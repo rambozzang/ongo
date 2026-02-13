@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { linkBioApi } from '@/api/linkbio'
+import { useNotificationStore } from '@/stores/notification'
 import type { BioPage, BioBlock, ThemeStyle, BlockType, LinkBlock } from '@/types/linkbio'
 
 const STORAGE_KEY = 'ongo_linkbio_page'
@@ -9,7 +10,7 @@ const saveToStorage = (page: BioPage) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(page))
   } catch (error) {
-    console.error('Failed to save to localStorage:', error)
+    useNotificationStore().error('링크 바이오 처리 중 오류가 발생했습니다')
   }
 }
 
@@ -70,7 +71,7 @@ export const useLinkBioStore = defineStore('linkbio', () => {
         bioPage.value = null
       }
     } catch (e) {
-      console.error('Failed to fetch link bio page:', e)
+      useNotificationStore().error('링크 바이오 처리 중 오류가 발생했습니다')
       bioPage.value = null
     } finally {
       loading.value = false
@@ -258,7 +259,7 @@ export const useLinkBioStore = defineStore('linkbio', () => {
         })))
       }
     } catch (e) {
-      console.error('Failed to save link bio page:', e)
+      useNotificationStore().error('링크 바이오 처리 중 오류가 발생했습니다')
     }
     saveToStorage(bioPage.value)
     isDirty.value = false

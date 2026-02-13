@@ -65,7 +65,6 @@ async function handleFileSelected(event: Event) {
       uploadedAt: new Date().toISOString(),
     })
   } catch (e) {
-    console.error('Failed to upload asset:', e)
     alert('에셋 업로드에 실패했습니다.')
   } finally {
     uploading.value = false
@@ -94,7 +93,6 @@ function closePreview() {
 
 function handleDownload(asset: BrandAsset) {
   // Mock download
-  console.log('Downloading:', asset.name)
   alert(`${asset.name} 다운로드를 시작합니다.`)
 }
 

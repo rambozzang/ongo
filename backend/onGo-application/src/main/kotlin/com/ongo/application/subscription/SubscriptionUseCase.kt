@@ -35,7 +35,8 @@ class SubscriptionUseCase(
         val billingCycle = safeValueOfOrThrow<BillingCycle>(request.billingCycle)
         val subscription = subscriptionRepository.findByUserId(userId)
             ?: throw NotFoundException("구독", userId)
-        val user = userRepository.findById(userId)!!
+        val user = userRepository.findById(userId)
+            ?: throw NotFoundException("사용자", userId)
 
         val isUpgrade = targetPlan.price > subscription.planType.price
         val now = LocalDateTime.now()
@@ -84,7 +85,8 @@ class SubscriptionUseCase(
     }
 
     fun getPlans(userId: Long): PlanComparisonResponse {
-        val user = userRepository.findById(userId)!!
+        val user = userRepository.findById(userId)
+            ?: throw NotFoundException("사용자", userId)
         val plans = PlanType.entries.map { plan ->
             PlanInfo(
                 planType = plan,

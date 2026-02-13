@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { brandKitApi } from '@/api/brandkit'
+import { useNotificationStore } from '@/stores/notification'
 import type { BrandKit, BrandColor, BrandFont, BrandAsset } from '@/types/brandkit'
 
 const STORAGE_KEY = 'ongo_brandkit'
@@ -51,7 +52,7 @@ export const useBrandKitStore = defineStore('brandkit', () => {
         }
       }
     } catch (e) {
-      console.error('Failed to fetch brand kits:', e)
+      useNotificationStore().error('브랜드킷 저장 중 오류가 발생했습니다')
     } finally {
       loading.value = false
     }
@@ -140,7 +141,7 @@ export const useBrandKitStore = defineStore('brandkit', () => {
         })
       }
     } catch (e) {
-      console.error('Failed to save brand kit:', e)
+      useNotificationStore().error('브랜드킷 저장 중 오류가 발생했습니다')
     }
     saveToStorage()
     isDirty.value = false

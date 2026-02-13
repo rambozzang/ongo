@@ -379,8 +379,7 @@ function loadRecentItems() {
     if (stored) {
       recentItems.value = JSON.parse(stored)
     }
-  } catch (error) {
-    console.error('Failed to load recent items:', error)
+  } catch {
     recentItems.value = []
   }
 }

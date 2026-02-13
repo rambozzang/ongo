@@ -81,8 +81,8 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
       if (storedSettings) {
         settings.value = JSON.parse(storedSettings)
       }
-    } catch (error) {
-      console.error('Failed to load notifications from localStorage:', error)
+    } catch {
+      // silently ignore localStorage errors
     }
   }
 
@@ -90,8 +90,8 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications.value))
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings.value))
-    } catch (error) {
-      console.error('Failed to save notifications to localStorage:', error)
+    } catch {
+      // silently ignore localStorage errors
     }
   }
 

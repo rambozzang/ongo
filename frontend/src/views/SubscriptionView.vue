@@ -575,8 +575,8 @@ async function confirmChangePlan() {
     notification.success('플랜이 성공적으로 변경되었습니다.')
     targetPlan.value = null
     await creditStore.fetchBalance()
-  } catch (e: any) {
-    notification.error(e?.message ?? '플랜 변경에 실패했습니다.')
+  } catch (e: unknown) {
+    notification.error(e instanceof Error ? e.message : '플랜 변경에 실패했습니다.')
   }
 }
 
@@ -588,8 +588,8 @@ async function handlePaymentConfirm() {
     showPaymentModal.value = false
     targetPlan.value = null
     await creditStore.fetchBalance()
-  } catch (e: any) {
-    notification.error(e?.message ?? '플랜 변경에 실패했습니다.')
+  } catch (e: unknown) {
+    notification.error(e instanceof Error ? e.message : '플랜 변경에 실패했습니다.')
   }
 }
 
@@ -597,8 +597,8 @@ async function confirmCancel() {
   try {
     await subscriptionStore.cancelSubscription()
     notification.success('구독이 취소되었습니다. 현재 결제 기간까지 이용 가능합니다.')
-  } catch (e: any) {
-    notification.error(e?.message ?? '구독 취소에 실패했습니다.')
+  } catch (e: unknown) {
+    notification.error(e instanceof Error ? e.message : '구독 취소에 실패했습니다.')
   }
 }
 
@@ -611,8 +611,8 @@ async function handleCreditPurchase(pkg: CreditPackage) {
       creditStore.fetchTransactions(0, 20),
       subscriptionStore.fetchPayments(0, 20),
     ])
-  } catch (e: any) {
-    notification.error(e?.message ?? '크레딧 충전에 실패했습니다.')
+  } catch (e: unknown) {
+    notification.error(e instanceof Error ? e.message : '크레딧 충전에 실패했습니다.')
   }
 }
 

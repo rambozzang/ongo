@@ -35,7 +35,6 @@ export function useErrorHandler() {
         notification.error(result.message, '네트워크 오류')
       }
 
-      console.error('[ErrorHandler] Network error:', { context, error })
       return result
     }
 
@@ -53,7 +52,6 @@ export function useErrorHandler() {
           notification.error(result.message, '연결 오류')
         }
 
-        console.error('[ErrorHandler] No response from server:', { context, error })
         return result
       }
 
@@ -123,12 +121,6 @@ export function useErrorHandler() {
           }
       }
 
-      console.error('[ErrorHandler] API error:', {
-        context,
-        statusCode,
-        message: result.message,
-        error,
-      })
       return result
     }
 
@@ -141,7 +133,6 @@ export function useErrorHandler() {
         notification.error(result.message)
       }
 
-      console.error('[ErrorHandler] ApiError:', { context, error })
       return result
     }
 
@@ -155,7 +146,6 @@ export function useErrorHandler() {
         notification.error(result.message)
       }
 
-      console.error('[ErrorHandler] Generic error:', { context, error })
       return result
     }
 
@@ -168,7 +158,6 @@ export function useErrorHandler() {
       notification.error(result.message)
     }
 
-    console.error('[ErrorHandler] Unknown error:', { context, error })
     return result
   }
 

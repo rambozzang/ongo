@@ -341,8 +341,8 @@ async function nextStep() {
       })
       paymentComplete.value = true
       emit('confirm')
-    } catch (e: any) {
-      paymentError.value = e?.message || '플랜 변경에 실패했습니다. 다시 시도해주세요.'
+    } catch (e: unknown) {
+      paymentError.value = e instanceof Error ? e.message : '플랜 변경에 실패했습니다. 다시 시도해주세요.'
       currentStep.value = 2
     }
   } else {

@@ -52,8 +52,8 @@ onMounted(async () => {
       id: String(v.id),
       title: v.title,
     }))
-  } catch (e) {
-    console.error('Failed to load videos:', e)
+  } catch {
+    // silently ignore — video list will be empty
   } finally {
     loadingVideos.value = false
   }

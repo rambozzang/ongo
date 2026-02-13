@@ -170,8 +170,6 @@ export function registerAnnouncer(callback: (message: string, priority?: 'polite
 export function announce(message: string, priority: 'polite' | 'assertive' = 'polite') {
   if (announceCallback) {
     announceCallback(message, priority)
-  } else {
-    console.warn('[useAccessibility] AriaLiveRegion not registered. Cannot announce:', message)
   }
 }
 

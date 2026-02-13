@@ -85,7 +85,8 @@ class ScheduleUseCase(
         if (schedule.userId != userId) throw ForbiddenException("해당 예약에 대한 권한이 없습니다")
         if (schedule.status != ScheduleStatus.SCHEDULED) throw IllegalStateException("수정 가능한 상태가 아닙니다")
 
-        val user = userRepository.findById(userId)!!
+        val user = userRepository.findById(userId)
+            ?: throw NotFoundException("사용자", userId)
         val newScheduledAt = request.scheduledAt ?: schedule.scheduledAt
         if (request.scheduledAt != null) {
             if (newScheduledAt.isBefore(LocalDateTime.now(KST))) {

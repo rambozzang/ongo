@@ -57,7 +57,6 @@ export const useActivityLogStore = defineStore('activityLog', () => {
         createdAt: log.createdAt ?? new Date().toISOString(),
       }))
     } catch (error) {
-      console.error('Failed to load activity log:', error)
       useNotificationStore().error('활동 로그를 불러오는 중 오류가 발생했습니다')
       events.value = []
     } finally {

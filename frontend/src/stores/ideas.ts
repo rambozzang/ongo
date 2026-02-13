@@ -101,7 +101,7 @@ export const useIdeasStore = defineStore('ideas', {
         const data = await ideaApi.list()
         this.ideas = data.map(mapApiToIdea)
       } catch (e) {
-        console.error('Failed to fetch ideas:', e)
+
         useNotificationStore().error('아이디어 처리 중 오류가 발생했습니다')
         this.loadFromLocalStorage()
       } finally {
@@ -121,7 +121,7 @@ export const useIdeasStore = defineStore('ideas', {
         })
         this.ideas.push(mapApiToIdea(data))
       } catch (e) {
-        console.error('Failed to create idea:', e)
+
         useNotificationStore().error('아이디어 처리 중 오류가 발생했습니다')
         const newIdea: ContentIdea = {
           ...idea,
@@ -149,7 +149,7 @@ export const useIdeasStore = defineStore('ideas', {
           this.ideas[index] = mapApiToIdea(data)
         }
       } catch (e) {
-        console.error('Failed to update idea:', e)
+
         useNotificationStore().error('아이디어 처리 중 오류가 발생했습니다')
         const index = this.ideas.findIndex(idea => idea.id === id)
         if (index !== -1) {
@@ -171,7 +171,7 @@ export const useIdeasStore = defineStore('ideas', {
           this.ideas.splice(index, 1)
         }
       } catch (e) {
-        console.error('Failed to delete idea:', e)
+
         useNotificationStore().error('아이디어 처리 중 오류가 발생했습니다')
         const index = this.ideas.findIndex(idea => idea.id === id)
         if (index !== -1) {
@@ -190,7 +190,7 @@ export const useIdeasStore = defineStore('ideas', {
           idea.updatedAt = new Date().toISOString()
         }
       } catch (e) {
-        console.error('Failed to change status:', e)
+
         useNotificationStore().error('아이디어 처리 중 오류가 발생했습니다')
         const idea = this.ideas.find(i => i.id === id)
         if (idea) {
@@ -235,7 +235,7 @@ export const useIdeasStore = defineStore('ideas', {
         try {
           this.ideas = JSON.parse(stored)
         } catch (e) {
-          console.error('Failed to load ideas from localStorage:', e)
+
         }
       }
     }

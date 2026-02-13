@@ -42,7 +42,7 @@ export const useWebhookStore = defineStore('webhooks', () => {
       const data = await webhookApi.list()
       webhooks.value = data.map(mapApiWebhook)
     } catch (e) {
-      console.error('Failed to fetch webhooks:', e)
+
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
     } finally {
       loading.value = false
@@ -60,7 +60,7 @@ export const useWebhookStore = defineStore('webhooks', () => {
       webhooks.value.push(newWebhook)
       return newWebhook
     } catch (e) {
-      console.error('Failed to create webhook:', e)
+
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
       // Fallback to local
       const newId = Math.max(...webhooks.value.map((w) => w.id), 0) + 1
@@ -90,7 +90,7 @@ export const useWebhookStore = defineStore('webhooks', () => {
         webhooks.value[index] = { ...webhooks.value[index], ...mapApiWebhook(result) }
       }
     } catch (e) {
-      console.error('Failed to update webhook:', e)
+
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
       const index = webhooks.value.findIndex((w) => w.id === id)
       if (index !== -1) {
@@ -104,7 +104,7 @@ export const useWebhookStore = defineStore('webhooks', () => {
     try {
       await webhookApi.delete(id)
     } catch (e) {
-      console.error('Failed to delete webhook:', e)
+
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
     }
     const index = webhooks.value.findIndex((w) => w.id === id)
@@ -143,7 +143,7 @@ export const useWebhookStore = defineStore('webhooks', () => {
       webhook.lastTriggeredAt = delivery.sentAt
       return delivery
     } catch (e) {
-      console.error('Failed to test webhook:', e)
+
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
       // Fallback to simulated
       const delivery: WebhookDelivery = {
@@ -202,7 +202,7 @@ export const useWebhookStore = defineStore('webhooks', () => {
 
       return retried
     } catch (e) {
-      console.error('Failed to retry delivery:', e)
+
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
       const retried: WebhookDelivery = {
         id: Date.now(),

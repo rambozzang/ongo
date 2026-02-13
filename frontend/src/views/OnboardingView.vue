@@ -575,8 +575,8 @@ async function tryAiGeneration() {
   try {
     const result = await aiApi.demoGenerate(profile.category || 'DEFAULT')
     aiTrialResult.value = result
-  } catch (e: any) {
-    aiTrialError.value = e?.message || 'AI 생성에 실패했습니다. 다시 시도해주세요.'
+  } catch (e: unknown) {
+    aiTrialError.value = e instanceof Error ? e.message : 'AI 생성에 실패했습니다. 다시 시도해주세요.'
   } finally {
     isAiLoading.value = false
   }

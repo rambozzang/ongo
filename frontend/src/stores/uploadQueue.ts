@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Platform } from '@/types/channel'
 import { useTusUpload } from '@/composables/useTusUpload'
+import { useNotificationStore } from '@/stores/notification'
 
 export type QueueItemStatus = 'queued' | 'uploading' | 'processing' | 'completed' | 'failed' | 'paused'
 
@@ -152,19 +153,19 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
       // Validate extension
       const ext = '.' + file.name.split('.').pop()?.toLowerCase()
       if (!ALLOWED_EXTENSIONS.includes(ext)) {
-        console.warn(`Skipping file with unsupported extension: ${file.name}`)
+        useNotificationStore().error(`지원하지 않는 파일 형식입니다: ${file.name}`)
         continue
       }
 
       // Validate MIME type
       if (!ALLOWED_MIMES.includes(file.type) && file.type !== '') {
-        console.warn(`Skipping file with invalid MIME type: ${file.name}`)
+        useNotificationStore().error(`유효하지 않은 파일 형식입니다: ${file.name}`)
         continue
       }
 
       // Validate size
       if (file.size > MAX_SIZE) {
-        console.warn(`Skipping file exceeding 2GB: ${file.name}`)
+        useNotificationStore().error(`파일 크기가 2GB를 초과합니다: ${file.name}`)
         continue
       }
 

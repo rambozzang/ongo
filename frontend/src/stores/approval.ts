@@ -7,6 +7,7 @@ import type {
   ApprovalStatus,
 } from '@/types/approval'
 import { approvalApi } from '@/api/approval'
+import { useNotificationStore } from '@/stores/notification'
 import type { ApprovalResponse, ApprovalCommentResponse } from '@/api/approval'
 
 function mapApiApproval(a: ApprovalResponse): ApprovalRequest {
@@ -148,7 +149,7 @@ export const useApprovalStore = defineStore('approval', () => {
       const data = await approvalApi.list(status)
       requests.value = data.approvals.map(mapApiApproval)
     } catch (e) {
-      console.error('Failed to fetch approvals:', e)
+      useNotificationStore().error('승인 처리 중 오류가 발생했습니다')
     } finally {
       loading.value = false
     }
@@ -176,7 +177,7 @@ export const useApprovalStore = defineStore('approval', () => {
       const mapped = mapApiApproval(result)
       requests.value.unshift(mapped)
     } catch (e) {
-      console.error('Failed to submit for approval:', e)
+      useNotificationStore().error('승인 처리 중 오류가 발생했습니다')
       throw e
     }
   }
@@ -192,7 +193,7 @@ export const useApprovalStore = defineStore('approval', () => {
         requests.value[index] = mapApiApproval(result)
       }
     } catch (e) {
-      console.error('Failed to approve request:', e)
+      useNotificationStore().error('승인 처리 중 오류가 발생했습니다')
       throw e
     }
   }
@@ -208,7 +209,7 @@ export const useApprovalStore = defineStore('approval', () => {
         requests.value[index] = mapApiApproval(result)
       }
     } catch (e) {
-      console.error('Failed to reject request:', e)
+      useNotificationStore().error('승인 처리 중 오류가 발생했습니다')
       throw e
     }
   }
@@ -224,7 +225,7 @@ export const useApprovalStore = defineStore('approval', () => {
         requests.value[index] = mapApiApproval(result)
       }
     } catch (e) {
-      console.error('Failed to request revision:', e)
+      useNotificationStore().error('승인 처리 중 오류가 발생했습니다')
       throw e
     }
   }
@@ -240,7 +241,7 @@ export const useApprovalStore = defineStore('approval', () => {
         requests.value[index] = mapApiApproval(result)
       }
     } catch (e) {
-      console.error('Failed to resubmit request:', e)
+      useNotificationStore().error('승인 처리 중 오류가 발생했습니다')
       throw e
     }
   }
@@ -252,7 +253,7 @@ export const useApprovalStore = defineStore('approval', () => {
       comments.value = comments.value.filter((c) => c.approvalId !== approvalId)
       comments.value.push(...data.map(mapApiComment))
     } catch (e) {
-      console.error('Failed to fetch comments:', e)
+      useNotificationStore().error('승인 처리 중 오류가 발생했습니다')
     }
   }
 
@@ -264,7 +265,7 @@ export const useApprovalStore = defineStore('approval', () => {
       })
       comments.value.push(mapApiComment(result))
     } catch (e) {
-      console.error('Failed to add comment:', e)
+      useNotificationStore().error('승인 처리 중 오류가 발생했습니다')
       throw e
     }
   }

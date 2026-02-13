@@ -39,8 +39,8 @@ export function useInfiniteScroll(
       isLoading.value = true
       try {
         await loadMore()
-      } catch (error) {
-        console.error('Error loading more items:', error)
+      } catch {
+        // silently ignore load errors
       } finally {
         isLoading.value = false
       }

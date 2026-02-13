@@ -9,6 +9,7 @@ import type {
   AnalyticsPeriod,
 } from '@/types/analytics'
 import { analyticsApi } from '@/api/analytics'
+import { useNotificationStore } from '@/stores/notification'
 
 export const useAnalyticsStore = defineStore('analytics', () => {
   const kpi = ref<DashboardKpi | null>(null)
@@ -41,13 +42,11 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       }
       if (results[4].status === 'fulfilled') topVideos.value = results[4].value
 
-      // 실패한 요청 로깅
-      results.forEach((result, index) => {
-        if (result.status === 'rejected') {
-          const labels = ['KPI', 'Trends', 'Platform', 'Heatmap', 'TopVideos']
-          console.error(`Analytics ${labels[index]} fetch failed:`, result.reason)
-        }
-      })
+      // 실패한 요청이 있으면 사용자에게 알림
+      const hasFailure = results.some((result) => result.status === 'rejected')
+      if (hasFailure) {
+        useNotificationStore().error('분석 데이터를 불러오는 중 오류가 발생했습니다')
+      }
     } catch {
       // analytics fetch failed silently
     } finally {

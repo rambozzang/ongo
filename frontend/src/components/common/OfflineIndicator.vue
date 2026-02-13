@@ -56,7 +56,6 @@ function handleOnline() {
     reconnectedTimeout.value = null
   }, 3000)
 
-  console.log('[OfflineIndicator] Connection restored')
 }
 
 function handleOffline() {
@@ -69,7 +68,6 @@ function handleOffline() {
     reconnectedTimeout.value = null
   }
 
-  console.log('[OfflineIndicator] Connection lost')
 }
 
 onMounted(() => {

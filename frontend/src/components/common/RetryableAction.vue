@@ -116,8 +116,6 @@ async function handleRetry() {
   // Exponential backoff: 1s, 2s, 4s, 8s...
   const delay = props.retryDelay * Math.pow(2, retryCount.value - 1)
 
-  console.log(`[RetryableAction] Retry ${retryCount.value}/${props.maxRetries} after ${delay}ms`)
-
   await new Promise((resolve) => setTimeout(resolve, delay))
   await executeAction()
 }

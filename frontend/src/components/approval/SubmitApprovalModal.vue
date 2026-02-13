@@ -43,8 +43,8 @@ onMounted(async () => {
         role: m.role === 'OWNER' ? '소유자' : '관리자',
         avatar: stringToColor(m.memberEmail),
       }))
-  } catch (e) {
-    console.error('Failed to load team members:', e)
+  } catch {
+    // silently ignore — reviewer list is optional
   } finally {
     loadingReviewers.value = false
   }

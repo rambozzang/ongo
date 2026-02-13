@@ -65,8 +65,7 @@ export function useSearch() {
       if (stored) {
         recentSearches.value = JSON.parse(stored)
       }
-    } catch (e) {
-      console.error('Failed to load recent searches:', e)
+    } catch {
       recentSearches.value = []
     }
   }
@@ -75,8 +74,8 @@ export function useSearch() {
   const saveRecentSearches = () => {
     try {
       localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recentSearches.value))
-    } catch (e) {
-      console.error('Failed to save recent searches:', e)
+    } catch {
+      // silently ignore localStorage errors
     }
   }
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { MetadataTemplate } from '@/types/template'
 import type { MetadataFormData } from '@/components/upload/MetadataForm.vue'
+import { useNotificationStore } from '@/stores/notification'
 
 const STORAGE_KEY = 'ongo-templates'
 const MAX_TEMPLATES = 20
@@ -102,7 +103,7 @@ export const useTemplateStore = defineStore('template', () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(templates.value))
     } catch (error) {
-      console.error('Failed to save templates to localStorage:', error)
+      useNotificationStore().error('템플릿 처리 중 오류가 발생했습니다')
     }
   }
 

@@ -101,8 +101,9 @@ async function loadPreview() {
     } else {
       errorMessage.value = result.message || '채널을 찾을 수 없습니다.'
     }
-  } catch (e: any) {
-    errorMessage.value = e?.response?.data?.message || '채널 정보 조회 중 오류가 발생했습니다.'
+  } catch (e: unknown) {
+    const axiosErr = e as { response?: { data?: { message?: string } } }
+    errorMessage.value = axiosErr?.response?.data?.message || '채널 정보 조회 중 오류가 발생했습니다.'
   } finally {
     isLoading.value = false
   }

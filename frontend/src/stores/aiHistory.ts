@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useNotificationStore } from '@/stores/notification'
 
 export interface AiUsageRecord {
   id: string
@@ -100,7 +101,7 @@ export const useAiHistoryStore = defineStore('aiHistory', () => {
         initializeDefaultPresets()
       }
     } catch (e) {
-      console.error('Failed to load AI history from storage:', e)
+      useNotificationStore().error('AI 히스토리 처리 중 오류가 발생했습니다')
       initializeDefaultPresets()
     }
   }
@@ -110,7 +111,7 @@ export const useAiHistoryStore = defineStore('aiHistory', () => {
     try {
       localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history.value))
     } catch (e) {
-      console.error('Failed to save AI history to storage:', e)
+      useNotificationStore().error('AI 히스토리 처리 중 오류가 발생했습니다')
     }
   }
 
@@ -118,7 +119,7 @@ export const useAiHistoryStore = defineStore('aiHistory', () => {
     try {
       localStorage.setItem(STORAGE_KEY_PRESETS, JSON.stringify(presets.value))
     } catch (e) {
-      console.error('Failed to save AI presets to storage:', e)
+      useNotificationStore().error('AI 히스토리 처리 중 오류가 발생했습니다')
     }
   }
 

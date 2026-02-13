@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { recyclingApi } from '@/api/recycling'
 import { videoApi } from '@/api/video'
+import { useNotificationStore } from '@/stores/notification'
 
 export interface RecycleMetadata {
   title: string
@@ -64,7 +65,7 @@ export const useRecycleStore = defineStore('recycle', () => {
       // Persist to localStorage
       localStorage.setItem('recentRecycles', JSON.stringify(recentRecycles.value))
     } catch (error) {
-      console.error('Failed to recycle video:', error)
+      useNotificationStore().error('리사이클 처리 중 오류가 발생했습니다')
       throw error
     } finally {
       loading.value = false

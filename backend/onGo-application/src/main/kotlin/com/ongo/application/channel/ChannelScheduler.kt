@@ -84,9 +84,24 @@ class ChannelScheduler(
                     }
                 }
             } catch (e: Exception) {
-                log.error("토큰 갱신 실패 [${channel.platform}:${channel.id}]: ${e.message}")
-                channelRepository.update(channel.copy(status = "EXPIRED", updatedAt = LocalDateTime.now()))
+                when {
+                    isTransientError(e) -> {
+                        log.warn("토큰 갱신 일시적 실패 [${channel.platform}:${channel.id}]: ${e.message} - 다음 주기에 재시도")
+                    }
+                    else -> {
+                        log.error("토큰 갱신 실패 [${channel.platform}:${channel.id}]: ${e.message}")
+                        channelRepository.update(channel.copy(status = "EXPIRED", updatedAt = LocalDateTime.now()))
+                    }
+                }
             }
         }
+    }
+
+    private fun isTransientError(e: Exception): Boolean {
+        return e is java.net.SocketTimeoutException ||
+               e is java.net.ConnectException ||
+               e is java.io.IOException ||
+               e.cause is java.net.SocketTimeoutException ||
+               e.cause is java.net.ConnectException
     }
 }

@@ -168,12 +168,5 @@ function handleReport() {
   notification.info('문제 신고 기능은 곧 제공될 예정입니다.')
 
   // In production, this would open a modal or send error to logging service
-  console.log('[ErrorBoundary] Report requested:', {
-    message: errorMessage.value,
-    details: errorDetails.value,
-    timestamp: new Date().toISOString(),
-    userAgent: navigator.userAgent,
-    url: window.location.href,
-  })
 }
 </script>

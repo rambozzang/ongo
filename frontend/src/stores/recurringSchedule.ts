@@ -7,6 +7,7 @@ import type {
   DayOfWeek,
 } from '@/types/recurringSchedule'
 import { recurringScheduleApi } from '@/api/recurringSchedule'
+import { useNotificationStore } from '@/stores/notification'
 import type { RecurringScheduleResponse } from '@/api/recurringSchedule'
 
 function mapApiSchedule(s: RecurringScheduleResponse): RecurringRule {
@@ -132,7 +133,7 @@ export const useRecurringScheduleStore = defineStore('recurringSchedule', () => 
         if (rule.isActive) generateSlots(rule.id, 2)
       }
     } catch (e) {
-      console.error('Failed to fetch recurring schedules:', e)
+      useNotificationStore().error('반복 예약 처리 중 오류가 발생했습니다')
     } finally {
       loading.value = false
     }
@@ -154,7 +155,7 @@ export const useRecurringScheduleStore = defineStore('recurringSchedule', () => 
       generateSlots(newRule.id, 2)
       return newRule
     } catch (e) {
-      console.error('Failed to create recurring schedule:', e)
+      useNotificationStore().error('반복 예약 처리 중 오류가 발생했습니다')
       const now = new Date().toISOString()
       const newRule: RecurringRule = {
         ...rule,
@@ -179,7 +180,7 @@ export const useRecurringScheduleStore = defineStore('recurringSchedule', () => 
         platforms: updates.platforms,
       })
     } catch (e) {
-      console.error('Failed to update recurring schedule:', e)
+      useNotificationStore().error('반복 예약 처리 중 오류가 발생했습니다')
     }
     const index = rules.value.findIndex((r) => r.id === id)
     if (index !== -1) {
@@ -199,7 +200,7 @@ export const useRecurringScheduleStore = defineStore('recurringSchedule', () => 
     try {
       await recurringScheduleApi.delete(Number(id))
     } catch (e) {
-      console.error('Failed to delete recurring schedule:', e)
+      useNotificationStore().error('반복 예약 처리 중 오류가 발생했습니다')
     }
     rules.value = rules.value.filter((r) => r.id !== id)
     contentQueue.value = contentQueue.value.filter((s) => s.ruleId !== id)
@@ -209,7 +210,7 @@ export const useRecurringScheduleStore = defineStore('recurringSchedule', () => 
     try {
       await recurringScheduleApi.toggle(Number(id))
     } catch (e) {
-      console.error('Failed to toggle recurring schedule:', e)
+      useNotificationStore().error('반복 예약 처리 중 오류가 발생했습니다')
     }
     const rule = rules.value.find((r) => r.id === id)
     if (rule) {

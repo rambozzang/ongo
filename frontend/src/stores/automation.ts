@@ -70,7 +70,7 @@ export const useAutomationStore = defineStore('automation', {
         const data = await automationApi.list()
         this.rules = data.map(mapApiRule)
       } catch (e) {
-        console.error('Failed to fetch automation rules:', e)
+
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
       } finally {
         this.loading = false
@@ -90,7 +90,7 @@ export const useAutomationStore = defineStore('automation', {
         })
         this.rules.push(mapApiRule(data))
       } catch (e) {
-        console.error('Failed to create automation rule:', e)
+
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
         // Fallback to local
         const newRule: AutomationRule = {
@@ -120,7 +120,7 @@ export const useAutomationStore = defineStore('automation', {
           this.rules[index] = mapApiRule(data)
         }
       } catch (e) {
-        console.error('Failed to update automation rule:', e)
+
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
         const index = this.rules.findIndex(r => r.id === id)
         if (index !== -1) {
@@ -137,7 +137,7 @@ export const useAutomationStore = defineStore('automation', {
       try {
         await automationApi.delete(id)
       } catch (e) {
-        console.error('Failed to delete automation rule:', e)
+
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
       }
       const index = this.rules.findIndex(r => r.id === id)
@@ -154,7 +154,7 @@ export const useAutomationStore = defineStore('automation', {
           this.rules[index] = mapApiRule(data)
         }
       } catch (e) {
-        console.error('Failed to toggle automation rule:', e)
+
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
         const rule = this.rules.find(r => r.id === id)
         if (rule) {

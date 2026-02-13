@@ -927,8 +927,8 @@ async function loadTagPerformance() {
   tagDataLoading.value = true
   try {
     tagData.value = await analyticsApi.tagPerformance(period.value)
-  } catch (e) {
-    console.error('Failed to load tag performance:', e)
+  } catch {
+    // silently ignore — tag data will be empty
   } finally {
     tagDataLoading.value = false
   }

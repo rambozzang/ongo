@@ -159,8 +159,8 @@ onMounted(async () => {
           missingPlatforms: getMissingPlatforms(video),
         }
       })
-  } catch (e) {
-    console.error('Failed to load recycle suggestions:', e)
+  } catch {
+    // silently ignore — suggestions will be empty
   } finally {
     loadingSuggestions.value = false
   }

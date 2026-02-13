@@ -13,7 +13,6 @@ export function exportToCSV<T>(
   filename: string
 ): void {
   if (data.length === 0) {
-    console.warn('No data to export')
     return
   }
 
@@ -49,7 +48,6 @@ export function exportToCSV<T>(
  */
 export function exportToJSON<T>(data: T[], filename: string): void {
   if (data.length === 0) {
-    console.warn('No data to export')
     return
   }
 

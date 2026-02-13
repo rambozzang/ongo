@@ -98,7 +98,7 @@ export const useGoalsStore = defineStore('goals', {
         const data = await goalApi.list()
         this.goals = data.map(mapApiToGoal)
       } catch (e) {
-        console.error('Failed to fetch goals:', e)
+
         useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
         this.loadFromLocalStorage()
       } finally {
@@ -118,7 +118,7 @@ export const useGoalsStore = defineStore('goals', {
         })
         this.goals.unshift(mapApiToGoal(data))
       } catch (e) {
-        console.error('Failed to create goal:', e)
+
         useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
         const newGoal: Goal = {
           ...goal,
@@ -147,7 +147,7 @@ export const useGoalsStore = defineStore('goals', {
           this.goals[index] = mapApiToGoal(data)
         }
       } catch (e) {
-        console.error('Failed to update goal:', e)
+
         useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
         const index = this.goals.findIndex(g => g.id === id)
         if (index !== -1) {
@@ -172,7 +172,7 @@ export const useGoalsStore = defineStore('goals', {
           this.goals.splice(index, 1)
         }
       } catch (e) {
-        console.error('Failed to delete goal:', e)
+
         useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
         const index = this.goals.findIndex(g => g.id === id)
         if (index !== -1) {
@@ -190,7 +190,7 @@ export const useGoalsStore = defineStore('goals', {
           this.goals[index] = mapApiToGoal(data)
         }
       } catch (e) {
-        console.error('Failed to update progress:', e)
+
         useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
         this.updateGoal(id, { currentValue })
         const goal = this.goals.find(g => g.id === id)
@@ -236,7 +236,7 @@ export const useGoalsStore = defineStore('goals', {
         try {
           this.goals = JSON.parse(stored)
         } catch (e) {
-          console.error('Failed to load goals from localStorage:', e)
+
         }
       }
     },
