@@ -77,10 +77,31 @@ class AutomationWorkflowJooqRepository(
             .fetch()
             .map { it.toWorkflow() }
 
+        if (workflows.isEmpty()) return emptyList()
+
+        val workflowIds = workflows.mapNotNull { it.id }
+
+        // Batch fetch all conditions and actions (eliminates 2N+1 → 3 queries)
+        val allConditions = dsl.select()
+            .from(WORKFLOW_CONDITIONS)
+            .where(WORKFLOW_ID.`in`(workflowIds))
+            .orderBy(SORT_ORDER)
+            .fetch()
+            .map { it.toCondition() }
+        val conditionsByWorkflow = allConditions.groupBy { it.workflowId }
+
+        val allActions = dsl.select()
+            .from(WORKFLOW_ACTIONS)
+            .where(WORKFLOW_ID.`in`(workflowIds))
+            .orderBy(SORT_ORDER)
+            .fetch()
+            .map { it.toAction() }
+        val actionsByWorkflow = allActions.groupBy { it.workflowId }
+
         return workflows.map { w ->
             val wId = w.id!!
-            val conditions = findConditionsByWorkflowId(wId)
-            val actions = findActionsByWorkflowId(wId)
+            val conditions = buildConditionTree(conditionsByWorkflow[wId] ?: emptyList())
+            val actions = actionsByWorkflow[wId] ?: emptyList()
             w.copy(conditions = conditions, actions = actions)
         }
     }

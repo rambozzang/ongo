@@ -17,7 +17,10 @@ backend/.gradle/
 
 # Logs
 backend/logs/
+backend/onGo-api/logs/
 *.log
+*.log.*
+*.gz
 
 # OS
 .DS_Store

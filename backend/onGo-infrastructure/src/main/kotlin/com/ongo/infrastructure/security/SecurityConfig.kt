@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.core.env.Environment
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
@@ -20,6 +21,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val objectMapper: ObjectMapper,
+    private val environment: Environment,
     @org.springframework.beans.factory.annotation.Value("\${cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
     private val allowedOrigins: List<String>,
 ) {
@@ -32,19 +34,28 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
+            .headers { headers ->
+                headers.contentSecurityPolicy { it.policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'") }
+                headers.frameOptions { it.deny() }
+            }
             .authorizeHttpRequests { auth ->
+                val publicPaths = mutableListOf(
+                    "/api/v1/auth/login/**",
+                    "/api/v1/auth/refresh",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/v3/api-docs/**",
+                    "/api-docs/**",
+                    "/actuator/health",
+                    "/ws/**",
+                    "/api/v1/ai/demo/**",
+                )
+                // dev-login은 dev 프로필에서만 허용
+                if (environment.activeProfiles.contains("dev")) {
+                    publicPaths.add("/api/v1/auth/dev-login")
+                }
                 auth
-                    .requestMatchers(
-                        "/api/v1/auth/login/**",
-                        "/api/v1/auth/refresh",
-                        "/api/v1/auth/dev-login",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/v3/api-docs/**",
-                        "/api-docs/**",
-                        "/actuator/**",
-                        "/ws/**",
-                    ).permitAll()
+                    .requestMatchers(*publicPaths.toTypedArray()).permitAll()
                     .anyRequest().authenticated()
             }
             .exceptionHandling { exceptions ->
@@ -73,7 +84,7 @@ class SecurityConfig(
         val configuration = CorsConfiguration()
         configuration.allowedOrigins = allowedOrigins
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-        configuration.allowedHeaders = listOf("*")
+        configuration.allowedHeaders = listOf("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin")
         configuration.allowCredentials = true
         configuration.maxAge = 3600L
 

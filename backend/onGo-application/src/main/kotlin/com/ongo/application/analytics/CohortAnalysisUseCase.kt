@@ -211,11 +211,12 @@ class CohortAnalysisUseCase(
                     .associate { it.key to it.value }
             }
             CohortGroupBy.PLATFORM -> {
-                // We need upload info for platform grouping — use video IDs
-                val videoMap = videos.associateBy { it.id!! }
+                // Batch fetch all uploads for all videos (eliminates N+1)
+                val videoIds = videos.mapNotNull { it.id }
+                val uploadsByVideoId = videoUploadRepository.findByVideoIds(videoIds)
                 val result = mutableMapOf<String, MutableList<Video>>()
                 for (video in videos) {
-                    val uploads = videoUploadRepository.findByVideoId(video.id!!)
+                    val uploads = uploadsByVideoId[video.id!!] ?: emptyList()
                     for (upload in uploads) {
                         result.getOrPut(upload.platform.name) { mutableListOf() }.add(video)
                     }
@@ -241,9 +242,23 @@ class CohortAnalysisUseCase(
         val milestones = listOf(1, 3, 7, 14, 30, 60, 90)
         val cumulativeMap = mutableMapOf<Int, Long>()
 
+        // Batch fetch all uploads for this cohort group (eliminates N+1)
+        val videoIds = videos.mapNotNull { it.id }
+        val uploadsByVideoId = videoUploadRepository.findByVideoIds(videoIds)
+
+        // Collect all upload IDs for batch analytics query
+        val allUploadIds = uploadsByVideoId.values.flatten().mapNotNull { it.id }
+
+        // Batch fetch analytics for the full date range (eliminates milestone×video N+1)
+        val allAnalytics = if (allUploadIds.isNotEmpty()) {
+            analyticsRepository.findByVideoUploadIdsAndDateRange(allUploadIds, dateFrom, dateTo)
+        } else {
+            emptyMap()
+        }
+
         for (video in videos) {
             val videoCreated = video.createdAt?.toLocalDate() ?: continue
-            val uploads = videoUploadRepository.findByVideoId(video.id!!)
+            val uploads = uploadsByVideoId[video.id!!] ?: continue
             val uploadIds = uploads.mapNotNull { it.id }
             if (uploadIds.isEmpty()) continue
 
@@ -251,10 +266,12 @@ class CohortAnalysisUseCase(
                 val endDate = videoCreated.plusDays(day.toLong())
                 if (endDate.isAfter(dateTo)) continue
 
-                val analyticsForPeriod = analyticsRepository.findByVideoUploadIdsAndDateRange(
-                    uploadIds, videoCreated, endDate,
-                )
-                val views = analyticsForPeriod.values.flatten().sumOf { it.views.toLong() }
+                // Filter pre-fetched analytics in memory by upload IDs and date range
+                val views = uploadIds.sumOf { uploadId ->
+                    (allAnalytics[uploadId] ?: emptyList())
+                        .filter { !it.date.isBefore(videoCreated) && !it.date.isAfter(endDate) }
+                        .sumOf { it.views.toLong() }
+                }
                 cumulativeMap[day] = (cumulativeMap[day] ?: 0) + views
             }
         }

@@ -14,7 +14,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5434/ongo_db
     username: ${DB_USERNAME:ongo_user}
-    password: ${DB_PASSWORD:ongo_password}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -25,6 +25,13 @@ spring:
   # jOOQ
   jooq:
     sql-dialect: POSTGRES
+
+  # Flyway
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
 
   # Cache - configured in CaffeineCacheConfig.kt
 
@@ -70,7 +77,7 @@ spring:
 
 # JWT
 jwt:
-  secret: ${JWT_SECRET:ongo-dev-jwt-secret-key-must-be-at-least-32-bytes-long}
+  secret: ${JWT_SECRET}
   access-token-expiry: 1800000   # 30 minutes
   refresh-token-expiry: 604800000 # 7 days
 
@@ -94,7 +101,7 @@ payment:
 # Platform encryption
 platform:
   token:
-    encryption-key: ${PLATFORM_TOKEN_ENCRYPTION_KEY:b25nby1kZXYtYWVzMjU2LWVuY3J5cHRpb24ta2V5MDA=}
+    encryption-key: ${PLATFORM_TOKEN_ENCRYPTION_KEY}
   google:
     api-key: ${GOOGLE_API_KEY:}
 

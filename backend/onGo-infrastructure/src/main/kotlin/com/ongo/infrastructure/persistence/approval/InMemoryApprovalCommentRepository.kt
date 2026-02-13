@@ -2,12 +2,14 @@ package com.ongo.infrastructure.persistence.approval
 
 import com.ongo.domain.approval.ApprovalComment
 import com.ongo.domain.approval.ApprovalCommentRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 @Repository
+@Profile("test")
 class InMemoryApprovalCommentRepository : ApprovalCommentRepository {
 
     private val store = ConcurrentHashMap<Long, ApprovalComment>()

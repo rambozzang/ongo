@@ -48,15 +48,16 @@ class PaymentService(
 
     @Transactional
     fun handleWebhook(payload: TossWebhookPayload, signature: String?) {
-        // 웹훅 서명 검증
-        if (tossWebhookSecret.isNotBlank()) {
-            if (signature.isNullOrBlank()) {
-                throw UnauthorizedException("웹훅 서명이 누락되었습니다")
-            }
-            val expectedSignature = computeHmacSha256(payload.orderId + payload.status + payload.totalAmount, tossWebhookSecret)
-            if (signature != expectedSignature) {
-                throw UnauthorizedException("웹훅 서명 검증에 실패했습니다")
-            }
+        // 웹훅 서명 검증 (시크릿이 설정되지 않으면 웹훅 거부)
+        if (tossWebhookSecret.isBlank()) {
+            throw UnauthorizedException("웹훅 시크릿이 설정되지 않았습니다")
+        }
+        if (signature.isNullOrBlank()) {
+            throw UnauthorizedException("웹훅 서명이 누락되었습니다")
+        }
+        val expectedSignature = computeHmacSha256(payload.orderId + payload.status + payload.totalAmount, tossWebhookSecret)
+        if (signature != expectedSignature) {
+            throw UnauthorizedException("웹훅 서명 검증에 실패했습니다")
         }
 
         log.info("결제 웹훅 수신: orderId=${payload.orderId}, status=${payload.status}")

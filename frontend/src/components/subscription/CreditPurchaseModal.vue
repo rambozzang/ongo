@@ -156,6 +156,10 @@
                 </div>
               </div>
             </div>
+
+            <div v-if="paymentError" class="mt-4 rounded-lg bg-red-50 dark:bg-red-900/20 p-4">
+              <p class="text-sm text-red-700 dark:text-red-400">{{ paymentError }}</p>
+            </div>
           </div>
         </div>
 
@@ -240,6 +244,7 @@
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { XMarkIcon, SparklesIcon, CheckCircleIcon, CreditCardIcon, DevicePhoneMobileIcon } from '@heroicons/vue/24/outline'
 import { CREDIT_PACKAGES, type CreditPackage } from '@/types/credit'
+import { creditApi } from '@/api/credit'
 
 interface Props {
   modelValue: boolean
@@ -256,6 +261,7 @@ const currentStep = ref(1)
 const selectedPackage = ref<CreditPackage | null>(null)
 const selectedPaymentMethod = ref<string>('card')
 const paymentComplete = ref(false)
+const paymentError = ref('')
 
 // Mock card form
 const cardNumber = ref('')
@@ -342,16 +348,23 @@ function formatExpiry() {
     .replace(/(\d{2})(\d)/, '$1/$2')
 }
 
-function nextStep() {
+async function nextStep() {
   if (currentStep.value === 2) {
-    // Start mock payment processing
     currentStep.value = 3
-    setTimeout(() => {
+    paymentError.value = ''
+    try {
+      await creditApi.purchase({
+        packageName: selectedPackage.value!.name,
+        paymentMethodId: selectedPaymentMethod.value,
+      })
       paymentComplete.value = true
       if (selectedPackage.value) {
         emit('purchase', selectedPackage.value)
       }
-    }, 2000)
+    } catch (e: any) {
+      paymentError.value = e?.message || '결제에 실패했습니다. 다시 시도해주세요.'
+      currentStep.value = 2
+    }
   } else {
     currentStep.value++
   }
@@ -371,6 +384,7 @@ function close() {
     selectedPackage.value = null
     selectedPaymentMethod.value = 'card'
     paymentComplete.value = false
+    paymentError.value = ''
     cardNumber.value = ''
     cardExpiry.value = ''
     cardCvc.value = ''

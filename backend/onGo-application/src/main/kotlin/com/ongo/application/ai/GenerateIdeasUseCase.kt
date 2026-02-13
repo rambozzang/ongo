@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class GenerateIdeasUseCase(
@@ -18,6 +19,7 @@ class GenerateIdeasUseCase(
 
     private val log = LoggerFactory.getLogger(GenerateIdeasUseCase::class.java)
 
+    @Transactional
     fun execute(userId: Long, category: String, recentTitles: List<String>): ContentIdeaResult {
         rateLimiter.checkRateLimit(userId)
         creditService.validateAndDeduct(userId, AiFeature.CONTENT_IDEA)

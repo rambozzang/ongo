@@ -453,7 +453,10 @@ const isTablet = useMediaQuery('(min-width: 768px)')
 
 const userName = computed(() => authStore.user?.nickname || authStore.user?.name || '크리에이터')
 const creditBalance = computed(() => creditStore.totalBalance)
-const todayScheduleCount = ref(0) // TODO: 실제 스케줄 데이터 연동
+const todayScheduleCount = computed(() => {
+  const today = dayjs().startOf('day')
+  return upcomingSchedules.value.filter(s => dayjs(s.scheduledAt).isSame(today, 'day')).length
+})
 
 // Widget Customizer
 const showWidgetCustomizer = ref(false)

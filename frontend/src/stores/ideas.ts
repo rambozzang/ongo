@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ideaApi } from '@/api/idea'
+import { useNotificationStore } from '@/stores/notification'
 import type { ContentIdea, IdeaStatus, IdeaPriority } from '@/types/idea'
 
 interface IdeasState {
@@ -101,6 +102,7 @@ export const useIdeasStore = defineStore('ideas', {
         this.ideas = data.map(mapApiToIdea)
       } catch (e) {
         console.error('Failed to fetch ideas:', e)
+        useNotificationStore().error('아이디어 처리 중 오류가 발생했습니다')
         this.loadFromLocalStorage()
       } finally {
         this.loading = false
@@ -120,6 +122,7 @@ export const useIdeasStore = defineStore('ideas', {
         this.ideas.push(mapApiToIdea(data))
       } catch (e) {
         console.error('Failed to create idea:', e)
+        useNotificationStore().error('아이디어 처리 중 오류가 발생했습니다')
         const newIdea: ContentIdea = {
           ...idea,
           id: Math.max(...this.ideas.map(i => i.id), 0) + 1,
@@ -147,6 +150,7 @@ export const useIdeasStore = defineStore('ideas', {
         }
       } catch (e) {
         console.error('Failed to update idea:', e)
+        useNotificationStore().error('아이디어 처리 중 오류가 발생했습니다')
         const index = this.ideas.findIndex(idea => idea.id === id)
         if (index !== -1) {
           this.ideas[index] = {
@@ -168,6 +172,7 @@ export const useIdeasStore = defineStore('ideas', {
         }
       } catch (e) {
         console.error('Failed to delete idea:', e)
+        useNotificationStore().error('아이디어 처리 중 오류가 발생했습니다')
         const index = this.ideas.findIndex(idea => idea.id === id)
         if (index !== -1) {
           this.ideas.splice(index, 1)
@@ -186,6 +191,7 @@ export const useIdeasStore = defineStore('ideas', {
         }
       } catch (e) {
         console.error('Failed to change status:', e)
+        useNotificationStore().error('아이디어 처리 중 오류가 발생했습니다')
         const idea = this.ideas.find(i => i.id === id)
         if (idea) {
           idea.status = newStatus

@@ -2,12 +2,14 @@ package com.ongo.infrastructure.persistence.ai
 
 import com.ongo.domain.ai.WeeklyDigest
 import com.ongo.domain.ai.WeeklyDigestRepository
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 @Repository
+@Profile("test")
 class InMemoryWeeklyDigestRepository : WeeklyDigestRepository {
 
     private val store = ConcurrentHashMap<Long, WeeklyDigest>()

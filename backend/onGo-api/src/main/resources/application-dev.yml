@@ -1,4 +1,15 @@
 # Development profile overrides
+spring:
+  datasource:
+    password: ${DB_PASSWORD:ongo_password}
+
+jwt:
+  secret: ${JWT_SECRET:ongo-dev-jwt-secret-key-must-be-at-least-32-bytes-long}
+
+platform:
+  token:
+    encryption-key: ${PLATFORM_TOKEN_ENCRYPTION_KEY:b25nby1kZXYtYWVzMjU2LWVuY3J5cHRpb24ta2V5MDA=}
+
 logging:
   level:
     com.ongo: DEBUG

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Platform } from '@/types/channel'
+import { useTusUpload } from '@/composables/useTusUpload'
 
 export type QueueItemStatus = 'queued' | 'uploading' | 'processing' | 'completed' | 'failed' | 'paused'
 
@@ -326,91 +327,30 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
       item.platformProgress[platform as Platform].progress = 0
     })
 
-    const baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || '/api/v1'
-
-    try {
-      // Step 1: Init upload to get videoId
-      const token = localStorage.getItem('access_token') || ''
-      const initResponse = await fetch(`${baseUrl}/videos/upload/init`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          filename: item.fileName,
-          fileSize: item.fileSize,
-          contentType: item.file.type || 'video/mp4',
-        }),
-      })
-
-      if (!initResponse.ok) {
-        throw new Error(`Upload init failed: ${initResponse.status}`)
-      }
-
-      const initData = await initResponse.json()
-      const videoId = initData.data?.id ?? initData.data?.videoId
-
-      if (!videoId) {
-        throw new Error('No videoId returned from init')
-      }
-
-      // Step 2: Create Tus upload session
-      const tusUrl = `${baseUrl}/videos/upload/tus/${videoId}`
-      const createResponse = await fetch(tusUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Upload-Length': String(item.fileSize),
-          'Tus-Resumable': '1.0.0',
-          'Content-Type': 'application/offset+octet-stream',
-        },
-      })
-
-      if (!createResponse.ok) {
-        throw new Error(`Tus create failed: ${createResponse.status}`)
-      }
-
-      // Step 3: Upload in chunks
-      const CHUNK_SIZE = 5 * 1024 * 1024 // 5MB chunks
-      let offset = 0
-
-      while (offset < item.fileSize) {
-        if (item.status === 'paused') return
-
-        const chunk = item.file.slice(offset, offset + CHUNK_SIZE)
-        const patchResponse = await fetch(tusUrl, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Upload-Offset': String(offset),
-            'Content-Type': 'application/offset+octet-stream',
-            'Tus-Resumable': '1.0.0',
-          },
-          body: chunk,
+    const { upload } = useTusUpload({
+      shouldContinue: (itemId) => {
+        const current = queue.value.find((i) => i.id === itemId)
+        return current?.status !== 'paused'
+      },
+      onProgress: (itemId, progress) => {
+        const current = queue.value.find((i) => i.id === itemId)
+        if (!current) return
+        current.progress = progress
+        Object.keys(current.platformProgress).forEach((platform) => {
+          current.platformProgress[platform as Platform].progress = progress
         })
-
-        if (!patchResponse.ok) {
-          throw new Error(`Tus patch failed: ${patchResponse.status}`)
-        }
-
-        offset += chunk.size
-        const progress = Math.min(100, Math.round((offset / item.fileSize) * 100))
-        item.progress = progress
-
-        // Update platform progress proportionally
-        Object.keys(item.platformProgress).forEach((platform) => {
-          item.platformProgress[platform as Platform].progress = progress
-        })
-
         // Switch to processing at 80%
-        if (progress >= 80 && item.status === 'uploading') {
-          item.status = 'processing'
-          Object.keys(item.platformProgress).forEach((platform) => {
-            item.platformProgress[platform as Platform].status = 'processing'
+        if (progress >= 80 && current.status === 'uploading') {
+          current.status = 'processing'
+          Object.keys(current.platformProgress).forEach((platform) => {
+            current.platformProgress[platform as Platform].status = 'processing'
           })
         }
-      }
+      },
+    })
+
+    try {
+      await upload(item)
 
       // Upload complete
       item.status = 'completed'
@@ -423,9 +363,9 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
       })
 
       startNextPending()
-    } catch (error: any) {
+    } catch (error: unknown) {
       item.status = 'failed'
-      item.error = error.message || '업로드 중 오류가 발생했습니다.'
+      item.error = error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다.'
       startNextPending()
     }
   }

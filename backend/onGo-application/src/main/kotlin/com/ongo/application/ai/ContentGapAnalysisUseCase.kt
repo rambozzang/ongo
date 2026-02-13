@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
@@ -26,6 +27,7 @@ class ContentGapAnalysisUseCase(
 
     private val log = LoggerFactory.getLogger(ContentGapAnalysisUseCase::class.java)
 
+    @Transactional
     fun execute(userId: Long, includeCompetitors: Boolean): ContentGapResponse {
         rateLimiter.checkRateLimit(userId)
         creditService.validateAndDeduct(userId, AiFeature.CONTENT_GAP_ANALYSIS)

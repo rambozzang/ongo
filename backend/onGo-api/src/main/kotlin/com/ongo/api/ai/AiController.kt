@@ -469,6 +469,89 @@ class AiController(
         return ResData.success(pipeline.toResponse(), "파이프라인이 취소되었습니다")
     }
 
+    // ─── Demo Generation endpoint (no auth, for onboarding) ──────────
+
+    @Operation(
+        summary = "AI 데모 생성 (무료)",
+        description = "온보딩용 AI 데모 생성입니다. 카테고리를 기반으로 샘플 제목과 태그를 생성합니다. 인증 불필요."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "데모 생성 성공"),
+        ApiResponse(responseCode = "429", description = "요청 한도 초과"),
+        ApiResponse(responseCode = "500", description = "서버 오류")
+    )
+    @PostMapping("/demo/generate")
+    fun demoGenerate(
+        @Valid @RequestBody request: AiDemoRequest,
+        httpRequest: jakarta.servlet.http.HttpServletRequest,
+    ): ResponseEntity<ResData<AiDemoResponse>> {
+        // IP-based rate limiting
+        val clientIp = httpRequest.remoteAddr ?: "unknown"
+        demoRateLimiter.checkRateLimit(clientIp)
+
+        val sampleScript = DEMO_SCRIPTS[request.category] ?: DEMO_SCRIPTS["DEFAULT"]!!
+
+        val result = generateMetaUseCase.executeInternal(
+            userId = 0L,
+            script = sampleScript,
+            targetPlatforms = listOf(com.ongo.common.enums.Platform.YOUTUBE),
+            tone = "casual",
+            category = request.category,
+        )
+
+        val titles = result.platforms.firstOrNull()?.titleCandidates ?: emptyList()
+        val tags = result.platforms.firstOrNull()?.hashtags ?: emptyList()
+
+        return ResData.success(AiDemoResponse(titles = titles, tags = tags))
+    }
+
+    private val demoRateLimiter = DemoRateLimiter()
+
+    companion object {
+        private val DEMO_SCRIPTS = mapOf(
+            "BEAUTY" to "오늘은 겨울 데일리 메이크업 루틴을 소개합니다. 건성 피부에 맞는 촉촉한 베이스 메이크업부터 포인트 메이크업까지 자세히 알려드릴게요.",
+            "FOOD" to "오늘은 집에서 쉽게 만들 수 있는 크림파스타 레시피를 소개합니다. 재료 준비부터 완성까지 10분이면 충분해요.",
+            "GAME" to "오늘은 최신 RPG 게임 공략을 준비했습니다. 초보자도 쉽게 따라할 수 있는 레벨업 팁과 숨겨진 퀘스트를 알려드릴게요.",
+            "DAILY" to "일주일간의 일상 브이로그입니다. 카페 탐방, 요리, 운동 등 소소하지만 확실한 일상을 공유합니다.",
+            "EDUCATION" to "오늘은 프로그래밍 초보자를 위한 파이썬 기초 강의입니다. 변수, 조건문, 반복문을 쉽게 설명해드릴게요.",
+            "IT" to "최신 스마트폰 비교 리뷰입니다. 카메라 성능, 배터리, 디스플레이를 상세하게 비교 분석했습니다.",
+            "TRAVEL" to "제주도 3박 4일 여행 브이로그입니다. 숨겨진 맛집과 인생샷 스팟을 소개합니다.",
+            "MUSIC" to "기타 초보자를 위한 핑거스타일 연습곡을 알려드립니다. 쉬운 코드 진행부터 시작해볼게요.",
+            "DEFAULT" to "안녕하세요, 오늘의 콘텐츠를 소개합니다. 유익하고 재미있는 정보를 준비했으니 끝까지 시청해주세요.",
+        )
+    }
+
+    private class DemoRateLimiter {
+        private data class TokenBucket(val tokens: Int, val lastRefill: Long)
+
+        private val buckets = java.util.concurrent.ConcurrentHashMap<String, TokenBucket>()
+        private val maxTokens = 3
+        private val refillIntervalMs = 60_000L // 1 minute
+
+        fun checkRateLimit(clientIp: String) {
+            val now = System.currentTimeMillis()
+            buckets.compute(clientIp) { _, existing ->
+                val bucket = if (existing == null) {
+                    TokenBucket(maxTokens, now)
+                } else {
+                    val elapsed = now - existing.lastRefill
+                    if (elapsed >= refillIntervalMs) {
+                        TokenBucket(maxTokens, now)
+                    } else {
+                        existing
+                    }
+                }
+                if (bucket.tokens <= 0) {
+                    throw com.ongo.common.exception.BusinessException(
+                        "DEMO_RATE_LIMIT_EXCEEDED",
+                        "데모 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요."
+                    )
+                }
+                bucket.copy(tokens = bucket.tokens - 1)
+            }
+        }
+    }
+
     private fun AiPipeline.toResponse() = AiPipelineResponse(
         pipelineId = id,
         videoId = videoId,

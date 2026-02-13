@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { UploadQueueItem, UploadQueueStats } from '@/types/uploadQueue'
+import { useTusUpload } from '@/composables/useTusUpload'
 
 const MAX_CONCURRENT = 3
 
@@ -162,87 +163,27 @@ export const useBulkUploadQueueStore = defineStore('bulkUploadQueue', () => {
     item.startedAt = new Date().toISOString()
     item.error = undefined
 
-    const baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || '/api/v1'
-    const token = localStorage.getItem('access_token') || ''
+    const { upload } = useTusUpload({
+      shouldContinue: (itemId) => {
+        const current = items.value.find((i) => i.id === itemId)
+        return !!current && current.status === 'uploading'
+      },
+      onProgress: (itemId, progress) => {
+        const current = items.value.find((i) => i.id === itemId)
+        if (current) current.progress = progress
+      },
+    })
 
     try {
-      // Step 1: Init upload
-      const initResponse = await fetch(`${baseUrl}/videos/upload/init`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          filename: item.fileName,
-          fileSize: item.fileSize,
-          contentType: item.mimeType || 'video/mp4',
-        }),
-      })
+      await upload(item)
 
-      if (!initResponse.ok) {
-        throw new Error(`Upload init failed: ${initResponse.status}`)
-      }
-
-      const initData = await initResponse.json()
-      const videoId = initData.data?.id ?? initData.data?.videoId
-
-      if (!videoId) {
-        throw new Error('No videoId returned from init')
-      }
-
-      // Step 2: Create Tus session
-      const tusUrl = `${baseUrl}/videos/upload/tus/${videoId}`
-      const createResponse = await fetch(tusUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Upload-Length': String(item.fileSize),
-          'Tus-Resumable': '1.0.0',
-          'Content-Type': 'application/offset+octet-stream',
-        },
-      })
-
-      if (!createResponse.ok) {
-        throw new Error(`Tus create failed: ${createResponse.status}`)
-      }
-
-      // Step 3: Upload in chunks
-      const CHUNK_SIZE = 5 * 1024 * 1024 // 5MB
-      let offset = 0
-
-      while (offset < item.fileSize) {
-        const currentItem = items.value.find((i) => i.id === id)
-        if (!currentItem || currentItem.status !== 'uploading') return
-
-        const chunk = item.file.slice(offset, offset + CHUNK_SIZE)
-        const patchResponse = await fetch(tusUrl, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Upload-Offset': String(offset),
-            'Content-Type': 'application/offset+octet-stream',
-            'Tus-Resumable': '1.0.0',
-          },
-          body: chunk,
-        })
-
-        if (!patchResponse.ok) {
-          throw new Error(`Tus patch failed: ${patchResponse.status}`)
-        }
-
-        offset += chunk.size
-        currentItem.progress = Math.min(100, Math.round((offset / item.fileSize) * 100))
-      }
-
-      // Upload complete
       item.progress = 100
       item.status = 'completed'
       item.completedAt = new Date().toISOString()
       processQueue()
-    } catch (error: any) {
+    } catch (error: unknown) {
       item.status = 'failed'
-      item.error = error.message || '업로드 중 오류가 발생했습니다.'
+      item.error = error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다.'
       processQueue()
     }
   }

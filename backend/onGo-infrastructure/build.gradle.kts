@@ -17,6 +17,10 @@ dependencies {
     implementation("org.postgresql:postgresql")
     implementation("com.zaxxer:HikariCP")
 
+    // Flyway
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+
     // Spring AI
     implementation("org.springframework.ai:spring-ai-anthropic-spring-boot-starter")
     implementation("org.springframework.ai:spring-ai-openai-spring-boot-starter")

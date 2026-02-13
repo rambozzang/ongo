@@ -13,6 +13,7 @@ import type {
   AnomalyListResponse,
   CohortAnalysisResponse,
   RetentionCurveResponse,
+  TagPerformance,
 } from '@/types/analytics'
 
 function periodToDays(period: string): number {
@@ -108,5 +109,13 @@ export const analyticsApi = {
     return apiClient
       .get<ResData<RetentionCurveResponse>>(`/analytics/videos/${videoId}/retention`)
       .then(unwrapResponse)
+  },
+
+  tagPerformance(period: string = '30d') {
+    const days = periodToDays(period)
+    return apiClient
+      .get<ResData<{ tags: TagPerformance[] }>>('/analytics/tags', { params: { days } })
+      .then(unwrapResponse)
+      .then((res) => res.tags)
   },
 }

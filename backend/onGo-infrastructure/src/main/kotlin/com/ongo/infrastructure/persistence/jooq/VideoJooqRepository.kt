@@ -43,6 +43,15 @@ class VideoJooqRepository(
             .fetchOne()
             ?.toVideo()
 
+    override fun findByIds(ids: List<Long>): List<Video> {
+        if (ids.isEmpty()) return emptyList()
+        return dsl.select()
+            .from(VIDEOS)
+            .where(ID.`in`(ids))
+            .fetch()
+            .map { it.toVideo() }
+    }
+
     override fun findByUserId(userId: Long, page: Int, size: Int, status: UploadStatus?): List<Video> {
         var query = dsl.select()
             .from(VIDEOS)

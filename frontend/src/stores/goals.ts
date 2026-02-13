@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { goalApi } from '@/api/goal'
+import { useNotificationStore } from '@/stores/notification'
 import type { Goal } from '@/types/goal'
 
 interface GoalsState {
@@ -98,6 +99,7 @@ export const useGoalsStore = defineStore('goals', {
         this.goals = data.map(mapApiToGoal)
       } catch (e) {
         console.error('Failed to fetch goals:', e)
+        useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
         this.loadFromLocalStorage()
       } finally {
         this.loading = false
@@ -117,6 +119,7 @@ export const useGoalsStore = defineStore('goals', {
         this.goals.unshift(mapApiToGoal(data))
       } catch (e) {
         console.error('Failed to create goal:', e)
+        useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
         const newGoal: Goal = {
           ...goal,
           id: Math.max(...this.goals.map(g => g.id), 0) + 1,
@@ -145,6 +148,7 @@ export const useGoalsStore = defineStore('goals', {
         }
       } catch (e) {
         console.error('Failed to update goal:', e)
+        useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
         const index = this.goals.findIndex(g => g.id === id)
         if (index !== -1) {
           this.goals[index] = { ...this.goals[index], ...updates }
@@ -169,6 +173,7 @@ export const useGoalsStore = defineStore('goals', {
         }
       } catch (e) {
         console.error('Failed to delete goal:', e)
+        useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
         const index = this.goals.findIndex(g => g.id === id)
         if (index !== -1) {
           this.goals.splice(index, 1)
@@ -186,6 +191,7 @@ export const useGoalsStore = defineStore('goals', {
         }
       } catch (e) {
         console.error('Failed to update progress:', e)
+        useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
         this.updateGoal(id, { currentValue })
         const goal = this.goals.find(g => g.id === id)
         if (goal) {

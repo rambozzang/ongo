@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { activityLogApi } from '@/api/activityLog'
+import { useNotificationStore } from '@/stores/notification'
 
 export type ActivityEventType =
   | 'upload'
@@ -57,6 +58,7 @@ export const useActivityLogStore = defineStore('activityLog', () => {
       }))
     } catch (error) {
       console.error('Failed to load activity log:', error)
+      useNotificationStore().error('활동 로그를 불러오는 중 오류가 발생했습니다')
       events.value = []
     } finally {
       loading.value = false

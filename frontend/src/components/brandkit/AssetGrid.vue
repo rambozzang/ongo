@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { PlusIcon, TrashIcon, ArrowDownTrayIcon, EyeIcon, PhotoIcon, VideoCameraIcon, DocumentIcon } from '@heroicons/vue/24/outline'
 import type { BrandAsset } from '@/types/brandkit'
+import { assetsApi } from '@/api/assets'
 
 const props = defineProps<{
   assets: BrandAsset[]
@@ -14,6 +15,8 @@ const emit = defineEmits<{
 
 const selectedAsset = ref<BrandAsset | null>(null)
 const filterType = ref<string>('all')
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const uploading = ref(false)
 
 const assetTypeLabels: Record<BrandAsset['type'], string> = {
   logo: '로고',
@@ -42,15 +45,37 @@ const filteredAssets = computed(() => {
 })
 
 function handleUpload() {
-  const mockAsset: Omit<BrandAsset, 'id'> = {
-    name: `새 에셋 ${props.assets.length + 1}`,
-    type: 'logo',
-    url: '/assets/mock-asset.png',
-    format: 'PNG',
-    size: '128 KB',
-    uploadedAt: new Date().toISOString(),
+  fileInputRef.value?.click()
+}
+
+async function handleFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  uploading.value = true
+  try {
+    const response = await assetsApi.upload(file, 'brand-kit')
+    emit('add', {
+      name: response.filename || file.name,
+      type: 'logo',
+      url: response.fileUrl,
+      format: file.name.split('.').pop()?.toUpperCase() || 'PNG',
+      size: formatFileSize(file.size),
+      uploadedAt: new Date().toISOString(),
+    })
+  } catch (e) {
+    console.error('Failed to upload asset:', e)
+    alert('에셋 업로드에 실패했습니다.')
+  } finally {
+    uploading.value = false
+    input.value = ''
   }
-  emit('add', mockAsset)
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`
+  return `${(bytes / 1024).toFixed(0)} KB`
 }
 
 function handleRemove(id: number) {
@@ -255,5 +280,13 @@ function formatDate(dateString: string) {
         </div>
       </div>
     </div>
+
+    <input
+      ref="fileInputRef"
+      type="file"
+      class="hidden"
+      accept="image/*,video/*"
+      @change="handleFileSelected"
+    />
   </div>
 </template>

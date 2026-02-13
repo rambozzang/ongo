@@ -9,6 +9,8 @@ import com.ongo.common.util.safeValueOfOrThrow
 import com.ongo.domain.subscription.Subscription
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
+import com.ongo.domain.video.VideoRepository
+import java.time.YearMonth
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -17,7 +19,8 @@ import java.time.temporal.ChronoUnit
 @Service
 class SubscriptionUseCase(
     private val subscriptionRepository: SubscriptionRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val videoRepository: VideoRepository,
 ) {
 
     fun getCurrentSubscription(userId: Long): SubscriptionResponse {
@@ -94,8 +97,15 @@ class SubscriptionUseCase(
     }
 
     fun getUsage(userId: Long): UsageResponse {
-        // TODO: 실제 업로드 수 및 스토리지 사용량 계산
-        return UsageResponse(uploadsThisMonth = 0, storageUsedMb = 0)
+        val currentMonth = YearMonth.now()
+        val uploadsThisMonth = videoRepository.countByUserIdAndMonth(userId, currentMonth).toInt()
+
+        // Calculate storage: sum all video file sizes
+        val videos = videoRepository.findByUserId(userId, page = 0, size = 10000)
+        val storageUsedBytes = videos.sumOf { it.fileSizeBytes ?: 0L }
+        val storageUsedMb = storageUsedBytes / (1024 * 1024)
+
+        return UsageResponse(uploadsThisMonth = uploadsThisMonth, storageUsedMb = storageUsedMb)
     }
 
     fun initializeSubscription(userId: Long): Subscription {

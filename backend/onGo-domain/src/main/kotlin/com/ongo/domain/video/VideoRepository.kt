@@ -5,6 +5,7 @@ import java.time.YearMonth
 
 interface VideoRepository {
     fun findById(id: Long): Video?
+    fun findByIds(ids: List<Long>): List<Video>
     fun findByUserId(userId: Long, page: Int, size: Int, status: UploadStatus? = null): List<Video>
     fun countByUserId(userId: Long, status: UploadStatus? = null): Long
     fun countByUserIdAndMonth(userId: Long, yearMonth: YearMonth): Long

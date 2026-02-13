@@ -1,13 +1,14 @@
 package com.ongo.api.config
 
-import com.ongo.application.team.PermissionService
 import com.ongo.common.annotation.RequiresPermission
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.UnauthorizedException
+import com.ongo.application.team.PermissionService
+import com.ongo.domain.team.TeamMemberRepository
+import com.ongo.domain.user.UserRepository
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
-import org.aspectj.lang.reflect.MethodSignature
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 
@@ -15,41 +16,32 @@ import org.springframework.stereotype.Component
 @Component
 class PermissionCheckAspect(
     private val permissionService: PermissionService,
+    private val userRepository: UserRepository,
+    private val teamMemberRepository: TeamMemberRepository,
 ) {
 
-    @Around("@annotation(com.ongo.common.annotation.RequiresPermission)")
-    fun checkPermission(joinPoint: ProceedingJoinPoint): Any? {
-        val signature = joinPoint.signature as MethodSignature
-        val method = signature.method
-        val annotation = method.getAnnotation(RequiresPermission::class.java)
-            ?: return joinPoint.proceed()
-
-        val permission = annotation.value
-
-        // Extract userId from SecurityContext
+    @Around("@annotation(requiresPermission)")
+    fun checkPermission(joinPoint: ProceedingJoinPoint, requiresPermission: RequiresPermission): Any? {
         val authentication = SecurityContextHolder.getContext().authentication
-            ?: throw UnauthorizedException()
+            ?: throw UnauthorizedException("인증이 필요합니다")
         val userId = authentication.principal as? Long
-            ?: throw UnauthorizedException()
+            ?: throw UnauthorizedException("인증이 필요합니다")
 
-        // Extract teamId from method parameters (look for @PathVariable("teamId") or param named "teamId")
-        val paramNames = signature.parameterNames
-        val args = joinPoint.args
+        val permission = requiresPermission.value
 
-        var teamId: Long? = null
-        for (i in paramNames.indices) {
-            if (paramNames[i] == "teamId" && args[i] is Long) {
-                teamId = args[i] as Long
-                break
+        // Find user to get email for team membership lookup
+        val user = userRepository.findById(userId)
+            ?: throw UnauthorizedException("사용자를 찾을 수 없습니다")
+
+        // Check if user is a team member (not an owner)
+        val teamMemberships = teamMemberRepository.findTeamsForMember(user.email)
+        if (teamMemberships.isNotEmpty()) {
+            val activeMembership = teamMemberships.first()
+            if (!permissionService.hasPermissionForUser(userId, activeMembership.userId, permission)) {
+                throw ForbiddenException("${permission.name} 권한이 필요합니다")
             }
         }
-
-        // If no teamId found, assume user is operating on their own resources (owner)
-        val effectiveTeamId = teamId ?: userId
-
-        if (!permissionService.hasPermissionForUser(userId, effectiveTeamId, permission)) {
-            throw ForbiddenException("'${permission.name}' 권한이 없습니다")
-        }
+        // Solo users (account owners) have all permissions — proceed
 
         return joinPoint.proceed()
     }

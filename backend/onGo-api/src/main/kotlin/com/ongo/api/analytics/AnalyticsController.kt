@@ -151,6 +151,24 @@ class AnalyticsController(
     }
 
     @Operation(
+        summary = "태그 퍼포먼스 조회",
+        description = "사용자 영상에 사용된 태그별 조회수, 좋아요, 참여율, 트렌드 등의 성과를 분석합니다."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "태그 퍼포먼스 조회 성공"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    )
+    @RequiresPermission(Permission.ANALYTICS_READ)
+    @GetMapping("/tags")
+    fun getTagPerformance(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @Parameter(description = "조회 기간 (일 수, 기본값: 30)") @RequestParam(defaultValue = "30") days: Int
+    ): ResponseEntity<ResData<TagPerformanceResponse>> {
+        return ResData.success(analyticsUseCase.getTagPerformance(userId, days))
+    }
+
+    @Operation(
         summary = "영상 성과 점수 조회",
         description = "특정 영상의 복합 성과 점수(0-100)를 조회합니다. 조회수 속도, 참여율, 시청시간, 구독자 전환율, 공유율의 가중 합산 점수와 이상 감지 결과가 포함됩니다."
     )

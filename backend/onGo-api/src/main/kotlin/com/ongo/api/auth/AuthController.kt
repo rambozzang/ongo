@@ -5,6 +5,7 @@ import com.ongo.api.auth.dto.RefreshTokenRequest
 import com.ongo.api.auth.dto.SocialLoginRequest
 import com.ongo.api.auth.dto.UserResponse
 import com.ongo.api.config.CurrentUser
+import com.ongo.application.auth.AuthRateLimiter
 import com.ongo.application.auth.AuthUseCase
 import com.ongo.application.auth.dto.AuthResult
 import com.ongo.common.ResData
@@ -14,6 +15,7 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.*
 class AuthController(
     private val authUseCase: AuthUseCase,
     private val authTokenPort: AuthTokenPort,
+    private val authRateLimiter: AuthRateLimiter,
 ) {
 
     @Operation(
@@ -42,7 +45,9 @@ class AuthController(
     fun socialLogin(
         @Parameter(description = "OAuth 제공자 (google, kakao)") @PathVariable provider: String,
         @Valid @RequestBody request: SocialLoginRequest,
+        httpRequest: HttpServletRequest,
     ): ResponseEntity<ResData<AuthResponse>> {
+        authRateLimiter.checkLoginRateLimit(httpRequest.remoteAddr)
         val result = authUseCase.socialLogin(provider, request.code, request.redirectUri)
         val response = toAuthResponse(result)
         return ResData.success(response, if (result.isNewUser) "회원가입이 완료되었습니다" else "로그인되었습니다")
@@ -61,7 +66,9 @@ class AuthController(
     @PostMapping("/refresh")
     fun refreshToken(
         @Valid @RequestBody request: RefreshTokenRequest,
+        httpRequest: HttpServletRequest,
     ): ResponseEntity<ResData<AuthResponse>> {
+        authRateLimiter.checkRefreshRateLimit(httpRequest.remoteAddr)
         val result = authUseCase.refreshToken(request.refreshToken)
         return ResData.success(toAuthResponse(result), "토큰이 갱신되었습니다")
     }

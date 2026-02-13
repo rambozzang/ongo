@@ -243,6 +243,7 @@
                     <span v-else>AI 체험하기</span>
                   </button>
                 </div>
+                <p v-if="aiTrialError" class="mt-3 text-sm text-red-500">{{ aiTrialError }}</p>
               </div>
 
               <!-- AI Result -->
@@ -366,6 +367,7 @@ import type { CreatorCategory } from '@/types/user'
 import type { Platform } from '@/types/channel'
 import type { PlanType } from '@/types/subscription'
 import { authApi } from '@/api/auth'
+import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
 import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import OnboardingStepIndicator from '@/components/onboarding/OnboardingStepIndicator.vue'
@@ -399,6 +401,7 @@ const displayPlans = computed(() => PLANS.slice(0, 3))
 
 // Step 4: AI trial
 const aiTrialResult = ref<{ titles: string[]; tags: string[] } | null>(null)
+const aiTrialError = ref('')
 
 const steps = [
   { number: 1, label: '프로필' },
@@ -568,50 +571,12 @@ async function handleChannelCallback() {
 
 async function tryAiGeneration() {
   isAiLoading.value = true
+  aiTrialError.value = ''
   try {
-    // Demo generation with sample data
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/ai/demo/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authStore.accessToken}`,
-      },
-      body: JSON.stringify({ category: profile.category }),
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      if (data.success && data.data) {
-        aiTrialResult.value = data.data
-        return
-      }
-    }
-
-    // Fallback demo result if API not available
-    aiTrialResult.value = {
-      titles: [
-        '겨울 데일리 메이크업 루틴 | 건성 피부 필수템',
-        '5분 만에 완성! 출근 메이크업 튜토리얼',
-        '올겨울 필수 코스메틱 TOP 5 리뷰',
-      ],
-      tags: [
-        '메이크업', '뷰티', '겨울메이크업', '데일리룩',
-        '화장품추천', '코스메틱', '뷰티유튜버', '메이크업튜토리얼',
-      ],
-    }
-  } catch {
-    // Fallback demo result
-    aiTrialResult.value = {
-      titles: [
-        '겨울 데일리 메이크업 루틴 | 건성 피부 필수템',
-        '5분 만에 완성! 출근 메이크업 튜토리얼',
-        '올겨울 필수 코스메틱 TOP 5 리뷰',
-      ],
-      tags: [
-        '메이크업', '뷰티', '겨울메이크업', '데일리룩',
-        '화장품추천', '코스메틱', '뷰티유튜버', '메이크업튜토리얼',
-      ],
-    }
+    const result = await aiApi.demoGenerate(profile.category || 'DEFAULT')
+    aiTrialResult.value = result
+  } catch (e: any) {
+    aiTrialError.value = e?.message || 'AI 생성에 실패했습니다. 다시 시도해주세요.'
   } finally {
     isAiLoading.value = false
   }

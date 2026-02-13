@@ -212,7 +212,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { LightBulbIcon, ArrowRightIcon } from '@heroicons/vue/24/outline'
 import type { Video } from '@/types/video'
@@ -237,6 +237,8 @@ const displayReachScore = ref(0)
 const displayEngagementScore = ref(0)
 const displayGrowthScore = ref(0)
 const displayCoverageScore = ref(0)
+
+let animationInterval: ReturnType<typeof setInterval> | null = null
 
 // ---- Computed ----
 
@@ -339,7 +341,7 @@ function animateScores(): void {
 
   let currentFrame = 0
 
-  const interval = setInterval(() => {
+  animationInterval = setInterval(() => {
     currentFrame++
 
     displayOverallScore.value = Math.min(
@@ -364,7 +366,7 @@ function animateScores(): void {
     )
 
     if (currentFrame >= frames) {
-      clearInterval(interval)
+      clearInterval(animationInterval!)
       // Ensure final values are exact
       displayOverallScore.value = scoreResult.value.overall
       displayReachScore.value = scoreResult.value.reach
@@ -376,6 +378,13 @@ function animateScores(): void {
 }
 
 // ---- Lifecycle ----
+
+onUnmounted(() => {
+  if (animationInterval) {
+    clearInterval(animationInterval)
+    animationInterval = null
+  }
+})
 
 onMounted(() => {
   // Start animation after a brief delay

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class GenerateMetaUseCase(
@@ -36,6 +37,7 @@ class GenerateMetaUseCase(
             ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
     }
 
+    @Transactional
     fun execute(userId: Long, script: String, targetPlatforms: List<Platform>, tone: String, category: String): MetaGenerationResult {
         rateLimiter.checkRateLimit(userId)
         creditService.validateAndDeduct(userId, AiFeature.META_GENERATION)

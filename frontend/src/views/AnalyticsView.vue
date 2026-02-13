@@ -448,7 +448,7 @@
         <div class="grid gap-6 desktop:grid-cols-2">
           <div>
             <h3 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">태그 클라우드</h3>
-            <TagCloud :tags="mockTagData" :selected-tag="selectedTag" @tag-click="handleTagClick" />
+            <TagCloud :tags="tagData" :selected-tag="selectedTag" @tag-click="handleTagClick" />
           </div>
           <div>
             <h3 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">태그 성과</h3>
@@ -543,6 +543,7 @@ import TagCloud from '@/components/analytics/TagCloud.vue'
 import TagPerformanceTable from '@/components/analytics/TagPerformanceTable.vue'
 import CohortAnalysisChart from '@/components/analytics/CohortAnalysisChart.vue'
 import RetentionCurveChart from '@/components/analytics/RetentionCurveChart.vue'
+import { analyticsApi } from '@/api/analytics'
 import { useAnalyticsStore } from '@/stores/analytics'
 import { useAiStore } from '@/stores/ai'
 import { useCredit } from '@/composables/useCredit'
@@ -857,56 +858,14 @@ const sanitizedMarkdown = computed(() => {
 // ----- Hashtag Analytics -----
 const selectedTag = ref<string | null>(null)
 
-const mockTagData = computed<TagPerformance[]>(() => {
-  const tags = [
-    '일상브이로그',
-    '먹방',
-    'GRWM',
-    '하울',
-    '룩북',
-    '맛집',
-    '여행',
-    '게임',
-    '코딩',
-    '운동',
-    '뷰티',
-    '패션',
-    '육아',
-    '레시피',
-    '리뷰',
-    '언박싱',
-    '챌린지',
-    '커플',
-    '반려동물',
-    '자취',
-  ]
-
-  return tags.map((tag) => {
-    const videoCount = Math.floor(Math.random() * 50) + 5
-    const totalViews = Math.floor(Math.random() * 500000) + 10000
-    const totalLikes = Math.floor(totalViews * (Math.random() * 0.1 + 0.02))
-    const avgViews = Math.floor(totalViews / videoCount)
-    const avgEngagement = (totalLikes / totalViews) * 100
-    const trendRand = Math.random()
-    const trend = trendRand > 0.6 ? 'up' : trendRand > 0.3 ? 'stable' : 'down'
-
-    return {
-      tag,
-      videoCount,
-      totalViews,
-      totalLikes,
-      avgViews,
-      avgEngagement,
-      trend: trend as 'up' | 'down' | 'stable',
-    }
-  })
-})
+const tagData = ref<TagPerformance[]>([])
+const tagDataLoading = ref(false)
 
 const filteredTagData = computed(() => {
   if (!selectedTag.value) {
-    return mockTagData.value
+    return tagData.value
   }
-  return mockTagData.value.filter((t) => t.tag === selectedTag.value)
+  return tagData.value.filter((t) => t.tag === selectedTag.value)
 })
 
 function handleTagClick(tag: string) {
@@ -961,7 +920,19 @@ const exportFilename = computed(() => {
 // ----- Lifecycle -----
 onMounted(() => {
   analyticsStore.fetchAnalytics()
+  loadTagPerformance()
 })
+
+async function loadTagPerformance() {
+  tagDataLoading.value = true
+  try {
+    tagData.value = await analyticsApi.tagPerformance(period.value)
+  } catch (e) {
+    console.error('Failed to load tag performance:', e)
+  } finally {
+    tagDataLoading.value = false
+  }
+}
 </script>
 
 <style scoped>

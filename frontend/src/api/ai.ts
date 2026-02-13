@@ -120,4 +120,10 @@ export const aiApi = {
       .get<ResData<AiBatchResponse>>(`/ai/batch/${batchId}`)
       .then(unwrapResponse)
   },
+
+  demoGenerate(category: string) {
+    return apiClient
+      .post<ResData<{ titles: string[]; tags: string[] }>>('/ai/demo/generate', { category })
+      .then(unwrapResponse)
+  },
 }

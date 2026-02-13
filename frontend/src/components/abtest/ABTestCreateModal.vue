@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import type { TestType, TestVariant } from '@/types/abtest'
+import { videoApi } from '@/api/video'
 
 interface Emits {
   (e: 'close'): void
@@ -40,13 +41,23 @@ const duration = ref(24)
 const sampleSize = ref(1000)
 const confidence = ref(95)
 
-const mockVideos = [
-  { id: 'v001', title: '초보자를 위한 Vue 3 완벽 가이드' },
-  { id: 'v002', title: 'TypeScript 타입 시스템 완전 정복' },
-  { id: 'v003', title: 'React Hooks 실전 활용법' },
-  { id: 'v004', title: 'Next.js 14 서버 컴포넌트 가이드' },
-  { id: 'v005', title: 'Tailwind CSS 실무 프로젝트' }
-]
+const videoOptions = ref<Array<{ id: string; title: string }>>([])
+const loadingVideos = ref(false)
+
+onMounted(async () => {
+  loadingVideos.value = true
+  try {
+    const response = await videoApi.list({ page: 0, size: 50 })
+    videoOptions.value = response.content.map(v => ({
+      id: String(v.id),
+      title: v.title,
+    }))
+  } catch (e) {
+    console.error('Failed to load videos:', e)
+  } finally {
+    loadingVideos.value = false
+  }
+})
 
 const canProceedStep1 = computed(() => {
   return testName.value.trim() !== '' && videoTitle.value.trim() !== ''
@@ -193,7 +204,7 @@ const typeLabel = computed(() => {
             </label>
             <div class="space-y-2">
               <div
-                v-for="video in mockVideos"
+                v-for="video in videoOptions"
                 :key="video.id"
                 @click="selectVideo(video)"
                 :class="[

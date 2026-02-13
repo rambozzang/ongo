@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useApprovalStore } from '@/stores/approval'
 import {
   XMarkIcon,
   PaperAirplaneIcon,
   VideoCameraIcon,
 } from '@heroicons/vue/24/outline'
+import { teamApi } from '@/api/team'
 
 const props = defineProps<{
   visible: boolean
@@ -27,12 +28,36 @@ const comment = ref('')
 const selectedReviewerId = ref('')
 const submitting = ref(false)
 
-// Mock team members who can review (admins and owners)
-const reviewers = [
-  { id: 'user-1', name: '김민수', role: '소유자', avatar: '#6366F1' },
-  { id: 'user-2', name: '박지영', role: '관리자', avatar: '#EC4899' },
-  { id: 'user-8', name: '조민준', role: '관리자', avatar: '#14B8A6' },
-]
+const reviewers = ref<Array<{ id: string; name: string; role: string; avatar: string }>>([])
+const loadingReviewers = ref(false)
+
+onMounted(async () => {
+  loadingReviewers.value = true
+  try {
+    const members = await teamApi.listMembers()
+    reviewers.value = members
+      .filter(m => m.role === 'OWNER' || m.role === 'ADMIN')
+      .map(m => ({
+        id: String(m.id),
+        name: m.memberName || m.memberEmail,
+        role: m.role === 'OWNER' ? '소유자' : '관리자',
+        avatar: stringToColor(m.memberEmail),
+      }))
+  } catch (e) {
+    console.error('Failed to load team members:', e)
+  } finally {
+    loadingReviewers.value = false
+  }
+})
+
+function stringToColor(str: string): string {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const h = hash % 360
+  return `hsl(${h}, 60%, 50%)`
+}
 
 const platformLabels: Record<string, string> = {
   youtube: 'YouTube',
@@ -79,7 +104,7 @@ async function handleSubmit() {
 
   submitting.value = true
 
-  const reviewer = reviewers.find((r) => r.id === selectedReviewerId.value)
+  const reviewer = reviewers.value.find((r) => r.id === selectedReviewerId.value)
 
   try {
     approvalStore.submitForApproval(

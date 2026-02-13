@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import {
   XMarkIcon,
   VideoCameraIcon,
@@ -88,6 +88,8 @@ import type { Video } from '@/types/video'
 import type { Platform } from '@/types/channel'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import { PLATFORM_CONFIG } from '@/types/channel'
+import { recyclingApi } from '@/api/recycling'
+import { videoApi } from '@/api/video'
 
 interface RecycleSuggestion {
   video: Video
@@ -100,51 +102,8 @@ const emit = defineEmits<{
 }>()
 
 const isDismissed = ref(false)
-const mockVideos = ref<Video[]>([])
-
-// Mock data for demo
-const suggestions = computed<RecycleSuggestion[]>(() => {
-  if (mockVideos.value.length === 0) return []
-
-  const result: RecycleSuggestion[] = []
-
-  // Strategy 1: Old videos with high views
-  const oldHighPerformers = mockVideos.value
-    .filter((v) => {
-      const daysSincePublish = Math.floor(
-        (Date.now() - new Date(v.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-      )
-      return daysSincePublish > 30 && (v as any).totalViews > 10000
-    })
-    .slice(0, 2)
-
-  oldHighPerformers.forEach((video) => {
-    const daysSincePublish = Math.floor(
-      (Date.now() - new Date(video.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-    )
-    result.push({
-      video,
-      reason: `${daysSincePublish}일 전 게시, 높은 조회수 (${formatViews((video as any).totalViews || 0)})`,
-      missingPlatforms: getMissingPlatforms(video),
-    })
-  })
-
-  // Strategy 2: Videos posted to limited platforms
-  const limitedPlatformVideos = mockVideos.value
-    .filter((v) => v.uploads.length > 0 && v.uploads.length < 3)
-    .slice(0, 1)
-
-  limitedPlatformVideos.forEach((video) => {
-    const missing = getMissingPlatforms(video)
-    result.push({
-      video,
-      reason: `${video.uploads.length}개 플랫폼만 게시됨`,
-      missingPlatforms: missing,
-    })
-  })
-
-  return result
-})
+const suggestions = ref<RecycleSuggestion[]>([])
+const loadingSuggestions = ref(false)
 
 function getMissingPlatforms(video: Video): Platform[] {
   const allPlatforms: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP']
@@ -156,12 +115,6 @@ function formatMissingPlatforms(platforms: Platform[]): string {
   return platforms.map((p) => PLATFORM_CONFIG[p].label).join(', ')
 }
 
-function formatViews(views: number): string {
-  if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`
-  if (views >= 1_000) return `${(views / 1_000).toFixed(1)}K`
-  return views.toString()
-}
-
 function handleRecycle(video: Video) {
   emit('recycle', video)
 }
@@ -171,7 +124,7 @@ function dismiss() {
   localStorage.setItem('recycleSuggestionsDismissed', Date.now().toString())
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Check if dismissed recently (within 7 days)
   const dismissedAt = localStorage.getItem('recycleSuggestionsDismissed')
   if (dismissedAt) {
@@ -180,97 +133,36 @@ onMounted(() => {
     )
     if (daysSinceDismissed < 7) {
       isDismissed.value = true
+      return
     }
   }
 
-  // Mock data - in real app, this would come from video store
-  mockVideos.value = [
-    {
-      id: 101,
-      userId: 1,
-      title: '서울 여행 브이로그 - 강남 맛집 투어',
-      description: '강남역 주변 맛집을 소개합니다',
-      tags: ['브이로그', '여행', '맛집'],
-      category: '브이로그',
-      fileUrl: 'https://example.com/video1.mp4',
-      thumbnailUrl: null,
-      thumbnailCandidates: [],
-      duration: 600,
-      fileSize: 50000000,
-      resolution: '1080p',
-      status: 'PUBLISHED',
-      visibility: 'PUBLIC',
-      createdAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date().toISOString(),
-      uploads: [
-        {
-          id: 1001,
-          videoId: 101,
-          platform: 'YOUTUBE' as Platform,
-          status: 'PUBLISHED',
-          platformVideoId: 'yt123',
-          platformUrl: 'https://youtube.com/watch?v=yt123',
-          title: '서울 여행 브이로그',
-          description: null,
-          tags: [],
-          errorMessage: null,
-          publishedAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString(),
-        },
-      ],
-    } as any,
-    {
-      id: 102,
-      userId: 1,
-      title: '홈 카페 만들기 - 라떼아트 기초',
-      description: '집에서 쉽게 따라할 수 있는 라떼아트',
-      tags: ['카페', '라떼아트', '홈카페'],
-      category: '교육',
-      fileUrl: 'https://example.com/video2.mp4',
-      thumbnailUrl: null,
-      thumbnailCandidates: [],
-      duration: 480,
-      fileSize: 40000000,
-      resolution: '1080p',
-      status: 'PUBLISHED',
-      visibility: 'PUBLIC',
-      createdAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date().toISOString(),
-      uploads: [
-        {
-          id: 1002,
-          videoId: 102,
-          platform: 'YOUTUBE' as Platform,
-          status: 'PUBLISHED',
-          platformVideoId: 'yt124',
-          platformUrl: 'https://youtube.com/watch?v=yt124',
-          title: '홈 카페 만들기',
-          description: null,
-          tags: [],
-          errorMessage: null,
-          publishedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: 1003,
-          videoId: 102,
-          platform: 'INSTAGRAM' as Platform,
-          status: 'PUBLISHED',
-          platformVideoId: 'ig124',
-          platformUrl: 'https://instagram.com/p/ig124',
-          title: '홈 카페 만들기',
-          description: null,
-          tags: [],
-          errorMessage: null,
-          publishedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString(),
-        },
-      ],
-    } as any,
-  ]
+  loadingSuggestions.value = true
+  try {
+    let apiSuggestions = await recyclingApi.getSuggestions('PENDING')
+    if (apiSuggestions.length === 0) {
+      apiSuggestions = await recyclingApi.generateSuggestions()
+    }
 
-  // Add mock totalViews
-  ;(mockVideos.value[0] as any).totalViews = 15000
-  ;(mockVideos.value[1] as any).totalViews = 8500
+    // Fetch video details for each suggestion
+    const videoIds = [...new Set(apiSuggestions.map(s => s.videoId))]
+    const videosResponse = await videoApi.list({ page: 0, size: 50 })
+    const videosMap = new Map(videosResponse.content.map(v => [v.id, v]))
+
+    suggestions.value = apiSuggestions
+      .filter(s => videosMap.has(s.videoId))
+      .map(s => {
+        const video = videosMap.get(s.videoId)!
+        return {
+          video,
+          reason: s.reason || '재활용 추천',
+          missingPlatforms: getMissingPlatforms(video),
+        }
+      })
+  } catch (e) {
+    console.error('Failed to load recycle suggestions:', e)
+  } finally {
+    loadingSuggestions.value = false
+  }
 })
 </script>
