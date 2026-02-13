@@ -1,0 +1,74 @@
+{
+  "app": {
+    "name": "onGo",
+    "description": "Creator Multi-Platform Management"
+  },
+  "action": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "retry": "Retry",
+    "upload": "Upload",
+    "download": "Download",
+    "create": "Create",
+    "apply": "Apply",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "more": "More",
+    "seeAll": "See all"
+  },
+  "status": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "pending": "Pending",
+    "processing": "Processing",
+    "completed": "Completed",
+    "failed": "Failed"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "videos": "Videos",
+    "upload": "Upload",
+    "analytics": "Analytics",
+    "ai": "AI Tools",
+    "channels": "Channels",
+    "schedule": "Schedule",
+    "settings": "Settings",
+    "subscription": "Subscription",
+    "logout": "Logout"
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo": "{n}m ago",
+    "hoursAgo": "{n}h ago",
+    "daysAgo": "{n}d ago",
+    "weeksAgo": "{n}w ago"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address",
+    "tooLong": "Maximum {max} characters allowed",
+    "tooShort": "Minimum {min} characters required",
+    "fileTooLarge": "File size exceeds {max}",
+    "invalidFileType": "Unsupported file type"
+  },
+  "empty": {
+    "noData": "No data available",
+    "noResults": "No results found"
+  },
+  "confirm": {
+    "delete": "Are you sure you want to delete?",
+    "unsaved": "You have unsaved changes. Leave anyway?"
+  }
+}

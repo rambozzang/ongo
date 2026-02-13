@@ -1,0 +1,404 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import {
+  UserGroupIcon,
+  EnvelopeIcon,
+  ClockIcon,
+  UserPlusIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+  ShieldCheckIcon,
+} from '@heroicons/vue/24/outline'
+import { useTeamStore } from '@/stores/team'
+import TeamMemberCard from '@/components/team/TeamMemberCard.vue'
+import InviteMemberModal from '@/components/team/InviteMemberModal.vue'
+import TeamActivityFeed from '@/components/team/TeamActivityFeed.vue'
+import RoleBadge from '@/components/team/RoleBadge.vue'
+import PermissionMatrix from '@/components/team/PermissionMatrix.vue'
+
+const teamStore = useTeamStore()
+
+type TabType = 'members' | 'invites' | 'activity' | 'permissions'
+const activeTab = ref<TabType>('members')
+const showInviteModal = ref(false)
+
+const currentUser = computed(() => teamStore.members[0])
+
+const canManage = computed(() => {
+  return currentUser.value?.role === 'owner' || currentUser.value?.role === 'admin'
+})
+
+const roleStats = computed(() => {
+  return [
+    {
+      role: 'owner',
+      count: teamStore.membersByRole('owner').length,
+      label: '소유자',
+      color: 'text-purple-600 dark:text-purple-400',
+    },
+    {
+      role: 'admin',
+      count: teamStore.membersByRole('admin').length,
+      label: '관리자',
+      color: 'text-blue-600 dark:text-blue-400',
+    },
+    {
+      role: 'editor',
+      count: teamStore.membersByRole('editor').length,
+      label: '에디터',
+      color: 'text-green-600 dark:text-green-400',
+    },
+    {
+      role: 'viewer',
+      count: teamStore.membersByRole('viewer').length,
+      label: '뷰어',
+      color: 'text-gray-600 dark:text-gray-400',
+    },
+  ]
+})
+
+const inviteStatus = computed(() => {
+  const pending = teamStore.invites.filter((i) => i.status === 'pending').length
+  const expired = teamStore.invites.filter((i) => i.status === 'expired').length
+  return { pending, expired }
+})
+
+const handleCancelInvite = (inviteId: number) => {
+  if (confirm('초대를 취소하시겠습니까?')) {
+    teamStore.cancelInvite(inviteId)
+  }
+}
+
+const handleResendInvite = (inviteId: number) => {
+  teamStore.resendInvite(inviteId)
+}
+
+const relativeTime = (dateString: string): string => {
+  const diff = Date.now() - new Date(dateString).getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  if (days === 0) return '오늘'
+  if (days === 1) return '어제'
+  if (days < 7) return `${days}일 전`
+  return new Date(dateString).toLocaleDateString('ko-KR')
+}
+
+const expiresIn = (dateString: string): string => {
+  const diff = new Date(dateString).getTime() - Date.now()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  if (days < 0) return '만료됨'
+  if (days === 0) return '오늘 만료'
+  if (days === 1) return '내일 만료'
+  return `${days}일 후 만료`
+}
+</script>
+
+<template>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+              {{ teamStore.teamName }}
+            </h1>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              팀 멤버 관리 및 협업 활동 추적
+            </p>
+          </div>
+          <button
+            v-if="canManage"
+            @click="showInviteModal = true"
+            class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+          >
+            <UserPlusIcon class="mr-2 h-5 w-5" />
+            멤버 초대
+          </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div
+            class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+          >
+            <div class="flex items-center">
+              <UserGroupIcon class="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+              <div class="ml-3">
+                <p class="text-sm text-gray-600 dark:text-gray-400">전체 멤버</p>
+                <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {{ teamStore.members.length }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+          >
+            <div class="flex items-center">
+              <div
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
+              >
+                <span class="h-3 w-3 rounded-full bg-green-500"></span>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-gray-600 dark:text-gray-400">온라인</p>
+                <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {{ teamStore.onlineMembers.length }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+          >
+            <div class="flex items-center">
+              <EnvelopeIcon class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              <div class="ml-3">
+                <p class="text-sm text-gray-600 dark:text-gray-400">대기 중 초대</p>
+                <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {{ inviteStatus.pending }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+          >
+            <div class="flex items-center">
+              <ClockIcon class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              <div class="ml-3">
+                <p class="text-sm text-gray-600 dark:text-gray-400">최근 활동</p>
+                <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {{ teamStore.activities.length }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="border-b border-gray-200 dark:border-gray-700">
+        <nav class="-mb-px flex space-x-8">
+          <button
+            @click="activeTab = 'members'"
+            :class="[
+              activeTab === 'members'
+                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
+              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
+            ]"
+          >
+            <UserGroupIcon class="mr-2 h-5 w-5" />
+            멤버
+            <span
+              :class="[
+                activeTab === 'members'
+                  ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+                'ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium',
+              ]"
+            >
+              {{ teamStore.members.length }}
+            </span>
+          </button>
+          <button
+            @click="activeTab = 'invites'"
+            :class="[
+              activeTab === 'invites'
+                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
+              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
+            ]"
+          >
+            <EnvelopeIcon class="mr-2 h-5 w-5" />
+            초대
+            <span
+              v-if="inviteStatus.pending > 0"
+              :class="[
+                activeTab === 'invites'
+                  ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+                'ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium',
+              ]"
+            >
+              {{ inviteStatus.pending }}
+            </span>
+          </button>
+          <button
+            @click="activeTab = 'activity'"
+            :class="[
+              activeTab === 'activity'
+                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
+              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
+            ]"
+          >
+            <ClockIcon class="mr-2 h-5 w-5" />
+            활동
+          </button>
+          <button
+            v-if="canManage"
+            @click="activeTab = 'permissions'"
+            :class="[
+              activeTab === 'permissions'
+                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
+              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
+            ]"
+          >
+            <ShieldCheckIcon class="mr-2 h-5 w-5" />
+            권한
+          </button>
+        </nav>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="mt-8">
+        <!-- Members Tab -->
+        <div v-if="activeTab === 'members'" class="space-y-6">
+          <!-- Role Distribution -->
+          <div
+            class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+          >
+            <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+              역할별 분포
+            </h3>
+            <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div
+                v-for="stat in roleStats"
+                :key="stat.role"
+                class="text-center"
+              >
+                <p :class="[stat.color, 'text-2xl font-semibold']">
+                  {{ stat.count }}
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  {{ stat.label }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Members Grid -->
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <TeamMemberCard
+              v-for="member in teamStore.members"
+              :key="member.id"
+              :member="member"
+              :can-manage="canManage"
+            />
+          </div>
+        </div>
+
+        <!-- Invites Tab -->
+        <div v-if="activeTab === 'invites'" class="space-y-4">
+          <div
+            v-if="teamStore.invites.length === 0"
+            class="text-center py-12"
+          >
+            <EnvelopeIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
+            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+              초대 내역 없음
+            </h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              팀 멤버를 초대하여 협업을 시작하세요.
+            </p>
+            <button
+              v-if="canManage"
+              @click="showInviteModal = true"
+              class="mt-4 inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+            >
+              <UserPlusIcon class="mr-2 h-5 w-5" />
+              멤버 초대
+            </button>
+          </div>
+
+          <div
+            v-for="invite in teamStore.invites"
+            :key="invite.id"
+            class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+          >
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3">
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    {{ invite.email }}
+                  </p>
+                  <RoleBadge :role="invite.role" />
+                  <span
+                    v-if="invite.status === 'pending'"
+                    class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                  >
+                    <ClockIcon class="mr-1 h-3 w-3" />
+                    대기 중
+                  </span>
+                  <span
+                    v-else-if="invite.status === 'expired'"
+                    class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                  >
+                    <XCircleIcon class="mr-1 h-3 w-3" />
+                    만료됨
+                  </span>
+                  <span
+                    v-else
+                    class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                  >
+                    <CheckCircleIcon class="mr-1 h-3 w-3" />
+                    수락됨
+                  </span>
+                </div>
+                <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                  <span>초대: {{ relativeTime(invite.invitedAt) }}</span>
+                  <span>•</span>
+                  <span>{{ expiresIn(invite.expiresAt) }}</span>
+                </div>
+              </div>
+
+              <div v-if="canManage && invite.status === 'pending'" class="flex space-x-2">
+                <button
+                  @click="handleResendInvite(invite.id)"
+                  class="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                  title="초대 재전송"
+                >
+                  <ArrowPathIcon class="h-5 w-5" />
+                </button>
+                <button
+                  @click="handleCancelInvite(invite.id)"
+                  class="rounded-md p-2 text-gray-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                  title="초대 취소"
+                >
+                  <XCircleIcon class="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Tab -->
+        <div v-if="activeTab === 'activity'">
+          <div
+            class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+          >
+            <TeamActivityFeed />
+          </div>
+        </div>
+
+        <!-- Permissions Tab -->
+        <div v-if="activeTab === 'permissions'">
+          <div
+            class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+          >
+            <PermissionMatrix />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invite Member Modal -->
+    <InviteMemberModal :show="showInviteModal" @close="showInviteModal = false" />
+  </div>
+</template>

@@ -1,0 +1,228 @@
+<template>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <template v-if="!bioPage">
+      <div class="flex min-h-[400px] items-center justify-center">
+        <div class="text-center">
+          <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">링크 페이지가 없습니다</h2>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">나만의 링크 페이지를 만들어보세요</p>
+        </div>
+      </div>
+    </template>
+    <template v-else>
+    <!-- Header -->
+    <div class="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
+      <div class="mx-auto max-w-7xl">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">링크인바이오</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              나만의 링크 페이지를 만들어보세요
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <!-- Publish URL -->
+            <div class="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700">
+              <span class="text-sm text-gray-600 dark:text-gray-400">{{ publishUrl }}</span>
+              <button
+                @click="copyLink"
+                class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                <ClipboardDocumentIcon class="h-5 w-5" />
+              </button>
+            </div>
+            <!-- Save Button -->
+            <button
+              @click="handleSave"
+              :disabled="!isDirty"
+              class="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              <CheckIcon class="h-5 w-5" />
+              저장
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="mt-4 grid grid-cols-3 gap-4">
+          <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+            <div class="text-xs text-gray-500 dark:text-gray-400">총 조회수</div>
+            <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
+              {{ bioPage.totalViews.toLocaleString() }}
+            </div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+            <div class="text-xs text-gray-500 dark:text-gray-400">총 클릭수</div>
+            <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
+              {{ totalClicks.toLocaleString() }}
+            </div>
+          </div>
+          <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+            <div class="text-xs text-gray-500 dark:text-gray-400">클릭률</div>
+            <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
+              {{ clickRate }}%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Tabs -->
+    <div class="border-b border-gray-200 bg-white px-6 dark:border-gray-700 dark:bg-gray-800 lg:hidden">
+      <div class="flex gap-4">
+        <button
+          @click="activeTab = 'editor'"
+          :class="[
+            'border-b-2 py-3 text-sm font-medium transition-colors',
+            activeTab === 'editor'
+              ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
+          ]"
+        >
+          편집
+        </button>
+        <button
+          @click="activeTab = 'preview'"
+          :class="[
+            'border-b-2 py-3 text-sm font-medium transition-colors',
+            activeTab === 'preview'
+              ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
+          ]"
+        >
+          미리보기
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="mx-auto max-w-7xl px-6 py-8">
+      <div class="flex flex-col gap-8 lg:flex-row">
+        <!-- Editor Panel -->
+        <div
+          :class="[
+            'flex-1',
+            activeTab === 'preview' ? 'hidden lg:block' : 'block',
+          ]"
+        >
+          <BioEditor
+            :page="bioPage"
+            @update-profile="updateProfile"
+            @change-theme="changeTheme"
+            @update-colors="updateColors"
+            @add-block="addBlock"
+            @update-block="updateBlock"
+            @delete-block="removeBlock"
+            @toggle-visibility="toggleBlockVisibility"
+            @reorder-block="reorderBlock"
+          />
+        </div>
+
+        <!-- Preview Panel -->
+        <div
+          :class="[
+            'lg:w-[400px]',
+            activeTab === 'editor' ? 'hidden lg:block' : 'block',
+          ]"
+        >
+          <div class="sticky top-8">
+            <BioPreview :page="bioPage" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-y-2 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-2 opacity-0"
+    >
+      <div
+        v-if="showToast"
+        class="fixed bottom-8 right-8 z-50 rounded-lg bg-gray-900 px-4 py-3 text-white shadow-lg dark:bg-gray-100 dark:text-gray-900"
+      >
+        {{ toastMessage }}
+      </div>
+    </Transition>
+    </template>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { ClipboardDocumentIcon, CheckIcon } from '@heroicons/vue/24/outline'
+import { useLinkBioStore } from '@/stores/linkbio'
+import BioEditor from '@/components/linkbio/BioEditor.vue'
+import BioPreview from '@/components/linkbio/BioPreview.vue'
+import type { ThemeStyle, BlockType, BioBlock, BioPage } from '@/types/linkbio'
+
+const store = useLinkBioStore()
+const { bioPage, isDirty, totalClicks, publishUrl } = storeToRefs(store)
+
+const activeTab = ref<'editor' | 'preview'>('editor')
+const showToast = ref(false)
+const toastMessage = ref('')
+
+const clickRate = computed(() => {
+  if (!bioPage.value || bioPage.value.totalViews === 0) return '0.0'
+  return ((totalClicks.value / bioPage.value.totalViews) * 100).toFixed(1)
+})
+
+const updateProfile = (updates: Partial<Pick<BioPage, 'displayName' | 'bio'>>) => {
+  store.updateProfile(updates)
+}
+
+const changeTheme = (theme: ThemeStyle) => {
+  store.changeTheme(theme)
+}
+
+const updateColors = (colors: Partial<Pick<BioPage, 'backgroundColor' | 'textColor' | 'buttonColor' | 'buttonTextColor'>>) => {
+  store.updateColors(colors)
+}
+
+const addBlock = (type: BlockType) => {
+  store.addBlock(type)
+}
+
+const updateBlock = (blockId: number, updates: Partial<BioBlock>) => {
+  store.updateBlock(blockId, updates)
+}
+
+const removeBlock = (blockId: number) => {
+  store.removeBlock(blockId)
+}
+
+const toggleBlockVisibility = (blockId: number) => {
+  store.toggleBlockVisibility(blockId)
+}
+
+const reorderBlock = (fromIndex: number, toIndex: number) => {
+  store.reorderBlock(fromIndex, toIndex)
+}
+
+const handleSave = () => {
+  store.savePage()
+  showToastMessage('저장되었습니다')
+}
+
+const copyLink = async () => {
+  try {
+    await navigator.clipboard.writeText(publishUrl.value)
+    showToastMessage('링크가 복사되었습니다')
+  } catch {
+    showToastMessage('링크 복사에 실패했습니다')
+  }
+}
+
+const showToastMessage = (message: string) => {
+  toastMessage.value = message
+  showToast.value = true
+  setTimeout(() => {
+    showToast.value = false
+  }, 3000)
+}
+</script>

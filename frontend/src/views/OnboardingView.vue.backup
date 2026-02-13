@@ -1,0 +1,624 @@
+<template>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Header -->
+    <div class="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4">
+      <div class="mx-auto flex max-w-3xl items-center justify-between">
+        <h1 class="text-xl font-bold text-primary-600">onGo</h1>
+        <span v-if="currentStep > 0 && currentStep <= 4" class="text-sm text-gray-400 dark:text-gray-500">{{ currentStep }} / 4</span>
+      </div>
+    </div>
+
+    <!-- Step Indicator -->
+    <div v-if="currentStep > 0 && currentStep <= 4" class="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-6">
+      <div class="mx-auto max-w-2xl px-4">
+        <OnboardingStepIndicator :current-step="currentStep" :steps="steps" />
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="mx-auto max-w-2xl px-4 py-8">
+      <!-- Step transitions -->
+      <Transition :name="transitionName" mode="out-in">
+        <div :key="currentStep">
+          <!-- Step 0: Welcome Screen -->
+          <div v-if="currentStep === 0" class="mx-auto max-w-lg text-center">
+        <div class="mb-8">
+          <h1 class="text-display text-primary-600">onGo</h1>
+          <p class="mt-4 text-h2 text-gray-900 dark:text-gray-100">
+            크리에이터의 시간을<br />되돌려주는 플랫폼
+          </p>
+        </div>
+
+        <div class="space-y-6">
+          <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left dark:border-gray-700 dark:bg-gray-800">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/30">
+              <ArrowUpTrayIcon class="h-6 w-6 text-primary-600 dark:text-primary-400" />
+            </div>
+            <div>
+              <p class="font-semibold text-gray-900 dark:text-gray-100">영상 하나로, 모든 플랫폼에</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">YouTube, TikTok, Instagram, Naver Clip 동시 게시</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left dark:border-gray-700 dark:bg-gray-800">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-900/30">
+              <SparklesIcon class="h-6 w-6 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div>
+              <p class="font-semibold text-gray-900 dark:text-gray-100">AI가 제목, 태그를 자동 생성</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">플랫폼별 알고리즘에 최적화된 메타데이터</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left dark:border-gray-700 dark:bg-gray-800">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
+              <ChartBarIcon class="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p class="font-semibold text-gray-900 dark:text-gray-100">통합 분석 대시보드</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">모든 플랫폼의 성과를 한눈에</p>
+            </div>
+          </div>
+        </div>
+
+            <button class="btn-primary btn-press mt-8 w-full py-3 text-base" @click="startOnboarding">
+              시작하기
+            </button>
+            <p class="mt-3 text-caption text-gray-400">1분이면 끝나요</p>
+          </div>
+
+          <!-- Step 1: Profile -->
+          <div v-else-if="currentStep === 1">
+        <div class="mb-6 text-center">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">프로필을 설정해주세요</h2>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">다른 크리에이터들에게 보여질 이름과 활동 분야를 선택하세요.</p>
+        </div>
+
+        <div class="rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-sm tablet:p-8">
+          <!-- Nickname -->
+          <div class="mb-6">
+            <label for="nickname" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              닉네임 <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="nickname"
+              v-model="profile.nickname"
+              type="text"
+              maxlength="20"
+              placeholder="활동할 닉네임을 입력하세요"
+              class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-4 py-3 text-sm transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              :class="{ 'border-red-400 focus:border-red-500 focus:ring-red-500/20': nicknameError }"
+              @input="nicknameError = ''"
+            />
+            <div class="mt-1 flex items-center justify-between">
+              <p v-if="nicknameError" class="text-xs text-red-500">{{ nicknameError }}</p>
+              <span v-else class="text-xs text-gray-400 dark:text-gray-500">2~20자</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">{{ profile.nickname.length }}/20</span>
+            </div>
+          </div>
+
+          <!-- Category -->
+          <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              크리에이터 카테고리 <span class="text-red-500">*</span>
+            </label>
+            <p class="mb-3 text-xs text-gray-400">주로 제작하는 콘텐츠 분야를 선택하세요.</p>
+            <div class="grid grid-cols-2 gap-2 tablet:grid-cols-4">
+              <button
+                v-for="cat in categories"
+                :key="cat.value"
+                type="button"
+                class="rounded-xl border-2 px-3 py-3 text-sm font-medium transition-all"
+                :class="
+                  profile.category === cat.value
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                "
+                @click="profile.category = cat.value; categoryError = ''"
+              >
+                <span class="mr-1">{{ cat.icon }}</span>
+                {{ cat.label }}
+              </button>
+            </div>
+              <p v-if="categoryError" class="mt-2 text-xs text-red-500">{{ categoryError }}</p>
+            </div>
+          </div>
+
+          <!-- Step 2: Channel Connect -->
+          <div v-else-if="currentStep === 2">
+        <div class="mb-6 text-center">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">AI 기능을 체험해보세요</h2>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            무료 크레딧으로 AI가 만드는 콘텐츠 최적화를 경험하세요.
+          </p>
+        </div>
+
+        <div class="rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-sm tablet:p-8">
+          <!-- AI Demo -->
+          <div v-if="!aiTrialResult" class="text-center">
+            <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-primary-100">
+              <svg class="h-10 w-10 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+              </svg>
+            </div>
+            <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">AI 제목/태그 자동 생성</h3>
+            <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">
+              샘플 영상을 기반으로 AI가 플랫폼별 최적화된<br />제목과 해시태그를 생성합니다.
+            </p>
+            <div class="mb-4 inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/20 px-3 py-1 text-xs text-amber-700 dark:text-amber-400">
+              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              5 크레딧 사용
+            </div>
+            <div>
+              <button
+                :disabled="isAiLoading"
+                class="rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-8 py-3 text-sm font-medium text-white shadow-lg transition-all hover:shadow-xl disabled:opacity-50"
+                @click="tryAiGeneration"
+              >
+                <span v-if="isAiLoading" class="flex items-center gap-2">
+                  <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                  AI 생성 중...
+                </span>
+                <span v-else>AI 체험하기</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- AI Result -->
+          <div v-else>
+            <div class="mb-4 flex items-center gap-2">
+              <svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 class="font-semibold text-gray-900 dark:text-gray-100">AI 생성 결과</h3>
+            </div>
+
+            <div class="space-y-4">
+              <div class="rounded-xl bg-gray-50 dark:bg-gray-900 p-4">
+                <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">추천 제목</p>
+                <ul class="space-y-1">
+                  <li v-for="(title, i) in aiTrialResult.titles" :key="i" class="text-sm text-gray-800 dark:text-gray-200">
+                    {{ i + 1 }}. {{ title }}
+                  </li>
+                </ul>
+              </div>
+              <div class="rounded-xl bg-gray-50 dark:bg-gray-900 p-4">
+                <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">추천 해시태그</p>
+                <div class="flex flex-wrap gap-1.5">
+                  <span
+                    v-for="tag in aiTrialResult.tags"
+                    :key="tag"
+                    class="rounded-full bg-primary-100 dark:bg-primary-900/30 px-2.5 py-1 text-xs text-primary-700"
+                  >
+                    #{{ tag }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Channel Connect -->
+      <div v-if="currentStep === 3">
+        <div class="mb-6 text-center">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">채널을 연동하세요</h2>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">최소 1개 이상의 플랫폼을 연동해야 합니다.</p>
+        </div>
+
+        <div class="space-y-3">
+          <div
+            v-for="platform in platforms"
+            :key="platform.key"
+            class="flex items-center justify-between rounded-2xl bg-white dark:bg-gray-800 p-5 shadow-sm transition-all"
+            :class="connectedPlatforms.has(platform.key) ? 'ring-2 ring-primary-500/30' : ''"
+          >
+            <div class="flex items-center gap-4">
+              <div
+                class="flex h-12 w-12 items-center justify-center rounded-xl"
+                :style="{ backgroundColor: platform.bgColor }"
+              >
+                <svg v-if="platform.key === 'YOUTUBE'" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                <svg v-else-if="platform.key === 'TIKTOK'" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-.81.06l-.38-.26z"/>
+                </svg>
+                <svg v-else-if="platform.key === 'INSTAGRAM'" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                </svg>
+                <svg v-else class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z"/>
+                </svg>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-900 dark:text-gray-100">{{ platform.label }}</p>
+                <p v-if="connectedPlatforms.has(platform.key)" class="text-xs text-green-600">연동 완료</p>
+                <p v-else class="text-xs text-gray-400 dark:text-gray-500">{{ platform.description }}</p>
+              </div>
+            </div>
+            <button
+              v-if="connectedPlatforms.has(platform.key)"
+              class="rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+              @click="disconnectPlatform(platform.key)"
+            >
+              연동 해제
+            </button>
+            <button
+              v-else
+              :disabled="isConnecting"
+              class="rounded-lg bg-primary-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
+              @click="connectPlatform(platform.key)"
+            >
+              연동하기
+            </button>
+          </div>
+        </div>
+
+        <p v-if="channelError" class="mt-4 text-center text-sm text-red-500">{{ channelError }}</p>
+      </div>
+
+
+      <!-- Step 4: Completion -->
+      <div v-if="currentStep === 4" class="text-center">
+        <div class="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+          <svg class="h-12 w-12 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h2 class="mb-3 text-3xl font-bold text-gray-900 dark:text-gray-100">
+          환영합니다, {{ profile.nickname }}님!
+        </h2>
+        <p class="mb-2 text-gray-500 dark:text-gray-400">
+          onGo 설정이 모두 완료되었습니다.
+        </p>
+        <p class="mb-8 text-sm text-gray-400 dark:text-gray-500">
+          이제 영상을 업로드하고 모든 플랫폼에 한 번에 게시해보세요.
+        </p>
+
+        <div class="space-y-3">
+          <button
+            class="w-full rounded-xl bg-primary-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg transition-all hover:bg-primary-700 hover:shadow-xl tablet:w-auto tablet:px-10"
+            @click="goToUpload"
+          >
+            첫 영상 업로드하기
+          </button>
+          <div>
+            <button
+              class="text-sm font-medium text-gray-500 dark:text-gray-400 transition-colors hover:text-gray-700 dark:hover:text-gray-300"
+              @click="goToDashboard"
+            >
+              대시보드로 이동
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Buttons -->
+      <div v-if="currentStep > 0 && currentStep <= 3" class="mt-8 flex items-center justify-between">
+        <button
+          v-if="currentStep > 1"
+          class="flex items-center gap-1 rounded-xl border border-gray-300 dark:border-gray-600 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+          @click="prevStep"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+          이전
+        </button>
+        <div v-else></div>
+
+        <div class="flex items-center gap-3">
+          <button
+            v-if="currentStep === 2"
+            class="rounded-xl px-5 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            @click="skipAiTrial"
+          >
+            건너뛰기
+          </button>
+          <button
+            :disabled="isSubmitting"
+            class="flex items-center gap-1 rounded-xl bg-primary-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
+            @click="nextStep"
+          >
+            <span v-if="isSubmitting" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+            <span v-else>
+              {{ currentStep === 3 ? '완료' : '다음' }}
+            </span>
+            <svg v-if="!isSubmitting" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import type { CreatorCategory } from '@/types/user'
+import type { Platform } from '@/types/channel'
+import { authApi } from '@/api/auth'
+import { channelApi } from '@/api/channel'
+import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const currentStep = ref(0)
+const isSubmitting = ref(false)
+const isConnecting = ref(false)
+const isAiLoading = ref(false)
+
+// Step 1: Profile
+const profile = reactive({
+  nickname: authStore.user?.nickname || '',
+  category: (authStore.user?.category || '') as CreatorCategory | '',
+})
+const nicknameError = ref('')
+const categoryError = ref('')
+
+// Step 2: Channels
+const connectedPlatforms = ref<Set<Platform>>(new Set())
+const channelError = ref('')
+
+// Step 3: AI trial
+const aiTrialResult = ref<{ titles: string[]; tags: string[] } | null>(null)
+
+const steps = [
+  { number: 1, label: '프로필' },
+  { number: 2, label: 'AI 체험' },
+  { number: 3, label: '채널 연동' },
+]
+
+const categories: { value: CreatorCategory; label: string; icon: string }[] = [
+  { value: 'BEAUTY', label: '뷰티', icon: '💄' },
+  { value: 'FOOD', label: '먹방', icon: '🍔' },
+  { value: 'GAME', label: '게임', icon: '🎮' },
+  { value: 'DAILY', label: '일상', icon: '📸' },
+  { value: 'EDUCATION', label: '교육', icon: '📚' },
+  { value: 'IT', label: 'IT/테크', icon: '💻' },
+  { value: 'TRAVEL', label: '여행', icon: '✈️' },
+  { value: 'MUSIC', label: '음악', icon: '🎵' },
+]
+
+const platforms = [
+  { key: 'YOUTUBE' as Platform, label: 'YouTube', description: '영상, 쇼츠 업로드', bgColor: '#FF0000' },
+  { key: 'TIKTOK' as Platform, label: 'TikTok', description: '숏폼 콘텐츠 업로드', bgColor: '#000000' },
+  { key: 'INSTAGRAM' as Platform, label: 'Instagram Reels', description: '릴스 업로드', bgColor: '#E1306C' },
+  { key: 'NAVER_CLIP' as Platform, label: 'Naver Clip', description: '네이버 클립 업로드', bgColor: '#03C75A' },
+]
+
+function stepCircleClass(step: number) {
+  if (step < currentStep.value) return 'bg-primary-600 text-white'
+  if (step === currentStep.value) return 'bg-primary-600 text-white ring-4 ring-primary-100 dark:ring-primary-900/50'
+  return 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+}
+
+function validateStep1(): boolean {
+  let valid = true
+
+  if (!profile.nickname.trim()) {
+    nicknameError.value = '닉네임을 입력해주세요.'
+    valid = false
+  } else if (profile.nickname.trim().length < 2) {
+    nicknameError.value = '닉네임은 2자 이상이어야 합니다.'
+    valid = false
+  }
+
+  if (!profile.category) {
+    categoryError.value = '카테고리를 선택해주세요.'
+    valid = false
+  }
+
+  return valid
+}
+
+function validateStep2(): boolean {
+  if (connectedPlatforms.value.size === 0) {
+    channelError.value = '최소 1개 이상의 플랫폼을 연동해주세요.'
+    return false
+  }
+  channelError.value = ''
+  return true
+}
+
+async function nextStep() {
+  if (currentStep.value === 1) {
+    if (!validateStep1()) return
+
+    isSubmitting.value = true
+    try {
+      await authApi.updateProfile({
+        nickname: profile.nickname.trim(),
+        category: profile.category as CreatorCategory,
+      })
+      currentStep.value = 2
+    } catch {
+      nicknameError.value = '프로필 저장에 실패했습니다.'
+    } finally {
+      isSubmitting.value = false
+    }
+    return
+  }
+
+  if (currentStep.value === 2) {
+    currentStep.value = 3
+    return
+  }
+
+  if (currentStep.value === 3) {
+    if (!validateStep2()) return
+    await completeOnboarding()
+  }
+}
+
+function prevStep() {
+  if (currentStep.value > 0) {
+    currentStep.value--
+  }
+}
+
+function connectPlatform(platform: Platform) {
+  isConnecting.value = true
+  channelError.value = ''
+
+  const redirectUri = `${window.location.origin}/auth/channel-callback/${platform.toLowerCase()}`
+
+  const oauthUrls: Record<Platform, string> = {
+    YOUTUBE: `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'https://www.googleapis.com/auth/youtube',
+      access_type: 'offline',
+      state: 'YOUTUBE',
+    })}`,
+    TIKTOK: `https://www.tiktok.com/v2/auth/authorize/?${new URLSearchParams({
+      client_key: import.meta.env.VITE_TIKTOK_CLIENT_KEY || '',
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'video.upload,video.list',
+      state: 'TIKTOK',
+    })}`,
+    INSTAGRAM: `https://api.instagram.com/oauth/authorize?${new URLSearchParams({
+      client_id: import.meta.env.VITE_INSTAGRAM_CLIENT_ID || '',
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'instagram_basic,instagram_content_publish',
+      state: 'INSTAGRAM',
+    })}`,
+    NAVER_CLIP: `https://nid.naver.com/oauth2.0/authorize?${new URLSearchParams({
+      client_id: import.meta.env.VITE_NAVER_CLIENT_ID || '',
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      state: 'NAVER_CLIP',
+    })}`,
+  }
+
+  window.location.href = oauthUrls[platform]
+}
+
+function disconnectPlatform(platform: Platform) {
+  connectedPlatforms.value.delete(platform)
+}
+
+async function handleChannelCallback() {
+  const url = new URL(window.location.href)
+  const code = url.searchParams.get('code')
+  const state = url.searchParams.get('state') as Platform | null
+
+  if (!code || !state) return
+
+  isConnecting.value = true
+  try {
+    const redirectUri = `${window.location.origin}/auth/channel-callback/${state.toLowerCase()}`
+    await channelApi.connect(state, { code, redirectUri })
+    connectedPlatforms.value.add(state)
+    // Clean URL
+    window.history.replaceState({}, '', '/onboarding')
+  } catch {
+    channelError.value = '채널 연동에 실패했습니다. 다시 시도해주세요.'
+  } finally {
+    isConnecting.value = false
+  }
+}
+
+async function tryAiGeneration() {
+  isAiLoading.value = true
+  try {
+    // Demo generation with sample data
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/ai/demo/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authStore.accessToken}`,
+      },
+      body: JSON.stringify({ category: profile.category }),
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success && data.data) {
+        aiTrialResult.value = data.data
+        return
+      }
+    }
+
+    // Fallback demo result if API not available
+    aiTrialResult.value = {
+      titles: [
+        '겨울 데일리 메이크업 루틴 | 건성 피부 필수템',
+        '5분 만에 완성! 출근 메이크업 튜토리얼',
+        '올겨울 필수 코스메틱 TOP 5 리뷰',
+      ],
+      tags: [
+        '메이크업', '뷰티', '겨울메이크업', '데일리룩',
+        '화장품추천', '코스메틱', '뷰티유튜버', '메이크업튜토리얼',
+      ],
+    }
+  } catch {
+    // Fallback demo result
+    aiTrialResult.value = {
+      titles: [
+        '겨울 데일리 메이크업 루틴 | 건성 피부 필수템',
+        '5분 만에 완성! 출근 메이크업 튜토리얼',
+        '올겨울 필수 코스메틱 TOP 5 리뷰',
+      ],
+      tags: [
+        '메이크업', '뷰티', '겨울메이크업', '데일리룩',
+        '화장품추천', '코스메틱', '뷰티유튜버', '메이크업튜토리얼',
+      ],
+    }
+  } finally {
+    isAiLoading.value = false
+  }
+}
+
+function skipAiTrial() {
+  completeOnboarding()
+}
+
+async function completeOnboarding() {
+  isSubmitting.value = true
+  try {
+    await authApi.completeOnboarding()
+    if (authStore.user) {
+      authStore.user.onboardingCompleted = true
+    }
+    currentStep.value = 4
+  } catch {
+    // Still proceed to completion screen
+    currentStep.value = 4
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+function goToUpload() {
+  router.push('/upload')
+}
+
+function goToDashboard() {
+  router.push('/dashboard')
+}
+
+// Load existing connected channels
+async function loadConnectedChannels() {
+  try {
+    const channels = await channelApi.list()
+    channels.forEach((ch) => connectedPlatforms.value.add(ch.platform))
+  } catch {
+    // No channels yet, that's fine
+  }
+}
+
+// Handle channel OAuth callback and load existing channels
+handleChannelCallback()
+loadConnectedChannels()
+</script>

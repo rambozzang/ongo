@@ -1,0 +1,133 @@
+server:
+  port: 8777
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: ongo-api
+  threads:
+    virtual:
+      enabled: true
+
+  # DataSource
+  datasource:
+    url: jdbc:postgresql://localhost:5434/ongo_db
+    username: ${DB_USERNAME:ongo_user}
+    password: ${DB_PASSWORD:ongo_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 30000
+      max-lifetime: 1800000
+
+  # jOOQ
+  jooq:
+    sql-dialect: POSTGRES
+
+  # Cache - configured in CaffeineCacheConfig.kt
+
+  # Spring AI - Anthropic (primary)
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:your-api-key}
+      chat:
+        options:
+          model: claude-sonnet-4-5-20250514
+          max-tokens: 4096
+          temperature: 0.7
+    openai:
+      api-key: ${OPENAI_API_KEY:your-api-key}
+
+  # Security
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:your-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:your-client-secret}
+            scope: openid,profile,email
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID:your-client-id}
+            client-secret: ${KAKAO_CLIENT_SECRET:your-client-secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/api/v1/auth/callback/kakao"
+            scope: profile_nickname,account_email
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+  # Servlet multipart
+  servlet:
+    multipart:
+      max-file-size: 5GB
+      max-request-size: 5GB
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET:ongo-dev-jwt-secret-key-must-be-at-least-32-bytes-long}
+  access-token-expiry: 1800000   # 30 minutes
+  refresh-token-expiry: 604800000 # 7 days
+
+# MinIO / S3 Storage
+storage:
+  type: minio
+  minio:
+    endpoint: http://localhost:9000
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: ongo-videos
+  s3:
+    region: ap-northeast-2
+    bucket: ongo-videos
+
+# Payment (Toss)
+payment:
+  toss:
+    webhook-secret: ${TOSS_WEBHOOK_SECRET:}
+
+# Platform encryption
+platform:
+  token:
+    encryption-key: ${PLATFORM_TOKEN_ENCRYPTION_KEY:b25nby1kZXYtYWVzMjU2LWVuY3J5cHRpb24ta2V5MDA=}
+  google:
+    api-key: ${GOOGLE_API_KEY:}
+
+# CORS
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5173,https://ongo.kr,https://www.ongo.kr}
+
+# Springdoc / Swagger
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
+# Logging (production defaults - use application-dev.yml for DEBUG)
+logging:
+  level:
+    root: INFO
+    com.ongo: INFO
+    org.jooq: WARN
+    org.springframework.ai: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/ongo-api.log
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

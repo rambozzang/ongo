@@ -1,0 +1,35 @@
+# Build outputs
+backend/build/
+backend/**/build/
+frontend/dist/
+
+# Dependencies
+frontend/node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Gradle
+.gradle/
+backend/.gradle/
+
+# Logs
+backend/logs/
+*.log
+
+# OS
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Test results
+frontend/test-results/
+frontend/tsconfig.app.tsbuildinfo
+frontend/tsconfig.node.tsbuildinfo
+
+# Claude local config
+.claude/
