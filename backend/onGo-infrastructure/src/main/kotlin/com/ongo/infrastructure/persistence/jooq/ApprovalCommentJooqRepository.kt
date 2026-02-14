@@ -30,16 +30,21 @@ class ApprovalCommentJooqRepository(
             .map { it.toApprovalComment() }
 
     override fun save(comment: ApprovalComment): ApprovalComment {
-        val record = dsl.insertInto(APPROVAL_COMMENTS)
+        val id = dsl.insertInto(APPROVAL_COMMENTS)
             .set(APPROVAL_ID, comment.approvalId)
             .set(USER_ID, comment.userId)
             .set(USER_NAME, comment.userName)
             .set(CONTENT, comment.content)
             .set(FIELD, comment.field)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toApprovalComment()
+        return dsl.select()
+            .from(APPROVAL_COMMENTS)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toApprovalComment()
     }
 
     private fun Record.toApprovalComment(): ApprovalComment = ApprovalComment(

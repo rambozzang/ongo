@@ -51,7 +51,7 @@ class PaymentJooqRepository(
             .fetchOne(0, Long::class.java) ?: 0L
 
     override fun save(payment: Payment): Payment {
-        val record = dsl.insertInto(PAYMENTS)
+        val id = dsl.insertInto(PAYMENTS)
             .set(USER_ID, payment.userId)
             .set(TYPE, payment.type.name)
             .set(AMOUNT, payment.amount)
@@ -62,14 +62,15 @@ class PaymentJooqRepository(
             .set(PAYMENT_METHOD, payment.paymentMethod)
             .set(RECEIPT_URL, payment.receiptUrl)
             .set(DESCRIPTION, payment.description)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toPayment()
+        return findById(id)!!
     }
 
     override fun update(payment: Payment): Payment {
-        val record = dsl.update(PAYMENTS)
+        dsl.update(PAYMENTS)
             .set(STATUS, payment.status.name)
             .set(PG_PROVIDER, payment.pgProvider)
             .set(PG_TRANSACTION_ID, payment.pgTransactionId)
@@ -77,24 +78,27 @@ class PaymentJooqRepository(
             .set(RECEIPT_URL, payment.receiptUrl)
             .set(DESCRIPTION, payment.description)
             .where(ID.eq(payment.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toPayment()
+        return findById(payment.id!!)!!
     }
 
-    private fun Record.toPayment(): Payment = Payment(
-        id = get(ID),
-        userId = get(USER_ID),
-        type = PaymentType.valueOf(get(TYPE)),
-        amount = get(AMOUNT),
-        currency = get(CURRENCY),
-        status = PaymentStatus.valueOf(get(STATUS)),
-        pgProvider = get(PG_PROVIDER),
-        pgTransactionId = get(PG_TRANSACTION_ID),
-        paymentMethod = get(PAYMENT_METHOD),
-        receiptUrl = get(RECEIPT_URL),
-        description = get(DESCRIPTION),
-        createdAt = localDateTime(CREATED_AT),
-    )
+    private fun Record.toPayment(): Payment {
+        val typeStr = get(TYPE) ?: "CREDIT"
+        val statusStr = get(STATUS) ?: "PENDING"
+        return Payment(
+            id = get(ID),
+            userId = get(USER_ID),
+            type = try { PaymentType.valueOf(typeStr) } catch (_: Exception) { PaymentType.CREDIT },
+            amount = get(AMOUNT),
+            currency = get(CURRENCY),
+            status = try { PaymentStatus.valueOf(statusStr) } catch (_: Exception) { PaymentStatus.PENDING },
+            pgProvider = get(PG_PROVIDER),
+            pgTransactionId = get(PG_TRANSACTION_ID),
+            paymentMethod = get(PAYMENT_METHOD),
+            receiptUrl = get(RECEIPT_URL),
+            description = get(DESCRIPTION),
+            createdAt = localDateTime(CREATED_AT),
+        )
+    }
 }

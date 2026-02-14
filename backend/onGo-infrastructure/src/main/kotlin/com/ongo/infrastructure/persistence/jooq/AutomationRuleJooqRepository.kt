@@ -59,7 +59,7 @@ class AutomationRuleJooqRepository(
         val triggerJson = JSONB.jsonb(objectMapper.writeValueAsString(rule.triggerConfig))
         val actionJson = JSONB.jsonb(objectMapper.writeValueAsString(rule.actionConfig))
 
-        val record = dsl.insertInto(AUTOMATION_RULES)
+        val id = dsl.insertInto(AUTOMATION_RULES)
             .set(USER_ID, rule.userId)
             .set(NAME, rule.name)
             .set(DESCRIPTION, rule.description)
@@ -68,17 +68,18 @@ class AutomationRuleJooqRepository(
             .set(ACTION_TYPE, rule.actionType)
             .set(ACTION_CONFIG_JSONB, actionJson)
             .set(IS_ACTIVE, rule.isActive)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toAutomationRule()
+        return findById(id)!!
     }
 
     override fun update(rule: AutomationRule): AutomationRule {
         val triggerJson = JSONB.jsonb(objectMapper.writeValueAsString(rule.triggerConfig))
         val actionJson = JSONB.jsonb(objectMapper.writeValueAsString(rule.actionConfig))
 
-        val record = dsl.update(AUTOMATION_RULES)
+        dsl.update(AUTOMATION_RULES)
             .set(NAME, rule.name)
             .set(DESCRIPTION, rule.description)
             .set(TRIGGER_TYPE, rule.triggerType)
@@ -89,10 +90,9 @@ class AutomationRuleJooqRepository(
             .set(EXECUTION_COUNT, rule.executionCount)
             .set(LAST_TRIGGERED_AT, rule.lastTriggeredAt)
             .where(ID.eq(rule.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toAutomationRule()
+        return findById(rule.id!!)!!
     }
 
     override fun delete(id: Long) {
@@ -103,18 +103,22 @@ class AutomationRuleJooqRepository(
 
     private fun Record.toAutomationRule(): AutomationRule {
         val triggerRaw = get("trigger_config")
-        val triggerConfig: Map<String, Any?> = when (triggerRaw) {
-            is JSONB -> objectMapper.readValue(triggerRaw.data())
-            is String -> objectMapper.readValue(triggerRaw)
-            else -> emptyMap()
-        }
+        val triggerConfig: Map<String, Any?> = try {
+            when (triggerRaw) {
+                is JSONB -> objectMapper.readValue(triggerRaw.data())
+                is String -> objectMapper.readValue(triggerRaw)
+                else -> emptyMap()
+            }
+        } catch (_: Exception) { emptyMap() }
 
         val actionRaw = get("action_config")
-        val actionConfig: Map<String, Any?> = when (actionRaw) {
-            is JSONB -> objectMapper.readValue(actionRaw.data())
-            is String -> objectMapper.readValue(actionRaw)
-            else -> emptyMap()
-        }
+        val actionConfig: Map<String, Any?> = try {
+            when (actionRaw) {
+                is JSONB -> objectMapper.readValue(actionRaw.data())
+                is String -> objectMapper.readValue(actionRaw)
+                else -> emptyMap()
+            }
+        } catch (_: Exception) { emptyMap() }
 
         return AutomationRule(
             id = get(ID),

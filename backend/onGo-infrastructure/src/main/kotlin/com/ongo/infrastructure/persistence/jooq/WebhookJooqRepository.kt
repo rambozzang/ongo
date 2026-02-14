@@ -44,21 +44,22 @@ class WebhookJooqRepository(
             .map { it.toWebhook() }
 
     override fun save(webhook: Webhook): Webhook {
-        val record = dsl.insertInto(WEBHOOKS)
+        val id = dsl.insertInto(WEBHOOKS)
             .set(USER_ID, webhook.userId)
             .set(NAME, webhook.name)
             .set(URL, webhook.url)
             .set(EVENTS_FIELD, webhook.events.toTypedArray())
             .set(SECRET, webhook.secret)
             .set(IS_ACTIVE, webhook.isActive)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toWebhook()
+        return findById(id)!!
     }
 
     override fun update(webhook: Webhook): Webhook {
-        val record = dsl.update(WEBHOOKS)
+        dsl.update(WEBHOOKS)
             .set(NAME, webhook.name)
             .set(URL, webhook.url)
             .set(EVENTS_FIELD, webhook.events.toTypedArray())
@@ -68,10 +69,9 @@ class WebhookJooqRepository(
             .set(LAST_STATUS_CODE, webhook.lastStatusCode)
             .set(FAILURE_COUNT, webhook.failureCount)
             .where(ID.eq(webhook.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toWebhook()
+        return findById(webhook.id!!)!!
     }
 
     override fun delete(id: Long) {

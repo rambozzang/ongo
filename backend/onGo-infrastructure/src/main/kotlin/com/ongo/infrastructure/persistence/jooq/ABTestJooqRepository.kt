@@ -58,20 +58,21 @@ class ABTestJooqRepository(
             .map { it.toABTest() }
 
     override fun save(abTest: ABTest): ABTest {
-        val record = dsl.insertInto(AB_TESTS)
+        val id = dsl.insertInto(AB_TESTS)
             .set(USER_ID, abTest.userId)
             .set(VIDEO_ID, abTest.videoId)
             .set(TEST_NAME, abTest.testName)
             .set(STATUS, abTest.status)
             .set(METRIC_TYPE, abTest.metricType)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toABTest()
+        return findById(id)!!
     }
 
     override fun update(abTest: ABTest): ABTest {
-        val record = dsl.update(AB_TESTS)
+        dsl.update(AB_TESTS)
             .set(TEST_NAME, abTest.testName)
             .set(STATUS, abTest.status)
             .set(METRIC_TYPE, abTest.metricType)
@@ -79,10 +80,9 @@ class ABTestJooqRepository(
             .set(STARTED_AT, abTest.startedAt)
             .set(ENDED_AT, abTest.endedAt)
             .where(ID.eq(abTest.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toABTest()
+        return findById(abTest.id!!)!!
     }
 
     override fun delete(id: Long) {
@@ -119,19 +119,26 @@ class ABTestVariantJooqRepository(
             .map { it.toVariant() }
 
     override fun save(variant: ABTestVariant): ABTestVariant {
-        val record = dsl.insertInto(AB_TEST_VARIANTS)
+        val viewsField = org.jooq.impl.DSL.field("views", Long::class.java)
+        val clicksField = org.jooq.impl.DSL.field("clicks", Long::class.java)
+        val id = dsl.insertInto(AB_TEST_VARIANTS)
             .set(TEST_ID, variant.testId)
             .set(VARIANT_NAME, variant.variantName)
             .set(TITLE, variant.title)
             .set(DESCRIPTION, variant.description)
             .set(THUMBNAIL_URL, variant.thumbnailUrl)
-            .set(VIEWS, variant.views.toInt())
-            .set(CLICKS, variant.clicks)
+            .set(viewsField, variant.views)
+            .set(clicksField, variant.clicks)
             .set(ENGAGEMENT_RATE, variant.engagementRate)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toVariant()
+        return dsl.select()
+            .from(AB_TEST_VARIANTS)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toVariant()
     }
 
     override fun deleteByTestId(testId: Long) {
@@ -140,16 +147,30 @@ class ABTestVariantJooqRepository(
             .execute()
     }
 
-    private fun Record.toVariant(): ABTestVariant = ABTestVariant(
-        id = get(ID),
-        testId = get(TEST_ID),
-        variantName = get(VARIANT_NAME),
-        title = get(TITLE),
-        description = get(DESCRIPTION),
-        thumbnailUrl = get(THUMBNAIL_URL),
-        views = (get(VIEWS) ?: 0).toLong(),
-        clicks = get(CLICKS) ?: 0,
-        engagementRate = get(ENGAGEMENT_RATE) ?: BigDecimal.ZERO,
-        createdAt = localDateTime(CREATED_AT),
-    )
+    private fun Record.toVariant(): ABTestVariant {
+        val viewsRaw = get("views")
+        val clicksRaw = get("clicks")
+        return ABTestVariant(
+            id = get(ID),
+            testId = get(TEST_ID),
+            variantName = get(VARIANT_NAME),
+            title = get(TITLE),
+            description = get(DESCRIPTION),
+            thumbnailUrl = get(THUMBNAIL_URL),
+            views = when (viewsRaw) {
+                is Long -> viewsRaw
+                is Int -> viewsRaw.toLong()
+                is Number -> viewsRaw.toLong()
+                else -> 0L
+            },
+            clicks = when (clicksRaw) {
+                is Long -> clicksRaw
+                is Int -> clicksRaw.toLong()
+                is Number -> clicksRaw.toLong()
+                else -> 0L
+            },
+            engagementRate = get(ENGAGEMENT_RATE) ?: BigDecimal.ZERO,
+            createdAt = localDateTime(CREATED_AT),
+        )
+    }
 }

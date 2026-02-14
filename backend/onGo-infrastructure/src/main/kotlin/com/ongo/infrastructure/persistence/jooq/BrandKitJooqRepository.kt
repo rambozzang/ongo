@@ -43,7 +43,7 @@ class BrandKitJooqRepository(
             .map { it.toBrandKit() }
 
     override fun save(brandKit: BrandKit): BrandKit {
-        val record = dsl.insertInto(BRAND_KITS)
+        val id = dsl.insertInto(BRAND_KITS)
             .set(USER_ID, brandKit.userId)
             .set(NAME, brandKit.name)
             .set(PRIMARY_COLOR, brandKit.primaryColor)
@@ -56,14 +56,15 @@ class BrandKitJooqRepository(
             .set(WATERMARK_URL, brandKit.watermarkUrl)
             .set(GUIDELINES, brandKit.guidelines)
             .set(IS_DEFAULT, brandKit.isDefault)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toBrandKit()
+        return findById(id)!!
     }
 
     override fun update(brandKit: BrandKit): BrandKit {
-        val record = dsl.update(BRAND_KITS)
+        dsl.update(BRAND_KITS)
             .set(NAME, brandKit.name)
             .set(PRIMARY_COLOR, brandKit.primaryColor)
             .set(SECONDARY_COLOR, brandKit.secondaryColor)
@@ -77,10 +78,9 @@ class BrandKitJooqRepository(
             .set(IS_DEFAULT, brandKit.isDefault)
             .set(UPDATED_AT, java.time.LocalDateTime.now())
             .where(ID.eq(brandKit.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toBrandKit()
+        return findById(brandKit.id!!)!!
     }
 
     override fun delete(id: Long) {

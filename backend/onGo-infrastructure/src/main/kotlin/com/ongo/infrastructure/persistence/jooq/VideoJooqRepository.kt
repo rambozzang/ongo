@@ -21,6 +21,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.TITLE
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.VIDEOS
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.jooq.DSLContext
 import org.jooq.JSONB
@@ -97,7 +98,7 @@ class VideoJooqRepository(
         val tagsArray = video.tags.toTypedArray()
         val thumbnailJson = JSONB.jsonb(objectMapper.writeValueAsString(video.thumbnailUrls))
 
-        val record = dsl.insertInto(VIDEOS)
+        val id = dsl.insertInto(VIDEOS)
             .set(USER_ID, video.userId)
             .set(TITLE, video.title)
             .set(DESCRIPTION, video.description)
@@ -111,17 +112,18 @@ class VideoJooqRepository(
             .set(CONTENT_HASH, video.contentHash)
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
             .set(STATUS, video.status.name)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toVideo()
+        return findById(id)!!
     }
 
     override fun update(video: Video): Video {
         val tagsArray = video.tags.toTypedArray()
         val thumbnailJson = JSONB.jsonb(objectMapper.writeValueAsString(video.thumbnailUrls))
 
-        val record = dsl.update(VIDEOS)
+        dsl.update(VIDEOS)
             .set(TITLE, video.title)
             .set(DESCRIPTION, video.description)
             .set(DSL.field("tags", Array<String>::class.java), tagsArray)
@@ -135,10 +137,9 @@ class VideoJooqRepository(
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
             .set(STATUS, video.status.name)
             .where(ID.eq(video.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toVideo()
+        return findById(video.id!!)!!
     }
 
     override fun delete(id: Long) {
@@ -159,6 +160,7 @@ class VideoJooqRepository(
         val tagsRaw = get("tags")
         val tags: List<String> = when (tagsRaw) {
             is Array<*> -> (tagsRaw as Array<String>).toList()
+            is java.sql.Array -> (tagsRaw.array as Array<String>).toList()
             else -> emptyList()
         }
 
@@ -169,6 +171,7 @@ class VideoJooqRepository(
             else -> emptyList()
         }
 
+        val statusStr = get(STATUS) ?: "DRAFT"
         return Video(
             id = get(ID),
             userId = get(USER_ID),
@@ -183,17 +186,18 @@ class VideoJooqRepository(
             originalFilename = get(ORIGINAL_FILENAME),
             contentHash = get(CONTENT_HASH),
             thumbnailUrls = thumbnailUrls,
-            status = UploadStatus.valueOf(get(STATUS)),
+            status = try { UploadStatus.valueOf(statusStr) } catch (_: Exception) { UploadStatus.DRAFT },
             createdAt = localDateTime(CREATED_AT),
             updatedAt = localDateTime(UPDATED_AT),
         )
     }
 
     private fun parseThumbnailUrls(json: String): List<String> {
-        if (json.isBlank() || json == "[]" || json == "null") return emptyList()
-        return json.trim('[', ']')
-            .split(",")
-            .map { it.trim().trim('"') }
-            .filter { it.isNotBlank() }
+        if (json.isBlank() || json == "null") return emptyList()
+        return try {
+            objectMapper.readValue(json, object : TypeReference<List<String>>() {})
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 }

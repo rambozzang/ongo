@@ -1,17 +1,33 @@
 export type PlanType = 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS'
 
-export type SubscriptionStatus = 'ACTIVE' | 'CANCELLED' | 'PAST_DUE' | 'EXPIRED'
+export type SubscriptionStatus = 'ACTIVE' | 'CANCELLED' | 'PAST_DUE' | 'FREE'
+
+export interface PlanFeatures {
+  maxPlatforms: number
+  monthlyUploads: number
+  scheduleDays: number
+  analyticsDays: number
+  storageGB: number
+  freeCredits: number
+  maxTeamMembers: number
+}
 
 export interface Subscription {
-  id: number
-  userId: number
+  id?: number
+  userId?: number
   planType: PlanType
   status: SubscriptionStatus
   price: number
   billingCycle: string
-  currentPeriodEnd: string
+  currentPeriodEnd: string | null
   nextBillingDate: string | null
-  features: string[]
+  features: PlanFeatures | string[]
+}
+
+export interface ChangePlanResponse {
+  subscription: Subscription
+  proratedAmount: number | null
+  effectiveDate: string
 }
 
 export interface Plan {

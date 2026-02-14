@@ -268,7 +268,7 @@ class AnalyticsJooqRepository(
     }
 
     override fun save(analytics: AnalyticsDaily): AnalyticsDaily {
-        val record = dsl.insertInto(ANALYTICS_DAILY)
+        val id = dsl.insertInto(ANALYTICS_DAILY)
             .set(VIDEO_UPLOAD_ID, analytics.videoUploadId)
             .set(DATE, analytics.date)
             .set(VIEWS, analytics.views)
@@ -278,14 +278,19 @@ class AnalyticsJooqRepository(
             .set(WATCH_TIME_SECONDS, analytics.watchTimeSeconds)
             .set(SUBSCRIBER_GAINED, analytics.subscriberGained)
             .set(REVENUE_MICRO, analytics.revenueMicro)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toAnalyticsDaily()
+        return dsl.select()
+            .from(ANALYTICS_DAILY)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toAnalyticsDaily()
     }
 
     override fun upsert(analytics: AnalyticsDaily): AnalyticsDaily {
-        val record = dsl.insertInto(ANALYTICS_DAILY)
+        val id = dsl.insertInto(ANALYTICS_DAILY)
             .set(VIDEO_UPLOAD_ID, analytics.videoUploadId)
             .set(DATE, analytics.date)
             .set(VIEWS, analytics.views)
@@ -304,10 +309,15 @@ class AnalyticsJooqRepository(
             .set(WATCH_TIME_SECONDS, analytics.watchTimeSeconds)
             .set(SUBSCRIBER_GAINED, analytics.subscriberGained)
             .set(REVENUE_MICRO, analytics.revenueMicro)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toAnalyticsDaily()
+        return dsl.select()
+            .from(ANALYTICS_DAILY)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toAnalyticsDaily()
     }
 
     override fun saveBatch(analytics: List<AnalyticsDaily>) {

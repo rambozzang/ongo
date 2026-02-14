@@ -55,7 +55,7 @@ class LinkBioJooqRepository(
             ?.toPage()
 
     override fun savePage(page: LinkBioPage): LinkBioPage {
-        val record = dsl.insertInto(LINK_BIO_PAGES)
+        val id = dsl.insertInto(LINK_BIO_PAGES)
             .set(USER_ID, page.userId)
             .set(SLUG, page.slug)
             .set(TITLE, page.title)
@@ -65,14 +65,15 @@ class LinkBioJooqRepository(
             .set(BACKGROUND_COLOR, page.backgroundColor)
             .set(TEXT_COLOR, page.textColor)
             .set(IS_PUBLISHED, page.isPublished)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toPage()
+        return findPageById(id)!!
     }
 
     override fun updatePage(page: LinkBioPage): LinkBioPage {
-        val record = dsl.update(LINK_BIO_PAGES)
+        dsl.update(LINK_BIO_PAGES)
             .set(SLUG, page.slug)
             .set(TITLE, page.title)
             .set(BIO, page.bio)
@@ -83,10 +84,9 @@ class LinkBioJooqRepository(
             .set(IS_PUBLISHED, page.isPublished)
             .set(UPDATED_AT, java.time.LocalDateTime.now())
             .where(ID.eq(page.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toPage()
+        return findPageById(page.id!!)!!
     }
 
     override fun incrementViewCount(pageId: Long) {
@@ -95,6 +95,13 @@ class LinkBioJooqRepository(
             .where(ID.eq(pageId))
             .execute()
     }
+
+    private fun findLinkById(id: Long): LinkBioLink? =
+        dsl.select()
+            .from(LINK_BIO_LINKS)
+            .where(ID.eq(id))
+            .fetchOne()
+            ?.toLink()
 
     override fun findLinksByPageId(pageId: Long): List<LinkBioLink> =
         dsl.select()
@@ -105,31 +112,31 @@ class LinkBioJooqRepository(
             .map { it.toLink() }
 
     override fun saveLink(link: LinkBioLink): LinkBioLink {
-        val record = dsl.insertInto(LINK_BIO_LINKS)
+        val id = dsl.insertInto(LINK_BIO_LINKS)
             .set(PAGE_ID, link.pageId)
             .set(TITLE, link.title)
             .set(URL, link.url)
             .set(ICON, link.icon)
             .set(SORT_ORDER, link.sortOrder)
             .set(IS_ACTIVE, link.isActive)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toLink()
+        return findLinkById(id)!!
     }
 
     override fun updateLink(link: LinkBioLink): LinkBioLink {
-        val record = dsl.update(LINK_BIO_LINKS)
+        dsl.update(LINK_BIO_LINKS)
             .set(TITLE, link.title)
             .set(URL, link.url)
             .set(ICON, link.icon)
             .set(SORT_ORDER, link.sortOrder)
             .set(IS_ACTIVE, link.isActive)
             .where(ID.eq(link.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toLink()
+        return findLinkById(link.id!!)!!
     }
 
     override fun deleteLink(id: Long) {

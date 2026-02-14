@@ -57,29 +57,37 @@ class CreditJooqRepository(
             ?.toAiCredit()
 
     override fun save(credit: AiCredit): AiCredit {
-        val record = dsl.insertInto(AI_CREDITS)
+        val id = dsl.insertInto(AI_CREDITS)
             .set(USER_ID, credit.userId)
             .set(BALANCE, credit.balance)
             .set(FREE_MONTHLY, credit.freeMonthly)
             .set(FREE_REMAINING, credit.freeRemaining)
             .set(FREE_RESET_DATE, credit.freeResetDate)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toAiCredit()
+        return dsl.select()
+            .from(AI_CREDITS)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toAiCredit()
     }
 
     override fun update(credit: AiCredit): AiCredit {
-        val record = dsl.update(AI_CREDITS)
+        dsl.update(AI_CREDITS)
             .set(BALANCE, credit.balance)
             .set(FREE_MONTHLY, credit.freeMonthly)
             .set(FREE_REMAINING, credit.freeRemaining)
             .set(FREE_RESET_DATE, credit.freeResetDate)
             .where(ID.eq(credit.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toAiCredit()
+        return dsl.select()
+            .from(AI_CREDITS)
+            .where(ID.eq(credit.id))
+            .fetchOne()!!
+            .toAiCredit()
     }
 
     override fun getTransactions(userId: Long, page: Int, size: Int): List<AiCreditTransaction> =
@@ -93,17 +101,22 @@ class CreditJooqRepository(
             .map { it.toAiCreditTransaction() }
 
     override fun saveTransaction(transaction: AiCreditTransaction): AiCreditTransaction {
-        val record = dsl.insertInto(AI_CREDIT_TRANSACTIONS)
+        val id = dsl.insertInto(AI_CREDIT_TRANSACTIONS)
             .set(USER_ID, transaction.userId)
             .set(TYPE, transaction.type.name)
             .set(AMOUNT, transaction.amount)
             .set(BALANCE_AFTER, transaction.balanceAfter)
             .set(FEATURE, transaction.feature)
             .set(REFERENCE_ID, transaction.referenceId)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toAiCreditTransaction()
+        return dsl.select()
+            .from(AI_CREDIT_TRANSACTIONS)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toAiCreditTransaction()
     }
 
     override fun findActivePurchasedCredits(userId: Long): List<AiPurchasedCredit> =
@@ -128,7 +141,7 @@ class CreditJooqRepository(
             .map { it.toAiPurchasedCredit() }
 
     override fun savePurchasedCredit(credit: AiPurchasedCredit): AiPurchasedCredit {
-        val record = dsl.insertInto(AI_PURCHASED_CREDITS)
+        val id = dsl.insertInto(AI_PURCHASED_CREDITS)
             .set(USER_ID, credit.userId)
             .set(PACKAGE_NAME, credit.packageName)
             .set(TOTAL_CREDITS, credit.totalCredits)
@@ -136,21 +149,29 @@ class CreditJooqRepository(
             .set(PRICE, credit.price)
             .set(EXPIRES_AT, credit.expiresAt)
             .set(STATUS, credit.status)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toAiPurchasedCredit()
+        return dsl.select()
+            .from(AI_PURCHASED_CREDITS)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toAiPurchasedCredit()
     }
 
     override fun updatePurchasedCredit(credit: AiPurchasedCredit): AiPurchasedCredit {
-        val record = dsl.update(AI_PURCHASED_CREDITS)
+        dsl.update(AI_PURCHASED_CREDITS)
             .set(REMAINING, credit.remaining)
             .set(STATUS, credit.status)
             .where(ID.eq(credit.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toAiPurchasedCredit()
+        return dsl.select()
+            .from(AI_PURCHASED_CREDITS)
+            .where(ID.eq(credit.id))
+            .fetchOne()!!
+            .toAiPurchasedCredit()
     }
 
     override fun findExpiredCredits(): List<AiPurchasedCredit> =
@@ -207,21 +228,24 @@ class CreditJooqRepository(
         balance = get(BALANCE),
         freeMonthly = get(FREE_MONTHLY),
         freeRemaining = get(FREE_REMAINING),
-        freeResetDate = localDate(FREE_RESET_DATE)!!,
+        freeResetDate = localDate(FREE_RESET_DATE) ?: java.time.LocalDate.now().withDayOfMonth(1).plusMonths(1),
         createdAt = localDateTime(CREATED_AT),
         updatedAt = localDateTime(UPDATED_AT),
     )
 
-    private fun Record.toAiCreditTransaction(): AiCreditTransaction = AiCreditTransaction(
-        id = get(ID),
-        userId = get(USER_ID),
-        type = CreditTransactionType.valueOf(get(TYPE)),
-        amount = get(AMOUNT),
-        balanceAfter = get(BALANCE_AFTER),
-        feature = get(FEATURE),
-        referenceId = get(REFERENCE_ID),
-        createdAt = localDateTime(CREATED_AT),
-    )
+    private fun Record.toAiCreditTransaction(): AiCreditTransaction {
+        val typeStr = get(TYPE) ?: "DEDUCT"
+        return AiCreditTransaction(
+            id = get(ID),
+            userId = get(USER_ID),
+            type = try { CreditTransactionType.valueOf(typeStr) } catch (_: Exception) { CreditTransactionType.DEDUCT },
+            amount = get(AMOUNT),
+            balanceAfter = get(BALANCE_AFTER),
+            feature = get(FEATURE),
+            referenceId = get(REFERENCE_ID),
+            createdAt = localDateTime(CREATED_AT),
+        )
+    }
 
     private fun Record.toAiPurchasedCredit(): AiPurchasedCredit = AiPurchasedCredit(
         id = get(ID),

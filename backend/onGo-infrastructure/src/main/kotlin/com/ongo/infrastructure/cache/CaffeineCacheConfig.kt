@@ -21,6 +21,9 @@ class CaffeineCacheConfig {
         const val TREND_DATA_CACHE = "trendData"
         const val REVENUE_SUMMARY_CACHE = "revenueSummary"
         const val REVENUE_TRENDS_CACHE = "revenueTrends"
+        const val OPTIMAL_TIMES_CACHE = "optimalTimes"
+        const val COHORT_ANALYSIS_CACHE = "cohortAnalysis"
+        const val PERMISSIONS_CACHE = "permissions"
     }
 
     @Bean
@@ -33,6 +36,9 @@ class CaffeineCacheConfig {
             buildCache(TREND_DATA_CACHE, 10, TimeUnit.MINUTES, 500),
             buildCache(REVENUE_SUMMARY_CACHE, 10, TimeUnit.MINUTES, 500),
             buildCache(REVENUE_TRENDS_CACHE, 10, TimeUnit.MINUTES, 500),
+            buildCache(OPTIMAL_TIMES_CACHE, 30, TimeUnit.MINUTES, 500),
+            buildCache(COHORT_ANALYSIS_CACHE, 15, TimeUnit.MINUTES, 500),
+            buildCache(PERMISSIONS_CACHE, 10, TimeUnit.MINUTES, 1000),
         )
 
         return SimpleCacheManager().apply {

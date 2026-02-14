@@ -23,6 +23,13 @@ class VideoPlatformMetaJooqRepository(
     private val dsl: DSLContext,
 ) : VideoPlatformMetaRepository {
 
+    private fun findById(id: Long): VideoPlatformMeta? =
+        dsl.select()
+            .from(VIDEO_PLATFORM_META)
+            .where(ID.eq(id))
+            .fetchOne()
+            ?.toVideoPlatformMeta()
+
     override fun findByVideoUploadId(videoUploadId: Long): VideoPlatformMeta? =
         dsl.select()
             .from(VIDEO_PLATFORM_META)
@@ -43,33 +50,33 @@ class VideoPlatformMetaJooqRepository(
     override fun save(meta: VideoPlatformMeta): VideoPlatformMeta {
         val tagsArray = meta.tags.toTypedArray()
 
-        val record = dsl.insertInto(VIDEO_PLATFORM_META)
+        val id = dsl.insertInto(VIDEO_PLATFORM_META)
             .set(VIDEO_UPLOAD_ID, meta.videoUploadId)
             .set(TITLE, meta.title)
             .set(DESCRIPTION, meta.description)
             .set(DSL.field("tags", Array<String>::class.java), tagsArray)
             .set(VISIBILITY, meta.visibility.name)
             .set(CUSTOM_THUMBNAIL_URL, meta.customThumbnailUrl)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toVideoPlatformMeta()
+        return findById(id)!!
     }
 
     override fun update(meta: VideoPlatformMeta): VideoPlatformMeta {
         val tagsArray = meta.tags.toTypedArray()
 
-        val record = dsl.update(VIDEO_PLATFORM_META)
+        dsl.update(VIDEO_PLATFORM_META)
             .set(TITLE, meta.title)
             .set(DESCRIPTION, meta.description)
             .set(DSL.field("tags", Array<String>::class.java), tagsArray)
             .set(VISIBILITY, meta.visibility.name)
             .set(CUSTOM_THUMBNAIL_URL, meta.customThumbnailUrl)
             .where(ID.eq(meta.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toVideoPlatformMeta()
+        return findById(meta.id!!)!!
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -77,16 +84,18 @@ class VideoPlatformMetaJooqRepository(
         val tagsRaw = get("tags")
         val tags: List<String> = when (tagsRaw) {
             is Array<*> -> (tagsRaw as Array<String>).toList()
+            is java.sql.Array -> (tagsRaw.array as Array<String>).toList()
             else -> emptyList()
         }
 
+        val visibilityStr = get(VISIBILITY) ?: "PUBLIC"
         return VideoPlatformMeta(
             id = get(ID),
             videoUploadId = get(VIDEO_UPLOAD_ID),
             title = get(TITLE),
             description = get(DESCRIPTION),
             tags = tags,
-            visibility = Visibility.valueOf(get(VISIBILITY)),
+            visibility = try { Visibility.valueOf(visibilityStr) } catch (_: Exception) { Visibility.PUBLIC },
             customThumbnailUrl = get(CUSTOM_THUMBNAIL_URL),
         )
     }

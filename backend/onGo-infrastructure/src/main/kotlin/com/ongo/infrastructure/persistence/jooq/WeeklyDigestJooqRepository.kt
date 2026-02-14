@@ -58,7 +58,7 @@ class WeeklyDigestJooqRepository(
             .fetchOne(0, Int::class.java) ?: 0
 
     override fun save(digest: WeeklyDigest): WeeklyDigest {
-        val record = dsl.insertInto(WEEKLY_DIGESTS)
+        val id = dsl.insertInto(WEEKLY_DIGESTS)
             .set(USER_ID, digest.userId)
             .set(WEEK_START_DATE, digest.weekStartDate)
             .set(WEEK_END_DATE, digest.weekEndDate)
@@ -67,10 +67,11 @@ class WeeklyDigestJooqRepository(
             .set(ANOMALIES, digest.anomalies)
             .set(ACTION_ITEMS, digest.actionItems)
             .set(GENERATED_AT, digest.generatedAt)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toWeeklyDigest()
+        return findById(id)!!
     }
 
     private fun Record.toWeeklyDigest(): WeeklyDigest = WeeklyDigest(

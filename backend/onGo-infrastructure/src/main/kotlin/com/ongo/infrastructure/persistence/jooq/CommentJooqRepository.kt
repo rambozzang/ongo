@@ -84,7 +84,7 @@ class CommentJooqRepository(
             .fetchOne(0, Int::class.java) ?: 0
 
     override fun save(comment: Comment): Comment {
-        val record = dsl.insertInto(COMMENTS)
+        val id = dsl.insertInto(COMMENTS)
             .set(USER_ID, comment.userId)
             .set(VIDEO_ID, comment.videoId)
             .set(PLATFORM, comment.platform)
@@ -97,23 +97,23 @@ class CommentJooqRepository(
             .set(REPLY_CONTENT, comment.replyContent)
             .set(REPLIED_AT, comment.repliedAt)
             .set(PUBLISHED_AT, comment.publishedAt)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toComment()
+        return findById(id)!!
     }
 
     override fun update(comment: Comment): Comment {
-        val record = dsl.update(COMMENTS)
+        dsl.update(COMMENTS)
             .set(IS_REPLIED, comment.isReplied)
             .set(REPLY_CONTENT, comment.replyContent)
             .set(REPLIED_AT, comment.repliedAt)
             .set(SENTIMENT, comment.sentiment)
             .where(ID.eq(comment.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toComment()
+        return findById(comment.id!!)!!
     }
 
     override fun delete(id: Long) {

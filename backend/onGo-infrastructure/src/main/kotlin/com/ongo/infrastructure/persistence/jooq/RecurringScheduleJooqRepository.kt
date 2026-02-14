@@ -51,7 +51,7 @@ class RecurringScheduleJooqRepository(
             .map { it.toRecurringSchedule() }
 
     override fun save(schedule: RecurringSchedule): RecurringSchedule {
-        val record = dsl.insertInto(RECURRING_SCHEDULES)
+        val id = dsl.insertInto(RECURRING_SCHEDULES)
             .set(USER_ID, schedule.userId)
             .set(NAME, schedule.name)
             .set(FREQUENCY, schedule.frequency)
@@ -65,14 +65,15 @@ class RecurringScheduleJooqRepository(
             .set(TAGS_FIELD, schedule.tags.toTypedArray())
             .set(IS_ACTIVE, schedule.isActive)
             .set(NEXT_RUN_AT, schedule.nextRunAt)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toRecurringSchedule()
+        return findById(id)!!
     }
 
     override fun update(schedule: RecurringSchedule): RecurringSchedule {
-        val record = dsl.update(RECURRING_SCHEDULES)
+        dsl.update(RECURRING_SCHEDULES)
             .set(NAME, schedule.name)
             .set(FREQUENCY, schedule.frequency)
             .set(DAY_OF_WEEK, schedule.dayOfWeek)
@@ -87,10 +88,9 @@ class RecurringScheduleJooqRepository(
             .set(NEXT_RUN_AT, schedule.nextRunAt)
             .set(LAST_RUN_AT, schedule.lastRunAt)
             .where(ID.eq(schedule.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toRecurringSchedule()
+        return findById(schedule.id!!)!!
     }
 
     override fun delete(id: Long) {

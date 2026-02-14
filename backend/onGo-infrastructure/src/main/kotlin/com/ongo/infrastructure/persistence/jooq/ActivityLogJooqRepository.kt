@@ -13,6 +13,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.USER_AGENT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.ACTIVITY_LOGS
 import org.jooq.DSLContext
+import org.jooq.JSONB
 import org.jooq.Record
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
@@ -68,29 +69,43 @@ class ActivityLogJooqRepository(
     }
 
     override fun save(log: ActivityLog): ActivityLog {
-        val record = dsl.insertInto(ACTIVITY_LOGS)
+        val detailsField = DSL.field("details", JSONB::class.java)
+        val id = dsl.insertInto(ACTIVITY_LOGS)
             .set(USER_ID, log.userId)
             .set(ACTION, log.action)
             .set(ENTITY_TYPE, log.entityType)
             .set(ENTITY_ID, log.entityId)
-            .set(DETAILS, log.details)
+            .set(detailsField, JSONB.jsonb(log.details ?: "{}"))
             .set(IP_ADDRESS, log.ipAddress)
             .set(USER_AGENT, log.userAgent)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toActivityLog()
+        return dsl.select()
+            .from(ACTIVITY_LOGS)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toActivityLog()
     }
 
-    private fun Record.toActivityLog(): ActivityLog = ActivityLog(
-        id = get(ID),
-        userId = get(USER_ID),
-        action = get(ACTION),
-        entityType = get(ENTITY_TYPE),
-        entityId = get(ENTITY_ID),
-        details = get(DETAILS) ?: "{}",
-        ipAddress = get(IP_ADDRESS),
-        userAgent = get(USER_AGENT),
-        createdAt = localDateTime(CREATED_AT),
-    )
+    private fun Record.toActivityLog(): ActivityLog {
+        val detailsRaw = get("details")
+        val details: String = when (detailsRaw) {
+            is JSONB -> detailsRaw.data()
+            is String -> detailsRaw
+            else -> "{}"
+        }
+        return ActivityLog(
+            id = get(ID),
+            userId = get(USER_ID),
+            action = get(ACTION),
+            entityType = get(ENTITY_TYPE),
+            entityId = get(ENTITY_ID),
+            details = details,
+            ipAddress = get(IP_ADDRESS),
+            userAgent = get(USER_AGENT),
+            createdAt = localDateTime(CREATED_AT),
+        )
+    }
 }

@@ -440,9 +440,9 @@ const subscriptionStatusClass = computed(() => {
   if (!subscription.value) return ''
   const classes: Record<string, string> = {
     ACTIVE: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+    FREE: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
     CANCELLED: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
     PAST_DUE: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
-    EXPIRED: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
   }
   return classes[subscription.value.status] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
 })
@@ -451,9 +451,9 @@ const subscriptionStatusLabel = computed(() => {
   if (!subscription.value) return ''
   const labels: Record<string, string> = {
     ACTIVE: '활성',
+    FREE: '무료',
     CANCELLED: '취소됨',
     PAST_DUE: '결제 지연',
-    EXPIRED: '만료',
   }
   return labels[subscription.value.status] ?? subscription.value.status
 })

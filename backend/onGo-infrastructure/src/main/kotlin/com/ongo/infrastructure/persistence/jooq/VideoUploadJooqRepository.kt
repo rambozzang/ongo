@@ -85,7 +85,7 @@ class VideoUploadJooqRepository(
             .map { it.toVideoUpload() }
 
     override fun save(upload: VideoUpload): VideoUpload {
-        val record = dsl.insertInto(VIDEO_UPLOADS)
+        val id = dsl.insertInto(VIDEO_UPLOADS)
             .set(VIDEO_ID, upload.videoId)
             .set(PLATFORM, upload.platform.name)
             .set(PLATFORM_VIDEO_ID, upload.platformVideoId)
@@ -93,24 +93,24 @@ class VideoUploadJooqRepository(
             .set(ERROR_MESSAGE, upload.errorMessage)
             .set(PLATFORM_URL, upload.platformUrl)
             .set(PUBLISHED_AT, upload.publishedAt)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toVideoUpload()
+        return findById(id)!!
     }
 
     override fun update(upload: VideoUpload): VideoUpload {
-        val record = dsl.update(VIDEO_UPLOADS)
+        dsl.update(VIDEO_UPLOADS)
             .set(PLATFORM_VIDEO_ID, upload.platformVideoId)
             .set(STATUS, upload.status.name)
             .set(ERROR_MESSAGE, upload.errorMessage)
             .set(PLATFORM_URL, upload.platformUrl)
             .set(PUBLISHED_AT, upload.publishedAt)
             .where(ID.eq(upload.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toVideoUpload()
+        return findById(upload.id!!)!!
     }
 
     override fun findByUserId(userId: Long): List<VideoUpload> =
@@ -144,16 +144,20 @@ class VideoUploadJooqRepository(
             .fetch()
             .map { it.toVideoUpload() }
 
-    private fun Record.toVideoUpload(): VideoUpload = VideoUpload(
-        id = get(ID),
-        videoId = get(VIDEO_ID),
-        platform = Platform.valueOf(get(PLATFORM)),
-        platformVideoId = get(PLATFORM_VIDEO_ID),
-        status = UploadStatus.valueOf(get(STATUS)),
-        errorMessage = get(ERROR_MESSAGE),
-        platformUrl = get(PLATFORM_URL),
-        publishedAt = localDateTime(PUBLISHED_AT),
-        createdAt = localDateTime(CREATED_AT),
-        updatedAt = localDateTime(UPDATED_AT),
-    )
+    private fun Record.toVideoUpload(): VideoUpload {
+        val platformStr = get(PLATFORM) ?: "YOUTUBE"
+        val statusStr = get(STATUS) ?: "DRAFT"
+        return VideoUpload(
+            id = get(ID),
+            videoId = get(VIDEO_ID),
+            platform = try { Platform.valueOf(platformStr) } catch (_: Exception) { Platform.YOUTUBE },
+            platformVideoId = get(PLATFORM_VIDEO_ID),
+            status = try { UploadStatus.valueOf(statusStr) } catch (_: Exception) { UploadStatus.DRAFT },
+            errorMessage = get(ERROR_MESSAGE),
+            platformUrl = get(PLATFORM_URL),
+            publishedAt = localDateTime(PUBLISHED_AT),
+            createdAt = localDateTime(CREATED_AT),
+            updatedAt = localDateTime(UPDATED_AT),
+        )
+    }
 }

@@ -5,25 +5,25 @@
 -- ============================================================================
 
 -- ============================================================================
--- 1. ENUM TYPES
+-- 1. ENUM TYPES (idempotent: 이미 존재하면 무시)
 -- ============================================================================
 
-CREATE TYPE auth_provider AS ENUM ('GOOGLE', 'KAKAO');
-CREATE TYPE user_role AS ENUM ('USER', 'ADMIN');
-CREATE TYPE plan_type AS ENUM ('FREE', 'STARTER', 'PRO', 'BUSINESS');
-CREATE TYPE platform_type AS ENUM ('YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP');
-CREATE TYPE channel_status AS ENUM ('ACTIVE', 'EXPIRED', 'DISCONNECTED');
-CREATE TYPE video_status AS ENUM ('DRAFT', 'UPLOADING', 'PUBLISHED', 'FAILED');
-CREATE TYPE upload_status AS ENUM ('UPLOADING', 'PROCESSING', 'REVIEW', 'PUBLISHED', 'FAILED', 'REJECTED');
-CREATE TYPE visibility_type AS ENUM ('PUBLIC', 'PRIVATE', 'UNLISTED');
-CREATE TYPE schedule_status AS ENUM ('SCHEDULED', 'PUBLISHED', 'FAILED', 'CANCELLED');
-CREATE TYPE subscription_status AS ENUM ('ACTIVE', 'CANCELLED', 'PAST_DUE', 'FREE');
-CREATE TYPE billing_cycle AS ENUM ('MONTHLY', 'YEARLY');
-CREATE TYPE payment_type AS ENUM ('SUBSCRIPTION', 'CREDIT');
-CREATE TYPE payment_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED');
-CREATE TYPE credit_tx_type AS ENUM ('DEDUCT', 'CHARGE', 'FREE_RESET');
-CREATE TYPE purchased_credit_status AS ENUM ('ACTIVE', 'EXPIRED', 'EXHAUSTED');
-CREATE TYPE notification_type AS ENUM ('UPLOAD_COMPLETE', 'UPLOAD_FAILED', 'CREDIT_LOW', 'SCHEDULE_REMINDER', 'COMMENT', 'SYSTEM');
+DO $$ BEGIN CREATE TYPE auth_provider AS ENUM ('GOOGLE', 'KAKAO'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE user_role AS ENUM ('USER', 'ADMIN'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE plan_type AS ENUM ('FREE', 'STARTER', 'PRO', 'BUSINESS'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE platform_type AS ENUM ('YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE channel_status AS ENUM ('ACTIVE', 'EXPIRED', 'DISCONNECTED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE video_status AS ENUM ('DRAFT', 'UPLOADING', 'PUBLISHED', 'FAILED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE upload_status AS ENUM ('UPLOADING', 'PROCESSING', 'REVIEW', 'PUBLISHED', 'FAILED', 'REJECTED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE visibility_type AS ENUM ('PUBLIC', 'PRIVATE', 'UNLISTED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE schedule_status AS ENUM ('SCHEDULED', 'PUBLISHED', 'FAILED', 'CANCELLED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE subscription_status AS ENUM ('ACTIVE', 'CANCELLED', 'PAST_DUE', 'FREE'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE billing_cycle AS ENUM ('MONTHLY', 'YEARLY'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE payment_type AS ENUM ('SUBSCRIPTION', 'CREDIT'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE payment_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE credit_tx_type AS ENUM ('DEDUCT', 'CHARGE', 'FREE_RESET'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE purchased_credit_status AS ENUM ('ACTIVE', 'EXPIRED', 'EXHAUSTED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE notification_type AS ENUM ('UPLOAD_COMPLETE', 'UPLOAD_FAILED', 'CREDIT_LOW', 'SCHEDULE_REMINDER', 'COMMENT', 'SYSTEM'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ============================================================================
 -- 2. TABLES
@@ -32,7 +32,7 @@ CREATE TYPE notification_type AS ENUM ('UPLOAD_COMPLETE', 'UPLOAD_FAILED', 'CRED
 -- --------------------------------------------------------------------------
 -- users: 사용자 정보
 -- --------------------------------------------------------------------------
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id                  BIGSERIAL PRIMARY KEY,
     email               VARCHAR(255) NOT NULL UNIQUE,
     name                VARCHAR(100) NOT NULL,
@@ -57,7 +57,7 @@ COMMENT ON COLUMN users.plan_type IS '구독 플랜: FREE, STARTER(9,900원), PR
 -- --------------------------------------------------------------------------
 -- channels: 연동 플랫폼 채널
 -- --------------------------------------------------------------------------
-CREATE TABLE channels (
+CREATE TABLE IF NOT EXISTS channels (
     id                  BIGSERIAL PRIMARY KEY,
     user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     platform            platform_type NOT NULL,
@@ -83,7 +83,7 @@ COMMENT ON COLUMN channels.refresh_token IS 'AES-256 암호화된 플랫폼 리�
 -- --------------------------------------------------------------------------
 -- videos: 업로드 영상 원본 정보
 -- --------------------------------------------------------------------------
-CREATE TABLE videos (
+CREATE TABLE IF NOT EXISTS videos (
     id                  BIGSERIAL PRIMARY KEY,
     user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title               VARCHAR(200) NOT NULL,
@@ -113,7 +113,7 @@ COMMENT ON COLUMN videos.status IS 'DRAFT → UPLOADING → PUBLISHED/FAILED';
 -- --------------------------------------------------------------------------
 -- video_uploads: 플랫폼별 업로드 상태
 -- --------------------------------------------------------------------------
-CREATE TABLE video_uploads (
+CREATE TABLE IF NOT EXISTS video_uploads (
     id                  BIGSERIAL PRIMARY KEY,
     video_id            BIGINT NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
     platform            platform_type NOT NULL,
@@ -134,7 +134,7 @@ COMMENT ON COLUMN video_uploads.status IS 'UPLOADING → PROCESSING → REVIEW �
 -- --------------------------------------------------------------------------
 -- video_platform_meta: 플랫폼별 메타데이터 오버라이드
 -- --------------------------------------------------------------------------
-CREATE TABLE video_platform_meta (
+CREATE TABLE IF NOT EXISTS video_platform_meta (
     id                  BIGSERIAL PRIMARY KEY,
     video_upload_id     BIGINT NOT NULL REFERENCES video_uploads(id) ON DELETE CASCADE,
     title               TEXT,
@@ -151,7 +151,7 @@ COMMENT ON TABLE video_platform_meta IS '플랫폼별 메타데이터 커스터�
 -- --------------------------------------------------------------------------
 -- schedules: 예약 업로드
 -- --------------------------------------------------------------------------
-CREATE TABLE schedules (
+CREATE TABLE IF NOT EXISTS schedules (
     id                  BIGSERIAL PRIMARY KEY,
     video_id            BIGINT NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
     user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -170,7 +170,7 @@ COMMENT ON COLUMN schedules.platforms IS 'JSONB: 플랫폼별 개별 시간 설�
 -- --------------------------------------------------------------------------
 -- analytics_daily: 일별 영상 성과 (파티셔닝 테이블)
 -- --------------------------------------------------------------------------
-CREATE TABLE analytics_daily (
+CREATE TABLE IF NOT EXISTS analytics_daily (
     id                  BIGSERIAL,
     video_upload_id     BIGINT NOT NULL,
     date                DATE NOT NULL,
@@ -196,29 +196,29 @@ COMMENT ON TABLE analytics_daily IS '일별 영상 성과 데이터 (월별 파�
 COMMENT ON COLUMN analytics_daily.revenue_micro IS '수익 (마이크로 단위: 1원 = 1,000,000 micro)';
 
 -- Monthly partitions for 2026
-CREATE TABLE analytics_daily_2026_01 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_01 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
-CREATE TABLE analytics_daily_2026_02 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_02 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-02-01') TO ('2026-03-01');
-CREATE TABLE analytics_daily_2026_03 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_03 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-03-01') TO ('2026-04-01');
-CREATE TABLE analytics_daily_2026_04 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_04 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
-CREATE TABLE analytics_daily_2026_05 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_05 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
-CREATE TABLE analytics_daily_2026_06 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_06 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
-CREATE TABLE analytics_daily_2026_07 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_07 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
-CREATE TABLE analytics_daily_2026_08 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_08 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-08-01') TO ('2026-09-01');
-CREATE TABLE analytics_daily_2026_09 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_09 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-09-01') TO ('2026-10-01');
-CREATE TABLE analytics_daily_2026_10 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_10 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
-CREATE TABLE analytics_daily_2026_11 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_11 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-11-01') TO ('2026-12-01');
-CREATE TABLE analytics_daily_2026_12 PARTITION OF analytics_daily
+CREATE TABLE IF NOT EXISTS analytics_daily_2026_12 PARTITION OF analytics_daily
     FOR VALUES FROM ('2026-12-01') TO ('2027-01-01');
 
 -- --------------------------------------------------------------------------
@@ -255,7 +255,7 @@ $$ LANGUAGE plpgsql;
 -- --------------------------------------------------------------------------
 -- ai_credits: 사용자별 AI 크레딧 잔액
 -- --------------------------------------------------------------------------
-CREATE TABLE ai_credits (
+CREATE TABLE IF NOT EXISTS ai_credits (
     id                  BIGSERIAL PRIMARY KEY,
     user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
     balance             INTEGER NOT NULL DEFAULT 0,
@@ -277,7 +277,7 @@ COMMENT ON COLUMN ai_credits.free_reset_date IS '무료 크레딧 리셋 날짜 
 -- --------------------------------------------------------------------------
 -- ai_credit_transactions: 크레딧 사용/충전 이력
 -- --------------------------------------------------------------------------
-CREATE TABLE ai_credit_transactions (
+CREATE TABLE IF NOT EXISTS ai_credit_transactions (
     id                  BIGSERIAL PRIMARY KEY,
     user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type                credit_tx_type NOT NULL,
@@ -295,7 +295,7 @@ COMMENT ON COLUMN ai_credit_transactions.feature IS 'AI 기능 식별자: meta_g
 -- --------------------------------------------------------------------------
 -- ai_purchased_credits: 구매 크레딧 (유효기간별 FIFO 관리)
 -- --------------------------------------------------------------------------
-CREATE TABLE ai_purchased_credits (
+CREATE TABLE IF NOT EXISTS ai_purchased_credits (
     id                  BIGSERIAL PRIMARY KEY,
     user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     package_name        VARCHAR(50) NOT NULL,
@@ -316,7 +316,7 @@ COMMENT ON TABLE ai_purchased_credits IS '구매 크레딧 패키지 (만료 임
 -- --------------------------------------------------------------------------
 -- subscriptions: 구독 정보
 -- --------------------------------------------------------------------------
-CREATE TABLE subscriptions (
+CREATE TABLE IF NOT EXISTS subscriptions (
     id                      BIGSERIAL PRIMARY KEY,
     user_id                 BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
     plan_type               plan_type NOT NULL DEFAULT 'FREE',
@@ -338,7 +338,7 @@ COMMENT ON TABLE subscriptions IS '사용자 구독 정보 (1인 1구독)';
 -- --------------------------------------------------------------------------
 -- payments: 결제 이력
 -- --------------------------------------------------------------------------
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
     id                  BIGSERIAL PRIMARY KEY,
     user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type                payment_type NOT NULL,
@@ -360,7 +360,7 @@ COMMENT ON TABLE payments IS '결제 이력 (구독 결제 + 크레딧 충전)';
 -- --------------------------------------------------------------------------
 -- notifications: 알림
 -- --------------------------------------------------------------------------
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     id                  BIGSERIAL PRIMARY KEY,
     user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type                notification_type NOT NULL,
@@ -377,7 +377,7 @@ COMMENT ON TABLE notifications IS '사용자 알림 (업로드 완료/실패, �
 -- --------------------------------------------------------------------------
 -- user_settings: 사용자 설정
 -- --------------------------------------------------------------------------
-CREATE TABLE user_settings (
+CREATE TABLE IF NOT EXISTS user_settings (
     id                              BIGSERIAL PRIMARY KEY,
     user_id                         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
     default_visibility              visibility_type NOT NULL DEFAULT 'PUBLIC',
@@ -402,7 +402,7 @@ COMMENT ON COLUMN user_settings.notification_schedule_reminder IS '예약 리마
 -- --------------------------------------------------------------------------
 -- refresh_tokens: JWT 리프레시 토큰
 -- --------------------------------------------------------------------------
-CREATE TABLE refresh_tokens (
+CREATE TABLE IF NOT EXISTS refresh_tokens (
     id                  BIGSERIAL PRIMARY KEY,
     user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token               VARCHAR(512) NOT NULL UNIQUE,
@@ -420,56 +420,56 @@ COMMENT ON TABLE refresh_tokens IS 'JWT 리프레시 토큰 (Access 30분, Refre
 
 -- channels
 -- idx_channels_user_id omitted: covered by uq_channels_user_platform (user_id, platform)
-CREATE INDEX idx_channels_status ON channels(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_channels_status ON channels(user_id, status);
 
 -- videos
-CREATE INDEX idx_videos_user_created ON videos(user_id, created_at DESC);
-CREATE INDEX idx_videos_status ON videos(status);
-CREATE INDEX idx_videos_content_hash ON videos(content_hash) WHERE content_hash IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_videos_user_created ON videos(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_videos_status ON videos(status);
+CREATE INDEX IF NOT EXISTS idx_videos_content_hash ON videos(content_hash) WHERE content_hash IS NOT NULL;
 
 -- video_uploads
 -- idx_video_uploads_video_platform omitted: covered by uq_video_uploads_video_platform
-CREATE INDEX idx_video_uploads_active ON video_uploads(status)
+CREATE INDEX IF NOT EXISTS idx_video_uploads_active ON video_uploads(status)
     WHERE status IN ('UPLOADING', 'PROCESSING');
-CREATE INDEX idx_video_uploads_platform_video ON video_uploads(platform_video_id)
+CREATE INDEX IF NOT EXISTS idx_video_uploads_platform_video ON video_uploads(platform_video_id)
     WHERE platform_video_id IS NOT NULL;
 
 -- video_platform_meta
-CREATE INDEX idx_video_platform_meta_upload ON video_platform_meta(video_upload_id);
+CREATE INDEX IF NOT EXISTS idx_video_platform_meta_upload ON video_platform_meta(video_upload_id);
 
 -- schedules
-CREATE INDEX idx_schedules_user ON schedules(user_id);
-CREATE INDEX idx_schedules_pending ON schedules(scheduled_at, status)
+CREATE INDEX IF NOT EXISTS idx_schedules_user ON schedules(user_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_pending ON schedules(scheduled_at, status)
     WHERE status = 'SCHEDULED';
-CREATE INDEX idx_schedules_video ON schedules(video_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_video ON schedules(video_id);
 
 -- analytics_daily
 -- idx_analytics_upload_date omitted: covered by uq_analytics_upload_date
 
 -- ai_credit_transactions
-CREATE INDEX idx_credit_tx_user_date ON ai_credit_transactions(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_credit_tx_user_date ON ai_credit_transactions(user_id, created_at DESC);
 
 -- ai_purchased_credits
-CREATE INDEX idx_purchased_user_active ON ai_purchased_credits(user_id, status, expires_at)
+CREATE INDEX IF NOT EXISTS idx_purchased_user_active ON ai_purchased_credits(user_id, status, expires_at)
     WHERE status = 'ACTIVE';
 
 -- subscriptions
 -- idx_subscriptions_user omitted: covered by UNIQUE on user_id
-CREATE INDEX idx_subscriptions_next_billing ON subscriptions(next_billing_date)
+CREATE INDEX IF NOT EXISTS idx_subscriptions_next_billing ON subscriptions(next_billing_date)
     WHERE status = 'ACTIVE';
 
 -- payments
-CREATE INDEX idx_payments_user_date ON payments(user_id, created_at DESC);
-CREATE INDEX idx_payments_pg_tx ON payments(pg_transaction_id)
+CREATE INDEX IF NOT EXISTS idx_payments_user_date ON payments(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payments_pg_tx ON payments(pg_transaction_id)
     WHERE pg_transaction_id IS NOT NULL;
 
 -- notifications
-CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read, created_at DESC);
-CREATE INDEX idx_notifications_user_type ON notifications(user_id, type);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_type ON notifications(user_id, type);
 
 -- refresh_tokens
-CREATE INDEX idx_refresh_tokens_user ON refresh_tokens(user_id);
-CREATE INDEX idx_refresh_tokens_expires ON refresh_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
 
 -- ============================================================================
 -- 4. FUNCTIONS: updated_at 자동 갱신 트리거
@@ -484,30 +484,39 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply trigger to all tables with updated_at
+DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
 CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION fn_update_timestamp();
 
+DROP TRIGGER IF EXISTS trg_channels_updated_at ON channels;
 CREATE TRIGGER trg_channels_updated_at
     BEFORE UPDATE ON channels FOR EACH ROW EXECUTE FUNCTION fn_update_timestamp();
 
+DROP TRIGGER IF EXISTS trg_videos_updated_at ON videos;
 CREATE TRIGGER trg_videos_updated_at
     BEFORE UPDATE ON videos FOR EACH ROW EXECUTE FUNCTION fn_update_timestamp();
 
+DROP TRIGGER IF EXISTS trg_video_uploads_updated_at ON video_uploads;
 CREATE TRIGGER trg_video_uploads_updated_at
     BEFORE UPDATE ON video_uploads FOR EACH ROW EXECUTE FUNCTION fn_update_timestamp();
 
+DROP TRIGGER IF EXISTS trg_video_platform_meta_updated_at ON video_platform_meta;
 CREATE TRIGGER trg_video_platform_meta_updated_at
     BEFORE UPDATE ON video_platform_meta FOR EACH ROW EXECUTE FUNCTION fn_update_timestamp();
 
+DROP TRIGGER IF EXISTS trg_schedules_updated_at ON schedules;
 CREATE TRIGGER trg_schedules_updated_at
     BEFORE UPDATE ON schedules FOR EACH ROW EXECUTE FUNCTION fn_update_timestamp();
 
+DROP TRIGGER IF EXISTS trg_ai_credits_updated_at ON ai_credits;
 CREATE TRIGGER trg_ai_credits_updated_at
     BEFORE UPDATE ON ai_credits FOR EACH ROW EXECUTE FUNCTION fn_update_timestamp();
 
+DROP TRIGGER IF EXISTS trg_subscriptions_updated_at ON subscriptions;
 CREATE TRIGGER trg_subscriptions_updated_at
     BEFORE UPDATE ON subscriptions FOR EACH ROW EXECUTE FUNCTION fn_update_timestamp();
 
+DROP TRIGGER IF EXISTS trg_user_settings_updated_at ON user_settings;
 CREATE TRIGGER trg_user_settings_updated_at
     BEFORE UPDATE ON user_settings FOR EACH ROW EXECUTE FUNCTION fn_update_timestamp();
 

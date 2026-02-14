@@ -9,7 +9,7 @@ import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
 @Component
-@Profile("local", "default")
+@Profile("local", "default", "dev")
 class MinioStorageClient(
     private val minioClient: MinioClient,
     private val storageProperties: StorageProperties,

@@ -28,6 +28,7 @@ backend/onGo-api/logs/
 # Environment
 .env
 .env.local
+.envrc
 
 # Test results
 frontend/test-results/

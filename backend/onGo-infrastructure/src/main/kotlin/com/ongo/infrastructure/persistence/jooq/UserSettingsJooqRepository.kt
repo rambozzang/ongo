@@ -36,10 +36,17 @@ class UserSettingsJooqRepository(
             .fetchOne()
             ?.toUserSettings()
 
+    private fun findById(id: Long): UserSettings? =
+        dsl.select()
+            .from(USER_SETTINGS)
+            .where(ID.eq(id))
+            .fetchOne()
+            ?.toUserSettings()
+
     override fun save(settings: UserSettings): UserSettings {
         val platformsJson = JSONB.jsonb(objectMapper.writeValueAsString(settings.defaultPlatforms.map { it.name }))
 
-        val record = dsl.insertInto(USER_SETTINGS)
+        val id = dsl.insertInto(USER_SETTINGS)
             .set(USER_ID, settings.userId)
             .set(DEFAULT_VISIBILITY, settings.defaultVisibility.name)
             .set(DSL.field("default_platforms", JSONB::class.java), platformsJson)
@@ -48,16 +55,17 @@ class UserSettingsJooqRepository(
             .set(NOTIFICATION_COMMENT, settings.notificationComment)
             .set(NOTIFICATION_CREDIT_THRESHOLD, settings.notificationCreditThreshold)
             .set(NOTIFICATION_SCHEDULE_REMINDER, settings.notificationScheduleReminder)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toUserSettings()
+        return findById(id)!!
     }
 
     override fun update(settings: UserSettings): UserSettings {
         val platformsJson = JSONB.jsonb(objectMapper.writeValueAsString(settings.defaultPlatforms.map { it.name }))
 
-        val record = dsl.update(USER_SETTINGS)
+        dsl.update(USER_SETTINGS)
             .set(DEFAULT_VISIBILITY, settings.defaultVisibility.name)
             .set(DSL.field("default_platforms", JSONB::class.java), platformsJson)
             .set(DEFAULT_AI_TONE, settings.defaultAiTone)
@@ -66,10 +74,9 @@ class UserSettingsJooqRepository(
             .set(NOTIFICATION_CREDIT_THRESHOLD, settings.notificationCreditThreshold)
             .set(NOTIFICATION_SCHEDULE_REMINDER, settings.notificationScheduleReminder)
             .where(ID.eq(settings.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toUserSettings()
+        return findById(settings.id!!)!!
     }
 
     private fun Record.toUserSettings(): UserSettings {
@@ -80,10 +87,11 @@ class UserSettingsJooqRepository(
             else -> emptyList()
         }
 
+        val visibilityStr = get(DEFAULT_VISIBILITY) ?: "PUBLIC"
         return UserSettings(
             id = get(ID),
             userId = get(USER_ID),
-            defaultVisibility = Visibility.valueOf(get(DEFAULT_VISIBILITY)),
+            defaultVisibility = try { Visibility.valueOf(visibilityStr) } catch (_: Exception) { Visibility.PUBLIC },
             defaultPlatforms = defaultPlatforms,
             defaultAiTone = get(DEFAULT_AI_TONE),
             notificationUpload = get(NOTIFICATION_UPLOAD),

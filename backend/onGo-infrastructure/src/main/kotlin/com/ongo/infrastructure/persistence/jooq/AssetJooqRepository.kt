@@ -72,7 +72,7 @@ class AssetJooqRepository(
             .fetchOne(0, Int::class.java) ?: 0
 
     override fun save(asset: Asset): Asset {
-        val record = dsl.insertInto(ASSETS)
+        val id = dsl.insertInto(ASSETS)
             .set(USER_ID, asset.userId)
             .set(FILENAME, asset.filename)
             .set(ORIGINAL_FILENAME, asset.originalFilename)
@@ -85,21 +85,21 @@ class AssetJooqRepository(
             .set(WIDTH, asset.width)
             .set(HEIGHT, asset.height)
             .set(DURATION_SECONDS, asset.durationSeconds)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toAsset()
+        return findById(id)!!
     }
 
     override fun update(asset: Asset): Asset {
-        val record = dsl.update(ASSETS)
+        dsl.update(ASSETS)
             .set(TAGS, asset.tags.toTypedArray())
             .set(FOLDER, asset.folder)
             .where(ID.eq(asset.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toAsset()
+        return findById(asset.id!!)!!
     }
 
     override fun delete(id: Long) {
@@ -109,20 +109,29 @@ class AssetJooqRepository(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun Record.toAsset(): Asset = Asset(
-        id = get(ID),
-        userId = get(USER_ID),
-        filename = get(FILENAME),
-        originalFilename = get(ORIGINAL_FILENAME),
-        fileUrl = get(FILE_URL),
-        fileType = get(FILE_TYPE),
-        fileSizeBytes = get(FILE_SIZE_BYTES),
-        mimeType = get(MIME_TYPE),
-        tags = (get(TAGS) as? Array<String>)?.toList() ?: emptyList(),
-        folder = get(FOLDER) ?: "default",
-        width = get(WIDTH),
-        height = get(HEIGHT),
-        durationSeconds = get(DURATION_SECONDS),
-        createdAt = localDateTime(CREATED_AT),
-    )
+    private fun Record.toAsset(): Asset {
+        val tagsRaw = get("tags")
+        val tags: List<String> = when (tagsRaw) {
+            is Array<*> -> (tagsRaw as Array<String>).toList()
+            is java.sql.Array -> (tagsRaw.array as Array<String>).toList()
+            else -> emptyList()
+        }
+
+        return Asset(
+            id = get(ID),
+            userId = get(USER_ID),
+            filename = get(FILENAME),
+            originalFilename = get(ORIGINAL_FILENAME),
+            fileUrl = get(FILE_URL),
+            fileType = get(FILE_TYPE),
+            fileSizeBytes = get(FILE_SIZE_BYTES),
+            mimeType = get(MIME_TYPE),
+            tags = tags,
+            folder = get(FOLDER) ?: "default",
+            width = get(WIDTH),
+            height = get(HEIGHT),
+            durationSeconds = get(DURATION_SECONDS),
+            createdAt = localDateTime(CREATED_AT),
+        )
+    }
 }

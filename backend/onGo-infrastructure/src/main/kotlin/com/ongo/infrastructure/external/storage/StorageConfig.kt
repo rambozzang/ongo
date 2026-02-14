@@ -33,7 +33,7 @@ data class StorageProperties(
 class StorageConfig {
 
     @Bean
-    @Profile("local", "default")
+    @Profile("local", "default", "dev")
     fun minioClient(storageProperties: StorageProperties): MinioClient {
         return MinioClient.builder()
             .endpoint(storageProperties.minio.endpoint)

@@ -65,7 +65,7 @@ class ApprovalJooqRepository(
             .map { it.toApproval() }
 
     override fun save(approval: Approval): Approval {
-        val record = dsl.insertInto(APPROVALS)
+        val id = dsl.insertInto(APPROVALS)
             .set(USER_ID, approval.userId)
             .set(VIDEO_ID, approval.videoId)
             .set(VIDEO_TITLE, approval.videoTitle)
@@ -78,14 +78,15 @@ class ApprovalJooqRepository(
             .set(STATUS, approval.status)
             .set(COMMENT, approval.comment)
             .set(REQUESTED_AT, approval.requestedAt)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toApproval()
+        return findById(id)!!
     }
 
     override fun update(approval: Approval): Approval {
-        val record = dsl.update(APPROVALS)
+        dsl.update(APPROVALS)
             .set(STATUS, approval.status)
             .set(COMMENT, approval.comment)
             .set(REVISION_NOTE, approval.revisionNote)
@@ -93,10 +94,9 @@ class ApprovalJooqRepository(
             .set(REVIEWER_NAME, approval.reviewerName)
             .set(DECIDED_AT, approval.decidedAt)
             .where(ID.eq(approval.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toApproval()
+        return findById(approval.id!!)!!
     }
 
     override fun delete(id: Long) {

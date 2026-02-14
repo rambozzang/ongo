@@ -55,7 +55,7 @@ class NotificationJooqRepository(
     }
 
     override fun save(notification: Notification): Notification {
-        val record = dsl.insertInto(NOTIFICATIONS)
+        val id = dsl.insertInto(NOTIFICATIONS)
             .set(USER_ID, notification.userId)
             .set(TYPE, notification.type.name)
             .set(TITLE, notification.title)
@@ -63,10 +63,15 @@ class NotificationJooqRepository(
             .set(IS_READ, notification.isRead)
             .set(REFERENCE_TYPE, notification.referenceType)
             .set(REFERENCE_ID, notification.referenceId)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toNotification()
+        return dsl.select()
+            .from(NOTIFICATIONS)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toNotification()
     }
 
     override fun delete(id: Long) {
@@ -75,15 +80,18 @@ class NotificationJooqRepository(
             .execute()
     }
 
-    private fun Record.toNotification(): Notification = Notification(
-        id = get(ID),
-        userId = get(USER_ID),
-        type = NotificationType.valueOf(get(TYPE)),
-        title = get(TITLE),
-        message = get(MESSAGE),
-        isRead = get(IS_READ),
-        referenceType = get(REFERENCE_TYPE),
-        referenceId = get(REFERENCE_ID),
-        createdAt = localDateTime(CREATED_AT),
-    )
+    private fun Record.toNotification(): Notification {
+        val typeStr = get(TYPE) ?: "SYSTEM"
+        return Notification(
+            id = get(ID),
+            userId = get(USER_ID),
+            type = try { NotificationType.valueOf(typeStr) } catch (_: Exception) { NotificationType.SYSTEM },
+            title = get(TITLE),
+            message = get(MESSAGE),
+            isRead = get(IS_READ),
+            referenceType = get(REFERENCE_TYPE),
+            referenceId = get(REFERENCE_ID),
+            createdAt = localDateTime(CREATED_AT),
+        )
+    }
 }

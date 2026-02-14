@@ -45,7 +45,7 @@ class GoalJooqRepository(
             .map { it.toGoal() }
 
     override fun save(goal: Goal): Goal {
-        val record = dsl.insertInto(GOALS)
+        val id = dsl.insertInto(GOALS)
             .set(USER_ID, goal.userId)
             .set(TITLE, goal.title)
             .set(DESCRIPTION, goal.description)
@@ -55,14 +55,15 @@ class GoalJooqRepository(
             .set(START_DATE, goal.startDate)
             .set(END_DATE, goal.endDate)
             .set(STATUS, goal.status)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toGoal()
+        return findById(id)!!
     }
 
     override fun update(goal: Goal): Goal {
-        val record = dsl.update(GOALS)
+        dsl.update(GOALS)
             .set(TITLE, goal.title)
             .set(DESCRIPTION, goal.description)
             .set(METRIC_TYPE, goal.metricType)
@@ -73,10 +74,9 @@ class GoalJooqRepository(
             .set(STATUS, goal.status)
             .set(UPDATED_AT, java.time.LocalDateTime.now())
             .where(ID.eq(goal.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toGoal()
+        return findById(goal.id!!)!!
     }
 
     override fun delete(id: Long) {
@@ -94,16 +94,21 @@ class GoalJooqRepository(
             .map { it.toMilestone() }
 
     override fun saveMilestone(milestone: GoalMilestone): GoalMilestone {
-        val record = dsl.insertInto(GOAL_MILESTONES)
+        val id = dsl.insertInto(GOAL_MILESTONES)
             .set(GOAL_ID, milestone.goalId)
             .set(TITLE, milestone.title)
             .set(TARGET_VALUE, milestone.targetValue)
             .set(IS_REACHED, milestone.isReached)
             .set(REACHED_AT, milestone.reachedAt)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toMilestone()
+        return dsl.select()
+            .from(GOAL_MILESTONES)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toMilestone()
     }
 
     override fun deleteMilestone(id: Long) {
@@ -113,16 +118,19 @@ class GoalJooqRepository(
     }
 
     override fun updateMilestone(milestone: GoalMilestone): GoalMilestone {
-        val record = dsl.update(GOAL_MILESTONES)
+        dsl.update(GOAL_MILESTONES)
             .set(TITLE, milestone.title)
             .set(TARGET_VALUE, milestone.targetValue)
             .set(IS_REACHED, milestone.isReached)
             .set(REACHED_AT, milestone.reachedAt)
             .where(ID.eq(milestone.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toMilestone()
+        return dsl.select()
+            .from(GOAL_MILESTONES)
+            .where(ID.eq(milestone.id))
+            .fetchOne()!!
+            .toMilestone()
     }
 
     private fun Record.toGoal(): Goal = Goal(

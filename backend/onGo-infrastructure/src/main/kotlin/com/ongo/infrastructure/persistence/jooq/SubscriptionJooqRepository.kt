@@ -37,8 +37,15 @@ class SubscriptionJooqRepository(
             .fetchOne()
             ?.toSubscription()
 
+    private fun findById(id: Long): Subscription? =
+        dsl.select()
+            .from(SUBSCRIPTIONS)
+            .where(ID.eq(id))
+            .fetchOne()
+            ?.toSubscription()
+
     override fun save(subscription: Subscription): Subscription {
-        val record = dsl.insertInto(SUBSCRIPTIONS)
+        val id = dsl.insertInto(SUBSCRIPTIONS)
             .set(USER_ID, subscription.userId)
             .set(PLAN_TYPE, subscription.planType.name)
             .set(STATUS, subscription.status.name)
@@ -48,14 +55,15 @@ class SubscriptionJooqRepository(
             .set(CURRENT_PERIOD_END, subscription.currentPeriodEnd)
             .set(NEXT_BILLING_DATE, subscription.nextBillingDate)
             .set(CANCELLED_AT, subscription.cancelledAt)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toSubscription()
+        return findById(id)!!
     }
 
     override fun update(subscription: Subscription): Subscription {
-        val record = dsl.update(SUBSCRIPTIONS)
+        dsl.update(SUBSCRIPTIONS)
             .set(PLAN_TYPE, subscription.planType.name)
             .set(STATUS, subscription.status.name)
             .set(PRICE, subscription.price)
@@ -65,10 +73,9 @@ class SubscriptionJooqRepository(
             .set(NEXT_BILLING_DATE, subscription.nextBillingDate)
             .set(CANCELLED_AT, subscription.cancelledAt)
             .where(ID.eq(subscription.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toSubscription()
+        return findById(subscription.id!!)!!
     }
 
     override fun findDueForBilling(now: LocalDateTime): List<Subscription> =
@@ -101,14 +108,16 @@ class SubscriptionJooqRepository(
 
     private fun Record.toSubscription(): Subscription {
         val billingCycleStr = get(BILLING_CYCLE)
+        val planTypeStr = get(PLAN_TYPE) ?: "FREE"
+        val statusStr = get(STATUS) ?: "FREE"
 
         return Subscription(
             id = get(ID),
             userId = get(USER_ID),
-            planType = PlanType.valueOf(get(PLAN_TYPE)),
-            status = SubscriptionStatus.valueOf(get(STATUS)),
+            planType = try { PlanType.valueOf(planTypeStr) } catch (_: Exception) { PlanType.FREE },
+            status = try { SubscriptionStatus.valueOf(statusStr) } catch (_: Exception) { SubscriptionStatus.FREE },
             price = get(PRICE),
-            billingCycle = if (billingCycleStr != null) BillingCycle.valueOf(billingCycleStr) else BillingCycle.MONTHLY,
+            billingCycle = billingCycleStr?.let { try { BillingCycle.valueOf(it) } catch (_: Exception) { BillingCycle.MONTHLY } } ?: BillingCycle.MONTHLY,
             currentPeriodStart = localDateTime(CURRENT_PERIOD_START),
             currentPeriodEnd = localDateTime(CURRENT_PERIOD_END),
             nextBillingDate = localDateTime(NEXT_BILLING_DATE),

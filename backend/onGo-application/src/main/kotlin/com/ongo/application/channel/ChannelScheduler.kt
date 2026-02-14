@@ -23,7 +23,7 @@ class ChannelScheduler(
     /**
      * 24시간마다 모든 활성 채널의 정보(구독자 수, 프로필 등)를 갱신합니다.
      */
-    @Scheduled(fixedRate = 86400000) // 24시간마다
+    @Scheduled(fixedRate = 86_400_000) // 24시간마다
     fun refreshAllChannels() {
         log.info("채널 정보 자동 갱신 시작")
         // 모든 활성 채널의 구독자 수, 프로필 이미지 갱신
@@ -48,7 +48,7 @@ class ChannelScheduler(
     /**
      * 1시간마다 만료 임박한 토큰을 확인하고 자동으로 갱신합니다.
      */
-    @Scheduled(fixedRate = 3600000) // 1시간마다
+    @Scheduled(fixedRate = 3_600_000) // 1시간마다
     fun checkExpiringTokens() {
         log.info("토큰 만료 확인 시작")
         val channels = channelRepository.findAllActive()

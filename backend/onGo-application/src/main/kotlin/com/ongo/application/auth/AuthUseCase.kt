@@ -13,6 +13,8 @@ import com.ongo.domain.credit.AiCredit
 import com.ongo.domain.credit.CreditRepository
 import com.ongo.domain.settings.UserSettings
 import com.ongo.domain.settings.UserSettingsRepository
+import com.ongo.domain.subscription.Subscription
+import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.User
 import com.ongo.domain.user.UserRepository
 import org.slf4j.LoggerFactory
@@ -30,6 +32,7 @@ class AuthUseCase(
     private val userRepository: UserRepository,
     private val creditRepository: CreditRepository,
     private val userSettingsRepository: UserSettingsRepository,
+    private val subscriptionRepository: SubscriptionRepository,
     private val authTokenPort: AuthTokenPort,
     private val oAuth2Port: OAuth2Port,
     private val refreshTokenPort: RefreshTokenPort,
@@ -229,6 +232,14 @@ class AuthUseCase(
         // 사용자 설정 초기화
         userSettingsRepository.save(
             UserSettings(userId = newUserId)
+        )
+
+        // 구독 초기화 (Free 플랜)
+        subscriptionRepository.save(
+            Subscription(
+                userId = newUserId,
+                planType = PlanType.FREE,
+            )
         )
     }
 

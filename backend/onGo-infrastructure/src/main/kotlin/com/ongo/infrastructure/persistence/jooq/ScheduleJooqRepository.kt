@@ -71,30 +71,30 @@ class ScheduleJooqRepository(
     override fun save(schedule: Schedule): Schedule {
         val platformsJson = JSONB.jsonb(objectMapper.writeValueAsString(schedule.platforms))
 
-        val record = dsl.insertInto(SCHEDULES)
+        val id = dsl.insertInto(SCHEDULES)
             .set(VIDEO_ID, schedule.videoId)
             .set(USER_ID, schedule.userId)
             .set(SCHEDULED_AT, schedule.scheduledAt)
             .set(STATUS, schedule.status.name)
             .set(DSL.field("platforms", JSONB::class.java), platformsJson)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toSchedule()
+        return findById(id)!!
     }
 
     override fun update(schedule: Schedule): Schedule {
         val platformsJson = JSONB.jsonb(objectMapper.writeValueAsString(schedule.platforms))
 
-        val record = dsl.update(SCHEDULES)
+        dsl.update(SCHEDULES)
             .set(SCHEDULED_AT, schedule.scheduledAt)
             .set(STATUS, schedule.status.name)
             .set(DSL.field("platforms", JSONB::class.java), platformsJson)
             .where(ID.eq(schedule.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toSchedule()
+        return findById(schedule.id!!)!!
     }
 
     override fun delete(id: Long) {
@@ -105,18 +105,21 @@ class ScheduleJooqRepository(
 
     private fun Record.toSchedule(): Schedule {
         val platformsRaw = get("platforms")
-        val platforms: Map<String, Any?> = when (platformsRaw) {
-            is JSONB -> objectMapper.readValue(platformsRaw.data())
-            is String -> objectMapper.readValue(platformsRaw)
-            else -> emptyMap()
-        }
+        val platforms: Map<String, Any?> = try {
+            when (platformsRaw) {
+                is JSONB -> objectMapper.readValue(platformsRaw.data())
+                is String -> objectMapper.readValue(platformsRaw)
+                else -> emptyMap()
+            }
+        } catch (_: Exception) { emptyMap() }
 
+        val statusStr = get(STATUS) ?: "SCHEDULED"
         return Schedule(
             id = get(ID),
             videoId = get(VIDEO_ID),
             userId = get(USER_ID),
             scheduledAt = localDateTime(SCHEDULED_AT)!!,
-            status = ScheduleStatus.valueOf(get(STATUS)),
+            status = try { ScheduleStatus.valueOf(statusStr) } catch (_: Exception) { ScheduleStatus.SCHEDULED },
             platforms = platforms,
             createdAt = localDateTime(CREATED_AT),
             updatedAt = localDateTime(UPDATED_AT),

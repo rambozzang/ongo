@@ -52,7 +52,7 @@ class UserJooqRepository(
             ?.toUser()
 
     override fun save(user: User): User {
-        val record = dsl.insertInto(USERS)
+        val id = dsl.insertInto(USERS)
             .set(EMAIL, user.email)
             .set(NAME, user.name)
             .set(NICKNAME, user.nickname)
@@ -63,14 +63,15 @@ class UserJooqRepository(
             .set(CATEGORY, user.category)
             .set(ONBOARDING_COMPLETED, user.onboardingCompleted)
             .set(ROLE, user.role)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toUser()
+        return findById(id)!!
     }
 
     override fun update(user: User): User {
-        val record = dsl.update(USERS)
+        dsl.update(USERS)
             .set(EMAIL, user.email)
             .set(NAME, user.name)
             .set(NICKNAME, user.nickname)
@@ -80,10 +81,9 @@ class UserJooqRepository(
             .set(ONBOARDING_COMPLETED, user.onboardingCompleted)
             .set(ROLE, user.role)
             .where(ID.eq(user.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toUser()
+        return findById(user.id!!)!!
     }
 
     override fun delete(id: Long) {

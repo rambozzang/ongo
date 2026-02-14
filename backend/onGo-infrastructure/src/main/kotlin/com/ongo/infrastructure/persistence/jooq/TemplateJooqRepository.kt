@@ -48,7 +48,7 @@ class TemplateJooqRepository(
             .fetchOne(0, Int::class.java) ?: 0
 
     override fun save(template: Template): Template {
-        val record = dsl.insertInto(TEMPLATES)
+        val id = dsl.insertInto(TEMPLATES)
             .set(USER_ID, template.userId)
             .set(NAME, template.name)
             .set(TITLE_TEMPLATE, template.titleTemplate)
@@ -57,14 +57,15 @@ class TemplateJooqRepository(
             .set(CATEGORY, template.category)
             .set(PLATFORM, template.platform)
             .set(USAGE_COUNT, template.usageCount)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toTemplate()
+        return findById(id)!!
     }
 
     override fun update(template: Template): Template {
-        val record = dsl.update(TEMPLATES)
+        dsl.update(TEMPLATES)
             .set(NAME, template.name)
             .set(TITLE_TEMPLATE, template.titleTemplate)
             .set(DESCRIPTION_TEMPLATE, template.descriptionTemplate)
@@ -72,10 +73,9 @@ class TemplateJooqRepository(
             .set(CATEGORY, template.category)
             .set(PLATFORM, template.platform)
             .where(ID.eq(template.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toTemplate()
+        return findById(template.id!!)!!
     }
 
     override fun delete(id: Long) {
@@ -92,17 +92,26 @@ class TemplateJooqRepository(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun Record.toTemplate(): Template = Template(
-        id = get(ID),
-        userId = get(USER_ID),
-        name = get(NAME),
-        titleTemplate = get(TITLE_TEMPLATE),
-        descriptionTemplate = get(DESCRIPTION_TEMPLATE),
-        tags = (get(TAGS) as? Array<String>)?.toList() ?: emptyList(),
-        category = get(CATEGORY),
-        platform = get(PLATFORM),
-        usageCount = get(USAGE_COUNT) ?: 0,
-        createdAt = localDateTime(CREATED_AT),
-        updatedAt = localDateTime(UPDATED_AT),
-    )
+    private fun Record.toTemplate(): Template {
+        val tagsRaw = get("tags")
+        val tags: List<String> = when (tagsRaw) {
+            is Array<*> -> (tagsRaw as Array<String>).toList()
+            is java.sql.Array -> (tagsRaw.array as Array<String>).toList()
+            else -> emptyList()
+        }
+
+        return Template(
+            id = get(ID),
+            userId = get(USER_ID),
+            name = get(NAME),
+            titleTemplate = get(TITLE_TEMPLATE),
+            descriptionTemplate = get(DESCRIPTION_TEMPLATE),
+            tags = tags,
+            category = get(CATEGORY),
+            platform = get(PLATFORM),
+            usageCount = get(USAGE_COUNT) ?: 0,
+            createdAt = localDateTime(CREATED_AT),
+            updatedAt = localDateTime(UPDATED_AT),
+        )
+    }
 }

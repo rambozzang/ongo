@@ -62,7 +62,7 @@ class ChannelJooqRepository(
             ?.toChannel()
 
     override fun save(channel: Channel): Channel {
-        val record = dsl.insertInto(CHANNELS)
+        val id = dsl.insertInto(CHANNELS)
             .set(USER_ID, channel.userId)
             .set(PLATFORM, channel.platform.name)
             .set(PLATFORM_CHANNEL_ID, channel.platformChannelId)
@@ -74,14 +74,15 @@ class ChannelJooqRepository(
             .set(REFRESH_TOKEN, channel.refreshToken)
             .set(TOKEN_EXPIRES_AT, channel.tokenExpiresAt)
             .set(STATUS, channel.status)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toChannel()
+        return findById(id)!!
     }
 
     override fun update(channel: Channel): Channel {
-        val record = dsl.update(CHANNELS)
+        dsl.update(CHANNELS)
             .set(CHANNEL_NAME, channel.channelName)
             .set(CHANNEL_URL, channel.channelUrl)
             .set(SUBSCRIBER_COUNT, channel.subscriberCount)
@@ -91,10 +92,9 @@ class ChannelJooqRepository(
             .set(TOKEN_EXPIRES_AT, channel.tokenExpiresAt)
             .set(STATUS, channel.status)
             .where(ID.eq(channel.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toChannel()
+        return findById(channel.id!!)!!
     }
 
     override fun delete(id: Long) {
@@ -109,20 +109,23 @@ class ChannelJooqRepository(
             .where(USER_ID.eq(userId))
             .fetchOne(0, Int::class.java) ?: 0
 
-    private fun Record.toChannel(): Channel = Channel(
-        id = get(ID),
-        userId = get(USER_ID),
-        platform = Platform.valueOf(get(PLATFORM)),
-        platformChannelId = get(PLATFORM_CHANNEL_ID),
-        channelName = get(CHANNEL_NAME),
-        channelUrl = get(CHANNEL_URL),
-        subscriberCount = get(SUBSCRIBER_COUNT) ?: 0,
-        profileImageUrl = get(PROFILE_IMAGE_URL),
-        accessToken = get(ACCESS_TOKEN),
-        refreshToken = get(REFRESH_TOKEN),
-        tokenExpiresAt = localDateTime(TOKEN_EXPIRES_AT),
-        status = get(STATUS),
-        connectedAt = localDateTime(CONNECTED_AT),
-        updatedAt = localDateTime(UPDATED_AT),
-    )
+    private fun Record.toChannel(): Channel {
+        val platformStr = get(PLATFORM) ?: "YOUTUBE"
+        return Channel(
+            id = get(ID),
+            userId = get(USER_ID),
+            platform = try { Platform.valueOf(platformStr) } catch (_: Exception) { Platform.YOUTUBE },
+            platformChannelId = get(PLATFORM_CHANNEL_ID),
+            channelName = get(CHANNEL_NAME),
+            channelUrl = get(CHANNEL_URL),
+            subscriberCount = get(SUBSCRIBER_COUNT) ?: 0,
+            profileImageUrl = get(PROFILE_IMAGE_URL),
+            accessToken = get(ACCESS_TOKEN),
+            refreshToken = get(REFRESH_TOKEN),
+            tokenExpiresAt = localDateTime(TOKEN_EXPIRES_AT),
+            status = get(STATUS),
+            connectedAt = localDateTime(CONNECTED_AT),
+            updatedAt = localDateTime(UPDATED_AT),
+        )
+    }
 }

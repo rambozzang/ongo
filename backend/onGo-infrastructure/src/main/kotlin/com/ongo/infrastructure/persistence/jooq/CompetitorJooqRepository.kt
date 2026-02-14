@@ -43,7 +43,7 @@ class CompetitorJooqRepository(
             .map { it.toCompetitor() }
 
     override fun save(competitor: Competitor): Competitor {
-        val record = dsl.insertInto(COMPETITORS)
+        val id = dsl.insertInto(COMPETITORS)
             .set(USER_ID, competitor.userId)
             .set(PLATFORM, competitor.platform)
             .set(PLATFORM_CHANNEL_ID, competitor.platformChannelId)
@@ -54,14 +54,15 @@ class CompetitorJooqRepository(
             .set(VIDEO_COUNT, competitor.videoCount)
             .set(AVG_VIEWS, competitor.avgViews)
             .set(PROFILE_IMAGE_URL, competitor.profileImageUrl)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toCompetitor()
+        return findById(id)!!
     }
 
     override fun update(competitor: Competitor): Competitor {
-        val record = dsl.update(COMPETITORS)
+        dsl.update(COMPETITORS)
             .set(CHANNEL_NAME, competitor.channelName)
             .set(CHANNEL_URL, competitor.channelUrl)
             .set(SUBSCRIBER_COUNT, competitor.subscriberCount)
@@ -71,10 +72,9 @@ class CompetitorJooqRepository(
             .set(PROFILE_IMAGE_URL, competitor.profileImageUrl)
             .set(LAST_SYNCED_AT, competitor.lastSyncedAt)
             .where(ID.eq(competitor.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toCompetitor()
+        return findById(competitor.id!!)!!
     }
 
     override fun delete(id: Long) {

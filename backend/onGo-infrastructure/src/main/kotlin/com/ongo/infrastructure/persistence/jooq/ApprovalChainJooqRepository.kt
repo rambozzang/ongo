@@ -59,7 +59,7 @@ class ApprovalChainJooqRepository(
     }
 
     override fun save(chain: ApprovalChain): ApprovalChain {
-        val record = dsl.insertInto(APPROVAL_CHAINS)
+        val id = dsl.insertInto(APPROVAL_CHAINS)
             .set(APPROVAL_ID, chain.approvalId)
             .set(STEP_ORDER, chain.stepOrder)
             .set(APPROVER_ID, chain.approverId)
@@ -67,22 +67,22 @@ class ApprovalChainJooqRepository(
             .set(STATUS, chain.status)
             .set(DEADLINE_AT, chain.deadlineAt)
             .set(COMMENT, chain.comment)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toApprovalChain()
+        return findById(id)!!
     }
 
     override fun update(chain: ApprovalChain): ApprovalChain {
-        val record = dsl.update(APPROVAL_CHAINS)
+        dsl.update(APPROVAL_CHAINS)
             .set(STATUS, chain.status)
             .set(APPROVED_AT, chain.approvedAt)
             .set(COMMENT, chain.comment)
             .where(ID.eq(chain.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toApprovalChain()
+        return findById(chain.id!!)!!
     }
 
     override fun deleteByApprovalId(approvalId: Long) {

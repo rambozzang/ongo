@@ -61,7 +61,7 @@ class VideoVariantJooqRepository(
     }
 
     override fun save(variant: VideoVariant): VideoVariant {
-        val record = dsl.insertInto(VIDEO_VARIANTS)
+        val id = dsl.insertInto(VIDEO_VARIANTS)
             .set(VIDEO_ID, variant.videoId)
             .set(PLATFORM, variant.platform.name)
             .set(FILE_URL, variant.fileUrl)
@@ -71,14 +71,15 @@ class VideoVariantJooqRepository(
             .set(BITRATE_KBPS, variant.bitrateKbps)
             .set(STATUS, variant.status.name)
             .set(ERROR_MESSAGE, variant.errorMessage)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toVideoVariant()
+        return findById(id)!!
     }
 
     override fun update(variant: VideoVariant): VideoVariant {
-        val record = dsl.update(VIDEO_VARIANTS)
+        dsl.update(VIDEO_VARIANTS)
             .set(FILE_URL, variant.fileUrl)
             .set(FILE_SIZE_BYTES, variant.fileSizeBytes)
             .set(WIDTH, variant.width)
@@ -87,10 +88,9 @@ class VideoVariantJooqRepository(
             .set(STATUS, variant.status.name)
             .set(ERROR_MESSAGE, variant.errorMessage)
             .where(ID.eq(variant.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toVideoVariant()
+        return findById(variant.id!!)!!
     }
 
     override fun deleteByVideoId(videoId: Long) {
@@ -99,18 +99,22 @@ class VideoVariantJooqRepository(
             .execute()
     }
 
-    private fun Record.toVideoVariant(): VideoVariant = VideoVariant(
-        id = get(ID),
-        videoId = get(VIDEO_ID),
-        platform = Platform.valueOf(get(PLATFORM)),
-        fileUrl = get(FILE_URL),
-        fileSizeBytes = get(FILE_SIZE_BYTES),
-        width = get(WIDTH),
-        height = get(HEIGHT),
-        bitrateKbps = get(BITRATE_KBPS),
-        status = VariantStatus.valueOf(get(STATUS)),
-        errorMessage = get(ERROR_MESSAGE),
-        createdAt = localDateTime(CREATED_AT),
-        updatedAt = localDateTime(UPDATED_AT),
-    )
+    private fun Record.toVideoVariant(): VideoVariant {
+        val platformStr = get(PLATFORM) ?: "YOUTUBE"
+        val statusStr = get(STATUS) ?: "PENDING"
+        return VideoVariant(
+            id = get(ID),
+            videoId = get(VIDEO_ID),
+            platform = try { Platform.valueOf(platformStr) } catch (_: Exception) { Platform.YOUTUBE },
+            fileUrl = get(FILE_URL),
+            fileSizeBytes = get(FILE_SIZE_BYTES),
+            width = get(WIDTH),
+            height = get(HEIGHT),
+            bitrateKbps = get(BITRATE_KBPS),
+            status = try { VariantStatus.valueOf(statusStr) } catch (_: Exception) { VariantStatus.PENDING },
+            errorMessage = get(ERROR_MESSAGE),
+            createdAt = localDateTime(CREATED_AT),
+            updatedAt = localDateTime(UPDATED_AT),
+        )
+    }
 }

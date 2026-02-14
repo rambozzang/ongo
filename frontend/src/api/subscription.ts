@@ -1,6 +1,6 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
-import type { Subscription, ChangePlanRequest } from '@/types/subscription'
+import type { Subscription, ChangePlanRequest, ChangePlanResponse } from '@/types/subscription'
 
 export const subscriptionApi = {
   getCurrent() {
@@ -11,8 +11,9 @@ export const subscriptionApi = {
 
   changePlan(request: ChangePlanRequest) {
     return apiClient
-      .post<ResData<Subscription>>('/subscriptions/change', request)
+      .post<ResData<ChangePlanResponse>>('/subscriptions/change', request)
       .then(unwrapResponse)
+      .then((res) => res.subscription)
   },
 
   cancel() {

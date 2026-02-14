@@ -46,7 +46,7 @@ class WatermarkJooqRepository(
             ?.toWatermark()
 
     override fun save(watermark: Watermark): Watermark {
-        val record = dsl.insertInto(WATERMARKS)
+        val id = dsl.insertInto(WATERMARKS)
             .set(USER_ID, watermark.userId)
             .set(NAME, watermark.name)
             .set(IMAGE_URL, watermark.imageUrl)
@@ -54,14 +54,15 @@ class WatermarkJooqRepository(
             .set(OPACITY, BigDecimal.valueOf(watermark.opacity))
             .set(SIZE, watermark.size)
             .set(IS_DEFAULT, watermark.isDefault)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toWatermark()
+        return findById(id)!!
     }
 
     override fun update(watermark: Watermark): Watermark {
-        val record = dsl.update(WATERMARKS)
+        dsl.update(WATERMARKS)
             .set(NAME, watermark.name)
             .set(IMAGE_URL, watermark.imageUrl)
             .set(POSITION, watermark.position)
@@ -69,10 +70,9 @@ class WatermarkJooqRepository(
             .set(SIZE, watermark.size)
             .set(IS_DEFAULT, watermark.isDefault)
             .where(ID.eq(watermark.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toWatermark()
+        return findById(watermark.id!!)!!
     }
 
     override fun delete(id: Long) {

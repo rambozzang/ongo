@@ -48,7 +48,7 @@ class RecyclingSuggestionJooqRepository(
             ?.toRecyclingSuggestion()
 
     override fun save(suggestion: RecyclingSuggestion): RecyclingSuggestion {
-        val record = dsl.insertInto(RECYCLING_SUGGESTIONS)
+        val id = dsl.insertInto(RECYCLING_SUGGESTIONS)
             .set(USER_ID, suggestion.userId)
             .set(VIDEO_ID, suggestion.videoId)
             .set(SUGGESTION_TYPE, suggestion.suggestionType)
@@ -56,10 +56,11 @@ class RecyclingSuggestionJooqRepository(
             .set(SUGGESTED_PLATFORMS, suggestion.suggestedPlatforms.toTypedArray())
             .set(PRIORITY_SCORE, suggestion.priorityScore)
             .set(STATUS, suggestion.status)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toRecyclingSuggestion()
+        return findById(id)!!
     }
 
     override fun saveAll(suggestions: List<RecyclingSuggestion>): List<RecyclingSuggestion> {
@@ -67,13 +68,12 @@ class RecyclingSuggestionJooqRepository(
     }
 
     override fun updateStatus(id: Long, status: String): RecyclingSuggestion? {
-        val record = dsl.update(RECYCLING_SUGGESTIONS)
+        dsl.update(RECYCLING_SUGGESTIONS)
             .set(STATUS, status)
             .where(ID.eq(id))
-            .returning()
-            .fetchOne()
+            .execute()
 
-        return record?.toRecyclingSuggestion()
+        return findById(id)
     }
 
     override fun deleteByUserId(userId: Long) {

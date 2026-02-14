@@ -2,7 +2,6 @@ package com.ongo.api.automation
 
 import com.ongo.api.config.CurrentUser
 import com.ongo.application.automation.AutomationUseCase
-import com.ongo.application.automation.AutomationWorkflowUseCase
 import com.ongo.application.automation.dto.*
 import com.ongo.common.ResData
 import io.swagger.v3.oas.annotations.Operation
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/automation")
 class AutomationController(
     private val automationUseCase: AutomationUseCase,
-    private val workflowUseCase: AutomationWorkflowUseCase,
 ) {
 
     @Operation(summary = "자동화 규칙 목록 조회")
@@ -75,75 +73,4 @@ class AutomationController(
         return ResData.success(result)
     }
 
-    // ─── Workflow endpoints ───
-
-    @Operation(summary = "워크플로우 목록 조회")
-    @GetMapping("/workflows")
-    fun listWorkflows(
-        @Parameter(hidden = true) @CurrentUser userId: Long,
-    ): ResponseEntity<ResData<List<WorkflowResponse>>> {
-        val result = workflowUseCase.listWorkflows(userId)
-        return ResData.success(result)
-    }
-
-    @Operation(summary = "워크플로우 상세 조회")
-    @GetMapping("/workflows/{id}")
-    fun getWorkflow(
-        @Parameter(hidden = true) @CurrentUser userId: Long,
-        @PathVariable id: Long,
-    ): ResponseEntity<ResData<WorkflowResponse>> {
-        val result = workflowUseCase.getWorkflow(userId, id)
-        return ResData.success(result)
-    }
-
-    @Operation(summary = "워크플로우 생성")
-    @PostMapping("/workflows")
-    fun createWorkflow(
-        @Parameter(hidden = true) @CurrentUser userId: Long,
-        @RequestBody request: CreateWorkflowRequest,
-    ): ResponseEntity<ResData<WorkflowResponse>> {
-        val result = workflowUseCase.createWorkflow(userId, request)
-        return ResData.success(result, "워크플로우가 생성되었습니다")
-    }
-
-    @Operation(summary = "워크플로우 수정")
-    @PutMapping("/workflows/{id}")
-    fun updateWorkflow(
-        @Parameter(hidden = true) @CurrentUser userId: Long,
-        @PathVariable id: Long,
-        @RequestBody request: UpdateWorkflowRequest,
-    ): ResponseEntity<ResData<WorkflowResponse>> {
-        val result = workflowUseCase.updateWorkflow(userId, id, request)
-        return ResData.success(result, "워크플로우가 수정되었습니다")
-    }
-
-    @Operation(summary = "워크플로우 삭제")
-    @DeleteMapping("/workflows/{id}")
-    fun deleteWorkflow(
-        @Parameter(hidden = true) @CurrentUser userId: Long,
-        @PathVariable id: Long,
-    ): ResponseEntity<ResData<Nothing?>> {
-        workflowUseCase.deleteWorkflow(userId, id)
-        return ResData.success(null, "워크플로우가 삭제되었습니다")
-    }
-
-    @Operation(summary = "워크플로우 활성/비활성 토글")
-    @PostMapping("/workflows/{id}/toggle")
-    fun toggleWorkflow(
-        @Parameter(hidden = true) @CurrentUser userId: Long,
-        @PathVariable id: Long,
-    ): ResponseEntity<ResData<WorkflowResponse>> {
-        val result = workflowUseCase.toggleWorkflow(userId, id)
-        return ResData.success(result)
-    }
-
-    @Operation(summary = "워크플로우 실행 이력 조회")
-    @GetMapping("/workflows/{id}/history")
-    fun getWorkflowHistory(
-        @Parameter(hidden = true) @CurrentUser userId: Long,
-        @PathVariable id: Long,
-    ): ResponseEntity<ResData<List<WorkflowExecutionResponse>>> {
-        val result = workflowUseCase.getExecutionHistory(userId, id)
-        return ResData.success(result)
-    }
 }

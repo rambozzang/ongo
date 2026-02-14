@@ -14,7 +14,9 @@ import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.TEAM_MEMBERS
 import org.jooq.DSLContext
+import org.jooq.JSONB
 import org.jooq.Record
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -46,31 +48,33 @@ class TeamMemberJooqRepository(
             ?.toTeamMember()
 
     override fun save(member: TeamMember): TeamMember {
-        val record = dsl.insertInto(TEAM_MEMBERS)
+        val permissionsField = DSL.field("permissions", JSONB::class.java)
+        val id = dsl.insertInto(TEAM_MEMBERS)
             .set(USER_ID, member.userId)
             .set(MEMBER_EMAIL, member.memberEmail)
             .set(MEMBER_NAME, member.memberName)
             .set(ROLE, member.role)
             .set(STATUS, member.status)
-            .set(PERMISSIONS, member.permissions)
-            .returning()
+            .set(permissionsField, JSONB.jsonb(member.permissions ?: "{}"))
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toTeamMember()
+        return findById(id)!!
     }
 
     override fun update(member: TeamMember): TeamMember {
-        val record = dsl.update(TEAM_MEMBERS)
+        val permissionsField = DSL.field("permissions", JSONB::class.java)
+        dsl.update(TEAM_MEMBERS)
             .set(MEMBER_NAME, member.memberName)
             .set(ROLE, member.role)
             .set(STATUS, member.status)
-            .set(PERMISSIONS, member.permissions)
+            .set(permissionsField, JSONB.jsonb(member.permissions ?: "{}"))
             .set(JOINED_AT, member.joinedAt)
             .where(ID.eq(member.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toTeamMember()
+        return findById(member.id!!)!!
     }
 
     override fun delete(id: Long) {
@@ -102,16 +106,24 @@ class TeamMemberJooqRepository(
             .fetch()
             .map { it.toTeamMember() }
 
-    private fun Record.toTeamMember(): TeamMember = TeamMember(
-        id = get(ID),
-        userId = get(USER_ID),
-        memberEmail = get(MEMBER_EMAIL),
-        memberName = get(MEMBER_NAME),
-        role = get(ROLE),
-        status = get(STATUS),
-        permissions = get(PERMISSIONS) ?: "{}",
-        invitedAt = localDateTime(INVITED_AT),
-        joinedAt = localDateTime(JOINED_AT),
-        createdAt = localDateTime(CREATED_AT),
-    )
+    private fun Record.toTeamMember(): TeamMember {
+        val permissionsRaw = get("permissions")
+        val permissions: String = when (permissionsRaw) {
+            is JSONB -> permissionsRaw.data()
+            is String -> permissionsRaw
+            else -> "{}"
+        }
+        return TeamMember(
+            id = get(ID),
+            userId = get(USER_ID),
+            memberEmail = get(MEMBER_EMAIL),
+            memberName = get(MEMBER_NAME),
+            role = get(ROLE),
+            status = get(STATUS),
+            permissions = permissions,
+            invitedAt = localDateTime(INVITED_AT),
+            joinedAt = localDateTime(JOINED_AT),
+            createdAt = localDateTime(CREATED_AT),
+        )
+    }
 }

@@ -54,7 +54,7 @@ class IdeaJooqRepository(
     }
 
     override fun save(idea: Idea): Idea {
-        val record = dsl.insertInto(IDEAS)
+        val id = dsl.insertInto(IDEAS)
             .set(USER_ID, idea.userId)
             .set(TITLE, idea.title)
             .set(DESCRIPTION, idea.description)
@@ -65,14 +65,15 @@ class IdeaJooqRepository(
             .set(SOURCE, idea.source)
             .set(REFERENCE_URL, idea.referenceUrl)
             .set(DUE_DATE, idea.dueDate)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toIdea()
+        return findById(id)!!
     }
 
     override fun update(idea: Idea): Idea {
-        val record = dsl.update(IDEAS)
+        dsl.update(IDEAS)
             .set(TITLE, idea.title)
             .set(DESCRIPTION, idea.description)
             .set(STATUS, idea.status)
@@ -84,10 +85,9 @@ class IdeaJooqRepository(
             .set(DUE_DATE, idea.dueDate)
             .set(UPDATED_AT, java.time.LocalDateTime.now())
             .where(ID.eq(idea.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
-        return record.toIdea()
+        return findById(idea.id!!)!!
     }
 
     override fun delete(id: Long) {
@@ -97,19 +97,28 @@ class IdeaJooqRepository(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun Record.toIdea(): Idea = Idea(
-        id = get(ID),
-        userId = get(USER_ID),
-        title = get(TITLE),
-        description = get(DESCRIPTION),
-        status = get(STATUS),
-        category = get(CATEGORY),
-        tags = (get(TAGS) as? Array<String>) ?: emptyArray(),
-        priority = get(PRIORITY),
-        source = get(SOURCE),
-        referenceUrl = get(REFERENCE_URL),
-        dueDate = localDate(DUE_DATE),
-        createdAt = localDateTime(CREATED_AT),
-        updatedAt = localDateTime(UPDATED_AT),
-    )
+    private fun Record.toIdea(): Idea {
+        val tagsRaw = get("tags")
+        val tags: Array<String> = when (tagsRaw) {
+            is Array<*> -> tagsRaw as Array<String>
+            is java.sql.Array -> tagsRaw.array as Array<String>
+            else -> emptyArray()
+        }
+
+        return Idea(
+            id = get(ID),
+            userId = get(USER_ID),
+            title = get(TITLE),
+            description = get(DESCRIPTION),
+            status = get(STATUS),
+            category = get(CATEGORY),
+            tags = tags,
+            priority = get(PRIORITY),
+            source = get(SOURCE),
+            referenceUrl = get(REFERENCE_URL),
+            dueDate = localDate(DUE_DATE),
+            createdAt = localDateTime(CREATED_AT),
+            updatedAt = localDateTime(UPDATED_AT),
+        )
+    }
 }

@@ -86,7 +86,7 @@ class InboxMessageJooqRepository(
     }
 
     override fun save(message: InboxMessage): InboxMessage {
-        val record = dsl.insertInto(INBOX_MESSAGES)
+        val id = dsl.insertInto(INBOX_MESSAGES)
             .set(USER_ID, message.userId)
             .set(PLATFORM, message.platform)
             .set(SENDER_NAME, message.senderName)
@@ -97,10 +97,11 @@ class InboxMessageJooqRepository(
             .set(IS_STARRED, message.isStarred)
             .set(PLATFORM_MESSAGE_ID, message.platformMessageId)
             .set(VIDEO_ID, message.videoId)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return record.toInboxMessage()
+        return findById(id)!!
     }
 
     override fun countByUserId(userId: Long, platform: String?, isRead: Boolean?, messageType: String?): Long {

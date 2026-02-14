@@ -109,17 +109,22 @@ class AutomationWorkflowJooqRepository(
     override fun save(workflow: AutomationWorkflow): AutomationWorkflow {
         val triggerJson = JSONB.jsonb(objectMapper.writeValueAsString(workflow.triggerConfig))
 
-        val record = dsl.insertInto(AUTOMATION_WORKFLOWS)
+        val id = dsl.insertInto(AUTOMATION_WORKFLOWS)
             .set(USER_ID, workflow.userId)
             .set(NAME, workflow.name)
             .set(DESCRIPTION, workflow.description)
             .set(TRIGGER_TYPE, workflow.triggerType)
             .set(TRIGGER_CONFIG_JSONB, triggerJson)
             .set(ENABLED, workflow.enabled)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        val saved = record.toWorkflow()
+        val saved = dsl.select()
+            .from(AUTOMATION_WORKFLOWS)
+            .where(ID.eq(id))
+            .fetchOne()!!
+            .toWorkflow()
         val savedConditions = if (workflow.conditions.isNotEmpty()) {
             saveConditions(saved.id!!, workflow.conditions)
         } else emptyList()
@@ -133,7 +138,7 @@ class AutomationWorkflowJooqRepository(
     override fun update(workflow: AutomationWorkflow): AutomationWorkflow {
         val triggerJson = JSONB.jsonb(objectMapper.writeValueAsString(workflow.triggerConfig))
 
-        val record = dsl.update(AUTOMATION_WORKFLOWS)
+        dsl.update(AUTOMATION_WORKFLOWS)
             .set(NAME, workflow.name)
             .set(DESCRIPTION, workflow.description)
             .set(TRIGGER_TYPE, workflow.triggerType)
@@ -142,8 +147,7 @@ class AutomationWorkflowJooqRepository(
             .set(EXECUTION_COUNT, workflow.executionCount)
             .set(LAST_EXECUTED_AT_FIELD, workflow.lastExecutedAt)
             .where(ID.eq(workflow.id))
-            .returning()
-            .fetchOne()!!
+            .execute()
 
         // Replace conditions and actions
         val workflowId = workflow.id!!
@@ -157,7 +161,12 @@ class AutomationWorkflowJooqRepository(
             saveActions(workflowId, workflow.actions)
         } else emptyList()
 
-        return record.toWorkflow().copy(conditions = savedConditions, actions = savedActions)
+        val updated = dsl.select()
+            .from(AUTOMATION_WORKFLOWS)
+            .where(ID.eq(workflowId))
+            .fetchOne()!!
+            .toWorkflow()
+        return updated.copy(conditions = savedConditions, actions = savedActions)
     }
 
     override fun delete(id: Long) {
@@ -173,7 +182,7 @@ class AutomationWorkflowJooqRepository(
     }
 
     private fun saveCondition(workflowId: Long, condition: WorkflowCondition, parentId: Long?): WorkflowCondition {
-        val record = dsl.insertInto(WORKFLOW_CONDITIONS)
+        val savedId = dsl.insertInto(WORKFLOW_CONDITIONS)
             .set(WORKFLOW_ID, workflowId)
             .set(PARENT_CONDITION_ID, parentId)
             .set(GROUP_TYPE, condition.groupType.name)
@@ -182,10 +191,10 @@ class AutomationWorkflowJooqRepository(
             .set(VALUE, condition.value)
             .set(EXPRESSION, condition.expression)
             .set(SORT_ORDER, condition.sortOrder)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        val savedId = record.get(ID)
         val nestedSaved = condition.nestedConditions.map { saveCondition(workflowId, it, savedId) }
 
         return condition.copy(
@@ -228,16 +237,17 @@ class AutomationWorkflowJooqRepository(
     override fun saveActions(workflowId: Long, actions: List<WorkflowAction>): List<WorkflowAction> {
         return actions.map { action ->
             val configJson = JSONB.jsonb(objectMapper.writeValueAsString(action.config))
-            val record = dsl.insertInto(WORKFLOW_ACTIONS)
+            val actionId = dsl.insertInto(WORKFLOW_ACTIONS)
                 .set(WORKFLOW_ID, workflowId)
                 .set(ACTION_TYPE, action.actionType)
                 .set(CONFIG_FIELD_JSONB, configJson)
                 .set(DSL.field("delay_minutes", Int::class.java), action.delayMinutes)
                 .set(SORT_ORDER, action.sortOrder)
-                .returning()
+                .returningResult(ID)
                 .fetchOne()!!
+                .get(ID)
 
-            action.copy(id = record.get(ID), workflowId = workflowId)
+            action.copy(id = actionId, workflowId = workflowId)
         }
     }
 
@@ -262,7 +272,7 @@ class AutomationWorkflowJooqRepository(
         val triggerJson = JSONB.jsonb(objectMapper.writeValueAsString(execution.triggerData))
         val resultsJson = JSONB.jsonb(objectMapper.writeValueAsString(execution.actionResults))
 
-        val record = dsl.insertInto(WORKFLOW_EXECUTIONS)
+        val executionId = dsl.insertInto(WORKFLOW_EXECUTIONS)
             .set(WORKFLOW_ID, execution.workflowId)
             .set(USER_ID, execution.userId)
             .set(TRIGGER_DATA_JSONB, triggerJson)
@@ -270,10 +280,11 @@ class AutomationWorkflowJooqRepository(
             .set(ACTION_RESULTS_JSONB, resultsJson)
             .set(DSL.field("error_message", String::class.java), execution.errorMessage)
             .set(COMPLETED_AT, execution.completedAt)
-            .returning()
+            .returningResult(ID)
             .fetchOne()!!
+            .get(ID)
 
-        return execution.copy(id = record.get(ID))
+        return execution.copy(id = executionId)
     }
 
     override fun findExecutionsByWorkflowId(workflowId: Long, limit: Int): List<WorkflowExecution> {
@@ -290,11 +301,13 @@ class AutomationWorkflowJooqRepository(
 
     private fun Record.toWorkflow(): AutomationWorkflow {
         val triggerRaw = get("trigger_config")
-        val triggerConfig: Map<String, Any?> = when (triggerRaw) {
-            is JSONB -> objectMapper.readValue(triggerRaw.data())
-            is String -> objectMapper.readValue(triggerRaw)
-            else -> emptyMap()
-        }
+        val triggerConfig: Map<String, Any?> = try {
+            when (triggerRaw) {
+                is JSONB -> objectMapper.readValue(triggerRaw.data())
+                is String -> objectMapper.readValue(triggerRaw)
+                else -> emptyMap()
+            }
+        } catch (_: Exception) { emptyMap() }
 
         return AutomationWorkflow(
             id = get(ID),
@@ -329,11 +342,13 @@ class AutomationWorkflowJooqRepository(
 
     private fun Record.toAction(): WorkflowAction {
         val configRaw = get("config")
-        val config: Map<String, Any?> = when (configRaw) {
-            is JSONB -> objectMapper.readValue(configRaw.data())
-            is String -> objectMapper.readValue(configRaw)
-            else -> emptyMap()
-        }
+        val config: Map<String, Any?> = try {
+            when (configRaw) {
+                is JSONB -> objectMapper.readValue(configRaw.data())
+                is String -> objectMapper.readValue(configRaw)
+                else -> emptyMap()
+            }
+        } catch (_: Exception) { emptyMap() }
 
         return WorkflowAction(
             id = get(ID),
@@ -347,18 +362,22 @@ class AutomationWorkflowJooqRepository(
 
     private fun Record.toExecution(): WorkflowExecution {
         val triggerRaw = get("trigger_data")
-        val triggerData: Map<String, Any?> = when (triggerRaw) {
-            is JSONB -> objectMapper.readValue(triggerRaw.data())
-            is String -> objectMapper.readValue(triggerRaw)
-            else -> emptyMap()
-        }
+        val triggerData: Map<String, Any?> = try {
+            when (triggerRaw) {
+                is JSONB -> objectMapper.readValue(triggerRaw.data())
+                is String -> objectMapper.readValue(triggerRaw)
+                else -> emptyMap()
+            }
+        } catch (_: Exception) { emptyMap() }
 
         val resultsRaw = get("action_results")
-        val actionResults: List<ActionExecutionResult> = when (resultsRaw) {
-            is JSONB -> objectMapper.readValue(resultsRaw.data())
-            is String -> objectMapper.readValue(resultsRaw)
-            else -> emptyList()
-        }
+        val actionResults: List<ActionExecutionResult> = try {
+            when (resultsRaw) {
+                is JSONB -> objectMapper.readValue(resultsRaw.data())
+                is String -> objectMapper.readValue(resultsRaw)
+                else -> emptyList()
+            }
+        } catch (_: Exception) { emptyList() }
 
         return WorkflowExecution(
             id = get(ID),
