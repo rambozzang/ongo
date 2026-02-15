@@ -108,3 +108,7 @@ Swagger UI available at `http://localhost:8777/swagger-ui.html` when backend is 
 ## API Prefix
 
 All endpoints use `/api/v1/` prefix. Key groups: `auth/`, `channels/`, `videos/`, `schedules/`, `analytics/`, `ai/`, `credits/`, `subscriptions/`, `payments/`
+
+## User Manual Maintenance
+
+When adding new features or modifying existing ones, **always update the user manual** at `frontend/src/views/UserManualView.vue`. The manual contains bilingual (Korean/English) documentation for all features. Update both language versions in the `sectionsKo` and `sectionsEn` arrays to keep them in sync.

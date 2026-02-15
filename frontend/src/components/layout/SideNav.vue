@@ -11,7 +11,7 @@
       </router-link>
       <button
         v-if="!collapsed"
-        :aria-label="collapsed ? '사이드바 펼치기' : '사이드바 접기'"
+        :aria-label="collapsed ? t('nav.sidebarExpand') : t('nav.sidebarCollapse')"
         :aria-expanded="!collapsed"
         class="ml-auto hidden rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 desktop:block"
         @click="emit('toggle')"
@@ -20,7 +20,7 @@
       </button>
       <button
         v-else
-        :aria-label="collapsed ? '사이드바 펼치기' : '사이드바 접기'"
+        :aria-label="collapsed ? t('nav.sidebarExpand') : t('nav.sidebarCollapse')"
         :aria-expanded="!collapsed"
         class="ml-auto hidden rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 desktop:block"
         @click="emit('toggle')"
@@ -30,7 +30,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav role="navigation" aria-label="주요 네비게이션" class="flex-1 overflow-y-auto px-2 py-4">
+    <nav role="navigation" :aria-label="t('nav.mainNavigation')" class="flex-1 overflow-y-auto px-2 py-4">
       <div
         v-for="(group, groupIndex) in navGroups"
         :key="groupIndex"
@@ -88,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   HomeIcon,
@@ -118,7 +119,9 @@ import {
   FolderIcon,
   CodeBracketIcon,
   ClockIcon,
+  BookOpenIcon,
 } from '@heroicons/vue/24/outline'
+import { useLocale } from '@/composables/useLocale'
 
 defineProps<{
   collapsed: boolean
@@ -130,6 +133,7 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const { t } = useLocale()
 
 interface NavItem {
   to: string
@@ -142,72 +146,73 @@ interface NavGroup {
   items: NavItem[]
 }
 
-const navGroups: NavGroup[] = [
+const navGroups = computed<NavGroup[]>(() => [
   {
     items: [
-      { to: '/dashboard', label: '대시보드', icon: HomeIcon },
+      { to: '/dashboard', label: t('nav.dashboard'), icon: HomeIcon },
     ],
   },
   {
-    label: '콘텐츠',
+    label: t('nav.groupContent'),
     items: [
-      { to: '/upload', label: '업로드', icon: ArrowUpTrayIcon },
-      { to: '/videos', label: '영상 관리', icon: FilmIcon },
-      { to: '/templates', label: '템플릿', icon: DocumentDuplicateIcon },
-      { to: '/assets', label: '에셋', icon: FolderIcon },
-      { to: '/brandkit', label: '브랜드 키트', icon: SwatchIcon },
-      { to: '/recycling', label: '콘텐츠 재활용', icon: ArrowPathIcon },
+      { to: '/upload', label: t('nav.upload'), icon: ArrowUpTrayIcon },
+      { to: '/videos', label: t('nav.videos'), icon: FilmIcon },
+      { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
+      { to: '/assets', label: t('nav.assets'), icon: FolderIcon },
+      { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
+      { to: '/recycling', label: t('nav.recycling'), icon: ArrowPathIcon },
     ],
   },
   {
-    label: '게시',
+    label: t('nav.groupPublish'),
     items: [
-      { to: '/schedule', label: '예약 관리', icon: CalendarDaysIcon },
-      { to: '/calendar', label: '캘린더', icon: CalendarDaysIcon },
-      { to: '/automation', label: '자동화', icon: BoltIcon },
+      { to: '/schedule', label: t('nav.schedule'), icon: CalendarDaysIcon },
+      { to: '/calendar', label: t('nav.calendar'), icon: CalendarDaysIcon },
+      { to: '/automation', label: t('nav.automation'), icon: BoltIcon },
     ],
   },
   {
-    label: '분석',
+    label: t('nav.groupAnalytics'),
     items: [
-      { to: '/analytics', label: '분석', icon: ChartBarIcon },
-      { to: '/revenue', label: '수익', icon: BanknotesIcon },
-      { to: '/abtest', label: 'A/B 테스트', icon: BeakerIcon },
-      { to: '/competitor', label: '경쟁사 분석', icon: PresentationChartLineIcon },
-      { to: '/goals', label: '목표', icon: FlagIcon },
+      { to: '/analytics', label: t('nav.analytics'), icon: ChartBarIcon },
+      { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
+      { to: '/abtest', label: t('nav.abtest'), icon: BeakerIcon },
+      { to: '/competitor', label: t('nav.competitor'), icon: PresentationChartLineIcon },
+      { to: '/goals', label: t('nav.goals'), icon: FlagIcon },
     ],
   },
   {
-    label: '소통',
+    label: t('nav.groupCommunication'),
     items: [
-      { to: '/comments', label: '댓글', icon: ChatBubbleLeftEllipsisIcon },
-      { to: '/inbox', label: '인박스', icon: InboxIcon },
-      { to: '/notifications', label: '알림', icon: BellIcon },
+      { to: '/comments', label: t('nav.comments'), icon: ChatBubbleLeftEllipsisIcon },
+      { to: '/inbox', label: t('nav.inbox'), icon: InboxIcon },
+      { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
     ],
   },
   {
-    label: '도구',
+    label: t('nav.groupTools'),
     items: [
-      { to: '/ai', label: 'AI 도구', icon: SparklesIcon },
-      { to: '/ideas', label: '아이디어', icon: LightBulbIcon },
-      { to: '/linkbio', label: '링크인바이오', icon: GlobeAltIcon },
+      { to: '/ai', label: t('nav.ai'), icon: SparklesIcon },
+      { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
+      { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
     ],
   },
   {
-    label: '관리',
+    label: t('nav.groupManagement'),
     items: [
-      { to: '/channels', label: '채널 관리', icon: LinkIcon },
-      { to: '/team', label: '팀', icon: UserGroupIcon },
-      { to: '/webhooks', label: '웹훅', icon: CodeBracketIcon },
-      { to: '/activity-log', label: '활동 로그', icon: ClockIcon },
+      { to: '/channels', label: t('nav.channels'), icon: LinkIcon },
+      { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
+      { to: '/webhooks', label: t('nav.webhooks'), icon: CodeBracketIcon },
+      { to: '/activity-log', label: t('nav.activityLog'), icon: ClockIcon },
     ],
   },
-]
+])
 
-const bottomNavItems = [
-  { to: '/subscription', label: '구독/결제', icon: CreditCardIcon },
-  { to: '/settings', label: '설정', icon: Cog6ToothIcon },
-]
+const bottomNavItems = computed(() => [
+  { to: '/manual', label: t('nav.manual'), icon: BookOpenIcon },
+  { to: '/subscription', label: t('nav.subscription'), icon: CreditCardIcon },
+  { to: '/settings', label: t('nav.settings'), icon: Cog6ToothIcon },
+])
 
 function isCurrentRoute(to: string): boolean {
   return route.path === to || route.path.startsWith(to + '/')

@@ -193,6 +193,12 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '활동 로그' },
       },
       {
+        path: 'manual',
+        name: 'manual',
+        component: () => import('@/views/UserManualView.vue'),
+        meta: { breadcrumb: '사용자 매뉴얼' },
+      },
+      {
         path: 'settings',
         name: 'settings',
         component: () => import('@/views/SettingsView.vue'),
