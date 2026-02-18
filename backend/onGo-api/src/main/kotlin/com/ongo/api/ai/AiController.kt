@@ -414,7 +414,7 @@ class AiController(
         @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
         @Parameter(description = "배치 ID") @PathVariable batchId: String,
     ): ResponseEntity<ResData<com.ongo.application.ai.dto.AiBatchResponse>> {
-        val result = aiBatchProcessingUseCase.getBatchStatus(batchId)
+        val result = aiBatchProcessingUseCase.getBatchStatus(userId, batchId)
         return ResData.success(result)
     }
 

@@ -15,6 +15,7 @@ import type {
   RetentionCurveResponse,
   TagPerformance,
 } from '@/types/analytics'
+import type { Platform } from '@/types/channel'
 
 function periodToDays(period: string): number {
   const match = period.match(/^(\d+)d$/)
@@ -27,6 +28,43 @@ function periodToDays(period: string): number {
     default: return 7
   }
 }
+
+// ── Backend response shapes (differ from frontend types) ──────────────
+
+interface BackendVideoAnalyticsResponse {
+  videoId: number
+  title: string | null
+  platforms: {
+    platform: Platform
+    views: number
+    likes: number
+    comments: number
+    shares: number
+    dailyData: { date: string; views: number; likes: number; comments: number }[]
+  }[]
+}
+
+interface BackendPlatformComparisonResponse {
+  platforms: PlatformComparison[]
+}
+
+interface BackendHeatmapResponse {
+  data: Record<string, Record<string, number>>
+}
+
+interface BackendTopVideoResponse {
+  videos: {
+    id: number
+    title: string
+    thumbnailUrl: string | null
+    totalViews: number
+    totalLikes?: number
+    publishedAt?: string | null
+    platforms: string[]
+  }[]
+}
+
+// ── Public API ────────────────────────────────────────────────────────
 
 export const analyticsApi = {
   dashboard(period: string = '7d') {
@@ -44,28 +82,66 @@ export const analyticsApi = {
       .then((res) => res.data)
   },
 
-  platformComparison(period: string = '7d') {
+  platformComparison(period: string = '7d'): Promise<PlatformComparison[]> {
     const days = periodToDays(period)
     return apiClient
-      .get<ResData<PlatformComparison[]>>('/analytics/platform-comparison', { params: { days } })
+      .get<ResData<BackendPlatformComparisonResponse>>('/analytics/platform-comparison', { params: { days } })
       .then(unwrapResponse)
+      .then((res) => res.platforms)
   },
 
-  videoAnalytics(videoId: number) {
+  videoAnalytics(videoId: number): Promise<VideoAnalytics[]> {
     return apiClient
-      .get<ResData<VideoAnalytics[]>>(`/analytics/videos/${videoId}`)
+      .get<ResData<BackendVideoAnalyticsResponse>>(`/analytics/videos/${videoId}`)
       .then(unwrapResponse)
+      .then((res) =>
+        res.platforms.map((p) => ({
+          platform: p.platform,
+          views: p.views,
+          likes: p.likes,
+          comments: p.comments,
+          shares: p.shares,
+          dailyTrend: p.dailyData.map((d) => ({
+            date: d.date,
+            totalViews: d.views,
+            platformViews: {} as Record<string, number>,
+          })),
+        })),
+      )
   },
 
-  heatmap() {
-    return apiClient.get<ResData<HeatmapData[]>>('/analytics/heatmap').then(unwrapResponse)
+  heatmap(): Promise<HeatmapData[]> {
+    return apiClient
+      .get<ResData<BackendHeatmapResponse>>('/analytics/heatmap')
+      .then(unwrapResponse)
+      .then((res) => {
+        const result: HeatmapData[] = []
+        for (const [dayKey, hours] of Object.entries(res.data)) {
+          const dayOfWeek = parseInt(dayKey, 10)
+          for (const [hourKey, value] of Object.entries(hours)) {
+            result.push({ dayOfWeek, hour: parseInt(hourKey, 10), value })
+          }
+        }
+        return result
+      })
   },
 
-  topVideos(period: string = '7d', limit: number = 10) {
+  topVideos(period: string = '7d', limit: number = 10): Promise<TopVideo[]> {
     const days = periodToDays(period)
     return apiClient
-      .get<ResData<TopVideo[]>>('/analytics/top-videos', { params: { days, limit } })
+      .get<ResData<BackendTopVideoResponse>>('/analytics/top-videos', { params: { days, limit } })
       .then(unwrapResponse)
+      .then((res) =>
+        res.videos.map((v) => ({
+          videoId: v.id,
+          title: v.title,
+          thumbnailUrl: v.thumbnailUrl,
+          totalViews: v.totalViews,
+          totalLikes: v.totalLikes ?? 0,
+          publishedAt: v.publishedAt ?? null,
+          platforms: v.platforms as Platform[],
+        })),
+      )
   },
 
   getOptimalTimes(platform?: string) {

@@ -55,6 +55,7 @@ class DevAuthController(
                     nickname = user.nickname,
                     profileImageUrl = user.profileImageUrl,
                     planType = user.planType.name,
+                    role = user.role,
                     onboardingCompleted = user.onboardingCompleted,
                 ),
                 isNewUser = false,

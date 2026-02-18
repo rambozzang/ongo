@@ -26,14 +26,13 @@ export interface PlatformComparison {
 }
 
 export interface VideoAnalytics {
-  videoId: number
   platform: Platform
   views: number
   likes: number
   comments: number
   shares: number
-  viewsChange: number
-  likesChange: number
+  viewsChange?: number
+  likesChange?: number
   dailyTrend: TrendDataPoint[]
 }
 
@@ -49,7 +48,7 @@ export interface TopVideo {
   thumbnailUrl: string | null
   totalViews: number
   totalLikes: number
-  publishedAt: string
+  publishedAt: string | null
   platforms: Platform[]
 }
 

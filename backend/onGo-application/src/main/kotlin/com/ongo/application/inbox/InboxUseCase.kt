@@ -3,6 +3,7 @@ package com.ongo.application.inbox
 import com.ongo.application.inbox.dto.InboxListResponse
 import com.ongo.application.inbox.dto.InboxMessageResponse
 import com.ongo.application.inbox.dto.UnreadCountResponse
+import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.inbox.InboxMessage
 import com.ongo.domain.inbox.InboxMessageRepository
@@ -36,6 +37,9 @@ class InboxUseCase(
     fun markAsRead(userId: Long, id: Long) {
         val message = inboxMessageRepository.findById(id)
             ?: throw NotFoundException("받은 메시지", id)
+        if (message.userId != userId) {
+            throw ForbiddenException("해당 메시지에 대한 접근 권한이 없습니다")
+        }
         inboxMessageRepository.markAsRead(id)
     }
 
@@ -48,6 +52,9 @@ class InboxUseCase(
     fun toggleStar(userId: Long, id: Long): InboxMessageResponse {
         val message = inboxMessageRepository.findById(id)
             ?: throw NotFoundException("받은 메시지", id)
+        if (message.userId != userId) {
+            throw ForbiddenException("해당 메시지에 대한 접근 권한이 없습니다")
+        }
         inboxMessageRepository.toggleStar(id, !message.isStarred)
         return message.copy(isStarred = !message.isStarred).toResponse()
     }

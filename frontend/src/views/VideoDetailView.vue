@@ -12,6 +12,14 @@
       <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">영상 상세</h1>
     </div>
 
+    <PageGuide title="영상 상세" :items="[
+      '미디어 정보·썸네일·자막 탭에서 영상의 기술 정보를 확인하고 썸네일 선택·자막 편집이 가능합니다',
+      '플랫폼 탭을 전환하면 YouTube·TikTok·Instagram·Naver Clip별 조회수·좋아요·댓글·공유 성과를 비교할 수 있습니다',
+      '일별 조회수 추이 차트에서 막대 위에 마우스를 올리면 해당 날짜의 정확한 수치를 확인할 수 있습니다',
+      'AI 성과 점수 카드와 이상 탐지 알림으로 영상 성과를 분석하고 개선점을 파악하세요',
+      '수정·재활용·재업로드·삭제 버튼으로 영상을 관리하세요. 재활용 시 인기 콘텐츠를 다른 플랫폼에 재게시할 수 있습니다',
+    ]" />
+
     <LoadingSpinner v-if="loading" full-page />
 
     <!-- Not Found -->
@@ -152,76 +160,30 @@
         </div>
       </div>
 
-      <!-- Platform Variants Section -->
-      <div v-if="video.variants && video.variants.length > 0" class="mb-6">
+      <!-- Media Info / Thumbnails / Captions Tabs -->
+      <div class="mb-6">
         <div class="card">
-          <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">플랫폼별 변환본</h3>
-          <div class="space-y-3">
-            <div
-              v-for="variant in video.variants"
-              :key="variant.platform"
-              class="flex items-center justify-between rounded-lg border border-gray-100 dark:border-gray-700 p-3"
+          <div class="mb-4 flex gap-2 border-b border-gray-200 dark:border-gray-700">
+            <button
+              v-for="tab in detailTabs"
+              :key="tab.id"
+              class="px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
+              :class="activeDetailTab === tab.id ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'"
+              @click="activeDetailTab = tab.id"
             >
-              <div class="flex items-center gap-3">
-                <PlatformBadge :platform="variant.platform" />
-                <div>
-                  <div class="flex items-center gap-2">
-                    <!-- Status indicator -->
-                    <span
-                      v-if="variant.status === 'PENDING'"
-                      class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400"
-                    >
-                      <span class="h-2 w-2 rounded-full bg-gray-400 animate-pulse" />
-                      대기 중
-                    </span>
-                    <span
-                      v-else-if="variant.status === 'PROCESSING'"
-                      class="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400"
-                    >
-                      <svg class="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      변환 중
-                    </span>
-                    <span
-                      v-else-if="variant.status === 'COMPLETED'"
-                      class="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400"
-                    >
-                      <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                      </svg>
-                      변환 완료
-                    </span>
-                    <span
-                      v-else-if="variant.status === 'FAILED'"
-                      class="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400"
-                    >
-                      <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                      </svg>
-                      변환 실패
-                    </span>
-                  </div>
-                  <p v-if="variant.width && variant.height" class="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-                    {{ variant.width }}x{{ variant.height }}
-                    <span v-if="variant.fileSizeBytes"> · {{ formatFileSize(variant.fileSizeBytes) }}</span>
-                  </p>
-                  <p v-if="variant.errorMessage" class="mt-0.5 text-xs text-red-500">
-                    {{ variant.errorMessage }}
-                  </p>
-                </div>
-              </div>
-              <button
-                v-if="variant.status === 'FAILED'"
-                class="btn-secondary text-xs"
-                @click="handleRetryTranscode(variant.platform)"
-              >
-                <ArrowPathIcon class="mr-1 h-3 w-3" />
-                재시도
-              </button>
-            </div>
+              {{ tab.label }}
+            </button>
           </div>
+
+          <VideoMediaInfoPanel v-if="activeDetailTab === 'media'" :media-info="mediaInfo" />
+          <ThumbnailSelector
+            v-if="activeDetailTab === 'thumbnails'"
+            :thumbnails="video.autoThumbnails || []"
+            :selected-index="video.selectedThumbnailIndex || 0"
+            :video-id="video.id"
+            @select="loadVideo"
+          />
+          <CaptionEditor v-if="activeDetailTab === 'captions'" :video-id="video.id" />
         </div>
       </div>
 
@@ -597,10 +559,15 @@ import PerformanceScoreCard from '@/components/analytics/PerformanceScoreCard.vu
 import AnomalyAlertCard from '@/components/analytics/AnomalyAlertCard.vue'
 import FavoriteButton from '@/components/video/FavoriteButton.vue'
 import VideoPreviewModal from '@/components/video/VideoPreviewModal.vue'
+import VideoMediaInfoPanel from '@/components/video/VideoMediaInfoPanel.vue'
+import ThumbnailSelector from '@/components/video/ThumbnailSelector.vue'
+import CaptionEditor from '@/components/video/CaptionEditor.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { useVideoStore } from '@/stores/video'
 import { videoApi } from '@/api/video'
 import { analyticsApi } from '@/api/analytics'
 import type { VideoAnalytics } from '@/types/analytics'
+import type { VideoMediaInfo } from '@/types/video'
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
 
@@ -624,6 +591,14 @@ const showPreviewModal = ref(false)
 const selectedPlatform = ref<Platform | null>(null)
 const analyticsData = ref<VideoAnalytics[]>([])
 const analyticsLoading = ref(false)
+const activeDetailTab = ref<string>('media')
+const mediaInfo = ref<VideoMediaInfo | null>(null)
+
+const detailTabs = [
+  { id: 'media', label: '미디어 정보' },
+  { id: 'thumbnails', label: '썸네일' },
+  { id: 'captions', label: '자막' },
+]
 
 // ---- Computed ----
 
@@ -744,15 +719,6 @@ function handleReUpload() {
   router.push(`/upload?reupload=${props.id}`)
 }
 
-async function handleRetryTranscode(platform: Platform) {
-  try {
-    await videoApi.retryTranscode(Number(props.id), platform)
-    await videoStore.fetchVideo(Number(props.id))
-  } catch {
-    // Error handled by API client interceptor
-  }
-}
-
 async function handleDelete() {
   try {
     await videoStore.deleteVideo(Number(props.id))
@@ -775,9 +741,23 @@ async function fetchAnalytics(videoId: number) {
 
 // ---- Lifecycle ----
 
+async function loadVideo() {
+  const videoId = Number(props.id)
+  await videoStore.fetchVideo(videoId)
+}
+
+async function loadMediaInfo(videoId: number) {
+  try {
+    mediaInfo.value = await videoApi.getMediaInfo(videoId)
+  } catch {
+    // Media info may not be available yet
+  }
+}
+
 onMounted(async () => {
   const videoId = Number(props.id)
   await videoStore.fetchVideo(videoId)
+  loadMediaInfo(videoId)
 
   if (video.value && video.value.uploads.length > 0) {
     selectedPlatform.value = video.value.uploads[0].platform

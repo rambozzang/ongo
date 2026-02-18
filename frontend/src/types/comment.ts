@@ -7,14 +7,20 @@ export interface Comment {
   videoId: number
   videoTitle: string
   platform: Platform
+  platformCommentId?: string
   author: string
   authorAvatar?: string
+  authorChannelUrl?: string
   content: string
   likeCount: number
   replyCount: number
   sentiment: CommentSentiment
+  isReplied: boolean
   isHidden: boolean
   isPinned: boolean
+  replyContent?: string
+  repliedAt?: string
+  syncedAt?: string
   createdAt: string
 }
 
@@ -23,18 +29,48 @@ export interface CommentResponse {
   id: number
   videoId: number | null
   platform: string | null
+  platformCommentId: string | null
   authorName: string
   authorAvatarUrl: string | null
+  authorChannelUrl: string | null
   content: string
   sentiment: string
+  likeCount: number
+  replyCount: number
   isReplied: boolean
+  isHidden: boolean
+  isPinned: boolean
   replyContent: string | null
   repliedAt: string | null
   publishedAt: string | null
+  syncedAt: string | null
   createdAt: string | null
+}
+
+export interface CommentStats {
+  total: number
+  positive: number
+  neutral: number
+  negative: number
+}
+
+export interface CommentCapabilities {
+  canListComments: boolean
+  canReply: boolean
+  canLike: boolean
+  canDelete: boolean
+  canHide: boolean
+}
+
+export interface CommentSyncResult {
+  totalSynced: number
+  totalNew: number
+  errors: string[]
 }
 
 export interface CommentListResponse {
   comments: CommentResponse[]
   totalCount: number
+  stats: CommentStats
+  capabilities: Record<string, CommentCapabilities>
 }

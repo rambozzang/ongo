@@ -2,6 +2,14 @@
   <div>
     <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-gray-100">설정</h1>
 
+    <PageGuide title="설정" :items="[
+      '프로필 탭에서 프로필 이미지·닉네임(최대 20자)을 변경하세요',
+      '알림 탭에서 이메일·푸시 알림 수신 항목을 세부적으로 설정하세요',
+      '테마 탭에서 라이트/다크 모드를 전환하고, 언어(한국어/영어)를 변경하세요',
+      '계정 탭에서 연결된 소셜 로그인 정보를 확인하고 계정을 관리하세요',
+      '개인정보 탭에서 데이터 보존 및 개인정보 설정을 관리하세요',
+    ]" />
+
     <!-- Tab Navigation -->
     <div class="mb-6 overflow-x-auto border-b border-gray-200 dark:border-gray-700">
       <nav class="-mb-px flex space-x-6 desktop:space-x-8" aria-label="Settings tabs">
@@ -409,6 +417,37 @@
           </div>
         </div>
 
+        <!-- Default AI Provider -->
+        <div class="mb-8">
+          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ $t('settings.aiProvider.title') }}</h3>
+          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ $t('settings.aiProvider.description') }}</p>
+          <div class="space-y-3">
+            <label
+              v-for="option in aiProviderOptions"
+              :key="option.value"
+              class="flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
+              :class="
+                defaultsForm.aiProvider === option.value
+                  ? 'border-primary-500 bg-primary-50'
+                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+              "
+            >
+              <input
+                v-model="defaultsForm.aiProvider"
+                type="radio"
+                name="aiProvider"
+                :value="option.value"
+                class="h-4 w-4 border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+              />
+              <div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
+                <p class="text-xs text-gray-400">{{ option.description }}</p>
+              </div>
+            </label>
+          </div>
+          <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">{{ $t('settings.aiProvider.sttNote') }}</p>
+        </div>
+
         <!-- Language Selection -->
         <div class="mb-8">
           <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">언어 / Language</h3>
@@ -537,10 +576,12 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import ActivityFilter from '@/components/activity/ActivityFilter.vue'
 import ActivityTimeline from '@/components/activity/ActivityTimeline.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notification'
 import { useActivityLogStore } from '@/stores/activityLog'
+import { useI18n } from 'vue-i18n'
 import { useLocale } from '@/composables/useLocale'
 import { settingsApi } from '@/api/settings'
 import { authApi } from '@/api/auth'
@@ -552,6 +593,7 @@ const authStore = useAuthStore()
 const userStore = useUserStore()
 const notify = useNotificationStore()
 const activityStore = useActivityLogStore()
+const { t } = useI18n()
 const { currentLocale, switchLocale } = useLocale()
 
 // --- Tab State ---
@@ -713,10 +755,17 @@ const languageOptions = [
   { value: 'en' as const, label: 'English' },
 ]
 
+const aiProviderOptions = computed(() => [
+  { value: 'CLAUDE', label: 'Claude', description: t('settings.aiProvider.claude') },
+  { value: 'GEMINI', label: 'Gemini', description: t('settings.aiProvider.gemini') },
+  { value: 'OPENAI', label: 'OpenAI GPT', description: t('settings.aiProvider.openai') },
+])
+
 const defaultsForm = reactive({
   visibility: 'PUBLIC',
   platforms: ['YOUTUBE'] as Platform[],
   aiTone: 'FRIENDLY',
+  aiProvider: 'CLAUDE',
 })
 
 const isSavingDefaults = ref(false)
@@ -777,6 +826,7 @@ onMounted(async () => {
     defaultsForm.visibility = settings.defaultVisibility
     defaultsForm.platforms = settings.defaultPlatforms as Platform[]
     defaultsForm.aiTone = settings.defaultAiTone
+    defaultsForm.aiProvider = settings.defaultAiProvider || 'CLAUDE'
   } catch {
     // Use form defaults if API unavailable
   }

@@ -1,8 +1,8 @@
 package com.ongo.api.video.dto
 
+import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
-import com.ongo.common.enums.VariantStatus
 import com.ongo.common.enums.Visibility
 import java.time.LocalDateTime
 
@@ -17,10 +17,23 @@ data class VideoDetailResponse(
     val duration: Int?,
     val resolution: String?,
     val thumbnails: List<String>,
+    val autoThumbnails: List<String> = emptyList(),
+    val selectedThumbnailIndex: Int = 0,
+    val mediaType: MediaType = MediaType.VIDEO,
     val status: UploadStatus,
+    val contentImages: List<ContentImageItem> = emptyList(),
     val uploads: List<PlatformUploadDetail>,
-    val variants: List<VideoVariantItem> = emptyList(),
     val createdAt: LocalDateTime?,
+)
+
+data class ContentImageItem(
+    val id: Long?,
+    val imageUrl: String,
+    val displayOrder: Int,
+    val width: Int?,
+    val height: Int?,
+    val fileSizeBytes: Long?,
+    val originalFilename: String?,
 )
 
 data class PlatformUploadDetail(
@@ -40,14 +53,4 @@ data class PlatformMetaDetail(
     val tags: List<String>,
     val visibility: Visibility,
     val customThumbnailUrl: String?,
-)
-
-data class VideoVariantItem(
-    val platform: Platform,
-    val status: VariantStatus,
-    val fileUrl: String?,
-    val fileSizeBytes: Long?,
-    val width: Int?,
-    val height: Int?,
-    val errorMessage: String?,
 )

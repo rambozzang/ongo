@@ -149,6 +149,15 @@ const platformInitial = computed(() => {
     TIKTOK: 'T',
     INSTAGRAM: 'I',
     NAVER_CLIP: 'N',
+    TWITTER: 'X',
+    FACEBOOK: 'F',
+    THREADS: 'Th',
+    PINTEREST: 'P',
+    LINKEDIN: 'Li',
+    WORDPRESS: 'W',
+    TUMBLR: 'Tu',
+    VIMEO: 'V',
+    DAILYMOTION: 'D',
   }
   return initials[props.channel.platform]
 })

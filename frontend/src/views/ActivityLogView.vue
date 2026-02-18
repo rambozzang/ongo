@@ -14,6 +14,7 @@ import {
 import ActivityLogFilter from '@/components/activitylog/ActivityLogFilter.vue'
 import ActivityLogTimeline from '@/components/activitylog/ActivityLogTimeline.vue'
 import { useActivityLogsStore } from '@/stores/activityLogs'
+import PageGuide from '@/components/common/PageGuide.vue'
 import type { ActivityLog, ActivityAction, ActivityDateRange, ActivityDateCustomRange } from '@/types/activitylog'
 
 const router = useRouter()
@@ -109,6 +110,14 @@ onMounted(() => {
         CSV 내보내기
       </button>
     </div>
+
+    <PageGuide title="활동 로그" :items="[
+      '상단 요약 카드(업로드·게시·예약·AI 생성·삭제·채널 연결)에서 오늘의 활동 통계를 확인하세요',
+      '활동 유형·날짜 범위(오늘/이번 주/이번 달/직접 지정)·사용자·검색으로 원하는 로그를 필터링하세요',
+      '날짜별로 그룹화된 타임라인에서 각 작업의 시간·대상·결과를 상세히 확인할 수 있습니다',
+      '로그 항목을 클릭하면 관련 영상·채널 등의 상세 페이지로 이동합니다',
+      '내보내기 버튼으로 활동 로그를 CSV/JSON으로 다운로드하여 외부에서 분석할 수 있습니다',
+    ]" />
 
     <!-- Today's activity summary cards -->
     <div class="mb-6 grid grid-cols-2 gap-3 tablet:grid-cols-3 desktop:grid-cols-6">

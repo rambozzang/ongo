@@ -9,6 +9,14 @@
       </router-link>
     </div>
 
+    <PageGuide title="영상 관리" :items="[
+      '제목·태그 검색과 플랫폼(YT/TT/IG/NV)·상태(게시/예약/임시)·날짜 필터로 원하는 영상을 빠르게 찾으세요',
+      '그리드/리스트 뷰를 전환하고, 조회수순·좋아요순·최신순으로 정렬할 수 있습니다',
+      '선택 모드를 켜면 여러 영상을 체크하여 일괄 삭제·게시·카테고리 변경·AI 배치 처리가 가능합니다',
+      '즐겨찾기 필터로 중요 영상만 모아보고, 영상 카드의 우클릭 메뉴에서 수정·재활용·재업로드·삭제를 실행하세요',
+      '내보내기 버튼으로 영상 목록을 CSV/Excel로 다운로드할 수 있습니다',
+    ]" />
+
     <!-- Toolbar: Search + Filters + Sort + View Toggle -->
     <div class="card mb-6 space-y-4">
       <!-- Row 1: Search + View Toggle -->
@@ -618,6 +626,7 @@ import { PLATFORM_CONFIG } from '@/types/channel'
 import ScrollToTop from '@/components/common/ScrollToTop.vue'
 import BatchProgressPanel from '@/components/ai/BatchProgressPanel.vue'
 import { aiApi } from '@/api/ai'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { BATCH_OPERATIONS } from '@/types/ai'
 import type { AiBatchOperation, AiBatchResponse } from '@/types/ai'
 

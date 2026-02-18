@@ -5,13 +5,11 @@ import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AiFeature
 import com.ongo.common.exception.BusinessException
 import org.slf4j.LoggerFactory
-import org.springframework.ai.chat.client.ChatClient
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
 class AnalyzeScriptUseCase(
-    @Qualifier("anthropicChatClient") private val chatClient: ChatClient,
+    private val chatClientResolver: ChatClientResolver,
     private val creditService: CreditService,
     private val rateLimiter: AiRateLimiter,
 ) {
@@ -23,7 +21,7 @@ class AnalyzeScriptUseCase(
         val userPrompt = PromptTemplates.SCRIPT_ANALYSIS_USER
             .replace("{script}", sanitizedScript)
 
-        val result = chatClient.prompt()
+        val result = chatClientResolver.resolve(userId).prompt()
             .system(PromptTemplates.SCRIPT_ANALYSIS_SYSTEM)
             .user(userPrompt)
             .call()
@@ -42,7 +40,7 @@ class AnalyzeScriptUseCase(
             .replace("{script}", sanitizedScript)
 
         try {
-            val result = chatClient.prompt()
+            val result = chatClientResolver.resolve(userId).prompt()
                 .system(PromptTemplates.SCRIPT_ANALYSIS_SYSTEM)
                 .user(userPrompt)
                 .call()

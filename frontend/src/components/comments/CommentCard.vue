@@ -33,13 +33,30 @@
       <div class="min-w-0 flex-1">
         <!-- Header -->
         <div class="mb-1 flex flex-wrap items-center gap-2">
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{ comment.author }}</span>
+          <component
+            :is="comment.authorChannelUrl ? 'a' : 'span'"
+            :href="comment.authorChannelUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-medium text-gray-900 dark:text-gray-100"
+            :class="{ 'hover:underline': comment.authorChannelUrl }"
+          >
+            {{ comment.author }}
+          </component>
           <PlatformBadge :platform="comment.platform" />
           <span class="text-xs text-gray-500 dark:text-gray-400">{{ relativeTime }}</span>
+          <span
+            v-if="comment.syncedAt"
+            class="text-xs text-gray-400 dark:text-gray-500"
+            :title="'동기화: ' + comment.syncedAt"
+          >
+            · 동기화됨
+          </span>
         </div>
 
         <!-- Video title link -->
         <router-link
+          v-if="comment.videoTitle"
           :to="`/videos/${comment.videoId}`"
           class="mb-2 block text-xs text-primary-600 hover:underline dark:text-primary-400"
         >
@@ -65,6 +82,15 @@
           </span>
         </p>
 
+        <!-- Reply content -->
+        <div
+          v-if="comment.isReplied && comment.replyContent"
+          class="mb-2 rounded-lg bg-gray-50 p-2 text-sm dark:bg-gray-800"
+        >
+          <span class="text-xs font-medium text-primary-600 dark:text-primary-400">내 답글:</span>
+          <p class="mt-1 text-gray-700 dark:text-gray-300">{{ comment.replyContent }}</p>
+        </div>
+
         <!-- Metadata -->
         <div class="mb-2 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
           <span class="flex items-center gap-1">
@@ -89,6 +115,7 @@
           :class="showActions ? 'opacity-100' : ''"
         >
           <button
+            v-if="platformCaps?.canReply && !comment.isReplied"
             class="text-xs font-medium text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="isReplying = true"
           >
@@ -107,6 +134,7 @@
             {{ comment.isPinned ? '고정 해제' : '고정' }}
           </button>
           <button
+            v-if="platformCaps?.canDelete"
             class="text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
             @click="handleDelete"
           >
@@ -127,12 +155,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Comment } from '@/types/comment'
+import type { Comment, CommentCapabilities } from '@/types/comment'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import CommentReplyForm from './CommentReplyForm.vue'
 
 const props = defineProps<{
   comment: Comment
+  capabilities?: Record<string, CommentCapabilities>
 }>()
 
 const emit = defineEmits<{
@@ -145,6 +174,11 @@ const emit = defineEmits<{
 const expanded = ref(false)
 const isReplying = ref(false)
 const showActions = ref(false)
+
+const platformCaps = computed(() => {
+  if (!props.capabilities) return { canReply: true, canDelete: true, canLike: false, canHide: true, canListComments: true }
+  return props.capabilities[props.comment.platform] ?? { canReply: false, canDelete: false, canLike: false, canHide: true, canListComments: false }
+})
 
 const relativeTime = computed(() => {
   try {
@@ -212,7 +246,7 @@ const handleReply = (text: string) => {
 }
 
 const handleDelete = () => {
-  if (confirm('이 댓글을 삭제하시겠습니까?')) {
+  if (confirm('이 댓글을 삭제하시겠습니까? 플랫폼에서도 삭제됩니다.')) {
     emit('delete', props.comment.id)
   }
 }

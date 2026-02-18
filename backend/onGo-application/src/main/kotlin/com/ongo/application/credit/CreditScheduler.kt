@@ -4,6 +4,7 @@ import com.ongo.common.enums.CreditTransactionType
 import com.ongo.domain.credit.AiCreditTransaction
 import com.ongo.domain.credit.CreditRepository
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -13,6 +14,7 @@ import java.time.LocalDateTime
 @Component
 class CreditScheduler(
     private val creditRepository: CreditRepository,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     private val log = LoggerFactory.getLogger(CreditScheduler::class.java)
@@ -106,7 +108,13 @@ class CreditScheduler(
         for (credit in lowCreditUsers) {
             log.info("크레딧 잔여 20% 이하 알림. userId: {}, balance: {}, freeMonthly: {}",
                 credit.userId, credit.balance, credit.freeMonthly)
-            // TODO: NotificationService.sendLowCreditAlert(credit.userId, credit.balance)
+            eventPublisher.publishEvent(
+                LowCreditAlertEvent(
+                    userId = credit.userId,
+                    balance = credit.balance,
+                    freeMonthly = credit.freeMonthly,
+                )
+            )
             notifiedCount++
         }
 

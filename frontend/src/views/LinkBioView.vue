@@ -9,6 +9,14 @@
       </div>
     </template>
     <template v-else>
+    <PageGuide title="링크 인 바이오" :items="[
+      '에디터 탭에서 프로필에 표시할 링크를 추가·수정·삭제하고, 드래그로 순서를 변경하세요',
+      '프로필 URL을 복사하여 각 플랫폼의 프로필란에 붙여넣으면 팬들이 바로 접근할 수 있습니다',
+      '프리뷰 탭에서 실제 방문자에게 보이는 모습을 미리 확인하세요',
+      '상단 통계(총 조회수·총 클릭수·클릭률)에서 링크 페이지 성과를 모니터링하세요',
+      '저장 버튼을 누르면 변경사항이 즉시 라이브 페이지에 반영됩니다',
+    ]" />
+
     <!-- Header -->
     <div class="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
       <div class="mx-auto max-w-7xl">
@@ -154,6 +162,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { ClipboardDocumentIcon, CheckIcon } from '@heroicons/vue/24/outline'
 import { useLinkBioStore } from '@/stores/linkbio'
 import BioEditor from '@/components/linkbio/BioEditor.vue'

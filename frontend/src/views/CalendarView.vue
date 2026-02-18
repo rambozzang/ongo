@@ -36,6 +36,13 @@
       </div>
     </div>
 
+    <PageGuide title="콘텐츠 캘린더" :items="[
+      '월간/주간 뷰를 전환하여 전체 콘텐츠 일정을 시각적으로 파악하세요',
+      '이전/다음 버튼과 오늘 버튼으로 원하는 기간으로 빠르게 이동할 수 있습니다',
+      '캘린더의 콘텐츠 항목을 드래그 앤 드롭하여 게시 일정을 직관적으로 변경하세요',
+      '각 날짜의 콘텐츠를 클릭하면 상세 정보를 확인하고 수정할 수 있습니다',
+    ]" />
+
     <!-- Calendar Controls -->
     <div class="card flex items-center justify-between p-4">
       <button
@@ -74,6 +81,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import CalendarGrid from '@/components/schedule/CalendarGrid.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { useScheduleStore } from '@/stores/schedule'
 import type { Platform } from '@/types/channel'
 

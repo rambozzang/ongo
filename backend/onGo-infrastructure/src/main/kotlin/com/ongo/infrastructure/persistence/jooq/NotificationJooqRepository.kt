@@ -22,6 +22,13 @@ class NotificationJooqRepository(
     private val dsl: DSLContext,
 ) : NotificationRepository {
 
+    override fun findById(id: Long): Notification? =
+        dsl.select()
+            .from(NOTIFICATIONS)
+            .where(ID.eq(id))
+            .fetchOne()
+            ?.toNotification()
+
     override fun findByUserId(userId: Long, page: Int, size: Int): List<Notification> =
         dsl.select()
             .from(NOTIFICATIONS)

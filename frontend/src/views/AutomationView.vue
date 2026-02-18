@@ -8,6 +8,7 @@ import AutomationFormModal from '@/components/automation/AutomationFormModal.vue
 import SmartTriggerTemplateSelector from '@/components/automation/SmartTriggerTemplateSelector.vue'
 import WorkflowNodeEditor from '@/components/automation/WorkflowNodeEditor.vue'
 import WorkflowExecutionHistory from '@/components/automation/WorkflowExecutionHistory.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import type { AutomationRule, Workflow, WorkflowTriggerType, WorkflowActionType } from '@/types/automation'
 import type { SmartTriggerTemplate } from '@/components/automation/SmartTriggerTemplateSelector.vue'
 import { automationApi } from '@/api/automation'
@@ -220,6 +221,14 @@ onMounted(() => {
           </button>
         </div>
       </div>
+
+      <PageGuide title="자동화" :items="[
+        '규칙 탭에서 새 규칙 버튼으로 트리거(조건)와 액션(실행)을 조합한 자동화를 생성하세요',
+        '각 규칙 카드에서 활성/비활성 토글로 규칙을 제어하고, 실행 횟수와 마지막 실행 시간을 확인하세요',
+        '워크플로우 탭에서 노드 기반 비주얼 에디터로 복잡한 자동화 흐름(트리거→조건→액션)을 설계하세요',
+        '스마트 템플릿에서 자주 사용되는 자동화 패턴을 선택하여 빠르게 시작할 수 있습니다',
+        '로그 탭에서 자동화 실행 이력을 확인하고, 실패한 항목의 원인을 파악하세요',
+      ]" />
 
       <!-- Tabs -->
       <div class="mb-6 border-b border-gray-200 dark:border-gray-700">

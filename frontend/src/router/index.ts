@@ -15,6 +15,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/auth/channel-callback',
+    name: 'channel-callback',
+    component: () => import('@/views/ChannelCallbackView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/',
     component: () => import('@/components/layout/AppLayout.vue'),
     meta: { requiresAuth: true },
@@ -204,6 +210,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/SettingsView.vue'),
         meta: { breadcrumb: '설정' },
       },
+      {
+        path: 'admin',
+        name: 'admin',
+        component: () => import('@/views/AdminView.vue'),
+        meta: { breadcrumb: '관리자', requiresAdmin: true },
+      },
     ],
   },
   {
@@ -239,9 +251,14 @@ router.beforeEach(async (to, _from, next) => {
   if (
     authStore.user &&
     !authStore.user.onboardingCompleted &&
-    to.name !== 'onboarding'
+    to.name !== 'onboarding' &&
+    to.name !== 'channel-callback'
   ) {
     return next('/onboarding')
+  }
+
+  if (to.meta.requiresAdmin && authStore.user?.role !== 'ADMIN') {
+    return next('/dashboard')
   }
 
   next()

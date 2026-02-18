@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Platform } from '@/types/channel'
+import type { MediaType } from '@/types/video'
 import { useTusUpload } from '@/composables/useTusUpload'
 import { useNotificationStore } from '@/stores/notification'
 
@@ -17,6 +18,7 @@ export interface QueueItem {
   fileName: string
   fileSize: number
   title: string
+  mediaType: MediaType
   platforms: Platform[]
   status: QueueItemStatus
   progress: number
@@ -33,16 +35,34 @@ export interface QueueItem {
   }
 }
 
-const ALLOWED_EXTENSIONS = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
-const ALLOWED_MIMES = [
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic']
+const ALLOWED_EXTENSIONS = [...VIDEO_EXTENSIONS, ...IMAGE_EXTENSIONS]
+const VIDEO_MIMES = [
   'video/mp4',
   'video/quicktime',
   'video/x-msvideo',
   'video/x-matroska',
   'video/webm',
 ]
-const MAX_SIZE = 2 * 1024 * 1024 * 1024 // 2GB
+const IMAGE_MIMES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/heic',
+]
+const ALLOWED_MIMES = [...VIDEO_MIMES, ...IMAGE_MIMES]
+const VIDEO_MAX_SIZE = 2 * 1024 * 1024 * 1024 // 2GB
+const IMAGE_MAX_SIZE = 50 * 1024 * 1024 // 50MB
 const MAX_CONCURRENT = 2
+
+function detectMediaType(file: File): MediaType {
+  if (IMAGE_MIMES.includes(file.type)) return 'IMAGE'
+  const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+  if (IMAGE_EXTENSIONS.includes(ext)) return 'IMAGE'
+  return 'VIDEO'
+}
 
 export const useUploadQueueStore = defineStore('uploadQueue', () => {
   const queue = ref<QueueItem[]>([])
@@ -79,9 +99,39 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
   const isUploading = computed(() => uploadingCount.value > 0)
 
   /**
-   * Generate video thumbnail from first frame
+   * Generate thumbnail from file (video or image)
    */
   async function generateThumbnail(file: File): Promise<string | undefined> {
+    const mediaType = detectMediaType(file)
+
+    if (mediaType === 'IMAGE') {
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file)
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const maxDim = 200
+          const scale = Math.min(maxDim / img.width, maxDim / img.height, 1)
+          canvas.width = img.width * scale
+          canvas.height = img.height * scale
+          const ctx = canvas.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+            URL.revokeObjectURL(url)
+            resolve(canvas.toDataURL('image/jpeg', 0.7))
+          } else {
+            URL.revokeObjectURL(url)
+            resolve(undefined)
+          }
+        }
+        img.onerror = () => {
+          URL.revokeObjectURL(url)
+          resolve(undefined)
+        }
+        img.src = url
+      })
+    }
+
     return new Promise((resolve) => {
       const video = document.createElement('video')
       const canvas = document.createElement('canvas')
@@ -124,7 +174,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
   /**
    * Add item to queue with full metadata
    */
-  function addToQueue(item: Omit<QueueItem, 'id' | 'addedAt' | 'progress' | 'status' | 'platformProgress'>) {
+  function addToQueue(item: Omit<QueueItem, 'id' | 'addedAt' | 'progress' | 'status' | 'platformProgress' | 'mediaType'> & { mediaType?: MediaType }) {
     const platformProgress: Record<string, PlatformProgress> = {}
     item.platforms.forEach((platform) => {
       platformProgress[platform] = {
@@ -135,6 +185,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
 
     const queueItem: QueueItem = {
       ...item,
+      mediaType: item.mediaType ?? detectMediaType(item.file),
       id: crypto.randomUUID(),
       status: 'queued',
       progress: 0,
@@ -163,9 +214,12 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
         continue
       }
 
-      // Validate size
-      if (file.size > MAX_SIZE) {
-        useNotificationStore().error(`파일 크기가 2GB를 초과합니다: ${file.name}`)
+      // Validate size based on media type
+      const fileMediaType = detectMediaType(file)
+      const maxSize = fileMediaType === 'IMAGE' ? IMAGE_MAX_SIZE : VIDEO_MAX_SIZE
+      if (file.size > maxSize) {
+        const limitLabel = fileMediaType === 'IMAGE' ? '50MB' : '2GB'
+        useNotificationStore().error(`파일 크기가 ${limitLabel}를 초과합니다: ${file.name}`)
         continue
       }
 
@@ -179,6 +233,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
         fileName: file.name,
         fileSize: file.size,
         title: file.name.replace(/\.[^/.]+$/, ''),
+        mediaType: fileMediaType,
         platforms: ['YOUTUBE'] as Platform[],
         status: 'queued',
         progress: 0,

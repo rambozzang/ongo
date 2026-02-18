@@ -16,6 +16,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.PLAN_TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.PRICE
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS_TEXT
+import com.ongo.infrastructure.persistence.jooq.Fields.STORAGE_QUOTA_LIMIT_BYTES
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.SUBSCRIPTIONS
@@ -54,6 +55,7 @@ class SubscriptionJooqRepository(
             .set(CURRENT_PERIOD_START, subscription.currentPeriodStart)
             .set(CURRENT_PERIOD_END, subscription.currentPeriodEnd)
             .set(NEXT_BILLING_DATE, subscription.nextBillingDate)
+            .set(STORAGE_QUOTA_LIMIT_BYTES, subscription.storageQuotaLimitBytes)
             .set(CANCELLED_AT, subscription.cancelledAt)
             .returningResult(ID)
             .fetchOne()!!
@@ -71,6 +73,7 @@ class SubscriptionJooqRepository(
             .set(CURRENT_PERIOD_START, subscription.currentPeriodStart)
             .set(CURRENT_PERIOD_END, subscription.currentPeriodEnd)
             .set(NEXT_BILLING_DATE, subscription.nextBillingDate)
+            .set(STORAGE_QUOTA_LIMIT_BYTES, subscription.storageQuotaLimitBytes)
             .set(CANCELLED_AT, subscription.cancelledAt)
             .where(ID.eq(subscription.id))
             .execute()
@@ -121,6 +124,7 @@ class SubscriptionJooqRepository(
             currentPeriodStart = localDateTime(CURRENT_PERIOD_START),
             currentPeriodEnd = localDateTime(CURRENT_PERIOD_END),
             nextBillingDate = localDateTime(NEXT_BILLING_DATE),
+            storageQuotaLimitBytes = get(STORAGE_QUOTA_LIMIT_BYTES),
             cancelledAt = localDateTime(CANCELLED_AT),
             createdAt = localDateTime(CREATED_AT),
             updatedAt = localDateTime(UPDATED_AT),

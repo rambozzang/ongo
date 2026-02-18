@@ -2,10 +2,8 @@ package com.ongo.application.video
 
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
-import com.ongo.common.enums.VariantStatus
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUploadRepository
-import com.ongo.domain.video.VideoVariantRepository
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Async
@@ -20,7 +18,6 @@ class VideoPublishEventListener(
     private val platformUploadServices: List<PlatformUploadService>,
     private val videoUploadRepository: VideoUploadRepository,
     private val videoRepository: VideoRepository,
-    private val videoVariantRepository: VideoVariantRepository,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -67,15 +64,8 @@ class VideoPublishEventListener(
         }
 
         try {
-            // variant가 COMPLETED이면 variant.fileUrl 사용, 아니면 원본 fallback
-            val variantFileUrl = videoVariantRepository
-                .findByVideoIdAndPlatform(event.videoId, config.platform)
-                ?.takeIf { it.status == VariantStatus.COMPLETED }
-                ?.fileUrl
-                ?: event.fileUrl
-
-            log.info("플랫폼 {} 업로드 시작: videoId={}, variantUsed={}", config.platform, event.videoId, variantFileUrl != event.fileUrl)
-            val result = service.upload(config, variantFileUrl, event.userId)
+            log.info("플랫폼 {} 업로드 시작: videoId={}", config.platform, event.videoId)
+            val result = service.upload(config, event.fileUrl, event.userId)
 
             if (result.success) {
                 updateUploadStatus(

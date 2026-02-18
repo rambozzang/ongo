@@ -128,8 +128,9 @@ class ApprovalController(
     @Operation(summary = "SLA 상태 조회", description = "승인 체인의 SLA 상태를 조회합니다")
     @GetMapping("/{id}/sla")
     fun getSlaStatus(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable id: Long,
     ): ResponseEntity<ResData<List<ApprovalChainSlaResponse>>> {
-        return ResData.success(approvalChainUseCase.getSlaStatus(id))
+        return ResData.success(approvalChainUseCase.getSlaStatus(userId, id))
     }
 }

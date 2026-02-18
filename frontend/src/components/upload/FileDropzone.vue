@@ -42,10 +42,10 @@
         >
           {{
             dropState === 'hover'
-              ? '여기에 놓으세요!'
+              ? t('upload.dropzone.dropHere')
               : dropState === 'success'
-                ? '파일이 추가되었습니다!'
-                : '드래그 & 드롭으로 파일 업로드'
+                ? t('upload.dropzone.fileAdded')
+                : t('upload.dropzone.dragDrop')
           }}
         </p>
 
@@ -53,7 +53,7 @@
           v-if="dropState === 'idle'"
           class="text-sm text-gray-500 dark:text-gray-400"
         >
-          또는 파일을 선택하세요 • MP4, MOV, AVI, MKV, WebM | 최대 2GB
+          {{ t('upload.dropzone.selectFile') }} • {{ t('upload.dropzone.formatHint') }}
         </p>
       </div>
 
@@ -62,15 +62,15 @@
         type="file"
         class="hidden"
         multiple
-        aria-label="동영상 파일 선택"
+        :aria-label="t('upload.dropzone.ariaLabel')"
         :accept="ALLOWED_EXTENSIONS.join(',')"
         @change="onFileSelect"
       />
     </div>
 
-    <!-- File Preview Card (single file mode) -->
+    <!-- File Preview Card (single video file) -->
     <div
-      v-if="selectedFile"
+      v-if="selectedFile && !isSelectedImage"
       class="mt-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 transition-all duration-300"
     >
       <div class="flex items-start gap-4">
@@ -79,8 +79,8 @@
           class="relative flex-shrink-0 w-24 h-16 rounded bg-gray-100 dark:bg-gray-700 overflow-hidden"
         >
           <video
-            v-if="videoPreviewUrl"
-            :src="videoPreviewUrl"
+            v-if="previewUrl"
+            :src="previewUrl"
             class="w-full h-full object-cover"
             muted
             @loadeddata="captureFrame"
@@ -103,7 +103,7 @@
           </p>
           <div class="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
             <span>{{ formatFileSize(selectedFile.size) }}</span>
-            <span>•</span>
+            <span>&bull;</span>
             <span>{{ getFileExtension(selectedFile.name).toUpperCase() }}</span>
           </div>
         </div>
@@ -115,14 +115,70 @@
             class="px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-md transition-colors"
             @click.stop="openFilePicker"
           >
-            변경
+            {{ t('upload.dropzone.change') }}
           </button>
           <button
             type="button"
             class="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
             @click.stop="clearFile"
           >
-            삭제
+            {{ t('upload.dropzone.remove') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Preview Card (single image file) -->
+    <div
+      v-if="selectedFile && isSelectedImage"
+      class="mt-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 transition-all duration-300"
+    >
+      <div class="flex items-start gap-4">
+        <div
+          class="relative flex-shrink-0 w-24 h-16 rounded bg-gray-100 dark:bg-gray-700 overflow-hidden"
+        >
+          <img
+            v-if="previewUrl"
+            :src="previewUrl"
+            :alt="selectedFile.name"
+            class="w-full h-full object-cover"
+          />
+          <div
+            v-else
+            class="w-full h-full flex items-center justify-center"
+          >
+            <PhotoIcon class="w-8 h-8 text-gray-400 dark:text-gray-500" />
+          </div>
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <p
+            class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+            :title="selectedFile.name"
+          >
+            {{ selectedFile.name }}
+          </p>
+          <div class="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+            <span>{{ formatFileSize(selectedFile.size) }}</span>
+            <span>&bull;</span>
+            <span>{{ getFileExtension(selectedFile.name).toUpperCase() }}</span>
+          </div>
+        </div>
+
+        <div class="flex-shrink-0 flex gap-2">
+          <button
+            type="button"
+            class="px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-md transition-colors"
+            @click.stop="openFilePicker"
+          >
+            {{ t('upload.dropzone.change') }}
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+            @click.stop="clearFile"
+          >
+            {{ t('upload.dropzone.remove') }}
           </button>
         </div>
       </div>
@@ -131,22 +187,52 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
-import { ArrowUpTrayIcon, CheckCircleIcon, VideoCameraIcon } from '@heroicons/vue/24/outline'
+import { ref, computed, onUnmounted } from 'vue'
+import { ArrowUpTrayIcon, CheckCircleIcon, VideoCameraIcon, PhotoIcon } from '@heroicons/vue/24/outline'
+import { useLocale } from '@/composables/useLocale'
+import type { MediaType } from '@/types/video'
 
-const ALLOWED_EXTENSIONS = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
-const ALLOWED_MIMES = [
+const { t } = useLocale()
+
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic']
+const ALLOWED_EXTENSIONS = [...VIDEO_EXTENSIONS, ...IMAGE_EXTENSIONS]
+
+const VIDEO_MIMES = [
   'video/mp4',
   'video/quicktime',
   'video/x-msvideo',
   'video/x-matroska',
   'video/webm',
 ]
-const MAX_SIZE = 2 * 1024 * 1024 * 1024 // 2GB
+const IMAGE_MIMES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/heic',
+]
+const ALLOWED_MIMES = [...VIDEO_MIMES, ...IMAGE_MIMES]
+
+const VIDEO_MAX_SIZE = 2 * 1024 * 1024 * 1024 // 2GB
+const IMAGE_MAX_SIZE = 50 * 1024 * 1024 // 50MB
+const MAX_IMAGE_COUNT = 10
+
+function detectMediaType(file: File): MediaType {
+  if (IMAGE_MIMES.includes(file.type)) return 'IMAGE'
+  const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+  if (IMAGE_EXTENSIONS.includes(ext)) return 'IMAGE'
+  return 'VIDEO'
+}
+
+function getMaxSize(file: File): number {
+  return detectMediaType(file) === 'IMAGE' ? IMAGE_MAX_SIZE : VIDEO_MAX_SIZE
+}
 
 const emit = defineEmits<{
   select: [file: File]
   selectMultiple: [files: File[]]
+  selectImages: [files: File[]]
   error: [message: string]
 }>()
 
@@ -160,7 +246,8 @@ const dropState = ref<DropState>('idle')
 const dragCounter = ref(0)
 const fileInput = ref<HTMLInputElement>()
 const selectedFile = ref<File | null>(null)
-const videoPreviewUrl = ref<string | null>(null)
+const previewUrl = ref<string | null>(null)
+const isSelectedImage = computed(() => selectedFile.value ? detectMediaType(selectedFile.value) === 'IMAGE' : false)
 
 function openFilePicker() {
   fileInput.value?.click()
@@ -172,7 +259,6 @@ function onDragEnter() {
 }
 
 function onDragOver() {
-  // Keep hover state active
   if (dropState.value !== 'hover') {
     dropState.value = 'hover'
   }
@@ -194,7 +280,6 @@ function onDrop(event: DragEvent) {
     handleFiles(files)
   }
 
-  // Return to idle after 1.5s
   setTimeout(() => {
     if (dropState.value === 'success') {
       dropState.value = 'idle'
@@ -214,38 +299,75 @@ function onFileSelect(event: Event) {
 function handleFiles(fileList: FileList) {
   const filesArray = Array.from(fileList)
 
-  // If single file, use existing flow
-  if (filesArray.length === 1) {
-    validateAndEmit(filesArray[0])
-  } else {
-    // Multiple files: emit selectMultiple event
+  // Check if all files are images (story/carousel mode)
+  const allImages = filesArray.every((f) => detectMediaType(f) === 'IMAGE')
+
+  if (allImages && filesArray.length > 1) {
+    // Multiple images - story mode
+    if (filesArray.length > MAX_IMAGE_COUNT) {
+      emit('error', t('video.image.maxFiles', { max: MAX_IMAGE_COUNT }))
+      return
+    }
+
     const validFiles: File[] = []
     const errors: string[] = []
 
     for (const file of filesArray) {
       const ext = '.' + file.name.split('.').pop()?.toLowerCase()
       if (!ALLOWED_EXTENSIONS.includes(ext)) {
-        errors.push(`${file.name}: 지원하지 않는 파일 형식`)
+        errors.push(`${file.name}: ${t('upload.error.unsupportedFormat')}`)
         continue
       }
-
       if (!ALLOWED_MIMES.includes(file.type) && file.type !== '') {
-        errors.push(`${file.name}: 올바른 동영상 파일이 아님`)
+        errors.push(`${file.name}: ${t('upload.error.invalidFile')}`)
         continue
       }
-
-      if (file.size > MAX_SIZE) {
-        errors.push(`${file.name}: 파일 크기 2GB 초과`)
+      if (file.size > IMAGE_MAX_SIZE) {
+        errors.push(`${file.name}: ${t('upload.error.fileTooLarge', { limit: '50MB' })}`)
         continue
       }
-
       validFiles.push(file)
     }
 
     if (errors.length > 0) {
       emit('error', errors.join('\n'))
     }
+    if (validFiles.length > 0) {
+      emit('selectImages', validFiles)
+    }
+    return
+  }
 
+  // Single file
+  if (filesArray.length === 1) {
+    validateAndEmit(filesArray[0])
+  } else {
+    // Multiple video files: emit selectMultiple event
+    const validFiles: File[] = []
+    const errors: string[] = []
+
+    for (const file of filesArray) {
+      const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        errors.push(`${file.name}: ${t('upload.error.unsupportedFormat')}`)
+        continue
+      }
+      if (!ALLOWED_MIMES.includes(file.type) && file.type !== '') {
+        errors.push(`${file.name}: ${t('upload.error.invalidFile')}`)
+        continue
+      }
+      const maxSize = getMaxSize(file)
+      if (file.size > maxSize) {
+        const limitLabel = detectMediaType(file) === 'IMAGE' ? '50MB' : '2GB'
+        errors.push(`${file.name}: ${t('upload.error.fileTooLarge', { limit: limitLabel })}`)
+        continue
+      }
+      validFiles.push(file)
+    }
+
+    if (errors.length > 0) {
+      emit('error', errors.join('\n'))
+    }
     if (validFiles.length > 0) {
       emit('selectMultiple', validFiles)
     }
@@ -255,37 +377,42 @@ function handleFiles(fileList: FileList) {
 function validateAndEmit(file: File) {
   const ext = '.' + file.name.split('.').pop()?.toLowerCase()
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    emit('error', `지원하지 않는 파일 형식입니다. (${ALLOWED_EXTENSIONS.join(', ')})`)
+    emit('error', t('upload.error.unsupportedFormatDetail', { formats: ALLOWED_EXTENSIONS.join(', ') }))
     return
   }
 
   if (!ALLOWED_MIMES.includes(file.type) && file.type !== '') {
-    emit('error', '올바른 동영상 파일이 아닙니다.')
+    emit('error', t('upload.error.invalidFileDetail'))
     return
   }
 
-  if (file.size > MAX_SIZE) {
-    emit('error', '파일 크기가 2GB를 초과합니다.')
+  const maxSize = getMaxSize(file)
+  if (file.size > maxSize) {
+    const limitLabel = detectMediaType(file) === 'IMAGE' ? '50MB' : '2GB'
+    emit('error', t('upload.error.fileTooLargeDetail', { limit: limitLabel }))
     return
   }
 
-  // Store file for preview
   selectedFile.value = file
 
-  // Create video preview URL
-  if (videoPreviewUrl.value) {
-    URL.revokeObjectURL(videoPreviewUrl.value)
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value)
   }
-  videoPreviewUrl.value = URL.createObjectURL(file)
+  previewUrl.value = URL.createObjectURL(file)
 
-  emit('select', file)
+  // For images, also emit selectImages with single file for consistency
+  if (detectMediaType(file) === 'IMAGE') {
+    emit('selectImages', [file])
+  } else {
+    emit('select', file)
+  }
 }
 
 function clearFile() {
   selectedFile.value = null
-  if (videoPreviewUrl.value) {
-    URL.revokeObjectURL(videoPreviewUrl.value)
-    videoPreviewUrl.value = null
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value)
+    previewUrl.value = null
   }
   dropState.value = 'idle'
   dragCounter.value = 0
@@ -295,14 +422,13 @@ function clearFile() {
 }
 
 onUnmounted(() => {
-  if (videoPreviewUrl.value) {
-    URL.revokeObjectURL(videoPreviewUrl.value)
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value)
   }
 })
 
 function captureFrame(_event: Event) {
   // Frame capture happens automatically when video loads
-  // The video element itself serves as the thumbnail
 }
 
 function formatFileSize(bytes: number): string {
@@ -319,7 +445,6 @@ function getFileExtension(filename: string): string {
 </script>
 
 <style scoped>
-/* Border pulse animation for hover state */
 @keyframes border-pulse {
   0%, 100% {
     box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
@@ -333,7 +458,6 @@ function getFileExtension(filename: string): string {
   animation: border-pulse 2s ease-in-out infinite;
 }
 
-/* Bounce up animation for upload icon */
 @keyframes bounce-up {
   0%, 100% {
     transform: translateY(0);
@@ -347,7 +471,6 @@ function getFileExtension(filename: string): string {
   animation: bounce-up 0.6s ease-in-out infinite;
 }
 
-/* Check icon draw animation */
 @keyframes check-draw {
   from {
     opacity: 0;

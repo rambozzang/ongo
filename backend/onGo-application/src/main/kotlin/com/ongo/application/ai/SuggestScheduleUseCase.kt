@@ -9,13 +9,11 @@ import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.analytics.AnalyticsRepository
 import com.ongo.domain.channel.ChannelRepository
 import org.slf4j.LoggerFactory
-import org.springframework.ai.chat.client.ChatClient
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
 class SuggestScheduleUseCase(
-    @Qualifier("anthropicChatClient") private val chatClient: ChatClient,
+    private val chatClientResolver: ChatClientResolver,
     private val creditService: CreditService,
     private val rateLimiter: AiRateLimiter,
     private val channelRepository: ChannelRepository,
@@ -43,7 +41,7 @@ class SuggestScheduleUseCase(
             .replace("{category}", "일반")
             .replace("{analyticsData}", analyticsDataStr)
 
-        val result = chatClient.prompt()
+        val result = chatClientResolver.resolve(userId).prompt()
             .system(PromptTemplates.SCHEDULE_SUGGESTION_SYSTEM)
             .user(userPrompt)
             .call()
@@ -77,7 +75,7 @@ class SuggestScheduleUseCase(
             .replace("{analyticsData}", analyticsDataStr)
 
         try {
-            val result = chatClient.prompt()
+            val result = chatClientResolver.resolve(userId).prompt()
                 .system(PromptTemplates.SCHEDULE_SUGGESTION_SYSTEM)
                 .user(userPrompt)
                 .call()

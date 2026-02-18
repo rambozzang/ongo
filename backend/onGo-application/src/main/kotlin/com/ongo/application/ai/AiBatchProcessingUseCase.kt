@@ -5,6 +5,7 @@ import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AiFeature
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.BusinessException
+import com.ongo.common.exception.ForbiddenException
 import com.ongo.domain.video.VideoRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -58,6 +59,7 @@ class AiBatchProcessingUseCase(
 
         val batchResponse = AiBatchResponse(
             batchId = batchId,
+            userId = userId,
             totalItems = items.size,
             status = BatchStatus.PROCESSING,
             items = items,
@@ -74,9 +76,13 @@ class AiBatchProcessingUseCase(
         return batchResponse
     }
 
-    fun getBatchStatus(batchId: String): AiBatchResponse {
-        return batchStore[batchId]
+    fun getBatchStatus(userId: Long, batchId: String): AiBatchResponse {
+        val batch = batchStore[batchId]
             ?: throw BusinessException("BATCH_NOT_FOUND", "배치 작업을 찾을 수 없습니다: $batchId")
+        if (batch.userId != userId) {
+            throw ForbiddenException("해당 배치 작업에 대한 접근 권한이 없습니다")
+        }
+        return batch
     }
 
     private fun processBatch(userId: Long, batchId: String, request: AiBatchRequest) {

@@ -44,6 +44,6 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
 ]
 
 export interface PurchaseCreditRequest {
-  packageName: string
-  paymentMethodId?: string
+  packageType: string
+  paymentMethod: string
 }

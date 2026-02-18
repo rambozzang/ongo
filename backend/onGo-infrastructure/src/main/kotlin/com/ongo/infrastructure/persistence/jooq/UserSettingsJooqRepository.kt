@@ -1,10 +1,12 @@
 package com.ongo.infrastructure.persistence.jooq
 
+import com.ongo.common.enums.AiProvider
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.Visibility
 import com.ongo.domain.settings.UserSettings
 import com.ongo.domain.settings.UserSettingsRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
+import com.ongo.infrastructure.persistence.jooq.Fields.DEFAULT_AI_PROVIDER
 import com.ongo.infrastructure.persistence.jooq.Fields.DEFAULT_AI_TONE
 import com.ongo.infrastructure.persistence.jooq.Fields.DEFAULT_VISIBILITY
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
@@ -51,6 +53,7 @@ class UserSettingsJooqRepository(
             .set(DEFAULT_VISIBILITY, settings.defaultVisibility.name)
             .set(DSL.field("default_platforms", JSONB::class.java), platformsJson)
             .set(DEFAULT_AI_TONE, settings.defaultAiTone)
+            .set(DEFAULT_AI_PROVIDER, settings.defaultAiProvider.name)
             .set(NOTIFICATION_UPLOAD, settings.notificationUpload)
             .set(NOTIFICATION_COMMENT, settings.notificationComment)
             .set(NOTIFICATION_CREDIT_THRESHOLD, settings.notificationCreditThreshold)
@@ -69,6 +72,7 @@ class UserSettingsJooqRepository(
             .set(DEFAULT_VISIBILITY, settings.defaultVisibility.name)
             .set(DSL.field("default_platforms", JSONB::class.java), platformsJson)
             .set(DEFAULT_AI_TONE, settings.defaultAiTone)
+            .set(DEFAULT_AI_PROVIDER, settings.defaultAiProvider.name)
             .set(NOTIFICATION_UPLOAD, settings.notificationUpload)
             .set(NOTIFICATION_COMMENT, settings.notificationComment)
             .set(NOTIFICATION_CREDIT_THRESHOLD, settings.notificationCreditThreshold)
@@ -94,6 +98,7 @@ class UserSettingsJooqRepository(
             defaultVisibility = try { Visibility.valueOf(visibilityStr) } catch (_: Exception) { Visibility.PUBLIC },
             defaultPlatforms = defaultPlatforms,
             defaultAiTone = get(DEFAULT_AI_TONE),
+            defaultAiProvider = AiProvider.fromString(get(DEFAULT_AI_PROVIDER)),
             notificationUpload = get(NOTIFICATION_UPLOAD),
             notificationComment = get(NOTIFICATION_COMMENT),
             notificationCreditThreshold = get(NOTIFICATION_CREDIT_THRESHOLD),

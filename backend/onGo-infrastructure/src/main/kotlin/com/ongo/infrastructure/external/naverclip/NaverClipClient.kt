@@ -226,6 +226,12 @@ class NaverClipClient(
         }
     }
 
+    // --- Comment API ---
+    // Naver Clip does not provide a public comment API.
+
+    override fun getCommentCapabilities(): PlatformCommentCapabilities =
+        PlatformCommentCapabilities()
+
     private fun mapVisibility(visibility: String): String =
         when (visibility.uppercase()) {
             "PUBLIC" -> "PUBLIC"

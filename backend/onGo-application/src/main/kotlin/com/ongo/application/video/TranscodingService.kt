@@ -1,15 +1,11 @@
 package com.ongo.application.video
 
-import com.ongo.common.enums.Platform
-import com.ongo.domain.video.PlatformVideoSpec
+import com.ongo.domain.video.entity.VideoMediaInfo
 
-interface TranscodingService {
-    fun transcode(inputUrl: String, videoId: Long, platform: Platform, spec: PlatformVideoSpec): TranscodeResult
+interface MediaProbeService {
+    fun probe(inputFilePath: String, videoId: Long): VideoMediaInfo
 }
 
-data class TranscodeResult(
-    val fileUrl: String,
-    val fileSizeBytes: Long,
-    val width: Int,
-    val height: Int,
-)
+interface ThumbnailService {
+    fun generateThumbnails(inputFilePath: String, videoId: Long, durationMs: Long?): List<String>
+}

@@ -121,7 +121,11 @@ class ApprovalChainUseCase(
         return updated.toResponse()
     }
 
-    fun getSlaStatus(approvalId: Long): List<ApprovalChainSlaResponse> {
+    fun getSlaStatus(userId: Long, approvalId: Long): List<ApprovalChainSlaResponse> {
+        val approval = approvalRepository.findById(approvalId) ?: throw NotFoundException("승인 요청", approvalId)
+        if (approval.userId != userId && approval.reviewerId != userId) {
+            throw ForbiddenException("해당 승인 요청에 대한 접근 권한이 없습니다")
+        }
         val steps = approvalChainRepository.findByApprovalId(approvalId)
         val now = LocalDateTime.now()
 

@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
@@ -18,6 +19,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val objectMapper: ObjectMapper,
@@ -56,6 +58,7 @@ class SecurityConfig(
                 }
                 auth
                     .requestMatchers(*publicPaths.toTypedArray()).permitAll()
+                    .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
             }
             .exceptionHandling { exceptions ->
@@ -83,8 +86,15 @@ class SecurityConfig(
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
         configuration.allowedOrigins = allowedOrigins
-        configuration.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-        configuration.allowedHeaders = listOf("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin")
+        configuration.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
+        configuration.allowedHeaders = listOf(
+            "Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin",
+            "Tus-Resumable", "Upload-Length", "Upload-Offset", "Upload-Metadata",
+        )
+        configuration.exposedHeaders = listOf(
+            "Location", "Upload-Offset", "Upload-Length", "Tus-Resumable",
+            "Tus-Version", "Tus-Extension", "Tus-Max-Size",
+        )
         configuration.allowCredentials = true
         configuration.maxAge = 3600L
 

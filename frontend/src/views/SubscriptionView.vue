@@ -2,6 +2,14 @@
   <div>
     <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-gray-100">구독 및 결제</h1>
 
+    <PageGuide title="구독 및 결제" :items="[
+      '현재 플랜 카드에서 플랜명·가격·상태·다음 결제일·업로드 한도를 확인하세요',
+      '변경 버튼으로 Free·Starter(9,900원)·Pro(19,900원)·Business(49,900원) 플랜을 비교하고 업그레이드하세요',
+      '사용량 통계의 진행 바에서 월간 업로드 횟수와 스토리지 사용량을 확인하세요 (빨간색은 한도 초과 임박)',
+      'AI 크레딧이 부족하면 크레딧 충전으로 추가 구매하세요. 무료 크레딧이 먼저 소진된 후 구매 크레딧이 사용됩니다',
+      '결제 내역에서 과거 청구서를 확인하고 다운로드할 수 있습니다',
+    ]" />
+
     <LoadingSpinner v-if="subscriptionStore.loading && !subscription" full-page />
 
     <template v-else>
@@ -382,6 +390,7 @@ import UsageProgressBar from '@/components/subscription/UsageProgressBar.vue'
 import PlanComparisonTable from '@/components/subscription/PlanComparisonTable.vue'
 import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
 import PaymentModal from '@/components/subscription/PaymentModal.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { useSubscriptionStore } from '@/stores/subscription'
 import { useCreditStore } from '@/stores/credit'
 import { useChannelStore } from '@/stores/channel'
@@ -604,7 +613,7 @@ async function confirmCancel() {
 
 async function handleCreditPurchase(pkg: CreditPackage) {
   try {
-    const updatedBalance = await creditApi.purchase({ packageName: pkg.name })
+    const updatedBalance = await creditApi.purchase({ packageType: pkg.name, paymentMethod: 'CARD' })
     creditStore.balance = updatedBalance
     notification.success('크레딧이 충전되었습니다.')
     await Promise.all([

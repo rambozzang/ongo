@@ -1,6 +1,7 @@
 package com.ongo.application.settings
 
 import com.ongo.application.settings.dto.*
+import com.ongo.common.enums.AiProvider
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.Visibility
 import com.ongo.domain.settings.UserSettings
@@ -28,6 +29,7 @@ class SettingsUseCase(
                     defaultVisibility = request.defaultVisibility?.let { Visibility.valueOf(it) } ?: existing.defaultVisibility,
                     defaultPlatforms = request.defaultPlatforms?.map { Platform.valueOf(it) } ?: existing.defaultPlatforms,
                     defaultAiTone = request.defaultAiTone ?: existing.defaultAiTone,
+                    defaultAiProvider = request.defaultAiProvider?.let { AiProvider.fromString(it) } ?: existing.defaultAiProvider,
                     notificationUpload = request.notificationUpload ?: existing.notificationUpload,
                     notificationComment = request.notificationComment ?: existing.notificationComment,
                     notificationCreditThreshold = request.notificationCreditThreshold ?: existing.notificationCreditThreshold,
@@ -40,6 +42,7 @@ class SettingsUseCase(
                 defaultVisibility = request.defaultVisibility?.let { Visibility.valueOf(it) } ?: Visibility.PUBLIC,
                 defaultPlatforms = request.defaultPlatforms?.map { Platform.valueOf(it) } ?: emptyList(),
                 defaultAiTone = request.defaultAiTone ?: "friendly",
+                defaultAiProvider = request.defaultAiProvider?.let { AiProvider.fromString(it) } ?: AiProvider.CLAUDE,
                 notificationUpload = request.notificationUpload ?: true,
                 notificationComment = request.notificationComment ?: "realtime",
                 notificationCreditThreshold = request.notificationCreditThreshold ?: 20,
@@ -84,6 +87,7 @@ class SettingsUseCase(
                     defaultVisibility = Visibility.valueOf(request.visibility),
                     defaultPlatforms = request.platforms.map { Platform.valueOf(it) },
                     defaultAiTone = request.aiTone,
+                    defaultAiProvider = AiProvider.fromString(request.aiProvider),
                 )
             )
         } else {
@@ -92,6 +96,7 @@ class SettingsUseCase(
                 defaultVisibility = Visibility.valueOf(request.visibility),
                 defaultPlatforms = request.platforms.map { Platform.valueOf(it) },
                 defaultAiTone = request.aiTone,
+                defaultAiProvider = AiProvider.fromString(request.aiProvider),
             )
             userSettingsRepository.save(settings)
         }
@@ -106,6 +111,7 @@ class SettingsUseCase(
         defaultVisibility = defaultVisibility.name,
         defaultPlatforms = defaultPlatforms.map { it.name },
         defaultAiTone = defaultAiTone,
+        defaultAiProvider = defaultAiProvider.name,
         notificationUpload = notificationUpload,
         notificationComment = notificationComment,
         notificationCreditThreshold = notificationCreditThreshold,

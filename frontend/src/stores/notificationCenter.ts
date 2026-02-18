@@ -160,11 +160,9 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
   }
 
   async function fetchNotifications() {
-    loadFromStorage()
-
     try {
       const result = await notificationApi.list({ page: 0, size: 50 })
-      if (result.notifications && result.notifications.length > 0) {
+      if (result.notifications) {
         notifications.value = result.notifications.map((n) => ({
           id: n.id,
           type: n.type.toLowerCase() as Notification['type'],
@@ -177,33 +175,10 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
           createdAt: n.createdAt ?? new Date().toISOString(),
         }))
         saveToStorage()
-        return
       }
     } catch {
-      // Fall back to mock data
-    }
-
-    if (notifications.value.length === 0) {
-      const now = Date.now()
-      notifications.value = [
-        { id: 1, type: 'upload_success', category: 'upload', title: '영상 업로드 완료', message: '"겨울 여행 브이로그" 영상이 성공적으로 업로드되었습니다.', isRead: false, referenceType: 'video', referenceId: 101, createdAt: new Date(now - 1000 * 60 * 30).toISOString() },
-        { id: 2, type: 'platform_published', category: 'upload', title: 'YouTube 게시 완료', message: '"겨울 여행 브이로그"가 YouTube에 게시되었습니다.', isRead: false, referenceType: 'video', referenceId: 101, createdAt: new Date(now - 1000 * 60 * 45).toISOString() },
-        { id: 3, type: 'platform_failed', category: 'upload', title: 'TikTok 게시 실패', message: '"새해 인사 영상"의 TikTok 게시가 실패했습니다. 토큰을 확인해주세요.', isRead: false, referenceType: 'video', referenceId: 102, createdAt: new Date(now - 1000 * 60 * 60 * 2).toISOString() },
-        { id: 4, type: 'schedule_reminder', category: 'schedule', title: '예약 게시 알림', message: '"주간 먹방 콘텐츠" 30분 후 예약 게시가 시작됩니다.', isRead: false, referenceType: 'schedule', referenceId: 45, createdAt: new Date(now - 1000 * 60 * 15).toISOString() },
-        { id: 5, type: 'schedule_completed', category: 'schedule', title: '예약 게시 완료', message: '"일상 브이로그 #23" 예약 게시가 모든 플랫폼에 완료되었습니다.', isRead: false, referenceType: 'schedule', referenceId: 44, createdAt: new Date(now - 1000 * 60 * 60 * 4).toISOString() },
-        { id: 6, type: 'upload_failed', category: 'upload', title: '영상 업로드 실패', message: '"카페 투어" 영상 업로드 중 오류가 발생했습니다. 다시 시도해주세요.', isRead: true, referenceType: 'video', referenceId: 103, createdAt: new Date(now - 1000 * 60 * 60 * 8).toISOString() },
-        { id: 7, type: 'token_expiring', category: 'channel', title: 'Instagram 토큰 만료 예정', message: 'Instagram 연동 토큰이 7일 후 만료됩니다. 재연동이 필요합니다.', isRead: false, referenceType: 'channel', referenceId: 3, createdAt: new Date(now - 1000 * 60 * 60 * 24).toISOString() },
-        { id: 8, type: 'token_expired', category: 'channel', title: 'Naver Clip 토큰 만료', message: 'Naver Clip 연동 토큰이 만료되었습니다. 즉시 재연동해주세요.', isRead: false, referenceType: 'channel', referenceId: 5, createdAt: new Date(now - 1000 * 60 * 60 * 26).toISOString() },
-        { id: 9, type: 'credit_low', category: 'ai', title: 'AI 크레딧 부족', message: '남은 AI 크레딧이 15개입니다. 추가 충전을 고려해주세요.', isRead: true, referenceType: 'credit', createdAt: new Date(now - 1000 * 60 * 60 * 30).toISOString() },
-        { id: 10, type: 'credit_depleted', category: 'ai', title: 'AI 크레딧 소진', message: 'AI 크레딧이 모두 소진되었습니다. 충전 후 AI 기능을 이용할 수 있습니다.', isRead: false, referenceType: 'credit', createdAt: new Date(now - 1000 * 60 * 60 * 48).toISOString() },
-        { id: 11, type: 'milestone', category: 'analytics', title: '조회수 목표 달성!', message: '"코디 추천 영상"이 조회수 10,000회를 돌파했습니다!', isRead: true, referenceType: 'video', referenceId: 98, createdAt: new Date(now - 1000 * 60 * 60 * 72).toISOString() },
-        { id: 12, type: 'report_ready', category: 'analytics', title: '주간 리포트 준비 완료', message: '1월 4주차 주간 분석 리포트가 생성되었습니다.', isRead: true, referenceType: 'report', referenceId: 12, createdAt: new Date(now - 1000 * 60 * 60 * 24 * 4).toISOString() },
-        { id: 13, type: 'payment_reminder', category: 'subscription', title: '구독 결제 예정', message: 'Pro 플랜 결제가 3일 후 자동 갱신됩니다.', isRead: true, referenceType: 'payment', createdAt: new Date(now - 1000 * 60 * 60 * 24 * 5).toISOString() },
-        { id: 14, type: 'payment_failed', category: 'subscription', title: '결제 실패', message: '등록된 카드 결제에 실패했습니다. 결제 수단을 확인해주세요.', isRead: false, referenceType: 'payment', createdAt: new Date(now - 1000 * 60 * 60 * 24 * 6).toISOString() },
-        { id: 15, type: 'platform_published', category: 'upload', title: 'Instagram Reels 게시 완료', message: '"봄맞이 코디 하울"이 Instagram Reels에 게시되었습니다.', isRead: true, referenceType: 'video', referenceId: 95, createdAt: new Date(now - 1000 * 60 * 60 * 24 * 7).toISOString() },
-        { id: 16, type: 'milestone', category: 'analytics', title: '구독자 목표 달성!', message: 'YouTube 채널 구독자가 5,000명을 돌파했습니다!', isRead: true, referenceType: 'channel', referenceId: 1, createdAt: new Date(now - 1000 * 60 * 60 * 24 * 10).toISOString() },
-      ]
-      saveToStorage()
+      // On API failure, try loading cached data from localStorage
+      loadFromStorage()
     }
   }
 

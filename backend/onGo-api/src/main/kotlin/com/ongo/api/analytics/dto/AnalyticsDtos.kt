@@ -55,6 +55,8 @@ data class TopVideoItem(
     val title: String,
     val thumbnailUrl: String?,
     val totalViews: Long,
+    val totalLikes: Long = 0,
+    val publishedAt: java.time.LocalDateTime? = null,
     val platforms: List<String>
 )
 

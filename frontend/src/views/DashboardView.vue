@@ -13,6 +13,14 @@
       </div>
     </div>
 
+    <PageGuide title="대시보드" :items="[
+      '상단 KPI 카드를 탭하면 해당 상세 페이지(분석, 채널, 구독)로 바로 이동합니다',
+      '빠른 업로드·AI 도구·일정 확인 버튼으로 자주 쓰는 기능에 즉시 접근하세요',
+      '최근 업로드 영상을 가로 스크롤하며 확인하고, 탭하면 상세 페이지로 이동합니다',
+      '7일/30일 조회수 트렌드 차트로 채널 성장 추이를 한눈에 파악하세요',
+      '예약 업로드 섹션에서 오늘·내일 예정된 게시 일정을 확인할 수 있습니다',
+    ]" />
+
     <DashboardSkeleton v-if="loading" />
 
     <template v-else>
@@ -281,6 +289,14 @@
       </div>
     </div>
 
+    <PageGuide title="대시보드" :items="[
+      '상단 KPI 카드(조회수·구독자·좋아요·크레딧)를 클릭하면 해당 상세 페이지로 바로 이동합니다',
+      '커스터마이즈 버튼으로 대시보드 위젯 순서를 변경하고 불필요한 위젯을 숨길 수 있습니다',
+      '조회수 트렌드 차트에서 YouTube·TikTok·Instagram·Naver Clip별 성과를 비교하세요',
+      '재활용 추천 섹션에서 과거 인기 콘텐츠를 다시 게시할 수 있습니다',
+      '예약 일정 위젯에서 다가오는 게시 스케줄을 한눈에 확인하세요',
+    ]" />
+
     <DashboardSkeleton v-if="loading" />
 
     <template v-else>
@@ -428,6 +444,7 @@ import TopPerformingWidget from '@/components/dashboard/TopPerformingWidget.vue'
 import QuickActionsWidget from '@/components/dashboard/QuickActionsWidget.vue'
 import WeeklyDigestCard from '@/components/dashboard/WeeklyDigestCard.vue'
 import ContentGapCard from '@/components/dashboard/ContentGapCard.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useAuthStore } from '@/stores/auth'
 import { useCreditStore } from '@/stores/credit'

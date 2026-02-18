@@ -3,6 +3,7 @@ package com.ongo.application.analytics
 import com.ongo.application.analytics.dto.AnomalyListResponse
 import com.ongo.application.analytics.dto.AnomalyResponse
 import com.ongo.application.analytics.dto.PerformanceScoreResponse
+import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.analytics.AnalyticsDaily
 import com.ongo.domain.analytics.AnalyticsRepository
@@ -33,6 +34,9 @@ class PerformanceScoreUseCase(
 
     fun getPerformanceScore(userId: Long, videoId: Long): PerformanceScoreResponse {
         val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
+        if (video.userId != userId) {
+            throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        }
         val uploads = videoUploadRepository.findByVideoId(videoId)
         val uploadIds = uploads.mapNotNull { it.id }
 

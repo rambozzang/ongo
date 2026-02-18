@@ -1,5 +1,6 @@
 package com.ongo.domain.settings
 
+import com.ongo.common.enums.AiProvider
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.Visibility
 import java.time.LocalDateTime
@@ -10,6 +11,7 @@ data class UserSettings(
     val defaultVisibility: Visibility = Visibility.PUBLIC,
     val defaultPlatforms: List<Platform> = emptyList(),
     val defaultAiTone: String = "friendly",
+    val defaultAiProvider: AiProvider = AiProvider.CLAUDE,
     val notificationUpload: Boolean = true,
     val notificationComment: String = "realtime",
     val notificationCreditThreshold: Int = 20,

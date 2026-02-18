@@ -16,7 +16,7 @@
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <h3 id="template-edit-modal-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {{ template?.id ? '템플릿 수정' : '새 템플릿' }}
+          {{ isEdit ? '템플릿 수정' : '새 템플릿' }}
         </h3>
         <button
           class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
@@ -47,25 +47,13 @@
             </p>
           </div>
 
-          <!-- Description -->
-          <div>
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">설명</label>
-            <input
-              v-model="formData.description"
-              type="text"
-              maxlength="100"
-              class="input-field"
-              placeholder="이 템플릿에 대한 간단한 설명을 입력하세요"
-            />
-          </div>
-
-          <!-- Title Pattern -->
+          <!-- Title Template -->
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
               제목 패턴 <span class="text-red-500">*</span>
             </label>
             <input
-              v-model="formData.titlePattern"
+              v-model="formData.titleTemplate"
               type="text"
               maxlength="100"
               class="input-field"
@@ -74,7 +62,7 @@
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               <span class="font-medium">{title}</span> 플레이스홀더를 사용하면 실제 제목이 자동으로 삽입됩니다
             </p>
-            <p v-if="formData.titlePattern" class="mt-1 text-xs text-primary-600 dark:text-primary-400">
+            <p v-if="formData.titleTemplate" class="mt-1 text-xs text-primary-600 dark:text-primary-400">
               예시: {{ previewTitle }}
             </p>
           </div>
@@ -140,27 +128,6 @@
               <option v-for="cat in CATEGORIES" :key="cat" :value="cat">{{ cat }}</option>
             </select>
           </div>
-
-          <!-- Visibility -->
-          <div>
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">공개 범위</label>
-            <div class="flex gap-4">
-              <label
-                v-for="opt in VISIBILITY_OPTIONS"
-                :key="opt.value"
-                class="flex cursor-pointer items-center gap-2"
-              >
-                <input
-                  v-model="formData.visibility"
-                  type="radio"
-                  name="visibility"
-                  :value="opt.value"
-                  class="text-primary-600 focus:ring-primary-500"
-                />
-                <span class="text-sm text-gray-700 dark:text-gray-300">{{ opt.label }}</span>
-              </label>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -174,7 +141,7 @@
           class="btn-primary"
           @click="handleSave"
         >
-          {{ template?.id ? '수정' : '생성' }}
+          {{ isEdit ? '수정' : '생성' }}
         </button>
       </div>
         </div>
@@ -186,15 +153,14 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { XMarkIcon } from '@heroicons/vue/24/outline'
-import type { MetadataTemplate } from '@/types/template'
-import type { Visibility } from '@/types/video'
+import type { TemplateResponse, CreateTemplateRequest } from '@/types/template'
 
 const props = defineProps<{
-  template?: MetadataTemplate | null
+  template?: TemplateResponse | null
 }>()
 
 const emit = defineEmits<{
-  save: [data: Omit<MetadataTemplate, 'id' | 'createdAt' | 'updatedAt'>]
+  save: [data: CreateTemplateRequest]
   close: []
 }>()
 
@@ -217,28 +183,20 @@ const CATEGORIES = [
   '일상/Vlog',
 ]
 
-const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
-  { value: 'PUBLIC', label: '공개' },
-  { value: 'UNLISTED', label: '일부 공개' },
-  { value: 'PRIVATE', label: '비공개' },
-]
+const isEdit = computed(() => props.template && props.template.id > 0)
 
 const formData = reactive<{
   name: string
-  description: string
-  titlePattern: string
+  titleTemplate: string
   descriptionTemplate: string
   tags: string[]
   category: string
-  visibility: Visibility
 }>({
   name: '',
-  description: '',
-  titlePattern: '',
+  titleTemplate: '',
   descriptionTemplate: '',
   tags: [],
   category: '',
-  visibility: 'PUBLIC',
 })
 
 const tagInput = ref('')
@@ -246,24 +204,22 @@ const tagInput = ref('')
 const isValid = computed(() => {
   return (
     formData.name.trim().length > 0 &&
-    formData.titlePattern.trim().length > 0 &&
+    formData.titleTemplate.trim().length > 0 &&
     formData.descriptionTemplate.trim().length > 0
   )
 })
 
 const previewTitle = computed(() => {
-  return formData.titlePattern.replace('{title}', '샘플 제목')
+  return formData.titleTemplate.replace(/{title}/g, '샘플 제목')
 })
 
 onMounted(() => {
   if (props.template) {
     formData.name = props.template.name
-    formData.description = props.template.description || ''
-    formData.titlePattern = props.template.titlePattern
-    formData.descriptionTemplate = props.template.descriptionTemplate
+    formData.titleTemplate = props.template.titleTemplate || ''
+    formData.descriptionTemplate = props.template.descriptionTemplate || ''
     formData.tags = [...props.template.tags]
-    formData.category = props.template.category
-    formData.visibility = props.template.visibility as Visibility
+    formData.category = props.template.category || ''
   }
 })
 
@@ -284,12 +240,10 @@ function handleSave() {
 
   emit('save', {
     name: formData.name.trim(),
-    description: formData.description.trim() || '',
-    titlePattern: formData.titlePattern.trim(),
+    titleTemplate: formData.titleTemplate.trim(),
     descriptionTemplate: formData.descriptionTemplate.trim(),
     tags: formData.tags,
-    category: formData.category,
-    visibility: formData.visibility,
+    category: formData.category || undefined,
   })
 }
 </script>

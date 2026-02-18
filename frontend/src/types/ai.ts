@@ -6,35 +6,39 @@ export interface GenerateMetaRequest {
   script?: string
   videoId?: number
   useStt: boolean
-  platforms: Platform[]
-  tone: AiTone
+  targetPlatforms: Platform[]
+  tone: string
   category: string
 }
 
 export interface GenerateMetaResponse {
-  platformResults: PlatformMetaResult[]
-  hashtags: string[]
-  creditsUsed: number
-  creditsRemaining: number
+  platforms: PlatformMetaResult[]
+  creditsUsed?: number
+  creditsRemaining?: number
 }
 
 export interface PlatformMetaResult {
-  platform: Platform
+  platform: string
   titleCandidates: string[]
   description: string
-  tags: string[]
+  hashtags: string[]
 }
 
 export interface GenerateHashtagsRequest {
   title: string
   category: string
-  platforms: Platform[]
+  targetPlatforms: Platform[]
 }
 
 export interface GenerateHashtagsResponse {
-  platformHashtags: Record<string, string[]>
-  creditsUsed: number
-  creditsRemaining: number
+  platforms: PlatformHashtagsItem[]
+  creditsUsed?: number
+  creditsRemaining?: number
+}
+
+export interface PlatformHashtagsItem {
+  platform: string
+  hashtags: string[]
 }
 
 export interface SttRequest {
@@ -42,10 +46,10 @@ export interface SttRequest {
 }
 
 export interface SttResponse {
-  transcript: string
+  text: string
   segments: SttSegment[]
-  creditsUsed: number
-  creditsRemaining: number
+  creditsUsed?: number
+  creditsRemaining?: number
 }
 
 export interface SttSegment {
@@ -63,20 +67,20 @@ export interface AnalyzeScriptResponse {
   targetAudience: string
   suggestedCategory: string
   summary: string
-  creditsUsed: number
-  creditsRemaining: number
+  creditsUsed?: number
+  creditsRemaining?: number
 }
 
 export interface GenerateReplyRequest {
-  commentId: number
-  commentContent: string
-  channelTone: AiTone
+  comment: string
+  channelTone: string
+  context?: string
 }
 
 export interface GenerateReplyResponse {
-  replies: { tone: AiTone; content: string }[]
-  creditsUsed: number
-  creditsRemaining: number
+  replies: { tone: string; reply: string }[]
+  creditsUsed?: number
+  creditsRemaining?: number
 }
 
 export interface SuggestScheduleRequest {
@@ -85,43 +89,46 @@ export interface SuggestScheduleRequest {
 
 export interface SuggestScheduleResponse {
   suggestions: ScheduleSuggestion[]
-  creditsUsed: number
-  creditsRemaining: number
+  creditsUsed?: number
+  creditsRemaining?: number
 }
 
 export interface ScheduleSuggestion {
   dayOfWeek: string
   time: string
   reason: string
-  expectedImprovement: number
+  expectedBoost: number
 }
 
 export interface GenerateIdeasRequest {
   category: string
-  recentVideoIds?: number[]
+  recentTitles?: string[]
 }
 
 export interface GenerateIdeasResponse {
   ideas: ContentIdea[]
-  creditsUsed: number
-  creditsRemaining: number
+  creditsUsed?: number
+  creditsRemaining?: number
 }
 
 export interface ContentIdea {
   title: string
   description: string
   expectedReaction: string
-  trendScore: number
+  difficulty: string
 }
 
 export interface GenerateReportRequest {
-  period: '7d' | '30d'
+  days: number
 }
 
 export interface GenerateReportResponse {
   reportMarkdown: string
-  creditsUsed: number
-  creditsRemaining: number
+  highlights?: string[]
+  improvements?: string[]
+  nextWeekSuggestions?: string[]
+  creditsUsed?: number
+  creditsRemaining?: number
 }
 
 // AI Pipeline types

@@ -10,15 +10,13 @@ import com.ongo.domain.ai.WeeklyDigest
 import com.ongo.domain.ai.WeeklyDigestRepository
 import com.ongo.domain.analytics.AnalyticsRepository
 import org.slf4j.LoggerFactory
-import org.springframework.ai.chat.client.ChatClient
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Service
 class WeeklyDigestUseCase(
-    @Qualifier("anthropicChatClient") private val chatClient: ChatClient,
+    private val chatClientResolver: ChatClientResolver,
     private val creditService: CreditService,
     private val analyticsRepository: AnalyticsRepository,
     private val weeklyDigestRepository: WeeklyDigestRepository,
@@ -55,7 +53,7 @@ class WeeklyDigestUseCase(
             .replace("{topVideos}", topVideosStr)
 
         try {
-            val result = chatClient.prompt()
+            val result = chatClientResolver.resolve(userId).prompt()
                 .system(PromptTemplates.WEEKLY_DIGEST_SYSTEM)
                 .user(userPrompt)
                 .call()

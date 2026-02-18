@@ -2,6 +2,7 @@ package com.ongo.application.analytics
 
 import com.ongo.application.analytics.dto.*
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.analytics.AnalyticsRepository
 import com.ongo.domain.credit.CreditRepository
@@ -61,6 +62,9 @@ class AnalyticsUseCase(
 
     fun getVideoAnalytics(userId: Long, videoId: Long, days: Int): VideoAnalyticsResponse {
         val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
+        if (video.userId != userId) {
+            throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        }
         val uploads = videoUploadRepository.findByVideoId(videoId)
         val from = LocalDate.now().minusDays(days.toLong())
         val to = LocalDate.now()
@@ -104,6 +108,8 @@ class AnalyticsUseCase(
                 title = video.title,
                 thumbnailUrl = video.thumbnailUrls.firstOrNull(),
                 totalViews = 0, // populated from aggregate query
+                totalLikes = 0,
+                publishedAt = video.createdAt,
                 platforms = uploads.map { it.platform.name }
             )
         }
@@ -116,6 +122,14 @@ class AnalyticsUseCase(
 
         // Batch fetch all videos and uploads (eliminates N+1)
         val videos = videoRepository.findByIds(videoIds).associateBy { it.id!! }
+
+        // Verify ownership for all requested videos
+        videos.values.forEach { video ->
+            if (video.userId != userId) {
+                throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+            }
+        }
+
         val uploadsByVideoId = videoUploadRepository.findByVideoIds(videoIds)
 
         // Batch fetch all analytics

@@ -32,6 +32,14 @@ interface TikTokApi {
     fun getCreatorInfo(
         @RequestHeader("Authorization") authorization: String,
     ): TikTokCreatorInfoResponse
+
+    // --- Comment API ---
+
+    @PostExchange("/v2/comment/list/")
+    fun listComments(
+        @RequestHeader("Authorization") authorization: String,
+        @RequestBody request: TikTokCommentListRequest,
+    ): TikTokCommentListResponse
 }
 
 @HttpExchange

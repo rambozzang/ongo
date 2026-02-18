@@ -4,6 +4,7 @@ import { useInboxStore } from '@/stores/inbox'
 import type { MessagePlatform, MessageType, MessageStatus } from '@/types/inbox'
 import InboxMessageList from '@/components/inbox/InboxMessageList.vue'
 import InboxMessageDetail from '@/components/inbox/InboxMessageDetail.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import {
   FunnelIcon,
   MagnifyingGlassIcon,
@@ -150,6 +151,14 @@ const cancelSelection = () => {
             </button>
           </div>
         </div>
+
+        <PageGuide title="소셜 인박스" :items="[
+          '왼쪽 메시지 목록에서 모든 플랫폼의 DM과 메시지를 통합하여 확인하세요',
+          '플랫폼 드롭다운·메시지 유형·상태 필터와 검색으로 원하는 메시지를 빠르게 찾으세요',
+          '메시지를 클릭하면 오른쪽 상세 패널에서 전체 대화 내용을 확인하고 바로 답장할 수 있습니다',
+          '읽지 않은 메시지는 굵은 글씨로 표시되며, 별표·보관·삭제로 메시지를 정리하세요',
+          '상단 카운터에서 전체·읽지 않음·별표·보관 메시지 수를 확인할 수 있습니다',
+        ]" />
 
         <!-- Filters -->
         <div class="flex flex-wrap gap-3 items-center">

@@ -217,6 +217,56 @@ class TikTokClient(
         return false
     }
 
+    // --- Comment API ---
+    // TikTok API v2 only supports read-only comment listing.
+
+    override fun getCommentCapabilities(): PlatformCommentCapabilities =
+        PlatformCommentCapabilities(canListComments = true)
+
+    override fun listComments(
+        platformVideoId: String,
+        accessToken: String,
+        pageToken: String?,
+        maxResults: Int,
+    ): PlatformCommentListResult {
+        log.debug("TikTok 댓글 조회: videoId={}", platformVideoId)
+
+        return try {
+            val response = tikTokApi.listComments(
+                authorization = "Bearer $accessToken",
+                request = com.ongo.infrastructure.external.tiktok.dto.TikTokCommentListRequest(
+                    videoId = platformVideoId,
+                    maxCount = maxResults.coerceAtMost(50),
+                    cursor = pageToken?.toLongOrNull(),
+                ),
+            )
+
+            val comments = response.data?.comments?.mapNotNull { comment ->
+                PlatformComment(
+                    platformCommentId = comment.id ?: return@mapNotNull null,
+                    parentCommentId = comment.parentCommentId,
+                    authorName = comment.user?.displayName ?: "Unknown",
+                    authorAvatarUrl = comment.user?.avatarUrl,
+                    authorChannelUrl = comment.user?.profileDeepLink,
+                    content = comment.text ?: "",
+                    likeCount = comment.likeCount ?: 0,
+                    replyCount = comment.replyCount ?: 0,
+                    publishedAt = comment.createTime?.let {
+                        java.time.Instant.ofEpochSecond(it).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()
+                    },
+                )
+            } ?: emptyList()
+
+            PlatformCommentListResult(
+                comments = comments,
+                nextPageToken = if (response.data?.hasMore == true) response.data.cursor?.toString() else null,
+            )
+        } catch (e: Exception) {
+            log.warn("TikTok 댓글 조회 실패: {}", e.message)
+            PlatformCommentListResult(emptyList())
+        }
+    }
+
     private fun mapVisibility(visibility: String): String =
         when (visibility.uppercase()) {
             "PUBLIC" -> "PUBLIC_TO_EVERYONE"

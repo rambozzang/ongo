@@ -37,6 +37,15 @@
       </div>
     </div>
 
+    <PageGuide title="통합 분석" :items="[
+      '7일·30일·90일 기간 필터로 분석 구간을 설정하고, 내보내기 버튼으로 데이터를 CSV/Excel로 다운로드하세요',
+      '개요 탭에서 조회수·구독자·좋아요·예상 수익 KPI 카드와 플랫폼별 비교 차트를 확인하세요',
+      '최적 게시 시간 히트맵에서 요일별·시간대별 조회수가 가장 높은 구간을 파악하여 게시 시간을 최적화하세요',
+      '해시태그 분석의 태그 클라우드에서 태그를 클릭하면 해당 태그의 성과(사용 횟수·평균 조회수)를 상세 확인할 수 있습니다',
+      'AI 인사이트 버튼(8크레딧)으로 현재 분석 기간의 자동 리포트를 생성하여 핵심 개선점을 확인하세요',
+      '코호트 분석·리텐션 탭에서 카테고리별 누적 조회수 추이와 영상별 시청자 이탈 구간을 분석하세요',
+    ]" />
+
     <!-- Sub-tab Navigation -->
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
       <nav class="-mb-px flex space-x-6">
@@ -543,6 +552,7 @@ import TagCloud from '@/components/analytics/TagCloud.vue'
 import TagPerformanceTable from '@/components/analytics/TagPerformanceTable.vue'
 import CohortAnalysisChart from '@/components/analytics/CohortAnalysisChart.vue'
 import RetentionCurveChart from '@/components/analytics/RetentionCurveChart.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { analyticsApi } from '@/api/analytics'
 import { useAnalyticsStore } from '@/stores/analytics'
 import { useAiStore } from '@/stores/ai'

@@ -10,15 +10,13 @@ import com.ongo.common.exception.BusinessException
 import com.ongo.domain.competitor.CompetitorRepository
 import com.ongo.domain.video.VideoRepository
 import org.slf4j.LoggerFactory
-import org.springframework.ai.chat.client.ChatClient
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
 class ContentGapAnalysisUseCase(
-    @Qualifier("anthropicChatClient") private val chatClient: ChatClient,
+    private val chatClientResolver: ChatClientResolver,
     private val creditService: CreditService,
     private val rateLimiter: AiRateLimiter,
     private val videoRepository: VideoRepository,
@@ -51,7 +49,7 @@ class ContentGapAnalysisUseCase(
             .replace("{competitorData}", InputSanitizer.sanitize(competitorStr))
 
         try {
-            val result = chatClient.prompt()
+            val result = chatClientResolver.resolve(userId).prompt()
                 .system(PromptTemplates.CONTENT_GAP_SYSTEM)
                 .user(userPrompt)
                 .call()

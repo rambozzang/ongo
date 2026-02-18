@@ -78,8 +78,9 @@ export const useAiStore = defineStore('ai', () => {
     if (isGeneratingReport.value) return reportResult.value
     isGeneratingReport.value = true
     error.value = null
+    const days = period === '30d' ? 30 : 7
     try {
-      reportResult.value = await aiApi.generateReport({ period })
+      reportResult.value = await aiApi.generateReport({ days })
       return reportResult.value
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'AI 요청 실패'

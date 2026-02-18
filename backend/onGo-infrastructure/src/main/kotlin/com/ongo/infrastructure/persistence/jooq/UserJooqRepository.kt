@@ -19,8 +19,10 @@ import com.ongo.infrastructure.persistence.jooq.Fields.PROVIDER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.ROLE
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Tables.USERS
+import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Record
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -50,6 +52,28 @@ class UserJooqRepository(
             .and(PROVIDER_ID.eq(providerId))
             .fetchOne()
             ?.toUser()
+
+    override fun findAll(offset: Int, limit: Int, searchQuery: String?): List<User> =
+        dsl.select()
+            .from(USERS)
+            .where(buildSearchCondition(searchQuery))
+            .orderBy(CREATED_AT.desc())
+            .offset(offset)
+            .limit(limit)
+            .fetch()
+            .map { it.toUser() }
+
+    override fun countAll(searchQuery: String?): Long =
+        dsl.selectCount()
+            .from(USERS)
+            .where(buildSearchCondition(searchQuery))
+            .fetchOne(0, Long::class.java) ?: 0L
+
+    private fun buildSearchCondition(searchQuery: String?): Condition {
+        if (searchQuery.isNullOrBlank()) return DSL.trueCondition()
+        val pattern = "%${searchQuery.trim().lowercase()}%"
+        return DSL.lower(NAME).like(pattern).or(DSL.lower(EMAIL).like(pattern))
+    }
 
     override fun save(user: User): User {
         val id = dsl.insertInto(USERS)

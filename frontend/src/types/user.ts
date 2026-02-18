@@ -8,6 +8,7 @@ export interface User {
   profileImageUrl: string | null
   category: CreatorCategory | null
   planType: PlanType
+  role: string
   onboardingCompleted: boolean
   createdAt: string
   updatedAt: string

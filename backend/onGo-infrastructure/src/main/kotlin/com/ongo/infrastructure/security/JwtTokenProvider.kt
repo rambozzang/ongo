@@ -24,17 +24,30 @@ class JwtTokenProvider(
         return generateToken(userId, accessTokenExpiry, "access")
     }
 
+    override fun generateAccessToken(userId: Long, role: String): String {
+        return generateToken(userId, accessTokenExpiry, "access", role)
+    }
+
     override fun generateRefreshToken(userId: Long): String {
         return generateToken(userId, refreshTokenExpiry, "refresh")
     }
 
-    private fun generateToken(userId: Long, expiry: Long, type: String): String {
+    override fun generateSseToken(userId: Long): String {
+        // SSE 전용 단기 토큰: 5분 만료, 쿼리 파라미터 노출에 안전
+        return generateToken(userId, 5 * 60 * 1000L, "sse")
+    }
+
+    private fun generateToken(userId: Long, expiry: Long, type: String, role: String? = null): String {
         val now = Date()
         val expiryDate = Date(now.time + expiry)
 
-        return Jwts.builder()
+        val builder = Jwts.builder()
             .subject(userId.toString())
             .claim("type", type)
+        if (role != null) {
+            builder.claim("role", role)
+        }
+        return builder
             .issuedAt(now)
             .expiration(expiryDate)
             .signWith(key)
@@ -60,6 +73,11 @@ class JwtTokenProvider(
     override fun getTokenType(token: String): String {
         val claims = parseClaims(token)
         return claims["type"] as String
+    }
+
+    override fun getRoleFromToken(token: String): String? {
+        val claims = parseClaims(token)
+        return claims["role"] as? String
     }
 
     override fun getRefreshTokenExpiryMillis(): Long = refreshTokenExpiry

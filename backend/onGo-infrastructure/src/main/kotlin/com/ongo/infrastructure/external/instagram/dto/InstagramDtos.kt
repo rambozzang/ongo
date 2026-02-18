@@ -86,6 +86,45 @@ data class InstagramTokenResponse(
     @JsonProperty("expires_in") val expiresIn: Long?,
 )
 
+// --- Comments ---
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class InstagramCommentsResponse(
+    val data: List<InstagramCommentData>? = null,
+    val paging: Paging? = null,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class InstagramCommentData(
+        val id: String?,
+        val text: String?,
+        val username: String?,
+        @JsonProperty("like_count") val likeCount: Int?,
+        val timestamp: String?,
+        val replies: RepliesData? = null,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class RepliesData(
+        val data: List<InstagramCommentData>? = null,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Paging(
+        val cursors: Cursors? = null,
+        val next: String? = null,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Cursors(
+        val after: String? = null,
+    )
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class InstagramCommentReplyResponse(
+    val id: String? = null,
+)
+
 // --- Common Error ---
 
 @JsonIgnoreProperties(ignoreUnknown = true)

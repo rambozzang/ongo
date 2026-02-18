@@ -17,3 +17,10 @@ logging:
     org.springframework.ai: DEBUG
   file:
     name: ""  # Disable file logging in dev (console only)
+
+spring:
+  ai:
+    vertex:
+      ai:
+        gemini:
+          project-id: "dummy-project-id"

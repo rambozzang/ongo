@@ -1,11 +1,9 @@
 package com.ongo.infrastructure.upload
 
 import com.ongo.common.annotation.CurrentUser
-import com.ongo.application.video.StorageService
 import com.ongo.application.video.UploadVideoUseCase
 import com.ongo.domain.video.VideoRepository
-import io.minio.MinioClient
-import io.minio.PutObjectArgs
+import com.ongo.infrastructure.external.storage.StorageClient
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -14,13 +12,14 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
+import org.springframework.scheduling.annotation.Scheduled
 import java.io.File
-import java.io.FileOutputStream
 import java.io.RandomAccessFile
+import java.nio.file.Files
 import java.security.MessageDigest
+import java.time.LocalDateTime
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -31,9 +30,7 @@ class TusUploadController(
     private val tusConfig: TusUploadConfig,
     private val uploadVideoUseCase: UploadVideoUseCase,
     private val videoRepository: VideoRepository,
-    private val minioClient: MinioClient,
-    @Value("\${ongo.storage.bucket:ongo-videos}")
-    private val bucket: String,
+    private val storageClient: StorageClient,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -41,7 +38,7 @@ class TusUploadController(
     private val uploadOffsets = ConcurrentHashMap<Long, Long>()
     private val uploadMetadata = ConcurrentHashMap<Long, UploadMeta>()
 
-    data class UploadMeta(val filename: String, val contentType: String, val fileSize: Long)
+    data class UploadMeta(val filename: String, val contentType: String, val fileSize: Long, val createdAt: LocalDateTime = LocalDateTime.now())
 
     @Operation(
         summary = "Tus 서버 옵션 조회",
@@ -235,7 +232,7 @@ class TusUploadController(
     ) {
         uploadOffsets.remove(videoId)
         uploadMetadata.remove(videoId)
-        File(tusConfig.storagePath, "$videoId.part").delete()
+        Files.deleteIfExists(File(tusConfig.storagePath, "$videoId.part").toPath())
 
         response.setHeader("Tus-Resumable", "1.0.0")
         response.status = HttpStatus.NO_CONTENT.value()
@@ -250,21 +247,14 @@ class TusUploadController(
             // SHA-256 해시 계산
             val contentHash = calculateSHA256(file)
 
-            // MinIO에 파일 업로드 (파일명은 이미 sanitize 처리됨)
+            // 스토리지에 파일 업로드
             val objectName = "videos/$videoId/${meta.filename}"
             file.inputStream().use { input ->
-                minioClient.putObject(
-                    PutObjectArgs.builder()
-                        .bucket(bucket)
-                        .`object`(objectName)
-                        .stream(input, meta.fileSize, -1)
-                        .contentType(meta.contentType)
-                        .build()
-                )
+                storageClient.uploadFile(objectName, input, meta.contentType, meta.fileSize)
             }
 
             // 파일 URL 생성
-            val fileUrl = "/$bucket/$objectName"
+            val fileUrl = storageClient.getFileUrl(objectName)
 
             // 업로드 완료 처리
             uploadVideoUseCase.completeUpload(videoId, fileUrl, contentHash)
@@ -274,7 +264,7 @@ class TusUploadController(
             log.error("Tus 업로드 완료 처리 실패: videoId={}", videoId, e)
         } finally {
             // 임시 파일 정리
-            file.delete()
+            Files.deleteIfExists(file.toPath())
             uploadOffsets.remove(videoId)
             uploadMetadata.remove(videoId)
         }
@@ -299,6 +289,35 @@ class TusUploadController(
         }
         // UUID 기반 파일명으로 path traversal 방지
         return "${UUID.randomUUID()}$extension"
+    }
+
+    /**
+     * 매시간 고아 임시 파일 정리 — 설정된 만료 시간(기본 24시간) 초과 .part 파일 삭제
+     */
+    @Scheduled(cron = "0 0 * * * *")
+    fun cleanupOrphanedUploads() {
+        val tusDir = File(tusConfig.storagePath)
+        if (!tusDir.exists()) return
+
+        val expirationMs = tusConfig.expirationHours * 3600L * 1000L
+        val now = System.currentTimeMillis()
+        var cleaned = 0
+
+        tusDir.listFiles { file -> file.name.endsWith(".part") }?.forEach { file ->
+            if (now - file.lastModified() > expirationMs) {
+                val videoId = file.nameWithoutExtension.toLongOrNull()
+                Files.deleteIfExists(file.toPath())
+                if (videoId != null) {
+                    uploadOffsets.remove(videoId)
+                    uploadMetadata.remove(videoId)
+                }
+                cleaned++
+            }
+        }
+
+        if (cleaned > 0) {
+            log.info("고아 Tus 임시 파일 정리 완료: {}개", cleaned)
+        }
     }
 
     private fun parseTusMetadata(header: String): Map<String, String> {

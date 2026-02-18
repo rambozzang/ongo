@@ -16,6 +16,7 @@ import InviteMemberModal from '@/components/team/InviteMemberModal.vue'
 import TeamActivityFeed from '@/components/team/TeamActivityFeed.vue'
 import RoleBadge from '@/components/team/RoleBadge.vue'
 import PermissionMatrix from '@/components/team/PermissionMatrix.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 
 const teamStore = useTeamStore()
 
@@ -179,6 +180,14 @@ const expiresIn = (dateString: string): string => {
           </div>
         </div>
       </div>
+
+      <PageGuide title="팀 관리" :items="[
+        '멤버 탭에서 팀원 목록을 확인하고, 역할 배지(Owner/Admin/Editor/Viewer)로 권한 수준을 파악하세요',
+        '초대 탭에서 이메일로 새 멤버를 초대하고, 대기 중/만료된 초대를 관리(재발송/취소)할 수 있습니다',
+        '활동 탭에서 팀원들의 최근 작업 이력을 모니터링하세요',
+        '권한 탭에서 역할별 기능 접근 권한을 세밀하게 설정하여 팀 보안을 관리하세요',
+        '상단 역할 통계에서 Owner·Admin·Editor·Viewer 인원 수를 한눈에 확인하세요',
+      ]" />
 
       <!-- Tabs -->
       <div class="border-b border-gray-200 dark:border-gray-700">

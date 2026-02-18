@@ -66,6 +66,38 @@ class MinioStorageClient(
         )
     }
 
+    override fun listObjects(prefix: String): List<String> {
+        return minioClient.listObjects(
+            ListObjectsArgs.builder()
+                .bucket(storageProperties.bucket)
+                .prefix(prefix)
+                .recursive(true)
+                .build(),
+        ).map { it.get().objectName() }
+    }
+
+    override fun downloadFile(key: String): InputStream {
+        return minioClient.getObject(
+            GetObjectArgs.builder()
+                .bucket(storageProperties.bucket)
+                .`object`(key)
+                .build(),
+        )
+    }
+
+    override fun generatePresignedDownloadUrl(key: String, expirationMinutes: Int): String {
+        log.debug("MinIO presigned GET URL 생성: key={}, expiry={}분", key, expirationMinutes)
+
+        return minioClient.getPresignedObjectUrl(
+            GetPresignedObjectUrlArgs.builder()
+                .bucket(storageProperties.bucket)
+                .`object`(key)
+                .method(Method.GET)
+                .expiry(expirationMinutes, TimeUnit.MINUTES)
+                .build(),
+        )
+    }
+
     private fun ensureBucketExists() {
         val exists = minioClient.bucketExists(
             BucketExistsArgs.builder()

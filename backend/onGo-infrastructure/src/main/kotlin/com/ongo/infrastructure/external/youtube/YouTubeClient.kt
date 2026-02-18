@@ -3,6 +3,7 @@ package com.ongo.infrastructure.external.youtube
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
+import com.ongo.infrastructure.external.youtube.dto.YouTubeCommentInsertRequest
 import com.ongo.infrastructure.external.youtube.dto.YouTubeUploadRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -199,6 +200,98 @@ class YouTubeClient(
             false
         }
     }
+
+    // --- Comment API ---
+
+    override fun getCommentCapabilities(): PlatformCommentCapabilities =
+        PlatformCommentCapabilities(canListComments = true, canReply = true, canDelete = true, canHide = true)
+
+    override fun listComments(
+        platformVideoId: String,
+        accessToken: String,
+        pageToken: String?,
+        maxResults: Int,
+    ): PlatformCommentListResult {
+        log.debug("YouTube 댓글 조회: videoId={}", platformVideoId)
+
+        val response = youTubeApi.listCommentThreads(
+            videoId = platformVideoId,
+            part = "snippet",
+            maxResults = maxResults.coerceAtMost(100),
+            pageToken = pageToken,
+            order = "time",
+            authorization = "Bearer $accessToken",
+        )
+
+        val comments = response.items.mapNotNull { thread ->
+            val snippet = thread.snippet?.topLevelComment?.snippet ?: return@mapNotNull null
+            PlatformComment(
+                platformCommentId = thread.snippet.topLevelComment.id ?: thread.id,
+                authorName = snippet.authorDisplayName ?: "Unknown",
+                authorAvatarUrl = snippet.authorProfileImageUrl,
+                authorChannelUrl = snippet.authorChannelUrl,
+                content = snippet.textDisplay ?: "",
+                likeCount = snippet.likeCount ?: 0,
+                replyCount = thread.snippet.totalReplyCount ?: 0,
+                publishedAt = snippet.publishedAt?.let { parseIsoDateTime(it) },
+            )
+        }
+
+        return PlatformCommentListResult(
+            comments = comments,
+            nextPageToken = response.nextPageToken,
+            totalCount = response.pageInfo?.totalResults,
+        )
+    }
+
+    override fun replyToComment(
+        platformCommentId: String,
+        content: String,
+        accessToken: String,
+        platformVideoId: String?,
+    ): PlatformCommentReplyResult {
+        log.info("YouTube 댓글 답글: parentId={}", platformCommentId)
+
+        val response = youTubeApi.insertComment(
+            authorization = "Bearer $accessToken",
+            body = YouTubeCommentInsertRequest(
+                snippet = YouTubeCommentInsertRequest.Snippet(
+                    parentId = platformCommentId,
+                    textOriginal = content,
+                ),
+            ),
+        )
+
+        return PlatformCommentReplyResult(
+            platformCommentId = response.id ?: "",
+            success = response.id != null,
+        )
+    }
+
+    override fun deleteComment(
+        platformCommentId: String,
+        accessToken: String,
+    ): PlatformCommentDeleteResult {
+        log.info("YouTube 댓글 삭제: commentId={}", platformCommentId)
+
+        return try {
+            youTubeApi.deleteComment(
+                id = platformCommentId,
+                authorization = "Bearer $accessToken",
+            )
+            PlatformCommentDeleteResult(success = true)
+        } catch (e: Exception) {
+            log.error("YouTube 댓글 삭제 실패: {}", e.message)
+            PlatformCommentDeleteResult(success = false, errorMessage = e.message)
+        }
+    }
+
+    private fun parseIsoDateTime(iso: String): java.time.LocalDateTime? =
+        try {
+            java.time.OffsetDateTime.parse(iso).toLocalDateTime()
+        } catch (_: Exception) {
+            null
+        }
 
     private fun mapVisibility(visibility: String): String =
         when (visibility.uppercase()) {

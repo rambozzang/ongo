@@ -95,6 +95,7 @@ import {
   RocketLaunchIcon,
   LinkIcon,
   ArrowUpTrayIcon,
+  PhotoIcon,
   CalendarDaysIcon,
   SparklesIcon,
   ChartBarIcon,
@@ -163,7 +164,7 @@ const sectionsKo: ManualSection[] = [
     icon: LinkIcon,
     content: [
       {
-        text: 'onGo는 YouTube, TikTok, Instagram Reels, Naver Clip 4개 플랫폼을 지원합니다. 각 플랫폼의 공식 OAuth 인증을 통해 안전하게 채널을 연동할 수 있습니다.',
+        text: 'onGo는 YouTube, TikTok, Instagram Reels, Naver Clip을 포함한 총 13개 플랫폼을 지원합니다. 각 플랫폼의 공식 OAuth 인증을 통해 안전하게 채널을 연동할 수 있습니다.',
         steps: [
           '사이드바에서 "채널 관리"를 클릭합니다.',
           '"채널 추가" 버튼을 클릭하고 연동할 플랫폼을 선택합니다.',
@@ -179,6 +180,15 @@ const sectionsKo: ManualSection[] = [
           'TikTok: TikTok 비즈니스 또는 크리에이터 계정이 필요합니다.',
           'Instagram Reels: Facebook/Meta 비즈니스 계정과 연결된 Instagram 계정이 필요합니다.',
           'Naver Clip: 네이버 계정 인증 후 클립 채널을 연동합니다.',
+          'X (Twitter): Twitter/X 개발자 계정이 필요합니다. OAuth 2.0 PKCE를 사용합니다.',
+          'Facebook: Facebook 페이지 관리자 권한이 필요합니다.',
+          'Threads: Meta/Instagram 비즈니스 계정이 필요합니다.',
+          'Pinterest: Pinterest 비즈니스 계정이 필요합니다.',
+          'LinkedIn: LinkedIn 계정으로 비디오 포스트를 게시합니다.',
+          'WordPress: WordPress.com 블로그가 필요합니다.',
+          'Tumblr: Tumblr 블로그에 비디오 포스트를 게시합니다.',
+          'Vimeo: Vimeo 계정으로 고품질 영상을 업로드합니다.',
+          'Dailymotion: Dailymotion 계정으로 영상을 업로드합니다.',
         ],
       },
     ],
@@ -213,6 +223,96 @@ const sectionsKo: ManualSection[] = [
           '검토 중 (REVIEW): 플랫폼 검토 대기 중',
           '게시됨 (PUBLISHED): 업로드 완료',
           '실패 (FAILED): 업로드 실패',
+        ],
+      },
+      {
+        subtitle: '미디어 분석 (FFprobe)',
+        text: '업로드된 영상은 FFprobe를 통해 자동으로 분석됩니다. 영상 상세 페이지의 "미디어 분석 정보" 탭에서 결과를 확인할 수 있습니다.',
+        items: [
+          '비디오 트랙: 코덱(H.264/H.265 등), 해상도, FPS, 비트레이트, 프로파일',
+          '오디오 트랙: 코덱(AAC 등), 비트레이트, 샘플레이트, 채널 수',
+          '색상 정보: 색 공간, 픽셀 포맷',
+          '플랫폼 호환성: YouTube, TikTok, Instagram, Naver Clip 등 13개 플랫폼과의 호환성 여부를 자동 판단하여 배지로 표시합니다.',
+        ],
+      },
+      {
+        subtitle: '다이렉트 원본 업로드',
+        text: '원본 영상 파일이 별도의 트랜스코딩 없이 각 플랫폼에 직접 업로드됩니다. 플랫폼이 자체적으로 최적 처리를 수행하므로 품질 손실 없이 빠르게 업로드할 수 있습니다.',
+      },
+      {
+        subtitle: '실시간 처리 진행률',
+        text: '업로드 후 영상 처리 과정을 실시간으로 확인할 수 있습니다. SSE(Server-Sent Events)를 통해 각 처리 단계의 진행률이 자동 업데이트됩니다.',
+        items: [
+          '처리 단계: 미디어 분석 → 썸네일 생성 → 자막 생성 → 플랫폼 업로드',
+          '전체 진행률과 단계별 진행률을 동시에 확인할 수 있습니다.',
+          '예상 남은 시간이 자동 계산되어 표시됩니다.',
+          '연결이 끊긴 경우 자동 재접속을 시도합니다.',
+        ],
+      },
+      {
+        subtitle: 'AI 썸네일 생성',
+        text: '업로드 후 FFmpeg를 활용하여 자동으로 썸네일 후보를 생성합니다.',
+        items: [
+          '씬 감지: 장면 전환 지점에서 시각적으로 흥미로운 프레임을 자동 추출합니다.',
+          '균등 간격 추출: 영상 전체에 걸쳐 균등한 간격으로 프레임을 추출합니다.',
+          '총 10개 내외의 후보가 생성되며, 그리드에서 원하는 썸네일을 클릭하여 대표 이미지로 선택합니다.',
+          '커스텀 썸네일: JPG, PNG, WebP 형식의 이미지를 직접 업로드할 수 있습니다 (최대 5MB).',
+        ],
+      },
+      {
+        subtitle: 'AI 자동 자막 (Whisper STT)',
+        text: 'OpenAI Whisper를 사용하여 영상의 음성을 자동으로 텍스트로 변환합니다.',
+        items: [
+          '한국어와 영어 자막 생성을 지원합니다.',
+          '생성된 SRT 형식 자막을 인라인 편집기에서 직접 수정할 수 있습니다.',
+          '수정된 자막은 저장 버튼으로 서버에 저장됩니다.',
+          'SRT 또는 VTT 형식으로 다운로드할 수 있습니다.',
+          '자막 생성에는 AI 크레딧 5개가 차감됩니다 (생성 전 확인 팝업 표시).',
+        ],
+      },
+      {
+        subtitle: '향상된 업로드',
+        text: 'Tus 프로토콜 기반 업로드가 더욱 개선되었습니다.',
+        items: [
+          '적응형 청크 사이즈: 네트워크 속도에 따라 2MB~20MB 사이에서 청크 크기가 자동 조절됩니다.',
+          '업로드 속도와 남은 시간이 실시간으로 표시됩니다.',
+          '24시간 이내 중단된 업로드를 자동으로 이어받기할 수 있습니다.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'image-upload',
+    title: '이미지/사진 업로드',
+    icon: PhotoIcon,
+    content: [
+      {
+        subtitle: '사진 업로드',
+        text: 'onGo는 영상뿐만 아니라 사진/이미지 콘텐츠도 지원합니다. Instagram 등 사진 게시가 가능한 플랫폼에 이미지를 업로드할 수 있습니다.',
+        steps: [
+          '업로드 페이지에서 이미지 파일을 선택하면 자동으로 이미지 모드로 전환됩니다.',
+          '여러 장의 이미지를 한 번에 선택하여 멀티 이미지 스토리를 만들 수 있습니다.',
+          '제목, 설명, 태그 등 메타데이터를 입력합니다.',
+          '게시할 플랫폼을 선택하고 업로드합니다.',
+        ],
+      },
+      {
+        subtitle: '멀티 이미지 스토리',
+        text: 'Instagram 스토리처럼 여러 장의 이미지를 하나의 게시물로 묶어 업로드할 수 있습니다.',
+        items: [
+          '최대 10장까지 이미지를 추가할 수 있습니다.',
+          '드래그 앤 드롭으로 이미지 순서를 변경할 수 있습니다.',
+          '각 이미지는 최대 50MB까지 지원됩니다.',
+          '지원 형식: JPG, PNG, WebP, GIF, HEIC',
+        ],
+      },
+      {
+        subtitle: '이미지와 영상의 차이',
+        text: '',
+        items: [
+          '이미지 콘텐츠는 영상과 동일하게 원본이 바로 업로드됩니다.',
+          '자동 썸네일 생성과 자막 생성은 영상에만 적용됩니다.',
+          '이미지 콘텐츠는 영상 목록에서 이미지 아이콘으로 구분됩니다.',
         ],
       },
     ],
@@ -400,7 +500,7 @@ const sectionsEn: ManualSection[] = [
     icon: LinkIcon,
     content: [
       {
-        text: 'onGo supports 4 platforms: YouTube, TikTok, Instagram Reels, and Naver Clip. You can securely connect channels through each platform\'s official OAuth authentication.',
+        text: 'onGo supports 13 platforms including YouTube, TikTok, Instagram Reels, and Naver Clip. You can securely connect channels through each platform\'s official OAuth authentication.',
         steps: [
           'Click "Channels" in the sidebar.',
           'Click "Add Channel" and select the platform to connect.',
@@ -416,6 +516,15 @@ const sectionsEn: ManualSection[] = [
           'TikTok: A TikTok Business or Creator account is required.',
           'Instagram Reels: An Instagram account linked to a Facebook/Meta Business account is required.',
           'Naver Clip: Connect your Clip channel after Naver account authentication.',
+          'X (Twitter): A Twitter/X developer account is required. Uses OAuth 2.0 PKCE.',
+          'Facebook: Facebook Page admin permissions are required.',
+          'Threads: A Meta/Instagram Business account is required.',
+          'Pinterest: A Pinterest Business account is required.',
+          'LinkedIn: Post video content to your LinkedIn profile.',
+          'WordPress: A WordPress.com blog is required.',
+          'Tumblr: Post video content to your Tumblr blog.',
+          'Vimeo: Upload high-quality videos to your Vimeo account.',
+          'Dailymotion: Upload videos to your Dailymotion account.',
         ],
       },
     ],
@@ -450,6 +559,96 @@ const sectionsEn: ManualSection[] = [
           'Review (REVIEW): Awaiting platform review',
           'Published (PUBLISHED): Upload complete',
           'Failed (FAILED): Upload failed',
+        ],
+      },
+      {
+        subtitle: 'Media Analysis (FFprobe)',
+        text: 'Uploaded videos are automatically analyzed using FFprobe. View the results in the "Media Analysis Info" tab on the video detail page.',
+        items: [
+          'Video Track: Codec (H.264/H.265 etc.), resolution, FPS, bitrate, profile',
+          'Audio Track: Codec (AAC etc.), bitrate, sample rate, channel count',
+          'Color Info: Color space, pixel format',
+          'Platform Compatibility: Automatically evaluates and displays compatibility badges for all 13 supported platforms.',
+        ],
+      },
+      {
+        subtitle: 'Direct Original Upload',
+        text: 'Original video files are uploaded directly to each platform without any transcoding. Each platform handles its own optimal processing, allowing for fast uploads with no quality loss.',
+      },
+      {
+        subtitle: 'Real-time Processing Progress',
+        text: 'Monitor the video processing pipeline in real-time after upload. Each processing stage is automatically updated via SSE (Server-Sent Events).',
+        items: [
+          'Processing Stages: Media Analysis → Thumbnail Generation → Caption Generation → Platform Upload',
+          'View both overall and per-stage progress simultaneously.',
+          'Estimated time remaining is automatically calculated and displayed.',
+          'Automatic reconnection is attempted if the connection is lost.',
+        ],
+      },
+      {
+        subtitle: 'AI Thumbnail Generation',
+        text: 'After upload, thumbnail candidates are automatically generated using FFmpeg.',
+        items: [
+          'Scene Detection: Visually interesting frames are automatically extracted at scene transition points.',
+          'Even Spacing: Frames are extracted at even intervals across the entire video.',
+          'Approximately 10 candidates are generated. Click your preferred thumbnail in the grid to set it as the featured image.',
+          'Custom Thumbnails: Upload your own images in JPG, PNG, or WebP format (max 5MB).',
+        ],
+      },
+      {
+        subtitle: 'AI Auto Captions (Whisper STT)',
+        text: 'Uses OpenAI Whisper to automatically transcribe video audio to text.',
+        items: [
+          'Supports Korean and English caption generation.',
+          'Edit generated SRT captions directly in the inline editor.',
+          'Save edited captions to the server with the Save button.',
+          'Download in SRT or VTT format.',
+          'Caption generation costs 5 AI credits (confirmation popup shown before generation).',
+        ],
+      },
+      {
+        subtitle: 'Enhanced Upload',
+        text: 'Tus protocol-based uploads have been further improved.',
+        items: [
+          'Adaptive Chunk Sizing: Chunk size automatically adjusts between 2MB and 20MB based on network speed.',
+          'Upload speed and estimated time remaining are displayed in real-time.',
+          'Interrupted uploads within 24 hours can be automatically resumed.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'image-upload',
+    title: 'Image/Photo Upload',
+    icon: PhotoIcon,
+    content: [
+      {
+        subtitle: 'Photo Upload',
+        text: 'onGo supports not only videos but also photo/image content. You can upload images to platforms that support photo posts, such as Instagram.',
+        steps: [
+          'When you select an image file on the upload page, it automatically switches to image mode.',
+          'Select multiple images at once to create a multi-image story.',
+          'Enter metadata such as title, description, and tags.',
+          'Select target platforms and upload.',
+        ],
+      },
+      {
+        subtitle: 'Multi-Image Stories',
+        text: 'You can bundle multiple images into a single post, similar to Instagram Stories.',
+        items: [
+          'Add up to 10 images per post.',
+          'Reorder images with drag and drop.',
+          'Each image supports up to 50MB.',
+          'Supported formats: JPG, PNG, WebP, GIF, HEIC',
+        ],
+      },
+      {
+        subtitle: 'Differences Between Images and Videos',
+        text: '',
+        items: [
+          'Image content is uploaded directly, same as video originals.',
+          'Auto thumbnail generation and caption generation apply to videos only.',
+          'Image content is distinguished by an image icon in the content list.',
         ],
       },
     ],

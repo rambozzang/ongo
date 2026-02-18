@@ -10,4 +10,30 @@ interface CommentRepository {
     fun save(comment: Comment): Comment
     fun update(comment: Comment): Comment
     fun delete(id: Long)
+
+    fun findByPlatformAndPlatformCommentId(platform: String, platformCommentId: String): Comment?
+    fun upsertBatch(comments: List<Comment>): Int
+    fun findByUserIdFiltered(
+        userId: Long,
+        videoId: Long? = null,
+        platform: String? = null,
+        sentiment: String? = null,
+        searchText: String? = null,
+        startDate: java.time.LocalDateTime? = null,
+        endDate: java.time.LocalDateTime? = null,
+        page: Int = 0,
+        size: Int = 20,
+    ): List<Comment>
+
+    fun countByUserIdFiltered(
+        userId: Long,
+        videoId: Long? = null,
+        platform: String? = null,
+        sentiment: String? = null,
+        searchText: String? = null,
+        startDate: java.time.LocalDateTime? = null,
+        endDate: java.time.LocalDateTime? = null,
+    ): Int
+
+    fun countByUserIdGroupedBySentiment(userId: Long): Map<String, Int>
 }

@@ -6,14 +6,12 @@ import com.ongo.common.enums.AiFeature
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.BusinessException
 import org.slf4j.LoggerFactory
-import org.springframework.ai.chat.client.ChatClient
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class GenerateMetaUseCase(
-    @Qualifier("anthropicChatClient") private val chatClient: ChatClient,
+    private val chatClientResolver: ChatClientResolver,
     private val creditService: CreditService,
     private val rateLimiter: AiRateLimiter,
 ) {
@@ -27,7 +25,7 @@ class GenerateMetaUseCase(
             .replace("{tone}", InputSanitizer.sanitize(tone))
             .replace("{category}", InputSanitizer.sanitize(category))
 
-        val result = chatClient.prompt()
+        val result = chatClientResolver.resolve(userId).prompt()
             .system(PromptTemplates.META_GENERATION_SYSTEM)
             .user(userPrompt)
             .call()
@@ -49,7 +47,7 @@ class GenerateMetaUseCase(
             .replace("{category}", InputSanitizer.sanitize(category))
 
         try {
-            val result = chatClient.prompt()
+            val result = chatClientResolver.resolve(userId).prompt()
                 .system(PromptTemplates.META_GENERATION_SYSTEM)
                 .user(userPrompt)
                 .call()

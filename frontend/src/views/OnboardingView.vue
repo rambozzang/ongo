@@ -36,7 +36,7 @@
                 </div>
                 <div>
                   <p class="font-semibold text-gray-900 dark:text-gray-100">영상 하나로, 모든 플랫폼에</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">YouTube, TikTok, Instagram, Naver Clip 동시 게시</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">YouTube, TikTok, Instagram 외 13개 플랫폼 동시 게시</p>
                 </div>
               </div>
 
@@ -153,9 +153,19 @@
                     <svg v-else-if="platform.key === 'INSTAGRAM'" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
                     </svg>
-                    <svg v-else class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <svg v-else-if="platform.key === 'NAVER_CLIP'" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z"/>
                     </svg>
+                    <svg v-else-if="platform.key === 'TWITTER'" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <svg v-else-if="platform.key === 'FACEBOOK'" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                    <svg v-else-if="platform.key === 'THREADS'" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.187.408-2.26 1.33-3.017.88-.724 2.10-1.14 3.531-1.205 1.07-.049 2.07.058 2.986.318-.076-1.382-.603-2.417-1.58-3.084-.837-.573-1.947-.864-3.298-.864h-.038c-1.107.008-2.072.258-2.867.74l-1.02-1.775c1.07-.648 2.396-.999 3.895-1.012h.05c1.78 0 3.263.451 4.41 1.34 1.223.946 1.93 2.328 2.098 4.107.585.26 1.116.586 1.586.978 1.07.893 1.802 2.127 2.119 3.573.434 1.98.065 4.396-1.98 6.399-1.77 1.736-3.97 2.498-7.109 2.523zm-1.478-7.889c-.236 0-.47.014-.7.04-.96.097-2.255.444-2.201 1.735.034.77.497 1.292 1.379 1.583.344.115.73.17 1.148.17.617 0 1.282-.135 1.814-.557.623-.493.99-1.282 1.092-2.345-.692-.235-1.476-.532-2.242-.582-.1-.008-.194-.012-.29-.044z"/>
+                    </svg>
+                    <span v-else class="text-xs font-bold text-white">{{ platform.label.charAt(0) }}</span>
                   </div>
                   <div>
                     <p class="font-semibold text-gray-900 dark:text-gray-100">{{ platform.label }}</p>
@@ -369,6 +379,7 @@ import type { PlanType } from '@/types/subscription'
 import { authApi } from '@/api/auth'
 import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
+import { buildOAuthUrl } from '@/utils/oauth'
 import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import OnboardingStepIndicator from '@/components/onboarding/OnboardingStepIndicator.vue'
 import PlanSelectionCard from '@/components/onboarding/PlanSelectionCard.vue'
@@ -426,6 +437,9 @@ const platforms = [
   { key: 'TIKTOK' as Platform, label: 'TikTok', description: '숏폼 콘텐츠 업로드', bgColor: '#000000' },
   { key: 'INSTAGRAM' as Platform, label: 'Instagram Reels', description: '릴스 업로드', bgColor: '#E1306C' },
   { key: 'NAVER_CLIP' as Platform, label: 'Naver Clip', description: '네이버 클립 업로드', bgColor: '#03C75A' },
+  { key: 'TWITTER' as Platform, label: 'X (Twitter)', description: 'SNS 영상 게시', bgColor: '#000000' },
+  { key: 'FACEBOOK' as Platform, label: 'Facebook', description: '페이지 영상 업로드', bgColor: '#1877F2' },
+  { key: 'THREADS' as Platform, label: 'Threads', description: '스레드 영상 게시', bgColor: '#000000' },
 ]
 
 function startOnboarding() {
@@ -507,66 +521,11 @@ function prevStep() {
 function connectPlatform(platform: Platform) {
   isConnecting.value = true
   channelError.value = ''
-
-  const redirectUri = `${window.location.origin}/auth/channel-callback/${platform.toLowerCase()}`
-
-  const oauthUrls: Record<Platform, string> = {
-    YOUTUBE: `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: 'https://www.googleapis.com/auth/youtube',
-      access_type: 'offline',
-      state: 'YOUTUBE',
-    })}`,
-    TIKTOK: `https://www.tiktok.com/v2/auth/authorize/?${new URLSearchParams({
-      client_key: import.meta.env.VITE_TIKTOK_CLIENT_KEY || '',
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: 'video.upload,video.list',
-      state: 'TIKTOK',
-    })}`,
-    INSTAGRAM: `https://api.instagram.com/oauth/authorize?${new URLSearchParams({
-      client_id: import.meta.env.VITE_INSTAGRAM_CLIENT_ID || '',
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: 'instagram_basic,instagram_content_publish',
-      state: 'INSTAGRAM',
-    })}`,
-    NAVER_CLIP: `https://nid.naver.com/oauth2.0/authorize?${new URLSearchParams({
-      client_id: import.meta.env.VITE_NAVER_CLIENT_ID || '',
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      state: 'NAVER_CLIP',
-    })}`,
-  }
-
-  window.location.href = oauthUrls[platform]
+  window.location.href = buildOAuthUrl(platform, '/onboarding')
 }
 
 function disconnectPlatform(platform: Platform) {
   connectedPlatforms.value.delete(platform)
-}
-
-async function handleChannelCallback() {
-  const url = new URL(window.location.href)
-  const code = url.searchParams.get('code')
-  const state = url.searchParams.get('state') as Platform | null
-
-  if (!code || !state) return
-
-  isConnecting.value = true
-  try {
-    const redirectUri = `${window.location.origin}/auth/channel-callback/${state.toLowerCase()}`
-    await channelApi.connect(state, { code, redirectUri })
-    connectedPlatforms.value.add(state)
-    // Clean URL
-    window.history.replaceState({}, '', '/onboarding')
-  } catch {
-    channelError.value = '채널 연동에 실패했습니다. 다시 시도해주세요.'
-  } finally {
-    isConnecting.value = false
-  }
 }
 
 async function tryAiGeneration() {
@@ -621,8 +580,7 @@ async function loadConnectedChannels() {
   }
 }
 
-// Handle channel OAuth callback and load existing channels
-handleChannelCallback()
+// Load existing connected channels
 loadConnectedChannels()
 </script>
 

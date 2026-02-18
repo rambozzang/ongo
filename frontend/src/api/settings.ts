@@ -14,12 +14,14 @@ export interface DefaultSettings {
   visibility: string
   platforms: string[]
   aiTone: string
+  aiProvider: string
 }
 
 export interface UserSettingsResponse {
   defaultVisibility: string
   defaultPlatforms: string[]
   defaultAiTone: string
+  defaultAiProvider: string
   notificationUpload: boolean
   notificationComment: string
   notificationCreditThreshold: number

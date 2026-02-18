@@ -71,8 +71,10 @@ object Tables {
     val ACTIVITY_LOGS = DSL.table("activity_logs")
     val RECYCLING_SUGGESTIONS = DSL.table("recycling_suggestions")
 
-    // Video Variants
-    val VIDEO_VARIANTS = DSL.table("video_variants")
+    // Video Processing Upgrade
+    val VIDEO_MEDIA_INFO = DSL.table("video_media_info")
+    val VIDEO_SUBTITLES = DSL.table("video_subtitles")
+    val VIDEO_PROCESSING_PROGRESS = DSL.table("video_processing_progress")
 
     // Automation Workflows
     val AUTOMATION_WORKFLOWS = DSL.table("automation_workflows")
@@ -87,6 +89,9 @@ object Tables {
 
     // AI
     val WEEKLY_DIGESTS = DSL.table("weekly_digests")
+
+    // Content Images (image support)
+    val CONTENT_IMAGES = DSL.table("content_images")
 }
 
 object Fields {
@@ -188,6 +193,7 @@ object Fields {
     val CURRENT_PERIOD_START = DSL.field("current_period_start", java.time.LocalDateTime::class.java)
     val CURRENT_PERIOD_END = DSL.field("current_period_end", java.time.LocalDateTime::class.java)
     val NEXT_BILLING_DATE = DSL.field("next_billing_date", java.time.LocalDateTime::class.java)
+    val STORAGE_QUOTA_LIMIT_BYTES = DSL.field("storage_quota_limit_bytes", Long::class.javaObjectType)
     val CANCELLED_AT = DSL.field("cancelled_at", java.time.LocalDateTime::class.java)
 
     // payments
@@ -206,6 +212,7 @@ object Fields {
     val DEFAULT_VISIBILITY = DSL.field("default_visibility", String::class.java)
     val DEFAULT_PLATFORMS = DSL.field("default_platforms", Any::class.java)
     val DEFAULT_AI_TONE = DSL.field("default_ai_tone", String::class.java)
+    val DEFAULT_AI_PROVIDER = DSL.field("default_ai_provider", String::class.java)
     val NOTIFICATION_UPLOAD = DSL.field("notification_upload", Boolean::class.java)
     val NOTIFICATION_COMMENT = DSL.field("notification_comment", String::class.java)
     val NOTIFICATION_CREDIT_THRESHOLD = DSL.field("notification_credit_threshold", Int::class.java)
@@ -238,11 +245,20 @@ object Fields {
     val PLATFORM_COMMENT_ID = DSL.field("platform_comment_id", String::class.java)
     val AUTHOR_NAME = DSL.field("author_name", String::class.java)
     val AUTHOR_AVATAR_URL = DSL.field("author_avatar_url", String::class.java)
+    val AUTHOR_CHANNEL_URL = DSL.field("author_channel_url", String::class.java)
     val CONTENT = DSL.field("content", String::class.java)
     val SENTIMENT = DSL.field("sentiment", String::class.java)
+    val LIKE_COUNT = DSL.field("like_count", Int::class.java)
+    val REPLY_COUNT = DSL.field("reply_count", Int::class.java)
+    val PARENT_COMMENT_ID = DSL.field("parent_comment_id", Long::class.java)
+    val PLATFORM_REPLY_ID = DSL.field("platform_reply_id", String::class.java)
+    val PLATFORM_LIKE_ID = DSL.field("platform_like_id", String::class.java)
     val IS_REPLIED = DSL.field("is_replied", Boolean::class.java)
+    val IS_HIDDEN = DSL.field("is_hidden", Boolean::class.java)
+    val IS_PINNED = DSL.field("is_pinned", Boolean::class.java)
     val REPLY_CONTENT = DSL.field("reply_content", String::class.java)
     val REPLIED_AT = DSL.field("replied_at", java.time.LocalDateTime::class.java)
+    val SYNCED_AT = DSL.field("synced_at", java.time.LocalDateTime::class.java)
 
     // templates
     val TITLE_TEMPLATE = DSL.field("title_template", String::class.java)
@@ -348,8 +364,42 @@ object Fields {
     val PLATFORM_MESSAGE_ID = DSL.field("platform_message_id", String::class.java)
     val RECEIVED_AT = DSL.field("received_at", java.time.LocalDateTime::class.java)
 
-    // video_variants
+    // video_media_info shared fields
     val BITRATE_KBPS = DSL.field("bitrate_kbps", Int::class.java)
+    val FPS = DSL.field("fps", Double::class.java)
+
+    // video_media_info
+    val VIDEO_CODEC = DSL.field("video_codec", String::class.java)
+    val DURATION_MS = DSL.field("duration_ms", Long::class.java)
+    val COLOR_SPACE = DSL.field("color_space", String::class.java)
+    val PIXEL_FORMAT = DSL.field("pixel_format", String::class.java)
+    val PROFILE = DSL.field("profile", String::class.java)
+    val AUDIO_CODEC = DSL.field("audio_codec", String::class.java)
+    val AUDIO_BITRATE_KBPS = DSL.field("audio_bitrate_kbps", Int::class.java)
+    val SAMPLE_RATE = DSL.field("sample_rate", Int::class.java)
+    val AUDIO_CHANNELS = DSL.field("audio_channels", Int::class.java)
+    val FORMAT_NAME = DSL.field("format_name", String::class.java)
+    val RAW_JSON = DSL.field("raw_json", Any::class.java)
+
+    // video_subtitles
+    val LANGUAGE = DSL.field("language", String::class.java)
+    val FORMAT = DSL.field("format", String::class.java)
+    val IS_AUTO_GENERATED = DSL.field("is_auto_generated", Boolean::class.java)
+
+    // video_processing_progress
+    val STAGE = DSL.field("stage", String::class.java)
+    val PROGRESS_PERCENT = DSL.field("progress_percent", Int::class.java)
+
+    // videos extended
+    val AUTO_THUMBNAILS = DSL.field("auto_thumbnails", Any::class.java)
+    val SELECTED_THUMBNAIL_INDEX = DSL.field("selected_thumbnail_index", Int::class.java)
+    val MEDIA_TYPE = DSL.field("media_type", String::class.java)
+    val MEDIA_TYPE_TEXT = DSL.field("media_type::text", String::class.java)
+
+    // content_images
+    val IMAGE_URL_CI = DSL.field("image_url", String::class.java)
+    val DISPLAY_ORDER = DSL.field("display_order", Int::class.java)
+    val CONTENT_TYPE = DSL.field("content_type", String::class.java)
 
     // automation_workflows
     val ENABLED = DSL.field("enabled", Boolean::class.java)

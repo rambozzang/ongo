@@ -5,13 +5,11 @@ import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AiFeature
 import com.ongo.common.exception.BusinessException
 import org.slf4j.LoggerFactory
-import org.springframework.ai.chat.client.ChatClient
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
 class GenerateReplyUseCase(
-    @Qualifier("anthropicChatClient") private val chatClient: ChatClient,
+    private val chatClientResolver: ChatClientResolver,
     private val creditService: CreditService,
     private val rateLimiter: AiRateLimiter,
 ) {
@@ -28,7 +26,7 @@ class GenerateReplyUseCase(
             .replace("{context}", InputSanitizer.sanitize(context ?: "없음"))
 
         try {
-            val result = chatClient.prompt()
+            val result = chatClientResolver.resolve(userId).prompt()
                 .system(PromptTemplates.COMMENT_REPLY_SYSTEM)
                 .user(userPrompt)
                 .call()

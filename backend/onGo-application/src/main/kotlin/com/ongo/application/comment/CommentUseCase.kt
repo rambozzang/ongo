@@ -1,19 +1,18 @@
 package com.ongo.application.comment
 
+import com.ongo.application.comment.dto.CommentCapabilitiesDto
 import com.ongo.application.comment.dto.CommentListResponse
 import com.ongo.application.comment.dto.CommentResponse
-import com.ongo.application.comment.dto.ReplyCommentRequest
-import com.ongo.common.exception.ForbiddenException
-import com.ongo.common.exception.NotFoundException
+import com.ongo.application.comment.dto.CommentStats
 import com.ongo.domain.comment.Comment
 import com.ongo.domain.comment.CommentRepository
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
 class CommentUseCase(
     private val commentRepository: CommentRepository,
+    private val commentEngagementUseCase: CommentEngagementUseCase,
 ) {
 
     fun listComments(
@@ -21,55 +20,77 @@ class CommentUseCase(
         videoId: Long?,
         platform: String?,
         sentiment: String?,
+        searchText: String?,
+        startDate: LocalDateTime?,
+        endDate: LocalDateTime?,
         page: Int,
         size: Int,
     ): CommentListResponse {
-        val comments = when {
-            videoId != null -> commentRepository.findByUserIdAndVideoId(userId, videoId, page, size)
-            platform != null -> commentRepository.findByUserIdAndPlatform(userId, platform, page, size)
-            sentiment != null -> commentRepository.findByUserIdAndSentiment(userId, sentiment, page, size)
-            else -> commentRepository.findByUserId(userId, page, size)
-        }
-        val totalCount = commentRepository.countByUserId(userId)
+        val comments = commentRepository.findByUserIdFiltered(
+            userId = userId,
+            videoId = videoId,
+            platform = platform,
+            sentiment = sentiment?.uppercase(),
+            searchText = searchText,
+            startDate = startDate,
+            endDate = endDate,
+            page = page,
+            size = size,
+        )
+
+        val totalCount = commentRepository.countByUserIdFiltered(
+            userId = userId,
+            videoId = videoId,
+            platform = platform,
+            sentiment = sentiment?.uppercase(),
+            searchText = searchText,
+            startDate = startDate,
+            endDate = endDate,
+        )
+
+        val stats = getCommentStats(userId)
+        val capabilities = commentEngagementUseCase.getCapabilitiesMap(userId)
 
         return CommentListResponse(
             comments = comments.map { it.toResponse() },
             totalCount = totalCount,
+            stats = stats,
+            capabilities = capabilities,
         )
     }
 
-    @Transactional
-    fun replyToComment(userId: Long, commentId: Long, request: ReplyCommentRequest): CommentResponse {
-        val comment = commentRepository.findById(commentId) ?: throw NotFoundException("댓글", commentId)
-        if (comment.userId != userId) throw ForbiddenException("해당 댓글에 대한 권한이 없습니다")
-
-        val updated = comment.copy(
-            isReplied = true,
-            replyContent = request.content,
-            repliedAt = LocalDateTime.now(),
+    fun getCommentStats(userId: Long): CommentStats {
+        val grouped = commentRepository.countByUserIdGroupedBySentiment(userId)
+        val positive = grouped["POSITIVE"] ?: 0
+        val neutral = grouped["NEUTRAL"] ?: 0
+        val negative = grouped["NEGATIVE"] ?: 0
+        return CommentStats(
+            total = positive + neutral + negative,
+            positive = positive,
+            neutral = neutral,
+            negative = negative,
         )
-        return commentRepository.update(updated).toResponse()
-    }
-
-    @Transactional
-    fun deleteComment(userId: Long, commentId: Long) {
-        val comment = commentRepository.findById(commentId) ?: throw NotFoundException("댓글", commentId)
-        if (comment.userId != userId) throw ForbiddenException("해당 댓글에 대한 권한이 없습니다")
-        commentRepository.delete(commentId)
     }
 
     private fun Comment.toResponse(): CommentResponse = CommentResponse(
         id = id!!,
         videoId = videoId,
         platform = platform,
+        platformCommentId = platformCommentId,
         authorName = authorName,
         authorAvatarUrl = authorAvatarUrl,
+        authorChannelUrl = authorChannelUrl,
         content = content,
         sentiment = sentiment,
+        likeCount = likeCount,
+        replyCount = replyCount,
         isReplied = isReplied,
+        isHidden = isHidden,
+        isPinned = isPinned,
         replyContent = replyContent,
         repliedAt = repliedAt,
         publishedAt = publishedAt,
+        syncedAt = syncedAt,
         createdAt = createdAt,
     )
 }

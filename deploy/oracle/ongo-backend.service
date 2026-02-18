@@ -1,0 +1,13 @@
+[Unit]
+Description=OnGo Backend Service
+After=syslog.target network.target postgresql-16.service
+
+[Service]
+User=root
+# Adjust execution command as needed
+ExecStart=/usr/bin/java -jar /opt/ongo/backend/ongo-api.jar
+SuccessExitStatus=143
+EnvironmentFile=/opt/ongo/.env
+
+[Install]
+WantedBy=multi-user.target

@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -31,6 +32,15 @@ class AuthController(
     private val authTokenPort: AuthTokenPort,
     private val authRateLimiter: AuthRateLimiter,
 ) {
+
+    @Operation(summary = "SSE 토큰 발급", description = "SSE(Server-Sent Events) 연결용 단기 토큰을 발급합니다 (5분 만료).")
+    @PostMapping("/sse-token")
+    fun issueSseToken(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+    ): ResponseEntity<ResData<Map<String, String>>> {
+        val sseToken = authTokenPort.generateSseToken(userId)
+        return ResData.success(mapOf("token" to sseToken))
+    }
 
     @Operation(
         summary = "소셜 로그인",
@@ -100,6 +110,7 @@ class AuthController(
                 nickname = result.nickname,
                 profileImageUrl = result.profileImageUrl,
                 planType = result.planType,
+                role = result.role,
                 onboardingCompleted = result.onboardingCompleted,
             )
         )
@@ -120,6 +131,7 @@ class AuthController(
                 nickname = result.nickname,
                 profileImageUrl = result.profileImageUrl,
                 planType = result.planType,
+                role = result.role,
                 onboardingCompleted = result.onboardingCompleted,
             ),
             "프로필이 수정되었습니다"
@@ -167,6 +179,7 @@ class AuthController(
                 nickname = result.user.nickname,
                 profileImageUrl = result.user.profileImageUrl,
                 planType = result.user.planType,
+                role = result.user.role,
                 onboardingCompleted = result.user.onboardingCompleted,
             ),
             isNewUser = result.isNewUser,

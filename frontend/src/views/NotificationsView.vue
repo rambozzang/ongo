@@ -5,6 +5,7 @@ import { useNotificationCenterStore } from '@/stores/notificationCenter'
 import NotificationItem from '@/components/notifications/NotificationItem.vue'
 import NotificationFilter from '@/components/notifications/NotificationFilter.vue'
 import NotificationSettings from '@/components/notifications/NotificationSettings.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import type { Notification, NotificationCategory } from '@/types/notification'
 import {
   BellIcon,
@@ -101,6 +102,14 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
         </button>
       </div>
     </div>
+
+    <PageGuide title="알림 센터" :items="[
+      '알림 카테고리 탭으로 업로드·게시·댓글·구독·시스템 등 유형별 알림을 필터링하세요',
+      '읽지 않은 알림은 강조 표시되며, 클릭하면 자동으로 읽음 처리됩니다',
+      '각 알림을 클릭하면 관련 영상·채널·설정 등 해당 페이지로 바로 이동합니다',
+      '설정 버튼으로 알림 수신 설정 패널을 열어 카테고리별 이메일·푸시 알림을 켜거나 끌 수 있습니다',
+      '모두 읽음 버튼으로 미확인 알림을 한 번에 처리하세요',
+    ]" />
 
     <!-- Settings panel (collapsible) -->
     <Transition

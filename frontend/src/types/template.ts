@@ -17,19 +17,6 @@ export interface ContentTemplate {
   updatedAt: string
 }
 
-export interface MetadataTemplate {
-  id: string
-  name: string
-  description: string
-  titlePattern: string
-  descriptionTemplate: string
-  tags: string[]
-  category: string
-  visibility: string
-  createdAt: string
-  updatedAt: string
-}
-
 // Backend DTO types
 export interface TemplateResponse {
   id: number

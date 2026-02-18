@@ -23,6 +23,15 @@ class CrossPlatformOptimizationUseCase {
             Platform.TIKTOK -> checkTikTok(request, suggestions)
             Platform.INSTAGRAM -> checkInstagram(request, suggestions)
             Platform.NAVER_CLIP -> checkNaverClip(request, suggestions)
+            Platform.TWITTER -> checkGenericShortForm(request, suggestions, "X (Twitter)", 280)
+            Platform.FACEBOOK -> checkGenericLongForm(request, suggestions, "Facebook", 5000)
+            Platform.THREADS -> checkGenericShortForm(request, suggestions, "Threads", 500)
+            Platform.PINTEREST -> checkGenericShortForm(request, suggestions, "Pinterest", 500)
+            Platform.LINKEDIN -> checkGenericLongForm(request, suggestions, "LinkedIn", 3000)
+            Platform.WORDPRESS -> checkGenericLongForm(request, suggestions, "WordPress", 5000)
+            Platform.TUMBLR -> checkGenericLongForm(request, suggestions, "Tumblr", 5000)
+            Platform.VIMEO -> checkGenericLongForm(request, suggestions, "Vimeo", 5000)
+            Platform.DAILYMOTION -> checkGenericLongForm(request, suggestions, "Dailymotion", 3000)
         }
 
         // Calculate score: start at 100, deduct points per issue
@@ -156,6 +165,60 @@ class CrossPlatformOptimizationUseCase {
         if (firstLine.length < 5) {
             suggestions.add(
                 OptimizationSuggestion("description", OptimizationSeverity.WARNING, "캡션 첫 줄에 눈에 띄는 후킹 문장을 추가하세요", "첫 줄: ${firstLine.take(20)}", "강력한 첫 줄 권장")
+            )
+        }
+    }
+
+    private fun checkGenericShortForm(
+        req: OptimizationCheckRequest,
+        suggestions: MutableList<OptimizationSuggestion>,
+        platformName: String,
+        maxTitleLength: Int,
+    ) {
+        when {
+            req.title.length > maxTitleLength -> suggestions.add(
+                OptimizationSuggestion("title", OptimizationSeverity.ERROR, "$platformName 제목은 ${maxTitleLength}자 이내여야 합니다", "${req.title.length}자", "${maxTitleLength}자 이내")
+            )
+            req.title.length in 1..maxTitleLength -> suggestions.add(
+                OptimizationSuggestion("title", OptimizationSeverity.GOOD, "제목 길이가 적절합니다", "${req.title.length}자", null)
+            )
+        }
+
+        if (req.tags.size < 3) {
+            suggestions.add(
+                OptimizationSuggestion("tags", OptimizationSeverity.WARNING, "해시태그를 3개 이상 추가하면 노출이 향상됩니다", "${req.tags.size}개", "3-10개 권장")
+            )
+        }
+    }
+
+    private fun checkGenericLongForm(
+        req: OptimizationCheckRequest,
+        suggestions: MutableList<OptimizationSuggestion>,
+        platformName: String,
+        maxDescLength: Int,
+    ) {
+        when {
+            req.title.length > 200 -> suggestions.add(
+                OptimizationSuggestion("title", OptimizationSeverity.ERROR, "$platformName 제목은 200자 이내여야 합니다", "${req.title.length}자", "200자 이내")
+            )
+            req.title.length < 10 -> suggestions.add(
+                OptimizationSuggestion("title", OptimizationSeverity.WARNING, "제목이 너무 짧습니다", "${req.title.length}자", "10-100자 권장")
+            )
+            else -> suggestions.add(
+                OptimizationSuggestion("title", OptimizationSeverity.GOOD, "제목 길이가 적절합니다", "${req.title.length}자", null)
+            )
+        }
+
+        val descLen = req.description?.length ?: 0
+        if (descLen > maxDescLength) {
+            suggestions.add(
+                OptimizationSuggestion("description", OptimizationSeverity.ERROR, "$platformName 설명은 ${maxDescLength}자 이내여야 합니다", "${descLen}자", "${maxDescLength}자 이내")
+            )
+        }
+
+        if (req.tags.size < 3) {
+            suggestions.add(
+                OptimizationSuggestion("tags", OptimizationSeverity.WARNING, "태그를 3개 이상 추가하면 검색 노출이 향상됩니다", "${req.tags.size}개", "3-10개 권장")
             )
         }
     }

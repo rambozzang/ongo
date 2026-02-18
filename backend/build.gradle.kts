@@ -1,3 +1,9 @@
+import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension
+
 plugins {
     kotlin("jvm") version "2.1.0"
     kotlin("plugin.spring") version "2.1.0" apply false
@@ -19,31 +25,31 @@ allprojects {
 
 subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
+    apply(plugin = "org.jetbrains.kotlin.plugin.spring")
     apply(plugin = "io.spring.dependency-management")
 
-    the<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension>().apply {
+    extensions.configure<DependencyManagementExtension> {
         imports {
             mavenBom("org.springframework.boot:spring-boot-dependencies:3.4.2")
             mavenBom("org.springframework.ai:spring-ai-bom:1.0.0-M5")
         }
     }
 
-    java {
+    extensions.configure<JavaPluginExtension> {
         toolchain {
             languageVersion.set(JavaLanguageVersion.of(javaVersion))
         }
     }
 
-    kotlin {
+    tasks.withType<KotlinCompile>().configureEach {
         compilerOptions {
             freeCompilerArgs.add("-Xjsr305=strict")
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+            jvmTarget.set(JvmTarget.JVM_21)
         }
     }
 
     dependencies {
         implementation("org.jetbrains.kotlin:kotlin-reflect")
-        // kotlin-stdlib is automatically added by the Kotlin Gradle plugin since Kotlin 1.4+
         implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
         testImplementation("org.springframework.boot:spring-boot-starter-test")

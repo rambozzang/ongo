@@ -8,6 +8,13 @@
       </p>
     </div>
 
+    <PageGuide title="영상 비교" :items="[
+      '영상 A·영상 B 드롭다운에서 비교할 두 영상을 선택하세요. 검색으로 빠르게 찾을 수 있습니다',
+      '각 드롭다운에서 썸네일·제목·게시일·플랫폼 배지를 확인하며 영상을 선택하세요',
+      '선택 완료 후 조회수·좋아요·댓글·공유 등 주요 지표가 나란히 비교되어 표시됩니다',
+      '비교 결과를 바탕으로 어떤 제목·썸네일·태그 조합이 더 효과적인지 파악하여 콘텐츠 전략을 개선하세요',
+    ]" />
+
     <!-- Video Selectors -->
     <div class="mb-6 grid gap-4 desktop:grid-cols-2">
       <!-- Video A Selector -->
@@ -258,6 +265,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import VideoComparisonCard from '@/components/analytics/VideoComparisonCard.vue'
 import MetricDifferenceCard from '@/components/analytics/MetricDifferenceCard.vue'
 import InsightItem from '@/components/analytics/InsightItem.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)

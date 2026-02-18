@@ -120,8 +120,10 @@ import {
   CodeBracketIcon,
   ClockIcon,
   BookOpenIcon,
+  ShieldCheckIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
+import { useAuthStore } from '@/stores/auth'
 
 defineProps<{
   collapsed: boolean
@@ -134,6 +136,8 @@ const emit = defineEmits<{
 
 const route = useRoute()
 const { t } = useLocale()
+const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
 
 interface NavItem {
   to: string
@@ -208,11 +212,17 @@ const navGroups = computed<NavGroup[]>(() => [
   },
 ])
 
-const bottomNavItems = computed(() => [
-  { to: '/manual', label: t('nav.manual'), icon: BookOpenIcon },
-  { to: '/subscription', label: t('nav.subscription'), icon: CreditCardIcon },
-  { to: '/settings', label: t('nav.settings'), icon: Cog6ToothIcon },
-])
+const bottomNavItems = computed(() => {
+  const items = [
+    { to: '/manual', label: t('nav.manual'), icon: BookOpenIcon },
+    { to: '/subscription', label: t('nav.subscription'), icon: CreditCardIcon },
+    { to: '/settings', label: t('nav.settings'), icon: Cog6ToothIcon },
+  ]
+  if (isAdmin.value) {
+    items.push({ to: '/admin', label: t('nav.admin'), icon: ShieldCheckIcon })
+  }
+  return items
+})
 
 function isCurrentRoute(to: string): boolean {
   return route.path === to || route.path.startsWith(to + '/')

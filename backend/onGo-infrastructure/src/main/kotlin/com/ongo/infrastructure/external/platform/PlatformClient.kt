@@ -14,6 +14,34 @@ interface PlatformClient {
     fun refreshToken(refreshToken: String): PlatformTokenResult
     fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult
     fun deleteVideo(platformVideoId: String, accessToken: String): Boolean
+
+    // --- Comment API (default implementations for unsupported platforms) ---
+
+    fun getCommentCapabilities(): PlatformCommentCapabilities = PlatformCommentCapabilities()
+
+    fun listComments(
+        platformVideoId: String,
+        accessToken: String,
+        pageToken: String? = null,
+        maxResults: Int = 100,
+    ): PlatformCommentListResult = PlatformCommentListResult(emptyList())
+
+    fun replyToComment(
+        platformCommentId: String,
+        content: String,
+        accessToken: String,
+        platformVideoId: String? = null,
+    ): PlatformCommentReplyResult = throw UnsupportedOperationException("${platform.name} does not support comment replies")
+
+    fun deleteComment(
+        platformCommentId: String,
+        accessToken: String,
+    ): PlatformCommentDeleteResult = throw UnsupportedOperationException("${platform.name} does not support comment deletion")
+
+    fun likeComment(
+        platformCommentId: String,
+        accessToken: String,
+    ): Boolean = throw UnsupportedOperationException("${platform.name} does not support comment likes")
 }
 
 data class PlatformUploadRequest(
@@ -62,4 +90,43 @@ data class PlatformTokenResult(
     val accessToken: String,
     val refreshToken: String?,
     val expiresIn: Long,
+)
+
+// --- Comment data classes ---
+
+data class PlatformCommentCapabilities(
+    val canListComments: Boolean = false,
+    val canReply: Boolean = false,
+    val canLike: Boolean = false,
+    val canDelete: Boolean = false,
+    val canHide: Boolean = false,
+)
+
+data class PlatformComment(
+    val platformCommentId: String,
+    val parentCommentId: String? = null,
+    val authorName: String,
+    val authorAvatarUrl: String? = null,
+    val authorChannelUrl: String? = null,
+    val content: String,
+    val likeCount: Int = 0,
+    val replyCount: Int = 0,
+    val publishedAt: LocalDateTime? = null,
+)
+
+data class PlatformCommentListResult(
+    val comments: List<PlatformComment>,
+    val nextPageToken: String? = null,
+    val totalCount: Int? = null,
+)
+
+data class PlatformCommentReplyResult(
+    val platformCommentId: String,
+    val success: Boolean = true,
+    val errorMessage: String? = null,
+)
+
+data class PlatformCommentDeleteResult(
+    val success: Boolean = true,
+    val errorMessage: String? = null,
 )

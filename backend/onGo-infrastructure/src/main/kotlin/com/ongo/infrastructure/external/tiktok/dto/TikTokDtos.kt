@@ -117,6 +117,45 @@ data class TikTokTokenResponse(
     @JsonProperty("token_type") val tokenType: String?,
 )
 
+// --- Comment API ---
+
+data class TikTokCommentListRequest(
+    @JsonProperty("video_id") val videoId: String,
+    @JsonProperty("max_count") val maxCount: Int = 50,
+    val cursor: Long? = null,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class TikTokCommentListResponse(
+    val data: CommentListData?,
+    val error: TikTokError?,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class CommentListData(
+        val comments: List<TikTokComment>?,
+        val cursor: Long?,
+        @JsonProperty("has_more") val hasMore: Boolean?,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class TikTokComment(
+        val id: String?,
+        val text: String?,
+        @JsonProperty("like_count") val likeCount: Int?,
+        @JsonProperty("reply_count") val replyCount: Int?,
+        @JsonProperty("create_time") val createTime: Long?,
+        @JsonProperty("parent_comment_id") val parentCommentId: String?,
+        val user: CommentUser?,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class CommentUser(
+        @JsonProperty("display_name") val displayName: String?,
+        @JsonProperty("avatar_url") val avatarUrl: String?,
+        @JsonProperty("profile_deep_link") val profileDeepLink: String?,
+    )
+}
+
 // --- Common Error ---
 
 @JsonIgnoreProperties(ignoreUnknown = true)

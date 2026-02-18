@@ -20,6 +20,13 @@
       </div>
     </div>
 
+    <PageGuide title="수익 분석" :items="[
+      '주간/월간/연간 기간 필터를 전환하여 원하는 구간의 수익을 분석하세요',
+      '상단 요약 카드에서 총 수익(원화), 월간 성장률(초록=증가/빨간=감소), 평균 RPM을 확인하세요',
+      '수익 트렌드 차트에서 기간별 수익 변화 추이를 시각적으로 파악하세요',
+      '플랫폼별 수익 내역에서 YouTube·TikTok·Instagram·Naver Clip 각각의 수입을 비교하세요',
+    ]" />
+
     <!-- Loading State -->
     <div v-if="revenueStore.loading" class="flex items-center justify-center py-12">
       <div class="text-gray-500 dark:text-gray-400">로딩 중...</div>
@@ -168,6 +175,7 @@ import {
   TrophyIcon,
 } from '@heroicons/vue/24/outline'
 import { PLATFORM_CONFIG } from '@/types/channel'
+import PageGuide from '@/components/common/PageGuide.vue'
 import RevenueChart from '@/components/revenue/RevenueChart.vue'
 import RevenuePlatformBreakdown from '@/components/revenue/RevenuePlatformBreakdown.vue'
 import RevenueTable from '@/components/revenue/RevenueTable.vue'

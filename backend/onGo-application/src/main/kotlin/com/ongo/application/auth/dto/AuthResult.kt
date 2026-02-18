@@ -14,5 +14,6 @@ data class UserResult(
     val nickname: String?,
     val profileImageUrl: String?,
     val planType: String,
+    val role: String,
     val onboardingCompleted: Boolean,
 )

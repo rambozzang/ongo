@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">영상 업로드</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ t('upload.title') }}</h1>
 
       <!-- Queue button -->
       <button
@@ -10,16 +10,24 @@
         @click="queuePanelOpen = true"
       >
         <QueueListIcon class="h-5 w-5" />
-        업로드 큐
+        {{ t('upload.queue') }}
         <span class="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
           {{ uploadQueueStore.queue.length }}
         </span>
       </button>
     </div>
 
+    <PageGuide title="영상 업로드" :items="[
+      '1단계: 영상 파일을 드래그하거나 클릭하여 선택하세요. 여러 파일을 한 번에 선택하면 업로드 큐에 추가됩니다',
+      '2단계: 제목·설명·태그를 직접 입력하거나, AI 자동 생성 버튼으로 메타데이터를 생성하세요 (STT 포함 시 15크레딧, 기본 5크레딧)',
+      'AI 파이프라인 모드를 활성화하면 메타데이터 생성·해시태그 추출·최적화를 한 번에 자동 처리합니다',
+      '3단계: 게시할 플랫폼을 선택하고, 플랫폼별로 다른 제목·설명·예약 시간을 설정할 수 있습니다',
+      '업로드 큐 버튼으로 대기 중인 파일을 관리하고, 즉시 게시 또는 큐에 추가하여 나중에 일괄 게시하세요',
+    ]" />
+
     <!-- Step indicator -->
     <div class="mb-8 flex items-center justify-center gap-4">
-      <div v-for="(label, i) in STEP_LABELS" :key="i" class="flex items-center gap-2">
+      <div v-for="(label, i) in stepLabels" :key="i" class="flex items-center gap-2">
         <div
           class="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium"
           :class="
@@ -49,10 +57,13 @@
         v-if="!uploadStore.file"
         @select="handleFileSelect"
         @select-multiple="handleMultipleFileSelect"
+        @select-images="handleImageSelect"
         @error="(msg) => notify.error(msg)"
       />
+
+      <!-- Video upload progress -->
       <UploadProgress
-        v-else
+        v-else-if="!uploadStore.isImage"
         :file-name="uploadStore.file.name"
         :progress="uploadStore.progress"
         :uploading="uploadStore.uploading"
@@ -63,13 +74,22 @@
         @cancel="handleUploadCancel"
       />
 
+      <!-- Image story builder -->
+      <StoryBuilder
+        v-else
+        :images="uploadStore.imageFiles"
+        @update:images="(files) => (uploadStore.imageFiles = files)"
+        @remove="handleImageRemove"
+        @add="handleImageAdd"
+      />
+
       <div class="mt-6 flex justify-end">
         <button
           :disabled="!uploadCompleted"
           class="rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
           @click="step = 2"
         >
-          다음 단계
+          {{ t('upload.nextStep') }}
         </button>
       </div>
     </div>
@@ -79,8 +99,8 @@
 
     <!-- Step 2: Metadata -->
     <div v-if="step === 2" class="space-y-6">
-      <!-- AI Pipeline Toggle -->
-      <div class="flex items-center gap-3">
+      <!-- AI Pipeline Toggle (video only) -->
+      <div v-if="!uploadStore.isImage" class="flex items-center gap-3">
         <button
           :class="[
             'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -90,7 +110,7 @@
           ]"
           @click="pipelineMode = false"
         >
-          메타 입력
+          {{ t('upload.metaInput') }}
         </button>
         <button
           :class="[
@@ -104,12 +124,12 @@
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
           </svg>
-          AI 파이프라인
+          {{ t('upload.aiPipeline') }}
         </button>
       </div>
 
-      <!-- AI Pipeline Builder / Progress -->
-      <div v-if="pipelineMode" class="card">
+      <!-- AI Pipeline Builder / Progress (video only) -->
+      <div v-if="pipelineMode && !uploadStore.isImage" class="card">
         <AiPipelineProgress
           v-if="pipelineId"
           :pipeline-id="pipelineId"
@@ -125,7 +145,7 @@
         />
       </div>
 
-      <div v-if="!pipelineMode" class="card">
+      <div v-if="!pipelineMode || uploadStore.isImage" class="card">
         <MetadataForm
           v-model="metadata"
           :video-preview-url="videoPreviewUrl"
@@ -163,14 +183,14 @@
           class="rounded-lg border border-gray-300 dark:border-gray-600 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
           @click="step = 1"
         >
-          이전
+          {{ t('upload.previousStep') }}
         </button>
         <button
           :disabled="!metadata.title.trim()"
           class="rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
           @click="handleStep2Next"
         >
-          다음 단계
+          {{ t('upload.nextStep') }}
         </button>
       </div>
     </div>
@@ -194,7 +214,7 @@
           class="rounded-lg border border-gray-300 dark:border-gray-600 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
           @click="step = 2"
         >
-          이전
+          {{ t('upload.previousStep') }}
         </button>
         <div class="flex items-center gap-2">
           <button
@@ -203,7 +223,7 @@
             @click="handleAddToQueue"
           >
             <QueueListIcon class="h-5 w-5" />
-            큐에 추가
+            {{ t('upload.addToQueue') }}
           </button>
           <button
             :disabled="platformConfigs.length === 0 || publishing"
@@ -211,10 +231,22 @@
             @click="handlePublish"
           >
             <LoadingSpinner v-if="publishing" size="sm" />
-            {{ scheduledAt ? '예약 게시' : '즉시 게시' }}
+            {{ scheduledAt ? t('upload.publishScheduled') : t('upload.publishNow') }}
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- Processing Progress (shown after publish starts, video only) -->
+    <div v-if="publishedVideoId && !uploadStore.isImage" class="mt-6 space-y-6">
+      <ProcessingProgressPanel :video-id="publishedVideoId" />
+      <ThumbnailSelector
+        v-if="autoThumbnails.length > 0"
+        :thumbnails="autoThumbnails"
+        :selected-index="selectedThumbIndex"
+        :video-id="publishedVideoId"
+        @select="handleThumbnailSelect"
+      />
     </div>
 
     <!-- Upload Queue Panel -->
@@ -224,32 +256,35 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { CheckIcon } from '@heroicons/vue/24/solid'
 import { QueueListIcon } from '@heroicons/vue/24/outline'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
 import UploadProgress from '@/components/upload/UploadProgress.vue'
+import StoryBuilder from '@/components/upload/StoryBuilder.vue'
 import MetadataForm from '@/components/upload/MetadataForm.vue'
-import type { MetadataFormData } from '@/components/upload/MetadataForm.vue'
 import PlatformSelector from '@/components/upload/PlatformSelector.vue'
 import PlatformPreviewPanel from '@/components/preview/PlatformPreviewPanel.vue'
 import OptimizationSuggestionList from '@/components/preview/OptimizationSuggestionList.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BulkUploadQueue from '@/components/upload/BulkUploadQueue.vue'
 import UploadQueuePanel from '@/components/upload/UploadQueuePanel.vue'
+import ProcessingProgressPanel from '@/components/video/ProcessingProgressPanel.vue'
+import ThumbnailSelector from '@/components/video/ThumbnailSelector.vue'
 import AiPipelineBuilder from '@/components/ai/AiPipelineBuilder.vue'
 import AiPipelineProgress from '@/components/ai/AiPipelineProgress.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { useUploadStore } from '@/stores/upload'
 import { useChannelStore } from '@/stores/channel'
 import { useCreditStore } from '@/stores/credit'
 import { useNotificationStore } from '@/stores/notification'
 import { useUploadQueueStore } from '@/stores/uploadQueue'
+import { useLocale } from '@/composables/useLocale'
 import { videoApi } from '@/api/video'
 import { aiApi } from '@/api/ai'
 import type { PlatformPublishConfig, OptimizationResult } from '@/types/video'
 import type { ScheduleSuggestion, PipelineStepType, AiPipelineResponse } from '@/types/ai'
-
-const STEP_LABELS = ['파일 선택', '메타 입력', '플랫폼 게시']
 
 const router = useRouter()
 const uploadStore = useUploadStore()
@@ -257,28 +292,32 @@ const channelStore = useChannelStore()
 const creditStore = useCreditStore()
 const notify = useNotificationStore()
 const uploadQueueStore = useUploadQueueStore()
+const { t } = useLocale()
 
-const step = ref(1)
+// step and metadata live in the store so they survive route navigation
+const { step, metadata } = storeToRefs(uploadStore)
+
+const stepLabels = computed(() =>
+  uploadStore.isImage
+    ? [t('upload.steps.imageSelect'), t('upload.steps.metadata'), t('upload.steps.publish')]
+    : [t('upload.steps.fileSelect'), t('upload.steps.metadata'), t('upload.steps.publish')],
+)
+
 const videoId = ref<number | null>(null)
 const videoPreviewUrl = ref<string | null>(null)
 const thumbnailCandidates = ref<string[]>([])
 const useStt = ref(false)
 const aiGenerating = ref(false)
 const publishing = ref(false)
+const publishedVideoId = ref<number | null>(null)
+const autoThumbnails = ref<string[]>([])
+const selectedThumbIndex = ref(0)
 const scheduledAt = ref<string | undefined>(undefined)
 const scheduleSuggestions = ref<ScheduleSuggestion[]>([])
 const queuePanelOpen = ref(false)
 const pipelineMode = ref(false)
 const pipelineId = ref<string | null>(null)
-
-const metadata = ref<MetadataFormData>({
-  title: '',
-  description: '',
-  tags: [],
-  category: '',
-  visibility: 'PUBLIC',
-  thumbnailUrl: '',
-})
+let thumbnailPollTimer: ReturnType<typeof setTimeout> | null = null
 
 const platformConfigs = ref<PlatformPublishConfig[]>([])
 
@@ -317,32 +356,41 @@ async function runOptimizationCheck() {
 }
 
 function handleApplyOptimization() {
-  // Auto-fix simple issues: truncate title if too long for any platform
-  const maxTitleLen = 100 // Minimum across YouTube and Naver Clip
+  const maxTitleLen = 100
   if (metadata.value.title.length > maxTitleLen) {
     metadata.value.title = metadata.value.title.substring(0, maxTitleLen)
   }
 
-  // Truncate description if > 2200 (Instagram limit)
   if (metadata.value.description && metadata.value.description.length > 2200) {
     metadata.value.description = metadata.value.description.substring(0, 2200)
   }
 
-  // Limit tags to 15 (YouTube max)
   if (metadata.value.tags.length > 15) {
     metadata.value.tags = metadata.value.tags.slice(0, 15)
   }
 
-  notify.success('최적화 자동 수정이 적용되었습니다.')
+  notify.success(t('upload.success.optimized'))
 }
 
-const uploadCompleted = computed(
-  () => uploadStore.progress.percentage === 100 && !uploadStore.uploading && !uploadStore.uploadError,
-)
+const uploadCompleted = computed(() => {
+  if (uploadStore.isImage) {
+    return uploadStore.imageFiles.length > 0
+  }
+  return uploadStore.progress.percentage === 100 && !uploadStore.uploading && !uploadStore.uploadError
+})
 
 onMounted(async () => {
-  uploadStore.resetUpload()
-  uploadQueueStore.clearAll()
+  if (uploadStore.hasActiveSession) {
+    // Returning from another page (e.g. /channels) — restore session state
+    videoId.value = uploadStore.videoId
+    if (uploadStore.file && !uploadStore.isImage) {
+      videoPreviewUrl.value = URL.createObjectURL(uploadStore.file)
+    }
+  } else {
+    // Fresh visit — reset everything
+    uploadStore.resetUpload()
+    uploadQueueStore.clearAll()
+  }
   try {
     await Promise.all([
       channelStore.fetchChannels(),
@@ -358,6 +406,10 @@ onUnmounted(() => {
     URL.revokeObjectURL(videoPreviewUrl.value)
     videoPreviewUrl.value = null
   }
+  if (thumbnailPollTimer) {
+    clearTimeout(thumbnailPollTimer)
+    thumbnailPollTimer = null
+  }
 })
 
 function handleFileSelect(file: File) {
@@ -365,9 +417,26 @@ function handleFileSelect(file: File) {
   uploadStore.startUpload(file)
 }
 
+function handleImageSelect(files: File[]) {
+  uploadStore.startImageUpload(files)
+}
+
+function handleImageRemove(index: number) {
+  const updated = [...uploadStore.imageFiles]
+  updated.splice(index, 1)
+  uploadStore.imageFiles = updated
+  if (updated.length === 0) {
+    uploadStore.resetUpload()
+  }
+}
+
+function handleImageAdd(files: File[]) {
+  uploadStore.imageFiles = [...uploadStore.imageFiles, ...files]
+}
+
 async function handleMultipleFileSelect(files: File[]) {
   await uploadQueueStore.addFiles(files)
-  notify.success(`${files.length}개 파일이 업로드 큐에 추가되었습니다.`)
+  notify.success(t('upload.success.queuedFiles', { count: files.length }))
 }
 
 function handleUploadCancel() {
@@ -380,11 +449,16 @@ function handleUploadCancel() {
 
 async function handleStep2Next() {
   if (!metadata.value.title.trim()) {
-    notify.error('제목을 입력해주세요.')
+    notify.error(t('upload.error.titleRequired'))
     return
   }
 
-  // Create video record if not yet created
+  // For video uploads, the videoId is already created during initUpload (Tus flow)
+  if (!videoId.value && uploadStore.videoId) {
+    videoId.value = uploadStore.videoId
+  }
+
+  // Create video/content record if not yet created (image uploads, etc.)
   if (!videoId.value) {
     try {
       const video = await videoApi.create({
@@ -394,15 +468,25 @@ async function handleStep2Next() {
         category: metadata.value.category || undefined,
         thumbnailUrl: metadata.value.thumbnailUrl || undefined,
         visibility: metadata.value.visibility,
+        mediaType: uploadStore.mediaType,
       })
       videoId.value = video.id
       thumbnailCandidates.value = video.thumbnailCandidates || []
+
+      // For images, upload them now
+      if (uploadStore.isImage && uploadStore.imageFiles.length > 0) {
+        try {
+          await uploadStore.uploadImagesToServer(video.id)
+        } catch {
+          notify.error(t('upload.error.imageFailed'))
+          return
+        }
+      }
     } catch {
-      notify.error('영상 정보 저장에 실패했습니다.')
+      notify.error(t('upload.error.saveFailed'))
       return
     }
   } else {
-    // Update existing
     try {
       await videoApi.update(videoId.value, {
         title: metadata.value.title,
@@ -413,7 +497,7 @@ async function handleStep2Next() {
         visibility: metadata.value.visibility,
       })
     } catch {
-      notify.error('영상 정보 업데이트에 실패했습니다.')
+      notify.error(t('upload.error.updateFailed'))
       return
     }
   }
@@ -433,13 +517,13 @@ async function handleStep2Next() {
 
 async function handleAiGenerate() {
   if (!videoId.value && !uploadStore.uploadUrl) {
-    notify.error('파일 업로드를 먼저 완료해주세요.')
+    notify.error(t('upload.error.fileRequired'))
     return
   }
 
   const requiredCredits = useStt.value ? 15 : 5
   if (!creditStore.hasEnoughCredits(requiredCredits)) {
-    notify.error('크레딧이 부족합니다.')
+    notify.error(t('upload.error.creditsInsufficient'))
     return
   }
 
@@ -448,38 +532,43 @@ async function handleAiGenerate() {
     const res = await aiApi.generateMeta({
       videoId: videoId.value ?? undefined,
       useStt: useStt.value,
-      platforms: channelStore.connectedPlatforms,
+      targetPlatforms: channelStore.connectedPlatforms,
       tone: 'FRIENDLY',
       category: metadata.value.category || '엔터테인먼트',
     })
 
-    // Apply first platform result to base metadata
-    if (res.platformResults.length > 0) {
-      const first = res.platformResults[0]
+    if (res.platforms.length > 0) {
+      const first = res.platforms[0]
       if (first.titleCandidates.length > 0) {
         metadata.value.title = first.titleCandidates[0]
       }
       metadata.value.description = first.description
     }
-    if (res.hashtags.length > 0) {
-      metadata.value.tags = res.hashtags.slice(0, 30)
+    // Collect hashtags from all platforms
+    const allHashtags = res.platforms.flatMap((p) => p.hashtags)
+    if (allHashtags.length > 0) {
+      metadata.value.tags = allHashtags.slice(0, 30)
     }
 
     await creditStore.fetchBalance()
-    notify.success(`AI 메타데이터가 생성되었습니다. (${res.creditsUsed} 크레딧 사용)`)
+    notify.success(t('upload.success.aiGenerated', { credits: res.creditsUsed }))
   } catch {
-    notify.error('AI 메타데이터 생성에 실패했습니다.')
+    notify.error(t('upload.error.uploadFailed'))
   } finally {
     aiGenerating.value = false
   }
 }
 
 async function handleStartPipeline(steps: PipelineStepType[], channelId?: number) {
+  // Use videoId from upload store if available (video was created during Tus init)
+  if (!videoId.value && uploadStore.videoId) {
+    videoId.value = uploadStore.videoId
+  }
+
   if (!videoId.value) {
-    // Create video record first if not yet created
     try {
       const video = await videoApi.create({
-        title: metadata.value.title || '임시 제목',
+        title: metadata.value.title || t('upload.defaultTitle'),
         description: metadata.value.description || undefined,
         tags: metadata.value.tags.length > 0 ? metadata.value.tags : undefined,
         category: metadata.value.category || undefined,
@@ -487,7 +576,7 @@ async function handleStartPipeline(steps: PipelineStepType[], channelId?: number
       })
       videoId.value = video.id
     } catch {
-      notify.error('영상 정보 저장에 실패했습니다.')
+      notify.error(t('upload.error.saveFailed'))
       return
     }
   }
@@ -499,14 +588,13 @@ async function handleStartPipeline(steps: PipelineStepType[], channelId?: number
       channelId: channelId,
     })
     pipelineId.value = res.pipelineId
-    notify.success('AI 파이프라인이 시작되었습니다.')
+    notify.success(t('upload.success.pipelineStarted'))
   } catch {
-    notify.error('AI 파이프라인 시작에 실패했습니다.')
+    notify.error(t('upload.error.uploadFailed'))
   }
 }
 
 function handlePipelineCompleted(pipeline: AiPipelineResponse) {
-  // Apply results to metadata if available
   const results = pipeline.results
   if (results['GENERATE_META']) {
     const metaResult = results['GENERATE_META'] as Record<string, unknown>
@@ -536,32 +624,32 @@ function handlePipelineCompleted(pipeline: AiPipelineResponse) {
   creditStore.fetchBalance()
   pipelineId.value = null
   pipelineMode.value = false
-  notify.success('AI 파이프라인이 완료되었습니다.')
+  notify.success(t('upload.success.pipelineCompleted'))
 }
 
 function handlePipelineCancelled() {
   pipelineId.value = null
   creditStore.fetchBalance()
-  notify.success('AI 파이프라인이 취소되었습니다.')
+  notify.success(t('upload.success.pipelineCancelled'))
 }
 
 async function handleAddToQueue() {
   if (!videoId.value || !uploadStore.file) {
-    notify.error('영상 파일을 먼저 업로드해주세요.')
+    notify.error(t('upload.error.fileRequired'))
     return
   }
 
   if (platformConfigs.value.length === 0) {
-    notify.error('게시할 플랫폼을 선택해주세요.')
+    notify.error(t('upload.error.platformRequired'))
     return
   }
 
-  // Add to queue
   uploadQueueStore.addToQueue({
     file: uploadStore.file,
     fileName: uploadStore.file.name,
     fileSize: uploadStore.file.size,
     title: metadata.value.title,
+    mediaType: uploadStore.mediaType,
     platforms: platformConfigs.value.map((config) => config.platform),
     metadata: {
       title: metadata.value.title,
@@ -570,36 +658,27 @@ async function handleAddToQueue() {
     },
   })
 
-  notify.success('업로드 큐에 추가되었습니다.')
+  notify.success(t('upload.success.queued'))
   queuePanelOpen.value = true
 
   // Reset for next upload
-  uploadStore.resetUpload()
-  step.value = 1
-  videoId.value = null
   if (videoPreviewUrl.value) {
     URL.revokeObjectURL(videoPreviewUrl.value)
   }
   videoPreviewUrl.value = null
-  metadata.value = {
-    title: '',
-    description: '',
-    tags: [],
-    category: '',
-    visibility: 'PUBLIC',
-    thumbnailUrl: '',
-  }
+  videoId.value = null
   platformConfigs.value = []
+  uploadStore.resetUpload()
 }
 
 async function handlePublish() {
   if (!videoId.value) {
-    notify.error('영상 정보가 없습니다.')
+    notify.error(t('upload.error.contentRequired'))
     return
   }
 
   if (platformConfigs.value.length === 0) {
-    notify.error('게시할 플랫폼을 선택해주세요.')
+    notify.error(t('upload.error.platformRequired'))
     return
   }
 
@@ -610,13 +689,44 @@ async function handlePublish() {
       scheduledAt: scheduledAt.value,
     })
 
-    notify.success(scheduledAt.value ? '예약 게시가 설정되었습니다.' : '영상이 게시 중입니다.')
-    uploadStore.resetUpload()
-    router.push('/videos')
+    notify.success(scheduledAt.value ? t('upload.success.scheduled') : t('upload.success.publishing'))
+    publishedVideoId.value = videoId.value
+
+    // Poll for thumbnails only for video content
+    if (!uploadStore.isImage) {
+      pollThumbnails(videoId.value)
+    }
   } catch {
-    notify.error('게시에 실패했습니다. 다시 시도해주세요.')
+    notify.error(t('upload.error.publishFailed'))
   } finally {
     publishing.value = false
+  }
+}
+
+function pollThumbnails(vid: number, attempt = 0) {
+  if (attempt >= 30) return
+  thumbnailPollTimer = setTimeout(async () => {
+    try {
+      const result = await videoApi.getThumbnails(vid)
+      if (result.thumbnails && result.thumbnails.length > 0) {
+        autoThumbnails.value = result.thumbnails
+        selectedThumbIndex.value = result.selectedIndex ?? 0
+        return
+      }
+    } catch {
+      // Thumbnails not ready yet
+    }
+    pollThumbnails(vid, attempt + 1)
+  }, 10000)
+}
+
+async function handleThumbnailSelect(index: number) {
+  if (!publishedVideoId.value) return
+  try {
+    await videoApi.selectThumbnail(publishedVideoId.value, index)
+    selectedThumbIndex.value = index
+  } catch {
+    notify.error(t('video.thumbnail.selectError'))
   }
 }
 </script>

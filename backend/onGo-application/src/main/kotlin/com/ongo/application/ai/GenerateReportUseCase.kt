@@ -6,13 +6,11 @@ import com.ongo.common.enums.AiFeature
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.analytics.AnalyticsRepository
 import org.slf4j.LoggerFactory
-import org.springframework.ai.chat.client.ChatClient
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
 @Service
 class GenerateReportUseCase(
-    @Qualifier("anthropicChatClient") private val chatClient: ChatClient,
+    private val chatClientResolver: ChatClientResolver,
     private val creditService: CreditService,
     private val rateLimiter: AiRateLimiter,
     private val analyticsRepository: AnalyticsRepository,
@@ -43,7 +41,7 @@ class GenerateReportUseCase(
             .replace("{topVideos}", topVideosStr)
 
         try {
-            val result = chatClient.prompt()
+            val result = chatClientResolver.resolve(userId).prompt()
                 .system(PromptTemplates.PERFORMANCE_REPORT_SYSTEM)
                 .user(userPrompt)
                 .call()

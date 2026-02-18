@@ -16,6 +16,7 @@ data class Subscription(
     val currentPeriodEnd: LocalDateTime? = null,
     val nextBillingDate: LocalDateTime? = null,
     val pendingPlanType: PlanType? = null,
+    val storageQuotaLimitBytes: Long? = null,
     val cancelledAt: LocalDateTime? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,

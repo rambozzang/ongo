@@ -44,6 +44,16 @@ spring:
           temperature: 0.7
     openai:
       api-key: ${OPENAI_API_KEY:your-api-key}
+    vertex:
+      ai:
+        gemini:
+          enabled: ${GEMINI_ENABLED:false}
+          project-id: ${GEMINI_PROJECT_ID:}
+          location: ${GEMINI_LOCATION:us-central1}
+          chat:
+            options:
+              model: gemini-2.5-pro
+              temperature: 0.7
 
   # Security
   security:
@@ -79,29 +89,58 @@ jwt:
   access-token-expiry: 1800000   # 30 minutes
   refresh-token-expiry: 604800000 # 7 days
 
-# MinIO / S3 Storage
+# MinIO / S3 / R2 Storage
 storage:
   type: minio
+  bucket: ongo-videos
   minio:
     endpoint: http://localhost:9000
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadmin}
-    bucket: ongo-videos
   s3:
     region: ap-northeast-2
-    bucket: ongo-videos
+    endpoint: ${S3_ENDPOINT:}
+    access-key: ${S3_ACCESS_KEY:}
+    secret-key: ${S3_SECRET_KEY:}
 
 # Payment (Toss)
 payment:
   toss:
     webhook-secret: ${TOSS_WEBHOOK_SECRET:}
 
-# Platform encryption
+# Platform encryption & OAuth
 platform:
   token:
     encryption-key: ${PLATFORM_TOKEN_ENCRYPTION_KEY}
   google:
     api-key: ${GOOGLE_API_KEY:}
+  twitter:
+    client-id: ${TWITTER_CLIENT_ID:}
+    client-secret: ${TWITTER_CLIENT_SECRET:}
+  facebook:
+    app-id: ${FACEBOOK_APP_ID:}
+    app-secret: ${FACEBOOK_APP_SECRET:}
+  threads:
+    app-id: ${THREADS_APP_ID:}
+    app-secret: ${THREADS_APP_SECRET:}
+  pinterest:
+    app-id: ${PINTEREST_APP_ID:}
+    app-secret: ${PINTEREST_APP_SECRET:}
+  linkedin:
+    client-id: ${LINKEDIN_CLIENT_ID:}
+    client-secret: ${LINKEDIN_CLIENT_SECRET:}
+  wordpress:
+    client-id: ${WORDPRESS_CLIENT_ID:}
+    client-secret: ${WORDPRESS_CLIENT_SECRET:}
+  tumblr:
+    consumer-key: ${TUMBLR_CONSUMER_KEY:}
+    consumer-secret: ${TUMBLR_CONSUMER_SECRET:}
+  vimeo:
+    client-id: ${VIMEO_CLIENT_ID:}
+    client-secret: ${VIMEO_CLIENT_SECRET:}
+  dailymotion:
+    api-key: ${DAILYMOTION_API_KEY:}
+    api-secret: ${DAILYMOTION_API_SECRET:}
 
 # CORS
 cors:
@@ -117,6 +156,30 @@ springdoc:
     operations-sorter: alpha
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
+
+# Resilience4j — 플랫폼 API 호출 안정성
+resilience4j:
+  retry:
+    instances:
+      platformApi:
+        max-attempts: 3
+        wait-duration: 2s
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+          - org.springframework.web.client.ResourceAccessException
+        ignore-exceptions:
+          - com.ongo.common.exception.PlatformUploadException
+  circuitbreaker:
+    instances:
+      platformApi:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 3
+        slow-call-duration-threshold: 30s
+        slow-call-rate-threshold: 80
 
 # Logging (production defaults - use application-dev.yml for DEBUG)
 logging:

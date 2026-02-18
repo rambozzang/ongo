@@ -3,6 +3,8 @@ package com.ongo.application.notification
 import com.ongo.application.notification.dto.NotificationListResponse
 import com.ongo.application.notification.dto.NotificationResponse
 import com.ongo.application.notification.dto.UnreadCountResponse
+import com.ongo.common.exception.ForbiddenException
+import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.notification.Notification
 import com.ongo.domain.notification.NotificationRepository
 import org.springframework.stereotype.Service
@@ -24,6 +26,11 @@ class NotificationUseCase(
 
     @Transactional
     fun markAsRead(userId: Long, id: Long) {
+        val notification = notificationRepository.findById(id)
+            ?: throw NotFoundException("알림", id)
+        if (notification.userId != userId) {
+            throw ForbiddenException("해당 알림에 대한 접근 권한이 없습니다")
+        }
         notificationRepository.markAsRead(id)
     }
 
@@ -37,7 +44,11 @@ class NotificationUseCase(
 
     @Transactional
     fun deleteNotification(userId: Long, id: Long) {
-        // NotificationRepository에 delete 메서드 추가 필요 — 아래에서 직접 구현
+        val notification = notificationRepository.findById(id)
+            ?: throw NotFoundException("알림", id)
+        if (notification.userId != userId) {
+            throw ForbiddenException("해당 알림에 대한 접근 권한이 없습니다")
+        }
         notificationRepository.delete(id)
     }
 

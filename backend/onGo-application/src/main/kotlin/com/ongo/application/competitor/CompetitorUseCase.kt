@@ -6,6 +6,7 @@ import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.competitor.ChannelLookupPort
 import com.ongo.domain.competitor.Competitor
 import com.ongo.domain.competitor.CompetitorRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -15,7 +16,10 @@ class CompetitorUseCase(
     private val channelLookupPort: ChannelLookupPort,
 ) {
 
-    fun lookupChannel(request: ChannelLookupRequest): ChannelLookupResponse {
+    private val log = LoggerFactory.getLogger(CompetitorUseCase::class.java)
+
+    fun lookupChannel(userId: Long, request: ChannelLookupRequest): ChannelLookupResponse {
+        log.info("채널 조회: userId={}, platform={}, query={}", userId, request.platform, request.query)
         val result = channelLookupPort.lookupChannel(
             platform = request.platform,
             query = request.query,

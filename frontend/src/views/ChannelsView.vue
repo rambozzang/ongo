@@ -9,6 +9,14 @@
       </button>
     </div>
 
+    <PageGuide title="채널 관리" :items="[
+      '새 채널 연결 버튼으로 YouTube·TikTok·Instagram·Naver Clip 등 플랫폼 계정을 OAuth로 연동하세요',
+      '상단 요약 카드에서 총 채널 수, 정상·주의·오류 상태 채널 수를 한눈에 확인할 수 있습니다',
+      '각 채널 카드의 토큰 상태가 주의(노란색) 또는 오류(빨간색)이면 재연결 버튼으로 토큰을 갱신하세요',
+      '모두 동기화 버튼으로 전체 채널의 구독자·콘텐츠 정보를 최신 상태로 업데이트하세요',
+      '채널 연동을 해제하면 해당 플랫폼으로의 업로드와 분석이 중단되니 주의하세요',
+    ]" />
+
     <!-- Loading State -->
     <LoadingSpinner v-if="loading" full-page />
 
@@ -154,10 +162,12 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import ChannelHealthCard from '@/components/channel/ChannelHealthCard.vue'
 import ConnectChannelModal from '@/components/channel/ConnectChannelModal.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { useChannelStore } from '@/stores/channel'
 import { useNotification } from '@/composables/useNotification'
 import type { Channel, Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
+import { buildOAuthUrl } from '@/utils/oauth'
 
 // --- Stores ---
 const channelStore = useChannelStore()
@@ -235,10 +245,7 @@ async function handleSyncAll() {
 }
 
 function handleReconnect(platform: Platform) {
-  // Initiate OAuth flow for reconnecting
-  const redirectUri = `${window.location.origin}/channels/callback/${platform.toLowerCase()}`
-  const oauthUrl = `/api/v1/channels/connect/${platform.toLowerCase()}/authorize?redirectUri=${encodeURIComponent(redirectUri)}`
-  window.location.href = oauthUrl
+  window.location.href = buildOAuthUrl(platform, '/channels')
 }
 
 function openDisconnectModal(channel: Channel) {
@@ -260,11 +267,7 @@ async function handleDisconnect() {
 }
 
 function handleConnect(platform: Platform) {
-  // Initiate OAuth flow for the selected platform.
-  // The backend provides the OAuth authorization URL; redirect the user there.
-  const redirectUri = `${window.location.origin}/channels/callback/${platform.toLowerCase()}`
-  const oauthUrl = `/api/v1/channels/connect/${platform.toLowerCase()}/authorize?redirectUri=${encodeURIComponent(redirectUri)}`
-  window.location.href = oauthUrl
+  window.location.href = buildOAuthUrl(platform, '/channels')
 }
 
 // --- Lifecycle ---

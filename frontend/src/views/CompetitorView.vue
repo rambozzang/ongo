@@ -6,6 +6,7 @@ import CompetitorCard from '@/components/competitor/CompetitorCard.vue'
 import ComparisonChart from '@/components/competitor/ComparisonChart.vue'
 import AddCompetitorModal from '@/components/competitor/AddCompetitorModal.vue'
 import TrendingVideoList from '@/components/competitor/TrendingVideoList.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 
 type Tab = 'list' | 'comparison' | 'trending'
 
@@ -96,6 +97,14 @@ function formatNumber(num: number): string {
             </button>
           </div>
         </div>
+
+        <PageGuide title="경쟁사 분석" :items="[
+          '경쟁사 추가 버튼으로 벤치마크 대상 채널을 등록하고, 추적 토글로 모니터링을 시작하세요',
+          '목록 탭에서 추적 중인 경쟁 채널의 구독자·조회수·콘텐츠 수를 확인하세요',
+          '비교 탭에서 여러 경쟁 채널을 선택하여 주요 지표를 나란히 비교하고, 내 채널과의 차이를 분석하세요',
+          '트렌딩 탭에서 경쟁사의 인기 영상과 시장 트렌드를 파악하여 콘텐츠 전략에 반영하세요',
+          '새로고침 버튼으로 경쟁사 데이터를 최신 상태로 업데이트할 수 있습니다',
+        ]" />
 
         <!-- Overview Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

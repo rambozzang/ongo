@@ -42,4 +42,11 @@ export const authApi = {
       .delete<ResData<void>>('/auth/account')
       .then(unwrapResponse)
   },
+
+  /** SSE 연결용 단기 토큰 발급 (5분 만료) */
+  getSseToken() {
+    return apiClient
+      .post<ResData<{ token: string }>>('/auth/sse-token')
+      .then(unwrapResponse)
+  },
 }

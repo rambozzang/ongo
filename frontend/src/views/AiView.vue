@@ -60,6 +60,14 @@
       </div>
     </div>
 
+    <PageGuide title="AI 어시스턴트" :items="[
+      'AI 도구 탭에서 제목 생성·해시태그 추출·설명 작성·썸네일 분석 등 다양한 AI 도구를 사용하세요',
+      '프리셋 탭에서 자주 사용하는 AI 설정(톤, 타겟 플랫폼, 카테고리)을 저장하고 재사용하세요',
+      '사용 기록 탭에서 AI 크레딧 소비 내역과 생성 결과를 확인할 수 있습니다',
+      '상단의 일일 크레딧 사용량 표시가 빨간색이면 잔액이 부족하니 구독 페이지에서 충전하세요',
+      '각 도구 카드의 툴팁 아이콘에 마우스를 올리면 소요 크레딧과 상세 설명을 확인할 수 있습니다',
+    ]" />
+
     <!-- Tab Content -->
     <div class="mt-6">
       <!-- AI Tools Tab -->
@@ -223,7 +231,7 @@
               <!-- Meta Results -->
               <div v-else class="space-y-4">
                 <div
-                  v-for="(result, idx) in aiStore.metaResult.platformResults"
+                  v-for="(result, idx) in aiStore.metaResult.platforms"
                   :key="idx"
                   class="rounded-lg border border-gray-200 dark:border-gray-700 p-4"
                   :style="{ animationDelay: `${idx * 150}ms` }"
@@ -360,16 +368,16 @@
               <!-- Hashtag Results -->
               <div v-else class="space-y-4">
                 <div
-                  v-for="(hashtags, platform, idx) in aiStore.hashtagResult.platformHashtags"
-                  :key="platform"
+                  v-for="(item, idx) in aiStore.hashtagResult.platforms"
+                  :key="item.platform"
                   class="rounded-lg border border-gray-200 dark:border-gray-700 p-4"
                   :style="{ animationDelay: `${idx * 150}ms` }"
                   style="animation: ai-item-fade-in 500ms ease-out backwards"
                 >
-                  <h4 class="mb-2 font-medium text-gray-900 dark:text-gray-100">{{ platformLabel(platform as string) }}</h4>
+                  <h4 class="mb-2 font-medium text-gray-900 dark:text-gray-100">{{ platformLabel(item.platform) }}</h4>
                   <div class="flex flex-wrap gap-1.5">
                     <span
-                      v-for="tag in hashtags"
+                      v-for="tag in item.hashtags"
                       :key="tag"
                       class="cursor-pointer rounded-full bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/30"
                       @click="copyToClipboard(tag)"
@@ -438,13 +446,13 @@
                     </h4>
                     <span
                       class="ml-2 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
-                      :class="idea.trendScore >= 80
+                      :class="idea.difficulty === 'EASY'
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                        : idea.trendScore >= 50
+                        : idea.difficulty === 'MEDIUM'
                           ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'"
                     >
-                      트렌드 {{ idea.trendScore }}%
+                      {{ idea.difficulty }}
                     </span>
                   </div>
                   <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">{{ idea.description }}</p>
@@ -641,6 +649,7 @@ import AiLoadingOverlay from '@/components/ai/AiLoadingOverlay.vue'
 import AiTypingEffect from '@/components/ai/AiTypingEffect.vue'
 import AiPresetList from '@/components/ai/AiPresetList.vue'
 import AiUsageHistory from '@/components/ai/AiUsageHistory.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { useAiStore } from '@/stores/ai'
 import { useAiHistoryStore } from '@/stores/aiHistory'
 import { useCredit } from '@/composables/useCredit'
@@ -923,7 +932,7 @@ async function submitMeta() {
     const result = await aiStore.generateMeta({
       script: metaForm.value.script,
       useStt: false,
-      platforms: metaForm.value.platforms,
+      targetPlatforms: metaForm.value.platforms,
       tone: metaForm.value.tone,
       category: metaForm.value.category,
     })
@@ -957,14 +966,14 @@ async function submitHashtags() {
     const result = await aiStore.generateHashtags({
       title: hashtagForm.value.title,
       category: hashtagForm.value.category,
-      platforms: hashtagForm.value.platforms,
+      targetPlatforms: hashtagForm.value.platforms,
     })
     await fetchBalance()
 
     // Add to history
     if (result) {
-      const firstPlatform = Object.keys(result.platformHashtags)[0]
-      const sampleTags = result.platformHashtags[firstPlatform]?.slice(0, 5).join(', ') || ''
+      const firstPlatformItem = result.platforms[0]
+      const sampleTags = firstPlatformItem?.hashtags.slice(0, 5).join(', ') || ''
       aiHistoryStore.addRecord({
         toolType: '해시태그 추천',
         prompt: hashtagForm.value.title,

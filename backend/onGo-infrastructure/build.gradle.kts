@@ -24,6 +24,7 @@ dependencies {
     // Spring AI
     implementation("org.springframework.ai:spring-ai-anthropic-spring-boot-starter")
     implementation("org.springframework.ai:spring-ai-openai-spring-boot-starter")
+    implementation("org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter")
 
     // Cache
     implementation("org.springframework.boot:spring-boot-starter-cache")
@@ -44,4 +45,11 @@ dependencies {
     implementation(libs.jjwt.api)
     runtimeOnly(libs.jjwt.impl)
     runtimeOnly(libs.jjwt.jackson)
+
+    // Resilience4j (Circuit Breaker + Retry)
+    implementation(libs.resilience4j.spring)
+    implementation(libs.resilience4j.retry)
+
+    // AOP (Resilience4j 어노테이션 지원)
+    implementation("org.springframework.boot:spring-boot-starter-aop")
 }

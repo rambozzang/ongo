@@ -1,5 +1,6 @@
 package com.ongo.infrastructure.persistence.jooq
 
+import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
@@ -16,6 +17,10 @@ import com.ongo.infrastructure.persistence.jooq.Fields.RESOLUTION
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.TAGS
+import com.ongo.infrastructure.persistence.jooq.Fields.AUTO_THUMBNAILS
+import com.ongo.infrastructure.persistence.jooq.Fields.MEDIA_TYPE
+import com.ongo.infrastructure.persistence.jooq.Fields.MEDIA_TYPE_TEXT
+import com.ongo.infrastructure.persistence.jooq.Fields.SELECTED_THUMBNAIL_INDEX
 import com.ongo.infrastructure.persistence.jooq.Fields.THUMBNAIL_URLS
 import com.ongo.infrastructure.persistence.jooq.Fields.TITLE
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
@@ -97,6 +102,7 @@ class VideoJooqRepository(
     override fun save(video: Video): Video {
         val tagsArray = video.tags.toTypedArray()
         val thumbnailJson = JSONB.jsonb(objectMapper.writeValueAsString(video.thumbnailUrls))
+        val autoThumbJson = JSONB.jsonb(objectMapper.writeValueAsString(video.autoThumbnails))
 
         val id = dsl.insertInto(VIDEOS)
             .set(USER_ID, video.userId)
@@ -111,6 +117,9 @@ class VideoJooqRepository(
             .set(ORIGINAL_FILENAME, video.originalFilename)
             .set(CONTENT_HASH, video.contentHash)
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
+            .set(DSL.field("auto_thumbnails", JSONB::class.java), autoThumbJson)
+            .set(SELECTED_THUMBNAIL_INDEX, video.selectedThumbnailIndex)
+            .set(MEDIA_TYPE, video.mediaType.name)
             .set(STATUS, video.status.name)
             .returningResult(ID)
             .fetchOne()!!
@@ -122,6 +131,7 @@ class VideoJooqRepository(
     override fun update(video: Video): Video {
         val tagsArray = video.tags.toTypedArray()
         val thumbnailJson = JSONB.jsonb(objectMapper.writeValueAsString(video.thumbnailUrls))
+        val autoThumbJson = JSONB.jsonb(objectMapper.writeValueAsString(video.autoThumbnails))
 
         dsl.update(VIDEOS)
             .set(TITLE, video.title)
@@ -135,6 +145,9 @@ class VideoJooqRepository(
             .set(ORIGINAL_FILENAME, video.originalFilename)
             .set(CONTENT_HASH, video.contentHash)
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
+            .set(DSL.field("auto_thumbnails", JSONB::class.java), autoThumbJson)
+            .set(SELECTED_THUMBNAIL_INDEX, video.selectedThumbnailIndex)
+            .set(MEDIA_TYPE, video.mediaType.name)
             .set(STATUS, video.status.name)
             .where(ID.eq(video.id))
             .execute()
@@ -171,7 +184,15 @@ class VideoJooqRepository(
             else -> emptyList()
         }
 
+        val autoThumbRaw = get("auto_thumbnails")
+        val autoThumbnails: List<String> = when (autoThumbRaw) {
+            is JSONB -> parseThumbnailUrls(autoThumbRaw.data())
+            is String -> parseThumbnailUrls(autoThumbRaw)
+            else -> emptyList()
+        }
+
         val statusStr = get(STATUS) ?: "DRAFT"
+        val mediaTypeStr = get(MEDIA_TYPE) ?: "VIDEO"
         return Video(
             id = get(ID),
             userId = get(USER_ID),
@@ -186,6 +207,9 @@ class VideoJooqRepository(
             originalFilename = get(ORIGINAL_FILENAME),
             contentHash = get(CONTENT_HASH),
             thumbnailUrls = thumbnailUrls,
+            autoThumbnails = autoThumbnails,
+            selectedThumbnailIndex = get(SELECTED_THUMBNAIL_INDEX) ?: 0,
+            mediaType = try { MediaType.valueOf(mediaTypeStr) } catch (_: Exception) { MediaType.VIDEO },
             status = try { UploadStatus.valueOf(statusStr) } catch (_: Exception) { UploadStatus.DRAFT },
             createdAt = localDateTime(CREATED_AT),
             updatedAt = localDateTime(UPDATED_AT),

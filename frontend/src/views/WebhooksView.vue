@@ -15,6 +15,7 @@ import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import WebhookCard from '@/components/webhooks/WebhookCard.vue'
 import WebhookFormModal from '@/components/webhooks/WebhookFormModal.vue'
 import WebhookDeliveryLog from '@/components/webhooks/WebhookDeliveryLog.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import type { Webhook, WebhookEvent } from '@/types/webhook'
 
 // --- Store & composables ---
@@ -155,6 +156,14 @@ function handleCloseDeliveryLog() {
         새 웹훅
       </button>
     </div>
+
+    <PageGuide title="웹훅" :items="[
+      '새 웹훅 버튼으로 외부 서비스에 연결할 엔드포인트 URL을 등록하세요',
+      '웹훅 생성/수정 시 수신할 이벤트(업로드·게시·예약 실행·댓글 등)를 선택하고, 재시도 정책을 설정하세요',
+      '상단 요약에서 전체 웹훅 수·활성 수·실패 수를 확인하세요',
+      '각 웹훅 카드에서 활성/비활성 토글로 전송을 제어하고, 테스트 버튼으로 연결 상태를 검증하세요',
+      '전송 로그에서 요청/응답 상세(상태 코드·소요 시간)를 확인하여 문제를 디버깅하세요',
+    ]" />
 
     <!-- Empty State -->
     <EmptyState

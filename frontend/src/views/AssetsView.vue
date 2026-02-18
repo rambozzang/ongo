@@ -7,6 +7,7 @@ import FolderSidebar from '@/components/assets/FolderSidebar.vue'
 import AssetCard from '@/components/assets/AssetCard.vue'
 import AssetUploadModal from '@/components/assets/AssetUploadModal.vue'
 import AssetPreviewModal from '@/components/assets/AssetPreviewModal.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -233,6 +234,14 @@ function clearFilters() {
         </button>
       </div>
     </div>
+
+    <PageGuide title="에셋 라이브러리" :items="[
+      '업로드 버튼으로 영상·이미지·오디오·템플릿 파일을 라이브러리에 저장하세요',
+      '왼쪽 폴더 트리에서 폴더별로 에셋을 정리하고, 그리드/리스트 뷰로 전환하여 확인하세요',
+      '유형 필터(영상/이미지/오디오/템플릿)와 태그 필터, 검색을 조합하여 원하는 에셋을 빠르게 찾으세요',
+      '여러 에셋을 선택하여 일괄 삭제·다운로드가 가능하며, 상단의 스토리지 사용량 바에서 잔여 공간을 확인하세요',
+      '에셋을 클릭하면 미리보기 모달에서 상세 정보를 확인하고 영상 업로드에 바로 활용할 수 있습니다',
+    ]" />
 
     <!-- Toolbar -->
     <div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">

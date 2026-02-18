@@ -13,6 +13,7 @@ import RecyclingCreateModal from '@/components/recycling/RecyclingCreateModal.vu
 import RecyclingHistoryComponent from '@/components/recycling/RecyclingHistory.vue'
 import { LightBulbIcon } from '@heroicons/vue/24/outline'
 import type { RecyclingQueue, RecyclingQueueCreateRequest } from '@/types/recycling'
+import PageGuide from '@/components/common/PageGuide.vue'
 
 const recyclingStore = useRecyclingStore()
 
@@ -103,7 +104,6 @@ async function handleDismissSuggestion(id: number) {
 }
 
 onMounted(() => {
-  recyclingStore.loadFromLocalStorage()
   recyclingStore.fetchSuggestions()
 })
 </script>
@@ -135,6 +135,14 @@ onMounted(() => {
           </button>
         </div>
       </div>
+
+      <PageGuide title="콘텐츠 재활용" :items="[
+        '큐 목록 탭에서 자동 재게시 규칙을 생성하고, 활성 큐 수와 총 재활용 횟수를 확인하세요',
+        '재활용 규칙에 빈도(매일/매주/매월)·대상 플랫폼·제목 변형 옵션을 설정할 수 있습니다',
+        '기록 탭에서 과거 재활용 실행 이력과 성과를 확인하세요',
+        '추천 탭에서 AI가 분석한 재게시 추천 콘텐츠를 확인하고, 바로 재활용 큐에 추가하세요',
+        '다음 예정 항목 표시에서 곧 재게시될 콘텐츠를 미리 확인할 수 있습니다',
+      ]" />
 
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

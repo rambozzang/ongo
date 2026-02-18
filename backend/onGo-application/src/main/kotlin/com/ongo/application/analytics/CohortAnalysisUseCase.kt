@@ -1,6 +1,7 @@
 package com.ongo.application.analytics
 
 import com.ongo.application.analytics.dto.*
+import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.analytics.AnalyticsRepository
 import com.ongo.domain.video.Video
@@ -61,6 +62,10 @@ class CohortAnalysisUseCase(
     fun getRetentionCurve(userId: Long, videoId: Long): RetentionCurveResponse {
         val video = videoRepository.findById(videoId)
             ?: throw NotFoundException("영상", videoId)
+
+        if (video.userId != userId) {
+            throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        }
 
         val uploads = videoUploadRepository.findByVideoId(videoId)
         val uploadIds = uploads.mapNotNull { it.id }

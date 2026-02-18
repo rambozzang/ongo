@@ -17,6 +17,7 @@ enum class AiBatchOperation {
 
 data class AiBatchResponse(
     val batchId: String,
+    val userId: Long,
     val totalItems: Int,
     val status: BatchStatus,
     val items: List<AiBatchItemStatus>,

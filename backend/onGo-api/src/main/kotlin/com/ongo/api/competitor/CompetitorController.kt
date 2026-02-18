@@ -29,7 +29,7 @@ class CompetitorController(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @Valid @RequestBody request: ChannelLookupRequest,
     ): ResponseEntity<ResData<ChannelLookupResponse>> {
-        val result = competitorUseCase.lookupChannel(request)
+        val result = competitorUseCase.lookupChannel(userId, request)
         return ResData.success(result)
     }
 

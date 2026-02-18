@@ -132,6 +132,70 @@ data class YouTubeAnalyticsResponse(
     )
 }
 
+// --- Comment API ---
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class YouTubeCommentThreadListResponse(
+    val items: List<CommentThread> = emptyList(),
+    val nextPageToken: String? = null,
+    val pageInfo: PageInfo? = null,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class CommentThread(
+        val id: String,
+        val snippet: CommentThreadSnippet?,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class CommentThreadSnippet(
+        val videoId: String?,
+        val topLevelComment: TopLevelComment?,
+        val totalReplyCount: Int?,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class TopLevelComment(
+        val id: String?,
+        val snippet: CommentSnippet?,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class CommentSnippet(
+        val authorDisplayName: String?,
+        val authorProfileImageUrl: String?,
+        val authorChannelUrl: String?,
+        val textDisplay: String?,
+        val likeCount: Int?,
+        val publishedAt: String?,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class PageInfo(
+        val totalResults: Int?,
+    )
+}
+
+data class YouTubeCommentInsertRequest(
+    val snippet: Snippet,
+) {
+    data class Snippet(
+        val parentId: String,
+        val textOriginal: String,
+    )
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class YouTubeCommentResponse(
+    val id: String?,
+    val snippet: CommentSnippet?,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class CommentSnippet(
+        val parentId: String?,
+        val textDisplay: String?,
+    )
+}
+
 // --- OAuth Token ---
 
 @JsonIgnoreProperties(ignoreUnknown = true)

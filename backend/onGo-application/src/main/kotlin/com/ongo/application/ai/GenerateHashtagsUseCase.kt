@@ -6,14 +6,12 @@ import com.ongo.common.enums.AiFeature
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.BusinessException
 import org.slf4j.LoggerFactory
-import org.springframework.ai.chat.client.ChatClient
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class GenerateHashtagsUseCase(
-    @Qualifier("anthropicChatClient") private val chatClient: ChatClient,
+    private val chatClientResolver: ChatClientResolver,
     private val creditService: CreditService,
     private val rateLimiter: AiRateLimiter,
 ) {
@@ -26,7 +24,7 @@ class GenerateHashtagsUseCase(
             .replace("{category}", InputSanitizer.sanitize(category))
             .replace("{platforms}", targetPlatforms.joinToString(", ") { it.name })
 
-        val result = chatClient.prompt()
+        val result = chatClientResolver.resolve(userId).prompt()
             .system(PromptTemplates.HASHTAG_GENERATION_SYSTEM)
             .user(userPrompt)
             .call()
@@ -47,7 +45,7 @@ class GenerateHashtagsUseCase(
             .replace("{platforms}", targetPlatforms.joinToString(", ") { it.name })
 
         try {
-            val result = chatClient.prompt()
+            val result = chatClientResolver.resolve(userId).prompt()
                 .system(PromptTemplates.HASHTAG_GENERATION_SYSTEM)
                 .user(userPrompt)
                 .call()

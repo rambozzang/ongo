@@ -15,4 +15,7 @@ enum class PlanType(
     STARTER("Starter", 9_900, 3, 30, 7, 30, 10, 100, 0),
     PRO("Pro", 19_900, 4, 100, 30, 365, 50, 300, 2),
     BUSINESS("Business", 49_900, 4, Int.MAX_VALUE, 90, Int.MAX_VALUE, 200, 1_000, 10),
+    ;
+
+    val storageBytes: Long get() = storageGB.toLong() * 1024 * 1024 * 1024
 }

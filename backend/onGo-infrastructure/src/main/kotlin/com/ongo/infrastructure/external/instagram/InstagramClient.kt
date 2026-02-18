@@ -219,6 +219,97 @@ class InstagramClient(
         return false
     }
 
+    // --- Comment API ---
+
+    override fun getCommentCapabilities(): PlatformCommentCapabilities =
+        PlatformCommentCapabilities(canListComments = true, canReply = true, canDelete = true, canHide = true)
+
+    override fun listComments(
+        platformVideoId: String,
+        accessToken: String,
+        pageToken: String?,
+        maxResults: Int,
+    ): PlatformCommentListResult {
+        log.debug("Instagram 댓글 조회: mediaId={}", platformVideoId)
+
+        return try {
+            val response = instagramApi.getComments(
+                mediaId = platformVideoId,
+                fields = "id,text,username,like_count,timestamp",
+                limit = maxResults.coerceAtMost(100),
+                after = pageToken,
+                accessToken = accessToken,
+            )
+
+            val comments = response.data?.mapNotNull { comment ->
+                PlatformComment(
+                    platformCommentId = comment.id ?: return@mapNotNull null,
+                    authorName = comment.username ?: "Unknown",
+                    content = comment.text ?: "",
+                    likeCount = comment.likeCount ?: 0,
+                    publishedAt = comment.timestamp?.let { parseIsoDateTime(it) },
+                )
+            } ?: emptyList()
+
+            PlatformCommentListResult(
+                comments = comments,
+                nextPageToken = response.paging?.cursors?.after,
+            )
+        } catch (e: Exception) {
+            log.warn("Instagram 댓글 조회 실패: {}", e.message)
+            PlatformCommentListResult(emptyList())
+        }
+    }
+
+    override fun replyToComment(
+        platformCommentId: String,
+        content: String,
+        accessToken: String,
+        platformVideoId: String?,
+    ): PlatformCommentReplyResult {
+        log.info("Instagram 댓글 답글: commentId={}", platformCommentId)
+
+        return try {
+            val response = instagramApi.replyToComment(
+                commentId = platformCommentId,
+                message = content,
+                accessToken = accessToken,
+            )
+            PlatformCommentReplyResult(
+                platformCommentId = response.id ?: "",
+                success = response.id != null,
+            )
+        } catch (e: Exception) {
+            log.error("Instagram 댓글 답글 실패: {}", e.message)
+            PlatformCommentReplyResult("", success = false, errorMessage = e.message)
+        }
+    }
+
+    override fun deleteComment(
+        platformCommentId: String,
+        accessToken: String,
+    ): PlatformCommentDeleteResult {
+        log.info("Instagram 댓글 삭제: commentId={}", platformCommentId)
+
+        return try {
+            instagramApi.deleteComment(
+                commentId = platformCommentId,
+                accessToken = accessToken,
+            )
+            PlatformCommentDeleteResult(success = true)
+        } catch (e: Exception) {
+            log.error("Instagram 댓글 삭제 실패: {}", e.message)
+            PlatformCommentDeleteResult(success = false, errorMessage = e.message)
+        }
+    }
+
+    private fun parseIsoDateTime(iso: String): java.time.LocalDateTime? =
+        try {
+            java.time.OffsetDateTime.parse(iso).toLocalDateTime()
+        } catch (_: Exception) {
+            null
+        }
+
     private fun buildCaption(request: PlatformUploadRequest): String {
         val hashtags = request.tags.joinToString(" ") { "#$it" }
         val description = request.description.take(2200 - hashtags.length - 2)

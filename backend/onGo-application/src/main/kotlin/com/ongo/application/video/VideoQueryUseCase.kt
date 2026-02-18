@@ -1,20 +1,24 @@
 package com.ongo.application.video
 
 import com.ongo.common.config.PageResponse
+import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
-import com.ongo.common.enums.VariantStatus
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
-import com.ongo.common.util.safeValueOfOrThrow
+import com.ongo.common.util.FileValidationUtil
+import com.ongo.domain.video.ContentImage
+import com.ongo.domain.video.ContentImageRepository
 import com.ongo.domain.video.Video
+import com.ongo.domain.video.VideoMediaInfoRepository
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.video.VideoSubtitleRepository
 import com.ongo.domain.video.VideoUploadRepository
-import com.ongo.domain.video.VideoVariantRepository
-import org.springframework.context.ApplicationEventPublisher
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 
 @Service
 @Transactional(readOnly = true)
@@ -22,9 +26,21 @@ class VideoQueryUseCase(
     private val videoRepository: VideoRepository,
     private val videoUploadRepository: VideoUploadRepository,
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
-    private val videoVariantRepository: VideoVariantRepository,
-    private val eventPublisher: ApplicationEventPublisher,
+    private val contentImageRepository: ContentImageRepository,
+    private val mediaInfoRepository: VideoMediaInfoRepository,
+    private val subtitleRepository: VideoSubtitleRepository,
+    private val storageService: StorageService,
 ) {
+
+    private val log = LoggerFactory.getLogger(VideoQueryUseCase::class.java)
+
+    fun validateOwnership(userId: Long, videoId: Long) {
+        val video = videoRepository.findById(videoId)
+            ?: throw NotFoundException("영상", videoId)
+        if (video.userId != userId) {
+            throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        }
+    }
 
     fun listVideos(
         userId: Long,
@@ -54,6 +70,7 @@ class VideoQueryUseCase(
                 id = vid,
                 title = video.title,
                 thumbnailUrl = video.thumbnailUrls.firstOrNull(),
+                mediaType = video.mediaType,
                 status = video.status,
                 uploads = filteredUploads.map { upload ->
                     PlatformStatusResult(
@@ -115,18 +132,21 @@ class VideoQueryUseCase(
             )
         }
 
-        // VideoVariant 정보 조회
-        val variants = videoVariantRepository.findByVideoId(videoId)
-        val variantItems = variants.map { v ->
-            VideoVariantResult(
-                platform = v.platform,
-                status = v.status,
-                fileUrl = v.fileUrl,
-                fileSizeBytes = v.fileSizeBytes,
-                width = v.width,
-                height = v.height,
-                errorMessage = v.errorMessage,
-            )
+        // ContentImage 목록 조회 (이미지 타입인 경우)
+        val images = if (video.mediaType == MediaType.IMAGE) {
+            contentImageRepository.findByVideoId(videoId).map { img ->
+                ContentImageResult(
+                    id = img.id,
+                    imageUrl = img.imageUrl,
+                    displayOrder = img.displayOrder,
+                    width = img.width,
+                    height = img.height,
+                    fileSizeBytes = img.fileSizeBytes,
+                    originalFilename = img.originalFilename,
+                )
+            }
+        } else {
+            emptyList()
         }
 
         return VideoDetailResult(
@@ -140,9 +160,12 @@ class VideoQueryUseCase(
             duration = video.durationSeconds,
             resolution = video.resolution,
             thumbnails = video.thumbnailUrls,
+            autoThumbnails = video.autoThumbnails,
+            selectedThumbnailIndex = video.selectedThumbnailIndex,
+            mediaType = video.mediaType,
             status = video.status,
+            contentImages = images,
             uploads = uploadDetails,
-            variants = variantItems,
             createdAt = video.createdAt,
         )
     }
@@ -168,34 +191,6 @@ class VideoQueryUseCase(
     }
 
     @Transactional
-    fun retryTranscode(userId: Long, videoId: Long, platformName: String) {
-        val video = videoRepository.findById(videoId)
-            ?: throw NotFoundException("영상", videoId)
-
-        if (video.userId != userId) {
-            throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
-        }
-
-        val platform = safeValueOfOrThrow<Platform>(platformName)
-        val variant = videoVariantRepository.findByVideoIdAndPlatform(videoId, platform)
-        if (variant != null && variant.status != VariantStatus.FAILED) {
-            throw IllegalStateException("실패 상태의 변환본만 재시도할 수 있습니다. 현재 상태: ${variant.status}")
-        }
-
-        val fileUrl = video.fileUrl
-            ?: throw IllegalStateException("파일 업로드가 완료되지 않은 영상입니다")
-
-        eventPublisher.publishEvent(
-            VideoTranscodingEvent(
-                videoId = videoId,
-                userId = userId,
-                fileUrl = fileUrl,
-                platforms = listOf(platform),
-            )
-        )
-    }
-
-    @Transactional
     fun deleteVideo(userId: Long, videoId: Long) {
         val video = videoRepository.findById(videoId)
             ?: throw NotFoundException("영상", videoId)
@@ -204,9 +199,89 @@ class VideoQueryUseCase(
             throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
         }
 
-        // variant 레코드 삭제 (CASCADE로도 삭제되지만 명시적으로)
-        videoVariantRepository.deleteByVideoId(videoId)
+        log.info("[AUDIT] 영상 삭제: userId={}, videoId={}, title={}", userId, videoId, video.title)
+
+        // 스토리지에서 파일 삭제
+        try {
+            storageService.deleteFile(videoId)
+        } catch (_: Exception) {
+            // 파일이 없어도 DB 레코드 삭제는 계속 진행
+        }
+
+        // 관련 레코드 삭제
+        contentImageRepository.deleteByVideoId(videoId)
         videoRepository.delete(videoId)
+    }
+
+    @Transactional
+    fun uploadContentImages(userId: Long, videoId: Long, files: List<MultipartFile>): List<ContentImageResult> {
+        val video = videoRepository.findById(videoId)
+            ?: throw NotFoundException("콘텐츠", videoId)
+        if (video.userId != userId) {
+            throw ForbiddenException("해당 콘텐츠에 대한 접근 권한이 없습니다")
+        }
+
+        val existingCount = contentImageRepository.findByVideoId(videoId).size
+        val images = files.mapIndexed { index, file ->
+            val filename = file.originalFilename ?: "image_${index}.jpg"
+            val contentType = file.contentType ?: "image/jpeg"
+            FileValidationUtil.validateImage(filename, contentType, file.size)
+
+            val key = "content/$videoId/images/${System.currentTimeMillis()}_$filename"
+            val imageUrl = storageService.uploadFile(key, file.inputStream, contentType, file.size)
+
+            ContentImage(
+                videoId = videoId,
+                imageUrl = imageUrl,
+                displayOrder = existingCount + index,
+                fileSizeBytes = file.size,
+                originalFilename = filename,
+                contentType = contentType,
+            )
+        }
+
+        return contentImageRepository.saveAll(images).map { img ->
+            ContentImageResult(
+                id = img.id,
+                imageUrl = img.imageUrl,
+                displayOrder = img.displayOrder,
+                width = img.width,
+                height = img.height,
+                fileSizeBytes = img.fileSizeBytes,
+                originalFilename = img.originalFilename,
+            )
+        }
+    }
+
+    fun getContentImages(userId: Long, videoId: Long): List<ContentImageResult> {
+        val video = videoRepository.findById(videoId)
+            ?: throw NotFoundException("콘텐츠", videoId)
+        if (video.userId != userId) {
+            throw ForbiddenException("해당 콘텐츠에 대한 접근 권한이 없습니다")
+        }
+
+        return contentImageRepository.findByVideoId(videoId).map { img ->
+            ContentImageResult(
+                id = img.id,
+                imageUrl = img.imageUrl,
+                displayOrder = img.displayOrder,
+                width = img.width,
+                height = img.height,
+                fileSizeBytes = img.fileSizeBytes,
+                originalFilename = img.originalFilename,
+            )
+        }
+    }
+
+    @Transactional
+    fun reorderContentImages(userId: Long, videoId: Long, imageIds: List<Long>) {
+        val video = videoRepository.findById(videoId)
+            ?: throw NotFoundException("콘텐츠", videoId)
+        if (video.userId != userId) {
+            throw ForbiddenException("해당 콘텐츠에 대한 접근 권한이 없습니다")
+        }
+
+        contentImageRepository.updateOrder(videoId, imageIds)
     }
 }
 
@@ -214,6 +289,7 @@ data class VideoListResult(
     val id: Long,
     val title: String,
     val thumbnailUrl: String?,
+    val mediaType: MediaType = MediaType.VIDEO,
     val status: UploadStatus,
     val uploads: List<PlatformStatusResult>,
     val createdAt: java.time.LocalDateTime?,
@@ -236,10 +312,23 @@ data class VideoDetailResult(
     val duration: Int?,
     val resolution: String?,
     val thumbnails: List<String>,
+    val autoThumbnails: List<String> = emptyList(),
+    val selectedThumbnailIndex: Int = 0,
+    val mediaType: MediaType = MediaType.VIDEO,
     val status: UploadStatus,
+    val contentImages: List<ContentImageResult> = emptyList(),
     val uploads: List<PlatformUploadDetailResult>,
-    val variants: List<VideoVariantResult> = emptyList(),
     val createdAt: java.time.LocalDateTime?,
+)
+
+data class ContentImageResult(
+    val id: Long?,
+    val imageUrl: String,
+    val displayOrder: Int,
+    val width: Int?,
+    val height: Int?,
+    val fileSizeBytes: Long?,
+    val originalFilename: String?,
 )
 
 data class PlatformUploadDetailResult(
@@ -259,14 +348,4 @@ data class PlatformMetaResult(
     val tags: List<String>,
     val visibility: com.ongo.common.enums.Visibility,
     val customThumbnailUrl: String?,
-)
-
-data class VideoVariantResult(
-    val platform: Platform,
-    val status: VariantStatus,
-    val fileUrl: String?,
-    val fileSizeBytes: Long?,
-    val width: Int?,
-    val height: Int?,
-    val errorMessage: String?,
 )

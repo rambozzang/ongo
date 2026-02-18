@@ -52,6 +52,13 @@
         </div>
       </div>
 
+      <PageGuide title="아이디어 보드" :items="[
+        '새 아이디어 버튼으로 콘텐츠 기획 아이디어를 작성하고 우선순위를 지정하세요',
+        '칸반 보드의 4단계(아이디어→기획중→제작중→완료) 컬럼 간에 드래그 앤 드롭으로 진행 상태를 변경하세요',
+        '검색과 우선순위 필터로 중요한 아이디어를 빠르게 찾을 수 있습니다',
+        '아이디어 카드를 클릭하면 상세 내용을 편집하고, 완료된 아이디어를 영상 제작으로 바로 연결하세요',
+      ]" />
+
       <!-- Kanban Board -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-[calc(100vh-16rem)]">
         <IdeaColumn
@@ -135,6 +142,7 @@ import type { ContentIdea, IdeaStatus, IdeaPriority } from '@/types/idea'
 import IdeaCard from '@/components/ideas/IdeaCard.vue'
 import IdeaColumn from '@/components/ideas/IdeaColumn.vue'
 import IdeaFormModal from '@/components/ideas/IdeaFormModal.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { PlusIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 
 const ideasStore = useIdeasStore()

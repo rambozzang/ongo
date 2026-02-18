@@ -5,10 +5,9 @@ import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
-import software.amazon.awssdk.services.s3.model.GetUrlRequest
-import software.amazon.awssdk.services.s3.model.PutObjectRequest
+import software.amazon.awssdk.services.s3.model.*
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest
 import java.io.InputStream
 import java.time.Duration
@@ -41,12 +40,7 @@ class S3StorageClient(
     }
 
     override fun getFileUrl(key: String): String {
-        val urlRequest = GetUrlRequest.builder()
-            .bucket(storageProperties.bucket)
-            .key(key)
-            .build()
-
-        return s3Client.utilities().getUrl(urlRequest).toExternalForm()
+        return generatePresignedDownloadUrl(key, 60 * 24 * 7) // 7 days
     }
 
     override fun deleteFile(key: String) {
@@ -75,5 +69,39 @@ class S3StorageClient(
             .build()
 
         return s3Presigner.presignPutObject(presignRequest).url().toExternalForm()
+    }
+
+    override fun listObjects(prefix: String): List<String> {
+        val request = ListObjectsV2Request.builder()
+            .bucket(storageProperties.bucket)
+            .prefix(prefix)
+            .build()
+
+        return s3Client.listObjectsV2(request).contents().map { it.key() }
+    }
+
+    override fun downloadFile(key: String): InputStream {
+        val request = GetObjectRequest.builder()
+            .bucket(storageProperties.bucket)
+            .key(key)
+            .build()
+
+        return s3Client.getObject(request)
+    }
+
+    override fun generatePresignedDownloadUrl(key: String, expirationMinutes: Int): String {
+        log.debug("S3 presigned GET URL 생성: key={}, expiry={}분", key, expirationMinutes)
+
+        val getObjectRequest = GetObjectRequest.builder()
+            .bucket(storageProperties.bucket)
+            .key(key)
+            .build()
+
+        val presignRequest = GetObjectPresignRequest.builder()
+            .signatureDuration(Duration.ofMinutes(expirationMinutes.toLong()))
+            .getObjectRequest(getObjectRequest)
+            .build()
+
+        return s3Presigner.presignGetObject(presignRequest).url().toExternalForm()
     }
 }

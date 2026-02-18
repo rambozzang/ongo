@@ -11,6 +11,7 @@ import {
   StarIcon,
 } from '@heroicons/vue/24/outline'
 import type { TemplateCategory } from '@/types/template'
+import PageGuide from '@/components/common/PageGuide.vue'
 
 const templatesStore = useTemplatesStore()
 const { filteredTemplates, searchText, categoryFilter, sortBy, showFavoritesOnly } =
@@ -71,6 +72,14 @@ const handleCloseModal = () => {
           </button>
         </div>
       </div>
+
+      <PageGuide title="템플릿" :items="[
+        '새 템플릿 버튼으로 제목·설명·태그·썸네일 등 메타데이터 조합을 템플릿으로 저장하세요',
+        '카테고리 탭(제목/설명/태그/썸네일/풀패키지)으로 원하는 유형의 템플릿만 필터링하세요',
+        '검색과 정렬(최신순/사용순/이름순)으로 템플릿을 빠르게 찾을 수 있습니다',
+        '영상 업로드 시 저장된 템플릿을 적용하면 메타데이터 입력 시간을 크게 단축할 수 있습니다',
+        '자주 사용하는 템플릿에 즐겨찾기를 설정하면 상단에 우선 표시됩니다',
+      ]" />
 
       <!-- Filters and Search -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">

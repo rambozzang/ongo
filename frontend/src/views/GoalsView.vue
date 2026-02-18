@@ -8,6 +8,7 @@ import {
   ChartBarIcon,
   CalendarIcon,
 } from '@heroicons/vue/24/outline'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { useGoalsStore } from '@/stores/goals'
 import type { Goal } from '@/types/goal'
 import GoalCard from '@/components/goals/GoalCard.vue'
@@ -158,6 +159,14 @@ const formatNumber = (value: number): string => {
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageGuide title="목표 관리" :items="[
+        '새 목표 버튼으로 구독자 수·조회수·업로드 횟수 등 채널 성장 목표를 설정하세요',
+        '상단 요약 카드에서 활성 목표 수·달성 목표 수·전체 진행률·다음 마감일을 한눈에 파악하세요',
+        '활성/달성 토글과 마감일순·진행률순·최신순 정렬로 목표를 필터링하세요',
+        '각 목표 카드의 진행 바에서 달성률을 확인하고, 마일스톤 달성 시 자동으로 기록됩니다',
+        '다음 마감일 카드에서 가장 가까운 목표의 D-day를 확인하세요',
+      ]" />
+
       <!-- Stats Overview -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">

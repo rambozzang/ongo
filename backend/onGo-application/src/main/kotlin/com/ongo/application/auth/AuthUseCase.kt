@@ -74,7 +74,7 @@ class AuthUseCase(
             }
 
         val userId = user.id!!
-        val accessToken = authTokenPort.generateAccessToken(userId)
+        val accessToken = authTokenPort.generateAccessToken(userId, user.role)
         val refreshToken = authTokenPort.generateRefreshToken(userId)
 
         // Refresh Token DB 저장 (Token Rotation)
@@ -119,7 +119,7 @@ class AuthUseCase(
         refreshTokenPort.deleteByToken(refreshToken)
 
         val existingUserId = user.id!!
-        val newAccessToken = authTokenPort.generateAccessToken(existingUserId)
+        val newAccessToken = authTokenPort.generateAccessToken(existingUserId, user.role)
         val newRefreshToken = authTokenPort.generateRefreshToken(existingUserId)
 
         val expiresAt = LocalDateTime.now().plusNanos(Duration.ofMillis(authTokenPort.getRefreshTokenExpiryMillis()).toNanos())
@@ -166,7 +166,7 @@ class AuthUseCase(
             }
 
         val userId = user.id!!
-        val accessToken = authTokenPort.generateAccessToken(userId)
+        val accessToken = authTokenPort.generateAccessToken(userId, user.role)
         val refreshToken = authTokenPort.generateRefreshToken(userId)
 
         refreshTokenPort.deleteByUserId(userId)
@@ -251,6 +251,7 @@ class AuthUseCase(
             nickname = user.nickname,
             profileImageUrl = user.profileImageUrl,
             planType = user.planType.name,
+            role = user.role,
             onboardingCompleted = user.onboardingCompleted,
         )
     }

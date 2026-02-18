@@ -6,6 +6,7 @@ import ABTestCard from '@/components/abtest/ABTestCard.vue'
 import ABTestCreateModal from '@/components/abtest/ABTestCreateModal.vue'
 import ABTestResultsPanel from '@/components/abtest/ABTestResultsPanel.vue'
 import SignificanceIndicator from '@/components/abtest/SignificanceIndicator.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import type { TestStatus, TestVariant } from '@/types/abtest'
 
 const store = useABTestStore()
@@ -101,6 +102,14 @@ const filterButtons = [
           새 테스트
         </button>
       </div>
+
+      <PageGuide title="A/B 테스트" :items="[
+        '새 테스트 버튼으로 썸네일 또는 제목의 A/B 테스트를 생성하고, 변형(Variant)을 설정하세요',
+        '상태 필터(전체/진행중/완료/초안)와 그리드/리스트 뷰로 테스트를 관리하세요',
+        '상단 통계에서 총 테스트 수·진행 중·완료 수를 확인하세요',
+        '각 테스트 카드에서 샘플 크기·신뢰도·기간을 확인하고, 시작/중지/결과 보기 버튼으로 테스트를 관리하세요',
+        '완료된 테스트의 통계적 유의성 지표를 확인하여 더 성과가 좋은 조합을 선택하세요',
+      ]" />
 
       <!-- Stats bar -->
       <div class="grid grid-cols-3 gap-6 mb-8">

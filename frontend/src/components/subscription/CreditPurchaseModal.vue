@@ -354,8 +354,8 @@ async function nextStep() {
     paymentError.value = ''
     try {
       await creditApi.purchase({
-        packageName: selectedPackage.value!.name,
-        paymentMethodId: selectedPaymentMethod.value,
+        packageType: selectedPackage.value!.name,
+        paymentMethod: selectedPaymentMethod.value || 'CARD',
       })
       paymentComplete.value = true
       if (selectedPackage.value) {

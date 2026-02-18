@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useBrandKitStore } from '@/stores/brandkit'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/vue/24/outline'
 import ColorPalette from '@/components/brandkit/ColorPalette.vue'
 import TypographySection from '@/components/brandkit/TypographySection.vue'
@@ -98,6 +99,14 @@ function handleUpdateGuidelines(text: string) {
           </button>
         </div>
       </div>
+
+      <PageGuide title="브랜드 키트" :items="[
+        '색상 팔레트 섹션에서 브랜드 색상을 추가·수정·삭제하여 일관된 색상 체계를 관리하세요',
+        '타이포그래피 섹션에서 브랜드 폰트와 텍스트 스타일을 정의하세요',
+        '에셋 섹션에서 로고·아이콘·이미지 등 브랜드 시각 자산을 업로드하고 관리하세요',
+        '가이드라인 섹션에서 브랜드 사용 규칙과 스타일 가이드를 작성하세요',
+        '각 섹션의 헤더를 클릭하면 접기/펼치기가 가능하고, 저장 버튼으로 변경사항을 반영하세요',
+      ]" />
 
       <!-- Sections -->
       <div class="space-y-6">

@@ -51,6 +51,13 @@
       </div>
     </div>
 
+    <PageGuide title="예약 관리" :items="[
+      '리스트·캘린더·주간 뷰를 전환하여 예약된 콘텐츠를 원하는 방식으로 확인하세요',
+      '필터 버튼으로 특정 플랫폼·날짜 범위·상태(대기/완료/실패)별 예약만 모아볼 수 있습니다',
+      '정렬 옵션(날짜/플랫폼/상태/수동)으로 예약 목록 순서를 변경하고, 수동 정렬 시 드래그로 순서를 조정하세요',
+      '예약 항목을 클릭하면 상세 정보를 확인하고 시간 변경·취소가 가능합니다',
+    ]" />
+
     <!-- Filters panel -->
     <Transition
       enter-active-class="transition duration-200 ease-out"
@@ -647,6 +654,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import DraggableScheduleItem from '@/components/schedule/DraggableScheduleItem.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
 import { useScheduleStore } from '@/stores/schedule'
 import { useNotification } from '@/composables/useNotification'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'

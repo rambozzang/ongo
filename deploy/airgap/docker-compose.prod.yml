@@ -1,0 +1,71 @@
+services:
+  backend:
+    image: ongo-backend:latest
+    container_name: ongo-backend
+    restart: always
+    environment:
+      # Use internal docker dns for postgres
+      - DB_URL=jdbc:postgresql://postgres:5432/ongo_db
+      - DB_USERNAME=ongo_user
+      - DB_PASSWORD=ongo_password
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=ongo-bucket
+      - SPRING_PROFILES_ACTIVE=prod
+      # Add other env vars here or use env_file
+    ports:
+      - "8090:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  frontend:
+    image: ongo-frontend:latest
+    container_name: ongo-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:16
+    container_name: ongo-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ongo_user
+      POSTGRES_PASSWORD: ongo_password
+      POSTGRES_DB: ongo_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ongo_user -d ongo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: ongo-minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  minio_data:

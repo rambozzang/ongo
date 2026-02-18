@@ -1,9 +1,6 @@
 package com.ongo.infrastructure.external.youtube
 
-import com.ongo.infrastructure.external.youtube.dto.YouTubeChannelListResponse
-import com.ongo.infrastructure.external.youtube.dto.YouTubeTokenResponse
-import com.ongo.infrastructure.external.youtube.dto.YouTubeUploadResponse
-import com.ongo.infrastructure.external.youtube.dto.YouTubeVideoListResponse
+import com.ongo.infrastructure.external.youtube.dto.*
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestParam
@@ -55,6 +52,37 @@ interface YouTubeApi {
         @RequestParam("id") id: String,
         @RequestParam("key") key: String,
     ): YouTubeChannelListResponse
+
+    // --- Comment API ---
+
+    @GetExchange("/youtube/v3/commentThreads")
+    fun listCommentThreads(
+        @RequestParam("videoId") videoId: String,
+        @RequestParam("part") part: String,
+        @RequestParam("maxResults") maxResults: Int,
+        @RequestParam("pageToken", required = false) pageToken: String?,
+        @RequestParam("order") order: String,
+        @RequestHeader("Authorization") authorization: String,
+    ): YouTubeCommentThreadListResponse
+
+    @PostExchange("/youtube/v3/comments?part=snippet")
+    fun insertComment(
+        @RequestHeader("Authorization") authorization: String,
+        @RequestBody body: YouTubeCommentInsertRequest,
+    ): YouTubeCommentResponse
+
+    @DeleteExchange("/youtube/v3/comments")
+    fun deleteComment(
+        @RequestParam("id") id: String,
+        @RequestHeader("Authorization") authorization: String,
+    )
+
+    @PostExchange("/youtube/v3/comments/setModerationStatus")
+    fun setModerationStatus(
+        @RequestParam("id") id: String,
+        @RequestParam("moderationStatus") moderationStatus: String,
+        @RequestHeader("Authorization") authorization: String,
+    )
 }
 
 @HttpExchange
