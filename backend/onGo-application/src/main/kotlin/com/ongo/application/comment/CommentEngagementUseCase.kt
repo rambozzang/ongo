@@ -3,12 +3,15 @@ package com.ongo.application.comment
 import com.ongo.application.comment.dto.CommentCapabilitiesDto
 import com.ongo.application.comment.dto.CommentResponse
 import com.ongo.common.enums.Platform
+import com.ongo.common.enums.PlanType
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.comment.CommentRepository
 import com.ongo.domain.comment.PlatformCommentPort
+import com.ongo.domain.user.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,12 +23,14 @@ class CommentEngagementUseCase(
     private val platformCommentPort: PlatformCommentPort,
     private val channelRepository: ChannelRepository,
     private val tokenEncryptionPort: TokenEncryptionPort,
+    private val userRepository: UserRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun replyToComment(userId: Long, commentId: Long, content: String): CommentResponse {
+        validateCommentAccess(userId)
         val comment = commentRepository.findById(commentId)
             ?: throw NotFoundException("댓글", commentId)
         if (comment.userId != userId) throw ForbiddenException("해당 댓글에 대한 권한이 없습니다")
@@ -75,6 +80,7 @@ class CommentEngagementUseCase(
 
     @Transactional
     fun deleteComment(userId: Long, commentId: Long) {
+        validateCommentAccess(userId)
         val comment = commentRepository.findById(commentId)
             ?: throw NotFoundException("댓글", commentId)
         if (comment.userId != userId) throw ForbiddenException("해당 댓글에 대한 권한이 없습니다")
@@ -111,11 +117,23 @@ class CommentEngagementUseCase(
 
     @Transactional
     fun hideComment(userId: Long, commentId: Long): CommentResponse {
+        validateCommentAccess(userId)
         val comment = commentRepository.findById(commentId)
             ?: throw NotFoundException("댓글", commentId)
         if (comment.userId != userId) throw ForbiddenException("해당 댓글에 대한 권한이 없습니다")
 
         val updated = comment.copy(isHidden = !comment.isHidden)
+        return commentRepository.update(updated).toResponse()
+    }
+
+    @Transactional
+    fun pinComment(userId: Long, commentId: Long): CommentResponse {
+        validateCommentAccess(userId)
+        val comment = commentRepository.findById(commentId)
+            ?: throw NotFoundException("댓글", commentId)
+        if (comment.userId != userId) throw ForbiddenException("해당 댓글에 대한 권한이 없습니다")
+
+        val updated = comment.copy(isPinned = !comment.isPinned)
         return commentRepository.update(updated).toResponse()
     }
 
@@ -136,6 +154,13 @@ class CommentEngagementUseCase(
 
         return channels.associate { channel ->
             channel.platform.name to getCapabilities(channel.platform)
+        }
+    }
+
+    private fun validateCommentAccess(userId: Long) {
+        val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+        if (user.planType != PlanType.PRO && user.planType != PlanType.BUSINESS) {
+            throw PlanLimitExceededException("댓글 관리", 0)
         }
     }
 

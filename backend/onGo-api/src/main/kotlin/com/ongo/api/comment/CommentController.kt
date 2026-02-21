@@ -122,6 +122,20 @@ class CommentController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "댓글 고정/해제 토글", description = "지정된 댓글의 고정 상태를 토글합니다.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "고정 상태 변경 성공"),
+        ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음"),
+    )
+    @PutMapping("/{id}/pin")
+    fun pinComment(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<CommentResponse>> {
+        val result = commentEngagementUseCase.pinComment(userId, id)
+        return ResData.success(result)
+    }
+
     @Operation(summary = "플랫폼별 capabilities 조회", description = "연결된 플랫폼별 댓글 기능 지원 현황을 조회합니다.")
     @GetMapping("/capabilities")
     fun getCapabilities(

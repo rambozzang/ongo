@@ -145,6 +145,8 @@
         <!-- Reply form -->
         <CommentReplyForm
           v-if="isReplying"
+          :comment-content="comment.content"
+          :channel-tone="'friendly'"
           @submit="handleReply"
           @cancel="isReplying = false"
         />

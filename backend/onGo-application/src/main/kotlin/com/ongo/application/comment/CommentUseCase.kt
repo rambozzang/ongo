@@ -4,8 +4,12 @@ import com.ongo.application.comment.dto.CommentCapabilitiesDto
 import com.ongo.application.comment.dto.CommentListResponse
 import com.ongo.application.comment.dto.CommentResponse
 import com.ongo.application.comment.dto.CommentStats
+import com.ongo.common.enums.PlanType
+import com.ongo.common.exception.NotFoundException
+import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.comment.Comment
 import com.ongo.domain.comment.CommentRepository
+import com.ongo.domain.user.UserRepository
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -13,6 +17,7 @@ import java.time.LocalDateTime
 class CommentUseCase(
     private val commentRepository: CommentRepository,
     private val commentEngagementUseCase: CommentEngagementUseCase,
+    private val userRepository: UserRepository,
 ) {
 
     fun listComments(
@@ -26,6 +31,7 @@ class CommentUseCase(
         page: Int,
         size: Int,
     ): CommentListResponse {
+        validateCommentAccess(userId)
         val comments = commentRepository.findByUserIdFiltered(
             userId = userId,
             videoId = videoId,
@@ -70,6 +76,13 @@ class CommentUseCase(
             neutral = neutral,
             negative = negative,
         )
+    }
+
+    private fun validateCommentAccess(userId: Long) {
+        val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+        if (user.planType != PlanType.PRO && user.planType != PlanType.BUSINESS) {
+            throw PlanLimitExceededException("댓글 관리", 0)
+        }
     }
 
     private fun Comment.toResponse(): CommentResponse = CommentResponse(

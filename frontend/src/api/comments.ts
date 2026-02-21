@@ -43,6 +43,12 @@ export const commentsApi = {
       .then(unwrapResponse)
   },
 
+  pin(id: number) {
+    return apiClient
+      .put<ResData<CommentResponse>>(`/comments/${id}/pin`)
+      .then(unwrapResponse)
+  },
+
   hide(id: number) {
     return apiClient
       .put<ResData<CommentResponse>>(`/comments/${id}/hide`)

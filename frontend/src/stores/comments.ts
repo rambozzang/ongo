@@ -107,10 +107,15 @@ export const useCommentsStore = defineStore('comments', () => {
     }
   }
 
-  const pinComment = (id: number) => {
-    const comment = comments.value.find((c) => c.id === id)
-    if (comment) {
-      comment.isPinned = !comment.isPinned
+  const pinComment = async (id: number) => {
+    try {
+      await commentsApi.pin(id)
+      const comment = comments.value.find((c) => c.id === id)
+      if (comment) {
+        comment.isPinned = !comment.isPinned
+      }
+    } catch {
+      // Silently handle
     }
   }
 

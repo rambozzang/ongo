@@ -1,13 +1,23 @@
 package com.ongo.application.comment
 
+import com.ongo.application.ai.AnalyzeSentimentUseCase
 import com.ongo.application.comment.dto.CommentSyncResult
+import com.ongo.application.notification.WebSocketNotificationService
+import com.ongo.common.enums.NotificationType
 import com.ongo.common.enums.Platform
+import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.UploadStatus
+import com.ongo.common.exception.NotFoundException
+import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.comment.Comment
 import com.ongo.domain.comment.CommentRepository
 import com.ongo.domain.comment.PlatformCommentPort
+import com.ongo.domain.notification.Notification
+import com.ongo.domain.notification.NotificationRepository
+import com.ongo.domain.settings.UserSettingsRepository
+import com.ongo.domain.user.UserRepository
 import com.ongo.domain.video.VideoUploadRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -21,6 +31,11 @@ class CommentSyncUseCase(
     private val channelRepository: ChannelRepository,
     private val videoUploadRepository: VideoUploadRepository,
     private val tokenEncryptionPort: TokenEncryptionPort,
+    private val userRepository: UserRepository,
+    private val analyzeSentimentUseCase: AnalyzeSentimentUseCase,
+    private val notificationRepository: NotificationRepository,
+    private val webSocketNotificationService: WebSocketNotificationService,
+    private val settingsRepository: UserSettingsRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -32,6 +47,10 @@ class CommentSyncUseCase(
 
     @Transactional
     fun syncAllComments(userId: Long): CommentSyncResult {
+        val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+        if (user.planType != PlanType.PRO && user.planType != PlanType.BUSINESS) {
+            throw PlanLimitExceededException("댓글 관리", 0)
+        }
         log.info("전체 댓글 동기화 시작: userId={}", userId)
 
         val channels = channelRepository.findByUserId(userId)
@@ -131,15 +150,66 @@ class CommentSyncUseCase(
             pages++
         } while (pageToken != null && pages < MAX_PAGES)
 
-        val existingCount = allComments.count { comment ->
+        // 기존 댓글 여부 확인
+        val existingIds = mutableSetOf<String>()
+        val newComments = mutableListOf<Comment>()
+        for (comment in allComments) {
             val p = comment.platform
             val pcId = comment.platformCommentId
-            p != null && pcId != null &&
+            if (p != null && pcId != null &&
                 commentRepository.findByPlatformAndPlatformCommentId(p, pcId) != null
+            ) {
+                existingIds.add(pcId)
+            } else if (pcId != null) {
+                newComments.add(comment)
+            }
         }
 
-        val upserted = commentRepository.upsertBatch(allComments)
-        val newCount = allComments.size - existingCount
+        // AI 감정분석 (신규 댓글만)
+        val enrichedComments = if (newComments.isNotEmpty()) {
+            val sentiments = try {
+                analyzeSentimentUseCase.analyzeBatch(userId, newComments.map { it.content })
+            } catch (e: Exception) {
+                log.warn("감정분석 스킵: {}", e.message)
+                newComments.map { "NEUTRAL" }
+            }
+            val sentimentByPcId = newComments.mapIndexed { i, c ->
+                c.platformCommentId to sentiments.getOrElse(i) { "NEUTRAL" }
+            }.toMap()
+
+            allComments.map { comment ->
+                val sentiment = sentimentByPcId[comment.platformCommentId]
+                if (sentiment != null) comment.copy(sentiment = sentiment) else comment
+            }
+        } else {
+            allComments
+        }
+
+        val upserted = commentRepository.upsertBatch(enrichedComments)
+        val newCount = newComments.size
+
+        // 신규 댓글이 있으면 알림 전송 (realtime 설정 시)
+        if (newCount > 0) {
+            try {
+                val settings = settingsRepository.findByUserId(userId)
+                if (settings?.notificationComment == "realtime") {
+                    val notification = Notification(
+                        userId = userId,
+                        type = NotificationType.COMMENT,
+                        title = "새 댓글 ${newCount}개",
+                        message = "${platform.name}에서 새 댓글 ${newCount}개가 도착했습니다.",
+                    )
+                    notificationRepository.save(notification)
+                    webSocketNotificationService.sendToUser(
+                        userId = userId,
+                        type = "COMMENT",
+                        payload = mapOf("newCount" to newCount, "platform" to platform.name, "videoId" to videoId),
+                    )
+                }
+            } catch (e: Exception) {
+                log.warn("댓글 알림 전송 실패: {}", e.message)
+            }
+        }
 
         log.debug("영상 댓글 동기화 완료: platform={}, videoId={}, total={}, new={}",
             platform, platformVideoId, upserted, newCount)

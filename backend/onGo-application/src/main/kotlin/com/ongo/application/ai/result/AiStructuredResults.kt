@@ -94,6 +94,15 @@ data class WeeklyDigestResult(
     )
 }
 
+data class SentimentAnalysisResult(
+    val results: List<SentimentItem>,
+) {
+    data class SentimentItem(
+        val index: Int,
+        val sentiment: String,
+    )
+}
+
 data class ContentGapResult(
     val opportunities: List<ContentOpportunityResult>,
     val oversaturated: List<OversaturatedTopicResult>,

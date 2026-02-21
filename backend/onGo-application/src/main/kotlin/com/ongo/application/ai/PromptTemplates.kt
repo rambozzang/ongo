@@ -252,4 +252,18 @@ object PromptTemplates {
 
         위 데이터를 바탕으로 콘텐츠 갭 분석을 수행해주세요.
     """.trimIndent()
+
+    val SENTIMENT_ANALYSIS_SYSTEM = """
+        당신은 댓글 감정 분석 전문가입니다.
+        주어진 댓글 목록의 감정을 POSITIVE, NEUTRAL, NEGATIVE 중 하나로 분류하세요.
+        각 댓글의 인덱스(0부터 시작)와 감정을 JSON으로 반환하세요.
+
+        JSON 형식으로 응답하세요.
+        $INJECTION_GUARD
+    """.trimIndent()
+
+    val SENTIMENT_ANALYSIS_USER = """
+        다음 댓글들의 감정을 분석해주세요:
+        {comments}
+    """.trimIndent()
 }
