@@ -82,6 +82,17 @@
         >
           리텐션
         </button>
+        <button
+          @click="analyticsSubTab = 'deep'"
+          :class="[
+            analyticsSubTab === 'deep'
+              ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
+              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400',
+            'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
+          ]"
+        >
+          심층 분석
+        </button>
       </nav>
     </div>
 
@@ -126,6 +137,22 @@
 
         <RetentionCurveChart :video-id="retentionVideoId" />
       </div>
+    </div>
+
+    <!-- Deep Analytics Tab -->
+    <div v-if="analyticsSubTab === 'deep'" class="space-y-6">
+      <div v-if="analyticsStore.deepAnalyticsLoading" class="text-center py-12">
+        <LoadingSpinner />
+        <p class="mt-2 text-sm text-gray-500">심층 분석 데이터를 불러오는 중...</p>
+      </div>
+      <template v-else>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TrafficSourceChart :data="analyticsStore.trafficSources" />
+          <DemographicsChart :data="analyticsStore.demographics" />
+        </div>
+        <CTRTrendChart :data="analyticsStore.ctrData" />
+        <SubscriberConversionChart :data="analyticsStore.subscriberConversion" />
+      </template>
     </div>
 
     <!-- Overview Tab Content -->
@@ -569,7 +596,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { storeToRefs } from 'pinia'
 import {
@@ -594,6 +621,10 @@ import TagCloud from '@/components/analytics/TagCloud.vue'
 import TagPerformanceTable from '@/components/analytics/TagPerformanceTable.vue'
 import CohortAnalysisChart from '@/components/analytics/CohortAnalysisChart.vue'
 import RetentionCurveChart from '@/components/analytics/RetentionCurveChart.vue'
+import TrafficSourceChart from '@/components/analytics/TrafficSourceChart.vue'
+import DemographicsChart from '@/components/analytics/DemographicsChart.vue'
+import CTRTrendChart from '@/components/analytics/CTRTrendChart.vue'
+import SubscriberConversionChart from '@/components/analytics/SubscriberConversionChart.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { analyticsApi } from '@/api/analytics'
 import { useAnalyticsStore } from '@/stores/analytics'
@@ -608,7 +639,7 @@ import { formatDateOnlyForExport, exportReportToPDF } from '@/utils/export'
 import type { TagPerformance } from '@/types/analytics'
 
 // ----- Analytics Sub-tab -----
-type AnalyticsSubTab = 'overview' | 'cohort' | 'retention'
+type AnalyticsSubTab = 'overview' | 'cohort' | 'retention' | 'deep'
 const analyticsSubTab = ref<AnalyticsSubTab>('overview')
 const retentionVideoId = ref<number | undefined>(undefined)
 
@@ -616,6 +647,13 @@ function selectRetentionVideo(videoId: number) {
   retentionVideoId.value = videoId
   analyticsSubTab.value = 'retention'
 }
+
+watch(analyticsSubTab, (tab) => {
+  if (tab === 'deep') {
+    const days = period.value === '7d' ? 7 : period.value === '30d' ? 30 : 90
+    analyticsStore.fetchDeepAnalytics(days)
+  }
+})
 
 // ----- Stores & Composables -----
 const themeStore = useThemeStore()

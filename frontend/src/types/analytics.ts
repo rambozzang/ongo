@@ -158,3 +158,57 @@ export interface RetentionCurveResponse {
   avgRetention: RetentionDataPoint[]
   dropOffPoints: DropOffPoint[]
 }
+
+// Deep analytics types
+export interface TrafficSourceResponse {
+  period: string
+  sources: Record<string, number>
+  total: number
+}
+
+export interface DemographicsResponse {
+  period: string
+  ageDistribution: Record<string, number>
+  genderDistribution: Record<string, number>
+  topCountries: Record<string, number>
+}
+
+export interface CTRTrendPoint {
+  date: string
+  impressions: number
+  views: number
+  ctr: number
+}
+
+export interface CTRResponse {
+  period: string
+  avgCTR: number
+  totalImpressions: number
+  data: CTRTrendPoint[]
+}
+
+export interface AvgViewDurationPoint {
+  date: string
+  avgDurationSeconds: number
+  totalWatchTimeSeconds: number
+  totalViews: number
+}
+
+export interface AvgViewDurationResponse {
+  period: string
+  avgDurationSeconds: number
+  data: AvgViewDurationPoint[]
+}
+
+export interface SubscriberConversionPoint {
+  date: string
+  gained: number
+  views: number
+  conversionRate: number
+}
+
+export interface SubscriberConversionResponse {
+  period: string
+  totalGained: number
+  data: SubscriberConversionPoint[]
+}

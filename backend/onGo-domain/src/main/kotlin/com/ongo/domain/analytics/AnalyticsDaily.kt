@@ -14,5 +14,7 @@ data class AnalyticsDaily(
     val watchTimeSeconds: Long = 0,
     val subscriberGained: Int = 0,
     val revenueMicro: Long = 0,
+    val impressions: Int = 0,
+    val avgViewDurationSeconds: Int = 0,
     val createdAt: LocalDateTime? = null,
 )

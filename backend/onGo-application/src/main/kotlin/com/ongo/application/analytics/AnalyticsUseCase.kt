@@ -327,4 +327,134 @@ class AnalyticsUseCase(
         }
         return PlatformComparisonResponse(platforms = summaries)
     }
+
+    fun getTrafficSources(userId: Long, days: Int): TrafficSourceResponse {
+        val endDate = LocalDate.now()
+        val startDate = endDate.minusDays(days.toLong())
+        val insights = analyticsRepository.findChannelInsights(userId, null, startDate, endDate)
+
+        val merged = mutableMapOf<String, Long>()
+        insights.forEach { day ->
+            day.trafficSource.forEach { (source, count) ->
+                merged[source] = (merged[source] ?: 0) + count
+            }
+        }
+
+        return TrafficSourceResponse(
+            period = "${days}d",
+            sources = merged.toSortedMap(),
+            total = merged.values.sum(),
+        )
+    }
+
+    fun getDemographics(userId: Long, days: Int): DemographicsResponse {
+        val endDate = LocalDate.now()
+        val startDate = endDate.minusDays(days.toLong())
+        val insights = analyticsRepository.findChannelInsights(userId, null, startDate, endDate)
+
+        val ageAccum = mutableMapOf<String, Double>()
+        val genderAccum = mutableMapOf<String, Double>()
+        val countryAccum = mutableMapOf<String, Long>()
+
+        insights.forEach { day ->
+            day.demographicsAge.forEach { (k, v) -> ageAccum[k] = (ageAccum[k] ?: 0.0) + v }
+            day.demographicsGender.forEach { (k, v) -> genderAccum[k] = (genderAccum[k] ?: 0.0) + v }
+            day.demographicsCountry.forEach { (k, v) -> countryAccum[k] = (countryAccum[k] ?: 0) + v }
+        }
+
+        val count = insights.size.coerceAtLeast(1)
+        return DemographicsResponse(
+            period = "${days}d",
+            ageDistribution = ageAccum.mapValues { Math.round(it.value / count * 10) / 10.0 },
+            genderDistribution = genderAccum.mapValues { Math.round(it.value / count * 10) / 10.0 },
+            topCountries = countryAccum.entries.sortedByDescending { it.value }.take(10).associate { it.key to it.value },
+        )
+    }
+
+    fun getCTRTrend(userId: Long, days: Int): CTRResponse {
+        val allAnalytics = analyticsRepository.findAllByUserId(userId)
+        val endDate = LocalDate.now()
+        val startDate = endDate.minusDays(days.toLong())
+
+        val filtered = allAnalytics.filter { it.date in startDate..endDate }
+        val byDate = filtered.groupBy { it.date }
+
+        val dataPoints = byDate.entries.sortedBy { it.key }.map { (date, records) ->
+            val totalImpressions = records.sumOf { it.impressions.toLong() }
+            val totalViews = records.sumOf { it.views.toLong() }
+            val ctr = if (totalImpressions > 0) (totalViews.toDouble() / totalImpressions * 100) else 0.0
+            CTRTrendPoint(
+                date = date.toString(),
+                impressions = totalImpressions,
+                views = totalViews,
+                ctr = Math.round(ctr * 100) / 100.0,
+            )
+        }
+
+        val totalImpressions = dataPoints.sumOf { it.impressions }
+        val totalViews = dataPoints.sumOf { it.views }
+        val avgCTR = if (totalImpressions > 0) (totalViews.toDouble() / totalImpressions * 100) else 0.0
+
+        return CTRResponse(
+            period = "${days}d",
+            avgCTR = Math.round(avgCTR * 100) / 100.0,
+            totalImpressions = totalImpressions,
+            data = dataPoints,
+        )
+    }
+
+    fun getAvgViewDuration(userId: Long, days: Int): AvgViewDurationResponse {
+        val allAnalytics = analyticsRepository.findAllByUserId(userId)
+        val endDate = LocalDate.now()
+        val startDate = endDate.minusDays(days.toLong())
+        val filtered = allAnalytics.filter { it.date in startDate..endDate }
+        val byDate = filtered.groupBy { it.date }
+
+        val dataPoints = byDate.entries.sortedBy { it.key }.map { (date, records) ->
+            val totalWatch = records.sumOf { it.watchTimeSeconds }
+            val totalViews = records.sumOf { it.views.toLong() }
+            val avg = if (totalViews > 0) totalWatch / totalViews else 0L
+            AvgViewDurationPoint(
+                date = date.toString(),
+                avgDurationSeconds = avg,
+                totalWatchTimeSeconds = totalWatch,
+                totalViews = totalViews,
+            )
+        }
+
+        val totalWatch = filtered.sumOf { it.watchTimeSeconds }
+        val totalViews = filtered.sumOf { it.views.toLong() }
+
+        return AvgViewDurationResponse(
+            period = "${days}d",
+            avgDurationSeconds = if (totalViews > 0) totalWatch / totalViews else 0,
+            data = dataPoints,
+        )
+    }
+
+    fun getSubscriberConversion(userId: Long, days: Int): SubscriberConversionResponse {
+        val allAnalytics = analyticsRepository.findAllByUserId(userId)
+        val endDate = LocalDate.now()
+        val startDate = endDate.minusDays(days.toLong())
+        val filtered = allAnalytics.filter { it.date in startDate..endDate }
+        val byDate = filtered.groupBy { it.date }
+
+        val dataPoints = byDate.entries.sortedBy { it.key }.map { (date, records) ->
+            val gained = records.sumOf { it.subscriberGained }
+            val views = records.sumOf { it.views.toLong() }
+            val rate = if (views > 0) (gained.toDouble() / views * 100) else 0.0
+            SubscriberConversionPoint(
+                date = date.toString(),
+                gained = gained,
+                views = views,
+                conversionRate = Math.round(rate * 1000) / 1000.0,
+            )
+        }
+
+        return SubscriberConversionResponse(
+            period = "${days}d",
+            totalGained = filtered.sumOf { it.subscriberGained.toLong() },
+            data = dataPoints,
+        )
+    }
 }

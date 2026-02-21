@@ -7,6 +7,11 @@ import type {
   HeatmapData,
   TopVideo,
   AnalyticsPeriod,
+  TrafficSourceResponse,
+  DemographicsResponse,
+  CTRResponse,
+  AvgViewDurationResponse,
+  SubscriberConversionResponse,
 } from '@/types/analytics'
 import { analyticsApi } from '@/api/analytics'
 import { useNotificationStore } from '@/stores/notification'
@@ -20,6 +25,14 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const topVideos = ref<TopVideo[]>([])
   const loading = ref(false)
   const period = ref<AnalyticsPeriod>('7d')
+
+  // Deep analytics
+  const trafficSources = ref<TrafficSourceResponse | null>(null)
+  const demographics = ref<DemographicsResponse | null>(null)
+  const ctrData = ref<CTRResponse | null>(null)
+  const avgViewDuration = ref<AvgViewDurationResponse | null>(null)
+  const subscriberConversion = ref<SubscriberConversionResponse | null>(null)
+  const deepAnalyticsLoading = ref(false)
 
   async function fetchAnalytics() {
     loading.value = true
@@ -59,6 +72,26 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     fetchAnalytics()
   }
 
+  async function fetchDeepAnalytics(days = 30) {
+    deepAnalyticsLoading.value = true
+    try {
+      const results = await Promise.allSettled([
+        analyticsApi.trafficSources(days),
+        analyticsApi.demographics(days),
+        analyticsApi.ctr(days),
+        analyticsApi.avgViewDuration(days),
+        analyticsApi.subscriberConversion(days),
+      ])
+      if (results[0].status === 'fulfilled') trafficSources.value = results[0].value
+      if (results[1].status === 'fulfilled') demographics.value = results[1].value
+      if (results[2].status === 'fulfilled') ctrData.value = results[2].value
+      if (results[3].status === 'fulfilled') avgViewDuration.value = results[3].value
+      if (results[4].status === 'fulfilled') subscriberConversion.value = results[4].value
+    } finally {
+      deepAnalyticsLoading.value = false
+    }
+  }
+
   return {
     kpi,
     trendData,
@@ -70,5 +103,12 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     period,
     fetchAnalytics,
     setPeriod,
+    trafficSources,
+    demographics,
+    ctrData,
+    avgViewDuration,
+    subscriberConversion,
+    deepAnalyticsLoading,
+    fetchDeepAnalytics,
   }
 })

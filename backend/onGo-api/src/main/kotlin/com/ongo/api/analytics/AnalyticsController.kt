@@ -264,4 +264,49 @@ class AnalyticsController(
     ): ResponseEntity<ResData<RetentionCurveResponse>> {
         return ResData.success(cohortAnalysisUseCase.getRetentionCurve(userId, id))
     }
+
+    @Operation(summary = "트래픽 소스 조회")
+    @RequiresPermission(Permission.ANALYTICS_READ)
+    @GetMapping("/traffic-sources")
+    fun getTrafficSources(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<TrafficSourceResponse>> =
+        ResData.success(analyticsUseCase.getTrafficSources(userId, days))
+
+    @Operation(summary = "시청자 인구통계 조회")
+    @RequiresPermission(Permission.ANALYTICS_READ)
+    @GetMapping("/demographics")
+    fun getDemographics(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<DemographicsResponse>> =
+        ResData.success(analyticsUseCase.getDemographics(userId, days))
+
+    @Operation(summary = "CTR 트렌드 조회")
+    @RequiresPermission(Permission.ANALYTICS_READ)
+    @GetMapping("/ctr")
+    fun getCTRTrend(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<CTRResponse>> =
+        ResData.success(analyticsUseCase.getCTRTrend(userId, days))
+
+    @Operation(summary = "평균 시청 시간 트렌드")
+    @RequiresPermission(Permission.ANALYTICS_READ)
+    @GetMapping("/avg-view-duration")
+    fun getAvgViewDuration(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<AvgViewDurationResponse>> =
+        ResData.success(analyticsUseCase.getAvgViewDuration(userId, days))
+
+    @Operation(summary = "구독 전환 분석")
+    @RequiresPermission(Permission.ANALYTICS_READ)
+    @GetMapping("/subscriber-conversion")
+    fun getSubscriberConversion(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<SubscriberConversionResponse>> =
+        ResData.success(analyticsUseCase.getSubscriberConversion(userId, days))
 }

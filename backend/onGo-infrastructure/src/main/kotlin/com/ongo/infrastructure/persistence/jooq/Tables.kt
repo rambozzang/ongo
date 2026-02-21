@@ -38,6 +38,7 @@ object Tables {
     val VIDEO_PLATFORM_META = DSL.table("video_platform_meta")
     val SCHEDULES = DSL.table("schedules")
     val ANALYTICS_DAILY = DSL.table("analytics_daily")
+    val CHANNEL_INSIGHTS_DAILY = DSL.table("channel_insights_daily")
     val AI_CREDITS = DSL.table("ai_credits")
     val AI_CREDIT_TRANSACTIONS = DSL.table("ai_credit_transactions")
     val AI_PURCHASED_CREDITS = DSL.table("ai_purchased_credits")
@@ -167,6 +168,16 @@ object Fields {
     val WATCH_TIME_SECONDS = DSL.field("watch_time_seconds", Long::class.java)
     val SUBSCRIBER_GAINED = DSL.field("subscriber_gained", Int::class.java)
     val REVENUE_MICRO = DSL.field("revenue_micro", Long::class.java)
+
+    // analytics_daily extended
+    val IMPRESSIONS = DSL.field("impressions", Int::class.java)
+    val AVG_VIEW_DURATION_SECONDS = DSL.field("avg_view_duration_seconds", Int::class.java)
+
+    // channel_insights_daily
+    val TRAFFIC_SOURCE = DSL.field("traffic_source", Any::class.java)
+    val DEMOGRAPHICS_AGE = DSL.field("demographics_age", Any::class.java)
+    val DEMOGRAPHICS_GENDER = DSL.field("demographics_gender", Any::class.java)
+    val DEMOGRAPHICS_COUNTRY = DSL.field("demographics_country", Any::class.java)
 
     // ai_credits
     val BALANCE = DSL.field("balance", Int::class.java)

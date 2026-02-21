@@ -47,7 +47,9 @@ class AnalyticsSyncScheduler(
                                 commentsCount = analytics.comments.toInt(),
                                 shares = analytics.shares.toInt(),
                                 watchTimeSeconds = analytics.watchTimeSeconds,
-                                subscriberGained = analytics.subscriberGained
+                                subscriberGained = analytics.subscriberGained,
+                                impressions = analytics.impressions.toInt(),
+                                avgViewDurationSeconds = analytics.avgViewDurationSeconds.toInt(),
                             ))
                         } catch (e: Exception) {
                             log.warn("영상 분석 동기화 실패 [uploadId=${upload.id}]: ${e.message}")

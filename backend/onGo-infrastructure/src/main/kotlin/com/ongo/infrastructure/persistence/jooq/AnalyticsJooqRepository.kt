@@ -4,24 +4,36 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.analytics.AnalyticsDaily
 import com.ongo.domain.analytics.AnalyticsRepository
+import com.ongo.domain.analytics.ChannelInsightsDaily
 import com.ongo.domain.analytics.DashboardKpi
 import com.ongo.domain.analytics.TrendData
 import com.ongo.domain.video.Video
+import com.ongo.infrastructure.persistence.jooq.Fields.AVG_VIEW_DURATION_SECONDS
 import com.ongo.infrastructure.persistence.jooq.Fields.COMMENTS_COUNT
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.DATE
+import com.ongo.infrastructure.persistence.jooq.Fields.DEMOGRAPHICS_AGE
+import com.ongo.infrastructure.persistence.jooq.Fields.DEMOGRAPHICS_COUNTRY
+import com.ongo.infrastructure.persistence.jooq.Fields.DEMOGRAPHICS_GENDER
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
+import com.ongo.infrastructure.persistence.jooq.Fields.IMPRESSIONS
 import com.ongo.infrastructure.persistence.jooq.Fields.LIKES
+import com.ongo.infrastructure.persistence.jooq.Fields.PLATFORM
 import com.ongo.infrastructure.persistence.jooq.Fields.REVENUE_MICRO
 import com.ongo.infrastructure.persistence.jooq.Fields.SHARES
 import com.ongo.infrastructure.persistence.jooq.Fields.SUBSCRIBER_GAINED
+import com.ongo.infrastructure.persistence.jooq.Fields.TRAFFIC_SOURCE
+import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_UPLOAD_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.VIEWS
 import com.ongo.infrastructure.persistence.jooq.Fields.WATCH_TIME_SECONDS
 import com.ongo.infrastructure.persistence.jooq.Tables.ANALYTICS_DAILY
+import com.ongo.infrastructure.persistence.jooq.Tables.CHANNEL_INSIGHTS_DAILY
 import com.ongo.infrastructure.persistence.jooq.Tables.VIDEO_UPLOADS
 import com.ongo.infrastructure.persistence.jooq.Tables.VIDEOS
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.jooq.DSLContext
+import org.jooq.JSONB
 import org.jooq.Record
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
@@ -30,6 +42,7 @@ import java.time.LocalDate
 @Repository
 class AnalyticsJooqRepository(
     private val dsl: DSLContext,
+    private val objectMapper: ObjectMapper,
 ) : AnalyticsRepository {
 
     override fun findByVideoUploadIdAndDateRange(
@@ -280,6 +293,8 @@ class AnalyticsJooqRepository(
             .set(WATCH_TIME_SECONDS, analytics.watchTimeSeconds)
             .set(SUBSCRIBER_GAINED, analytics.subscriberGained)
             .set(REVENUE_MICRO, analytics.revenueMicro)
+            .set(IMPRESSIONS, analytics.impressions)
+            .set(AVG_VIEW_DURATION_SECONDS, analytics.avgViewDurationSeconds)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -302,6 +317,8 @@ class AnalyticsJooqRepository(
             .set(WATCH_TIME_SECONDS, analytics.watchTimeSeconds)
             .set(SUBSCRIBER_GAINED, analytics.subscriberGained)
             .set(REVENUE_MICRO, analytics.revenueMicro)
+            .set(IMPRESSIONS, analytics.impressions)
+            .set(AVG_VIEW_DURATION_SECONDS, analytics.avgViewDurationSeconds)
             .onConflict(VIDEO_UPLOAD_ID, DATE)
             .doUpdate()
             .set(VIEWS, analytics.views)
@@ -311,6 +328,8 @@ class AnalyticsJooqRepository(
             .set(WATCH_TIME_SECONDS, analytics.watchTimeSeconds)
             .set(SUBSCRIBER_GAINED, analytics.subscriberGained)
             .set(REVENUE_MICRO, analytics.revenueMicro)
+            .set(IMPRESSIONS, analytics.impressions)
+            .set(AVG_VIEW_DURATION_SECONDS, analytics.avgViewDurationSeconds)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -329,22 +348,25 @@ class AnalyticsJooqRepository(
             ANALYTICS_DAILY,
             VIDEO_UPLOAD_ID, DATE, VIEWS, LIKES, COMMENTS_COUNT,
             SHARES, WATCH_TIME_SECONDS, SUBSCRIBER_GAINED, REVENUE_MICRO,
+            IMPRESSIONS, AVG_VIEW_DURATION_SECONDS,
         )
 
-        var batch = insert.values(null as Long?, null, null, null, null, null, null, null, null)
+        var batch = insert.values(null as Long?, null, null, null, null, null, null, null, null, null, null)
         // Use batch binding
         val batchBind = dsl.batch(
             dsl.insertInto(
                 ANALYTICS_DAILY,
                 VIDEO_UPLOAD_ID, DATE, VIEWS, LIKES, COMMENTS_COUNT,
                 SHARES, WATCH_TIME_SECONDS, SUBSCRIBER_GAINED, REVENUE_MICRO,
-            ).values(null as Long?, null, null, null, null, null, null, null, null)
+                IMPRESSIONS, AVG_VIEW_DURATION_SECONDS,
+            ).values(null as Long?, null, null, null, null, null, null, null, null, null, null)
         )
 
         for (a in analytics) {
             batchBind.bind(
                 a.videoUploadId, a.date, a.views, a.likes, a.commentsCount,
                 a.shares, a.watchTimeSeconds, a.subscriberGained, a.revenueMicro,
+                a.impressions, a.avgViewDurationSeconds,
             )
         }
 
@@ -424,6 +446,76 @@ class AnalyticsJooqRepository(
         watchTimeSeconds = get(WATCH_TIME_SECONDS),
         subscriberGained = get(SUBSCRIBER_GAINED),
         revenueMicro = get(REVENUE_MICRO),
+        impressions = get(IMPRESSIONS) ?: 0,
+        avgViewDurationSeconds = get(AVG_VIEW_DURATION_SECONDS) ?: 0,
         createdAt = localDateTime(CREATED_AT),
     )
+
+    override fun upsertChannelInsights(insights: ChannelInsightsDaily) {
+        val trafficJsonb = JSONB.jsonb(objectMapper.writeValueAsString(insights.trafficSource))
+        val ageJsonb = JSONB.jsonb(objectMapper.writeValueAsString(insights.demographicsAge))
+        val genderJsonb = JSONB.jsonb(objectMapper.writeValueAsString(insights.demographicsGender))
+        val countryJsonb = JSONB.jsonb(objectMapper.writeValueAsString(insights.demographicsCountry))
+
+        val trafficField = DSL.field("traffic_source", JSONB::class.java)
+        val ageField = DSL.field("demographics_age", JSONB::class.java)
+        val genderField = DSL.field("demographics_gender", JSONB::class.java)
+        val countryField = DSL.field("demographics_country", JSONB::class.java)
+
+        dsl.insertInto(CHANNEL_INSIGHTS_DAILY)
+            .set(USER_ID, insights.userId)
+            .set(PLATFORM, insights.platform.name)
+            .set(DATE, insights.date)
+            .set(trafficField, trafficJsonb)
+            .set(ageField, ageJsonb)
+            .set(genderField, genderJsonb)
+            .set(countryField, countryJsonb)
+            .onConflict(USER_ID, PLATFORM, DATE)
+            .doUpdate()
+            .set(trafficField, trafficJsonb)
+            .set(ageField, ageJsonb)
+            .set(genderField, genderJsonb)
+            .set(countryField, countryJsonb)
+            .execute()
+    }
+
+    override fun findChannelInsights(
+        userId: Long, platform: com.ongo.common.enums.Platform?, startDate: LocalDate, endDate: LocalDate
+    ): List<ChannelInsightsDaily> {
+        var condition = USER_ID.eq(userId)
+            .and(DATE.greaterOrEqual(startDate))
+            .and(DATE.lessOrEqual(endDate))
+        if (platform != null) {
+            condition = condition.and(PLATFORM.eq(platform.name))
+        }
+        return dsl.select().from(CHANNEL_INSIGHTS_DAILY)
+            .where(condition)
+            .orderBy(DATE.asc())
+            .fetch()
+            .map { it.toChannelInsights() }
+    }
+
+    private fun Record.toChannelInsights(): ChannelInsightsDaily {
+        fun <V> parseJsonMap(fieldName: String, valueType: Class<V>): Map<String, V> {
+            val rawValue = get(fieldName) ?: return emptyMap()
+            val raw = when (rawValue) {
+                is JSONB -> rawValue.data()
+                else -> rawValue.toString()
+            }
+            return try {
+                objectMapper.readValue(raw, objectMapper.typeFactory.constructMapType(Map::class.java, String::class.java, valueType))
+            } catch (_: Exception) { emptyMap() }
+        }
+        return ChannelInsightsDaily(
+            id = get(ID),
+            userId = get(USER_ID),
+            platform = com.ongo.common.enums.Platform.valueOf(get(PLATFORM)),
+            date = localDate(DATE)!!,
+            trafficSource = parseJsonMap("traffic_source", Long::class.javaObjectType),
+            demographicsAge = parseJsonMap("demographics_age", Double::class.javaObjectType),
+            demographicsGender = parseJsonMap("demographics_gender", Double::class.javaObjectType),
+            demographicsCountry = parseJsonMap("demographics_country", Long::class.javaObjectType),
+            createdAt = localDateTime(CREATED_AT),
+        )
+    }
 }

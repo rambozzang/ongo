@@ -14,6 +14,11 @@ import type {
   CohortAnalysisResponse,
   RetentionCurveResponse,
   TagPerformance,
+  TrafficSourceResponse,
+  DemographicsResponse,
+  CTRResponse,
+  AvgViewDurationResponse,
+  SubscriberConversionResponse,
 } from '@/types/analytics'
 import type { Platform } from '@/types/channel'
 
@@ -193,5 +198,35 @@ export const analyticsApi = {
       .get<ResData<{ tags: TagPerformance[] }>>('/analytics/tags', { params: { days } })
       .then(unwrapResponse)
       .then((res) => res.tags)
+  },
+
+  trafficSources(days = 30) {
+    return apiClient
+      .get<ResData<TrafficSourceResponse>>(`/analytics/traffic-sources`, { params: { days } })
+      .then(unwrapResponse)
+  },
+
+  demographics(days = 30) {
+    return apiClient
+      .get<ResData<DemographicsResponse>>(`/analytics/demographics`, { params: { days } })
+      .then(unwrapResponse)
+  },
+
+  ctr(days = 30) {
+    return apiClient
+      .get<ResData<CTRResponse>>(`/analytics/ctr`, { params: { days } })
+      .then(unwrapResponse)
+  },
+
+  avgViewDuration(days = 30) {
+    return apiClient
+      .get<ResData<AvgViewDurationResponse>>(`/analytics/avg-view-duration`, { params: { days } })
+      .then(unwrapResponse)
+  },
+
+  subscriberConversion(days = 30) {
+    return apiClient
+      .get<ResData<SubscriberConversionResponse>>(`/analytics/subscriber-conversion`, { params: { days } })
+      .then(unwrapResponse)
   },
 }

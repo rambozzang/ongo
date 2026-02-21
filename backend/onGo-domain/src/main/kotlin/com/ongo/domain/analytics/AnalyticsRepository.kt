@@ -16,4 +16,6 @@ interface AnalyticsRepository {
     fun findDailyAnalyticsByChannelIds(userId: Long, platform: com.ongo.common.enums.Platform?): List<AnalyticsDaily>
     fun findByVideoUploadIds(uploadIds: List<Long>): List<AnalyticsDaily>
     fun findAllByUserId(userId: Long): List<AnalyticsDaily>
+    fun upsertChannelInsights(insights: ChannelInsightsDaily)
+    fun findChannelInsights(userId: Long, platform: com.ongo.common.enums.Platform?, startDate: LocalDate, endDate: LocalDate): List<ChannelInsightsDaily>
 }

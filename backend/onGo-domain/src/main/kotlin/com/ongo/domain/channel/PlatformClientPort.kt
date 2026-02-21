@@ -23,6 +23,8 @@ data class PlatformAnalyticsResult(
     val shares: Long,
     val watchTimeSeconds: Long,
     val subscriberGained: Int,
+    val impressions: Long = 0,
+    val avgViewDurationSeconds: Long = 0,
 )
 
 data class PlatformChannelInfoResult(
