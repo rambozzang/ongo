@@ -543,12 +543,22 @@
             </div>
             <div class="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
               <span>사용 크레딧: {{ aiReport.creditsUsed }} / 잔여: {{ aiReport.creditsRemaining }}</span>
-              <button
-                class="font-medium text-purple-600 hover:text-purple-800"
-                @click="handleGenerateInsight"
-              >
-                다시 생성
-              </button>
+              <div class="flex items-center gap-3">
+                <button
+                  class="inline-flex items-center gap-1 font-medium text-purple-600 hover:text-purple-800"
+                  :disabled="pdfExporting"
+                  @click="handleExportPDF"
+                >
+                  <ArrowDownTrayIcon class="h-3.5 w-3.5" />
+                  {{ pdfExporting ? 'PDF 생성 중...' : 'PDF 다운로드' }}
+                </button>
+                <button
+                  class="font-medium text-purple-600 hover:text-purple-800"
+                  @click="handleGenerateInsight"
+                >
+                  다시 생성
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -571,6 +581,7 @@ import {
   FilmIcon,
   ChartBarIcon,
   ArrowsRightLeftIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -593,7 +604,7 @@ import type { Platform } from '@/types/channel'
 import type { PlatformComparison, TrendDataPoint } from '@/types/analytics'
 import type { GenerateReportResponse } from '@/types/ai'
 import type { ColumnDefinition } from '@/utils/export'
-import { formatDateOnlyForExport } from '@/utils/export'
+import { formatDateOnlyForExport, exportReportToPDF } from '@/utils/export'
 import type { TagPerformance } from '@/types/analytics'
 
 // ----- Analytics Sub-tab -----
@@ -854,6 +865,23 @@ const bestPostingTime = computed(() => {
 const aiReport = ref<GenerateReportResponse | null>(null)
 const aiLoading = ref(false)
 const aiError = ref<string | null>(null)
+
+const pdfExporting = ref(false)
+
+async function handleExportPDF() {
+  if (!aiReport.value) return
+  pdfExporting.value = true
+  try {
+    const periodLabel = period.value === '7d' ? '최근 7일' : period.value === '30d' ? '최근 30일' : '최근 90일'
+    await exportReportToPDF(aiReport.value, {
+      period: periodLabel,
+    })
+  } catch (e) {
+    console.error('PDF 내보내기 실패:', e)
+  } finally {
+    pdfExporting.value = false
+  }
+}
 
 async function handleGenerateInsight() {
   aiError.value = null

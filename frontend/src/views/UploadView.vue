@@ -52,7 +52,7 @@
         </span>
         <span v-if="i < 2" class="hidden h-px w-8 tablet:block" :class="i + 1 < step ? 'bg-green-400' : 'bg-gray-300 dark:bg-gray-600'" />
       </div>
-    </div>
+    </nav>
 
     <!-- Step 1: File Upload -->
     <div v-if="step === 1" class="card">
