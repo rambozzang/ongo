@@ -10,6 +10,7 @@ data class TeamMember(
     val role: String = "VIEWER",
     val status: String = "INVITED",
     val permissions: String = "{}",
+    val workspaceId: Long? = null,
     val invitedAt: LocalDateTime? = null,
     val joinedAt: LocalDateTime? = null,
     val createdAt: LocalDateTime? = null,

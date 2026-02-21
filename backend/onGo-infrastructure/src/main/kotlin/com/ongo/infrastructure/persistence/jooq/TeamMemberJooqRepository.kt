@@ -12,6 +12,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.PERMISSIONS
 import com.ongo.infrastructure.persistence.jooq.Fields.ROLE
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.WORKSPACE_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.TEAM_MEMBERS
 import org.jooq.DSLContext
 import org.jooq.JSONB
@@ -56,6 +57,7 @@ class TeamMemberJooqRepository(
             .set(ROLE, member.role)
             .set(STATUS, member.status)
             .set(permissionsField, JSONB.jsonb(member.permissions ?: "{}"))
+            .set(WORKSPACE_ID, member.workspaceId)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -121,6 +123,7 @@ class TeamMemberJooqRepository(
             role = get(ROLE),
             status = get(STATUS),
             permissions = permissions,
+            workspaceId = get(WORKSPACE_ID),
             invitedAt = localDateTime(INVITED_AT),
             joinedAt = localDateTime(JOINED_AT),
             createdAt = localDateTime(CREATED_AT),

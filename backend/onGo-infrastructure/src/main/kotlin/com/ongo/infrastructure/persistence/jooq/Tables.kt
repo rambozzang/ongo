@@ -67,6 +67,9 @@ object Tables {
     val WEBHOOKS = DSL.table("webhooks")
     val RECURRING_SCHEDULES = DSL.table("recurring_schedules")
 
+    // Workspace
+    val WORKSPACES = DSL.table("workspaces")
+
     // Collab
     val TEAM_MEMBERS = DSL.table("team_members")
     val INBOX_MESSAGES = DSL.table("inbox_messages")
@@ -365,6 +368,16 @@ object Fields {
     val TIMEZONE = DSL.field("timezone", String::class.java)
     val NEXT_RUN_AT = DSL.field("next_run_at", java.time.LocalDateTime::class.java)
     val LAST_RUN_AT = DSL.field("last_run_at", java.time.LocalDateTime::class.java)
+
+    // workspaces
+    val OWNER_ID = DSL.field("owner_id", Long::class.java)
+    val WORKSPACE_NAME = DSL.field("name", String::class.java)
+    val WORKSPACE_SLUG = DSL.field("slug", String::class.java)
+    val WORKSPACE_DESCRIPTION = DSL.field("description", String::class.java)
+    val WORKSPACE_LOGO_URL = DSL.field("logo_url", String::class.java)
+
+    // team_members extended
+    val WORKSPACE_ID = DSL.field("workspace_id", Long::class.java)
 
     // team_members
     val MEMBER_EMAIL = DSL.field("member_email", String::class.java)

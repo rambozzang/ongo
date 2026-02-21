@@ -29,6 +29,9 @@
       </button>
     </div>
 
+    <!-- Workspace Switcher -->
+    <WorkspaceSwitcher :collapsed="collapsed" />
+
     <!-- Navigation -->
     <nav role="navigation" :aria-label="t('nav.mainNavigation')" class="flex-1 overflow-y-auto px-2 py-4">
       <div
@@ -124,6 +127,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
+import WorkspaceSwitcher from '@/components/layout/WorkspaceSwitcher.vue'
 
 defineProps<{
   collapsed: boolean
