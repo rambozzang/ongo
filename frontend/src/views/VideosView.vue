@@ -25,11 +25,13 @@
         <div class="relative flex-1 tablet:max-w-sm">
           <MagnifyingGlassIcon
             class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+            aria-hidden="true"
           />
           <input
             v-model="searchKeyword"
             type="text"
             placeholder="제목 또는 태그 검색..."
+            aria-label="영상 검색"
             class="input w-full pl-10"
             @input="onSearchInput"
           />
@@ -68,13 +70,14 @@
                 : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
             "
             @click="toggleSelectionMode"
-            title="선택 모드"
+            :aria-pressed="selectionMode"
+            aria-label="선택 모드"
           >
             <CheckIcon class="h-5 w-5" />
           </button>
 
           <!-- View Mode Toggle -->
-          <div class="flex rounded-lg border border-gray-300 dark:border-gray-600">
+          <div class="flex rounded-lg border border-gray-300 dark:border-gray-600" role="group" aria-label="보기 모드">
             <button
               class="rounded-l-lg px-3 py-2 text-sm"
               :class="
@@ -83,7 +86,8 @@
                   : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
               "
               @click="viewMode = 'grid'"
-              title="그리드 보기"
+              :aria-pressed="viewMode === 'grid'"
+              aria-label="그리드 보기"
             >
               <Squares2X2Icon class="h-5 w-5" />
             </button>
@@ -95,7 +99,8 @@
                   : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
               "
               @click="viewMode = 'list'"
-              title="리스트 보기"
+              :aria-pressed="viewMode === 'list'"
+              aria-label="리스트 보기"
             >
               <ListBulletIcon class="h-5 w-5" />
             </button>
@@ -114,6 +119,8 @@
               : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
           "
           @click="filterFavoritesOnly = !filterFavoritesOnly"
+          :aria-pressed="filterFavoritesOnly"
+          aria-label="즐겨찾기 필터"
         >
           <StarIcon v-if="!filterFavoritesOnly" class="h-3.5 w-3.5" />
           <StarIconSolid v-else class="h-3.5 w-3.5" />
@@ -122,8 +129,8 @@
 
         <!-- Platform Filter -->
         <div class="flex items-center gap-1">
-          <FunnelIcon class="h-4 w-4 text-gray-400" />
-          <div class="flex rounded-lg border border-gray-200 dark:border-gray-700">
+          <FunnelIcon class="h-4 w-4 text-gray-400" aria-hidden="true" />
+          <div class="flex rounded-lg border border-gray-200 dark:border-gray-700" role="group" aria-label="플랫폼 필터">
             <button
               v-for="pf in platformOptions"
               :key="pf.value ?? 'all'"

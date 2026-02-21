@@ -406,7 +406,7 @@
                   type="number"
                   min="0"
                   step="1"
-                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                  class="input"
                 />
                 <span class="text-sm text-gray-500">GB</span>
               </div>
@@ -429,7 +429,7 @@
               {{ t('action.cancel') }}
             </button>
             <button
-              class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+              class="btn-primary"
               :disabled="saving"
               @click="saveQuota"
             >

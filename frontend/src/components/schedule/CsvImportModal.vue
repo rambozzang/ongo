@@ -557,7 +557,7 @@ function handleEditRow(rowNumber: number, field: string, value: string) {
             <button
               v-if="currentStep < 3 && !store.importing"
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-primary-500 dark:hover:bg-primary-600"
+              class="btn-primary gap-1.5"
               :disabled="!canGoNext"
               @click="goNext"
             >
@@ -569,7 +569,7 @@ function handleEditRow(rowNumber: number, field: string, value: string) {
             <button
               v-if="currentStep === 3 && !store.importing && !importComplete"
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600"
+              class="btn-primary gap-1.5 px-5"
               @click="startImport"
             >
               <CloudArrowUpIcon class="h-4 w-4" />

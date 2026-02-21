@@ -26,7 +26,7 @@
     ]" />
 
     <!-- Step indicator -->
-    <div class="mb-8 flex items-center justify-center gap-4">
+    <nav aria-label="업로드 단계" class="mb-8 flex items-center justify-center gap-4">
       <div v-for="(label, i) in stepLabels" :key="i" class="flex items-center gap-2">
         <div
           class="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium"
@@ -37,6 +37,9 @@
                 ? 'bg-primary-600 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
           "
+          :aria-current="i + 1 === step ? 'step' : undefined"
+          :aria-label="`${i + 1}단계: ${label}${i + 1 < step ? ' (완료)' : ''}`"
+          role="listitem"
         >
           <CheckIcon v-if="i + 1 < step" class="h-4 w-4" />
           <span v-else>{{ i + 1 }}</span>
@@ -86,7 +89,7 @@
       <div class="mt-6 flex justify-end">
         <button
           :disabled="!uploadCompleted"
-          class="rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+          class="btn-primary"
           @click="step = 2"
         >
           {{ t('upload.nextStep') }}
@@ -180,14 +183,14 @@
 
       <div class="flex justify-between">
         <button
-          class="rounded-lg border border-gray-300 dark:border-gray-600 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+          class="btn-secondary"
           @click="step = 1"
         >
           {{ t('upload.previousStep') }}
         </button>
         <button
           :disabled="!metadata.title.trim()"
-          class="rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+          class="btn-primary"
           @click="handleStep2Next"
         >
           {{ t('upload.nextStep') }}
@@ -211,7 +214,7 @@
 
       <div class="mt-6 flex justify-between">
         <button
-          class="rounded-lg border border-gray-300 dark:border-gray-600 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+          class="btn-secondary"
           @click="step = 2"
         >
           {{ t('upload.previousStep') }}
@@ -219,7 +222,7 @@
         <div class="flex items-center gap-2">
           <button
             :disabled="platformConfigs.length === 0 || publishing"
-            class="inline-flex items-center gap-2 rounded-lg border border-primary-600 bg-white px-6 py-2.5 text-sm font-medium text-primary-600 transition-colors hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800 dark:hover:bg-gray-700"
+            class="btn-secondary inline-flex items-center gap-2"
             @click="handleAddToQueue"
           >
             <QueueListIcon class="h-5 w-5" />
@@ -227,7 +230,7 @@
           </button>
           <button
             :disabled="platformConfigs.length === 0 || publishing"
-            class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+            class="btn-primary inline-flex items-center gap-2"
             @click="handlePublish"
           >
             <LoadingSpinner v-if="publishing" size="sm" />

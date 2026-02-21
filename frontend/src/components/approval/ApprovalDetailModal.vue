@@ -452,7 +452,7 @@ function cancelAction() {
                 <textarea
                   v-model="actionNote"
                   :placeholder="actionMode === 'reject' ? '반려 사유를 입력하세요...' : '수정이 필요한 내용을 입력하세요...'"
-                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
+                  class="input"
                   rows="3"
                 />
                 <div class="mt-2 flex items-center gap-2">
@@ -483,7 +483,7 @@ function cancelAction() {
                       ref="commentTextareaRef"
                       v-model="newComment"
                       placeholder="코멘트를 입력하세요... (@로 멤버 멘션)"
-                      class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
+                      class="input"
                       rows="2"
                       @input="handleCommentInput"
                       @keydown="handleCommentKeydown"
@@ -535,7 +535,7 @@ function cancelAction() {
                   <div class="flex flex-shrink-0 flex-col gap-1">
                     <button
                       :disabled="!newComment.trim()"
-                      class="rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-primary-500 dark:hover:bg-primary-400"
+                      class="btn-primary px-3"
                       @click="handleSubmitComment"
                     >
                       전송

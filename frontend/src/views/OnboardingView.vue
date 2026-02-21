@@ -183,7 +183,7 @@
                 <button
                   v-else
                   :disabled="isConnecting"
-                  class="rounded-lg bg-primary-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
+                  class="btn-primary text-xs"
                   @click="connectPlatform(platform.key)"
                 >
                   연동하기

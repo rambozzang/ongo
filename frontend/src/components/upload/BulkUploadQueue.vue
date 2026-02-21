@@ -25,7 +25,7 @@
           <!-- Actions -->
           <button
             v-if="queueStore.pendingCount > 0"
-            class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+            class="btn-primary inline-flex items-center gap-1.5"
             :disabled="queueStore.isUploading"
             @click="queueStore.startUpload()"
           >

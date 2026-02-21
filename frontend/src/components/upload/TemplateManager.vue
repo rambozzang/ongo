@@ -116,7 +116,7 @@
             <!-- Actions -->
             <div class="mt-4 flex gap-2">
               <button
-                class="flex-1 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+                class="btn-primary flex-1"
                 @click="handleApplyTemplate(tmpl)"
               >
                 적용

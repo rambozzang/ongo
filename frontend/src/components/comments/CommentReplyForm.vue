@@ -4,7 +4,7 @@
       v-model="replyText"
       placeholder="답글을 입력하세요..."
       rows="3"
-      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+      class="input"
       :disabled="submitting"
     />
 
@@ -55,7 +55,7 @@
         </button>
         <button
           type="button"
-          class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+          class="btn-primary"
           :disabled="!replyText.trim() || submitting || replyText.length > 500"
           @click="handleSubmit"
         >

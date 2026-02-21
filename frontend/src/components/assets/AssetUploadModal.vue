@@ -238,7 +238,7 @@ async function handleUpload() {
             </label>
             <select
               v-model="selectedFolderId"
-              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+              class="input"
             >
               <option :value="null">전체 (루트)</option>
               <option v-for="folder in folders" :key="folder.id" :value="folder.id">
@@ -304,7 +304,7 @@ async function handleUpload() {
               취소
             </button>
             <button
-              class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+              class="btn-primary"
               :disabled="selectedFiles.length === 0 || uploading"
               @click="handleUpload"
             >

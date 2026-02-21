@@ -226,7 +226,7 @@ function clearFilters() {
 
         <!-- Upload Button -->
         <button
-          class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors"
+          class="btn-primary inline-flex items-center gap-2"
           @click="showUploadModal = true"
         >
           <PlusIcon class="h-5 w-5" />
@@ -373,7 +373,7 @@ function clearFilters() {
           </p>
           <button
             v-if="!hasActiveFilters"
-            class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            class="btn-primary inline-flex items-center gap-2"
             @click="showUploadModal = true"
           >
             <CloudArrowUpIcon class="h-5 w-5" />
@@ -516,7 +516,7 @@ function clearFilters() {
             <h3 class="mb-4 text-lg font-bold text-gray-900 dark:text-white">폴더 이동</h3>
             <select
               v-model="moveTargetFolderId"
-              class="mb-4 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+              class="input mb-4"
             >
               <option :value="null">전체 (루트)</option>
               <option v-for="folder in folders" :key="folder.id" :value="folder.id">
@@ -525,13 +525,13 @@ function clearFilters() {
             </select>
             <div class="flex justify-end gap-3">
               <button
-                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                class="btn-secondary"
                 @click="showMoveModal = false"
               >
                 취소
               </button>
               <button
-                class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                class="btn-primary"
                 @click="confirmMove"
               >
                 이동
@@ -557,7 +557,7 @@ function clearFilters() {
             </p>
             <select
               v-model="bulkMoveFolderId"
-              class="mb-4 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+              class="input mb-4"
             >
               <option :value="null">전체 (루트)</option>
               <option v-for="folder in folders" :key="folder.id" :value="folder.id">
@@ -566,13 +566,13 @@ function clearFilters() {
             </select>
             <div class="flex justify-end gap-3">
               <button
-                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                class="btn-secondary"
                 @click="showBulkMoveModal = false"
               >
                 취소
               </button>
               <button
-                class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                class="btn-primary"
                 @click="confirmBulkMove"
               >
                 이동

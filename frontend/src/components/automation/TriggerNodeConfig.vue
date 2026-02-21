@@ -16,7 +16,7 @@ const config = defineModel<Record<string, unknown>>('config', { required: true }
       <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">트리거 유형</label>
       <select
         :value="triggerType"
-        class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+        class="input"
         @change="triggerType = ($event.target as HTMLSelectElement).value as WorkflowTriggerType"
       >
         <option v-for="opt in WORKFLOW_TRIGGER_OPTIONS" :key="opt.value" :value="opt.value">

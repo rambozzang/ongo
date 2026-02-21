@@ -232,7 +232,7 @@ function formatDate(dateStr: string): string {
             v-if="request.status === 'revision_requested' && role === 'requester'"
           >
             <button
-              class="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-400"
+              class="btn-primary gap-1 px-3 py-1.5 text-xs"
               @click="emit('resubmit', request.id)"
             >
               <ClockIcon class="h-3.5 w-3.5" />

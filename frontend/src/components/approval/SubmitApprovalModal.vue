@@ -209,7 +209,7 @@ async function handleSubmit() {
               </label>
               <select
                 v-model="selectedReviewerId"
-                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                class="input"
               >
                 <option value="">
                   검토자를 선택하세요
@@ -232,7 +232,7 @@ async function handleSubmit() {
               <textarea
                 v-model="comment"
                 placeholder="요청 사항이나 참고 사항을 입력하세요..."
-                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
+                class="input"
                 rows="3"
               />
             </div>
@@ -248,7 +248,7 @@ async function handleSubmit() {
             </button>
             <button
               :disabled="submitting"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-primary-500 dark:hover:bg-primary-400"
+              class="btn-primary gap-1.5"
               @click="handleSubmit"
             >
               <PaperAirplaneIcon class="h-4 w-4" />
