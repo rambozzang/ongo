@@ -50,10 +50,15 @@ class AnalyticsUseCase(
             val platformViews = items
                 .filter { it.platform != null }
                 .associate { it.platform!!.name to it.views }
+            val platformSubscribers = items
+                .filter { it.platform != null }
+                .associate { it.platform!!.name to it.subscribers }
             TrendPoint(
                 date = date,
                 totalViews = items.sumOf { it.views },
-                platformViews = platformViews
+                platformViews = platformViews,
+                totalSubscribers = items.sumOf { it.subscribers },
+                platformSubscribers = platformSubscribers,
             )
         }.sortedBy { it.date }
 

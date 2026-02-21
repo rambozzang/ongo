@@ -149,8 +149,9 @@ class AnalyticsJooqRepository(
         val platformField = DSL.field("vu.platform", String::class.java)
         val dateField = DSL.field("ad.date", LocalDate::class.java)
         val viewsSum = DSL.sum(DSL.field("ad.views", Int::class.java)).`as`("total_views")
+        val subscribersSum = DSL.sum(DSL.field("ad.subscriber_gained", Int::class.java)).`as`("total_subscribers")
 
-        return dsl.select(dateField, platformField, viewsSum)
+        return dsl.select(dateField, platformField, viewsSum, subscribersSum)
             .from(DSL.table("analytics_daily").`as`("ad"))
             .join(DSL.table("video_uploads").`as`("vu"))
             .on(DSL.field("ad.video_upload_id", Long::class.java).eq(DSL.field("vu.id", Long::class.java)))
@@ -165,6 +166,7 @@ class AnalyticsJooqRepository(
                     date = record.get("date", LocalDate::class.java),
                     platform = platformStr?.let { Platform.valueOf(it) },
                     views = record.get("total_views", Long::class.java) ?: 0L,
+                    subscribers = record.get("total_subscribers", Long::class.java) ?: 0L,
                 )
             }
     }

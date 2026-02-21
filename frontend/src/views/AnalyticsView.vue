@@ -289,6 +289,37 @@
         </div>
       </div>
 
+      <!-- Subscriber Trend Area Chart -->
+      <div class="card mb-6">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">구독자 변화 추이</h2>
+        <div class="relative h-48 w-full overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-900">
+          <template v-if="trendData.length > 0 && subscriberMaxValue > 0">
+            <svg
+              class="h-full w-full"
+              :viewBox="`0 0 ${trendChartWidth} 200`"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="subscriberGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#6366f1" stop-opacity="0.05" />
+                </linearGradient>
+              </defs>
+              <path :d="subscriberAreaPath" fill="url(#subscriberGradient)" />
+              <polyline
+                :points="subscriberLinePath"
+                fill="none"
+                stroke="#6366f1"
+                stroke-width="2"
+              />
+            </svg>
+          </template>
+          <div v-else class="flex h-full items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+            구독자 데이터가 없습니다
+          </div>
+        </div>
+      </div>
+
       <!-- Best Posting Time Section -->
       <div class="mb-6 grid gap-6 desktop:grid-cols-3">
         <!-- Posting Time Heatmap -->
@@ -677,6 +708,48 @@ const trendXLabels = computed(() => {
     labels.push(`${date.getMonth() + 1}/${date.getDate()}`)
   }
   return labels
+})
+
+// ----- Subscriber Trend Chart -----
+const subscriberMaxValue = computed(() => {
+  if (trendData.value.length === 0) return 0
+  return Math.max(...trendData.value.map((d) => d.totalSubscribers ?? 0), 1)
+})
+
+const subscriberLinePath = computed(() => {
+  const data = trendData.value
+  if (data.length === 0) return ''
+  const maxVal = subscriberMaxValue.value
+  const padding = 10
+  const height = 200
+  return data
+    .map((d, i) => {
+      const x = padding + (i / Math.max(data.length - 1, 1)) * (trendChartWidth - padding * 2)
+      const y = height - padding - ((d.totalSubscribers ?? 0) / maxVal) * (height - padding * 2)
+      return `${x},${y}`
+    })
+    .join(' ')
+})
+
+const subscriberAreaPath = computed(() => {
+  const data = trendData.value
+  if (data.length === 0) return ''
+  const maxVal = subscriberMaxValue.value
+  const padding = 10
+  const height = 200
+  const points = data.map((d, i) => {
+    const x = padding + (i / Math.max(data.length - 1, 1)) * (trendChartWidth - padding * 2)
+    const y = height - padding - ((d.totalSubscribers ?? 0) / maxVal) * (height - padding * 2)
+    return { x, y }
+  })
+  const first = points[0]
+  const last = points[points.length - 1]
+  let path = `M ${first.x},${first.y}`
+  for (let i = 1; i < points.length; i++) {
+    path += ` L ${points[i].x},${points[i].y}`
+  }
+  path += ` L ${last.x},${height - padding} L ${first.x},${height - padding} Z`
+  return path
 })
 
 // ----- Platform Comparison -----

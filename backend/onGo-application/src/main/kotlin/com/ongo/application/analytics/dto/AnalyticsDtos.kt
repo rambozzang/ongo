@@ -17,7 +17,9 @@ data class DashboardKpiResponse(
 data class TrendPoint(
     val date: LocalDate,
     val totalViews: Long,
-    val platformViews: Map<String, Long>
+    val platformViews: Map<String, Long>,
+    val totalSubscribers: Long = 0,
+    val platformSubscribers: Map<String, Long> = emptyMap(),
 )
 
 data class TrendDataResponse(

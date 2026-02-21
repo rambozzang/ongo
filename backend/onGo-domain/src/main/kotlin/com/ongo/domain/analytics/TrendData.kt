@@ -7,4 +7,5 @@ data class TrendData(
     val date: LocalDate,
     val platform: Platform?,
     val views: Long,
+    val subscribers: Long = 0,
 )

@@ -15,6 +15,8 @@ export interface TrendDataPoint {
   date: string
   totalViews: number
   platformViews: Record<string, number>
+  totalSubscribers?: number
+  platformSubscribers?: Record<string, number>
 }
 
 export interface PlatformComparison {

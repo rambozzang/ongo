@@ -379,6 +379,7 @@ import type { PlanType } from '@/types/subscription'
 import { authApi } from '@/api/auth'
 import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
+import { subscriptionApi } from '@/api/subscription'
 import { buildOAuthUrl } from '@/utils/oauth'
 import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import OnboardingStepIndicator from '@/components/onboarding/OnboardingStepIndicator.vue'
@@ -552,6 +553,14 @@ async function completeOnboarding() {
     await authApi.completeOnboarding()
     if (authStore.user) {
       authStore.user.onboardingCompleted = true
+    }
+    // 무료가 아닌 플랜 선택 시 구독 변경 (실패해도 온보딩 완료 진행)
+    if (selectedPlan.value !== 'FREE') {
+      try {
+        await subscriptionApi.changePlan({ targetPlan: selectedPlan.value })
+      } catch {
+        // 플랜 변경 실패 시 무시 - 나중에 구독 페이지에서 변경 가능
+      }
     }
     currentStep.value = 5
   } catch {
