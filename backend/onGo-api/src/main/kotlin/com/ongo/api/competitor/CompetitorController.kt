@@ -1,12 +1,7 @@
 package com.ongo.api.competitor
 
 import com.ongo.application.competitor.CompetitorUseCase
-import com.ongo.application.competitor.dto.ChannelLookupRequest
-import com.ongo.application.competitor.dto.ChannelLookupResponse
-import com.ongo.application.competitor.dto.CompetitorListResponse
-import com.ongo.application.competitor.dto.CompetitorResponse
-import com.ongo.application.competitor.dto.CreateCompetitorRequest
-import com.ongo.application.competitor.dto.UpdateCompetitorRequest
+import com.ongo.application.competitor.dto.*
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
 import io.swagger.v3.oas.annotations.Operation
@@ -70,5 +65,31 @@ class CompetitorController(
     ): ResponseEntity<ResData<Nothing?>> {
         competitorUseCase.removeCompetitor(userId, id)
         return ResData.success(null, "경쟁자가 삭제되었습니다")
+    }
+
+    @Operation(summary = "경쟁자 트렌드 데이터 조회")
+    @PostMapping("/trends")
+    fun getCompetitorTrends(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @Valid @RequestBody request: CompetitorTrendRequest,
+    ): ResponseEntity<ResData<List<CompetitorTrendResponse>>> {
+        return ResData.success(competitorUseCase.getCompetitorTrends(userId, request))
+    }
+
+    @Operation(summary = "벤치마크 비교 데이터 조회")
+    @GetMapping("/benchmark")
+    fun getBenchmark(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<BenchmarkResponse>> {
+        return ResData.success(competitorUseCase.getBenchmark(userId))
+    }
+
+    @Operation(summary = "경쟁자 데이터 수동 동기화")
+    @PostMapping("/sync")
+    fun syncCompetitors(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<CompetitorListResponse>> {
+        val competitors = competitorUseCase.listCompetitors(userId)
+        return ResData.success(competitors, "동기화가 완료되었습니다")
     }
 }

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Competitor, CompetitorComparison, CompetitorVideo, CompetitorResponse } from '@/types/competitor'
+import type { Competitor, CompetitorComparison, CompetitorVideo, CompetitorResponse, CompetitorTrendResponse, BenchmarkResponse, CompetitorInsightResult } from '@/types/competitor'
 import { competitorApi } from '@/api/competitor'
 
 interface MyStats {
@@ -38,6 +38,10 @@ export const useCompetitorStore = defineStore('competitor', () => {
     growthRate: 0,
   })
   const competitorVideos = ref<CompetitorVideo[]>([])
+  const trends = ref<CompetitorTrendResponse[]>([])
+  const benchmark = ref<BenchmarkResponse | null>(null)
+  const aiInsight = ref<CompetitorInsightResult | null>(null)
+  const insightLoading = ref(false)
 
   const trackedCompetitors = computed(() =>
     competitors.value.filter(c => c.isTracking)
@@ -72,10 +76,27 @@ export const useCompetitorStore = defineStore('competitor', () => {
 
   async function fetchCompetitors() {
     try {
-      const result = await competitorApi.list()
-      competitors.value = result.competitors.map(mapResponseToCompetitor)
+      const [listResult, benchmarkResult] = await Promise.all([
+        competitorApi.list(),
+        competitorApi.benchmark().catch(() => null),
+      ])
+      competitors.value = listResult.competitors.map(mapResponseToCompetitor)
+      if (benchmarkResult) {
+        benchmark.value = benchmarkResult
+        myStats.value = {
+          subscriberCount: benchmarkResult.myStats.subscriberCount,
+          avgViews: benchmarkResult.myStats.avgViews,
+          avgEngagement: benchmarkResult.myStats.engagementRate,
+          growthRate: benchmarkResult.myStats.growthRate,
+        }
+        for (const comp of competitors.value) {
+          const bm = benchmarkResult.competitors.find(b => b.id === comp.id)
+          if (bm) {
+            comp.growthRate = bm.growthRate
+          }
+        }
+      }
     } catch {
-      // API failed — keep empty state
       competitors.value = []
     }
   }
@@ -137,6 +158,25 @@ export const useCompetitorStore = defineStore('competitor', () => {
     return competitorVideos.value
   }
 
+  async function fetchTrends(competitorIds: number[] = [], days = 30) {
+    try {
+      trends.value = await competitorApi.trends(competitorIds, days)
+    } catch {
+      trends.value = []
+    }
+  }
+
+  async function fetchInsight() {
+    insightLoading.value = true
+    try {
+      aiInsight.value = await competitorApi.insight()
+    } catch (e) {
+      console.error('AI 인사이트 생성 실패:', e)
+    } finally {
+      insightLoading.value = false
+    }
+  }
+
   return {
     competitors,
     myStats,
@@ -152,5 +192,11 @@ export const useCompetitorStore = defineStore('competitor', () => {
     getComparison,
     getCompetitorVideos,
     fetchCompetitors,
+    trends,
+    benchmark,
+    aiInsight,
+    insightLoading,
+    fetchTrends,
+    fetchInsight,
   }
 })

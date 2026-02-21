@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { PlusIcon, ArrowPathIcon, UsersIcon, ChartBarIcon, TrophyIcon, ArrowTrendingUpIcon } from '@heroicons/vue/24/outline'
+import { ref, computed, onMounted } from 'vue'
+import { PlusIcon, ArrowPathIcon, UsersIcon, ChartBarIcon, TrophyIcon, ArrowTrendingUpIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import { useCompetitorStore } from '@/stores/competitor'
 import CompetitorCard from '@/components/competitor/CompetitorCard.vue'
 import ComparisonChart from '@/components/competitor/ComparisonChart.vue'
@@ -56,6 +56,10 @@ async function handleRefresh() {
     isRefreshing.value = false
   }
 }
+
+onMounted(() => {
+  competitorStore.fetchCompetitors()
+})
 
 function formatNumber(num: number): string {
   if (num >= 1000000) {
@@ -293,6 +297,61 @@ function formatNumber(num: number): string {
               :videos="competitorStore.competitorVideos"
               :competitors="competitorStore.competitors"
             />
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Insight Section -->
+      <div v-if="competitorStore.competitors.length > 0" class="mt-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <SparklesIcon class="w-5 h-5 text-purple-600" />
+              AI 벤치마킹 인사이트
+            </h2>
+            <button
+              @click="competitorStore.fetchInsight()"
+              :disabled="competitorStore.insightLoading"
+              class="btn-primary text-sm"
+            >
+              {{ competitorStore.insightLoading ? '분석 중...' : 'AI 분석 (8크레딧)' }}
+            </button>
+          </div>
+
+          <div v-if="competitorStore.aiInsight" class="space-y-4">
+            <p class="text-gray-700 dark:text-gray-300">{{ competitorStore.aiInsight.summary }}</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                <h3 class="font-medium text-green-800 dark:text-green-300 mb-2">강점</h3>
+                <ul class="space-y-1 text-sm text-green-700 dark:text-green-400">
+                  <li v-for="(s, i) in competitorStore.aiInsight.strengths" :key="i">- {{ s }}</li>
+                </ul>
+              </div>
+              <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                <h3 class="font-medium text-red-800 dark:text-red-300 mb-2">약점</h3>
+                <ul class="space-y-1 text-sm text-red-700 dark:text-red-400">
+                  <li v-for="(w, i) in competitorStore.aiInsight.weaknesses" :key="i">- {{ w }}</li>
+                </ul>
+              </div>
+              <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                <h3 class="font-medium text-blue-800 dark:text-blue-300 mb-2">기회</h3>
+                <ul class="space-y-1 text-sm text-blue-700 dark:text-blue-400">
+                  <li v-for="(o, i) in competitorStore.aiInsight.opportunities" :key="i">- {{ o }}</li>
+                </ul>
+              </div>
+              <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                <h3 class="font-medium text-purple-800 dark:text-purple-300 mb-2">추천 행동</h3>
+                <ul class="space-y-1 text-sm text-purple-700 dark:text-purple-400">
+                  <li v-for="(r, i) in competitorStore.aiInsight.recommendations" :key="i">- {{ r }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
+            <SparklesIcon class="w-8 h-8 mx-auto mb-2 text-gray-400" />
+            <p>AI 분석 버튼을 눌러 경쟁자와의 비교 인사이트를 받아보세요</p>
           </div>
         </div>
       </div>

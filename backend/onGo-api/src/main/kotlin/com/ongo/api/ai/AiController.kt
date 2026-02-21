@@ -34,6 +34,7 @@ class AiController(
     private val weeklyDigestUseCase: WeeklyDigestUseCase,
     private val contentGapAnalysisUseCase: ContentGapAnalysisUseCase,
     private val aiBatchProcessingUseCase: AiBatchProcessingUseCase,
+    private val competitorInsightUseCase: CompetitorInsightUseCase,
 ) {
 
     @Operation(
@@ -376,6 +377,27 @@ class AiController(
             analyzedAt = result.analyzedAt,
         )
         return ResData.success(response)
+    }
+
+    // ─── Competitor Insight endpoint ─────────────────────────────────
+
+    @Operation(
+        summary = "경쟁자 벤치마킹 AI 인사이트 (8크레딧)",
+        description = "내 채널과 경쟁자 데이터를 AI로 분석하여 강점, 약점, 기회, 추천 행동을 제공합니다."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "인사이트 생성 성공"),
+        ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "500", description = "서버 오류")
+    )
+    @RequiresPermission(Permission.AI_USE)
+    @PostMapping("/competitor-insight")
+    fun getCompetitorInsight(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+    ): ResponseEntity<ResData<com.ongo.application.ai.result.CompetitorInsightResult>> {
+        val result = competitorInsightUseCase.execute(userId)
+        return ResData.success(result)
     }
 
     // ─── Batch Processing endpoints ────────────────────────────────

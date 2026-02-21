@@ -97,3 +97,54 @@ export interface ChannelLookupResponse {
   requiresManualInput: boolean
   message?: string
 }
+
+// Trend API types
+export interface CompetitorTrendPoint {
+  date: string
+  subscriberCount: number
+  avgViews: number
+  totalViews: number
+}
+
+export interface CompetitorTrendResponse {
+  competitorId: number
+  channelName: string
+  data: CompetitorTrendPoint[]
+}
+
+// Benchmark API types
+export interface MyChannelStats {
+  subscriberCount: number
+  totalViews: number
+  videoCount: number
+  avgViews: number
+  engagementRate: number
+  growthRate: number
+}
+
+export interface CompetitorBenchmark {
+  id: number
+  channelName: string
+  platform: string
+  subscriberCount: number
+  totalViews: number
+  videoCount: number
+  avgViews: number
+  engagementRate: number
+  growthRate: number
+  profileImageUrl: string | null
+}
+
+export interface BenchmarkResponse {
+  myStats: MyChannelStats
+  competitors: CompetitorBenchmark[]
+}
+
+// AI Insight types
+export interface CompetitorInsightResult {
+  summary: string
+  strengths: string[]
+  weaknesses: string[]
+  opportunities: string[]
+  recommendations: string[]
+}

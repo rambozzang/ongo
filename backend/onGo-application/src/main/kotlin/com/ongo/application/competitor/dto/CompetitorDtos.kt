@@ -62,3 +62,48 @@ data class ChannelLookupResponse(
     val requiresManualInput: Boolean = false,
     val message: String? = null,
 )
+
+data class CompetitorTrendRequest(
+    val competitorIds: List<Long> = emptyList(),
+    val days: Int = 30,
+)
+
+data class CompetitorTrendPoint(
+    val date: String,
+    val subscriberCount: Long,
+    val avgViews: Long,
+    val totalViews: Long,
+)
+
+data class CompetitorTrendResponse(
+    val competitorId: Long,
+    val channelName: String,
+    val data: List<CompetitorTrendPoint>,
+)
+
+data class BenchmarkResponse(
+    val myStats: MyChannelStats,
+    val competitors: List<CompetitorBenchmark>,
+)
+
+data class MyChannelStats(
+    val subscriberCount: Long,
+    val totalViews: Long,
+    val videoCount: Int,
+    val avgViews: Long,
+    val engagementRate: Double,
+    val growthRate: Double,
+)
+
+data class CompetitorBenchmark(
+    val id: Long,
+    val channelName: String,
+    val platform: String,
+    val subscriberCount: Long,
+    val totalViews: Long,
+    val videoCount: Int,
+    val avgViews: Long,
+    val engagementRate: Double,
+    val growthRate: Double,
+    val profileImageUrl: String?,
+)

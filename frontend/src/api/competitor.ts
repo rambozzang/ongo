@@ -5,6 +5,9 @@ import type {
   ChannelLookupResponse,
   CompetitorListResponse,
   CompetitorResponse,
+  CompetitorTrendResponse,
+  BenchmarkResponse,
+  CompetitorInsightResult,
   CreateCompetitorRequest,
   UpdateCompetitorRequest,
 } from '@/types/competitor'
@@ -37,6 +40,24 @@ export const competitorApi = {
   lookup(request: ChannelLookupRequest) {
     return apiClient
       .post<ResData<ChannelLookupResponse>>('/competitors/lookup', request)
+      .then(unwrapResponse)
+  },
+
+  trends(competitorIds: number[] = [], days = 30) {
+    return apiClient
+      .post<ResData<CompetitorTrendResponse[]>>('/competitors/trends', { competitorIds, days })
+      .then(unwrapResponse)
+  },
+
+  benchmark() {
+    return apiClient
+      .get<ResData<BenchmarkResponse>>('/competitors/benchmark')
+      .then(unwrapResponse)
+  },
+
+  insight() {
+    return apiClient
+      .post<ResData<CompetitorInsightResult>>('/ai/competitor-insight')
       .then(unwrapResponse)
   },
 }

@@ -47,6 +47,7 @@ object Tables {
     val USER_SETTINGS = DSL.table("user_settings")
     val REFRESH_TOKENS = DSL.table("refresh_tokens")
     val COMPETITORS = DSL.table("competitors")
+    val COMPETITOR_ANALYTICS_DAILY = DSL.table("competitor_analytics_daily")
     val AB_TESTS = DSL.table("ab_tests")
     val AB_TEST_VARIANTS = DSL.table("ab_test_variants")
     val COMMENTS = DSL.table("comments")
@@ -226,6 +227,11 @@ object Fields {
     val VIDEO_COUNT = DSL.field("video_count", Int::class.java)
     val AVG_VIEWS = DSL.field("avg_views", Long::class.java)
     val LAST_SYNCED_AT = DSL.field("last_synced_at", java.time.LocalDateTime::class.java)
+
+    // competitor_analytics_daily
+    val COMPETITOR_ID = DSL.field("competitor_id", Long::class.java)
+    val AVG_LIKES = DSL.field("avg_likes", Long::class.java)
+    val AVG_COMMENTS = DSL.field("avg_comments", Long::class.java)
 
     // ab_tests
     val TEST_NAME = DSL.field("test_name", String::class.java)

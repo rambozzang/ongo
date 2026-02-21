@@ -14,5 +14,6 @@ enum class AiFeature(
     PERFORMANCE_REPORT("성과 리포트", 8),
     WEEKLY_DIGEST("주간 다이제스트", 8),
     CONTENT_GAP_ANALYSIS("콘텐츠 갭 분석", 10),
+    COMPETITOR_INSIGHT("경쟁자 벤치마킹 인사이트", 8),
     SENTIMENT_ANALYSIS("감정 분석", 0),
 }
