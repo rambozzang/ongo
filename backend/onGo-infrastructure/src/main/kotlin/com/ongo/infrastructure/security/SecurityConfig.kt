@@ -23,9 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val objectMapper: ObjectMapper,
-    private val environment: Environment,
-    @org.springframework.beans.factory.annotation.Value("\${cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
-    private val allowedOrigins: List<String>,
+    private val environment: Environment
 ) {
 
     @Bean
@@ -85,7 +83,7 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOrigins = allowedOrigins
+        configuration.allowedOriginPatterns = listOf("*") // allowedOrigins 대신 패턴 사용 (allowCredentials 지원)
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
         configuration.allowedHeaders = listOf(
             "Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin",
