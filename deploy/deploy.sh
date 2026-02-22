@@ -128,6 +128,11 @@ deploy_backend() {
         fi
     fi
 
+    # .env 파일 내의 잘못된 Base64 암호화 키가 이미 복사되어 있다면 수정
+    if [ -f "$ENV_FILE" ]; then
+        sed -i 's/PLATFORM_TOKEN_ENCRYPTION_KEY=change-me-to-a-secure-secret-key-for-platform-tokens-32-bytes/PLATFORM_TOKEN_ENCRYPTION_KEY=Y2hhbmdlLW1lLXRvLWEtc2VjdXJlLXNlY3JldC1rZXk=/g' "$ENV_FILE"
+    fi
+
     # 서비스 재시작
     info "Backend 재시작..."
     bash "$SRC_DIR/deploy/stop.sh" || true
