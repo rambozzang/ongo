@@ -88,12 +88,12 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
     const dataToExport = filteredLogs.value
 
     const columns: ColumnDefinition<ActivityLog>[] = [
-      { key: 'createdAt', header: '일시', formatter: (val: string) => formatDateForExport(val) },
+      { key: 'createdAt', header: '일시', formatter: (val) => formatDateForExport(val as string) },
       { key: 'userName', header: '사용자' },
-      { key: 'action', header: '활동 유형', formatter: (val: ActivityAction) => ACTION_LABELS[val] ?? val },
+      { key: 'action', header: '활동 유형', formatter: (val) => ACTION_LABELS[val as ActivityAction] ?? String(val) },
       { key: 'entityType', header: '대상 유형' },
-      { key: 'entityName', header: '대상 이름', formatter: (val: string | undefined) => val ?? '-' },
-      { key: 'ipAddress', header: 'IP 주소', formatter: (val: string | undefined) => val ?? '-' },
+      { key: 'entityName', header: '대상 이름', formatter: (val) => (val as string) ?? '-' },
+      { key: 'ipAddress', header: 'IP 주소', formatter: (val) => (val as string) ?? '-' },
     ]
 
     const today = new Date()

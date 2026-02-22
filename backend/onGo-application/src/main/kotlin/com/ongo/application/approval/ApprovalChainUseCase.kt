@@ -121,6 +121,22 @@ class ApprovalChainUseCase(
         return updated.toResponse()
     }
 
+    fun getWorkflowVisualization(userId: Long, approvalId: Long): List<WorkflowStepInfo> {
+        val approval = approvalRepository.findById(approvalId) ?: throw NotFoundException("승인 요청", approvalId)
+        if (approval.userId != userId && approval.reviewerId != userId) {
+            throw ForbiddenException()
+        }
+        return approvalChainRepository.findByApprovalId(approvalId).map { chain ->
+            WorkflowStepInfo(
+                stepOrder = chain.stepOrder,
+                stepName = "단계 ${chain.stepOrder}",
+                reviewerName = chain.approverName,
+                status = chain.status,
+                completedAt = chain.approvedAt?.toString(),
+            )
+        }
+    }
+
     fun getSlaStatus(userId: Long, approvalId: Long): List<ApprovalChainSlaResponse> {
         val approval = approvalRepository.findById(approvalId) ?: throw NotFoundException("승인 요청", approvalId)
         if (approval.userId != userId && approval.reviewerId != userId) {

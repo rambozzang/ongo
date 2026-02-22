@@ -1,6 +1,8 @@
 package com.ongo.api.comment
 
 import com.ongo.api.config.CurrentUser
+import com.ongo.application.ai.FaqClusteringUseCase
+import com.ongo.application.ai.GenerateReplyUseCase
 import com.ongo.application.comment.CommentEngagementUseCase
 import com.ongo.application.comment.CommentSyncUseCase
 import com.ongo.application.comment.CommentUseCase
@@ -25,6 +27,8 @@ class CommentController(
     private val commentUseCase: CommentUseCase,
     private val commentSyncUseCase: CommentSyncUseCase,
     private val commentEngagementUseCase: CommentEngagementUseCase,
+    private val faqClusteringUseCase: FaqClusteringUseCase,
+    private val generateReplyUseCase: GenerateReplyUseCase,
 ) {
 
     @Operation(summary = "댓글 목록 조회", description = "사용자의 댓글을 복합 필터링하여 조회합니다.")
@@ -143,5 +147,43 @@ class CommentController(
     ): ResponseEntity<ResData<Map<String, CommentCapabilitiesDto>>> {
         val result = commentEngagementUseCase.getCapabilitiesMap(userId)
         return ResData.success(result)
+    }
+
+    @Operation(summary = "감정 트렌드 조회", description = "기간별 댓글 감정 변화 추이를 조회합니다.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "감정 트렌드 조회 성공"),
+    )
+    @GetMapping("/sentiment-trend")
+    fun getSentimentTrend(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<SentimentTrendResponse>> {
+        val result = commentUseCase.getSentimentTrend(userId, days)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "FAQ 자동 분류", description = "AI를 활용하여 댓글에서 자주 묻는 질문을 자동으로 분류합니다.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "FAQ 분류 성공"),
+    )
+    @GetMapping("/faq")
+    fun getFaqClusters(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<FaqClusterResponse>> {
+        val result = faqClusteringUseCase.execute(userId)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "배치 AI 답변 초안", description = "여러 댓글에 대해 AI 답변 초안을 일괄 생성합니다.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "배치 AI 답변 초안 생성 성공"),
+    )
+    @PostMapping("/ai-draft")
+    fun batchAiDraft(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @Valid @RequestBody request: BatchAiDraftRequest,
+    ): ResponseEntity<ResData<BatchAiDraftResponse>> {
+        val result = generateReplyUseCase.executeBatch(userId, request.commentIds, request.tone)
+        return ResData.success(result, "AI 답변 초안이 생성되었습니다")
     }
 }

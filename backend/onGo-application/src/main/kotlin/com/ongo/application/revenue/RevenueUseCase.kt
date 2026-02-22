@@ -69,6 +69,60 @@ class RevenueUseCase(
         return RevenueTrendResponse(data = points)
     }
 
+    fun getCpmRpm(userId: Long, days: Int): CpmRpmResponse {
+        userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+
+        val now = LocalDate.now()
+        val from = now.minusDays(days.toLong())
+        val rawData = revenueRepository.getCpmRpmByPlatform(userId, from, now)
+
+        val items = rawData.map { raw ->
+            // CPM = (수익 / 노출수) * 1000, RPM = (수익 / 조회수) * 1000
+            // 수익은 micro 단위이므로 실제 금액으로 변환 (÷ 1,000,000)
+            val revenueActual = raw.revenueMicro.toDouble() / 1_000_000
+            val cpm = if (raw.impressions > 0) (revenueActual / raw.impressions) * 1000 else 0.0
+            val rpm = if (raw.views > 0) (revenueActual / raw.views) * 1000 else 0.0
+
+            CpmRpmItem(
+                platform = raw.platform,
+                cpm = Math.round(cpm * 100) / 100.0,
+                rpm = Math.round(rpm * 100) / 100.0,
+                impressions = raw.impressions,
+                views = raw.views,
+                revenueMicro = raw.revenueMicro,
+            )
+        }
+
+        return CpmRpmResponse(platforms = items)
+    }
+
+    fun getBrandDealRevenue(userId: Long, days: Int): BrandDealRevenueResponse {
+        userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+
+        val now = LocalDate.now()
+        val from = now.minusDays(days.toLong())
+        val rawData = revenueRepository.getBrandDealRevenue(userId, from, now)
+
+        val items = rawData.map { raw ->
+            BrandDealRevenueItem(
+                id = raw.id,
+                brandName = raw.brandName,
+                dealValue = raw.dealValue,
+                dealValueKrw = raw.dealValue / 1_000_000,
+                status = raw.status,
+                platform = raw.platform,
+            )
+        }
+
+        val totalRevenue = items.sumOf { it.dealValue }
+
+        return BrandDealRevenueResponse(
+            deals = items,
+            totalRevenue = totalRevenue,
+            totalRevenueKrw = totalRevenue / 1_000_000,
+        )
+    }
+
     fun getPlatformRevenue(userId: Long, days: Int): PlatformRevenueResponse {
         userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
 

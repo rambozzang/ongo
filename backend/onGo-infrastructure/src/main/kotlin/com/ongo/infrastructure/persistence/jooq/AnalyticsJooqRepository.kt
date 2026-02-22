@@ -5,6 +5,7 @@ import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.analytics.AnalyticsDaily
 import com.ongo.domain.analytics.AnalyticsRepository
 import com.ongo.domain.analytics.ChannelInsightsDaily
+import com.ongo.domain.analytics.CrossPlatformRaw
 import com.ongo.domain.analytics.DashboardKpi
 import com.ongo.domain.analytics.TrendData
 import com.ongo.domain.video.Video
@@ -493,6 +494,56 @@ class AnalyticsJooqRepository(
             .orderBy(DATE.asc())
             .fetch()
             .map { it.toChannelInsights() }
+    }
+
+    override fun findCrossPlatformMetrics(userId: Long, days: Int): List<CrossPlatformRaw> {
+        val from = LocalDate.now().minusDays(days.toLong())
+
+        val videoIdField = DSL.field("v.id", Long::class.java)
+        val videoTitleField = DSL.field("v.title", String::class.java)
+        val platformField = DSL.field("vu.platform", String::class.java)
+        val vuIdField = DSL.field("vu.id", Long::class.java)
+
+        return dsl.select(
+            videoIdField,
+            videoTitleField,
+            platformField,
+            vuIdField,
+            DSL.sum(DSL.field("ad.views", Int::class.java)).`as`("total_views"),
+            DSL.sum(DSL.field("ad.likes", Int::class.java)).`as`("total_likes"),
+            DSL.sum(DSL.field("ad.comments_count", Int::class.java)).`as`("total_comments"),
+            DSL.sum(DSL.field("ad.shares", Int::class.java)).`as`("total_shares"),
+            DSL.sum(DSL.field("ad.watch_time_seconds", Long::class.java)).`as`("total_watch_time"),
+            DSL.sum(DSL.field("ad.revenue_micro", Long::class.java)).`as`("total_revenue"),
+            DSL.sum(DSL.field("ad.impressions", Int::class.java)).`as`("total_impressions"),
+            DSL.avg(DSL.field("ad.avg_view_duration_seconds", Int::class.java)).`as`("avg_duration"),
+        )
+            .from(DSL.table("videos").`as`("v"))
+            .join(DSL.table("video_uploads").`as`("vu"))
+            .on(DSL.field("vu.video_id", Long::class.java).eq(videoIdField))
+            .join(DSL.table("analytics_daily").`as`("ad"))
+            .on(DSL.field("ad.video_upload_id", Long::class.java).eq(vuIdField))
+            .where(DSL.field("v.user_id", Long::class.java).eq(userId))
+            .and(DSL.field("ad.date", LocalDate::class.java).greaterOrEqual(from))
+            .groupBy(videoIdField, videoTitleField, platformField, vuIdField)
+            .orderBy(videoIdField.asc(), platformField.asc())
+            .fetch()
+            .map { record ->
+                CrossPlatformRaw(
+                    videoId = record.get("id", Long::class.java),
+                    videoTitle = record.get("title", String::class.java),
+                    platform = record.get(platformField) ?: "UNKNOWN",
+                    videoUploadId = record.get(vuIdField),
+                    views = record.get("total_views", Long::class.java) ?: 0L,
+                    likes = record.get("total_likes", Long::class.java) ?: 0L,
+                    comments = record.get("total_comments", Long::class.java) ?: 0L,
+                    shares = record.get("total_shares", Long::class.java) ?: 0L,
+                    watchTimeSeconds = record.get("total_watch_time", Long::class.java) ?: 0L,
+                    revenueMicro = record.get("total_revenue", Long::class.java) ?: 0L,
+                    impressions = record.get("total_impressions", Long::class.java) ?: 0L,
+                    avgViewDurationSeconds = record.get("avg_duration", Long::class.java) ?: 0L,
+                )
+            }
     }
 
     private fun Record.toChannelInsights(): ChannelInsightsDaily {

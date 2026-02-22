@@ -2,7 +2,7 @@
   <div>
     <!-- Header -->
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">예약 관리</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('scheduleView.title') }}</h1>
 
       <div class="flex items-center gap-3">
         <!-- Sort dropdown (only in list view) -->
@@ -11,10 +11,10 @@
           v-model="sortMode"
           class="input py-1.5 text-sm"
         >
-          <option value="date">날짜순</option>
-          <option value="platform">플랫폼순</option>
-          <option value="status">상태순</option>
-          <option value="manual">수동 정렬</option>
+          <option value="date">{{ $t('scheduleView.sort.date') }}</option>
+          <option value="platform">{{ $t('scheduleView.sort.platform') }}</option>
+          <option value="status">{{ $t('scheduleView.sort.status') }}</option>
+          <option value="manual">{{ $t('scheduleView.sort.manual') }}</option>
         </select>
 
         <!-- Filter toggle -->
@@ -23,7 +23,7 @@
           @click="showFilters = !showFilters"
         >
           <FunnelIcon class="h-4 w-4" />
-          <span class="hidden tablet:inline">필터</span>
+          <span class="hidden tablet:inline">{{ $t('scheduleView.filter') }}</span>
           <span
             v-if="activeFilterCount > 0"
             class="flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-xs text-white"
@@ -51,12 +51,7 @@
       </div>
     </div>
 
-    <PageGuide title="예약 관리" :items="[
-      '리스트·캘린더·주간 뷰를 전환하여 예약된 콘텐츠를 원하는 방식으로 확인하세요',
-      '필터 버튼으로 특정 플랫폼·날짜 범위·상태(대기/완료/실패)별 예약만 모아볼 수 있습니다',
-      '정렬 옵션(날짜/플랫폼/상태/수동)으로 예약 목록 순서를 변경하고, 수동 정렬 시 드래그로 순서를 조정하세요',
-      '예약 항목을 클릭하면 상세 정보를 확인하고 시간 변경·취소가 가능합니다',
-    ]" />
+    <PageGuide :title="$t('scheduleView.title')" :items="($tm('scheduleView.pageGuide') as string[])" />
 
     <!-- Filters panel -->
     <Transition
@@ -71,7 +66,7 @@
         <div class="flex flex-wrap items-center gap-4">
           <!-- Platform filter -->
           <div>
-            <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">플랫폼</label>
+            <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('scheduleView.filterPlatform') }}</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="p in platformOptions"
@@ -92,7 +87,7 @@
 
           <!-- Status filter -->
           <div>
-            <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">상태</label>
+            <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('scheduleView.filterStatus') }}</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="s in statusOptions"
@@ -114,7 +109,7 @@
             class="ml-auto text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             @click="clearFilters"
           >
-            필터 초기화
+            {{ $t('scheduleView.filterReset') }}
           </button>
         </div>
       </div>
@@ -126,12 +121,12 @@
     <!-- Empty State (when no schedules at all) -->
     <EmptyState
       v-else-if="schedules.length === 0"
-      title="예약된 영상이 없어요"
-      description="영상 업로드 시 예약 게시를 설정하면 이곳에서 한눈에 관리할 수 있어요."
+      :title="$t('scheduleView.noSchedules')"
+      :description="$t('scheduleView.noSchedulesDescription')"
       :icon="CalendarDaysIcon"
-      action-label="영상 업로드하기"
+      :action-label="$t('scheduleView.uploadVideo')"
       action-to="/upload"
-      secondary-action-label="내 영상 목록 보기"
+      :secondary-action-label="$t('scheduleView.viewMyVideos')"
       secondary-action-to="/videos"
     />
 
@@ -152,7 +147,7 @@
             class="rounded-md bg-gray-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
             @click="goToToday"
           >
-            오늘
+            {{ $t('scheduleView.today') }}
           </button>
         </div>
 
@@ -242,7 +237,7 @@
                 <ArrowPathIcon
                   v-if="schedule.recurrence && schedule.recurrence.type !== 'NONE'"
                   class="h-3 w-3 shrink-0 text-primary-500 dark:text-primary-400"
-                  title="반복 예약"
+                  :title="$t('scheduleView.repeatingSchedule')"
                 />
 
                 <!-- Title -->
@@ -317,7 +312,7 @@
                 <ArrowPathIcon
                   v-if="schedule.recurrence && schedule.recurrence.type !== 'NONE'"
                   class="h-3 w-3 shrink-0 text-primary-500 dark:text-primary-400"
-                  title="반복 예약"
+                  :title="$t('scheduleView.repeatingSchedule')"
                 />
                 <span class="truncate font-medium text-gray-800 dark:text-gray-200">
                   {{ schedule.videoTitle }}
@@ -336,7 +331,7 @@
         <!-- Empty state -->
         <div v-if="filteredSchedules.length === 0" class="px-6 py-12 text-center">
           <CalendarIcon class="mx-auto mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
-          <p class="text-sm text-gray-500 dark:text-gray-400">예약된 일정이 없습니다.</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('scheduleView.noFiltered') }}</p>
         </div>
 
         <table v-else class="w-full min-w-[640px]">
@@ -344,19 +339,19 @@
             <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
               <th v-if="sortMode === 'manual'" class="w-8" />
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                일시
+                {{ $t('scheduleView.table.datetime') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                영상
+                {{ $t('scheduleView.table.video') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                플랫폼
+                {{ $t('scheduleView.table.platform') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                상태
+                {{ $t('scheduleView.table.status') }}
               </th>
               <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                작업
+                {{ $t('scheduleView.table.actions') }}
               </th>
             </tr>
           </thead>
@@ -432,7 +427,7 @@
                     <button
                       v-if="schedule.status === 'SCHEDULED'"
                       class="rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
-                      title="수정"
+                      :title="$t('scheduleView.edit')"
                       @click="openScheduleDetail(schedule)"
                     >
                       <PencilSquareIcon class="h-4 w-4" />
@@ -440,7 +435,7 @@
                     <button
                       v-if="schedule.status === 'SCHEDULED'"
                       class="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
-                      title="취소"
+                      :title="$t('action.cancel')"
                       @click="confirmCancel(schedule)"
                     >
                       <XMarkIcon class="h-4 w-4" />
@@ -456,27 +451,27 @@
 
     <!-- Quick add modal -->
     <Teleport to="body">
-      <div v-if="showQuickAdd" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div v-if="showQuickAdd" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" :aria-label="$t('scheduleView.quickAdd.title')">
         <div class="fixed inset-0 bg-black/50" @click="showQuickAdd = false" />
         <div class="relative w-full max-w-md rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl">
-          <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">예약 추가</h3>
+          <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('scheduleView.quickAdd.title') }}</h3>
 
           <div class="space-y-4">
             <!-- Video ID -->
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">영상 ID</label>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('scheduleView.quickAdd.videoId') }}</label>
               <input
                 v-model.number="quickAddForm.videoId"
                 type="number"
                 class="input w-full"
-                placeholder="영상 ID를 입력하세요"
+                :placeholder="$t('scheduleView.quickAdd.videoIdPlaceholder')"
               />
             </div>
 
             <!-- Scheduled date/time -->
             <div>
               <div class="mb-1 flex items-center justify-between">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">예약 일시</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('scheduleView.quickAdd.scheduledAt') }}</label>
                 <button
                   v-if="recommendedSlot"
                   class="flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400 transition-colors hover:bg-green-200 dark:hover:bg-green-900/50"
@@ -497,7 +492,7 @@
 
             <!-- Platforms -->
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">플랫폼 선택</label>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('scheduleView.quickAdd.selectPlatform') }}</label>
               <div class="flex flex-wrap gap-2">
                 <label
                   v-for="p in allPlatforms"
@@ -537,13 +532,13 @@
           </div>
 
           <div class="mt-6 flex justify-end gap-3">
-            <button class="btn-secondary" @click="showQuickAdd = false">취소</button>
+            <button class="btn-secondary" @click="showQuickAdd = false">{{ $t('scheduleView.quickAdd.cancel') }}</button>
             <button
               class="btn-primary"
               :disabled="!isQuickAddValid"
               @click="submitQuickAdd"
             >
-              예약 추가
+              {{ $t('scheduleView.quickAdd.submit') }}
             </button>
           </div>
         </div>
@@ -552,11 +547,11 @@
 
     <!-- Schedule detail modal -->
     <Teleport to="body">
-      <div v-if="selectedSchedule" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div v-if="selectedSchedule" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" :aria-label="$t('scheduleView.detail.title')">
         <div class="fixed inset-0 bg-black/50" @click="selectedSchedule = null" />
         <div class="relative w-full max-w-lg rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl">
           <div class="mb-4 flex items-start justify-between">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">예약 상세</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('scheduleView.detail.title') }}</h3>
             <button
               class="rounded-lg p-1 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
               @click="selectedSchedule = null"
@@ -592,21 +587,21 @@
             <div class="rounded-lg bg-gray-50 dark:bg-gray-900 p-4">
               <div class="grid gap-3 text-sm">
                 <div class="flex justify-between">
-                  <span class="text-gray-500 dark:text-gray-400">예약 일시</span>
+                  <span class="text-gray-500 dark:text-gray-400">{{ $t('scheduleView.detail.scheduledAt') }}</span>
                   <span class="font-medium text-gray-900 dark:text-gray-100">
                     {{ formatDate(selectedSchedule.scheduledAt) }}
                     {{ formatTime(selectedSchedule.scheduledAt) }}
                   </span>
                 </div>
                 <div v-if="selectedSchedule.recurrence && selectedSchedule.recurrence.type !== 'NONE'" class="flex justify-between">
-                  <span class="text-gray-500 dark:text-gray-400">반복</span>
+                  <span class="text-gray-500 dark:text-gray-400">{{ $t('scheduleView.detail.recurrence') }}</span>
                   <span class="flex items-center gap-1 font-medium text-gray-900 dark:text-gray-100">
                     <ArrowPathIcon class="h-3.5 w-3.5 text-primary-500" />
                     {{ formatRecurrence(selectedSchedule.recurrence) }}
                   </span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-500 dark:text-gray-400">생성일</span>
+                  <span class="text-gray-500 dark:text-gray-400">{{ $t('scheduleView.detail.createdAt') }}</span>
                   <span class="text-gray-700 dark:text-gray-300">{{ formatDate(selectedSchedule.createdAt) }}</span>
                 </div>
               </div>
@@ -614,7 +609,7 @@
 
             <!-- Per-platform status -->
             <div>
-              <h4 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">플랫폼별 상태</h4>
+              <h4 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('scheduleView.detail.platformStatus') }}</h4>
               <div class="space-y-2">
                 <div
                   v-for="sp in selectedSchedule.platforms"
@@ -647,7 +642,7 @@
             class="mt-6 flex justify-end gap-3"
           >
             <button class="btn-danger" @click="confirmCancel(selectedSchedule)">
-              예약 취소
+              {{ $t('scheduleView.detail.cancel') }}
             </button>
           </div>
         </div>
@@ -657,9 +652,9 @@
     <!-- Cancel confirm modal -->
     <ConfirmModal
       v-model="showCancelModal"
-      title="예약 취소"
-      message="이 예약을 취소하시겠습니까? 취소된 예약은 복원할 수 없습니다."
-      confirm-text="취소하기"
+      :title="$t('scheduleView.cancelModal.title')"
+      :message="$t('scheduleView.cancelModal.message')"
+      :confirm-text="$t('scheduleView.cancelModal.confirm')"
       danger
       @confirm="handleCancel"
     />
@@ -668,6 +663,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import {
   ChevronLeftIcon,
@@ -692,7 +688,7 @@ import { useScheduleStore } from '@/stores/schedule'
 import { useNotification } from '@/composables/useNotification'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import { analyticsApi } from '@/api/analytics'
-import type { Schedule, ScheduleStatus, CalendarView, RecurrenceConfig } from '@/types/schedule'
+import type { Schedule, ScheduleCreateRequest, ScheduleStatus, CalendarView, RecurrenceConfig } from '@/types/schedule'
 import type { Platform } from '@/types/channel'
 import type { OptimalTimeSlot } from '@/types/analytics'
 import type { TimeRecommendation } from '@/components/schedule/OptimalTimeRecommendation.vue'
@@ -703,14 +699,16 @@ const scheduleStore = useScheduleStore()
 const { schedules, loading, calendarView } = storeToRefs(scheduleStore)
 const { fetchSchedules, createSchedule, cancelSchedule, setCalendarView } = scheduleStore
 
+const { t } = useI18n()
+
 // ─── Notification ────────────────────────────────────────
 const { success } = useNotification()
 
 // ─── View options ────────────────────────────────────────
 const viewOptions: { value: CalendarView; label: string }[] = [
-  { value: 'month', label: '월간' },
-  { value: 'week', label: '주간' },
-  { value: 'list', label: '리스트' },
+  { value: 'month', label: t('scheduleView.view.month') },
+  { value: 'week', label: t('scheduleView.view.week') },
+  { value: 'list', label: t('scheduleView.view.list') },
 ]
 
 const dayLabels = ['일', '월', '화', '수', '목', '금', '토']
@@ -738,10 +736,10 @@ const platformOptions = [
 ]
 
 const statusOptions = [
-  { value: 'SCHEDULED' as ScheduleStatus, label: '예약됨', activeClass: 'badge-blue' },
-  { value: 'PUBLISHED' as ScheduleStatus, label: '게시완료', activeClass: 'badge-success' },
-  { value: 'FAILED' as ScheduleStatus, label: '실패', activeClass: 'badge-danger' },
-  { value: 'CANCELLED' as ScheduleStatus, label: '취소됨', activeClass: 'badge-gray' },
+  { value: 'SCHEDULED' as ScheduleStatus, label: t('scheduleView.status.scheduled'), activeClass: 'badge-blue' },
+  { value: 'PUBLISHED' as ScheduleStatus, label: t('scheduleView.status.published'), activeClass: 'badge-success' },
+  { value: 'FAILED' as ScheduleStatus, label: t('scheduleView.status.failed'), activeClass: 'badge-danger' },
+  { value: 'CANCELLED' as ScheduleStatus, label: t('scheduleView.status.cancelled'), activeClass: 'badge-gray' },
 ]
 
 const activeFilterCount = computed(() => {
@@ -1077,7 +1075,7 @@ async function submitQuickAdd() {
   if (!isQuickAddValid.value || quickAddForm.value.videoId == null) return
 
   try {
-    const request: any = {
+    const request: ScheduleCreateRequest = {
       videoId: quickAddForm.value.videoId,
       scheduledAt: new Date(quickAddForm.value.scheduledAt).toISOString(),
       platforms: quickAddForm.value.platforms.map((p) => ({ platform: p })),
@@ -1187,10 +1185,10 @@ function formatRecurrence(recurrence: RecurrenceConfig): string {
 
 function getStatusLabel(status: ScheduleStatus): string {
   const map: Record<ScheduleStatus, string> = {
-    SCHEDULED: '예약됨',
-    PUBLISHED: '게시완료',
-    FAILED: '실패',
-    CANCELLED: '취소됨',
+    SCHEDULED: t('scheduleView.status.scheduled'),
+    PUBLISHED: t('scheduleView.status.published'),
+    FAILED: t('scheduleView.status.failed'),
+    CANCELLED: t('scheduleView.status.cancelled'),
   }
   return map[status]
 }

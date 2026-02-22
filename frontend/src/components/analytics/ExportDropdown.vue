@@ -58,8 +58,8 @@ import { ArrowDownTrayIcon, DocumentTextIcon, CodeBracketIcon } from '@heroicons
 import { exportToCSV, exportToJSON, type ColumnDefinition } from '@/utils/export'
 
 interface Props {
-  data: any[]
-  columns: ColumnDefinition<any>[]
+  data: Record<string, unknown>[]
+  columns: ColumnDefinition<Record<string, unknown>>[]
   filenamePrefix: string
 }
 

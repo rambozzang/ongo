@@ -74,3 +74,49 @@ export interface CommentListResponse {
   stats: CommentStats
   capabilities: Record<string, CommentCapabilities>
 }
+
+// 감정 트렌드
+export interface SentimentTrendPoint {
+  date: string
+  positive: number
+  neutral: number
+  negative: number
+}
+
+export interface SentimentSummary {
+  totalPositive: number
+  totalNeutral: number
+  totalNegative: number
+  trend: 'IMPROVING' | 'STABLE' | 'WORSENING'
+}
+
+export interface SentimentTrendResponse {
+  data: SentimentTrendPoint[]
+  summary: SentimentSummary
+}
+
+// FAQ 클러스터링
+export interface FaqCluster {
+  topic: string
+  questionCount: number
+  sampleQuestions: string[]
+  suggestedReply: string
+}
+
+export interface FaqClusterResponse {
+  clusters: FaqCluster[]
+  generatedAt: string
+}
+
+// 배치 AI 답변 초안
+export interface AiDraftItem {
+  commentId: number
+  commentContent: string
+  draftReply: string
+  tone: string
+}
+
+export interface BatchAiDraftResponse {
+  drafts: AiDraftItem[]
+  totalCreditsUsed: number
+}

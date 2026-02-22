@@ -1,0 +1,57 @@
+// onGo - Frontend Jenkins Pipeline
+// Git push시 자동으로 프론트엔드 빌드 + 배포
+
+pipeline {
+    agent any
+
+    environment {
+        NODE_VERSION = '20'
+    }
+
+    options {
+        timeout(time: 15, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Build Frontend') {
+            steps {
+                dir('frontend') {
+                    sh 'npm ci'
+                    sh 'VITE_API_URL=/api npm run build'
+                }
+            }
+        }
+
+        stage('Deploy Frontend') {
+            steps {
+                script {
+                    echo 'Syncing frontend workspace to production source directory...'
+                    sh 'mkdir -p /data/data/ongo/src/frontend /data/data/ongo/src/deploy'
+
+                    // frontend, deploy 폴더만 동기화하여 백엔드 결과물 보존
+                    sh 'rsync -av --delete --exclude=".git" frontend/ /data/data/ongo/src/frontend/'
+                    sh 'rsync -av --delete --exclude=".git" deploy/ /data/data/ongo/src/deploy/'
+
+                    echo 'Executing deployment script for frontend...'
+                    sh 'JENKINS_NODE_COOKIE=dontKillMe bash /data/data/ongo/src/deploy/deploy.sh frontend --skip-git --skip-build'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+
+        success {
+            echo 'Frontend build and deploy completed successfully!'
+        }
+
+        failure {
+            echo 'Frontend build or deploy failed!'
+        }
+    }
+}

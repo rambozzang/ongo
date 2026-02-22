@@ -245,3 +245,57 @@ export interface OversaturatedTopic {
   saturationLevel: 'HIGH' | 'MEDIUM' | 'LOW'
   recommendation: string
 }
+
+// Strategy Coach types
+export interface StrategyCoachRequest {
+  includeCompetitors: boolean
+  focusArea?: string
+}
+
+export interface StrategyCoachResponse {
+  contentRecommendations: ContentRecommendation[]
+  platformStrategy: PlatformStrategyItem[]
+  timingAdvice: TimingAdvice[]
+  overallStrategy: string
+}
+
+export interface ContentRecommendation {
+  topic: string
+  targetPlatform: string
+  reason: string
+  priority: 'HIGH' | 'MEDIUM' | 'LOW'
+  expectedImpact: string
+}
+
+export interface PlatformStrategyItem {
+  platform: string
+  strength: string
+  opportunity: string
+  action: string
+}
+
+export interface TimingAdvice {
+  recommendation: string
+  reason: string
+  expectedBoost: string
+}
+
+// Revenue Report types
+export interface RevenueReportRequest {
+  days: number
+}
+
+export interface RevenueReportResponse {
+  reportMarkdown: string
+  highlights: string[]
+  improvements: string[]
+  optimizationTips: string[]
+  platformBreakdown: PlatformRevenueBreakdown[]
+}
+
+export interface PlatformRevenueBreakdown {
+  platform: string
+  contribution: string
+  trend: string
+  suggestion: string
+}

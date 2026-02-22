@@ -35,6 +35,8 @@ class AiController(
     private val contentGapAnalysisUseCase: ContentGapAnalysisUseCase,
     private val aiBatchProcessingUseCase: AiBatchProcessingUseCase,
     private val competitorInsightUseCase: CompetitorInsightUseCase,
+    private val strategyCoachUseCase: StrategyCoachUseCase,
+    private val generateRevenueReportUseCase: GenerateRevenueReportUseCase,
 ) {
 
     @Operation(
@@ -398,6 +400,95 @@ class AiController(
     ): ResponseEntity<ResData<com.ongo.application.ai.result.CompetitorInsightResult>> {
         val result = competitorInsightUseCase.execute(userId)
         return ResData.success(result)
+    }
+
+    // ─── Strategy Coach endpoint ──────────────────────────────────
+
+    @Operation(
+        summary = "AI 전략 코치 (10크레딧)",
+        description = "채널 성과, 영상 이력, 경쟁자 데이터를 종합 분석하여 맞춤형 콘텐츠 전략과 성장 방향을 제안합니다."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "전략 분석 성공"),
+        ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "500", description = "서버 오류")
+    )
+    @RequiresPermission(Permission.AI_USE)
+    @PostMapping("/strategy-coach")
+    fun strategyCoach(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Valid @RequestBody request: StrategyCoachRequest,
+    ): ResponseEntity<ResData<StrategyCoachResponse>> {
+        val result = strategyCoachUseCase.execute(
+            userId = userId,
+            includeCompetitors = request.includeCompetitors,
+            focusArea = request.focusArea,
+        )
+        val response = StrategyCoachResponse(
+            contentRecommendations = result.contentRecommendations.map {
+                StrategyCoachResponse.ContentRecommendation(
+                    topic = it.topic,
+                    targetPlatform = it.targetPlatform,
+                    reason = it.reason,
+                    priority = it.priority,
+                    expectedImpact = it.expectedImpact,
+                )
+            },
+            platformStrategy = result.platformStrategy.map {
+                StrategyCoachResponse.PlatformStrategyItem(
+                    platform = it.platform,
+                    strength = it.strength,
+                    opportunity = it.opportunity,
+                    action = it.action,
+                )
+            },
+            timingAdvice = result.timingAdvice.map {
+                StrategyCoachResponse.TimingAdvice(
+                    recommendation = it.recommendation,
+                    reason = it.reason,
+                    expectedBoost = it.expectedBoost,
+                )
+            },
+            overallStrategy = result.overallStrategy,
+        )
+        return ResData.success(response)
+    }
+
+    // ─── Revenue Report endpoint ──────────────────────────────────
+
+    @Operation(
+        summary = "AI 수익 분석 리포트 (8크레딧)",
+        description = "수익 데이터를 분석하여 수익 트렌드, 플랫폼별 수익 비교, 수익 최적화 전략이 포함된 리포트를 생성합니다."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "수익 리포트 생성 성공"),
+        ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "500", description = "서버 오류")
+    )
+    @RequiresPermission(Permission.AI_USE)
+    @PostMapping("/revenue-report")
+    fun revenueReport(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Valid @RequestBody request: RevenueReportRequest,
+    ): ResponseEntity<ResData<RevenueReportResponse>> {
+        val result = generateRevenueReportUseCase.execute(userId = userId, days = request.days)
+        val response = RevenueReportResponse(
+            reportMarkdown = result.reportMarkdown,
+            highlights = result.highlights,
+            improvements = result.improvements,
+            optimizationTips = result.optimizationTips,
+            platformBreakdown = result.platformBreakdown.map {
+                RevenueReportResponse.PlatformRevenueBreakdown(
+                    platform = it.platform,
+                    contribution = it.contribution,
+                    trend = it.trend,
+                    suggestion = it.suggestion,
+                )
+            },
+        )
+        return ResData.success(response)
     }
 
     // ─── Batch Processing endpoints ────────────────────────────────

@@ -79,6 +79,32 @@ class ApprovalController(
         return ResData.success(result, "코멘트가 추가되었습니다")
     }
 
+    // ─── Workflow Board endpoints ──────────────────────────────────
+
+    @Operation(summary = "워크플로우 보드 조회", description = "칸반 보드 형태로 승인 요청을 상태별로 그룹화하여 조회합니다")
+    @GetMapping("/workflow-board")
+    fun getWorkflowBoard(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<WorkflowBoardResponse>> {
+        return ResData.success(approvalUseCase.getWorkflowBoard(userId))
+    }
+
+    @Operation(summary = "내 작업 조회", description = "나에게 할당된 작업과 내가 요청한 작업을 조회합니다")
+    @GetMapping("/my-tasks")
+    fun getMyTasks(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<MyTasksResponse>> {
+        return ResData.success(approvalUseCase.getMyTasks(userId))
+    }
+
+    @Operation(summary = "대기 중인 검토 조회", description = "나에게 할당된 대기 중인 검토 요청을 조회합니다")
+    @GetMapping("/pending-reviews")
+    fun getPendingReviews(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<PendingReviewsResponse>> {
+        return ResData.success(approvalUseCase.getPendingReviews(userId))
+    }
+
     // ─── Approval Chain endpoints ─────────────────────────────────
 
     @Operation(summary = "승인 체인 조회", description = "멀티스텝 승인 체인의 단계 목록을 조회합니다")

@@ -48,7 +48,10 @@
             v-for="user in users"
             :key="user.id"
             class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            role="button"
+            tabindex="0"
             @click="openUserDetail(user)"
+            @keydown.enter="openUserDetail(user)"
           >
             <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
               {{ user.name }}
@@ -116,7 +119,7 @@
     <!-- User Detail Drawer -->
     <Teleport to="body">
       <Transition name="drawer">
-        <div v-if="showDetailDrawer" class="fixed inset-0 z-50 flex justify-end" @click.self="closeDetailDrawer">
+        <div v-if="showDetailDrawer" class="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" :aria-label="t('admin.userDetail')" @click.self="closeDetailDrawer">
           <div class="fixed inset-0 bg-black/40" @click="closeDetailDrawer" />
           <div class="relative z-10 flex h-full w-full max-w-2xl flex-col overflow-y-auto bg-white shadow-xl dark:bg-gray-800">
             <!-- Drawer Header -->
@@ -381,7 +384,7 @@
 
     <!-- Storage Quota Modal -->
     <Teleport to="body">
-      <div v-if="showQuotaModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" @click.self="closeQuotaModal">
+      <div v-if="showQuotaModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" :aria-label="t('admin.quotaModalTitle')" @click.self="closeQuotaModal">
         <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('admin.quotaModalTitle') }}</h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -442,7 +445,7 @@
 
     <!-- Confirm Dialog -->
     <Teleport to="body">
-      <div v-if="showConfirm" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50" @click.self="cancelConfirm">
+      <div v-if="showConfirm" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" :aria-label="confirmTitle" @click.self="cancelConfirm">
         <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ confirmTitle }}</h3>
           <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ confirmMessage }}</p>
@@ -469,7 +472,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { useLocale } from '@/composables/useLocale'
@@ -847,6 +850,10 @@ function subStatusClass(status: string): string {
 
 onMounted(() => {
   fetchUsers()
+})
+
+onUnmounted(() => {
+  if (searchTimeout) clearTimeout(searchTimeout)
 })
 </script>
 

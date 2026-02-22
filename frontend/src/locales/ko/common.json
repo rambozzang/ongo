@@ -320,6 +320,691 @@
       "sttNote": "* 음성 인식(STT)은 항상 OpenAI Whisper를 사용합니다."
     }
   },
+  "brandDeal": {
+    "title": "브랜드 딜 관리",
+    "tabs": {
+      "tracker": "딜 트래커",
+      "mediakit": "미디어키트"
+    },
+    "status": {
+      "all": "전체",
+      "inquiry": "문의",
+      "negotiation": "협상 중",
+      "contracted": "계약 완료",
+      "inProgress": "진행 중",
+      "completed": "완료",
+      "cancelled": "취소"
+    },
+    "addDeal": "새 딜 추가",
+    "loading": "로딩 중...",
+    "emptyDeals": "등록된 브랜드 딜이 없습니다.",
+    "contactPerson": "담당자:",
+    "deadline": "마감일:",
+    "delete": "삭제",
+    "confirmDelete": "이 딜을 삭제하시겠습니까?",
+    "createFailed": "딜 생성 실패:",
+    "deleteFailed": "딜 삭제 실패:",
+    "modal": {
+      "title": "새 브랜드 딜 추가",
+      "brandName": "브랜드명 *",
+      "brandNamePlaceholder": "브랜드 이름",
+      "contactPerson": "담당자",
+      "contactNamePlaceholder": "담당자 이름",
+      "email": "이메일",
+      "dealValue": "딜 금액 (원)",
+      "deadline": "마감일",
+      "notes": "메모",
+      "notesPlaceholder": "추가 메모",
+      "cancel": "취소",
+      "add": "추가"
+    },
+    "mediaKit": {
+      "displayName": "표시 이름",
+      "displayNamePlaceholder": "크리에이터 이름",
+      "bio": "소개 (Bio)",
+      "bioPlaceholder": "간단한 자기소개를 입력하세요",
+      "categories": "카테고리 (쉼표 구분)",
+      "categoriesPlaceholder": "뷰티, 패션, 라이프스타일",
+      "socialLinks": "소셜 링크",
+      "slug": "공개 슬러그",
+      "slugPlaceholder": "my-media-kit",
+      "isPublic": "미디어키트 공개",
+      "save": "저장",
+      "saveFailed": "미디어키트 저장 실패:"
+    }
+  },
+  "audience": {
+    "title": "오디언스 CRM",
+    "tabs": {
+      "profiles": "팬 프로필",
+      "segments": "세그먼트"
+    },
+    "sort": {
+      "engagementScore": "참여도 높은 순",
+      "totalInteractions": "상호작용 많은 순",
+      "lastSeenAt": "최근 활동 순"
+    },
+    "loading": "불러오는 중...",
+    "emptyProfiles": "오디언스 프로필이 없습니다.",
+    "table": {
+      "profile": "프로필",
+      "platform": "플랫폼",
+      "engagement": "참여도",
+      "tags": "태그",
+      "interactions": "상호작용",
+      "lastActivity": "최근 활동"
+    },
+    "pagination": {
+      "previous": "이전",
+      "next": "다음"
+    },
+    "members": "명",
+    "autoUpdate": "자동 갱신",
+    "segment": {
+      "add": "세그먼트 추가",
+      "empty": "세그먼트가 없습니다. 새 세그먼트를 추가해보세요.",
+      "confirmDelete": "이 세그먼트를 삭제하시겠습니까?",
+      "createFailed": "세그먼트 생성 실패:",
+      "deleteFailed": "세그먼트 삭제 실패:",
+      "modal": {
+        "title": "새 세그먼트",
+        "name": "이름 *",
+        "namePlaceholder": "세그먼트 이름",
+        "description": "설명",
+        "descriptionPlaceholder": "세그먼트 설명 (선택)",
+        "conditions": "조건",
+        "conditionsPlaceholder": "예: engagement_score > 80",
+        "autoUpdate": "자동 갱신",
+        "cancel": "취소",
+        "creating": "생성 중...",
+        "add": "추가"
+      }
+    }
+  },
+  "schedule": {
+    "recurrence": {
+      "title": "반복 설정",
+      "interval": "반복 간격",
+      "every": "매",
+      "dayOfWeek": "반복 요일",
+      "endCondition": "종료 조건",
+      "none": "없음",
+      "daily": "매일",
+      "weekly": "매주",
+      "monthly": "매월",
+      "days": {
+        "sun": "일",
+        "mon": "월",
+        "tue": "화",
+        "wed": "수",
+        "thu": "목",
+        "fri": "금",
+        "sat": "토"
+      },
+      "unlimited": "무제한",
+      "byDate": "날짜 지정",
+      "byCount": "횟수 제한",
+      "perDays": "일마다",
+      "perWeeks": "주마다",
+      "perMonths": "월마다",
+      "times": "회"
+    },
+    "optimalTime": {
+      "title": "추천 시간대",
+      "confidence": "신뢰도",
+      "best": "BEST",
+      "reasonEngagement": "{day} {time} — 참여율 최고 ({rate}%)",
+      "reasonReach": "{day} {time} — 도달률 최고 (예상 조회수 {views})",
+      "reasonBalance": "{day} {time} — 밸런스 추천"
+    }
+  },
+  "onboarding": {
+    "completed": "완료",
+    "recommended": "추천",
+    "perMonth": "원/월",
+    "unlimited": "무제한",
+    "uploadsPerMonth": "월 {count}회 업로드",
+    "unlimitedUploads": "월 무제한 업로드",
+    "platformConnections": "{count}개 플랫폼 연동",
+    "aiCredits": "월 {count} AI 크레딧",
+    "scheduleDays": "{count}일 예약 업로드",
+    "storage": "스토리지:",
+    "free": "무료"
+  },
+  "preview": {
+    "howItLooks": "이렇게 보여요",
+    "exceeded": "초과",
+    "titleCount": "제목 {current}/{max}",
+    "descCount": "설명 {current}/{max}",
+    "enterTitle": "영상 제목을 입력하세요",
+    "enterCaption": "캡션을 입력하세요",
+    "charExceeded": "{max}자 초과",
+    "charCount": "/{max}자",
+    "titleExceeded": "제목이 {max}자를 초과합니다",
+    "channelName": "채널명",
+    "username": "사용자명",
+    "creator": "크리에이터",
+    "platformPreview": "플랫폼별 미리보기",
+    "switchToTab": "탭 뷰로 전환",
+    "switchToGrid": "비교 뷰로 전환",
+    "platformInfo": "실제 플랫폼에서 보이는 모습을 미리 확인할 수 있습니다. 각 플랫폼의 특성에 맞게 최적화된 형태로 표시됩니다.",
+    "selectPlatform": "플랫폼을 선택하면 미리보기가 표시됩니다"
+  },
+  "crossPlatform": {
+    "title": "크로스 플랫폼 비교",
+    "tab": "크로스 플랫폼",
+    "summary": "플랫폼 종합 순위",
+    "videoComparison": "영상별 플랫폼 비교",
+    "insights": "인사이트",
+    "bestPlatform": "최고 성과 플랫폼",
+    "rank": "{rank}위",
+    "engagementRate": "참여율",
+    "avgViews": "평균 조회수",
+    "totalRevenue": "총 수익",
+    "noData": "크로스 플랫폼 비교 데이터가 없습니다",
+    "views": "조회수",
+    "likes": "좋아요",
+    "comments": "댓글",
+    "shares": "공유",
+    "watchTime": "시청 시간",
+    "revenue": "수익"
+  },
+  "revenueEnhanced": {
+    "tabs": {
+      "overview": "개요",
+      "cpmRpm": "CPM·RPM",
+      "brandDeals": "브랜드딜",
+      "aiReport": "AI 리포트"
+    },
+    "cpmRpm": {
+      "title": "CPM·RPM 분석",
+      "cpm": "CPM (1,000회 노출당 수익)",
+      "rpm": "RPM (1,000회 조회당 수익)",
+      "platform": "플랫폼",
+      "impressions": "노출수",
+      "noData": "CPM/RPM 데이터가 없습니다"
+    },
+    "brandDealRevenue": {
+      "title": "브랜드딜 수익",
+      "totalRevenue": "총 브랜드딜 수익",
+      "dealCount": "딜 수",
+      "avgDealValue": "평균 딜 금액",
+      "noData": "브랜드딜 수익 데이터가 없습니다"
+    },
+    "aiReport": {
+      "title": "AI 수익 분석 리포트",
+      "generate": "리포트 생성",
+      "generating": "리포트 생성 중...",
+      "creditCost": "8 크레딧",
+      "noReport": "AI 수익 리포트를 생성해보세요"
+    }
+  },
+  "strategyCoach": {
+    "title": "AI 전략 코치",
+    "description": "크로스 플랫폼 데이터와 트렌드를 분석하여 최적의 콘텐츠 전략을 추천합니다",
+    "generate": "전략 분석 시작",
+    "generating": "전략 분석 중...",
+    "creditCost": "10 크레딧",
+    "includeCompetitors": "경쟁사 데이터 포함",
+    "focusArea": "집중 영역",
+    "contentRecommendations": "콘텐츠 추천",
+    "platformStrategy": "플랫폼 전략",
+    "timingAdvice": "타이밍 조언",
+    "overallStrategy": "종합 전략",
+    "topic": "주제",
+    "targetPlatform": "타겟 플랫폼",
+    "priority": "우선순위",
+    "expectedImpact": "예상 효과",
+    "strength": "강점",
+    "opportunity": "기회",
+    "action": "실행 방안",
+    "noData": "AI 전략 코치를 시작해보세요"
+  },
+  "commentAdvanced": {
+    "sentimentTrend": {
+      "title": "감성 트렌드",
+      "positive": "긍정",
+      "neutral": "중립",
+      "negative": "부정",
+      "period": "{days}일",
+      "improving": "개선 중",
+      "stable": "안정적",
+      "worsening": "악화 중",
+      "noData": "감성 트렌드 데이터가 없습니다"
+    },
+    "faq": {
+      "title": "FAQ 자동 분류",
+      "analyze": "AI 분석 시작",
+      "analyzing": "분석 중...",
+      "creditCost": "5 크레딧",
+      "topic": "주제",
+      "questionCount": "질문 수",
+      "sampleQuestions": "대표 질문",
+      "suggestedReply": "추천 답변",
+      "noData": "FAQ 분석을 시작해보세요"
+    },
+    "batchReply": {
+      "title": "배치 AI 답변",
+      "generate": "선택한 댓글에 AI 답변 생성",
+      "generating": "AI 답변 생성 중...",
+      "creditCost": "댓글당 3 크레딧",
+      "selectComments": "댓글을 선택하세요",
+      "tone": "톤",
+      "tones": {
+        "friendly": "친근한",
+        "professional": "전문적",
+        "humorous": "유머러스"
+      },
+      "draftReply": "AI 답변 초안",
+      "apply": "적용",
+      "applyAll": "전체 적용",
+      "noData": "배치 AI 답변 데이터가 없습니다"
+    }
+  },
+  "workflow": {
+    "title": "워크플로우",
+    "tab": "워크플로우",
+    "board": {
+      "title": "워크플로우 보드",
+      "columns": {
+        "draft": "초안",
+        "editing": "편집중",
+        "review": "검수",
+        "approved": "승인",
+        "published": "게시"
+      }
+    },
+    "myTasks": {
+      "title": "내 작업",
+      "assignedToMe": "나에게 할당된 작업",
+      "requestedByMe": "내가 요청한 작업",
+      "noTasks": "할당된 작업이 없습니다"
+    },
+    "pendingReviews": {
+      "title": "대기 중인 검토",
+      "overdue": "기한 초과",
+      "noReviews": "대기 중인 검토가 없습니다"
+    },
+    "stats": {
+      "pending": "대기",
+      "inReview": "검수 중",
+      "approved": "승인됨",
+      "rejected": "거절됨",
+      "avgTime": "평균 승인 시간"
+    },
+    "step": {
+      "completed": "완료",
+      "current": "진행 중",
+      "pending": "대기",
+      "rejected": "거절"
+    }
+  },
+  "dashboard": {
+    "totalViews": "총 조회수",
+    "totalSubscribers": "총 구독자",
+    "totalLikes": "총 좋아요",
+    "aiCredits": "AI 크레딧",
+    "recentUploads": "최근 업로드",
+    "viewAll": "전체 보기 →",
+    "viewsTrend": "조회수 트렌드",
+    "scheduledUploads": "예약 업로드",
+    "viewCalendar": "캘린더 보기 →",
+    "noScheduledToday": "오늘 예약된 영상이 없어요",
+    "scheduledToday": "오늘 {count}개 영상이 예약되어 있어요",
+    "creditsRemaining": "AI 크레딧 {count}개 남음",
+    "noScheduleTitle": "예정된 일정이 없어요",
+    "noScheduleDescription": "영상 업로드 시 예약 게시를 설정하면 이곳에서 바로 확인할 수 있어요.",
+    "createSchedule": "일정 만들기",
+    "uploadVideo": "영상 업로드하기",
+    "newUpload": "새 영상 업로드",
+    "aiTools": "AI 도구",
+    "checkSchedule": "일정 확인",
+    "customize": "커스터마이즈",
+    "today": "오늘",
+    "tomorrow": "내일",
+    "greetingMorning": "좋은 아침이에요",
+    "greetingAfternoon": "좋은 오후예요",
+    "greetingEvening": "좋은 저녁이에요",
+    "greetingNight": "밤늦게까지 수고하세요",
+    "days7": "7일",
+    "days30": "30일",
+    "pageGuideTitle": "대시보드",
+    "pageGuideMobile": [
+      "상단 KPI 카드를 탭하면 해당 상세 페이지(분석, 채널, 구독)로 바로 이동합니다",
+      "빠른 업로드·AI 도구·일정 확인 버튼으로 자주 쓰는 기능에 즉시 접근하세요",
+      "최근 업로드 영상을 가로 스크롤하며 확인하고, 탭하면 상세 페이지로 이동합니다",
+      "7일/30일 조회수 트렌드 차트로 채널 성장 추이를 한눈에 파악하세요",
+      "예약 업로드 섹션에서 오늘·내일 예정된 게시 일정을 확인할 수 있습니다"
+    ],
+    "pageGuideDesktop": [
+      "상단 KPI 카드(조회수·구독자·좋아요·크레딧)를 클릭하면 해당 상세 페이지로 바로 이동합니다",
+      "커스터마이즈 버튼으로 대시보드 위젯 순서를 변경하고 불필요한 위젯을 숨길 수 있습니다",
+      "조회수 트렌드 차트에서 YouTube·TikTok·Instagram·Naver Clip별 성과를 비교하세요",
+      "재활용 추천 섹션에서 과거 인기 콘텐츠를 다시 게시할 수 있습니다",
+      "예약 일정 위젯에서 다가오는 게시 스케줄을 한눈에 확인하세요"
+    ]
+  },
+  "scheduleView": {
+    "title": "예약 관리",
+    "sort": {
+      "date": "날짜순",
+      "platform": "플랫폼순",
+      "status": "상태순",
+      "manual": "수동 정렬"
+    },
+    "filter": "필터",
+    "filterReset": "필터 초기화",
+    "filterPlatform": "플랫폼",
+    "filterStatus": "상태",
+    "view": {
+      "month": "월간",
+      "week": "주간",
+      "list": "리스트"
+    },
+    "noSchedules": "예약된 영상이 없어요",
+    "noSchedulesDescription": "영상 업로드 시 예약 게시를 설정하면 이곳에서 한눈에 관리할 수 있어요.",
+    "uploadVideo": "영상 업로드하기",
+    "viewMyVideos": "내 영상 목록 보기",
+    "noFiltered": "예약된 일정이 없습니다.",
+    "today": "오늘",
+    "moreCount": "+{count} 더보기",
+    "quickAdd": {
+      "title": "예약 추가",
+      "videoId": "영상 ID",
+      "videoIdPlaceholder": "영상 ID를 입력하세요",
+      "scheduledAt": "예약 일시",
+      "recommendedTime": "추천: {dayLabel} {timeLabel}",
+      "selectPlatform": "플랫폼 선택",
+      "cancel": "취소",
+      "submit": "예약 추가"
+    },
+    "detail": {
+      "title": "예약 상세",
+      "scheduledAt": "예약 일시",
+      "recurrence": "반복",
+      "createdAt": "생성일",
+      "platformStatus": "플랫폼별 상태",
+      "cancel": "예약 취소"
+    },
+    "cancelModal": {
+      "title": "예약 취소",
+      "message": "이 예약을 취소하시겠습니까? 취소된 예약은 복원할 수 없습니다.",
+      "confirm": "취소하기"
+    },
+    "status": {
+      "scheduled": "예약됨",
+      "published": "게시완료",
+      "failed": "실패",
+      "cancelled": "취소됨"
+    },
+    "table": {
+      "datetime": "일시",
+      "video": "영상",
+      "platform": "플랫폼",
+      "status": "상태",
+      "actions": "작업"
+    },
+    "dayLabels": ["일", "월", "화", "수", "목", "금", "토"],
+    "recurrence": {
+      "daily": "매일",
+      "weekly": "매주",
+      "monthly": "매월"
+    },
+    "repeatingSchedule": "반복 예약",
+    "edit": "수정",
+    "pageGuide": [
+      "리스트·캘린더·주간 뷰를 전환하여 예약된 콘텐츠를 원하는 방식으로 확인하세요",
+      "필터 버튼으로 특정 플랫폼·날짜 범위·상태(대기/완료/실패)별 예약만 모아볼 수 있습니다",
+      "정렬 옵션(날짜/플랫폼/상태/수동)으로 예약 목록 순서를 변경하고, 수동 정렬 시 드래그로 순서를 조정하세요",
+      "예약 항목을 클릭하면 상세 정보를 확인하고 시간 변경·취소가 가능합니다"
+    ]
+  },
+  "aiView": {
+    "title": "AI 크리에이터 어시스턴트",
+    "usedToday": "오늘 사용",
+    "remaining": "잔여",
+    "tabs": {
+      "tools": "AI 도구",
+      "presets": "프리셋",
+      "history": "사용 기록"
+    },
+    "credits": "크레딧",
+    "creditsUsed": "크레딧 소모",
+    "useButton": "사용하기",
+    "form": {
+      "script": "스크립트",
+      "scriptPlaceholder": "영상 스크립트를 입력하세요...",
+      "platform": "플랫폼",
+      "tone": "톤",
+      "category": "카테고리",
+      "select": "선택",
+      "cancel": "취소",
+      "generate": "생성하기",
+      "recommend": "추천받기",
+      "generateIdea": "아이디어 생성",
+      "generateReport": "리포트 생성",
+      "strategyAnalysis": "전략 분석",
+      "reAnalyze": "다시 분석"
+    },
+    "tones": {
+      "friendly": "친근한",
+      "professional": "전문적인",
+      "humorous": "유머러스한"
+    },
+    "results": {
+      "titleCandidates": "제목 후보",
+      "description": "설명",
+      "tags": "태그",
+      "commonHashtags": "공통 해시태그",
+      "creditsUsedRemaining": "사용 크레딧: {used} / 잔여: {remaining}",
+      "close": "닫기",
+      "regenerate": "다시 생성",
+      "reRecommend": "다시 추천",
+      "expectedReaction": "예상 반응: {reaction}"
+    },
+    "report": {
+      "period": "분석 기간",
+      "last7d": "최근 7일",
+      "last30d": "최근 30일"
+    },
+    "strategyCoach": {
+      "focusArea": "집중 영역 (선택)",
+      "focusOptions": {
+        "all": "전체 전략",
+        "content": "콘텐츠 기획",
+        "growth": "구독자 성장",
+        "revenue": "수익 최적화",
+        "platform": "플랫폼 확장"
+      },
+      "includeCompetitors": "경쟁자 데이터 포함",
+      "overallStrategy": "종합 전략",
+      "contentRecommendations": "콘텐츠 추천",
+      "platformStrategy": "플랫폼 전략",
+      "timingAdvice": "타이밍 조언",
+      "expectedImpact": "예상 영향: {impact}",
+      "expectedBoost": "예상 향상: {boost}",
+      "strength": "강점:",
+      "opportunity": "기회:",
+      "action": "실행:"
+    },
+    "revenueReport": {
+      "optimizationTips": "수익 최적화 팁",
+      "platformBreakdown": "플랫폼별 수익 분석",
+      "contribution": "기여도:",
+      "trend": "트렌드:",
+      "suggestion": "제안:"
+    },
+    "placeholder": {
+      "preparing": "이 기능은 현재 준비 중입니다. 곧 사용하실 수 있습니다."
+    },
+    "creditModal": {
+      "title": "크레딧이 부족합니다",
+      "description": "이 기능에는 {credits} 크레딧이 필요합니다. (잔여: {balance})",
+      "perCredit": "크레딧당 {price}원",
+      "validDays": "{days}일 유효",
+      "purchase": "구매하기"
+    },
+    "videoTitle": "영상 제목",
+    "videoTitlePlaceholder": "영상 제목을 입력하세요",
+    "pageGuide": [
+      "AI 도구 탭에서 제목 생성·해시태그 추출·설명 작성·썸네일 분석 등 다양한 AI 도구를 사용하세요",
+      "프리셋 탭에서 자주 사용하는 AI 설정(톤, 타겟 플랫폼, 카테고리)을 저장하고 재사용하세요",
+      "사용 기록 탭에서 AI 크레딧 소비 내역과 생성 결과를 확인할 수 있습니다",
+      "상단의 일일 크레딧 사용량 표시가 빨간색이면 잔액이 부족하니 구독 페이지에서 충전하세요",
+      "각 도구 카드의 툴팁 아이콘에 마우스를 올리면 소요 크레딧과 상세 설명을 확인할 수 있습니다"
+    ]
+  },
+  "analyticsView": {
+    "title": "통합 분석",
+    "videoComparison": "영상 비교",
+    "tabs": {
+      "overview": "개요",
+      "cohort": "코호트 분석",
+      "retention": "리텐션",
+      "crossPlatform": "크로스 플랫폼",
+      "deep": "심층 분석"
+    },
+    "crossPlatformLoading": "크로스 플랫폼 데이터를 불러오는 중...",
+    "deepAnalyticsLoading": "심층 분석 데이터를 불러오는 중...",
+    "platformRankings": "플랫폼 종합 순위",
+    "totalViews": "총 조회수",
+    "engagementRate": "참여율",
+    "totalRevenue": "총 수익",
+    "noCrossData": "여러 플랫폼에 업로드된 영상이 없습니다",
+    "noCrossDataHint": "동일 영상을 2개 이상의 플랫폼에 업로드하면 비교 분석이 시작됩니다",
+    "cohort": {
+      "title": "코호트 분석",
+      "description": "카테고리, 태그, 플랫폼, 업로드 월별로 영상을 그룹핑하고 누적 조회수 추이를 비교합니다."
+    },
+    "retention": {
+      "title": "시청자 리텐션 커브",
+      "description": "영상의 시청자 리텐션을 분석합니다. 채널 평균과 비교하여 이탈 구간을 파악할 수 있습니다.",
+      "selectVideo": "분석할 영상 선택",
+      "button": "리텐션"
+    },
+    "emptyData": "분석할 데이터를 수집 중이에요",
+    "emptyDataDescription": "영상을 게시하면 24시간 내에 조회수, 좋아요, 댓글 등의 분석 데이터가 나타납니다.",
+    "uploadVideo": "영상 업로드하기",
+    "connectChannel": "채널 연동하기",
+    "estimatedRevenue": "예상 수익",
+    "viewsTrend": "조회수 트렌드",
+    "noData": "데이터가 없습니다",
+    "platformComparison": "플랫폼 비교",
+    "subscriberTrend": "구독자 변화 추이",
+    "noSubscriberData": "구독자 데이터가 없습니다",
+    "bestPostingTime": "최적 게시 시간",
+    "topVideos": "인기 영상 Top 10",
+    "noTopVideos": "인기 영상 데이터가 없습니다",
+    "uploadTimeAnalysis": "업로드 시간 분석",
+    "uploadTimeHint": "요일별/시간대별 평균 조회수 - 색이 진할수록 조회수가 높습니다",
+    "heatmapLow": "적음",
+    "heatmapHigh": "많음",
+    "hashtagAnalysis": "해시태그 분석",
+    "tagCloud": "태그 클라우드",
+    "tagPerformance": "태그 성과",
+    "aiInsight": "AI 인사이트",
+    "remainingCredits": "잔여 크레딧: {credits}",
+    "generateAiInsight": "AI 인사이트 생성 (8 크레딧)",
+    "aiAnalyzing": "AI가 분석 리포트를 생성하고 있습니다...",
+    "retryGenerate": "다시 시도",
+    "creditsUsedRemaining": "사용 크레딧: {used} / 잔여: {remaining}",
+    "pdfDownload": "PDF 다운로드",
+    "pdfExporting": "PDF 생성 중...",
+    "regenerate": "다시 생성",
+    "table": {
+      "platform": "플랫폼",
+      "views": "조회수",
+      "likes": "좋아요",
+      "comments": "댓글",
+      "shares": "공유",
+      "engagementRate": "참여율",
+      "watchTime": "시청시간"
+    },
+    "metrics": {
+      "views": "조회수",
+      "likes": "좋아요",
+      "comments": "댓글",
+      "shares": "공유"
+    },
+    "dayLabels": ["월", "화", "수", "목", "금", "토", "일"],
+    "pageGuide": [
+      "7일·30일·90일 기간 필터로 분석 구간을 설정하고, 내보내기 버튼으로 데이터를 CSV/Excel로 다운로드하세요",
+      "개요 탭에서 조회수·구독자·좋아요·예상 수익 KPI 카드와 플랫폼별 비교 차트를 확인하세요",
+      "최적 게시 시간 히트맵에서 요일별·시간대별 조회수가 가장 높은 구간을 파악하여 게시 시간을 최적화하세요",
+      "해시태그 분석의 태그 클라우드에서 태그를 클릭하면 해당 태그의 성과(사용 횟수·평균 조회수)를 상세 확인할 수 있습니다",
+      "AI 인사이트 버튼(8크레딧)으로 현재 분석 기간의 자동 리포트를 생성하여 핵심 개선점을 확인하세요",
+      "코호트 분석·리텐션 탭에서 카테고리별 누적 조회수 추이와 영상별 시청자 이탈 구간을 분석하세요"
+    ]
+  },
+  "commentsView": {
+    "title": "댓글 관리",
+    "totalComments": "전체 {count}개의 댓글",
+    "lastSync": "마지막 동기화: {time}",
+    "aiBatchReply": "AI 답변 ({count})",
+    "aiBatchGenerating": "AI 생성 중...",
+    "syncComments": "댓글 동기화",
+    "syncing": "동기화 중...",
+    "sentimentSummary": "감정 분석 요약",
+    "sentimentPositive": "긍정",
+    "sentimentNeutral": "중립",
+    "sentimentNegative": "부정",
+    "sentimentTrend": "감정 트렌드",
+    "faqTitle": "FAQ 자동 분류",
+    "faqAiAnalyze": "AI 분석",
+    "faqAnalyzing": "분석 중...",
+    "faqCount": "{count}건",
+    "faqSuggestedReply": "추천 답변:",
+    "faqEmpty": "\"AI 분석\" 버튼을 눌러 FAQ를 자동 분류하세요",
+    "aiDraftTitle": "AI 답변 초안",
+    "aiDraftClose": "닫기",
+    "aiDraftOriginal": "원문: {text}",
+    "aiDraftApply": "이 답변으로 답글 달기",
+    "filterPlatform": "플랫폼",
+    "filterSentiment": "감정",
+    "filterSearch": "검색",
+    "filterSearchPlaceholder": "작성자, 내용 검색...",
+    "filterAll": "전체",
+    "filterAllPlatforms": "전체 플랫폼",
+    "sortLabel": "정렬:",
+    "sortRecent": "최신순",
+    "sortLikes": "좋아요순",
+    "sortReplies": "댓글순",
+    "emptyComments": "아직 댓글이 없습니다",
+    "emptyCommentsHint": "\"댓글 동기화\" 버튼을 눌러 플랫폼 댓글을 가져오세요",
+    "emptyFiltered": "검색 결과가 없습니다",
+    "emptyFilteredHint": "다른 필터를 시도해보세요",
+    "noTrendData": "트렌드 데이터를 불러올 수 없습니다",
+    "trendImproving": "개선 중",
+    "trendStable": "안정적",
+    "trendWorsening": "주의 필요",
+    "pagination": {
+      "previous": "이전",
+      "next": "다음"
+    },
+    "days": "{n}일"
+  },
+  "linkBioView": {
+    "noPage": "링크 페이지가 없습니다",
+    "noPageDescription": "나만의 링크 페이지를 만들어보세요",
+    "title": "링크인바이오",
+    "description": "나만의 링크 페이지를 만들어보세요",
+    "save": "저장",
+    "totalViews": "총 조회수",
+    "totalClicks": "총 클릭수",
+    "clickRate": "클릭률",
+    "tabEditor": "편집",
+    "tabPreview": "미리보기",
+    "saved": "저장되었습니다",
+    "linkCopied": "링크가 복사되었습니다",
+    "linkCopyFailed": "링크 복사에 실패했습니다",
+    "pageGuide": [
+      "에디터 탭에서 프로필에 표시할 링크를 추가·수정·삭제하고, 드래그로 순서를 변경하세요",
+      "프로필 URL을 복사하여 각 플랫폼의 프로필란에 붙여넣으면 팬들이 바로 접근할 수 있습니다",
+      "프리뷰 탭에서 실제 방문자에게 보이는 모습을 미리 확인하세요",
+      "상단 통계(총 조회수·총 클릭수·클릭률)에서 링크 페이지 성과를 모니터링하세요",
+      "저장 버튼을 누르면 변경사항이 즉시 라이브 페이지에 반영됩니다"
+    ]
+  },
   "upload": {
     "title": "콘텐츠 업로드",
     "queue": "업로드 큐",

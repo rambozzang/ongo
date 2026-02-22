@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import {
   ArrowUpTrayIcon,
   CheckCircleIcon,
@@ -62,13 +62,16 @@ function onDragLeave() {
   }
 }
 
+let dropResetTimeout: ReturnType<typeof setTimeout> | null = null
+
 function onDrop(event: DragEvent) {
   dragCounter.value = 0
   const files = event.dataTransfer?.files
   if (files && files.length > 0) {
     handleFiles(files)
     dropState.value = 'success'
-    setTimeout(() => {
+    if (dropResetTimeout) clearTimeout(dropResetTimeout)
+    dropResetTimeout = setTimeout(() => {
       if (dropState.value === 'success') {
         dropState.value = 'idle'
       }
@@ -118,6 +121,10 @@ function handleAddToQueue() {
   emit('addToQueue', [...selectedFiles.value], [...selectedPlatforms.value])
   selectedFiles.value = []
 }
+
+onUnmounted(() => {
+  if (dropResetTimeout) clearTimeout(dropResetTimeout)
+})
 </script>
 
 <template>

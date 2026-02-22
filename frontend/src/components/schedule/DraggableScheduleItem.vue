@@ -47,7 +47,7 @@
 import DropIndicator from './DropIndicator.vue'
 
 const props = defineProps<{
-  item: any
+  item: Record<string, unknown>
   index: number
   isDraggable?: boolean
   isDragging?: boolean

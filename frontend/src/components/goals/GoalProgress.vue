@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 interface Props {
   percentage: number
@@ -39,10 +39,16 @@ const textColor = computed(() => {
   return 'text-green-600 dark:text-green-400'
 })
 
+let animationTimeout: ReturnType<typeof setTimeout> | null = null
+
 onMounted(() => {
-  setTimeout(() => {
+  animationTimeout = setTimeout(() => {
     animatedPercentage.value = Math.min(props.percentage, 100)
   }, 100)
+})
+
+onUnmounted(() => {
+  if (animationTimeout) clearTimeout(animationTimeout)
 })
 </script>
 

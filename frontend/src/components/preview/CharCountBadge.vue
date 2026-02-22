@@ -8,13 +8,16 @@
     <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
-    초과
+    {{ t('preview.exceeded') }}
   </span>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Platform } from '@/types/channel'
+
+const { t } = useI18n()
 
 interface PlatformMeta {
   title: string
@@ -41,10 +44,10 @@ const overflowDetail = computed(() => {
   if (!limits) return ''
   const parts: string[] = []
   if (limits.title && props.meta.title.length > limits.title) {
-    parts.push(`제목 ${props.meta.title.length}/${limits.title}`)
+    parts.push(t('preview.titleCount', { current: props.meta.title.length, max: limits.title }))
   }
   if (limits.description && props.meta.description.length > limits.description) {
-    parts.push(`설명 ${props.meta.description.length}/${limits.description}`)
+    parts.push(t('preview.descCount', { current: props.meta.description.length, max: limits.description }))
   }
   return parts.join(', ')
 })

@@ -22,7 +22,7 @@ export interface ActivityEvent {
     videoTitle?: string
     platform?: string
     creditsUsed?: number
-    [key: string]: any
+    [key: string]: string | number | null | undefined
   }
   createdAt: string
   icon?: string

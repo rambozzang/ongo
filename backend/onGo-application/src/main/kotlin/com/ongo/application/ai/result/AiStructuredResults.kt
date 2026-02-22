@@ -103,6 +103,26 @@ data class SentimentAnalysisResult(
     )
 }
 
+data class FaqClusterResult(
+    val clusters: List<FaqClusterItem>,
+) {
+    data class FaqClusterItem(
+        val topic: String,
+        val questionCount: Int,
+        val sampleQuestions: List<String>,
+        val suggestedReply: String,
+    )
+}
+
+data class BatchReplyDraftResult(
+    val drafts: List<DraftItem>,
+) {
+    data class DraftItem(
+        val commentIndex: Int,
+        val draftReply: String,
+    )
+}
+
 data class ContentGapResult(
     val opportunities: List<ContentOpportunityResult>,
     val oversaturated: List<OversaturatedTopicResult>,
@@ -118,5 +138,46 @@ data class ContentGapResult(
         val topic: String,
         val saturationLevel: String,
         val recommendation: String,
+    )
+}
+
+data class StrategyCoachResult(
+    val contentRecommendations: List<ContentRecommendation>,
+    val platformStrategy: List<PlatformStrategyItem>,
+    val timingAdvice: List<TimingAdvice>,
+    val overallStrategy: String,
+) {
+    data class ContentRecommendation(
+        val topic: String,
+        val targetPlatform: String,
+        val reason: String,
+        val priority: String,
+        val expectedImpact: String,
+    )
+    data class PlatformStrategyItem(
+        val platform: String,
+        val strength: String,
+        val opportunity: String,
+        val action: String,
+    )
+    data class TimingAdvice(
+        val recommendation: String,
+        val reason: String,
+        val expectedBoost: String,
+    )
+}
+
+data class RevenueReportResult(
+    val reportMarkdown: String,
+    val highlights: List<String>,
+    val improvements: List<String>,
+    val optimizationTips: List<String>,
+    val platformBreakdown: List<PlatformRevenueBreakdown>,
+) {
+    data class PlatformRevenueBreakdown(
+        val platform: String,
+        val contribution: String,
+        val trend: String,
+        val suggestion: String,
     )
 }

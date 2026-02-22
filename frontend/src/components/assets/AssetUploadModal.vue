@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useAssetsStore } from '@/stores/assets'
 import type { AssetFolder } from '@/types/asset'
 import {
@@ -109,25 +109,36 @@ function formatFileSize(bytes: number): string {
   return bytes + ' B'
 }
 
+let uploadCancelled = false
+
 async function handleUpload() {
   if (selectedFiles.value.length === 0) return
 
   uploading.value = true
   uploadProgress.value = 0
+  uploadCancelled = false
 
   const totalFiles = selectedFiles.value.length
   for (let i = 0; i < totalFiles; i++) {
+    if (uploadCancelled) break
     const file = selectedFiles.value[i]
     // Simulate upload delay
     await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 500))
+    if (uploadCancelled) break
     assetsStore.uploadAsset(file, selectedFolderId.value, [...tags.value])
     uploadProgress.value = Math.round(((i + 1) / totalFiles) * 100)
   }
 
   uploading.value = false
-  emit('uploaded')
-  close()
+  if (!uploadCancelled) {
+    emit('uploaded')
+    close()
+  }
 }
+
+onUnmounted(() => {
+  uploadCancelled = true
+})
 </script>
 
 <template>

@@ -189,7 +189,7 @@ const bestDayPlugin: Plugin<'line'> = {
     if (maxPoint && maxValue > 0) {
       ctx.save()
       ctx.beginPath()
-      ctx.arc((maxPoint as any).x, (maxPoint as any).y, 6, 0, 2 * Math.PI)
+      ctx.arc(maxPoint.x, maxPoint.y, 6, 0, 2 * Math.PI)
       ctx.fillStyle = '#8b5cf6'
       ctx.fill()
       ctx.strokeStyle = themeStore.isDark ? '#1f2937' : '#ffffff'

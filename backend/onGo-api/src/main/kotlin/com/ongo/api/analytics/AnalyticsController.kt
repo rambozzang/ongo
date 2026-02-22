@@ -301,6 +301,23 @@ class AnalyticsController(
     ): ResponseEntity<ResData<AvgViewDurationResponse>> =
         ResData.success(analyticsUseCase.getAvgViewDuration(userId, days))
 
+    @Operation(
+        summary = "크로스 플랫폼 성과 비교",
+        description = "동일 영상이 업로드된 여러 플랫폼의 성과를 비교 분석합니다. 영상별 플랫폼 지표, 순위, 인사이트가 포함됩니다."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "크로스 플랫폼 비교 조회 성공"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    )
+    @RequiresPermission(Permission.ANALYTICS_READ)
+    @GetMapping("/cross-platform")
+    fun getCrossPlatformComparison(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @Parameter(description = "조회 기간 (일 수, 기본값: 30)") @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<CrossPlatformSummaryResponse>> =
+        ResData.success(analyticsUseCase.getCrossPlatformComparison(userId, days))
+
     @Operation(summary = "구독 전환 분석")
     @RequiresPermission(Permission.ANALYTICS_READ)
     @GetMapping("/subscriber-conversion")

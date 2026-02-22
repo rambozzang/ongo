@@ -12,6 +12,7 @@ import type {
   CTRResponse,
   AvgViewDurationResponse,
   SubscriberConversionResponse,
+  CrossPlatformSummaryResponse,
 } from '@/types/analytics'
 import { analyticsApi } from '@/api/analytics'
 import { useNotificationStore } from '@/stores/notification'
@@ -33,6 +34,21 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const avgViewDuration = ref<AvgViewDurationResponse | null>(null)
   const subscriberConversion = ref<SubscriberConversionResponse | null>(null)
   const deepAnalyticsLoading = ref(false)
+
+  // 크로스 플랫폼 분석
+  const crossPlatformData = ref<CrossPlatformSummaryResponse | null>(null)
+  const crossPlatformLoading = ref(false)
+
+  async function fetchCrossPlatform(days = 30) {
+    crossPlatformLoading.value = true
+    try {
+      crossPlatformData.value = await analyticsApi.crossPlatformComparison(days)
+    } catch {
+      // silently ignore
+    } finally {
+      crossPlatformLoading.value = false
+    }
+  }
 
   async function fetchAnalytics() {
     loading.value = true
@@ -110,5 +126,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     subscriberConversion,
     deepAnalyticsLoading,
     fetchDeepAnalytics,
+    crossPlatformData,
+    crossPlatformLoading,
+    fetchCrossPlatform,
   }
 })

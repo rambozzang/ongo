@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { PlusIcon, BoltIcon } from '@heroicons/vue/24/outline'
 import { useAutomationStore } from '@/stores/automation'
+import { useNotification } from '@/composables/useNotification'
 import AutomationRuleCard from '@/components/automation/AutomationRuleCard.vue'
 import AutomationLogTable from '@/components/automation/AutomationLogTable.vue'
 import AutomationFormModal from '@/components/automation/AutomationFormModal.vue'
@@ -9,13 +10,14 @@ import SmartTriggerTemplateSelector from '@/components/automation/SmartTriggerTe
 import WorkflowNodeEditor from '@/components/automation/WorkflowNodeEditor.vue'
 import WorkflowExecutionHistory from '@/components/automation/WorkflowExecutionHistory.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
-import type { AutomationRule, Workflow, WorkflowTriggerType, WorkflowActionType } from '@/types/automation'
+import type { AutomationRule, ConditionOperator, Workflow, WorkflowTriggerType, WorkflowActionType } from '@/types/automation'
 import type { SmartTriggerTemplate } from '@/components/automation/SmartTriggerTemplateSelector.vue'
 import { automationApi } from '@/api/automation'
 import apiClient, { unwrapResponse } from '@/api/client'
 import type { ResData } from '@/types/api'
 
 const automationStore = useAutomationStore()
+const notification = useNotification()
 
 const activeTab = ref<'rules' | 'workflows' | 'logs'>('rules')
 const isModalOpen = ref(false)
@@ -77,9 +79,12 @@ async function fetchSmartTemplates() {
       .then(unwrapResponse)
     smartTemplates.value = result
   } catch {
+    notification.error('스마트 템플릿을 불러오지 못했습니다')
     smartTemplates.value = []
   }
 }
+
+let smartTriggerTimeout: ReturnType<typeof setTimeout> | null = null
 
 function handleSmartTriggerSelect(payload: { triggerType: string; config: Record<string, unknown> }) {
   const template = smartTemplates.value.find(t => t.triggerType === payload.triggerType)
@@ -88,7 +93,7 @@ function handleSmartTriggerSelect(payload: { triggerType: string; config: Record
   editingRule.value = undefined
   isModalOpen.value = true
   // Pre-fill with smart trigger data via a nextTick
-  setTimeout(() => {
+  smartTriggerTimeout = setTimeout(() => {
     // The modal will be opened with pre-filled trigger type and config
   }, 0)
 }
@@ -103,6 +108,7 @@ async function fetchWorkflows() {
   try {
     workflows.value = await automationApi.listWorkflows()
   } catch {
+    notification.error('워크플로우 목록을 불러오지 못했습니다')
     workflows.value = []
   }
 }
@@ -126,7 +132,7 @@ async function handleWorkflowSave(data: {
         conditions: data.conditions.map((c) => ({
           groupType: (c.groupType as 'AND' | 'OR') ?? 'AND',
           field: c.field,
-          operator: c.operator as any,
+          operator: c.operator as ConditionOperator,
           value: c.value,
           expression: c.expression,
         })),
@@ -144,7 +150,7 @@ async function handleWorkflowSave(data: {
         conditions: data.conditions.map((c) => ({
           groupType: (c.groupType as 'AND' | 'OR') ?? 'AND',
           field: c.field,
-          operator: c.operator as any,
+          operator: c.operator as ConditionOperator,
           value: c.value,
           expression: c.expression,
         })),
@@ -160,7 +166,7 @@ async function handleWorkflowSave(data: {
     editingWorkflow.value = null
     await fetchWorkflows()
   } catch {
-    // error
+    notification.error('워크플로우 저장에 실패했습니다')
   }
 }
 
@@ -169,7 +175,7 @@ async function handleWorkflowToggle(id: number) {
     await automationApi.toggleWorkflow(id)
     await fetchWorkflows()
   } catch {
-    // error
+    notification.error('워크플로우 상태 변경에 실패했습니다')
   }
 }
 
@@ -179,7 +185,7 @@ async function handleWorkflowDelete(id: number) {
     await automationApi.deleteWorkflow(id)
     await fetchWorkflows()
   } catch {
-    // error
+    notification.error('워크플로우 삭제에 실패했습니다')
   }
 }
 
@@ -187,6 +193,10 @@ onMounted(() => {
   automationStore.fetchRules()
   fetchSmartTemplates()
   fetchWorkflows()
+})
+
+onUnmounted(() => {
+  if (smartTriggerTimeout) clearTimeout(smartTriggerTimeout)
 })
 </script>
 

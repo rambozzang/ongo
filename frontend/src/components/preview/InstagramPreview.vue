@@ -1,7 +1,7 @@
 <template>
   <div class="instagram-preview">
     <div class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-      이렇게 보여요
+      {{ t('preview.howItLooks') }}
     </div>
 
     <!-- Phone Frame -->
@@ -107,7 +107,7 @@
                 </div>
               </div>
               <span class="text-sm font-semibold text-white drop-shadow">
-                {{ channelName || '사용자명' }}
+                {{ channelName || t('preview.username') }}
               </span>
               <span class="text-white/60">·</span>
               <button class="rounded-lg border border-white/80 px-3 py-0.5 text-xs font-semibold text-white">
@@ -146,12 +146,12 @@
                 class="text-[10px] font-medium"
                 :class="captionLength > 2200 ? 'text-red-400' : 'text-white/60'"
               >
-                {{ captionLength.toLocaleString() }}/2,200자
+                {{ captionLength.toLocaleString() }}{{ t('preview.charCount', { max: '2,200' }) }}
               </span>
               <span
                 v-if="captionLength > 2200"
                 class="ml-1 text-[10px] text-red-400"
-              >초과</span>
+              >{{ t('preview.exceeded') }}</span>
             </div>
           </div>
 
@@ -179,6 +179,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   title?: string
@@ -211,7 +214,7 @@ const displayCaption = computed(() => {
   if (hashtagsText.value) {
     return text ? `${text}\n\n${hashtagsText.value}` : hashtagsText.value
   }
-  return text || '캡션을 입력하세요'
+  return text || t('preview.enterCaption')
 })
 
 const captionLength = computed(() => {

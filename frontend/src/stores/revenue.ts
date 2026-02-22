@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Platform } from '@/types/channel'
-import type { RevenueSummary, PlatformRevenueData, RevenueTrendPoint } from '@/types/revenue'
+import type { RevenueSummary, PlatformRevenueData, RevenueTrendPoint, CpmRpmResponse, BrandDealRevenueResponse } from '@/types/revenue'
 import { revenueApi } from '@/api/revenue'
 
 export interface RevenueData {
@@ -34,6 +34,10 @@ export const useRevenueStore = defineStore('revenue', () => {
   const apiSummary = ref<RevenueSummary | null>(null)
   const apiTrends = ref<RevenueTrendPoint[]>([])
   const apiPlatformRevenue = ref<PlatformRevenueData | null>(null)
+  const cpmRpmData = ref<CpmRpmResponse | null>(null)
+  const brandDealData = ref<BrandDealRevenueResponse | null>(null)
+  const cpmRpmLoading = ref(false)
+  const brandDealLoading = ref(false)
 
   function calculateSummary(data: RevenueData[]): RevenueSummaryLocal {
     if (data.length === 0) {
@@ -162,6 +166,28 @@ export const useRevenueStore = defineStore('revenue', () => {
     }
   }
 
+  async function fetchCpmRpm(period = '30d') {
+    cpmRpmLoading.value = true
+    try {
+      cpmRpmData.value = await revenueApi.cpmRpm(period)
+    } catch {
+      // silently ignore
+    } finally {
+      cpmRpmLoading.value = false
+    }
+  }
+
+  async function fetchBrandDealRevenue(period = '90d') {
+    brandDealLoading.value = true
+    try {
+      brandDealData.value = await revenueApi.brandDealRevenue(period)
+    } catch {
+      // silently ignore
+    } finally {
+      brandDealLoading.value = false
+    }
+  }
+
   return {
     monthlyRevenue,
     summary,
@@ -173,5 +199,11 @@ export const useRevenueStore = defineStore('revenue', () => {
     apiTrends,
     apiPlatformRevenue,
     fetchRevenue,
+    cpmRpmData,
+    brandDealData,
+    cpmRpmLoading,
+    brandDealLoading,
+    fetchCpmRpm,
+    fetchBrandDealRevenue,
   }
 })

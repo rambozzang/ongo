@@ -1,5 +1,5 @@
 server:
-  port: 8777
+  port: 8070
   servlet:
     context-path: /
 
@@ -144,7 +144,7 @@ platform:
 
 # CORS
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5173,https://ongo.kr,https://www.ongo.kr}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5173,https://ongo.codelabtiger.com}
 
 # Springdoc / Swagger
 springdoc:

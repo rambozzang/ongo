@@ -13,13 +13,7 @@
       </div>
     </div>
 
-    <PageGuide title="대시보드" :items="[
-      '상단 KPI 카드를 탭하면 해당 상세 페이지(분석, 채널, 구독)로 바로 이동합니다',
-      '빠른 업로드·AI 도구·일정 확인 버튼으로 자주 쓰는 기능에 즉시 접근하세요',
-      '최근 업로드 영상을 가로 스크롤하며 확인하고, 탭하면 상세 페이지로 이동합니다',
-      '7일/30일 조회수 트렌드 차트로 채널 성장 추이를 한눈에 파악하세요',
-      '예약 업로드 섹션에서 오늘·내일 예정된 게시 일정을 확인할 수 있습니다',
-    ]" />
+    <PageGuide :title="$t('dashboard.pageGuideTitle')" :items="($tm('dashboard.pageGuideMobile') as string[])" />
 
     <DashboardSkeleton v-if="loading" />
 
@@ -34,9 +28,12 @@
       <div class="grid grid-cols-2 gap-2">
         <div
           class="card cursor-pointer p-3 transition-all duration-200 hover:-translate-y-0.5"
+          role="button"
+          tabindex="0"
           @click="$router.push('/analytics')"
+          @keydown.enter="$router.push('/analytics')"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">총 조회수</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalViews') }}</p>
           <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
             {{ formatCompact(kpi?.totalViews ?? 0) }}
           </p>
@@ -49,9 +46,12 @@
 
         <div
           class="card cursor-pointer p-3 transition-all duration-200 hover:-translate-y-0.5"
+          role="button"
+          tabindex="0"
           @click="$router.push('/channels')"
+          @keydown.enter="$router.push('/channels')"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">총 구독자</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalSubscribers') }}</p>
           <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
             {{ formatCompact(kpi?.totalSubscribers ?? 0) }}
           </p>
@@ -64,9 +64,12 @@
 
         <div
           class="card cursor-pointer p-3 transition-all duration-200 hover:-translate-y-0.5"
+          role="button"
+          tabindex="0"
           @click="$router.push('/analytics')"
+          @keydown.enter="$router.push('/analytics')"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">총 좋아요</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalLikes') }}</p>
           <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
             {{ formatCompact(kpi?.totalLikes ?? 0) }}
           </p>
@@ -79,9 +82,12 @@
 
         <div
           class="card cursor-pointer p-3 transition-all duration-200 hover:-translate-y-0.5"
+          role="button"
+          tabindex="0"
           @click="$router.push('/subscription')"
+          @keydown.enter="$router.push('/subscription')"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">AI 크레딧</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.aiCredits') }}</p>
           <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
             {{ (kpi?.creditBalance ?? 0).toLocaleString() }}
           </p>
@@ -103,7 +109,7 @@
           style="scroll-snap-align: start"
         >
           <PlusIcon class="h-4 w-4" />
-          새 영상 업로드
+          {{ $t('dashboard.newUpload') }}
         </router-link>
         <router-link
           to="/ai"
@@ -111,7 +117,7 @@
           style="scroll-snap-align: start"
         >
           <SparklesIcon class="h-4 w-4" />
-          AI 도구
+          {{ $t('dashboard.aiTools') }}
         </router-link>
         <router-link
           to="/schedule"
@@ -119,16 +125,16 @@
           style="scroll-snap-align: start"
         >
           <CalendarDaysIcon class="h-4 w-4" />
-          일정 확인
+          {{ $t('dashboard.checkSchedule') }}
         </router-link>
       </div>
 
       <!-- Recent Videos - Horizontal Scroll -->
       <div v-if="recentVideos.length > 0" class="card p-4">
         <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">최근 업로드</h3>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.recentUploads') }}</h3>
           <router-link to="/videos" class="text-xs text-primary-600 hover:underline">
-            전체 보기 →
+            {{ $t('dashboard.viewAll') }}
           </router-link>
         </div>
         <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style="scroll-snap-type: x mandatory">
@@ -171,21 +177,21 @@
       <!-- Trend Chart - Simplified -->
       <div class="card" style="height: 280px">
         <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">조회수 트렌드</h3>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.viewsTrend') }}</h3>
           <div class="flex rounded-lg border border-gray-200 dark:border-gray-700">
             <button
               class="px-2 py-1 text-xs transition-colors"
               :class="period === '7d' ? 'bg-primary-500 text-white' : 'text-gray-600 dark:text-gray-300'"
               @click="dashboardStore.setPeriod('7d')"
             >
-              7일
+              {{ $t('dashboard.days7') }}
             </button>
             <button
               class="px-2 py-1 text-xs transition-colors"
               :class="period === '30d' ? 'bg-primary-500 text-white' : 'text-gray-600 dark:text-gray-300'"
               @click="dashboardStore.setPeriod('30d')"
             >
-              30일
+              {{ $t('dashboard.days30') }}
             </button>
           </div>
         </div>
@@ -201,9 +207,9 @@
       <!-- Upcoming Schedules - Today & Tomorrow only -->
       <div v-if="todayAndTomorrowSchedules.length > 0" class="card">
         <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">예약 업로드</h3>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.scheduledUploads') }}</h3>
           <router-link to="/schedule" class="text-xs text-primary-600 hover:underline">
-            캘린더 보기 →
+            {{ $t('dashboard.viewCalendar') }}
           </router-link>
         </div>
         <div class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -239,12 +245,12 @@
       <EmptyState
         v-else
         variant="compact"
-        title="예정된 일정이 없어요"
-        description="영상 업로드 시 예약 게시를 설정하면 이곳에서 바로 확인할 수 있어요."
+        :title="$t('dashboard.noScheduleTitle')"
+        :description="$t('dashboard.noScheduleDescription')"
         :icon="CalendarDaysIcon"
-        action-label="일정 만들기"
+        :action-label="$t('dashboard.createSchedule')"
         action-to="/schedule"
-        secondary-action-label="영상 업로드하기"
+        :secondary-action-label="$t('dashboard.uploadVideo')"
         secondary-action-to="/upload"
       />
     </template>
@@ -269,11 +275,11 @@
           </h1>
           <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
             <span v-if="todayScheduleCount > 0">
-              오늘 {{ todayScheduleCount }}개 영상이 예약되어 있어요
+              {{ $t('dashboard.scheduledToday', { count: todayScheduleCount }) }}
             </span>
-            <span v-else>오늘 예약된 영상이 없어요</span>
+            <span v-else>{{ $t('dashboard.noScheduledToday') }}</span>
             <span class="mx-2 text-gray-300 dark:text-gray-600">·</span>
-            <span>AI 크레딧 {{ creditBalance }}개 남음</span>
+            <span>{{ $t('dashboard.creditsRemaining', { count: creditBalance }) }}</span>
           </p>
         </div>
         <button
@@ -281,32 +287,26 @@
           @click="showWidgetCustomizer = true"
         >
           <Cog6ToothIcon class="h-4 w-4" />
-          커스터마이즈
+          {{ $t('dashboard.customize') }}
         </button>
       </div>
       <div class="mt-4 flex flex-wrap gap-2">
         <router-link to="/upload" class="btn-primary btn-press inline-flex items-center gap-1.5 text-sm">
           <PlusIcon class="h-4 w-4" />
-          새 영상 업로드
+          {{ $t('dashboard.newUpload') }}
         </router-link>
         <router-link to="/ai" class="btn-secondary btn-press inline-flex items-center gap-1.5 text-sm">
           <SparklesIcon class="h-4 w-4" />
-          AI 도구
+          {{ $t('dashboard.aiTools') }}
         </router-link>
         <router-link to="/schedule" class="btn-secondary btn-press inline-flex items-center gap-1.5 text-sm">
           <CalendarDaysIcon class="h-4 w-4" />
-          일정 확인
+          {{ $t('dashboard.checkSchedule') }}
         </router-link>
       </div>
     </div>
 
-    <PageGuide title="대시보드" :items="[
-      '상단 KPI 카드(조회수·구독자·좋아요·크레딧)를 클릭하면 해당 상세 페이지로 바로 이동합니다',
-      '커스터마이즈 버튼으로 대시보드 위젯 순서를 변경하고 불필요한 위젯을 숨길 수 있습니다',
-      '조회수 트렌드 차트에서 YouTube·TikTok·Instagram·Naver Clip별 성과를 비교하세요',
-      '재활용 추천 섹션에서 과거 인기 콘텐츠를 다시 게시할 수 있습니다',
-      '예약 일정 위젯에서 다가오는 게시 스케줄을 한눈에 확인하세요',
-    ]" />
+    <PageGuide :title="$t('dashboard.pageGuideTitle')" :items="($tm('dashboard.pageGuideDesktop') as string[])" />
 
     <DashboardSkeleton v-if="loading" />
 
@@ -330,7 +330,7 @@
             <!-- Summary Cards Widget -->
             <div v-if="widget.id === 'summary'" class="grid grid-cols-2 gap-4 desktop:grid-cols-4">
               <SummaryCard
-                title="총 조회수"
+                :title="$t('dashboard.totalViews')"
                 :value="kpi?.totalViews ?? 0"
                 :change="kpi?.viewsChangePercent"
                 change-type="percent"
@@ -338,7 +338,7 @@
                 @click="$router.push('/analytics')"
               />
               <SummaryCard
-                title="총 구독자"
+                :title="$t('dashboard.totalSubscribers')"
                 :value="kpi?.totalSubscribers ?? 0"
                 :change="kpi?.subscribersChange"
                 change-type="number"
@@ -346,7 +346,7 @@
                 @click="$router.push('/channels')"
               />
               <SummaryCard
-                title="총 좋아요"
+                :title="$t('dashboard.totalLikes')"
                 :value="kpi?.totalLikes ?? 0"
                 :change="kpi?.likesChangePercent"
                 change-type="percent"
@@ -354,7 +354,7 @@
                 @click="$router.push('/analytics')"
               />
               <SummaryCard
-                title="AI 크레딧"
+                :title="$t('dashboard.aiCredits')"
                 :value="kpi?.creditBalance ?? 0"
                 :icon="SparklesIcon"
                 format="number"
@@ -428,6 +428,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useMediaQuery } from '@vueuse/core'
 import {
@@ -478,6 +479,8 @@ const authStore = useAuthStore()
 const creditStore = useCreditStore()
 const widgetSettingsStore = useWidgetSettingsStore()
 
+const { t } = useI18n()
+
 const { kpi, trendData, platformComparison, recentVideos, upcomingSchedules, topVideos, loading, period } =
   storeToRefs(dashboardStore)
 
@@ -499,10 +502,10 @@ const visibleWidgets = computed(() => widgetSettingsStore.getVisibleWidgets())
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour >= 6 && hour < 12) return '좋은 아침이에요'
-  if (hour >= 12 && hour < 18) return '좋은 오후예요'
-  if (hour >= 18 && hour < 22) return '좋은 저녁이에요'
-  return '밤늦게까지 수고하세요'
+  if (hour >= 6 && hour < 12) return t('dashboard.greetingMorning')
+  if (hour >= 12 && hour < 18) return t('dashboard.greetingAfternoon')
+  if (hour >= 18 && hour < 22) return t('dashboard.greetingEvening')
+  return t('dashboard.greetingNight')
 })
 
 const currentDate = computed(() => {
@@ -557,14 +560,14 @@ const groupedSchedules = computed(() => {
 
   const groups = [
     {
-      label: '오늘',
+      label: t('dashboard.today'),
       schedules: todayAndTomorrowSchedules.value.filter((s) => {
         const scheduleDate = dayjs(s.scheduledAt)
         return scheduleDate.isSame(today, 'day')
       }),
     },
     {
-      label: '내일',
+      label: t('dashboard.tomorrow'),
       schedules: todayAndTomorrowSchedules.value.filter((s) => {
         const scheduleDate = dayjs(s.scheduledAt)
         return scheduleDate.isSame(tomorrow, 'day')

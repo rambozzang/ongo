@@ -16,4 +16,8 @@ enum class AiFeature(
     CONTENT_GAP_ANALYSIS("콘텐츠 갭 분석", 10),
     COMPETITOR_INSIGHT("경쟁자 벤치마킹 인사이트", 8),
     SENTIMENT_ANALYSIS("감정 분석", 0),
+    STRATEGY_COACH("AI 전략 코치", 10),
+    REVENUE_REPORT("수익 분석 리포트", 8),
+    FAQ_CLUSTERING("FAQ 자동 분류", 5),
+    BATCH_REPLY_DRAFT("배치 답변 초안", 3),
 }

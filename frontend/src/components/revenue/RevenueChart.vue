@@ -17,6 +17,7 @@ import {
   Tooltip,
   Legend,
   Filler,
+  type TooltipItem,
 } from 'chart.js'
 import type { RevenueData } from '@/stores/revenue'
 import { PLATFORM_CONFIG } from '@/types/channel'
@@ -106,7 +107,7 @@ const chartOptions = computed(() => ({
     },
     tooltip: {
       callbacks: {
-        label: (context: any) => {
+        label: (context: TooltipItem<'bar'>) => {
           const label = context.dataset.label || ''
           const value = context.parsed.y
           return `${label}: ₩${value.toLocaleString('ko-KR')}`
@@ -130,7 +131,7 @@ const chartOptions = computed(() => ({
       },
       ticks: {
         color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280',
-        callback: (value: any) => `₩${(value / 1000).toFixed(0)}K`,
+        callback: (value: string | number) => `₩${(Number(value) / 1000).toFixed(0)}K`,
       },
     },
   },

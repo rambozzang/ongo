@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
           <SparklesIcon class="h-7 w-7 text-primary-600" />
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">AI 크리에이터 어시스턴트</h1>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('aiView.title') }}</h1>
         </div>
         <div class="flex items-center gap-3">
           <div
@@ -13,12 +13,12 @@
             :class="isLow ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'"
           >
             <SparklesIcon class="h-4 w-4" :class="isLow ? 'text-red-500' : 'text-primary-600'" />
-            <span class="text-gray-600 dark:text-gray-300">오늘 사용</span>
+            <span class="text-gray-600 dark:text-gray-300">{{ $t('aiView.usedToday') }}</span>
             <span class="font-bold text-primary-600 dark:text-primary-400">
               {{ creditsUsedToday.toLocaleString() }}
             </span>
             <span class="text-gray-400 dark:text-gray-500 mx-1">|</span>
-            <span class="text-gray-600 dark:text-gray-300">잔여</span>
+            <span class="text-gray-600 dark:text-gray-300">{{ $t('aiView.remaining') }}</span>
             <span class="font-bold" :class="isLow ? 'text-red-600' : 'text-primary-600'">
               {{ balance.toLocaleString() }}
             </span>
@@ -36,7 +36,7 @@
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
             @click="activeTab = 'tools'"
           >
-            AI 도구
+            {{ $t('aiView.tabs.tools') }}
           </button>
           <button
             class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
@@ -45,7 +45,7 @@
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
             @click="activeTab = 'presets'"
           >
-            프리셋
+            {{ $t('aiView.tabs.presets') }}
           </button>
           <button
             class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
@@ -54,19 +54,13 @@
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
             @click="activeTab = 'history'"
           >
-            사용 기록
+            {{ $t('aiView.tabs.history') }}
           </button>
         </nav>
       </div>
     </div>
 
-    <PageGuide title="AI 어시스턴트" :items="[
-      'AI 도구 탭에서 제목 생성·해시태그 추출·설명 작성·썸네일 분석 등 다양한 AI 도구를 사용하세요',
-      '프리셋 탭에서 자주 사용하는 AI 설정(톤, 타겟 플랫폼, 카테고리)을 저장하고 재사용하세요',
-      '사용 기록 탭에서 AI 크레딧 소비 내역과 생성 결과를 확인할 수 있습니다',
-      '상단의 일일 크레딧 사용량 표시가 빨간색이면 잔액이 부족하니 구독 페이지에서 충전하세요',
-      '각 도구 카드의 툴팁 아이콘에 마우스를 올리면 소요 크레딧과 상세 설명을 확인할 수 있습니다',
-    ]" />
+    <PageGuide :title="$t('aiView.title')" :items="($tm('aiView.pageGuide') as string[])" />
 
     <!-- Tab Content -->
     <div class="mt-6">
@@ -78,7 +72,10 @@
         v-for="tool in aiTools"
         :key="tool.id"
         class="card group cursor-pointer transition-all hover:shadow-md hover:border-primary-200"
+        role="button"
+        tabindex="0"
         @click="handleToolClick(tool)"
+        @keydown.enter="handleToolClick(tool)"
       >
         <div class="mb-3 flex items-start justify-between">
           <div
@@ -87,7 +84,7 @@
           >
             <component :is="tool.icon" class="h-5 w-5" :class="tool.iconColor" />
           </div>
-          <span class="badge-blue">{{ tool.credits }} 크레딧</span>
+          <span class="badge-blue">{{ tool.credits }} {{ $t('aiView.credits') }}</span>
         </div>
         <h3 class="mb-1 font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 transition-colors">
           {{ tool.name }}
@@ -97,7 +94,7 @@
           class="btn-primary w-full"
           @click.stop="handleToolClick(tool)"
         >
-          사용하기
+          {{ $t('aiView.useButton') }}
         </button>
       </div>
     </div>
@@ -116,7 +113,7 @@
 
     <!-- Tool Form Modal -->
     <Teleport to="body">
-      <div v-if="selectedTool" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div v-if="selectedTool" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" :aria-label="selectedTool.name">
         <div class="fixed inset-0 bg-black/50" @click="closeTool" />
         <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white dark:bg-gray-800 shadow-xl">
           <!-- Modal Header -->
@@ -130,7 +127,7 @@
               </div>
               <div>
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ selectedTool.name }}</h2>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ selectedTool.credits }} 크레딧 소모</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ selectedTool.credits }} {{ $t('aiView.creditsUsed') }}</p>
               </div>
             </div>
             <button
@@ -163,16 +160,16 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">스크립트</label>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.script') }}</label>
                   <textarea
                     v-model="metaForm.script"
                     class="input-field min-h-[120px] resize-y"
-                    placeholder="영상 스크립트를 입력하세요..."
+                    :placeholder="$t('aiView.form.scriptPlaceholder')"
                     :disabled="aiStore.loading"
                   />
                 </div>
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">플랫폼</label>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.platform') }}</label>
                   <div class="flex flex-wrap gap-2">
                     <label
                       v-for="p in platforms"
@@ -198,17 +195,17 @@
                 </div>
                 <div class="grid gap-4 tablet:grid-cols-2">
                   <div>
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">톤</label>
+                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.tone') }}</label>
                     <select v-model="metaForm.tone" class="input-field" :disabled="aiStore.loading">
-                      <option value="FRIENDLY">친근한</option>
-                      <option value="PROFESSIONAL">전문적인</option>
-                      <option value="HUMOROUS">유머러스한</option>
+                      <option value="FRIENDLY">{{ $t('aiView.tones.friendly') }}</option>
+                      <option value="PROFESSIONAL">{{ $t('aiView.tones.professional') }}</option>
+                      <option value="HUMOROUS">{{ $t('aiView.tones.humorous') }}</option>
                     </select>
                   </div>
                   <div>
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">카테고리</label>
+                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.category') }}</label>
                     <select v-model="metaForm.category" class="input-field" :disabled="aiStore.loading">
-                      <option value="">선택</option>
+                      <option value="">{{ $t('aiView.form.select') }}</option>
                       <option v-for="cat in categories" :key="cat" :value="cat">
                         {{ cat }}
                       </option>
@@ -216,14 +213,14 @@
                   </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">취소</button>
+                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
                   <button
                     class="btn-primary inline-flex items-center gap-2"
                     :disabled="!metaForm.script || metaForm.platforms.length === 0 || !metaForm.category || aiStore.loading"
                     @click="submitMeta"
                   >
                     <SparklesIcon class="h-4 w-4" />
-                    생성하기
+                    {{ $t('aiView.form.generate') }}
                   </button>
                 </div>
               </div>
@@ -241,7 +238,7 @@
                     {{ platformLabel(result.platform) }}
                   </h4>
                   <div class="mb-3">
-                    <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">제목 후보</p>
+                    <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('aiView.results.titleCandidates') }}</p>
                     <ul class="space-y-1">
                       <li
                         v-for="(title, ti) in result.titleCandidates"
@@ -255,16 +252,16 @@
                     </ul>
                   </div>
                   <div class="mb-3">
-                    <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">설명</p>
+                    <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('aiView.results.description') }}</p>
                     <p class="whitespace-pre-wrap rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                       {{ result.description }}
                     </p>
                   </div>
                   <div>
-                    <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">태그</p>
+                    <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('aiView.results.tags') }}</p>
                     <div class="flex flex-wrap gap-1">
                       <span
-                        v-for="tag in result.tags"
+                        v-for="tag in result.hashtags"
                         :key="tag"
                         class="badge-blue"
                       >
@@ -274,11 +271,11 @@
                   </div>
                 </div>
 
-                <div v-if="aiStore.metaResult.hashtags.length > 0">
-                  <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">공통 해시태그</p>
+                <div v-if="commonHashtags.length > 0">
+                  <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('aiView.results.commonHashtags') }}</p>
                   <div class="flex flex-wrap gap-1">
                     <span
-                      v-for="tag in aiStore.metaResult.hashtags"
+                      v-for="tag in commonHashtags"
                       :key="tag"
                       class="badge-blue"
                     >
@@ -292,8 +289,8 @@
                     사용 크레딧: {{ aiStore.metaResult.creditsUsed }} / 잔여: {{ aiStore.metaResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
-                    <button class="btn-secondary" @click="resetAndClose">닫기</button>
-                    <button class="btn-primary" @click="resetTool">다시 생성</button>
+                    <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
+                    <button class="btn-primary" @click="resetTool">{{ $t('aiView.results.regenerate') }}</button>
                   </div>
                 </div>
               </div>
@@ -309,26 +306,26 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">영상 제목</label>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.videoTitle') }}</label>
                   <input
                     v-model="hashtagForm.title"
                     type="text"
                     class="input-field"
-                    placeholder="영상 제목을 입력하세요"
+                    :placeholder="$t('aiView.videoTitlePlaceholder')"
                     :disabled="aiStore.loading"
                   />
                 </div>
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">카테고리</label>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.category') }}</label>
                   <select v-model="hashtagForm.category" class="input-field" :disabled="aiStore.loading">
-                    <option value="">선택</option>
+                    <option value="">{{ $t('aiView.form.select') }}</option>
                     <option v-for="cat in categories" :key="cat" :value="cat">
                       {{ cat }}
                     </option>
                   </select>
                 </div>
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">플랫폼</label>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.platform') }}</label>
                   <div class="flex flex-wrap gap-2">
                     <label
                       v-for="p in platforms"
@@ -353,14 +350,14 @@
                   </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">취소</button>
+                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
                   <button
                     class="btn-primary inline-flex items-center gap-2"
                     :disabled="!hashtagForm.title || !hashtagForm.category || hashtagForm.platforms.length === 0 || aiStore.loading"
                     @click="submitHashtags"
                   >
                     <HashtagIcon class="h-4 w-4" />
-                    추천받기
+                    {{ $t('aiView.form.recommend') }}
                   </button>
                 </div>
               </div>
@@ -392,8 +389,8 @@
                     사용 크레딧: {{ aiStore.hashtagResult.creditsUsed }} / 잔여: {{ aiStore.hashtagResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
-                    <button class="btn-secondary" @click="resetAndClose">닫기</button>
-                    <button class="btn-primary" @click="resetTool">다시 추천</button>
+                    <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
+                    <button class="btn-primary" @click="resetTool">{{ $t('aiView.results.reRecommend') }}</button>
                   </div>
                 </div>
               </div>
@@ -409,23 +406,23 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">카테고리</label>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.category') }}</label>
                   <select v-model="ideasForm.category" class="input-field" :disabled="aiStore.loading">
-                    <option value="">선택</option>
+                    <option value="">{{ $t('aiView.form.select') }}</option>
                     <option v-for="cat in categories" :key="cat" :value="cat">
                       {{ cat }}
                     </option>
                   </select>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">취소</button>
+                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
                   <button
                     class="btn-primary inline-flex items-center gap-2"
                     :disabled="!ideasForm.category || aiStore.loading"
                     @click="submitIdeas"
                   >
                     <LightBulbIcon class="h-4 w-4" />
-                    아이디어 생성
+                    {{ $t('aiView.form.generateIdea') }}
                   </button>
                 </div>
               </div>
@@ -466,8 +463,8 @@
                     사용 크레딧: {{ aiStore.ideasResult.creditsUsed }} / 잔여: {{ aiStore.ideasResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
-                    <button class="btn-secondary" @click="resetAndClose">닫기</button>
-                    <button class="btn-primary" @click="resetTool">다시 생성</button>
+                    <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
+                    <button class="btn-primary" @click="resetTool">{{ $t('aiView.results.regenerate') }}</button>
                   </div>
                 </div>
               </div>
@@ -503,14 +500,14 @@
                   </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">취소</button>
+                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
                   <button
                     class="btn-primary inline-flex items-center gap-2"
                     :disabled="aiStore.loading"
                     @click="submitReport"
                   >
                     <ChartBarIcon class="h-4 w-4" />
-                    리포트 생성
+                    {{ $t('aiView.form.generateReport') }}
                   </button>
                 </div>
               </div>
@@ -527,9 +524,224 @@
                     사용 크레딧: {{ aiStore.reportResult.creditsUsed }} / 잔여: {{ aiStore.reportResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
-                    <button class="btn-secondary" @click="resetAndClose">닫기</button>
-                    <button class="btn-primary" @click="resetTool">다시 생성</button>
+                    <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
+                    <button class="btn-primary" @click="resetTool">{{ $t('aiView.results.regenerate') }}</button>
                   </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- 9. AI 전략 코치 -->
+            <template v-else-if="selectedTool.id === 'strategy-coach'">
+              <div v-if="!aiStore.strategyCoachResult" class="relative space-y-4">
+                <AiLoadingOverlay
+                  :visible="aiStore.loading"
+                  stage="analyzing"
+                  type="insight"
+                />
+
+                <div>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.strategyCoach.focusArea') }}</label>
+                  <select v-model="strategyCoachForm.focusArea" class="input-field" :disabled="aiStore.loading">
+                    <option value="">{{ $t('aiView.strategyCoach.focusOptions.all') }}</option>
+                    <option value="콘텐츠">{{ $t('aiView.strategyCoach.focusOptions.content') }}</option>
+                    <option value="성장">{{ $t('aiView.strategyCoach.focusOptions.growth') }}</option>
+                    <option value="수익">{{ $t('aiView.strategyCoach.focusOptions.revenue') }}</option>
+                    <option value="플랫폼">{{ $t('aiView.strategyCoach.focusOptions.platform') }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <input
+                      v-model="strategyCoachForm.includeCompetitors"
+                      type="checkbox"
+                      class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                      :disabled="aiStore.loading"
+                    />
+                    {{ $t('aiView.strategyCoach.includeCompetitors') }}
+                  </label>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
+                  <button
+                    class="btn-primary inline-flex items-center gap-2"
+                    :disabled="aiStore.loading"
+                    @click="submitStrategyCoach"
+                  >
+                    <RocketLaunchIcon class="h-4 w-4" />
+                    {{ $t('aiView.form.strategyAnalysis') }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Strategy Coach Results -->
+              <div v-else class="space-y-4">
+                <!-- 종합 전략 -->
+                <div class="rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 p-4">
+                  <h4 class="mb-2 font-semibold text-primary-700 dark:text-primary-300">{{ $t('aiView.strategyCoach.overallStrategy') }}</h4>
+                  <p class="text-sm text-primary-800 dark:text-primary-200">{{ aiStore.strategyCoachResult.overallStrategy }}</p>
+                </div>
+
+                <!-- 콘텐츠 추천 -->
+                <div>
+                  <h4 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">{{ $t('aiView.strategyCoach.contentRecommendations') }}</h4>
+                  <div class="space-y-2">
+                    <div
+                      v-for="(rec, idx) in aiStore.strategyCoachResult.contentRecommendations"
+                      :key="idx"
+                      class="rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                      :style="{ animationDelay: `${idx * 100}ms` }"
+                      style="animation: ai-item-fade-in 500ms ease-out backwards"
+                    >
+                      <div class="mb-1 flex items-center justify-between">
+                        <span class="font-medium text-gray-900 dark:text-gray-100">{{ rec.topic }}</span>
+                        <span
+                          class="rounded-full px-2 py-0.5 text-xs font-medium"
+                          :class="rec.priority === 'HIGH'
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            : rec.priority === 'MEDIUM'
+                              ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                              : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'"
+                        >
+                          {{ rec.priority }}
+                        </span>
+                      </div>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ rec.targetPlatform }} | {{ rec.reason }}</p>
+                      <p class="mt-1 text-xs text-primary-600 dark:text-primary-400">예상 영향: {{ rec.expectedImpact }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 플랫폼 전략 -->
+                <div>
+                  <h4 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">{{ $t('aiView.strategyCoach.platformStrategy') }}</h4>
+                  <div class="space-y-2">
+                    <div
+                      v-for="(ps, idx) in aiStore.strategyCoachResult.platformStrategy"
+                      :key="idx"
+                      class="rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                      :style="{ animationDelay: `${idx * 100}ms` }"
+                      style="animation: ai-item-fade-in 500ms ease-out backwards"
+                    >
+                      <h5 class="mb-1 font-medium text-gray-900 dark:text-gray-100">{{ ps.platform }}</h5>
+                      <div class="grid gap-1 text-xs">
+                        <p class="text-gray-600 dark:text-gray-300"><span class="font-medium">{{ $t('aiView.strategyCoach.strength') }}</span> {{ ps.strength }}</p>
+                        <p class="text-gray-600 dark:text-gray-300"><span class="font-medium">{{ $t('aiView.strategyCoach.opportunity') }}</span> {{ ps.opportunity }}</p>
+                        <p class="text-primary-600 dark:text-primary-400"><span class="font-medium">{{ $t('aiView.strategyCoach.action') }}</span> {{ ps.action }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 타이밍 조언 -->
+                <div>
+                  <h4 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">{{ $t('aiView.strategyCoach.timingAdvice') }}</h4>
+                  <div class="space-y-2">
+                    <div
+                      v-for="(ta, idx) in aiStore.strategyCoachResult.timingAdvice"
+                      :key="idx"
+                      class="rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                    >
+                      <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ ta.recommendation }}</p>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ ta.reason }}</p>
+                      <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">예상 향상: {{ ta.expectedBoost }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex justify-end gap-3 border-t dark:border-gray-700 pt-4">
+                  <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
+                  <button class="btn-primary" @click="resetTool">{{ $t('aiView.form.reAnalyze') }}</button>
+                </div>
+              </div>
+            </template>
+
+            <!-- 10. 수익 분석 리포트 -->
+            <template v-else-if="selectedTool.id === 'revenue-report'">
+              <div v-if="!aiStore.revenueReportResult" class="relative space-y-4">
+                <AiLoadingOverlay
+                  :visible="aiStore.loading"
+                  stage="analyzing"
+                  type="insight"
+                />
+
+                <div>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">분석 기간</label>
+                  <div class="flex gap-3">
+                    <button
+                      v-for="p in reportPeriods"
+                      :key="p.value"
+                      class="flex-1 rounded-lg border px-4 py-3 text-center text-sm font-medium transition-colors"
+                      :class="[
+                        revenueReportForm.period === p.value
+                          ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
+                        aiStore.loading ? 'opacity-50 pointer-events-none' : ''
+                      ]"
+                      @click="revenueReportForm.period = p.value"
+                      :disabled="aiStore.loading"
+                    >
+                      {{ p.label }}
+                    </button>
+                  </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
+                  <button
+                    class="btn-primary inline-flex items-center gap-2"
+                    :disabled="aiStore.loading"
+                    @click="submitRevenueReport"
+                  >
+                    <CurrencyDollarIcon class="h-4 w-4" />
+                    {{ $t('aiView.form.generateReport') }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Revenue Report Results -->
+              <div v-else class="space-y-4">
+                <div
+                  class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4"
+                  v-html="renderMarkdown(aiStore.revenueReportResult.reportMarkdown)"
+                />
+
+                <!-- 수익 최적화 팁 -->
+                <div v-if="aiStore.revenueReportResult.optimizationTips.length > 0">
+                  <h4 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">{{ $t('aiView.revenueReport.optimizationTips') }}</h4>
+                  <ul class="space-y-1">
+                    <li
+                      v-for="(tip, idx) in aiStore.revenueReportResult.optimizationTips"
+                      :key="idx"
+                      class="flex items-start gap-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200"
+                    >
+                      <CurrencyDollarIcon class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                      {{ tip }}
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- 플랫폼별 분석 -->
+                <div v-if="aiStore.revenueReportResult.platformBreakdown.length > 0">
+                  <h4 class="mb-2 font-semibold text-gray-900 dark:text-gray-100">{{ $t('aiView.revenueReport.platformBreakdown') }}</h4>
+                  <div class="space-y-2">
+                    <div
+                      v-for="(pb, idx) in aiStore.revenueReportResult.platformBreakdown"
+                      :key="idx"
+                      class="rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                    >
+                      <h5 class="mb-1 font-medium text-gray-900 dark:text-gray-100">{{ pb.platform }}</h5>
+                      <div class="grid gap-1 text-xs">
+                        <p class="text-gray-600 dark:text-gray-300"><span class="font-medium">{{ $t('aiView.revenueReport.contribution') }}</span> {{ pb.contribution }}</p>
+                        <p class="text-gray-600 dark:text-gray-300"><span class="font-medium">{{ $t('aiView.revenueReport.trend') }}</span> {{ pb.trend }}</p>
+                        <p class="text-primary-600 dark:text-primary-400"><span class="font-medium">{{ $t('aiView.revenueReport.suggestion') }}</span> {{ pb.suggestion }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex justify-end gap-3 border-t dark:border-gray-700 pt-4">
+                  <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
+                  <button class="btn-primary" @click="resetTool">{{ $t('aiView.results.regenerate') }}</button>
                 </div>
               </div>
             </template>
@@ -544,11 +756,11 @@
                   />
                   <h3 class="mb-1 text-sm font-medium text-gray-900 dark:text-gray-100">{{ selectedTool.name }}</h3>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
-                    이 기능은 현재 준비 중입니다. 곧 사용하실 수 있습니다.
+                    {{ $t('aiView.placeholder.preparing') }}
                   </p>
                 </div>
                 <div class="flex justify-end">
-                  <button class="btn-secondary" @click="closeTool">닫기</button>
+                  <button class="btn-secondary" @click="closeTool">{{ $t('aiView.results.close') }}</button>
                 </div>
               </div>
             </template>
@@ -559,12 +771,12 @@
 
     <!-- Insufficient Credit Modal -->
     <Teleport to="body">
-      <div v-if="showCreditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div v-if="showCreditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="크레딧 부족">
         <div class="fixed inset-0 bg-black/50" @click="showCreditModal = false" />
         <div class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white dark:bg-gray-800 shadow-xl">
           <div class="flex items-center justify-between border-b dark:border-gray-700 px-6 py-4">
             <div>
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">크레딧이 부족합니다</h2>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('aiView.creditModal.title') }}</h2>
               <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
                 이 기능에는 <span class="font-medium text-primary-600">{{ requiredCredits }} 크레딧</span>이 필요합니다.
                 (잔여: {{ balance.toLocaleString() }})
@@ -614,13 +826,13 @@
             </div>
 
             <div class="mt-6 flex justify-end gap-3">
-              <button class="btn-secondary" @click="showCreditModal = false">취소</button>
+              <button class="btn-secondary" @click="showCreditModal = false">{{ $t('aiView.form.cancel') }}</button>
               <button
                 class="btn-primary"
                 :disabled="!selectedPackage"
                 @click="handlePurchase"
               >
-                구매하기
+                {{ $t('aiView.creditModal.purchase') }}
               </button>
             </div>
           </div>
@@ -632,6 +844,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, type Component } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
   SparklesIcon,
@@ -644,6 +857,8 @@ import {
   LightBulbIcon,
   ChartBarIcon,
   XMarkIcon,
+  RocketLaunchIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/vue/24/outline'
 import AiLoadingOverlay from '@/components/ai/AiLoadingOverlay.vue'
 import AiTypingEffect from '@/components/ai/AiTypingEffect.vue'
@@ -651,7 +866,7 @@ import AiPresetList from '@/components/ai/AiPresetList.vue'
 import AiUsageHistory from '@/components/ai/AiUsageHistory.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { useAiStore } from '@/stores/ai'
-import { useAiHistoryStore } from '@/stores/aiHistory'
+import { useAiHistoryStore, type AiPreset } from '@/stores/aiHistory'
 import { useCredit } from '@/composables/useCredit'
 import { CREDIT_PACKAGES } from '@/types/credit'
 import type { Platform } from '@/types/channel'
@@ -659,10 +874,18 @@ import { PLATFORM_CONFIG } from '@/types/channel'
 import type { AiTone } from '@/types/ai'
 
 // --- Stores & Composables ---
+const { t } = useI18n()
 const router = useRouter()
 const aiStore = useAiStore()
 const aiHistoryStore = useAiHistoryStore()
 const { balance, isLow, checkAndUse, fetchBalance } = useCredit()
+
+// Common hashtags across all platforms
+const commonHashtags = computed(() => {
+  if (!aiStore.metaResult?.platforms) return []
+  const allTags = aiStore.metaResult.platforms.flatMap(p => p.hashtags)
+  return [...new Set(allTags)]
+})
 
 // --- Types ---
 interface AiTool {
@@ -749,6 +972,24 @@ const aiTools: AiTool[] = [
     iconBg: 'bg-indigo-100 dark:bg-indigo-900/30',
     iconColor: 'text-indigo-600 dark:text-indigo-400',
   },
+  {
+    id: 'strategy-coach',
+    name: 'AI 전략 코치',
+    credits: 10,
+    description: '채널 성과·경쟁자 분석 기반 맞춤형 성장 전략 제안',
+    icon: RocketLaunchIcon,
+    iconBg: 'bg-rose-100 dark:bg-rose-900/30',
+    iconColor: 'text-rose-600 dark:text-rose-400',
+  },
+  {
+    id: 'revenue-report',
+    name: '수익 분석 리포트',
+    credits: 8,
+    description: '수익 트렌드·플랫폼별 비교·최적화 전략 리포트',
+    icon: CurrencyDollarIcon,
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+  },
 ]
 
 // --- Shared data ---
@@ -780,8 +1021,8 @@ const categories = [
 ]
 
 const reportPeriods = [
-  { value: '7d' as const, label: '최근 7일' },
-  { value: '30d' as const, label: '최근 30일' },
+  { value: '7d' as const, label: t('aiView.report.last7d') },
+  { value: '30d' as const, label: t('aiView.report.last30d') },
 ]
 
 // --- State ---
@@ -821,6 +1062,15 @@ const ideasForm = ref({
 
 const reportForm = ref({
   period: '7d' as '7d' | '30d',
+})
+
+const strategyCoachForm = ref({
+  includeCompetitors: true,
+  focusArea: '',
+})
+
+const revenueReportForm = ref({
+  period: '30d' as '7d' | '30d',
 })
 
 // --- Lifecycle ---
@@ -894,10 +1144,12 @@ function resetForms() {
   hashtagForm.value = { title: '', category: '', platforms: [] }
   ideasForm.value = { category: '' }
   reportForm.value = { period: '7d' }
+  strategyCoachForm.value = { includeCompetitors: true, focusArea: '' }
+  revenueReportForm.value = { period: '30d' }
 }
 
 // --- Preset handler ---
-function handlePresetSelected(preset: any) {
+function handlePresetSelected(preset: AiPreset) {
   // Switch to tools tab
   activeTab.value = 'tools'
 
@@ -1034,6 +1286,64 @@ async function submitReport() {
       aiHistoryStore.addRecord({
         toolType: '성과 리포트',
         prompt: reportForm.value.period === '7d' ? '최근 7일' : '최근 30일',
+        result: result.reportMarkdown.substring(0, 200) + '...',
+        creditsUsed: 8,
+      })
+    }
+  } catch {
+    // Error is handled by the store
+  }
+}
+
+async function submitStrategyCoach() {
+  const canUse = await checkAndUse(10, 'AI 전략 코치')
+  if (!canUse) {
+    selectedTool.value = null
+    requiredCredits.value = 10
+    selectedPackage.value = null
+    showCreditModal.value = true
+    return
+  }
+
+  try {
+    const result = await aiStore.generateStrategyCoach({
+      includeCompetitors: strategyCoachForm.value.includeCompetitors,
+      focusArea: strategyCoachForm.value.focusArea || undefined,
+    })
+    await fetchBalance()
+
+    if (result) {
+      aiHistoryStore.addRecord({
+        toolType: 'AI 전략 코치',
+        prompt: strategyCoachForm.value.focusArea || '전체 전략',
+        result: result.overallStrategy.substring(0, 200) + '...',
+        creditsUsed: 10,
+      })
+    }
+  } catch {
+    // Error is handled by the store
+  }
+}
+
+async function submitRevenueReport() {
+  const canUse = await checkAndUse(8, '수익 분석 리포트')
+  if (!canUse) {
+    selectedTool.value = null
+    requiredCredits.value = 8
+    selectedPackage.value = null
+    showCreditModal.value = true
+    return
+  }
+
+  const days = revenueReportForm.value.period === '30d' ? 30 : 7
+  try {
+    const result = await aiStore.generateRevenueReport(days)
+    await fetchBalance()
+
+    if (result) {
+      aiHistoryStore.addRecord({
+        toolType: '수익 분석 리포트',
+        prompt: revenueReportForm.value.period === '7d' ? '최근 7일' : '최근 30일',
         result: result.reportMarkdown.substring(0, 200) + '...',
         creditsUsed: 8,
       })

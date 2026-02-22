@@ -12,7 +12,7 @@ import java.io.InputStream
 class VideoStorageService(
     private val storageClient: StorageClient,
     private val storageProperties: StorageProperties,
-    @Value("\${storage.tus-endpoint:http://localhost:8777/api/v1/videos/upload/tus}")
+    @Value("\${storage.tus-endpoint:http://localhost:8070/api/v1/videos/upload/tus}")
     private val tusBaseEndpoint: String,
 ) : StorageService {
 

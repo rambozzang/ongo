@@ -1,6 +1,6 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
-import type { ApprovalRequest, ApprovalComment } from '@/types/approval'
+import type { ApprovalRequest, ApprovalComment, WorkflowBoard, MyTasks, PendingReviews } from '@/types/approval'
 
 export interface ApprovalListResponse {
   approvals: ApprovalResponse[]
@@ -123,6 +123,25 @@ export const approvalApi = {
   getSlaStatus(id: number) {
     return apiClient
       .get<ResData<import('@/types/approval').ApprovalChainSlaStatus[]>>(`/approvals/${id}/sla`)
+      .then(unwrapResponse)
+  },
+
+  // Workflow Board
+  workflowBoard() {
+    return apiClient
+      .get<ResData<WorkflowBoard>>('/approvals/workflow-board')
+      .then(unwrapResponse)
+  },
+
+  myTasks() {
+    return apiClient
+      .get<ResData<MyTasks>>('/approvals/my-tasks')
+      .then(unwrapResponse)
+  },
+
+  pendingReviews() {
+    return apiClient
+      .get<ResData<PendingReviews>>('/approvals/pending-reviews')
       .then(unwrapResponse)
   },
 }

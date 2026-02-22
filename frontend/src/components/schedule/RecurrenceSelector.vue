@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <!-- 반복 타입 선택 -->
     <div>
-      <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">반복 설정</label>
+      <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('schedule.recurrence.title') }}</label>
       <div class="flex flex-wrap gap-2">
         <button
           v-for="option in recurrenceOptions"
@@ -26,10 +26,10 @@
       <!-- 간격 설정 -->
       <div>
         <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          반복 간격
+          {{ t('schedule.recurrence.interval') }}
         </label>
         <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-500 dark:text-gray-400">매</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('schedule.recurrence.every') }}</span>
           <input
             :value="modelValue.interval"
             type="number"
@@ -45,7 +45,7 @@
       <!-- 주간 반복 시 요일 선택 -->
       <div v-if="modelValue.type === 'WEEKLY'">
         <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          반복 요일
+          {{ t('schedule.recurrence.dayOfWeek') }}
         </label>
         <div class="flex gap-1.5">
           <button
@@ -68,7 +68,7 @@
       <!-- 종료 조건 -->
       <div>
         <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          종료 조건
+          {{ t('schedule.recurrence.endCondition') }}
         </label>
         <div class="space-y-2">
           <label
@@ -109,7 +109,7 @@
                 class="input w-20 text-center text-sm"
                 @input="updateMaxOccurrences(($event.target as HTMLInputElement).value)"
               />
-              <span class="text-sm text-gray-500 dark:text-gray-400">회</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('schedule.recurrence.times') }}</span>
             </div>
           </label>
         </div>
@@ -120,7 +120,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { RecurrenceConfig, RecurrenceType } from '@/types/schedule'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: RecurrenceConfig
@@ -130,28 +133,28 @@ const emit = defineEmits<{
   'update:modelValue': [value: RecurrenceConfig]
 }>()
 
-const recurrenceOptions: { value: RecurrenceType; label: string }[] = [
-  { value: 'NONE', label: '없음' },
-  { value: 'DAILY', label: '매일' },
-  { value: 'WEEKLY', label: '매주' },
-  { value: 'MONTHLY', label: '매월' },
-]
+const recurrenceOptions = computed<{ value: RecurrenceType; label: string }[]>(() => [
+  { value: 'NONE', label: t('schedule.recurrence.none') },
+  { value: 'DAILY', label: t('schedule.recurrence.daily') },
+  { value: 'WEEKLY', label: t('schedule.recurrence.weekly') },
+  { value: 'MONTHLY', label: t('schedule.recurrence.monthly') },
+])
 
-const dayOptions = [
-  { value: 0, label: '일' },
-  { value: 1, label: '월' },
-  { value: 2, label: '화' },
-  { value: 3, label: '수' },
-  { value: 4, label: '목' },
-  { value: 5, label: '금' },
-  { value: 6, label: '토' },
-]
+const dayOptions = computed(() => [
+  { value: 0, label: t('schedule.recurrence.days.sun') },
+  { value: 1, label: t('schedule.recurrence.days.mon') },
+  { value: 2, label: t('schedule.recurrence.days.tue') },
+  { value: 3, label: t('schedule.recurrence.days.wed') },
+  { value: 4, label: t('schedule.recurrence.days.thu') },
+  { value: 5, label: t('schedule.recurrence.days.fri') },
+  { value: 6, label: t('schedule.recurrence.days.sat') },
+])
 
-const endOptions = [
-  { value: 'never' as const, label: '무제한' },
-  { value: 'date' as const, label: '날짜 지정' },
-  { value: 'count' as const, label: '횟수 제한' },
-]
+const endOptions = computed(() => [
+  { value: 'never' as const, label: t('schedule.recurrence.unlimited') },
+  { value: 'date' as const, label: t('schedule.recurrence.byDate') },
+  { value: 'count' as const, label: t('schedule.recurrence.byCount') },
+])
 
 const endCondition = ref<'never' | 'date' | 'count'>('never')
 
@@ -173,9 +176,9 @@ watch(
 const intervalUnit = computed(() => {
   const map: Record<RecurrenceType, string> = {
     NONE: '',
-    DAILY: '일마다',
-    WEEKLY: '주마다',
-    MONTHLY: '월마다',
+    DAILY: t('schedule.recurrence.perDays'),
+    WEEKLY: t('schedule.recurrence.perWeeks'),
+    MONTHLY: t('schedule.recurrence.perMonths'),
   }
   return map[props.modelValue.type]
 })

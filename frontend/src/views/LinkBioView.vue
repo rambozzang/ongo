@@ -3,28 +3,22 @@
     <template v-if="!bioPage">
       <div class="flex min-h-[400px] items-center justify-center">
         <div class="text-center">
-          <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">링크 페이지가 없습니다</h2>
-          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">나만의 링크 페이지를 만들어보세요</p>
+          <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $t('linkBioView.noPage') }}</h2>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $t('linkBioView.noPageDescription') }}</p>
         </div>
       </div>
     </template>
     <template v-else>
-    <PageGuide title="링크 인 바이오" :items="[
-      '에디터 탭에서 프로필에 표시할 링크를 추가·수정·삭제하고, 드래그로 순서를 변경하세요',
-      '프로필 URL을 복사하여 각 플랫폼의 프로필란에 붙여넣으면 팬들이 바로 접근할 수 있습니다',
-      '프리뷰 탭에서 실제 방문자에게 보이는 모습을 미리 확인하세요',
-      '상단 통계(총 조회수·총 클릭수·클릭률)에서 링크 페이지 성과를 모니터링하세요',
-      '저장 버튼을 누르면 변경사항이 즉시 라이브 페이지에 반영됩니다',
-    ]" />
+    <PageGuide :title="$t('linkBioView.title')" :items="($tm('linkBioView.pageGuide') as string[])" />
 
     <!-- Header -->
     <div class="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
       <div class="mx-auto max-w-7xl">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">링크인바이오</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('linkBioView.title') }}</h1>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              나만의 링크 페이지를 만들어보세요
+              {{ $t('linkBioView.description') }}
             </p>
           </div>
           <div class="flex items-center gap-3">
@@ -45,7 +39,7 @@
               class="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               <CheckIcon class="h-5 w-5" />
-              저장
+              {{ $t('linkBioView.save') }}
             </button>
           </div>
         </div>
@@ -53,19 +47,19 @@
         <!-- Stats Bar -->
         <div class="mt-4 grid grid-cols-3 gap-4">
           <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-            <div class="text-xs text-gray-500 dark:text-gray-400">총 조회수</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.totalViews') }}</div>
             <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
               {{ bioPage.totalViews.toLocaleString() }}
             </div>
           </div>
           <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-            <div class="text-xs text-gray-500 dark:text-gray-400">총 클릭수</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.totalClicks') }}</div>
             <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
               {{ totalClicks.toLocaleString() }}
             </div>
           </div>
           <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-            <div class="text-xs text-gray-500 dark:text-gray-400">클릭률</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.clickRate') }}</div>
             <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
               {{ clickRate }}%
             </div>
@@ -86,7 +80,7 @@
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
           ]"
         >
-          편집
+          {{ $t('linkBioView.tabEditor') }}
         </button>
         <button
           @click="activeTab = 'preview'"
@@ -97,7 +91,7 @@
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
           ]"
         >
-          미리보기
+          {{ $t('linkBioView.tabPreview') }}
         </button>
       </div>
     </div>
@@ -160,7 +154,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { ClipboardDocumentIcon, CheckIcon } from '@heroicons/vue/24/outline'
@@ -169,6 +164,7 @@ import BioEditor from '@/components/linkbio/BioEditor.vue'
 import BioPreview from '@/components/linkbio/BioPreview.vue'
 import type { ThemeStyle, BlockType, BioBlock, BioPage } from '@/types/linkbio'
 
+const { t } = useI18n()
 const store = useLinkBioStore()
 const { bioPage, isDirty, totalClicks, publishUrl } = storeToRefs(store)
 
@@ -215,23 +211,30 @@ const reorderBlock = (fromIndex: number, toIndex: number) => {
 
 const handleSave = () => {
   store.savePage()
-  showToastMessage('저장되었습니다')
+  showToastMessage(t('linkBioView.saved'))
 }
 
 const copyLink = async () => {
   try {
     await navigator.clipboard.writeText(publishUrl.value)
-    showToastMessage('링크가 복사되었습니다')
+    showToastMessage(t('linkBioView.linkCopied'))
   } catch {
-    showToastMessage('링크 복사에 실패했습니다')
+    showToastMessage(t('linkBioView.linkCopyFailed'))
   }
 }
+
+let toastTimeout: ReturnType<typeof setTimeout> | null = null
 
 const showToastMessage = (message: string) => {
   toastMessage.value = message
   showToast.value = true
-  setTimeout(() => {
+  if (toastTimeout) clearTimeout(toastTimeout)
+  toastTimeout = setTimeout(() => {
     showToast.value = false
   }, 3000)
 }
+
+onUnmounted(() => {
+  if (toastTimeout) clearTimeout(toastTimeout)
+})
 </script>

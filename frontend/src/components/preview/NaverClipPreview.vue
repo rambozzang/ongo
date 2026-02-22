@@ -1,7 +1,7 @@
 <template>
   <div class="naver-preview">
     <div class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-      이렇게 보여요
+      {{ t('preview.howItLooks') }}
     </div>
 
     <div class="overflow-hidden rounded-xl bg-white shadow-lg dark:bg-gray-900">
@@ -60,17 +60,17 @@
         <!-- Title with char count -->
         <div class="mb-1">
           <h3 class="line-clamp-2 text-[15px] font-bold leading-snug text-gray-900 dark:text-gray-100">
-            {{ title || '영상 제목을 입력하세요' }}
+            {{ title || t('preview.enterTitle') }}
           </h3>
           <div class="mt-1 flex items-center justify-between">
             <span
               v-if="title && title.length > 100"
               class="text-[10px] text-red-500"
-            >제목이 100자를 초과합니다</span>
+            >{{ t('preview.titleExceeded', { max: 100 }) }}</span>
             <span
               class="ml-auto text-[10px]"
               :class="(title?.length || 0) > 100 ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'"
-            >{{ title?.length || 0 }}/100자</span>
+            >{{ title?.length || 0 }}{{ t('preview.charCount', { max: 100 }) }}</span>
           </div>
         </div>
 
@@ -84,7 +84,7 @@
             </div>
             <div>
               <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {{ channelName || '크리에이터' }}
+                {{ channelName || t('preview.creator') }}
               </div>
               <div class="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
                 <span>조회 0</span>
@@ -122,7 +122,7 @@
             <span
               class="text-[10px]"
               :class="(description?.length || 0) > 1000 ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'"
-            >{{ description?.length || 0 }}/1,000자</span>
+            >{{ description?.length || 0 }}{{ t('preview.charCount', { max: '1,000' }) }}</span>
           </div>
         </div>
 
@@ -178,6 +178,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   title?: string

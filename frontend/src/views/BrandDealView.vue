@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-6xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">브랜드 딜 관리</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('brandDeal.title') }}</h1>
     </div>
 
     <!-- 탭 -->
@@ -27,30 +27,30 @@
     <div v-if="activeTab === 'tracker'">
       <div class="mb-4 flex items-center justify-between">
         <select v-model="statusFilter" class="px-3 py-2 border rounded-lg text-sm" @change="filterDeals">
-          <option value="">전체</option>
-          <option value="INQUIRY">문의</option>
-          <option value="NEGOTIATION">협상 중</option>
-          <option value="CONTRACTED">계약 완료</option>
-          <option value="IN_PROGRESS">진행 중</option>
-          <option value="COMPLETED">완료</option>
-          <option value="CANCELLED">취소</option>
+          <option value="">{{ t('brandDeal.status.all') }}</option>
+          <option value="INQUIRY">{{ t('brandDeal.status.inquiry') }}</option>
+          <option value="NEGOTIATION">{{ t('brandDeal.status.negotiation') }}</option>
+          <option value="CONTRACTED">{{ t('brandDeal.status.contracted') }}</option>
+          <option value="IN_PROGRESS">{{ t('brandDeal.status.inProgress') }}</option>
+          <option value="COMPLETED">{{ t('brandDeal.status.completed') }}</option>
+          <option value="CANCELLED">{{ t('brandDeal.status.cancelled') }}</option>
         </select>
         <button
           class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
           @click="showCreateModal = true"
         >
-          새 딜 추가
+          {{ t('brandDeal.addDeal') }}
         </button>
       </div>
 
       <!-- 로딩 -->
       <div v-if="store.loading" class="text-center py-12 text-gray-400">
-        로딩 중...
+        {{ t('brandDeal.loading') }}
       </div>
 
       <!-- 빈 상태 -->
       <div v-else-if="store.deals.length === 0" class="text-center py-12 text-gray-400">
-        등록된 브랜드 딜이 없습니다.
+        {{ t('brandDeal.emptyDeals') }}
       </div>
 
       <!-- 딜 카드 목록 -->
@@ -78,10 +78,10 @@
 
           <div class="space-y-1 text-sm text-gray-500">
             <div v-if="deal.contactName" class="flex items-center gap-1">
-              <span class="font-medium text-gray-600">담당자:</span> {{ deal.contactName }}
+              <span class="font-medium text-gray-600">{{ t('brandDeal.contactPerson') }}</span> {{ deal.contactName }}
             </div>
             <div v-if="deal.deadline" class="flex items-center gap-1">
-              <span class="font-medium text-gray-600">마감일:</span> {{ deal.deadline }}
+              <span class="font-medium text-gray-600">{{ t('brandDeal.deadline') }}</span> {{ deal.deadline }}
             </div>
           </div>
 
@@ -90,7 +90,7 @@
               class="text-xs text-red-500 hover:text-red-700"
               @click="handleDeleteDeal(deal.id)"
             >
-              삭제
+              {{ t('brandDeal.delete') }}
             </button>
           </div>
         </div>
@@ -101,34 +101,34 @@
     <div v-if="activeTab === 'mediakit'">
       <div class="bg-white rounded-lg border p-6 space-y-5">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">표시 이름</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.mediaKit.displayName') }}</label>
           <input
             v-model="mkForm.displayName"
             type="text"
             class="w-full px-3 py-2 border rounded-lg text-sm"
-            placeholder="크리에이터 이름"
+            :placeholder="t('brandDeal.mediaKit.displayNamePlaceholder')"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">소개 (Bio)</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.mediaKit.bio') }}</label>
           <textarea
             v-model="mkForm.bio"
             rows="3"
             class="w-full px-3 py-2 border rounded-lg text-sm"
-            placeholder="간단한 자기소개를 입력하세요"
+            :placeholder="t('brandDeal.mediaKit.bioPlaceholder')"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">카테고리 (쉼표 구분)</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.mediaKit.categories') }}</label>
           <input
             v-model="mkCategoriesInput"
             type="text"
             class="w-full px-3 py-2 border rounded-lg text-sm"
-            placeholder="뷰티, 패션, 라이프스타일"
+            :placeholder="t('brandDeal.mediaKit.categoriesPlaceholder')"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">소셜 링크</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.mediaKit.socialLinks') }}</label>
           <div class="space-y-2">
             <div v-for="platform in socialPlatforms" :key="platform" class="flex items-center gap-2">
               <span class="text-sm font-medium text-gray-600 w-24">{{ platform }}</span>
@@ -142,12 +142,12 @@
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">공개 슬러그</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.mediaKit.slug') }}</label>
           <input
             v-model="mkForm.slug"
             type="text"
             class="w-full px-3 py-2 border rounded-lg text-sm"
-            placeholder="my-media-kit"
+            :placeholder="t('brandDeal.mediaKit.slugPlaceholder')"
           />
         </div>
         <div class="flex items-center gap-2">
@@ -157,7 +157,7 @@
             type="checkbox"
             class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
           />
-          <label for="isPublic" class="text-sm text-gray-700">미디어키트 공개</label>
+          <label for="isPublic" class="text-sm text-gray-700">{{ t('brandDeal.mediaKit.isPublic') }}</label>
         </div>
         <div class="flex justify-end">
           <button
@@ -165,37 +165,37 @@
             :disabled="store.loading"
             @click="handleSaveMediaKit"
           >
-            저장
+            {{ t('brandDeal.mediaKit.save') }}
           </button>
         </div>
       </div>
     </div>
 
     <!-- 새 딜 추가 모달 -->
-    <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showCreateModal = false">
+    <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" :aria-label="t('brandDeal.modal.title')" @click.self="showCreateModal = false">
       <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4">
-        <h2 class="text-lg font-bold text-gray-900">새 브랜드 딜 추가</h2>
+        <h2 class="text-lg font-bold text-gray-900">{{ t('brandDeal.modal.title') }}</h2>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">브랜드명 *</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.modal.brandName') }}</label>
           <input
             v-model="newDeal.brandName"
             type="text"
             class="w-full px-3 py-2 border rounded-lg text-sm"
-            placeholder="브랜드 이름"
+            :placeholder="t('brandDeal.modal.brandNamePlaceholder')"
           />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">담당자</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.modal.contactPerson') }}</label>
             <input
               v-model="newDeal.contactName"
               type="text"
               class="w-full px-3 py-2 border rounded-lg text-sm"
-              placeholder="담당자 이름"
+              :placeholder="t('brandDeal.modal.contactNamePlaceholder')"
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.modal.email') }}</label>
             <input
               v-model="newDeal.contactEmail"
               type="email"
@@ -206,7 +206,7 @@
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">딜 금액 (원)</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.modal.dealValue') }}</label>
             <input
               v-model.number="newDeal.dealValue"
               type="number"
@@ -215,7 +215,7 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">마감일</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.modal.deadline') }}</label>
             <input
               v-model="newDeal.deadline"
               type="date"
@@ -224,12 +224,12 @@
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">메모</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('brandDeal.modal.notes') }}</label>
           <textarea
             v-model="newDeal.notes"
             rows="3"
             class="w-full px-3 py-2 border rounded-lg text-sm"
-            placeholder="추가 메모"
+            :placeholder="t('brandDeal.modal.notesPlaceholder')"
           />
         </div>
         <div class="flex justify-end gap-3 pt-2">
@@ -237,14 +237,14 @@
             class="px-4 py-2 border rounded-lg text-sm text-gray-700 hover:bg-gray-50"
             @click="showCreateModal = false"
           >
-            취소
+            {{ t('brandDeal.modal.cancel') }}
           </button>
           <button
             class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50"
             :disabled="!newDeal.brandName.trim()"
             @click="handleCreateDeal"
           >
-            추가
+            {{ t('brandDeal.modal.add') }}
           </button>
         </div>
       </div>
@@ -254,8 +254,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useBrandDealStore } from '@/stores/branddeal'
 
+const { t } = useI18n()
 const store = useBrandDealStore()
 
 const activeTab = ref('tracker')
@@ -283,21 +285,22 @@ const mkSocialLinks = reactive<Record<string, string>>({})
 const socialPlatforms = ['YouTube', 'Instagram', 'TikTok', 'Twitter']
 
 const tabs = [
-  { key: 'tracker', label: '딜 트래커' },
-  { key: 'mediakit', label: '미디어키트' },
+  { key: 'tracker', label: t('brandDeal.tabs.tracker') },
+  { key: 'mediakit', label: t('brandDeal.tabs.mediakit') },
 ]
 
-const statusLabels: Record<string, string> = {
-  INQUIRY: '문의',
-  NEGOTIATION: '협상 중',
-  CONTRACTED: '계약 완료',
-  IN_PROGRESS: '진행 중',
-  COMPLETED: '완료',
-  CANCELLED: '취소',
+const statusLabelMap: Record<string, string> = {
+  INQUIRY: 'brandDeal.status.inquiry',
+  NEGOTIATION: 'brandDeal.status.negotiation',
+  CONTRACTED: 'brandDeal.status.contracted',
+  IN_PROGRESS: 'brandDeal.status.inProgress',
+  COMPLETED: 'brandDeal.status.completed',
+  CANCELLED: 'brandDeal.status.cancelled',
 }
 
 function statusLabel(status: string): string {
-  return statusLabels[status] ?? status
+  const key = statusLabelMap[status]
+  return key ? t(key) : status
 }
 
 function statusBadgeClass(status: string): string {
@@ -343,16 +346,16 @@ async function handleCreateDeal() {
     showCreateModal.value = false
     resetNewDeal()
   } catch (e) {
-    console.error('딜 생성 실패:', e)
+    console.error(t('brandDeal.createFailed'), e)
   }
 }
 
 async function handleDeleteDeal(id: number) {
-  if (!confirm('이 딜을 삭제하시겠습니까?')) return
+  if (!confirm(t('brandDeal.confirmDelete'))) return
   try {
     await store.deleteDeal(id)
   } catch (e) {
-    console.error('딜 삭제 실패:', e)
+    console.error(t('brandDeal.deleteFailed'), e)
   }
 }
 
@@ -377,7 +380,7 @@ async function handleSaveMediaKit() {
       slug: mkForm.slug || undefined,
     })
   } catch (e) {
-    console.error('미디어키트 저장 실패:', e)
+    console.error(t('brandDeal.mediaKit.saveFailed'), e)
   }
 }
 

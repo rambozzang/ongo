@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { ExclamationCircleIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 
@@ -106,6 +106,9 @@ async function executeAction() {
   }
 }
 
+let retryTimeoutId: ReturnType<typeof setTimeout> | null = null
+let retryCancelled = false
+
 async function handleRetry() {
   if (!canRetry.value) {
     return
@@ -116,8 +119,12 @@ async function handleRetry() {
   // Exponential backoff: 1s, 2s, 4s, 8s...
   const delay = props.retryDelay * Math.pow(2, retryCount.value - 1)
 
-  await new Promise((resolve) => setTimeout(resolve, delay))
-  await executeAction()
+  await new Promise<void>((resolve) => {
+    retryTimeoutId = setTimeout(() => resolve(), delay)
+  })
+  if (!retryCancelled) {
+    await executeAction()
+  }
 }
 
 function handleReset() {
@@ -132,5 +139,10 @@ defineExpose({
   execute: executeAction,
   reset: handleReset,
   retry: handleRetry,
+})
+
+onUnmounted(() => {
+  retryCancelled = true
+  if (retryTimeoutId) clearTimeout(retryTimeoutId)
 })
 </script>

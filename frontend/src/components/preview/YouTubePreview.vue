@@ -1,7 +1,7 @@
 <template>
   <div class="youtube-preview">
     <div class="mb-3 flex items-center justify-between">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">이렇게 보여요</span>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('preview.howItLooks') }}</span>
       <div class="flex gap-1 rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
         <button
           @click="viewMode = 'feed'"
@@ -69,25 +69,25 @@
               class="mb-1 line-clamp-2 text-sm font-medium leading-5 text-gray-900 dark:text-gray-100"
               :title="title"
             >
-              {{ displayTitle || '영상 제목을 입력하세요' }}
+              {{ displayTitle || t('preview.enterTitle') }}
             </h3>
 
             <!-- Title Character Indicator -->
             <div class="mb-1 flex items-center gap-1.5">
               <span :class="['text-[11px]', titleCountColor]">
-                {{ titleLength }}/100자
+                {{ titleLength }}{{ t('preview.charCount', { max: 100 }) }}
               </span>
               <span
                 v-if="titleLength > 100"
                 class="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-900/40 dark:text-red-400"
               >
-                100자 초과
+                {{ t('preview.charExceeded', { max: 100 }) }}
               </span>
             </div>
 
             <!-- Channel & Meta -->
             <div class="text-xs text-gray-600 dark:text-gray-400">
-              <span>{{ channelName || '채널명' }}</span>
+              <span>{{ channelName || t('preview.channelName') }}</span>
               <span class="mx-1">·</span>
               <span>조회수 0회</span>
               <span class="mx-1">·</span>
@@ -193,19 +193,19 @@
             class="mb-1 line-clamp-2 text-sm font-medium leading-5 text-gray-900 dark:text-gray-100"
             :title="title"
           >
-            {{ displayTitle || '영상 제목을 입력하세요' }}
+            {{ displayTitle || t('preview.enterTitle') }}
           </h3>
 
           <!-- Title Character Indicator -->
           <div class="mb-1.5 flex items-center gap-1.5">
             <span :class="['text-[11px]', titleCountColor]">
-              {{ titleLength }}/100자
+              {{ titleLength }}{{ t('preview.charCount', { max: 100 }) }}
             </span>
             <span
               v-if="titleLength > 100"
               class="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-900/40 dark:text-red-400"
             >
-              100자 초과
+              {{ t('preview.charExceeded', { max: 100 }) }}
             </span>
           </div>
 
@@ -214,7 +214,7 @@
             <div class="flex h-5 w-5 items-center justify-center rounded-full bg-red-600">
               <span class="text-[9px] font-bold text-white">{{ channelInitial }}</span>
             </div>
-            <span>{{ channelName || '채널명' }}</span>
+            <span>{{ channelName || t('preview.channelName') }}</span>
           </div>
           <div class="text-xs text-gray-500 dark:text-gray-500">
             조회수 0회 · 방금 전
@@ -259,6 +259,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   title?: string

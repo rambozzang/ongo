@@ -19,6 +19,7 @@ import type {
   CTRResponse,
   AvgViewDurationResponse,
   SubscriberConversionResponse,
+  CrossPlatformSummaryResponse,
 } from '@/types/analytics'
 import type { Platform } from '@/types/channel'
 
@@ -227,6 +228,12 @@ export const analyticsApi = {
   subscriberConversion(days = 30) {
     return apiClient
       .get<ResData<SubscriberConversionResponse>>(`/analytics/subscriber-conversion`, { params: { days } })
+      .then(unwrapResponse)
+  },
+
+  crossPlatformComparison(days = 30) {
+    return apiClient
+      .get<ResData<CrossPlatformSummaryResponse>>('/analytics/cross-platform', { params: { days } })
       .then(unwrapResponse)
   },
 }

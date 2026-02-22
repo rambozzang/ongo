@@ -33,6 +33,7 @@ import org.jooq.DSLContext
 import org.jooq.Record
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Repository
@@ -246,6 +247,43 @@ class CommentJooqRepository(
             .groupBy(SENTIMENT)
             .fetch()
             .associate { (it.get(SENTIMENT) ?: "NEUTRAL") to (it.get(1, Int::class.java) ?: 0) }
+
+    override fun findSentimentGroupedByDate(userId: Long, days: Int): Map<LocalDate, Map<String, Int>> {
+        val dateField = DSL.field("DATE({0})", LocalDate::class.java, CREATED_AT)
+        val cutoff = LocalDateTime.now().minusDays(days.toLong())
+
+        return dsl.select(dateField, SENTIMENT, DSL.count())
+            .from(COMMENTS)
+            .where(USER_ID.eq(userId))
+            .and(CREATED_AT.greaterOrEqual(cutoff))
+            .groupBy(dateField, SENTIMENT)
+            .orderBy(dateField.asc())
+            .fetch()
+            .groupBy(
+                { it.get(dateField)!! },
+                { (it.get(SENTIMENT) ?: "NEUTRAL") to (it.get(2, Int::class.java) ?: 0) },
+            )
+            .mapValues { (_, pairs) -> pairs.toMap() }
+    }
+
+    override fun findRecentNegativeComments(userId: Long, limit: Int): List<Comment> =
+        dsl.select()
+            .from(COMMENTS)
+            .where(USER_ID.eq(userId))
+            .and(SENTIMENT.eq("NEGATIVE"))
+            .orderBy(CREATED_AT.desc())
+            .limit(limit)
+            .fetch()
+            .map { it.toComment() }
+
+    override fun findByIds(ids: List<Long>): List<Comment> {
+        if (ids.isEmpty()) return emptyList()
+        return dsl.select()
+            .from(COMMENTS)
+            .where(ID.`in`(ids))
+            .fetch()
+            .map { it.toComment() }
+    }
 
     private fun buildFilterConditions(
         userId: Long,

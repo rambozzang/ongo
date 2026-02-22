@@ -5,6 +5,9 @@ import type {
   ApprovalComment,
   ApprovalStats,
   ApprovalStatus,
+  WorkflowBoard,
+  MyTasks,
+  PendingReviews,
 } from '@/types/approval'
 import { approvalApi } from '@/api/approval'
 import { useNotificationStore } from '@/stores/notification'
@@ -45,6 +48,12 @@ export const useApprovalStore = defineStore('approval', () => {
   const requests = ref<ApprovalRequest[]>([])
   const comments = ref<ApprovalComment[]>([])
   const loading = ref(false)
+
+  // Workflow state
+  const workflowBoard = ref<WorkflowBoard | null>(null)
+  const myTasks = ref<MyTasks | null>(null)
+  const pendingReviews = ref<PendingReviews | null>(null)
+  const workflowLoading = ref(false)
 
   // Getters
   const pendingRequests = computed(() =>
@@ -270,6 +279,34 @@ export const useApprovalStore = defineStore('approval', () => {
     }
   }
 
+  // Workflow actions
+  async function fetchWorkflowBoard() {
+    workflowLoading.value = true
+    try {
+      workflowBoard.value = await approvalApi.workflowBoard()
+    } catch (e) {
+      useNotificationStore().error('워크플로우 보드를 불러오는 중 오류가 발생했습니다')
+    } finally {
+      workflowLoading.value = false
+    }
+  }
+
+  async function fetchMyTasks() {
+    try {
+      myTasks.value = await approvalApi.myTasks()
+    } catch (e) {
+      useNotificationStore().error('내 작업을 불러오는 중 오류가 발생했습니다')
+    }
+  }
+
+  async function fetchPendingReviews() {
+    try {
+      pendingReviews.value = await approvalApi.pendingReviews()
+    } catch (e) {
+      useNotificationStore().error('대기 중인 검토를 불러오는 중 오류가 발생했습니다')
+    }
+  }
+
   return {
     // State
     requests,
@@ -295,5 +332,14 @@ export const useApprovalStore = defineStore('approval', () => {
     requestRevision,
     resubmitRequest,
     addComment,
+
+    // Workflow
+    workflowBoard,
+    myTasks,
+    pendingReviews,
+    workflowLoading,
+    fetchWorkflowBoard,
+    fetchMyTasks,
+    fetchPendingReviews,
   }
 })

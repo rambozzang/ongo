@@ -36,4 +36,10 @@ interface CommentRepository {
     ): Int
 
     fun countByUserIdGroupedBySentiment(userId: Long): Map<String, Int>
+
+    fun findSentimentGroupedByDate(userId: Long, days: Int): Map<java.time.LocalDate, Map<String, Int>>
+
+    fun findRecentNegativeComments(userId: Long, limit: Int): List<Comment>
+
+    fun findByIds(ids: List<Long>): List<Comment>
 }

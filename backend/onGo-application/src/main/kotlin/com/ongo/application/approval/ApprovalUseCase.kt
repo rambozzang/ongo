@@ -4,17 +4,20 @@ import com.ongo.application.approval.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.approval.Approval
+import com.ongo.domain.approval.ApprovalChainRepository
 import com.ongo.domain.approval.ApprovalComment
 import com.ongo.domain.approval.ApprovalCommentRepository
 import com.ongo.domain.approval.ApprovalRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Duration
 import java.time.LocalDateTime
 
 @Service
 class ApprovalUseCase(
     private val approvalRepository: ApprovalRepository,
     private val approvalCommentRepository: ApprovalCommentRepository,
+    private val approvalChainRepository: ApprovalChainRepository,
 ) {
 
     fun listApprovals(userId: Long, status: String?): ApprovalListResponse {
@@ -99,6 +102,114 @@ class ApprovalUseCase(
         )
         val saved = approvalCommentRepository.save(comment)
         return saved.toResponse()
+    }
+
+    // ─── Workflow Board ────────────────────────────────────────
+
+    private val STATUS_LABELS = mapOf(
+        "DRAFT" to "초안",
+        "EDITING" to "편집중",
+        "PENDING" to "검수",
+        "REVIEW" to "검수",
+        "APPROVED" to "승인",
+        "PUBLISHED" to "게시",
+        "REJECTED" to "거절",
+    )
+
+    private val COLUMN_ORDER = listOf("DRAFT", "EDITING", "PENDING", "APPROVED", "PUBLISHED")
+
+    fun getWorkflowBoard(userId: Long): WorkflowBoardResponse {
+        val grouped = approvalRepository.findGroupedByStatus(userId)
+        val allItems = grouped.values.flatten()
+
+        val columns = COLUMN_ORDER.map { status ->
+            val approvals = grouped[status] ?: emptyList()
+            WorkflowColumn(
+                status = status,
+                statusLabel = STATUS_LABELS[status] ?: status,
+                items = approvals.map { it.toWorkflowItem() },
+                count = approvals.size,
+            )
+        }
+
+        val decidedApprovals = allItems.filter { it.decidedAt != null && it.requestedAt != null }
+        val avgHours = if (decidedApprovals.isNotEmpty()) {
+            decidedApprovals.map { Duration.between(it.requestedAt, it.decidedAt).toHours().toDouble() }
+                .average()
+        } else null
+
+        return WorkflowBoardResponse(
+            columns = columns,
+            totalItems = allItems.size,
+            stats = WorkflowStats(
+                totalPending = grouped["PENDING"]?.size ?: 0,
+                totalInReview = grouped["REVIEW"]?.size ?: 0,
+                totalApproved = grouped["APPROVED"]?.size ?: 0,
+                totalRejected = grouped["REJECTED"]?.size ?: 0,
+                avgApprovalTimeHours = avgHours,
+            ),
+        )
+    }
+
+    fun getMyTasks(userId: Long): MyTasksResponse {
+        val allApprovals = approvalRepository.findByUserId(userId)
+        return MyTasksResponse(
+            assignedToMe = allApprovals
+                .filter { it.reviewerId == userId }
+                .map { it.toWorkflowItem() },
+            requestedByMe = allApprovals
+                .filter { it.requesterId == userId }
+                .map { it.toWorkflowItem() },
+        )
+    }
+
+    fun getPendingReviews(userId: Long): PendingReviewsResponse {
+        val reviews = approvalRepository.findByReviewerId(userId)
+            .filter { it.status == "PENDING" || it.status == "REVIEW" }
+
+        val now = LocalDateTime.now()
+        val overdueCount = reviews.count { approval ->
+            val approvalId = approval.id ?: return@count false
+            val chains = approvalChainRepository.findByApprovalId(approvalId)
+            chains.any { chain ->
+                val deadline = chain.deadlineAt
+                deadline != null && deadline.isBefore(now) && chain.status == "PENDING"
+            }
+        }
+
+        return PendingReviewsResponse(
+            reviews = reviews.map { it.toWorkflowItem() },
+            overdueCount = overdueCount,
+        )
+    }
+
+    private fun Approval.toWorkflowItem(): WorkflowItem {
+        val approvalId = id
+        val chains = if (approvalId != null) {
+            approvalChainRepository.findByApprovalId(approvalId).map { chain ->
+                WorkflowStepInfo(
+                    stepOrder = chain.stepOrder,
+                    stepName = "단계 ${chain.stepOrder}",
+                    reviewerName = chain.approverName,
+                    status = chain.status,
+                    completedAt = chain.approvedAt?.toString(),
+                )
+            }
+        } else null
+
+        return WorkflowItem(
+            approvalId = id!!,
+            videoId = videoId,
+            videoTitle = videoTitle,
+            platforms = platforms.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+            requesterName = requesterName,
+            reviewerName = reviewerName,
+            scheduledAt = scheduledAt?.toString(),
+            status = status,
+            requestedAt = requestedAt.toString(),
+            updatedAt = updatedAt?.toString(),
+            chainSteps = chains?.ifEmpty { null },
+        )
     }
 
     private fun Approval.toResponse() = ApprovalResponse(

@@ -2,7 +2,7 @@
 import { CheckCircleIcon, CircleStackIcon } from '@heroicons/vue/24/outline'
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/vue/24/solid'
 import type { Milestone } from '@/types/goal'
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 
 interface Props {
   milestones: Milestone[]
@@ -24,11 +24,14 @@ const newMilestoneTarget = ref<number | ''>('')
 
 const celebratingId = ref<number | null>(null)
 
+let celebrateTimeout: ReturnType<typeof setTimeout> | null = null
+
 const handleComplete = (milestone: Milestone) => {
   if (!milestone.isCompleted) {
     celebratingId.value = milestone.id
     emit('complete', milestone.id)
-    setTimeout(() => {
+    if (celebrateTimeout) clearTimeout(celebrateTimeout)
+    celebrateTimeout = setTimeout(() => {
       celebratingId.value = null
     }, 2000)
   }
@@ -49,6 +52,10 @@ const handleAddMilestone = () => {
 const formatNumber = (value: number): string => {
   return value.toLocaleString('ko-KR')
 }
+
+onUnmounted(() => {
+  if (celebrateTimeout) clearTimeout(celebrateTimeout)
+})
 </script>
 
 <template>

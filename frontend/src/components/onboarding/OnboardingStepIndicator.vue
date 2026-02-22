@@ -44,13 +44,16 @@
       ></div>
     </div>
     <p class="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">
-      {{ progressPercentage }}% 완료
+      {{ progressPercentage }}% {{ t('onboarding.completed') }}
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Step {
   number: number

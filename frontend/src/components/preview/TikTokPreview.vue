@@ -1,7 +1,7 @@
 <template>
   <div class="tiktok-preview">
     <div class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-      이렇게 보여요
+      {{ t('preview.howItLooks') }}
     </div>
 
     <!-- Phone Frame -->
@@ -95,25 +95,25 @@
             <!-- Character Count Indicator -->
             <div class="mb-1.5">
               <span :class="['text-[10px] font-medium', captionCountColor]">
-                {{ captionLength }}/150자
+                {{ captionLength }}{{ t('preview.charCount', { max: 150 }) }}
               </span>
               <span
                 v-if="captionLength > 150"
                 class="ml-1.5 rounded bg-red-500/30 px-1.5 py-0.5 text-[9px] font-semibold text-red-300"
               >
-                150자 초과
+                {{ t('preview.charExceeded', { max: 150 }) }}
               </span>
             </div>
 
             <!-- Channel Name -->
             <div class="mb-1 text-sm font-bold text-white">
-              @{{ channelName || '사용자명' }}
+              @{{ channelName || t('preview.username') }}
             </div>
 
             <!-- Caption with inline hashtags (TikTok style) -->
             <div class="text-[13px] leading-5 text-white">
               <span class="line-clamp-2">
-                <span>{{ title || '캡션을 입력하세요' }}</span>
+                <span>{{ title || t('preview.enterCaption') }}</span>
                 <template v-if="tags && tags.length > 0">
                   {{ ' ' }}
                   <span
@@ -133,7 +133,7 @@
                 <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
               </svg>
               <div class="overflow-hidden">
-                <span class="marquee-text text-xs text-white">원본 사운드 - {{ channelName || '사용자명' }}</span>
+                <span class="marquee-text text-xs text-white">원본 사운드 - {{ channelName || t('preview.username') }}</span>
               </div>
             </div>
           </div>
@@ -145,6 +145,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   title?: string

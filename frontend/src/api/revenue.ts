@@ -1,6 +1,6 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
-import type { RevenueSummary, RevenueTrend, PlatformRevenueData } from '@/types/revenue'
+import type { RevenueSummary, RevenueTrend, PlatformRevenueData, CpmRpmResponse, BrandDealRevenueResponse } from '@/types/revenue'
 
 function periodToDays(period: string): number {
   const match = period.match(/^(\d+)d$/)
@@ -32,6 +32,20 @@ export const revenueApi = {
     const days = periodToDays(period)
     return apiClient
       .get<ResData<PlatformRevenueData>>('/analytics/revenue/platform', { params: { days } })
+      .then(unwrapResponse)
+  },
+
+  cpmRpm(period: string = '30d') {
+    const days = periodToDays(period)
+    return apiClient
+      .get<ResData<CpmRpmResponse>>('/analytics/revenue/cpm-rpm', { params: { days } })
+      .then(unwrapResponse)
+  },
+
+  brandDealRevenue(period: string = '90d') {
+    const days = periodToDays(period)
+    return apiClient
+      .get<ResData<BrandDealRevenueResponse>>('/analytics/revenue/brand-deals', { params: { days } })
       .then(unwrapResponse)
   },
 }

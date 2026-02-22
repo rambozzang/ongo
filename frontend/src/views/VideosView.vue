@@ -585,7 +585,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, reactive } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, reactive, type ComponentPublicInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useMediaQuery } from '@vueuse/core'
@@ -657,11 +657,12 @@ const { pullDistance, isRefreshing } = usePullToRefresh(pageContainerRef, {
 })
 
 // Swipeable cards management
-const swipeableCardRefs = new Map<number, any>()
+type SwipeableCardInstance = { close?: () => void }
+const swipeableCardRefs = new Map<number, SwipeableCardInstance>()
 
-function setSwipeableCardRef(videoId: number, el: any) {
+function setSwipeableCardRef(videoId: number, el: Element | ComponentPublicInstance | null) {
   if (el) {
-    swipeableCardRefs.set(videoId, el)
+    swipeableCardRefs.set(videoId, el as SwipeableCardInstance)
   } else {
     swipeableCardRefs.delete(videoId)
   }
@@ -1021,11 +1022,11 @@ function formatDuration(seconds: number): string {
 function getTotalViews(video: Video): number {
   // Views would typically come from analytics; using 0 as the Video type
   // doesn't carry aggregate view counts directly.
-  return (video as any).totalViews ?? 0
+  return (video as Video & { totalViews?: number }).totalViews ?? 0
 }
 
 function getTotalLikes(video: Video): number {
-  return (video as any).totalLikes ?? 0
+  return (video as Video & { totalLikes?: number }).totalLikes ?? 0
 }
 
 // --- Bulk Actions (with toast notifications for now) ---
@@ -1075,6 +1076,7 @@ function handleBulkExport() {
 
 // --- Export Data Preparation ---
 interface VideoExportData {
+  [key: string]: string | number
   title: string
   status: string
   platforms: string
@@ -1098,13 +1100,13 @@ const exportData = computed<VideoExportData[]>(() => {
   }))
 })
 
-const exportColumns = computed<ColumnDefinition<VideoExportData>[]>(() => [
+const exportColumns = computed<ColumnDefinition<Record<string, unknown>>[]>(() => [
   { key: 'title', header: '제목' },
   { key: 'status', header: '상태' },
   { key: 'platforms', header: '플랫폼' },
   { key: 'views', header: '조회수' },
   { key: 'likes', header: '좋아요' },
-  { key: 'createdAt', header: '게시일', formatter: (val) => formatDateForExport(val) },
+  { key: 'createdAt', header: '게시일', formatter: (val) => formatDateForExport(val as string) },
 ])
 
 const exportFilename = computed(() => {
@@ -1173,5 +1175,9 @@ onMounted(() => {
   }
 
   videoStore.fetchVideos()
+})
+
+onUnmounted(() => {
+  if (searchTimeout) clearTimeout(searchTimeout)
 })
 </script>

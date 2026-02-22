@@ -212,3 +212,37 @@ export interface SubscriberConversionResponse {
   totalGained: number
   data: SubscriberConversionPoint[]
 }
+
+// 크로스 플랫폼 성과 비교
+export interface PlatformMetrics {
+  platform: string
+  views: number
+  likes: number
+  comments: number
+  shares: number
+  watchTimeSeconds: number
+  engagementRate: number
+  avgViewDuration: number
+  revenueMicro: number
+}
+
+export interface CrossPlatformComparisonResponse {
+  videoId: number
+  videoTitle: string | null
+  platforms: PlatformMetrics[]
+  bestPlatform: string | null
+  insights: string[]
+}
+
+export interface PlatformRanking {
+  platform: string
+  avgEngagementRate: number
+  totalViews: number
+  totalRevenue: number
+  rank: number
+}
+
+export interface CrossPlatformSummaryResponse {
+  videos: CrossPlatformComparisonResponse[]
+  platformRankings: Record<string, PlatformRanking>
+}

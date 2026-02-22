@@ -64,32 +64,13 @@ else
     echo "Warning: Nginx not found."
 fi
 
-# 5. MinIO Installation (Standalone Binary)
-echo ">>> Installing MinIO..."
-if ! command -v minio &> /dev/null; then
-    wget https://dl.min.io/server/minio/release/linux-arm64/minio -O /usr/local/bin/minio
-    chmod +x /usr/local/bin/minio
-    
-    # Create MinIO user and group
-    if ! id "minio-user" &>/dev/null; then
-        useradd -r minio-user -s /sbin/nologin
-    fi
-    
-    mkdir -p /mnt/data
-    chown minio-user:minio-user /mnt/data
-else
-    echo "MinIO is already installed."
-fi
-
-# 6. Firewall Configuration
+# 5. Firewall Configuration
 echo ">>> Configuring Firewall..."
 firewall-cmd --permanent --add-service=http
 firewall-cmd --permanent --add-service=https
-firewall-cmd --permanent --add-port=8090/tcp # Backend
+firewall-cmd --permanent --add-port=8070/tcp # Backend
 firewall-cmd --permanent --add-port=5432/tcp # PostgreSQL (External Access)
-firewall-cmd --permanent --add-port=9000/tcp # MinIO API
-firewall-cmd --permanent --add-port=9001/tcp # MinIO Console
 firewall-cmd --reload
 
 echo ">>> Setup Complete!"
-echo "Next steps: Configure systemd services and deploy code."
+echo "Next steps: deploy/deploy.sh 스크립트로 배포하세요."

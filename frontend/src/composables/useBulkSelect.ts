@@ -2,7 +2,7 @@ import { ref, computed, type Ref } from 'vue'
 
 export interface BulkSelectItem {
   id: number
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export function useBulkSelect<T extends BulkSelectItem>(items: Ref<T[]>) {

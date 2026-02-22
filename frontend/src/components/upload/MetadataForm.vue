@@ -54,13 +54,16 @@
 
       <!-- Title -->
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label for="metadata-title" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
           제목 <span class="text-red-500">*</span>
         </label>
         <input
+          id="metadata-title"
           :value="modelValue.title"
           type="text"
           maxlength="100"
+          required
+          aria-required="true"
           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           placeholder="영상 제목을 입력하세요"
           @input="updateField('title', ($event.target as HTMLInputElement).value)"
@@ -72,8 +75,9 @@
 
       <!-- Description -->
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">설명</label>
+        <label for="metadata-description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">설명</label>
         <textarea
+          id="metadata-description"
           :value="modelValue.description"
           rows="4"
           class="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -121,8 +125,9 @@
 
       <!-- Category -->
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">카테고리</label>
+        <label for="metadata-category" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">카테고리</label>
         <select
+          id="metadata-category"
           :value="modelValue.category"
           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           @change="updateField('category', ($event.target as HTMLSelectElement).value)"

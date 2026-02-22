@@ -1,5 +1,7 @@
 package com.ongo.infrastructure.persistence.jooq
 
+import com.ongo.domain.revenue.BrandDealRevenueRaw
+import com.ongo.domain.revenue.CpmRpmRaw
 import com.ongo.domain.revenue.DailyRevenue
 import com.ongo.domain.revenue.PlatformRevenue
 import com.ongo.domain.revenue.RevenueRepository
@@ -87,6 +89,59 @@ class RevenueJooqRepository(
                 .lessThan(to.plusDays(1).atStartOfDay()))
             .fetchOne()
             ?.get("total", Long::class.java) ?: 0L
+    }
+
+    override fun getCpmRpmByPlatform(userId: Long, from: LocalDate, to: LocalDate): List<CpmRpmRaw> {
+        val uploadIds = getUserUploadIds(userId)
+        if (uploadIds.isEmpty()) return emptyList()
+
+        val platformField = DSL.field("vu.platform", String::class.java)
+        val impressionsSum = DSL.sum(DSL.field("ad.impressions", Int::class.java)).`as`("total_impressions")
+        val viewsSum = DSL.sum(DSL.field("ad.views", Int::class.java)).`as`("total_views")
+        val revenueSum = DSL.sum(DSL.field("ad.revenue_micro", Long::class.java)).`as`("total_revenue")
+
+        return dsl.select(platformField, impressionsSum, viewsSum, revenueSum)
+            .from(DSL.table("analytics_daily").`as`("ad"))
+            .join(DSL.table("video_uploads").`as`("vu"))
+            .on(DSL.field("ad.video_upload_id", Long::class.java).eq(DSL.field("vu.id", Long::class.java)))
+            .where(DSL.field("ad.video_upload_id", Long::class.java).`in`(uploadIds))
+            .and(DSL.field("ad.date", LocalDate::class.java).greaterOrEqual(from))
+            .and(DSL.field("ad.date", LocalDate::class.java).lessOrEqual(to))
+            .groupBy(platformField)
+            .fetch()
+            .map { record ->
+                CpmRpmRaw(
+                    platform = record.get(platformField) ?: "UNKNOWN",
+                    impressions = record.get("total_impressions", Long::class.java) ?: 0L,
+                    views = record.get("total_views", Long::class.java) ?: 0L,
+                    revenueMicro = record.get("total_revenue", Long::class.java) ?: 0L,
+                )
+            }
+    }
+
+    override fun getBrandDealRevenue(userId: Long, from: LocalDate, to: LocalDate): List<BrandDealRevenueRaw> {
+        return dsl.select(
+            Fields.ID,
+            Fields.BRAND_NAME,
+            Fields.DEAL_VALUE,
+            Fields.STATUS,
+            Fields.PLATFORM,
+        )
+            .from(Tables.BRAND_DEALS)
+            .where(Fields.USER_ID.eq(userId))
+            .and(Fields.CREATED_AT.greaterOrEqual(from.atStartOfDay()))
+            .and(Fields.CREATED_AT.lessThan(to.plusDays(1).atStartOfDay()))
+            .orderBy(Fields.CREATED_AT.desc())
+            .fetch()
+            .map { record ->
+                BrandDealRevenueRaw(
+                    id = record.get(Fields.ID),
+                    brandName = record.get(Fields.BRAND_NAME) ?: "",
+                    dealValue = record.get(Fields.DEAL_VALUE) ?: 0L,
+                    status = record.get(Fields.STATUS) ?: "UNKNOWN",
+                    platform = record.get(Fields.PLATFORM),
+                )
+            }
     }
 
     private fun getUserUploadIds(userId: Long): List<Long> =

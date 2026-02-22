@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Doughnut } from 'vue-chartjs'
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, type TooltipItem } from 'chart.js'
 import { PLATFORM_CONFIG } from '@/types/channel'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
@@ -72,7 +72,7 @@ const chartOptions = computed(() => ({
       labels: {
         padding: 16,
         usePointStyle: true,
-        generateLabels: (chart: any) => {
+        generateLabels: (chart: ChartJS<'doughnut'>) => {
           const data = chart.data
           if (data.labels.length && data.datasets.length) {
             return data.labels.map((label: string, i: number) => {
@@ -94,10 +94,10 @@ const chartOptions = computed(() => ({
     },
     tooltip: {
       callbacks: {
-        label: (context: any) => {
+        label: (context: TooltipItem<'doughnut'>) => {
           const label = context.label || ''
           const value = context.parsed
-          const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
+          const total = (context.dataset.data as number[]).reduce((a: number, b: number) => a + b, 0)
           const percentage = ((value / total) * 100).toFixed(1)
           return `${label}: ₩${value.toLocaleString('ko-KR')} (${percentage}%)`
         },

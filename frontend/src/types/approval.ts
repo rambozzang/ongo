@@ -75,3 +75,57 @@ export interface CreateApprovalChainRequest {
   steps: { approverId: number; approverName: string; deadlineHours?: number }[]
   deadlineHours?: number
 }
+
+// Workflow Board types
+export interface WorkflowBoard {
+  columns: WorkflowColumn[]
+  totalItems: number
+  stats: WorkflowBoardStats
+}
+
+export interface WorkflowColumn {
+  status: string
+  statusLabel: string
+  items: WorkflowItem[]
+  count: number
+}
+
+export interface WorkflowItem {
+  approvalId: number
+  videoId: number
+  videoTitle: string
+  platforms: string[]
+  requesterName: string
+  reviewerName: string | null
+  scheduledAt: string | null
+  status: string
+  requestedAt: string
+  updatedAt: string | null
+  chainSteps: WorkflowStep[] | null
+}
+
+export interface WorkflowStep {
+  stepOrder: number
+  stepName: string
+  reviewerName: string | null
+  status: string
+  completedAt: string | null
+}
+
+export interface WorkflowBoardStats {
+  totalPending: number
+  totalInReview: number
+  totalApproved: number
+  totalRejected: number
+  avgApprovalTimeHours: number | null
+}
+
+export interface MyTasks {
+  assignedToMe: WorkflowItem[]
+  requestedByMe: WorkflowItem[]
+}
+
+export interface PendingReviews {
+  reviews: WorkflowItem[]
+  overdueCount: number
+}

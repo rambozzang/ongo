@@ -9,6 +9,7 @@ import {
   CalendarDaysIcon,
   ClockIcon,
 } from '@heroicons/vue/24/outline'
+import type { Platform } from '@/types/channel'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import RecurringRuleFormModal from './RecurringRuleFormModal.vue'
 
@@ -236,7 +237,7 @@ const sortedRules = computed(() =>
               <PlatformBadge
                 v-for="platform in rule.platforms"
                 :key="platform"
-                :platform="platform as any"
+                :platform="platform as Platform"
               />
             </div>
 

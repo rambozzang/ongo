@@ -320,6 +320,691 @@
       "sttNote": "* Speech-to-text (STT) always uses OpenAI Whisper."
     }
   },
+  "brandDeal": {
+    "title": "Brand Deal Management",
+    "tabs": {
+      "tracker": "Deal Tracker",
+      "mediakit": "Media Kit"
+    },
+    "status": {
+      "all": "All",
+      "inquiry": "Inquiry",
+      "negotiation": "Negotiating",
+      "contracted": "Contracted",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "addDeal": "Add New Deal",
+    "loading": "Loading...",
+    "emptyDeals": "No brand deals found.",
+    "contactPerson": "Contact:",
+    "deadline": "Deadline:",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this deal?",
+    "createFailed": "Failed to create deal:",
+    "deleteFailed": "Failed to delete deal:",
+    "modal": {
+      "title": "Add New Brand Deal",
+      "brandName": "Brand Name *",
+      "brandNamePlaceholder": "Brand name",
+      "contactPerson": "Contact Person",
+      "contactNamePlaceholder": "Contact name",
+      "email": "Email",
+      "dealValue": "Deal Value (KRW)",
+      "deadline": "Deadline",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional notes",
+      "cancel": "Cancel",
+      "add": "Add"
+    },
+    "mediaKit": {
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Creator name",
+      "bio": "Bio",
+      "bioPlaceholder": "Write a brief introduction",
+      "categories": "Categories (comma separated)",
+      "categoriesPlaceholder": "Beauty, Fashion, Lifestyle",
+      "socialLinks": "Social Links",
+      "slug": "Public Slug",
+      "slugPlaceholder": "my-media-kit",
+      "isPublic": "Make Media Kit Public",
+      "save": "Save",
+      "saveFailed": "Failed to save media kit:"
+    }
+  },
+  "audience": {
+    "title": "Audience CRM",
+    "tabs": {
+      "profiles": "Fan Profiles",
+      "segments": "Segments"
+    },
+    "sort": {
+      "engagementScore": "Highest Engagement",
+      "totalInteractions": "Most Interactions",
+      "lastSeenAt": "Recent Activity"
+    },
+    "loading": "Loading...",
+    "emptyProfiles": "No audience profiles found.",
+    "table": {
+      "profile": "Profile",
+      "platform": "Platform",
+      "engagement": "Engagement",
+      "tags": "Tags",
+      "interactions": "Interactions",
+      "lastActivity": "Last Activity"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "members": "members",
+    "autoUpdate": "Auto Update",
+    "segment": {
+      "add": "Add Segment",
+      "empty": "No segments found. Add a new segment to get started.",
+      "confirmDelete": "Are you sure you want to delete this segment?",
+      "createFailed": "Failed to create segment:",
+      "deleteFailed": "Failed to delete segment:",
+      "modal": {
+        "title": "New Segment",
+        "name": "Name *",
+        "namePlaceholder": "Segment name",
+        "description": "Description",
+        "descriptionPlaceholder": "Segment description (optional)",
+        "conditions": "Conditions",
+        "conditionsPlaceholder": "e.g. engagement_score > 80",
+        "autoUpdate": "Auto Update",
+        "cancel": "Cancel",
+        "creating": "Creating...",
+        "add": "Add"
+      }
+    }
+  },
+  "schedule": {
+    "recurrence": {
+      "title": "Recurrence",
+      "interval": "Repeat Interval",
+      "every": "Every",
+      "dayOfWeek": "Repeat Days",
+      "endCondition": "End Condition",
+      "none": "None",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "days": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      },
+      "unlimited": "Unlimited",
+      "byDate": "By Date",
+      "byCount": "By Count",
+      "perDays": "day(s)",
+      "perWeeks": "week(s)",
+      "perMonths": "month(s)",
+      "times": "times"
+    },
+    "optimalTime": {
+      "title": "Recommended Times",
+      "confidence": "Confidence",
+      "best": "BEST",
+      "reasonEngagement": "{day} {time} — Highest engagement ({rate}%)",
+      "reasonReach": "{day} {time} — Highest reach (est. {views} views)",
+      "reasonBalance": "{day} {time} — Balanced recommendation"
+    }
+  },
+  "onboarding": {
+    "completed": "Completed",
+    "recommended": "Recommended",
+    "perMonth": "/mo",
+    "unlimited": "Unlimited",
+    "uploadsPerMonth": "{count} uploads/month",
+    "unlimitedUploads": "Unlimited uploads/month",
+    "platformConnections": "{count} platform connections",
+    "aiCredits": "{count} AI credits/month",
+    "scheduleDays": "{count}-day scheduled uploads",
+    "storage": "Storage:",
+    "free": "Free"
+  },
+  "preview": {
+    "howItLooks": "Preview",
+    "exceeded": "Exceeded",
+    "titleCount": "Title {current}/{max}",
+    "descCount": "Desc {current}/{max}",
+    "enterTitle": "Enter video title",
+    "enterCaption": "Enter caption",
+    "charExceeded": "Over {max} chars",
+    "charCount": "/{max} chars",
+    "titleExceeded": "Title exceeds {max} characters",
+    "channelName": "Channel",
+    "username": "Username",
+    "creator": "Creator",
+    "platformPreview": "Platform Preview",
+    "switchToTab": "Switch to tab view",
+    "switchToGrid": "Switch to comparison view",
+    "platformInfo": "Preview how your content will look on each platform. Displayed in optimized format for each platform.",
+    "selectPlatform": "Select a platform to see preview"
+  },
+  "crossPlatform": {
+    "title": "Cross-Platform Comparison",
+    "tab": "Cross-Platform",
+    "summary": "Platform Rankings",
+    "videoComparison": "Video Platform Comparison",
+    "insights": "Insights",
+    "bestPlatform": "Best Performing Platform",
+    "rank": "Rank #{rank}",
+    "engagementRate": "Engagement Rate",
+    "avgViews": "Avg. Views",
+    "totalRevenue": "Total Revenue",
+    "noData": "No cross-platform comparison data available",
+    "views": "Views",
+    "likes": "Likes",
+    "comments": "Comments",
+    "shares": "Shares",
+    "watchTime": "Watch Time",
+    "revenue": "Revenue"
+  },
+  "revenueEnhanced": {
+    "tabs": {
+      "overview": "Overview",
+      "cpmRpm": "CPM·RPM",
+      "brandDeals": "Brand Deals",
+      "aiReport": "AI Report"
+    },
+    "cpmRpm": {
+      "title": "CPM·RPM Analysis",
+      "cpm": "CPM (Revenue per 1,000 Impressions)",
+      "rpm": "RPM (Revenue per 1,000 Views)",
+      "platform": "Platform",
+      "impressions": "Impressions",
+      "noData": "No CPM/RPM data available"
+    },
+    "brandDealRevenue": {
+      "title": "Brand Deal Revenue",
+      "totalRevenue": "Total Brand Deal Revenue",
+      "dealCount": "Deal Count",
+      "avgDealValue": "Avg. Deal Value",
+      "noData": "No brand deal revenue data available"
+    },
+    "aiReport": {
+      "title": "AI Revenue Analysis Report",
+      "generate": "Generate Report",
+      "generating": "Generating report...",
+      "creditCost": "8 Credits",
+      "noReport": "Generate an AI revenue report to get started"
+    }
+  },
+  "strategyCoach": {
+    "title": "AI Strategy Coach",
+    "description": "Analyzes cross-platform data and trends to recommend optimal content strategies",
+    "generate": "Start Strategy Analysis",
+    "generating": "Analyzing strategy...",
+    "creditCost": "10 Credits",
+    "includeCompetitors": "Include Competitor Data",
+    "focusArea": "Focus Area",
+    "contentRecommendations": "Content Recommendations",
+    "platformStrategy": "Platform Strategy",
+    "timingAdvice": "Timing Advice",
+    "overallStrategy": "Overall Strategy",
+    "topic": "Topic",
+    "targetPlatform": "Target Platform",
+    "priority": "Priority",
+    "expectedImpact": "Expected Impact",
+    "strength": "Strength",
+    "opportunity": "Opportunity",
+    "action": "Action Plan",
+    "noData": "Start the AI Strategy Coach to get recommendations"
+  },
+  "commentAdvanced": {
+    "sentimentTrend": {
+      "title": "Sentiment Trend",
+      "positive": "Positive",
+      "neutral": "Neutral",
+      "negative": "Negative",
+      "period": "{days} days",
+      "improving": "Improving",
+      "stable": "Stable",
+      "worsening": "Worsening",
+      "noData": "No sentiment trend data available"
+    },
+    "faq": {
+      "title": "FAQ Auto-Classification",
+      "analyze": "Start AI Analysis",
+      "analyzing": "Analyzing...",
+      "creditCost": "5 Credits",
+      "topic": "Topic",
+      "questionCount": "Questions",
+      "sampleQuestions": "Sample Questions",
+      "suggestedReply": "Suggested Reply",
+      "noData": "Start FAQ analysis to get clusters"
+    },
+    "batchReply": {
+      "title": "Batch AI Replies",
+      "generate": "Generate AI replies for selected comments",
+      "generating": "Generating AI replies...",
+      "creditCost": "3 credits per comment",
+      "selectComments": "Select comments",
+      "tone": "Tone",
+      "tones": {
+        "friendly": "Friendly",
+        "professional": "Professional",
+        "humorous": "Humorous"
+      },
+      "draftReply": "AI Draft Reply",
+      "apply": "Apply",
+      "applyAll": "Apply All",
+      "noData": "No batch AI reply data available"
+    }
+  },
+  "workflow": {
+    "title": "Workflow",
+    "tab": "Workflow",
+    "board": {
+      "title": "Workflow Board",
+      "columns": {
+        "draft": "Draft",
+        "editing": "Editing",
+        "review": "Review",
+        "approved": "Approved",
+        "published": "Published"
+      }
+    },
+    "myTasks": {
+      "title": "My Tasks",
+      "assignedToMe": "Assigned to Me",
+      "requestedByMe": "Requested by Me",
+      "noTasks": "No tasks assigned"
+    },
+    "pendingReviews": {
+      "title": "Pending Reviews",
+      "overdue": "Overdue",
+      "noReviews": "No pending reviews"
+    },
+    "stats": {
+      "pending": "Pending",
+      "inReview": "In Review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "avgTime": "Avg. Approval Time"
+    },
+    "step": {
+      "completed": "Completed",
+      "current": "In Progress",
+      "pending": "Pending",
+      "rejected": "Rejected"
+    }
+  },
+  "dashboard": {
+    "totalViews": "Total Views",
+    "totalSubscribers": "Total Subscribers",
+    "totalLikes": "Total Likes",
+    "aiCredits": "AI Credits",
+    "recentUploads": "Recent Uploads",
+    "viewAll": "View all →",
+    "viewsTrend": "Views Trend",
+    "scheduledUploads": "Scheduled Uploads",
+    "viewCalendar": "Calendar →",
+    "noScheduledToday": "No videos scheduled for today",
+    "scheduledToday": "{count} videos scheduled for today",
+    "creditsRemaining": "{count} AI credits remaining",
+    "noScheduleTitle": "No upcoming schedules",
+    "noScheduleDescription": "Set up scheduled publishing when uploading videos to see them here.",
+    "createSchedule": "Create Schedule",
+    "uploadVideo": "Upload Video",
+    "newUpload": "New Upload",
+    "aiTools": "AI Tools",
+    "checkSchedule": "Schedule",
+    "customize": "Customize",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "greetingNight": "Burning the midnight oil",
+    "days7": "7D",
+    "days30": "30D",
+    "pageGuideTitle": "Dashboard",
+    "pageGuideMobile": [
+      "Tap KPI cards to navigate to detail pages (Analytics, Channels, Subscription)",
+      "Use quick action buttons for Upload, AI Tools, and Schedule",
+      "Scroll horizontally through recent uploads and tap to view details",
+      "Track channel growth with the 7/30-day views trend chart",
+      "Check today's and tomorrow's scheduled posts in the schedule section"
+    ],
+    "pageGuideDesktop": [
+      "Click KPI cards (Views, Subscribers, Likes, Credits) to navigate to detail pages",
+      "Use the Customize button to reorder and hide dashboard widgets",
+      "Compare performance across YouTube, TikTok, Instagram, and Naver Clip in the trend chart",
+      "Discover content recycling opportunities from past popular videos",
+      "Monitor upcoming publishing schedules in the schedule widget"
+    ]
+  },
+  "scheduleView": {
+    "title": "Schedule Management",
+    "sort": {
+      "date": "By Date",
+      "platform": "By Platform",
+      "status": "By Status",
+      "manual": "Manual"
+    },
+    "filter": "Filter",
+    "filterReset": "Clear Filters",
+    "filterPlatform": "Platform",
+    "filterStatus": "Status",
+    "view": {
+      "month": "Month",
+      "week": "Week",
+      "list": "List"
+    },
+    "noSchedules": "No scheduled videos",
+    "noSchedulesDescription": "Set up scheduled publishing when uploading videos to manage them here.",
+    "uploadVideo": "Upload Video",
+    "viewMyVideos": "View My Videos",
+    "noFiltered": "No scheduled items found.",
+    "today": "Today",
+    "moreCount": "+{count} more",
+    "quickAdd": {
+      "title": "Add Schedule",
+      "videoId": "Video ID",
+      "videoIdPlaceholder": "Enter video ID",
+      "scheduledAt": "Scheduled Date/Time",
+      "recommendedTime": "Recommended: {dayLabel} {timeLabel}",
+      "selectPlatform": "Select Platforms",
+      "cancel": "Cancel",
+      "submit": "Add Schedule"
+    },
+    "detail": {
+      "title": "Schedule Details",
+      "scheduledAt": "Scheduled Date/Time",
+      "recurrence": "Recurrence",
+      "createdAt": "Created",
+      "platformStatus": "Platform Status",
+      "cancel": "Cancel Schedule"
+    },
+    "cancelModal": {
+      "title": "Cancel Schedule",
+      "message": "Are you sure you want to cancel this schedule? Cancelled schedules cannot be restored.",
+      "confirm": "Cancel Schedule"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "published": "Published",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "table": {
+      "datetime": "Date/Time",
+      "video": "Video",
+      "platform": "Platform",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "dayLabels": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "recurrence": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "repeatingSchedule": "Recurring",
+    "edit": "Edit",
+    "pageGuide": [
+      "Switch between List, Calendar, and Week views to see scheduled content your way",
+      "Use the Filter button to filter by platform, date range, or status (Pending/Completed/Failed)",
+      "Sort options (Date/Platform/Status/Manual) let you reorder the list; use drag in manual mode",
+      "Click a schedule item to view details and modify time or cancel"
+    ]
+  },
+  "aiView": {
+    "title": "AI Creator Assistant",
+    "usedToday": "Used Today",
+    "remaining": "Remaining",
+    "tabs": {
+      "tools": "AI Tools",
+      "presets": "Presets",
+      "history": "History"
+    },
+    "credits": "credits",
+    "creditsUsed": "credits used",
+    "useButton": "Use",
+    "form": {
+      "script": "Script",
+      "scriptPlaceholder": "Enter your video script...",
+      "platform": "Platform",
+      "tone": "Tone",
+      "category": "Category",
+      "select": "Select",
+      "cancel": "Cancel",
+      "generate": "Generate",
+      "recommend": "Get Recommendations",
+      "generateIdea": "Generate Ideas",
+      "generateReport": "Generate Report",
+      "strategyAnalysis": "Analyze Strategy",
+      "reAnalyze": "Re-analyze"
+    },
+    "tones": {
+      "friendly": "Friendly",
+      "professional": "Professional",
+      "humorous": "Humorous"
+    },
+    "results": {
+      "titleCandidates": "Title Candidates",
+      "description": "Description",
+      "tags": "Tags",
+      "commonHashtags": "Common Hashtags",
+      "creditsUsedRemaining": "Credits used: {used} / Remaining: {remaining}",
+      "close": "Close",
+      "regenerate": "Regenerate",
+      "reRecommend": "Re-recommend",
+      "expectedReaction": "Expected reaction: {reaction}"
+    },
+    "report": {
+      "period": "Analysis Period",
+      "last7d": "Last 7 days",
+      "last30d": "Last 30 days"
+    },
+    "strategyCoach": {
+      "focusArea": "Focus Area (optional)",
+      "focusOptions": {
+        "all": "Overall Strategy",
+        "content": "Content Planning",
+        "growth": "Subscriber Growth",
+        "revenue": "Revenue Optimization",
+        "platform": "Platform Expansion"
+      },
+      "includeCompetitors": "Include Competitor Data",
+      "overallStrategy": "Overall Strategy",
+      "contentRecommendations": "Content Recommendations",
+      "platformStrategy": "Platform Strategy",
+      "timingAdvice": "Timing Advice",
+      "expectedImpact": "Expected impact: {impact}",
+      "expectedBoost": "Expected boost: {boost}",
+      "strength": "Strength:",
+      "opportunity": "Opportunity:",
+      "action": "Action:"
+    },
+    "revenueReport": {
+      "optimizationTips": "Revenue Optimization Tips",
+      "platformBreakdown": "Platform Revenue Breakdown",
+      "contribution": "Contribution:",
+      "trend": "Trend:",
+      "suggestion": "Suggestion:"
+    },
+    "placeholder": {
+      "preparing": "This feature is coming soon."
+    },
+    "creditModal": {
+      "title": "Insufficient Credits",
+      "description": "This feature requires {credits} credits. (Remaining: {balance})",
+      "perCredit": "{price} KRW per credit",
+      "validDays": "Valid for {days} days",
+      "purchase": "Purchase"
+    },
+    "videoTitle": "Video Title",
+    "videoTitlePlaceholder": "Enter video title",
+    "pageGuide": [
+      "Use AI tools (title generation, hashtag extraction, description writing, etc.) in the AI Tools tab",
+      "Save and reuse frequently used AI settings (tone, target platform, category) in the Presets tab",
+      "View AI credit consumption history and generated results in the History tab",
+      "If the daily credit indicator turns red, recharge on the Subscription page",
+      "Hover over tooltip icons on tool cards to see credit costs and descriptions"
+    ]
+  },
+  "analyticsView": {
+    "title": "Unified Analytics",
+    "videoComparison": "Compare Videos",
+    "tabs": {
+      "overview": "Overview",
+      "cohort": "Cohort Analysis",
+      "retention": "Retention",
+      "crossPlatform": "Cross-Platform",
+      "deep": "Deep Analytics"
+    },
+    "crossPlatformLoading": "Loading cross-platform data...",
+    "deepAnalyticsLoading": "Loading deep analytics data...",
+    "platformRankings": "Platform Rankings",
+    "totalViews": "Total Views",
+    "engagementRate": "Engagement Rate",
+    "totalRevenue": "Total Revenue",
+    "noCrossData": "No videos uploaded to multiple platforms",
+    "noCrossDataHint": "Upload the same video to 2+ platforms to start comparison analysis",
+    "cohort": {
+      "title": "Cohort Analysis",
+      "description": "Group videos by category, tags, platform, or upload month and compare cumulative view trends."
+    },
+    "retention": {
+      "title": "Audience Retention Curve",
+      "description": "Analyze viewer retention for videos. Compare with channel average to identify drop-off points.",
+      "selectVideo": "Select a video to analyze",
+      "button": "Retention"
+    },
+    "emptyData": "Collecting analytics data",
+    "emptyDataDescription": "Analytics data including views, likes, and comments will appear within 24 hours after publishing videos.",
+    "uploadVideo": "Upload Video",
+    "connectChannel": "Connect Channel",
+    "estimatedRevenue": "Est. Revenue",
+    "viewsTrend": "Views Trend",
+    "noData": "No data available",
+    "platformComparison": "Platform Comparison",
+    "subscriberTrend": "Subscriber Trend",
+    "noSubscriberData": "No subscriber data available",
+    "bestPostingTime": "Best Posting Time",
+    "topVideos": "Top 10 Videos",
+    "noTopVideos": "No top video data available",
+    "uploadTimeAnalysis": "Upload Time Analysis",
+    "uploadTimeHint": "Average views by day/hour - darker colors indicate higher views",
+    "heatmapLow": "Low",
+    "heatmapHigh": "High",
+    "hashtagAnalysis": "Hashtag Analytics",
+    "tagCloud": "Tag Cloud",
+    "tagPerformance": "Tag Performance",
+    "aiInsight": "AI Insights",
+    "remainingCredits": "Credits remaining: {credits}",
+    "generateAiInsight": "Generate AI Insight (8 credits)",
+    "aiAnalyzing": "AI is generating an analysis report...",
+    "retryGenerate": "Retry",
+    "creditsUsedRemaining": "Credits used: {used} / Remaining: {remaining}",
+    "pdfDownload": "Download PDF",
+    "pdfExporting": "Generating PDF...",
+    "regenerate": "Regenerate",
+    "table": {
+      "platform": "Platform",
+      "views": "Views",
+      "likes": "Likes",
+      "comments": "Comments",
+      "shares": "Shares",
+      "engagementRate": "Engagement",
+      "watchTime": "Watch Time"
+    },
+    "metrics": {
+      "views": "Views",
+      "likes": "Likes",
+      "comments": "Comments",
+      "shares": "Shares"
+    },
+    "dayLabels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "pageGuide": [
+      "Set analysis period with 7/30/90-day filters and export data as CSV/Excel",
+      "View KPI cards (Views, Subscribers, Likes, Revenue) and platform comparison charts in Overview",
+      "Find optimal posting times using the day/hour heatmap",
+      "Click tags in the Tag Cloud to see detailed performance (usage count, avg views)",
+      "Generate AI insight reports (8 credits) for key improvement points",
+      "Analyze cumulative view trends by category and viewer drop-off points in Cohort/Retention tabs"
+    ]
+  },
+  "commentsView": {
+    "title": "Comment Management",
+    "totalComments": "{count} total comments",
+    "lastSync": "Last sync: {time}",
+    "aiBatchReply": "AI Reply ({count})",
+    "aiBatchGenerating": "Generating...",
+    "syncComments": "Sync Comments",
+    "syncing": "Syncing...",
+    "sentimentSummary": "Sentiment Summary",
+    "sentimentPositive": "Positive",
+    "sentimentNeutral": "Neutral",
+    "sentimentNegative": "Negative",
+    "sentimentTrend": "Sentiment Trend",
+    "faqTitle": "FAQ Auto-Classification",
+    "faqAiAnalyze": "AI Analyze",
+    "faqAnalyzing": "Analyzing...",
+    "faqCount": "{count} questions",
+    "faqSuggestedReply": "Suggested reply:",
+    "faqEmpty": "Click \"AI Analyze\" to auto-classify FAQs",
+    "aiDraftTitle": "AI Draft Replies",
+    "aiDraftClose": "Close",
+    "aiDraftOriginal": "Original: {text}",
+    "aiDraftApply": "Reply with this",
+    "filterPlatform": "Platform",
+    "filterSentiment": "Sentiment",
+    "filterSearch": "Search",
+    "filterSearchPlaceholder": "Search by author, content...",
+    "filterAll": "All",
+    "filterAllPlatforms": "All Platforms",
+    "sortLabel": "Sort:",
+    "sortRecent": "Latest",
+    "sortLikes": "Most Liked",
+    "sortReplies": "Most Replies",
+    "emptyComments": "No comments yet",
+    "emptyCommentsHint": "Click \"Sync Comments\" to fetch platform comments",
+    "emptyFiltered": "No results found",
+    "emptyFilteredHint": "Try different filters",
+    "noTrendData": "Unable to load trend data",
+    "trendImproving": "Improving",
+    "trendStable": "Stable",
+    "trendWorsening": "Needs Attention",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "days": "{n}d"
+  },
+  "linkBioView": {
+    "noPage": "No link page found",
+    "noPageDescription": "Create your own link page",
+    "title": "Link in Bio",
+    "description": "Create your own link page",
+    "save": "Save",
+    "totalViews": "Total Views",
+    "totalClicks": "Total Clicks",
+    "clickRate": "Click Rate",
+    "tabEditor": "Editor",
+    "tabPreview": "Preview",
+    "saved": "Saved successfully",
+    "linkCopied": "Link copied",
+    "linkCopyFailed": "Failed to copy link",
+    "pageGuide": [
+      "Add, edit, delete, and reorder links via drag-and-drop in the Editor tab",
+      "Copy your profile URL and paste it in your platform profile for fans to access",
+      "Preview how visitors will see your page in the Preview tab",
+      "Monitor link page performance (Total Views, Total Clicks, Click Rate) in the stats bar",
+      "Click Save to instantly publish changes to your live page"
+    ]
+  },
   "upload": {
     "title": "Content Upload",
     "queue": "Upload Queue",

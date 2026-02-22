@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, type Component } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import {
@@ -27,7 +27,7 @@ const { isLoading, filter, customDateRange, groupedByDate, actionCounts, uniqueU
 interface SummaryCardData {
   label: string
   key: ActivityAction
-  icon: any
+  icon: Component
   colorClass: string
 }
 

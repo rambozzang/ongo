@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-6xl mx-auto space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">오디언스 CRM</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ t('audience.title') }}</h1>
     </div>
 
     <!-- 탭 -->
@@ -27,30 +27,30 @@
     <div v-if="activeTab === 'profiles'">
       <div class="mb-4 flex gap-3">
         <select v-model="sortBy" class="px-3 py-2 border rounded-lg text-sm" @change="loadProfiles">
-          <option value="engagement_score">참여도 높은 순</option>
-          <option value="total_interactions">상호작용 많은 순</option>
-          <option value="last_seen_at">최근 활동 순</option>
+          <option value="engagement_score">{{ t('audience.sort.engagementScore') }}</option>
+          <option value="total_interactions">{{ t('audience.sort.totalInteractions') }}</option>
+          <option value="last_seen_at">{{ t('audience.sort.lastSeenAt') }}</option>
         </select>
       </div>
 
       <div v-if="store.loading" class="text-center py-12 text-gray-400">
-        불러오는 중...
+        {{ t('audience.loading') }}
       </div>
 
       <div v-else-if="store.profiles.length === 0" class="text-center py-12 text-gray-400">
-        오디언스 프로필이 없습니다.
+        {{ t('audience.emptyProfiles') }}
       </div>
 
       <div v-else class="bg-white rounded-lg border overflow-hidden">
         <table class="w-full text-sm">
           <thead class="bg-gray-50 border-b">
             <tr>
-              <th class="text-left px-4 py-3 font-medium text-gray-500">프로필</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-500">플랫폼</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-500">참여도</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-500">태그</th>
-              <th class="text-right px-4 py-3 font-medium text-gray-500">상호작용</th>
-              <th class="text-right px-4 py-3 font-medium text-gray-500">최근 활동</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-500">{{ t('audience.table.profile') }}</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-500">{{ t('audience.table.platform') }}</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-500">{{ t('audience.table.engagement') }}</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-500">{{ t('audience.table.tags') }}</th>
+              <th class="text-right px-4 py-3 font-medium text-gray-500">{{ t('audience.table.interactions') }}</th>
+              <th class="text-right px-4 py-3 font-medium text-gray-500">{{ t('audience.table.lastActivity') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -110,7 +110,7 @@
             class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50"
             @click="changePage(currentPage - 1)"
           >
-            이전
+            {{ t('audience.pagination.previous') }}
           </button>
           <span class="px-3 py-1.5 text-sm text-gray-600">
             {{ currentPage + 1 }} / {{ Math.ceil(store.totalProfiles / 20) }}
@@ -120,7 +120,7 @@
             class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50"
             @click="changePage(currentPage + 1)"
           >
-            다음
+            {{ t('audience.pagination.next') }}
           </button>
         </div>
       </div>
@@ -133,16 +133,16 @@
           class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
           @click="showSegmentModal = true"
         >
-          세그먼트 추가
+          {{ t('audience.segment.add') }}
         </button>
       </div>
 
       <div v-if="store.loading" class="text-center py-12 text-gray-400">
-        불러오는 중...
+        {{ t('audience.loading') }}
       </div>
 
       <div v-else-if="store.segments.length === 0" class="text-center py-12 text-gray-400">
-        세그먼트가 없습니다. 새 세그먼트를 추가해보세요.
+        {{ t('audience.segment.empty') }}
       </div>
 
       <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -165,10 +165,10 @@
           <p v-if="segment.description" class="text-sm text-gray-500 mb-3">{{ segment.description }}</p>
           <div class="flex items-center justify-between text-sm">
             <span class="text-gray-600">
-              <span class="font-medium text-indigo-600">{{ segment.memberCount.toLocaleString() }}</span>명
+              <span class="font-medium text-indigo-600">{{ segment.memberCount.toLocaleString() }}</span>{{ t('audience.members') }}
             </span>
             <span v-if="segment.autoUpdate" class="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">
-              자동 갱신
+              {{ t('audience.autoUpdate') }}
             </span>
           </div>
         </div>
@@ -182,35 +182,35 @@
       @click.self="closeModal"
     >
       <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-4">새 세그먼트</h2>
+        <h2 class="text-lg font-bold text-gray-900 mb-4">{{ t('audience.segment.modal.title') }}</h2>
         <form @submit.prevent="handleCreateSegment">
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">이름 *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('audience.segment.modal.name') }}</label>
               <input
                 v-model="segmentForm.name"
                 type="text"
                 required
                 class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="세그먼트 이름"
+                :placeholder="t('audience.segment.modal.namePlaceholder')"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">설명</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('audience.segment.modal.description') }}</label>
               <textarea
                 v-model="segmentForm.description"
                 rows="2"
                 class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="세그먼트 설명 (선택)"
+                :placeholder="t('audience.segment.modal.descriptionPlaceholder')"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">조건</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('audience.segment.modal.conditions') }}</label>
               <input
                 v-model="segmentForm.conditions"
                 type="text"
                 class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="예: engagement_score > 80"
+                :placeholder="t('audience.segment.modal.conditionsPlaceholder')"
               />
             </div>
             <div class="flex items-center gap-2">
@@ -220,7 +220,7 @@
                 type="checkbox"
                 class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
-              <label for="autoUpdate" class="text-sm text-gray-700">자동 갱신</label>
+              <label for="autoUpdate" class="text-sm text-gray-700">{{ t('audience.segment.modal.autoUpdate') }}</label>
             </div>
           </div>
           <div class="mt-6 flex justify-end gap-3">
@@ -229,14 +229,14 @@
               class="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50"
               @click="closeModal"
             >
-              취소
+              {{ t('audience.segment.modal.cancel') }}
             </button>
             <button
               type="submit"
               :disabled="!segmentForm.name || creating"
               class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
             >
-              {{ creating ? '생성 중...' : '추가' }}
+              {{ creating ? t('audience.segment.modal.creating') : t('audience.segment.modal.add') }}
             </button>
           </div>
         </form>
@@ -247,8 +247,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAudienceStore } from '@/stores/audience'
 
+const { t } = useI18n()
 const store = useAudienceStore()
 
 const activeTab = ref('profiles')
@@ -265,8 +267,8 @@ const segmentForm = reactive({
 })
 
 const tabs = [
-  { key: 'profiles', label: '팬 프로필' },
-  { key: 'segments', label: '세그먼트' },
+  { key: 'profiles', label: t('audience.tabs.profiles') },
+  { key: 'segments', label: t('audience.tabs.segments') },
 ]
 
 function scoreColor(score: number): string {
@@ -302,18 +304,18 @@ async function handleCreateSegment() {
     })
     closeModal()
   } catch (e) {
-    console.error('세그먼트 생성 실패:', e)
+    console.error(t('audience.segment.createFailed'), e)
   } finally {
     creating.value = false
   }
 }
 
 async function handleDeleteSegment(id: number) {
-  if (!confirm('이 세그먼트를 삭제하시겠습니까?')) return
+  if (!confirm(t('audience.segment.confirmDelete'))) return
   try {
     await store.deleteSegment(id)
   } catch (e) {
-    console.error('세그먼트 삭제 실패:', e)
+    console.error(t('audience.segment.deleteFailed'), e)
   }
 }
 

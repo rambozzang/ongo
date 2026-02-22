@@ -51,6 +51,11 @@ class InMemoryApprovalRepository : ApprovalRepository {
         return updated
     }
 
+    override fun findGroupedByStatus(userId: Long): Map<String, List<Approval>> =
+        store.values
+            .filter { it.userId == userId || it.requesterId == userId || it.reviewerId == userId }
+            .groupBy { it.status }
+
     override fun delete(id: Long) {
         store.remove(id)
     }

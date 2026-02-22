@@ -64,6 +64,17 @@ class ApprovalJooqRepository(
             .fetch()
             .map { it.toApproval() }
 
+    override fun findGroupedByStatus(userId: Long): Map<String, List<Approval>> =
+        dsl.select()
+            .from(APPROVALS)
+            .where(USER_ID.eq(userId))
+            .or(REQUESTER_ID.eq(userId))
+            .or(REVIEWER_ID.eq(userId))
+            .orderBy(CREATED_AT.desc())
+            .fetch()
+            .map { it.toApproval() }
+            .groupBy { it.status }
+
     override fun save(approval: Approval): Approval {
         val id = dsl.insertInto(APPROVALS)
             .set(USER_ID, approval.userId)

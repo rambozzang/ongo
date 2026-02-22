@@ -1,0 +1,52 @@
+// onGo - Backend Jenkins Pipeline
+// Git push시 자동으로 백엔드 빌드 + 배포
+
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Build Backend') {
+            steps {
+                dir('backend') {
+                    sh './gradlew :onGo-api:bootJar -x test --no-daemon'
+                }
+            }
+        }
+
+        stage('Deploy Backend') {
+            steps {
+                script {
+                    echo 'Syncing backend workspace to production source directory...'
+                    sh 'mkdir -p /data/data/ongo/src/backend /data/data/ongo/src/deploy'
+
+                    // backend, deploy 폴더만 동기화하여 프론트엔드 결과물 보존
+                    sh 'rsync -av --delete --exclude=".git" backend/ /data/data/ongo/src/backend/'
+                    sh 'rsync -av --delete --exclude=".git" deploy/ /data/data/ongo/src/deploy/'
+
+                    echo 'Executing deployment script for backend...'
+                    sh 'JENKINS_NODE_COOKIE=dontKillMe bash /data/data/ongo/src/deploy/deploy.sh backend --skip-git --skip-build'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+
+        success {
+            echo 'Backend build and deploy completed successfully!'
+        }
+
+        failure {
+            echo 'Backend build or deploy failed!'
+        }
+    }
+}

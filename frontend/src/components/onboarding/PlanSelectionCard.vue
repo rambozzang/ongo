@@ -15,7 +15,7 @@
       v-if="isRecommended"
       class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-primary-600 to-purple-600 px-3 py-1 text-xs font-semibold text-white shadow-lg"
     >
-      추천
+      {{ t('onboarding.recommended') }}
     </div>
 
     <!-- Plan header -->
@@ -26,7 +26,7 @@
           <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
             {{ formatPrice(plan.price) }}
           </span>
-          <span v-if="plan.price > 0" class="text-sm text-gray-500 dark:text-gray-400">원/월</span>
+          <span v-if="plan.price > 0" class="text-sm text-gray-500 dark:text-gray-400">{{ t('onboarding.perMonth') }}</span>
         </div>
       </div>
 
@@ -56,39 +56,42 @@
         <svg class="h-4 w-4 shrink-0 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>월 {{ plan.maxUploadsPerMonth === -1 ? '무제한' : plan.maxUploadsPerMonth }}회 업로드</span>
+        <span>{{ plan.maxUploadsPerMonth === -1 ? t('onboarding.unlimitedUploads') : t('onboarding.uploadsPerMonth', { count: plan.maxUploadsPerMonth }) }}</span>
       </li>
       <li class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
         <svg class="h-4 w-4 shrink-0 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>{{ plan.maxPlatforms }}개 플랫폼 연동</span>
+        <span>{{ t('onboarding.platformConnections', { count: plan.maxPlatforms }) }}</span>
       </li>
       <li class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
         <svg class="h-4 w-4 shrink-0 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>월 {{ plan.freeAiCredits }} AI 크레딧</span>
+        <span>{{ t('onboarding.aiCredits', { count: plan.freeAiCredits }) }}</span>
       </li>
       <li v-if="plan.maxScheduleDays > 0" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
         <svg class="h-4 w-4 shrink-0 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>{{ plan.maxScheduleDays }}일 예약 업로드</span>
+        <span>{{ t('onboarding.scheduleDays', { count: plan.maxScheduleDays }) }}</span>
       </li>
     </ul>
 
     <!-- Storage info -->
     <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
       <p class="text-xs text-gray-500 dark:text-gray-400">
-        스토리지: {{ formatStorage(plan.storageMb) }} • {{ plan.support }}
+        {{ t('onboarding.storage') }} {{ formatStorage(plan.storageMb) }} • {{ plan.support }}
       </p>
     </div>
   </button>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { Plan, PlanType } from '@/types/subscription'
+
+const { t } = useI18n()
 
 interface Props {
   plan: Plan
@@ -103,7 +106,7 @@ defineEmits<{
 }>()
 
 function formatPrice(price: number): string {
-  if (price === 0) return '무료'
+  if (price === 0) return t('onboarding.free')
   return price.toLocaleString('ko-KR')
 }
 

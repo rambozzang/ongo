@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 interface Props {
   label: string
@@ -50,10 +50,16 @@ const progressColorClass = computed(() => {
   return 'bg-green-500'
 })
 
+let animationTimeout: ReturnType<typeof setTimeout> | null = null
+
 onMounted(() => {
   // Trigger animation after mount
-  setTimeout(() => {
+  animationTimeout = setTimeout(() => {
     animationStarted.value = true
   }, 100)
+})
+
+onUnmounted(() => {
+  if (animationTimeout) clearTimeout(animationTimeout)
 })
 </script>

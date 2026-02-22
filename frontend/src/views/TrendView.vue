@@ -82,10 +82,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useTrendStore } from '@/stores/trend'
+import { useNotification } from '@/composables/useNotification'
 import TrendChart from '@/components/trend/TrendChart.vue'
 import TrendAlertManager from '@/components/trend/TrendAlertManager.vue'
 
 const store = useTrendStore()
+const notification = useNotification()
 
 const activeTab = ref('trends')
 const searchKeyword = ref('')
@@ -118,6 +120,7 @@ async function runAnalysis() {
     activeTab.value = 'analysis'
   } catch (e) {
     console.error('AI 분석 실패:', e)
+    notification.error('AI 트렌드 분석에 실패했습니다')
   } finally {
     analyzing.value = false
   }

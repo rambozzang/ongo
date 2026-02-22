@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import {
   UserGroupIcon,
   EnvelopeIcon,
@@ -9,18 +9,22 @@ import {
   XCircleIcon,
   ArrowPathIcon,
   ShieldCheckIcon,
+  ViewColumnsIcon,
 } from '@heroicons/vue/24/outline'
 import { useTeamStore } from '@/stores/team'
+import { useApprovalStore } from '@/stores/approval'
 import TeamMemberCard from '@/components/team/TeamMemberCard.vue'
 import InviteMemberModal from '@/components/team/InviteMemberModal.vue'
 import TeamActivityFeed from '@/components/team/TeamActivityFeed.vue'
 import RoleBadge from '@/components/team/RoleBadge.vue'
 import PermissionMatrix from '@/components/team/PermissionMatrix.vue'
+import WorkflowBoard from '@/components/team/WorkflowBoard.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 
 const teamStore = useTeamStore()
+const approvalStore = useApprovalStore()
 
-type TabType = 'members' | 'invites' | 'activity' | 'permissions'
+type TabType = 'members' | 'invites' | 'activity' | 'permissions' | 'workflow'
 const activeTab = ref<TabType>('members')
 const showInviteModal = ref(false)
 
@@ -94,6 +98,14 @@ const expiresIn = (dateString: string): string => {
   if (days === 1) return '내일 만료'
   return `${days}일 후 만료`
 }
+
+// 워크플로우 탭 전환 시 데이터 로드
+watch(activeTab, (tab) => {
+  if (tab === 'workflow') {
+    approvalStore.fetchMyTasks()
+    approvalStore.fetchPendingReviews()
+  }
+})
 </script>
 
 <template>
@@ -262,6 +274,18 @@ const expiresIn = (dateString: string): string => {
             <ShieldCheckIcon class="mr-2 h-5 w-5" />
             권한
           </button>
+          <button
+            @click="activeTab = 'workflow'"
+            :class="[
+              activeTab === 'workflow'
+                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
+              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
+            ]"
+          >
+            <ViewColumnsIcon class="mr-2 h-5 w-5" />
+            워크플로우
+          </button>
         </nav>
       </div>
 
@@ -402,6 +426,138 @@ const expiresIn = (dateString: string): string => {
             class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
           >
             <PermissionMatrix />
+          </div>
+        </div>
+
+        <!-- Workflow Tab -->
+        <div v-if="activeTab === 'workflow'" class="space-y-8">
+          <!-- Kanban Board -->
+          <div>
+            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+              워크플로우 보드
+            </h3>
+            <WorkflowBoard />
+          </div>
+
+          <!-- My Tasks & Pending Reviews -->
+          <div class="grid gap-6 lg:grid-cols-2">
+            <!-- 내 작업 -->
+            <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+              <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-white">
+                내 작업
+              </h3>
+              <div v-if="approvalStore.myTasks">
+                <div v-if="approvalStore.myTasks.assignedToMe.length > 0" class="mb-4">
+                  <p class="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    나에게 할당됨
+                  </p>
+                  <div class="space-y-2">
+                    <div
+                      v-for="task in approvalStore.myTasks.assignedToMe"
+                      :key="task.approvalId"
+                      class="flex items-center justify-between rounded-md border border-gray-100 p-3 dark:border-gray-700"
+                    >
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ task.videoTitle }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.requesterName }}</p>
+                      </div>
+                      <span
+                        class="ml-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium"
+                        :class="{
+                          'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300': task.status === 'PENDING',
+                          'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': task.status === 'APPROVED',
+                          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300': task.status === 'REJECTED',
+                          'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': !['PENDING', 'APPROVED', 'REJECTED'].includes(task.status),
+                        }"
+                      >
+                        {{ task.status }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="approvalStore.myTasks.requestedByMe.length > 0">
+                  <p class="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    내가 요청함
+                  </p>
+                  <div class="space-y-2">
+                    <div
+                      v-for="task in approvalStore.myTasks.requestedByMe"
+                      :key="task.approvalId"
+                      class="flex items-center justify-between rounded-md border border-gray-100 p-3 dark:border-gray-700"
+                    >
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ task.videoTitle }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.reviewerName ?? '검토자 미정' }}</p>
+                      </div>
+                      <span
+                        class="ml-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium"
+                        :class="{
+                          'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300': task.status === 'PENDING',
+                          'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': task.status === 'APPROVED',
+                          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300': task.status === 'REJECTED',
+                          'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': !['PENDING', 'APPROVED', 'REJECTED'].includes(task.status),
+                        }"
+                      >
+                        {{ task.status }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  v-if="approvalStore.myTasks.assignedToMe.length === 0 && approvalStore.myTasks.requestedByMe.length === 0"
+                  class="py-8 text-center text-sm text-gray-400 dark:text-gray-500"
+                >
+                  작업이 없습니다
+                </div>
+              </div>
+              <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+                로딩 중...
+              </div>
+            </div>
+
+            <!-- 대기 중인 검토 -->
+            <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                  대기 중인 검토
+                </h3>
+                <span
+                  v-if="approvalStore.pendingReviews && approvalStore.pendingReviews.overdueCount > 0"
+                  class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                >
+                  {{ approvalStore.pendingReviews.overdueCount }}건 기한 초과
+                </span>
+              </div>
+              <div v-if="approvalStore.pendingReviews">
+                <div v-if="approvalStore.pendingReviews.reviews.length > 0" class="space-y-2">
+                  <div
+                    v-for="review in approvalStore.pendingReviews.reviews"
+                    :key="review.approvalId"
+                    class="flex items-center justify-between rounded-md border border-gray-100 p-3 dark:border-gray-700"
+                  >
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ review.videoTitle }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ review.requesterName }}</p>
+                    </div>
+                    <div class="ml-2 flex flex-wrap gap-1">
+                      <span
+                        v-for="p in review.platforms"
+                        :key="p"
+                        class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                      >
+                        {{ p }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+                  대기 중인 검토가 없습니다
+                </div>
+              </div>
+              <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+                로딩 중...
+              </div>
+            </div>
           </div>
         </div>
       </div>

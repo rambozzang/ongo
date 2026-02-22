@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { StarIcon as StarIconOutline } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 import { useFavoritesStore } from '@/stores/favorites'
@@ -52,13 +52,16 @@ const iconSizeClasses = computed(() => {
   return props.size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'
 })
 
+let animationTimeout: ReturnType<typeof setTimeout> | null = null
+
 function handleToggle() {
   try {
     const added = favoritesStore.toggleFavorite(props.videoId)
 
     // Trigger animation
     isAnimating.value = true
-    setTimeout(() => {
+    if (animationTimeout) clearTimeout(animationTimeout)
+    animationTimeout = setTimeout(() => {
       isAnimating.value = false
     }, 300)
 
@@ -73,6 +76,10 @@ function handleToggle() {
     }
   }
 }
+
+onUnmounted(() => {
+  if (animationTimeout) clearTimeout(animationTimeout)
+})
 </script>
 
 <style scoped>

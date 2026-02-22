@@ -1,7 +1,7 @@
 export interface ColumnDefinition<T> {
   key: keyof T | string
   header: string
-  formatter?: (value: any, row?: T) => string
+  formatter?: (value: unknown, row?: T) => string
 }
 
 /**
@@ -87,8 +87,8 @@ export function formatDateOnlyForExport(dateStr: string): string {
 /**
  * Get nested value from object using dot notation
  */
-function getNestedValue(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => current?.[key], obj)
+function getNestedValue(obj: unknown, path: string): unknown {
+  return path.split('.').reduce((current: Record<string, unknown> | undefined, key: string) => (current as Record<string, unknown> | undefined)?.[key] as Record<string, unknown> | undefined, obj as Record<string, unknown> | undefined)
 }
 
 /**

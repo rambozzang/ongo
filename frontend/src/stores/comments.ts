@@ -1,6 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Comment, CommentSentiment, CommentStats, CommentCapabilities } from '@/types/comment'
+import type {
+  Comment,
+  CommentSentiment,
+  CommentStats,
+  CommentCapabilities,
+  SentimentTrendResponse,
+  FaqClusterResponse,
+  BatchAiDraftResponse,
+  AiDraftItem,
+} from '@/types/comment'
 import type { Platform } from '@/types/channel'
 import { commentsApi } from '@/api/comments'
 
@@ -22,6 +31,12 @@ export const useCommentsStore = defineStore('comments', () => {
   const stats = ref<CommentStats>({ total: 0, positive: 0, neutral: 0, negative: 0 })
   const capabilities = ref<Record<string, CommentCapabilities>>({})
   const lastSyncedAt = ref<string | null>(null)
+  const sentimentTrendData = ref<SentimentTrendResponse | null>(null)
+  const sentimentTrendLoading = ref(false)
+  const faqData = ref<FaqClusterResponse | null>(null)
+  const faqLoading = ref(false)
+  const batchDrafts = ref<AiDraftItem[]>([])
+  const batchDraftLoading = ref(false)
 
   const filters = ref<CommentFilters>({
     platform: 'ALL',
@@ -146,6 +161,42 @@ export const useCommentsStore = defineStore('comments', () => {
     }
   }
 
+  const fetchSentimentTrend = async (days = 30) => {
+    sentimentTrendLoading.value = true
+    try {
+      sentimentTrendData.value = await commentsApi.sentimentTrend(days)
+    } catch {
+      sentimentTrendData.value = null
+    } finally {
+      sentimentTrendLoading.value = false
+    }
+  }
+
+  const fetchFaqClusters = async () => {
+    faqLoading.value = true
+    try {
+      faqData.value = await commentsApi.faqClusters()
+    } catch {
+      faqData.value = null
+    } finally {
+      faqLoading.value = false
+    }
+  }
+
+  const generateBatchDrafts = async (commentIds: number[], tone = 'FRIENDLY') => {
+    batchDraftLoading.value = true
+    try {
+      const response = await commentsApi.batchAiDraft(commentIds, tone)
+      batchDrafts.value = response.drafts
+      return response
+    } catch {
+      batchDrafts.value = []
+      return null
+    } finally {
+      batchDraftLoading.value = false
+    }
+  }
+
   const nextPage = () => {
     if ((page.value + 1) * pageSize.value < totalCount.value) {
       page.value++
@@ -186,12 +237,21 @@ export const useCommentsStore = defineStore('comments', () => {
     totalPages,
     hasNextPage,
     hasPrevPage,
+    sentimentTrendData,
+    sentimentTrendLoading,
+    faqData,
+    faqLoading,
+    batchDrafts,
+    batchDraftLoading,
     fetchComments,
     syncComments,
     hideComment,
     pinComment,
     replyToComment,
     deleteComment,
+    fetchSentimentTrend,
+    fetchFaqClusters,
+    generateBatchDrafts,
     nextPage,
     prevPage,
   }

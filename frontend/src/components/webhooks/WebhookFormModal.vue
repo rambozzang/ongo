@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import {
   XMarkIcon,
   ClipboardDocumentIcon,
@@ -137,12 +137,15 @@ function handleRegenerateSecret() {
   }
 }
 
+let copyTimeout: ReturnType<typeof setTimeout> | null = null
+
 async function copySecret() {
   if (!secret.value) return
   try {
     await navigator.clipboard.writeText(secret.value)
     copied.value = true
-    setTimeout(() => {
+    if (copyTimeout) clearTimeout(copyTimeout)
+    copyTimeout = setTimeout(() => {
       copied.value = false
     }, 2000)
   } catch {
@@ -158,6 +161,10 @@ function selectAll() {
 function deselectAll() {
   selectedEvents.value = []
 }
+
+onUnmounted(() => {
+  if (copyTimeout) clearTimeout(copyTimeout)
+})
 </script>
 
 <template>

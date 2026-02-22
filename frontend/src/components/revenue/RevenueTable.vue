@@ -102,8 +102,8 @@ const sortedData = computed(() => {
   const data = [...dataWithChange.value]
 
   data.sort((a, b) => {
-    let aVal: any = a[sortKey.value as keyof typeof a]
-    let bVal: any = b[sortKey.value as keyof typeof b]
+    let aVal: string | number | null = a[sortKey.value as keyof typeof a] as string | number | null
+    let bVal: string | number | null = b[sortKey.value as keyof typeof b] as string | number | null
 
     // Handle null values for change column
     if (aVal === null) aVal = -Infinity

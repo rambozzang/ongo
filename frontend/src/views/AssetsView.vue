@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAssetsStore } from '@/stores/assets'
 import type { Asset, AssetType } from '@/types/asset'
@@ -183,6 +183,10 @@ function clearFilters() {
   activeTagFilter.value = undefined
   assetsStore.filter = {}
 }
+
+onUnmounted(() => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+})
 </script>
 
 <template>
@@ -510,6 +514,9 @@ function clearFilters() {
         <div
           v-if="showMoveModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="폴더 이동"
         >
           <div class="absolute inset-0 bg-black/50" @click="showMoveModal = false" />
           <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800">
@@ -548,6 +555,9 @@ function clearFilters() {
         <div
           v-if="showBulkMoveModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="일괄 폴더 이동"
         >
           <div class="absolute inset-0 bg-black/50" @click="showBulkMoveModal = false" />
           <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800">

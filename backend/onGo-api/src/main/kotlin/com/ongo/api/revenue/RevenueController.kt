@@ -1,9 +1,7 @@
 package com.ongo.api.revenue
 
 import com.ongo.application.revenue.RevenueUseCase
-import com.ongo.application.revenue.dto.PlatformRevenueResponse
-import com.ongo.application.revenue.dto.RevenueSummaryResponse
-import com.ongo.application.revenue.dto.RevenueTrendResponse
+import com.ongo.application.revenue.dto.*
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
 import io.swagger.v3.oas.annotations.Operation
@@ -47,5 +45,23 @@ class RevenueController(
         @RequestParam(defaultValue = "30") days: Int,
     ): ResponseEntity<ResData<PlatformRevenueResponse>> {
         return ResData.success(revenueUseCase.getPlatformRevenue(userId, days))
+    }
+
+    @Operation(summary = "플랫폼별 CPM/RPM 조회", description = "플랫폼별 1000회 노출/조회당 수익(CPM/RPM)을 조회합니다.")
+    @GetMapping("/cpm-rpm")
+    fun getCpmRpm(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<CpmRpmResponse>> {
+        return ResData.success(revenueUseCase.getCpmRpm(userId, days))
+    }
+
+    @Operation(summary = "브랜드딜 수익 조회", description = "기간 내 브랜드딜 수익을 조회합니다.")
+    @GetMapping("/brand-deals")
+    fun getBrandDealRevenue(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(defaultValue = "90") days: Int,
+    ): ResponseEntity<ResData<BrandDealRevenueResponse>> {
+        return ResData.success(revenueUseCase.getBrandDealRevenue(userId, days))
     }
 }

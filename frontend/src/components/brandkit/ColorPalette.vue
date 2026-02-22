@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { PlusIcon, PencilIcon, TrashIcon, ClipboardIcon, CheckIcon } from '@heroicons/vue/24/outline'
 import type { BrandColor } from '@/types/brandkit'
 
@@ -75,17 +75,24 @@ function handleRemove(id: number) {
   }
 }
 
+let copyTimeout: ReturnType<typeof setTimeout> | null = null
+
 async function copyHex(hex: string, id: number) {
   try {
     await navigator.clipboard.writeText(hex)
     copiedId.value = id
-    setTimeout(() => {
+    if (copyTimeout) clearTimeout(copyTimeout)
+    copyTimeout = setTimeout(() => {
       copiedId.value = null
     }, 2000)
   } catch {
     // Clipboard API failed
   }
 }
+
+onUnmounted(() => {
+  if (copyTimeout) clearTimeout(copyTimeout)
+})
 </script>
 
 <template>

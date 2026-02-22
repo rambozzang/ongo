@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
   Filler,
+  type ChartDataset,
 } from 'chart.js'
 import {
   ArrowPathIcon,
@@ -123,7 +124,7 @@ const chartData = computed(() => {
       pointRadius: 6,
       pointHoverRadius: 8,
       borderWidth: 0,
-    } as any)
+    } as ChartDataset<'line'>)
   }
 
   return { labels, datasets }

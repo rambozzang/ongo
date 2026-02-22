@@ -5,8 +5,8 @@
 set -e
 
 # Configuration
-TARGET_HOST="134.185.107.207"
-TARGET_PORT="5432"
+TARGET_HOST="ongo.codelabtiger.com"
+TARGET_PORT="54332"
 TARGET_DB="ongo"
 TARGET_USER="ongo"
 # Password for remote DB

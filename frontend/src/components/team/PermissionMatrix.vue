@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
   ShieldCheckIcon,
   ArrowPathIcon,
@@ -105,7 +105,8 @@ async function saveChanges() {
     await Promise.all(promises)
     localChanges.value = {}
     saved.value = true
-    setTimeout(() => {
+    if (savedTimeout) clearTimeout(savedTimeout)
+    savedTimeout = setTimeout(() => {
       saved.value = false
     }, 2000)
     // Reload
@@ -128,8 +129,14 @@ async function fetchPermissions() {
   }
 }
 
+let savedTimeout: ReturnType<typeof setTimeout> | null = null
+
 onMounted(() => {
   fetchPermissions()
+})
+
+onUnmounted(() => {
+  if (savedTimeout) clearTimeout(savedTimeout)
 })
 </script>
 

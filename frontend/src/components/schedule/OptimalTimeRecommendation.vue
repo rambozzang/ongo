@@ -1,7 +1,7 @@
 <template>
   <div v-if="recommendations.length > 0" class="space-y-2">
     <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-      추천 시간대
+      {{ t('schedule.optimalTime.title') }}
     </label>
     <div class="grid gap-2" :class="recommendations.length === 1 ? 'grid-cols-1' : 'grid-cols-1 tablet:grid-cols-3'">
       <button
@@ -25,7 +25,7 @@
             v-if="index === 0"
             class="rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-[10px] font-semibold text-green-700 dark:text-green-400"
           >
-            BEST
+            {{ t('schedule.optimalTime.best') }}
           </span>
         </div>
 
@@ -37,7 +37,7 @@
         <!-- 신뢰도 바 -->
         <div class="mt-auto">
           <div class="mb-0.5 flex items-center justify-between">
-            <span class="text-[10px] text-gray-400 dark:text-gray-500">신뢰도</span>
+            <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ t('schedule.optimalTime.confidence') }}</span>
             <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">
               {{ Math.round(rec.confidenceScore * 100) }}%
             </span>
@@ -57,6 +57,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 export interface TimeRecommendation {
   dayOfWeek: number
@@ -86,12 +89,23 @@ function selectRecommendation(index: number) {
 
 function getRecommendationReason(rec: TimeRecommendation, index: number): string {
   if (index === 0) {
-    return `${rec.dayLabel} ${rec.timeLabel} — 참여율 최고 (${(rec.engagementRate * 100).toFixed(1)}%)`
+    return t('schedule.optimalTime.reasonEngagement', {
+      day: rec.dayLabel,
+      time: rec.timeLabel,
+      rate: (rec.engagementRate * 100).toFixed(1),
+    })
   }
   if (index === 1) {
-    return `${rec.dayLabel} ${rec.timeLabel} — 도달률 최고 (예상 조회수 ${rec.expectedViews.toLocaleString()})`
+    return t('schedule.optimalTime.reasonReach', {
+      day: rec.dayLabel,
+      time: rec.timeLabel,
+      views: rec.expectedViews.toLocaleString(),
+    })
   }
-  return `${rec.dayLabel} ${rec.timeLabel} — 밸런스 추천`
+  return t('schedule.optimalTime.reasonBalance', {
+    day: rec.dayLabel,
+    time: rec.timeLabel,
+  })
 }
 
 function getConfidenceBarColor(score: number): string {

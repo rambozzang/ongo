@@ -25,7 +25,7 @@
             d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
           />
         </svg>
-        <span class="font-semibold text-gray-900 dark:text-gray-100">플랫폼별 미리보기</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100">{{ t('preview.platformPreview') }}</span>
         <span
           v-if="platforms.length > 0"
           class="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
@@ -38,7 +38,7 @@
         <button
           v-if="platforms.length > 1"
           class="rounded-md p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-          :title="isGridView ? '탭 뷰로 전환' : '비교 뷰로 전환'"
+          :title="isGridView ? t('preview.switchToTab') : t('preview.switchToGrid')"
           @click.stop="isGridView = !isGridView"
         >
           <Squares2X2Icon v-if="!isGridView" class="h-5 w-5" />
@@ -147,7 +147,7 @@
           />
         </svg>
         <p class="text-sm text-blue-800 dark:text-blue-300">
-          실제 플랫폼에서 보이는 모습을 미리 확인할 수 있습니다. 각 플랫폼의 특성에 맞게 최적화된 형태로 표시됩니다.
+          {{ t('preview.platformInfo') }}
         </p>
       </div>
     </div>
@@ -177,7 +177,7 @@
         />
       </svg>
       <p class="text-sm text-gray-600 dark:text-gray-400">
-        플랫폼을 선택하면 미리보기가 표시됩니다
+        {{ t('preview.selectPlatform') }}
       </p>
     </div>
   </div>
@@ -185,7 +185,10 @@
 
 <script setup lang="ts">
 import { ref, watch, type Component } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Squares2X2Icon, ListBulletIcon } from '@heroicons/vue/24/outline'
+
+const { t } = useI18n()
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
 import YouTubePreview from './YouTubePreview.vue'

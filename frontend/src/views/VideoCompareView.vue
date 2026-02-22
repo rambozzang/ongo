@@ -246,6 +246,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  type TooltipItem,
 } from 'chart.js'
 import {
   ChevronDownIcon,
@@ -416,9 +417,9 @@ const chartOptions = computed(() => {
         borderColor: gridColor,
         borderWidth: 1,
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'bar'>) => {
             const label = context.dataset.label || ''
-            const value = context.parsed.y.toLocaleString()
+            const value = (context.parsed.y ?? 0).toLocaleString()
             return `${label}: ${value}`
           },
         },
@@ -508,7 +509,8 @@ const comparisonInsights = computed(() => {
 })
 
 // Date formatting
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '-'
   const date = new Date(dateStr)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')

@@ -24,6 +24,10 @@ import type {
   WeeklyDigestResponse,
   ContentGapRequest,
   ContentGapResponse,
+  StrategyCoachRequest,
+  StrategyCoachResponse,
+  RevenueReportRequest,
+  RevenueReportResponse,
 } from '@/types/ai'
 
 export const aiApi = {
@@ -118,6 +122,18 @@ export const aiApi = {
   getBatchStatus(batchId: string) {
     return apiClient
       .get<ResData<AiBatchResponse>>(`/ai/batch/${batchId}`)
+      .then(unwrapResponse)
+  },
+
+  strategyCoach(request: StrategyCoachRequest) {
+    return apiClient
+      .post<ResData<StrategyCoachResponse>>('/ai/strategy-coach', request)
+      .then(unwrapResponse)
+  },
+
+  revenueReport(request: RevenueReportRequest) {
+    return apiClient
+      .post<ResData<RevenueReportResponse>>('/ai/revenue-report', request)
       .then(unwrapResponse)
   },
 

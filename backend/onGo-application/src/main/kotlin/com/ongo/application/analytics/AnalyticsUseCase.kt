@@ -315,6 +315,97 @@ class AnalyticsUseCase(
         return TagPerformanceResponse(tags = tagItems)
     }
 
+    fun getCrossPlatformComparison(userId: Long, days: Int): CrossPlatformSummaryResponse {
+        val rawData = analyticsRepository.findCrossPlatformMetrics(userId, days)
+        if (rawData.isEmpty()) return CrossPlatformSummaryResponse(videos = emptyList(), platformRankings = emptyMap())
+
+        // 영상별 그룹핑
+        val byVideo = rawData.groupBy { it.videoId }
+        val videos = byVideo.map { (videoId, items) ->
+            val platforms = items.map { raw ->
+                val engagementRate = if (raw.views > 0) {
+                    ((raw.likes + raw.comments + raw.shares).toDouble() / raw.views) * 100
+                } else 0.0
+
+                PlatformMetrics(
+                    platform = raw.platform,
+                    views = raw.views,
+                    likes = raw.likes,
+                    comments = raw.comments,
+                    shares = raw.shares,
+                    watchTimeSeconds = raw.watchTimeSeconds,
+                    engagementRate = Math.round(engagementRate * 100) / 100.0,
+                    avgViewDuration = raw.avgViewDurationSeconds,
+                    revenueMicro = raw.revenueMicro,
+                )
+            }
+
+            val bestPlatform = platforms.maxByOrNull { it.engagementRate }?.platform
+            val insights = generateInsights(platforms)
+
+            CrossPlatformComparisonResponse(
+                videoId = videoId,
+                videoTitle = items.first().videoTitle,
+                platforms = platforms,
+                bestPlatform = bestPlatform,
+                insights = insights,
+            )
+        }
+
+        // 플랫폼별 순위
+        val byPlatform = rawData.groupBy { it.platform }
+        val platformRankings = byPlatform.map { (platform, items) ->
+            val totalViews = items.sumOf { it.views }
+            val totalRevenue = items.sumOf { it.revenueMicro }
+            val totalEngagements = items.sumOf { it.likes + it.comments + it.shares }
+            val avgEngagementRate = if (totalViews > 0) {
+                (totalEngagements.toDouble() / totalViews) * 100
+            } else 0.0
+
+            platform to PlatformRanking(
+                platform = platform,
+                avgEngagementRate = Math.round(avgEngagementRate * 100) / 100.0,
+                totalViews = totalViews,
+                totalRevenue = totalRevenue,
+                rank = 0, // 아래에서 설정
+            )
+        }
+            .sortedByDescending { it.second.totalViews }
+            .mapIndexed { index, (platform, ranking) ->
+                platform to ranking.copy(rank = index + 1)
+            }
+            .toMap()
+
+        return CrossPlatformSummaryResponse(videos = videos, platformRankings = platformRankings)
+    }
+
+    private fun generateInsights(platforms: List<PlatformMetrics>): List<String> {
+        val insights = mutableListOf<String>()
+        if (platforms.size < 2) return insights
+
+        val bestViews = platforms.maxByOrNull { it.views }
+        val bestEngagement = platforms.maxByOrNull { it.engagementRate }
+        val bestRevenue = platforms.maxByOrNull { it.revenueMicro }
+
+        if (bestViews != null) {
+            insights.add("${bestViews.platform}에서 가장 높은 조회수(${bestViews.views.formatCompact()})를 기록했습니다")
+        }
+        if (bestEngagement != null && bestEngagement.platform != bestViews?.platform) {
+            insights.add("${bestEngagement.platform}의 참여율(${bestEngagement.engagementRate}%)이 가장 높습니다")
+        }
+        if (bestRevenue != null && bestRevenue.revenueMicro > 0) {
+            insights.add("${bestRevenue.platform}에서 가장 높은 수익을 창출했습니다")
+        }
+
+        return insights
+    }
+
+    private fun Long.formatCompact(): String = when {
+        this >= 1_000_000 -> "${(this / 1_000_000.0).let { Math.round(it * 10) / 10.0 }}M"
+        this >= 1_000 -> "${(this / 1_000.0).let { Math.round(it * 10) / 10.0 }}K"
+        else -> this.toString()
+    }
+
     fun getPlatformComparison(userId: Long, days: Int): PlatformComparisonResponse {
         val trendData = analyticsRepository.getTrendData(userId, days)
         val byPlatform = trendData.filter { it.platform != null }.groupBy { it.platform!! }

@@ -5,6 +5,9 @@ import type {
   CommentResponse,
   CommentSyncResult,
   CommentCapabilities,
+  SentimentTrendResponse,
+  FaqClusterResponse,
+  BatchAiDraftResponse,
 } from '@/types/comment'
 
 export const commentsApi = {
@@ -62,6 +65,24 @@ export const commentsApi = {
   getCapabilities() {
     return apiClient
       .get<ResData<Record<string, CommentCapabilities>>>('/comments/capabilities')
+      .then(unwrapResponse)
+  },
+
+  sentimentTrend(days = 30) {
+    return apiClient
+      .get<ResData<SentimentTrendResponse>>('/comments/sentiment-trend', { params: { days } })
+      .then(unwrapResponse)
+  },
+
+  faqClusters() {
+    return apiClient
+      .get<ResData<FaqClusterResponse>>('/comments/faq')
+      .then(unwrapResponse)
+  },
+
+  batchAiDraft(commentIds: number[], tone = 'FRIENDLY') {
+    return apiClient
+      .post<ResData<BatchAiDraftResponse>>('/comments/ai-draft', { commentIds, tone })
       .then(unwrapResponse)
   },
 }

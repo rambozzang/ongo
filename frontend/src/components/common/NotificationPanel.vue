@@ -54,7 +54,10 @@
             v-for="notification in filteredNotifications"
             :key="notification.id"
             class="flex cursor-pointer gap-3 border-b border-gray-100 px-4 py-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
+            role="button"
+            tabindex="0"
             @click="handleNotificationClick(notification)"
+            @keydown.enter="handleNotificationClick(notification)"
           >
             <!-- Icon -->
             <div class="flex-shrink-0">
