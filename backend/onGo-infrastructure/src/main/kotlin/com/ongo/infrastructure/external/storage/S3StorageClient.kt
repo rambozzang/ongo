@@ -13,7 +13,7 @@ import java.io.InputStream
 import java.time.Duration
 
 @Component
-@Profile("production")
+@Profile("prod")
 class S3StorageClient(
     private val s3Client: S3Client,
     private val s3Presigner: S3Presigner,

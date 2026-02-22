@@ -49,7 +49,7 @@ class StorageConfig {
     }
 
     @Bean
-    @Profile("production")
+    @Profile("prod")
     fun s3Client(storageProperties: StorageProperties): S3Client {
         val builder = S3Client.builder()
             .region(Region.of(storageProperties.s3.region))
@@ -76,7 +76,7 @@ class StorageConfig {
     }
 
     @Bean
-    @Profile("production")
+    @Profile("prod")
     fun s3Presigner(storageProperties: StorageProperties): S3Presigner {
         val builder = S3Presigner.builder()
             .region(Region.of(storageProperties.s3.region))
