@@ -1,5 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { Client } from '@stomp/stompjs'
+// @ts-ignore
 import SockJS from 'sockjs-client/dist/sockjs'
 import { useNotificationCenterStore } from '@/stores/notificationCenter'
 import { useNotificationStore } from '@/stores/notification'

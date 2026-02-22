@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { recyclingApi } from '@/api/recycling'
 import { videoApi } from '@/api/video'
 import { useNotificationStore } from '@/stores/notification'
 

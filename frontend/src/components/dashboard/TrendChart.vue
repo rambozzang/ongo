@@ -174,10 +174,10 @@ const bestDayPlugin: Plugin<'line'> = {
         dataset.data.forEach((value, index) => {
           if (typeof value === 'number' && value > maxValue) {
             maxValue = value
-            const point = meta.data[index]
+            const point = meta.data[index] as any
             maxPoint = {
-              x: (point as any).x,
-              y: (point as any).y,
+              x: point.x,
+              y: point.y,
               datasetIndex,
               index
             }

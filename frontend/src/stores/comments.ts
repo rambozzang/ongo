@@ -7,7 +7,6 @@ import type {
   CommentCapabilities,
   SentimentTrendResponse,
   FaqClusterResponse,
-  BatchAiDraftResponse,
   AiDraftItem,
 } from '@/types/comment'
 import type { Platform } from '@/types/channel'

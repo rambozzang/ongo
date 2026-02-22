@@ -8,7 +8,6 @@ import {
   BellIcon,
   ChartBarIcon,
   ClockIcon,
-  UserIcon,
 } from '@heroicons/vue/24/outline'
 import type { WsMessage, OnlineMember } from '@/composables/useWebSocket'
 
