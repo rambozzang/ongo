@@ -36,14 +36,14 @@ spring:
   # Spring AI - Anthropic (primary)
   ai:
     anthropic:
-      api-key: ${ANTHROPIC_API_KEY:your-api-key}
+      api-key: ${ANTHROPIC_API_KEY:dummy-anthropic-key}
       chat:
         options:
           model: claude-sonnet-4-5-20250514
           max-tokens: 4096
           temperature: 0.7
     openai:
-      api-key: ${OPENAI_API_KEY:your-api-key}
+      api-key: ${OPENAI_API_KEY:dummy-openai-key}
     vertex:
       ai:
         gemini:
