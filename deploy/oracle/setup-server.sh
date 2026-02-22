@@ -69,7 +69,7 @@ echo ">>> Configuring Firewall..."
 firewall-cmd --permanent --add-service=http
 firewall-cmd --permanent --add-service=https
 firewall-cmd --permanent --add-port=8070/tcp # Backend
-firewall-cmd --permanent --add-port=5432/tcp # PostgreSQL (External Access)
+firewall-cmd --permanent --add-port=54332/tcp # PostgreSQL (External Access)
 firewall-cmd --reload
 
 echo ">>> Setup Complete!"

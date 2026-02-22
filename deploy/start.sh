@@ -11,9 +11,19 @@ mkdir -p "$LOG_DIR"
 
 # 환경변수 로드
 if [ -f "$ENV_FILE" ]; then
+    # Remove Windows line endings (\r) which can break source
+    sed -i 's/\r$//' "$ENV_FILE"
     set -a
     source "$ENV_FILE"
     set +a
+else
+    echo "[WARN] $ENV_FILE 파일이 존재하지 않습니다."
+fi
+
+# 필수 환경변수 확인
+if [ -z "$JWT_SECRET" ]; then
+    echo "[ERROR] JWT_SECRET 환경변수가 설정되지 않았습니다. $ENV_FILE 파일을 확인해주세요."
+    exit 1
 fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] $APP_NAME 시작..."

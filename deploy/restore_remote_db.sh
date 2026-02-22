@@ -53,6 +53,6 @@ if [ $? -eq 0 ]; then
     echo "✅ Restore completed successfully!"
 else
     echo ""
-    echo "❌ Restore failed! (Check if port 5432 is open on remote server)"
+    echo "❌ Restore failed! (Check if port $TARGET_PORT is open on remote server)"
     exit 1
 fi

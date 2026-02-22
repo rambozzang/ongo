@@ -147,4 +147,4 @@ chmod +x deploy/restore_remote_db.sh
 ./deploy/restore_remote_db.sh ongo_backup_20240218.sql
 ```
 
-*Note: This script connects directly to the remote PostgreSQL port (5432). Ensure the port is open in the Oracle Cloud Security List and OS Firewall.*
+*Note: This script connects directly to the remote PostgreSQL port (54332). Ensure the port is open in the Oracle Cloud Security List and OS Firewall.*
