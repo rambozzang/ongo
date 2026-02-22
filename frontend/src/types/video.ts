@@ -178,3 +178,26 @@ export interface ThumbnailResult {
   thumbnails: string[]
   selectedIndex: number
 }
+
+export interface VideoResize {
+  id: number
+  originalVideoId: number
+  aspectRatio: string
+  width: number
+  height: number
+  fileUrl: string | null
+  status: string
+  createdAt: string | null
+}
+
+export interface VideoTranslation {
+  id: number
+  videoId: number
+  language: string
+  title?: string
+  description?: string
+  tags: string[]
+  subtitleContent?: string
+  status: string
+  createdAt?: string
+}

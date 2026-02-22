@@ -124,6 +124,9 @@ import {
   ClockIcon,
   BookOpenIcon,
   ShieldCheckIcon,
+  FireIcon,
+  UsersIcon,
+  BriefcaseIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -186,6 +189,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
       { to: '/abtest', label: t('nav.abtest'), icon: BeakerIcon },
       { to: '/competitor', label: t('nav.competitor'), icon: PresentationChartLineIcon },
+      { to: '/trends', label: t('nav.trends'), icon: FireIcon },
       { to: '/goals', label: t('nav.goals'), icon: FlagIcon },
     ],
   },
@@ -195,6 +199,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/comments', label: t('nav.comments'), icon: ChatBubbleLeftEllipsisIcon },
       { to: '/inbox', label: t('nav.inbox'), icon: InboxIcon },
       { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
+      { to: '/audience', label: t('nav.audience'), icon: UsersIcon },
     ],
   },
   {
@@ -203,6 +208,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/ai', label: t('nav.ai'), icon: SparklesIcon },
       { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
       { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
+      { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
     ],
   },
   {

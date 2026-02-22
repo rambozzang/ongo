@@ -193,6 +193,24 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '웹훅 관리' },
       },
       {
+        path: 'trends',
+        name: 'trends',
+        component: () => import('@/views/TrendView.vue'),
+        meta: { breadcrumb: '트렌드 모니터링' },
+      },
+      {
+        path: 'audience',
+        name: 'audience',
+        component: () => import('@/views/AudienceView.vue'),
+        meta: { breadcrumb: '오디언스 CRM' },
+      },
+      {
+        path: 'brand-deals',
+        name: 'brand-deals',
+        component: () => import('@/views/BrandDealView.vue'),
+        meta: { breadcrumb: '브랜드 딜' },
+      },
+      {
         path: 'activity-log',
         name: 'activity-log',
         component: () => import('@/views/ActivityLogView.vue'),

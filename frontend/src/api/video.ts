@@ -11,6 +11,8 @@ import type {
   ContentImage,
   OptimizationCheckRequest,
   OptimizationCheckResponse,
+  VideoResize,
+  VideoTranslation,
 } from '@/types/video'
 
 export const videoApi = {
@@ -116,6 +118,44 @@ export const videoApi = {
   reorderImages(videoId: number, imageIds: number[]) {
     return apiClient
       .put<ResData<void>>(`/videos/${videoId}/images/reorder`, { imageIds })
+      .then(unwrapResponse)
+  },
+
+  // Resize
+  requestResize(videoId: number, aspectRatios: string[]) {
+    return apiClient
+      .post<ResData<VideoResize[]>>(`/videos/${videoId}/resize`, { aspectRatios })
+      .then(unwrapResponse)
+  },
+
+  getResizes(videoId: number) {
+    return apiClient
+      .get<ResData<VideoResize[]>>(`/videos/${videoId}/resizes`)
+      .then(unwrapResponse)
+  },
+
+  // Translations
+  getTranslations(videoId: number) {
+    return apiClient
+      .get<ResData<VideoTranslation[]>>(`/videos/${videoId}/translations`)
+      .then(unwrapResponse)
+  },
+
+  requestTranslation(videoId: number, languages: string[]) {
+    return apiClient
+      .post<ResData<VideoTranslation[]>>(`/videos/${videoId}/translations`, { languages })
+      .then(unwrapResponse)
+  },
+
+  updateTranslation(videoId: number, translationId: number, data: { title?: string; description?: string }) {
+    return apiClient
+      .put<ResData<VideoTranslation>>(`/videos/${videoId}/translations/${translationId}`, data)
+      .then(unwrapResponse)
+  },
+
+  deleteTranslation(videoId: number, translationId: number) {
+    return apiClient
+      .delete<ResData<void>>(`/videos/${videoId}/translations/${translationId}`)
       .then(unwrapResponse)
   },
 }

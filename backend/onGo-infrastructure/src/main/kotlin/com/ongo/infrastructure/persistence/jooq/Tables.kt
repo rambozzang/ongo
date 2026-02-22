@@ -97,6 +97,25 @@ object Tables {
 
     // Content Images (image support)
     val CONTENT_IMAGES = DSL.table("content_images")
+
+    // Video Resizes
+    val VIDEO_RESIZES = DSL.table("video_resizes")
+
+    // Trends
+    val TRENDS = DSL.table("trends")
+    val TREND_ALERTS = DSL.table("trend_alerts")
+
+    // Audience CRM
+    val AUDIENCE_PROFILES = DSL.table("audience_profiles")
+    val AUDIENCE_SEGMENTS = DSL.table("audience_segments")
+    val AUDIENCE_PROFILE_SEGMENTS = DSL.table("audience_profile_segments")
+
+    // Translations
+    val VIDEO_TRANSLATIONS = DSL.table("video_translations")
+
+    // Brand Deals
+    val BRAND_DEALS = DSL.table("brand_deals")
+    val MEDIA_KITS = DSL.table("media_kits")
 }
 
 object Fields {
@@ -492,4 +511,55 @@ object Fields {
     val ACTION_ITEMS = DSL.field("action_items", String::class.java)
     val GENERATED_AT = DSL.field("generated_at", java.time.LocalDateTime::class.java)
     val PLATFORMS_STR = DSL.field("platforms", String::class.java)
+
+    // video_resizes
+    val ORIGINAL_VIDEO_ID = DSL.field("original_video_id", Long::class.java)
+    val ASPECT_RATIO = DSL.field("aspect_ratio", String::class.java)
+    val COMPLETED_AT_RESIZE = DSL.field("completed_at", java.time.LocalDateTime::class.java)
+
+    // trends
+    val KEYWORD = DSL.field("keyword", String::class.java)
+    val SCORE = DSL.field("score", Double::class.java)
+    val REGION = DSL.field("region", String::class.java)
+    val METADATA = DSL.field("metadata", String::class.java)
+
+    // trend_alerts
+    val THRESHOLD = DSL.field("threshold", Double::class.java)
+
+    // audience_profiles
+    val ENGAGEMENT_SCORE = DSL.field("engagement_score", Double::class.java)
+    val TOTAL_INTERACTIONS = DSL.field("total_interactions", Int::class.java)
+    val POSITIVE_RATIO = DSL.field("positive_ratio", Double::class.java)
+    val FIRST_SEEN_AT = DSL.field("first_seen_at", java.time.LocalDateTime::class.java)
+    val LAST_SEEN_AT = DSL.field("last_seen_at", java.time.LocalDateTime::class.java)
+    val TAGS_JSONB = DSL.field("tags", String::class.java)
+
+    // audience_segments
+    val CONDITIONS = DSL.field("conditions", String::class.java)
+    val AUTO_UPDATE = DSL.field("auto_update", Boolean::class.java)
+    val MEMBER_COUNT = DSL.field("member_count", Int::class.java)
+
+    // audience_profile_segments
+    val PROFILE_ID = DSL.field("profile_id", Long::class.java)
+    val SEGMENT_ID = DSL.field("segment_id", Long::class.java)
+
+    // video_translations
+    val SUBTITLE_CONTENT = DSL.field("subtitle_content", String::class.java)
+
+    // brand_deals
+    val BRAND_NAME = DSL.field("brand_name", String::class.java)
+    val CONTACT_NAME = DSL.field("contact_name", String::class.java)
+    val CONTACT_EMAIL = DSL.field("contact_email", String::class.java)
+    val DEAL_VALUE = DSL.field("deal_value", Long::class.java)
+    val DEADLINE_BD = DSL.field("deadline", java.time.LocalDate::class.java)
+    val DELIVERABLES = DSL.field("deliverables", String::class.java)
+    val NOTES_BD = DSL.field("notes", String::class.java)
+
+    // media_kits
+    val DISPLAY_NAME = DSL.field("display_name", String::class.java)
+    val CATEGORIES_MK = DSL.field("categories", String::class.java)
+    val SOCIAL_LINKS = DSL.field("social_links", String::class.java)
+    val STATS_SNAPSHOT = DSL.field("stats_snapshot", String::class.java)
+    val RATE_CARD = DSL.field("rate_card", String::class.java)
+    val IS_PUBLIC_MK = DSL.field("is_public", Boolean::class.java)
 }

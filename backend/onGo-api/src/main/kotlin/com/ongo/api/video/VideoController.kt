@@ -9,8 +9,11 @@ import com.ongo.application.video.ThumbnailUseCase
 import com.ongo.application.video.UploadVideoUseCase
 import com.ongo.application.video.VideoProcessingProgressUseCase
 import com.ongo.application.video.VideoQueryUseCase
+import com.ongo.application.video.VideoResizeUseCase
 import com.ongo.application.video.dto.OptimizationCheckRequest
 import com.ongo.application.video.dto.OptimizationCheckResponse
+import com.ongo.application.video.dto.ResizeRequest
+import com.ongo.application.video.dto.VideoResizeResponse
 import com.ongo.domain.video.VideoMediaInfoRepository
 import com.ongo.common.ResData
 import com.ongo.common.annotation.RequiresPermission
@@ -44,6 +47,7 @@ class VideoController(
     private val captionUseCase: CaptionUseCase,
     private val progressUseCase: VideoProcessingProgressUseCase,
     private val mediaInfoRepository: VideoMediaInfoRepository,
+    private val videoResizeUseCase: VideoResizeUseCase,
 ) {
 
     @Operation(
@@ -444,6 +448,23 @@ class VideoController(
         videoQueryUseCase.reorderContentImages(userId, id, imageIds)
         return ResData.success(null, "이미지 순서가 변경되었습니다")
     }
+
+    @Operation(summary = "영상 리사이즈 요청", description = "원본 영상을 선택한 비율(9:16, 1:1, 4:5, 16:9)로 리사이즈합니다. AI 크레딧이 차감됩니다.")
+    @PostMapping("/{id}/resize")
+    fun requestResize(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @PathVariable id: Long,
+        @RequestBody request: ResizeRequest,
+    ): ResponseEntity<ResData<List<VideoResizeResponse>>> =
+        ResData.success(videoResizeUseCase.requestResize(userId, id, request))
+
+    @Operation(summary = "리사이즈 결과 조회", description = "영상의 리사이즈 결과 목록을 조회합니다.")
+    @GetMapping("/{id}/resizes")
+    fun getResizes(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<List<VideoResizeResponse>>> =
+        ResData.success(videoResizeUseCase.getResizes(userId, id))
 
     @Operation(
         summary = "크로스 플랫폼 최적화 검사",
