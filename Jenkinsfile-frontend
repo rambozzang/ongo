@@ -28,14 +28,14 @@ pipeline {
             steps {
                 script {
                     echo 'Syncing frontend workspace to production source directory...'
-                    sh 'mkdir -p /data/data/ongo/src/frontend /data/data/ongo/src/deploy'
+                    sh 'mkdir -p /data/ongo/src/frontend /data/ongo/src/deploy'
 
                     // frontend, deploy 폴더만 동기화하여 백엔드 결과물 보존
-                    sh 'rsync -av --delete --exclude=".git" frontend/ /data/data/ongo/src/frontend/'
-                    sh 'rsync -av --delete --exclude=".git" deploy/ /data/data/ongo/src/deploy/'
+                    sh 'rsync -av --delete --exclude=".git" frontend/ /data/ongo/src/frontend/'
+                    sh 'rsync -av --delete --exclude=".git" deploy/ /data/ongo/src/deploy/'
 
                     echo 'Executing deployment script for frontend...'
-                    sh 'JENKINS_NODE_COOKIE=dontKillMe bash /data/data/ongo/src/deploy/deploy.sh frontend --skip-git --skip-build'
+                    sh 'JENKINS_NODE_COOKIE=dontKillMe bash /data/ongo/src/deploy/deploy.sh frontend --skip-git --skip-build'
                 }
             }
         }
