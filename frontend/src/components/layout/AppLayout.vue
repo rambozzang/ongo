@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import SideNav from './SideNav.vue'
 import TopBar from './TopBar.vue'
@@ -73,6 +73,7 @@ import UploadQueueIndicator from '@/components/upload/UploadQueueIndicator.vue'
 import UploadQueuePanel from '@/components/upload/UploadQueuePanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCreditStore } from '@/stores/credit'
+import { useWebSocket } from '@/composables/useWebSocket'
 
 const isDesktop = useMediaQuery('(min-width: 1280px)')
 const sidebarCollapsed = ref(!isDesktop.value)
@@ -81,10 +82,29 @@ const queuePanelOpen = ref(false)
 
 const authStore = useAuthStore()
 const creditStore = useCreditStore()
+const { connect, disconnect } = useWebSocket()
 
 onMounted(() => {
   // 병렬 실행 — 프로필 복원과 크레딧 조회를 동시에 시작
   authStore.initialize()
   creditStore.fetchBalance()
+
+  // WebSocket 연결 (인증된 사용자)
+  if (authStore.accessToken && authStore.user?.id) {
+    connect(authStore.user.id, authStore.accessToken)
+  }
+})
+
+onUnmounted(() => {
+  disconnect()
+})
+
+// 로그인 후 연결 / 로그아웃 시 해제
+watch(() => authStore.isAuthenticated, (isAuth) => {
+  if (isAuth && authStore.accessToken && authStore.user?.id) {
+    connect(authStore.user.id, authStore.accessToken)
+  } else {
+    disconnect()
+  }
 })
 </script>
