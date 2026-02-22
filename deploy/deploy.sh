@@ -21,7 +21,7 @@ step()  { echo -e "${BLUE}[STEP]${NC} $1"; }
 # ============================================================
 # 경로 설정
 # ============================================================
-BASE_DIR="/data/data/ongo"
+BASE_DIR="/data/ongo"
 SRC_DIR="$BASE_DIR/src"
 JAR_DIR="$BASE_DIR/jar"
 WWW_DIR="$BASE_DIR/www"

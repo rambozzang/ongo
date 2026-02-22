@@ -2,7 +2,7 @@
 # onGo Backend 중지
 
 APP_NAME="ongo"
-PID_FILE="/data/data/ongo/app.pid"
+PID_FILE="/data/ongo/app.pid"
 
 if [ -f "$PID_FILE" ]; then
     PID=$(cat "$PID_FILE")

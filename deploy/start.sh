@@ -2,10 +2,10 @@
 # onGo Backend 시작
 
 APP_NAME="ongo"
-JAR_PATH="/data/data/ongo/jar/ongo-api.jar"
-LOG_DIR="/data/data/ongo/log"
-PID_FILE="/data/data/ongo/app.pid"
-ENV_FILE="/data/data/ongo/.env"
+JAR_PATH="/data/ongo/jar/ongo-api.jar"
+LOG_DIR="/data/ongo/log"
+PID_FILE="/data/ongo/app.pid"
+ENV_FILE="/data/ongo/.env"
 
 mkdir -p "$LOG_DIR"
 
