@@ -182,6 +182,14 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     }
   }
 
+  async function syncUnreadCount() {
+    try {
+      await fetchNotifications()
+    } catch {
+      // 무시
+    }
+  }
+
   return {
     notifications,
     activeCategory,
@@ -200,6 +208,7 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     filterByCategory,
     updateSetting,
     fetchNotifications,
+    syncUnreadCount,
   }
 })
 
