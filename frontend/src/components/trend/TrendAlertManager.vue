@@ -82,6 +82,10 @@ import type { TrendAlert } from '@/types/trend'
 
 defineProps<{
   alerts: TrendAlert[]
+}
+
+const emit = defineEmits<{
+  (e: 'refresh'): void
 }>()
 
 const showForm = ref(false)
