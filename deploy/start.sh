@@ -26,6 +26,14 @@ if [ -z "$JWT_SECRET" ]; then
     exit 1
 fi
 
+# AI API 키 예외 처리 (값이 비어있으면 Spring AI 초기화 실패 방지용 더미 값 설정)
+if [ -z "$OPENAI_API_KEY" ]; then
+    export OPENAI_API_KEY="dummy-openai-key"
+fi
+if [ -z "$ANTHROPIC_API_KEY" ]; then
+    export ANTHROPIC_API_KEY="dummy-anthropic-key"
+fi
+
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] $APP_NAME 시작..."
 
 # 이미 실행 중인지 확인
