@@ -69,7 +69,7 @@ const totalViews = computed(() =>
 
 function platformColor(platform: Platform): string {
   // Use exact brand colors from the spec
-  const colorMap: Record<Platform, string> = {
+  const colorMap: Partial<Record<Platform, string>> = {
     YOUTUBE: '#FF0000',
     TIKTOK: themeStore.isDark ? '#E5E7EB' : '#000000',
     INSTAGRAM: '#E1306C',

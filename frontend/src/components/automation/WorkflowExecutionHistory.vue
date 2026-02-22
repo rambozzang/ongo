@@ -14,7 +14,7 @@ const expandedId = ref<number | null>(null)
 async function fetchHistory() {
   loading.value = true
   try {
-    executions.value = await automationApi.getWorkflowHistory(props.workflowId)
+    executions.value = await automationApi.getWorkflowExecutions(props.workflowId)
   } catch {
     // ignore
   } finally {

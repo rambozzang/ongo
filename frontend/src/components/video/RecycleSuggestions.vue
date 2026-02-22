@@ -145,7 +145,7 @@ onMounted(async () => {
     }
 
     // Fetch video details for each suggestion
-    const videoIds = [...new Set(apiSuggestions.map(s => s.videoId))]
+    // Collect video IDs to fetch detailed info
     const videosResponse = await videoApi.list({ page: 0, size: 50 })
     const videosMap = new Map(videosResponse.content.map(v => [v.id, v]))
 

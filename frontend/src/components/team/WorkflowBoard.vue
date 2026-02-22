@@ -11,7 +11,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useApprovalStore } from '@/stores/approval'
 import WorkflowStepIndicator from '@/components/team/WorkflowStepIndicator.vue'
-import type { WorkflowColumn, WorkflowItem } from '@/types/approval'
+
 
 const approvalStore = useApprovalStore()
 

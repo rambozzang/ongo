@@ -14,10 +14,11 @@ import {
   PointElement,
   LineElement,
   Title,
-  Tooltip,
   Legend,
   Filler,
   type TooltipItem,
+  type ChartData,
+  type ChartOptions,
 } from 'chart.js'
 import type { RevenueData } from '@/stores/revenue'
 import { PLATFORM_CONFIG } from '@/types/channel'
@@ -28,7 +29,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   Title,
-  Tooltip,
+
   Legend,
   Filler
 )
@@ -40,7 +41,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const chartData = computed(() => {
+const chartData = computed<ChartData<'line'>>(() => {
   const labels = props.data.map(item => {
     const [, month] = item.period.split('-')
     return `${month}월`
@@ -89,7 +90,7 @@ const chartData = computed(() => {
   }
 })
 
-const chartOptions = computed(() => ({
+const chartOptions = computed<ChartOptions<'line'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
   interaction: {
@@ -107,9 +108,10 @@ const chartOptions = computed(() => ({
     },
     tooltip: {
       callbacks: {
-        label: (context: TooltipItem<'bar'>) => {
+        label: (context: TooltipItem<'line'>) => {
           const label = context.dataset.label || ''
           const value = context.parsed.y
+          if (value == null) return label
           return `${label}: ₩${value.toLocaleString('ko-KR')}`
         },
       },

@@ -120,9 +120,9 @@ function handleSelectWebhook(webhook: Webhook) {
   }
 }
 
-function handleRetry(webhookId: number, deliveryId: number) {
+async function handleRetry(webhookId: number, deliveryId: number) {
   try {
-    const delivery = webhookStore.retryDelivery(webhookId, deliveryId)
+    const delivery = await webhookStore.retryDelivery(webhookId, deliveryId)
     if (delivery.statusCode >= 200 && delivery.statusCode < 300) {
       notification.success(`재시도 성공 (${delivery.statusCode})`)
     } else {

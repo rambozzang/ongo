@@ -67,7 +67,7 @@
             </div>
             <div class="text-right">
               <p class="text-lg font-bold" :class="index < 2 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">
-                {{ normalizedScore(rec, index) }}%
+                {{ normalizedScore(rec) }}%
               </p>
             </div>
           </div>
@@ -84,7 +84,7 @@
             <div
               class="h-full rounded-full transition-all duration-500"
               :class="getBarClass(index)"
-              :style="{ width: `${normalizedScore(rec, index)}%` }"
+              :style="{ width: `${normalizedScore(rec)}%` }"
             />
           </div>
         </div>
@@ -165,7 +165,7 @@ const displaySlots = computed<OptimalTimeSlot[]>(() => {
   }))
 })
 
-function normalizedScore(slot: OptimalTimeSlot, index: number): number {
+function normalizedScore(slot: OptimalTimeSlot): number {
   if (displaySlots.value.length === 0) return 0
   const maxScore = displaySlots.value[0]?.score ?? 1
   if (maxScore === 0) return 0

@@ -13,16 +13,7 @@ import {
   WORKFLOW_ACTION_OPTIONS,
 } from '@/types/automation'
 
-interface WorkflowNode {
-  id: string
-  type: 'trigger' | 'condition' | 'action'
-  data: TriggerData | ConditionData | ActionData
-}
 
-interface TriggerData {
-  triggerType: WorkflowTriggerType
-  config: Record<string, unknown>
-}
 
 interface ConditionData {
   groupType: ConditionGroupType

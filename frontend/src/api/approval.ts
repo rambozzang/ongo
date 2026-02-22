@@ -1,6 +1,6 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
-import type { ApprovalRequest, ApprovalComment, WorkflowBoard, MyTasks, PendingReviews } from '@/types/approval'
+import type { WorkflowBoard, MyTasks, PendingReviews } from '@/types/approval'
 
 export interface ApprovalListResponse {
   approvals: ApprovalResponse[]

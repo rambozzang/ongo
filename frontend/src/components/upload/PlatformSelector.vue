@@ -70,7 +70,7 @@
           >
             {{ PLATFORM_CONFIG[platform].label }}
             <span
-              v-if="isOverLimit(platform, 'title')"
+              v-if="PLATFORM_LIMITS[platform] && isOverLimit(platform, 'title')"
               class="ml-1 text-xs text-red-500"
               title="제목이 플랫폼 제한을 초과합니다"
             >!</span>
@@ -90,20 +90,20 @@
               class="text-xs"
               :class="isOverLimit(activeTab, 'title') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'"
             >
-              {{ platformMeta[activeTab].title.length }}/{{ PLATFORM_LIMITS[activeTab].title }}
+              {{ platformMeta[activeTab]?.title.length || 0 }}/{{ PLATFORM_LIMITS[activeTab]?.title || 0 }}
             </span>
           </div>
           <input
-            v-model="platformMeta[activeTab].title"
+            v-model="platformMeta[activeTab]!.title"
             type="text"
             class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             @input="emitUpdate"
           />
           <p
-            v-if="isOverLimit(activeTab, 'title')"
+            v-if="PLATFORM_LIMITS[activeTab] && isOverLimit(activeTab, 'title')"
             class="mt-1 text-xs text-red-500"
           >
-            {{ PLATFORM_CONFIG[activeTab].label }}은(는) 제목 {{ PLATFORM_LIMITS[activeTab].title }}자까지 허용합니다
+            {{ PLATFORM_CONFIG[activeTab].label }}은(는) 제목 {{ PLATFORM_LIMITS[activeTab]?.title }}자까지 허용합니다
           </p>
         </div>
 
@@ -117,11 +117,11 @@
               class="text-xs"
               :class="isOverLimit(activeTab, 'description') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'"
             >
-              {{ platformMeta[activeTab].description.length }}/{{ PLATFORM_LIMITS[activeTab].description }}
+              {{ platformMeta[activeTab]?.description.length || 0 }}/{{ PLATFORM_LIMITS[activeTab]?.description || 0 }}
             </span>
           </div>
           <textarea
-            v-model="platformMeta[activeTab].description"
+            v-model="platformMeta[activeTab]!.description"
             rows="3"
             class="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             @input="emitUpdate"
@@ -135,12 +135,12 @@
               {{ PLATFORM_CONFIG[activeTab].label }} 태그
             </label>
             <span class="text-xs text-gray-400 dark:text-gray-500">
-              {{ platformMeta[activeTab].tags.length }}개
+              {{ platformMeta[activeTab]?.tags.length || 0 }}개
             </span>
           </div>
           <div class="flex flex-wrap gap-1.5">
             <span
-              v-for="(tag, i) in platformMeta[activeTab].tags"
+              v-for="(tag, i) in platformMeta[activeTab]?.tags || []"
               :key="i"
               class="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-xs text-gray-700 dark:text-gray-300"
             >
@@ -254,7 +254,7 @@ import type { ScheduleSuggestion } from '@/types/ai'
 
 const ALL_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP']
 
-const PLATFORM_LIMITS: Record<Platform, { title: number; description: number }> = {
+const PLATFORM_LIMITS: Partial<Record<Platform, { title: number; description: number }>> = {
   YOUTUBE: { title: 100, description: 5000 },
   TIKTOK: { title: 150, description: 2200 },
   INSTAGRAM: { title: 100, description: 2200 },
@@ -289,7 +289,7 @@ const todayStr = computed(() => {
   return d.toISOString().split('T')[0]
 })
 
-const platformMeta = reactive<Record<Platform, { title: string; description: string; tags: string[] }>>({
+const platformMeta = reactive<Partial<Record<Platform, { title: string; description: string; tags: string[] }>>>({
   YOUTUBE: { title: '', description: '', tags: [] },
   TIKTOK: { title: '', description: '', tags: [] },
   INSTAGRAM: { title: '', description: '', tags: [] },
@@ -301,14 +301,17 @@ watch(
   () => [props.baseTitle, props.baseDescription, props.baseTags] as const,
   ([title, desc, tags]) => {
     for (const p of ALL_PLATFORMS) {
-      if (!platformMeta[p].title || platformMeta[p].title === '') {
-        platformMeta[p].title = title
-      }
-      if (!platformMeta[p].description || platformMeta[p].description === '') {
-        platformMeta[p].description = desc
-      }
-      if (platformMeta[p].tags.length === 0) {
-        platformMeta[p].tags = [...tags]
+      const meta = platformMeta[p]
+      if (meta) {
+        if (!meta.title || meta.title === '') {
+          meta.title = title
+        }
+        if (!meta.description || meta.description === '') {
+          meta.description = desc
+        }
+        if (meta.tags.length === 0) {
+          meta.tags = [...tags]
+        }
       }
     }
   },
@@ -334,9 +337,12 @@ function togglePlatform(platform: Platform) {
     }
   } else {
     // Init from base
-    platformMeta[platform].title = props.baseTitle
-    platformMeta[platform].description = props.baseDescription
-    platformMeta[platform].tags = [...props.baseTags]
+    const meta = platformMeta[platform]
+    if (meta) {
+      meta.title = props.baseTitle
+      meta.description = props.baseDescription
+      meta.tags = [...props.baseTags]
+    }
     selectedPlatforms.value.push(platform)
     if (!activeTab.value) activeTab.value = platform
   }
@@ -344,31 +350,38 @@ function togglePlatform(platform: Platform) {
 }
 
 function isOverLimit(platform: Platform, field: 'title' | 'description'): boolean {
-  return platformMeta[platform][field].length > PLATFORM_LIMITS[platform][field]
+  const limit = PLATFORM_LIMITS[platform]
+  const meta = platformMeta[platform]
+  if (!limit || !meta) return false
+  return meta[field].length > limit[field]
 }
 
 function removePlatformTag(platform: Platform, index: number) {
-  platformMeta[platform].tags.splice(index, 1)
+  platformMeta[platform]?.tags.splice(index, 1)
   emitUpdate()
 }
 
 function addPlatformTag(platform: Platform) {
   const tag = platformTagInput.value.trim()
-  if (tag && !platformMeta[platform].tags.includes(tag)) {
-    platformMeta[platform].tags.push(tag)
+  const meta = platformMeta[platform]
+  if (tag && meta && !meta.tags.includes(tag)) {
+    meta.tags.push(tag)
     emitUpdate()
   }
   platformTagInput.value = ''
 }
 
 function emitUpdate() {
-  const configs: PlatformPublishConfig[] = selectedPlatforms.value.map((p) => ({
-    platform: p,
-    title: platformMeta[p].title,
-    description: platformMeta[p].description,
-    tags: platformMeta[p].tags,
-    visibility: props.baseVisibility,
-  }))
+  const configs: PlatformPublishConfig[] = selectedPlatforms.value.map((p) => {
+    const meta = platformMeta[p]
+    return {
+      platform: p,
+      title: meta?.title || '',
+      description: meta?.description || '',
+      tags: meta?.tags || [],
+      visibility: props.baseVisibility,
+    }
+  })
   emit('update:platforms', configs)
 }
 

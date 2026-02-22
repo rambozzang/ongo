@@ -12,6 +12,7 @@ import {
   Legend,
   Filler,
   type ChartDataset,
+  type ChartData
 } from 'chart.js'
 import {
   ArrowPathIcon,
@@ -67,7 +68,7 @@ const chartData = computed(() => {
   const labels = retentionData.value.retentionPoints.map((p) => formatTimestamp(p.timestamp))
 
   // Create gradient-like colors for the area fill
-  const datasets = [
+  const datasets: ChartDataset<'line'>[] = [
     {
       label: '이 영상',
       data: retentionData.value.retentionPoints.map((p) => p.retentionRate),
@@ -127,7 +128,7 @@ const chartData = computed(() => {
     } as ChartDataset<'line'>)
   }
 
-  return { labels, datasets }
+  return { labels, datasets } as ChartData<'line'>
 })
 
 const chartOptions = computed(() => ({

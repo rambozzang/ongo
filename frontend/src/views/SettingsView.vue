@@ -583,6 +583,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { useActivityLogStore } from '@/stores/activityLog'
 import { useI18n } from 'vue-i18n'
 import { useLocale } from '@/composables/useLocale'
+
 import { settingsApi } from '@/api/settings'
 import { authApi } from '@/api/auth'
 import type { CreatorCategory } from '@/types/user'

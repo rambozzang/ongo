@@ -176,8 +176,8 @@ const bestDayPlugin: Plugin<'line'> = {
             maxValue = value
             const point = meta.data[index]
             maxPoint = {
-              x: point.x,
-              y: point.y,
+              x: (point as any).x,
+              y: (point as any).y,
               datasetIndex,
               index
             }

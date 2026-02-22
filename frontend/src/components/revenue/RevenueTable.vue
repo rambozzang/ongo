@@ -114,8 +114,11 @@ const sortedData = computed(() => {
         ? aVal.localeCompare(bVal)
         : bVal.localeCompare(aVal)
     }
+    
+    const numA = typeof aVal === 'number' ? aVal : Number(aVal)
+    const numB = typeof bVal === 'number' ? bVal : Number(bVal)
 
-    return sortOrder.value === 'asc' ? aVal - bVal : bVal - aVal
+    return sortOrder.value === 'asc' ? numA - numB : numB - numA
   })
 
   return data

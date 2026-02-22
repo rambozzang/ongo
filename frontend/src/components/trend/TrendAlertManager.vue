@@ -80,12 +80,8 @@ import { ref } from 'vue'
 import { trendApi } from '@/api/trend'
 import type { TrendAlert } from '@/types/trend'
 
-const props = defineProps<{
+defineProps<{
   alerts: TrendAlert[]
-}>()
-
-const emit = defineEmits<{
-  refresh: []
 }>()
 
 const showForm = ref(false)

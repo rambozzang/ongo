@@ -143,7 +143,7 @@
           v-else
           :video-id="videoId ?? 0"
           :channel-id="channelStore.channels.length > 0 ? channelStore.channels[0].id : undefined"
-          :credit-balance="creditStore.balance"
+          :credit-balance="creditStore.totalBalance"
           @start="handleStartPipeline"
         />
       </div>
@@ -271,7 +271,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useRouter } from 'vue-router'
+
 import { CheckIcon } from '@heroicons/vue/24/solid'
 import { QueueListIcon } from '@heroicons/vue/24/outline'
 import FileDropzone from '@/components/upload/FileDropzone.vue'
@@ -301,7 +301,7 @@ import type { Platform } from '@/types/channel'
 import type { PlatformPublishConfig, OptimizationResult } from '@/types/video'
 import type { ScheduleSuggestion, PipelineStepType, AiPipelineResponse } from '@/types/ai'
 
-const router = useRouter()
+
 const uploadStore = useUploadStore()
 const channelStore = useChannelStore()
 const creditStore = useCreditStore()

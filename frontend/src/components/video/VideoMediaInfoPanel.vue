@@ -161,7 +161,7 @@ const props = defineProps<{
 // ---- Constants ----
 
 /** Maximum supported resolution per platform for compatibility check */
-const PLATFORM_MAX_RESOLUTION: Record<Platform, { width: number; height: number }> = {
+const PLATFORM_MAX_RESOLUTION: Partial<Record<Platform, { width: number; height: number }>> = {
   YOUTUBE: { width: 3840, height: 2160 },
   TIKTOK: { width: 1080, height: 1920 },
   INSTAGRAM: { width: 1080, height: 1920 },
@@ -213,6 +213,7 @@ const channelsText = computed(() => {
 function isPlatformCompatible(platform: Platform): boolean {
   if (!props.mediaInfo?.width || !props.mediaInfo?.height) return false
   const limit = PLATFORM_MAX_RESOLUTION[platform]
+  if (!limit) return false
   return props.mediaInfo.width <= limit.width && props.mediaInfo.height <= limit.height
 }
 

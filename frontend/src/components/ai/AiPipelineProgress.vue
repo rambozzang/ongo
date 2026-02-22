@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { aiApi } from '@/api/ai'
-import type { AiPipelineResponse, PipelineStepStatusDto, PipelineStatusType } from '@/types/ai'
+import type { AiPipelineResponse } from '@/types/ai'
 
 const props = defineProps<{
   pipelineId: string
@@ -75,20 +75,7 @@ function stopPolling() {
   }
 }
 
-function stepStatusIcon(status: string): string {
-  switch (status) {
-    case 'COMPLETED':
-      return 'check'
-    case 'FAILED':
-      return 'x'
-    case 'RUNNING':
-      return 'spinner'
-    case 'SKIPPED':
-      return 'skip'
-    default:
-      return 'pending'
-  }
-}
+
 
 function stepStatusColor(status: string): string {
   switch (status) {

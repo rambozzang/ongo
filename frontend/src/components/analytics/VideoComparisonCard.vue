@@ -138,7 +138,8 @@ function formatNumber(n: number): string {
   return n.toLocaleString()
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-'
   const date = new Date(dateStr)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')

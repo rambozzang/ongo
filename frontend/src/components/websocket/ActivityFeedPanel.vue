@@ -51,7 +51,7 @@ interface ActivityPayload {
 const activityMessages = computed(() => {
   return props.messages
     .filter((m) => m.type === 'ACTIVITY')
-    .map((m) => m.payload as ActivityPayload)
+    .map((m) => m.payload as unknown as ActivityPayload)
 })
 
 function getIcon(type: string) {

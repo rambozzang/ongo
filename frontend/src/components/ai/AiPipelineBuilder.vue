@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { PIPELINE_STEPS, type PipelineStepType, type PipelineStepInfo } from '@/types/ai'
+import { PIPELINE_STEPS, type PipelineStepType } from '@/types/ai'
 
 const props = defineProps<{
   videoId: number

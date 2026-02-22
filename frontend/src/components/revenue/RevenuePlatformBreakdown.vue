@@ -74,14 +74,16 @@ const chartOptions = computed(() => ({
         usePointStyle: true,
         generateLabels: (chart: ChartJS<'doughnut'>) => {
           const data = chart.data
-          if (data.labels.length && data.datasets.length) {
-            return data.labels.map((label: string, i: number) => {
-              const value = data.datasets[0].data[i]
-              const total = data.datasets[0].data.reduce((a: number, b: number) => a + b, 0)
+          if (data.labels && data.labels.length && data.datasets.length) {
+            return data.labels.map((label: unknown, i: number) => {
+              const dataset = data.datasets[0]
+              const bgColors = dataset.backgroundColor as string[] | undefined
+              const value = dataset.data[i] as number
+              const total = dataset.data.reduce((a: number, b: number) => a + b, 0)
               const percentage = ((value / total) * 100).toFixed(1)
               return {
-                text: `${label} (${percentage}%)`,
-                fillStyle: data.datasets[0].backgroundColor[i],
+                text: `${String(label)} (${percentage}%)`,
+                fillStyle: bgColors ? bgColors[i] : '#000',
                 hidden: false,
                 index: i,
               }

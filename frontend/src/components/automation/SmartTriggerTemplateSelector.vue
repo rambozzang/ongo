@@ -114,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, h } from 'vue'
+import { ref, watch } from 'vue'
 import {
   ChartBarIcon,
   FireIcon,
@@ -129,11 +129,11 @@ export interface SmartTriggerTemplate {
   configSchema: Record<string, unknown>
 }
 
-interface Props {
+export interface Props {
   templates: SmartTriggerTemplate[]
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 const emit = defineEmits<{
   select: [payload: { triggerType: string; config: Record<string, unknown> }]

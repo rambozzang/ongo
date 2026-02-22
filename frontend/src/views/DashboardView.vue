@@ -457,8 +457,7 @@ import AudienceGrowthWidget from '@/components/dashboard/AudienceGrowthWidget.vu
 import ContentCalendarWidget from '@/components/dashboard/ContentCalendarWidget.vue'
 import TopPerformingWidget from '@/components/dashboard/TopPerformingWidget.vue'
 import QuickActionsWidget from '@/components/dashboard/QuickActionsWidget.vue'
-import WeeklyDigestCard from '@/components/dashboard/WeeklyDigestCard.vue'
-import ContentGapCard from '@/components/dashboard/ContentGapCard.vue'
+
 import PageGuide from '@/components/common/PageGuide.vue'
 import OnboardingBanner from '@/components/common/OnboardingBanner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'

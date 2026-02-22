@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend, LineController, BarController } from 'chart.js'
+import type { ChartData } from 'chart.js'
 import type { SubscriberConversionResponse } from '@/types/analytics'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend, LineController, BarController)
@@ -28,7 +29,7 @@ const chartData = computed(() => {
         yAxisID: 'y1',
       },
     ],
-  }
+  } as ChartData<'bar'>
 })
 
 const chartOptions = {
