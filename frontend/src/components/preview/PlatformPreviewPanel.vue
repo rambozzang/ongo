@@ -188,7 +188,7 @@ import { ref, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Squares2X2Icon, ListBulletIcon } from '@heroicons/vue/24/outline'
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
 import YouTubePreview from './YouTubePreview.vue'

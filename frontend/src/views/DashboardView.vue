@@ -478,7 +478,7 @@ const authStore = useAuthStore()
 const creditStore = useCreditStore()
 const widgetSettingsStore = useWidgetSettingsStore()
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 
 const { kpi, trendData, platformComparison, recentVideos, upcomingSchedules, topVideos, loading, period } =
   storeToRefs(dashboardStore)

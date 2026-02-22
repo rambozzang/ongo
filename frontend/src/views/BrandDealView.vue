@@ -257,7 +257,7 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBrandDealStore } from '@/stores/branddeal'
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 const store = useBrandDealStore()
 
 const activeTab = ref('tracker')

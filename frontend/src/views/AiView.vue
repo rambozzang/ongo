@@ -874,7 +874,7 @@ import { PLATFORM_CONFIG } from '@/types/channel'
 import type { AiTone } from '@/types/ai'
 
 // --- Stores & Composables ---
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
 const aiStore = useAiStore()
 const aiHistoryStore = useAiHistoryStore()

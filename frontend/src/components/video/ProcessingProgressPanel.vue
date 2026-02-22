@@ -157,7 +157,7 @@ import PlatformBadge from '@/components/common/PlatformBadge.vue'
 
 // ---- i18n ----
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 
 // ---- Props ----
 

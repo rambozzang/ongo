@@ -788,7 +788,7 @@ watch(analyticsSubTab, (tab) => {
 })
 
 // ----- Stores & Composables -----
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 const themeStore = useThemeStore()
 const analyticsStore = useAnalyticsStore()
 const aiStore = useAiStore()

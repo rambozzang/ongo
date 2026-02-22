@@ -91,7 +91,7 @@
 import { useI18n } from 'vue-i18n'
 import type { Plan, PlanType } from '@/types/subscription'
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 
 interface Props {
   plan: Plan

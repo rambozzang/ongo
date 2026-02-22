@@ -428,7 +428,7 @@ import CommentCard from '@/components/comments/CommentCard.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import type { SentimentTrendPoint } from '@/types/comment'
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 const commentsStore = useCommentsStore()
 
 const {

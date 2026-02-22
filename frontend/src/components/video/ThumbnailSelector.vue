@@ -115,7 +115,7 @@ import { videoApi } from '@/api/video'
 
 // ---- i18n ----
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 
 // ---- Props ----
 

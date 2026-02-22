@@ -250,7 +250,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAudienceStore } from '@/stores/audience'
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 const store = useAudienceStore()
 
 const activeTab = ref('profiles')

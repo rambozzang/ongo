@@ -699,7 +699,7 @@ const scheduleStore = useScheduleStore()
 const { schedules, loading, calendarView } = storeToRefs(scheduleStore)
 const { fetchSchedules, createSchedule, cancelSchedule, setCalendarView } = scheduleStore
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 
 // ─── Notification ────────────────────────────────────────
 const { success } = useNotification()

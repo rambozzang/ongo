@@ -164,7 +164,7 @@ import BioEditor from '@/components/linkbio/BioEditor.vue'
 import BioPreview from '@/components/linkbio/BioPreview.vue'
 import type { ThemeStyle, BlockType, BioBlock, BioPage } from '@/types/linkbio'
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 const store = useLinkBioStore()
 const { bioPage, isDirty, totalClicks, publishUrl } = storeToRefs(store)
 

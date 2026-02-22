@@ -150,7 +150,7 @@ import { PLATFORM_CONFIG } from '@/types/channel'
 
 // ---- i18n ----
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 
 // ---- Props ----
 

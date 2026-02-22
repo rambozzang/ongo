@@ -17,7 +17,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Platform } from '@/types/channel'
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 
 interface PlatformMeta {
   title: string

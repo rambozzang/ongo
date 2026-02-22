@@ -594,7 +594,7 @@ const authStore = useAuthStore()
 const userStore = useUserStore()
 const notify = useNotificationStore()
 const activityStore = useActivityLogStore()
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 const { currentLocale, switchLocale } = useLocale()
 
 // --- Tab State ---
