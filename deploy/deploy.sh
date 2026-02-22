@@ -116,6 +116,18 @@ deploy_backend() {
     cp "$JAR_FILE" "$JAR_DIR/ongo-api.jar"
     info "JAR 복사 완료: $JAR_FILE → $JAR_DIR/ongo-api.jar"
 
+    # .env 파일이 없으면 샘플에서 복사
+    if [ ! -f "$ENV_FILE" ]; then
+        if [ -f "$SRC_DIR/deploy/oracle/.env.production" ]; then
+            cp "$SRC_DIR/deploy/oracle/.env.production" "$ENV_FILE"
+            info ".env 파일 생성: deploy/oracle/.env.production 복사 완료"
+            # Windows 줄바꿈 제거 (안전성 강화)
+            sed -i 's/\r$//' "$ENV_FILE"
+        else
+            warn ".env 파일과 deploy/oracle/.env.production 파일이 모두 없습니다."
+        fi
+    fi
+
     # 서비스 재시작
     info "Backend 재시작..."
     bash "$SRC_DIR/deploy/stop.sh" || true
