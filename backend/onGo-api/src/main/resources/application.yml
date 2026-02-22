@@ -12,9 +12,9 @@ spring:
 
   # DataSource
   datasource:
-    url: jdbc:postgresql://localhost:5434/ongo_db?stringtype=unspecified
-    username: ${DB_USERNAME:ongo_user}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:54332/ongo?stringtype=unspecified
+    username: ${DB_USERNAME:ongo}
+    password: ${DB_PASSWORD:aaaAAA111!!!}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
