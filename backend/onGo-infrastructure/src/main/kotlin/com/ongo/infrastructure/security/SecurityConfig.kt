@@ -42,6 +42,7 @@ class SecurityConfig(
                 val publicPaths = mutableListOf(
                     "/api/v1/auth/login/**",
                     "/api/v1/auth/refresh",
+                    "/api/v1/auth/dev-login", // 관리자 초기 계정 생성용 (모든 프로필 허용)
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**",
@@ -50,10 +51,6 @@ class SecurityConfig(
                     "/ws/**",
                     "/api/v1/ai/demo/**",
                 )
-                // dev-login은 dev 프로필에서만 허용
-                if (environment.activeProfiles.contains("dev")) {
-                    publicPaths.add("/api/v1/auth/dev-login")
-                }
                 auth
                     .requestMatchers(*publicPaths.toTypedArray()).permitAll()
                     .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
