@@ -1,8 +1,13 @@
-import { ref, onUnmounted, type Ref } from 'vue'
+import { ref, type Ref } from 'vue'
+import { Client } from '@stomp/stompjs'
+import SockJS from 'sockjs-client/dist/sockjs'
+import { useNotificationCenterStore } from '@/stores/notificationCenter'
+import { useNotificationStore } from '@/stores/notification'
+import type { NotificationCategory } from '@/types/notification'
 
 export interface WsMessage {
   type: string
-  payload: unknown
+  payload: Record<string, unknown>
   timestamp: number
 }
 
@@ -14,189 +19,139 @@ export interface OnlineMember {
 
 interface UseWebSocketReturn {
   connected: Ref<boolean>
-  messages: Ref<WsMessage[]>
-  onlineMembers: Ref<OnlineMember[]>
-  connect: (userId: number, teamId?: number) => void
+  connect: (userId: number, accessToken: string) => void
   disconnect: () => void
-  send: (destination: string, body: unknown) => void
 }
 
-/**
- * WebSocket composable using native WebSocket + simple STOMP-like protocol.
- * Connects to /ws endpoint with SockJS fallback URL.
- */
+const connected = ref(false)
+let stompClient: Client | null = null
+let reconnectDelay = 1000
+const MAX_RECONNECT_DELAY = 30000
+
+function mapWsTypeToNotification(type: string): {
+  notifType: string
+  category: NotificationCategory
+  toastType: 'success' | 'error' | 'warning' | 'info'
+} {
+  switch (type) {
+    case 'UPLOAD_COMPLETE':
+      return { notifType: 'upload_success', category: 'upload', toastType: 'success' }
+    case 'UPLOAD_FAILED':
+      return { notifType: 'upload_failed', category: 'upload', toastType: 'error' }
+    case 'CREDIT_LOW':
+      return { notifType: 'credit_low', category: 'ai', toastType: 'warning' }
+    case 'SCHEDULE_REMINDER':
+      return { notifType: 'schedule_reminder', category: 'schedule', toastType: 'info' }
+    case 'COMMENT':
+      return { notifType: 'comment', category: 'upload', toastType: 'info' }
+    default:
+      return { notifType: type.toLowerCase(), category: 'upload', toastType: 'info' }
+  }
+}
+
 export function useWebSocket(): UseWebSocketReturn {
-  const connected = ref(false)
-  const messages = ref<WsMessage[]>([])
-  const onlineMembers = ref<OnlineMember[]>([])
+  function connect(userId: number, accessToken: string) {
+    if (stompClient?.connected) return
 
-  let ws: WebSocket | null = null
-  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  let heartbeatTimer: ReturnType<typeof setInterval> | null = null
-  let currentUserId: number | null = null
-  let currentTeamId: number | null = null
+    const wsUrl = `${window.location.protocol === 'https:' ? 'https:' : 'http:'}//${window.location.host}/ws`
 
-  function getWsUrl(): string {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = import.meta.env.VITE_WS_HOST || window.location.host
-    return `${protocol}//${host}/ws/websocket`
+    stompClient = new Client({
+      webSocketFactory: () => new SockJS(wsUrl),
+      connectHeaders: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      reconnectDelay: 0, // 수동 재연결 관리
+      onConnect: () => {
+        connected.value = true
+        reconnectDelay = 1000 // 재연결 성공 시 초기화
+
+        // 사용자 큐 구독
+        stompClient?.subscribe(`/queue/user/${userId}`, (frame) => {
+          try {
+            const message = JSON.parse(frame.body) as WsMessage
+            handleMessage(message)
+          } catch {
+            // 파싱 실패 무시
+          }
+        })
+
+        // 재연결 시 누락된 알림 동기화
+        const notifCenter = useNotificationCenterStore()
+        notifCenter.fetchNotifications()
+      },
+      onStompError: (frame) => {
+        console.error('STOMP error:', frame.headers['message'])
+        connected.value = false
+      },
+      onWebSocketClose: () => {
+        connected.value = false
+        scheduleReconnect(userId, accessToken)
+      },
+    })
+
+    stompClient.activate()
   }
 
-  function connect(userId: number, teamId?: number) {
-    currentUserId = userId
-    currentTeamId = teamId ?? null
+  function handleMessage(message: WsMessage) {
+    const { notifType, category, toastType } = mapWsTypeToNotification(message.type)
+    const payload = message.payload || {}
 
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    const title = (payload.title as string) || message.type
+    const body = (payload.message as string) || ''
+
+    // 1) notificationCenter 스토어에 추가
+    const notifCenter = useNotificationCenterStore()
+    notifCenter.addNotification({
+      type: notifType as any,
+      category,
+      title,
+      message: body,
+      isRead: false,
+      referenceType: payload.referenceType as string | undefined,
+      referenceId: payload.referenceId as number | undefined,
+    })
+
+    // 2) 토스트 팝업 표시
+    const toastStore = useNotificationStore()
+    toastStore.showToast({
+      type: toastType,
+      title,
+      message: body,
+      duration: 5000,
+    })
+  }
+
+  function scheduleReconnect(userId: number, accessToken: string) {
+    if (document.hidden) {
+      // 탭 비활성 시 재연결 대기 → 탭 활성화 시 재연결
+      const onVisible = () => {
+        if (!document.hidden) {
+          document.removeEventListener('visibilitychange', onVisible)
+          connect(userId, accessToken)
+        }
+      }
+      document.addEventListener('visibilitychange', onVisible)
       return
     }
 
-    try {
-      ws = new WebSocket(getWsUrl())
-
-      ws.onopen = () => {
-        connected.value = true
-
-        // Send STOMP CONNECT frame
-        sendFrame('CONNECT', { 'accept-version': '1.2', 'heart-beat': '10000,10000' })
-
-        // Subscribe to user queue
-        sendFrame('SUBSCRIBE', {
-          id: `sub-user-${userId}`,
-          destination: `/queue/user/${userId}`,
-        })
-
-        // Subscribe to team topic if teamId provided
-        if (teamId) {
-          sendFrame('SUBSCRIBE', {
-            id: `sub-team-${teamId}`,
-            destination: `/topic/team/${teamId}`,
-          })
-        }
-
-        // Start heartbeat
-        heartbeatTimer = setInterval(() => {
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send('\n') // STOMP heartbeat
-          }
-        }, 10000)
-      }
-
-      ws.onmessage = (event) => {
-        const data = event.data as string
-        if (data === '\n') return // heartbeat
-
-        // Parse STOMP frame
-        const frame = parseStompFrame(data)
-        if (frame.command === 'MESSAGE' && frame.body) {
-          try {
-            const msg = JSON.parse(frame.body) as WsMessage
-            messages.value = [msg, ...messages.value.slice(0, 99)]
-
-            // Handle presence updates
-            if (msg.type === 'PRESENCE_UPDATE') {
-              const members = msg.payload as OnlineMember[]
-              onlineMembers.value = members
-            }
-          } catch {
-            // ignore parse errors
-          }
-        }
-      }
-
-      ws.onclose = () => {
-        connected.value = false
-        cleanup()
-        // Auto-reconnect after 3 seconds
-        reconnectTimer = setTimeout(() => {
-          if (currentUserId !== null) {
-            connect(currentUserId, currentTeamId ?? undefined)
-          }
-        }, 3000)
-      }
-
-      ws.onerror = () => {
-        connected.value = false
-      }
-    } catch {
-      connected.value = false
-    }
+    setTimeout(() => {
+      reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY)
+      connect(userId, accessToken)
+    }, reconnectDelay)
   }
 
   function disconnect() {
-    currentUserId = null
-    currentTeamId = null
-    if (ws) {
-      sendFrame('DISCONNECT', {})
-      ws.close()
-      ws = null
+    if (stompClient) {
+      stompClient.deactivate()
+      stompClient = null
     }
-    cleanup()
     connected.value = false
+    reconnectDelay = 1000
   }
-
-  function send(destination: string, body: unknown) {
-    sendFrame('SEND', { destination }, JSON.stringify(body))
-  }
-
-  function sendFrame(command: string, headers: Record<string, string>, body?: string) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return
-
-    let frame = command + '\n'
-    for (const [key, value] of Object.entries(headers)) {
-      frame += `${key}:${value}\n`
-    }
-    frame += '\n'
-    if (body) {
-      frame += body
-    }
-    frame += '\0'
-
-    ws.send(frame)
-  }
-
-  function parseStompFrame(data: string): { command: string; headers: Record<string, string>; body: string } {
-    const lines = data.split('\n')
-    const command = lines[0] || ''
-    const headers: Record<string, string> = {}
-    let bodyStart = 1
-
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i]
-      if (line === '') {
-        bodyStart = i + 1
-        break
-      }
-      const colonIdx = line.indexOf(':')
-      if (colonIdx > 0) {
-        headers[line.substring(0, colonIdx)] = line.substring(colonIdx + 1)
-      }
-    }
-
-    const body = lines.slice(bodyStart).join('\n').replace(/\0$/, '')
-    return { command, headers, body }
-  }
-
-  function cleanup() {
-    if (heartbeatTimer) {
-      clearInterval(heartbeatTimer)
-      heartbeatTimer = null
-    }
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer)
-      reconnectTimer = null
-    }
-  }
-
-  onUnmounted(() => {
-    disconnect()
-  })
 
   return {
     connected,
-    messages,
-    onlineMembers,
     connect,
     disconnect,
-    send,
   }
 }
