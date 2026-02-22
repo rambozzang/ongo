@@ -212,6 +212,17 @@
         @update:scheduled-at="(v) => (scheduledAt = v)"
       />
 
+      <!-- Step 3 Platform Preview (comparison mode) -->
+      <PlatformPreviewPanel
+        v-if="platformConfigs.length > 0"
+        :platforms="platformConfigs.map(c => c.platform)"
+        :platform-metadata="platformConfigsAsMetadata"
+        :thumbnail="metadata.thumbnailUrl || videoPreviewUrl || undefined"
+        :channel-name="channelStore.channels[0]?.channelName"
+        comparison-mode
+        class="mt-6"
+      />
+
       <div class="mt-6 flex justify-between">
         <button
           class="btn-secondary"
@@ -286,6 +297,7 @@ import { useUploadQueueStore } from '@/stores/uploadQueue'
 import { useLocale } from '@/composables/useLocale'
 import { videoApi } from '@/api/video'
 import { aiApi } from '@/api/ai'
+import type { Platform } from '@/types/channel'
 import type { PlatformPublishConfig, OptimizationResult } from '@/types/video'
 import type { ScheduleSuggestion, PipelineStepType, AiPipelineResponse } from '@/types/ai'
 
@@ -323,6 +335,18 @@ const pipelineId = ref<string | null>(null)
 let thumbnailPollTimer: ReturnType<typeof setTimeout> | null = null
 
 const platformConfigs = ref<PlatformPublishConfig[]>([])
+
+const platformConfigsAsMetadata = computed(() => {
+  const map: Partial<Record<Platform, { title: string; description: string; tags: string[] }>> = {}
+  for (const config of platformConfigs.value) {
+    map[config.platform] = {
+      title: config.title,
+      description: config.description,
+      tags: config.tags,
+    }
+  }
+  return map
+})
 
 // ─── Optimization check ──────────────────────────────────
 const optimizationResults = ref<OptimizationResult[]>([])
