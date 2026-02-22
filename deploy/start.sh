@@ -34,6 +34,20 @@ if [ -z "$ANTHROPIC_API_KEY" ]; then
     export ANTHROPIC_API_KEY="dummy-anthropic-key"
 fi
 
+# OAuth 키 예외 처리 (값이 비어있으면 초기화 실패 방지용 더미 값 설정)
+if [ -z "$GOOGLE_CLIENT_ID" ]; then
+    export GOOGLE_CLIENT_ID="dummy-google-client-id"
+fi
+if [ -z "$GOOGLE_CLIENT_SECRET" ]; then
+    export GOOGLE_CLIENT_SECRET="dummy-google-client-secret"
+fi
+if [ -z "$KAKAO_CLIENT_ID" ]; then
+    export KAKAO_CLIENT_ID="dummy-kakao-client-id"
+fi
+if [ -z "$KAKAO_CLIENT_SECRET" ]; then
+    export KAKAO_CLIENT_SECRET="dummy-kakao-client-secret"
+fi
+
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] $APP_NAME 시작..."
 
 # 이미 실행 중인지 확인

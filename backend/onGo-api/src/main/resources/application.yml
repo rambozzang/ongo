@@ -99,48 +99,48 @@ storage:
     secret-key: ${MINIO_SECRET_KEY:minioadmin}
   s3:
     region: ap-northeast-2
-    endpoint: ${S3_ENDPOINT:}
-    access-key: ${S3_ACCESS_KEY:}
-    secret-key: ${S3_SECRET_KEY:}
+    endpoint: ${S3_ENDPOINT:dummy-endpoint}
+    access-key: ${S3_ACCESS_KEY:dummy-s3-access}
+    secret-key: ${S3_SECRET_KEY:dummy-s3-secret}
 
 # Payment (Toss)
 payment:
   toss:
-    webhook-secret: ${TOSS_WEBHOOK_SECRET:}
+    webhook-secret: ${TOSS_WEBHOOK_SECRET:dummy-toss-secret}
 
 # Platform encryption & OAuth
 platform:
   token:
     encryption-key: ${PLATFORM_TOKEN_ENCRYPTION_KEY:Y2hhbmdlLW1lLXRvLWEtc2VjdXJlLXNlY3JldC1rZXk=}
   google:
-    api-key: ${GOOGLE_API_KEY:}
+    api-key: ${GOOGLE_API_KEY:dummy-google-api}
   twitter:
-    client-id: ${TWITTER_CLIENT_ID:}
-    client-secret: ${TWITTER_CLIENT_SECRET:}
+    client-id: ${TWITTER_CLIENT_ID:dummy-twitter-id}
+    client-secret: ${TWITTER_CLIENT_SECRET:dummy-twitter-secret}
   facebook:
-    app-id: ${FACEBOOK_APP_ID:}
-    app-secret: ${FACEBOOK_APP_SECRET:}
+    app-id: ${FACEBOOK_APP_ID:dummy-fb-app}
+    app-secret: ${FACEBOOK_APP_SECRET:dummy-fb-secret}
   threads:
-    app-id: ${THREADS_APP_ID:}
-    app-secret: ${THREADS_APP_SECRET:}
+    app-id: ${THREADS_APP_ID:dummy-threads-app}
+    app-secret: ${THREADS_APP_SECRET:dummy-threads-secret}
   pinterest:
-    app-id: ${PINTEREST_APP_ID:}
-    app-secret: ${PINTEREST_APP_SECRET:}
+    app-id: ${PINTEREST_APP_ID:dummy-pinterest-app}
+    app-secret: ${PINTEREST_APP_SECRET:dummy-pinterest-secret}
   linkedin:
-    client-id: ${LINKEDIN_CLIENT_ID:}
-    client-secret: ${LINKEDIN_CLIENT_SECRET:}
+    client-id: ${LINKEDIN_CLIENT_ID:dummy-linkedin-id}
+    client-secret: ${LINKEDIN_CLIENT_SECRET:dummy-linkedin-secret}
   wordpress:
-    client-id: ${WORDPRESS_CLIENT_ID:}
-    client-secret: ${WORDPRESS_CLIENT_SECRET:}
+    client-id: ${WORDPRESS_CLIENT_ID:dummy-wp-id}
+    client-secret: ${WORDPRESS_CLIENT_SECRET:dummy-wp-secret}
   tumblr:
-    consumer-key: ${TUMBLR_CONSUMER_KEY:}
-    consumer-secret: ${TUMBLR_CONSUMER_SECRET:}
+    consumer-key: ${TUMBLR_CONSUMER_KEY:dummy-tumblr-key}
+    consumer-secret: ${TUMBLR_CONSUMER_SECRET:dummy-tumblr-secret}
   vimeo:
-    client-id: ${VIMEO_CLIENT_ID:}
-    client-secret: ${VIMEO_CLIENT_SECRET:}
+    client-id: ${VIMEO_CLIENT_ID:dummy-vimeo-id}
+    client-secret: ${VIMEO_CLIENT_SECRET:dummy-vimeo-secret}
   dailymotion:
-    api-key: ${DAILYMOTION_API_KEY:}
-    api-secret: ${DAILYMOTION_API_SECRET:}
+    api-key: ${DAILYMOTION_API_KEY:dummy-dm-api}
+    api-secret: ${DAILYMOTION_API_SECRET:dummy-dm-secret}
 
 # CORS
 cors:
