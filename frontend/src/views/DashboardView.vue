@@ -24,6 +24,9 @@
     <DashboardSkeleton v-if="loading" />
 
     <template v-else>
+      <!-- Onboarding Banner -->
+      <OnboardingBanner />
+
       <!-- Start Guide (if shown) -->
       <StartGuide />
 
@@ -233,9 +236,17 @@
           </div>
         </div>
       </div>
-      <div v-else class="card py-8 text-center text-sm text-gray-400 dark:text-gray-500">
-        예정된 일정이 없습니다
-      </div>
+      <EmptyState
+        v-else
+        variant="compact"
+        title="예정된 일정이 없어요"
+        description="영상 업로드 시 예약 게시를 설정하면 이곳에서 바로 확인할 수 있어요."
+        :icon="CalendarDaysIcon"
+        action-label="일정 만들기"
+        action-to="/schedule"
+        secondary-action-label="영상 업로드하기"
+        secondary-action-to="/upload"
+      />
     </template>
 
     <!-- Recycle Modal -->
@@ -300,6 +311,9 @@
     <DashboardSkeleton v-if="loading" />
 
     <template v-else>
+      <!-- Onboarding Banner -->
+      <OnboardingBanner />
+
       <!-- Start Guide -->
       <StartGuide />
 
@@ -445,6 +459,8 @@ import QuickActionsWidget from '@/components/dashboard/QuickActionsWidget.vue'
 import WeeklyDigestCard from '@/components/dashboard/WeeklyDigestCard.vue'
 import ContentGapCard from '@/components/dashboard/ContentGapCard.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import OnboardingBanner from '@/components/common/OnboardingBanner.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useAuthStore } from '@/stores/auth'
 import { useCreditStore } from '@/stores/credit'

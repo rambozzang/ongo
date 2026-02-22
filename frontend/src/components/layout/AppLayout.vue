@@ -38,7 +38,9 @@
       <main id="main-content" class="flex-1 overflow-y-auto p-4 tablet:p-6 pb-20 tablet:pb-6">
         <ErrorBoundary>
           <router-view v-slot="{ Component, route }">
-            <component :is="Component" :key="route.path" />
+            <Transition name="page-fade" mode="out-in">
+              <component :is="Component" :key="route.path" />
+            </Transition>
           </router-view>
         </ErrorBoundary>
       </main>
@@ -46,6 +48,9 @@
 
     <!-- Mobile bottom nav -->
     <MobileBottomNav class="tablet:hidden" />
+
+    <!-- PWA Install Banner -->
+    <PwaInstallBanner />
 
     <!-- Upload Queue Indicator (global) -->
     <UploadQueueIndicator @open="queuePanelOpen = true" />
@@ -67,6 +72,7 @@ import Breadcrumb from './Breadcrumb.vue'
 import MobileBottomNav from './MobileBottomNav.vue'
 import ErrorBoundary from '@/components/common/ErrorBoundary.vue'
 import OfflineIndicator from '@/components/common/OfflineIndicator.vue'
+import PwaInstallBanner from '@/components/common/PwaInstallBanner.vue'
 import SkipToContent from '@/components/common/SkipToContent.vue'
 import AriaLiveRegion from '@/components/common/AriaLiveRegion.vue'
 import UploadQueueIndicator from '@/components/upload/UploadQueueIndicator.vue'

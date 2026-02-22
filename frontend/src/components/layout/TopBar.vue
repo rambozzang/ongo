@@ -32,38 +32,7 @@
       <CreditDisplay />
 
       <!-- Theme Toggle -->
-      <div class="relative">
-        <button
-          :aria-label="getThemeButtonLabel()"
-          :aria-expanded="themeMenuOpen"
-          aria-haspopup="menu"
-          class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-          @click="themeMenuOpen = !themeMenuOpen"
-        >
-          <SunIcon v-if="themeStore.mode === 'light'" class="h-5 w-5" aria-hidden="true" />
-          <MoonIcon v-else-if="themeStore.mode === 'dark'" class="h-5 w-5" aria-hidden="true" />
-          <ComputerDesktopIcon v-else class="h-5 w-5" aria-hidden="true" />
-        </button>
-        <div
-          v-if="themeMenuOpen"
-          role="menu"
-          aria-label="테마 선택"
-          class="absolute right-0 top-full z-50 mt-2 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
-        >
-          <button
-            v-for="opt in themeOptions"
-            :key="opt.value"
-            role="menuitem"
-            :aria-label="`${opt.label} 테마로 변경`"
-            class="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
-            :class="{ 'text-primary-600 dark:text-primary-400': themeStore.mode === opt.value }"
-            @click="setTheme(opt.value)"
-          >
-            <component :is="opt.icon" class="h-4 w-4" aria-hidden="true" />
-            {{ opt.label }}
-          </button>
-        </div>
-      </div>
+      <ThemeToggle />
 
       <!-- Notifications -->
       <div class="relative" ref="notificationRef">
@@ -140,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, type Component } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import {
   Bars3Icon,
@@ -149,15 +118,12 @@ import {
   ChevronDownIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  SunIcon,
-  MoonIcon,
-  ComputerDesktopIcon,
 } from '@heroicons/vue/24/outline'
 import CreditDisplay from '@/components/common/CreditDisplay.vue'
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import NotificationPanel from '@/components/common/NotificationPanel.vue'
 import SearchOverlay from '@/components/common/SearchOverlay.vue'
 import { useAuthStore } from '@/stores/auth'
-import { useThemeStore, type ThemeMode } from '@/stores/theme'
 import { useNotificationCenterStore } from '@/stores/notificationCenter'
 
 const emit = defineEmits<{
@@ -165,25 +131,12 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
-const themeStore = useThemeStore()
 const notificationStore = useNotificationCenterStore()
 const user = computed(() => authStore.user)
 const userInitial = computed(() => (user.value?.nickname || user.value?.name || 'U').charAt(0))
 const notificationOpen = ref(false)
 const profileOpen = ref(false)
-const themeMenuOpen = ref(false)
 const searchOpen = ref(false)
-
-const themeOptions: { value: ThemeMode; label: string; icon: Component }[] = [
-  { value: 'light', label: '라이트', icon: SunIcon },
-  { value: 'dark', label: '다크', icon: MoonIcon },
-  { value: 'system', label: '시스템', icon: ComputerDesktopIcon },
-]
-
-function setTheme(mode: ThemeMode) {
-  themeStore.setMode(mode)
-  themeMenuOpen.value = false
-}
 
 const notificationRef = ref<HTMLElement>()
 const profileRef = ref<HTMLElement>()
@@ -203,15 +156,6 @@ onMounted(() => {
 function handleLogout() {
   profileOpen.value = false
   authStore.logout()
-}
-
-function getThemeButtonLabel(): string {
-  const themeLabels: Record<ThemeMode, string> = {
-    light: '라이트 테마',
-    dark: '다크 테마',
-    system: '시스템 테마',
-  }
-  return `테마 변경 (현재: ${themeLabels[themeStore.mode]})`
 }
 
 function getNotificationButtonLabel(): string {

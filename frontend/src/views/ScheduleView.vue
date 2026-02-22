@@ -131,6 +131,8 @@
       :icon="CalendarDaysIcon"
       action-label="영상 업로드하기"
       action-to="/upload"
+      secondary-action-label="내 영상 목록 보기"
+      secondary-action-to="/videos"
     />
 
     <!-- Calendar navigation + content -->
@@ -236,6 +238,13 @@
                   class="hidden h-4 w-6 shrink-0 rounded-sm object-cover tablet:block"
                 />
 
+                <!-- Recurrence icon -->
+                <ArrowPathIcon
+                  v-if="schedule.recurrence && schedule.recurrence.type !== 'NONE'"
+                  class="h-3 w-3 shrink-0 text-primary-500 dark:text-primary-400"
+                  title="반복 예약"
+                />
+
                 <!-- Title -->
                 <span class="truncate text-gray-700 dark:text-gray-300">
                   {{ schedule.videoTitle }}
@@ -305,6 +314,11 @@
                 }"
                 @click.stop="openScheduleDetail(schedule)"
               >
+                <ArrowPathIcon
+                  v-if="schedule.recurrence && schedule.recurrence.type !== 'NONE'"
+                  class="h-3 w-3 shrink-0 text-primary-500 dark:text-primary-400"
+                  title="반복 예약"
+                />
                 <span class="truncate font-medium text-gray-800 dark:text-gray-200">
                   {{ schedule.videoTitle }}
                 </span>
@@ -511,6 +525,15 @@
                 </label>
               </div>
             </div>
+
+            <!-- 최적 시간대 추천 -->
+            <OptimalTimeRecommendation
+              :recommendations="timeRecommendations"
+              @select="handleTimeRecommendationSelect"
+            />
+
+            <!-- 반복 예약 설정 -->
+            <RecurrenceSelector v-model="quickAddForm.recurrence" />
           </div>
 
           <div class="mt-6 flex justify-end gap-3">
@@ -573,6 +596,13 @@
                   <span class="font-medium text-gray-900 dark:text-gray-100">
                     {{ formatDate(selectedSchedule.scheduledAt) }}
                     {{ formatTime(selectedSchedule.scheduledAt) }}
+                  </span>
+                </div>
+                <div v-if="selectedSchedule.recurrence && selectedSchedule.recurrence.type !== 'NONE'" class="flex justify-between">
+                  <span class="text-gray-500 dark:text-gray-400">반복</span>
+                  <span class="flex items-center gap-1 font-medium text-gray-900 dark:text-gray-100">
+                    <ArrowPathIcon class="h-3.5 w-3.5 text-primary-500" />
+                    {{ formatRecurrence(selectedSchedule.recurrence) }}
                   </span>
                 </div>
                 <div class="flex justify-between">
@@ -648,6 +678,7 @@ import {
   FunnelIcon,
   PencilSquareIcon,
   XMarkIcon,
+  ArrowPathIcon,
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -655,13 +686,16 @@ import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import DraggableScheduleItem from '@/components/schedule/DraggableScheduleItem.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import RecurrenceSelector from '@/components/schedule/RecurrenceSelector.vue'
+import OptimalTimeRecommendation from '@/components/schedule/OptimalTimeRecommendation.vue'
 import { useScheduleStore } from '@/stores/schedule'
 import { useNotification } from '@/composables/useNotification'
 import { useDragAndDrop } from '@/composables/useDragAndDrop'
 import { analyticsApi } from '@/api/analytics'
-import type { Schedule, ScheduleStatus, CalendarView } from '@/types/schedule'
+import type { Schedule, ScheduleStatus, CalendarView, RecurrenceConfig } from '@/types/schedule'
 import type { Platform } from '@/types/channel'
 import type { OptimalTimeSlot } from '@/types/analytics'
+import type { TimeRecommendation } from '@/components/schedule/OptimalTimeRecommendation.vue'
 import { PLATFORM_CONFIG } from '@/types/channel'
 
 // ─── Store ───────────────────────────────────────────────
@@ -954,6 +988,7 @@ const quickAddForm = ref({
   videoId: null as number | null,
   scheduledAt: '',
   platforms: [] as Platform[],
+  recurrence: { type: 'NONE', interval: 1 } as RecurrenceConfig,
 })
 
 // ─── Recommended time ─────────────────────────────────────
@@ -966,6 +1001,31 @@ async function fetchRecommendedTime() {
   } catch {
     recommendedSlot.value = null
   }
+}
+
+// ─── Time recommendations for OptimalTimeRecommendation ──
+const timeRecommendations = ref<TimeRecommendation[]>([])
+
+async function fetchTimeRecommendations() {
+  try {
+    const result = await analyticsApi.getOptimalTimes()
+    timeRecommendations.value = result.slots.slice(0, 3)
+  } catch {
+    timeRecommendations.value = []
+  }
+}
+
+function handleTimeRecommendationSelect(rec: TimeRecommendation) {
+  const now = new Date()
+  const currentDay = now.getDay()
+  let daysUntil = rec.dayOfWeek - currentDay
+  if (daysUntil < 0) daysUntil += 7
+  if (daysUntil === 0 && rec.hour <= now.getHours()) daysUntil = 7
+
+  const target = new Date(now)
+  target.setDate(target.getDate() + daysUntil)
+  target.setHours(rec.hour, 0, 0, 0)
+  quickAddForm.value.scheduledAt = toDateTimeLocal(target)
 }
 
 function applyRecommendedTime() {
@@ -1008,6 +1068,7 @@ function openQuickAdd(date: Date, hour?: number) {
     videoId: null,
     scheduledAt: toDateTimeLocal(d),
     platforms: [],
+    recurrence: { type: 'NONE', interval: 1 },
   }
   showQuickAdd.value = true
 }
@@ -1016,11 +1077,15 @@ async function submitQuickAdd() {
   if (!isQuickAddValid.value || quickAddForm.value.videoId == null) return
 
   try {
-    await createSchedule({
+    const request: any = {
       videoId: quickAddForm.value.videoId,
       scheduledAt: new Date(quickAddForm.value.scheduledAt).toISOString(),
       platforms: quickAddForm.value.platforms.map((p) => ({ platform: p })),
-    })
+    }
+    if (quickAddForm.value.recurrence.type !== 'NONE') {
+      request.recurrence = quickAddForm.value.recurrence
+    }
+    await createSchedule(request)
     showQuickAdd.value = false
     await loadSchedules()
   } catch {
@@ -1102,6 +1167,24 @@ function getScheduleBorderColor(schedule: Schedule): string {
   return getPlatformColor(schedule.platforms[0].platform)
 }
 
+function formatRecurrence(recurrence: RecurrenceConfig): string {
+  const typeLabels: Record<string, string> = {
+    DAILY: '매일',
+    WEEKLY: '매주',
+    MONTHLY: '매월',
+  }
+  let label = typeLabels[recurrence.type] ?? recurrence.type
+  if (recurrence.interval > 1) {
+    label = `${recurrence.interval}${recurrence.type === 'DAILY' ? '일' : recurrence.type === 'WEEKLY' ? '주' : '월'}마다`
+  }
+  if (recurrence.type === 'WEEKLY' && recurrence.daysOfWeek?.length) {
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토']
+    const days = recurrence.daysOfWeek.map((d) => dayNames[d]).join(', ')
+    label += ` (${days})`
+  }
+  return label
+}
+
 function getStatusLabel(status: ScheduleStatus): string {
   const map: Record<ScheduleStatus, string> = {
     SCHEDULED: '예약됨',
@@ -1167,5 +1250,6 @@ watch([currentDate, calendarView], () => {
 onMounted(() => {
   loadSchedules()
   fetchRecommendedTime()
+  fetchTimeRecommendations()
 })
 </script>
