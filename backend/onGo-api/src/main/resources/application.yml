@@ -48,7 +48,7 @@ spring:
       ai:
         gemini:
           enabled: ${GEMINI_ENABLED:false}
-          project-id: ${GEMINI_PROJECT_ID:}
+          project-id: ${GEMINI_PROJECT_ID:dummy-gemini-project-id}
           location: ${GEMINI_LOCATION:us-central1}
           chat:
             options:
