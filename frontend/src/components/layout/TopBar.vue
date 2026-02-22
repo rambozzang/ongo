@@ -31,6 +31,9 @@
       <!-- AI Credit Display -->
       <CreditDisplay />
 
+      <!-- Language Toggle -->
+      <LanguageToggle />
+
       <!-- Theme Toggle -->
       <ThemeToggle />
 
@@ -120,6 +123,7 @@ import {
   ArrowRightOnRectangleIcon,
 } from '@heroicons/vue/24/outline'
 import CreditDisplay from '@/components/common/CreditDisplay.vue'
+import LanguageToggle from '@/components/common/LanguageToggle.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import NotificationPanel from '@/components/common/NotificationPanel.vue'
 import SearchOverlay from '@/components/common/SearchOverlay.vue'
