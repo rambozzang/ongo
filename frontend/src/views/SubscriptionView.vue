@@ -208,7 +208,7 @@
           v-if="creditTransactions && creditTransactions.totalPages > 1"
           class="mt-4 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4"
         >
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-gray-500 dark:text-gray-400">
             총 {{ creditTransactions.totalElements.toLocaleString() }}건
           </p>
           <div class="flex gap-1">
@@ -315,7 +315,7 @@
           v-if="paymentList && paymentList.totalPages > 1"
           class="mt-4 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4"
         >
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-gray-500 dark:text-gray-400">
             총 {{ paymentList.totalElements.toLocaleString() }}건
           </p>
           <div class="flex gap-1">

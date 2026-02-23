@@ -412,7 +412,7 @@
                   step="1"
                   class="input"
                 />
-                <span class="text-sm text-gray-500">GB</span>
+                <span class="text-sm text-gray-500 dark:text-gray-400">GB</span>
               </div>
             </div>
 

@@ -107,7 +107,7 @@
     <div v-if="analyticsSubTab === 'crossPlatform'" class="space-y-6">
       <div v-if="analyticsStore.crossPlatformLoading" class="text-center py-12">
         <LoadingSpinner />
-        <p class="mt-2 text-sm text-gray-500">{{ $t('analyticsView.crossPlatformLoading') }}</p>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $t('analyticsView.crossPlatformLoading') }}</p>
       </div>
       <template v-else-if="analyticsStore.crossPlatformData">
         <!-- 플랫폼 순위 -->
@@ -273,7 +273,7 @@
     <div v-if="analyticsSubTab === 'deep'" class="space-y-6">
       <div v-if="analyticsStore.deepAnalyticsLoading" class="text-center py-12">
         <LoadingSpinner />
-        <p class="mt-2 text-sm text-gray-500">{{ $t('analyticsView.deepAnalyticsLoading') }}</p>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $t('analyticsView.deepAnalyticsLoading') }}</p>
       </div>
       <template v-else>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

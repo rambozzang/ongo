@@ -43,7 +43,7 @@
                 class="h-full w-full object-cover"
               />
               <div v-else class="flex h-full items-center justify-center">
-                <VideoCameraIcon class="h-16 w-16 text-gray-600" />
+                <VideoCameraIcon class="h-16 w-16 text-gray-600 dark:text-gray-300" />
               </div>
               <!-- Duration overlay -->
               <span
@@ -106,7 +106,7 @@
 
             <!-- Tags -->
             <div v-if="video.tags.length > 0" class="mb-5">
-              <p class="mb-2 text-xs font-medium text-gray-500">태그</p>
+              <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">태그</p>
               <div class="flex flex-wrap gap-1.5">
                 <span
                   v-for="tag in video.tags"
@@ -120,7 +120,7 @@
 
             <!-- Platform Upload Badges -->
             <div v-if="video.uploads.length > 0" class="mb-5">
-              <p class="mb-2 text-xs font-medium text-gray-500">업로드 플랫폼</p>
+              <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">업로드 플랫폼</p>
               <div class="flex flex-wrap gap-2">
                 <div
                   v-for="upload in video.uploads"
@@ -349,7 +349,7 @@
             <div v-if="analyticsData.length > 0" class="h-64 space-y-4 overflow-y-auto">
               <!-- Views comparison -->
               <div>
-                <p class="mb-1 text-xs font-medium text-gray-500">조회수</p>
+                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">조회수</p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
@@ -376,7 +376,7 @@
               </div>
               <!-- Likes comparison -->
               <div>
-                <p class="mb-1 text-xs font-medium text-gray-500">좋아요</p>
+                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">좋아요</p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
@@ -403,7 +403,7 @@
               </div>
               <!-- Comments comparison -->
               <div>
-                <p class="mb-1 text-xs font-medium text-gray-500">댓글</p>
+                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">댓글</p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
@@ -430,7 +430,7 @@
               </div>
               <!-- Shares comparison -->
               <div>
-                <p class="mb-1 text-xs font-medium text-gray-500">공유</p>
+                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">공유</p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"

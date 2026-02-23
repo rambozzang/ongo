@@ -38,7 +38,7 @@
           />
           <button
             v-if="searchKeyword"
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400"
             @click="clearSearch"
           >
             <XMarkIcon class="h-4 w-4" />
@@ -241,7 +241,7 @@
           type="checkbox"
           :checked="isAllSelected"
           :indeterminate="isPartiallySelected"
-          class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
           @change="toggleSelectAll"
         />
         <span class="text-sm text-gray-500 dark:text-gray-400">
@@ -275,7 +275,7 @@
             <input
               type="checkbox"
               :checked="selectedIds.has(video.id)"
-              class="h-4 w-4 rounded border-gray-300 bg-white/80 text-primary-600 focus:ring-primary-500"
+              class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 bg-white/80 text-primary-600 focus:ring-primary-500"
               @click.stop
               @change="toggleSelect(video.id)"
             />
@@ -362,7 +362,7 @@
                     type="checkbox"
                     :checked="isAllSelected"
                     :indeterminate="isPartiallySelected"
-                    class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
                     @change="toggleSelectAll"
                   />
                 </th>
@@ -386,7 +386,7 @@
                     <input
                       type="checkbox"
                       :checked="selectedIds.has(video.id)"
-                      class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
                       @change="toggleSelect(video.id)"
                     />
                     <FavoriteButton :video-id="video.id" size="sm" />

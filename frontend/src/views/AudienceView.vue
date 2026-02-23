@@ -226,7 +226,7 @@
                 id="autoUpdate"
                 v-model="segmentForm.autoUpdate"
                 type="checkbox"
-                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
               />
               <label for="autoUpdate" class="text-sm text-gray-700 dark:text-gray-300">{{ $t('audience.segment.modal.autoUpdate') }}</label>
             </div>

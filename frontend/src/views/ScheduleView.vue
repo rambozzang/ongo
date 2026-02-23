@@ -182,7 +182,7 @@
             :key="index"
             class="relative min-h-[100px] cursor-pointer border-b border-r border-gray-100 dark:border-gray-700 p-1.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 tablet:min-h-[120px]"
             :class="{
-              'bg-blue-50/40': cell.isToday,
+              'bg-blue-50/40 dark:bg-blue-900/20': cell.isToday,
               'opacity-40': !cell.isCurrentMonth,
             }"
             @click="onCellClick(cell)"
@@ -270,7 +270,7 @@
             v-for="day in weekDays"
             :key="day.dateStr"
             class="px-2 py-2.5 text-center"
-            :class="{ 'bg-blue-50/60': day.isToday }"
+            :class="{ 'bg-blue-50/60 dark:bg-blue-900/20': day.isToday }"
           >
             <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ day.dayLabel }}</div>
             <div
@@ -299,7 +299,7 @@
               v-for="day in weekDays"
               :key="day.dateStr"
               class="relative min-h-[48px] cursor-pointer border-r border-gray-100 dark:border-gray-700 px-1 py-0.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-              :class="{ 'bg-blue-50/30': day.isToday }"
+              :class="{ 'bg-blue-50/30 dark:bg-blue-900/20': day.isToday }"
               @click="openQuickAdd(day.date, hour)"
             >
               <div
@@ -437,7 +437,7 @@
                     </button>
                     <button
                       v-if="schedule.status === 'SCHEDULED'"
-                      class="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                      class="rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"
                       :title="$t('action.cancel')"
                       @click="confirmCancel(schedule)"
                     >

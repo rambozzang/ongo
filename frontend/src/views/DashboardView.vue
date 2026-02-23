@@ -335,6 +335,7 @@
                 :change="kpi?.viewsChangePercent"
                 change-type="percent"
                 :icon="EyeIcon"
+                color="blue"
                 @click="$router.push('/analytics')"
               />
               <SummaryCard
@@ -343,6 +344,7 @@
                 :change="kpi?.subscribersChange"
                 change-type="number"
                 :icon="UsersIcon"
+                color="green"
                 @click="$router.push('/channels')"
               />
               <SummaryCard
@@ -351,12 +353,14 @@
                 :change="kpi?.likesChangePercent"
                 change-type="percent"
                 :icon="HeartIcon"
+                color="rose"
                 @click="$router.push('/analytics')"
               />
               <SummaryCard
                 :title="$t('dashboard.aiCredits')"
                 :value="kpi?.creditBalance ?? 0"
                 :icon="SparklesIcon"
+                color="purple"
                 format="number"
                 :progress-bar="true"
                 :progress-percent="creditPercentage"
