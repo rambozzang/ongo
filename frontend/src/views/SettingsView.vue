@@ -86,8 +86,8 @@
             class="input-field max-w-md"
           />
           <div class="mt-1 flex items-center justify-between max-w-md">
-            <span class="text-xs text-gray-400">{{ t('settings.profile.nicknameLength') }}</span>
-            <span class="text-xs text-gray-400">{{ profileForm.nickname.length }}/20</span>
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{ t('settings.profile.nicknameLength') }}</span>
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{ profileForm.nickname.length }}/20</span>
           </div>
         </div>
 
@@ -178,7 +178,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.emailAlert') }}</p>
-                <p class="text-xs text-gray-400">{{ t('settings.notifications.emailAlertDesc') }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.emailAlertDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -197,7 +197,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.pushAlert') }}</p>
-                <p class="text-xs text-gray-400">{{ t('settings.notifications.pushAlertDesc') }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.pushAlertDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -226,7 +226,7 @@
               class="flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
               :class="
                 notificationForm.commentFrequency === option.value
-                  ? 'border-primary-500 bg-primary-50'
+                  ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
                   : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               "
             >
@@ -238,8 +238,8 @@
                 class="h-4 w-4 border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
               />
               <div>
-                <p class="text-sm font-medium text-gray-700">{{ option.label }}</p>
-                <p class="text-xs text-gray-400">{{ option.description }}</p>
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ option.description }}</p>
               </div>
             </label>
           </div>
@@ -276,7 +276,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.reminder1h') }}</p>
-                <p class="text-xs text-gray-400">{{ t('settings.notifications.reminder1hDesc') }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.reminder1hDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -295,7 +295,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.reminder30m') }}</p>
-                <p class="text-xs text-gray-400">{{ t('settings.notifications.reminder30mDesc') }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.reminder30mDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -343,7 +343,7 @@
               class="flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-3 transition-colors"
               :class="
                 defaultsForm.visibility === option.value
-                  ? 'border-primary-500 bg-primary-50'
+                  ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
                   : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               "
             >
@@ -370,7 +370,7 @@
               class="flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
               :class="
                 defaultsForm.platforms.includes(platform.value)
-                  ? 'border-primary-500 bg-primary-50'
+                  ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
                   : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               "
             >
@@ -402,7 +402,7 @@
               class="flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-3 transition-colors"
               :class="
                 defaultsForm.aiTone === option.value
-                  ? 'border-primary-500 bg-primary-50'
+                  ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
                   : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               "
             >
@@ -415,7 +415,7 @@
               />
               <div>
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
-                <p class="text-xs text-gray-400">{{ option.description }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ option.description }}</p>
               </div>
             </label>
           </div>
@@ -432,7 +432,7 @@
               class="flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
               :class="
                 defaultsForm.aiProvider === option.value
-                  ? 'border-primary-500 bg-primary-50'
+                  ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
                   : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               "
             >
@@ -445,7 +445,7 @@
               />
               <div>
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
-                <p class="text-xs text-gray-400">{{ option.description }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ option.description }}</p>
               </div>
             </label>
           </div>
@@ -463,7 +463,7 @@
               class="flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-3 transition-colors"
               :class="
                 currentLocale === option.value
-                  ? 'border-primary-500 bg-primary-50'
+                  ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
                   : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               "
             >
