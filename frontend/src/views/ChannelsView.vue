@@ -1,21 +1,22 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">채널 관리</h1>
-      <button class="btn-primary inline-flex items-center gap-2" @click="showConnectModal = true">
-        <PlusIcon class="h-5 w-5" />
-        새 채널 연결
-      </button>
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('channels.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('channels.description') }}
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="btn-primary inline-flex items-center gap-2" @click="showConnectModal = true">
+          <PlusIcon class="h-5 w-5" />
+          {{ $t('channels.addChannel') }}
+        </button>
+      </div>
     </div>
 
-    <PageGuide title="채널 관리" :items="[
-      '새 채널 연결 버튼으로 YouTube·TikTok·Instagram·Naver Clip 등 플랫폼 계정을 OAuth로 연동하세요',
-      '상단 요약 카드에서 총 채널 수, 정상·주의·오류 상태 채널 수를 한눈에 확인할 수 있습니다',
-      '각 채널 카드의 토큰 상태가 주의(노란색) 또는 오류(빨간색)이면 재연결 버튼으로 토큰을 갱신하세요',
-      '모두 동기화 버튼으로 전체 채널의 구독자·콘텐츠 정보를 최신 상태로 업데이트하세요',
-      '채널 연동을 해제하면 해당 플랫폼으로의 업로드와 분석이 중단되니 주의하세요',
-    ]" />
+    <PageGuide :title="$t('channels.pageGuideTitle')" :items="($tm('channels.pageGuide') as string[])" />
 
     <!-- Loading State -->
     <LoadingSpinner v-if="loading" full-page />
@@ -23,15 +24,15 @@
     <!-- Empty State -->
     <EmptyState
       v-else-if="channels.length === 0"
-      title="연동된 채널이 없어요"
-      description="YouTube, TikTok, Instagram, Naver Clip 채널을 연결하면 영상 업로드와 분석을 시작할 수 있어요."
+      :title="$t('channels.emptyTitle')"
+      :description="$t('channels.emptyDescription')"
       :icon="LinkIcon"
       @action="showConnectModal = true"
     >
       <template #action>
         <button class="btn-primary inline-flex items-center gap-2" @click="showConnectModal = true">
           <PlusIcon class="h-5 w-5" />
-          채널 연동하기
+          {{ $t('channels.connectChannel') }}
         </button>
       </template>
     </EmptyState>
@@ -43,7 +44,7 @@
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">총 채널</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.totalChannels') }}</p>
               <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {{ channelStats.total }}
               </p>
@@ -57,7 +58,7 @@
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">정상</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.healthy') }}</p>
               <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
                 {{ channelStats.healthy }}
               </p>
@@ -71,7 +72,7 @@
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">주의</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.warning') }}</p>
               <p class="mt-1 text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                 {{ channelStats.warning }}
               </p>
@@ -85,7 +86,7 @@
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">오류</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.error') }}</p>
               <p class="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
                 {{ channelStats.error }}
               </p>
@@ -108,7 +109,7 @@
             class="h-5 w-5"
             :class="{ 'animate-spin': syncingAll }"
           />
-          {{ syncingAll ? '모두 동기화 중...' : '모두 동기화' }}
+          {{ syncingAll ? $t('channels.syncingAll') : $t('channels.syncAll') }}
         </button>
       </div>
 
@@ -137,9 +138,9 @@
     <!-- Disconnect Confirmation Modal -->
     <ConfirmModal
       v-model="showDisconnectModal"
-      title="채널 연동 해제"
+      :title="$t('channels.disconnectTitle')"
       :message="disconnectMessage"
-      confirm-text="연동 해제"
+      :confirm-text="$t('channels.disconnectConfirm')"
       :danger="true"
       @confirm="handleDisconnect"
     />
@@ -165,11 +166,13 @@ import ConnectChannelModal from '@/components/channel/ConnectChannelModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { useChannelStore } from '@/stores/channel'
 import { useNotification } from '@/composables/useNotification'
+import { useI18n } from 'vue-i18n'
 import type { Channel, Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
 import { buildOAuthUrl } from '@/utils/oauth'
 
 // --- Stores ---
+const { t } = useI18n()
 const channelStore = useChannelStore()
 const notification = useNotification()
 const { channels, loading, connectedPlatforms } = storeToRefs(channelStore)
@@ -206,7 +209,7 @@ const channelStats = computed(() => {
 const disconnectMessage = computed(() => {
   if (!channelToDisconnect.value) return ''
   const config = PLATFORM_CONFIG[channelToDisconnect.value.platform]
-  return `${config.label} 채널 "${channelToDisconnect.value.channelName}"의 연동을 해제하시겠습니까?\n\n연동 해제 시 해당 플랫폼 업로드/분석이 중단됩니다.`
+  return t('channels.disconnectMessage', { platform: config.label, name: channelToDisconnect.value.channelName })
 })
 
 // --- Helpers ---
@@ -221,9 +224,9 @@ async function handleSync(channelId: number) {
   syncingChannelIds.add(channelId)
   try {
     await channelStore.syncChannel(channelId)
-    notification.success('채널 정보가 동기화되었습니다.')
+    notification.success(t('channels.syncSuccess'))
   } catch {
-    notification.error('동기화에 실패했습니다. 다시 시도해주세요.')
+    notification.error(t('channels.syncError'))
   } finally {
     syncingChannelIds.delete(channelId)
   }
@@ -236,9 +239,9 @@ async function handleSyncAll() {
     await Promise.all(
       channels.value.map((channel) => channelStore.syncChannel(channel.id))
     )
-    notification.success('모든 채널이 동기화되었습니다.')
+    notification.success(t('channels.syncAllSuccess'))
   } catch {
-    notification.error('일부 채널 동기화에 실패했습니다.')
+    notification.error(t('channels.syncAllError'))
   } finally {
     syncingAll.value = false
   }
@@ -258,9 +261,9 @@ async function handleDisconnect() {
   const name = channelToDisconnect.value.channelName
   try {
     await channelStore.disconnectChannel(channelToDisconnect.value.id)
-    notification.success(`${name} 채널 연동이 해제되었습니다.`)
+    notification.success(t('channels.disconnectSuccess', { name }))
   } catch {
-    notification.error('연동 해제에 실패했습니다. 다시 시도해주세요.')
+    notification.error(t('channels.disconnectError'))
   } finally {
     channelToDisconnect.value = null
   }

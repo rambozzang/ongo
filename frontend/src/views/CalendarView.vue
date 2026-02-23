@@ -1,11 +1,11 @@
 <template>
-  <div class="space-y-6">
+  <div class="relative">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">캘린더</h1>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('calendar.title') }}</h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          예약된 콘텐츠를 달력으로 확인하세요
+          {{ $t('calendar.description') }}
         </p>
       </div>
 
@@ -20,7 +20,7 @@
           ]"
           @click="viewMode = 'monthly'"
         >
-          월간
+          {{ $t('calendar.monthly') }}
         </button>
         <button
           :class="[
@@ -31,17 +31,12 @@
           ]"
           @click="viewMode = 'weekly'"
         >
-          주간
+          {{ $t('calendar.weekly') }}
         </button>
       </div>
     </div>
 
-    <PageGuide title="콘텐츠 캘린더" :items="[
-      '월간/주간 뷰를 전환하여 전체 콘텐츠 일정을 시각적으로 파악하세요',
-      '이전/다음 버튼과 오늘 버튼으로 원하는 기간으로 빠르게 이동할 수 있습니다',
-      '캘린더의 콘텐츠 항목을 드래그 앤 드롭하여 게시 일정을 직관적으로 변경하세요',
-      '각 날짜의 콘텐츠를 클릭하면 상세 정보를 확인하고 수정할 수 있습니다',
-    ]" />
+    <PageGuide :title="$t('calendar.pageGuideTitle')" :items="($tm('calendar.pageGuide') as string[])" />
 
     <!-- Calendar Controls -->
     <div class="card flex items-center justify-between p-4">
@@ -60,7 +55,7 @@
           class="rounded-lg px-3 py-1.5 text-sm font-medium text-primary-700 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/30"
           @click="goToToday"
         >
-          오늘
+          {{ $t('calendar.today') }}
         </button>
       </div>
 

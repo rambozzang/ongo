@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import { useTemplatesStore } from '@/stores/templates'
 import TemplateCard from '@/components/templates/TemplateCard.vue'
 import TemplateFormModal from '@/components/templates/TemplateFormModal.vue'
@@ -13,6 +14,7 @@ import {
 import type { TemplateCategory } from '@/types/template'
 import PageGuide from '@/components/common/PageGuide.vue'
 
+const { t } = useI18n()
 const templatesStore = useTemplatesStore()
 const { filteredTemplates, searchText, categoryFilter, sortBy, showFavoritesOnly } =
   storeToRefs(templatesStore)
@@ -20,20 +22,20 @@ const { filteredTemplates, searchText, categoryFilter, sortBy, showFavoritesOnly
 const showCreateModal = ref(false)
 const editingTemplateId = ref<number | null>(null)
 
-const categories: Array<{ value: TemplateCategory | 'all'; label: string }> = [
-  { value: 'all', label: '전체' },
-  { value: 'title', label: '제목' },
-  { value: 'description', label: '설명' },
-  { value: 'tags', label: '태그' },
-  { value: 'thumbnail', label: '썸네일' },
-  { value: 'full', label: '풀 패키지' },
-]
+const categories = computed<Array<{ value: TemplateCategory | 'all'; label: string }>>(() => [
+  { value: 'all', label: t('templates.catAll') },
+  { value: 'title', label: t('templates.catTitle') },
+  { value: 'description', label: t('templates.catDescription') },
+  { value: 'tags', label: t('templates.catTags') },
+  { value: 'thumbnail', label: t('templates.catThumbnail') },
+  { value: 'full', label: t('templates.catFull') },
+])
 
-const sortOptions: Array<{ value: 'latest' | 'usage' | 'name'; label: string }> = [
-  { value: 'latest', label: '최신순' },
-  { value: 'usage', label: '사용순' },
-  { value: 'name', label: '이름순' },
-]
+const sortOptions = computed<Array<{ value: 'latest' | 'usage' | 'name'; label: string }>>(() => [
+  { value: 'latest', label: t('templates.sortLatest') },
+  { value: 'usage', label: t('templates.sortUsage') },
+  { value: 'name', label: t('templates.sortName') },
+])
 
 const handleCreateNew = () => {
   editingTemplateId.value = null
@@ -52,139 +54,131 @@ const handleCloseModal = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
-    <div class="max-w-7xl mx-auto">
-      <!-- Header -->
-      <div class="mb-8">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">콘텐츠 템플릿</h1>
-            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              자주 사용하는 메타데이터 템플릿을 저장하고 빠르게 적용하세요
-            </p>
-          </div>
-          <button
-            @click="handleCreateNew"
-            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
-          >
-            <PlusIcon class="w-5 h-5 mr-2" />
-            새 템플릿
-          </button>
-        </div>
+  <div class="relative">
+    <!-- Header -->
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('templates.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('templates.description') }}
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button
+          @click="handleCreateNew"
+          class="btn-primary inline-flex items-center gap-2"
+        >
+          <PlusIcon class="h-5 w-5" />
+          {{ $t('templates.newTemplate') }}
+        </button>
+      </div>
+    </div>
+
+    <PageGuide :title="$t('templates.pageGuideTitle')" :items="($tm('templates.pageGuide') as string[])" />
+
+    <!-- Filters and Search -->
+    <div class="card mb-6 space-y-4">
+      <!-- Category Tabs -->
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="cat in categories"
+          :key="cat.value"
+          @click="categoryFilter = cat.value"
+          :class="[
+            'px-3 py-1.5 rounded-lg font-medium text-xs transition-colors',
+            categoryFilter === cat.value
+              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600',
+          ]"
+        >
+          {{ cat.label }}
+        </button>
       </div>
 
-      <PageGuide title="템플릿" :items="[
-        '새 템플릿 버튼으로 제목·설명·태그·썸네일 등 메타데이터 조합을 템플릿으로 저장하세요',
-        '카테고리 탭(제목/설명/태그/썸네일/풀패키지)으로 원하는 유형의 템플릿만 필터링하세요',
-        '검색과 정렬(최신순/사용순/이름순)으로 템플릿을 빠르게 찾을 수 있습니다',
-        '영상 업로드 시 저장된 템플릿을 적용하면 메타데이터 입력 시간을 크게 단축할 수 있습니다',
-        '자주 사용하는 템플릿에 즐겨찾기를 설정하면 상단에 우선 표시됩니다',
-      ]" />
+      <!-- Search and Controls -->
+      <div class="flex flex-col gap-3 tablet:flex-row">
+        <!-- Search -->
+        <div class="relative flex-1">
+          <MagnifyingGlassIcon
+            class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+          />
+          <input
+            v-model="searchText"
+            type="text"
+            :placeholder="$t('templates.searchPlaceholder')"
+            class="input w-full pl-10"
+          />
+        </div>
 
-      <!-- Filters and Search -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
-        <!-- Category Tabs -->
-        <div class="flex flex-wrap gap-2 mb-4">
-          <button
-            v-for="cat in categories"
-            :key="cat.value"
-            @click="categoryFilter = cat.value"
+        <!-- Sort -->
+        <div class="flex items-center gap-2">
+          <AdjustmentsHorizontalIcon class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          <select
+            v-model="sortBy"
+            class="input text-sm"
+          >
+            <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Favorites Toggle -->
+        <button
+          @click="showFavoritesOnly = !showFavoritesOnly"
+          :class="[
+            'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+            showFavoritesOnly
+              ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'
+              : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700',
+          ]"
+        >
+          <StarIcon
             :class="[
-              'px-4 py-2 rounded-lg font-medium text-sm transition-colors',
-              categoryFilter === cat.value
-                ? 'bg-blue-600 dark:bg-blue-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600',
+              'h-4 w-4',
+              showFavoritesOnly ? 'fill-yellow-500 text-yellow-500' : '',
             ]"
-          >
-            {{ cat.label }}
-          </button>
-        </div>
-
-        <!-- Search and Controls -->
-        <div class="flex flex-col sm:flex-row gap-4">
-          <!-- Search -->
-          <div class="flex-1 relative">
-            <MagnifyingGlassIcon
-              class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-            />
-            <input
-              v-model="searchText"
-              type="text"
-              placeholder="템플릿 검색..."
-              class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            />
-          </div>
-
-          <!-- Sort -->
-          <div class="flex items-center gap-2">
-            <AdjustmentsHorizontalIcon class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            <select
-              v-model="sortBy"
-              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            >
-              <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Favorites Toggle -->
-          <button
-            @click="showFavoritesOnly = !showFavoritesOnly"
-            :class="[
-              'inline-flex items-center px-4 py-2 rounded-lg font-medium text-sm transition-colors',
-              showFavoritesOnly
-                ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600',
-            ]"
-          >
-            <StarIcon
-              :class="[
-                'w-5 h-5 mr-2',
-                showFavoritesOnly ? 'fill-yellow-500 text-yellow-500' : '',
-              ]"
-            />
-            즐겨찾기
-          </button>
-        </div>
+          />
+          {{ $t('templates.favorites') }}
+        </button>
       </div>
+    </div>
 
-      <!-- Templates Grid -->
-      <div
-        v-if="filteredTemplates.length > 0"
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        <TemplateCard
-          v-for="template in filteredTemplates"
-          :key="template.id"
-          :template="template"
-          @edit="handleEdit"
-        />
-      </div>
+    <!-- Templates Grid -->
+    <div
+      v-if="filteredTemplates.length > 0"
+      class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3"
+    >
+      <TemplateCard
+        v-for="template in filteredTemplates"
+        :key="template.id"
+        :template="template"
+        @edit="handleEdit"
+      />
+    </div>
 
-      <!-- Empty State -->
-      <div
-        v-else
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-12 text-center"
-      >
-        <div class="max-w-md mx-auto">
-          <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AdjustmentsHorizontalIcon class="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            템플릿이 없습니다
-          </h3>
-          <p class="text-gray-600 dark:text-gray-400 mb-6">
-            검색 조건을 변경하거나 새 템플릿을 만들어보세요
-          </p>
-          <button
-            @click="handleCreateNew"
-            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
-          >
-            <PlusIcon class="w-5 h-5 mr-2" />
-            템플릿 만들기
-          </button>
+    <!-- Empty State -->
+    <div
+      v-else
+      class="card p-12 text-center"
+    >
+      <div class="mx-auto max-w-md">
+        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+          <AdjustmentsHorizontalIcon class="h-8 w-8 text-gray-400" />
         </div>
+        <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+          {{ $t('templates.emptyTitle') }}
+        </h3>
+        <p class="mb-6 text-gray-600 dark:text-gray-400">
+          {{ $t('templates.emptyDescription') }}
+        </p>
+        <button
+          @click="handleCreateNew"
+          class="btn-primary inline-flex items-center gap-2"
+        >
+          <PlusIcon class="h-5 w-5" />
+          {{ $t('templates.createTemplate') }}
+        </button>
       </div>
     </div>
 

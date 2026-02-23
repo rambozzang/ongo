@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useInboxStore } from '@/stores/inbox'
 import type { MessagePlatform, MessageType, MessageStatus } from '@/types/inbox'
 import InboxMessageList from '@/components/inbox/InboxMessageList.vue'
@@ -13,34 +14,36 @@ import {
   CheckIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n({ useScope: 'global' })
+
 const inboxStore = useInboxStore()
 
 const showMobileDetail = ref(false)
 const showCheckboxes = ref(false)
 
-const platformOptions: Array<{ value: MessagePlatform | 'ALL'; label: string }> = [
-  { value: 'ALL', label: '전체 플랫폼' },
-  { value: 'YOUTUBE', label: 'YouTube' },
-  { value: 'TIKTOK', label: 'TikTok' },
-  { value: 'INSTAGRAM', label: 'Instagram' },
-  { value: 'NAVER_CLIP', label: '네이버 클립' },
-]
+const platformOptions = computed(() => [
+  { value: 'ALL' as const, label: t('inbox.filters.allPlatforms') },
+  { value: 'YOUTUBE' as const, label: 'YouTube' },
+  { value: 'TIKTOK' as const, label: 'TikTok' },
+  { value: 'INSTAGRAM' as const, label: 'Instagram' },
+  { value: 'NAVER_CLIP' as const, label: t('inbox.filters.naverClip') },
+])
 
-const typeOptions: Array<{ value: MessageType | 'ALL'; label: string }> = [
-  { value: 'ALL', label: '전체 유형' },
-  { value: 'comment', label: '댓글' },
-  { value: 'mention', label: '멘션' },
-  { value: 'dm', label: 'DM' },
-  { value: 'reply', label: '답글' },
-]
+const typeOptions = computed(() => [
+  { value: 'ALL' as const, label: t('inbox.filters.allTypes') },
+  { value: 'comment' as const, label: t('inbox.filters.comment') },
+  { value: 'mention' as const, label: t('inbox.filters.mention') },
+  { value: 'dm' as const, label: 'DM' },
+  { value: 'reply' as const, label: t('inbox.filters.reply') },
+])
 
-const statusOptions: Array<{ value: MessageStatus | 'ALL'; label: string }> = [
-  { value: 'ALL', label: '전체 상태' },
-  { value: 'unread', label: '읽지 않음' },
-  { value: 'read', label: '읽음' },
-  { value: 'replied', label: '답장함' },
-  { value: 'archived', label: '보관됨' },
-]
+const statusOptions = computed(() => [
+  { value: 'ALL' as const, label: t('inbox.filters.allStatuses') },
+  { value: 'unread' as const, label: t('inbox.filters.unread') },
+  { value: 'read' as const, label: t('inbox.filters.read') },
+  { value: 'replied' as const, label: t('inbox.filters.replied') },
+  { value: 'archived' as const, label: t('inbox.filters.archived') },
+])
 
 const selectedCount = computed(() => inboxStore.selectedMessageIds.size)
 const hasSelection = computed(() => selectedCount.value > 0)
@@ -77,7 +80,7 @@ const handleArchive = () => {
 
 const handleDelete = () => {
   if (!inboxStore.selectedMessage) return
-  if (confirm('이 메시지를 삭제하시겠습니까?')) {
+  if (confirm(t('inbox.confirmDelete'))) {
     const index = inboxStore.messages.findIndex(
       (m) => m.id === inboxStore.selectedMessage?.id
     )
@@ -128,54 +131,52 @@ const cancelSelection = () => {
 </script>
 
 <template>
-  <div class="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+  <div class="relative">
     <!-- Header -->
-    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <div class="px-4 py-4">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-3">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">소셜 인박스</h1>
-            <span
-              v-if="inboxStore.unreadCount > 0"
-              class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-600 text-white"
-            >
-              {{ inboxStore.unreadCount }}
-            </span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              @click="toggleSelectionMode"
-              class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              {{ showCheckboxes ? '선택 취소' : '선택' }}
-            </button>
-          </div>
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('inbox.title') }}</h1>
+          <span
+            v-if="inboxStore.unreadCount > 0"
+            class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-600 text-white"
+          >
+            {{ inboxStore.unreadCount }}
+          </span>
         </div>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('inbox.description') }}
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button
+          @click="toggleSelectionMode"
+          class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+        >
+          {{ showCheckboxes ? $t('inbox.cancelSelection') : $t('inbox.select') }}
+        </button>
+      </div>
+    </div>
 
-        <PageGuide title="소셜 인박스" :items="[
-          '왼쪽 메시지 목록에서 모든 플랫폼의 DM과 메시지를 통합하여 확인하세요',
-          '플랫폼 드롭다운·메시지 유형·상태 필터와 검색으로 원하는 메시지를 빠르게 찾으세요',
-          '메시지를 클릭하면 오른쪽 상세 패널에서 전체 대화 내용을 확인하고 바로 답장할 수 있습니다',
-          '읽지 않은 메시지는 굵은 글씨로 표시되며, 별표·보관·삭제로 메시지를 정리하세요',
-          '상단 카운터에서 전체·읽지 않음·별표·보관 메시지 수를 확인할 수 있습니다',
-        ]" />
+    <PageGuide :title="$t('inbox.pageGuideTitle')" :items="($tm('inbox.pageGuide') as string[])" />
 
-        <!-- Filters -->
-        <div class="flex flex-wrap gap-3 items-center">
-          <div class="flex items-center gap-2 flex-1 min-w-[200px]">
-            <MagnifyingGlassIcon class="w-5 h-5 text-gray-400 dark:text-gray-500" />
-            <input
-              type="text"
-              :value="inboxStore.filters.searchText"
-              @input="
-                inboxStore.setFilters({
-                  searchText: ($event.target as HTMLInputElement).value,
-                })
-              "
-              placeholder="메시지 검색..."
-              class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-            />
-          </div>
+    <!-- Filters -->
+    <div class="mb-4">
+      <div class="flex flex-wrap gap-3 items-center">
+        <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+          <MagnifyingGlassIcon class="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          <input
+            type="text"
+            :value="inboxStore.filters.searchText"
+            @input="
+              inboxStore.setFilters({
+                searchText: ($event.target as HTMLInputElement).value,
+              })
+            "
+            :placeholder="$t('inbox.searchPlaceholder')"
+            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+          />
+        </div>
 
           <div class="flex items-center gap-2">
             <FunnelIcon class="w-5 h-5 text-gray-400 dark:text-gray-500" />
@@ -224,44 +225,43 @@ const cancelSelection = () => {
         </div>
       </div>
 
-      <!-- Bulk Action Bar -->
-      <div
-        v-if="hasSelection"
-        class="bg-blue-50 dark:bg-blue-900/20 border-t border-blue-200 dark:border-blue-800 px-4 py-3"
-      >
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-medium text-blue-900 dark:text-blue-100">
-            {{ selectedCount }}개 선택됨
-          </span>
-          <div class="flex items-center gap-2">
-            <button
-              @click="handleBulkMarkRead"
-              class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
-            >
-              <CheckIcon class="w-4 h-4" />
-              <span>읽음 표시</span>
-            </button>
-            <button
-              @click="handleBulkArchive"
-              class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
-            >
-              <ArchiveBoxIcon class="w-4 h-4" />
-              <span>보관</span>
-            </button>
-            <button
-              @click="cancelSelection"
-              class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <XMarkIcon class="w-4 h-4" />
-              <span>취소</span>
-            </button>
-          </div>
+    <!-- Bulk Action Bar -->
+    <div
+      v-if="hasSelection"
+      class="mb-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-4 py-3"
+    >
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-blue-900 dark:text-blue-100">
+          {{ $t('inbox.selectedCount', { count: selectedCount }) }}
+        </span>
+        <div class="flex items-center gap-2">
+          <button
+            @click="handleBulkMarkRead"
+            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
+          >
+            <CheckIcon class="w-4 h-4" />
+            <span>{{ $t('inbox.markRead') }}</span>
+          </button>
+          <button
+            @click="handleBulkArchive"
+            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
+          >
+            <ArchiveBoxIcon class="w-4 h-4" />
+            <span>{{ $t('inbox.archive') }}</span>
+          </button>
+          <button
+            @click="cancelSelection"
+            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <XMarkIcon class="w-4 h-4" />
+            <span>{{ $t('inbox.cancel') }}</span>
+          </button>
         </div>
       </div>
-    </header>
+    </div>
 
     <!-- Main Content: Split Layout -->
-    <div class="flex-1 flex overflow-hidden">
+    <div class="flex h-[calc(100vh-20rem)] overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
       <!-- Desktop: Split View -->
       <div class="hidden md:flex flex-1">
         <!-- Left: Message List (1/3 width) -->
@@ -315,7 +315,7 @@ const cancelSelection = () => {
               class="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
             >
               <XMarkIcon class="w-5 h-5" />
-              <span>목록으로</span>
+              <span>{{ $t('inbox.backToList') }}</span>
             </button>
           </div>
           <div class="flex-1 overflow-hidden">

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { PlusIcon, ArrowPathIcon, UsersIcon, ChartBarIcon, TrophyIcon, ArrowTrendingUpIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import { useCompetitorStore } from '@/stores/competitor'
 import CompetitorCard from '@/components/competitor/CompetitorCard.vue'
@@ -10,6 +11,7 @@ import PageGuide from '@/components/common/PageGuide.vue'
 
 type Tab = 'list' | 'comparison' | 'trending'
 
+const { t } = useI18n()
 const competitorStore = useCompetitorStore()
 const activeTab = ref<Tab>('list')
 const isAddModalOpen = ref(false)
@@ -31,7 +33,7 @@ function handleToggleTracking(id: number) {
 }
 
 function handleRemoveCompetitor(id: number) {
-  if (confirm('정말 이 경쟁 채널을 삭제하시겠습니까?')) {
+  if (confirm(t('competitor.confirmDelete'))) {
     competitorStore.removeCompetitor(id)
     if (selectedCompetitorId.value === id) {
       selectedCompetitorId.value = null
@@ -73,42 +75,39 @@ function formatNumber(num: number): string {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="relative">
       <!-- Header -->
-      <div class="mb-8">
-        <div class="flex items-center justify-between mb-6">
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            경쟁사 분석
+      <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {{ $t('competitor.title') }}
           </h1>
-          <div class="flex items-center space-x-2">
-            <button
-              @click="handleRefresh"
-              :disabled="isRefreshing"
-              class="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
-            >
-              <ArrowPathIcon
-                :class="['w-5 h-5', isRefreshing && 'animate-spin']"
-              />
-              <span>새로고침</span>
-            </button>
-            <button
-              @click="isAddModalOpen = true"
-              class="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              <PlusIcon class="w-5 h-5" />
-              <span>채널 추가</span>
-            </button>
-          </div>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {{ $t('competitor.description') }}
+          </p>
         </div>
+        <div class="flex items-center gap-3">
+          <button
+            @click="handleRefresh"
+            :disabled="isRefreshing"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+          >
+            <ArrowPathIcon
+              :class="['w-5 h-5', isRefreshing && 'animate-spin']"
+            />
+            <span>{{ $t('competitor.refresh') }}</span>
+          </button>
+          <button
+            @click="isAddModalOpen = true"
+            class="btn-primary inline-flex items-center gap-2"
+          >
+            <PlusIcon class="w-5 h-5" />
+            <span>{{ $t('competitor.addChannel') }}</span>
+          </button>
+        </div>
+      </div>
 
-        <PageGuide title="경쟁사 분석" :items="[
-          '경쟁사 추가 버튼으로 벤치마크 대상 채널을 등록하고, 추적 토글로 모니터링을 시작하세요',
-          '목록 탭에서 추적 중인 경쟁 채널의 구독자·조회수·콘텐츠 수를 확인하세요',
-          '비교 탭에서 여러 경쟁 채널을 선택하여 주요 지표를 나란히 비교하고, 내 채널과의 차이를 분석하세요',
-          '트렌딩 탭에서 경쟁사의 인기 영상과 시장 트렌드를 파악하여 콘텐츠 전략에 반영하세요',
-          '새로고침 버튼으로 경쟁사 데이터를 최신 상태로 업데이트할 수 있습니다',
-        ]" />
+      <PageGuide :title="$t('competitor.pageGuideTitle')" :items="($tm('competitor.pageGuide') as string[])" />
 
         <!-- Overview Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -117,7 +116,7 @@ function formatNumber(num: number): string {
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
                 <UsersIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <span class="text-sm text-gray-600 dark:text-gray-400">추적 중인 채널</span>
+                <span class="text-sm text-gray-600 dark:text-gray-400">{{ $t('competitor.trackedChannels') }}</span>
               </div>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -130,7 +129,7 @@ function formatNumber(num: number): string {
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
                 <ChartBarIcon class="w-5 h-5 text-green-600 dark:text-green-400" />
-                <span class="text-sm text-gray-600 dark:text-gray-400">평균 구독자</span>
+                <span class="text-sm text-gray-600 dark:text-gray-400">{{ $t('competitor.avgSubscribers') }}</span>
               </div>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -143,7 +142,7 @@ function formatNumber(num: number): string {
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
                 <TrophyIcon class="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                <span class="text-sm text-gray-600 dark:text-gray-400">내 순위</span>
+                <span class="text-sm text-gray-600 dark:text-gray-400">{{ $t('competitor.myRanking') }}</span>
               </div>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -156,7 +155,7 @@ function formatNumber(num: number): string {
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
                 <ArrowTrendingUpIcon class="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                <span class="text-sm text-gray-600 dark:text-gray-400">평균 성장률</span>
+                <span class="text-sm text-gray-600 dark:text-gray-400">{{ $t('competitor.avgGrowthRate') }}</span>
               </div>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -164,10 +163,9 @@ function formatNumber(num: number): string {
             </p>
           </div>
         </div>
-      </div>
 
       <!-- Tabs -->
-      <div class="mb-6">
+      <div class="mb-6 mt-8">
         <div class="border-b border-gray-200 dark:border-gray-700">
           <nav class="-mb-px flex space-x-8">
             <button
@@ -179,7 +177,7 @@ function formatNumber(num: number): string {
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
               ]"
             >
-              채널 목록
+              {{ $t('competitor.tabList') }}
             </button>
             <button
               @click="activeTab = 'comparison'"
@@ -190,7 +188,7 @@ function formatNumber(num: number): string {
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
               ]"
             >
-              비교 분석
+              {{ $t('competitor.tabComparison') }}
             </button>
             <button
               @click="activeTab = 'trending'"
@@ -201,7 +199,7 @@ function formatNumber(num: number): string {
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
               ]"
             >
-              트렌드
+              {{ $t('competitor.tabTrending') }}
             </button>
           </nav>
         </div>
@@ -215,13 +213,13 @@ function formatNumber(num: number): string {
             v-if="competitorStore.competitors.length === 0"
             class="text-center py-12 text-gray-500 dark:text-gray-400"
           >
-            <p class="mb-4">추가된 경쟁 채널이 없습니다</p>
+            <p class="mb-4">{{ $t('competitor.emptyList') }}</p>
             <button
               @click="isAddModalOpen = true"
-              class="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              class="btn-primary inline-flex items-center gap-2"
             >
               <PlusIcon class="w-5 h-5" />
-              <span>채널 추가하기</span>
+              <span>{{ $t('competitor.addChannelAction') }}</span>
             </button>
           </div>
           <div
@@ -244,20 +242,20 @@ function formatNumber(num: number): string {
         <div v-if="activeTab === 'comparison'">
           <div v-if="!selectedCompetitorId" class="text-center py-12">
             <p class="text-gray-500 dark:text-gray-400 mb-4">
-              비교할 채널을 선택하세요
+              {{ $t('competitor.selectChannel') }}
             </p>
             <button
               @click="activeTab = 'list'"
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              class="btn-primary"
             >
-              채널 목록으로 이동
+              {{ $t('competitor.goToList') }}
             </button>
           </div>
           <div v-else>
             <!-- Competitor selector -->
             <div class="mb-6">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                비교 대상 채널
+                {{ $t('competitor.comparisonTarget') }}
               </label>
               <select
                 v-model="selectedCompetitorId"
@@ -275,12 +273,12 @@ function formatNumber(num: number): string {
 
             <!-- Comparison chart -->
             <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-                내 채널 vs {{ selectedCompetitor?.name }}
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
+                {{ $t('competitor.myChannelVs', { name: selectedCompetitor?.name }) }}
               </h2>
               <ComparisonChart
                 :comparisons="comparisonData"
-                my-name="내 채널"
+                :my-name="$t('competitor.myChannel')"
                 :competitor-name="selectedCompetitor?.name"
               />
             </div>
@@ -290,8 +288,8 @@ function formatNumber(num: number): string {
         <!-- Trending Tab -->
         <div v-if="activeTab === 'trending'">
           <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              인기 영상
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {{ $t('competitor.trendingVideos') }}
             </h2>
             <TrendingVideoList
               :videos="competitorStore.competitorVideos"
@@ -305,16 +303,16 @@ function formatNumber(num: number): string {
       <div v-if="competitorStore.competitors.length > 0" class="mt-8">
         <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               <SparklesIcon class="w-5 h-5 text-purple-600" />
-              AI 벤치마킹 인사이트
+              {{ $t('competitor.aiInsightTitle') }}
             </h2>
             <button
               @click="competitorStore.fetchInsight()"
               :disabled="competitorStore.insightLoading"
               class="btn-primary text-sm"
             >
-              {{ competitorStore.insightLoading ? '분석 중...' : 'AI 분석 (8크레딧)' }}
+              {{ competitorStore.insightLoading ? $t('competitor.aiAnalyzing') : $t('competitor.aiAnalyzeButton') }}
             </button>
           </div>
 
@@ -323,25 +321,25 @@ function formatNumber(num: number): string {
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                <h3 class="font-medium text-green-800 dark:text-green-300 mb-2">강점</h3>
+                <h3 class="font-medium text-green-800 dark:text-green-300 mb-2">{{ $t('competitor.strengths') }}</h3>
                 <ul class="space-y-1 text-sm text-green-700 dark:text-green-400">
                   <li v-for="(s, i) in competitorStore.aiInsight.strengths" :key="i">- {{ s }}</li>
                 </ul>
               </div>
               <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-                <h3 class="font-medium text-red-800 dark:text-red-300 mb-2">약점</h3>
+                <h3 class="font-medium text-red-800 dark:text-red-300 mb-2">{{ $t('competitor.weaknesses') }}</h3>
                 <ul class="space-y-1 text-sm text-red-700 dark:text-red-400">
                   <li v-for="(w, i) in competitorStore.aiInsight.weaknesses" :key="i">- {{ w }}</li>
                 </ul>
               </div>
               <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <h3 class="font-medium text-blue-800 dark:text-blue-300 mb-2">기회</h3>
+                <h3 class="font-medium text-blue-800 dark:text-blue-300 mb-2">{{ $t('competitor.opportunities') }}</h3>
                 <ul class="space-y-1 text-sm text-blue-700 dark:text-blue-400">
                   <li v-for="(o, i) in competitorStore.aiInsight.opportunities" :key="i">- {{ o }}</li>
                 </ul>
               </div>
               <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-                <h3 class="font-medium text-purple-800 dark:text-purple-300 mb-2">추천 행동</h3>
+                <h3 class="font-medium text-purple-800 dark:text-purple-300 mb-2">{{ $t('competitor.recommendations') }}</h3>
                 <ul class="space-y-1 text-sm text-purple-700 dark:text-purple-400">
                   <li v-for="(r, i) in competitorStore.aiInsight.recommendations" :key="i">- {{ r }}</li>
                 </ul>
@@ -351,11 +349,10 @@ function formatNumber(num: number): string {
 
           <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
             <SparklesIcon class="w-8 h-8 mx-auto mb-2 text-gray-400" />
-            <p>AI 분석 버튼을 눌러 경쟁자와의 비교 인사이트를 받아보세요</p>
+            <p>{{ $t('competitor.aiInsightEmpty') }}</p>
           </div>
         </div>
       </div>
-    </div>
 
     <!-- Add Competitor Modal -->
     <AddCompetitorModal

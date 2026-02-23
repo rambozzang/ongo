@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   PlusIcon,
   FunnelIcon,
@@ -15,6 +16,7 @@ import GoalCard from '@/components/goals/GoalCard.vue'
 import GoalFormModal from '@/components/goals/GoalFormModal.vue'
 import MilestoneList from '@/components/goals/MilestoneList.vue'
 
+const { t } = useI18n()
 const goalsStore = useGoalsStore()
 
 const showFormModal = ref(false)
@@ -81,7 +83,7 @@ const handleEditGoal = (goal: Goal) => {
 }
 
 const handleDeleteGoal = (goalId: number) => {
-  if (confirm('정말로 이 목표를 삭제하시겠습니까?')) {
+  if (confirm(t('goals.confirmDelete'))) {
     goalsStore.deleteGoal(goalId)
   }
 }
@@ -134,45 +136,38 @@ const formatNumber = (value: number): string => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20 md:pb-0">
+  <div class="relative">
     <!-- Header -->
-    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              목표 & 마일스톤
-            </h1>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              채널 성장 목표를 설정하고 단계별로 달성해 나가세요
-            </p>
-          </div>
-          <button
-            @click="handleCreateGoal"
-            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors"
-          >
-            <PlusIcon class="w-5 h-5" />
-            새 목표
-          </button>
-        </div>
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {{ $t('goals.title') }}
+        </h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('goals.description') }}
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button
+          @click="handleCreateGoal"
+          class="btn-primary inline-flex items-center gap-2"
+        >
+          <PlusIcon class="w-5 h-5" />
+          {{ $t('goals.newGoal') }}
+        </button>
       </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <PageGuide title="목표 관리" :items="[
-        '새 목표 버튼으로 구독자 수·조회수·업로드 횟수 등 채널 성장 목표를 설정하세요',
-        '상단 요약 카드에서 활성 목표 수·달성 목표 수·전체 진행률·다음 마감일을 한눈에 파악하세요',
-        '활성/달성 토글과 마감일순·진행률순·최신순 정렬로 목표를 필터링하세요',
-        '각 목표 카드의 진행 바에서 달성률을 확인하고, 마일스톤 달성 시 자동으로 기록됩니다',
-        '다음 마감일 카드에서 가장 가까운 목표의 D-day를 확인하세요',
-      ]" />
+    <PageGuide :title="$t('goals.pageGuideTitle')" :items="($tm('goals.pageGuide') as string[])" />
+
+    <div class="mt-6">
 
       <!-- Stats Overview -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">활성 목표</p>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.activeGoals') }}</p>
               <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
                 {{ stats.active }}
               </p>
@@ -186,7 +181,7 @@ const formatNumber = (value: number): string => {
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">달성 완료</p>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.completed') }}</p>
               <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
                 {{ stats.completed }}
               </p>
@@ -200,7 +195,7 @@ const formatNumber = (value: number): string => {
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">전체 진행률</p>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.overallProgress') }}</p>
               <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
                 {{ stats.progress }}%
               </p>
@@ -214,7 +209,7 @@ const formatNumber = (value: number): string => {
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">다음 마감</p>
+              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.nextDeadline') }}</p>
               <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
                 {{ nextDeadline ? `D-${nextDeadline.daysLeft}` : '-' }}
               </p>
@@ -235,10 +230,10 @@ const formatNumber = (value: number): string => {
           <CalendarIcon class="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
           <div class="flex-1">
             <h3 class="text-sm font-medium text-orange-900 dark:text-orange-200">
-              임박한 마감일
+              {{ $t('goals.upcomingDeadline') }}
             </h3>
             <p class="text-sm text-orange-700 dark:text-orange-300 mt-1">
-              {{ stats.upcoming }}개의 목표가 7일 이내에 마감됩니다.
+              {{ $t('goals.upcomingDeadlineDesc', { count: stats.upcoming }) }}
             </p>
           </div>
         </div>
@@ -256,7 +251,7 @@ const formatNumber = (value: number): string => {
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
             ]"
           >
-            활성 목표 ({{ stats.active }})
+            {{ $t('goals.activeGoalsFilter', { count: stats.active }) }}
           </button>
           <button
             @click="showCompleted = true"
@@ -267,7 +262,7 @@ const formatNumber = (value: number): string => {
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
             ]"
           >
-            완료된 목표 ({{ stats.completed }})
+            {{ $t('goals.completedGoalsFilter', { count: stats.completed }) }}
           </button>
         </div>
 
@@ -277,9 +272,9 @@ const formatNumber = (value: number): string => {
             v-model="sortBy"
             class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           >
-            <option value="deadline">마감일순</option>
-            <option value="progress">진행률순</option>
-            <option value="recent">최신순</option>
+            <option value="deadline">{{ $t('goals.sortDeadline') }}</option>
+            <option value="progress">{{ $t('goals.sortProgress') }}</option>
+            <option value="recent">{{ $t('goals.sortRecent') }}</option>
           </select>
         </div>
       </div>
@@ -305,18 +300,18 @@ const formatNumber = (value: number): string => {
       >
         <ChartBarIcon class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-          {{ showCompleted ? '완료된 목표가 없습니다' : '활성 목표가 없습니다' }}
+          {{ showCompleted ? $t('goals.emptyCompletedTitle') : $t('goals.emptyActiveTitle') }}
         </h3>
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          {{ showCompleted ? '아직 완료한 목표가 없습니다.' : '새로운 목표를 생성하여 채널 성장을 추적하세요.' }}
+          {{ showCompleted ? $t('goals.emptyCompletedDesc') : $t('goals.emptyActiveDesc') }}
         </p>
         <button
           v-if="!showCompleted"
           @click="handleCreateGoal"
-          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors"
+          class="btn-primary inline-flex items-center gap-2"
         >
           <PlusIcon class="w-5 h-5" />
-          첫 목표 만들기
+          {{ $t('goals.createFirstGoal') }}
         </button>
       </div>
     </div>
@@ -385,7 +380,7 @@ const formatNumber = (value: number): string => {
                   <!-- Progress Info -->
                   <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                     <div class="flex items-center justify-between mb-2">
-                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">진행 상황</span>
+                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('goals.progressStatus') }}</span>
                       <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {{ Math.round((viewingGoal.currentValue / viewingGoal.targetValue) * 100) }}%
                       </span>
@@ -397,15 +392,15 @@ const formatNumber = (value: number): string => {
                       ></div>
                     </div>
                     <div class="flex items-center justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
-                      <span>현재: {{ formatNumber(viewingGoal.currentValue) }} {{ viewingGoal.unit }}</span>
-                      <span>목표: {{ formatNumber(viewingGoal.targetValue) }} {{ viewingGoal.unit }}</span>
+                      <span>{{ $t('goals.current') }}: {{ formatNumber(viewingGoal.currentValue) }} {{ viewingGoal.unit }}</span>
+                      <span>{{ $t('goals.target') }}: {{ formatNumber(viewingGoal.targetValue) }} {{ viewingGoal.unit }}</span>
                     </div>
                   </div>
 
                   <!-- Milestones -->
                   <div>
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                      마일스톤
+                      {{ $t('goals.milestones') }}
                     </h3>
                     <MilestoneList
                       :milestones="viewingGoal.milestones"

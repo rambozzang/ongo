@@ -2,7 +2,10 @@
   <div>
     <!-- Header -->
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('scheduleView.title') }}</h1>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('scheduleView.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $t('scheduleView.description') }}</p>
+      </div>
 
       <div class="flex items-center gap-3">
         <!-- Sort dropdown (only in list view) -->
@@ -51,7 +54,7 @@
       </div>
     </div>
 
-    <PageGuide :title="$t('scheduleView.title')" :items="($tm('scheduleView.pageGuide') as string[])" />
+    <PageGuide :title="$t('scheduleView.pageGuideTitle')" :items="($tm('scheduleView.pageGuide') as string[])" />
 
     <!-- Filters panel -->
     <Transition
@@ -251,7 +254,7 @@
                 v-if="getSchedulesForDate(cell.dateStr).length > 3"
                 class="px-1 text-[10px] font-medium text-gray-400 dark:text-gray-500"
               >
-                +{{ getSchedulesForDate(cell.dateStr).length - 3 }} 더보기
+                +{{ getSchedulesForDate(cell.dateStr).length - 3 }} {{ $t('scheduleView.more') }}
               </div>
             </div>
           </div>
@@ -480,7 +483,7 @@
                   <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  추천: {{ recommendedSlot.dayLabel }} {{ recommendedSlot.timeLabel }}
+                  {{ $t('scheduleView.recommended') }}: {{ recommendedSlot.dayLabel }} {{ recommendedSlot.timeLabel }}
                 </button>
               </div>
               <input
@@ -711,7 +714,7 @@ const viewOptions: { value: CalendarView; label: string }[] = [
   { value: 'list', label: t('scheduleView.view.list') },
 ]
 
-const dayLabels = ['일', '월', '화', '수', '목', '금', '토']
+const dayLabels = computed(() => (t('scheduleView.dayLabels') as string).split(','))
 
 const hours = Array.from({ length: 24 }, (_, i) => i)
 
@@ -815,7 +818,7 @@ const { dragHandlers, isDragging, dragIndex, dropIndex } = useDragAndDrop(
   computed(() => sortedListSchedules.value),
   (reorderedItems: Schedule[]) => {
     manualOrder.value = reorderedItems
-    success('일정이 변경되었습니다')
+    success(t('scheduleView.reorderSuccess'))
   }
 )
 
@@ -1167,16 +1170,21 @@ function getScheduleBorderColor(schedule: Schedule): string {
 
 function formatRecurrence(recurrence: RecurrenceConfig): string {
   const typeLabels: Record<string, string> = {
-    DAILY: '매일',
-    WEEKLY: '매주',
-    MONTHLY: '매월',
+    DAILY: t('scheduleView.recurrence.daily'),
+    WEEKLY: t('scheduleView.recurrence.weekly'),
+    MONTHLY: t('scheduleView.recurrence.monthly'),
   }
   let label = typeLabels[recurrence.type] ?? recurrence.type
   if (recurrence.interval > 1) {
-    label = `${recurrence.interval}${recurrence.type === 'DAILY' ? '일' : recurrence.type === 'WEEKLY' ? '주' : '월'}마다`
+    const unitMap: Record<string, string> = {
+      DAILY: t('scheduleView.recurrence.dayUnit'),
+      WEEKLY: t('scheduleView.recurrence.weekUnit'),
+      MONTHLY: t('scheduleView.recurrence.monthUnit'),
+    }
+    label = t('scheduleView.recurrence.every', { interval: recurrence.interval, unit: unitMap[recurrence.type] ?? '' })
   }
   if (recurrence.type === 'WEEKLY' && recurrence.daysOfWeek?.length) {
-    const dayNames = ['일', '월', '화', '수', '목', '금', '토']
+    const dayNames = dayLabels.value
     const days = recurrence.daysOfWeek.map((d) => dayNames[d]).join(', ')
     label += ` (${days})`
   }

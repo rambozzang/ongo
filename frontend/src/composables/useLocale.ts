@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { setLocale } from '@/i18n'
 
 export function useLocale() {
-  const { locale, t } = useI18n({ useScope: 'global' })
+  const { locale, t, tm } = useI18n({ useScope: 'global' })
 
   const currentLocale = computed(() => locale.value)
   const isKorean = computed(() => locale.value === 'ko')
@@ -23,5 +23,6 @@ export function useLocale() {
     switchLocale,
     toggleLocale,
     t,
+    tm,
   }
 }

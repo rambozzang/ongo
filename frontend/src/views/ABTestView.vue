@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { PlusIcon, Squares2X2Icon, ListBulletIcon } from '@heroicons/vue/24/outline'
 import { useABTestStore } from '@/stores/abtest'
 import ABTestCard from '@/components/abtest/ABTestCard.vue'
@@ -9,6 +10,7 @@ import SignificanceIndicator from '@/components/abtest/SignificanceIndicator.vue
 import PageGuide from '@/components/common/PageGuide.vue'
 import type { TestStatus, TestVariant } from '@/types/abtest'
 
+const { t } = useI18n()
 const store = useABTestStore()
 
 const showCreateModal = ref(false)
@@ -67,7 +69,7 @@ const handleViewResults = (id: number) => {
 }
 
 const handleApplyWinner = (_testId: number) => {
-  alert('우승 변형이 비디오에 적용되었습니다!')
+  alert(t('abTest.winnerApplied'))
   showResultsPanel.value = false
 }
 
@@ -76,47 +78,42 @@ const setFilter = (filter: TestStatus | 'all') => {
 }
 
 const filterButtons = [
-  { value: 'all' as const, label: '전체' },
-  { value: 'running' as const, label: '진행 중' },
-  { value: 'completed' as const, label: '완료' },
-  { value: 'draft' as const, label: '초안' }
+  { value: 'all' as const, label: t('abTest.filterAll') },
+  { value: 'running' as const, label: t('abTest.filterRunning') },
+  { value: 'completed' as const, label: t('abTest.filterCompleted') },
+  { value: 'draft' as const, label: t('abTest.filterDraft') }
 ]
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="relative">
       <!-- Header -->
-      <div class="flex items-center justify-between mb-8">
+      <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">A/B 테스트</h1>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            썸네일, 제목, 설명을 테스트하여 최적의 성과를 찾아보세요
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('abTest.title') }}</h1>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {{ $t('abTest.description') }}
           </p>
         </div>
-        <button
-          @click="showCreateModal = true"
-          class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-        >
-          <PlusIcon class="w-5 h-5" />
-          새 테스트
-        </button>
+        <div class="flex items-center gap-3">
+          <button
+            @click="showCreateModal = true"
+            class="btn-primary inline-flex items-center gap-2"
+          >
+            <PlusIcon class="w-5 h-5" />
+            {{ $t('abTest.newTest') }}
+          </button>
+        </div>
       </div>
 
-      <PageGuide title="A/B 테스트" :items="[
-        '새 테스트 버튼으로 썸네일 또는 제목의 A/B 테스트를 생성하고, 변형(Variant)을 설정하세요',
-        '상태 필터(전체/진행중/완료/초안)와 그리드/리스트 뷰로 테스트를 관리하세요',
-        '상단 통계에서 총 테스트 수·진행 중·완료 수를 확인하세요',
-        '각 테스트 카드에서 샘플 크기·신뢰도·기간을 확인하고, 시작/중지/결과 보기 버튼으로 테스트를 관리하세요',
-        '완료된 테스트의 통계적 유의성 지표를 확인하여 더 성과가 좋은 조합을 선택하세요',
-      ]" />
+      <PageGuide :title="$t('abTest.pageGuideTitle')" :items="($tm('abTest.pageGuide') as string[])" />
 
       <!-- Stats bar -->
       <div class="grid grid-cols-3 gap-6 mb-8">
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="flex items-center justify-between">
             <div>
-              <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">진행 중</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{ $t('abTest.running') }}</div>
               <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ store.activeTests.length }}</div>
             </div>
             <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
@@ -128,7 +125,7 @@ const filterButtons = [
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="flex items-center justify-between">
             <div>
-              <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">완료</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{ $t('abTest.completedStat') }}</div>
               <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ store.completedTests.length }}</div>
             </div>
             <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
@@ -142,7 +139,7 @@ const filterButtons = [
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="flex items-center justify-between">
             <div>
-              <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">평균 CTR 개선율</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{ $t('abTest.avgCtrImprovement') }}</div>
               <div class="text-3xl font-bold text-green-600 dark:text-green-400">
                 +{{ store.averageCTRImprovement.toFixed(1) }}%
               </div>
@@ -220,21 +217,20 @@ const filterButtons = [
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-          {{ store.activeFilter === 'all' ? '테스트가 없습니다' : `${filterButtons.find(f => f.value === store.activeFilter)?.label} 테스트가 없습니다` }}
+        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+          {{ store.activeFilter === 'all' ? $t('abTest.emptyTitle') : `${filterButtons.find(f => f.value === store.activeFilter)?.label} ${$t('abTest.emptyTitleSuffix')}` }}
         </h3>
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          새로운 A/B 테스트를 생성하여 비디오 성과를 최적화하세요
+          {{ $t('abTest.emptyDesc') }}
         </p>
         <button
           @click="showCreateModal = true"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          class="btn-primary inline-flex items-center gap-2"
         >
           <PlusIcon class="w-5 h-5" />
-          첫 테스트 생성
+          {{ $t('abTest.createFirstTest') }}
         </button>
       </div>
-    </div>
 
     <!-- Modals -->
     <ABTestCreateModal
@@ -251,7 +247,7 @@ const filterButtons = [
     />
 
     <!-- Statistics Detail Panel -->
-    <div v-if="selectedTestId !== null && showResultsPanel" class="mt-6 px-4 sm:px-6 lg:px-8">
+    <div v-if="selectedTestId !== null && showResultsPanel" class="mt-6">
       <SignificanceIndicator :test-id="selectedTestId" />
     </div>
   </div>

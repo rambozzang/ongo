@@ -1,66 +1,64 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <SparklesIcon class="h-7 w-7 text-primary-600" />
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('aiView.title') }}</h1>
-        </div>
-        <div class="flex items-center gap-3">
-          <div
-            class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm"
-            :class="isLow ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'"
-          >
-            <SparklesIcon class="h-4 w-4" :class="isLow ? 'text-red-500' : 'text-primary-600'" />
-            <span class="text-gray-600 dark:text-gray-300">{{ $t('aiView.usedToday') }}</span>
-            <span class="font-bold text-primary-600 dark:text-primary-400">
-              {{ creditsUsedToday.toLocaleString() }}
-            </span>
-            <span class="text-gray-400 dark:text-gray-500 mx-1">|</span>
-            <span class="text-gray-600 dark:text-gray-300">{{ $t('aiView.remaining') }}</span>
-            <span class="font-bold" :class="isLow ? 'text-red-600' : 'text-primary-600'">
-              {{ balance.toLocaleString() }}
-            </span>
-          </div>
-        </div>
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('aiView.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $t('aiView.description') }}</p>
       </div>
-
-      <!-- Tab Navigation -->
-      <div class="border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex gap-6">
-          <button
-            class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
-            :class="activeTab === 'tools'
-              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
-            @click="activeTab = 'tools'"
-          >
-            {{ $t('aiView.tabs.tools') }}
-          </button>
-          <button
-            class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
-            :class="activeTab === 'presets'
-              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
-            @click="activeTab = 'presets'"
-          >
-            {{ $t('aiView.tabs.presets') }}
-          </button>
-          <button
-            class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
-            :class="activeTab === 'history'
-              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
-            @click="activeTab = 'history'"
-          >
-            {{ $t('aiView.tabs.history') }}
-          </button>
-        </nav>
+      <div class="flex items-center gap-3">
+        <div
+          class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm"
+          :class="isLow ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'"
+        >
+          <SparklesIcon class="h-4 w-4" :class="isLow ? 'text-red-500' : 'text-primary-600'" />
+          <span class="text-gray-600 dark:text-gray-300">{{ $t('aiView.usedToday') }}</span>
+          <span class="font-bold text-primary-600 dark:text-primary-400">
+            {{ creditsUsedToday.toLocaleString() }}
+          </span>
+          <span class="text-gray-400 dark:text-gray-500 mx-1">|</span>
+          <span class="text-gray-600 dark:text-gray-300">{{ $t('aiView.remaining') }}</span>
+          <span class="font-bold" :class="isLow ? 'text-red-600' : 'text-primary-600'">
+            {{ balance.toLocaleString() }}
+          </span>
+        </div>
       </div>
     </div>
 
-    <PageGuide :title="$t('aiView.title')" :items="($tm('aiView.pageGuide') as string[])" />
+    <PageGuide :title="$t('aiView.pageGuideTitle')" :items="($tm('aiView.pageGuide') as string[])" />
+
+    <!-- Tab Navigation -->
+    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+      <nav class="-mb-px flex gap-6">
+        <button
+          class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
+          :class="activeTab === 'tools'
+            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+            : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
+          @click="activeTab = 'tools'"
+        >
+          {{ $t('aiView.tabs.tools') }}
+        </button>
+        <button
+          class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
+          :class="activeTab === 'presets'
+            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+            : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
+          @click="activeTab = 'presets'"
+        >
+          {{ $t('aiView.tabs.presets') }}
+        </button>
+        <button
+          class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
+          :class="activeTab === 'history'
+            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+            : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
+          @click="activeTab = 'history'"
+        >
+          {{ $t('aiView.tabs.history') }}
+        </button>
+      </nav>
+    </div>
 
     <!-- Tab Content -->
     <div class="mt-6">
@@ -286,7 +284,7 @@
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    사용 크레딧: {{ aiStore.metaResult.creditsUsed }} / 잔여: {{ aiStore.metaResult.creditsRemaining }}
+                    {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.metaResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.metaResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
                     <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
@@ -386,7 +384,7 @@
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    사용 크레딧: {{ aiStore.hashtagResult.creditsUsed }} / 잔여: {{ aiStore.hashtagResult.creditsRemaining }}
+                    {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.hashtagResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.hashtagResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
                     <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
@@ -454,13 +452,13 @@
                   </div>
                   <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">{{ idea.description }}</p>
                   <p class="text-xs text-gray-400 dark:text-gray-500">
-                    예상 반응: {{ idea.expectedReaction }}
+                    {{ $t('aiView.expectedReaction') }}: {{ idea.expectedReaction }}
                   </p>
                 </div>
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    사용 크레딧: {{ aiStore.ideasResult.creditsUsed }} / 잔여: {{ aiStore.ideasResult.creditsRemaining }}
+                    {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.ideasResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.ideasResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
                     <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
@@ -480,7 +478,7 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">분석 기간</label>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.analysisPeriod') }}</label>
                   <div class="flex gap-3">
                     <button
                       v-for="p in reportPeriods"
@@ -521,7 +519,7 @@
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    사용 크레딧: {{ aiStore.reportResult.creditsUsed }} / 잔여: {{ aiStore.reportResult.creditsRemaining }}
+                    {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.reportResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.reportResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
                     <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
@@ -607,7 +605,7 @@
                         </span>
                       </div>
                       <p class="text-xs text-gray-500 dark:text-gray-400">{{ rec.targetPlatform }} | {{ rec.reason }}</p>
-                      <p class="mt-1 text-xs text-primary-600 dark:text-primary-400">예상 영향: {{ rec.expectedImpact }}</p>
+                      <p class="mt-1 text-xs text-primary-600 dark:text-primary-400">{{ $t('aiView.expectedImpact') }}: {{ rec.expectedImpact }}</p>
                     </div>
                   </div>
                 </div>
@@ -644,7 +642,7 @@
                     >
                       <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ ta.recommendation }}</p>
                       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ ta.reason }}</p>
-                      <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">예상 향상: {{ ta.expectedBoost }}</p>
+                      <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">{{ $t('aiView.expectedBoost') }}: {{ ta.expectedBoost }}</p>
                     </div>
                   </div>
                 </div>
@@ -666,7 +664,7 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">분석 기간</label>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.analysisPeriod') }}</label>
                   <div class="flex gap-3">
                     <button
                       v-for="p in reportPeriods"
@@ -778,8 +776,8 @@
             <div>
               <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('aiView.creditModal.title') }}</h2>
               <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                이 기능에는 <span class="font-medium text-primary-600">{{ requiredCredits }} 크레딧</span>이 필요합니다.
-                (잔여: {{ balance.toLocaleString() }})
+                {{ $t('aiView.creditModal.needCredits', { credits: requiredCredits }) }}
+                ({{ $t('aiView.remainingLabel') }}: {{ balance.toLocaleString() }})
               </p>
             </div>
             <button
@@ -806,20 +804,20 @@
                   <span class="text-2xl font-bold text-primary-600">
                     {{ pkg.price.toLocaleString() }}
                   </span>
-                  <span class="text-sm text-gray-500 dark:text-gray-400">원</span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">{{ $t('aiView.creditModal.currencyUnit') }}</span>
                 </div>
                 <ul class="space-y-1 text-xs text-gray-600 dark:text-gray-300">
                   <li class="flex items-center gap-1.5">
                     <SparklesIcon class="h-3.5 w-3.5 text-primary-500" />
-                    {{ pkg.credits.toLocaleString() }} 크레딧
+                    {{ pkg.credits.toLocaleString() }} {{ $t('aiView.credits') }}
                   </li>
                   <li class="flex items-center gap-1.5">
                     <span class="inline-block h-3.5 w-3.5 text-center text-primary-500">~</span>
-                    크레딧당 {{ pkg.pricePerCredit }}원
+                    {{ $t('aiView.creditModal.perCredit', { price: pkg.pricePerCredit }) }}
                   </li>
                   <li class="flex items-center gap-1.5">
                     <ClockIcon class="h-3.5 w-3.5 text-primary-500" />
-                    {{ pkg.validDays }}일 유효
+                    {{ $t('aiView.creditModal.validDays', { days: pkg.validDays }) }}
                   </li>
                 </ul>
               </div>

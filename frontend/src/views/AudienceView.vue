@@ -1,11 +1,19 @@
 <template>
-  <div class="max-w-6xl mx-auto space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">{{ t('audience.title') }}</h1>
+  <div class="relative">
+    <!-- Header -->
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('audience.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('audience.description') }}
+        </p>
+      </div>
     </div>
 
+    <PageGuide :title="$t('audience.pageGuideTitle')" :items="($tm('audience.pageGuide') as string[])" />
+
     <!-- 탭 -->
-    <div class="border-b border-gray-200">
+    <div class="border-b border-gray-200 dark:border-gray-700">
       <nav class="flex gap-6">
         <button
           v-for="tab in tabs"
@@ -13,8 +21,8 @@
           :class="[
             'pb-3 text-sm font-medium border-b-2 transition-colors',
             activeTab === tab.key
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700',
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
           ]"
           @click="activeTab = tab.key"
         >
@@ -26,35 +34,35 @@
     <!-- 팬 프로필 탭 -->
     <div v-if="activeTab === 'profiles'">
       <div class="mb-4 flex gap-3">
-        <select v-model="sortBy" class="px-3 py-2 border rounded-lg text-sm" @change="loadProfiles">
-          <option value="engagement_score">{{ t('audience.sort.engagementScore') }}</option>
-          <option value="total_interactions">{{ t('audience.sort.totalInteractions') }}</option>
-          <option value="last_seen_at">{{ t('audience.sort.lastSeenAt') }}</option>
+        <select v-model="sortBy" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" @change="loadProfiles">
+          <option value="engagement_score">{{ $t('audience.sort.engagementScore') }}</option>
+          <option value="total_interactions">{{ $t('audience.sort.totalInteractions') }}</option>
+          <option value="last_seen_at">{{ $t('audience.sort.lastSeenAt') }}</option>
         </select>
       </div>
 
       <div v-if="store.loading" class="text-center py-12 text-gray-400">
-        {{ t('audience.loading') }}
+        {{ $t('audience.loading') }}
       </div>
 
       <div v-else-if="store.profiles.length === 0" class="text-center py-12 text-gray-400">
-        {{ t('audience.emptyProfiles') }}
+        {{ $t('audience.emptyProfiles') }}
       </div>
 
-      <div v-else class="bg-white rounded-lg border overflow-hidden">
+      <div v-else class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <table class="w-full text-sm">
-          <thead class="bg-gray-50 border-b">
+          <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <tr>
-              <th class="text-left px-4 py-3 font-medium text-gray-500">{{ t('audience.table.profile') }}</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-500">{{ t('audience.table.platform') }}</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-500">{{ t('audience.table.engagement') }}</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-500">{{ t('audience.table.tags') }}</th>
-              <th class="text-right px-4 py-3 font-medium text-gray-500">{{ t('audience.table.interactions') }}</th>
-              <th class="text-right px-4 py-3 font-medium text-gray-500">{{ t('audience.table.lastActivity') }}</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.profile') }}</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.platform') }}</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.engagement') }}</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.tags') }}</th>
+              <th class="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.interactions') }}</th>
+              <th class="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.lastActivity') }}</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="profile in store.profiles" :key="profile.id" class="hover:bg-gray-50">
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+            <tr v-for="profile in store.profiles" :key="profile.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                   <img
@@ -69,20 +77,20 @@
                   >
                     {{ profile.authorName.charAt(0) }}
                   </div>
-                  <span class="font-medium text-gray-900">{{ profile.authorName }}</span>
+                  <span class="font-medium text-gray-900 dark:text-gray-100">{{ profile.authorName }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-gray-600">{{ profile.platform }}</td>
+              <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ profile.platform }}</td>
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
-                  <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div class="w-16 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                     <div
                       class="h-full rounded-full"
                       :class="scoreColor(profile.engagementScore)"
                       :style="{ width: `${Math.min(profile.engagementScore, 100)}%` }"
                     />
                   </div>
-                  <span class="text-gray-700 text-xs">{{ profile.engagementScore }}</span>
+                  <span class="text-gray-700 dark:text-gray-300 text-xs">{{ profile.engagementScore }}</span>
                 </div>
               </td>
               <td class="px-4 py-3">
@@ -90,14 +98,14 @@
                   <span
                     v-for="tag in profile.tags"
                     :key="tag"
-                    class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs"
+                    class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-xs"
                   >
                     {{ tag }}
                   </span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-right text-gray-700">{{ profile.totalInteractions.toLocaleString() }}</td>
-              <td class="px-4 py-3 text-right text-gray-500 text-xs">{{ formatDate(profile.lastSeenAt) }}</td>
+              <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{{ profile.totalInteractions.toLocaleString() }}</td>
+              <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 text-xs">{{ formatDate(profile.lastSeenAt) }}</td>
             </tr>
           </tbody>
         </table>
@@ -107,20 +115,20 @@
         <div class="flex gap-2">
           <button
             :disabled="currentPage === 0"
-            class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-700 dark:text-gray-300"
             @click="changePage(currentPage - 1)"
           >
-            {{ t('audience.pagination.previous') }}
+            {{ $t('audience.pagination.previous') }}
           </button>
-          <span class="px-3 py-1.5 text-sm text-gray-600">
+          <span class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">
             {{ currentPage + 1 }} / {{ Math.ceil(store.totalProfiles / 20) }}
           </span>
           <button
             :disabled="(currentPage + 1) * 20 >= store.totalProfiles"
-            class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-700 dark:text-gray-300"
             @click="changePage(currentPage + 1)"
           >
-            {{ t('audience.pagination.next') }}
+            {{ $t('audience.pagination.next') }}
           </button>
         </div>
       </div>
@@ -130,29 +138,29 @@
     <div v-if="activeTab === 'segments'">
       <div class="mb-4 flex justify-end">
         <button
-          class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+          class="btn-primary inline-flex items-center gap-2"
           @click="showSegmentModal = true"
         >
-          {{ t('audience.segment.add') }}
+          {{ $t('audience.segment.add') }}
         </button>
       </div>
 
       <div v-if="store.loading" class="text-center py-12 text-gray-400">
-        {{ t('audience.loading') }}
+        {{ $t('audience.loading') }}
       </div>
 
       <div v-else-if="store.segments.length === 0" class="text-center py-12 text-gray-400">
-        {{ t('audience.segment.empty') }}
+        {{ $t('audience.segment.empty') }}
       </div>
 
       <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div
           v-for="segment in store.segments"
           :key="segment.id"
-          class="bg-white rounded-lg border p-5 hover:shadow-md transition-shadow"
+          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow"
         >
           <div class="flex items-start justify-between mb-2">
-            <h3 class="font-semibold text-gray-900">{{ segment.name }}</h3>
+            <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ segment.name }}</h3>
             <button
               class="text-gray-400 hover:text-red-500 transition-colors"
               @click="handleDeleteSegment(segment.id)"
@@ -162,13 +170,13 @@
               </svg>
             </button>
           </div>
-          <p v-if="segment.description" class="text-sm text-gray-500 mb-3">{{ segment.description }}</p>
+          <p v-if="segment.description" class="text-sm text-gray-500 dark:text-gray-400 mb-3">{{ segment.description }}</p>
           <div class="flex items-center justify-between text-sm">
-            <span class="text-gray-600">
-              <span class="font-medium text-indigo-600">{{ segment.memberCount.toLocaleString() }}</span>{{ t('audience.members') }}
+            <span class="text-gray-600 dark:text-gray-400">
+              <span class="font-medium text-indigo-600 dark:text-indigo-400">{{ segment.memberCount.toLocaleString() }}</span>{{ $t('audience.members') }}
             </span>
-            <span v-if="segment.autoUpdate" class="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">
-              {{ t('audience.autoUpdate') }}
+            <span v-if="segment.autoUpdate" class="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded text-xs">
+              {{ $t('audience.autoUpdate') }}
             </span>
           </div>
         </div>
@@ -181,36 +189,36 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       @click.self="closeModal"
     >
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-4">{{ t('audience.segment.modal.title') }}</h2>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{{ $t('audience.segment.modal.title') }}</h2>
         <form @submit.prevent="handleCreateSegment">
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('audience.segment.modal.name') }}</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('audience.segment.modal.name') }}</label>
               <input
                 v-model="segmentForm.name"
                 type="text"
                 required
-                class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                :placeholder="t('audience.segment.modal.namePlaceholder')"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :placeholder="$t('audience.segment.modal.namePlaceholder')"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('audience.segment.modal.description') }}</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('audience.segment.modal.description') }}</label>
               <textarea
                 v-model="segmentForm.description"
                 rows="2"
-                class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                :placeholder="t('audience.segment.modal.descriptionPlaceholder')"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :placeholder="$t('audience.segment.modal.descriptionPlaceholder')"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('audience.segment.modal.conditions') }}</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('audience.segment.modal.conditions') }}</label>
               <input
                 v-model="segmentForm.conditions"
                 type="text"
-                class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                :placeholder="t('audience.segment.modal.conditionsPlaceholder')"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                :placeholder="$t('audience.segment.modal.conditionsPlaceholder')"
               />
             </div>
             <div class="flex items-center gap-2">
@@ -220,23 +228,23 @@
                 type="checkbox"
                 class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
-              <label for="autoUpdate" class="text-sm text-gray-700">{{ t('audience.segment.modal.autoUpdate') }}</label>
+              <label for="autoUpdate" class="text-sm text-gray-700 dark:text-gray-300">{{ $t('audience.segment.modal.autoUpdate') }}</label>
             </div>
           </div>
           <div class="mt-6 flex justify-end gap-3">
             <button
               type="button"
-              class="px-4 py-2 text-sm text-gray-700 border rounded-lg hover:bg-gray-50"
+              class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
               @click="closeModal"
             >
-              {{ t('audience.segment.modal.cancel') }}
+              {{ $t('audience.segment.modal.cancel') }}
             </button>
             <button
               type="submit"
               :disabled="!segmentForm.name || creating"
               class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
             >
-              {{ creating ? t('audience.segment.modal.creating') : t('audience.segment.modal.add') }}
+              {{ creating ? $t('audience.segment.modal.creating') : $t('audience.segment.modal.add') }}
             </button>
           </div>
         </form>
@@ -249,6 +257,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAudienceStore } from '@/stores/audience'
+import PageGuide from '@/components/common/PageGuide.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const store = useAudienceStore()

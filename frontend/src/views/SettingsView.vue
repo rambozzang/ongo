@@ -1,14 +1,18 @@
 <template>
-  <div>
-    <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-gray-100">설정</h1>
+  <div class="relative">
+    <!-- Header -->
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {{ t('settings.title') }}
+        </h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ t('settings.description') }}
+        </p>
+      </div>
+    </div>
 
-    <PageGuide title="설정" :items="[
-      '프로필 탭에서 프로필 이미지·닉네임(최대 20자)을 변경하세요',
-      '알림 탭에서 이메일·푸시 알림 수신 항목을 세부적으로 설정하세요',
-      '테마 탭에서 라이트/다크 모드를 전환하고, 언어(한국어/영어)를 변경하세요',
-      '계정 탭에서 연결된 소셜 로그인 정보를 확인하고 계정을 관리하세요',
-      '개인정보 탭에서 데이터 보존 및 개인정보 설정을 관리하세요',
-    ]" />
+    <PageGuide :title="t('settings.pageGuideTitle')" :items="(tm('settings.pageGuide') as string[])" />
 
     <!-- Tab Navigation -->
     <div class="mb-6 overflow-x-auto border-b border-gray-200 dark:border-gray-700">
@@ -33,7 +37,7 @@
     <!-- Profile Tab -->
     <div v-if="activeTab === 'profile'" class="space-y-6">
       <div class="card">
-        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">프로필 설정</h2>
+        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.profile.title') }}</h2>
 
         <!-- Profile Image -->
         <div class="mb-6 flex items-center gap-6">
@@ -44,7 +48,7 @@
               <img
                 v-if="profileForm.profileImageUrl"
                 :src="profileForm.profileImageUrl"
-                alt="프로필 이미지"
+                :alt="t('settings.profile.profileImage')"
                 class="h-full w-full object-cover"
               />
               <UserIcon v-else class="h-10 w-10 text-gray-400" />
@@ -55,7 +59,7 @@
               for="profile-image-upload"
               class="btn-secondary cursor-pointer"
             >
-              이미지 변경
+              {{ t('settings.profile.changeImage') }}
             </label>
             <input
               id="profile-image-upload"
@@ -64,25 +68,25 @@
               class="hidden"
               @change="handleImageUpload"
             />
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">JPG, PNG 파일. 최대 5MB</p>
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.profile.imageHint') }}</p>
           </div>
         </div>
 
         <!-- Nickname -->
         <div class="mb-6">
           <label for="nickname" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            닉네임
+            {{ t('settings.profile.nickname') }}
           </label>
           <input
             id="nickname"
             v-model="profileForm.nickname"
             type="text"
             maxlength="20"
-            placeholder="닉네임을 입력하세요"
+            :placeholder="t('settings.profile.nicknamePlaceholder')"
             class="input-field max-w-md"
           />
           <div class="mt-1 flex items-center justify-between max-w-md">
-            <span class="text-xs text-gray-400">2~20자</span>
+            <span class="text-xs text-gray-400">{{ t('settings.profile.nicknameLength') }}</span>
             <span class="text-xs text-gray-400">{{ profileForm.nickname.length }}/20</span>
           </div>
         </div>
@@ -90,14 +94,14 @@
         <!-- Creator Category -->
         <div class="mb-6">
           <label for="category" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            크리에이터 카테고리
+            {{ t('settings.profile.category') }}
           </label>
           <select
             id="category"
             v-model="profileForm.category"
             class="input-field max-w-md"
           >
-            <option value="">카테고리 선택</option>
+            <option value="">{{ t('settings.profile.selectCategory') }}</option>
             <option
               v-for="cat in categories"
               :key="cat.value"
@@ -111,7 +115,7 @@
         <!-- Email (read-only) -->
         <div class="mb-6">
           <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            이메일
+            {{ t('settings.profile.email') }}
           </label>
           <input
             type="email"
@@ -119,13 +123,13 @@
             disabled
             class="input-field max-w-md cursor-not-allowed bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400"
           />
-          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">소셜 계정 이메일은 변경할 수 없습니다.</p>
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.profile.emailHint') }}</p>
         </div>
 
         <!-- Connected Social Account (read-only) -->
         <div class="mb-6">
           <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            연동된 소셜 계정
+            {{ t('settings.profile.connectedSocial') }}
           </label>
           <div class="flex max-w-md items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3">
             <!-- Google Icon -->
@@ -141,11 +145,11 @@
             </svg>
             <div>
               <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ socialProvider === 'GOOGLE' ? 'Google' : 'Kakao' }} 계정
+                {{ socialProvider === 'GOOGLE' ? 'Google' : 'Kakao' }} {{ t('settings.profile.account') }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">{{ authStore.user?.email }}</p>
             </div>
-            <span class="badge-success ml-auto">연동됨</span>
+            <span class="badge-success ml-auto">{{ t('settings.profile.connected') }}</span>
           </div>
         </div>
 
@@ -156,7 +160,7 @@
             @click="saveProfile"
           >
             <LoadingSpinner v-if="isSavingProfile" size="sm" class="mr-2" />
-            저장
+            {{ t('settings.save') }}
           </button>
         </div>
       </div>
@@ -165,16 +169,16 @@
     <!-- Notifications Tab -->
     <div v-if="activeTab === 'notifications'" class="space-y-6">
       <div class="card">
-        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">알림 설정</h2>
+        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.notifications.title') }}</h2>
 
         <!-- Upload Notifications -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">업로드 완료/실패 알림</h3>
+          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.uploadAlerts') }}</h3>
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">이메일 알림</p>
-                <p class="text-xs text-gray-400">업로드 완료 또는 실패 시 이메일로 알림</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.emailAlert') }}</p>
+                <p class="text-xs text-gray-400">{{ t('settings.notifications.emailAlertDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -192,8 +196,8 @@
             </div>
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">푸시 알림</p>
-                <p class="text-xs text-gray-400">브라우저 푸시 알림으로 즉시 전달</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.pushAlert') }}</p>
+                <p class="text-xs text-gray-400">{{ t('settings.notifications.pushAlertDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -214,7 +218,7 @@
 
         <!-- Comment Notifications -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">댓글 알림</h3>
+          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.commentAlerts') }}</h3>
           <div class="space-y-3">
             <label
               v-for="option in commentOptions"
@@ -243,10 +247,10 @@
 
         <!-- Credit Remaining Alert -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">크레딧 잔여 알림</h3>
+          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.creditAlert') }}</h3>
           <div class="flex items-center gap-3">
             <label for="creditThreshold" class="text-sm text-gray-700 dark:text-gray-300">
-              잔여 크레딧이
+              {{ t('settings.notifications.creditThresholdPrefix') }}
             </label>
             <div class="relative w-24">
               <input
@@ -260,19 +264,19 @@
               />
               <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-gray-500">%</span>
             </div>
-            <span class="text-sm text-gray-700 dark:text-gray-300">이하일 때 알림</span>
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.creditThresholdSuffix') }}</span>
           </div>
-          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">5~50% 사이의 값을 설정하세요. (기본값: 20%)</p>
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.creditThresholdHint') }}</p>
         </div>
 
         <!-- Schedule Reminder -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">예약 업로드 리마인더</h3>
+          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.scheduleReminder') }}</h3>
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">1시간 전 알림</p>
-                <p class="text-xs text-gray-400">예약 업로드 1시간 전에 알림</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.reminder1h') }}</p>
+                <p class="text-xs text-gray-400">{{ t('settings.notifications.reminder1hDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -290,8 +294,8 @@
             </div>
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">30분 전 알림</p>
-                <p class="text-xs text-gray-400">예약 업로드 30분 전에 알림</p>
+                <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.reminder30m') }}</p>
+                <p class="text-xs text-gray-400">{{ t('settings.notifications.reminder30mDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -317,7 +321,7 @@
             @click="saveNotifications"
           >
             <LoadingSpinner v-if="isSavingNotifications" size="sm" class="mr-2" />
-            저장
+            {{ t('settings.save') }}
           </button>
         </div>
       </div>
@@ -326,12 +330,12 @@
     <!-- Default Settings Tab -->
     <div v-if="activeTab === 'defaults'" class="space-y-6">
       <div class="card">
-        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">기본 설정</h2>
+        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.defaults.title') }}</h2>
 
         <!-- Default Visibility -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">기본 공개 설정</h3>
-          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">영상 업로드 시 기본으로 적용되는 공개 설정입니다.</p>
+          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.visibility') }}</h3>
+          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.visibilityDesc') }}</p>
           <div class="flex flex-wrap gap-3">
             <label
               v-for="option in visibilityOptions"
@@ -357,8 +361,8 @@
 
         <!-- Default Upload Platforms -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">기본 업로드 플랫폼</h3>
-          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">영상 업로드 시 기본으로 선택되는 플랫폼입니다.</p>
+          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.platforms') }}</h3>
+          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.platformsDesc') }}</p>
           <div class="space-y-3">
             <label
               v-for="platform in platformOptions"
@@ -389,8 +393,8 @@
 
         <!-- Default AI Tone -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">기본 AI 톤</h3>
-          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">AI가 제목, 설명을 생성할 때 사용하는 기본 톤입니다.</p>
+          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.aiTone') }}</h3>
+          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.aiToneDesc') }}</p>
           <div class="flex flex-wrap gap-3">
             <label
               v-for="option in toneOptions"
@@ -450,8 +454,8 @@
 
         <!-- Language Selection -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">언어 / Language</h3>
-          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">앱에서 사용할 언어를 선택하세요</p>
+          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.language') }}</h3>
+          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.languageDesc') }}</p>
           <div class="flex flex-wrap gap-3">
             <label
               v-for="option in languageOptions"
@@ -483,7 +487,7 @@
             @click="saveDefaults"
           >
             <LoadingSpinner v-if="isSavingDefaults" size="sm" class="mr-2" />
-            저장
+            {{ t('settings.save') }}
           </button>
         </div>
       </div>
@@ -492,7 +496,7 @@
     <!-- Activity Log Tab -->
     <div v-if="activeTab === 'activity'" class="space-y-6">
       <div class="card">
-        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">활동 로그</h2>
+        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.activity.title') }}</h2>
 
         <!-- Filter -->
         <div class="mb-6">
@@ -512,25 +516,25 @@
     <div v-if="activeTab === 'account'" class="space-y-6">
       <!-- Account Info -->
       <div class="card">
-        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">계정 정보</h2>
+        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.account.title') }}</h2>
 
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">이메일</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('settings.account.email') }}</span>
             <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ authStore.user?.email }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">소셜 로그인</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('settings.account.socialLogin') }}</span>
             <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
               {{ socialProvider === 'GOOGLE' ? 'Google' : 'Kakao' }}
             </span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">현재 플랜</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('settings.account.currentPlan') }}</span>
             <span class="badge-blue">{{ authStore.user?.planType ?? 'FREE' }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">가입일</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('settings.account.joinDate') }}</span>
             <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ formattedCreatedAt }}</span>
           </div>
         </div>
@@ -538,14 +542,14 @@
 
       <!-- Danger Zone -->
       <div class="card border-red-200 dark:border-red-800">
-        <h2 class="mb-2 text-lg font-semibold text-red-600">위험 구역</h2>
+        <h2 class="mb-2 text-lg font-semibold text-red-600">{{ t('settings.account.dangerZone') }}</h2>
         <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">
-          회원 탈퇴 시 모든 데이터가 즉시 삭제되며, 이 작업은 되돌릴 수 없습니다.
+          {{ t('settings.account.dangerDesc') }}
         </p>
 
         <button class="btn-danger" @click="showDeleteModal = true">
           <ShieldExclamationIcon class="mr-2 h-4 w-4" />
-          회원 탈퇴
+          {{ t('settings.account.deleteAccount') }}
         </button>
       </div>
     </div>
@@ -553,10 +557,10 @@
     <!-- Delete Account Confirmation Modal -->
     <ConfirmModal
       v-model="showDeleteModal"
-      title="회원 탈퇴"
-      message="모든 데이터가 삭제되며 복구할 수 없습니다. 정말로 탈퇴하시겠습니까?"
-      confirm-text="탈퇴하기"
-      cancel-text="취소"
+      :title="t('settings.account.deleteAccount')"
+      :message="t('settings.account.deleteConfirm')"
+      :confirm-text="t('settings.account.deleteBtn')"
+      :cancel-text="t('settings.cancel')"
       :danger="true"
       @confirm="handleDeleteAccount"
     />
@@ -594,7 +598,7 @@ const authStore = useAuthStore()
 const userStore = useUserStore()
 const notify = useNotificationStore()
 const activityStore = useActivityLogStore()
-const { t } = useI18n({ useScope: 'global' })
+const { t, tm } = useI18n({ useScope: 'global' })
 const { currentLocale, switchLocale } = useLocale()
 
 // --- Tab State ---
@@ -603,13 +607,13 @@ type SettingsTab = 'profile' | 'notifications' | 'defaults' | 'account' | 'activ
 
 const activeTab = ref<SettingsTab>('profile')
 
-const tabs: { key: SettingsTab; label: string; icon: typeof UserIcon }[] = [
-  { key: 'profile', label: '프로필', icon: UserIcon },
-  { key: 'notifications', label: '알림', icon: BellIcon },
-  { key: 'defaults', label: '기본 설정', icon: Cog6ToothIcon },
-  { key: 'activity', label: '활동 로그', icon: ClockIcon },
-  { key: 'account', label: '계정', icon: ShieldExclamationIcon },
-]
+const tabs = computed<{ key: SettingsTab; label: string; icon: typeof UserIcon }[]>(() => [
+  { key: 'profile', label: t('settings.tabs.profile'), icon: UserIcon },
+  { key: 'notifications', label: t('settings.tabs.notifications'), icon: BellIcon },
+  { key: 'defaults', label: t('settings.tabs.defaults'), icon: Cog6ToothIcon },
+  { key: 'activity', label: t('settings.tabs.activity'), icon: ClockIcon },
+  { key: 'account', label: t('settings.tabs.account'), icon: ShieldExclamationIcon },
+])
 
 // --- Social Provider ---
 
@@ -623,19 +627,19 @@ const socialProvider = computed(() => {
 
 // --- Profile Tab ---
 
-const categories: { value: CreatorCategory; label: string }[] = [
-  { value: 'BEAUTY', label: '뷰티' },
-  { value: 'FOOD', label: '먹방' },
-  { value: 'GAME', label: '게임' },
-  { value: 'DAILY', label: '일상' },
-  { value: 'EDUCATION', label: '교육' },
-  { value: 'IT', label: 'IT/테크' },
-  { value: 'TRAVEL', label: '여행' },
-  { value: 'MUSIC', label: '음악' },
-  { value: 'FASHION', label: '패션' },
-  { value: 'SPORTS', label: '스포츠' },
-  { value: 'OTHER', label: '기타' },
-]
+const categories = computed<{ value: CreatorCategory; label: string }[]>(() => [
+  { value: 'BEAUTY', label: t('settings.categories.beauty') },
+  { value: 'FOOD', label: t('settings.categories.food') },
+  { value: 'GAME', label: t('settings.categories.game') },
+  { value: 'DAILY', label: t('settings.categories.daily') },
+  { value: 'EDUCATION', label: t('settings.categories.education') },
+  { value: 'IT', label: t('settings.categories.it') },
+  { value: 'TRAVEL', label: t('settings.categories.travel') },
+  { value: 'MUSIC', label: t('settings.categories.music') },
+  { value: 'FASHION', label: t('settings.categories.fashion') },
+  { value: 'SPORTS', label: t('settings.categories.sports') },
+  { value: 'OTHER', label: t('settings.categories.other') },
+])
 
 const profileForm = reactive({
   nickname: authStore.user?.nickname ?? '',
@@ -651,13 +655,13 @@ function handleImageUpload(event: Event) {
   if (!file) return
 
   if (file.size > 5 * 1024 * 1024) {
-    notify.warning('이미지 파일은 5MB 이하만 가능합니다.')
+    notify.warning(t('settings.profile.imageSizeError'))
     return
   }
 
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
   if (!allowedTypes.includes(file.type)) {
-    notify.warning('JPG, PNG, WebP 형식의 이미지만 가능합니다.')
+    notify.warning(t('settings.profile.imageTypeError'))
     return
   }
 
@@ -671,11 +675,11 @@ function handleImageUpload(event: Event) {
 
 async function saveProfile() {
   if (!profileForm.nickname.trim()) {
-    notify.warning('닉네임을 입력해주세요.')
+    notify.warning(t('settings.profile.nicknameRequired'))
     return
   }
   if (profileForm.nickname.trim().length < 2) {
-    notify.warning('닉네임은 2자 이상이어야 합니다.')
+    notify.warning(t('settings.profile.nicknameMinLength'))
     return
   }
 
@@ -686,9 +690,9 @@ async function saveProfile() {
       profileImageUrl: profileForm.profileImageUrl || null,
       category: (profileForm.category as CreatorCategory) || null,
     })
-    notify.success('프로필이 저장되었습니다.')
+    notify.success(t('settings.profile.saveSuccess'))
   } catch {
-    notify.error('프로필 저장에 실패했습니다. 다시 시도해주세요.')
+    notify.error(t('settings.profile.saveError'))
   } finally {
     isSavingProfile.value = false
   }
@@ -696,11 +700,11 @@ async function saveProfile() {
 
 // --- Notifications Tab ---
 
-const commentOptions = [
-  { value: 'realtime', label: '실시간', description: '댓글이 달릴 때마다 즉시 알림' },
-  { value: 'hourly', label: '1시간 요약', description: '1시간마다 댓글 요약을 알림' },
-  { value: 'daily', label: '일별 요약', description: '하루 한 번 댓글 요약을 알림' },
-]
+const commentOptions = computed(() => [
+  { value: 'realtime', label: t('settings.notifications.commentRealtime'), description: t('settings.notifications.commentRealtimeDesc') },
+  { value: 'hourly', label: t('settings.notifications.commentHourly'), description: t('settings.notifications.commentHourlyDesc') },
+  { value: 'daily', label: t('settings.notifications.commentDaily'), description: t('settings.notifications.commentDailyDesc') },
+])
 
 const notificationForm = reactive({
   uploadEmail: true,
@@ -715,16 +719,16 @@ const isSavingNotifications = ref(false)
 
 async function saveNotifications() {
   if (notificationForm.creditThreshold < 5 || notificationForm.creditThreshold > 50) {
-    notify.warning('크레딧 알림 기준은 5~50% 사이여야 합니다.')
+    notify.warning(t('settings.notifications.creditThresholdError'))
     return
   }
 
   isSavingNotifications.value = true
   try {
     await settingsApi.updateNotifications(notificationForm)
-    notify.success('알림 설정이 저장되었습니다.')
+    notify.success(t('settings.notifications.saveSuccess'))
   } catch {
-    notify.error('알림 설정 저장에 실패했습니다. 다시 시도해주세요.')
+    notify.error(t('settings.notifications.saveError'))
   } finally {
     isSavingNotifications.value = false
   }
@@ -732,11 +736,11 @@ async function saveNotifications() {
 
 // --- Default Settings Tab ---
 
-const visibilityOptions = [
-  { value: 'PUBLIC', label: '공개' },
-  { value: 'PRIVATE', label: '비공개' },
-  { value: 'UNLISTED', label: '미등록' },
-]
+const visibilityOptions = computed(() => [
+  { value: 'PUBLIC', label: t('settings.defaults.visibilityPublic') },
+  { value: 'PRIVATE', label: t('settings.defaults.visibilityPrivate') },
+  { value: 'UNLISTED', label: t('settings.defaults.visibilityUnlisted') },
+])
 
 const platformOptions: { value: Platform; label: string; color: string; shortIcon: string }[] = [
   { value: 'YOUTUBE', label: 'YouTube', color: '#FF0000', shortIcon: 'YT' },
@@ -745,11 +749,11 @@ const platformOptions: { value: Platform; label: string; color: string; shortIco
   { value: 'NAVER_CLIP', label: 'Naver Clip', color: '#03C75A', shortIcon: 'N' },
 ]
 
-const toneOptions = [
-  { value: 'FRIENDLY', label: '친근', description: '일상적이고 친근한 톤' },
-  { value: 'PROFESSIONAL', label: '전문', description: '전문적이고 신뢰감 있는 톤' },
-  { value: 'HUMOR', label: '유머', description: '재미있고 가벼운 톤' },
-]
+const toneOptions = computed(() => [
+  { value: 'FRIENDLY', label: t('settings.defaults.toneFriendly'), description: t('settings.defaults.toneFriendlyDesc') },
+  { value: 'PROFESSIONAL', label: t('settings.defaults.toneProfessional'), description: t('settings.defaults.toneProfessionalDesc') },
+  { value: 'HUMOR', label: t('settings.defaults.toneHumor'), description: t('settings.defaults.toneHumorDesc') },
+])
 
 const languageOptions = [
   { value: 'ko' as const, label: '한국어' },
@@ -775,9 +779,9 @@ async function saveDefaults() {
   isSavingDefaults.value = true
   try {
     await settingsApi.updateDefaults(defaultsForm)
-    notify.success('기본 설정이 저장되었습니다.')
+    notify.success(t('settings.defaults.saveSuccess'))
   } catch {
-    notify.error('기본 설정 저장에 실패했습니다. 다시 시도해주세요.')
+    notify.error(t('settings.defaults.saveError'))
   } finally {
     isSavingDefaults.value = false
   }
@@ -799,16 +803,20 @@ const formattedCreatedAt = computed(() => {
   const dateStr = authStore.user?.createdAt
   if (!dateStr) return '-'
   const date = new Date(dateStr)
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
+  return date.toLocaleDateString(currentLocale.value === 'ko' ? 'ko-KR' : 'en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
 })
 
 async function handleDeleteAccount() {
   try {
     await authApi.deleteAccount()
-    notify.success('회원 탈퇴가 완료되었습니다.')
+    notify.success(t('settings.account.deleteSuccess'))
     authStore.logout()
   } catch {
-    notify.error('회원 탈퇴에 실패했습니다. 다시 시도해주세요.')
+    notify.error(t('settings.account.deleteError'))
   }
 }
 

@@ -2,7 +2,10 @@
   <div>
     <!-- Header with period selector -->
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.title') }}</h1>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $t('analyticsView.description') }}</p>
+      </div>
       <div class="flex flex-col gap-2 mobile:flex-row">
         <div class="flex gap-2">
           <button
@@ -37,7 +40,7 @@
       </div>
     </div>
 
-    <PageGuide :title="$t('analyticsView.title')" :items="($tm('analyticsView.pageGuide') as string[])" />
+    <PageGuide :title="$t('analyticsView.pageGuideTitle')" :items="($tm('analyticsView.pageGuide') as string[])" />
 
     <!-- Sub-tab Navigation -->
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
@@ -149,7 +152,7 @@
         <div v-for="video in analyticsStore.crossPlatformData.videos" :key="video.videoId" class="card">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-              {{ video.videoTitle || `영상 #${video.videoId}` }}
+              {{ video.videoTitle || `${$t('analyticsView.videoPrefix')} #${video.videoId}` }}
             </h3>
             <span
               v-if="video.bestPlatform"
@@ -487,17 +490,17 @@
 
       <!-- Top 10 Videos Table -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900">{{ $t('analyticsView.topVideos') }}</h2>
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.topVideos') }}</h2>
         <div class="overflow-x-auto">
           <table v-if="topVideos.length > 0" class="w-full text-left text-sm">
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
                 <th class="whitespace-nowrap px-3 py-3 font-medium">#</th>
-                <th class="whitespace-nowrap px-3 py-3 font-medium">영상</th>
-                <th class="whitespace-nowrap px-3 py-3 font-medium text-right">조회수</th>
-                <th class="whitespace-nowrap px-3 py-3 font-medium text-right">좋아요</th>
-                <th class="hidden whitespace-nowrap px-3 py-3 font-medium tablet:table-cell">게시일</th>
-                <th class="hidden whitespace-nowrap px-3 py-3 font-medium tablet:table-cell">플랫폼</th>
+                <th class="whitespace-nowrap px-3 py-3 font-medium">{{ $t('analyticsView.table.video') }}</th>
+                <th class="whitespace-nowrap px-3 py-3 font-medium text-right">{{ $t('analyticsView.table.views') }}</th>
+                <th class="whitespace-nowrap px-3 py-3 font-medium text-right">{{ $t('analyticsView.table.likes') }}</th>
+                <th class="hidden whitespace-nowrap px-3 py-3 font-medium tablet:table-cell">{{ $t('analyticsView.table.publishedAt') }}</th>
+                <th class="hidden whitespace-nowrap px-3 py-3 font-medium tablet:table-cell">{{ $t('analyticsView.table.platform') }}</th>
                 <th class="hidden whitespace-nowrap px-3 py-3 font-medium tablet:table-cell"></th>
               </tr>
             </thead>
@@ -581,7 +584,7 @@
 
       <!-- Upload Time Analysis Heatmap -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900">{{ $t('analyticsView.uploadTimeAnalysis') }}</h2>
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.uploadTimeAnalysis') }}</h2>
         <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ $t('analyticsView.uploadTimeHint') }}</p>
         <div class="overflow-x-auto">
           <div class="min-w-[640px]">
@@ -616,7 +619,7 @@
                     :style="{
                       backgroundColor: heatmapCellColor(dayIndex, hour - 1),
                     }"
-                    :title="`${dayLabel} ${hour - 1}시: ${heatmapCellValue(dayIndex, hour - 1).toLocaleString()} 조회`"
+                    :title="`${dayLabel} ${hour - 1}${$t('analyticsView.hourSuffix')}: ${heatmapCellValue(dayIndex, hour - 1).toLocaleString()} ${$t('analyticsView.viewsSuffix')}`"
                   />
                 </div>
               </div>
@@ -658,7 +661,7 @@
             <SparklesIcon class="h-5 w-5 text-purple-500" />
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.aiInsight') }}</h2>
           </div>
-          <span class="text-xs text-gray-400 dark:text-gray-500">잔여 크레딧: {{ kpi?.creditBalance ?? balance }}</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{ $t('analyticsView.remainingCredits') }}: {{ kpi?.creditBalance ?? balance }}</span>
         </div>
 
         <div class="mt-4">
@@ -696,7 +699,7 @@
               <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300" v-html="sanitizedMarkdown" />
             </div>
             <div class="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-              <span>사용 크레딧: {{ aiReport.creditsUsed }} / 잔여: {{ aiReport.creditsRemaining }}</span>
+              <span>{{ $t('analyticsView.creditsUsed') }}: {{ aiReport.creditsUsed }} / {{ $t('analyticsView.remainingCredits') }}: {{ aiReport.creditsRemaining }}</span>
               <div class="flex items-center gap-3">
                 <button
                   class="inline-flex items-center gap-1 font-medium text-purple-600 hover:text-purple-800"
@@ -808,11 +811,11 @@ const {
 const { setPeriod } = analyticsStore
 
 // ----- Period Selector -----
-const periods = [
-  { value: '7d' as const, label: '7일' },
-  { value: '30d' as const, label: '30일' },
-  { value: '90d' as const, label: '90일' },
-]
+const periods = computed(() => [
+  { value: '7d' as const, label: t('analyticsView.period.7d') },
+  { value: '30d' as const, label: t('analyticsView.period.30d') },
+  { value: '90d' as const, label: t('analyticsView.period.90d') },
+])
 
 // ----- KPI Estimated Revenue -----
 // CPM-based rough estimation: totalViews / 1000 * average CPM (KRW)
@@ -999,7 +1002,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 // ----- Heatmap -----
-const dayLabels = ['월', '화', '수', '목', '금', '토', '일']
+const dayLabels = computed(() => (t('analyticsView.dayLabels') as string).split(','))
 
 const heatmapLookup = computed(() => {
   const map = new Map<string, number>()
@@ -1207,12 +1210,12 @@ const exportData = computed<ExportDataRow[]>(() => {
 })
 
 const exportColumns = computed<ColumnDefinition<Record<string, unknown>>[]>(() => [
-  { key: 'date', header: '날짜', formatter: (val) => formatDateOnlyForExport(val as string) },
-  { key: 'youtube', header: 'YouTube 조회수' },
-  { key: 'tiktok', header: 'TikTok 조회수' },
-  { key: 'instagram', header: 'Instagram 조회수' },
-  { key: 'naverClip', header: 'Naver Clip 조회수' },
-  { key: 'total', header: '총 조회수' },
+  { key: 'date', header: t('analyticsView.export.date'), formatter: (val) => formatDateOnlyForExport(val as string) },
+  { key: 'youtube', header: t('analyticsView.export.youtubeViews') },
+  { key: 'tiktok', header: t('analyticsView.export.tiktokViews') },
+  { key: 'instagram', header: t('analyticsView.export.instagramViews') },
+  { key: 'naverClip', header: t('analyticsView.export.naverClipViews') },
+  { key: 'total', header: t('analyticsView.export.totalViews') },
 ])
 
 const exportFilename = computed(() => {

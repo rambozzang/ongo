@@ -2,20 +2,21 @@
   <div ref="pageContainerRef" class="relative" :class="{ 'overflow-hidden': isMobile }">
     <!-- Header -->
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">영상 관리</h1>
-      <router-link to="/upload" class="btn-primary inline-flex items-center gap-2">
-        <PlusIcon class="h-5 w-5" />
-        새 영상 업로드
-      </router-link>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('videos.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('videos.description') }}
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <router-link to="/upload" class="btn-primary inline-flex items-center gap-2">
+          <PlusIcon class="h-5 w-5" />
+          {{ $t('videos.uploadNew') }}
+        </router-link>
+      </div>
     </div>
 
-    <PageGuide title="영상 관리" :items="[
-      '제목·태그 검색과 플랫폼(YT/TT/IG/NV)·상태(게시/예약/임시)·날짜 필터로 원하는 영상을 빠르게 찾으세요',
-      '그리드/리스트 뷰를 전환하고, 조회수순·좋아요순·최신순으로 정렬할 수 있습니다',
-      '선택 모드를 켜면 여러 영상을 체크하여 일괄 삭제·게시·카테고리 변경·AI 배치 처리가 가능합니다',
-      '즐겨찾기 필터로 중요 영상만 모아보고, 영상 카드의 우클릭 메뉴에서 수정·재활용·재업로드·삭제를 실행하세요',
-      '내보내기 버튼으로 영상 목록을 CSV/Excel로 다운로드할 수 있습니다',
-    ]" />
+    <PageGuide :title="$t('videos.pageGuideTitle')" :items="($tm('videos.pageGuide') as string[])" />
 
     <!-- Toolbar: Search + Filters + Sort + View Toggle -->
     <div class="card mb-6 space-y-4">
@@ -30,8 +31,8 @@
           <input
             v-model="searchKeyword"
             type="text"
-            placeholder="제목 또는 태그 검색..."
-            aria-label="영상 검색"
+            :placeholder="$t('videos.searchPlaceholder')"
+            :aria-label="$t('videos.searchLabel')"
             class="input w-full pl-10"
             @input="onSearchInput"
           />
@@ -48,9 +49,9 @@
         <div class="flex items-center gap-3">
           <!-- Sort -->
           <select v-model="sortField" class="input text-sm" @change="onSortChange">
-            <option value="createdAt">최신순</option>
-            <option value="views">조회수순</option>
-            <option value="likes">좋아요순</option>
+            <option value="createdAt">{{ $t('videos.sortLatest') }}</option>
+            <option value="views">{{ $t('videos.sortViews') }}</option>
+            <option value="likes">{{ $t('videos.sortLikes') }}</option>
           </select>
 
           <!-- Export Button -->
@@ -71,13 +72,13 @@
             "
             @click="toggleSelectionMode"
             :aria-pressed="selectionMode"
-            aria-label="선택 모드"
+            :aria-label="$t('videos.selectionMode')"
           >
             <CheckIcon class="h-5 w-5" />
           </button>
 
           <!-- View Mode Toggle -->
-          <div class="flex rounded-lg border border-gray-300 dark:border-gray-600" role="group" aria-label="보기 모드">
+          <div class="flex rounded-lg border border-gray-300 dark:border-gray-600" role="group" :aria-label="$t('videos.viewMode')">
             <button
               class="rounded-l-lg px-3 py-2 text-sm"
               :class="
@@ -87,7 +88,7 @@
               "
               @click="viewMode = 'grid'"
               :aria-pressed="viewMode === 'grid'"
-              aria-label="그리드 보기"
+              :aria-label="$t('videos.gridView')"
             >
               <Squares2X2Icon class="h-5 w-5" />
             </button>
@@ -100,7 +101,7 @@
               "
               @click="viewMode = 'list'"
               :aria-pressed="viewMode === 'list'"
-              aria-label="리스트 보기"
+              :aria-label="$t('videos.listView')"
             >
               <ListBulletIcon class="h-5 w-5" />
             </button>
@@ -120,17 +121,17 @@
           "
           @click="filterFavoritesOnly = !filterFavoritesOnly"
           :aria-pressed="filterFavoritesOnly"
-          aria-label="즐겨찾기 필터"
+          :aria-label="$t('videos.favoritesFilter')"
         >
           <StarIcon v-if="!filterFavoritesOnly" class="h-3.5 w-3.5" />
           <StarIconSolid v-else class="h-3.5 w-3.5" />
-          즐겨찾기
+          {{ $t('videos.favorites') }}
         </button>
 
         <!-- Platform Filter -->
         <div class="flex items-center gap-1">
           <FunnelIcon class="h-4 w-4 text-gray-400" aria-hidden="true" />
-          <div class="flex rounded-lg border border-gray-200 dark:border-gray-700" role="group" aria-label="플랫폼 필터">
+          <div class="flex rounded-lg border border-gray-200 dark:border-gray-700" role="group" :aria-label="$t('videos.platformFilter')">
             <button
               v-for="pf in platformOptions"
               :key="pf.value ?? 'all'"
@@ -189,7 +190,7 @@
           @click="clearFilters"
         >
           <XMarkIcon class="h-3.5 w-3.5" />
-          필터 초기화
+          {{ $t('videos.clearFilters') }}
         </button>
       </div>
 
@@ -201,17 +202,17 @@
     <!-- Empty State -->
     <EmptyState
       v-else-if="!displayedVideos || displayedVideos.content.length === 0"
-      :title="hasActiveFilters ? '필터 조건에 맞는 영상이 없습니다' : '아직 영상이 없어요'"
-      :description="hasActiveFilters ? '필터를 변경하거나 초기화해 보세요.' : '첫 영상을 업로드하고 YouTube, TikTok, Instagram, Naver Clip에 한 번에 게시해보세요.'"
+      :title="hasActiveFilters ? $t('videos.emptyFilterTitle') : $t('videos.emptyTitle')"
+      :description="hasActiveFilters ? $t('videos.emptyFilterDescription') : $t('videos.emptyDescription')"
       :icon="FilmIcon"
-      :action-label="hasActiveFilters ? undefined : '첫 영상 업로드하기'"
+      :action-label="hasActiveFilters ? undefined : $t('videos.firstUpload')"
       :action-to="hasActiveFilters ? undefined : '/upload'"
-      secondary-action-label="업로드 가이드 보기"
+      :secondary-action-label="$t('videos.uploadGuide')"
       :secondary-action-to="hasActiveFilters ? undefined : '/settings'"
     >
       <template v-if="hasActiveFilters" #action>
         <button class="btn-secondary" @click="clearFilters">
-          필터 초기화
+          {{ $t('videos.clearFilters') }}
         </button>
       </template>
     </EmptyState>
@@ -244,10 +245,10 @@
           @change="toggleSelectAll"
         />
         <span class="text-sm text-gray-500 dark:text-gray-400">
-          전체 선택 ({{ displayedVideos.content.length }}개)
+          {{ $t('videos.selectAll', { count: displayedVideos.content.length }) }}
         </span>
         <span class="ml-auto text-sm text-gray-400 dark:text-gray-500">
-          총 {{ formatNumber(displayedVideos.totalElements) }}개 영상
+          {{ $t('videos.totalVideos', { count: formatNumber(displayedVideos.totalElements) }) }}
         </span>
       </div>
 
@@ -365,11 +366,11 @@
                     @change="toggleSelectAll"
                   />
                 </th>
-                <th class="px-4 py-3">영상</th>
-                <th class="px-4 py-3">플랫폼</th>
-                <th class="px-4 py-3">조회수</th>
-                <th class="px-4 py-3">좋아요</th>
-                <th class="px-4 py-3">게시일</th>
+                <th class="px-4 py-3">{{ $t('videos.tableVideo') }}</th>
+                <th class="px-4 py-3">{{ $t('videos.tablePlatform') }}</th>
+                <th class="px-4 py-3">{{ $t('videos.tableViews') }}</th>
+                <th class="px-4 py-3">{{ $t('videos.tableLikes') }}</th>
+                <th class="px-4 py-3">{{ $t('videos.tableDate') }}</th>
                 <th class="w-10 px-4 py-3"></th>
               </tr>
             </thead>
@@ -473,7 +474,7 @@
           v-else-if="!hasMoreItems && paginatedVideos.length > 0"
           class="text-sm text-gray-400 dark:text-gray-500"
         >
-          더 이상 영상이 없습니다
+          {{ $t('videos.noMoreVideos') }}
         </p>
       </div>
     </template>
@@ -498,21 +499,21 @@
           @click="goToDetail(contextMenu.video!.id)"
         >
           <EyeIcon class="h-4 w-4" />
-          상세 보기
+          {{ $t('videos.contextView') }}
         </button>
         <button
           class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
           @click="handleEdit(contextMenu.video!.id)"
         >
           <PencilSquareIcon class="h-4 w-4" />
-          수정
+          {{ $t('videos.contextEdit') }}
         </button>
         <button
           class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
           @click="handleRecycle(contextMenu.video!)"
         >
           <ArrowPathRoundedSquareIcon class="h-4 w-4" />
-          재활용
+          {{ $t('videos.contextRecycle') }}
         </button>
         <button
           v-if="contextMenu.video?.status === 'FAILED'"
@@ -520,7 +521,7 @@
           @click="handleReupload(contextMenu.video!)"
         >
           <ArrowPathIcon class="h-4 w-4" />
-          재업로드
+          {{ $t('videos.contextReupload') }}
         </button>
         <hr class="my-1 border-gray-100 dark:border-gray-700" />
         <button
@@ -528,7 +529,7 @@
           @click="handleSingleDelete(contextMenu.video!)"
         >
           <TrashIcon class="h-4 w-4" />
-          삭제
+          {{ $t('videos.contextDelete') }}
         </button>
       </div>
     </Teleport>
@@ -536,9 +537,9 @@
     <!-- Delete Confirmation Modal -->
     <ConfirmModal
       v-model="showDeleteModal"
-      title="영상 삭제"
+      :title="$t('videos.deleteTitle')"
       :message="deleteMessage"
-      confirm-text="삭제"
+      :confirm-text="$t('videos.deleteConfirm')"
       :danger="true"
       @confirm="handleConfirmDelete"
     />
@@ -566,9 +567,9 @@
     <!-- AI Batch Confirm Modal -->
     <ConfirmModal
       v-model="showBatchConfirm"
-      title="AI 배치 처리 시작"
+      :title="$t('videos.batchTitle')"
       :message="batchConfirmMessage"
-      confirm-text="시작"
+      :confirm-text="$t('videos.batchStart')"
       @confirm="handleStartBatch"
     />
 
@@ -634,9 +635,11 @@ import ScrollToTop from '@/components/common/ScrollToTop.vue'
 import BatchProgressPanel from '@/components/ai/BatchProgressPanel.vue'
 import { aiApi } from '@/api/ai'
 import PageGuide from '@/components/common/PageGuide.vue'
+import { useI18n } from 'vue-i18n'
 import { BATCH_OPERATIONS } from '@/types/ai'
 import type { AiBatchOperation, AiBatchResponse } from '@/types/ai'
 
+const { t } = useI18n()
 const router = useRouter()
 const videoStore = useVideoStore()
 const favoritesStore = useFavoritesStore()
@@ -710,20 +713,20 @@ const filterStartDate = ref('')
 const filterEndDate = ref('')
 const filterFavoritesOnly = ref(false)
 
-const platformOptions: { label: string; value: Platform | undefined }[] = [
-  { label: '전체', value: undefined },
+const platformOptions = computed<{ label: string; value: Platform | undefined }[]>(() => [
+  { label: t('videos.filterAll'), value: undefined },
   { label: 'YT', value: 'YOUTUBE' },
   { label: 'TT', value: 'TIKTOK' },
   { label: 'IG', value: 'INSTAGRAM' },
   { label: 'NV', value: 'NAVER_CLIP' },
-]
+])
 
-const statusOptions: { label: string; value: UploadStatus | undefined }[] = [
-  { label: '전체', value: undefined },
-  { label: '게시', value: 'PUBLISHED' },
-  { label: '예약', value: 'REVIEW' },
-  { label: '임시', value: 'DRAFT' },
-]
+const statusOptions = computed<{ label: string; value: UploadStatus | undefined }[]>(() => [
+  { label: t('videos.filterAll'), value: undefined },
+  { label: t('videos.statusPublished'), value: 'PUBLISHED' },
+  { label: t('videos.statusScheduled'), value: 'REVIEW' },
+  { label: t('videos.statusDraft'), value: 'DRAFT' },
+])
 
 const hasActiveFilters = computed(() => {
   return (
@@ -947,7 +950,7 @@ const deleteTargetIds = ref<number[]>([])
 
 const deleteMessage = computed(() => {
   const count = deleteTargetIds.value.length
-  return `선택한 ${count}개의 영상을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`
+  return t('videos.deleteMessage', { count })
 })
 
 function handleSingleDelete(video: Video) {
@@ -1044,9 +1047,9 @@ async function handleBulkPublish() {
         videoApi.publish(id, { platforms: [] }),
       ),
     )
-    success(`${count}개 영상을 플랫폼에 게시합니다`)
+    success(t('videos.publishSuccess', { count }))
   } catch {
-    error('일부 영상 게시에 실패했습니다.')
+    error(t('videos.publishError'))
   }
   clearSelection()
 }
@@ -1059,10 +1062,10 @@ async function handleBulkChangeCategory(tags: string[]) {
         videoApi.update(id, { tags }),
       ),
     )
-    success(`${count}개 영상의 카테고리가 변경되었습니다: ${tags.join(', ')}`)
+    success(t('videos.categoryChangeSuccess', { count, tags: tags.join(', ') }))
     await videoStore.fetchVideos()
   } catch {
-    error('일부 영상 카테고리 변경에 실패했습니다.')
+    error(t('videos.categoryChangeError'))
   }
   clearSelection()
 }
@@ -1070,7 +1073,7 @@ async function handleBulkChangeCategory(tags: string[]) {
 function handleBulkExport() {
   const count = selectedIds.value.size
   // Export is a client-side operation (CSV download) — no API needed
-  success(`${count}개 영상을 내보냅니다`)
+  success(t('videos.exportSuccess', { count }))
   clearSelection()
 }
 
@@ -1101,12 +1104,12 @@ const exportData = computed<VideoExportData[]>(() => {
 })
 
 const exportColumns = computed<ColumnDefinition<Record<string, unknown>>[]>(() => [
-  { key: 'title', header: '제목' },
-  { key: 'status', header: '상태' },
-  { key: 'platforms', header: '플랫폼' },
-  { key: 'views', header: '조회수' },
-  { key: 'likes', header: '좋아요' },
-  { key: 'createdAt', header: '게시일', formatter: (val) => formatDateForExport(val as string) },
+  { key: 'title', header: t('videos.tableVideo') },
+  { key: 'status', header: t('videos.exportStatus') },
+  { key: 'platforms', header: t('videos.tablePlatform') },
+  { key: 'views', header: t('videos.tableViews') },
+  { key: 'likes', header: t('videos.tableLikes') },
+  { key: 'createdAt', header: t('videos.tableDate'), formatter: (val) => formatDateForExport(val as string) },
 ])
 
 const exportFilename = computed(() => {
@@ -1119,13 +1122,13 @@ const exportFilename = computed(() => {
 
 function getStatusLabel(status: UploadStatus): string {
   const statusLabels: Record<UploadStatus, string> = {
-    DRAFT: '임시저장',
-    UPLOADING: '업로드 중',
-    PROCESSING: '처리 중',
-    REVIEW: '검토 중',
-    PUBLISHED: '게시됨',
-    FAILED: '실패',
-    REJECTED: '거부됨',
+    DRAFT: t('videos.labelDraft'),
+    UPLOADING: t('videos.labelUploading'),
+    PROCESSING: t('videos.labelProcessing'),
+    REVIEW: t('videos.labelReview'),
+    PUBLISHED: t('videos.labelPublished'),
+    FAILED: t('videos.labelFailed'),
+    REJECTED: t('videos.labelRejected'),
   }
   return statusLabels[status] ?? status
 }
@@ -1138,7 +1141,7 @@ const activeBatchId = ref<string | null>(null)
 const batchConfirmMessage = computed(() => {
   const op = BATCH_OPERATIONS.find(o => o.key === batchOperation.value)
   const totalCost = (op?.creditCost ?? 0) * selectedIds.value.size
-  return `선택한 ${selectedIds.value.size}개 영상에 '${op?.label ?? batchOperation.value}' 작업을 실행합니다.\n예상 크레딧: ${totalCost}`
+  return t('videos.batchConfirmMessage', { count: selectedIds.value.size, operation: op?.label ?? batchOperation.value, cost: totalCost })
 })
 
 function handleAiBatchStart(operation: AiBatchOperation) {
@@ -1155,14 +1158,14 @@ async function handleStartBatch() {
     activeBatchId.value = response.batchId
     showBatchConfirm.value = false
     clearSelection()
-    success('AI 배치 처리가 시작되었습니다')
+    success(t('videos.batchStartSuccess'))
   } catch {
-    error('AI 배치 처리 시작에 실패했습니다')
+    error(t('videos.batchStartError'))
   }
 }
 
 function handleBatchCompleted(_batch: AiBatchResponse) {
-  success('AI 배치 처리가 완료되었습니다')
+  success(t('videos.batchCompleteSuccess'))
   videoStore.fetchVideos()
 }
 

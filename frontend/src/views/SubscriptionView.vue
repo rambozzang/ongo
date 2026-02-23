@@ -1,14 +1,18 @@
 <template>
-  <div>
-    <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-gray-100">구독 및 결제</h1>
+  <div class="relative">
+    <!-- Header -->
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {{ $t('subscription.title') }}
+        </h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('subscription.description') }}
+        </p>
+      </div>
+    </div>
 
-    <PageGuide title="구독 및 결제" :items="[
-      '현재 플랜 카드에서 플랜명·가격·상태·다음 결제일·업로드 한도를 확인하세요',
-      '변경 버튼으로 Free·Starter(9,900원)·Pro(19,900원)·Business(49,900원) 플랜을 비교하고 업그레이드하세요',
-      '사용량 통계의 진행 바에서 월간 업로드 횟수와 스토리지 사용량을 확인하세요 (빨간색은 한도 초과 임박)',
-      'AI 크레딧이 부족하면 크레딧 충전으로 추가 구매하세요. 무료 크레딧이 먼저 소진된 후 구매 크레딧이 사용됩니다',
-      '결제 내역에서 과거 청구서를 확인하고 다운로드할 수 있습니다',
-    ]" />
+    <PageGuide :title="$t('subscription.pageGuideTitle')" :items="($tm('subscription.pageGuide') as string[])" />
 
     <LoadingSpinner v-if="subscriptionStore.loading && !subscription" full-page />
 
@@ -18,7 +22,7 @@
         <div class="flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
           <div>
             <div class="mb-1 flex items-center gap-2">
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">현재 플랜</h2>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.currentPlan') }}</h2>
               <span
                 v-if="subscription"
                 class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -32,33 +36,33 @@
                 {{ currentPlanInfo?.name ?? subscription.planType }}
                 <span class="text-base font-normal text-gray-500 dark:text-gray-400">
                   {{ currentPlanInfo ? formatPrice(currentPlanInfo.price) : '' }}
-                  <template v-if="currentPlanInfo && currentPlanInfo.price > 0">/월</template>
+                  <template v-if="currentPlanInfo && currentPlanInfo.price > 0">{{ $t('subscription.perMonth') }}</template>
                 </span>
               </p>
               <p v-if="subscription.nextBillingDate" class="text-sm text-gray-500 dark:text-gray-400">
                 <CalendarIcon class="mr-1 inline h-4 w-4" />
-                다음 결제일: {{ formatDate(subscription.nextBillingDate) }}
+                {{ $t('subscription.nextBillingDate') }}: {{ formatDate(subscription.nextBillingDate) }}
               </p>
               <p v-if="currentPlanInfo" class="text-sm text-gray-500 dark:text-gray-400">
                 <ArrowUpTrayIcon class="mr-1 inline h-4 w-4" />
-                업로드:
-                <template v-if="currentPlanInfo.maxUploadsPerMonth === -1">무제한</template>
-                <template v-else>월 {{ currentPlanInfo.maxUploadsPerMonth }}회</template>
+                {{ $t('subscription.uploads') }}:
+                <template v-if="currentPlanInfo.maxUploadsPerMonth === -1">{{ $t('subscription.unlimited') }}</template>
+                <template v-else>{{ $t('subscription.uploadsPerMonth', { count: currentPlanInfo.maxUploadsPerMonth }) }}</template>
               </p>
             </div>
-            <p v-else class="text-sm text-gray-500 dark:text-gray-400">구독 정보를 불러올 수 없습니다.</p>
+            <p v-else class="text-sm text-gray-500 dark:text-gray-400">{{ $t('subscription.noSubscriptionInfo') }}</p>
           </div>
           <div v-if="subscription" class="flex gap-2">
             <button class="btn-primary" @click="showPlanComparison">
               <ArrowPathIcon class="mr-1.5 h-4 w-4" />
-              변경
+              {{ $t('subscription.changePlan') }}
             </button>
             <button
               v-if="subscription.status === 'ACTIVE' && subscription.planType !== 'FREE'"
               class="btn-danger"
               @click="showCancelModal = true"
             >
-              취소
+              {{ $t('subscription.cancelSubscription') }}
             </button>
           </div>
         </div>
@@ -66,20 +70,20 @@
 
       <!-- Section 2: Usage Statistics -->
       <div v-if="currentPlanInfo" class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">플랜 사용 현황</h2>
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.usageStatus') }}</h2>
 
         <div class="space-y-4">
           <!-- Monthly Uploads Usage -->
           <UsageProgressBar
-            label="월간 업로드"
+            :label="$t('subscription.monthlyUploads')"
             :current="usageData.uploadsThisMonth"
             :max="currentPlanInfo.maxUploadsPerMonth"
-            unit="회"
+            :unit="$t('subscription.unitTimes')"
           />
 
           <!-- Storage Usage -->
           <UsageProgressBar
-            label="저장 공간"
+            :label="$t('subscription.storage')"
             :current="formatStorageValue(usageData.storageUsedMb, currentPlanInfo.storageMb)"
             :max="formatStorageValue(currentPlanInfo.storageMb, currentPlanInfo.storageMb)"
             :unit="formatStorageUnit(currentPlanInfo.storageMb)"
@@ -87,10 +91,10 @@
 
           <!-- Connected Platforms -->
           <UsageProgressBar
-            label="연동 채널"
+            :label="$t('subscription.connectedChannels')"
             :current="connectedPlatformCount"
             :max="currentPlanInfo.maxPlatforms"
-            unit="개"
+            :unit="$t('subscription.unitCount')"
           />
         </div>
       </div>
@@ -100,11 +104,11 @@
         <div class="mb-4 flex items-center justify-between">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
             <SparklesIcon class="mr-1.5 inline h-5 w-5 text-primary-600" />
-            AI 크레딧
+            {{ $t('subscription.aiCredits') }}
           </h2>
           <button class="btn-primary" @click="showCreditModal = true">
             <PlusIcon class="mr-1.5 h-4 w-4" />
-            크레딧 충전
+            {{ $t('subscription.chargeCredits') }}
           </button>
         </div>
 
@@ -115,11 +119,11 @@
                 {{ creditStore.totalBalance.toLocaleString() }}
               </span>
               <span class="ml-1 text-sm text-gray-500 dark:text-gray-400">
-                / {{ creditBalance.freeMonthly.toLocaleString() }} (월 무료)
+                / {{ creditBalance.freeMonthly.toLocaleString() }} ({{ $t('subscription.monthlyFree') }})
               </span>
             </div>
             <span class="text-xs text-gray-400 dark:text-gray-500">
-              무료 크레딧 초기화: {{ formatDate(creditBalance.freeResetDate) }}
+              {{ $t('subscription.freeResetDate') }}: {{ formatDate(creditBalance.freeResetDate) }}
             </span>
           </div>
 
@@ -132,8 +136,8 @@
             />
           </div>
           <div class="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>무료 잔여: {{ creditBalance.freeRemaining.toLocaleString() }}</span>
-            <span>구매 잔여: {{ creditBalance.purchasedBalance.toLocaleString() }}</span>
+            <span>{{ $t('subscription.freeRemaining') }}: {{ creditBalance.freeRemaining.toLocaleString() }}</span>
+            <span>{{ $t('subscription.purchasedRemaining') }}: {{ creditBalance.purchasedBalance.toLocaleString() }}</span>
           </div>
 
           <!-- Low credit warning -->
@@ -142,27 +146,27 @@
             class="mt-3 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-400"
           >
             <ExclamationTriangleIcon class="h-4 w-4 flex-shrink-0" />
-            크레딧 잔여량이 부족합니다. 충전을 권장합니다.
+            {{ $t('subscription.lowCreditWarning') }}
           </div>
         </div>
         <div v-else class="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-          크레딧 정보를 불러올 수 없습니다.
+          {{ $t('subscription.noCreditInfo') }}
         </div>
       </div>
 
       <!-- Section 4: Credit Usage History Table -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">크레딧 사용 내역 (최근 30일)</h2>
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.creditHistory') }}</h2>
 
         <div class="overflow-x-auto">
           <table v-if="creditTransactions && creditTransactions.content.length > 0" class="w-full text-sm">
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <th class="px-4 py-3">날짜</th>
-                <th class="px-4 py-3">유형</th>
-                <th class="px-4 py-3">기능</th>
-                <th class="px-4 py-3 text-right">크레딧</th>
-                <th class="px-4 py-3 text-right">잔여</th>
+                <th class="px-4 py-3">{{ $t('subscription.table.date') }}</th>
+                <th class="px-4 py-3">{{ $t('subscription.table.type') }}</th>
+                <th class="px-4 py-3">{{ $t('subscription.table.feature') }}</th>
+                <th class="px-4 py-3 text-right">{{ $t('subscription.table.credits') }}</th>
+                <th class="px-4 py-3 text-right">{{ $t('subscription.table.remaining') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -195,7 +199,7 @@
             </tbody>
           </table>
           <div v-else class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            최근 30일간 크레딧 사용 내역이 없습니다.
+            {{ $t('subscription.noCreditHistory') }}
           </div>
         </div>
 
@@ -213,7 +217,7 @@
               :disabled="!creditTransactions.hasPrevious"
               @click="loadCreditTransactions(creditTransactions!.page - 1)"
             >
-              이전
+              {{ $t('action.previous') }}
             </button>
             <span class="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
               {{ creditTransactions.page + 1 }} / {{ creditTransactions.totalPages }}
@@ -223,7 +227,7 @@
               :disabled="!creditTransactions.hasNext"
               @click="loadCreditTransactions(creditTransactions!.page + 1)"
             >
-              다음
+              {{ $t('action.next') }}
             </button>
           </div>
         </div>
@@ -231,7 +235,7 @@
 
       <!-- Section 5: Plan Comparison Table -->
       <div id="plan-comparison" class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">플랜 비교</h2>
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.planComparison') }}</h2>
 
         <PlanComparisonTable
           :current-plan="subscription?.planType"
@@ -241,18 +245,18 @@
 
       <!-- Section 6: Payment History -->
       <div class="card">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">결제 내역</h2>
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.paymentHistory') }}</h2>
 
         <div class="overflow-x-auto">
           <table v-if="paymentList && paymentList.content.length > 0" class="w-full text-sm">
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <th class="px-4 py-3">날짜</th>
-                <th class="px-4 py-3">항목</th>
-                <th class="px-4 py-3">설명</th>
-                <th class="px-4 py-3 text-right">금액</th>
-                <th class="px-4 py-3 text-center">상태</th>
-                <th class="px-4 py-3 text-center">영수증</th>
+                <th class="px-4 py-3">{{ $t('subscription.table.date') }}</th>
+                <th class="px-4 py-3">{{ $t('subscription.table.item') }}</th>
+                <th class="px-4 py-3">{{ $t('subscription.table.description') }}</th>
+                <th class="px-4 py-3 text-right">{{ $t('subscription.table.amount') }}</th>
+                <th class="px-4 py-3 text-center">{{ $t('subscription.table.status') }}</th>
+                <th class="px-4 py-3 text-center">{{ $t('subscription.table.receipt') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -269,7 +273,7 @@
                     class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                     :class="payment.type === 'SUBSCRIPTION' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'"
                   >
-                    {{ payment.type === 'SUBSCRIPTION' ? '구독' : '크레딧' }}
+                    {{ payment.type === 'SUBSCRIPTION' ? $t('subscription.typeSubscription') : $t('subscription.typeCredit') }}
                   </span>
                 </td>
                 <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
@@ -302,7 +306,7 @@
             </tbody>
           </table>
           <div v-else class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            결제 내역이 없습니다.
+            {{ $t('subscription.noPaymentHistory') }}
           </div>
         </div>
 
@@ -320,7 +324,7 @@
               :disabled="!paymentList.hasPrevious"
               @click="loadPayments(paymentList!.page - 1)"
             >
-              이전
+              {{ $t('action.previous') }}
             </button>
             <span class="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
               {{ paymentList.page + 1 }} / {{ paymentList.totalPages }}
@@ -330,7 +334,7 @@
               :disabled="!paymentList.hasNext"
               @click="loadPayments(paymentList!.page + 1)"
             >
-              다음
+              {{ $t('action.next') }}
             </button>
           </div>
         </div>

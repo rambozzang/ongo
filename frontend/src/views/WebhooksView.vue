@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   PlusIcon,
   LinkIcon,
@@ -17,6 +18,8 @@ import WebhookFormModal from '@/components/webhooks/WebhookFormModal.vue'
 import WebhookDeliveryLog from '@/components/webhooks/WebhookDeliveryLog.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import type { Webhook, WebhookEvent } from '@/types/webhook'
+
+const { t } = useI18n({ useScope: 'global' })
 
 // --- Store & composables ---
 const webhookStore = useWebhookStore()
@@ -40,7 +43,7 @@ const summaryStats = computed(() => ({
 
 const deleteMessage = computed(() => {
   if (!deletingWebhook.value) return ''
-  return `"${deletingWebhook.value.url}" 웹훅을 삭제하시겠습니까?\n\n삭제 후에는 이벤트가 더 이상 전달되지 않습니다.`
+  return t('webhooks.confirmDelete', { url: deletingWebhook.value.url })
 })
 
 // --- Actions ---
@@ -62,26 +65,26 @@ function handleDeletePrompt(webhook: Webhook) {
 function handleDelete() {
   if (!deletingWebhook.value) return
   webhookStore.deleteWebhook(deletingWebhook.value.id)
-  notification.success('웹훅이 삭제되었습니다.')
+  notification.success(t('webhooks.notify.deleted'))
   deletingWebhook.value = null
 }
 
 function handleToggle(webhook: Webhook) {
   webhookStore.toggleActive(webhook.id)
-  const status = !webhook.isActive ? '활성화' : '비활성화'
-  notification.success(`웹훅이 ${status}되었습니다.`)
+  const status = !webhook.isActive ? t('webhooks.notify.activated') : t('webhooks.notify.deactivated')
+  notification.success(status)
 }
 
 async function handleTest(webhook: Webhook) {
   try {
     const delivery = await webhookStore.testWebhook(webhook.id)
     if (delivery.statusCode >= 200 && delivery.statusCode < 300) {
-      notification.success(`테스트 전송 성공 (${delivery.statusCode}, ${delivery.duration}ms)`)
+      notification.success(t('webhooks.notify.testSuccess', { code: delivery.statusCode, duration: delivery.duration }))
     } else {
-      notification.error(`테스트 전송 실패 (${delivery.statusCode})`)
+      notification.error(t('webhooks.notify.testFailed', { code: delivery.statusCode }))
     }
   } catch {
-    notification.error('테스트 전송 중 오류가 발생했습니다.')
+    notification.error(t('webhooks.notify.testError'))
   }
 }
 
@@ -96,19 +99,19 @@ function handleSave(data: { url: string; events: WebhookEvent[]; secret?: string
       url: data.url,
       events: data.events,
     })
-    notification.success('웹훅이 수정되었습니다.')
+    notification.success(t('webhooks.notify.updated'))
   } else {
     webhookStore.createWebhook(data)
-    notification.success('새 웹훅이 추가되었습니다.')
+    notification.success(t('webhooks.notify.created'))
   }
 }
 
 function handleRegenerateSecret(webhookId: number) {
   try {
     webhookStore.regenerateSecret(webhookId)
-    notification.success('시크릿 키가 재생성되었습니다.')
+    notification.success(t('webhooks.notify.secretRegenerated'))
   } catch {
-    notification.error('시크릿 키 재생성에 실패했습니다.')
+    notification.error(t('webhooks.notify.secretRegenerateFailed'))
   }
 }
 
@@ -124,12 +127,12 @@ async function handleRetry(webhookId: number, deliveryId: number) {
   try {
     const delivery = await webhookStore.retryDelivery(webhookId, deliveryId)
     if (delivery.statusCode >= 200 && delivery.statusCode < 300) {
-      notification.success(`재시도 성공 (${delivery.statusCode})`)
+      notification.success(t('webhooks.notify.retrySuccess', { code: delivery.statusCode }))
     } else {
-      notification.error(`재시도 실패 (${delivery.statusCode})`)
+      notification.error(t('webhooks.notify.retryFailed', { code: delivery.statusCode }))
     }
   } catch {
-    notification.error('재시도 중 오류가 발생했습니다.')
+    notification.error(t('webhooks.notify.retryError'))
   }
 }
 
@@ -141,41 +144,37 @@ function handleCloseDeliveryLog() {
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex items-start justify-between">
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">웹훅 관리</h1>
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          외부 서비스에 실시간 이벤트를 전달합니다
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('webhooks.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('webhooks.description') }}
         </p>
       </div>
-      <button
-        class="btn-primary inline-flex items-center gap-2"
-        @click="handleCreate"
-      >
-        <PlusIcon class="h-5 w-5" />
-        새 웹훅
-      </button>
+      <div class="flex items-center gap-3">
+        <button
+          class="btn-primary inline-flex items-center gap-2"
+          @click="handleCreate"
+        >
+          <PlusIcon class="h-5 w-5" />
+          {{ $t('webhooks.newWebhook') }}
+        </button>
+      </div>
     </div>
 
-    <PageGuide title="웹훅" :items="[
-      '새 웹훅 버튼으로 외부 서비스에 연결할 엔드포인트 URL을 등록하세요',
-      '웹훅 생성/수정 시 수신할 이벤트(업로드·게시·예약 실행·댓글 등)를 선택하고, 재시도 정책을 설정하세요',
-      '상단 요약에서 전체 웹훅 수·활성 수·실패 수를 확인하세요',
-      '각 웹훅 카드에서 활성/비활성 토글로 전송을 제어하고, 테스트 버튼으로 연결 상태를 검증하세요',
-      '전송 로그에서 요청/응답 상세(상태 코드·소요 시간)를 확인하여 문제를 디버깅하세요',
-    ]" />
+    <PageGuide :title="$t('webhooks.pageGuideTitle')" :items="($tm('webhooks.pageGuide') as string[])" />
 
     <!-- Empty State -->
     <EmptyState
       v-if="webhooks.length === 0"
-      title="등록된 웹훅이 없어요"
-      description="웹훅을 추가하면 영상 업로드, 게시, 예약 실행 등의 이벤트를 외부 서비스에 실시간으로 전달할 수 있어요."
+      :title="$t('webhooks.emptyTitle')"
+      :description="$t('webhooks.emptyDescription')"
       :icon="LinkIcon"
     >
       <template #action>
         <button class="btn-primary inline-flex items-center gap-2" @click="handleCreate">
           <PlusIcon class="h-5 w-5" />
-          첫 번째 웹훅 추가하기
+          {{ $t('webhooks.addFirst') }}
         </button>
       </template>
     </EmptyState>
@@ -187,7 +186,7 @@ function handleCloseDeliveryLog() {
         <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">전체 웹훅</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.total') }}</p>
               <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {{ summaryStats.total }}
               </p>
@@ -200,7 +199,7 @@ function handleCloseDeliveryLog() {
         <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">활성 상태</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.active') }}</p>
               <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
                 {{ summaryStats.active }}
               </p>
@@ -213,7 +212,7 @@ function handleCloseDeliveryLog() {
         <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">오류 발생</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.errors') }}</p>
               <p
                 class="mt-1 text-2xl font-bold"
                 :class="
@@ -276,17 +275,15 @@ function handleCloseDeliveryLog() {
         <div class="flex items-start gap-3">
           <BoltIcon class="mt-0.5 h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
           <div>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">웹훅 연동 가이드</p>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('webhooks.integrationGuide') }}</p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              웹훅 페이로드는 JSON 형식으로 전달되며, <code class="rounded bg-gray-200 px-1 py-0.5 dark:bg-gray-700">X-Webhook-Signature</code> 헤더를 통해
-              서명을 검증할 수 있습니다. 자세한 내용은
+              {{ $t('webhooks.integrationDescription') }}
               <a
                 href="/api/docs#webhooks"
                 class="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
               >
-                API 문서
+                {{ $t('webhooks.apiDocs') }}
               </a>
-              를 참고하세요.
             </p>
           </div>
         </div>
@@ -305,9 +302,9 @@ function handleCloseDeliveryLog() {
     <!-- Delete Confirmation Modal -->
     <ConfirmModal
       v-model="showDeleteModal"
-      title="웹훅 삭제"
+      :title="$t('webhooks.deleteTitle')"
       :message="deleteMessage"
-      confirm-text="삭제"
+      :confirm-text="$t('webhooks.deleteConfirm')"
       :danger="true"
       @confirm="handleDelete"
     />

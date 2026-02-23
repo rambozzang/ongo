@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { PlusIcon, BoltIcon } from '@heroicons/vue/24/outline'
 import { useAutomationStore } from '@/stores/automation'
 import { useNotification } from '@/composables/useNotification'
@@ -16,6 +17,7 @@ import { automationApi } from '@/api/automation'
 import apiClient, { unwrapResponse } from '@/api/client'
 import type { ResData } from '@/types/api'
 
+const { t } = useI18n()
 const automationStore = useAutomationStore()
 const notification = useNotification()
 
@@ -60,7 +62,7 @@ const handleSave = (rule: Omit<AutomationRule, 'id' | 'createdAt' | 'updatedAt' 
 }
 
 const handleDelete = (id: number) => {
-  if (confirm('이 규칙을 삭제하시겠습니까?')) {
+  if (confirm(t('automation.confirmDeleteRule'))) {
     automationStore.deleteRule(id)
   }
 }
@@ -180,7 +182,7 @@ async function handleWorkflowToggle(id: number) {
 }
 
 async function handleWorkflowDelete(id: number) {
-  if (!confirm('이 워크플로우를 삭제하시겠습니까?')) return
+  if (!confirm(t('automation.confirmDeleteWorkflow'))) return
   try {
     await automationApi.deleteWorkflow(id)
     await fetchWorkflows()
@@ -201,44 +203,33 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="relative">
       <!-- Header -->
-      <div class="mb-8">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="flex items-center gap-3 mb-2">
-              <BoltIcon class="w-8 h-8 text-blue-600 dark:text-blue-400" />
-              <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                자동화 규칙
-              </h1>
-            </div>
-            <p class="text-gray-600 dark:text-gray-400">
-              반복 작업을 자동화하여 효율적으로 관리하세요
-            </p>
-            <div class="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">
-              <span class="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
-              활성 규칙 {{ activeRuleCount }}개
-            </div>
+      <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {{ $t('automation.title') }}
+          </h1>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {{ $t('automation.description') }}
+          </p>
+          <div class="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">
+            <span class="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+            {{ $t('automation.activeRules', { count: activeRuleCount }) }}
           </div>
-
+        </div>
+        <div class="flex items-center gap-3">
           <button
             @click="openCreateModal"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            class="btn-primary inline-flex items-center gap-2"
           >
             <PlusIcon class="w-5 h-5" />
-            새 규칙
+            {{ $t('automation.newRule') }}
           </button>
         </div>
       </div>
 
-      <PageGuide title="자동화" :items="[
-        '규칙 탭에서 새 규칙 버튼으로 트리거(조건)와 액션(실행)을 조합한 자동화를 생성하세요',
-        '각 규칙 카드에서 활성/비활성 토글로 규칙을 제어하고, 실행 횟수와 마지막 실행 시간을 확인하세요',
-        '워크플로우 탭에서 노드 기반 비주얼 에디터로 복잡한 자동화 흐름(트리거→조건→액션)을 설계하세요',
-        '스마트 템플릿에서 자주 사용되는 자동화 패턴을 선택하여 빠르게 시작할 수 있습니다',
-        '로그 탭에서 자동화 실행 이력을 확인하고, 실패한 항목의 원인을 파악하세요',
-      ]" />
+      <PageGuide :title="$t('automation.pageGuideTitle')" :items="($tm('automation.pageGuide') as string[])" />
 
       <!-- Tabs -->
       <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
@@ -252,7 +243,7 @@ onUnmounted(() => {
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
             ]"
           >
-            규칙 목록
+            {{ $t('automation.tabRules') }}
             <span
               :class="[
                 'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
@@ -274,7 +265,7 @@ onUnmounted(() => {
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
             ]"
           >
-            워크플로우
+            {{ $t('automation.tabWorkflows') }}
             <span
               :class="[
                 'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
@@ -296,7 +287,7 @@ onUnmounted(() => {
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
             ]"
           >
-            실행 로그
+            {{ $t('automation.tabLogs') }}
             <span
               :class="[
                 'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
@@ -338,18 +329,18 @@ onUnmounted(() => {
           class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
         >
           <BoltIcon class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            자동화 규칙이 없습니다
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            {{ $t('automation.emptyRulesTitle') }}
           </h3>
           <p class="text-gray-600 dark:text-gray-400 mb-6">
-            첫 번째 자동화 규칙을 만들어 작업을 효율화하세요
+            {{ $t('automation.emptyRulesDesc') }}
           </p>
           <button
             @click="openCreateModal"
-            class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            class="btn-primary inline-flex items-center gap-2"
           >
             <PlusIcon class="w-5 h-5" />
-            첫 규칙 만들기
+            {{ $t('automation.createFirstRule') }}
           </button>
         </div>
       </div>
@@ -360,7 +351,7 @@ onUnmounted(() => {
         <div v-if="showWorkflowEditor" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {{ editingWorkflow ? '워크플로우 수정' : '새 워크플로우' }}
+              {{ editingWorkflow ? $t('automation.editWorkflow') : $t('automation.newWorkflow') }}
             </h2>
             <button
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -384,14 +375,14 @@ onUnmounted(() => {
         <div v-else>
           <div class="flex items-center justify-between mb-4">
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              조건 분기와 다중 액션을 포함한 고급 자동화 워크플로우
+              {{ $t('automation.workflowSubtitle') }}
             </p>
             <button
               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               @click="openWorkflowEditor()"
             >
               <PlusIcon class="w-4 h-4" />
-              새 워크플로우
+              {{ $t('automation.newWorkflow') }}
             </button>
           </div>
 
@@ -411,8 +402,8 @@ onUnmounted(() => {
                   <div>
                     <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ wf.name }}</h3>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
-                      {{ wf.conditions.length }}개 조건 / {{ wf.actions.length }}개 액션
-                      <span v-if="wf.executionCount > 0" class="ml-2">{{ wf.executionCount }}회 실행</span>
+                      {{ $t('automation.workflowStats', { conditions: wf.conditions.length, actions: wf.actions.length }) }}
+                      <span v-if="wf.executionCount > 0" class="ml-2">{{ $t('automation.executionCount', { count: wf.executionCount }) }}</span>
                     </p>
                   </div>
                 </div>
@@ -421,26 +412,26 @@ onUnmounted(() => {
                     class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                     @click="selectedWorkflowId = selectedWorkflowId === wf.id ? null : wf.id"
                   >
-                    이력
+                    {{ $t('automation.history') }}
                   </button>
                   <button
                     class="text-xs text-primary-600 dark:text-primary-400 hover:underline"
                     @click="openWorkflowEditor(wf)"
                   >
-                    수정
+                    {{ $t('automation.edit') }}
                   </button>
                   <button
                     class="px-3 py-1 text-xs rounded-full font-medium transition-colors"
                     :class="wf.enabled ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'"
                     @click="handleWorkflowToggle(wf.id)"
                   >
-                    {{ wf.enabled ? '활성' : '비활성' }}
+                    {{ wf.enabled ? $t('automation.enabled') : $t('automation.disabled') }}
                   </button>
                   <button
                     class="text-xs text-red-500 hover:text-red-700"
                     @click="handleWorkflowDelete(wf.id)"
                   >
-                    삭제
+                    {{ $t('automation.delete') }}
                   </button>
                 </div>
               </div>
@@ -457,14 +448,14 @@ onUnmounted(() => {
             <svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">워크플로우가 없습니다</h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-6">조건 분기와 다중 액션을 포함한 고급 자동화를 만들어보세요</p>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{{ $t('automation.emptyWorkflowsTitle') }}</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">{{ $t('automation.emptyWorkflowsDesc') }}</p>
             <button
-              class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              class="btn-primary inline-flex items-center gap-2"
               @click="openWorkflowEditor()"
             >
               <PlusIcon class="w-5 h-5" />
-              첫 워크플로우 만들기
+              {{ $t('automation.createFirstWorkflow') }}
             </button>
           </div>
         </div>
@@ -474,7 +465,6 @@ onUnmounted(() => {
       <div v-if="activeTab === 'logs'">
         <AutomationLogTable :logs="automationStore.recentLogs" />
       </div>
-    </div>
 
     <!-- Modal -->
     <AutomationFormModal

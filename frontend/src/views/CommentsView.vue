@@ -1,17 +1,17 @@
 <template>
-  <div class="space-y-6">
+  <div class="relative">
     <!-- Header -->
-    <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('commentsView.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {{ $t('commentsView.totalComments', { count: commentStats.total }) }}
           <span v-if="lastSyncedAt" class="ml-2 text-xs text-gray-400">
             · {{ $t('commentsView.lastSync', { time: formatSyncTime(lastSyncedAt) }) }}
           </span>
         </p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex items-center gap-3">
         <button
           class="btn-secondary inline-flex items-center gap-2"
           :disabled="batchDraftLoading || selectedCommentIds.length === 0"
@@ -34,13 +34,9 @@
       </div>
     </div>
 
-    <PageGuide title="댓글 관리" :items="[
-      '댓글 동기화 버튼을 클릭하면 연결된 모든 플랫폼에서 최신 댓글을 가져옵니다 (마지막 동기화 시간 표시)',
-      '상단 감정 분석 막대에서 긍정(초록)·중립(회색)·부정(빨간) 댓글 비율을 한눈에 파악하세요',
-      '감정 트렌드 차트로 일별 감정 변화 추이를 확인하고, FAQ 자동 분류로 자주 묻는 질문을 파악하세요',
-      '댓글을 선택 후 AI 답변 버튼을 누르면 여러 댓글에 대한 답변 초안을 한번에 생성합니다',
-    ]" />
+    <PageGuide :title="$t('commentsView.pageGuideTitle')" :items="($tm('commentsView.pageGuide') as string[])" />
 
+    <div class="space-y-6">
     <!-- Sentiment summary -->
     <div v-if="commentStats.total > 0" class="card">
       <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $t('commentsView.sentimentSummary') }}</h3>
@@ -236,7 +232,7 @@
           class="rounded-lg border border-gray-200 dark:border-gray-700 p-3"
         >
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 line-clamp-1">
-            원문: {{ draft.commentContent }}
+            {{ $t('commentsView.originalComment') }}: {{ draft.commentContent }}
           </p>
           <p class="text-sm text-gray-900 dark:text-gray-100">
             {{ draft.draftReply }}
@@ -407,6 +403,7 @@
           {{ $t('commentsView.pagination.next') }}
         </button>
       </div>
+    </div>
     </div>
   </div>
 </template>

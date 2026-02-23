@@ -1,20 +1,21 @@
 <template>
-  <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
+  <div class="relative">
     <!-- Header -->
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ t('admin.title') }}</h1>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.description') }}</p>
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {{ t('admin.title') }}
+        </h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ t('admin.description') }}
+        </p>
+      </div>
     </div>
 
-    <PageGuide title="관리자" :items="[
-      '검색창에서 이름·이메일로 사용자를 검색하고, 테이블에서 플랜·가입일·스토리지 사용량을 확인하세요',
-      '사용자 행을 클릭하면 상세 정보(영상, 채널, 구독, 역할 변경)를 확인할 수 있습니다',
-      '스토리지 할당량 조정 버튼으로 개별 사용자의 저장 공간을 관리하세요',
-      '사용자 비활성화/활성화, 역할 변경 등 관리 작업은 상세 패널에서 수행하세요',
-    ]" />
+    <PageGuide :title="t('admin.pageGuideTitle')" :items="(tm('admin.pageGuide') as string[])" />
 
     <!-- Search -->
-    <div class="flex items-center gap-4">
+    <div class="mb-6 flex items-center gap-4">
       <div class="relative flex-1 max-w-md">
         <MagnifyingGlassIcon class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
         <input
@@ -485,7 +486,7 @@ import type {
   AdminSubscriptionDetail,
 } from '@/types/admin'
 
-const { t } = useLocale()
+const { t, tm } = useLocale()
 
 // --- User List ---
 const users = ref<AdminUserListItem[]>([])

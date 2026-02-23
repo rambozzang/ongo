@@ -1,29 +1,27 @@
 <template>
   <div>
-    <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ t('upload.title') }}</h1>
-
-      <!-- Queue button -->
-      <button
-        v-if="uploadQueueStore.queue.length > 0"
-        class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-        @click="queuePanelOpen = true"
-      >
-        <QueueListIcon class="h-5 w-5" />
-        {{ t('upload.queue') }}
-        <span class="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-          {{ uploadQueueStore.queue.length }}
-        </span>
-      </button>
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ t('upload.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('upload.description') }}</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <!-- Queue button -->
+        <button
+          v-if="uploadQueueStore.queue.length > 0"
+          class="btn-secondary inline-flex items-center gap-2"
+          @click="queuePanelOpen = true"
+        >
+          <QueueListIcon class="h-5 w-5" />
+          {{ t('upload.queue') }}
+          <span class="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+            {{ uploadQueueStore.queue.length }}
+          </span>
+        </button>
+      </div>
     </div>
 
-    <PageGuide title="영상 업로드" :items="[
-      '1단계: 영상 파일을 드래그하거나 클릭하여 선택하세요. 여러 파일을 한 번에 선택하면 업로드 큐에 추가됩니다',
-      '2단계: 제목·설명·태그를 직접 입력하거나, AI 자동 생성 버튼으로 메타데이터를 생성하세요 (STT 포함 시 15크레딧, 기본 5크레딧)',
-      'AI 파이프라인 모드를 활성화하면 메타데이터 생성·해시태그 추출·최적화를 한 번에 자동 처리합니다',
-      '3단계: 게시할 플랫폼을 선택하고, 플랫폼별로 다른 제목·설명·예약 시간을 설정할 수 있습니다',
-      '업로드 큐 버튼으로 대기 중인 파일을 관리하고, 즉시 게시 또는 큐에 추가하여 나중에 일괄 게시하세요',
-    ]" />
+    <PageGuide :title="$t('upload.pageGuideTitle')" :items="($tm('upload.pageGuide') as string[])" />
 
     <!-- Step indicator -->
     <nav aria-label="업로드 단계" class="mb-8 flex items-center justify-center gap-4">

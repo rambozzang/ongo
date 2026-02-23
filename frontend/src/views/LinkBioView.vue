@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="relative">
     <template v-if="!bioPage">
       <div class="flex min-h-[400px] items-center justify-center">
         <div class="text-center">
@@ -9,67 +9,63 @@
       </div>
     </template>
     <template v-else>
-    <PageGuide :title="$t('linkBioView.title')" :items="($tm('linkBioView.pageGuide') as string[])" />
-
     <!-- Header -->
-    <div class="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
-      <div class="mx-auto max-w-7xl">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('linkBioView.title') }}</h1>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {{ $t('linkBioView.description') }}
-            </p>
-          </div>
-          <div class="flex items-center gap-3">
-            <!-- Publish URL -->
-            <div class="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700">
-              <span class="text-sm text-gray-600 dark:text-gray-400">{{ publishUrl }}</span>
-              <button
-                @click="copyLink"
-                class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                <ClipboardDocumentIcon class="h-5 w-5" />
-              </button>
-            </div>
-            <!-- Save Button -->
-            <button
-              @click="handleSave"
-              :disabled="!isDirty"
-              class="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              <CheckIcon class="h-5 w-5" />
-              {{ $t('linkBioView.save') }}
-            </button>
-          </div>
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('linkBioView.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('linkBioView.description') }}
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <!-- Publish URL -->
+        <div class="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700">
+          <span class="text-sm text-gray-600 dark:text-gray-400">{{ publishUrl }}</span>
+          <button
+            @click="copyLink"
+            class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+          >
+            <ClipboardDocumentIcon class="h-5 w-5" />
+          </button>
         </div>
+        <!-- Save Button -->
+        <button
+          @click="handleSave"
+          :disabled="!isDirty"
+          class="btn-primary inline-flex items-center gap-2"
+        >
+          <CheckIcon class="h-5 w-5" />
+          {{ $t('linkBioView.save') }}
+        </button>
+      </div>
+    </div>
 
-        <!-- Stats Bar -->
-        <div class="mt-4 grid grid-cols-3 gap-4">
-          <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.totalViews') }}</div>
-            <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
-              {{ bioPage.totalViews.toLocaleString() }}
-            </div>
-          </div>
-          <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.totalClicks') }}</div>
-            <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
-              {{ totalClicks.toLocaleString() }}
-            </div>
-          </div>
-          <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
-            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.clickRate') }}</div>
-            <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
-              {{ clickRate }}%
-            </div>
-          </div>
+    <PageGuide :title="$t('linkBioView.pageGuideTitle')" :items="($tm('linkBioView.pageGuide') as string[])" />
+
+    <!-- Stats Bar -->
+    <div class="mb-6 grid grid-cols-3 gap-4">
+      <div class="card p-3">
+        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.totalViews') }}</div>
+        <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
+          {{ bioPage.totalViews.toLocaleString() }}
+        </div>
+      </div>
+      <div class="card p-3">
+        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.totalClicks') }}</div>
+        <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
+          {{ totalClicks.toLocaleString() }}
+        </div>
+      </div>
+      <div class="card p-3">
+        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.clickRate') }}</div>
+        <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
+          {{ clickRate }}%
         </div>
       </div>
     </div>
 
     <!-- Mobile Tabs -->
-    <div class="border-b border-gray-200 bg-white px-6 dark:border-gray-700 dark:bg-gray-800 lg:hidden">
+    <div class="mb-6 border-b border-gray-200 dark:border-gray-700 lg:hidden">
       <div class="flex gap-4">
         <button
           @click="activeTab = 'editor'"
@@ -97,7 +93,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="mx-auto max-w-7xl px-6 py-8">
+    <div>
       <div class="flex flex-col gap-8 lg:flex-row">
         <!-- Editor Panel -->
         <div

@@ -270,10 +270,10 @@
     <div class="mb-6">
       <div class="flex items-start justify-between">
         <div class="flex-1">
-          <h1 class="text-h1 text-gray-900 dark:text-gray-100">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {{ greeting }}, {{ userName }}님!
           </h1>
-          <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             <span v-if="todayScheduleCount > 0">
               {{ $t('dashboard.scheduledToday', { count: todayScheduleCount }) }}
             </span>

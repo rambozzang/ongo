@@ -1,26 +1,25 @@
 <template>
-  <div>
+  <div class="relative">
     <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">영상 비교 분석</h1>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        두 영상의 성과를 비교하여 인사이트를 얻으세요
-      </p>
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {{ $t('videoCompare.title') }}
+        </h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('videoCompare.description') }}
+        </p>
+      </div>
     </div>
 
-    <PageGuide title="영상 비교" :items="[
-      '영상 A·영상 B 드롭다운에서 비교할 두 영상을 선택하세요. 검색으로 빠르게 찾을 수 있습니다',
-      '각 드롭다운에서 썸네일·제목·게시일·플랫폼 배지를 확인하며 영상을 선택하세요',
-      '선택 완료 후 조회수·좋아요·댓글·공유 등 주요 지표가 나란히 비교되어 표시됩니다',
-      '비교 결과를 바탕으로 어떤 제목·썸네일·태그 조합이 더 효과적인지 파악하여 콘텐츠 전략을 개선하세요',
-    ]" />
+    <PageGuide :title="$t('videoCompare.pageGuideTitle')" :items="($tm('videoCompare.pageGuide') as string[])" />
 
     <!-- Video Selectors -->
     <div class="mb-6 grid gap-4 desktop:grid-cols-2">
       <!-- Video A Selector -->
       <div class="card">
         <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          비교 영상 A
+          {{ $t('videoCompare.videoA') }}
         </label>
         <div class="relative">
           <button
@@ -31,7 +30,7 @@
             <span v-if="selectedVideoA" class="text-gray-900 dark:text-gray-100">
               {{ selectedVideoA.title }}
             </span>
-            <span v-else class="text-gray-400">영상을 선택하세요</span>
+            <span v-else class="text-gray-400">{{ $t('videoCompare.selectVideo') }}</span>
             <ChevronDownIcon class="h-5 w-5 text-gray-400" />
           </button>
 
@@ -45,7 +44,7 @@
               <input
                 v-model="searchVideoA"
                 type="text"
-                placeholder="영상 검색..."
+                :placeholder="$t('videoCompare.searchVideo')"
                 class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
             </div>
@@ -97,7 +96,7 @@
       <!-- Video B Selector -->
       <div class="card">
         <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          비교 영상 B
+          {{ $t('videoCompare.videoB') }}
         </label>
         <div class="relative">
           <button
@@ -108,7 +107,7 @@
             <span v-if="selectedVideoB" class="text-gray-900 dark:text-gray-100">
               {{ selectedVideoB.title }}
             </span>
-            <span v-else class="text-gray-400">영상을 선택하세요</span>
+            <span v-else class="text-gray-400">{{ $t('videoCompare.selectVideo') }}</span>
             <ChevronDownIcon class="h-5 w-5 text-gray-400" />
           </button>
 
@@ -122,7 +121,7 @@
               <input
                 v-model="searchVideoB"
                 type="text"
-                placeholder="영상 검색..."
+                :placeholder="$t('videoCompare.searchVideo')"
                 class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
             </div>
@@ -175,8 +174,8 @@
     <!-- Empty State -->
     <EmptyState
       v-if="!selectedVideoA || !selectedVideoB"
-      title="두 영상을 선택해주세요"
-      description="비교할 두 영상을 선택하면 상세한 성과 비교 분석을 확인할 수 있습니다."
+      :title="$t('videoCompare.emptyTitle')"
+      :description="$t('videoCompare.emptyDescription')"
       :icon="ArrowsRightLeftIcon"
     />
 
@@ -184,7 +183,7 @@
     <template v-else>
       <!-- Visual Comparison Chart -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">주요 지표 비교</h2>
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('videoCompare.keyMetrics') }}</h2>
         <div class="h-80">
           <Bar :data="chartData" :options="chartOptions" />
         </div>
@@ -193,25 +192,25 @@
       <!-- Performance Difference Cards -->
       <div class="mb-6 grid gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
         <MetricDifferenceCard
-          title="조회수"
+          :title="$t('videoCompare.views')"
           :value-a="selectedVideoA.totalViews"
           :value-b="selectedVideoB.totalViews"
           :icon="EyeIcon"
         />
         <MetricDifferenceCard
-          title="좋아요"
+          :title="$t('videoCompare.likes')"
           :value-a="selectedVideoA.totalLikes"
           :value-b="selectedVideoB.totalLikes"
           :icon="HeartIcon"
         />
         <MetricDifferenceCard
-          title="댓글"
+          :title="$t('videoCompare.comments')"
           :value-a="mockCommentsA"
           :value-b="mockCommentsB"
           :icon="ChatBubbleLeftIcon"
         />
         <MetricDifferenceCard
-          title="참여율"
+          :title="$t('videoCompare.engagementRate')"
           :value-a="engagementRateA"
           :value-b="engagementRateB"
           :icon="ChartBarIcon"
@@ -221,7 +220,7 @@
 
       <!-- Detailed Insights -->
       <div class="card">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">상세 분석</h2>
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('videoCompare.detailedAnalysis') }}</h2>
         <div class="space-y-3">
           <InsightItem
             v-for="insight in comparisonInsights"
@@ -237,6 +236,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -270,6 +270,8 @@ import PageGuide from '@/components/common/PageGuide.vue'
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+
+const { t } = useI18n({ useScope: 'global' })
 
 // Stores
 const analyticsStore = useAnalyticsStore()
@@ -362,7 +364,7 @@ const chartData = computed(() => {
   }
 
   return {
-    labels: ['조회수', '좋아요', '댓글', '공유'],
+    labels: [t('videoCompare.views'), t('videoCompare.likes'), t('videoCompare.comments'), t('videoCompare.shares')],
     datasets: [
       {
         label: selectedVideoA.value.title.substring(0, 30) + '...',

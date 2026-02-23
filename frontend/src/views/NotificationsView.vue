@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useNotificationCenterStore } from '@/stores/notificationCenter'
 import NotificationItem from '@/components/notifications/NotificationItem.vue'
@@ -13,6 +14,8 @@ import {
   CheckIcon,
   BellSlashIcon,
 } from '@heroicons/vue/24/outline'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const router = useRouter()
 const store = useNotificationCenterStore()
@@ -68,29 +71,24 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="relative">
     <!-- Header -->
-    <div class="flex flex-wrap items-start justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-900/30">
-          <BellIcon class="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">알림 센터</h1>
-          <p class="mt-0.5 text-sm text-gray-600 dark:text-gray-400">
-            {{ store.unreadCount > 0 ? `읽지 않은 알림 ${store.unreadCount}개` : '모든 알림을 확인했습니다' }}
-          </p>
-        </div>
+    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('notifications.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ store.unreadCount > 0 ? $t('notifications.unreadCount', { count: store.unreadCount }) : $t('notifications.allRead') }}
+        </p>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
         <button
           v-if="store.unreadCount > 0"
           class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           @click="store.markAllAsRead()"
         >
           <CheckIcon class="h-4 w-4" />
-          모두 읽음
+          {{ $t('notifications.markAllRead') }}
         </button>
         <button
           class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
@@ -98,18 +96,12 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
           @click="showSettings = !showSettings"
         >
           <Cog6ToothIcon class="h-4 w-4" />
-          알림 설정
+          {{ $t('notifications.settings') }}
         </button>
       </div>
     </div>
 
-    <PageGuide title="알림 센터" :items="[
-      '알림 카테고리 탭으로 업로드·게시·댓글·구독·시스템 등 유형별 알림을 필터링하세요',
-      '읽지 않은 알림은 강조 표시되며, 클릭하면 자동으로 읽음 처리됩니다',
-      '각 알림을 클릭하면 관련 영상·채널·설정 등 해당 페이지로 바로 이동합니다',
-      '설정 버튼으로 알림 수신 설정 패널을 열어 카테고리별 이메일·푸시 알림을 켜거나 끌 수 있습니다',
-      '모두 읽음 버튼으로 미확인 알림을 한 번에 처리하세요',
-    ]" />
+    <PageGuide :title="$t('notifications.pageGuideTitle')" :items="($tm('notifications.pageGuide') as string[])" />
 
     <!-- Settings panel (collapsible) -->
     <Transition
@@ -162,9 +154,9 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
         <BellSlashIcon class="h-8 w-8 text-gray-400 dark:text-gray-500" />
       </div>
-      <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-white">알림이 없습니다</h3>
+      <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-white">{{ $t('notifications.empty') }}</h3>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        {{ store.activeCategory ? '선택한 카테고리에 알림이 없습니다.' : '새로운 알림이 도착하면 여기에 표시됩니다.' }}
+        {{ store.activeCategory ? $t('notifications.emptyCategory') : $t('notifications.emptyDescription') }}
       </p>
     </div>
   </div>
