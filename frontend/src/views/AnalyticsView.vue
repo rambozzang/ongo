@@ -1221,7 +1221,7 @@ const exportColumns = computed<ColumnDefinition<Record<string, unknown>>[]>(() =
 const exportFilename = computed(() => {
   const today = new Date()
   const dateStr = formatDateOnlyForExport(today.toISOString())
-  const periodLabel = periods.find((p) => p.value === period.value)?.label ?? period.value
+  const periodLabel = periods.value.find((p: { value: string; label: string }) => p.value === period.value)?.label ?? period.value
   return `onGo_analytics_${periodLabel}_${dateStr}`
 })
 

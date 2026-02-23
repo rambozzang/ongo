@@ -954,7 +954,7 @@ const weekDays = computed<WeekDay[]>(() => {
       date: d,
       dateStr: toDateStr(d),
       day: d.getDate(),
-      dayLabel: dayLabels[d.getDay()],
+      dayLabel: dayLabels.value[d.getDay()],
       isToday: toDateStr(d) === toDateStr(today),
     })
   }

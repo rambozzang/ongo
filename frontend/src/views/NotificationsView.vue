@@ -9,13 +9,12 @@ import NotificationSettings from '@/components/notifications/NotificationSetting
 import PageGuide from '@/components/common/PageGuide.vue'
 import type { Notification, NotificationCategory } from '@/types/notification'
 import {
-  BellIcon,
   Cog6ToothIcon,
   CheckIcon,
   BellSlashIcon,
 } from '@heroicons/vue/24/outline'
 
-const { t } = useI18n({ useScope: 'global' })
+useI18n({ useScope: 'global' })
 
 const router = useRouter()
 const store = useNotificationCenterStore()
