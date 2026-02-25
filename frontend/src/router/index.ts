@@ -147,7 +147,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'abtest',
         name: 'abtest',
-        component: () => import('@/views/ABTestView.vue'),
+        component: () => import('@/views/AbTestView.vue'),
         meta: { breadcrumb: 'A/B 테스트' },
       },
       {
@@ -281,6 +281,24 @@ const routes: RouteRecordRaw[] = [
         name: 'client-portal',
         component: () => import('@/views/ClientPortalView.vue'),
         meta: { breadcrumb: '클라이언트 포탈' },
+      },
+      {
+        path: 'video-resizer',
+        name: 'video-resizer',
+        component: () => import('@/views/VideoResizerView.vue'),
+        meta: { breadcrumb: 'AI 비디오 리사이저' },
+      },
+      {
+        path: 'subtitle-editor',
+        name: 'subtitle-editor',
+        component: () => import('@/views/SubtitleEditorView.vue'),
+        meta: { breadcrumb: '자막 에디터' },
+      },
+      {
+        path: 'competitor-analysis',
+        name: 'competitor-analysis',
+        component: () => import('@/views/CompetitorAnalysisView.vue'),
+        meta: { breadcrumb: '경쟁사 심층 분석' },
       },
     ],
   },

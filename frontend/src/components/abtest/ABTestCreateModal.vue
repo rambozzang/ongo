@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
-import type { TestType, TestVariant } from '@/types/abtest'
+import type { AbTestType, AbTestVariant } from '@/types/abtest'
 import { videoApi } from '@/api/video'
 
 interface Emits {
@@ -10,8 +10,8 @@ interface Emits {
     name: string
     videoTitle: string
     videoId: string
-    type: TestType
-    variants: TestVariant[]
+    type: AbTestType
+    variants: AbTestVariant[]
     duration: number
     sampleSize: number
     confidence: number
@@ -25,16 +25,16 @@ const step = ref(1)
 const testName = ref('')
 const videoTitle = ref('')
 const videoId = ref('v_' + Date.now())
-const testType = ref<TestType>('thumbnail')
+const testType = ref<AbTestType>('THUMBNAIL')
 
 const variants = ref<Array<{
   id: string
   label: string
-  content: string
+  value: string
   thumbnailUrl?: string
 }>>([
-  { id: 'v1', label: '변형 A', content: '', thumbnailUrl: '' },
-  { id: 'v2', label: '변형 B', content: '', thumbnailUrl: '' }
+  { id: 'v1', label: '변형 A', value: '', thumbnailUrl: '' },
+  { id: 'v2', label: '변형 B', value: '', thumbnailUrl: '' }
 ])
 
 const duration = ref(24)
@@ -65,10 +65,10 @@ const canProceedStep1 = computed(() => {
 
 const canProceedStep2 = computed(() => {
   return variants.value.every(v => {
-    if (testType.value === 'thumbnail') {
+    if (testType.value === 'THUMBNAIL') {
       return v.label.trim() !== '' && v.thumbnailUrl && v.thumbnailUrl.trim() !== ''
     }
-    return v.label.trim() !== '' && v.content.trim() !== ''
+    return v.label.trim() !== '' && v.value.trim() !== ''
   })
 })
 
@@ -79,7 +79,7 @@ const addVariant = () => {
     variants.value.push({
       id: 'v' + (variants.value.length + 1),
       label: '변형 ' + nextLetter,
-      content: '',
+      value: '',
       thumbnailUrl: ''
     })
   }
@@ -109,15 +109,16 @@ const prevStep = () => {
 }
 
 const handleCreate = (startNow: boolean) => {
-  const testVariants: TestVariant[] = variants.value.map(v => ({
+  const testVariants: AbTestVariant[] = variants.value.map(v => ({
     id: v.id,
-    label: v.label,
-    content: v.content,
+    label: v.label as AbTestVariant['label'],
+    value: v.value,
     thumbnailUrl: v.thumbnailUrl,
     impressions: 0,
     clicks: 0,
     ctr: 0,
-    watchTime: 0,
+    views: 0,
+    avgWatchTime: 0,
     isWinner: false
   }))
 
@@ -135,10 +136,10 @@ const handleCreate = (startNow: boolean) => {
 }
 
 const typeLabel = computed(() => {
-  const labels = {
-    thumbnail: '썸네일',
-    title: '제목',
-    description: '설명'
+  const labels: Record<string, string> = {
+    THUMBNAIL: '썸네일',
+    TITLE: '제목',
+    DESCRIPTION: '설명'
   }
   return labels[testType.value]
 })
@@ -228,7 +229,7 @@ const typeLabel = computed(() => {
             </label>
             <div class="grid grid-cols-3 gap-3">
               <button
-                v-for="type in ['thumbnail', 'title', 'description'] as TestType[]"
+                v-for="type in ['THUMBNAIL', 'TITLE', 'DESCRIPTION'] as AbTestType[]"
                 :key="type"
                 @click="testType = type"
                 :class="[
@@ -239,7 +240,7 @@ const typeLabel = computed(() => {
                 ]"
               >
                 <div class="font-medium">
-                  {{ type === 'thumbnail' ? '썸네일' : type === 'title' ? '제목' : '설명' }}
+                  {{ type === 'THUMBNAIL' ? '썸네일' : type === 'TITLE' ? '제목' : '설명' }}
                 </div>
               </button>
             </div>
@@ -285,7 +286,7 @@ const typeLabel = computed(() => {
               </div>
 
               <!-- Thumbnail input -->
-              <div v-if="testType === 'thumbnail'" class="space-y-2">
+              <div v-if="testType === 'THUMBNAIL'" class="space-y-2">
                 <input
                   v-model="variant.thumbnailUrl"
                   type="text"
@@ -300,13 +301,13 @@ const typeLabel = computed(() => {
               <!-- Text input -->
               <div v-else>
                 <textarea
-                  v-model="variant.content"
-                  :placeholder="testType === 'title' ? '제목 입력...' : '설명 입력...'"
-                  :rows="testType === 'title' ? 2 : 4"
+                  v-model="variant.value"
+                  :placeholder="testType === 'TITLE' ? '제목 입력...' : '설명 입력...'"
+                  :rows="testType === 'TITLE' ? 2 : 4"
                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none"
                 ></textarea>
                 <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {{ variant.content.length }} 자
+                  {{ variant.value.length }} 자
                 </div>
               </div>
             </div>

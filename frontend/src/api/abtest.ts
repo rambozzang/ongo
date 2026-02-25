@@ -1,59 +1,71 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
 import type {
-  ABTestListResponse,
-  ABTestResponse,
-  ABTestStatisticsResponse,
-  CreateABTestRequest,
-  UpdateABTestRequest,
+  AbTest,
+  AbTestSummary,
+  VideoForAbTest,
+  CreateAbTestRequest,
+  CreateAbTestResponse,
 } from '@/types/abtest'
 
-export const abtestApi = {
-  list() {
+export const abTestApi = {
+  getVideos() {
     return apiClient
-      .get<ResData<ABTestListResponse>>('/ab-tests')
+      .get<ResData<VideoForAbTest[]>>('/ab-tests/videos')
       .then(unwrapResponse)
   },
 
-  get(id: number) {
+  getTests() {
     return apiClient
-      .get<ResData<ABTestResponse>>(`/ab-tests/${id}`)
+      .get<ResData<AbTest[]>>('/ab-tests')
       .then(unwrapResponse)
   },
 
-  create(request: CreateABTestRequest) {
+  getTest(testId: number) {
     return apiClient
-      .post<ResData<ABTestResponse>>('/ab-tests', request)
+      .get<ResData<AbTest>>(`/ab-tests/${testId}`)
       .then(unwrapResponse)
   },
 
-  update(id: number, request: UpdateABTestRequest) {
+  createTest(request: CreateAbTestRequest) {
     return apiClient
-      .put<ResData<ABTestResponse>>(`/ab-tests/${id}`, request)
+      .post<ResData<CreateAbTestResponse>>('/ab-tests', request)
       .then(unwrapResponse)
   },
 
-  remove(id: number) {
+  startTest(testId: number) {
     return apiClient
-      .delete<ResData<null>>(`/ab-tests/${id}`)
+      .post<ResData<AbTest>>(`/ab-tests/${testId}/start`)
       .then(unwrapResponse)
   },
 
-  start(id: number) {
+  pauseTest(testId: number) {
     return apiClient
-      .post<ResData<ABTestResponse>>(`/ab-tests/${id}/start`)
+      .post<ResData<AbTest>>(`/ab-tests/${testId}/pause`)
       .then(unwrapResponse)
   },
 
-  stop(id: number) {
+  completeTest(testId: number) {
     return apiClient
-      .post<ResData<ABTestResponse>>(`/ab-tests/${id}/stop`)
+      .post<ResData<AbTest>>(`/ab-tests/${testId}/complete`)
       .then(unwrapResponse)
   },
 
-  statistics(id: number) {
+  applyWinner(testId: number) {
     return apiClient
-      .get<ResData<ABTestStatisticsResponse>>(`/ab-tests/${id}/statistics`)
+      .post<ResData<void>>(`/ab-tests/${testId}/apply-winner`)
+      .then(unwrapResponse)
+  },
+
+  deleteTest(testId: number) {
+    return apiClient
+      .delete<ResData<void>>(`/ab-tests/${testId}`)
+      .then(unwrapResponse)
+  },
+
+  getSummary() {
+    return apiClient
+      .get<ResData<AbTestSummary>>('/ab-tests/summary')
       .then(unwrapResponse)
   },
 }

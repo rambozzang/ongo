@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { TrophyIcon } from '@heroicons/vue/24/outline'
-import type { TestVariant, TestType } from '@/types/abtest'
+import type { AbTestVariant, AbTestType } from '@/types/abtest'
 
 interface Props {
-  variants: TestVariant[]
-  type: TestType
+  variants: AbTestVariant[]
+  type: AbTestType
 }
 
 const props = defineProps<Props>()
@@ -28,13 +28,13 @@ const maxCTR = computed(() => Math.max(...props.variants.map(v => v.ctr)))
       <!-- Content preview -->
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
         <!-- Thumbnail preview -->
-        <div v-if="type === 'thumbnail' && variant.thumbnailUrl" class="aspect-video bg-gray-100 dark:bg-gray-700">
+        <div v-if="type === 'THUMBNAIL' && variant.thumbnailUrl" class="aspect-video bg-gray-100 dark:bg-gray-700">
           <img :src="variant.thumbnailUrl" :alt="variant.label" class="w-full h-full object-cover" />
         </div>
 
         <!-- Text preview -->
         <div v-else class="p-4 bg-gray-50 dark:bg-gray-700/50">
-          <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ variant.content }}</p>
+          <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ variant.value }}</p>
         </div>
       </div>
 
@@ -86,12 +86,12 @@ const maxCTR = computed(() => Math.max(...props.variants.map(v => v.ctr)))
         <div>
           <div class="flex justify-between text-sm mb-1">
             <span class="text-gray-600 dark:text-gray-400">평균 시청 시간</span>
-            <span class="font-semibold text-gray-900 dark:text-white">{{ variant.watchTime }}초</span>
+            <span class="font-semibold text-gray-900 dark:text-white">{{ variant.avgWatchTime }}초</span>
           </div>
           <div class="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               :class="['h-full transition-all', variant.isWinner ? 'bg-yellow-500' : 'bg-blue-500']"
-              :style="{ width: `${(variant.watchTime / Math.max(...variants.map(v => v.watchTime))) * 100}%` }"
+              :style="{ width: `${(variant.avgWatchTime / Math.max(...variants.map(v => v.avgWatchTime))) * 100}%` }"
             ></div>
           </div>
         </div>

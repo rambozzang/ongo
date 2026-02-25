@@ -1,203 +1,121 @@
 import { defineStore } from 'pinia'
-import type { ABTest, TestStatus, TestType } from '@/types/abtest'
-import { abtestApi } from '@/api/abtest'
+import { ref, computed } from 'vue'
+import type { AbTest, AbTestSummary, VideoForAbTest, AbTestType, VariantLabel } from '@/types/abtest'
+import { abTestApi } from '@/api/abtest'
 
-interface ABTestState {
-  tests: ABTest[]
-  activeFilter: TestStatus | 'all'
-}
+export const useAbTestStore = defineStore('abTest', () => {
+  const tests = ref<AbTest[]>([])
+  const videos = ref<VideoForAbTest[]>([])
+  const summary = ref<AbTestSummary | null>(null)
+  const selectedTest = ref<AbTest | null>(null)
+  const activeTab = ref<'active' | 'completed' | 'create'>('active')
+  const processing = ref(false)
+  const error = ref<string | null>(null)
 
-export const useABTestStore = defineStore('abtest', {
-  state: (): ABTestState => {
-    const stored = localStorage.getItem('ongo_abtests')
-    const tests = stored ? JSON.parse(stored) : []
+  const activeTests = computed(() => tests.value.filter(t => t.status === 'RUNNING' || t.status === 'PAUSED'))
+  const completedTests = computed(() => tests.value.filter(t => t.status === 'COMPLETED'))
+  const draftTests = computed(() => tests.value.filter(t => t.status === 'DRAFT'))
 
-    return {
-      tests,
-      activeFilter: 'all'
-    }
-  },
-
-  getters: {
-    activeTests(): ABTest[] {
-      return this.tests.filter(test => test.status === 'running')
-    },
-
-    completedTests(): ABTest[] {
-      return this.tests.filter(test => test.status === 'completed')
-    },
-
-    draftTests(): ABTest[] {
-      return this.tests.filter(test => test.status === 'draft')
-    },
-
-    testsByType() {
-      return (type: TestType) => this.tests.filter(test => test.type === type)
-    },
-
-    filteredTests(): ABTest[] {
-      if (this.activeFilter === 'all') {
-        return this.tests
-      }
-      return this.tests.filter(test => test.status === this.activeFilter)
-    },
-
-    averageCTRImprovement(): number {
-      const completed = this.completedTests
-      if (completed.length === 0) return 0
-
-      const improvements = completed.map(test => {
-        const winner = test.variants.find(v => v.isWinner)
-        const loser = test.variants.find(v => !v.isWinner)
-        if (!winner || !loser || loser.ctr === 0) return 0
-        return ((winner.ctr - loser.ctr) / loser.ctr) * 100
-      })
-
-      return improvements.reduce((a, b) => a + b, 0) / improvements.length
-    }
-  },
-
-  actions: {
-    async fetchTests() {
-      try {
-        const result = await abtestApi.list()
-        if (result.tests.length > 0) {
-          // Map API response to local ABTest type with fallback fields
-          this.tests = result.tests.map((t) => ({
-            id: t.id,
-            name: t.testName,
-            videoTitle: '',
-            videoId: t.videoId?.toString() ?? '',
-            type: 'thumbnail' as TestType,
-            status: t.status.toLowerCase() as TestStatus,
-            startDate: t.startedAt ?? new Date().toISOString(),
-            endDate: t.endedAt ?? null,
-            duration: 24,
-            sampleSize: 1000,
-            confidence: 95,
-            createdAt: t.createdAt ?? new Date().toISOString(),
-            completedAt: t.endedAt ?? null,
-            variants: t.variants.map(v => ({
-              id: v.id.toString(),
-              label: v.variantName,
-              content: v.title ?? v.description ?? '',
-              thumbnailUrl: v.thumbnailUrl ?? undefined,
-              impressions: v.views,
-              clicks: v.clicks,
-              ctr: v.views > 0 ? (v.clicks / v.views) * 100 : 0,
-              watchTime: 0,
-              isWinner: t.winnerVariantId === v.id,
-            })),
-          }))
-          this.persist()
-        }
-      } catch {
-        // Use local data
-      }
-    },
-
-    async createTest(test: Omit<ABTest, 'id' | 'createdAt' | 'completedAt'>) {
-      try {
-        const result = await abtestApi.create({
-          testName: test.name,
-          videoId: test.videoId ? parseInt(test.videoId) : undefined,
-          variants: test.variants.map(v => ({
-            variantName: v.label,
-            title: v.content,
-          })),
-        })
-        // Add to local list after API success
-        const newTest: ABTest = {
-          ...test,
-          id: result.id,
-          createdAt: result.createdAt ?? new Date().toISOString(),
-          completedAt: null,
-        }
-        this.tests.unshift(newTest)
-      } catch {
-        // Fallback to local creation
-        const newTest: ABTest = {
-          ...test,
-          id: Math.max(0, ...this.tests.map(t => t.id)) + 1,
-          createdAt: new Date().toISOString(),
-          completedAt: null
-        }
-        this.tests.unshift(newTest)
-      }
-      this.persist()
-    },
-
-    async startTest(id: number) {
-      try {
-        await abtestApi.start(id)
-      } catch {
-        // Continue with local update
-      }
-      const test = this.tests.find(t => t.id === id)
-      if (test) {
-        test.status = 'running'
-        test.startDate = new Date().toISOString()
-        this.persist()
-      }
-    },
-
-    async stopTest(id: number) {
-      try {
-        await abtestApi.stop(id)
-      } catch {
-        // Continue with local update
-      }
-      const test = this.tests.find(t => t.id === id)
-      if (test) {
-        test.status = 'cancelled'
-        test.endDate = new Date().toISOString()
-        this.persist()
-      }
-    },
-
-    completeTest(id: number) {
-      const test = this.tests.find(t => t.id === id)
-      if (test) {
-        test.status = 'completed'
-        test.endDate = new Date().toISOString()
-        test.completedAt = new Date().toISOString()
-        this.persist()
-      }
-    },
-
-    async deleteTest(id: number) {
-      try {
-        await abtestApi.remove(id)
-      } catch {
-        // Continue with local removal
-      }
-      const index = this.tests.findIndex(t => t.id === id)
-      if (index !== -1) {
-        this.tests.splice(index, 1)
-        this.persist()
-      }
-    },
-
-    declareWinner(testId: number, variantId: string) {
-      const test = this.tests.find(t => t.id === testId)
-      if (test) {
-        test.variants.forEach(v => {
-          v.isWinner = v.id === variantId
-        })
-        test.status = 'completed'
-        test.endDate = new Date().toISOString()
-        test.completedAt = new Date().toISOString()
-        this.persist()
-      }
-    },
-
-    setFilter(filter: TestStatus | 'all') {
-      this.activeFilter = filter
-    },
-
-    persist() {
-      localStorage.setItem('ongo_abtests', JSON.stringify(this.tests))
+  async function fetchTests() {
+    processing.value = true
+    error.value = null
+    try {
+      tests.value = await abTestApi.getTests()
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to load tests'
+    } finally {
+      processing.value = false
     }
   }
-})
 
+  async function fetchVideos() {
+    try {
+      videos.value = await abTestApi.getVideos()
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to load videos'
+    }
+  }
+
+  async function fetchSummary() {
+    try {
+      summary.value = await abTestApi.getSummary()
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to load summary'
+    }
+  }
+
+  async function createTest(videoId: number, type: AbTestType, variants: { label: VariantLabel; value: string }[], durationHours: number) {
+    processing.value = true
+    error.value = null
+    try {
+      const result = await abTestApi.createTest({ videoId, type, variants, durationHours })
+      tests.value.unshift(result.test)
+      return result
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to create test'
+      throw e
+    } finally {
+      processing.value = false
+    }
+  }
+
+  async function startTest(testId: number) {
+    try {
+      const updated = await abTestApi.startTest(testId)
+      const idx = tests.value.findIndex(t => t.id === testId)
+      if (idx >= 0) tests.value[idx] = updated
+      if (selectedTest.value?.id === testId) selectedTest.value = updated
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to start test'
+    }
+  }
+
+  async function pauseTest(testId: number) {
+    try {
+      const updated = await abTestApi.pauseTest(testId)
+      const idx = tests.value.findIndex(t => t.id === testId)
+      if (idx >= 0) tests.value[idx] = updated
+      if (selectedTest.value?.id === testId) selectedTest.value = updated
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to pause test'
+    }
+  }
+
+  async function applyWinner(testId: number) {
+    try {
+      await abTestApi.applyWinner(testId)
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to apply winner'
+    }
+  }
+
+  function selectTest(test: AbTest | null) {
+    selectedTest.value = test
+  }
+
+  function setActiveTab(tab: 'active' | 'completed' | 'create') {
+    activeTab.value = tab
+  }
+
+  return {
+    tests,
+    videos,
+    summary,
+    selectedTest,
+    activeTab,
+    processing,
+    error,
+    activeTests,
+    completedTests,
+    draftTests,
+    fetchTests,
+    fetchVideos,
+    fetchSummary,
+    createTest,
+    startTest,
+    pauseTest,
+    applyWinner,
+    selectTest,
+    setActiveTab,
+  }
+})

@@ -133,8 +133,27 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { abtestApi } from '@/api/abtest'
-import type { ABTestStatisticsResponse } from '@/types/abtest'
+import { abTestApi } from '@/api/abtest'
+
+interface StatisticsVariant {
+  variantId: string
+  name: string
+  impressions: number
+  conversions: number
+  conversionRate: number
+  confidenceInterval: [number, number]
+  isWinner: boolean
+}
+
+interface ABTestStatisticsResponse {
+  confidence: number
+  pValue: number
+  isSignificant: boolean
+  currentSampleSize: number
+  sampleSizeRequired: number
+  sampleProgress: number
+  variants: StatisticsVariant[]
+}
 
 const props = defineProps<{
   testId: number
@@ -162,13 +181,13 @@ const pValueColorClass = computed(() => {
 
 const winner = computed(() => {
   if (!stats.value) return null
-  return stats.value.variants.find(v => v.isWinner) ?? null
+  return stats.value.variants.find((v: StatisticsVariant) => v.isWinner) ?? null
 })
 
 async function fetchStatistics() {
   loading.value = true
   try {
-    stats.value = await abtestApi.statistics(props.testId)
+    stats.value = await abTestApi.getTest(props.testId) as any
   } catch {
     stats.value = null
   } finally {

@@ -134,6 +134,9 @@ import {
   BuildingOffice2Icon,
   CalendarIcon,
   CubeTransparentIcon,
+  FilmIcon as VideoResizerIcon,
+  LanguageIcon,
+  MagnifyingGlassCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -176,6 +179,8 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/upload', label: t('nav.upload'), icon: ArrowUpTrayIcon },
       { to: '/videos', label: t('nav.videos'), icon: FilmIcon },
       { to: '/content-studio', label: t('nav.contentStudio'), icon: ScissorsIcon },
+      { to: '/video-resizer', label: t('nav.videoResizer'), icon: VideoResizerIcon },
+      { to: '/subtitle-editor', label: t('nav.subtitleEditor'), icon: LanguageIcon },
       { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
       { to: '/assets', label: t('nav.assets'), icon: FolderIcon },
       { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
@@ -201,6 +206,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/commerce', label: t('nav.commerce'), icon: ShoppingCartIcon },
       { to: '/abtest', label: t('nav.abtest'), icon: BeakerIcon },
       { to: '/competitor', label: t('nav.competitor'), icon: PresentationChartLineIcon },
+      { to: '/competitor-analysis', label: t('nav.competitorAnalysis'), icon: MagnifyingGlassCircleIcon },
       { to: '/trends', label: t('nav.trends'), icon: FireIcon },
       { to: '/goals', label: t('nav.goals'), icon: FlagIcon },
     ],

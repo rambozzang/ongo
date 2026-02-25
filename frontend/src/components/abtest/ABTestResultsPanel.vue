@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { XMarkIcon, CheckCircleIcon, TrophyIcon } from '@heroicons/vue/24/outline'
-import type { ABTest } from '@/types/abtest'
+import type { AbTest, AbTestVariant } from '@/types/abtest'
 import VariantCompare from './VariantCompare.vue'
 
 interface Props {
-  test: ABTest | null
+  test: AbTest | null
 }
 
 interface Emits {
@@ -18,12 +18,12 @@ const emit = defineEmits<Emits>()
 
 const winner = computed(() => {
   if (!props.test) return null
-  return props.test.variants.find(v => v.isWinner)
+  return props.test.variants.find((v: AbTestVariant) => v.isWinner)
 })
 
 const loser = computed(() => {
   if (!props.test) return null
-  return props.test.variants.find(v => !v.isWinner)
+  return props.test.variants.find((v: AbTestVariant) => !v.isWinner)
 })
 
 const improvement = computed(() => {
@@ -52,7 +52,7 @@ const isSignificant = computed(() => {
       <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
         <div>
           <h2 id="abtest-results-panel-title" class="text-2xl font-bold text-gray-900 dark:text-white">테스트 결과</h2>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ test.name }}</p>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ test.videoTitle }}</p>
         </div>
         <button
           @click="emit('close')"
@@ -97,7 +97,7 @@ const isSignificant = computed(() => {
             </div>
             <div>
               <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">신뢰 수준</div>
-              <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ test.confidence }}%</div>
+              <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ test.confidenceLevel }}%</div>
             </div>
           </div>
         </div>
@@ -121,7 +121,7 @@ const isSignificant = computed(() => {
                         'h-full flex items-center justify-end px-3 transition-all',
                         variant.isWinner ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gradient-to-r from-blue-400 to-blue-500'
                       ]"
-                      :style="{ width: `${(variant.ctr / Math.max(...test.variants.map(v => v.ctr))) * 100}%` }"
+                      :style="{ width: `${(variant.ctr / Math.max(...test.variants.map((v: AbTestVariant) => v.ctr))) * 100}%` }"
                     >
                       <TrophyIcon v-if="variant.isWinner" class="w-5 h-5 text-white" />
                     </div>
@@ -137,7 +137,7 @@ const isSignificant = computed(() => {
                 <div v-for="variant in test.variants" :key="variant.id">
                   <div class="flex items-center justify-between mb-1">
                     <span class="text-sm text-gray-600 dark:text-gray-400">{{ variant.label }}</span>
-                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ variant.watchTime }}초</span>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ variant.avgWatchTime }}초</span>
                   </div>
                   <div class="relative h-8 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
                     <div
@@ -145,7 +145,7 @@ const isSignificant = computed(() => {
                         'h-full flex items-center justify-end px-3 transition-all',
                         variant.isWinner ? 'bg-gradient-to-r from-purple-500 to-purple-600' : 'bg-gradient-to-r from-indigo-400 to-indigo-500'
                       ]"
-                      :style="{ width: `${(variant.watchTime / Math.max(...test.variants.map(v => v.watchTime))) * 100}%` }"
+                      :style="{ width: `${(variant.avgWatchTime / Math.max(...test.variants.map((v: AbTestVariant) => v.avgWatchTime))) * 100}%` }"
                     >
                       <TrophyIcon v-if="variant.isWinner" class="w-5 h-5 text-white" />
                     </div>
@@ -180,7 +180,7 @@ const isSignificant = computed(() => {
                   <td class="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">{{ variant.impressions.toLocaleString() }}</td>
                   <td class="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">{{ variant.clicks.toLocaleString() }}</td>
                   <td class="px-4 py-3 text-sm text-right font-semibold text-gray-900 dark:text-white">{{ variant.ctr.toFixed(2) }}%</td>
-                  <td class="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">{{ variant.watchTime }}초</td>
+                  <td class="px-4 py-3 text-sm text-right text-gray-700 dark:text-gray-300">{{ variant.avgWatchTime }}초</td>
                 </tr>
               </tbody>
             </table>
