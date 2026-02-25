@@ -89,7 +89,8 @@
     "admin": "관리자",
     "videoResizer": "비디오 리사이저",
     "subtitleEditor": "자막 에디터",
-    "competitorAnalysis": "경쟁사 심층 분석"
+    "competitorAnalysis": "경쟁사 심층 분석",
+    "hashtagStrategy": "해시태그 전략"
   },
   "manual": {
     "title": "사용자 매뉴얼",
@@ -2529,5 +2530,57 @@
       "COMPLETED": "완료",
       "FAILED": "실패"
     }
+  },
+  "hashtagStrategy": {
+    "title": "해시태그 전략 엔진",
+    "description": "AI가 해시태그 조합을 분석하고 최적화하여 도달률과 참여율을 극대화합니다.",
+    "pageGuideTitle": "해시태그 전략 가이드",
+    "pageGuide": [
+      "콘텐츠 설명을 입력하면 AI가 3가지 전략(보수적/균형/공격적)의 해시태그 세트를 추천합니다.",
+      "각 해시태그에 마우스를 올리면 도달 예상치, 경쟁도, 트렌드 정보를 확인할 수 있습니다.",
+      "마음에 드는 세트를 저장하거나 복사하여 바로 사용할 수 있습니다.",
+      "플랫폼별로 최적화된 해시태그가 제안되며, 타겟 오디언스를 지정하면 더 정확한 결과를 얻을 수 있습니다."
+    ],
+    "inputTitle": "콘텐츠 정보 입력",
+    "contentLabel": "콘텐츠 설명",
+    "contentPlaceholder": "영상 또는 콘텐츠에 대한 간단한 설명을 입력하세요...",
+    "platformLabel": "플랫폼",
+    "audienceLabel": "타겟 오디언스 (선택)",
+    "audiencePlaceholder": "예: 20-30대 여성, 뷰티 관심",
+    "generateButton": "해시태그 생성",
+    "analyzing": "분석 중...",
+    "creditCost": "{cost} 크레딧 소모",
+    "creditsRemaining": "잔여 크레딧",
+    "resultsTitle": "추천 해시태그 세트",
+    "savedSetsTitle": "저장된 세트",
+    "emptyState": "콘텐츠 설명을 입력하고 해시태그를 생성해보세요.",
+    "strategyConservative": "보수적 전략",
+    "strategyBalanced": "균형 전략",
+    "strategyAggressive": "공격적 전략",
+    "strategyScore": "전략 점수",
+    "scoreExcellent": "우수",
+    "scoreGood": "양호",
+    "scoreFair": "보통",
+    "scorePoor": "미흡",
+    "estimatedReach": "예상 도달",
+    "difficulty": "경쟁 난이도",
+    "difficultyEasy": "쉬움",
+    "difficultyMedium": "보통",
+    "difficultyHard": "어려움",
+    "difficultyVeryHard": "매우 어려움",
+    "reach": "도달 예상",
+    "competition": "경쟁도",
+    "trendLabel": "트렌드",
+    "trendRising": "상승",
+    "trendStable": "안정",
+    "trendDeclining": "하락",
+    "avgViews": "평균 조회수",
+    "copyAll": "전체 복사",
+    "copiedSuccess": "해시태그가 클립보드에 복사되었습니다.",
+    "savedSuccess": "해시태그 세트가 저장되었습니다.",
+    "deletedSuccess": "해시태그 세트가 삭제되었습니다.",
+    "analyzeError": "해시태그 분석에 실패했습니다.",
+    "saveError": "저장에 실패했습니다.",
+    "deleteError": "삭제에 실패했습니다."
   }
 }

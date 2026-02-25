@@ -89,7 +89,8 @@
     "admin": "Admin",
     "videoResizer": "Video Resizer",
     "subtitleEditor": "Subtitle Editor",
-    "competitorAnalysis": "Competitor Deep Analysis"
+    "competitorAnalysis": "Competitor Deep Analysis",
+    "hashtagStrategy": "Hashtag Strategy"
   },
   "manual": {
     "title": "User Manual",
@@ -2704,5 +2705,57 @@
       "COMPLETED": "Completed",
       "FAILED": "Failed"
     }
+  },
+  "hashtagStrategy": {
+    "title": "Hashtag Strategy Engine",
+    "description": "AI analyzes and optimizes hashtag combinations for maximum reach and engagement.",
+    "pageGuideTitle": "Hashtag Strategy Guide",
+    "pageGuide": [
+      "Enter a content description and AI will recommend 3 strategy sets (Conservative/Balanced/Aggressive).",
+      "Hover over each hashtag to see reach estimates, competition level, and trend info.",
+      "Save or copy your favorite sets for immediate use.",
+      "Hashtags are optimized per platform. Specifying a target audience provides more accurate results."
+    ],
+    "inputTitle": "Content Information",
+    "contentLabel": "Content Description",
+    "contentPlaceholder": "Enter a brief description of your video or content...",
+    "platformLabel": "Platform",
+    "audienceLabel": "Target Audience (Optional)",
+    "audiencePlaceholder": "e.g., Women 20-30, interested in beauty",
+    "generateButton": "Generate Hashtags",
+    "analyzing": "Analyzing...",
+    "creditCost": "{cost} credits",
+    "creditsRemaining": "Credits remaining",
+    "resultsTitle": "Recommended Hashtag Sets",
+    "savedSetsTitle": "Saved Sets",
+    "emptyState": "Enter a content description and generate hashtags to get started.",
+    "strategyConservative": "Conservative Strategy",
+    "strategyBalanced": "Balanced Strategy",
+    "strategyAggressive": "Aggressive Strategy",
+    "strategyScore": "Strategy Score",
+    "scoreExcellent": "Excellent",
+    "scoreGood": "Good",
+    "scoreFair": "Fair",
+    "scorePoor": "Poor",
+    "estimatedReach": "Estimated Reach",
+    "difficulty": "Difficulty",
+    "difficultyEasy": "Easy",
+    "difficultyMedium": "Medium",
+    "difficultyHard": "Hard",
+    "difficultyVeryHard": "Very Hard",
+    "reach": "Reach",
+    "competition": "Competition",
+    "trendLabel": "Trend",
+    "trendRising": "Rising",
+    "trendStable": "Stable",
+    "trendDeclining": "Declining",
+    "avgViews": "Avg Views",
+    "copyAll": "Copy All",
+    "copiedSuccess": "Hashtags copied to clipboard.",
+    "savedSuccess": "Hashtag set saved successfully.",
+    "deletedSuccess": "Hashtag set deleted successfully.",
+    "analyzeError": "Failed to analyze hashtags.",
+    "saveError": "Failed to save.",
+    "deleteError": "Failed to delete."
   }
 }

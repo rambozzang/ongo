@@ -137,6 +137,7 @@ import {
   FilmIcon as VideoResizerIcon,
   LanguageIcon,
   MagnifyingGlassCircleIcon,
+  HashtagIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -228,6 +229,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/portfolio', label: t('nav.portfolio'), icon: IdentificationIcon },
       { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
       { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
+      { to: '/hashtag-strategy', label: t('nav.hashtagStrategy'), icon: HashtagIcon },
     ],
   },
   {

@@ -300,6 +300,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/CompetitorAnalysisView.vue'),
         meta: { breadcrumb: '경쟁사 심층 분석' },
       },
+      {
+        path: 'hashtag-strategy',
+        name: 'hashtag-strategy',
+        component: () => import('@/views/HashtagStrategyView.vue'),
+        meta: { breadcrumb: '해시태그 전략' },
+      },
     ],
   },
   {
