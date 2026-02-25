@@ -142,6 +142,10 @@ import {
   ArrowsPointingOutIcon,
   AcademicCapIcon,
   DocumentMagnifyingGlassIcon,
+  PhotoIcon,
+  TableCellsIcon,
+  BoltIcon as LiveBoltIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -189,6 +193,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
       { to: '/assets', label: t('nav.assets'), icon: FolderIcon },
       { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
+      { to: '/thumbnail-generator', label: t('nav.thumbnailGenerator'), icon: PhotoIcon },
       { to: '/recycling', label: t('nav.recycling'), icon: ArrowPathIcon },
     ],
   },
@@ -216,6 +221,9 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/trends', label: t('nav.trends'), icon: FireIcon },
       { to: '/goals', label: t('nav.goals'), icon: FlagIcon },
       { to: '/growth-coach', label: t('nav.growthCoach'), icon: AcademicCapIcon },
+      { to: '/performance-heatmap', label: t('nav.performanceHeatmap'), icon: TableCellsIcon },
+      { to: '/live-dashboard', label: t('nav.liveDashboard'), icon: LiveBoltIcon },
+      { to: '/revenue-forecaster', label: t('nav.revenueForecaster'), icon: CurrencyDollarIcon },
     ],
   },
   {
