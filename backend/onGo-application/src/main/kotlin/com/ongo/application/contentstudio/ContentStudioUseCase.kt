@@ -1,0 +1,111 @@
+package com.ongo.application.contentstudio
+
+import com.ongo.application.contentstudio.dto.*
+import com.ongo.common.exception.ForbiddenException
+import com.ongo.common.exception.NotFoundException
+import com.ongo.domain.contentstudio.ContentClip
+import com.ongo.domain.contentstudio.ContentStudioRepository
+import com.ongo.domain.contentstudio.VideoCaption
+import com.ongo.domain.contentstudio.AiThumbnail
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+@Service
+class ContentStudioUseCase(
+    private val contentStudioRepository: ContentStudioRepository,
+) {
+
+    fun listClips(userId: Long): List<ContentClipResponse> {
+        return contentStudioRepository.findClipsByUserId(userId).map { it.toResponse() }
+    }
+
+    @Transactional
+    fun createClip(userId: Long, request: CreateClipRequest): ContentClipResponse {
+        val clip = ContentClip(
+            userId = userId,
+            sourceVideoId = request.sourceVideoId,
+            title = request.title,
+            startTimeMs = request.startTimeMs,
+            endTimeMs = request.endTimeMs,
+            aspectRatio = request.aspectRatio,
+        )
+        return contentStudioRepository.saveClip(clip).toResponse()
+    }
+
+    @Transactional
+    fun deleteClip(userId: Long, clipId: Long) {
+        val clip = contentStudioRepository.findClipById(clipId) ?: throw NotFoundException("클립", clipId)
+        if (clip.userId != userId) throw ForbiddenException("해당 클립에 대한 권한이 없습니다")
+        contentStudioRepository.deleteClip(clipId)
+    }
+
+    fun listCaptions(videoId: Long): List<VideoCaptionResponse> {
+        return contentStudioRepository.findCaptionsByVideoId(videoId).map { it.toResponse() }
+    }
+
+    @Transactional
+    fun createCaption(userId: Long, request: CreateCaptionRequest): VideoCaptionResponse {
+        val caption = VideoCaption(
+            videoId = request.videoId,
+            language = request.language,
+            captionData = request.captionData,
+        )
+        return contentStudioRepository.saveCaption(caption).toResponse()
+    }
+
+    @Transactional
+    fun deleteCaption(userId: Long, captionId: Long) {
+        contentStudioRepository.findCaptionById(captionId) ?: throw NotFoundException("자막", captionId)
+        contentStudioRepository.deleteCaption(captionId)
+    }
+
+    fun listThumbnails(videoId: Long): List<AiThumbnailResponse> {
+        return contentStudioRepository.findThumbnailsByVideoId(videoId).map { it.toResponse() }
+    }
+
+    @Transactional
+    fun generateThumbnail(userId: Long, request: GenerateThumbnailRequest): AiThumbnailResponse {
+        val thumbnail = AiThumbnail(
+            videoId = request.videoId,
+            style = request.style,
+            textOverlay = request.textOverlay,
+        )
+        return contentStudioRepository.saveThumbnail(thumbnail).toResponse()
+    }
+
+    @Transactional
+    fun deleteThumbnail(userId: Long, thumbnailId: Long) {
+        contentStudioRepository.findThumbnailById(thumbnailId) ?: throw NotFoundException("썸네일", thumbnailId)
+        contentStudioRepository.deleteThumbnail(thumbnailId)
+    }
+
+    private fun ContentClip.toResponse() = ContentClipResponse(
+        id = id!!,
+        sourceVideoId = sourceVideoId,
+        title = title,
+        startTimeMs = startTimeMs,
+        endTimeMs = endTimeMs,
+        aspectRatio = aspectRatio,
+        status = status,
+        outputUrl = outputUrl,
+        createdAt = createdAt,
+    )
+
+    private fun VideoCaption.toResponse() = VideoCaptionResponse(
+        id = id!!,
+        videoId = videoId,
+        language = language,
+        captionData = captionData,
+        status = status,
+        createdAt = createdAt,
+    )
+
+    private fun AiThumbnail.toResponse() = AiThumbnailResponse(
+        id = id!!,
+        videoId = videoId,
+        style = style,
+        textOverlay = textOverlay,
+        imageUrl = imageUrl,
+        createdAt = createdAt,
+    )
+}

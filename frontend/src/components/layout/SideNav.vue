@@ -127,6 +127,13 @@ import {
   FireIcon,
   UsersIcon,
   BriefcaseIcon,
+  ScissorsIcon,
+  SignalIcon,
+  IdentificationIcon,
+  ShoppingCartIcon,
+  BuildingOffice2Icon,
+  CalendarIcon,
+  CubeTransparentIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -168,6 +175,7 @@ const navGroups = computed<NavGroup[]>(() => [
     items: [
       { to: '/upload', label: t('nav.upload'), icon: ArrowUpTrayIcon },
       { to: '/videos', label: t('nav.videos'), icon: FilmIcon },
+      { to: '/content-studio', label: t('nav.contentStudio'), icon: ScissorsIcon },
       { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
       { to: '/assets', label: t('nav.assets'), icon: FolderIcon },
       { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
@@ -179,14 +187,18 @@ const navGroups = computed<NavGroup[]>(() => [
     items: [
       { to: '/schedule', label: t('nav.schedule'), icon: CalendarDaysIcon },
       { to: '/calendar', label: t('nav.calendar'), icon: CalendarDaysIcon },
+      { to: '/ai-calendar', label: t('nav.aiCalendar'), icon: CalendarIcon },
       { to: '/automation', label: t('nav.automation'), icon: BoltIcon },
+      { to: '/workflow-builder', label: t('nav.workflowBuilder'), icon: CubeTransparentIcon },
     ],
   },
   {
     label: t('nav.groupAnalytics'),
     items: [
       { to: '/analytics', label: t('nav.analytics'), icon: ChartBarIcon },
+      { to: '/prediction', label: t('nav.prediction'), icon: SignalIcon },
       { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
+      { to: '/commerce', label: t('nav.commerce'), icon: ShoppingCartIcon },
       { to: '/abtest', label: t('nav.abtest'), icon: BeakerIcon },
       { to: '/competitor', label: t('nav.competitor'), icon: PresentationChartLineIcon },
       { to: '/trends', label: t('nav.trends'), icon: FireIcon },
@@ -207,6 +219,7 @@ const navGroups = computed<NavGroup[]>(() => [
     items: [
       { to: '/ai', label: t('nav.ai'), icon: SparklesIcon },
       { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
+      { to: '/portfolio', label: t('nav.portfolio'), icon: IdentificationIcon },
       { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
       { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
     ],
@@ -216,6 +229,7 @@ const navGroups = computed<NavGroup[]>(() => [
     items: [
       { to: '/channels', label: t('nav.channels'), icon: LinkIcon },
       { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
+      { to: '/agency', label: t('nav.agency'), icon: BuildingOffice2Icon },
       { to: '/webhooks', label: t('nav.webhooks'), icon: CodeBracketIcon },
       { to: '/activity-log', label: t('nav.activityLog'), icon: ClockIcon },
     ],
