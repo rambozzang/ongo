@@ -138,6 +138,10 @@ import {
   LanguageIcon,
   MagnifyingGlassCircleIcon,
   HashtagIcon,
+  SpeakerWaveIcon,
+  ArrowsPointingOutIcon,
+  AcademicCapIcon,
+  DocumentMagnifyingGlassIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -208,8 +212,10 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/abtest', label: t('nav.abtest'), icon: BeakerIcon },
       { to: '/competitor', label: t('nav.competitor'), icon: PresentationChartLineIcon },
       { to: '/competitor-analysis', label: t('nav.competitorAnalysis'), icon: MagnifyingGlassCircleIcon },
+      { to: '/cross-analytics', label: t('nav.crossAnalytics'), icon: ArrowsPointingOutIcon },
       { to: '/trends', label: t('nav.trends'), icon: FireIcon },
       { to: '/goals', label: t('nav.goals'), icon: FlagIcon },
+      { to: '/growth-coach', label: t('nav.growthCoach'), icon: AcademicCapIcon },
     ],
   },
   {
@@ -230,6 +236,8 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
       { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
       { to: '/hashtag-strategy', label: t('nav.hashtagStrategy'), icon: HashtagIcon },
+      { to: '/brand-voice', label: t('nav.brandVoice'), icon: SpeakerWaveIcon },
+      { to: '/copyright-check', label: t('nav.copyrightCheck'), icon: DocumentMagnifyingGlassIcon },
     ],
   },
   {

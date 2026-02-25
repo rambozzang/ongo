@@ -306,6 +306,30 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/HashtagStrategyView.vue'),
         meta: { breadcrumb: '해시태그 전략' },
       },
+      {
+        path: 'growth-coach',
+        name: 'growth-coach',
+        component: () => import('@/views/GrowthCoachView.vue'),
+        meta: { breadcrumb: '크리에이터 성장 코치' },
+      },
+      {
+        path: 'brand-voice',
+        name: 'brand-voice',
+        component: () => import('@/views/BrandVoiceView.vue'),
+        meta: { breadcrumb: 'AI 브랜드 보이스' },
+      },
+      {
+        path: 'cross-analytics',
+        name: 'cross-analytics',
+        component: () => import('@/views/CrossAnalyticsView.vue'),
+        meta: { breadcrumb: '크로스플랫폼 분석' },
+      },
+      {
+        path: 'copyright-check',
+        name: 'copyright-check',
+        component: () => import('@/views/CopyrightCheckView.vue'),
+        meta: { breadcrumb: '저작권 사전검증' },
+      },
     ],
   },
   {
