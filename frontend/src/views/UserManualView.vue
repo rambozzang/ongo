@@ -116,6 +116,10 @@ import {
   LanguageIcon,
   MagnifyingGlassCircleIcon,
   BeakerIcon,
+  ChatBubbleBottomCenterTextIcon,
+  ArrowsPointingOutIcon,
+  AcademicCapIcon,
+  ShieldCheckIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 
@@ -904,6 +908,185 @@ const sectionsKo: ManualSection[] = [
           '트렌드 주제에 대한 경쟁 채널의 콘텐츠 발행 현황을 확인합니다.',
           '얼리 어답터 기회: 아직 경쟁이 적은 새로운 트렌드를 우선 추천합니다.',
         ],
+      },
+    ],
+  },
+  {
+    id: 'brand-voice',
+    title: 'AI 브랜드 보이스 엔진',
+    icon: ChatBubbleBottomCenterTextIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: '나만의 브랜드 톤앤매너를 AI로 학습시키고, 일관된 브랜드 보이스로 콘텐츠를 생성하세요.',
+      },
+      {
+        subtitle: '보이스 프로필 관리',
+        text: '기존 콘텐츠를 기반으로 AI가 작성 스타일을 학습합니다.',
+        items: [
+          '프로필 훈련: 기존 콘텐츠 텍스트를 입력하여 AI가 작성 스타일을 학습합니다.',
+          '톤 설정: 캐주얼, 전문적, 유머러스, 교육적, 영감 5가지 톤 중 선택합니다.',
+          '어휘 관리: 자주 사용할 단어와 피해야 할 단어를 설정합니다.',
+          '이모지 설정: 없음/최소/보통/많음 4단계로 이모지 사용 빈도를 조절합니다.',
+        ],
+      },
+      {
+        subtitle: 'AI 텍스트 생성',
+        text: '학습된 보이스 프로필을 선택하고 주제를 입력하면 브랜드 톤에 맞는 텍스트를 생성합니다.',
+        items: [
+          '플랫폼별 최적화 (YouTube, TikTok, Instagram, Naver Clip)를 지원합니다.',
+          '해시태그 자동 생성 옵션을 제공합니다.',
+          '신뢰도 점수로 브랜드 일관성을 확인할 수 있습니다.',
+        ],
+      },
+      {
+        subtitle: '텍스트 분석',
+        text: '기존 텍스트를 붙여넣으면 톤, 문장 길이, 자주 쓰는 단어, 이모지 빈도 등을 분석합니다.',
+        items: [
+          '가독성 점수와 격식 점수를 제공합니다.',
+        ],
+      },
+      {
+        subtitle: '크레딧 비용',
+        text: '텍스트 생성 3크레딧, 분석 2크레딧이 소모됩니다.',
+      },
+    ],
+  },
+  {
+    id: 'cross-analytics',
+    title: '크로스플랫폼 분석',
+    icon: ArrowsPointingOutIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: '여러 플랫폼에 업로드한 같은 콘텐츠의 성과를 한눈에 비교 분석하세요.',
+      },
+      {
+        subtitle: '개요 대시보드',
+        text: '플랫폼별 성과를 한눈에 파악할 수 있습니다.',
+        items: [
+          '플랫폼별 총 조회수/좋아요 요약 카드를 제공합니다.',
+          '플랫폼 점유율 차트: 각 플랫폼이 전체 조회수에서 차지하는 비중을 시각화합니다.',
+          'AI 추천 전략: 데이터 기반의 플랫폼별 최적화 제안을 받을 수 있습니다.',
+        ],
+      },
+      {
+        subtitle: '콘텐츠 비교',
+        text: '같은 콘텐츠의 플랫폼별 성과를 표로 비교합니다.',
+        items: [
+          '조회수, 좋아요, CTR을 플랫폼별로 나란히 표시합니다.',
+          '지표별 최고 성과 플랫폼을 자동으로 하이라이트합니다.',
+        ],
+      },
+      {
+        subtitle: '오디언스 중복 분석',
+        text: '플랫폼 쌍별 오디언스 중복률을 시각화합니다.',
+        items: [
+          '중복률이 높은 플랫폼은 차별화 전략을 추천합니다.',
+          '중복률이 낮은 플랫폼은 크로스 프로모션을 추천합니다.',
+        ],
+      },
+      {
+        subtitle: '기간 설정',
+        text: '7일, 30일, 90일 단위로 분석 기간을 선택할 수 있습니다.',
+      },
+    ],
+  },
+  {
+    id: 'growth-coach',
+    title: '크리에이터 성장 코치',
+    icon: AcademicCapIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: 'AI 기반 성장 코칭으로 채널 성장을 가속화하세요.',
+        items: [
+          '종합 점수: 채널 성장 상태를 0-100점으로 한눈에 파악합니다.',
+          '성장 지표: 구독자, 조회수, 참여율 변화를 실시간으로 추적합니다.',
+          '우선 인사이트: 가장 영향력 높은 인사이트 3개를 바로 확인합니다.',
+        ],
+      },
+      {
+        subtitle: '목표 관리',
+        text: '구독자, 조회수, 참여율, 수익, 업로드 빈도 등 목표를 설정합니다.',
+        items: [
+          '진행률을 시각적 프로그레스 바로 확인합니다.',
+          '마감일까지 남은 일수를 자동 계산합니다.',
+        ],
+      },
+      {
+        subtitle: '주간 리포트',
+        text: 'AI가 매주 채널 성과를 자동 분석하여 리포트를 생성합니다.',
+        items: [
+          '하이라이트(좋은 점)와 우려사항(개선점)을 구분하여 표시합니다.',
+          '실행 가능한 액션 아이템을 체크리스트로 제공합니다.',
+          '과거 리포트와 비교하여 추세를 파악할 수 있습니다.',
+        ],
+      },
+      {
+        subtitle: 'AI 인사이트',
+        text: '영향도(높음/보통/낮음)별로 필터링하여 인사이트를 확인합니다.',
+        items: [
+          '실행 가능한 인사이트에는 구체적인 추천 행동이 포함됩니다.',
+        ],
+      },
+      {
+        subtitle: '크레딧 비용',
+        text: '리포트 생성 시 10크레딧이 소모됩니다.',
+      },
+    ],
+  },
+  {
+    id: 'copyright-check',
+    title: '저작권 사전검증',
+    icon: ShieldCheckIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: '영상 업로드 전에 저작권 이슈를 미리 확인하고 수익화 영향을 예측하세요.',
+      },
+      {
+        subtitle: '영상 선택 및 검사',
+        text: '업로드 예정 영상 목록에서 검사할 영상을 선택합니다.',
+        items: [
+          '음악 검사: BGM의 저작권 상태를 확인합니다.',
+          '콘텐츠 검사: 이미지, 영상 내 콘텐츠 정책 위반을 확인합니다.',
+          '브랜드 검사: 브랜드 로고, 상표 노출을 감지합니다.',
+        ],
+      },
+      {
+        subtitle: '플랫폼별 검증',
+        text: 'YouTube, TikTok, Instagram, Naver Clip 각 플랫폼의 정책에 맞춰 검증합니다.',
+        items: [
+          '플랫폼별 통과/경고/차단 상태를 한눈에 확인할 수 있습니다.',
+        ],
+      },
+      {
+        subtitle: '검사 결과',
+        text: '검사 결과를 3단계로 분류하여 표시합니다.',
+        items: [
+          '통과(PASSED): 모든 검사 항목 문제 없음 (녹색)',
+          '경고(WARNING): 일부 이슈가 있으나 업로드 가능 (노란색)',
+          '차단(BLOCKED): 심각한 저작권 이슈로 업로드 시 제재 가능 (빨간색)',
+        ],
+      },
+      {
+        subtitle: '이슈 상세',
+        text: '각 이슈의 상세 정보를 확인하고 해결할 수 있습니다.',
+        items: [
+          '각 이슈의 심각도(정보/경고/심각)를 색상으로 구분합니다.',
+          '발생 시간 구간을 표시합니다 (음악의 경우).',
+          'AI 제안 해결 방법을 제공합니다.',
+          '자동 수정: 일부 이슈는 AI가 자동으로 수정할 수 있습니다.',
+        ],
+      },
+      {
+        subtitle: '수익화 적격성',
+        text: '검사 결과에 따른 수익화 가능 여부를 표시합니다.',
+      },
+      {
+        subtitle: '크레딧 비용',
+        text: '검사 1회당 3크레딧이 소모됩니다.',
       },
     ],
   },
@@ -1713,6 +1896,185 @@ const sectionsEn: ManualSection[] = [
           'View competitor channels\' content publishing status for trending topics.',
           'Early Adopter Opportunities: Prioritizes new trends with low competition.',
         ],
+      },
+    ],
+  },
+  {
+    id: 'brand-voice',
+    title: 'AI Brand Voice Engine',
+    icon: ChatBubbleBottomCenterTextIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'Train your brand\'s unique tone and manner with AI, and generate content with a consistent brand voice.',
+      },
+      {
+        subtitle: 'Voice Profile Management',
+        text: 'AI learns your writing style based on your existing content.',
+        items: [
+          'Profile Training: Input your existing content text for AI to learn your writing style.',
+          'Tone Settings: Choose from 5 tones — Casual, Professional, Humorous, Educational, and Inspirational.',
+          'Vocabulary Management: Set frequently used words and words to avoid.',
+          'Emoji Settings: Adjust emoji frequency in 4 levels — None, Minimal, Moderate, and Frequent.',
+        ],
+      },
+      {
+        subtitle: 'AI Text Generation',
+        text: 'Select a trained voice profile and enter a topic to generate text that matches your brand tone.',
+        items: [
+          'Platform-specific optimization (YouTube, TikTok, Instagram, Naver Clip) is supported.',
+          'Automatic hashtag generation option is available.',
+          'Verify brand consistency with a confidence score.',
+        ],
+      },
+      {
+        subtitle: 'Text Analysis',
+        text: 'Paste existing text to analyze tone, sentence length, frequently used words, emoji frequency, and more.',
+        items: [
+          'Provides readability score and formality score.',
+        ],
+      },
+      {
+        subtitle: 'Credit Cost',
+        text: 'Text generation costs 3 credits, and analysis costs 2 credits.',
+      },
+    ],
+  },
+  {
+    id: 'cross-analytics',
+    title: 'Cross-Platform Analytics',
+    icon: ArrowsPointingOutIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'Compare and analyze the performance of the same content uploaded across multiple platforms at a glance.',
+      },
+      {
+        subtitle: 'Overview Dashboard',
+        text: 'Get a comprehensive view of performance across platforms.',
+        items: [
+          'Summary cards showing total views and likes per platform.',
+          'Platform Share Chart: Visualizes the proportion of total views each platform accounts for.',
+          'AI Recommended Strategy: Receive data-driven optimization suggestions for each platform.',
+        ],
+      },
+      {
+        subtitle: 'Content Comparison',
+        text: 'Compare the performance of the same content across platforms in a table format.',
+        items: [
+          'Views, likes, and CTR are displayed side by side for each platform.',
+          'Top-performing platforms are automatically highlighted for each metric.',
+        ],
+      },
+      {
+        subtitle: 'Audience Overlap Analysis',
+        text: 'Visualize audience overlap rates between platform pairs.',
+        items: [
+          'Platforms with high overlap rates are recommended differentiation strategies.',
+          'Platforms with low overlap rates are recommended cross-promotion strategies.',
+        ],
+      },
+      {
+        subtitle: 'Period Settings',
+        text: 'Choose analysis periods of 7 days, 30 days, or 90 days.',
+      },
+    ],
+  },
+  {
+    id: 'growth-coach',
+    title: 'Creator Growth Coach',
+    icon: AcademicCapIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'Accelerate your channel growth with AI-powered growth coaching.',
+        items: [
+          'Overall Score: Assess your channel growth status at a glance with a 0-100 score.',
+          'Growth Metrics: Track changes in subscribers, views, and engagement rates in real-time.',
+          'Priority Insights: View the top 3 most impactful insights immediately.',
+        ],
+      },
+      {
+        subtitle: 'Goal Management',
+        text: 'Set goals for subscribers, views, engagement rate, revenue, upload frequency, and more.',
+        items: [
+          'Track progress with visual progress bars.',
+          'Automatically calculates remaining days until the deadline.',
+        ],
+      },
+      {
+        subtitle: 'Weekly Reports',
+        text: 'AI automatically analyzes channel performance each week and generates reports.',
+        items: [
+          'Displays highlights (strengths) and concerns (areas for improvement) separately.',
+          'Provides actionable items as a checklist.',
+          'Compare with past reports to identify trends.',
+        ],
+      },
+      {
+        subtitle: 'AI Insights',
+        text: 'Filter insights by impact level (High, Medium, Low).',
+        items: [
+          'Actionable insights include specific recommended actions.',
+        ],
+      },
+      {
+        subtitle: 'Credit Cost',
+        text: 'Report generation costs 10 credits.',
+      },
+    ],
+  },
+  {
+    id: 'copyright-check',
+    title: 'Copyright Pre-Check',
+    icon: ShieldCheckIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'Verify copyright issues before uploading videos and predict the impact on monetization.',
+      },
+      {
+        subtitle: 'Video Selection and Scanning',
+        text: 'Select videos to scan from the list of videos pending upload.',
+        items: [
+          'Music Check: Verifies the copyright status of background music.',
+          'Content Check: Checks for content policy violations in images and video.',
+          'Brand Check: Detects brand logo and trademark exposure.',
+        ],
+      },
+      {
+        subtitle: 'Platform-Specific Validation',
+        text: 'Validates against the policies of each platform — YouTube, TikTok, Instagram, and Naver Clip.',
+        items: [
+          'View pass/warning/blocked status for each platform at a glance.',
+        ],
+      },
+      {
+        subtitle: 'Scan Results',
+        text: 'Scan results are classified into 3 levels.',
+        items: [
+          'PASSED: No issues found in all scan items (green).',
+          'WARNING: Some issues found but upload is possible (yellow).',
+          'BLOCKED: Serious copyright issues that may result in sanctions upon upload (red).',
+        ],
+      },
+      {
+        subtitle: 'Issue Details',
+        text: 'View detailed information for each issue and resolve them.',
+        items: [
+          'Each issue\'s severity (Info, Warning, Critical) is color-coded.',
+          'Time range is displayed for music-related issues.',
+          'AI-suggested resolution methods are provided.',
+          'Auto-Fix: Some issues can be automatically fixed by AI.',
+        ],
+      },
+      {
+        subtitle: 'Monetization Eligibility',
+        text: 'Displays monetization eligibility based on scan results.',
+      },
+      {
+        subtitle: 'Credit Cost',
+        text: 'Each scan costs 3 credits.',
       },
     ],
   },
