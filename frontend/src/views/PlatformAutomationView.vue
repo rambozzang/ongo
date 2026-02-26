@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted } from 'vue'
 import {
   CogIcon,
   BoltIcon,
@@ -7,7 +7,6 @@ import {
   CheckCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { usePlatformAutomationStore } from '@/stores/platformAutomation'
-import type { AutomationRule, AutomationLog } from '@/types/platformAutomation'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import AutomationRuleCard from '@/components/platformautomation/AutomationRuleCard.vue'
 import AutomationLogRow from '@/components/platformautomation/AutomationLogRow.vue'

@@ -29,16 +29,6 @@ const platformNames: Record<string, string> = {
   NAVER_CLIP: 'Naver Clip',
 }
 
-const platformColors: Record<string, { ring: string; gauge: string }> = {
-  YOUTUBE: { ring: 'stroke-red-500', gauge: 'text-red-500' },
-  TIKTOK: { ring: 'stroke-gray-700 dark:stroke-gray-300', gauge: 'text-gray-700 dark:text-gray-300' },
-  INSTAGRAM: { ring: 'stroke-pink-500', gauge: 'text-pink-500' },
-  NAVER_CLIP: { ring: 'stroke-green-500', gauge: 'text-green-500' },
-}
-
-const getPlatformColor = (platform: string) =>
-  platformColors[platform.toUpperCase()] ?? platformColors.YOUTUBE
-
 const overallScoreColor = computed(() => {
   if (props.score.overallScore >= 80) return 'text-green-600 dark:text-green-400'
   if (props.score.overallScore >= 60) return 'text-yellow-600 dark:text-yellow-400'

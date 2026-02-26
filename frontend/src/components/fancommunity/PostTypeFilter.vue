@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { PostType } from '@/types/fanCommunity'
-
 defineProps<{
   selected: string
 }>()

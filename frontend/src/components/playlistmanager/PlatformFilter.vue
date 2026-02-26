@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { PlaylistPlatform } from '@/types/playlistManager'
-
 interface Props {
   selected: string
 }

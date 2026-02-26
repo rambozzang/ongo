@@ -9,7 +9,6 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useVideoSeoStore } from '@/stores/videoSeo'
 import SeoAnalysisCard from '@/components/videoseo/SeoAnalysisCard.vue'
-import SeoScoreGauge from '@/components/videoseo/SeoScoreGauge.vue'
 import SeoKeywordRow from '@/components/videoseo/SeoKeywordRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 

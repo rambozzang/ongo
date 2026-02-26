@@ -7,7 +7,6 @@ import {
   StarIcon,
 } from '@heroicons/vue/24/outline'
 import { useCreatorMarketplaceStore } from '@/stores/creatorMarketplace'
-import type { MarketplaceListing, MarketplaceOrder, MarketplaceSummary } from '@/types/creatorMarketplace'
 import ListingCard from '@/components/creatormarketplace/ListingCard.vue'
 import OrderRow from '@/components/creatormarketplace/OrderRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'

@@ -13,7 +13,7 @@ import PlatformFilter from '@/components/playlistmanager/PlatformFilter.vue'
 import PlaylistStats from '@/components/playlistmanager/PlaylistStats.vue'
 import { usePlaylistManagerStore } from '@/stores/playlistManager'
 import { storeToRefs } from 'pinia'
-import type { CreatePlaylistRequest, PlaylistPlatform, PlaylistVisibility } from '@/types/playlistManager'
+import type { CreatePlaylistRequest } from '@/types/playlistManager'
 
 const store = usePlaylistManagerStore()
 const { playlists, summary, isLoading } = storeToRefs(store)
@@ -40,10 +40,6 @@ const filteredPlaylists = computed(() => {
 })
 
 /* ---- Helpers ---- */
-function formatNumber(num: number): string {
-  return num.toLocaleString('ko-KR')
-}
-
 /* ---- Handlers ---- */
 function openCreate() {
   form.value = {
@@ -63,7 +59,7 @@ async function handleCreate() {
   showCreateModal.value = false
 }
 
-function handleCardClick(id: number) {
+function handleCardClick(_id: number) {
   // 향후 상세 뷰 연결
 }
 

@@ -7,7 +7,6 @@ import {
   HandThumbUpIcon,
 } from '@heroicons/vue/24/outline'
 import { useFanRewardStore } from '@/stores/fanReward'
-import type { FanReward, FanActivity } from '@/types/fanReward'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import RewardCard from '@/components/fanreward/RewardCard.vue'
 import FanActivityRow from '@/components/fanreward/FanActivityRow.vue'

@@ -11,7 +11,7 @@ import ThumbnailTestCard from '@/components/thumbnailabtest/ThumbnailTestCard.vu
 import PageGuide from '@/components/common/PageGuide.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
-const { t } = useI18n({ useScope: 'global' })
+useI18n({ useScope: 'global' })
 const store = useThumbnailAbTestStore()
 
 const { tests, summary, loading } = storeToRefs(store)

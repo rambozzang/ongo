@@ -12,7 +12,7 @@ import PageGuide from '@/components/common/PageGuide.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { TopComment } from '@/types/commentSummary'
 
-const { t } = useI18n({ useScope: 'global' })
+useI18n({ useScope: 'global' })
 const store = useCommentSummaryStore()
 const { results, summary, isLoading } = storeToRefs(store)
 

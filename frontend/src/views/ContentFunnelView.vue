@@ -123,7 +123,7 @@ onMounted(() => {
               </span>
             </div>
 
-            <FunnelChart :stages="funnel.stages" />
+            <FunnelChart :funnel="funnel" />
           </div>
         </div>
 

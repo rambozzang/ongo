@@ -18,7 +18,7 @@ interface Emits {
   (e: 'toggle', id: number): void
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const actionConfig: Record<string, { icon: typeof PlayIcon; label: string }> = {

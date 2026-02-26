@@ -7,7 +7,6 @@ import {
   ChatBubbleLeftRightIcon,
 } from '@heroicons/vue/24/outline'
 import { useLiveStreamStore } from '@/stores/liveStream'
-import type { LiveStream, StreamChat, LiveStreamSummary } from '@/types/liveStream'
 import StreamCard from '@/components/livestream/StreamCard.vue'
 import ChatMessageRow from '@/components/livestream/ChatMessageRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'

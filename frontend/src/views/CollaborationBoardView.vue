@@ -16,7 +16,7 @@ import { useCollaborationBoardStore } from '@/stores/collaborationBoard'
 import type { BoardColumnType, BoardTask, CreateBoardTaskRequest } from '@/types/collaborationBoard'
 
 const store = useCollaborationBoardStore()
-const { columns, summary, isLoading, totalTasks } = storeToRefs(store)
+const { columns, summary, isLoading } = storeToRefs(store)
 
 const showCreateModal = ref(false)
 const showDetailModal = ref(false)
@@ -252,7 +252,7 @@ function formatDate(dateStr: string): string {
                     {{ priorityConfig[selectedTask.priority]?.label }}
                   </span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-                    {{ columns.find(c => c.type === selectedTask.column)?.label ?? selectedTask.column }}
+                    {{ columns.find(c => c.type === selectedTask!.column)?.label ?? selectedTask!.column }}
                   </span>
                 </div>
 

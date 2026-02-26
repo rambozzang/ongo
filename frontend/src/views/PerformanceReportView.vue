@@ -12,7 +12,6 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import ReportCard from '@/components/performancereport/ReportCard.vue'
 import ReportSectionItem from '@/components/performancereport/ReportSectionItem.vue'
 import { usePerformanceReportStore } from '@/stores/performanceReport'
-import type { PerformanceReport, ReportSection, PerformanceReportSummary } from '@/types/performanceReport'
 
 const store = usePerformanceReportStore()
 

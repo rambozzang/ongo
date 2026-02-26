@@ -4,9 +4,6 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import {
   HeartIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  MinusIcon,
 } from '@heroicons/vue/24/outline'
 import { usePlatformHealthStore } from '@/stores/platformHealth'
 import PlatformHealthCard from '@/components/platformhealth/PlatformHealthCard.vue'

@@ -13,10 +13,10 @@ import GoalMilestoneList from '@/components/revenuegoal/GoalMilestoneList.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
-const { t } = useI18n({ useScope: 'global' })
+useI18n({ useScope: 'global' })
 const store = useRevenueGoalStore()
 
-const { goals, milestones, summary, loading } = storeToRefs(store)
+const { goals, summary, loading } = storeToRefs(store)
 
 // ─── Filters ──────────────────────────────────────
 const statusFilter = ref<string>('')

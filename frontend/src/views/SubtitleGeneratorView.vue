@@ -15,7 +15,7 @@ import SubtitleSegmentRow from '@/components/subtitlegenerator/SubtitleSegmentRo
 import { useSubtitleGeneratorStore } from '@/stores/subtitleGenerator'
 import type { SubtitleJob } from '@/types/subtitleGenerator'
 
-const { t } = useI18n({ useScope: 'global' })
+useI18n({ useScope: 'global' })
 const store = useSubtitleGeneratorStore()
 
 const selectedJobId = ref<number | null>(null)

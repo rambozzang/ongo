@@ -15,7 +15,7 @@ import DeliverableList from '@/components/sponsorshiptracker/DeliverableList.vue
 import RevenueChart from '@/components/sponsorshiptracker/RevenueChart.vue'
 import { useSponsorshipTrackerStore } from '@/stores/sponsorshipTracker'
 import { storeToRefs } from 'pinia'
-import type { Sponsorship, SponsorshipStatus, CreateSponsorshipRequest } from '@/types/sponsorshipTracker'
+import type { Sponsorship, CreateSponsorshipRequest } from '@/types/sponsorshipTracker'
 
 const store = useSponsorshipTrackerStore()
 const { sponsorships, summary, isLoading } = storeToRefs(store)

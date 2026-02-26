@@ -141,7 +141,7 @@
               </label>
               <div class="space-y-2">
                 <div
-                  v-for="(option, index) in newPoll.options"
+                  v-for="(_option, index) in newPoll.options"
                   :key="index"
                   class="flex items-center gap-2"
                 >
