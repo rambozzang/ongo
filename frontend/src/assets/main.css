@@ -17,10 +17,12 @@
   .page-leave-active {
     transition: opacity 200ms ease, transform 200ms ease;
   }
+
   .page-enter-from {
     opacity: 0;
     transform: translateY(8px);
   }
+
   .page-leave-to {
     opacity: 0;
     transform: translateY(-4px);
@@ -31,6 +33,7 @@
   .btn-press {
     @apply transition-transform;
   }
+
   .btn-press:active {
     transform: scale(0.97);
   }
@@ -53,7 +56,15 @@
   }
 
   .card {
-    @apply rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800;
+    @apply relative rounded-2xl border border-gray-200/80 bg-white/90 p-6 shadow-sm backdrop-blur-xl transition-all duration-300 dark:border-gray-700/50 dark:bg-gray-900/85 dark:shadow-gray-900/30;
+  }
+
+  .card:hover {
+    @apply border-gray-300 dark:border-gray-600 shadow-md;
+  }
+
+  .card-compact {
+    @apply card p-4;
   }
 
   .badge {
@@ -85,6 +96,7 @@
     @apply bg-white/80 backdrop-blur-xl dark:bg-gray-900/80;
     border: 1px solid rgba(255, 255, 255, 0.18);
   }
+
   .dark .glass {
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
@@ -93,6 +105,7 @@
     @apply bg-white/80 backdrop-blur-xl dark:bg-gray-900/85;
     border-right: 1px solid rgba(0, 0, 0, 0.06);
   }
+
   .dark .glass-sidebar {
     border-right: 1px solid rgba(255, 255, 255, 0.06);
   }
@@ -101,6 +114,7 @@
     @apply bg-white/90 backdrop-blur-2xl shadow-xl dark:bg-gray-800/90;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
   }
+
   .dark .glass-elevated {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.04);
   }
@@ -109,10 +123,12 @@
   .card-interactive {
     @apply transition-all duration-200;
   }
+
   .card-interactive:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
   }
+
   .dark .card-interactive:hover {
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
   }
@@ -126,6 +142,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -136,9 +153,12 @@
   }
 
   @keyframes notification-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.6;
     }
@@ -146,6 +166,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
