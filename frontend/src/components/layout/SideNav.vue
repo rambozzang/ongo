@@ -146,6 +146,10 @@ import {
   TableCellsIcon,
   BoltIcon as LiveBoltIcon,
   CurrencyDollarIcon,
+  DocumentTextIcon,
+  MegaphoneIcon,
+  UserPlusIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -194,6 +198,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/assets', label: t('nav.assets'), icon: FolderIcon },
       { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
       { to: '/thumbnail-generator', label: t('nav.thumbnailGenerator'), icon: PhotoIcon },
+      { to: '/content-rewriter', label: t('nav.contentRewriter'), icon: DocumentTextIcon },
       { to: '/recycling', label: t('nav.recycling'), icon: ArrowPathIcon },
     ],
   },
@@ -233,6 +238,8 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/inbox', label: t('nav.inbox'), icon: InboxIcon },
       { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
       { to: '/audience', label: t('nav.audience'), icon: UsersIcon },
+      { to: '/social-listening', label: t('nav.socialListening'), icon: MegaphoneIcon },
+      { to: '/influencer-match', label: t('nav.influencerMatch'), icon: UserPlusIcon },
     ],
   },
   {
@@ -246,6 +253,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/hashtag-strategy', label: t('nav.hashtagStrategy'), icon: HashtagIcon },
       { to: '/brand-voice', label: t('nav.brandVoice'), icon: SpeakerWaveIcon },
       { to: '/copyright-check', label: t('nav.copyrightCheck'), icon: DocumentMagnifyingGlassIcon },
+      { to: '/quality-score', label: t('nav.qualityScore'), icon: ClipboardDocumentCheckIcon },
     ],
   },
   {

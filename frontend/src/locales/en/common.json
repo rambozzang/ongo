@@ -98,7 +98,11 @@
     "thumbnailGenerator": "AI Thumbnails",
     "performanceHeatmap": "Performance Heatmap",
     "liveDashboard": "Live Dashboard",
-    "revenueForecaster": "Revenue Forecaster"
+    "revenueForecaster": "Revenue Forecaster",
+    "contentRewriter": "Content Rewriter",
+    "socialListening": "Social Listening",
+    "influencerMatch": "Influencer Match",
+    "qualityScore": "Quality Score"
   },
   "manual": {
     "title": "User Manual",
@@ -3336,6 +3340,237 @@
         "SUPER_CHAT": "Super Chat",
         "AFFILIATE": "Affiliate"
       }
+    }
+  },
+  "contentRewriter": {
+    "title": "AI Content Rewriter",
+    "description": "Automatically transform one piece of content for multiple platforms",
+    "pageGuideTitle": "Content Rewriter Guide",
+    "pageGuide": [
+      "Enter your source content and select output formats",
+      "AI generates platform-optimized content automatically",
+      "Copy generated content directly to use"
+    ],
+    "inputTitle": "Source Content",
+    "sourceText": "Source Text",
+    "sourceTextPlaceholder": "Enter content to transform...",
+    "sourceType": "Source Type",
+    "sourceTypes": {
+      "VIDEO_SCRIPT": "Video Script",
+      "BLOG": "Blog",
+      "TRANSCRIPT": "Transcript",
+      "RAW_TEXT": "Raw Text"
+    },
+    "outputFormats": "Output Formats",
+    "formats": {
+      "SHORT_VIDEO": "Shorts/Reels",
+      "TWEET": "Tweet",
+      "BLOG_POST": "Blog Post",
+      "CAPTION": "Caption",
+      "NEWSLETTER": "Newsletter",
+      "THREAD": "Thread"
+    },
+    "formatHints": {
+      "SHORT_VIDEO": "Under 60s",
+      "TWEET": "Under 280 chars",
+      "BLOG_POST": "500-2000 chars",
+      "CAPTION": "Under 150 chars",
+      "NEWSLETTER": "Email format",
+      "THREAD": "Connected posts"
+    },
+    "tone": "Tone",
+    "tones": {
+      "professional": "Professional",
+      "casual": "Casual",
+      "humorous": "Humorous",
+      "educational": "Educational"
+    },
+    "rewriteButton": "AI Rewrite",
+    "rewriting": "Rewriting...",
+    "creditCost": "{cost} credits",
+    "creditsRemaining": "Credits remaining",
+    "resultsTitle": "Results",
+    "noResults": "No results yet",
+    "noResultsDesc": "Enter content on the left and start rewriting",
+    "historyTitle": "History",
+    "noHistory": "No history",
+    "noHistoryDesc": "Rewrite history will appear here",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "delete": "Delete",
+    "characters": "{count} chars",
+    "engagement": "Est. engagement {rate}%",
+    "hashtags": "Hashtags",
+    "rewriteError": "An error occurred during rewriting",
+    "selectAtLeastOne": "Select at least one output format"
+  },
+  "socialListening": {
+    "title": "Social Listening",
+    "description": "Monitor brand mentions and sentiment analysis in real time",
+    "pageGuideTitle": "Social Listening Guide",
+    "pageGuide": [
+      "Automatically collects brand mentions across major platforms",
+      "AI analyzes positive/neutral/negative sentiment",
+      "Set keyword alerts to never miss important mentions"
+    ],
+    "period": "Period",
+    "periods": {
+      "7d": "7 days",
+      "14d": "14 days",
+      "30d": "30 days",
+      "90d": "90 days"
+    },
+    "totalMentions": "Total Mentions",
+    "mentions": "mentions",
+    "sentiment": {
+      "positive": "Positive",
+      "neutral": "Neutral",
+      "negative": "Negative"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "mentions": "Mentions",
+      "alerts": "Keyword Alerts"
+    },
+    "trendTitle": "Sentiment Trends",
+    "topKeywords": "Top Keywords",
+    "keywordCount": "{count} times",
+    "mentionsTitle": "Recent Mentions",
+    "source": "Source",
+    "author": "Author",
+    "reach": "Reach",
+    "reachCount": "{count} people",
+    "sentimentScore": "Sentiment Score",
+    "viewOriginal": "View Original",
+    "alertsTitle": "Keyword Alerts",
+    "alertKeyword": "Keyword",
+    "alertMentions": "Mentions",
+    "alertLastTriggered": "Last Triggered",
+    "alertEnabled": "Enabled",
+    "addAlert": "Add Alert",
+    "alertPlaceholder": "Enter keyword to monitor",
+    "deleteAlert": "Delete Alert",
+    "noMentions": "No mentions",
+    "noMentionsDesc": "No brand mentions detected yet",
+    "noAlerts": "No alerts set",
+    "noAlertsDesc": "Add keywords to monitor important mentions"
+  },
+  "influencerMatch": {
+    "title": "AI Influencer Match",
+    "description": "AI finds the best collaboration partners for your channel",
+    "pageGuideTitle": "Influencer Match Guide",
+    "pageGuide": [
+      "AI recommends optimal influencers based on audience analysis",
+      "Higher match scores indicate greater synergy potential",
+      "Send collaboration proposals directly to start working together"
+    ],
+    "creditsRemaining": "Credits remaining",
+    "findMatches": "Start AI Match",
+    "searching": "Searching...",
+    "creditCost": "{cost} credits",
+    "tabs": {
+      "matches": "Recommended Influencers",
+      "collabs": "Collaboration Requests"
+    },
+    "filters": {
+      "category": "Category",
+      "allCategories": "All",
+      "platform": "Platform",
+      "allPlatforms": "All",
+      "followers": "Followers",
+      "engagement": "Engagement",
+      "budget": "Budget"
+    },
+    "matchScore": "Match Score",
+    "matchReason": "Match Reason",
+    "followers": "Followers",
+    "avgViews": "Avg Views",
+    "engagementRate": "Engagement Rate",
+    "audienceOverlap": "Audience Overlap",
+    "estimatedCost": "Estimated Cost",
+    "recentContent": "Recent Content",
+    "views": "views",
+    "contact": "Propose Collab",
+    "noMatches": "No matches found",
+    "noMatchesDesc": "Run AI matching to discover recommended influencers",
+    "collabStatus": {
+      "SUGGESTED": "Suggested",
+      "CONTACTED": "Contacted",
+      "NEGOTIATING": "Negotiating",
+      "CONFIRMED": "Confirmed",
+      "COMPLETED": "Completed",
+      "DECLINED": "Declined"
+    },
+    "proposedBudget": "Proposed Budget",
+    "noCollabs": "No collaboration requests",
+    "noCollabsDesc": "Send a collaboration proposal to an influencer",
+    "sendCollab": "Send Collaboration Proposal",
+    "collabMessage": "Proposal Message",
+    "collabMessagePlaceholder": "Write your collaboration proposal...",
+    "collabBudget": "Proposed Budget (KRW)",
+    "send": "Send",
+    "sendError": "Failed to send proposal",
+    "sendSuccess": "Collaboration proposal sent!"
+  },
+  "qualityScore": {
+    "title": "AI Content Quality Score",
+    "description": "AI evaluates content quality before upload and suggests improvements",
+    "pageGuideTitle": "Quality Score Guide",
+    "pageGuide": [
+      "Enter title, description, and tags for your content",
+      "AI analyzes quality across 8 categories",
+      "Apply improvement suggestions for better performance"
+    ],
+    "creditsRemaining": "Credits remaining",
+    "checkTitle": "Quality Check",
+    "videoTitle": "Video Title",
+    "videoTitlePlaceholder": "Enter video title",
+    "videoDescription": "Video Description",
+    "videoDescriptionPlaceholder": "Enter video description",
+    "tags": "Tags",
+    "tagsPlaceholder": "Separate with commas",
+    "platform": "Platform",
+    "checkButton": "AI Quality Check",
+    "checking": "Checking...",
+    "creditCost": "{cost} credits",
+    "reportTitle": "Quality Report",
+    "overallScore": "Overall Score",
+    "overallGrade": "Overall Grade",
+    "competitorAvg": "Competitor Average",
+    "aboveAverage": "Above Average",
+    "belowAverage": "Below Average",
+    "categories": {
+      "TITLE": "Title",
+      "THUMBNAIL": "Thumbnail",
+      "DESCRIPTION": "Description",
+      "TAGS": "Tags",
+      "AUDIO": "Audio",
+      "VIDEO": "Video",
+      "SEO": "SEO",
+      "ENGAGEMENT_POTENTIAL": "Engagement Potential"
+    },
+    "feedback": "Feedback",
+    "suggestions": "Suggestions",
+    "topIssues": "Top Issues",
+    "improvements": "Improvements",
+    "priority": {
+      "HIGH": "High",
+      "MEDIUM": "Medium",
+      "LOW": "Low"
+    },
+    "expectedImpact": "Expected Impact",
+    "historyTitle": "Check History",
+    "noReport": "No report yet",
+    "noReportDesc": "Enter content info on the left and run quality check",
+    "noHistory": "No history",
+    "noHistoryDesc": "Quality check history will appear here",
+    "checkError": "An error occurred during quality check",
+    "grade": {
+      "S": "S Grade",
+      "A": "A Grade",
+      "B": "B Grade",
+      "C": "C Grade",
+      "D": "D Grade"
     }
   }
 }

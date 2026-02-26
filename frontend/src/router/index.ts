@@ -354,6 +354,30 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/RevenueForecasterView.vue'),
         meta: { breadcrumb: '수익 예측기' },
       },
+      {
+        path: 'content-rewriter',
+        name: 'content-rewriter',
+        component: () => import('@/views/ContentRewriterView.vue'),
+        meta: { breadcrumb: 'AI 콘텐츠 리라이터' },
+      },
+      {
+        path: 'social-listening',
+        name: 'social-listening',
+        component: () => import('@/views/SocialListeningView.vue'),
+        meta: { breadcrumb: '소셜 리스닝' },
+      },
+      {
+        path: 'influencer-match',
+        name: 'influencer-match',
+        component: () => import('@/views/InfluencerMatchView.vue'),
+        meta: { breadcrumb: '인플루언서 매칭' },
+      },
+      {
+        path: 'quality-score',
+        name: 'quality-score',
+        component: () => import('@/views/QualityScoreView.vue'),
+        meta: { breadcrumb: '퀄리티 스코어' },
+      },
     ],
   },
   {

@@ -98,7 +98,11 @@
     "thumbnailGenerator": "AI 썸네일",
     "performanceHeatmap": "성과 히트맵",
     "liveDashboard": "실시간 대시보드",
-    "revenueForecaster": "수익 예측기"
+    "revenueForecaster": "수익 예측기",
+    "contentRewriter": "콘텐츠 리라이터",
+    "socialListening": "소셜 리스닝",
+    "influencerMatch": "인플루언서 매칭",
+    "qualityScore": "퀄리티 스코어"
   },
   "manual": {
     "title": "사용자 매뉴얼",
@@ -3161,6 +3165,237 @@
         "SUPER_CHAT": "슈퍼챗",
         "AFFILIATE": "제휴 마케팅"
       }
+    }
+  },
+  "contentRewriter": {
+    "title": "AI 콘텐츠 리라이터",
+    "description": "하나의 콘텐츠를 다양한 플랫폼에 맞게 자동 변환합니다",
+    "pageGuideTitle": "콘텐츠 리라이터 가이드",
+    "pageGuide": [
+      "원본 콘텐츠를 입력하고 변환할 형식을 선택하세요",
+      "AI가 각 플랫폼에 최적화된 콘텐츠를 자동 생성합니다",
+      "생성된 콘텐츠를 바로 복사하여 사용할 수 있습니다"
+    ],
+    "inputTitle": "원본 콘텐츠",
+    "sourceText": "원본 텍스트",
+    "sourceTextPlaceholder": "변환할 콘텐츠를 입력하세요...",
+    "sourceType": "소스 유형",
+    "sourceTypes": {
+      "VIDEO_SCRIPT": "영상 스크립트",
+      "BLOG": "블로그",
+      "TRANSCRIPT": "자막/트랜스크립트",
+      "RAW_TEXT": "일반 텍스트"
+    },
+    "outputFormats": "출력 형식",
+    "formats": {
+      "SHORT_VIDEO": "쇼츠/릴스",
+      "TWEET": "트윗",
+      "BLOG_POST": "블로그 포스트",
+      "CAPTION": "캡션",
+      "NEWSLETTER": "뉴스레터",
+      "THREAD": "스레드"
+    },
+    "formatHints": {
+      "SHORT_VIDEO": "60초 이내",
+      "TWEET": "280자 이내",
+      "BLOG_POST": "500~2000자",
+      "CAPTION": "150자 이내",
+      "NEWSLETTER": "이메일 형식",
+      "THREAD": "연결 게시물"
+    },
+    "tone": "톤",
+    "tones": {
+      "professional": "전문적",
+      "casual": "캐주얼",
+      "humorous": "유머러스",
+      "educational": "교육적"
+    },
+    "rewriteButton": "AI 변환하기",
+    "rewriting": "변환 중...",
+    "creditCost": "{cost} 크레딧 소모",
+    "creditsRemaining": "잔여 크레딧",
+    "resultsTitle": "변환 결과",
+    "noResults": "아직 변환 결과가 없습니다",
+    "noResultsDesc": "왼쪽에서 콘텐츠를 입력하고 변환해보세요",
+    "historyTitle": "변환 이력",
+    "noHistory": "이력이 없습니다",
+    "noHistoryDesc": "콘텐츠를 변환하면 여기에 기록됩니다",
+    "copy": "복사",
+    "copied": "복사되었습니다!",
+    "delete": "삭제",
+    "characters": "{count}자",
+    "engagement": "예상 참여율 {rate}%",
+    "hashtags": "해시태그",
+    "rewriteError": "변환 중 오류가 발생했습니다",
+    "selectAtLeastOne": "최소 하나의 출력 형식을 선택하세요"
+  },
+  "socialListening": {
+    "title": "소셜 리스닝",
+    "description": "브랜드 언급과 감성 분석을 실시간으로 모니터링합니다",
+    "pageGuideTitle": "소셜 리스닝 가이드",
+    "pageGuide": [
+      "주요 플랫폼에서 브랜드 언급을 자동 수집합니다",
+      "긍정/중립/부정 감성을 AI가 분석합니다",
+      "키워드 알림을 설정하여 중요한 언급을 놓치지 마세요"
+    ],
+    "period": "기간",
+    "periods": {
+      "7d": "7일",
+      "14d": "14일",
+      "30d": "30일",
+      "90d": "90일"
+    },
+    "totalMentions": "총 언급",
+    "mentions": "건",
+    "sentiment": {
+      "positive": "긍정",
+      "neutral": "중립",
+      "negative": "부정"
+    },
+    "tabs": {
+      "overview": "개요",
+      "mentions": "언급 목록",
+      "alerts": "키워드 알림"
+    },
+    "trendTitle": "감성 추이",
+    "topKeywords": "인기 키워드",
+    "keywordCount": "{count}회",
+    "mentionsTitle": "최근 언급",
+    "source": "출처",
+    "author": "작성자",
+    "reach": "도달",
+    "reachCount": "{count}명",
+    "sentimentScore": "감성 점수",
+    "viewOriginal": "원문 보기",
+    "alertsTitle": "키워드 알림",
+    "alertKeyword": "키워드",
+    "alertMentions": "언급 수",
+    "alertLastTriggered": "마지막 감지",
+    "alertEnabled": "활성",
+    "addAlert": "알림 추가",
+    "alertPlaceholder": "모니터링할 키워드 입력",
+    "deleteAlert": "알림 삭제",
+    "noMentions": "언급이 없습니다",
+    "noMentionsDesc": "아직 감지된 브랜드 언급이 없습니다",
+    "noAlerts": "설정된 알림이 없습니다",
+    "noAlertsDesc": "키워드를 추가하여 중요한 언급을 모니터링하세요"
+  },
+  "influencerMatch": {
+    "title": "AI 인플루언서 매칭",
+    "description": "AI가 내 채널과 최적의 콜라보 파트너를 찾아줍니다",
+    "pageGuideTitle": "인플루언서 매칭 가이드",
+    "pageGuide": [
+      "AI가 오디언스 분석을 기반으로 최적의 인플루언서를 추천합니다",
+      "매칭 점수가 높을수록 시너지 효과가 큽니다",
+      "직접 콜라보 제안을 보내 협업을 시작하세요"
+    ],
+    "creditsRemaining": "잔여 크레딧",
+    "findMatches": "AI 매칭 시작",
+    "searching": "검색 중...",
+    "creditCost": "{cost} 크레딧 소모",
+    "tabs": {
+      "matches": "추천 인플루언서",
+      "collabs": "콜라보 요청"
+    },
+    "filters": {
+      "category": "카테고리",
+      "allCategories": "전체",
+      "platform": "플랫폼",
+      "allPlatforms": "전체",
+      "followers": "팔로워",
+      "engagement": "참여율",
+      "budget": "예산"
+    },
+    "matchScore": "매칭 점수",
+    "matchReason": "매칭 이유",
+    "followers": "팔로워",
+    "avgViews": "평균 조회수",
+    "engagementRate": "참여율",
+    "audienceOverlap": "오디언스 겹침",
+    "estimatedCost": "예상 비용",
+    "recentContent": "최근 콘텐츠",
+    "views": "조회",
+    "contact": "콜라보 제안",
+    "noMatches": "매칭 결과가 없습니다",
+    "noMatchesDesc": "AI 매칭을 실행하여 추천 인플루언서를 확인하세요",
+    "collabStatus": {
+      "SUGGESTED": "추천",
+      "CONTACTED": "연락함",
+      "NEGOTIATING": "협상 중",
+      "CONFIRMED": "확정",
+      "COMPLETED": "완료",
+      "DECLINED": "거절"
+    },
+    "proposedBudget": "제안 예산",
+    "noCollabs": "콜라보 요청이 없습니다",
+    "noCollabsDesc": "인플루언서에게 콜라보를 제안해보세요",
+    "sendCollab": "콜라보 제안 보내기",
+    "collabMessage": "제안 메시지",
+    "collabMessagePlaceholder": "콜라보 제안 내용을 작성하세요...",
+    "collabBudget": "제안 예산 (원)",
+    "send": "보내기",
+    "sendError": "제안 전송 중 오류가 발생했습니다",
+    "sendSuccess": "콜라보 제안이 전송되었습니다!"
+  },
+  "qualityScore": {
+    "title": "AI 콘텐츠 퀄리티 스코어",
+    "description": "업로드 전 콘텐츠 품질을 AI가 평가하고 개선점을 제안합니다",
+    "pageGuideTitle": "퀄리티 스코어 가이드",
+    "pageGuide": [
+      "업로드할 콘텐츠의 제목, 설명, 태그를 입력하세요",
+      "AI가 8가지 카테고리로 품질을 분석합니다",
+      "개선 제안을 반영하면 더 높은 성과를 기대할 수 있습니다"
+    ],
+    "creditsRemaining": "잔여 크레딧",
+    "checkTitle": "품질 검사",
+    "videoTitle": "영상 제목",
+    "videoTitlePlaceholder": "영상 제목을 입력하세요",
+    "videoDescription": "영상 설명",
+    "videoDescriptionPlaceholder": "영상 설명을 입력하세요",
+    "tags": "태그",
+    "tagsPlaceholder": "쉼표로 구분하여 입력",
+    "platform": "플랫폼",
+    "checkButton": "AI 품질 검사",
+    "checking": "검사 중...",
+    "creditCost": "{cost} 크레딧 소모",
+    "reportTitle": "품질 리포트",
+    "overallScore": "종합 점수",
+    "overallGrade": "종합 등급",
+    "competitorAvg": "경쟁사 평균",
+    "aboveAverage": "평균 이상",
+    "belowAverage": "평균 이하",
+    "categories": {
+      "TITLE": "제목",
+      "THUMBNAIL": "썸네일",
+      "DESCRIPTION": "설명",
+      "TAGS": "태그",
+      "AUDIO": "오디오",
+      "VIDEO": "영상",
+      "SEO": "SEO",
+      "ENGAGEMENT_POTENTIAL": "참여 잠재력"
+    },
+    "feedback": "피드백",
+    "suggestions": "개선 제안",
+    "topIssues": "주요 이슈",
+    "improvements": "개선 사항",
+    "priority": {
+      "HIGH": "높음",
+      "MEDIUM": "중간",
+      "LOW": "낮음"
+    },
+    "expectedImpact": "예상 효과",
+    "historyTitle": "검사 이력",
+    "noReport": "아직 검사 결과가 없습니다",
+    "noReportDesc": "왼쪽에서 콘텐츠 정보를 입력하고 품질 검사를 실행하세요",
+    "noHistory": "이력이 없습니다",
+    "noHistoryDesc": "품질 검사를 실행하면 여기에 기록됩니다",
+    "checkError": "품질 검사 중 오류가 발생했습니다",
+    "grade": {
+      "S": "S등급",
+      "A": "A등급",
+      "B": "B등급",
+      "C": "C등급",
+      "D": "D등급"
     }
   }
 }
