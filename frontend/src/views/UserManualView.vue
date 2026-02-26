@@ -120,6 +120,13 @@ import {
   ArrowsPointingOutIcon,
   AcademicCapIcon,
   ShieldCheckIcon,
+  TableCellsIcon,
+  BoltIcon,
+  CurrencyDollarIcon,
+  DocumentTextIcon,
+  MegaphoneIcon,
+  UserPlusIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 
@@ -1133,6 +1140,291 @@ const sectionsKo: ManualSection[] = [
       },
     ],
   },
+  {
+    id: 'thumbnail-generator',
+    title: 'AI 썸네일 생성기',
+    icon: PhotoIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: 'AI 썸네일 생성기는 영상 콘텐츠에 최적화된 고품질 썸네일을 AI가 자동으로 디자인하고 생성하는 기능입니다. 클릭률(CTR)을 극대화하는 시각적 요소를 분석하여 전문 디자이너 수준의 썸네일을 만들어 줍니다.',
+      },
+      {
+        subtitle: '주요 기능',
+        text: '',
+        items: [
+          'AI 자동 디자인: 영상 내용과 제목을 분석하여 최적의 썸네일 레이아웃을 자동 생성합니다.',
+          '텍스트 오버레이: 제목, 부제목 등 텍스트를 자동 배치하며 가독성 높은 폰트와 색상을 추천합니다.',
+          '배경 제거/합성: 인물 사진의 배경을 자동으로 제거하고 새로운 배경과 합성합니다.',
+          '스타일 템플릿: 카테고리별(게임, 뷰티, 먹방, 교육 등) 인기 썸네일 스타일 템플릿을 제공합니다.',
+          'CTR 예측: 생성된 썸네일의 예상 클릭률을 AI가 점수로 표시합니다.',
+        ],
+      },
+      {
+        subtitle: '사용 방법',
+        text: '',
+        steps: [
+          '영상 상세 페이지 또는 업로드 화면에서 "AI 썸네일 생성" 버튼을 클릭합니다.',
+          '썸네일 스타일(모던, 임팩트, 미니멀 등)을 선택합니다.',
+          '텍스트 오버레이 내용을 입력하거나 AI 자동 생성을 선택합니다.',
+          'AI가 4~6개의 썸네일 후보를 생성합니다.',
+          '원하는 썸네일을 선택하고 필요 시 미세 편집 후 적용합니다.',
+        ],
+      },
+      {
+        subtitle: '크레딧 비용',
+        text: '썸네일 생성 1회당 5크레딧이 소모됩니다.',
+      },
+    ],
+  },
+  {
+    id: 'performance-heatmap',
+    title: '성과 히트맵',
+    icon: TableCellsIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: '성과 히트맵은 요일(7일)과 시간대(24시간)를 기준으로 7x24 격자 형태의 히트맵을 제공하여, 콘텐츠 업로드에 가장 효과적인 시간대를 시각적으로 파악할 수 있는 기능입니다.',
+      },
+      {
+        subtitle: '주요 기능',
+        text: '',
+        items: [
+          '7x24 히트맵: 요일별, 시간대별 조회수/참여율/CTR 등 성과 지표를 색상 강도로 시각화합니다.',
+          '플랫폼별 필터: YouTube, TikTok, Instagram, Naver Clip 등 플랫폼별로 개별 히트맵을 확인할 수 있습니다.',
+          '지표 전환: 조회수, 좋아요, 댓글, CTR, 참여율 등 원하는 지표를 선택하여 히트맵을 전환합니다.',
+          '기간 설정: 최근 7일, 30일, 90일, 1년 등 분석 기간을 자유롭게 설정합니다.',
+          '최적 시간 추천: AI가 데이터를 분석하여 최적의 업로드 시간 Top 5를 자동 추천합니다.',
+        ],
+      },
+      {
+        subtitle: '사용 방법',
+        text: '',
+        steps: [
+          '분석 메뉴에서 "성과 히트맵"을 클릭합니다.',
+          '분석할 플랫폼과 지표를 선택합니다.',
+          '히트맵에서 색이 진한 셀(높은 성과 시간대)을 확인합니다.',
+          '원하는 셀을 클릭하면 해당 시간대의 상세 성과 데이터를 볼 수 있습니다.',
+          'AI 추천 시간을 참고하여 예약 업로드를 설정합니다.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'live-dashboard',
+    title: '실시간 대시보드',
+    icon: BoltIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: '실시간 대시보드는 모든 연동 플랫폼의 핵심 지표를 실시간으로 모니터링하고, 이상 징후 발생 시 즉각적인 알림을 받을 수 있는 통합 모니터링 기능입니다.',
+      },
+      {
+        subtitle: '주요 기능',
+        text: '',
+        items: [
+          '실시간 지표: 조회수, 구독자, 좋아요, 댓글 수 등 핵심 지표가 자동으로 갱신됩니다.',
+          '자동 새로고침: 30초/1분/5분 간격으로 데이터가 자동 갱신되며 간격을 직접 설정할 수 있습니다.',
+          '알림 시스템: 구독자 급증, 조회수 이상 변동, 부정 댓글 급증 등 이상 징후 발생 시 즉시 알림을 전송합니다.',
+          '맞춤 위젯: 대시보드에 표시할 위젯을 자유롭게 추가/제거/배치할 수 있습니다.',
+          '멀티채널 뷰: 여러 채널의 지표를 하나의 화면에서 동시에 모니터링합니다.',
+        ],
+      },
+      {
+        subtitle: '사용 방법',
+        text: '',
+        steps: [
+          '사이드바에서 "실시간 대시보드"를 클릭합니다.',
+          '모니터링할 채널과 지표를 선택합니다.',
+          '알림 조건(임계값)을 설정합니다 (예: 구독자 1시간 내 100명 이상 증가 시 알림).',
+          '대시보드 레이아웃을 자유롭게 커스터마이징합니다.',
+          '실시간 데이터 스트림이 자동으로 시작됩니다.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'revenue-forecaster',
+    title: '수익 예측기',
+    icon: CurrencyDollarIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: '수익 예측기는 채널의 과거 수익 데이터와 성장 트렌드를 AI가 분석하여, 향후 예상 수익을 예측하고 수익 최적화 전략을 제안하는 기능입니다.',
+      },
+      {
+        subtitle: '주요 기능',
+        text: '',
+        items: [
+          'AI 수익 예측: 과거 수익 패턴, 구독자 성장률, 콘텐츠 발행 빈도 등을 종합 분석하여 1개월/3개월/6개월/1년 후 예상 수익을 산출합니다.',
+          '시나리오 분석: 낙관적/보통/비관적 3가지 시나리오별 예상 수익을 비교할 수 있습니다.',
+          '수익원 분류: 광고 수익, 후원/슈퍼챗, 멤버십, 커머스 등 수익원별 예측을 제공합니다.',
+          '성장 요인 분석: 수익에 가장 큰 영향을 미치는 요인(업로드 빈도, 참여율, 구독자 등)을 분석합니다.',
+          '최적화 제안: 수익을 극대화하기 위한 구체적인 액션 아이템을 AI가 추천합니다.',
+        ],
+      },
+      {
+        subtitle: '사용 방법',
+        text: '',
+        steps: [
+          '분석 메뉴에서 "수익 예측기"를 클릭합니다.',
+          '예측 기간(1개월~1년)을 선택합니다.',
+          '예측에 포함할 수익원을 선택합니다.',
+          'AI가 수익 예측 리포트를 생성합니다.',
+          '시나리오별 예측 결과와 최적화 제안을 확인합니다.',
+        ],
+      },
+      {
+        subtitle: '크레딧 비용',
+        text: '수익 예측 리포트 생성 1회당 8크레딧이 소모됩니다.',
+      },
+    ],
+  },
+  {
+    id: 'content-rewriter',
+    title: 'AI 콘텐츠 리라이터',
+    icon: DocumentTextIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: 'AI 콘텐츠 리라이터는 하나의 콘텐츠를 여러 플랫폼에 맞게 자동으로 변환하는 기능입니다. 각 플랫폼의 특성(글자 수 제한, 해시태그 스타일, 톤 등)에 최적화된 텍스트를 생성합니다.',
+      },
+      {
+        subtitle: '주요 기능',
+        text: '',
+        items: [
+          '플랫폼 최적화: YouTube 설명, TikTok 캡션, Instagram 캡션, Naver 블로그 등 각 플랫폼에 맞는 포맷으로 자동 변환합니다.',
+          '톤 변환: 같은 내용을 전문적, 캐주얼, 유머러스, 교육적 등 다양한 톤으로 변환합니다.',
+          '길이 조절: 숏폼(30자 이내), 미디엄(100자), 롱폼(500자 이상) 등 원하는 길이로 조절합니다.',
+          '해시태그 자동 생성: 플랫폼별 최적의 해시태그를 자동으로 추가합니다.',
+          '다국어 변환: 한국어 콘텐츠를 영어, 일본어 등 다른 언어로 자동 변환합니다.',
+        ],
+      },
+      {
+        subtitle: '사용 방법',
+        text: '',
+        steps: [
+          'AI 도구 메뉴에서 "콘텐츠 리라이터"를 클릭합니다.',
+          '원본 텍스트를 입력하거나 기존 영상의 설명을 불러옵니다.',
+          '변환할 대상 플랫폼을 선택합니다 (복수 선택 가능).',
+          '톤과 길이 옵션을 설정합니다.',
+          '"변환하기" 버튼을 클릭하면 플랫폼별 최적화된 텍스트가 생성됩니다.',
+          '생성 결과를 확인하고 편집 후 바로 적용할 수 있습니다.',
+        ],
+      },
+      {
+        subtitle: '크레딧 비용',
+        text: '콘텐츠 변환 1회당 3크레딧이 소모됩니다 (플랫폼 수에 관계없이 동일).',
+      },
+    ],
+  },
+  {
+    id: 'social-listening',
+    title: '소셜 리스닝',
+    icon: MegaphoneIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: '소셜 리스닝은 소셜 미디어 전반에서 브랜드 멘션(언급)을 모니터링하고, 감성 분석을 통해 여론 동향을 실시간으로 파악할 수 있는 기능입니다.',
+      },
+      {
+        subtitle: '주요 기능',
+        text: '',
+        items: [
+          '브랜드 멘션 모니터링: 채널명, 브랜드명, 관련 키워드가 언급된 게시물을 실시간으로 수집합니다.',
+          '감성 분석: AI가 멘션의 감성(긍정/중립/부정)을 자동으로 분류하고 비율을 시각화합니다.',
+          '트렌드 추적: 멘션 볼륨의 시계열 변화를 추적하여 급증/급감 시점을 감지합니다.',
+          '경쟁사 비교: 경쟁 채널의 멘션 볼륨 및 감성과 비교 분석합니다.',
+          '알림 설정: 부정 멘션 급증, 특정 키워드 감지 등 조건별 알림을 설정할 수 있습니다.',
+        ],
+      },
+      {
+        subtitle: '사용 방법',
+        text: '',
+        steps: [
+          '분석 메뉴에서 "소셜 리스닝"을 클릭합니다.',
+          '모니터링할 키워드(채널명, 브랜드명 등)를 등록합니다.',
+          '모니터링 범위(플랫폼, 기간)를 설정합니다.',
+          '대시보드에서 멘션 현황, 감성 분포, 트렌드 차트를 확인합니다.',
+          '개별 멘션을 클릭하여 원문을 확인하고 직접 대응할 수 있습니다.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'influencer-match',
+    title: '인플루언서 매칭',
+    icon: UserPlusIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: '인플루언서 매칭은 AI가 채널 데이터, 콘텐츠 유형, 오디언스 특성 등을 분석하여 최적의 협업 파트너를 자동으로 추천하는 기능입니다.',
+      },
+      {
+        subtitle: '주요 기능',
+        text: '',
+        items: [
+          'AI 매칭 알고리즘: 카테고리, 오디언스 규모, 참여율, 콘텐츠 스타일 등을 종합 분석하여 호환성 점수를 산출합니다.',
+          '오디언스 겹침 분석: 두 채널의 시청자 중복률을 분석하여 시너지 효과를 예측합니다.',
+          '카테고리 필터: 뷰티, 게임, 먹방, 교육, 테크 등 카테고리별로 필터링하여 검색합니다.',
+          '협업 이력 관리: 과거 협업 파트너의 성과를 기록하고 추적합니다.',
+          '연락처 관리: 관심 인플루언서의 연락처와 협업 메모를 관리합니다.',
+        ],
+      },
+      {
+        subtitle: '사용 방법',
+        text: '',
+        steps: [
+          '사이드바에서 "인플루언서 매칭"을 클릭합니다.',
+          '원하는 협업 조건(카테고리, 구독자 범위, 플랫폼 등)을 설정합니다.',
+          'AI가 조건에 맞는 인플루언서 목록을 호환성 점수 순으로 추천합니다.',
+          '추천된 인플루언서의 상세 프로필과 채널 통계를 확인합니다.',
+          '관심 인플루언서를 즐겨찾기에 추가하고 협업을 제안합니다.',
+        ],
+      },
+      {
+        subtitle: '크레딧 비용',
+        text: '인플루언서 검색 1회당 5크레딧이 소모됩니다.',
+      },
+    ],
+  },
+  {
+    id: 'quality-score',
+    title: '콘텐츠 퀄리티 스코어',
+    icon: ClipboardDocumentCheckIcon,
+    content: [
+      {
+        subtitle: '개요',
+        text: '콘텐츠 퀄리티 스코어는 영상 업로드 전에 AI가 콘텐츠의 품질을 종합적으로 평가하여 0~100점의 점수를 부여하고, 개선 포인트를 제안하는 기능입니다.',
+      },
+      {
+        subtitle: '주요 기능',
+        text: '',
+        items: [
+          '종합 품질 점수: 영상, 오디오, 메타데이터, SEO 등 다방면에서 평가하여 0~100점의 종합 점수를 산출합니다.',
+          '카테고리별 세부 점수: 영상 품질(해상도, FPS, 안정성), 오디오 품질(음량, 잡음), 메타데이터(제목, 설명, 태그), SEO 최적화 등 카테고리별 점수를 제공합니다.',
+          '개선 제안: AI가 점수가 낮은 항목에 대해 구체적인 개선 방법을 제안합니다.',
+          '벤치마크 비교: 같은 카테고리 상위 크리에이터의 평균 점수와 비교합니다.',
+          '이력 추적: 과거 콘텐츠의 퀄리티 점수 변화 추이를 확인할 수 있습니다.',
+        ],
+      },
+      {
+        subtitle: '사용 방법',
+        text: '',
+        steps: [
+          '영상 상세 페이지 또는 업로드 화면에서 "퀄리티 스코어" 버튼을 클릭합니다.',
+          'AI가 영상 파일과 메타데이터를 종합 분석합니다.',
+          '종합 점수와 카테고리별 세부 점수를 확인합니다.',
+          '개선 제안을 참고하여 콘텐츠를 보완합니다.',
+          '수정 후 재검사하여 점수 향상을 확인합니다.',
+        ],
+      },
+      {
+        subtitle: '크레딧 비용',
+        text: '퀄리티 스코어 검사 1회당 3크레딧이 소모됩니다.',
+      },
+    ],
+  },
 ]
 
 const sectionsEn: ManualSection[] = [
@@ -2118,6 +2410,291 @@ const sectionsEn: ManualSection[] = [
           'Save test result reports and review past test history.',
           'Leverage test insights for future content strategy.',
         ],
+      },
+    ],
+  },
+  {
+    id: 'thumbnail-generator',
+    title: 'AI Thumbnail Generator',
+    icon: PhotoIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'The AI Thumbnail Generator automatically designs and creates high-quality thumbnails optimized for your video content. It analyzes visual elements that maximize click-through rate (CTR) and produces professional designer-level thumbnails.',
+      },
+      {
+        subtitle: 'Key Features',
+        text: '',
+        items: [
+          'AI Auto Design: Automatically generates optimal thumbnail layouts by analyzing video content and titles.',
+          'Text Overlay: Automatically places titles, subtitles, and other text, recommending highly readable fonts and colors.',
+          'Background Removal/Compositing: Automatically removes backgrounds from subject photos and composites them with new backgrounds.',
+          'Style Templates: Provides popular thumbnail style templates by category (gaming, beauty, food, education, etc.).',
+          'CTR Prediction: AI displays the predicted click-through rate of generated thumbnails as a score.',
+        ],
+      },
+      {
+        subtitle: 'How to Use',
+        text: '',
+        steps: [
+          'Click the "AI Thumbnail Generation" button on the video detail page or upload screen.',
+          'Select a thumbnail style (modern, impact, minimal, etc.).',
+          'Enter text overlay content or choose AI auto-generation.',
+          'AI generates 4-6 thumbnail candidates.',
+          'Select your preferred thumbnail, fine-tune if needed, and apply.',
+        ],
+      },
+      {
+        subtitle: 'Credit Cost',
+        text: 'Each thumbnail generation costs 5 credits.',
+      },
+    ],
+  },
+  {
+    id: 'performance-heatmap',
+    title: 'Performance Heatmap',
+    icon: TableCellsIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'The Performance Heatmap provides a 7x24 grid-based heatmap organized by day of the week (7 days) and time of day (24 hours), enabling you to visually identify the most effective time slots for content uploads.',
+      },
+      {
+        subtitle: 'Key Features',
+        text: '',
+        items: [
+          '7x24 Heatmap: Visualizes performance metrics such as views, engagement rate, and CTR by day and time using color intensity.',
+          'Platform Filter: View individual heatmaps for each platform — YouTube, TikTok, Instagram, Naver Clip, and more.',
+          'Metric Switching: Switch the heatmap between views, likes, comments, CTR, engagement rate, and other metrics.',
+          'Period Settings: Freely set the analysis period — last 7 days, 30 days, 90 days, 1 year, etc.',
+          'Optimal Time Recommendations: AI analyzes the data and automatically recommends the top 5 optimal upload times.',
+        ],
+      },
+      {
+        subtitle: 'How to Use',
+        text: '',
+        steps: [
+          'Click "Performance Heatmap" from the analytics menu.',
+          'Select the platform and metric to analyze.',
+          'Identify cells with darker colors (high-performance time slots) on the heatmap.',
+          'Click any cell to view detailed performance data for that time slot.',
+          'Use AI-recommended times to set up scheduled uploads.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'live-dashboard',
+    title: 'Live Dashboard',
+    icon: BoltIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'The Live Dashboard is an integrated monitoring feature that tracks key metrics from all connected platforms in real-time and provides instant alerts when anomalies are detected.',
+      },
+      {
+        subtitle: 'Key Features',
+        text: '',
+        items: [
+          'Real-Time Metrics: Key metrics such as views, subscribers, likes, and comment counts are automatically refreshed.',
+          'Auto-Refresh: Data refreshes automatically at 30-second, 1-minute, or 5-minute intervals, and the interval is configurable.',
+          'Alert System: Instantly sends alerts when anomalies occur, such as subscriber surges, unusual view changes, or spikes in negative comments.',
+          'Custom Widgets: Freely add, remove, and arrange widgets displayed on the dashboard.',
+          'Multi-Channel View: Monitor metrics from multiple channels simultaneously on a single screen.',
+        ],
+      },
+      {
+        subtitle: 'How to Use',
+        text: '',
+        steps: [
+          'Click "Live Dashboard" in the sidebar.',
+          'Select the channels and metrics to monitor.',
+          'Set alert conditions (thresholds), e.g., alert when subscribers increase by 100+ within 1 hour.',
+          'Customize the dashboard layout to your preference.',
+          'The real-time data stream starts automatically.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'revenue-forecaster',
+    title: 'Revenue Forecaster',
+    icon: CurrencyDollarIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'The Revenue Forecaster uses AI to analyze your channel\'s historical revenue data and growth trends, predict future expected revenue, and suggest revenue optimization strategies.',
+      },
+      {
+        subtitle: 'Key Features',
+        text: '',
+        items: [
+          'AI Revenue Prediction: Comprehensively analyzes past revenue patterns, subscriber growth rate, content publishing frequency, and more to calculate expected revenue for 1 month, 3 months, 6 months, and 1 year ahead.',
+          'Scenario Analysis: Compare expected revenue across 3 scenarios — optimistic, moderate, and pessimistic.',
+          'Revenue Source Breakdown: Provides predictions broken down by revenue source — ad revenue, donations/Super Chat, memberships, commerce, etc.',
+          'Growth Factor Analysis: Identifies the factors that have the greatest impact on revenue (upload frequency, engagement rate, subscribers, etc.).',
+          'Optimization Suggestions: AI recommends specific action items to maximize revenue.',
+        ],
+      },
+      {
+        subtitle: 'How to Use',
+        text: '',
+        steps: [
+          'Click "Revenue Forecaster" from the analytics menu.',
+          'Select the forecast period (1 month to 1 year).',
+          'Choose the revenue sources to include in the forecast.',
+          'AI generates the revenue forecast report.',
+          'Review scenario-based predictions and optimization suggestions.',
+        ],
+      },
+      {
+        subtitle: 'Credit Cost',
+        text: 'Each revenue forecast report generation costs 8 credits.',
+      },
+    ],
+  },
+  {
+    id: 'content-rewriter',
+    title: 'AI Content Rewriter',
+    icon: DocumentTextIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'The AI Content Rewriter automatically transforms a single piece of content for multiple platforms. It generates text optimized for each platform\'s characteristics, including character limits, hashtag styles, and tone.',
+      },
+      {
+        subtitle: 'Key Features',
+        text: '',
+        items: [
+          'Platform Optimization: Automatically converts content to the appropriate format for YouTube descriptions, TikTok captions, Instagram captions, Naver blog posts, and more.',
+          'Tone Transformation: Converts the same content into various tones — professional, casual, humorous, educational, etc.',
+          'Length Control: Adjusts content to desired lengths — short-form (under 30 characters), medium (100 characters), long-form (500+ characters).',
+          'Auto Hashtag Generation: Automatically adds optimal hashtags for each platform.',
+          'Multilingual Conversion: Automatically translates Korean content to English, Japanese, and other languages.',
+        ],
+      },
+      {
+        subtitle: 'How to Use',
+        text: '',
+        steps: [
+          'Click "Content Rewriter" from the AI tools menu.',
+          'Enter the original text or import an existing video description.',
+          'Select the target platforms for conversion (multiple selection available).',
+          'Set tone and length options.',
+          'Click "Convert" to generate platform-optimized text.',
+          'Review the results, edit if needed, and apply directly.',
+        ],
+      },
+      {
+        subtitle: 'Credit Cost',
+        text: 'Each content conversion costs 3 credits (same regardless of the number of platforms).',
+      },
+    ],
+  },
+  {
+    id: 'social-listening',
+    title: 'Social Listening',
+    icon: MegaphoneIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'Social Listening monitors brand mentions across social media and uses sentiment analysis to track public opinion trends in real-time.',
+      },
+      {
+        subtitle: 'Key Features',
+        text: '',
+        items: [
+          'Brand Mention Monitoring: Collects posts mentioning your channel name, brand name, and related keywords in real-time.',
+          'Sentiment Analysis: AI automatically classifies mentions by sentiment (positive, neutral, negative) and visualizes the ratios.',
+          'Trend Tracking: Tracks time-series changes in mention volume to detect spikes and dips.',
+          'Competitor Comparison: Compare and analyze mention volume and sentiment against competitor channels.',
+          'Alert Settings: Configure conditional alerts for negative mention surges, specific keyword detection, and more.',
+        ],
+      },
+      {
+        subtitle: 'How to Use',
+        text: '',
+        steps: [
+          'Click "Social Listening" from the analytics menu.',
+          'Register keywords to monitor (channel name, brand name, etc.).',
+          'Set the monitoring scope (platforms, time period).',
+          'View mention status, sentiment distribution, and trend charts on the dashboard.',
+          'Click individual mentions to view the original text and respond directly.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'influencer-match',
+    title: 'Influencer Matching',
+    icon: UserPlusIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'Influencer Matching uses AI to analyze channel data, content types, and audience characteristics to automatically recommend optimal collaboration partners.',
+      },
+      {
+        subtitle: 'Key Features',
+        text: '',
+        items: [
+          'AI Matching Algorithm: Calculates a compatibility score by comprehensively analyzing category, audience size, engagement rate, content style, and more.',
+          'Audience Overlap Analysis: Analyzes viewer overlap between two channels to predict synergy effects.',
+          'Category Filter: Search and filter by categories such as beauty, gaming, food, education, tech, and more.',
+          'Collaboration History Management: Record and track the performance of past collaboration partners.',
+          'Contact Management: Manage contact information and collaboration notes for influencers of interest.',
+        ],
+      },
+      {
+        subtitle: 'How to Use',
+        text: '',
+        steps: [
+          'Click "Influencer Matching" in the sidebar.',
+          'Set desired collaboration criteria (category, subscriber range, platform, etc.).',
+          'AI recommends a list of influencers matching your criteria, sorted by compatibility score.',
+          'Review detailed profiles and channel statistics for recommended influencers.',
+          'Add influencers of interest to favorites and propose collaborations.',
+        ],
+      },
+      {
+        subtitle: 'Credit Cost',
+        text: 'Each influencer search costs 5 credits.',
+      },
+    ],
+  },
+  {
+    id: 'quality-score',
+    title: 'Content Quality Score',
+    icon: ClipboardDocumentCheckIcon,
+    content: [
+      {
+        subtitle: 'Overview',
+        text: 'Content Quality Score is a feature where AI comprehensively evaluates your content quality before upload, assigns a score from 0 to 100, and suggests improvement points.',
+      },
+      {
+        subtitle: 'Key Features',
+        text: '',
+        items: [
+          'Overall Quality Score: Evaluates video, audio, metadata, SEO, and more across multiple dimensions to produce a comprehensive score from 0 to 100.',
+          'Category Subscores: Provides individual scores for video quality (resolution, FPS, stability), audio quality (volume, noise), metadata (title, description, tags), SEO optimization, and more.',
+          'Improvement Suggestions: AI suggests specific improvement methods for low-scoring items.',
+          'Benchmark Comparison: Compare your score against the average scores of top creators in the same category.',
+          'History Tracking: Track quality score trends across your past content.',
+        ],
+      },
+      {
+        subtitle: 'How to Use',
+        text: '',
+        steps: [
+          'Click the "Quality Score" button on the video detail page or upload screen.',
+          'AI comprehensively analyzes the video file and metadata.',
+          'Review the overall score and category-specific subscores.',
+          'Refer to improvement suggestions to enhance your content.',
+          'Re-scan after making changes to confirm score improvements.',
+        ],
+      },
+      {
+        subtitle: 'Credit Cost',
+        text: 'Each quality score scan costs 3 credits.',
       },
     ],
   },
