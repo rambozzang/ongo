@@ -116,6 +116,10 @@ object Tables {
     // Brand Deals
     val BRAND_DEALS = DSL.table("brand_deals")
     val MEDIA_KITS = DSL.table("media_kits")
+
+    // AB Test Results
+    val AB_TEST_RESULTS = DSL.table("ab_test_results")
+    val TEST_VARIANTS = DSL.table("test_variants")
 }
 
 object Fields {
@@ -562,4 +566,19 @@ object Fields {
     val STATS_SNAPSHOT = DSL.field("stats_snapshot", String::class.java)
     val RATE_CARD = DSL.field("rate_card", String::class.java)
     val IS_PUBLIC_MK = DSL.field("is_public", Boolean::class.java)
+
+    // ab_test_results
+    val CONFIDENCE = DSL.field("confidence", java.math.BigDecimal::class.java)
+    val METRIC = DSL.field("metric", String::class.java)
+    val WINNER = DSL.field("winner", String::class.java)
+
+    // test_variants
+    val RESULT_ID = DSL.field("result_id", Long::class.java)
+    val VARIANT_ID = DSL.field("variant_id", String::class.java)
+    val CTR = DSL.field("ctr", java.math.BigDecimal::class.java)
+    val AVG_WATCH_TIME = DSL.field("avg_watch_time", Int::class.java)
+    val ENGAGEMENT = DSL.field("engagement", java.math.BigDecimal::class.java)
+    val CONVERSIONS = DSL.field("conversions", Int::class.java)
+    val IS_CONTROL = DSL.field("is_control", Boolean::class.java)
+    val IS_WINNER = DSL.field("is_winner", Boolean::class.java)
 }
