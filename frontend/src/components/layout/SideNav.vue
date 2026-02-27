@@ -294,26 +294,6 @@ function toggleSubGroup(key: string) {
   expandedSubGroups.value = next
 }
 
-// Auto-expand sub-group containing the current route
-watch(
-  () => route.path,
-  (path) => {
-    for (const group of navGroups.value) {
-      if (!group.subGroups) continue
-      for (const sub of group.subGroups) {
-        if (sub.items.some((item) => path === item.to || path.startsWith(item.to + '/'))) {
-          if (!expandedSubGroups.value.has(sub.key)) {
-            const next = new Set(expandedSubGroups.value)
-            next.add(sub.key)
-            expandedSubGroups.value = next
-          }
-        }
-      }
-    }
-  },
-  { immediate: true },
-)
-
 const navGroups = computed<NavGroup[]>(() => [
   // 1. 대시보드
   {
@@ -608,6 +588,26 @@ const navGroups = computed<NavGroup[]>(() => [
     ],
   },
 ])
+
+// Auto-expand sub-group containing the current route
+watch(
+  () => route.path,
+  (path) => {
+    for (const group of navGroups.value) {
+      if (!group.subGroups) continue
+      for (const sub of group.subGroups) {
+        if (sub.items.some((item) => path === item.to || path.startsWith(item.to + '/'))) {
+          if (!expandedSubGroups.value.has(sub.key)) {
+            const next = new Set(expandedSubGroups.value)
+            next.add(sub.key)
+            expandedSubGroups.value = next
+          }
+        }
+      }
+    }
+  },
+  { immediate: true },
+)
 
 const bottomNavItems = computed(() => {
   const items = [
