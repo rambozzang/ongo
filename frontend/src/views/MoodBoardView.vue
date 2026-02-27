@@ -13,7 +13,9 @@ import MoodBoardCard from '@/components/moodboard/MoodBoardCard.vue'
 import MoodBoardGrid from '@/components/moodboard/MoodBoardGrid.vue'
 import { useMoodBoardStore } from '@/stores/moodBoard'
 import type { MoodBoard } from '@/types/moodBoard'
+import { useLocale } from '@/composables/useLocale'
 
+const { t } = useLocale()
 const store = useMoodBoardStore()
 
 const selectedBoard = ref<MoodBoard | null>(null)
@@ -55,22 +57,22 @@ function handleBack() {
           </h1>
         </div>
         <h1 v-else class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          크리에이터 무드보드
+          {{ $t('moodBoard.title') }}
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
           <template v-if="selectedBoard">{{ selectedBoard.description }}</template>
-          <template v-else>콘텐츠 스타일과 비주얼 아이디어를 핀보드처럼 관리하세요</template>
+          <template v-else>{{ $t('moodBoard.description') }}</template>
         </p>
       </div>
     </div>
 
     <PageGuide
       v-if="!selectedBoard"
-      title="크리에이터 무드보드 활용 가이드"
+      :title="$t('moodBoard.guideTitle')"
       :items="[
-        '이미지, 컬러, 텍스트 등 다양한 형태의 레퍼런스를 카테고리별로 수집하세요.',
-        '촬영 전 무드보드를 확인하면 일관된 스타일을 유지할 수 있습니다.',
-        '팀원과 보드를 공유하여 콘텐츠 방향성을 맞춰보세요.',
+        $t('moodBoard.guideItem1'),
+        $t('moodBoard.guideItem2'),
+        $t('moodBoard.guideItem3'),
       ]"
     />
 
@@ -90,10 +92,10 @@ function handleBack() {
               <div class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
                 <Squares2X2Icon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <span class="text-xs font-medium text-gray-500 dark:text-gray-400">총 보드</span>
+              <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('moodBoard.totalBoards') }}</span>
             </div>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-              {{ store.summary.totalBoards }}개
+              {{ store.summary.totalBoards }}{{ $t('moodBoard.countUnit') }}
             </p>
           </div>
 
@@ -103,10 +105,10 @@ function handleBack() {
               <div class="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
                 <PhotoIcon class="w-4 h-4 text-green-600 dark:text-green-400" />
               </div>
-              <span class="text-xs font-medium text-gray-500 dark:text-gray-400">총 아이템</span>
+              <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('moodBoard.totalItems') }}</span>
             </div>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-              {{ store.summary.totalItems }}개
+              {{ store.summary.totalItems }}{{ $t('moodBoard.countUnit') }}
             </p>
           </div>
 
@@ -116,7 +118,7 @@ function handleBack() {
               <div class="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                 <SparklesIcon class="w-4 h-4 text-purple-600 dark:text-purple-400" />
               </div>
-              <span class="text-xs font-medium text-gray-500 dark:text-gray-400">인기 카테고리</span>
+              <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('moodBoard.topCategory') }}</span>
             </div>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
               {{ store.summary.topCategory }}
@@ -129,10 +131,10 @@ function handleBack() {
               <div class="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
                 <SwatchIcon class="w-4 h-4 text-orange-600 dark:text-orange-400" />
               </div>
-              <span class="text-xs font-medium text-gray-500 dark:text-gray-400">보드당 평균 아이템</span>
+              <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('moodBoard.avgItemsPerBoard') }}</span>
             </div>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-              {{ store.summary.avgItemsPerBoard.toFixed(1) }}개
+              {{ store.summary.avgItemsPerBoard.toFixed(1) }}{{ $t('moodBoard.countUnit') }}
             </p>
           </div>
         </div>
@@ -140,7 +142,7 @@ function handleBack() {
         <!-- Board Grid -->
         <section>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            내 무드보드
+            {{ $t('moodBoard.myBoards') }}
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">({{ store.boards.length }})</span>
           </h2>
 
@@ -159,10 +161,10 @@ function handleBack() {
           >
             <SwatchIcon class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
             <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              아직 무드보드가 없습니다
+              {{ $t('moodBoard.noBoards') }}
             </h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              콘텐츠 스타일과 비주얼 레퍼런스를 정리할 무드보드를 만들어보세요.
+              {{ $t('moodBoard.noBoardsHint') }}
             </p>
           </div>
         </section>
@@ -178,19 +180,19 @@ function handleBack() {
             {{ selectedBoard.category }}
           </span>
           <span class="text-sm text-gray-500 dark:text-gray-400">
-            {{ selectedBoard.itemCount }}개 아이템
+            {{ selectedBoard.itemCount }}{{ $t('moodBoard.itemUnit') }}
           </span>
           <span
             v-if="selectedBoard.isPublic"
             class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
           >
-            공개
+            {{ $t('moodBoard.public') }}
           </span>
           <span
             v-else
             class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
           >
-            비공개
+            {{ $t('moodBoard.private') }}
           </span>
         </div>
 
@@ -208,7 +210,7 @@ function handleBack() {
         <!-- Item Grid (Masonry) -->
         <section>
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            아이템 목록
+            {{ $t('moodBoard.itemList') }}
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">({{ store.boardItems.length }})</span>
           </h2>
 
@@ -223,10 +225,10 @@ function handleBack() {
           >
             <PhotoIcon class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
             <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              이 보드에 아이템이 없습니다
+              {{ $t('moodBoard.noItems') }}
             </h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              이미지, 컬러, 텍스트 등 다양한 레퍼런스를 추가해보세요.
+              {{ $t('moodBoard.noItemsHint') }}
             </p>
           </div>
         </section>

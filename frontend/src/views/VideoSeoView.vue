@@ -8,10 +8,12 @@ import {
   TagIcon,
 } from '@heroicons/vue/24/outline'
 import { useVideoSeoStore } from '@/stores/videoSeo'
+import { useLocale } from '@/composables/useLocale'
 import SeoAnalysisCard from '@/components/videoseo/SeoAnalysisCard.vue'
 import SeoKeywordRow from '@/components/videoseo/SeoKeywordRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
+const { t } = useLocale()
 const store = useVideoSeoStore()
 const { analyses, keywords, summary, isLoading } = storeToRefs(store)
 
@@ -25,7 +27,7 @@ const handleSelectAnalysis = (id: number) => {
 onMounted(() => {
   store.fetchAnalyses()
   store.fetchSummary()
-  // 기본적으로 첫 번째 분석의 키워드 로드
+  // Load keywords for the first analysis by default
   store.fetchKeywords(1)
 })
 </script>
@@ -36,10 +38,10 @@ onMounted(() => {
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          비디오 SEO 최적화
+          {{ $t('videoSeo.title') }}
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          영상의 SEO 점수를 분석하고 검색 노출을 개선합니다.
+          {{ $t('videoSeo.description') }}
         </p>
       </div>
     </div>
@@ -53,7 +55,7 @@ onMounted(() => {
             <MagnifyingGlassIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 분석</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('videoSeo.totalAnalyzed') }}</p>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ summary.totalAnalyzed }}</p>
           </div>
         </div>
@@ -66,7 +68,7 @@ onMounted(() => {
             <ChartBarSquareIcon class="h-5 w-5 text-green-600 dark:text-green-400" />
           </div>
           <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">평균 점수</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('videoSeo.avgScore') }}</p>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ summary.avgScore.toFixed(1) }}</p>
           </div>
         </div>
@@ -79,7 +81,7 @@ onMounted(() => {
             <TagIcon class="h-5 w-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">탑 키워드</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('videoSeo.topKeyword') }}</p>
             <p class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">{{ summary.topKeyword }}</p>
           </div>
         </div>
@@ -92,7 +94,7 @@ onMounted(() => {
             <ArrowTrendingUpIcon class="h-5 w-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">개선율</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('videoSeo.improvementRate') }}</p>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">+{{ summary.improvementRate }}%</p>
           </div>
         </div>
@@ -106,7 +108,7 @@ onMounted(() => {
       <!-- SEO Analysis List -->
       <section>
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          SEO 분석 목록
+          {{ $t('videoSeo.analysisListTitle') }}
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ analyses.length }})</span>
         </h2>
 
@@ -126,10 +128,10 @@ onMounted(() => {
         >
           <MagnifyingGlassIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            SEO 분석 결과가 없습니다
+            {{ $t('videoSeo.noAnalyses') }}
           </h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            영상을 선택하여 SEO 분석을 시작해보세요.
+            {{ $t('videoSeo.noAnalysesDesc') }}
           </p>
         </div>
       </section>
@@ -137,7 +139,7 @@ onMounted(() => {
       <!-- Keyword Table -->
       <section>
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          키워드 분석
+          {{ $t('videoSeo.keywordAnalysis') }}
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ keywords.length }})</span>
         </h2>
 
@@ -147,11 +149,11 @@ onMounted(() => {
               <thead>
                 <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                   <th class="py-3 px-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-10">#</th>
-                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">키워드</th>
-                  <th class="py-3 px-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">검색량</th>
-                  <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">경쟁</th>
-                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">관련도</th>
-                  <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">트렌드</th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('videoSeo.keyword') }}</th>
+                  <th class="py-3 px-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('videoSeo.searchVolume') }}</th>
+                  <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('videoSeo.competition') }}</th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('videoSeo.relevance') }}</th>
+                  <th class="py-3 px-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $t('videoSeo.trend') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -173,10 +175,10 @@ onMounted(() => {
         >
           <TagIcon class="mx-auto mb-3 h-10 w-10 text-gray-400 dark:text-gray-600" />
           <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-            키워드 데이터가 없습니다
+            {{ $t('videoSeo.noKeywords') }}
           </h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            SEO 분석 카드를 클릭하면 관련 키워드를 확인할 수 있습니다.
+            {{ $t('videoSeo.noKeywordsDesc') }}
           </p>
         </div>
       </section>

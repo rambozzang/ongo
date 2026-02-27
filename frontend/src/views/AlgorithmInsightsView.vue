@@ -8,19 +8,21 @@ import {
   BellAlertIcon,
   ArrowPathIcon,
 } from '@heroicons/vue/24/outline'
+import { useLocale } from '@/composables/useLocale'
 import { useAlgorithmInsightsStore } from '@/stores/algorithmInsights'
 import AlgorithmScoreCard from '@/components/algorithminsights/AlgorithmScoreCard.vue'
 import InsightFactorRow from '@/components/algorithminsights/InsightFactorRow.vue'
 import AlgorithmChangeCard from '@/components/algorithminsights/AlgorithmChangeCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
+const { t } = useLocale()
 const store = useAlgorithmInsightsStore()
 const { insights, scores, changes, summary, isLoading } = storeToRefs(store)
 
 const platformFilter = ref<string>('ALL')
 
 const platformOptions = [
-  { value: 'ALL', label: '전체' },
+  { value: 'ALL', label: t('algorithmInsights.filterAll') },
   { value: 'YOUTUBE', label: 'YouTube' },
   { value: 'TIKTOK', label: 'TikTok' },
   { value: 'INSTAGRAM', label: 'Instagram' },
@@ -60,11 +62,11 @@ onMounted(() => {
       <div>
         <div class="flex items-center gap-3">
           <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            플랫폼 알고리즘 인사이트
+            {{ $t('algorithmInsights.title') }}
           </h1>
         </div>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          각 플랫폼 알고리즘의 주요 요소를 분석하고 최적화 전략을 확인하세요
+          {{ $t('algorithmInsights.description') }}
         </p>
       </div>
     </div>
@@ -74,7 +76,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ChartBarSquareIcon class="h-5 w-5 text-primary-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">평균 점수</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('algorithmInsights.avgScore') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
           {{ summary.avgOverallScore }}
@@ -84,7 +86,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <TrophyIcon class="h-5 w-5 text-yellow-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">최고 플랫폼</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('algorithmInsights.bestPlatform') }}</p>
         </div>
         <p class="mt-1 text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
           {{ summary.bestPlatform || '-' }}
@@ -94,7 +96,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ExclamationTriangleIcon class="h-5 w-5 text-orange-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">최약 요소</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('algorithmInsights.worstFactor') }}</p>
         </div>
         <p class="mt-1 text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
           {{ summary.worstFactor || '-' }}
@@ -104,7 +106,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <BellAlertIcon class="h-5 w-5 text-red-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">최근 변경</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('algorithmInsights.recentChanges') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
           {{ summary.recentChanges }}
@@ -119,7 +121,7 @@ onMounted(() => {
       <!-- Platform Score Cards -->
       <div class="mb-8">
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          플랫폼별 알고리즘 점수
+          {{ $t('algorithmInsights.platformScores') }}
         </h2>
         <div v-if="scores.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
           <AlgorithmScoreCard
@@ -133,7 +135,7 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white py-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
         >
           <ChartBarSquareIcon class="mx-auto mb-2 h-10 w-10 text-gray-400 dark:text-gray-600" />
-          <p class="text-sm text-gray-500 dark:text-gray-400">플랫폼 점수 데이터가 없습니다</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('algorithmInsights.noScoreData') }}</p>
         </div>
       </div>
 
@@ -160,7 +162,7 @@ onMounted(() => {
       <!-- Algorithm Factors -->
       <div class="mb-8">
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          알고리즘 요소 분석
+          {{ $t('algorithmInsights.factorAnalysis') }}
         </h2>
         <div v-if="filteredInsights.length > 0" class="space-y-3">
           <InsightFactorRow
@@ -174,14 +176,14 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white py-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
         >
           <ChartBarSquareIcon class="mx-auto mb-2 h-10 w-10 text-gray-400 dark:text-gray-600" />
-          <p class="text-sm text-gray-500 dark:text-gray-400">알고리즘 요소 데이터가 없습니다</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('algorithmInsights.noFactorData') }}</p>
         </div>
       </div>
 
       <!-- Recent Algorithm Changes -->
       <div>
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          최근 알고리즘 변경
+          {{ $t('algorithmInsights.recentAlgorithmChanges') }}
         </h2>
         <div v-if="filteredChanges.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
           <AlgorithmChangeCard
@@ -195,7 +197,7 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white py-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
         >
           <BellAlertIcon class="mx-auto mb-2 h-10 w-10 text-gray-400 dark:text-gray-600" />
-          <p class="text-sm text-gray-500 dark:text-gray-400">최근 알고리즘 변경 사항이 없습니다</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('algorithmInsights.noRecentChanges') }}</p>
         </div>
       </div>
     </template>

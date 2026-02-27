@@ -11,11 +11,13 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import { useSubtitleTranslationStore } from '@/stores/subtitleTranslation'
+import { useLocale } from '@/composables/useLocale'
 import TranslationCard from '@/components/subtitletranslation/TranslationCard.vue'
 import TranslationLineEditor from '@/components/subtitletranslation/TranslationLineEditor.vue'
 import LanguageSelector from '@/components/subtitletranslation/LanguageSelector.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
+const { t } = useLocale()
 const store = useSubtitleTranslationStore()
 const { translations, currentLines, supportedLanguages, summary, isLoading } = storeToRefs(store)
 
@@ -31,11 +33,11 @@ const newSourceLang = ref('ko')
 const newTargetLang = ref('')
 
 const statusFilters = [
-  { value: 'ALL', label: '전체' },
-  { value: 'PENDING', label: '대기중' },
-  { value: 'TRANSLATING', label: '번역중' },
-  { value: 'COMPLETED', label: '완료' },
-  { value: 'REVIEWING', label: '검토중' },
+  { value: 'ALL', label: t('subtitleTranslation.filterAll') },
+  { value: 'PENDING', label: t('subtitleTranslation.filterPending') },
+  { value: 'TRANSLATING', label: t('subtitleTranslation.filterTranslating') },
+  { value: 'COMPLETED', label: t('subtitleTranslation.filterCompleted') },
+  { value: 'REVIEWING', label: t('subtitleTranslation.filterReviewing') },
 ]
 
 const filteredTranslations = computed(() => {
@@ -106,11 +108,11 @@ onMounted(() => {
       <div>
         <div class="flex items-center gap-3">
           <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            자동 자막 번역
+            {{ $t('subtitleTranslation.title') }}
           </h1>
         </div>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          AI 기반 자동 자막 번역으로 글로벌 시청자에게 다가가세요
+          {{ $t('subtitleTranslation.description') }}
         </p>
       </div>
       <div class="flex items-center gap-3">
@@ -119,7 +121,7 @@ onMounted(() => {
           @click="openCreateModal"
         >
           <PlusIcon class="h-5 w-5" />
-          새 번역 요청
+          {{ $t('subtitleTranslation.newRequest') }}
         </button>
       </div>
     </div>
@@ -129,7 +131,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <LanguageIcon class="h-5 w-5 text-primary-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 번역수</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('subtitleTranslation.totalTranslations') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
           {{ summary.totalTranslations.toLocaleString('ko-KR') }}
@@ -139,7 +141,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <CheckCircleIcon class="h-5 w-5 text-green-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">완료</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('subtitleTranslation.completed') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
           {{ summary.completedCount.toLocaleString('ko-KR') }}
@@ -149,7 +151,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ArrowPathIcon class="h-5 w-5 text-blue-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">진행중</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('subtitleTranslation.inProgress') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">
           {{ summary.inProgressCount.toLocaleString('ko-KR') }}
@@ -159,17 +161,17 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <SparklesIcon class="h-5 w-5 text-yellow-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">평균 품질</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('subtitleTranslation.avgQuality') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ summary.avgQuality.toFixed(1) }}점
+          {{ summary.avgQuality.toFixed(1) }}{{ $t('subtitleTranslation.pointUnit') }}
         </p>
       </div>
 
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <CreditCardIcon class="h-5 w-5 text-purple-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">사용 크레딧</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('subtitleTranslation.creditsUsed') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-purple-600 dark:text-purple-400">
           {{ summary.totalCreditsUsed.toLocaleString('ko-KR') }}
@@ -215,17 +217,17 @@ onMounted(() => {
     >
       <LanguageIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
       <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        번역 작업이 없습니다
+        {{ $t('subtitleTranslation.noTranslations') }}
       </h3>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        새 번역을 요청하여 글로벌 시청자에게 콘텐츠를 전달하세요
+        {{ $t('subtitleTranslation.noTranslationsDesc') }}
       </p>
       <button
         class="btn-primary mt-4 inline-flex items-center gap-2"
         @click="openCreateModal"
       >
         <PlusIcon class="h-5 w-5" />
-        첫 번역 시작하기
+        {{ $t('subtitleTranslation.startFirstTranslation') }}
       </button>
     </div>
 
@@ -240,7 +242,7 @@ onMounted(() => {
           <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
             <div class="mb-5 flex items-center justify-between">
               <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-                새 번역 요청
+                {{ $t('subtitleTranslation.newRequest') }}
               </h2>
               <button
                 class="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
@@ -253,28 +255,28 @@ onMounted(() => {
             <div class="space-y-4">
               <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  영상 제목
+                  {{ $t('subtitleTranslation.videoTitle') }}
                 </label>
                 <input
                   v-model="newVideoTitle"
                   type="text"
-                  placeholder="번역할 영상의 제목을 입력하세요"
+                  :placeholder="$t('subtitleTranslation.videoTitlePlaceholder')"
                   class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
                 />
               </div>
 
               <LanguageSelector
                 v-model="newSourceLang"
-                label="원본 언어"
+                :label="$t('subtitleTranslation.sourceLanguage')"
                 :languages="[{ code: 'ko', name: 'Korean', nativeName: '한국어' }, ...supportedLanguages]"
-                placeholder="원본 언어를 선택하세요"
+                :placeholder="$t('subtitleTranslation.sourceLanguagePlaceholder')"
               />
 
               <LanguageSelector
                 v-model="newTargetLang"
-                label="번역 언어"
+                :label="$t('subtitleTranslation.targetLanguage')"
                 :languages="supportedLanguages"
-                placeholder="번역 언어를 선택하세요"
+                :placeholder="$t('subtitleTranslation.targetLanguagePlaceholder')"
               />
             </div>
 
@@ -283,14 +285,14 @@ onMounted(() => {
                 class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 @click="closeCreateModal"
               >
-                취소
+                {{ $t('subtitleTranslation.cancel') }}
               </button>
               <button
                 class="btn-primary text-sm"
                 :disabled="!newVideoTitle.trim() || !newTargetLang"
                 @click="handleCreate"
               >
-                번역 요청
+                {{ $t('subtitleTranslation.requestTranslation') }}
               </button>
             </div>
           </div>
@@ -309,7 +311,7 @@ onMounted(() => {
           <div class="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-xl dark:bg-gray-900">
             <div class="mb-5 flex items-center justify-between">
               <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-                번역 라인 편집
+                {{ $t('subtitleTranslation.editLines') }}
               </h2>
               <button
                 class="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
@@ -334,7 +336,7 @@ onMounted(() => {
             >
               <LanguageIcon class="mx-auto mb-3 h-10 w-10 text-gray-400 dark:text-gray-600" />
               <p class="text-sm text-gray-500 dark:text-gray-400">
-                번역 라인이 아직 없습니다
+                {{ $t('subtitleTranslation.noLines') }}
               </p>
             </div>
           </div>

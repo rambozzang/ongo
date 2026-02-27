@@ -7,10 +7,12 @@ import {
   CheckCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { usePlatformAutomationStore } from '@/stores/platformAutomation'
+import { useLocale } from '@/composables/useLocale'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import AutomationRuleCard from '@/components/platformautomation/AutomationRuleCard.vue'
 import AutomationLogRow from '@/components/platformautomation/AutomationLogRow.vue'
 
+const { t } = useLocale()
 const store = usePlatformAutomationStore()
 
 onMounted(() => {
@@ -26,10 +28,10 @@ onMounted(() => {
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          플랫폼 자동화
+          {{ $t('platformAutomation.title') }}
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          플랫폼별 자동화 규칙을 관리하고 실행 로그를 확인합니다
+          {{ $t('platformAutomation.description') }}
         </p>
       </div>
     </div>
@@ -47,9 +49,9 @@ onMounted(() => {
               <CogIcon class="h-5 w-5" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 규칙</p>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('platformAutomation.totalRules') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {{ store.summary.totalRules }}개
+                {{ store.summary.totalRules }}{{ $t('platformAutomation.countUnit') }}
               </p>
             </div>
           </div>
@@ -62,9 +64,9 @@ onMounted(() => {
               <BoltIcon class="h-5 w-5" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">활성 규칙</p>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('platformAutomation.activeRules') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {{ store.summary.activeRules }}개
+                {{ store.summary.activeRules }}{{ $t('platformAutomation.countUnit') }}
               </p>
             </div>
           </div>
@@ -77,9 +79,9 @@ onMounted(() => {
               <PlayCircleIcon class="h-5 w-5" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 실행</p>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('platformAutomation.totalExecutions') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {{ store.summary.totalExecutions.toLocaleString('ko-KR') }}회
+                {{ store.summary.totalExecutions.toLocaleString('ko-KR') }}{{ $t('platformAutomation.timesUnit') }}
               </p>
             </div>
           </div>
@@ -92,7 +94,7 @@ onMounted(() => {
               <CheckCircleIcon class="h-5 w-5" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">성공률</p>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('platformAutomation.successRate') }}</p>
               <p class="text-xl font-bold text-green-600 dark:text-green-400">
                 {{ store.summary.successRate.toFixed(1) }}%
               </p>
@@ -104,7 +106,7 @@ onMounted(() => {
       <!-- Automation Rule Cards Grid -->
       <section class="mb-8">
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          자동화 규칙
+          {{ $t('platformAutomation.automationRules') }}
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ store.rules.length }})</span>
         </h2>
 
@@ -122,10 +124,10 @@ onMounted(() => {
         >
           <CogIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            등록된 자동화 규칙이 없습니다
+            {{ $t('platformAutomation.noRules') }}
           </h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            새 규칙을 추가하여 플랫폼 작업을 자동화하세요
+            {{ $t('platformAutomation.noRulesDesc') }}
           </p>
         </div>
       </section>
@@ -133,7 +135,7 @@ onMounted(() => {
       <!-- Execution Logs -->
       <section>
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          실행 로그
+          {{ $t('platformAutomation.executionLogs') }}
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ store.logs.length }})</span>
         </h2>
 
@@ -150,7 +152,7 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white py-12 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
         >
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            실행 로그가 없습니다
+            {{ $t('platformAutomation.noLogs') }}
           </p>
         </div>
       </section>

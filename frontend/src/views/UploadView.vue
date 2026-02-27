@@ -24,7 +24,7 @@
     <PageGuide :title="$t('upload.pageGuideTitle')" :items="($tm('upload.pageGuide') as string[])" />
 
     <!-- Step indicator -->
-    <nav aria-label="업로드 단계" class="mb-8 flex items-center justify-center gap-4">
+    <nav :aria-label="t('upload.stepsAriaLabel')" class="mb-8 flex items-center justify-center gap-4">
       <div v-for="(label, i) in stepLabels" :key="i" class="flex items-center gap-2">
         <div
           class="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium"
@@ -36,7 +36,7 @@
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
           "
           :aria-current="i + 1 === step ? 'step' : undefined"
-          :aria-label="`${i + 1}단계: ${label}${i + 1 < step ? ' (완료)' : ''}`"
+          :aria-label="t('upload.stepAriaLabel', { step: i + 1, label, completed: i + 1 < step ? ` (${t('upload.stepCompleted')})` : '' })"
           role="listitem"
         >
           <CheckIcon v-if="i + 1 < step" class="h-4 w-4" />
@@ -559,7 +559,7 @@ async function handleAiGenerate() {
       useStt: useStt.value,
       targetPlatforms: channelStore.connectedPlatforms,
       tone: 'FRIENDLY',
-      category: metadata.value.category || '엔터테인먼트',
+      category: metadata.value.category || 'entertainment',
     })
 
     if (res.platforms.length > 0) {

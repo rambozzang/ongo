@@ -11,6 +11,9 @@ import { useContentTranslatorStore } from '@/stores/contentTranslator'
 import TranslationJobCard from '@/components/contenttranslator/TranslationJobCard.vue'
 import GlossaryRow from '@/components/contenttranslator/GlossaryRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { useLocale } from '@/composables/useLocale'
+
+const { t } = useLocale()
 
 const store = useContentTranslatorStore()
 const { jobs, glossary, summary, loading } = storeToRefs(store)
@@ -28,10 +31,10 @@ onMounted(() => {
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          콘텐츠 번역기
+          {{ $t('contentTranslator.title') }}
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          AI 기반 다국어 콘텐츠 번역 및 용어집 관리
+          {{ $t('contentTranslator.description') }}
         </p>
       </div>
     </div>
@@ -49,7 +52,7 @@ onMounted(() => {
               <LanguageIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">총 번역</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('contentTranslator.totalTranslations') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {{ summary.totalTranslations.toLocaleString('ko-KR') }}
               </p>
@@ -64,7 +67,7 @@ onMounted(() => {
               <CheckCircleIcon class="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">완료</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('contentTranslator.completed') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {{ summary.completedTranslations.toLocaleString('ko-KR') }}
               </p>
@@ -79,9 +82,9 @@ onMounted(() => {
               <SparklesIcon class="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">평균 품질</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('contentTranslator.avgQuality') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {{ summary.avgQuality }}점
+                {{ summary.avgQuality }}{{ $t('contentTranslator.points') }}
               </p>
             </div>
           </div>
@@ -94,7 +97,7 @@ onMounted(() => {
               <GlobeAltIcon class="h-5 w-5 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">주요 언어 쌍</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('contentTranslator.topLanguagePair') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {{ summary.topLanguagePair }}
               </p>
@@ -106,7 +109,7 @@ onMounted(() => {
       <!-- Translation Jobs Grid -->
       <section>
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          번역 작업
+          {{ $t('contentTranslator.translationJobs') }}
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ jobs.length }})</span>
         </h2>
 
@@ -124,10 +127,10 @@ onMounted(() => {
         >
           <LanguageIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            번역 작업이 없습니다
+            {{ $t('contentTranslator.noJobs') }}
           </h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            새로운 번역 작업을 시작해보세요
+            {{ $t('contentTranslator.noJobsHint') }}
           </p>
         </div>
       </section>
@@ -135,7 +138,7 @@ onMounted(() => {
       <!-- Glossary Table -->
       <section>
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          용어집
+          {{ $t('contentTranslator.glossary') }}
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ glossary.length }})</span>
         </h2>
 
@@ -145,16 +148,16 @@ onMounted(() => {
               <thead>
                 <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
                   <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    소스 단어
+                    {{ $t('contentTranslator.sourceWord') }}
                   </th>
                   <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    타겟 단어
+                    {{ $t('contentTranslator.targetWord') }}
                   </th>
                   <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    언어 쌍
+                    {{ $t('contentTranslator.languagePair') }}
                   </th>
                   <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    컨텍스트
+                    {{ $t('contentTranslator.context') }}
                   </th>
                 </tr>
               </thead>
@@ -174,7 +177,7 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white py-12 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
         >
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            등록된 용어가 없습니다
+            {{ $t('contentTranslator.noGlossary') }}
           </p>
         </div>
       </section>

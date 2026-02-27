@@ -10,7 +10,9 @@ import { useFanRewardStore } from '@/stores/fanReward'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import RewardCard from '@/components/fanreward/RewardCard.vue'
 import FanActivityRow from '@/components/fanreward/FanActivityRow.vue'
+import { useLocale } from '@/composables/useLocale'
 
+const { t } = useLocale()
 const store = useFanRewardStore()
 
 onMounted(() => {
@@ -26,10 +28,10 @@ onMounted(() => {
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          팬 리워드
+          {{ $t('fanReward.title') }}
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          팬 활동에 대한 보상을 관리하고 리워드를 배포합니다
+          {{ $t('fanReward.description') }}
         </p>
       </div>
     </div>
@@ -47,9 +49,9 @@ onMounted(() => {
               <GiftIcon class="h-5 w-5" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 리워드</p>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('fanReward.totalRewards') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {{ store.summary.totalRewards }}개
+                {{ store.summary.totalRewards }}{{ $t('fanReward.countUnit') }}
               </p>
             </div>
           </div>
@@ -62,9 +64,9 @@ onMounted(() => {
               <SparklesIcon class="h-5 w-5" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">활성 리워드</p>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('fanReward.activeRewards') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {{ store.summary.activeRewards }}개
+                {{ store.summary.activeRewards }}{{ $t('fanReward.countUnit') }}
               </p>
             </div>
           </div>
@@ -77,7 +79,7 @@ onMounted(() => {
               <CurrencyDollarIcon class="h-5 w-5" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">배포 포인트</p>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('fanReward.distributedPoints') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {{ store.summary.totalPointsDistributed.toLocaleString('ko-KR') }}P
               </p>
@@ -92,9 +94,9 @@ onMounted(() => {
               <HandThumbUpIcon class="h-5 w-5" />
             </div>
             <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 클레임</p>
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('fanReward.totalClaims') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {{ store.summary.totalClaims.toLocaleString('ko-KR') }}건
+                {{ store.summary.totalClaims.toLocaleString('ko-KR') }}{{ $t('fanReward.claimUnit') }}
               </p>
             </div>
           </div>
@@ -104,7 +106,7 @@ onMounted(() => {
       <!-- Reward Cards Grid -->
       <section class="mb-8">
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          리워드 목록
+          {{ $t('fanReward.rewardList') }}
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ store.rewards.length }})</span>
         </h2>
 
@@ -122,10 +124,10 @@ onMounted(() => {
         >
           <GiftIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            등록된 리워드가 없습니다
+            {{ $t('fanReward.noRewards') }}
           </h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            새 리워드를 추가하여 팬에게 보상하세요
+            {{ $t('fanReward.noRewardsHint') }}
           </p>
         </div>
       </section>
@@ -133,7 +135,7 @@ onMounted(() => {
       <!-- Recent Fan Activities -->
       <section>
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          최근 팬 활동
+          {{ $t('fanReward.recentActivities') }}
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ store.activities.length }})</span>
         </h2>
 
@@ -150,7 +152,7 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white py-12 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
         >
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            최근 팬 활동이 없습니다
+            {{ $t('fanReward.noActivities') }}
           </p>
         </div>
       </section>

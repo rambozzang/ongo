@@ -209,7 +209,7 @@
           class="mt-4 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4"
         >
           <p class="text-xs text-gray-500 dark:text-gray-400">
-            총 {{ creditTransactions.totalElements.toLocaleString() }}건
+            {{ $t('subscription.totalCount', { count: creditTransactions.totalElements.toLocaleString() }) }}
           </p>
           <div class="flex gap-1">
             <button
@@ -316,7 +316,7 @@
           class="mt-4 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4"
         >
           <p class="text-xs text-gray-500 dark:text-gray-400">
-            총 {{ paymentList.totalElements.toLocaleString() }}건
+            {{ $t('subscription.totalCount', { count: paymentList.totalElements.toLocaleString() }) }}
           </p>
           <div class="flex gap-1">
             <button
@@ -344,18 +344,18 @@
     <!-- Plan Change Confirmation Modal -->
     <ConfirmModal
       v-model="showChangePlanModal"
-      title="플랜 변경"
+      :title="$t('subscription.changePlanTitle')"
       :message="changePlanMessage"
-      confirm-text="변경하기"
+      :confirm-text="$t('subscription.changePlanConfirm')"
       @confirm="confirmChangePlan"
     />
 
     <!-- Cancel Subscription Confirmation Modal -->
     <ConfirmModal
       v-model="showCancelModal"
-      title="구독 취소"
-      message="정말 구독을 취소하시겠습니까? 현재 결제 기간이 종료되면 Free 플랜으로 전환됩니다. 업로드 제한과 기능 제한이 적용됩니다."
-      confirm-text="구독 취소"
+      :title="$t('subscription.cancelTitle')"
+      :message="$t('subscription.cancelMessage')"
+      :confirm-text="$t('subscription.cancelConfirmText')"
       danger
       @confirm="confirmCancel"
     />
@@ -403,11 +403,13 @@ import { PLANS, type PlanType } from '@/types/subscription'
 import type { CreditPackage } from '@/types/credit'
 import { creditApi } from '@/api/credit'
 import { subscriptionApi } from '@/api/subscription'
+import { useLocale } from '@/composables/useLocale'
 
 const subscriptionStore = useSubscriptionStore()
 const creditStore = useCreditStore()
 const channelStore = useChannelStore()
 const notification = useNotificationStore()
+const { t } = useLocale()
 
 const { subscription } = storeToRefs(subscriptionStore)
 const { balance: creditBalance, transactions: creditTransactions } = storeToRefs(creditStore)
@@ -462,13 +464,14 @@ const subscriptionStatusClass = computed(() => {
 
 const subscriptionStatusLabel = computed(() => {
   if (!subscription.value) return ''
-  const labels: Record<string, string> = {
-    ACTIVE: '활성',
-    FREE: '무료',
-    CANCELLED: '취소됨',
-    PAST_DUE: '결제 지연',
+  const labelKeys: Record<string, string> = {
+    ACTIVE: 'subscription.statusActive',
+    FREE: 'subscription.statusFree',
+    CANCELLED: 'subscription.statusCancelled',
+    PAST_DUE: 'subscription.statusPastDue',
   }
-  return labels[subscription.value.status] ?? subscription.value.status
+  const key = labelKeys[subscription.value.status]
+  return key ? t(key) : subscription.value.status
 })
 
 const changePlanMessage = computed(() => {
@@ -476,17 +479,18 @@ const changePlanMessage = computed(() => {
   const target = PLANS.find((p) => p.type === targetPlan.value)
   if (!target) return ''
   const current = currentPlanInfo.value
-  if (!current) return `${target.name} 플랜으로 변경하시겠습니까?`
+  if (!current) return t('subscription.changePlanSimple', { plan: target.name })
 
   if (target.price > current.price) {
-    return `${current.name} 플랜에서 ${target.name} 플랜(${formatPrice(target.price)}/월)으로 업그레이드하시겠습니까? 차액은 일할 계산되어 청구됩니다.`
+    return t('subscription.upgradeMessage', { current: current.name, target: target.name, price: formatPrice(target.price) })
   }
-  return `${current.name} 플랜에서 ${target.name} 플랜(${target.price === 0 ? '무료' : formatPrice(target.price) + '/월'})으로 다운그레이드하시겠습니까? 현재 결제 기간 종료 후 적용됩니다.`
+  const targetPrice = target.price === 0 ? t('subscription.free') : formatPrice(target.price) + t('subscription.perMonth')
+  return t('subscription.downgradeMessage', { current: current.name, target: target.name, price: targetPrice })
 })
 
 // Helpers
 function formatPrice(amount: number): string {
-  if (amount === 0) return '무료'
+  if (amount === 0) return t('subscription.free')
   return '\u20A9' + amount.toLocaleString()
 }
 
@@ -531,12 +535,13 @@ function creditTransactionTypeClass(type: string): string {
 }
 
 function creditTransactionTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    DEDUCT: '사용',
-    CHARGE: '충전',
-    FREE_RESET: '무료 초기화',
+  const labelKeys: Record<string, string> = {
+    DEDUCT: 'subscription.creditTypeDeduct',
+    CHARGE: 'subscription.creditTypeCharge',
+    FREE_RESET: 'subscription.creditTypeFreeReset',
   }
-  return labels[type] ?? type
+  const key = labelKeys[type]
+  return key ? t(key) : type
 }
 
 function paymentStatusClass(status: string): string {
@@ -549,12 +554,13 @@ function paymentStatusClass(status: string): string {
 }
 
 function paymentStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    COMPLETED: '완료',
-    FAILED: '실패',
-    REFUNDED: '환불',
+  const labelKeys: Record<string, string> = {
+    COMPLETED: 'subscription.paymentCompleted',
+    FAILED: 'subscription.paymentFailed',
+    REFUNDED: 'subscription.paymentRefunded',
   }
-  return labels[status] ?? status
+  const key = labelKeys[status]
+  return key ? t(key) : status
 }
 
 // Actions
@@ -585,11 +591,11 @@ async function confirmChangePlan() {
   if (!targetPlan.value) return
   try {
     await subscriptionStore.changePlan(targetPlan.value)
-    notification.success('플랜이 성공적으로 변경되었습니다.')
+    notification.success(t('subscription.changePlanSuccess'))
     targetPlan.value = null
     await creditStore.fetchBalance()
   } catch (e: unknown) {
-    notification.error(e instanceof Error ? e.message : '플랜 변경에 실패했습니다.')
+    notification.error(e instanceof Error ? e.message : t('subscription.changePlanError'))
   }
 }
 
@@ -597,21 +603,21 @@ async function handlePaymentConfirm() {
   if (!targetPlan.value) return
   try {
     await subscriptionStore.changePlan(targetPlan.value)
-    notification.success('플랜이 성공적으로 업그레이드되었습니다.')
+    notification.success(t('subscription.upgradeSuccess'))
     showPaymentModal.value = false
     targetPlan.value = null
     await creditStore.fetchBalance()
   } catch (e: unknown) {
-    notification.error(e instanceof Error ? e.message : '플랜 변경에 실패했습니다.')
+    notification.error(e instanceof Error ? e.message : t('subscription.changePlanError'))
   }
 }
 
 async function confirmCancel() {
   try {
     await subscriptionStore.cancelSubscription()
-    notification.success('구독이 취소되었습니다. 현재 결제 기간까지 이용 가능합니다.')
+    notification.success(t('subscription.cancelSuccess'))
   } catch (e: unknown) {
-    notification.error(e instanceof Error ? e.message : '구독 취소에 실패했습니다.')
+    notification.error(e instanceof Error ? e.message : t('subscription.cancelError'))
   }
 }
 
@@ -619,13 +625,13 @@ async function handleCreditPurchase(pkg: CreditPackage) {
   try {
     const updatedBalance = await creditApi.purchase({ packageType: pkg.name, paymentMethod: 'CARD' })
     creditStore.balance = updatedBalance
-    notification.success('크레딧이 충전되었습니다.')
+    notification.success(t('subscription.creditChargeSuccess'))
     await Promise.all([
       creditStore.fetchTransactions(0, 20),
       subscriptionStore.fetchPayments(0, 20),
     ])
   } catch (e: unknown) {
-    notification.error(e instanceof Error ? e.message : '크레딧 충전에 실패했습니다.')
+    notification.error(e instanceof Error ? e.message : t('subscription.creditChargeError'))
   }
 }
 

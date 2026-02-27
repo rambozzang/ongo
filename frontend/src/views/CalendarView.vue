@@ -78,6 +78,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import CalendarGrid from '@/components/schedule/CalendarGrid.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { useScheduleStore } from '@/stores/schedule'
+import { useLocale } from '@/composables/useLocale'
 import type { Platform } from '@/types/channel'
 
 export interface CalendarEvent {
@@ -91,6 +92,7 @@ export interface CalendarEvent {
 }
 
 const scheduleStore = useScheduleStore()
+const { t } = useLocale()
 
 const currentDate = ref(new Date())
 const viewMode = ref<'monthly' | 'weekly'>('monthly')
@@ -101,7 +103,7 @@ const formattedCurrentDate = computed(() => {
   const date = currentDate.value.getDate()
 
   if (viewMode.value === 'monthly') {
-    return `${year}년 ${month}월`
+    return t('calendar.dateFormatMonthly', { year, month })
   } else {
     const weekStart = new Date(currentDate.value)
     weekStart.setDate(date - currentDate.value.getDay())
@@ -114,9 +116,9 @@ const formattedCurrentDate = computed(() => {
     const endDate = weekEnd.getDate()
 
     if (startMonth === endMonth) {
-      return `${year}년 ${startMonth}월 ${startDate}일 - ${endDate}일`
+      return t('calendar.dateFormatWeeklySameMonth', { year, month: startMonth, startDate, endDate })
     } else {
-      return `${year}년 ${startMonth}월 ${startDate}일 - ${endMonth}월 ${endDate}일`
+      return t('calendar.dateFormatWeeklyCrossMonth', { year, startMonth, startDate, endMonth, endDate })
     }
   }
 })

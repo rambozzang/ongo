@@ -12,9 +12,11 @@ import SeriesCard from '@/components/contentseries/SeriesCard.vue'
 import EpisodeList from '@/components/contentseries/EpisodeList.vue'
 import SeriesAnalyticsPanel from '@/components/contentseries/SeriesAnalyticsPanel.vue'
 import { useContentSeriesStore } from '@/stores/contentSeries'
+import { useLocale } from '@/composables/useLocale'
 import type { ContentSeries, CreateSeriesRequest } from '@/types/contentSeries'
 
 const store = useContentSeriesStore()
+const { t } = useLocale()
 
 const showCreateModal = ref(false)
 const showDetailModal = ref(false)
@@ -68,7 +70,7 @@ function handleSelect(id: number) {
 }
 
 function handleDelete(id: number) {
-  if (confirm('이 시리즈를 삭제하시겠습니까?')) {
+  if (confirm(t('contentSeries.deleteConfirm'))) {
     store.deleteSeries(id)
     if (selectedSeries.value?.id === id) {
       showDetailModal.value = false

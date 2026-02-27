@@ -11,6 +11,9 @@ import { useContentRepurposerStore } from '@/stores/contentRepurposer'
 import RepurposeJobCard from '@/components/contentrepurposer/RepurposeJobCard.vue'
 import RepurposeTemplateCard from '@/components/contentrepurposer/RepurposeTemplateCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { useLocale } from '@/composables/useLocale'
+
+const { t } = useLocale()
 
 const store = useContentRepurposerStore()
 const { jobs, templates, summary, isLoading } = storeToRefs(store)
@@ -35,10 +38,10 @@ onMounted(() => {
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          콘텐츠 리퍼포징
+          {{ $t('contentRepurposer.title') }}
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          하나의 영상을 여러 플랫폼에 맞는 포맷으로 자동 변환합니다.
+          {{ $t('contentRepurposer.description') }}
         </p>
       </div>
     </div>
@@ -52,7 +55,7 @@ onMounted(() => {
             <ArrowPathRoundedSquareIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 작업</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('contentRepurposer.totalJobs') }}</p>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ summary.totalJobs }}</p>
           </div>
         </div>
@@ -65,7 +68,7 @@ onMounted(() => {
             <CheckCircleIcon class="h-5 w-5 text-green-600 dark:text-green-400" />
           </div>
           <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">완료</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('contentRepurposer.completed') }}</p>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ summary.completedJobs }}</p>
           </div>
         </div>
@@ -78,8 +81,8 @@ onMounted(() => {
             <ClockIcon class="h-5 w-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">평균 시간 절약</p>
-            <p class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ summary.avgTimeSaved }}분</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('contentRepurposer.avgTimeSaved') }}</p>
+            <p class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ summary.avgTimeSaved }}{{ $t('contentRepurposer.minutes') }}</p>
           </div>
         </div>
       </div>
@@ -91,7 +94,7 @@ onMounted(() => {
             <ChartBarIcon class="h-5 w-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">성공률</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('contentRepurposer.successRate') }}</p>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ summary.successRate }}%</p>
           </div>
         </div>
@@ -110,7 +113,7 @@ onMounted(() => {
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
           ]"
         >
-          작업 목록
+          {{ $t('contentRepurposer.jobList') }}
           <span
             :class="[
               'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
@@ -132,7 +135,7 @@ onMounted(() => {
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
           ]"
         >
-          변환 템플릿
+          {{ $t('contentRepurposer.conversionTemplates') }}
           <span
             :class="[
               'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
@@ -167,10 +170,10 @@ onMounted(() => {
       >
         <ArrowPathRoundedSquareIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          리퍼포징 작업이 없습니다
+          {{ $t('contentRepurposer.noJobs') }}
         </h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          템플릿을 사용하여 첫 번째 리퍼포징 작업을 시작해보세요.
+          {{ $t('contentRepurposer.noJobsHint') }}
         </p>
       </div>
     </div>
@@ -193,10 +196,10 @@ onMounted(() => {
       >
         <ArrowPathRoundedSquareIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          템플릿이 없습니다
+          {{ $t('contentRepurposer.noTemplates') }}
         </h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          기본 변환 템플릿이 곧 추가됩니다.
+          {{ $t('contentRepurposer.noTemplatesHint') }}
         </p>
       </div>
     </div>

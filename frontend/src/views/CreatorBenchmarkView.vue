@@ -14,18 +14,21 @@ import BenchmarkMetricCard from '@/components/creatorbenchmark/BenchmarkMetricCa
 import PeerComparisonRow from '@/components/creatorbenchmark/PeerComparisonRow.vue'
 import PercentileChart from '@/components/creatorbenchmark/PercentileChart.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { useLocale } from '@/composables/useLocale'
+
+const { t } = useLocale()
 
 const store = useCreatorBenchmarkStore()
 const { results, peers, summary, isLoading } = storeToRefs(store)
 
 const platformFilter = ref<string>('ALL')
 
-const platformOptions = [
-  { value: 'ALL', label: '전체' },
+const platformOptions = computed(() => [
+  { value: 'ALL', label: t('creatorBenchmark.filterAll') },
   { value: 'YOUTUBE', label: 'YouTube' },
   { value: 'TIKTOK', label: 'TikTok' },
   { value: 'INSTAGRAM', label: 'Instagram' },
-]
+])
 
 const filteredResults = computed(() => {
   if (platformFilter.value === 'ALL') return results.value
@@ -40,16 +43,16 @@ const filteredPeers = computed(() => {
 const percentileItems = computed(() => {
   return filteredResults.value.map((r) => {
     const metricLabels: Record<string, string> = {
-      SUBSCRIBERS: '구독자 수',
-      AVG_VIEWS: '평균 조회수',
-      ENGAGEMENT_RATE: '참여율',
-      WATCH_TIME: '시청 시간',
-      LIKES: '좋아요',
-      COMMENTS: '댓글',
+      SUBSCRIBERS: t('creatorBenchmark.subscribers'),
+      AVG_VIEWS: t('creatorBenchmark.avgViews'),
+      ENGAGEMENT_RATE: t('creatorBenchmark.engagementRate'),
+      WATCH_TIME: t('creatorBenchmark.watchTime'),
+      LIKES: t('creatorBenchmark.likes'),
+      COMMENTS: t('creatorBenchmark.comments'),
     }
     const formatValue = (value: number): string => {
       if (r.metric === 'ENGAGEMENT_RATE') return `${value}%`
-      if (value >= 10000) return `${(value / 10000).toFixed(1)}만`
+      if (value >= 10000) return `${(value / 10000).toFixed(1)}${t('creatorBenchmark.tenThousandUnit')}`
       if (value >= 1000) return `${(value / 1000).toFixed(1)}K`
       return value.toLocaleString()
     }
@@ -86,11 +89,11 @@ onMounted(() => {
       <div>
         <div class="flex items-center gap-3">
           <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            크리에이터 벤치마크
+            {{ $t('creatorBenchmark.title') }}
           </h1>
         </div>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          동일 카테고리 크리에이터 대비 내 채널의 위치를 확인하세요
+          {{ $t('creatorBenchmark.description') }}
         </p>
       </div>
     </div>
@@ -100,7 +103,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ChartBarSquareIcon class="h-5 w-5 text-primary-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">분석 지표</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.totalMetrics') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
           {{ summary.totalMetrics }}
@@ -110,7 +113,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ArrowTrendingUpIcon class="h-5 w-5 text-green-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">평균 이상</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.aboveAvg') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
           {{ summary.aboveAvgCount }}
@@ -120,17 +123,17 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <TrophyIcon class="h-5 w-5 text-yellow-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">최고 백분위</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.topPercentile') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-          상위 {{ 100 - summary.topPercentile }}%
+          {{ $t('creatorBenchmark.topPercentileValue', { value: 100 - summary.topPercentile }) }}
         </p>
       </div>
 
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ExclamationTriangleIcon class="h-5 w-5 text-orange-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">약점 지표</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.weakestMetric') }}</p>
         </div>
         <p class="mt-1 text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
           {{ summary.weakestMetric || '-' }}
@@ -165,7 +168,7 @@ onMounted(() => {
       <!-- Benchmark Metric Cards -->
       <div class="mb-8">
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          벤치마크 지표
+          {{ $t('creatorBenchmark.benchmarkMetrics') }}
         </h2>
         <div v-if="filteredResults.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
           <BenchmarkMetricCard
@@ -179,14 +182,14 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white py-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
         >
           <ChartBarSquareIcon class="mx-auto mb-2 h-10 w-10 text-gray-400 dark:text-gray-600" />
-          <p class="text-sm text-gray-500 dark:text-gray-400">벤치마크 데이터가 없습니다</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.noBenchmarkData') }}</p>
         </div>
       </div>
 
       <!-- Percentile Chart -->
       <div class="mb-8">
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          백분위 분포
+          {{ $t('creatorBenchmark.percentileDistribution') }}
         </h2>
         <div v-if="percentileItems.length > 0" class="space-y-3">
           <PercentileChart
@@ -202,33 +205,33 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white py-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
         >
           <ChartBarSquareIcon class="mx-auto mb-2 h-10 w-10 text-gray-400 dark:text-gray-600" />
-          <p class="text-sm text-gray-500 dark:text-gray-400">백분위 데이터가 없습니다</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.noPercentileData') }}</p>
         </div>
       </div>
 
       <!-- Peer Comparison Table -->
       <div>
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          피어 비교
+          {{ $t('creatorBenchmark.peerComparison') }}
         </h2>
         <div v-if="filteredPeers.length > 0" class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <table class="w-full min-w-[600px]">
             <thead>
               <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  크리에이터
+                  {{ $t('creatorBenchmark.creator') }}
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  플랫폼
+                  {{ $t('creatorBenchmark.platform') }}
                 </th>
                 <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  구독자
+                  {{ $t('creatorBenchmark.subscribers') }}
                 </th>
                 <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  평균 조회수
+                  {{ $t('creatorBenchmark.avgViews') }}
                 </th>
                 <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  참여율
+                  {{ $t('creatorBenchmark.engagementRate') }}
                 </th>
               </tr>
             </thead>
@@ -246,7 +249,7 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white py-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
         >
           <UserGroupIcon class="mx-auto mb-2 h-10 w-10 text-gray-400 dark:text-gray-600" />
-          <p class="text-sm text-gray-500 dark:text-gray-400">피어 비교 데이터가 없습니다</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.noPeerData') }}</p>
         </div>
       </div>
     </template>

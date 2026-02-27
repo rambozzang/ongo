@@ -214,10 +214,12 @@ import AiCalendarGrid from '@/components/aicalendar/AiCalendarGrid.vue'
 import AiCalendarActions from '@/components/aicalendar/AiCalendarActions.vue'
 import SeasonEventBadge from '@/components/aicalendar/SeasonEventBadge.vue'
 import { useAiCalendarStore } from '@/stores/aiCalendar'
+import { useLocale } from '@/composables/useLocale'
 import type { Platform } from '@/types/channel'
 import type { CalendarPeriod, PostingFrequency, ContentSlot, SeasonEvent } from '@/types/aiCalendar'
 
 const calendarStore = useAiCalendarStore()
+const { t } = useLocale()
 
 // --- Settings Form ---
 const settingsForm = ref({
@@ -245,9 +247,9 @@ const formattedWeekRange = computed(() => {
   const year = start.getFullYear()
 
   if (startMonth === endMonth) {
-    return `${year}년 ${startMonth}월 ${startDate}일 - ${endDate}일`
+    return t('calendar.dateFormatWeeklySameMonth', { year, month: startMonth, startDate, endDate })
   }
-  return `${year}년 ${startMonth}월 ${startDate}일 - ${endMonth}월 ${endDate}일`
+  return t('calendar.dateFormatWeeklyCrossMonth', { year, startMonth, startDate, endMonth, endDate })
 })
 
 const currentWeekSeasonEvents = computed(() => {

@@ -11,7 +11,9 @@ import { useFanSegmentCampaignStore } from '@/stores/fanSegmentCampaign'
 import CampaignCard from '@/components/fansegmentcampaign/CampaignCard.vue'
 import SegmentRow from '@/components/fansegmentcampaign/SegmentRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { useLocale } from '@/composables/useLocale'
 
+const { t } = useLocale()
 const store = useFanSegmentCampaignStore()
 const { campaigns, segments, summary, loading } = storeToRefs(store)
 
@@ -28,10 +30,10 @@ onMounted(() => {
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          팬 세그먼트 캠페인
+          {{ $t('fanSegmentCampaign.title') }}
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          팬 세그먼트별 맞춤 캠페인 관리
+          {{ $t('fanSegmentCampaign.description') }}
         </p>
       </div>
     </div>
@@ -48,9 +50,9 @@ onMounted(() => {
               <MegaphoneIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">총 캠페인</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('fanSegmentCampaign.totalCampaigns') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {{ summary.totalCampaigns }}개
+                {{ summary.totalCampaigns }}{{ $t('fanSegmentCampaign.countUnit') }}
               </p>
             </div>
           </div>
@@ -62,9 +64,9 @@ onMounted(() => {
               <SignalIcon class="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">활성 캠페인</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('fanSegmentCampaign.activeCampaigns') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {{ summary.activeCampaigns }}개
+                {{ summary.activeCampaigns }}{{ $t('fanSegmentCampaign.countUnit') }}
               </p>
             </div>
           </div>
@@ -76,7 +78,7 @@ onMounted(() => {
               <EnvelopeOpenIcon class="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">평균 오픈률</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('fanSegmentCampaign.avgOpenRate') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {{ summary.avgOpenRate }}%
               </p>
@@ -90,7 +92,7 @@ onMounted(() => {
               <UsersIcon class="h-5 w-5 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">총 도달</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('fanSegmentCampaign.totalReach') }}</p>
               <p class="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {{ summary.totalReach.toLocaleString('ko-KR') }}
               </p>
@@ -102,7 +104,7 @@ onMounted(() => {
       <!-- Campaigns Grid -->
       <section>
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          캠페인 목록
+          {{ $t('fanSegmentCampaign.campaignList') }}
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ campaigns.length }})</span>
         </h2>
 
@@ -119,15 +121,15 @@ onMounted(() => {
           class="rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
         >
           <MegaphoneIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">캠페인이 없습니다</h3>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">새 캠페인을 만들어 팬과 소통하세요</p>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('fanSegmentCampaign.noCampaigns') }}</h3>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $t('fanSegmentCampaign.noCampaignsHint') }}</p>
         </div>
       </section>
 
       <!-- Segments Table -->
       <section>
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          팬 세그먼트
+          {{ $t('fanSegmentCampaign.fanSegments') }}
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ segments.length }})</span>
         </h2>
 
@@ -136,10 +138,10 @@ onMounted(() => {
             <table class="w-full">
               <thead>
                 <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">세그먼트</th>
-                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">기준</th>
-                  <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">팬 수</th>
-                  <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">평균 참여도</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ $t('fanSegmentCampaign.segmentName') }}</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ $t('fanSegmentCampaign.criteria') }}</th>
+                  <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ $t('fanSegmentCampaign.fanCount') }}</th>
+                  <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ $t('fanSegmentCampaign.avgEngagement') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700">

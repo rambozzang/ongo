@@ -9,11 +9,13 @@ import {
   CheckBadgeIcon,
   Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
+import { useLocale } from '@/composables/useLocale'
 import { useBrandSafetyStore } from '@/stores/brandSafety'
 import SafetyCheckCard from '@/components/brandsafety/SafetyCheckCard.vue'
 import SafetyRuleToggle from '@/components/brandsafety/SafetyRuleToggle.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
+const { t } = useLocale()
 const store = useBrandSafetyStore()
 const { checks, rules, summary, isLoading } = storeToRefs(store)
 
@@ -21,10 +23,10 @@ const activeTab = ref<'checks' | 'rules'>('checks')
 const statusFilter = ref<string>('ALL')
 
 const statusFilters = [
-  { value: 'ALL', label: '전체' },
-  { value: 'SAFE', label: '안전' },
-  { value: 'WARNING', label: '경고' },
-  { value: 'VIOLATION', label: '위반' },
+  { value: 'ALL', label: t('brandSafety.filterAll') },
+  { value: 'SAFE', label: t('brandSafety.filterSafe') },
+  { value: 'WARNING', label: t('brandSafety.filterWarning') },
+  { value: 'VIOLATION', label: t('brandSafety.filterViolation') },
 ]
 
 const filteredChecks = computed(() => {
@@ -73,11 +75,11 @@ onMounted(() => {
       <div>
         <div class="flex items-center gap-3">
           <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            브랜드 안전성 점검
+            {{ $t('brandSafety.title') }}
           </h1>
         </div>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          콘텐츠의 브랜드 안전성을 AI로 점검하고 위반 사항을 사전에 방지하세요
+          {{ $t('brandSafety.description') }}
         </p>
       </div>
     </div>
@@ -87,7 +89,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ShieldCheckIcon class="h-5 w-5 text-primary-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 점검수</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('brandSafety.totalChecks') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
           {{ summary.totalChecks.toLocaleString('ko-KR') }}
@@ -97,7 +99,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <CheckBadgeIcon class="h-5 w-5 text-green-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">안전</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('brandSafety.safe') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
           {{ summary.safeCount.toLocaleString('ko-KR') }}
@@ -107,7 +109,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ExclamationTriangleIcon class="h-5 w-5 text-yellow-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">경고</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('brandSafety.warning') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-yellow-600 dark:text-yellow-400">
           {{ summary.warningCount.toLocaleString('ko-KR') }}
@@ -117,7 +119,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <XCircleIcon class="h-5 w-5 text-red-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">위반</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('brandSafety.violation') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
           {{ summary.violationCount.toLocaleString('ko-KR') }}
@@ -128,7 +130,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ShieldExclamationIcon class="h-5 w-5 text-primary-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">평균 점수</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('brandSafety.avgScore') }}</p>
         </div>
         <div class="mt-1 flex items-center gap-3">
           <div
@@ -157,7 +159,7 @@ onMounted(() => {
           ]"
         >
           <ShieldCheckIcon class="mr-1.5 inline h-4 w-4" />
-          점검 결과
+          {{ $t('brandSafety.checksTab') }}
           <span
             :class="[
               'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
@@ -180,7 +182,7 @@ onMounted(() => {
           ]"
         >
           <Cog6ToothIcon class="mr-1.5 inline h-4 w-4" />
-          규칙 관리
+          {{ $t('brandSafety.rulesTab') }}
           <span
             :class="[
               'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
@@ -233,10 +235,10 @@ onMounted(() => {
       >
         <ShieldCheckIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          점검 결과가 없습니다
+          {{ $t('brandSafety.noChecksTitle') }}
         </h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          콘텐츠를 업로드하면 브랜드 안전성이 자동으로 점검됩니다
+          {{ $t('brandSafety.noChecksDesc') }}
         </p>
       </div>
     </div>
@@ -259,10 +261,10 @@ onMounted(() => {
       >
         <Cog6ToothIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          등록된 규칙이 없습니다
+          {{ $t('brandSafety.noRulesTitle') }}
         </h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          브랜드 안전성 규칙을 설정하여 콘텐츠를 보호하세요
+          {{ $t('brandSafety.noRulesDesc') }}
         </p>
       </div>
     </div>

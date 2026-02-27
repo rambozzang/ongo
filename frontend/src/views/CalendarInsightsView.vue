@@ -7,23 +7,25 @@ import {
   ClockIcon,
   ArrowTrendingUpIcon,
 } from '@heroicons/vue/24/outline'
+import { useLocale } from '@/composables/useLocale'
 import { useCalendarInsightsStore } from '@/stores/calendarInsights'
 import InsightCard from '@/components/calendarinsights/InsightCard.vue'
 import OptimalTimeCard from '@/components/calendarinsights/OptimalTimeCard.vue'
 import PatternChart from '@/components/calendarinsights/PatternChart.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
+const { t } = useLocale()
 const store = useCalendarInsightsStore()
 const { insights, optimalTimeSlots, uploadPatterns, summary, isLoading } = storeToRefs(store)
 
 const dayOfWeekLabels: Record<string, string> = {
-  MON: '월요일',
-  TUE: '화요일',
-  WED: '수요일',
-  THU: '목요일',
-  FRI: '금요일',
-  SAT: '토요일',
-  SUN: '일요일',
+  MON: t('calendarInsights.mon'),
+  TUE: t('calendarInsights.tue'),
+  WED: t('calendarInsights.wed'),
+  THU: t('calendarInsights.thu'),
+  FRI: t('calendarInsights.fri'),
+  SAT: t('calendarInsights.sat'),
+  SUN: t('calendarInsights.sun'),
 }
 
 onMounted(() => {
@@ -41,11 +43,11 @@ onMounted(() => {
       <div>
         <div class="flex items-center gap-3">
           <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            콘텐츠 캘린더 인사이트
+            {{ $t('calendarInsights.title') }}
           </h1>
         </div>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          업로드 패턴 분석과 최적 시간대 추천으로 콘텐츠 전략을 최적화하세요
+          {{ $t('calendarInsights.description') }}
         </p>
       </div>
     </div>
@@ -55,7 +57,7 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <CalendarDaysIcon class="h-5 w-5 text-primary-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 업로드</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('calendarInsights.totalUploads') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
           {{ summary.totalUploads.toLocaleString('ko-KR') }}
@@ -65,17 +67,17 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ArrowTrendingUpIcon class="h-5 w-5 text-green-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">주간 평균</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('calendarInsights.weeklyAvg') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ summary.avgUploadsPerWeek.toFixed(1) }}건
+          {{ summary.avgUploadsPerWeek.toFixed(1) }}{{ $t('calendarInsights.countSuffix') }}
         </p>
       </div>
 
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ClockIcon class="h-5 w-5 text-blue-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">최적 요일</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('calendarInsights.bestDay') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
           {{ dayOfWeekLabels[summary.bestDay] || summary.bestDay || '-' }}
@@ -85,10 +87,10 @@ onMounted(() => {
       <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div class="flex items-center gap-2">
           <ChartBarIcon class="h-5 w-5 text-yellow-500" />
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">일관성 점수</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('calendarInsights.consistencyScore') }}</p>
         </div>
         <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ summary.consistencyScore }}점
+          {{ summary.consistencyScore }}{{ $t('calendarInsights.scoreSuffix') }}
         </p>
       </div>
     </div>
@@ -101,7 +103,7 @@ onMounted(() => {
       <div class="mb-8">
         <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
           <ClockIcon class="h-5 w-5 text-primary-500" />
-          최적 업로드 시간
+          {{ $t('calendarInsights.optimalUploadTime') }}
         </h2>
 
         <div v-if="optimalTimeSlots.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2">
@@ -118,10 +120,10 @@ onMounted(() => {
         >
           <ClockIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            최적 시간 데이터가 없습니다
+            {{ $t('calendarInsights.noOptimalTimeTitle') }}
           </h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            콘텐츠를 업로드하면 최적 시간이 분석됩니다
+            {{ $t('calendarInsights.noOptimalTimeDesc') }}
           </p>
         </div>
       </div>
@@ -130,7 +132,7 @@ onMounted(() => {
       <div class="mb-8">
         <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
           <CalendarDaysIcon class="h-5 w-5 text-primary-500" />
-          일별 인사이트
+          {{ $t('calendarInsights.dailyInsights') }}
         </h2>
 
         <div v-if="insights.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
@@ -147,10 +149,10 @@ onMounted(() => {
         >
           <CalendarDaysIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            일별 인사이트 데이터가 없습니다
+            {{ $t('calendarInsights.noDailyInsightsTitle') }}
           </h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            업로드 기록이 쌓이면 일별 인사이트를 확인할 수 있습니다
+            {{ $t('calendarInsights.noDailyInsightsDesc') }}
           </p>
         </div>
       </div>
@@ -159,7 +161,7 @@ onMounted(() => {
       <div class="mb-8">
         <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
           <ChartBarIcon class="h-5 w-5 text-primary-500" />
-          플랫폼별 업로드 패턴
+          {{ $t('calendarInsights.uploadPatterns') }}
         </h2>
 
         <div v-if="uploadPatterns.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
@@ -176,10 +178,10 @@ onMounted(() => {
         >
           <ChartBarIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            업로드 패턴 데이터가 없습니다
+            {{ $t('calendarInsights.noUploadPatternsTitle') }}
           </h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            여러 플랫폼에 콘텐츠를 업로드하면 패턴이 분석됩니다
+            {{ $t('calendarInsights.noUploadPatternsDesc') }}
           </p>
         </div>
       </div>
