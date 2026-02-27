@@ -12,6 +12,8 @@ import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.PAYMENT_METHOD
 import com.ongo.infrastructure.persistence.jooq.Fields.PG_PROVIDER
 import com.ongo.infrastructure.persistence.jooq.Fields.PG_TRANSACTION_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.PADDLE_INVOICE_URL
+import com.ongo.infrastructure.persistence.jooq.Fields.PADDLE_TRANSACTION_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.RECEIPT_URL
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.TYPE
@@ -31,6 +33,13 @@ class PaymentJooqRepository(
         dsl.select()
             .from(PAYMENTS)
             .where(ID.eq(id))
+            .fetchOne()
+            ?.toPayment()
+
+    override fun findByPaddleTransactionId(paddleTransactionId: String): Payment? =
+        dsl.select()
+            .from(PAYMENTS)
+            .where(PADDLE_TRANSACTION_ID.eq(paddleTransactionId))
             .fetchOne()
             ?.toPayment()
 
@@ -62,6 +71,8 @@ class PaymentJooqRepository(
             .set(PAYMENT_METHOD, payment.paymentMethod)
             .set(RECEIPT_URL, payment.receiptUrl)
             .set(DESCRIPTION, payment.description)
+            .set(PADDLE_TRANSACTION_ID, payment.paddleTransactionId)
+            .set(PADDLE_INVOICE_URL, payment.paddleInvoiceUrl)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -77,6 +88,8 @@ class PaymentJooqRepository(
             .set(PAYMENT_METHOD, payment.paymentMethod)
             .set(RECEIPT_URL, payment.receiptUrl)
             .set(DESCRIPTION, payment.description)
+            .set(PADDLE_TRANSACTION_ID, payment.paddleTransactionId)
+            .set(PADDLE_INVOICE_URL, payment.paddleInvoiceUrl)
             .where(ID.eq(payment.id))
             .execute()
 
@@ -98,6 +111,8 @@ class PaymentJooqRepository(
             paymentMethod = get(PAYMENT_METHOD),
             receiptUrl = get(RECEIPT_URL),
             description = get(DESCRIPTION),
+            paddleTransactionId = get(PADDLE_TRANSACTION_ID),
+            paddleInvoiceUrl = get(PADDLE_INVOICE_URL),
             createdAt = localDateTime(CREATED_AT),
         )
     }

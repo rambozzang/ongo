@@ -31,6 +31,7 @@ data class User(
     val category: String? = null,
     val onboardingCompleted: Boolean = false,
     val role: String = "USER",
+    val paddleCustomerId: String? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
 )

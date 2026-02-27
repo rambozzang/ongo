@@ -9,19 +9,19 @@ import type {
 export const aiCalendarApi = {
   generate(request: AiCalendarGenerateRequest) {
     return apiClient
-      .post<ResData<AiCalendarResult>>('/ai/calendar/generate', request)
+      .post<ResData<AiCalendarResult>>('/ai-calendars/generate', request)
       .then(unwrapResponse)
   },
 
   regenerateSlots(calendarId: string, slotIds: string[]) {
     return apiClient
-      .post<ResData<AiCalendarResult>>(`/ai/calendar/${calendarId}/regenerate`, { slotIds })
+      .post<ResData<AiCalendarResult>>(`/ai-calendars/${calendarId}/regenerate`, { slotIds })
       .then(unwrapResponse)
   },
 
   applyToSchedule(request: AiCalendarApplyRequest) {
     return apiClient
-      .post<ResData<{ appliedCount: number }>>('/ai/calendar/apply', request)
+      .post<ResData<{ appliedCount: number }>>('/ai-calendars/apply', request)
       .then(unwrapResponse)
   },
 }

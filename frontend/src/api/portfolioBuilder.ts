@@ -4,14 +4,14 @@ import type { Portfolio, PortfolioBuilderSummary } from '@/types/portfolioBuilde
 
 export const portfolioBuilderApi = {
   getPortfolios: () =>
-    apiClient.get<ResData<Portfolio[]>>('/api/v1/portfolio-builder').then(unwrapResponse),
+    apiClient.get<ResData<Portfolio[]>>('/portfolio-builder').then(unwrapResponse),
 
   create: (data: { title: string; template: string }) =>
-    apiClient.post<ResData<Portfolio>>('/api/v1/portfolio-builder', data).then(unwrapResponse),
+    apiClient.post<ResData<Portfolio>>('/portfolio-builder', data).then(unwrapResponse),
 
   publish: (id: number) =>
-    apiClient.post<ResData<Portfolio>>(`/api/v1/portfolio-builder/${id}/publish`).then(unwrapResponse),
+    apiClient.post<ResData<Portfolio>>(`/portfolio-builder/${id}/publish`).then(unwrapResponse),
 
   getSummary: () =>
-    apiClient.get<ResData<PortfolioBuilderSummary>>('/api/v1/portfolio-builder/summary').then(unwrapResponse),
+    apiClient.get<ResData<PortfolioBuilderSummary>>('/portfolio-builder/summary').then(unwrapResponse),
 }

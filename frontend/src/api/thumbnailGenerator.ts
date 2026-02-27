@@ -10,27 +10,27 @@ import type {
 export const thumbnailGeneratorApi = {
   getTemplates() {
     return apiClient
-      .get<ResData<{ templates: ThumbnailTemplate[] }>>('/ai/thumbnail/templates')
+      .get<ResData<{ templates: ThumbnailTemplate[] }>>('/thumbnail-generator/templates')
       .then(unwrapResponse)
       .then((res) => res.templates)
   },
 
   generate(request: ThumbnailGenerateRequest) {
     return apiClient
-      .post<ResData<ThumbnailGenerateResponse>>('/ai/thumbnail/generate', request)
+      .post<ResData<ThumbnailGenerateResponse>>('/thumbnail-generator/generate', request)
       .then(unwrapResponse)
   },
 
   getHistory() {
     return apiClient
-      .get<ResData<{ history: ThumbnailHistory[] }>>('/ai/thumbnail/history')
+      .get<ResData<{ history: ThumbnailHistory[] }>>('/thumbnail-generator/history')
       .then(unwrapResponse)
       .then((res) => res.history)
   },
 
   selectThumbnail(historyId: number, thumbnailId: number) {
     return apiClient
-      .post<ResData<void>>(`/ai/thumbnail/history/${historyId}/select/${thumbnailId}`)
+      .post<ResData<void>>(`/thumbnail-generator/history/${historyId}/select/${thumbnailId}`)
       .then(unwrapResponse)
   },
 }

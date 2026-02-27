@@ -8,6 +8,9 @@ import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.BILLING_CYCLE
 import com.ongo.infrastructure.persistence.jooq.Fields.CANCELLED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
+import com.ongo.infrastructure.persistence.jooq.Fields.PADDLE_CUSTOMER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.PADDLE_SUBSCRIPTION_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.PENDING_PLAN_TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.CURRENT_PERIOD_END
 import com.ongo.infrastructure.persistence.jooq.Fields.CURRENT_PERIOD_START
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
@@ -38,6 +41,13 @@ class SubscriptionJooqRepository(
             .fetchOne()
             ?.toSubscription()
 
+    override fun findByPaddleSubscriptionId(paddleSubscriptionId: String): Subscription? =
+        dsl.select()
+            .from(SUBSCRIPTIONS)
+            .where(PADDLE_SUBSCRIPTION_ID.eq(paddleSubscriptionId))
+            .fetchOne()
+            ?.toSubscription()
+
     private fun findById(id: Long): Subscription? =
         dsl.select()
             .from(SUBSCRIPTIONS)
@@ -55,7 +65,10 @@ class SubscriptionJooqRepository(
             .set(CURRENT_PERIOD_START, subscription.currentPeriodStart)
             .set(CURRENT_PERIOD_END, subscription.currentPeriodEnd)
             .set(NEXT_BILLING_DATE, subscription.nextBillingDate)
+            .set(PENDING_PLAN_TYPE, subscription.pendingPlanType?.name)
             .set(STORAGE_QUOTA_LIMIT_BYTES, subscription.storageQuotaLimitBytes)
+            .set(PADDLE_SUBSCRIPTION_ID, subscription.paddleSubscriptionId)
+            .set(PADDLE_CUSTOMER_ID, subscription.paddleCustomerId)
             .set(CANCELLED_AT, subscription.cancelledAt)
             .returningResult(ID)
             .fetchOne()!!
@@ -73,7 +86,10 @@ class SubscriptionJooqRepository(
             .set(CURRENT_PERIOD_START, subscription.currentPeriodStart)
             .set(CURRENT_PERIOD_END, subscription.currentPeriodEnd)
             .set(NEXT_BILLING_DATE, subscription.nextBillingDate)
+            .set(PENDING_PLAN_TYPE, subscription.pendingPlanType?.name)
             .set(STORAGE_QUOTA_LIMIT_BYTES, subscription.storageQuotaLimitBytes)
+            .set(PADDLE_SUBSCRIPTION_ID, subscription.paddleSubscriptionId)
+            .set(PADDLE_CUSTOMER_ID, subscription.paddleCustomerId)
             .set(CANCELLED_AT, subscription.cancelledAt)
             .where(ID.eq(subscription.id))
             .execute()
@@ -113,6 +129,7 @@ class SubscriptionJooqRepository(
         val billingCycleStr = get(BILLING_CYCLE)
         val planTypeStr = get(PLAN_TYPE) ?: "FREE"
         val statusStr = get(STATUS) ?: "FREE"
+        val pendingPlanTypeStr = get(PENDING_PLAN_TYPE)
 
         return Subscription(
             id = get(ID),
@@ -124,7 +141,10 @@ class SubscriptionJooqRepository(
             currentPeriodStart = localDateTime(CURRENT_PERIOD_START),
             currentPeriodEnd = localDateTime(CURRENT_PERIOD_END),
             nextBillingDate = localDateTime(NEXT_BILLING_DATE),
+            pendingPlanType = pendingPlanTypeStr?.let { try { PlanType.valueOf(it) } catch (_: Exception) { null } },
             storageQuotaLimitBytes = get(STORAGE_QUOTA_LIMIT_BYTES),
+            paddleSubscriptionId = get(PADDLE_SUBSCRIPTION_ID),
+            paddleCustomerId = get(PADDLE_CUSTOMER_ID),
             cancelledAt = localDateTime(CANCELLED_AT),
             createdAt = localDateTime(CREATED_AT),
             updatedAt = localDateTime(UPDATED_AT),

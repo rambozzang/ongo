@@ -4,14 +4,14 @@ import type { ChannelHealthMetric, HealthTrend, ChannelHealthSummary } from '@/t
 
 export const channelHealthApi = {
   getMetrics: () =>
-    apiClient.get<ResData<ChannelHealthMetric[]>>('/api/v1/channel-health').then(unwrapResponse),
+    apiClient.get<ResData<ChannelHealthMetric[]>>('/channel-health').then(unwrapResponse),
 
   measure: (channelId: number) =>
-    apiClient.post<ResData<ChannelHealthMetric>>(`/api/v1/channel-health/${channelId}/measure`).then(unwrapResponse),
+    apiClient.post<ResData<ChannelHealthMetric>>(`/channel-health/${channelId}/measure`).then(unwrapResponse),
 
   getTrends: (metricId: number) =>
-    apiClient.get<ResData<HealthTrend[]>>(`/api/v1/channel-health/${metricId}/trends`).then(unwrapResponse),
+    apiClient.get<ResData<HealthTrend[]>>(`/channel-health/${metricId}/trends`).then(unwrapResponse),
 
   getSummary: () =>
-    apiClient.get<ResData<ChannelHealthSummary>>('/api/v1/channel-health/summary').then(unwrapResponse),
+    apiClient.get<ResData<ChannelHealthSummary>>('/channel-health/summary').then(unwrapResponse),
 }

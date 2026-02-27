@@ -4,17 +4,17 @@ import type { MarketplaceListing, MarketplaceOrder, MarketplaceSummary } from '@
 
 export const creatorMarketplaceApi = {
   getListings: (serviceType?: string) =>
-    apiClient.get<ResData<MarketplaceListing[]>>('/api/v1/creator-marketplace', { params: { serviceType } }).then(unwrapResponse),
+    apiClient.get<ResData<MarketplaceListing[]>>('/creator-marketplace', { params: { serviceType } }).then(unwrapResponse),
   getListing: (id: number) =>
-    apiClient.get<ResData<MarketplaceListing>>(`/api/v1/creator-marketplace/${id}`).then(unwrapResponse),
+    apiClient.get<ResData<MarketplaceListing>>(`/creator-marketplace/${id}`).then(unwrapResponse),
   createListing: (data: Partial<MarketplaceListing>) =>
-    apiClient.post<ResData<MarketplaceListing>>('/api/v1/creator-marketplace', data).then(unwrapResponse),
+    apiClient.post<ResData<MarketplaceListing>>('/creator-marketplace', data).then(unwrapResponse),
   getOrders: () =>
-    apiClient.get<ResData<MarketplaceOrder[]>>('/api/v1/creator-marketplace/orders').then(unwrapResponse),
+    apiClient.get<ResData<MarketplaceOrder[]>>('/creator-marketplace/orders').then(unwrapResponse),
   placeOrder: (listingId: number) =>
-    apiClient.post<ResData<MarketplaceOrder>>(`/api/v1/creator-marketplace/${listingId}/order`).then(unwrapResponse),
+    apiClient.post<ResData<MarketplaceOrder>>(`/creator-marketplace/${listingId}/order`).then(unwrapResponse),
   getSummary: () =>
-    apiClient.get<ResData<MarketplaceSummary>>('/api/v1/creator-marketplace/summary').then(unwrapResponse),
+    apiClient.get<ResData<MarketplaceSummary>>('/creator-marketplace/summary').then(unwrapResponse),
 }
 
 export default creatorMarketplaceApi

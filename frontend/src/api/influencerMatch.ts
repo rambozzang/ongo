@@ -5,26 +5,26 @@ import type { MatchFilter, MatchResponse, CollabRequest } from '@/types/influenc
 export const influencerMatchApi = {
   findMatches(filter?: MatchFilter) {
     return apiClient
-      .post<ResData<MatchResponse>>('/ai/influencer-match/find', filter ?? {})
+      .post<ResData<MatchResponse>>('/influencer-match/find', filter ?? {})
       .then(unwrapResponse)
   },
 
   getCollabRequests() {
     return apiClient
-      .get<ResData<{ requests: CollabRequest[] }>>('/ai/influencer-match/collabs')
+      .get<ResData<{ requests: CollabRequest[] }>>('/influencer-match/collabs')
       .then(unwrapResponse)
       .then((res) => res.requests)
   },
 
   sendCollabRequest(influencerId: number, message: string, budget: number) {
     return apiClient
-      .post<ResData<CollabRequest>>('/ai/influencer-match/collabs', { influencerId, message, proposedBudget: budget })
+      .post<ResData<CollabRequest>>('/influencer-match/collabs', { influencerId, message, proposedBudget: budget })
       .then(unwrapResponse)
   },
 
   updateCollabStatus(id: number, status: string) {
     return apiClient
-      .put<ResData<CollabRequest>>(`/ai/influencer-match/collabs/${id}`, { status })
+      .put<ResData<CollabRequest>>(`/influencer-match/collabs/${id}`, { status })
       .then(unwrapResponse)
   },
 }

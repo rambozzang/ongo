@@ -6,4 +6,5 @@ interface PaymentRepository {
     fun countByUserId(userId: Long): Long
     fun save(payment: Payment): Payment
     fun update(payment: Payment): Payment
+    fun findByPaddleTransactionId(paddleTransactionId: String): Payment?
 }

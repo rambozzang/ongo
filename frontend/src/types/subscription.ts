@@ -22,6 +22,8 @@ export interface Subscription {
   currentPeriodEnd: string | null
   nextBillingDate: string | null
   features: PlanFeatures | string[]
+  paddleSubscriptionId?: string | null
+  paddleCustomerId?: string | null
 }
 
 export interface ChangePlanResponse {

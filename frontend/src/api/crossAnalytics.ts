@@ -10,20 +10,20 @@ export const crossAnalyticsApi = {
   getReport(period?: string) {
     const params = period ? { period } : {}
     return apiClient
-      .get<ResData<CrossPlatformReport>>('/analytics/cross-platform', { params })
+      .get<ResData<CrossPlatformReport>>('/cross-analytics', { params })
       .then(unwrapResponse)
   },
 
   compareContents(request: ContentCompareRequest) {
     return apiClient
-      .post<ResData<{ contents: CrossPlatformContent[] }>>('/analytics/cross-platform/compare', request)
+      .post<ResData<{ contents: CrossPlatformContent[] }>>('/cross-analytics/compare', request)
       .then(unwrapResponse)
       .then((res) => res.contents)
   },
 
   exportReport(reportId: number, format: string) {
     return apiClient
-      .get<Blob>(`/analytics/cross-platform/${reportId}/export`, {
+      .get<Blob>(`/cross-analytics/${reportId}/export`, {
         params: { format },
         responseType: 'blob',
       })

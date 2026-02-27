@@ -11,38 +11,38 @@ import type {
 export const brandVoiceApi = {
   getProfiles() {
     return apiClient
-      .get<ResData<{ profiles: BrandVoiceProfile[] }>>('/ai/brand-voice/profiles')
+      .get<ResData<{ profiles: BrandVoiceProfile[] }>>('/brand-voice/profiles')
       .then(unwrapResponse)
       .then((res) => res.profiles)
   },
 
   getProfile(id: number) {
     return apiClient
-      .get<ResData<BrandVoiceProfile>>(`/ai/brand-voice/profiles/${id}`)
+      .get<ResData<BrandVoiceProfile>>(`/brand-voice/profiles/${id}`)
       .then(unwrapResponse)
   },
 
   trainVoice(request: TrainVoiceRequest) {
     return apiClient
-      .post<ResData<BrandVoiceProfile>>('/ai/brand-voice/train', request)
+      .post<ResData<BrandVoiceProfile>>('/brand-voice/train', request)
       .then(unwrapResponse)
   },
 
   generateWithVoice(request: GenerateWithVoiceRequest) {
     return apiClient
-      .post<ResData<GenerateWithVoiceResponse>>('/ai/brand-voice/generate', request)
+      .post<ResData<GenerateWithVoiceResponse>>('/brand-voice/generate', request)
       .then(unwrapResponse)
   },
 
   analyzeText(text: string) {
     return apiClient
-      .post<ResData<VoiceAnalysis>>('/ai/brand-voice/analyze', { text })
+      .post<ResData<VoiceAnalysis>>('/brand-voice/analyze', { text })
       .then(unwrapResponse)
   },
 
   deleteProfile(id: number) {
     return apiClient
-      .delete<ResData<void>>(`/ai/brand-voice/profiles/${id}`)
+      .delete<ResData<void>>(`/brand-voice/profiles/${id}`)
       .then(unwrapResponse)
   },
 }

@@ -50,6 +50,7 @@ class SecurityConfig(
                     "/actuator/health",
                     "/ws/**",
                     "/api/v1/ai/demo/**",
+                    "/api/v1/paddle/webhooks",
                 )
                 auth
                     .requestMatchers(*publicPaths.toTypedArray()).permitAll()

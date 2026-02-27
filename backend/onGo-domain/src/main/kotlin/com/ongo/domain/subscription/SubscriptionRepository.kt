@@ -5,6 +5,7 @@ import java.time.LocalDateTime
 
 interface SubscriptionRepository {
     fun findByUserId(userId: Long): Subscription?
+    fun findByPaddleSubscriptionId(paddleSubscriptionId: String): Subscription?
     fun save(subscription: Subscription): Subscription
     fun update(subscription: Subscription): Subscription
     fun findDueForBilling(now: LocalDateTime): List<Subscription>

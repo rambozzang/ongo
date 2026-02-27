@@ -1,5 +1,6 @@
 package com.ongo.application.subscription
 
+import com.ongo.application.paddle.PaddleGateway
 import com.ongo.application.subscription.dto.*
 import com.ongo.common.enums.BillingCycle
 import com.ongo.common.enums.PlanType
@@ -21,6 +22,7 @@ class SubscriptionUseCase(
     private val subscriptionRepository: SubscriptionRepository,
     private val userRepository: UserRepository,
     private val videoRepository: VideoRepository,
+    private val paddleGateway: PaddleGateway,
 ) {
 
     fun getCurrentSubscription(userId: Long): SubscriptionResponse {
@@ -40,6 +42,24 @@ class SubscriptionUseCase(
 
         val isUpgrade = targetPlan.price > subscription.planType.price
         val now = LocalDateTime.now()
+
+        // Paddle 구독이 있는 경우 Paddle API로 변경 처리
+        if (subscription.paddleSubscriptionId != null) {
+            val priceId = paddleGateway.getPriceIdForPlan(targetPlan.name)
+                ?: throw IllegalArgumentException("해당 플랜의 Paddle 가격 ID를 찾을 수 없습니다")
+
+            val prorationMode = if (isUpgrade) "prorated_immediately" else "prorated_next_billing_period"
+            paddleGateway.updateSubscription(subscription.paddleSubscriptionId!!, priceId, prorationMode)
+
+            // Paddle이 웹훅으로 DB를 동기화하므로 여기선 응답만 반환
+            val effectiveDate = if (isUpgrade) now else (subscription.currentPeriodEnd ?: now)
+            return ChangePlanResponse(subscription.toResponse(), null, effectiveDate)
+        }
+
+        // FREE → 유료 전환 (Paddle 체크아웃 필요 → 프론트엔드에서 체크아웃 오버레이를 열어야 함)
+        if (subscription.planType == PlanType.FREE && targetPlan != PlanType.FREE) {
+            return ChangePlanResponse(subscription.toResponse(), null, now)
+        }
 
         if (isUpgrade) {
             // 업그레이드: 즉시 적용, 일할 계산 차액
@@ -76,6 +96,13 @@ class SubscriptionUseCase(
     fun cancelSubscription(userId: Long): SubscriptionResponse {
         val subscription = subscriptionRepository.findByUserId(userId)
             ?: throw NotFoundException("구독", userId)
+
+        // Paddle 구독 취소 (실제 취소는 Paddle 웹훅에서 처리)
+        if (subscription.paddleSubscriptionId != null) {
+            paddleGateway.cancelSubscription(subscription.paddleSubscriptionId!!, "next_billing_period")
+            return subscription.toResponse()
+        }
+
         val updated = subscription.copy(
             status = SubscriptionStatus.CANCELLED,
             cancelledAt = LocalDateTime.now()

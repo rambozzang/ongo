@@ -10,44 +10,44 @@ import type {
 export const growthCoachApi = {
   getSession() {
     return apiClient
-      .get<ResData<CoachSession>>('/ai/growth-coach/session')
+      .get<ResData<CoachSession>>('/growth-coach/session')
       .then(unwrapResponse)
   },
 
   setGoal(goal: Omit<GrowthGoal, 'id' | 'progress' | 'currentValue'>) {
     return apiClient
-      .post<ResData<GrowthGoal>>('/ai/growth-coach/goals', goal)
+      .post<ResData<GrowthGoal>>('/growth-coach/goals', goal)
       .then(unwrapResponse)
   },
 
   updateGoal(id: number, updates: Partial<GrowthGoal>) {
     return apiClient
-      .put<ResData<GrowthGoal>>(`/ai/growth-coach/goals/${id}`, updates)
+      .put<ResData<GrowthGoal>>(`/growth-coach/goals/${id}`, updates)
       .then(unwrapResponse)
   },
 
   deleteGoal(id: number) {
     return apiClient
-      .delete<ResData<void>>(`/ai/growth-coach/goals/${id}`)
+      .delete<ResData<void>>(`/growth-coach/goals/${id}`)
       .then(unwrapResponse)
   },
 
   generateReport() {
     return apiClient
-      .post<ResData<WeeklyReport>>('/ai/growth-coach/reports/generate')
+      .post<ResData<WeeklyReport>>('/growth-coach/reports/generate')
       .then(unwrapResponse)
   },
 
   getReports() {
     return apiClient
-      .get<ResData<{ reports: WeeklyReport[] }>>('/ai/growth-coach/reports')
+      .get<ResData<{ reports: WeeklyReport[] }>>('/growth-coach/reports')
       .then(unwrapResponse)
       .then((res) => res.reports)
   },
 
   updateActionItem(reportId: number, actionId: number, updates: Partial<ActionItem>) {
     return apiClient
-      .put<ResData<ActionItem>>(`/ai/growth-coach/reports/${reportId}/actions/${actionId}`, updates)
+      .put<ResData<ActionItem>>(`/growth-coach/reports/${reportId}/actions/${actionId}`, updates)
       .then(unwrapResponse)
   },
 }

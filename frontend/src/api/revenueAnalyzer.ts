@@ -4,14 +4,14 @@ import type { RevenueStream, RevenueProjection, RevenueAnalyzerSummary } from '@
 
 export const revenueAnalyzerApi = {
   getStreams: () =>
-    apiClient.get<ResData<RevenueStream[]>>('/api/v1/revenue-analyzer').then(unwrapResponse),
+    apiClient.get<ResData<RevenueStream[]>>('/revenue-analyzer').then(unwrapResponse),
 
   getProjections: (channelId: number) =>
-    apiClient.get<ResData<RevenueProjection[]>>(`/api/v1/revenue-analyzer/${channelId}/projections`).then(unwrapResponse),
+    apiClient.get<ResData<RevenueProjection[]>>(`/revenue-analyzer/${channelId}/projections`).then(unwrapResponse),
 
   analyze: (channelId: number) =>
-    apiClient.post<ResData<RevenueStream[]>>(`/api/v1/revenue-analyzer/${channelId}/analyze`).then(unwrapResponse),
+    apiClient.post<ResData<RevenueStream[]>>(`/revenue-analyzer/${channelId}/analyze`).then(unwrapResponse),
 
   getSummary: () =>
-    apiClient.get<ResData<RevenueAnalyzerSummary>>('/api/v1/revenue-analyzer/summary').then(unwrapResponse),
+    apiClient.get<ResData<RevenueAnalyzerSummary>>('/revenue-analyzer/summary').then(unwrapResponse),
 }

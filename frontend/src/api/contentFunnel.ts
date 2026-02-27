@@ -4,14 +4,14 @@ import type { VideoFunnel, FunnelComparison, FunnelSummary } from '@/types/conte
 
 export const contentFunnelApi = {
   getSummary: () =>
-    apiClient.get<ResData<FunnelSummary>>('/content-funnels/summary').then(unwrapResponse),
+    apiClient.get<ResData<FunnelSummary>>('/content-funnel/summary').then(unwrapResponse),
 
   getFunnels: () =>
-    apiClient.get<ResData<VideoFunnel[]>>('/content-funnels').then(unwrapResponse),
+    apiClient.get<ResData<VideoFunnel[]>>('/content-funnel').then(unwrapResponse),
 
   getFunnel: (id: number) =>
-    apiClient.get<ResData<VideoFunnel>>(`/content-funnels/${id}`).then(unwrapResponse),
+    apiClient.get<ResData<VideoFunnel>>(`/content-funnel/${id}`).then(unwrapResponse),
 
   compare: (videoAId: number, videoBId: number) =>
-    apiClient.get<ResData<FunnelComparison>>('/content-funnels/compare', { params: { videoAId, videoBId } }).then(unwrapResponse),
+    apiClient.get<ResData<FunnelComparison>>('/content-funnel/compare', { params: { videoAId, videoBId } }).then(unwrapResponse),
 }

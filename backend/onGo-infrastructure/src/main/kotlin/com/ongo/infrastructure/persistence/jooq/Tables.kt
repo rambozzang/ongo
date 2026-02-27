@@ -233,6 +233,9 @@ object Fields {
     val NEXT_BILLING_DATE = DSL.field("next_billing_date", java.time.LocalDateTime::class.java)
     val STORAGE_QUOTA_LIMIT_BYTES = DSL.field("storage_quota_limit_bytes", Long::class.javaObjectType)
     val CANCELLED_AT = DSL.field("cancelled_at", java.time.LocalDateTime::class.java)
+    val PENDING_PLAN_TYPE = DSL.field("pending_plan_type", String::class.java)
+    val PADDLE_SUBSCRIPTION_ID = DSL.field("paddle_subscription_id", String::class.java)
+    val PADDLE_CUSTOMER_ID = DSL.field("paddle_customer_id", String::class.java)
 
     // payments
     val CURRENCY = DSL.field("currency", String::class.java)
@@ -240,6 +243,8 @@ object Fields {
     val PG_TRANSACTION_ID = DSL.field("pg_transaction_id", String::class.java)
     val PAYMENT_METHOD = DSL.field("payment_method", String::class.java)
     val RECEIPT_URL = DSL.field("receipt_url", String::class.java)
+    val PADDLE_TRANSACTION_ID = DSL.field("paddle_transaction_id", String::class.java)
+    val PADDLE_INVOICE_URL = DSL.field("paddle_invoice_url", String::class.java)
 
     // notifications
     val MESSAGE = DSL.field("message", String::class.java)

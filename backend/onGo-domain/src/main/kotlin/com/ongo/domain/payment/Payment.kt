@@ -16,5 +16,7 @@ data class Payment(
     val paymentMethod: String? = null,
     val receiptUrl: String? = null,
     val description: String? = null,
+    val paddleTransactionId: String? = null,
+    val paddleInvoiceUrl: String? = null,
     val createdAt: LocalDateTime? = null,
 )

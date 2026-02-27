@@ -401,15 +401,16 @@ import { useChannelStore } from '@/stores/channel'
 import { useNotificationStore } from '@/stores/notification'
 import { PLANS, type PlanType } from '@/types/subscription'
 import type { CreditPackage } from '@/types/credit'
-import { creditApi } from '@/api/credit'
 import { subscriptionApi } from '@/api/subscription'
 import { useLocale } from '@/composables/useLocale'
+import { usePaddle } from '@/composables/usePaddle'
 
 const subscriptionStore = useSubscriptionStore()
 const creditStore = useCreditStore()
 const channelStore = useChannelStore()
 const notification = useNotificationStore()
 const { t } = useLocale()
+const { ensureInitialized: initPaddle } = usePaddle()
 
 const { subscription } = storeToRefs(subscriptionStore)
 const { balance: creditBalance, transactions: creditTransactions } = storeToRefs(creditStore)
@@ -600,16 +601,18 @@ async function confirmChangePlan() {
 }
 
 async function handlePaymentConfirm() {
-  if (!targetPlan.value) return
-  try {
-    await subscriptionStore.changePlan(targetPlan.value)
-    notification.success(t('subscription.upgradeSuccess'))
-    showPaymentModal.value = false
-    targetPlan.value = null
-    await creditStore.fetchBalance()
-  } catch (e: unknown) {
-    notification.error(e instanceof Error ? e.message : t('subscription.changePlanError'))
-  }
+  // Paddle 웹훅이 DB를 업데이트할 시간을 줌
+  showPaymentModal.value = false
+  targetPlan.value = null
+  notification.success(t('subscription.upgradeSuccess'))
+  // 1.5초 후 데이터 리페치
+  setTimeout(async () => {
+    await Promise.all([
+      subscriptionStore.fetchSubscription(),
+      creditStore.fetchBalance(),
+      subscriptionStore.fetchPayments(0, 20),
+    ])
+  }, 1500)
 }
 
 async function confirmCancel() {
@@ -621,18 +624,16 @@ async function confirmCancel() {
   }
 }
 
-async function handleCreditPurchase(pkg: CreditPackage) {
-  try {
-    const updatedBalance = await creditApi.purchase({ packageType: pkg.name, paymentMethod: 'CARD' })
-    creditStore.balance = updatedBalance
-    notification.success(t('subscription.creditChargeSuccess'))
+async function handleCreditPurchase(_pkg: CreditPackage) {
+  notification.success(t('subscription.creditChargeSuccess'))
+  // 1.5초 후 데이터 리페치 (Paddle 웹훅 동기화 대기)
+  setTimeout(async () => {
     await Promise.all([
+      creditStore.fetchBalance(),
       creditStore.fetchTransactions(0, 20),
       subscriptionStore.fetchPayments(0, 20),
     ])
-  } catch (e: unknown) {
-    notification.error(e instanceof Error ? e.message : t('subscription.creditChargeError'))
-  }
+  }, 1500)
 }
 
 function loadCreditTransactions(page: number) {
@@ -668,6 +669,7 @@ onMounted(() => {
     subscriptionStore.fetchPayments(0, 20),
     channelStore.fetchChannels(),
     fetchUsage(),
+    initPaddle(),
   ])
 })
 </script>

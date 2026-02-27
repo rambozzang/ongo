@@ -17,6 +17,8 @@ data class Subscription(
     val nextBillingDate: LocalDateTime? = null,
     val pendingPlanType: PlanType? = null,
     val storageQuotaLimitBytes: Long? = null,
+    val paddleSubscriptionId: String? = null,
+    val paddleCustomerId: String? = null,
     val cancelledAt: LocalDateTime? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,

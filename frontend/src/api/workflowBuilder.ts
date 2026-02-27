@@ -10,49 +10,49 @@ import type {
 export const workflowBuilderApi = {
   list() {
     return apiClient
-      .get<ResData<WfWorkflow[]>>('/workflow-builder/workflows')
+      .get<ResData<WfWorkflow[]>>('/workflows')
       .then(unwrapResponse)
   },
 
   get(id: number) {
     return apiClient
-      .get<ResData<WfWorkflow>>(`/workflow-builder/workflows/${id}`)
+      .get<ResData<WfWorkflow>>(`/workflows/${id}`)
       .then(unwrapResponse)
   },
 
   create(request: CreateWfWorkflowRequest) {
     return apiClient
-      .post<ResData<WfWorkflow>>('/workflow-builder/workflows', request)
+      .post<ResData<WfWorkflow>>('/workflows', request)
       .then(unwrapResponse)
   },
 
   update(id: number, request: UpdateWfWorkflowRequest) {
     return apiClient
-      .put<ResData<WfWorkflow>>(`/workflow-builder/workflows/${id}`, request)
+      .put<ResData<WfWorkflow>>(`/workflows/${id}`, request)
       .then(unwrapResponse)
   },
 
   delete(id: number) {
     return apiClient
-      .delete<ResData<void>>(`/workflow-builder/workflows/${id}`)
+      .delete<ResData<void>>(`/workflows/${id}`)
       .then(unwrapResponse)
   },
 
   toggle(id: number) {
     return apiClient
-      .post<ResData<WfWorkflow>>(`/workflow-builder/workflows/${id}/toggle`)
+      .post<ResData<WfWorkflow>>(`/workflows/${id}/toggle`)
       .then(unwrapResponse)
   },
 
   testRun(id: number) {
     return apiClient
-      .post<ResData<WfExecutionLog>>(`/workflow-builder/workflows/${id}/test`)
+      .post<ResData<WfExecutionLog>>(`/workflows/${id}/test`)
       .then(unwrapResponse)
   },
 
   getExecutions(id: number) {
     return apiClient
-      .get<ResData<WfExecutionLog[]>>(`/workflow-builder/workflows/${id}/executions`)
+      .get<ResData<WfExecutionLog[]>>(`/workflows/${id}/executions`)
       .then(unwrapResponse)
   },
 }

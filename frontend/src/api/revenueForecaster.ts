@@ -10,19 +10,19 @@ export const revenueForecasterApi = {
   getForecast(period?: string) {
     const params = period ? { period } : {}
     return apiClient
-      .get<ResData<RevenueForecast>>('/ai/revenue-forecast', { params })
+      .get<ResData<RevenueForecast>>('/revenue-forecaster', { params })
       .then(unwrapResponse)
   },
 
   generateForecast(request: ForecastRequest) {
     return apiClient
-      .post<ResData<ForecastResponse>>('/ai/revenue-forecast/generate', request)
+      .post<ResData<ForecastResponse>>('/revenue-forecaster/generate', request)
       .then(unwrapResponse)
   },
 
   getHistory() {
     return apiClient
-      .get<ResData<{ forecasts: RevenueForecast[] }>>('/ai/revenue-forecast/history')
+      .get<ResData<{ forecasts: RevenueForecast[] }>>('/revenue-forecaster/history')
       .then(unwrapResponse)
       .then((res) => res.forecasts)
   },

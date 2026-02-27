@@ -10,33 +10,33 @@ import type {
 export const copyrightCheckApi = {
   getVideos() {
     return apiClient
-      .get<ResData<{ videos: VideoForCheck[] }>>('/ai/copyright-check/videos')
+      .get<ResData<{ videos: VideoForCheck[] }>>('/copyright-check/videos')
       .then(unwrapResponse)
       .then((res) => res.videos)
   },
 
   getResults() {
     return apiClient
-      .get<ResData<{ results: CopyrightCheckResult[] }>>('/ai/copyright-check/results')
+      .get<ResData<{ results: CopyrightCheckResult[] }>>('/copyright-check/results')
       .then(unwrapResponse)
       .then((res) => res.results)
   },
 
   getResult(id: number) {
     return apiClient
-      .get<ResData<CopyrightCheckResult>>(`/ai/copyright-check/results/${id}`)
+      .get<ResData<CopyrightCheckResult>>(`/copyright-check/results/${id}`)
       .then(unwrapResponse)
   },
 
   runCheck(request: RunCheckRequest) {
     return apiClient
-      .post<ResData<RunCheckResponse>>('/ai/copyright-check/run', request)
+      .post<ResData<RunCheckResponse>>('/copyright-check/run', request)
       .then(unwrapResponse)
   },
 
   autoFix(resultId: number, issueId: string) {
     return apiClient
-      .post<ResData<CopyrightCheckResult>>(`/ai/copyright-check/results/${resultId}/fix/${issueId}`)
+      .post<ResData<CopyrightCheckResult>>(`/copyright-check/results/${resultId}/fix/${issueId}`)
       .then(unwrapResponse)
   },
 }

@@ -9,26 +9,26 @@ import type {
 export const hashtagStrategyApi = {
   analyze(request: HashtagAnalysisRequest) {
     return apiClient
-      .post<ResData<HashtagAnalysisResponse>>('/ai/hashtag-strategy/analyze', request)
+      .post<ResData<HashtagAnalysisResponse>>('/hashtag-strategy/analyze', request)
       .then(unwrapResponse)
   },
 
   getSavedSets() {
     return apiClient
-      .get<ResData<{ sets: HashtagSet[] }>>('/ai/hashtag-strategy/sets')
+      .get<ResData<{ sets: HashtagSet[] }>>('/hashtag-strategy/sets')
       .then(unwrapResponse)
       .then((res) => res.sets)
   },
 
   saveSet(set: HashtagSet) {
     return apiClient
-      .post<ResData<HashtagSet>>('/ai/hashtag-strategy/sets', set)
+      .post<ResData<HashtagSet>>('/hashtag-strategy/sets', set)
       .then(unwrapResponse)
   },
 
   deleteSet(id: number) {
     return apiClient
-      .delete<ResData<void>>(`/ai/hashtag-strategy/sets/${id}`)
+      .delete<ResData<void>>(`/hashtag-strategy/sets/${id}`)
       .then(unwrapResponse)
   },
 }

@@ -5,20 +5,20 @@ import type { RewriteRequest, RewriteResponse, RewriteResult } from '@/types/con
 export const contentRewriterApi = {
   rewrite(request: RewriteRequest) {
     return apiClient
-      .post<ResData<RewriteResponse>>('/ai/content-rewriter/rewrite', request)
+      .post<ResData<RewriteResponse>>('/content-rewriter/rewrite', request)
       .then(unwrapResponse)
   },
 
   getHistory() {
     return apiClient
-      .get<ResData<{ results: RewriteResult[] }>>('/ai/content-rewriter/history')
+      .get<ResData<{ results: RewriteResult[] }>>('/content-rewriter/history')
       .then(unwrapResponse)
       .then((res) => res.results)
   },
 
   deleteResult(id: number) {
     return apiClient
-      .delete<ResData<void>>(`/ai/content-rewriter/results/${id}`)
+      .delete<ResData<void>>(`/content-rewriter/results/${id}`)
       .then(unwrapResponse)
   },
 }

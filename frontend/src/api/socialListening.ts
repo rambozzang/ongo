@@ -6,25 +6,25 @@ export const socialListeningApi = {
   getReport(period?: string) {
     const params = period ? { period } : {}
     return apiClient
-      .get<ResData<SocialListeningReport>>('/analytics/social-listening', { params })
+      .get<ResData<SocialListeningReport>>('/social-listening', { params })
       .then(unwrapResponse)
   },
 
   addKeywordAlert(keyword: string) {
     return apiClient
-      .post<ResData<KeywordAlert>>('/analytics/social-listening/alerts', { keyword })
+      .post<ResData<KeywordAlert>>('/social-listening/alerts', { keyword })
       .then(unwrapResponse)
   },
 
   toggleAlert(id: number, enabled: boolean) {
     return apiClient
-      .put<ResData<KeywordAlert>>(`/analytics/social-listening/alerts/${id}`, { enabled })
+      .put<ResData<KeywordAlert>>(`/social-listening/alerts/${id}`, { enabled })
       .then(unwrapResponse)
   },
 
   deleteAlert(id: number) {
     return apiClient
-      .delete<ResData<void>>(`/analytics/social-listening/alerts/${id}`)
+      .delete<ResData<void>>(`/social-listening/alerts/${id}`)
       .then(unwrapResponse)
   },
 }

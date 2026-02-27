@@ -4,14 +4,14 @@ import type { OptimalSlot, ScheduleRecommendation, ScheduleOptimizerSummary } fr
 
 export const scheduleOptimizerApi = {
   getSlots: (platform: string) =>
-    apiClient.get<ResData<OptimalSlot[]>>(`/api/v1/schedule-optimizer/slots?platform=${platform}`).then(unwrapResponse),
+    apiClient.get<ResData<OptimalSlot[]>>(`/schedule-optimizer/slots?platform=${platform}`).then(unwrapResponse),
 
   getRecommendations: () =>
-    apiClient.get<ResData<ScheduleRecommendation[]>>('/api/v1/schedule-optimizer/recommendations').then(unwrapResponse),
+    apiClient.get<ResData<ScheduleRecommendation[]>>('/schedule-optimizer/recommendations').then(unwrapResponse),
 
   applyRecommendation: (id: number) =>
-    apiClient.post<ResData<ScheduleRecommendation>>(`/api/v1/schedule-optimizer/recommendations/${id}/apply`).then(unwrapResponse),
+    apiClient.post<ResData<ScheduleRecommendation>>(`/schedule-optimizer/recommendations/${id}/apply`).then(unwrapResponse),
 
   getSummary: () =>
-    apiClient.get<ResData<ScheduleOptimizerSummary>>('/api/v1/schedule-optimizer/summary').then(unwrapResponse),
+    apiClient.get<ResData<ScheduleOptimizerSummary>>('/schedule-optimizer/summary').then(unwrapResponse),
 }

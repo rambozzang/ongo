@@ -16,6 +16,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.PROFILE_IMAGE_URL
 import com.ongo.infrastructure.persistence.jooq.Fields.PROVIDER
 import com.ongo.infrastructure.persistence.jooq.Fields.PROVIDER_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.PROVIDER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.PADDLE_CUSTOMER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.ROLE
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Tables.USERS
@@ -53,6 +54,13 @@ class UserJooqRepository(
             .fetchOne()
             ?.toUser()
 
+    override fun findByPaddleCustomerId(paddleCustomerId: String): User? =
+        dsl.select()
+            .from(USERS)
+            .where(PADDLE_CUSTOMER_ID.eq(paddleCustomerId))
+            .fetchOne()
+            ?.toUser()
+
     override fun findAll(offset: Int, limit: Int, searchQuery: String?): List<User> =
         dsl.select()
             .from(USERS)
@@ -87,6 +95,7 @@ class UserJooqRepository(
             .set(CATEGORY, user.category)
             .set(ONBOARDING_COMPLETED, user.onboardingCompleted)
             .set(ROLE, user.role)
+            .set(PADDLE_CUSTOMER_ID, user.paddleCustomerId)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -104,6 +113,7 @@ class UserJooqRepository(
             .set(CATEGORY, user.category)
             .set(ONBOARDING_COMPLETED, user.onboardingCompleted)
             .set(ROLE, user.role)
+            .set(PADDLE_CUSTOMER_ID, user.paddleCustomerId)
             .where(ID.eq(user.id))
             .execute()
 
@@ -128,6 +138,7 @@ class UserJooqRepository(
         category = get(CATEGORY),
         onboardingCompleted = get(ONBOARDING_COMPLETED),
         role = get(ROLE),
+        paddleCustomerId = get(PADDLE_CUSTOMER_ID),
         createdAt = localDateTime(CREATED_AT),
         updatedAt = localDateTime(UPDATED_AT),
     )

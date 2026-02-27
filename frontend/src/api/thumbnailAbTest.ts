@@ -4,17 +4,17 @@ import type { ThumbnailTest, ThumbnailAbTestSummary } from '@/types/thumbnailAbT
 
 export const thumbnailAbTestApi = {
   getTests: () =>
-    apiClient.get<ResData<ThumbnailTest[]>>('/thumbnail-ab-test/tests').then(unwrapResponse),
+    apiClient.get<ResData<ThumbnailTest[]>>('/thumbnail-ab-tests').then(unwrapResponse),
 
   getTest: (id: number) =>
-    apiClient.get<ResData<ThumbnailTest>>(`/thumbnail-ab-test/tests/${id}`).then(unwrapResponse),
+    apiClient.get<ResData<ThumbnailTest>>(`/thumbnail-ab-tests/${id}`).then(unwrapResponse),
 
   getSummary: () =>
-    apiClient.get<ResData<ThumbnailAbTestSummary>>('/thumbnail-ab-test/summary').then(unwrapResponse),
+    apiClient.get<ResData<ThumbnailAbTestSummary>>('/thumbnail-ab-tests/summary').then(unwrapResponse),
 
   createTest: (test: Omit<ThumbnailTest, 'id' | 'winner' | 'endedAt'>) =>
-    apiClient.post<ResData<ThumbnailTest>>('/thumbnail-ab-test/tests', test).then(unwrapResponse),
+    apiClient.post<ResData<ThumbnailTest>>('/thumbnail-ab-tests', test).then(unwrapResponse),
 
   deleteTest: (id: number) =>
-    apiClient.delete<ResData<void>>(`/thumbnail-ab-test/tests/${id}`).then(unwrapResponse),
+    apiClient.delete<ResData<void>>(`/thumbnail-ab-tests/${id}`).then(unwrapResponse),
 }

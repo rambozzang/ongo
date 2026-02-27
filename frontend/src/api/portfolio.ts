@@ -23,38 +23,38 @@ export interface UpdatePortfolioSettingsRequest {
 
 export const portfolioApi = {
   get() {
-    return apiClient.get<ResData<Portfolio>>('/portfolio').then(unwrapResponse)
+    return apiClient.get<ResData<Portfolio>>('/portfolios').then(unwrapResponse)
   },
 
   updateProfile(request: UpdatePortfolioProfileRequest) {
-    return apiClient.put<ResData<Portfolio>>('/portfolio/profile', request).then(unwrapResponse)
+    return apiClient.put<ResData<Portfolio>>('/portfolios/profile', request).then(unwrapResponse)
   },
 
   updateShowcaseOrder(request: UpdateShowcaseOrderRequest) {
-    return apiClient.put<ResData<void>>('/portfolio/showcase/order', request).then(unwrapResponse)
+    return apiClient.put<ResData<void>>('/portfolios/showcase/order', request).then(unwrapResponse)
   },
 
   addShowcaseContent(content: Omit<ShowcaseContent, 'id' | 'order'>) {
-    return apiClient.post<ResData<ShowcaseContent>>('/portfolio/showcase', content).then(unwrapResponse)
+    return apiClient.post<ResData<ShowcaseContent>>('/portfolios/showcase', content).then(unwrapResponse)
   },
 
   removeShowcaseContent(contentId: number) {
-    return apiClient.delete<ResData<void>>(`/portfolio/showcase/${contentId}`).then(unwrapResponse)
+    return apiClient.delete<ResData<void>>(`/portfolios/showcase/${contentId}`).then(unwrapResponse)
   },
 
   addBrandCollaboration(collab: Omit<BrandCollaboration, 'id'>) {
-    return apiClient.post<ResData<BrandCollaboration>>('/portfolio/collaborations', collab).then(unwrapResponse)
+    return apiClient.post<ResData<BrandCollaboration>>('/portfolios/collaborations', collab).then(unwrapResponse)
   },
 
   removeBrandCollaboration(collabId: number) {
-    return apiClient.delete<ResData<void>>(`/portfolio/collaborations/${collabId}`).then(unwrapResponse)
+    return apiClient.delete<ResData<void>>(`/portfolios/collaborations/${collabId}`).then(unwrapResponse)
   },
 
   updateSettings(request: UpdatePortfolioSettingsRequest) {
-    return apiClient.put<ResData<Portfolio>>('/portfolio/settings', request).then(unwrapResponse)
+    return apiClient.put<ResData<Portfolio>>('/portfolios/settings', request).then(unwrapResponse)
   },
 
   exportPdf() {
-    return apiClient.get<Blob>('/portfolio/export/pdf', { responseType: 'blob' })
+    return apiClient.get<Blob>('/portfolios/export/pdf', { responseType: 'blob' })
   },
 }
