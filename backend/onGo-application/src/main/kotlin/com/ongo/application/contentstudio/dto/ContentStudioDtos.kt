@@ -51,3 +51,20 @@ data class GenerateThumbnailRequest(
     val style: String? = null,
     val textOverlay: String? = null,
 )
+
+data class VideoSummaryResponse(
+    val id: Long,
+    val title: String,
+    val duration: Int?,
+    val thumbnailUrl: String?,
+    val fileUrl: String?,
+)
+
+data class ContentStudioHistoryResponse(
+    val id: Long,
+    val type: String,
+    val videoTitle: String,
+    val description: String,
+    val creditsUsed: Int,
+    val createdAt: LocalDateTime?,
+)

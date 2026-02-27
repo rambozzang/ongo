@@ -17,6 +17,24 @@ class ContentStudioController(
     private val contentStudioUseCase: ContentStudioUseCase
 ) {
 
+    @Operation(summary = "영상 목록 조회 (콘텐츠 스튜디오용)")
+    @GetMapping("/videos")
+    fun listVideos(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<List<VideoSummaryResponse>>> {
+        val result = contentStudioUseCase.listVideos(userId)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "히스토리 조회")
+    @GetMapping("/history")
+    fun listHistory(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<List<ContentStudioHistoryResponse>>> {
+        val result = contentStudioUseCase.listHistory(userId)
+        return ResData.success(result)
+    }
+
     @Operation(summary = "클립 목록 조회")
     @GetMapping("/clips")
     fun listClips(

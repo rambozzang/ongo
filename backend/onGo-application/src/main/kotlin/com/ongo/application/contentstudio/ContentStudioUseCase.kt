@@ -7,13 +7,31 @@ import com.ongo.domain.contentstudio.ContentClip
 import com.ongo.domain.contentstudio.ContentStudioRepository
 import com.ongo.domain.contentstudio.VideoCaption
 import com.ongo.domain.contentstudio.AiThumbnail
+import com.ongo.domain.video.VideoRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ContentStudioUseCase(
     private val contentStudioRepository: ContentStudioRepository,
+    private val videoRepository: VideoRepository,
 ) {
+
+    fun listVideos(userId: Long): List<VideoSummaryResponse> {
+        return videoRepository.findByUserId(userId, page = 0, size = 100).map {
+            VideoSummaryResponse(
+                id = it.id!!,
+                title = it.title,
+                duration = it.durationSeconds,
+                thumbnailUrl = it.thumbnailUrls.firstOrNull(),
+                fileUrl = it.fileUrl,
+            )
+        }
+    }
+
+    fun listHistory(userId: Long): List<ContentStudioHistoryResponse> {
+        return emptyList()
+    }
 
     fun listClips(userId: Long): List<ContentClipResponse> {
         return contentStudioRepository.findClipsByUserId(userId).map { it.toResponse() }
