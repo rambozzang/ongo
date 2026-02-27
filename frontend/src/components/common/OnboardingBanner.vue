@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showGuide"
-    class="card overflow-hidden border-primary-200 bg-gradient-to-r from-primary-50 to-blue-50 dark:border-primary-800 dark:from-primary-950/30 dark:to-blue-950/30"
+    class="card overflow-hidden border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50"
   >
     <div class="flex items-start justify-between gap-4 p-4">
       <div class="flex-1">

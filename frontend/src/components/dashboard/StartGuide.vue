@@ -1,5 +1,5 @@
 <template>
-  <div v-if="guide.showGuide.value" class="card mb-6 border-primary-200 bg-primary-50/50 dark:border-primary-800 dark:bg-primary-900/10">
+  <div v-if="guide.showGuide.value" class="card mb-6 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
     <div class="mb-3 flex items-center justify-between">
       <div>
         <h3 class="text-h3 text-gray-900 dark:text-gray-100">onGo 시작하기</h3>
