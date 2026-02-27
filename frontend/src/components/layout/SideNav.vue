@@ -295,13 +295,13 @@ function toggleSubGroup(key: string) {
 }
 
 const navGroups = computed<NavGroup[]>(() => [
-  // 1. 대시보드
+  // ── 1. 대시보드 ──
   {
     items: [
       { to: '/dashboard', label: t('nav.dashboard'), icon: HomeIcon },
     ],
   },
-  // 2. 제작
+  // ── 2. 콘텐츠 제작: 영상 기획 → 제작 → 관리 ──
   {
     label: t('nav.groupCreate'),
     items: [
@@ -364,7 +364,7 @@ const navGroups = computed<NavGroup[]>(() => [
       },
     ],
   },
-  // 3. 최적화
+  // ── 3. 최적화: SEO·품질·브랜드·A/B 테스트 ──
   {
     label: t('nav.groupOptimize'),
     items: [
@@ -403,7 +403,7 @@ const navGroups = computed<NavGroup[]>(() => [
       },
     ],
   },
-  // 4. 게시
+  // ── 4. 게시 & 자동화: 스케줄·캘린더·워크플로우 ──
   {
     label: t('nav.groupPublish'),
     items: [
@@ -428,30 +428,40 @@ const navGroups = computed<NavGroup[]>(() => [
         items: [
           { to: '/workflow-builder', label: t('nav.workflowBuilder'), icon: CubeTransparentIcon },
           { to: '/platform-automation-pro', label: t('nav.platformAutomationPro'), icon: CogIcon },
+          { to: '/multi-brand-calendar', label: t('nav.multiBrandCalendar'), icon: CalendarDaysIcon },
         ],
       },
     ],
   },
-  // 5. 분석
+  // ── 5. 분석: 성과·채널·경쟁사·성장 ──
   {
     label: t('nav.groupAnalytics'),
     items: [
       { to: '/analytics', label: t('nav.analytics'), icon: ChartBarIcon },
       { to: '/live-dashboard', label: t('nav.liveDashboard'), icon: LiveBoltIcon },
-      { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
       { to: '/trends', label: t('nav.trends'), icon: FireIcon },
       { to: '/goals', label: t('nav.goals'), icon: FlagIcon },
     ],
     subGroups: [
       {
-        key: 'analytics-revenue',
-        label: t('nav.subRevenueAnalysis'),
+        key: 'analytics-performance',
+        label: t('nav.subPerformance'),
         items: [
-          { to: '/revenue-forecaster', label: t('nav.revenueForecaster'), icon: CurrencyDollarIcon },
-          { to: '/revenue-split', label: t('nav.revenueSplit'), icon: BanknotesIcon },
-          { to: '/revenue-goal', label: t('nav.revenueGoal'), icon: RevenueGoalIcon },
-          { to: '/revenue-analyzer', label: t('nav.revenueAnalyzer'), icon: BanknotesIcon },
-          { to: '/commerce', label: t('nav.commerce'), icon: ShoppingCartIcon },
+          { to: '/prediction', label: t('nav.prediction'), icon: SignalIcon },
+          { to: '/performance-heatmap', label: t('nav.performanceHeatmap'), icon: TableCellsIcon },
+          { to: '/performance-report', label: t('nav.performanceReport'), icon: ReportIcon2 },
+          { to: '/cross-analytics', label: t('nav.crossAnalytics'), icon: ArrowsPointingOutIcon },
+          { to: '/content-funnel', label: t('nav.contentFunnel'), icon: FunnelIcon },
+          { to: '/team-performance', label: t('nav.teamPerformance'), icon: ChartBarIcon },
+        ],
+      },
+      {
+        key: 'analytics-channel-health',
+        label: t('nav.subChannelHealth'),
+        items: [
+          { to: '/platform-health', label: t('nav.platformHealth'), icon: HealthIcon },
+          { to: '/channel-health', label: t('nav.channelHealth'), icon: HealthIcon },
+          { to: '/algorithm-insights', label: t('nav.algorithmInsights'), icon: CpuChipIcon },
         ],
       },
       {
@@ -465,48 +475,68 @@ const navGroups = computed<NavGroup[]>(() => [
         ],
       },
       {
-        key: 'analytics-performance',
-        label: t('nav.subPerformance'),
-        items: [
-          { to: '/prediction', label: t('nav.prediction'), icon: SignalIcon },
-          { to: '/performance-heatmap', label: t('nav.performanceHeatmap'), icon: TableCellsIcon },
-          { to: '/performance-report', label: t('nav.performanceReport'), icon: ReportIcon2 },
-          { to: '/cross-analytics', label: t('nav.crossAnalytics'), icon: ArrowsPointingOutIcon },
-          { to: '/content-funnel', label: t('nav.contentFunnel'), icon: FunnelIcon },
-        ],
-      },
-      {
-        key: 'analytics-channel-health',
-        label: t('nav.subChannelHealth'),
-        items: [
-          { to: '/platform-health', label: t('nav.platformHealth'), icon: HealthIcon },
-          { to: '/channel-health', label: t('nav.channelHealth'), icon: HealthIcon },
-          { to: '/algorithm-insights', label: t('nav.algorithmInsights'), icon: CpuChipIcon },
-        ],
-      },
-      {
         key: 'analytics-growth',
         label: t('nav.subGrowth'),
         items: [
           { to: '/growth-coach', label: t('nav.growthCoach'), icon: AcademicCapIcon },
           { to: '/trend-predictor', label: t('nav.trendPredictor'), icon: ArrowTrendingUpIcon },
           { to: '/creator-milestone', label: t('nav.creatorMilestone'), icon: TrophyIcon },
+          { to: '/creator-academy', label: t('nav.creatorAcademy'), icon: BookOpenIcon },
         ],
       },
     ],
   },
-  // 6. 소통
+  // ── 6. 수익: 매출·비즈니스·스폰서 ──
   {
-    label: t('nav.groupCommunication'),
+    label: t('nav.groupRevenue'),
     items: [
-      { to: '/comments', label: t('nav.comments'), icon: ChatBubbleLeftEllipsisIcon },
-      { to: '/inbox', label: t('nav.inbox'), icon: InboxIcon },
-      { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
-      { to: '/audience', label: t('nav.audience'), icon: UsersIcon },
+      { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
+      { to: '/commerce', label: t('nav.commerce'), icon: ShoppingCartIcon },
     ],
     subGroups: [
       {
-        key: 'comm-ai-comment',
+        key: 'revenue-analysis',
+        label: t('nav.subRevenueAnalysis'),
+        items: [
+          { to: '/revenue-forecaster', label: t('nav.revenueForecaster'), icon: CurrencyDollarIcon },
+          { to: '/revenue-split', label: t('nav.revenueSplit'), icon: BanknotesIcon },
+          { to: '/revenue-goal', label: t('nav.revenueGoal'), icon: RevenueGoalIcon },
+          { to: '/revenue-analyzer', label: t('nav.revenueAnalyzer'), icon: BanknotesIcon },
+        ],
+      },
+      {
+        key: 'revenue-business',
+        label: t('nav.subBusiness'),
+        items: [
+          { to: '/portfolio', label: t('nav.portfolio'), icon: IdentificationIcon },
+          { to: '/portfolio-builder', label: t('nav.portfolioBuilder'), icon: RectangleGroupIcon },
+          { to: '/media-kit', label: t('nav.mediaKit'), icon: DocumentArrowUpIcon },
+          { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
+          { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
+        ],
+      },
+      {
+        key: 'revenue-sponsor',
+        label: t('nav.subSponsor'),
+        items: [
+          { to: '/sponsorship-tracker', label: t('nav.sponsorshipTracker'), icon: GiftIcon },
+          { to: '/fan-segment-campaign', label: t('nav.fanSegmentCampaign'), icon: CampaignIcon },
+        ],
+      },
+    ],
+  },
+  // ── 7. 오디언스: 댓글·팬·크리에이터 네트워크 ──
+  {
+    label: t('nav.groupAudience'),
+    items: [
+      { to: '/comments', label: t('nav.comments'), icon: ChatBubbleLeftEllipsisIcon },
+      { to: '/audience', label: t('nav.audience'), icon: UsersIcon },
+      { to: '/inbox', label: t('nav.inbox'), icon: InboxIcon },
+      { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
+    ],
+    subGroups: [
+      {
+        key: 'audience-ai-comment',
         label: t('nav.subAiComment'),
         items: [
           { to: '/smart-reply', label: t('nav.smartReply'), icon: ChatBubbleBottomCenterTextIcon },
@@ -515,7 +545,7 @@ const navGroups = computed<NavGroup[]>(() => [
         ],
       },
       {
-        key: 'comm-fan-manage',
+        key: 'audience-fan-manage',
         label: t('nav.subFanManage'),
         items: [
           { to: '/fan-community', label: t('nav.fanCommunity'), icon: UserGroupIcon },
@@ -527,7 +557,7 @@ const navGroups = computed<NavGroup[]>(() => [
         ],
       },
       {
-        key: 'comm-creator-network',
+        key: 'audience-creator-network',
         label: t('nav.subCreatorNetwork'),
         items: [
           { to: '/social-listening', label: t('nav.socialListening'), icon: MegaphoneIcon },
@@ -539,9 +569,9 @@ const navGroups = computed<NavGroup[]>(() => [
       },
     ],
   },
-  // 7. 관리
+  // ── 8. 채널 운영: 채널·팀·협업 ──
   {
-    label: t('nav.groupManagement'),
+    label: t('nav.groupOperations'),
     items: [
       { to: '/channels', label: t('nav.channels'), icon: LinkIcon },
       { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
@@ -549,40 +579,12 @@ const navGroups = computed<NavGroup[]>(() => [
     ],
     subGroups: [
       {
-        key: 'manage-business',
-        label: t('nav.subBusiness'),
-        items: [
-          { to: '/portfolio', label: t('nav.portfolio'), icon: IdentificationIcon },
-          { to: '/portfolio-builder', label: t('nav.portfolioBuilder'), icon: RectangleGroupIcon },
-          { to: '/media-kit', label: t('nav.mediaKit'), icon: DocumentArrowUpIcon },
-          { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
-          { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
-        ],
-      },
-      {
-        key: 'manage-sponsor',
-        label: t('nav.subSponsor'),
-        items: [
-          { to: '/sponsorship-tracker', label: t('nav.sponsorshipTracker'), icon: GiftIcon },
-          { to: '/fan-segment-campaign', label: t('nav.fanSegmentCampaign'), icon: CampaignIcon },
-        ],
-      },
-      {
-        key: 'manage-collaboration',
+        key: 'ops-collaboration',
         label: t('nav.subCollaboration'),
         items: [
-          { to: '/multi-brand-calendar', label: t('nav.multiBrandCalendar'), icon: CalendarDaysIcon },
           { to: '/collaboration-board', label: t('nav.collaborationBoard'), icon: ViewColumnsIcon },
-          { to: '/team-performance', label: t('nav.teamPerformance'), icon: ChartBarIcon },
           { to: '/webhooks', label: t('nav.webhooks'), icon: CodeBracketIcon },
           { to: '/activity-log', label: t('nav.activityLog'), icon: ClockIcon },
-        ],
-      },
-      {
-        key: 'manage-learning',
-        label: t('nav.subLearning'),
-        items: [
-          { to: '/creator-academy', label: t('nav.creatorAcademy'), icon: BookOpenIcon },
         ],
       },
     ],
