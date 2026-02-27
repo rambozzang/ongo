@@ -18,6 +18,10 @@ storage:
 cors:
   allowed-origins: https://ongo.codelabtiger.com
 
+logging:
+  file:
+    name: backend.log
+
 management:
   endpoints:
     web:
