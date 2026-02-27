@@ -1,6 +1,7 @@
 package com.ongo.application.fansegmentcampaign
 
 import com.ongo.application.fansegmentcampaign.dto.*
+import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.fansegmentcampaign.CampaignSegment
 import com.ongo.domain.fansegmentcampaign.CampaignSegmentRepository
@@ -35,6 +36,14 @@ class FanSegmentCampaignUseCase(
             targetCount = segment.fanCount,
         )
         return campaignRepository.save(campaign).toResponse()
+    }
+
+    @Transactional
+    fun deleteCampaign(userId: Long, campaignId: Long) {
+        val campaign = campaignRepository.findById(campaignId)
+            ?: throw NotFoundException("캠페인", campaignId)
+        if (campaign.userId != userId) throw ForbiddenException("해당 캠페인에 대한 권한이 없습니다")
+        campaignRepository.delete(campaignId)
     }
 
     fun getSegments(userId: Long): List<CampaignSegmentResponse> {

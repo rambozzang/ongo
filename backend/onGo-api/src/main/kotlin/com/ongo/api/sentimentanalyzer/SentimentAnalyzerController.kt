@@ -18,11 +18,30 @@ class SentimentAnalyzerController(
 ) {
 
     @Operation(summary = "분석 결과 목록 조회")
+    @GetMapping("/results")
+    fun getResultsList(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<List<SentimentResultResponse>>> {
+        val result = useCase.getResults(userId)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "분석 결과 목록 조회 (루트)")
     @GetMapping
     fun getResults(
         @Parameter(hidden = true) @CurrentUser userId: Long,
     ): ResponseEntity<ResData<List<SentimentResultResponse>>> {
         val result = useCase.getResults(userId)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "분석 결과 상세 조회")
+    @GetMapping("/results/{id}")
+    fun getResult(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<SentimentResultResponse>> {
+        val result = useCase.getResultById(userId, id)
         return ResData.success(result)
     }
 
@@ -37,12 +56,32 @@ class SentimentAnalyzerController(
     }
 
     @Operation(summary = "댓글 감정 목록 조회")
+    @GetMapping("/results/{resultId}/comments")
+    fun getResultComments(
+        @PathVariable resultId: Long,
+        @RequestParam(required = false) sentiment: String?,
+    ): ResponseEntity<ResData<List<CommentSentimentResponse>>> {
+        val result = useCase.getComments(resultId, sentiment)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "댓글 감정 목록 조회 (레거시)")
     @GetMapping("/{resultId}/comments")
     fun getComments(
         @PathVariable resultId: Long,
         @RequestParam(required = false) sentiment: String?,
     ): ResponseEntity<ResData<List<CommentSentimentResponse>>> {
         val result = useCase.getComments(resultId, sentiment)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "감정 트렌드 조회")
+    @GetMapping("/trends")
+    fun getTrends(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(required = false, defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<List<SentimentTrendPoint>>> {
+        val result = useCase.getTrends(userId, days)
         return ResData.success(result)
     }
 

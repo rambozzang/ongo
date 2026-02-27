@@ -7,6 +7,7 @@ import com.ongo.domain.abtest.ABTest
 import com.ongo.domain.abtest.ABTestRepository
 import com.ongo.domain.abtest.ABTestVariant
 import com.ongo.domain.abtest.ABTestVariantRepository
+import com.ongo.domain.video.VideoRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -15,6 +16,7 @@ import java.time.LocalDateTime
 class ABTestUseCase(
     private val abTestRepository: ABTestRepository,
     private val variantRepository: ABTestVariantRepository,
+    private val videoRepository: VideoRepository,
 ) {
 
     fun listTests(userId: Long): ABTestListResponse {
@@ -107,6 +109,93 @@ class ABTestUseCase(
         val saved = abTestRepository.update(updated)
         val variants = variantRepository.findByTestId(testId)
         return saved.toResponse(variants)
+    }
+
+    fun getVideosForTest(userId: Long): List<ABTestVideoResponse> {
+        val videos = videoRepository.findByUserId(userId, page = 0, size = 100)
+        return videos.map {
+            ABTestVideoResponse(
+                id = it.id!!,
+                title = it.title,
+                thumbnailUrl = it.thumbnailUrls.firstOrNull(),
+                duration = it.durationSeconds,
+            )
+        }
+    }
+
+    @Transactional
+    fun pauseTest(userId: Long, testId: Long): ABTestResponse {
+        val test = abTestRepository.findById(testId) ?: throw NotFoundException("A/B 테스트", testId)
+        if (test.userId != userId) throw ForbiddenException()
+
+        val updated = test.copy(status = "PAUSED")
+        val saved = abTestRepository.update(updated)
+        val variants = variantRepository.findByTestId(testId)
+        return saved.toResponse(variants)
+    }
+
+    @Transactional
+    fun completeTest(userId: Long, testId: Long): ABTestResponse {
+        val test = abTestRepository.findById(testId) ?: throw NotFoundException("A/B 테스트", testId)
+        if (test.userId != userId) throw ForbiddenException()
+
+        val updated = test.copy(
+            status = "COMPLETED",
+            endedAt = LocalDateTime.now(),
+        )
+        val saved = abTestRepository.update(updated)
+        val variants = variantRepository.findByTestId(testId)
+        return saved.toResponse(variants)
+    }
+
+    @Transactional
+    fun applyWinner(userId: Long, testId: Long) {
+        val test = abTestRepository.findById(testId) ?: throw NotFoundException("A/B 테스트", testId)
+        if (test.userId != userId) throw ForbiddenException()
+
+        val variants = variantRepository.findByTestId(testId)
+        if (variants.isEmpty()) throw NotFoundException("A/B 테스트 변형", testId)
+
+        // 가장 높은 클릭률의 variant를 승자로 선정
+        val winner = variants.maxByOrNull {
+            if (it.views > 0) it.clicks.toDouble() / it.views else 0.0
+        } ?: throw NotFoundException("A/B 테스트 변형", testId)
+
+        val updated = test.copy(
+            winnerVariantId = winner.id,
+            status = if (test.status != "COMPLETED") "COMPLETED" else test.status,
+            endedAt = test.endedAt ?: LocalDateTime.now(),
+        )
+        abTestRepository.update(updated)
+    }
+
+    fun getSummary(userId: Long): ABTestSummaryResponse {
+        val tests = abTestRepository.findByUserId(userId)
+        val activeTests = tests.count { it.status == "RUNNING" || it.status == "PAUSED" }
+        val completedTests = tests.count { it.status == "COMPLETED" }
+
+        // 완료된 테스트에서 평균 개선율 계산
+        val avgImprovement = if (completedTests > 0) {
+            val improvements = tests.filter { it.status == "COMPLETED" && it.winnerVariantId != null }.mapNotNull { test ->
+                val variants = variantRepository.findByTestId(test.id!!)
+                if (variants.size >= 2) {
+                    val rates = variants.map {
+                        if (it.views > 0) it.clicks.toDouble() / it.views * 100 else 0.0
+                    }
+                    val maxRate = rates.maxOrNull() ?: 0.0
+                    val minRate = rates.minOrNull() ?: 0.0
+                    if (minRate > 0) (maxRate - minRate) / minRate * 100 else 0.0
+                } else null
+            }
+            if (improvements.isNotEmpty()) improvements.average() else 0.0
+        } else 0.0
+
+        return ABTestSummaryResponse(
+            totalTests = tests.size,
+            activeTests = activeTests,
+            completedTests = completedTests,
+            averageImprovement = Math.round(avgImprovement * 100) / 100.0,
+        )
     }
 
     private fun ABTest.toResponse(variants: List<ABTestVariant>) = ABTestResponse(

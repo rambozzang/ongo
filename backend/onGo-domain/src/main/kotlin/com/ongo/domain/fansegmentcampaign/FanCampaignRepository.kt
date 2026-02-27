@@ -5,4 +5,5 @@ interface FanCampaignRepository {
     fun findByUserId(userId: Long): List<FanCampaign>
     fun save(campaign: FanCampaign): FanCampaign
     fun updateStatus(id: Long, status: String)
+    fun delete(id: Long)
 }

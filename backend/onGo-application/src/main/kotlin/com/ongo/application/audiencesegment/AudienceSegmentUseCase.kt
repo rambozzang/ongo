@@ -43,6 +43,32 @@ class AudienceSegmentUseCase(
         audienceSegmentRepository.delete(segmentId)
     }
 
+    fun compareSegments(userId: Long, request: CompareSegmentsRequest): SegmentComparisonResponse {
+        val segments = request.segmentIds.mapNotNull { id ->
+            audienceSegmentRepository.findById(id)?.let { segment ->
+                if (segment.userId != userId) throw ForbiddenException("해당 세그먼트에 대한 권한이 없습니다")
+                segment.toResponse()
+            }
+        }
+        val insights = mutableListOf<String>()
+        if (segments.size >= 2) {
+            val best = segments.maxByOrNull { it.avgEngagement }
+            val worst = segments.minByOrNull { it.avgEngagement }
+            if (best != null && worst != null) {
+                insights.add("'${best.name}' 세그먼트의 평균 참여율이 가장 높습니다 (${best.avgEngagement})")
+                insights.add("'${worst.name}' 세그먼트의 참여율 개선이 필요합니다 (${worst.avgEngagement})")
+            }
+            val largest = segments.maxByOrNull { it.size }
+            if (largest != null) {
+                insights.add("'${largest.name}' 세그먼트가 가장 큰 규모입니다 (${largest.size}명)")
+            }
+        }
+        return SegmentComparisonResponse(
+            segments = segments,
+            insights = insights,
+        )
+    }
+
     fun getInsight(userId: Long, segmentId: Long): SegmentInsightResponse {
         val segment = audienceSegmentRepository.findById(segmentId)
             ?: throw NotFoundException("오디언스 세그먼트", segmentId)

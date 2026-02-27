@@ -41,3 +41,42 @@ data class UpdatePortfolioRequest(
     val brandHistory: String? = null,
     val isPublic: Boolean? = null,
 )
+
+data class UpdateProfileRequest(
+    val displayName: String? = null,
+    val bio: String? = null,
+    val category: String? = null,
+    val profileImageUrl: String? = null,
+)
+
+data class ShowcaseOrderRequest(
+    val contentIds: List<Long>,
+)
+
+data class AddShowcaseRequest(
+    val contentId: Long,
+    val title: String? = null,
+    val thumbnailUrl: String? = null,
+)
+
+data class ShowcaseItemResponse(
+    val id: Long,
+    val order: Int,
+)
+
+data class AddCollaborationRequest(
+    val brandName: String,
+    val description: String? = null,
+    val date: String? = null,
+    val logoUrl: String? = null,
+)
+
+data class CollaborationResponse(
+    val id: Long,
+)
+
+data class UpdateSettingsRequest(
+    val theme: String? = null,
+    val publicSlug: String? = null,
+    val isPublic: Boolean? = null,
+)

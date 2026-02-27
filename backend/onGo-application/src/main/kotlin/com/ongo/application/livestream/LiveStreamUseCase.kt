@@ -1,6 +1,7 @@
 package com.ongo.application.livestream
 
 import com.ongo.application.livestream.dto.*
+import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.livestream.LiveStream
 import com.ongo.domain.livestream.LiveStreamRepository
@@ -14,6 +15,13 @@ class LiveStreamUseCase(
     private val streamRepository: LiveStreamRepository,
     private val chatRepository: StreamChatRepository,
 ) {
+
+    fun getStream(userId: Long, streamId: Long): LiveStreamResponse {
+        val stream = streamRepository.findById(streamId)
+            ?: throw NotFoundException("라이브 스트림", streamId)
+        if (stream.userId != userId) throw ForbiddenException("해당 스트림에 대한 권한이 없습니다")
+        return stream.toResponse()
+    }
 
     fun getStreams(userId: Long, status: String?): List<LiveStreamResponse> {
         val streams = if (status != null) {

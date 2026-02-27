@@ -16,7 +16,7 @@ export const fanPollApi = {
     apiClient.post<ResData<FanPoll>>('/fan-polls', request).then(unwrapResponse),
 
   closePoll: (id: number) =>
-    apiClient.post<ResData<FanPoll>>(`/fan-polls/${id}/close`).then(unwrapResponse),
+    apiClient.patch<ResData<FanPoll>>(`/fan-polls/${id}/close`).then(unwrapResponse),
 
   deletePoll: (id: number) =>
     apiClient.delete<ResData<void>>(`/fan-polls/${id}`).then(unwrapResponse),

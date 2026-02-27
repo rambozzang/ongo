@@ -19,3 +19,21 @@ data class GenerateReportRequest(
     val audienceOverlap: String = "{}",
     val recommendations: String = "[]",
 )
+
+data class ContentCompareRequest(
+    val videoIds: List<Long> = emptyList(),
+    val period: String = "30d",
+)
+
+data class CrossPlatformContent(
+    val videoId: Long,
+    val title: String,
+    val platform: String,
+    val views: Long,
+    val likes: Long,
+    val comments: Long,
+)
+
+data class ContentCompareResponse(
+    val contents: List<CrossPlatformContent>,
+)

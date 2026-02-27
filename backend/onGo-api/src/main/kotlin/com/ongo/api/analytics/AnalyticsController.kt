@@ -5,6 +5,7 @@ import com.ongo.api.config.CurrentUser
 import com.ongo.application.analytics.AnalyticsUseCase
 import com.ongo.application.analytics.CohortAnalysisUseCase
 import com.ongo.application.analytics.CohortGroupBy
+import com.ongo.application.analytics.LiveDashboardUseCase
 import com.ongo.application.analytics.PerformanceScoreUseCase
 import com.ongo.common.ResData
 import com.ongo.common.annotation.RequiresPermission
@@ -25,6 +26,7 @@ class AnalyticsController(
     private val analyticsUseCase: AnalyticsUseCase,
     private val performanceScoreUseCase: PerformanceScoreUseCase,
     private val cohortAnalysisUseCase: CohortAnalysisUseCase,
+    private val liveDashboardUseCase: LiveDashboardUseCase,
 ) {
 
     @Operation(
@@ -326,4 +328,62 @@ class AnalyticsController(
         @RequestParam(defaultValue = "30") days: Int,
     ): ResponseEntity<ResData<SubscriberConversionResponse>> =
         ResData.success(analyticsUseCase.getSubscriberConversion(userId, days))
+
+    // ── 라이브 대시보드 ─────────────────────────────────────────────────
+
+    @Operation(summary = "라이브 대시보드 현황 조회")
+    @GetMapping("/live")
+    fun getLiveDashboard(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<LiveDashboardStateResponse>> {
+        val result = liveDashboardUseCase.getLiveState(userId)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "라이브 알림 목록 조회")
+    @GetMapping("/live/alerts")
+    fun getLiveAlerts(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<Map<String, List<LiveAlertResponse>>>> {
+        val alerts = liveDashboardUseCase.getAlerts(userId)
+        return ResData.success(mapOf("alerts" to alerts))
+    }
+
+    @Operation(summary = "라이브 알림 읽음 처리")
+    @PutMapping("/live/alerts/{alertId}/read")
+    fun markLiveAlertRead(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable alertId: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        liveDashboardUseCase.markAlertRead(userId, alertId)
+        return ResData.success(null, "알림이 읽음 처리되었습니다")
+    }
+
+    @Operation(summary = "라이브 알림 설정 조회")
+    @GetMapping("/live/alert-configs")
+    fun getLiveAlertConfigs(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<Map<String, List<LiveAlertConfigResponse>>>> {
+        val configs = liveDashboardUseCase.getAlertConfigs(userId)
+        return ResData.success(mapOf("configs" to configs))
+    }
+
+    @Operation(summary = "라이브 알림 설정 수정")
+    @PutMapping("/live/alert-configs")
+    fun updateLiveAlertConfig(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestBody request: UpdateLiveAlertConfigRequest,
+    ): ResponseEntity<ResData<LiveAlertConfigResponse>> {
+        val result = liveDashboardUseCase.updateAlertConfig(userId, request)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "히트맵 기반 추천 조회")
+    @GetMapping("/heatmap/recommendations")
+    fun getHeatmapRecommendations(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<List<HeatmapRecommendationResponse>>> {
+        val result = liveDashboardUseCase.getHeatmapRecommendations(userId)
+        return ResData.success(result)
+    }
 }

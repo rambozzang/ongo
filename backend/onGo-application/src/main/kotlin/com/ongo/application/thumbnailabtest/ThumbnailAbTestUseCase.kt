@@ -1,8 +1,10 @@
 package com.ongo.application.thumbnailabtest
 
 import com.ongo.application.thumbnailabtest.dto.*
+import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.thumbnailabtest.*
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ThumbnailAbTestUseCase(
@@ -18,6 +20,18 @@ class ThumbnailAbTestUseCase(
         return tests.map { toResponse(it) }
     }
 
+    fun getTest(workspaceId: Long, testId: Long): ThumbnailTestResponse {
+        val test = repository.findById(testId) ?: throw NotFoundException("썸네일 A/B 테스트", testId)
+        return toResponse(test)
+    }
+
+    @Transactional
+    fun deleteTest(workspaceId: Long, testId: Long) {
+        repository.findById(testId) ?: throw NotFoundException("썸네일 A/B 테스트", testId)
+        repository.delete(testId)
+    }
+
+    @Transactional
     fun createTest(workspaceId: Long, request: CreateThumbnailTestRequest): ThumbnailTestResponse {
         val test = ThumbnailAbTest(
             workspaceId = workspaceId,

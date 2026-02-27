@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 data class ContentRight(
     val id: Long? = null,
     val userId: Long,
-    val videoId: String? = null,
+    val videoId: Long? = null,
     val videoTitle: String? = null,
     val assetName: String,
     val assetType: String = "MUSIC",

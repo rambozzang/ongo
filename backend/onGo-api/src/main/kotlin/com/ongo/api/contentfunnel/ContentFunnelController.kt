@@ -17,6 +17,25 @@ class ContentFunnelController(
     private val contentFunnelUseCase: ContentFunnelUseCase
 ) {
 
+    @Operation(summary = "전체 퍼널 목록 조회")
+    @GetMapping
+    fun getFunnels(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<List<FunnelStageResponse>>> {
+        val result = contentFunnelUseCase.listFunnels(userId)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "퍼널 상세 조회")
+    @GetMapping("/{id}")
+    fun getFunnel(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<FunnelComparisonResponse?>> {
+        val result = contentFunnelUseCase.getFunnel(userId, id)
+        return ResData.success(result)
+    }
+
     @Operation(summary = "퍼널 단계 조회")
     @GetMapping("/{videoId}/stages")
     fun getStages(

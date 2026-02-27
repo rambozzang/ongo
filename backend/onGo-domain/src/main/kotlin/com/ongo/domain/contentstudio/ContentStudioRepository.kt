@@ -10,6 +10,7 @@ interface ContentStudioRepository {
     fun findCaptionById(id: Long): VideoCaption?
     fun findCaptionsByVideoId(videoId: Long): List<VideoCaption>
     fun saveCaption(caption: VideoCaption): VideoCaption
+    fun updateCaption(caption: VideoCaption): VideoCaption
     fun deleteCaption(id: Long)
 
     fun findThumbnailById(id: Long): AiThumbnail?

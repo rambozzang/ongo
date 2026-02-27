@@ -24,7 +24,7 @@ export const influencerMatchApi = {
 
   updateCollabStatus(id: number, status: string) {
     return apiClient
-      .put<ResData<CollabRequest>>(`/influencer-match/collabs/${id}`, { status })
+      .put<ResData<CollabRequest>>(`/influencer-match/collabs/${id}/status`, { status })
       .then(unwrapResponse)
   },
 }

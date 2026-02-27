@@ -26,3 +26,20 @@ data class UpdateWorkflowRequest(
     val workflowData: String? = null,
     val isActive: Boolean? = null,
 )
+
+data class WorkflowExecutionResponse(
+    val id: Long,
+    val workflowId: Long,
+    val status: String,
+    val startedAt: LocalDateTime?,
+    val completedAt: LocalDateTime?,
+    val triggerCount: Int,
+)
+
+data class WorkflowTestResponse(
+    val workflowId: Long,
+    val status: String,
+    val startedAt: LocalDateTime,
+    val completedAt: LocalDateTime,
+    val steps: List<String>,
+)

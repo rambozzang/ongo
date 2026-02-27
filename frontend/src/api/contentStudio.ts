@@ -47,7 +47,7 @@ export const contentStudioApi = {
   // 자막 생성
   generateCaption(request: GenerateCaptionRequest) {
     return apiClient
-      .post<ResData<GenerateCaptionResponse>>('/content-studio/captions/generate', request)
+      .post<ResData<GenerateCaptionResponse>>('/content-studio/captions', request)
       .then(unwrapResponse)
   },
 
@@ -75,7 +75,7 @@ export const contentStudioApi = {
   // 썸네일 생성
   generateThumbnail(request: GenerateThumbnailRequest) {
     return apiClient
-      .post<ResData<GenerateThumbnailResponse>>('/content-studio/thumbnails/generate', request)
+      .post<ResData<GenerateThumbnailResponse>>('/content-studio/thumbnails', request)
       .then(unwrapResponse)
   },
 

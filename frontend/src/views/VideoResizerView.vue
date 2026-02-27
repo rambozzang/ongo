@@ -414,6 +414,7 @@ import ResizePreview from '@/components/videoresizer/ResizePreview.vue'
 import ResizeJobCard from '@/components/videoresizer/ResizeJobCard.vue'
 import { useVideoResizerStore } from '@/stores/videoResizer'
 import { useCredit } from '@/composables/useCredit'
+import { videoResizerApi } from '@/api/videoResizer'
 import type { PlatformTarget, ResizePreset, VideoForResize } from '@/types/videoResizer'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -501,8 +502,14 @@ async function handleCancelJob(jobId: number) {
   await store.cancelJob(jobId)
 }
 
-function handleDownloadJob(jobId: number) {
-  window.open(`/api/v1/video-resizer/jobs/${jobId}/download`, '_blank')
+async function handleDownloadJob(jobId: number) {
+  const response = await videoResizerApi.downloadOutput(jobId)
+  const url = URL.createObjectURL(response.data)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `resized-${jobId}.mp4`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 async function handleDeleteJob(jobId: number) {

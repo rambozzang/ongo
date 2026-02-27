@@ -84,4 +84,14 @@ class ContentRightsController(
         contentRightsUseCase.markAlertRead(userId, alertId)
         return ResData.success(null)
     }
+
+    @Operation(summary = "대체 에셋 검색")
+    @GetMapping("/{rightId}/alternatives")
+    fun findAlternatives(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable rightId: Long,
+    ): ResponseEntity<ResData<List<AlternativeAssetResponse>>> {
+        val result = contentRightsUseCase.getAlternatives(userId, rightId)
+        return ResData.success(result)
+    }
 }

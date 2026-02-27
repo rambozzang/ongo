@@ -5,6 +5,8 @@ import com.ongo.application.abtest.ABTestUseCase
 import com.ongo.application.abtest.dto.ABTestListResponse
 import com.ongo.application.abtest.dto.ABTestResponse
 import com.ongo.application.abtest.dto.ABTestStatisticsResponse
+import com.ongo.application.abtest.dto.ABTestSummaryResponse
+import com.ongo.application.abtest.dto.ABTestVideoResponse
 import com.ongo.application.abtest.dto.CreateABTestRequest
 import com.ongo.application.abtest.dto.UpdateABTestRequest
 import com.ongo.common.ResData
@@ -99,5 +101,53 @@ class ABTestController(
     ): ResponseEntity<ResData<ABTestResponse>> {
         val result = abTestUseCase.stopTest(userId, id)
         return ResData.success(result, "A/B 테스트가 종료되었습니다")
+    }
+
+    @Operation(summary = "A/B 테스트용 영상 목록 조회")
+    @GetMapping("/videos")
+    fun getVideos(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<List<ABTestVideoResponse>>> {
+        val result = abTestUseCase.getVideosForTest(userId)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "A/B 테스트 일시정지")
+    @PostMapping("/{id}/pause")
+    fun pauseTest(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<ABTestResponse>> {
+        val result = abTestUseCase.pauseTest(userId, id)
+        return ResData.success(result, "A/B 테스트가 일시정지되었습니다")
+    }
+
+    @Operation(summary = "A/B 테스트 완료 처리")
+    @PostMapping("/{id}/complete")
+    fun completeTest(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<ABTestResponse>> {
+        val result = abTestUseCase.completeTest(userId, id)
+        return ResData.success(result, "A/B 테스트가 완료되었습니다")
+    }
+
+    @Operation(summary = "A/B 테스트 승자 적용")
+    @PostMapping("/{id}/apply-winner")
+    fun applyWinner(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        abTestUseCase.applyWinner(userId, id)
+        return ResData.success(null, "승자 변형이 적용되었습니다")
+    }
+
+    @Operation(summary = "A/B 테스트 요약 통계")
+    @GetMapping("/summary")
+    fun getSummary(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<ABTestSummaryResponse>> {
+        val result = abTestUseCase.getSummary(userId)
+        return ResData.success(result)
     }
 }

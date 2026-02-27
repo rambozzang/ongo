@@ -40,3 +40,8 @@ data class SegmentInsightResponse(
 data class CompareSegmentsRequest(
     val segmentIds: List<Long>,
 )
+
+data class SegmentComparisonResponse(
+    val segments: List<AudienceSegmentResponse>,
+    val insights: List<String>,
+)

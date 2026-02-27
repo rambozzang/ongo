@@ -6,4 +6,5 @@ interface ThumbnailAbTestRepository {
     fun findById(id: Long): ThumbnailAbTest?
     fun save(test: ThumbnailAbTest): ThumbnailAbTest
     fun updateStatus(id: Long, status: String, winner: String?)
+    fun delete(id: Long)
 }

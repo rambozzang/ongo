@@ -27,6 +27,16 @@ class LiveStreamController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "스트림 상세 조회")
+    @GetMapping("/{id}")
+    fun getStream(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<LiveStreamResponse>> {
+        val result = liveStreamUseCase.getStream(userId, id)
+        return ResData.success(result)
+    }
+
     @Operation(summary = "스트림 채팅 조회")
     @GetMapping("/{streamId}/chats")
     fun getChats(

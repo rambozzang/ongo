@@ -37,6 +37,26 @@ class ThumbnailAbTestController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "테스트 상세 조회")
+    @GetMapping("/{id}")
+    fun getTest(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<ThumbnailTestResponse>> {
+        val result = useCase.getTest(userId, id)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "테스트 삭제")
+    @DeleteMapping("/{id}")
+    fun deleteTest(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        useCase.deleteTest(userId, id)
+        return ResData.success(null, "썸네일 A/B 테스트가 삭제되었습니다")
+    }
+
     @Operation(summary = "테스트 종료")
     @PostMapping("/{id}/end")
     fun endTest(

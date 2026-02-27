@@ -7,4 +7,6 @@ interface PredictionRepository {
     fun save(prediction: PerformancePrediction): PerformancePrediction
     fun update(prediction: PerformancePrediction): PerformancePrediction
     fun delete(id: Long)
+    fun findByUserIdOrderByCreatedAtDesc(userId: Long, limit: Int): List<PerformancePrediction>
+    fun countByUserId(userId: Long): Long
 }

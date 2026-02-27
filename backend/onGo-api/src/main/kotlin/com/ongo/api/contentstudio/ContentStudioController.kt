@@ -83,6 +83,27 @@ class ContentStudioController(
         return ResData.success(result, "자막이 생성되었습니다")
     }
 
+    @Operation(summary = "AI 자막 자동 생성")
+    @PostMapping("/captions/generate")
+    fun generateCaption(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestBody request: GenerateCaptionRequest,
+    ): ResponseEntity<ResData<VideoCaptionResponse>> {
+        val result = contentStudioUseCase.generateCaption(userId, request)
+        return ResData.success(result, "자막이 생성되었습니다")
+    }
+
+    @Operation(summary = "자막 수정")
+    @PutMapping("/captions/{captionId}")
+    fun updateCaption(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable captionId: Long,
+        @RequestBody request: UpdateCaptionRequest,
+    ): ResponseEntity<ResData<VideoCaptionResponse>> {
+        val result = contentStudioUseCase.updateCaption(userId, captionId, request)
+        return ResData.success(result, "자막이 수정되었습니다")
+    }
+
     @Operation(summary = "자막 삭제")
     @DeleteMapping("/captions/{id}")
     fun deleteCaption(

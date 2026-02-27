@@ -36,9 +36,9 @@ export const useVideoSeoStore = defineStore('videoSeo', () => {
     }
   }
 
-  async function fetchKeywords(videoId: number) {
+  async function fetchKeywords(analysisId: number) {
     try {
-      keywords.value = await videoSeoApi.getKeywords(videoId)
+      keywords.value = await videoSeoApi.getKeywords(analysisId)
     } catch {
       keywords.value = [
         { id: 1, keyword: '맥북 프로 리뷰', searchVolume: 12000, competition: 'HIGH', relevance: 95, trend: 'UP' },

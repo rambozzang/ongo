@@ -66,4 +66,34 @@ class VisualWorkflowController(
         visualWorkflowUseCase.deleteWorkflow(userId, id)
         return ResData.success(null, "워크플로우가 삭제되었습니다")
     }
+
+    @Operation(summary = "워크플로우 활성/비활성 토글")
+    @PostMapping("/{id}/toggle")
+    fun toggleWorkflow(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<WorkflowResponse>> {
+        val result = visualWorkflowUseCase.toggleWorkflow(userId, id)
+        return ResData.success(result, "워크플로우 상태가 변경되었습니다")
+    }
+
+    @Operation(summary = "워크플로우 테스트 실행")
+    @PostMapping("/{id}/test")
+    fun testWorkflow(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<WorkflowTestResponse>> {
+        val result = visualWorkflowUseCase.testWorkflow(userId, id)
+        return ResData.success(result, "워크플로우 테스트가 실행되었습니다")
+    }
+
+    @Operation(summary = "워크플로우 실행 이력 조회")
+    @GetMapping("/{id}/executions")
+    fun getExecutions(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<List<WorkflowExecutionResponse>>> {
+        val result = visualWorkflowUseCase.getExecutions(userId, id)
+        return ResData.success(result)
+    }
 }

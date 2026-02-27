@@ -60,3 +60,13 @@ data class SendRequestDto(
     val message: String,
     val proposedType: String,
 )
+
+data class CreateCollabRequest(
+    val toCreatorId: Long,
+    val message: String? = null,
+    val proposedType: String? = null,
+)
+
+data class RespondCollabRequest(
+    val accept: Boolean,
+)

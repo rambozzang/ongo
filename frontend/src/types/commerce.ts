@@ -3,6 +3,7 @@ export type CommercePlatform = 'COUPANG' | 'NAVER_SMARTSTORE' | 'TIKTOK_SHOP'
 export type CommercePlatformStatus = 'CONNECTED' | 'DISCONNECTED' | 'EXPIRED'
 
 export interface CommercePlatformConnection {
+  id: number
   platform: CommercePlatform
   status: CommercePlatformStatus
   storeName?: string

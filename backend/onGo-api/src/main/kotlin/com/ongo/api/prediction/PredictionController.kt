@@ -66,4 +66,75 @@ class PredictionController(
         predictionUseCase.deletePrediction(userId, id)
         return ResData.success(null, "예측이 삭제되었습니다")
     }
+
+    @Operation(summary = "도달 히트맵 조회")
+    @GetMapping("/heatmap")
+    fun getReachHeatmap(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(required = false) platform: String?,
+    ): ResponseEntity<ResData<PredictionHeatmapResponse>> {
+        val result = predictionUseCase.getHeatmap(userId, platform)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "최적 업로드 시간 추천")
+    @GetMapping("/optimal-times")
+    fun getOptimalTimes(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(required = false) platform: String?,
+    ): ResponseEntity<ResData<PredictionOptimalTimesResponse>> {
+        val result = predictionUseCase.getOptimalTimes(userId, platform)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "제목 제안")
+    @GetMapping("/title-suggestions")
+    fun getTitleSuggestions(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam title: String,
+        @RequestParam(required = false) platform: String?,
+    ): ResponseEntity<ResData<TitleSuggestionsResponse>> {
+        val result = predictionUseCase.getTitleSuggestions(userId, title, platform)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "태그 제안")
+    @GetMapping("/tag-suggestions")
+    fun getTagSuggestions(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam tags: String,
+        @RequestParam(required = false) platform: String?,
+    ): ResponseEntity<ResData<TagSuggestionsResponse>> {
+        val result = predictionUseCase.getTagSuggestions(userId, tags, platform)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "경쟁자 비교 분석")
+    @GetMapping("/competitors/{videoId}")
+    fun getCompetitorComparison(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable videoId: Long,
+    ): ResponseEntity<ResData<CompetitorComparisonResponse>> {
+        val result = predictionUseCase.getCompetitorComparison(userId, videoId)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "예측 히스토리 조회")
+    @GetMapping("/history")
+    fun getHistory(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(required = false, defaultValue = "20") limit: Int,
+    ): ResponseEntity<ResData<PredictionHistoryResponse>> {
+        val result = predictionUseCase.getHistory(userId, limit)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "예측 요약 통계")
+    @GetMapping("/summary")
+    fun getSummary(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<PredictionSummaryResponse>> {
+        val result = predictionUseCase.getSummary(userId)
+        return ResData.success(result)
+    }
 }

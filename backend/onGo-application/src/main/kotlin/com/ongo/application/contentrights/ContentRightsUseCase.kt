@@ -84,6 +84,34 @@ class ContentRightsUseCase(
         rightsAlertRepository.markRead(alertId)
     }
 
+    fun getAlternatives(userId: Long, rightId: Long): List<AlternativeAssetResponse> {
+        val right = contentRightRepository.findById(rightId)
+            ?: throw NotFoundException("저작권 정보", rightId)
+        if (right.userId != userId) throw ForbiddenException("해당 저작권 정보에 대한 권한이 없습니다")
+        return listOf(
+            AlternativeAssetResponse(
+                id = 1L,
+                name = "${right.assetName} 대체 에셋 1",
+                type = right.assetType,
+                source = "Free Library",
+                licenseType = "CC0",
+                previewUrl = null,
+                cost = 0L,
+                currency = "KRW",
+            ),
+            AlternativeAssetResponse(
+                id = 2L,
+                name = "${right.assetName} 대체 에셋 2",
+                type = right.assetType,
+                source = "Premium Library",
+                licenseType = "ROYALTY_FREE",
+                previewUrl = null,
+                cost = 5000L,
+                currency = "KRW",
+            ),
+        )
+    }
+
     private fun ContentRight.toResponse() = ContentRightResponse(
         id = id!!, videoId = videoId, videoTitle = videoTitle, assetName = assetName,
         assetType = assetType, licenseType = licenseType, licenseStatus = licenseStatus,

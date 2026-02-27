@@ -47,12 +47,23 @@ class ContentLibraryController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "아이템 상세 조회")
+    @GetMapping("/{id}")
+    fun getItem(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<LibraryItemResponse>> {
+        val result = useCase.getItem(userId, id)
+        return ResData.success(result)
+    }
+
     @Operation(summary = "아이템 삭제")
     @DeleteMapping("/{id}")
     fun deleteItem(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable id: Long,
     ): ResponseEntity<ResData<Unit>> {
-        useCase.deleteItem(id)
+        useCase.deleteItem(userId, id)
         return ResData.success(Unit)
     }
 

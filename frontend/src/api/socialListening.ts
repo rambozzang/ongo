@@ -6,7 +6,7 @@ export const socialListeningApi = {
   getReport(period?: string) {
     const params = period ? { period } : {}
     return apiClient
-      .get<ResData<SocialListeningReport>>('/social-listening', { params })
+      .get<ResData<SocialListeningReport>>('/social-listening/report', { params })
       .then(unwrapResponse)
   },
 
@@ -18,7 +18,7 @@ export const socialListeningApi = {
 
   toggleAlert(id: number, enabled: boolean) {
     return apiClient
-      .put<ResData<KeywordAlert>>(`/social-listening/alerts/${id}`, { enabled })
+      .put<ResData<KeywordAlert>>(`/social-listening/alerts/${id}/toggle`, { enabled })
       .then(unwrapResponse)
   },
 

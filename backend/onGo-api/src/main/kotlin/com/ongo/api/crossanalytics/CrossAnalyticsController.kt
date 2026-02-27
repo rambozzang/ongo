@@ -45,4 +45,38 @@ class CrossAnalyticsController(
         val result = crossAnalyticsUseCase.generateReport(userId, request)
         return ResData.success(result, "크로스 플랫폼 리포트가 생성되었습니다")
     }
+
+    @Operation(summary = "크로스 플랫폼 분석 조회 (루트)")
+    @GetMapping
+    fun getAnalytics(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(required = false) period: String?,
+    ): ResponseEntity<ResData<CrossPlatformReportResponse>> {
+        val result = crossAnalyticsUseCase.getAnalytics(userId, period)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "콘텐츠 비교 분석")
+    @PostMapping("/compare")
+    fun compareContents(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestBody request: ContentCompareRequest,
+    ): ResponseEntity<ResData<ContentCompareResponse>> {
+        val result = crossAnalyticsUseCase.compareContent(userId, request)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "리포트 내보내기")
+    @GetMapping("/{reportId}/export")
+    fun exportReport(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable reportId: Long,
+        @RequestParam format: String,
+    ): ResponseEntity<ByteArray> {
+        val data = crossAnalyticsUseCase.exportReport(userId, reportId, format)
+        return ResponseEntity.ok()
+            .header("Content-Disposition", "attachment; filename=report-$reportId.$format")
+            .header("Content-Type", if (format == "csv") "text/csv; charset=UTF-8" else "application/octet-stream")
+            .body(data)
+    }
 }

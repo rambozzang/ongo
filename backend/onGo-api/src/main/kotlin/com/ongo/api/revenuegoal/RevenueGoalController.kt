@@ -27,6 +27,16 @@ class RevenueGoalController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "수익 목표 상세 조회")
+    @GetMapping("/{id}")
+    fun getGoal(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<RevenueGoalResponse>> {
+        val result = useCase.getGoal(userId, id)
+        return ResData.success(result)
+    }
+
     @Operation(summary = "수익 목표 생성")
     @PostMapping
     fun createGoal(
@@ -49,9 +59,10 @@ class RevenueGoalController(
     @Operation(summary = "수익 목표 삭제")
     @DeleteMapping("/{id}")
     fun deleteGoal(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable id: Long,
     ): ResponseEntity<ResData<Unit>> {
-        useCase.deleteGoal(id)
+        useCase.deleteGoal(userId, id)
         return ResData.success(Unit)
     }
 

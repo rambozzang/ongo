@@ -28,3 +28,38 @@ data class CreateBrandVoiceProfileRequest(
     val avgSentenceLength: Int = 0,
     val signaturePhrase: String? = null,
 )
+
+data class TrainVoiceRequest(
+    val profileId: Long? = null,
+    val trainingSamples: List<String> = emptyList(),
+    val tone: String? = null,
+    val style: String? = null,
+)
+
+data class TrainVoiceResponse(
+    val id: Long,
+    val name: String,
+    val status: String,
+)
+
+data class GenerateTextRequest(
+    val profileId: Long,
+    val prompt: String,
+    val maxLength: Int = 500,
+)
+
+data class GenerateTextResponse(
+    val generatedText: String,
+    val voiceProfileId: Long,
+)
+
+data class AnalyzeTextRequest(
+    val text: String,
+)
+
+data class AnalyzeTextResponse(
+    val tone: String,
+    val formality: Double,
+    val emotion: String,
+    val keywords: List<String>,
+)

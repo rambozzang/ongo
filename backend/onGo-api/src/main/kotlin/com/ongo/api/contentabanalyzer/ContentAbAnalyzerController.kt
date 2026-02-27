@@ -27,6 +27,26 @@ class ContentAbAnalyzerController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "A/B 테스트 생성")
+    @PostMapping
+    fun create(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestBody request: CreateAbTestRequest,
+    ): ResponseEntity<ResData<ContentAbTestResponse>> {
+        val result = contentAbAnalyzerUseCase.createTest(userId, request)
+        return ResData.success(result, "A/B 테스트가 생성되었습니다")
+    }
+
+    @Operation(summary = "A/B 테스트 완료 처리")
+    @PutMapping("/{id}/complete")
+    fun complete(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<ContentAbTestResponse>> {
+        val result = contentAbAnalyzerUseCase.completeTest(userId, id)
+        return ResData.success(result, "A/B 테스트가 완료되었습니다")
+    }
+
     @Operation(summary = "A/B 테스트 요약")
     @GetMapping("/summary")
     fun getSummary(

@@ -6,6 +6,7 @@ import com.ongo.domain.contentfunnel.FunnelComparisonRepository
 import com.ongo.domain.contentfunnel.FunnelStage
 import com.ongo.domain.contentfunnel.FunnelStageRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -15,10 +16,32 @@ class ContentFunnelUseCase(
     private val comparisonRepository: FunnelComparisonRepository,
 ) {
 
+    fun listFunnels(userId: Long): List<FunnelStageResponse> {
+        return stageRepository.findByUserId(userId).map { it.toResponse() }
+    }
+
+    fun getFunnel(userId: Long, id: Long): FunnelComparisonResponse? {
+        val comparison = comparisonRepository.findById(id) ?: return null
+        val stagesA = stageRepository.findByVideoId(comparison.videoIdA)
+        val stagesB = stageRepository.findByVideoId(comparison.videoIdB)
+        return FunnelComparisonResponse(
+            id = comparison.id!!,
+            videoIdA = comparison.videoIdA,
+            videoTitleA = comparison.videoTitleA,
+            videoIdB = comparison.videoIdB,
+            videoTitleB = comparison.videoTitleB,
+            stagesA = stagesA.map { it.toResponse() },
+            stagesB = stagesB.map { it.toResponse() },
+            winner = comparison.winner,
+            createdAt = comparison.createdAt,
+        )
+    }
+
     fun getStages(videoId: Long): List<FunnelStageResponse> {
         return stageRepository.findByVideoId(videoId).map { it.toResponse() }
     }
 
+    @Transactional
     fun compare(userId: Long, videoIdA: Long, videoIdB: Long): FunnelComparisonResponse {
         val stagesA = stageRepository.findByVideoId(videoIdA)
         val stagesB = stageRepository.findByVideoId(videoIdB)

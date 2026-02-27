@@ -54,6 +54,52 @@ class VisualWorkflowUseCase(
         workflowRepository.delete(workflowId)
     }
 
+    @Transactional
+    fun toggleWorkflow(userId: Long, workflowId: Long): WorkflowResponse {
+        val workflow = workflowRepository.findById(workflowId) ?: throw NotFoundException("워크플로우", workflowId)
+        if (workflow.userId != userId) throw ForbiddenException("해당 워크플로우에 대한 권한이 없습니다")
+        val toggled = workflow.copy(isActive = !workflow.isActive)
+        return workflowRepository.update(toggled).toResponse()
+    }
+
+    @Transactional
+    fun testWorkflow(userId: Long, workflowId: Long): WorkflowTestResponse {
+        val workflow = workflowRepository.findById(workflowId) ?: throw NotFoundException("워크플로우", workflowId)
+        if (workflow.userId != userId) throw ForbiddenException("해당 워크플로우에 대한 권한이 없습니다")
+        val now = java.time.LocalDateTime.now()
+        val updated = workflow.copy(
+            lastTriggeredAt = now,
+            triggerCount = workflow.triggerCount + 1,
+        )
+        workflowRepository.update(updated)
+        return WorkflowTestResponse(
+            workflowId = workflowId,
+            status = "COMPLETED",
+            startedAt = now,
+            completedAt = now,
+            steps = listOf("TRIGGER", "EXECUTE", "COMPLETE"),
+        )
+    }
+
+    fun getExecutions(userId: Long, workflowId: Long): List<WorkflowExecutionResponse> {
+        val workflow = workflowRepository.findById(workflowId) ?: throw NotFoundException("워크플로우", workflowId)
+        if (workflow.userId != userId) throw ForbiddenException("해당 워크플로우에 대한 권한이 없습니다")
+        return if (workflow.lastTriggeredAt != null) {
+            listOf(
+                WorkflowExecutionResponse(
+                    id = workflow.id!!,
+                    workflowId = workflowId,
+                    status = "COMPLETED",
+                    startedAt = workflow.lastTriggeredAt,
+                    completedAt = workflow.lastTriggeredAt,
+                    triggerCount = workflow.triggerCount,
+                )
+            )
+        } else {
+            emptyList()
+        }
+    }
+
     private fun VisualWorkflow.toResponse() = WorkflowResponse(
         id = id!!,
         name = name,

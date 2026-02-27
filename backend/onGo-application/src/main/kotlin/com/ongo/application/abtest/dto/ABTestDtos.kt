@@ -50,3 +50,17 @@ data class UpdateABTestRequest(
     val testName: String? = null,
     val metricType: String? = null,
 )
+
+data class ABTestSummaryResponse(
+    val totalTests: Int,
+    val activeTests: Int,
+    val completedTests: Int,
+    val averageImprovement: Double,
+)
+
+data class ABTestVideoResponse(
+    val id: Long,
+    val title: String,
+    val thumbnailUrl: String?,
+    val duration: Int?,
+)

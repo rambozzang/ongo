@@ -45,6 +45,16 @@ class FanSegmentCampaignController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "캠페인 삭제")
+    @DeleteMapping("/{id}")
+    fun delete(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        fanSegmentCampaignUseCase.deleteCampaign(userId, id)
+        return ResData.success(null, "캠페인이 삭제되었습니다")
+    }
+
     @Operation(summary = "캠페인 요약")
     @GetMapping("/summary")
     fun getSummary(

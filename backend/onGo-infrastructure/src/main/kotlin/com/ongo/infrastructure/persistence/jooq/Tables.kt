@@ -120,6 +120,39 @@ object Tables {
     // AB Test Results
     val AB_TEST_RESULTS = DSL.table("ab_test_results")
     val TEST_VARIANTS = DSL.table("test_variants")
+
+    // Stub Features (V24)
+    val CREATOR_PORTFOLIOS = DSL.table("creator_portfolios")
+    val PERFORMANCE_PREDICTIONS = DSL.table("performance_predictions")
+    val VISUAL_WORKFLOWS = DSL.table("visual_workflows")
+    val BRAND_VOICE_PROFILES = DSL.table("brand_voice_profiles")
+    val CREATOR_PROFILES = DSL.table("creator_profiles")
+    val COLLABORATION_REQUESTS = DSL.table("collaboration_requests")
+    val SENTIMENT_RESULTS = DSL.table("sentiment_results")
+    val COMMENT_SENTIMENTS = DSL.table("comment_sentiments")
+    val THUMBNAIL_AB_TESTS = DSL.table("thumbnail_ab_tests")
+    val FUNNEL_STAGES = DSL.table("funnel_stages")
+    val FUNNEL_COMPARISONS = DSL.table("funnel_comparisons")
+    val CROSS_PLATFORM_REPORTS = DSL.table("cross_platform_reports")
+    val LIBRARY_ITEMS = DSL.table("library_items")
+    val LIBRARY_FOLDERS = DSL.table("library_folders")
+    val REVENUE_GOALS = DSL.table("revenue_goals")
+    val REVENUE_GOAL_MILESTONES = DSL.table("revenue_goal_milestones")
+    val LIVE_STREAMS = DSL.table("live_streams")
+    val STREAM_CHATS = DSL.table("stream_chats")
+    val CONTENT_AB_TESTS = DSL.table("content_ab_tests")
+    val CONTENT_VARIANTS = DSL.table("content_variants")
+    val FAN_CAMPAIGNS = DSL.table("fan_campaigns")
+    val CAMPAIGN_SEGMENTS = DSL.table("campaign_segments")
+    val CONTENT_RIGHTS = DSL.table("content_rights")
+    val RIGHTS_ALERTS = DSL.table("rights_alerts")
+    val CONTENT_CLIPS = DSL.table("content_clips")
+    val VIDEO_CAPTIONS = DSL.table("video_captions")
+    val AI_THUMBNAILS = DSL.table("ai_thumbnails")
+
+    // Live Dashboard
+    val LIVE_DASHBOARD_ALERTS = DSL.table("live_dashboard_alerts")
+    val LIVE_ALERT_CONFIGS = DSL.table("live_alert_configs")
 }
 
 object Fields {
@@ -586,4 +619,174 @@ object Fields {
     val CONVERSIONS = DSL.field("conversions", Int::class.java)
     val IS_CONTROL = DSL.field("is_control", Boolean::class.java)
     val IS_WINNER = DSL.field("is_winner", Boolean::class.java)
+
+    // =====================================================
+    // Stub Features Fields (V24)
+    // =====================================================
+
+    // creator_portfolios
+    val PUBLIC_SLUG = DSL.field("public_slug", String::class.java)
+    val SHOWCASE_VIDEOS = DSL.field("showcase_videos", String::class.java)
+    val BRAND_HISTORY = DSL.field("brand_history", String::class.java)
+    val IS_PUBLIC = DSL.field("is_public", Boolean::class.java)
+
+    // performance_predictions
+    val PREDICTED_VIEWS = DSL.field("predicted_views", Long::class.java)
+    val PREDICTED_LIKES = DSL.field("predicted_likes", Long::class.java)
+    val PREDICTED_ENGAGEMENT_RATE = DSL.field("predicted_engagement_rate", java.math.BigDecimal::class.java)
+    val CONFIDENCE_SCORE = DSL.field("confidence_score", java.math.BigDecimal::class.java)
+    val OPTIMAL_UPLOAD_TIME = DSL.field("optimal_upload_time", java.time.LocalDateTime::class.java)
+    val PREDICTION_DATA = DSL.field("prediction_data", String::class.java)
+    val ACTUAL_VIEWS = DSL.field("actual_views", Long::class.java)
+    val ACTUAL_LIKES = DSL.field("actual_likes", Long::class.java)
+
+    // visual_workflows
+    val WORKFLOW_DATA = DSL.field("workflow_data", String::class.java)
+    val TRIGGER_COUNT = DSL.field("trigger_count", Int::class.java)
+
+    // brand_voice_profiles
+    val TONE = DSL.field("tone", String::class.java)
+    val TRAIN_STATUS = DSL.field("train_status", String::class.java)
+    val SAMPLE_COUNT = DSL.field("sample_count", Int::class.java)
+    val VOCABULARY = DSL.field("vocabulary", String::class.java)
+    val AVOID_WORDS = DSL.field("avoid_words", String::class.java)
+    val EMOJI_USAGE = DSL.field("emoji_usage", String::class.java)
+    val AVG_SENTENCE_LENGTH = DSL.field("avg_sentence_length", Int::class.java)
+    val SIGNATURE_PHRASE = DSL.field("signature_phrase", String::class.java)
+
+    // creator_profiles
+    val SUBSCRIBERS = DSL.field("subscribers", Long::class.java)
+    val MATCH_SCORE = DSL.field("match_score", Int::class.java)
+    val IS_CONNECTED = DSL.field("is_connected", Boolean::class.java)
+
+    // collaboration_requests
+    val FROM_CREATOR_ID = DSL.field("from_creator_id", Long::class.java)
+    val TO_CREATOR_ID = DSL.field("to_creator_id", Long::class.java)
+    val PROPOSED_TYPE = DSL.field("proposed_type", String::class.java)
+
+    // sentiment_results
+    val CONTENT_TITLE = DSL.field("content_title", String::class.java)
+    val TOTAL_COMMENTS = DSL.field("total_comments", Int::class.java)
+    val POSITIVE_COUNT = DSL.field("positive_count", Int::class.java)
+    val NEUTRAL_COUNT = DSL.field("neutral_count", Int::class.java)
+    val NEGATIVE_COUNT = DSL.field("negative_count", Int::class.java)
+    val POSITIVE_RATE = DSL.field("positive_rate", java.math.BigDecimal::class.java)
+    val AVG_SENTIMENT_SCORE = DSL.field("avg_sentiment_score", Int::class.java)
+    val TOP_POSITIVE_KEYWORDS = DSL.field("top_positive_keywords", String::class.java)
+    val TOP_NEGATIVE_KEYWORDS = DSL.field("top_negative_keywords", String::class.java)
+    val ANALYZED_AT = DSL.field("analyzed_at", java.time.LocalDateTime::class.java)
+
+    // comment_sentiments
+    val COMMENT_TEXT = DSL.field("comment_text", String::class.java)
+    val KEYWORDS = DSL.field("keywords", String::class.java)
+
+    // thumbnail_ab_tests
+    val VARIANT_A_IMAGE_URL = DSL.field("variant_a_image_url", String::class.java)
+    val VARIANT_A_CTR = DSL.field("variant_a_ctr", java.math.BigDecimal::class.java)
+    val VARIANT_A_IMPRESSIONS = DSL.field("variant_a_impressions", Long::class.java)
+    val VARIANT_A_CLICKS = DSL.field("variant_a_clicks", Long::class.java)
+    val VARIANT_B_IMAGE_URL = DSL.field("variant_b_image_url", String::class.java)
+    val VARIANT_B_CTR = DSL.field("variant_b_ctr", java.math.BigDecimal::class.java)
+    val VARIANT_B_IMPRESSIONS = DSL.field("variant_b_impressions", Long::class.java)
+    val VARIANT_B_CLICKS = DSL.field("variant_b_clicks", Long::class.java)
+
+    // funnel_stages
+    val COUNT = DSL.field("count", Long::class.java)
+    val RATE = DSL.field("rate", java.math.BigDecimal::class.java)
+    val DROP_OFF = DSL.field("drop_off", java.math.BigDecimal::class.java)
+    val MEASURED_AT = DSL.field("measured_at", java.time.LocalDateTime::class.java)
+
+    // funnel_comparisons
+    val VIDEO_ID_A = DSL.field("video_id_a", Long::class.java)
+    val VIDEO_TITLE_A = DSL.field("video_title_a", String::class.java)
+    val VIDEO_ID_B = DSL.field("video_id_b", Long::class.java)
+    val VIDEO_TITLE_B = DSL.field("video_title_b", String::class.java)
+
+    // cross_platform_reports
+    val PERIOD = DSL.field("period", String::class.java)
+    val CONTENTS = DSL.field("contents", String::class.java)
+    val PLATFORM_SUMMARIES = DSL.field("platform_summaries", String::class.java)
+    val AUDIENCE_OVERLAP = DSL.field("audience_overlap", String::class.java)
+    val RECOMMENDATIONS = DSL.field("recommendations", String::class.java)
+
+    // library_items
+    val FILE_SIZE = DSL.field("file_size", Long::class.java)
+    val FOLDER_ID = DSL.field("folder_id", Long::class.java)
+    val UPLOADED_AT = DSL.field("uploaded_at", java.time.LocalDateTime::class.java)
+
+    // library_folders
+    val PARENT_ID = DSL.field("parent_id", Long::class.java)
+    val COLOR = DSL.field("color", String::class.java)
+
+    // revenue_goals
+    val TARGET_AMOUNT = DSL.field("target_amount", Long::class.java)
+    val CURRENT_AMOUNT = DSL.field("current_amount", Long::class.java)
+    val PROGRESS = DSL.field("progress", Int::class.java)
+
+    // revenue_goal_milestones
+    val LABEL = DSL.field("label", String::class.java)
+    val REACHED = DSL.field("reached", Boolean::class.java)
+
+    // live_streams
+    val VIEWER_COUNT = DSL.field("viewer_count", Int::class.java)
+    val PEAK_VIEWERS = DSL.field("peak_viewers", Int::class.java)
+    val CHAT_MESSAGES = DSL.field("chat_messages", Int::class.java)
+    val STREAM_URL = DSL.field("stream_url", String::class.java)
+
+    // stream_chats
+    val STREAM_ID = DSL.field("stream_id", Long::class.java)
+    val USERNAME = DSL.field("username", String::class.java)
+    val TIMESTAMP = DSL.field("timestamp", java.time.LocalDateTime::class.java)
+    val IS_HIGHLIGHTED = DSL.field("is_highlighted", Boolean::class.java)
+    val IS_MODERATOR = DSL.field("is_moderator", Boolean::class.java)
+
+    // content_variants
+    val COMMENTS_LONG = DSL.field("comments", Long::class.java)
+
+    // fan_campaigns
+    val SEGMENT_ID_FK = DSL.field("segment_id", Long::class.java)
+    val SEGMENT_NAME = DSL.field("segment_name", String::class.java)
+    val CAMPAIGN_TYPE = DSL.field("campaign_type", String::class.java)
+    val TARGET_COUNT = DSL.field("target_count", Int::class.java)
+    val SENT_COUNT = DSL.field("sent_count", Int::class.java)
+    val OPEN_RATE = DSL.field("open_rate", java.math.BigDecimal::class.java)
+    val CLICK_RATE = DSL.field("click_rate", java.math.BigDecimal::class.java)
+
+    // campaign_segments
+    val CRITERIA = DSL.field("criteria", String::class.java)
+    val FAN_COUNT = DSL.field("fan_count", Int::class.java)
+    val AVG_ENGAGEMENT = DSL.field("avg_engagement", java.math.BigDecimal::class.java)
+
+    // content_rights
+    val ASSET_NAME = DSL.field("asset_name", String::class.java)
+    val ASSET_TYPE = DSL.field("asset_type", String::class.java)
+    val LICENSE_TYPE = DSL.field("license_type", String::class.java)
+    val LICENSE_STATUS = DSL.field("license_status", String::class.java)
+    val LICENSE_URL = DSL.field("license_url", String::class.java)
+    val PURCHASED_AT_CR = DSL.field("purchased_at", java.time.LocalDateTime::class.java)
+    val COST = DSL.field("cost", Long::class.java)
+    val NOTES = DSL.field("notes", String::class.java)
+
+    // rights_alerts
+    val CONTENT_RIGHT_ID = DSL.field("content_right_id", Long::class.java)
+    val SEVERITY = DSL.field("severity", String::class.java)
+    val DAYS_UNTIL_EXPIRY = DSL.field("days_until_expiry", Int::class.java)
+
+    // content_clips
+    val SOURCE_VIDEO_ID = DSL.field("source_video_id", Long::class.java)
+    val START_TIME_MS = DSL.field("start_time_ms", Long::class.java)
+    val END_TIME_MS = DSL.field("end_time_ms", Long::class.java)
+    val OUTPUT_URL = DSL.field("output_url", String::class.java)
+
+    // video_captions
+    val CAPTION_DATA = DSL.field("caption_data", String::class.java)
+
+    // ai_thumbnails
+    val STYLE = DSL.field("style", String::class.java)
+    val TEXT_OVERLAY = DSL.field("text_overlay", String::class.java)
+
+    // live_dashboard_alerts / live_alert_configs
+    val ALERT_TYPE = DSL.field("type", String::class.java)
+    val ALERT_MESSAGE = DSL.field("message", String::class.java)
+    val ALERT_SEVERITY = DSL.field("severity", String::class.java)
 }

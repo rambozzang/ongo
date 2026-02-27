@@ -68,3 +68,14 @@ data class ContentStudioHistoryResponse(
     val creditsUsed: Int,
     val createdAt: LocalDateTime?,
 )
+
+data class GenerateCaptionRequest(
+    val videoId: Long,
+    val language: String = "ko",
+)
+
+data class UpdateCaptionRequest(
+    val language: String? = null,
+    val captionData: String? = null,
+    val status: String? = null,
+)

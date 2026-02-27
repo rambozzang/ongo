@@ -3,7 +3,7 @@ package com.ongo.application.contentrights.dto
 import java.time.LocalDateTime
 
 data class CreateRightRequest(
-    val videoId: String? = null,
+    val videoId: Long? = null,
     val videoTitle: String? = null,
     val assetName: String,
     val assetType: String = "MUSIC",
@@ -26,7 +26,7 @@ data class UpdateRightRequest(
 
 data class ContentRightResponse(
     val id: Long,
-    val videoId: String?,
+    val videoId: Long?,
     val videoTitle: String?,
     val assetName: String,
     val assetType: String,
@@ -63,4 +63,15 @@ data class RightsSummaryResponse(
     val totalCost: Long,
     val byType: String,
     val byLicense: String,
+)
+
+data class AlternativeAssetResponse(
+    val id: Long,
+    val name: String,
+    val type: String,
+    val source: String,
+    val licenseType: String,
+    val previewUrl: String?,
+    val cost: Long,
+    val currency: String,
 )

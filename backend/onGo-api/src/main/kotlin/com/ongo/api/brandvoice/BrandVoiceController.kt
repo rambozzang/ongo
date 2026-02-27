@@ -55,4 +55,34 @@ class BrandVoiceController(
         brandVoiceUseCase.deleteProfile(userId, id)
         return ResData.success(null, "브랜드 보이스 프로필이 삭제되었습니다")
     }
+
+    @Operation(summary = "브랜드 보이스 학습")
+    @PostMapping("/train")
+    fun trainVoice(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestBody request: TrainVoiceRequest,
+    ): ResponseEntity<ResData<TrainVoiceResponse>> {
+        val result = brandVoiceUseCase.trainVoice(userId, request)
+        return ResData.success(result, "브랜드 보이스 학습이 완료되었습니다")
+    }
+
+    @Operation(summary = "브랜드 보이스로 텍스트 생성")
+    @PostMapping("/generate")
+    fun generateWithVoice(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestBody request: GenerateTextRequest,
+    ): ResponseEntity<ResData<GenerateTextResponse>> {
+        val result = brandVoiceUseCase.generateText(userId, request)
+        return ResData.success(result)
+    }
+
+    @Operation(summary = "텍스트 보이스 분석")
+    @PostMapping("/analyze")
+    fun analyzeText(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestBody request: AnalyzeTextRequest,
+    ): ResponseEntity<ResData<AnalyzeTextResponse>> {
+        val result = brandVoiceUseCase.analyzeText(userId, request)
+        return ResData.success(result)
+    }
 }

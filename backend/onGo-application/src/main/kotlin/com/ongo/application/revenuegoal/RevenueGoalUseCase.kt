@@ -1,8 +1,11 @@
 package com.ongo.application.revenuegoal
 
 import com.ongo.application.revenuegoal.dto.*
+import com.ongo.common.exception.ForbiddenException
+import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.revenuegoal.*
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
 @Service
@@ -10,6 +13,12 @@ class RevenueGoalUseCase(
     private val goalRepository: RevenueGoalRepository,
     private val milestoneRepository: RevenueGoalMilestoneRepository,
 ) {
+
+    fun getGoal(workspaceId: Long, goalId: Long): RevenueGoalResponse {
+        val goal = goalRepository.findById(goalId)
+            ?: throw NotFoundException("수익 목표", goalId)
+        return toGoalResponse(goal)
+    }
 
     fun getGoals(workspaceId: Long, status: String?): List<RevenueGoalResponse> {
         val goals = if (status != null) {
@@ -20,6 +29,7 @@ class RevenueGoalUseCase(
         return goals.map { toGoalResponse(it) }
     }
 
+    @Transactional
     fun createGoal(workspaceId: Long, request: CreateRevenueGoalRequest): RevenueGoalResponse {
         val goal = RevenueGoal(
             workspaceId = workspaceId,
@@ -37,7 +47,13 @@ class RevenueGoalUseCase(
         return milestoneRepository.findByGoalId(goalId).map { toMilestoneResponse(it) }
     }
 
-    fun deleteGoal(id: Long) {
+    @Transactional
+    fun deleteGoal(workspaceId: Long, id: Long) {
+        val goal = goalRepository.findById(id)
+            ?: throw NotFoundException("수익 목표", id)
+        if (goal.workspaceId != workspaceId) {
+            throw ForbiddenException("해당 수익 목표에 대한 권한이 없습니다")
+        }
         goalRepository.deleteById(id)
     }
 

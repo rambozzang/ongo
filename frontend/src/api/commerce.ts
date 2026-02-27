@@ -21,13 +21,13 @@ export const commerceApi = {
 
   connectPlatform(platform: CommercePlatform) {
     return apiClient
-      .post<ResData<CommercePlatformConnection>>('/commerce/platforms/connect', { platform })
+      .post<ResData<CommercePlatformConnection>>('/commerce/platforms', { platform })
       .then(unwrapResponse)
   },
 
-  disconnectPlatform(platform: CommercePlatform) {
+  disconnectPlatform(id: number) {
     return apiClient
-      .post<ResData<void>>('/commerce/platforms/disconnect', { platform })
+      .delete<ResData<void>>(`/commerce/platforms/${id}`)
       .then(unwrapResponse)
   },
 

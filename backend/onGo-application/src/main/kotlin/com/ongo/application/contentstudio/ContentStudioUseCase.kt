@@ -72,6 +72,31 @@ class ContentStudioUseCase(
     }
 
     @Transactional
+    fun generateCaption(userId: Long, request: GenerateCaptionRequest): VideoCaptionResponse {
+        // AI 자막 생성 시뮬레이션 - 실제로는 STT 서비스를 호출해야 하지만
+        // 현재는 빈 자막 데이터를 생성하여 DB에 저장
+        val captionData = """[{"start":0,"end":1000,"text":"자동 생성된 자막"}]"""
+        val caption = VideoCaption(
+            videoId = request.videoId,
+            language = request.language,
+            captionData = captionData,
+            status = "COMPLETED",
+        )
+        return contentStudioRepository.saveCaption(caption).toResponse()
+    }
+
+    @Transactional
+    fun updateCaption(userId: Long, captionId: Long, request: UpdateCaptionRequest): VideoCaptionResponse {
+        val caption = contentStudioRepository.findCaptionById(captionId) ?: throw NotFoundException("자막", captionId)
+        val updated = caption.copy(
+            language = request.language ?: caption.language,
+            captionData = request.captionData ?: caption.captionData,
+            status = request.status ?: caption.status,
+        )
+        return contentStudioRepository.updateCaption(updated).toResponse()
+    }
+
+    @Transactional
     fun deleteCaption(userId: Long, captionId: Long) {
         contentStudioRepository.findCaptionById(captionId) ?: throw NotFoundException("자막", captionId)
         contentStudioRepository.deleteCaption(captionId)

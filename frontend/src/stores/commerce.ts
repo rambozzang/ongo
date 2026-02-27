@@ -115,8 +115,10 @@ export const useCommerceStore = defineStore('commerce', () => {
   }
 
   async function disconnectPlatform(platform: CommercePlatform) {
+    const connection = platforms.value.find(p => p.platform === platform)
+    if (!connection) return
     try {
-      await commerceApi.disconnectPlatform(platform)
+      await commerceApi.disconnectPlatform(connection.id)
     } catch {
       // mock
     }
@@ -181,18 +183,21 @@ export const useCommerceStore = defineStore('commerce', () => {
   function generateMockPlatforms(): CommercePlatformConnection[] {
     return [
       {
+        id: 1,
         platform: 'COUPANG',
         status: 'CONNECTED',
         storeName: '크리에이터 스토어',
         connectedAt: '2025-12-01T00:00:00Z',
       },
       {
+        id: 2,
         platform: 'NAVER_SMARTSTORE',
         status: 'CONNECTED',
         storeName: '네이버 스마트스토어',
         connectedAt: '2025-11-15T00:00:00Z',
       },
       {
+        id: 3,
         platform: 'TIKTOK_SHOP',
         status: 'DISCONNECTED',
       },

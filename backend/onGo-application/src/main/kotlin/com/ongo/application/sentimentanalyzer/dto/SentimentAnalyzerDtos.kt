@@ -39,3 +39,12 @@ data class SentimentAnalyzerSummaryResponse(
     val mostPositiveContent: String,
     val mostNegativeContent: String,
 )
+
+data class SentimentTrendPoint(
+    val date: String,
+    val positiveRate: Double,
+    val neutralRate: Double,
+    val negativeRate: Double,
+    val avgScore: Double,
+    val totalComments: Int,
+)

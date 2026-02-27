@@ -1,6 +1,8 @@
 package com.ongo.application.contentlibrary
 
 import com.ongo.application.contentlibrary.dto.*
+import com.ongo.common.exception.ForbiddenException
+import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.contentlibrary.LibraryFolder
 import com.ongo.domain.contentlibrary.LibraryFolderRepository
 import com.ongo.domain.contentlibrary.LibraryItemRepository
@@ -33,8 +35,24 @@ class ContentLibraryUseCase(
         return LibraryFolderResponse.from(folder)
     }
 
+    fun getItem(userId: Long, itemId: Long): LibraryItemResponse {
+        val item = itemRepo.findById(itemId)
+            ?: throw NotFoundException("라이브러리 아이템", itemId)
+        if (item.userId != userId) throw ForbiddenException("해당 아이템에 대한 권한이 없습니다")
+        val fid = item.folderId
+        val folder = if (fid != null) folderRepo.findById(fid) else null
+        return LibraryItemResponse.from(item, folder?.name)
+    }
+
     @Transactional
-    fun deleteItem(id: Long) = itemRepo.deleteById(id)
+    fun deleteItem(userId: Long, id: Long) {
+        val item = itemRepo.findById(id)
+            ?: throw NotFoundException("라이브러리 아이템", id)
+        if (item.userId != userId) {
+            throw ForbiddenException("해당 아이템에 대한 권한이 없습니다")
+        }
+        itemRepo.deleteById(id)
+    }
 
     fun getSummary(userId: Long): ContentLibrarySummaryResponse {
         val items = itemRepo.findByUserId(userId)

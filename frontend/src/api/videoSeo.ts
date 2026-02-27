@@ -20,9 +20,9 @@ export const videoSeoApi = {
       .then(unwrapResponse)
   },
 
-  getKeywords(videoId: number) {
+  getKeywords(analysisId: number) {
     return apiClient
-      .get<ResData<SeoKeyword[]>>(`/video-seo/${videoId}/keywords`)
+      .get<ResData<SeoKeyword[]>>(`/video-seo/${analysisId}/keywords`)
       .then(unwrapResponse)
   },
 

@@ -65,4 +65,14 @@ class AudienceSegmentController(
         val result = audienceSegmentUseCase.getInsight(userId, segmentId)
         return ResData.success(result)
     }
+
+    @Operation(summary = "세그먼트 비교 분석")
+    @PostMapping("/compare")
+    fun compare(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestBody request: CompareSegmentsRequest,
+    ): ResponseEntity<ResData<SegmentComparisonResponse>> {
+        val result = audienceSegmentUseCase.compareSegments(userId, request)
+        return ResData.success(result)
+    }
 }
