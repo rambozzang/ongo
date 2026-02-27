@@ -13,7 +13,7 @@ import RepurposeTemplateCard from '@/components/contentrepurposer/RepurposeTempl
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { useLocale } from '@/composables/useLocale'
 
-const { t } = useLocale()
+useLocale()
 
 const store = useContentRepurposerStore()
 const { jobs, templates, summary, isLoading } = storeToRefs(store)

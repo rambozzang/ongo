@@ -15,7 +15,7 @@ import { useMoodBoardStore } from '@/stores/moodBoard'
 import type { MoodBoard } from '@/types/moodBoard'
 import { useLocale } from '@/composables/useLocale'
 
-const { t } = useLocale()
+useLocale()
 const store = useMoodBoardStore()
 
 const selectedBoard = ref<MoodBoard | null>(null)

@@ -12,7 +12,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import AutomationRuleCard from '@/components/platformautomation/AutomationRuleCard.vue'
 import AutomationLogRow from '@/components/platformautomation/AutomationLogRow.vue'
 
-const { t } = useLocale()
+useLocale()
 const store = usePlatformAutomationStore()
 
 onMounted(() => {

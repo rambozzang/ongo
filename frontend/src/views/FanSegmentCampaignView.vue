@@ -13,7 +13,7 @@ import SegmentRow from '@/components/fansegmentcampaign/SegmentRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { useLocale } from '@/composables/useLocale'
 
-const { t } = useLocale()
+useLocale()
 const store = useFanSegmentCampaignStore()
 const { campaigns, segments, summary, loading } = storeToRefs(store)
 

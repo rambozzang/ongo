@@ -13,7 +13,7 @@ import GlossaryRow from '@/components/contenttranslator/GlossaryRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { useLocale } from '@/composables/useLocale'
 
-const { t } = useLocale()
+useLocale()
 
 const store = useContentTranslatorStore()
 const { jobs, glossary, summary, loading } = storeToRefs(store)

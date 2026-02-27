@@ -11,7 +11,7 @@ import { usePortfolioBuilderStore } from '@/stores/portfolioBuilder'
 import { useLocale } from '@/composables/useLocale'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
-const { t } = useLocale()
+useLocale()
 const store = usePortfolioBuilderStore()
 const { portfolios, summary, loading } = storeToRefs(store)
 

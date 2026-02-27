@@ -12,7 +12,7 @@ import { useContentFunnelStore } from '@/stores/contentFunnel'
 import FunnelChart from '@/components/contentfunnel/FunnelChart.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
-const { t } = useLocale()
+useLocale()
 const store = useContentFunnelStore()
 const { funnels, summary, loading } = storeToRefs(store)
 

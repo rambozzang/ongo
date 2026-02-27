@@ -12,7 +12,7 @@ import VersionGroupCard from '@/components/contentversioning/VersionGroupCard.vu
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { useLocale } from '@/composables/useLocale'
 
-const { t } = useLocale()
+useLocale()
 
 const store = useContentVersioningStore()
 const { groups, summary, isLoading } = storeToRefs(store)

@@ -13,7 +13,7 @@ import SeoAnalysisCard from '@/components/videoseo/SeoAnalysisCard.vue'
 import SeoKeywordRow from '@/components/videoseo/SeoKeywordRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
-const { t } = useLocale()
+useLocale()
 const store = useVideoSeoStore()
 const { analyses, keywords, summary, isLoading } = storeToRefs(store)
 

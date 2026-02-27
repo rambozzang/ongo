@@ -12,7 +12,7 @@ import RewardCard from '@/components/fanreward/RewardCard.vue'
 import FanActivityRow from '@/components/fanreward/FanActivityRow.vue'
 import { useLocale } from '@/composables/useLocale'
 
-const { t } = useLocale()
+useLocale()
 const store = useFanRewardStore()
 
 onMounted(() => {
