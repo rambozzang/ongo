@@ -1,16 +1,11 @@
 <template>
-  <!-- Ambient Background Glow for Modern Professional Look -->
-  <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-    <div class="absolute -top-[20%] -left-[10%] h-[50%] w-[50%] rounded-full bg-primary-400/10 blur-[120px] dark:bg-primary-900/20" />
-    <div class="absolute top-[20%] -right-[10%] h-[40%] w-[40%] rounded-full bg-blue-400/10 blur-[120px] dark:bg-blue-900/20" />
-  </div>
-
+  <div>
   <!-- Mobile Layout (below 768px) -->
-  <div v-if="!isTablet" class="relative z-10 space-y-5 px-4 pb-6">
+  <div v-if="!isTablet" class="space-y-5 px-4 pb-6">
     <!-- Compact Greeting Header -->
     <div class="flex items-center justify-between pt-2">
       <div class="flex items-center gap-2">
-        <h1 class="text-lg font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
+        <h1 class="text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
           {{ greeting }}, {{ userName }}님 👋
         </h1>
       </div>
@@ -271,12 +266,12 @@
   </div>
 
   <!-- Desktop/Tablet Layout (768px+) -->
-  <div v-else class="relative z-10 px-6 pb-8 pt-4">
+  <div v-else class="px-6 pb-8 pt-4">
     <!-- Personalized Header -->
     <div class="mb-8">
       <div class="flex items-start justify-between">
         <div class="flex-1">
-          <h1 class="text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400">
+          <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
             {{ greeting }}, {{ userName }}님!
           </h1>
           <p class="mt-2 text-base font-medium text-gray-500 dark:text-gray-400">
@@ -433,6 +428,7 @@
       :video="recycleVideo"
       @confirm="handleRecycleConfirm"
     />
+  </div>
   </div>
 </template>
 
