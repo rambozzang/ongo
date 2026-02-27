@@ -1,4 +1,5 @@
 <template>
+  <div>
   <!-- Mobile Layout -->
   <div v-if="!isTablet" class="space-y-4">
     <!-- Header -->
@@ -197,6 +198,7 @@
       :loading="loadingHistory"
       class="mt-8"
     />
+  </div>
   </div>
 </template>
 

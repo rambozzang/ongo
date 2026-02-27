@@ -36,13 +36,13 @@
       <Breadcrumb role="navigation" aria-label="Breadcrumb" />
 
       <main id="main-content" class="flex-1 overflow-y-auto p-4 tablet:p-6 pb-20 tablet:pb-6">
-        <ErrorBoundary>
-          <router-view v-slot="{ Component, route }">
-            <Transition name="page-fade" mode="out-in">
-              <component :is="Component" :key="route.path" />
-            </Transition>
-          </router-view>
-        </ErrorBoundary>
+        <router-view v-slot="{ Component, route }">
+          <Transition name="page-fade" mode="out-in">
+            <ErrorBoundary :key="route.path">
+              <component :is="Component" />
+            </ErrorBoundary>
+          </Transition>
+        </router-view>
       </main>
     </div>
 
