@@ -4,6 +4,7 @@ import com.ongo.common.ResData
 import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.common.exception.RateLimitExceededException
 import com.ongo.common.exception.TokenExpiredException
 import com.ongo.common.exception.UnauthorizedException
 import org.slf4j.LoggerFactory
@@ -44,6 +45,13 @@ class GlobalExceptionHandler {
         log.warn("Not found: {}", e.message)
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(ResData(success = false, error = e.message))
+    }
+
+    @ExceptionHandler(RateLimitExceededException::class)
+    fun handleRateLimitExceeded(e: RateLimitExceededException): ResponseEntity<ResData<Nothing>> {
+        log.warn("Rate limit exceeded: {}", e.message)
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .body(ResData(success = false, error = e.message ?: "요청이 너무 많습니다"))
     }
 
     @ExceptionHandler(BusinessException::class)

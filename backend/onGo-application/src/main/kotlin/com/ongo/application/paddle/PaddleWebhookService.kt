@@ -14,6 +14,9 @@ import com.ongo.domain.payment.PaymentRepository
 import com.ongo.domain.subscription.Subscription
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
+import com.ongo.domain.webhook.WebhookEvent
+import com.ongo.domain.webhook.WebhookEventRepository
+import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -28,6 +31,7 @@ class PaddleWebhookService(
     private val userRepository: UserRepository,
     private val creditService: CreditService,
     private val objectMapper: ObjectMapper,
+    private val webhookEventRepository: WebhookEventRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -38,12 +42,79 @@ class PaddleWebhookService(
             throw UnauthorizedException("Paddle 웹훅 서명 검증 실패")
         }
 
+        // 리플레이 공격 방지: 타임스탬프 검증 (5분 허용)
+        val ts = paddleSignature.split(";")
+            .associate { it.split("=", limit = 2).let { p -> p[0] to p.getOrElse(1) { "" } } }["ts"]
+        if (ts != null) {
+            val webhookTime = try { ts.toLong() } catch (_: NumberFormatException) { 0L }
+            val now = System.currentTimeMillis() / 1000
+            val toleranceSeconds = 300L // 5분
+            if (kotlin.math.abs(now - webhookTime) > toleranceSeconds) {
+                log.warn("Paddle 웹훅 타임스탬프 만료: ts=$ts, now=$now, diff=${now - webhookTime}s")
+                throw UnauthorizedException("Paddle 웹훅 타임스탬프 만료")
+            }
+        }
+
         val event = objectMapper.readValue<Map<String, Any>>(rawBody)
         val eventType = event["event_type"] as? String ?: return
+        val eventId = event["event_id"] as? String ?: UUID.randomUUID().toString()
         val data = event["data"] as? Map<*, *> ?: return
 
-        log.info("Paddle 웹훅 수신: eventType=$eventType")
+        log.info("Paddle 웹훅 수신: eventType=$eventType, eventId=$eventId")
 
+        // 멱등성 검사: 이미 처리된 이벤트 스킵
+        val existing = webhookEventRepository.findByEventId(eventId)
+        if (existing != null && existing.status == "PROCESSED") {
+            log.info("이미 처리된 웹훅 이벤트: eventId=$eventId")
+            return
+        }
+
+        // 이벤트 저장 (PENDING)
+        val webhookEvent = if (existing != null) {
+            existing
+        } else {
+            webhookEventRepository.save(WebhookEvent(
+                eventId = eventId,
+                eventType = eventType,
+                payload = rawBody,
+                status = "PENDING",
+            ))
+        }
+
+        try {
+            when (eventType) {
+                "subscription.created" -> handleSubscriptionCreated(data)
+                "subscription.updated" -> handleSubscriptionUpdated(data)
+                "subscription.canceled" -> handleSubscriptionCanceled(data)
+                "subscription.past_due" -> handleSubscriptionPastDue(data)
+                "transaction.completed" -> handleTransactionCompleted(data)
+                "transaction.payment_failed" -> handleTransactionPaymentFailed(data)
+                "transaction.refunded" -> handleTransactionRefunded(data)
+                else -> log.info("미처리 Paddle 이벤트: $eventType")
+            }
+            // 처리 성공
+            webhookEventRepository.update(webhookEvent.copy(
+                status = "PROCESSED",
+                processedAt = LocalDateTime.now(),
+            ))
+        } catch (e: Exception) {
+            // 처리 실패: 재시도 가능하도록 저장
+            val retryCount = webhookEvent.retryCount + 1
+            val nextRetry = LocalDateTime.now().plusMinutes((1L shl minOf(retryCount, 5)).toLong())
+            webhookEventRepository.update(webhookEvent.copy(
+                status = "FAILED",
+                retryCount = retryCount,
+                nextRetryAt = nextRetry,
+                errorMessage = e.message?.take(500),
+            ))
+            throw e
+        }
+    }
+
+    fun reprocessWebhookEvent(webhookEvent: WebhookEvent) {
+        val event = objectMapper.readValue<Map<String, Any>>(webhookEvent.payload)
+        val eventType = event["event_type"] as? String ?: return
+        val data = event["data"] as? Map<*, *> ?: return
         when (eventType) {
             "subscription.created" -> handleSubscriptionCreated(data)
             "subscription.updated" -> handleSubscriptionUpdated(data)
@@ -51,7 +122,7 @@ class PaddleWebhookService(
             "subscription.past_due" -> handleSubscriptionPastDue(data)
             "transaction.completed" -> handleTransactionCompleted(data)
             "transaction.payment_failed" -> handleTransactionPaymentFailed(data)
-            else -> log.info("미처리 Paddle 이벤트: $eventType")
+            "transaction.refunded" -> handleTransactionRefunded(data)
         }
     }
 
@@ -242,6 +313,22 @@ class PaddleWebhookService(
             paddleTransactionId = transactionId,
             description = "결제 실패",
         ))
+    }
+
+    private fun handleTransactionRefunded(data: Map<*, *>) {
+        val transactionId = data["id"] as? String ?: return
+        log.info("Paddle 환불 처리: transactionId=$transactionId")
+
+        val payment = paymentRepository.findByPaddleTransactionId(transactionId) ?: run {
+            log.warn("환불 대상 결제를 찾을 수 없음: $transactionId")
+            return
+        }
+
+        paymentRepository.update(payment.copy(status = PaymentStatus.REFUNDED))
+
+        if (payment.type == PaymentType.CREDIT) {
+            creditService.revokeCredits(payment.userId, payment.amount, "REFUND_$transactionId")
+        }
     }
 
     private fun resolvePlanType(data: Map<*, *>): PlanType {

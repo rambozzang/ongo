@@ -11,4 +11,7 @@ interface SubscriptionRepository {
     fun findDueForBilling(now: LocalDateTime): List<Subscription>
     fun findPastDue(gracePeriodDays: Int): List<Subscription>
     fun findByPlanType(planType: PlanType): List<Subscription>
+    fun findWithPendingPlanType(): List<Subscription>
+    fun findTrialExpired(now: LocalDateTime): List<Subscription>
+    fun findPausedToResume(now: LocalDateTime): List<Subscription>
 }

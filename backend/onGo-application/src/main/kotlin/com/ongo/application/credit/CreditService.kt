@@ -167,6 +167,33 @@ class CreditService(
     }
 
     @Transactional
+    fun revokeCredits(userId: Long, amount: Int, reason: String) {
+        val credit = creditRepository.findByUserIdForUpdate(userId)
+            ?: throw CreditNotFoundException(userId)
+
+        val newBalance = (credit.balance - amount).coerceAtLeast(0)
+        val newFreeRemaining = minOf(credit.freeRemaining, newBalance)
+
+        creditRepository.update(
+            credit.copy(
+                balance = newBalance,
+                freeRemaining = newFreeRemaining,
+                updatedAt = LocalDateTime.now(),
+            )
+        )
+
+        creditRepository.saveTransaction(
+            AiCreditTransaction(
+                userId = userId,
+                type = CreditTransactionType.REVOKE,
+                amount = -amount,
+                balanceAfter = newBalance,
+                feature = reason,
+            )
+        )
+    }
+
+    @Transactional
     fun addPurchasedCredits(userId: Long, credits: Int, referenceId: Long) {
         val credit = creditRepository.findByUserIdForUpdate(userId)
             ?: throw CreditNotFoundException(userId)

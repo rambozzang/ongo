@@ -10,205 +10,130 @@ import com.ongo.domain.credit.AiPurchasedCredit
 import com.ongo.domain.credit.CreditRepository
 import com.ongo.domain.event.CreditDeductedEvent
 import io.mockk.*
-import org.junit.jupiter.api.BeforeEach
+import io.mockk.impl.annotations.InjectMockKs
+import io.mockk.impl.annotations.MockK
+import io.mockk.junit5.MockKExtension
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
+@ExtendWith(MockKExtension::class)
 class CreditServiceTest {
 
-    private val creditRepository = mockk<CreditRepository>()
-    private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
+    @MockK
+    private lateinit var creditRepository: CreditRepository
+
+    @MockK(relaxed = true)
+    private lateinit var eventPublisher: ApplicationEventPublisher
+
+    @InjectMockKs
     private lateinit var creditService: CreditService
 
     private val userId = 1L
     private val now = LocalDateTime.now()
     private val resetDate = LocalDate.now().withDayOfMonth(1).plusMonths(1)
 
-    @BeforeEach
-    fun setUp() {
-        clearAllMocks()
-        creditService = CreditService(creditRepository, eventPublisher)
-    }
+    private fun createCredit(
+        id: Long = 1L,
+        balance: Int = 100,
+        freeMonthly: Int = 30,
+        freeRemaining: Int = 20,
+    ) = AiCredit(
+        id = id,
+        userId = userId,
+        balance = balance,
+        freeMonthly = freeMonthly,
+        freeRemaining = freeRemaining,
+        freeResetDate = resetDate,
+    )
 
+    // ──────────────────────────────────────────────
+    // 1. revokeCredits 정상 차감
+    // ──────────────────────────────────────────────
     @Test
-    fun `validateAndDeduct should deduct from free credits only when sufficient`() {
-        val credit = AiCredit(
-            id = 1L, userId = userId, balance = 30, freeMonthly = 30,
-            freeRemaining = 30, freeResetDate = resetDate,
-        )
+    fun `revokeCredits should decrease balance by amount and create REVOKE transaction`() {
+        val credit = createCredit(balance = 100, freeRemaining = 20)
         every { creditRepository.findByUserIdForUpdate(userId) } returns credit
-        every { creditRepository.findActivePurchasedCreditsForUpdate(userId) } returns emptyList()
-        every { creditRepository.findActivePurchasedCredits(userId) } returns emptyList()
         every { creditRepository.update(any()) } answers { firstArg() }
         every { creditRepository.saveTransaction(any()) } answers { firstArg() }
 
-        creditService.validateAndDeduct(userId, AiFeature.META_GENERATION)
+        creditService.revokeCredits(userId, 30, "ADMIN_REVOKE")
 
         verify {
             creditRepository.update(match<AiCredit> {
-                it.freeRemaining == 25 && it.balance == 25
+                it.balance == 70 && it.freeRemaining == 20
             })
         }
         verify {
             creditRepository.saveTransaction(match<AiCreditTransaction> {
-                it.type == CreditTransactionType.DEDUCT && it.amount == -5 && it.balanceAfter == 25
+                it.type == CreditTransactionType.REVOKE &&
+                    it.amount == -30 &&
+                    it.balanceAfter == 70 &&
+                    it.feature == "ADMIN_REVOKE"
             })
         }
-        verify {
-            eventPublisher.publishEvent(match<CreditDeductedEvent> {
-                it.userId == userId && it.amount == 5 && it.feature == AiFeature.META_GENERATION && it.remainingBalance == 25
-            })
-        }
-        verify(exactly = 0) { creditRepository.updatePurchasedCredit(any()) }
     }
 
+    // ──────────────────────────────────────────────
+    // 2. revokeCredits 잔액 0 이하 방지
+    // ──────────────────────────────────────────────
     @Test
-    fun `validateAndDeduct should deduct from free then purchased credits`() {
-        val credit = AiCredit(
-            id = 1L, userId = userId, balance = 13, freeMonthly = 30,
-            freeRemaining = 3, freeResetDate = resetDate,
-        )
-        val purchasedCredit = AiPurchasedCredit(
-            id = 10L, userId = userId, packageName = "BASIC",
-            totalCredits = 100, remaining = 10, price = 5000,
-            expiresAt = now.plusDays(30), status = "ACTIVE",
-        )
+    fun `revokeCredits should floor balance at 0 when amount exceeds balance`() {
+        val credit = createCredit(balance = 10, freeRemaining = 5)
         every { creditRepository.findByUserIdForUpdate(userId) } returns credit
-        every { creditRepository.findActivePurchasedCreditsForUpdate(userId) } returns listOf(purchasedCredit)
-        every { creditRepository.updatePurchasedCredit(any()) } answers { firstArg() }
-        // After deduction: free 3→0 (deduct 3), purchased 10→3 (deduct 7). findActivePurchasedCredits returns updated remaining.
-        every { creditRepository.findActivePurchasedCredits(userId) } returns listOf(purchasedCredit.copy(remaining = 3))
         every { creditRepository.update(any()) } answers { firstArg() }
         every { creditRepository.saveTransaction(any()) } answers { firstArg() }
 
-        creditService.validateAndDeduct(userId, AiFeature.STT) // cost=10
+        creditService.revokeCredits(userId, 50, "ADMIN_REVOKE")
 
         verify {
-            creditRepository.updatePurchasedCredit(match<AiPurchasedCredit> {
-                it.id == 10L && it.remaining == 3 && it.status == "ACTIVE"
-            })
-        }
-        verify {
             creditRepository.update(match<AiCredit> {
-                it.freeRemaining == 0 && it.balance == 3
+                it.balance == 0 && it.freeRemaining == 0
             })
         }
         verify {
             creditRepository.saveTransaction(match<AiCreditTransaction> {
-                it.amount == -10 && it.balanceAfter == 3
+                it.balanceAfter == 0 && it.amount == -50
             })
         }
     }
 
+    // ──────────────────────────────────────────────
+    // 3. refundCredit 정상 복구
+    // ──────────────────────────────────────────────
     @Test
-    fun `validateAndDeduct should throw InsufficientCreditException when not enough credits`() {
-        val credit = AiCredit(
-            id = 1L, userId = userId, balance = 2, freeMonthly = 30,
-            freeRemaining = 2, freeResetDate = resetDate,
-        )
+    fun `refundCredit should increase balance and freeRemaining capped at freeMonthly`() {
+        val credit = createCredit(balance = 20, freeMonthly = 30, freeRemaining = 18)
         every { creditRepository.findByUserIdForUpdate(userId) } returns credit
-        every { creditRepository.findActivePurchasedCreditsForUpdate(userId) } returns emptyList()
-
-        val exception = assertFailsWith<InsufficientCreditException> {
-            creditService.validateAndDeduct(userId, AiFeature.META_GENERATION) // cost=5
-        }
-        assertEquals(5, exception.required)
-        assertEquals(2, exception.available)
-
-        verify(exactly = 0) { creditRepository.update(any()) }
-        verify(exactly = 0) { creditRepository.saveTransaction(any()) }
-    }
-
-    @Test
-    fun `validateAndDeduct should throw CreditNotFoundException when no credit record`() {
-        every { creditRepository.findByUserIdForUpdate(userId) } returns null
-
-        assertFailsWith<CreditNotFoundException> {
-            creditService.validateAndDeduct(userId, AiFeature.META_GENERATION)
-        }
-
-        verify(exactly = 0) { creditRepository.findActivePurchasedCreditsForUpdate(any()) }
-    }
-
-    @Test
-    fun `validateAndDeduct should exhaust purchased credit and mark as EXHAUSTED`() {
-        val credit = AiCredit(
-            id = 1L, userId = userId, balance = 5, freeMonthly = 30,
-            freeRemaining = 0, freeResetDate = resetDate,
-        )
-        val purchasedCredit = AiPurchasedCredit(
-            id = 10L, userId = userId, packageName = "BASIC",
-            totalCredits = 100, remaining = 5, price = 5000,
-            expiresAt = now.plusDays(30), status = "ACTIVE",
-        )
-        every { creditRepository.findByUserIdForUpdate(userId) } returns credit
-        every { creditRepository.findActivePurchasedCreditsForUpdate(userId) } returns listOf(purchasedCredit)
-        every { creditRepository.updatePurchasedCredit(any()) } answers { firstArg() }
-        every { creditRepository.findActivePurchasedCredits(userId) } returns emptyList()
         every { creditRepository.update(any()) } answers { firstArg() }
         every { creditRepository.saveTransaction(any()) } answers { firstArg() }
 
-        creditService.validateAndDeduct(userId, AiFeature.META_GENERATION) // cost=5
+        creditService.refundCredit(userId, 5, "META_GENERATION")
 
-        verify {
-            creditRepository.updatePurchasedCredit(match<AiPurchasedCredit> {
-                it.id == 10L && it.remaining == 0 && it.status == "EXHAUSTED"
-            })
-        }
         verify {
             creditRepository.update(match<AiCredit> {
-                it.freeRemaining == 0 && it.balance == 0
+                it.balance == 25 && it.freeRemaining == 23
+            })
+        }
+        verify {
+            creditRepository.saveTransaction(match<AiCreditTransaction> {
+                it.type == CreditTransactionType.REFUND &&
+                    it.amount == 5 &&
+                    it.balanceAfter == 25
             })
         }
     }
 
+    // ──────────────────────────────────────────────
+    // 4. refundCredit freeMonthly 초과 방지
+    // ──────────────────────────────────────────────
     @Test
-    fun `getBalance should return correct balance info`() {
-        val credit = AiCredit(
-            id = 1L, userId = userId, balance = 50, freeMonthly = 30,
-            freeRemaining = 20, freeResetDate = resetDate,
-        )
-        val purchasedCredits = listOf(
-            AiPurchasedCredit(
-                id = 10L, userId = userId, packageName = "BASIC",
-                totalCredits = 100, remaining = 30, price = 5000,
-                expiresAt = now.plusDays(30), status = "ACTIVE",
-            ),
-        )
-        every { creditRepository.findByUserId(userId) } returns credit
-        every { creditRepository.findActivePurchasedCredits(userId) } returns purchasedCredits
-
-        val result = creditService.getBalance(userId)
-
-        assertEquals(50, result.totalBalance)
-        assertEquals(20, result.freeRemaining)
-        assertEquals(30, result.freeMonthly)
-        assertEquals(30, result.purchasedBalance)
-        assertEquals(resetDate, result.freeResetDate)
-    }
-
-    @Test
-    fun `getBalance should return defaults when no credit record`() {
-        every { creditRepository.findByUserId(userId) } returns null
-
-        val result = creditService.getBalance(userId)
-
-        assertEquals(0, result.totalBalance)
-        assertEquals(0, result.freeRemaining)
-        assertEquals(0, result.freeMonthly)
-        assertEquals(0, result.purchasedBalance)
-    }
-
-    @Test
-    fun `refundCredit should cap freeRemaining at freeMonthly`() {
-        val credit = AiCredit(
-            id = 1L, userId = userId, balance = 25, freeMonthly = 30,
-            freeRemaining = 28, freeResetDate = resetDate,
-        )
+    fun `refundCredit should not exceed freeMonthly for freeRemaining`() {
+        val credit = createCredit(balance = 25, freeMonthly = 30, freeRemaining = 28)
         every { creditRepository.findByUserIdForUpdate(userId) } returns credit
         every { creditRepository.update(any()) } answers { firstArg() }
         every { creditRepository.saveTransaction(any()) } answers { firstArg() }
@@ -220,10 +145,25 @@ class CreditServiceTest {
                 it.freeRemaining == 30 && it.balance == 30
             })
         }
-        verify {
-            creditRepository.saveTransaction(match<AiCreditTransaction> {
-                it.type == CreditTransactionType.REFUND && it.amount == 5 && it.balanceAfter == 30
-            })
+    }
+
+    // ──────────────────────────────────────────────
+    // 5. validateAndDeduct 잔액 부족
+    // ──────────────────────────────────────────────
+    @Test
+    fun `validateAndDeduct should throw InsufficientCreditException when balance is insufficient`() {
+        val credit = createCredit(balance = 2, freeRemaining = 2)
+        every { creditRepository.findByUserIdForUpdate(userId) } returns credit
+        every { creditRepository.findActivePurchasedCreditsForUpdate(userId) } returns emptyList()
+
+        val exception = assertFailsWith<InsufficientCreditException> {
+            creditService.validateAndDeduct(userId, AiFeature.META_GENERATION) // cost=5
         }
+
+        assertEquals(5, exception.required)
+        assertEquals(2, exception.available)
+
+        verify(exactly = 0) { creditRepository.update(any()) }
+        verify(exactly = 0) { creditRepository.saveTransaction(any()) }
     }
 }

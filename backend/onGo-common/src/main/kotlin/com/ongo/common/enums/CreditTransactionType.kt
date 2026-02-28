@@ -5,4 +5,5 @@ enum class CreditTransactionType {
     CHARGE,
     FREE_RESET,
     REFUND,
+    REVOKE,
 }

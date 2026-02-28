@@ -15,8 +15,14 @@ class PaddleGatewayImpl(
     override fun cancelSubscription(subscriptionId: String, effectiveFrom: String): Any =
         paddleClient.cancelSubscription(subscriptionId, effectiveFrom)
 
-    override fun getPriceIdForPlan(planType: String): String? =
-        paddleClient.getPriceIdForPlan(planType)
+    override fun pauseSubscription(subscriptionId: String): Any =
+        paddleClient.pauseSubscription(subscriptionId)
+
+    override fun resumeSubscription(subscriptionId: String): Any =
+        paddleClient.resumeSubscription(subscriptionId)
+
+    override fun getPriceIdForPlan(planType: String, billingCycle: String): String? =
+        paddleClient.getPriceIdForPlan(planType, billingCycle)
 
     override fun getPriceIdForCreditPackage(packageName: String): String? =
         paddleClient.getPriceIdForCreditPackage(packageName)

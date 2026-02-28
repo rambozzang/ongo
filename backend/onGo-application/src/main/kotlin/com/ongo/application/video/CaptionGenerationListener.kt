@@ -77,12 +77,15 @@ class CaptionGenerationListener(
         } catch (e: java.io.FileNotFoundException) {
             log.error("자막 생성 실패 (파일 없음): videoId={}", event.videoId, e)
             progressRepository.upsertProgress(event.videoId, ProcessingStage.CAPTION, null, 0, "실패: 파일을 찾을 수 없습니다")
+            creditService.refundCredit(event.userId, CAPTION_CREDIT_COST, "CAPTION_GENERATION_FAILED")
         } catch (e: java.io.IOException) {
             log.error("자막 생성 파일 I/O 오류: videoId={}", event.videoId, e)
             progressRepository.upsertProgress(event.videoId, ProcessingStage.CAPTION, null, 0, "실패: 파일 처리 오류")
+            creditService.refundCredit(event.userId, CAPTION_CREDIT_COST, "CAPTION_GENERATION_FAILED")
         } catch (e: Exception) {
             log.error("자막 생성 예기치 않은 오류: videoId={}", event.videoId, e)
             progressRepository.upsertProgress(event.videoId, ProcessingStage.CAPTION, null, 0, "실패: ${e.message?.take(200)}")
+            creditService.refundCredit(event.userId, CAPTION_CREDIT_COST, "CAPTION_GENERATION_FAILED")
         } finally {
             try {
                 Files.deleteIfExists(inputFile)

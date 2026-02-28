@@ -93,6 +93,7 @@ class TranslationUseCase(
             } catch (e: Exception) {
                 log.error("번역 실패: translationId={}", translationId, e)
                 translationRepository.update(translationId, title = null, description = null, tags = null, subtitleContent = null, status = "FAILED")
+                creditService.refundCredit(userId, CREDIT_PER_LANGUAGE, "TRANSLATION_FAILED")
             }
         }
     }

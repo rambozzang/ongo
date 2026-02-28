@@ -43,6 +43,12 @@
                 <CalendarIcon class="mr-1 inline h-4 w-4" />
                 {{ $t('subscription.nextBillingDate') }}: {{ formatDate(subscription.nextBillingDate) }}
               </p>
+              <p v-if="subscription.status === 'TRIALING' && subscription.trialEnd" class="text-sm text-purple-600 dark:text-purple-400">
+                트라이얼 종료: {{ formatDate(subscription.trialEnd) }}
+              </p>
+              <p v-if="subscription.status === 'PAUSED' && subscription.resumeAt" class="text-sm text-orange-600 dark:text-orange-400">
+                재개 예정: {{ formatDate(subscription.resumeAt) }}
+              </p>
               <p v-if="currentPlanInfo" class="text-sm text-gray-500 dark:text-gray-400">
                 <ArrowUpTrayIcon class="mr-1 inline h-4 w-4" />
                 {{ $t('subscription.uploads') }}:
@@ -52,10 +58,31 @@
             </div>
             <p v-else class="text-sm text-gray-500 dark:text-gray-400">{{ $t('subscription.noSubscriptionInfo') }}</p>
           </div>
-          <div v-if="subscription" class="flex gap-2">
+          <div v-if="subscription" class="flex flex-wrap gap-2">
             <button class="btn-primary" @click="showPlanComparison">
               <ArrowPathIcon class="mr-1.5 h-4 w-4" />
               {{ $t('subscription.changePlan') }}
+            </button>
+            <button
+              v-if="subscription.status === 'FREE' && subscription.planType === 'FREE'"
+              class="btn-secondary"
+              @click="handleStartTrial"
+            >
+              무료 체험 시작
+            </button>
+            <button
+              v-if="subscription.status === 'ACTIVE' && subscription.planType !== 'FREE'"
+              class="btn-secondary"
+              @click="handlePause"
+            >
+              일시정지
+            </button>
+            <button
+              v-if="subscription.status === 'PAUSED'"
+              class="btn-primary"
+              @click="handleResume"
+            >
+              구독 재개
             </button>
             <button
               v-if="subscription.status === 'ACTIVE' && subscription.planType !== 'FREE'"
@@ -233,12 +260,101 @@
         </div>
       </div>
 
-      <!-- Section 5: Plan Comparison Table -->
+      <!-- Section 5: Coupon -->
+      <div class="card mb-6">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">쿠폰</h2>
+        <div class="flex gap-2">
+          <input
+            v-model="couponCode"
+            type="text"
+            placeholder="쿠폰 코드를 입력하세요"
+            class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            @keyup.enter="handleValidateCoupon"
+          />
+          <button class="btn-secondary" :disabled="!couponCode.trim()" @click="handleValidateCoupon">
+            검증
+          </button>
+          <button class="btn-primary" :disabled="!couponValidation?.valid" @click="handleApplyCoupon">
+            적용
+          </button>
+        </div>
+        <div v-if="couponValidation" class="mt-3 rounded-lg px-3 py-2 text-sm" :class="couponValidation.valid ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'">
+          <template v-if="couponValidation.valid">
+            쿠폰 유효: {{ couponValidation.discountType === 'PERCENTAGE' ? couponValidation.discountValue + '% 할인' : couponValidation.discountType === 'FIXED_AMOUNT' ? '₩' + couponValidation.discountValue?.toLocaleString() + ' 할인' : couponValidation.discountValue + '일 무료' }}
+          </template>
+          <template v-else>
+            {{ couponValidation.message }}
+          </template>
+        </div>
+      </div>
+
+      <!-- Section: Usage Alert Settings -->
+      <div class="card mb-6">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">사용량 알림 설정</h2>
+        <div class="space-y-4">
+          <div v-for="alert in usageAlerts" :key="alert.type" class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3">
+            <div class="flex items-center gap-3">
+              <button
+                class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+                :class="alert.enabled ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'"
+                @click="toggleAlert(alert)"
+              >
+                <span
+                  class="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform"
+                  :class="alert.enabled ? 'translate-x-4.5' : 'translate-x-0.5'"
+                />
+              </button>
+              <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ alert.label }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ alert.description }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{ alert.thresholdPercent }}%</span>
+              <input
+                type="range"
+                :value="alert.thresholdPercent"
+                min="50"
+                max="95"
+                step="5"
+                class="h-1.5 w-24 cursor-pointer appearance-none rounded-full bg-gray-200 dark:bg-gray-700 accent-primary-600"
+                @change="updateAlertThreshold(alert, ($event.target as HTMLInputElement).valueAsNumber)"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 6: Plan Comparison Table -->
       <div id="plan-comparison" class="card mb-6">
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.planComparison') }}</h2>
 
+        <!-- Billing Cycle Toggle -->
+        <div class="mb-4 flex items-center justify-center gap-3">
+          <span class="text-sm font-medium" :class="billingCycle === 'MONTHLY' ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'">
+            {{ $t('subscription.monthly') }}
+          </span>
+          <button
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+            :class="billingCycle === 'YEARLY' ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'"
+            @click="billingCycle = billingCycle === 'MONTHLY' ? 'YEARLY' : 'MONTHLY'"
+          >
+            <span
+              class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+              :class="billingCycle === 'YEARLY' ? 'translate-x-6' : 'translate-x-1'"
+            />
+          </button>
+          <span class="text-sm font-medium" :class="billingCycle === 'YEARLY' ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'">
+            {{ $t('subscription.yearly') }}
+            <span class="ml-1 rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+              ~17% {{ $t('subscription.discount') }}
+            </span>
+          </span>
+        </div>
+
         <PlanComparisonTable
           :current-plan="subscription?.planType"
+          :billing-cycle="billingCycle"
           @select-plan="selectPlan"
         />
       </div>
@@ -417,6 +533,9 @@ const { balance: creditBalance, transactions: creditTransactions } = storeToRefs
 const { payments: paymentList } = storeToRefs(subscriptionStore)
 const { channels } = storeToRefs(channelStore)
 
+// Billing cycle
+const billingCycle = ref<'MONTHLY' | 'YEARLY'>('MONTHLY')
+
 // Modal states
 const showChangePlanModal = ref(false)
 const showCancelModal = ref(false)
@@ -431,18 +550,31 @@ const usageData = ref({
 })
 const usageLoading = ref(false)
 
+// Coupon
+const couponCode = ref('')
+const couponValidation = ref<import('@/types/subscription').CouponValidation | null>(null)
+
+// Usage Alerts
+const usageAlerts = ref([
+  { type: 'UPLOAD', label: '업로드 알림', description: '월간 업로드 횟수가 한도에 도달할 때 알림', enabled: false, thresholdPercent: 80 },
+  { type: 'STORAGE', label: '저장공간 알림', description: '저장공간 사용량이 한도에 도달할 때 알림', enabled: false, thresholdPercent: 80 },
+  { type: 'CREDIT', label: '크레딧 알림', description: 'AI 크레딧 잔여량이 부족할 때 알림', enabled: false, thresholdPercent: 80 },
+])
+
 // Connected platforms count derived from the channel store
 const connectedPlatformCount = computed(() => channels.value.length)
 
 // Computed
+const storePlans = computed(() => subscriptionStore.plans.length > 0 ? subscriptionStore.plans : PLANS)
+
 const currentPlanInfo = computed(() => {
   if (!subscription.value) return null
-  return PLANS.find((p) => p.type === subscription.value!.planType) ?? null
+  return storePlans.value.find((p) => p.type === subscription.value!.planType) ?? null
 })
 
 const targetPlanInfo = computed(() => {
   if (!targetPlan.value) return null
-  return PLANS.find((p) => p.type === targetPlan.value) ?? null
+  return storePlans.value.find((p) => p.type === targetPlan.value) ?? null
 })
 
 const creditPercentage = computed(() => {
@@ -459,6 +591,8 @@ const subscriptionStatusClass = computed(() => {
     FREE: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
     CANCELLED: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
     PAST_DUE: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+    TRIALING: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+    PAUSED: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
   }
   return classes[subscription.value.status] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
 })
@@ -470,6 +604,8 @@ const subscriptionStatusLabel = computed(() => {
     FREE: 'subscription.statusFree',
     CANCELLED: 'subscription.statusCancelled',
     PAST_DUE: 'subscription.statusPastDue',
+    TRIALING: '트라이얼',
+    PAUSED: '일시정지',
   }
   const key = labelKeys[subscription.value.status]
   return key ? t(key) : subscription.value.status
@@ -477,7 +613,7 @@ const subscriptionStatusLabel = computed(() => {
 
 const changePlanMessage = computed(() => {
   if (!targetPlan.value) return ''
-  const target = PLANS.find((p) => p.type === targetPlan.value)
+  const target = storePlans.value.find((p) => p.type === targetPlan.value)
   if (!target) return ''
   const current = currentPlanInfo.value
   if (!current) return t('subscription.changePlanSimple', { plan: target.name })
@@ -576,8 +712,8 @@ function selectPlan(plan: PlanType) {
   targetPlan.value = plan
   // For FREE plan or downgrades, show confirmation modal
   // For upgrades, show payment modal
-  const currentIdx = PLANS.findIndex((p) => p.type === subscription.value?.planType)
-  const targetIdx = PLANS.findIndex((p) => p.type === plan)
+  const currentIdx = storePlans.value.findIndex((p) => p.type === subscription.value?.planType)
+  const targetIdx = storePlans.value.findIndex((p) => p.type === plan)
 
   if (targetIdx > currentIdx) {
     // Upgrade - show payment modal
@@ -591,7 +727,7 @@ function selectPlan(plan: PlanType) {
 async function confirmChangePlan() {
   if (!targetPlan.value) return
   try {
-    await subscriptionStore.changePlan(targetPlan.value)
+    await subscriptionStore.changePlan(targetPlan.value, billingCycle.value)
     notification.success(t('subscription.changePlanSuccess'))
     targetPlan.value = null
     await creditStore.fetchBalance()
@@ -636,6 +772,96 @@ async function handleCreditPurchase(_pkg: CreditPackage) {
   }, 1500)
 }
 
+async function handleStartTrial() {
+  try {
+    await subscriptionStore.startTrial('STARTER')
+    notification.success('트라이얼이 시작되었습니다')
+  } catch (e: unknown) {
+    notification.error(e instanceof Error ? e.message : '트라이얼 시작에 실패했습니다')
+  }
+}
+
+async function handlePause() {
+  try {
+    await subscriptionStore.pauseSubscription()
+    notification.success('구독이 일시정지되었습니다')
+  } catch (e: unknown) {
+    notification.error(e instanceof Error ? e.message : '구독 일시정지에 실패했습니다')
+  }
+}
+
+async function handleResume() {
+  try {
+    await subscriptionStore.resumeSubscription()
+    notification.success('구독이 재개되었습니다')
+  } catch (e: unknown) {
+    notification.error(e instanceof Error ? e.message : '구독 재개에 실패했습니다')
+  }
+}
+
+async function handleValidateCoupon() {
+  if (!couponCode.value.trim()) return
+  try {
+    couponValidation.value = await subscriptionStore.validateCoupon(couponCode.value.trim())
+  } catch (e: unknown) {
+    notification.error(e instanceof Error ? e.message : '쿠폰 검증에 실패했습니다')
+  }
+}
+
+async function handleApplyCoupon() {
+  if (!couponValidation.value?.valid) return
+  try {
+    await subscriptionStore.applyCoupon(couponCode.value.trim())
+    notification.success('쿠폰이 적용되었습니다')
+    couponCode.value = ''
+    couponValidation.value = null
+  } catch (e: unknown) {
+    notification.error(e instanceof Error ? e.message : '쿠폰 적용에 실패했습니다')
+  }
+}
+
+async function fetchUsageAlerts() {
+  try {
+    const alerts = await subscriptionApi.getUsageAlerts()
+    for (const serverAlert of alerts) {
+      const local = usageAlerts.value.find(a => a.type === serverAlert.alertType)
+      if (local) {
+        local.enabled = serverAlert.enabled
+        local.thresholdPercent = serverAlert.thresholdPercent
+      }
+    }
+  } catch {
+    // keep defaults
+  }
+}
+
+async function toggleAlert(alert: { type: string; enabled: boolean; thresholdPercent: number }) {
+  const newEnabled = !alert.enabled
+  try {
+    await subscriptionApi.updateUsageAlert({
+      alertType: alert.type,
+      thresholdPercent: alert.thresholdPercent,
+      enabled: newEnabled,
+    })
+    alert.enabled = newEnabled
+  } catch {
+    notification.error('알림 설정 변경에 실패했습니다')
+  }
+}
+
+async function updateAlertThreshold(alert: { type: string; enabled: boolean; thresholdPercent: number }, value: number) {
+  try {
+    await subscriptionApi.updateUsageAlert({
+      alertType: alert.type,
+      thresholdPercent: value,
+      enabled: alert.enabled,
+    })
+    alert.thresholdPercent = value
+  } catch {
+    notification.error('알림 설정 변경에 실패했습니다')
+  }
+}
+
 function loadCreditTransactions(page: number) {
   creditStore.fetchTransactions(page, 20)
 }
@@ -664,11 +890,13 @@ async function fetchUsage() {
 onMounted(() => {
   Promise.all([
     subscriptionStore.fetchSubscription(),
+    subscriptionStore.fetchPlans(),
     creditStore.fetchBalance(),
     creditStore.fetchTransactions(0, 20),
     subscriptionStore.fetchPayments(0, 20),
     channelStore.fetchChannels(),
     fetchUsage(),
+    fetchUsageAlerts(),
     initPaddle(),
   ])
 })

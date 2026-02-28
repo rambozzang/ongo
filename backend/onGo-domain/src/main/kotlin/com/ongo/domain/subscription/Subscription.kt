@@ -20,6 +20,11 @@ data class Subscription(
     val paddleSubscriptionId: String? = null,
     val paddleCustomerId: String? = null,
     val cancelledAt: LocalDateTime? = null,
+    val trialStart: LocalDateTime? = null,
+    val trialEnd: LocalDateTime? = null,
+    val trialPlanType: PlanType? = null,
+    val pausedAt: LocalDateTime? = null,
+    val resumeAt: LocalDateTime? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
 )

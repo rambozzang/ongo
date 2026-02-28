@@ -45,7 +45,7 @@ class SubscriptionUseCase(
 
         // Paddle 구독이 있는 경우 Paddle API로 변경 처리
         if (subscription.paddleSubscriptionId != null) {
-            val priceId = paddleGateway.getPriceIdForPlan(targetPlan.name)
+            val priceId = paddleGateway.getPriceIdForPlan(targetPlan.name, billingCycle.name)
                 ?: throw IllegalArgumentException("해당 플랜의 Paddle 가격 ID를 찾을 수 없습니다")
 
             val prorationMode = if (isUpgrade) "prorated_immediately" else "prorated_next_billing_period"
@@ -66,11 +66,17 @@ class SubscriptionUseCase(
             val remainingDays = subscription.currentPeriodEnd?.let {
                 ChronoUnit.DAYS.between(now, it).toInt()
             } ?: 0
-            val proratedAmount = calculateProration(subscription.planType, targetPlan, remainingDays)
+            val totalPeriodDays = if (subscription.currentPeriodStart != null && subscription.currentPeriodEnd != null) {
+                ChronoUnit.DAYS.between(subscription.currentPeriodStart, subscription.currentPeriodEnd).toInt()
+            } else if (subscription.billingCycle == BillingCycle.YEARLY) 365 else 30
+
+            val currentPrice = subscription.price
+            val targetPrice = targetPlan.priceFor(billingCycle)
+            val proratedAmount = calculateProration(currentPrice, targetPrice, remainingDays, totalPeriodDays)
 
             val updated = subscription.copy(
                 planType = targetPlan,
-                price = targetPlan.price,
+                price = targetPlan.priceFor(billingCycle),
                 billingCycle = billingCycle,
                 status = SubscriptionStatus.ACTIVE,
                 updatedAt = now
@@ -111,6 +117,71 @@ class SubscriptionUseCase(
         return updated.toResponse()
     }
 
+    @Transactional
+    fun startTrial(userId: Long, targetPlan: String): SubscriptionResponse {
+        val plan = safeValueOfOrThrow<PlanType>(targetPlan)
+        val subscription = subscriptionRepository.findByUserId(userId)
+            ?: throw NotFoundException("구독", userId)
+        if (subscription.planType != PlanType.FREE)
+            throw IllegalStateException("무료 플랜 사용자만 트라이얼 시작 가능")
+        if (subscription.trialStart != null)
+            throw IllegalStateException("이미 트라이얼을 사용한 적이 있습니다")
+        val now = LocalDateTime.now()
+        val trialEnd = now.plusDays(7)
+        val updated = subscription.copy(
+            status = SubscriptionStatus.TRIALING,
+            trialStart = now,
+            trialEnd = trialEnd,
+            trialPlanType = plan,
+            planType = plan,
+            price = 0,
+            updatedAt = now,
+        )
+        subscriptionRepository.update(updated)
+        userRepository.update(userRepository.findById(userId)!!.copy(planType = plan))
+        return updated.toResponse()
+    }
+
+    @Transactional
+    fun pauseSubscription(userId: Long): SubscriptionResponse {
+        val sub = subscriptionRepository.findByUserId(userId)
+            ?: throw NotFoundException("구독", userId)
+        if (sub.status != SubscriptionStatus.ACTIVE)
+            throw IllegalStateException("활성 구독만 일시정지 가능")
+        if (sub.paddleSubscriptionId != null) {
+            paddleGateway.pauseSubscription(sub.paddleSubscriptionId!!)
+        }
+        val now = LocalDateTime.now()
+        val updated = sub.copy(
+            status = SubscriptionStatus.PAUSED,
+            pausedAt = now,
+            resumeAt = now.plusDays(30),
+            updatedAt = now,
+        )
+        subscriptionRepository.update(updated)
+        return updated.toResponse()
+    }
+
+    @Transactional
+    fun resumeSubscription(userId: Long): SubscriptionResponse {
+        val sub = subscriptionRepository.findByUserId(userId)
+            ?: throw NotFoundException("구독", userId)
+        if (sub.status != SubscriptionStatus.PAUSED)
+            throw IllegalStateException("일시정지 상태만 재개 가능")
+        if (sub.paddleSubscriptionId != null) {
+            paddleGateway.resumeSubscription(sub.paddleSubscriptionId!!)
+        }
+        val now = LocalDateTime.now()
+        val updated = sub.copy(
+            status = SubscriptionStatus.ACTIVE,
+            pausedAt = null,
+            resumeAt = null,
+            updatedAt = now,
+        )
+        subscriptionRepository.update(updated)
+        return updated.toResponse()
+    }
+
     fun getPlans(userId: Long): PlanComparisonResponse {
         val user = userRepository.findById(userId)
             ?: throw NotFoundException("사용자", userId)
@@ -118,6 +189,7 @@ class SubscriptionUseCase(
             PlanInfo(
                 planType = plan,
                 price = plan.price,
+                yearlyPrice = plan.yearlyPrice,
                 features = plan.toFeatures(),
                 recommended = plan == PlanType.PRO
             )
@@ -150,8 +222,14 @@ class SubscriptionUseCase(
         return subscriptionRepository.save(subscription)
     }
 
-    private fun calculateProration(current: PlanType, target: PlanType, remainingDays: Int): Int {
-        val dailyDiff = (target.price - current.price) / 30.0
+    private fun calculateProration(
+        currentPrice: Int,
+        targetPrice: Int,
+        remainingDays: Int,
+        totalPeriodDays: Int,
+    ): Int {
+        if (totalPeriodDays <= 0) return 0
+        val dailyDiff = (targetPrice - currentPrice).toDouble() / totalPeriodDays
         return (dailyDiff * remainingDays).toInt().coerceAtLeast(0)
     }
 
@@ -162,7 +240,10 @@ class SubscriptionUseCase(
         billingCycle = billingCycle,
         currentPeriodEnd = currentPeriodEnd,
         nextBillingDate = nextBillingDate,
-        features = planType.toFeatures()
+        features = planType.toFeatures(),
+        trialEnd = trialEnd,
+        pausedAt = pausedAt,
+        resumeAt = resumeAt,
     )
 
     private fun PlanType.toFeatures(): PlanFeatures = PlanFeatures(

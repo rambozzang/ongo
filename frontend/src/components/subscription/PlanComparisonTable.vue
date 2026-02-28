@@ -7,7 +7,7 @@
             기능
           </th>
           <th
-            v-for="plan in PLANS"
+            v-for="plan in displayPlans"
             :key="plan.type"
             class="px-4 py-4 text-center"
             :class="getPlanHeaderClass(plan.type)"
@@ -17,8 +17,8 @@
                 {{ plan.name }}
               </div>
               <div class="text-xl font-bold" :class="getPlanPriceClass(plan.type)">
-                {{ plan.price === 0 ? '무료' : '₩' + plan.price.toLocaleString() }}
-                <span v-if="plan.price > 0" class="text-xs font-normal">/월</span>
+                {{ getDisplayPrice(plan).amount === 0 ? '무료' : '₩' + getDisplayPrice(plan).amount.toLocaleString() }}
+                <span v-if="getDisplayPrice(plan).amount > 0" class="text-xs font-normal">{{ getDisplayPrice(plan).label }}</span>
               </div>
               <div v-if="plan.type === currentPlan" class="flex justify-center">
                 <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium" :class="getCurrentPlanBadgeClass(plan.type)">
@@ -35,7 +35,7 @@
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             월간 업로드 수
           </td>
-          <td v-for="plan in PLANS" :key="`upload-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`upload-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
             <span class="font-medium">{{ plan.maxUploadsPerMonth === -1 ? '무제한' : plan.maxUploadsPerMonth + '회' }}</span>
           </td>
         </tr>
@@ -45,7 +45,7 @@
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             저장 용량
           </td>
-          <td v-for="plan in PLANS" :key="`storage-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`storage-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
             <span class="font-medium">{{ formatStorage(plan.storageMb) }}</span>
           </td>
         </tr>
@@ -55,7 +55,7 @@
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             연동 채널 수
           </td>
-          <td v-for="plan in PLANS" :key="`platforms-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`platforms-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
             <span class="font-medium">{{ plan.maxPlatforms === -1 ? '무제한' : plan.maxPlatforms + '개' }}</span>
           </td>
         </tr>
@@ -65,7 +65,7 @@
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             AI 무료 크레딧
           </td>
-          <td v-for="plan in PLANS" :key="`credits-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`credits-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
             <span class="font-medium">{{ plan.freeAiCredits.toLocaleString() }}크레딧</span>
           </td>
         </tr>
@@ -75,7 +75,7 @@
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             동시 업로드
           </td>
-          <td v-for="plan in PLANS" :key="`concurrent-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`concurrent-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
             <span class="font-medium">{{ getConcurrentUploads(plan.type) }}개</span>
           </td>
         </tr>
@@ -85,7 +85,7 @@
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             분석 기능
           </td>
-          <td v-for="plan in PLANS" :key="`analytics-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`analytics-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
             <span class="font-medium">{{ getAnalyticsLevel(plan.type) }}</span>
           </td>
         </tr>
@@ -95,7 +95,7 @@
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             예약 게시
           </td>
-          <td v-for="plan in PLANS" :key="`schedule-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`schedule-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
             <CheckIcon v-if="plan.maxScheduleDays > 0" class="mx-auto h-6 w-6 text-green-500" />
             <XMarkIcon v-else class="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
           </td>
@@ -106,7 +106,7 @@
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             팀 멤버
           </td>
-          <td v-for="plan in PLANS" :key="`team-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`team-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
             <span class="font-medium">{{ plan.teamMembers === 0 ? '1명' : plan.teamMembers + '명' }}</span>
           </td>
         </tr>
@@ -116,7 +116,7 @@
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             우선 지원
           </td>
-          <td v-for="plan in PLANS" :key="`priority-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`priority-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
             <CheckIcon v-if="['PRO', 'BUSINESS'].includes(plan.type)" class="mx-auto h-6 w-6 text-green-500" />
             <XMarkIcon v-else class="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
           </td>
@@ -127,7 +127,7 @@
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
             API 접근
           </td>
-          <td v-for="plan in PLANS" :key="`api-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`api-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
             <CheckIcon v-if="plan.type === 'BUSINESS'" class="mx-auto h-6 w-6 text-green-500" />
             <XMarkIcon v-else class="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
           </td>
@@ -136,7 +136,7 @@
         <!-- Action Buttons -->
         <tr class="bg-gray-50 dark:bg-gray-800/50">
           <td class="sticky left-0 z-10 bg-gray-50 dark:bg-gray-800/50 px-4 py-4 border-r border-gray-200 dark:border-gray-700" />
-          <td v-for="plan in PLANS" :key="`action-${plan.type}`" class="px-4 py-4 text-center" :class="getCellClass(plan.type)">
+          <td v-for="plan in displayPlans" :key="`action-${plan.type}`" class="px-4 py-4 text-center" :class="getCellClass(plan.type)">
             <button
               v-if="plan.type !== currentPlan"
               class="w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors"
@@ -156,16 +156,30 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline'
-import { PLANS, type PlanType } from '@/types/subscription'
+import { PLANS, type PlanType, type Plan } from '@/types/subscription'
 
 interface Props {
   currentPlan?: PlanType
+  plans?: Plan[]
+  billingCycle?: 'MONTHLY' | 'YEARLY'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   currentPlan: undefined,
+  plans: undefined,
+  billingCycle: 'MONTHLY',
 })
+
+const displayPlans = computed(() => props.plans ?? PLANS)
+
+function getDisplayPrice(plan: Plan): { amount: number; label: string } {
+  if (props.billingCycle === 'YEARLY' && plan.yearlyPrice > 0) {
+    return { amount: plan.yearlyPrice, label: '/년' }
+  }
+  return { amount: plan.price, label: '/월' }
+}
 
 defineEmits<{
   (e: 'select-plan', planType: PlanType): void
@@ -260,8 +274,8 @@ function getCellClass(planType: PlanType): string {
 
 function getActionButtonLabel(planType: PlanType): string {
   if (!props.currentPlan) return '선택'
-  const currentIdx = PLANS.findIndex((p) => p.type === props.currentPlan)
-  const targetIdx = PLANS.findIndex((p) => p.type === planType)
+  const currentIdx = displayPlans.value.findIndex((p) => p.type === props.currentPlan)
+  const targetIdx = displayPlans.value.findIndex((p) => p.type === planType)
   if (targetIdx > currentIdx) return '업그레이드'
   return '다운그레이드'
 }
@@ -270,8 +284,8 @@ function getActionButtonClass(planType: PlanType): string {
   if (!props.currentPlan) {
     return 'bg-primary-600 text-white hover:bg-primary-700'
   }
-  const currentIdx = PLANS.findIndex((p) => p.type === props.currentPlan)
-  const targetIdx = PLANS.findIndex((p) => p.type === planType)
+  const currentIdx = displayPlans.value.findIndex((p) => p.type === props.currentPlan)
+  const targetIdx = displayPlans.value.findIndex((p) => p.type === planType)
 
   if (targetIdx > currentIdx) {
     // Upgrade button - use primary

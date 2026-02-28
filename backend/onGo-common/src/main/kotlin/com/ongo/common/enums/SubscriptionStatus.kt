@@ -6,4 +6,6 @@ enum class SubscriptionStatus {
     PAST_DUE,
     SUSPENDED,
     FREE,
+    TRIALING,
+    PAUSED,
 }

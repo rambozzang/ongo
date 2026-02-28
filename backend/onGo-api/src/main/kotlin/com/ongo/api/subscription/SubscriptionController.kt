@@ -4,6 +4,7 @@ import com.ongo.api.config.CurrentUser
 import com.ongo.application.subscription.dto.*
 import com.ongo.application.subscription.SubscriptionUseCase
 import com.ongo.common.ResData
+import com.ongo.common.exception.RateLimitExceededException
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -12,6 +13,8 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 @Tag(name = "구독", description = "구독 현황 조회, 플랜 변경, 취소")
 @RestController
@@ -19,6 +22,30 @@ import org.springframework.web.bind.annotation.*
 class SubscriptionController(
     private val subscriptionUseCase: SubscriptionUseCase
 ) {
+
+    companion object {
+        private val rateLimits = ConcurrentHashMap<String, RateLimitEntry>()
+        private const val MAX_PLAN_CHANGES_PER_HOUR = 5
+        private const val RATE_LIMIT_WINDOW_MS = 3_600_000L // 1시간
+    }
+
+    private data class RateLimitEntry(val count: AtomicInteger = AtomicInteger(0), val windowStart: Long = System.currentTimeMillis())
+
+    private fun checkRateLimit(userId: Long, action: String) {
+        val key = "$action:$userId"
+        val now = System.currentTimeMillis()
+        val entry = rateLimits.compute(key) { _, existing ->
+            if (existing == null || now - existing.windowStart > RATE_LIMIT_WINDOW_MS) {
+                RateLimitEntry(AtomicInteger(1), now)
+            } else {
+                existing.count.incrementAndGet()
+                existing
+            }
+        }!!
+        if (entry.count.get() > MAX_PLAN_CHANGES_PER_HOUR) {
+            throw RateLimitExceededException("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.")
+        }
+    }
 
     @Operation(
         summary = "현재 구독 조회",
@@ -48,6 +75,7 @@ class SubscriptionController(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @Valid @RequestBody request: ChangePlanRequest
     ): ResponseEntity<ResData<ChangePlanResponse>> {
+        checkRateLimit(userId, "changePlan")
         return ResData.success(subscriptionUseCase.changePlan(userId, request), "플랜이 변경되었습니다")
     }
 
@@ -63,6 +91,7 @@ class SubscriptionController(
     )
     @PostMapping("/cancel")
     fun cancelSubscription(@Parameter(hidden = true) @CurrentUser userId: Long): ResponseEntity<ResData<SubscriptionResponse>> {
+        checkRateLimit(userId, "cancel")
         return ResData.success(subscriptionUseCase.cancelSubscription(userId), "구독이 취소되었습니다")
     }
 
@@ -83,5 +112,28 @@ class SubscriptionController(
     @GetMapping("/usage")
     fun getUsage(@Parameter(hidden = true) @CurrentUser userId: Long): ResponseEntity<ResData<UsageResponse>> {
         return ResData.success(subscriptionUseCase.getUsage(userId))
+    }
+
+    @Operation(summary = "트라이얼 시작", description = "7일 무료 체험을 시작합니다. 무료 플랜 사용자만 가능하며, 1회만 사용할 수 있습니다.")
+    @PostMapping("/trial")
+    fun startTrial(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @Valid @RequestBody request: StartTrialRequest,
+    ): ResponseEntity<ResData<SubscriptionResponse>> {
+        return ResData.success(subscriptionUseCase.startTrial(userId, request.targetPlan), "7일 무료 체험이 시작되었습니다")
+    }
+
+    @Operation(summary = "구독 일시정지", description = "구독을 최대 30일간 일시정지합니다. 활성 구독만 가능합니다.")
+    @PostMapping("/pause")
+    fun pauseSubscription(@Parameter(hidden = true) @CurrentUser userId: Long): ResponseEntity<ResData<SubscriptionResponse>> {
+        checkRateLimit(userId, "pause")
+        return ResData.success(subscriptionUseCase.pauseSubscription(userId), "구독이 일시정지되었습니다")
+    }
+
+    @Operation(summary = "구독 재개", description = "일시정지된 구독을 재개합니다.")
+    @PostMapping("/resume")
+    fun resumeSubscription(@Parameter(hidden = true) @CurrentUser userId: Long): ResponseEntity<ResData<SubscriptionResponse>> {
+        checkRateLimit(userId, "resume")
+        return ResData.success(subscriptionUseCase.resumeSubscription(userId), "구독이 재개되었습니다")
     }
 }

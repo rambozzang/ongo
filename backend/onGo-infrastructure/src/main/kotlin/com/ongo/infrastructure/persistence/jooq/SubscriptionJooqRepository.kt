@@ -10,6 +10,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.CANCELLED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.PADDLE_CUSTOMER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.PADDLE_SUBSCRIPTION_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.PAUSED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.PENDING_PLAN_TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.CURRENT_PERIOD_END
 import com.ongo.infrastructure.persistence.jooq.Fields.CURRENT_PERIOD_START
@@ -17,9 +18,13 @@ import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.NEXT_BILLING_DATE
 import com.ongo.infrastructure.persistence.jooq.Fields.PLAN_TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.PRICE
+import com.ongo.infrastructure.persistence.jooq.Fields.RESUME_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.STORAGE_QUOTA_LIMIT_BYTES
+import com.ongo.infrastructure.persistence.jooq.Fields.TRIAL_END
+import com.ongo.infrastructure.persistence.jooq.Fields.TRIAL_PLAN_TYPE
+import com.ongo.infrastructure.persistence.jooq.Fields.TRIAL_START
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.SUBSCRIPTIONS
@@ -70,6 +75,11 @@ class SubscriptionJooqRepository(
             .set(PADDLE_SUBSCRIPTION_ID, subscription.paddleSubscriptionId)
             .set(PADDLE_CUSTOMER_ID, subscription.paddleCustomerId)
             .set(CANCELLED_AT, subscription.cancelledAt)
+            .set(TRIAL_START, subscription.trialStart)
+            .set(TRIAL_END, subscription.trialEnd)
+            .set(TRIAL_PLAN_TYPE, subscription.trialPlanType?.name)
+            .set(PAUSED_AT, subscription.pausedAt)
+            .set(RESUME_AT, subscription.resumeAt)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -91,6 +101,11 @@ class SubscriptionJooqRepository(
             .set(PADDLE_SUBSCRIPTION_ID, subscription.paddleSubscriptionId)
             .set(PADDLE_CUSTOMER_ID, subscription.paddleCustomerId)
             .set(CANCELLED_AT, subscription.cancelledAt)
+            .set(TRIAL_START, subscription.trialStart)
+            .set(TRIAL_END, subscription.trialEnd)
+            .set(TRIAL_PLAN_TYPE, subscription.trialPlanType?.name)
+            .set(PAUSED_AT, subscription.pausedAt)
+            .set(RESUME_AT, subscription.resumeAt)
             .where(ID.eq(subscription.id))
             .execute()
 
@@ -125,6 +140,29 @@ class SubscriptionJooqRepository(
             .fetch()
             .map { it.toSubscription() }
 
+    override fun findWithPendingPlanType(): List<Subscription> =
+        dsl.select()
+            .from(SUBSCRIPTIONS)
+            .where(PENDING_PLAN_TYPE.isNotNull)
+            .fetch()
+            .map { it.toSubscription() }
+
+    override fun findTrialExpired(now: LocalDateTime): List<Subscription> =
+        dsl.select()
+            .from(SUBSCRIPTIONS)
+            .where(STATUS_TEXT.eq(SubscriptionStatus.TRIALING.name))
+            .and(TRIAL_END.lessOrEqual(now))
+            .fetch()
+            .map { it.toSubscription() }
+
+    override fun findPausedToResume(now: LocalDateTime): List<Subscription> =
+        dsl.select()
+            .from(SUBSCRIPTIONS)
+            .where(STATUS_TEXT.eq(SubscriptionStatus.PAUSED.name))
+            .and(RESUME_AT.lessOrEqual(now))
+            .fetch()
+            .map { it.toSubscription() }
+
     private fun Record.toSubscription(): Subscription {
         val billingCycleStr = get(BILLING_CYCLE)
         val planTypeStr = get(PLAN_TYPE) ?: "FREE"
@@ -146,6 +184,11 @@ class SubscriptionJooqRepository(
             paddleSubscriptionId = get(PADDLE_SUBSCRIPTION_ID),
             paddleCustomerId = get(PADDLE_CUSTOMER_ID),
             cancelledAt = localDateTime(CANCELLED_AT),
+            trialStart = localDateTime(TRIAL_START),
+            trialEnd = localDateTime(TRIAL_END),
+            trialPlanType = get(TRIAL_PLAN_TYPE)?.let { try { PlanType.valueOf(it) } catch (_: Exception) { null } },
+            pausedAt = localDateTime(PAUSED_AT),
+            resumeAt = localDateTime(RESUME_AT),
             createdAt = localDateTime(CREATED_AT),
             updatedAt = localDateTime(UPDATED_AT),
         )

@@ -8,7 +8,9 @@ package com.ongo.application.paddle
 interface PaddleGateway {
     fun updateSubscription(subscriptionId: String, newPriceId: String, prorationMode: String): Any
     fun cancelSubscription(subscriptionId: String, effectiveFrom: String): Any
-    fun getPriceIdForPlan(planType: String): String?
+    fun pauseSubscription(subscriptionId: String): Any
+    fun resumeSubscription(subscriptionId: String): Any
+    fun getPriceIdForPlan(planType: String, billingCycle: String = "MONTHLY"): String?
     fun getPriceIdForCreditPackage(packageName: String): String?
     fun verifyWebhookSignature(rawBody: String, paddleSignature: String): Boolean
     fun getTransactionInvoice(transactionId: String): String?

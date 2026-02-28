@@ -71,6 +71,34 @@ class PaddleClient(
         return objectMapper.readValue(dataJson, PaddleSubscription::class.java)
     }
 
+    fun pauseSubscription(subscriptionId: String): PaddleSubscription {
+        log.info("Paddle 구독 일시정지: subscriptionId=$subscriptionId")
+        val body = mapOf("scheduled_change" to mapOf("action" to "pause"))
+        val json = restClient.patch()
+            .uri("/subscriptions/$subscriptionId")
+            .body(body)
+            .retrieve()
+            .body(String::class.java)
+            ?: throw RuntimeException("Paddle 구독 일시정지 실패")
+        val wrapper = objectMapper.readValue<Map<String, Any>>(json)
+        val dataJson = objectMapper.writeValueAsString(wrapper["data"])
+        return objectMapper.readValue(dataJson, PaddleSubscription::class.java)
+    }
+
+    fun resumeSubscription(subscriptionId: String): PaddleSubscription {
+        log.info("Paddle 구독 재개: subscriptionId=$subscriptionId")
+        val body = mapOf("scheduled_change" to null)
+        val json = restClient.patch()
+            .uri("/subscriptions/$subscriptionId")
+            .body(body)
+            .retrieve()
+            .body(String::class.java)
+            ?: throw RuntimeException("Paddle 구독 재개 실패")
+        val wrapper = objectMapper.readValue<Map<String, Any>>(json)
+        val dataJson = objectMapper.writeValueAsString(wrapper["data"])
+        return objectMapper.readValue(dataJson, PaddleSubscription::class.java)
+    }
+
     fun getTransactionInvoice(transactionId: String): String? {
         log.info("Paddle 인보이스 조회: transactionId=$transactionId")
         return try {
@@ -108,11 +136,14 @@ class PaddleClient(
         }
     }
 
-    fun getPriceIdForPlan(planType: String): String? = when (planType) {
-        "STARTER" -> config.price.starter.ifBlank { null }
-        "PRO" -> config.price.pro.ifBlank { null }
-        "BUSINESS" -> config.price.business.ifBlank { null }
-        else -> null
+    fun getPriceIdForPlan(planType: String, billingCycle: String = "MONTHLY"): String? {
+        val isYearly = billingCycle.uppercase() == "YEARLY"
+        return when (planType) {
+            "STARTER" -> (if (isYearly) config.price.starterYearly else config.price.starter).ifBlank { null }
+            "PRO" -> (if (isYearly) config.price.proYearly else config.price.pro).ifBlank { null }
+            "BUSINESS" -> (if (isYearly) config.price.businessYearly else config.price.business).ifBlank { null }
+            else -> null
+        }
     }
 
     fun getPriceIdForCreditPackage(packageName: String): String? = when (packageName.uppercase()) {

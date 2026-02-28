@@ -153,6 +153,12 @@ object Tables {
     // Live Dashboard
     val LIVE_DASHBOARD_ALERTS = DSL.table("live_dashboard_alerts")
     val LIVE_ALERT_CONFIGS = DSL.table("live_alert_configs")
+
+    // Pricing V2
+    val WEBHOOK_EVENTS = DSL.table("webhook_events")
+    val COUPONS = DSL.table("coupons")
+    val COUPON_USAGES = DSL.table("coupon_usages")
+    val USAGE_ALERT_CONFIGS = DSL.table("usage_alert_configs")
 }
 
 object Fields {
@@ -789,4 +795,43 @@ object Fields {
     val ALERT_TYPE = DSL.field("type", String::class.java)
     val ALERT_MESSAGE = DSL.field("message", String::class.java)
     val ALERT_SEVERITY = DSL.field("severity", String::class.java)
+
+    // webhook_events
+    val EVENT_ID = DSL.field("event_id", String::class.java)
+    val EVENT_TYPE = DSL.field("event_type", String::class.java)
+    val PAYLOAD = DSL.field("payload", Any::class.java)
+    val RETRY_COUNT = DSL.field("retry_count", Int::class.java)
+    val MAX_RETRIES = DSL.field("max_retries", Int::class.java)
+    val NEXT_RETRY_AT = DSL.field("next_retry_at", java.time.LocalDateTime::class.java)
+    val PROCESSED_AT = DSL.field("processed_at", java.time.LocalDateTime::class.java)
+
+    // coupons
+    val CODE = DSL.field("code", String::class.java)
+    val DISCOUNT_TYPE = DSL.field("discount_type", String::class.java)
+    val DISCOUNT_VALUE = DSL.field("discount_value", Int::class.java)
+    val APPLICABLE_PLANS = DSL.field("applicable_plans", String::class.java)
+    val MIN_BILLING_CYCLE = DSL.field("min_billing_cycle", String::class.java)
+    val MAX_USES = DSL.field("max_uses", Int::class.java)
+    val USED_COUNT = DSL.field("used_count", Int::class.java)
+    val MAX_USES_PER_USER = DSL.field("max_uses_per_user", Int::class.java)
+    val VALID_FROM = DSL.field("valid_from", java.time.LocalDateTime::class.java)
+    val VALID_UNTIL = DSL.field("valid_until", java.time.LocalDateTime::class.java)
+    val ACTIVE = DSL.field("active", Boolean::class.java)
+
+    // coupon_usages
+    val COUPON_ID = DSL.field("coupon_id", Long::class.java)
+    val APPLIED_AT = DSL.field("applied_at", java.time.LocalDateTime::class.java)
+    val DISCOUNT_AMOUNT = DSL.field("discount_amount", Int::class.java)
+    val SUBSCRIPTION_ID = DSL.field("subscription_id", Long::class.java)
+
+    // usage_alert_configs
+    val THRESHOLD_PERCENT = DSL.field("threshold_percent", Int::class.java)
+    val LAST_ALERTED_AT = DSL.field("last_alerted_at", java.time.LocalDateTime::class.java)
+
+    // subscriptions new fields
+    val TRIAL_START = DSL.field("trial_start", java.time.LocalDateTime::class.java)
+    val TRIAL_END = DSL.field("trial_end", java.time.LocalDateTime::class.java)
+    val TRIAL_PLAN_TYPE = DSL.field("trial_plan_type", String::class.java)
+    val PAUSED_AT = DSL.field("paused_at", java.time.LocalDateTime::class.java)
+    val RESUME_AT = DSL.field("resume_at", java.time.LocalDateTime::class.java)
 }

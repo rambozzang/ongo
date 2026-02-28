@@ -12,7 +12,10 @@ data class SubscriptionResponse(
     val billingCycle: BillingCycle,
     val currentPeriodEnd: LocalDateTime?,
     val nextBillingDate: LocalDateTime?,
-    val features: PlanFeatures
+    val features: PlanFeatures,
+    val trialEnd: LocalDateTime? = null,
+    val pausedAt: LocalDateTime? = null,
+    val resumeAt: LocalDateTime? = null,
 )
 
 data class PlanFeatures(
@@ -39,6 +42,7 @@ data class ChangePlanResponse(
 data class PlanInfo(
     val planType: PlanType,
     val price: Int,
+    val yearlyPrice: Int,
     val features: PlanFeatures,
     val recommended: Boolean = false
 )
@@ -46,6 +50,10 @@ data class PlanInfo(
 data class PlanComparisonResponse(
     val plans: List<PlanInfo>,
     val currentPlan: PlanType
+)
+
+data class StartTrialRequest(
+    val targetPlan: String,
 )
 
 data class UsageResponse(
