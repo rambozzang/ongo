@@ -1,5 +1,6 @@
 package com.ongo.application.subscription
 
+import com.ongo.application.paddle.PaddleGateway
 import com.ongo.application.subscription.dto.ChangePlanRequest
 import com.ongo.common.enums.AuthProvider
 import com.ongo.common.enums.BillingCycle
@@ -27,13 +28,14 @@ class SubscriptionUseCaseTest {
     private val subscriptionRepository = mockk<SubscriptionRepository>()
     private val userRepository = mockk<UserRepository>()
     private val videoRepository = mockk<VideoRepository>()
+    private val paddleGateway = mockk<PaddleGateway>()
 
     private lateinit var useCase: SubscriptionUseCase
 
     @BeforeEach
     fun setUp() {
         clearAllMocks()
-        useCase = SubscriptionUseCase(subscriptionRepository, userRepository, videoRepository)
+        useCase = SubscriptionUseCase(subscriptionRepository, userRepository, videoRepository, paddleGateway)
     }
 
     private fun createSubscription(
