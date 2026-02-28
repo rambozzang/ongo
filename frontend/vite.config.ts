@@ -46,6 +46,7 @@ export default defineConfig({
         // 앱 셸(index.html, CSS, 핵심 JS)만 프리캐시. 뷰 청크는 런타임 캐시.
         globPatterns: ['**/*.{css,html,ico,png,svg,woff2}'],
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//, /\.(?:js|css|json|woff2?|png|svg|ico)$/],
         runtimeCaching: [
           {
             // lazy-loaded JS 청크: 방문 시에만 캐시
