@@ -13,6 +13,18 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '20'))
         disableConcurrentBuilds()
     }
+    
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                [key: 'ref', value: '$.ref'],
+                [key: 'changed_files', value: '$.commits[*].["modified","added","removed"][*]']
+            ],
+            regexpFilterText: '$changed_files',
+            regexpFilterExpression: '.*(frontend)/.*',  // frontend/ 변경 시 트리거
+            token: 'ongo-frontend'
+        )
+    }
 
     stages {
         stage('Build Frontend') {
