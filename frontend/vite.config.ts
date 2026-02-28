@@ -6,13 +6,12 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig({
   define: {
     // Vue 3.5 프로덕션 최적화 플래그
-    __VUE_OPTIONS_API__: false,                 // Options API 미사용 → ~10 KB 절감
     __VUE_PROD_DEVTOOLS__: false,               // 프로덕션 DevTools 제거
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,  // SSR 미사용
     // vue-i18n 최적화 플래그
-    __VUE_I18N_FULL_INSTALL__: false,           // Composition API만 사용
-    __VUE_I18N_LEGACY_API__: false,             // Legacy API 제거
-    __INTLIFY_DROP_MESSAGE_COMPILER__: true,    // 런타임 메시지 컴파일러 제거 → ~40 KB 절감
+    __VUE_I18N_FULL_INSTALL__: true,            // $t() 글로벌 등록 필요
+    __VUE_I18N_LEGACY_API__: false,             // Legacy API 제거 (Composition API 모드)
+    __INTLIFY_DROP_MESSAGE_COMPILER__: false,   // JSON 메시지 런타임 컴파일 필요
     __INTLIFY_PROD_DEVTOOLS__: false,
   },
   plugins: [
