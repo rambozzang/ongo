@@ -51,8 +51,10 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401 && !('_retry' in originalRequest)) {
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
+        return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject })
+          // 대기 중인 요청이 영원히 stuck되지 않도록 15초 타임아웃
+          setTimeout(() => reject(new Error('Token refresh timeout')), 15000)
         }).then((token) => {
           originalRequest.headers.Authorization = `Bearer ${token}`
           return apiClient(originalRequest)
@@ -71,6 +73,7 @@ apiClient.interceptors.response.use(
         const { data } = await axios.post<ResData<{ accessToken: string; refreshToken: string }>>(
           `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
           { refreshToken },
+          { timeout: 10000 },
         )
 
         if (data.success && data.data) {
