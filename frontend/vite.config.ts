@@ -71,18 +71,7 @@ export default defineConfig({
               },
             },
           },
-          {
-            urlPattern: /\/api\/v1\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5,
-              },
-              networkTimeoutSeconds: 10,
-            },
-          },
+          // API 요청은 SW에서 캐싱하지 않음 — SW 상태 이상 시 요청이 멈추는 문제 방지
         ],
       },
     }),
