@@ -727,6 +727,21 @@ const router = createRouter({
   routes,
 })
 
+// 배포 후 이전 JS 청크가 삭제되어 동적 import 실패 시 자동 새로고침
+router.onError((error, to) => {
+  if (
+    error.message.includes('Failed to fetch dynamically imported module') ||
+    error.message.includes('Importing a module script failed')
+  ) {
+    // 무한 리로드 방지: 세션당 1회만 시도
+    const reloadKey = `chunk-reload:${to.fullPath}`
+    if (!sessionStorage.getItem(reloadKey)) {
+      sessionStorage.setItem(reloadKey, '1')
+      window.location.assign(to.fullPath)
+    }
+  }
+})
+
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
 

@@ -6,16 +6,30 @@ const loading = ref(false)
 let cachedConfig: { clientToken: string; environment: string; paddleCustomerId: string | null } | null = null
 
 export function usePaddle() {
+  async function waitForPaddle(timeoutMs = 5000): Promise<boolean> {
+    if (window.Paddle) return true
+    return new Promise((resolve) => {
+      const start = Date.now()
+      const check = () => {
+        if (window.Paddle) return resolve(true)
+        if (Date.now() - start > timeoutMs) return resolve(false)
+        setTimeout(check, 100)
+      }
+      check()
+    })
+  }
+
   async function ensureInitialized() {
     if (initialized.value) return
-    if (!window.Paddle) {
-      console.warn('Paddle.js가 로드되지 않았습니다')
+    const loaded = await waitForPaddle()
+    if (!loaded) {
+      console.warn('Paddle.js 로드 타임아웃')
       return
     }
 
     try {
       cachedConfig = await paddleApi.getConfig()
-      window.Paddle.Initialize({
+      window.Paddle!.Initialize({
         token: cachedConfig.clientToken,
         environment: cachedConfig.environment as 'sandbox' | 'production',
       })
