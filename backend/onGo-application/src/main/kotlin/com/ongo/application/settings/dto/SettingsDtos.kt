@@ -35,5 +35,5 @@ data class UpdateDefaultsRequest(
     val visibility: String = "PUBLIC",
     val platforms: List<String> = listOf("YOUTUBE"),
     val aiTone: String = "FRIENDLY",
-    val aiProvider: String = "CLAUDE",
+    val aiProvider: String = "QWEN",
 )

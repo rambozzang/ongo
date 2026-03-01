@@ -774,7 +774,7 @@ const defaultsForm = reactive({
   visibility: 'PUBLIC',
   platforms: ['YOUTUBE'] as Platform[],
   aiTone: 'FRIENDLY',
-  aiProvider: 'CLAUDE',
+  aiProvider: 'QWEN',
 })
 
 const isSavingDefaults = ref(false)
@@ -839,7 +839,7 @@ onMounted(async () => {
     defaultsForm.visibility = settings.defaultVisibility
     defaultsForm.platforms = settings.defaultPlatforms as Platform[]
     defaultsForm.aiTone = settings.defaultAiTone
-    defaultsForm.aiProvider = settings.defaultAiProvider || 'CLAUDE'
+    defaultsForm.aiProvider = settings.defaultAiProvider || 'QWEN'
   } catch {
     // Use form defaults if API unavailable
   }

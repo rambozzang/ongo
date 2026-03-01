@@ -13,9 +13,9 @@ enum class AiProvider(val displayName: String) {
     companion object {
         fun fromString(value: String?): AiProvider =
             try {
-                valueOf(value?.uppercase() ?: "CLAUDE")
+                valueOf(value?.uppercase() ?: "QWEN")
             } catch (_: IllegalArgumentException) {
-                CLAUDE
+                QWEN
             }
     }
 }

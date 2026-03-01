@@ -11,7 +11,7 @@ data class UserSettings(
     val defaultVisibility: Visibility = Visibility.PUBLIC,
     val defaultPlatforms: List<Platform> = emptyList(),
     val defaultAiTone: String = "friendly",
-    val defaultAiProvider: AiProvider = AiProvider.CLAUDE,
+    val defaultAiProvider: AiProvider = AiProvider.QWEN,
     val notificationUpload: Boolean = true,
     val notificationComment: String = "realtime",
     val notificationCreditThreshold: Int = 20,

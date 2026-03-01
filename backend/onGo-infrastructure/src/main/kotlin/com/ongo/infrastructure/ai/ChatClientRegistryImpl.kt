@@ -32,8 +32,8 @@ class ChatClientRegistryImpl(
 
     override fun getClient(provider: AiProvider): ChatClient =
         clients[provider]
-            ?: clients[AiProvider.CLAUDE]
-            ?: error("Anthropic ChatClient is required but not available")
+            ?: clients[AiProvider.QWEN]
+            ?: error("Qwen ChatClient is required but not available")
 
     override fun isProviderAvailable(provider: AiProvider): Boolean =
         clients.containsKey(provider)

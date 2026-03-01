@@ -42,7 +42,7 @@ class SettingsUseCase(
                 defaultVisibility = request.defaultVisibility?.let { Visibility.valueOf(it) } ?: Visibility.PUBLIC,
                 defaultPlatforms = request.defaultPlatforms?.map { Platform.valueOf(it) } ?: emptyList(),
                 defaultAiTone = request.defaultAiTone ?: "friendly",
-                defaultAiProvider = request.defaultAiProvider?.let { AiProvider.fromString(it) } ?: AiProvider.CLAUDE,
+                defaultAiProvider = request.defaultAiProvider?.let { AiProvider.fromString(it) } ?: AiProvider.QWEN,
                 notificationUpload = request.notificationUpload ?: true,
                 notificationComment = request.notificationComment ?: "realtime",
                 notificationCreditThreshold = request.notificationCreditThreshold ?: 20,
