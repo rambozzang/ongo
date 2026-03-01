@@ -425,6 +425,10 @@
       "claude": "Anthropic의 Claude — 자연스러운 한국어 생성",
       "gemini": "Google의 Gemini — 다국어 지원 강점",
       "openai": "OpenAI GPT — 범용 AI 모델",
+      "qwen": "Alibaba의 Qwen 3.5 — 균형 잡힌 성능, Vision 지원",
+      "kimi": "Moonshot의 Kimi K2.5 — 강력한 추론, Vision 지원",
+      "glm": "Zhipu의 GLM-5 — 중국어/한국어 강점",
+      "minimax": "MiniMax M2.5 — 코딩 및 분석 특화",
       "sttNote": "* 음성 인식(STT)은 항상 OpenAI Whisper를 사용합니다."
     },
     "title": "설정",

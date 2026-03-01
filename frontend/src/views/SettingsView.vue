@@ -764,6 +764,10 @@ const aiProviderOptions = computed(() => [
   { value: 'CLAUDE', label: 'Claude', description: t('settings.aiProvider.claude') },
   { value: 'GEMINI', label: 'Gemini', description: t('settings.aiProvider.gemini') },
   { value: 'OPENAI', label: 'OpenAI GPT', description: t('settings.aiProvider.openai') },
+  { value: 'QWEN', label: 'Qwen 3.5', description: t('settings.aiProvider.qwen') },
+  { value: 'KIMI', label: 'Kimi K2.5', description: t('settings.aiProvider.kimi') },
+  { value: 'GLM', label: 'GLM-5', description: t('settings.aiProvider.glm') },
+  { value: 'MINIMAX', label: 'MiniMax M2.5', description: t('settings.aiProvider.minimax') },
 ])
 
 const defaultsForm = reactive({

@@ -425,6 +425,10 @@
       "claude": "Anthropic Claude — Natural Korean generation",
       "gemini": "Google Gemini — Strong multilingual support",
       "openai": "OpenAI GPT — General-purpose AI model",
+      "qwen": "Alibaba Qwen 3.5 — Balanced performance, Vision support",
+      "kimi": "Moonshot Kimi K2.5 — Strong reasoning, Vision support",
+      "glm": "Zhipu GLM-5 — Chinese/Korean language strength",
+      "minimax": "MiniMax M2.5 — Coding and analysis focused",
       "sttNote": "* Speech-to-text (STT) always uses OpenAI Whisper."
     },
     "title": "Settings",
