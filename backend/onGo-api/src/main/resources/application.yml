@@ -83,6 +83,11 @@ spring:
       max-file-size: 5GB
       max-request-size: 5GB
 
+# DashScope (Alibaba Cloud Model Studio)
+dashscope:
+  api-key: ${DASHSCOPE_API_KEY:dummy-dashscope-key}
+  base-url: https://coding-intl.dashscope.aliyuncs.com/v1
+
 # JWT
 jwt:
   secret: ${JWT_SECRET}
