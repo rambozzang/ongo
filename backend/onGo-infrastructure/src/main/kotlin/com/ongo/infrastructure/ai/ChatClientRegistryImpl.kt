@@ -12,6 +12,10 @@ class ChatClientRegistryImpl(
     @Qualifier("anthropicChatClient") private val anthropicChatClient: ChatClient,
     @Qualifier("openaiChatClient") private val openaiChatClient: ChatClient,
     @Autowired(required = false) @Qualifier("geminiChatClient") private val geminiChatClient: ChatClient?,
+    @Qualifier("qwenChatClient") private val qwenChatClient: ChatClient,
+    @Qualifier("kimiChatClient") private val kimiChatClient: ChatClient,
+    @Qualifier("glmChatClient") private val glmChatClient: ChatClient,
+    @Qualifier("minimaxChatClient") private val minimaxChatClient: ChatClient,
 ) : ChatClientRegistry {
 
     private val clients: Map<AiProvider, ChatClient> = buildMap {
@@ -20,6 +24,10 @@ class ChatClientRegistryImpl(
         if (geminiChatClient != null) {
             put(AiProvider.GEMINI, geminiChatClient)
         }
+        put(AiProvider.QWEN, qwenChatClient)
+        put(AiProvider.KIMI, kimiChatClient)
+        put(AiProvider.GLM, glmChatClient)
+        put(AiProvider.MINIMAX, minimaxChatClient)
     }
 
     override fun getClient(provider: AiProvider): ChatClient =
