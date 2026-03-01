@@ -418,6 +418,21 @@ const sectionsKo: ManualSection[] = [
         text: '영상 주제와 트렌드를 분석하여 효과적인 해시태그를 추천합니다.',
       },
       {
+        subtitle: 'AI 제공자 선택',
+        text: '설정 페이지에서 원하는 AI 모델을 선택하여 사용할 수 있습니다.',
+        items: [
+          'Claude — 자연스러운 한국어 생성에 강점이 있습니다.',
+          'Gemini — 다국어 지원이 뛰어납니다.',
+          'OpenAI GPT — 범용 AI 모델입니다.',
+          'Qwen 3.5 — 균형 잡힌 성능과 Vision(이미지 분석)을 지원합니다.',
+          'Kimi K2.5 — 강력한 추론 능력과 Vision을 지원합니다.',
+          'GLM-5 — 중국어/한국어에 강점이 있습니다.',
+          'MiniMax M2.5 — 코딩 및 분석에 특화되어 있습니다.',
+          '선택한 AI 제공자는 메타 생성, 해시태그 추천, 아이디어 생성 등 모든 AI 기능에 적용됩니다.',
+          '음성 인식(STT)은 항상 OpenAI Whisper를 사용합니다.',
+        ],
+      },
+      {
         subtitle: 'AI 크레딧 시스템',
         text: 'AI 기능은 크레딧을 소비합니다.',
         items: [
@@ -498,7 +513,7 @@ const sectionsKo: ManualSection[] = [
         items: [
           '프로필: 닉네임, 프로필 이미지, 크리에이터 카테고리 설정',
           '알림: 이메일/푸시 알림, 댓글 알림 빈도, 크레딧 알림 설정',
-          '기본 설정: 기본 공개 설정, 기본 업로드 플랫폼, AI 톤 설정',
+          '기본 설정: 기본 공개 설정, 기본 업로드 플랫폼, AI 톤, AI 제공자 설정',
           '언어: 한국어 / English 전환',
           '계정: 연동된 소셜 계정 확인, 회원 탈퇴',
         ],
@@ -3367,6 +3382,21 @@ const sectionsEn: ManualSection[] = [
         text: 'Effective hashtags are recommended based on video topic analysis and trends.',
       },
       {
+        subtitle: 'AI Provider Selection',
+        text: 'You can choose your preferred AI model from the Settings page.',
+        items: [
+          'Claude — Strong natural Korean generation.',
+          'Gemini — Excellent multilingual support.',
+          'OpenAI GPT — General-purpose AI model.',
+          'Qwen 3.5 — Balanced performance with Vision (image analysis) support.',
+          'Kimi K2.5 — Strong reasoning with Vision support.',
+          'GLM-5 — Strength in Chinese/Korean languages.',
+          'MiniMax M2.5 — Specialized in coding and analysis.',
+          'The selected AI provider applies to all AI features including meta generation, hashtag recommendations, and idea generation.',
+          'Speech-to-text (STT) always uses OpenAI Whisper.',
+        ],
+      },
+      {
         subtitle: 'AI Credit System',
         text: 'AI features consume credits.',
         items: [
@@ -3447,7 +3477,7 @@ const sectionsEn: ManualSection[] = [
         items: [
           'Profile: Nickname, profile image, creator category',
           'Notifications: Email/push notifications, comment notification frequency, credit alerts',
-          'Defaults: Default visibility, default upload platforms, AI tone',
+          'Defaults: Default visibility, default upload platforms, AI tone, AI provider',
           'Language: Switch between Korean / English',
           'Account: View connected social accounts, delete account',
         ],
