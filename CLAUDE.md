@@ -4,9 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**onGo** is a multi-platform creator management SaaS for Korean content creators. It enables uploading one video simultaneously to YouTube, TikTok, Instagram Reels, and Naver Clip, with AI-powered metadata optimization and unified analytics.
+**onGo**는 한국 콘텐츠 크리에이터를 위한 멀티 플랫폼 관리 SaaS입니다.
 
 Reference: `CreFlow_Development_Guide_v2.0_1.md` contains the full specification (UI wireframes, business rules, DB schema, API design).
+
+### 핵심 기능
+
+1. **멀티 플랫폼 동시 업로드** — 영상 하나를 YouTube, TikTok, Instagram Reels, Naver Clip에 한 번에 게시
+   - Tus 프로토콜 기반 이어받기 업로드
+   - 플랫폼별 상태 추적: `DRAFT → UPLOADING → PROCESSING/REVIEW → PUBLISHED/FAILED/REJECTED`
+2. **AI 메타데이터 최적화** — 각 플랫폼에 맞는 제목, 설명, 해시태그를 AI가 자동 생성
+3. **AI 크리에이터 도구** — 스크립트 작성, 썸네일 생성, 댓글 자동 답변, SEO 분석, 트렌드 예측
+4. **통합 분석 대시보드** — 전체 플랫폼의 조회수, 구독자, 수익 등을 하나의 화면에서 크로스 플랫폼 비교
+5. **스케줄링 & 캘린더** — 예약 게시, 최적 업로드 시간 추천
+6. **채널 관리** — OAuth로 연동된 채널의 토큰 상태, 동기화 관리
+7. **구독 & 결제** — Free / Starter / Pro / Business 4단계 요금제 (Paddle 결제)
 
 ## Tech Stack
 
