@@ -266,7 +266,7 @@ function formatDate(date: string | null): string {
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {{ $t('workflowBuilder.emptyTitle') }}
           </h3>
-          <p class="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+          <p class="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
             {{ $t('workflowBuilder.emptyDesc') }}
           </p>
           <div class="flex items-center justify-center gap-3">

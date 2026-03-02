@@ -157,8 +157,8 @@ const handleCloseModal = () => {
       v-else
       class="card p-12 text-center"
     >
-      <div class="mx-auto max-w-md">
-        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+      <div class="max-w-md">
+        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
           <AdjustmentsHorizontalIcon class="h-8 w-8 text-gray-400" />
         </div>
         <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">

@@ -136,7 +136,7 @@
             <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
               {{ $t('revenue.platformBreakdown') }}
             </h2>
-            <div class="mx-auto max-w-md">
+            <div class="max-w-md">
               <RevenuePlatformBreakdown :data="revenueStore.platformBreakdown" />
             </div>
           </div>

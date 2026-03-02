@@ -12,7 +12,7 @@
     <template v-else-if="portal">
       <!-- Header -->
       <div class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-        <div class="mx-auto max-w-5xl px-4 py-6 mobile:px-6">
+        <div class="max-w-5xl px-4 py-6 mobile:px-6">
           <div class="flex flex-col gap-4 mobile:flex-row mobile:items-center mobile:justify-between">
             <div class="flex items-center gap-4">
               <div
@@ -53,7 +53,7 @@
         </div>
       </div>
 
-      <div class="mx-auto max-w-5xl px-4 py-6 mobile:px-6">
+      <div class="max-w-5xl px-4 py-6 mobile:px-6">
         <!-- KPI Cards -->
         <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">
           <div class="card">

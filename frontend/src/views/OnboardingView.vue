@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
     <div class="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4">
-      <div class="mx-auto flex max-w-3xl items-center justify-between">
+      <div class="flex max-w-3xl items-center justify-between">
         <h1 class="text-xl font-bold text-primary-600">onGo</h1>
         <span v-if="currentStep > 0 && currentStep <= 4" class="text-sm text-gray-400 dark:text-gray-500">{{ currentStep }} / 4</span>
       </div>
@@ -10,18 +10,18 @@
 
     <!-- Step Indicator -->
     <div v-if="currentStep > 0 && currentStep <= 4" class="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-6">
-      <div class="mx-auto max-w-2xl px-4">
+      <div class="max-w-2xl px-4">
         <OnboardingStepIndicator :current-step="currentStep" :steps="steps" />
       </div>
     </div>
 
     <!-- Content -->
-    <div class="mx-auto max-w-2xl px-4 py-8">
+    <div class="max-w-2xl px-4 py-8">
       <!-- Step transitions -->
       <Transition :name="transitionName" mode="out-in">
         <div :key="currentStep">
           <!-- Step 0: Welcome Screen -->
-          <div v-if="currentStep === 0" class="mx-auto max-w-lg text-center">
+          <div v-if="currentStep === 0" class="max-w-lg text-center">
             <div class="mb-8">
               <h1 class="text-display text-primary-600">onGo</h1>
               <p class="mt-4 text-h2 text-gray-900 dark:text-gray-100">
