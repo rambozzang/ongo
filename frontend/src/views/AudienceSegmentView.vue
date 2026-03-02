@@ -16,6 +16,7 @@ import InsightPanel from '@/components/audiencesegment/InsightPanel.vue'
 import SegmentCompareChart from '@/components/audiencesegment/SegmentCompareChart.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import type { AudienceSegment, SegmentType } from '@/types/audienceSegment'
 
 const store = useAudienceSegmentStore()
@@ -310,144 +311,49 @@ onMounted(() => {
     </Teleport>
 
     <!-- Create Segment Modal -->
-    <Teleport to="body">
-      <div
-        v-if="showCreateModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        @click.self="closeCreateModal"
-      >
-        <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
-          <!-- Modal header -->
-          <div class="mb-5 flex items-center justify-between">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-              새 세그먼트 만들기
-            </h2>
-            <button
-              class="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-              @click="closeCreateModal"
-            >
-              <XMarkIcon class="h-5 w-5" />
-            </button>
+    <BaseModal v-model="showCreateModal" title="새 세그먼트 만들기" max-width="lg">
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">세그먼트 이름</label>
+          <input v-model="newSegmentName" type="text" placeholder="예: 20대 남성 게이머" class="input-field" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">세그먼트 유형</label>
+          <select v-model="newSegmentType" class="input-field">
+            <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">최소 연령</label>
+            <input v-model.number="newAgeMin" type="number" min="13" max="99" class="input-field" />
           </div>
-
-          <!-- Form -->
-          <div class="space-y-4">
-            <!-- Segment name -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                세그먼트 이름
-              </label>
-              <input
-                v-model="newSegmentName"
-                type="text"
-                placeholder="예: 20대 남성 게이머"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-
-            <!-- Type -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                세그먼트 유형
-              </label>
-              <select
-                v-model="newSegmentType"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Age range -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  최소 연령
-                </label>
-                <input
-                  v-model.number="newAgeMin"
-                  type="number"
-                  min="13"
-                  max="99"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  최대 연령
-                </label>
-                <input
-                  v-model.number="newAgeMax"
-                  type="number"
-                  min="13"
-                  max="99"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                />
-              </div>
-            </div>
-
-            <!-- Gender -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                성별
-              </label>
-              <select
-                v-model="newGender"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option value="ALL">전체</option>
-                <option value="MALE">남성</option>
-                <option value="FEMALE">여성</option>
-              </select>
-            </div>
-
-            <!-- Regions -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                지역 (쉼표로 구분)
-              </label>
-              <input
-                v-model="newRegions"
-                type="text"
-                placeholder="예: 서울, 경기, 부산"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-
-            <!-- Interests -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                관심사 (쉼표로 구분)
-              </label>
-              <input
-                v-model="newInterests"
-                type="text"
-                placeholder="예: 게임, 뷰티, 테크"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-          </div>
-
-          <!-- Modal actions -->
-          <div class="mt-6 flex items-center justify-end gap-3">
-            <button
-              class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-              @click="closeCreateModal"
-            >
-              취소
-            </button>
-            <button
-              class="btn-primary text-sm"
-              :disabled="!newSegmentName.trim()"
-              @click="handleCreateSegment"
-            >
-              세그먼트 생성
-            </button>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">최대 연령</label>
+            <input v-model.number="newAgeMax" type="number" min="13" max="99" class="input-field" />
           </div>
         </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">성별</label>
+          <select v-model="newGender" class="input-field">
+            <option value="ALL">전체</option>
+            <option value="MALE">남성</option>
+            <option value="FEMALE">여성</option>
+          </select>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">지역 (쉼표로 구분)</label>
+          <input v-model="newRegions" type="text" placeholder="예: 서울, 경기, 부산" class="input-field" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">관심사 (쉼표로 구분)</label>
+          <input v-model="newInterests" type="text" placeholder="예: 게임, 뷰티, 테크" class="input-field" />
+        </div>
       </div>
-    </Teleport>
+      <template #footer>
+        <button class="btn-secondary" @click="closeCreateModal">취소</button>
+        <button class="btn-primary" :disabled="!newSegmentName.trim()" @click="handleCreateSegment">세그먼트 생성</button>
+      </template>
+    </BaseModal>
   </div>
 </template>

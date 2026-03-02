@@ -97,7 +97,7 @@
                   type="text"
                   required
                   :placeholder="$t('fanPoll.pollTitlePlaceholder')"
-                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  class="input-field"
                 />
               </div>
               <div>
@@ -106,7 +106,7 @@
                 </label>
                 <select
                   v-model="newPoll.type"
-                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  class="input-field"
                 >
                   <option value="SINGLE_CHOICE">{{ $t('fanPoll.typeSingle') }}</option>
                   <option value="MULTIPLE_CHOICE">{{ $t('fanPoll.typeMultiple') }}</option>
@@ -124,7 +124,7 @@
                 required
                 rows="2"
                 :placeholder="$t('fanPoll.pollDescriptionPlaceholder')"
-                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                class="input-field"
               />
             </div>
 
@@ -176,7 +176,7 @@
                   v-model="newPoll.deadline"
                   type="datetime-local"
                   required
-                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  class="input-field"
                 />
               </div>
             </div>
@@ -184,7 +184,7 @@
             <div class="flex items-center justify-end gap-3">
               <button
                 type="button"
-                class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                class="btn-secondary"
                 @click="showCreateForm = false"
               >
                 {{ $t('fanPoll.cancel') }}
@@ -192,7 +192,7 @@
               <button
                 type="submit"
                 :disabled="!isFormValid"
-                class="rounded-lg bg-primary-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+                class="btn-primary"
               >
                 {{ $t('fanPoll.createPoll') }}
               </button>
@@ -202,23 +202,7 @@
       </Transition>
 
       <!-- Status Filter -->
-      <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex space-x-6">
-          <button
-            v-for="tab in statusTabs"
-            :key="tab.key"
-            :class="[
-              activeFilter === tab.key
-                ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400',
-              'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
-            ]"
-            @click="activeFilter = tab.key"
-          >
-            {{ tab.label }} ({{ tab.count }})
-          </button>
-        </nav>
-      </div>
+      <OTabs v-model="activeFilter" :tabs="statusTabItems" class="mb-6" />
 
       <!-- Poll Cards Grid -->
       <div v-if="filteredPolls.length > 0" class="mb-6 grid gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
@@ -291,6 +275,7 @@ import type { FanPoll, PollType } from '@/types/fanPoll'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import PollCard from '@/components/fanpoll/PollCard.vue'
 import PollResultChart from '@/components/fanpoll/PollResultChart.vue'
 
@@ -332,6 +317,12 @@ const statusTabs = computed(() => [
   { key: 'scheduled' as const, label: t('fanPoll.filterScheduled'), count: store.scheduledPolls.length },
   { key: 'draft' as const, label: t('fanPoll.filterDraft'), count: store.draftPolls.length },
 ])
+
+const statusTabItems = computed(() => statusTabs.value.map(tab => ({
+  key: tab.key,
+  label: tab.label,
+  count: tab.count,
+})))
 
 const filteredPolls = computed(() => {
   if (activeFilter.value === 'active') return store.activePolls

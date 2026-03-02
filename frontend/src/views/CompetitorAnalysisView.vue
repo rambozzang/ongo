@@ -12,6 +12,7 @@ import {
   MinusIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline'
+import BaseModal from '@/components/common/BaseModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import CompetitorCard from '@/components/competitorAnalysis/CompetitorCard.vue'
@@ -310,7 +311,7 @@ onMounted(async () => {
           {{ $t('competitorAnalysis.contentGaps.description') }}
         </p>
       </div>
-      <div class="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      <div class="card">
         <ContentGapTable
           :gaps="contentGaps"
           @create-content="handleCreateContent"
@@ -349,25 +350,7 @@ onMounted(async () => {
     </div>
 
     <!-- Add Competitor Modal -->
-    <Teleport to="body">
-      <div
-        v-if="showAddModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        @click.self="handleCloseModal"
-      >
-        <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
-          <div class="mb-4 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ $t('competitorAnalysis.addCompetitorTitle') }}
-            </h3>
-            <button
-              class="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-              @click="handleCloseModal"
-            >
-              <XMarkIcon class="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            </button>
-          </div>
-
+    <BaseModal v-model="showAddModal" :title="$t('competitorAnalysis.addCompetitorTitle')" max-width="md">
           <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
             {{ $t('competitorAnalysis.addCompetitorDesc') }}
           </p>
@@ -381,7 +364,7 @@ onMounted(async () => {
               v-model="newCompetitorName"
               type="text"
               :placeholder="$t('competitorAnalysis.competitorNamePlaceholder')"
-              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              class="input-field"
             />
           </div>
 
@@ -394,7 +377,7 @@ onMounted(async () => {
             >
               <select
                 v-model="pUrl.platform"
-                class="rounded-lg border border-gray-300 bg-white px-2 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                class="input-field"
               >
                 <option
                   v-for="opt in platformOptions"
@@ -408,7 +391,7 @@ onMounted(async () => {
                 v-model="pUrl.url"
                 type="url"
                 :placeholder="$t('competitorAnalysis.platformUrlPlaceholder')"
-                class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                class="input-field flex-1"
               />
               <button
                 v-if="newPlatformUrls.length > 1"
@@ -426,24 +409,21 @@ onMounted(async () => {
             </button>
           </div>
 
-          <!-- Actions -->
-          <div class="flex justify-end gap-3">
+          <template #footer>
             <button
-              class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              class="btn-secondary"
               @click="handleCloseModal"
             >
               {{ $t('competitorAnalysis.cancel') }}
             </button>
             <button
-              class="btn-primary px-4 py-2 text-sm"
+              class="btn-primary"
               :disabled="processing || !newCompetitorName.trim()"
               @click="handleAddCompetitor"
             >
               {{ processing ? $t('competitorAnalysis.adding') : $t('competitorAnalysis.add') }}
             </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+          </template>
+    </BaseModal>
   </div>
 </template>

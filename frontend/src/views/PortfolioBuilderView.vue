@@ -31,7 +31,7 @@ onMounted(() => {
 
     <div v-else class="space-y-8">
       <!-- Summary Cards -->
-      <div v-if="summary" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div v-if="summary" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
         <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
@@ -96,7 +96,7 @@ onMounted(() => {
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ portfolios.length }})</span>
         </h2>
 
-        <div v-if="portfolios.length > 0" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div v-if="portfolios.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
           <div
             v-for="portfolio in portfolios"
             :key="portfolio.id"

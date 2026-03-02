@@ -15,6 +15,7 @@ import SafetyCheckCard from '@/components/brandsafety/SafetyCheckCard.vue'
 import SafetyRuleToggle from '@/components/brandsafety/SafetyRuleToggle.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 
 const { t } = useLocale()
 const store = useBrandSafetyStore()
@@ -22,6 +23,11 @@ const { checks, rules, summary, isLoading } = storeToRefs(store)
 
 const activeTab = ref<'checks' | 'rules'>('checks')
 const statusFilter = ref<string>('ALL')
+
+const safetyTabs = computed(() => [
+  { key: 'checks', label: t('brandSafety.checksTab'), count: checks.value.length },
+  { key: 'rules', label: t('brandSafety.rulesTab'), count: rules.value.length },
+])
 
 const statusFilters = [
   { value: 'ALL', label: t('brandSafety.filterAll') },
@@ -137,55 +143,7 @@ onMounted(() => {
     </div>
 
     <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex gap-8">
-        <button
-          @click="activeTab = 'checks'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'checks'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          <ShieldCheckIcon class="mr-1.5 inline h-4 w-4" />
-          {{ $t('brandSafety.checksTab') }}
-          <span
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === 'checks'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ checks.length }}
-          </span>
-        </button>
-
-        <button
-          @click="activeTab = 'rules'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'rules'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          <Cog6ToothIcon class="mr-1.5 inline h-4 w-4" />
-          {{ $t('brandSafety.rulesTab') }}
-          <span
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === 'rules'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ rules.length }}
-          </span>
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="safetyTabs" class="mb-6" />
 
     <!-- Loading -->
     <LoadingSpinner v-if="isLoading" :full-page="true" size="lg" />

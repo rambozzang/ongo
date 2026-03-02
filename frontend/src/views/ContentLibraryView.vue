@@ -73,7 +73,7 @@ onMounted(async () => {
     <template v-else>
       <!-- Summary Stats -->
       <div v-if="store.summary" class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-3 desktop:grid-cols-5">
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <ArchiveBoxIcon class="h-5 w-5 text-blue-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('contentLibrary.totalItems') }}</p>
@@ -83,7 +83,7 @@ onMounted(async () => {
           </p>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <ServerStackIcon class="h-5 w-5 text-green-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('contentLibrary.totalSize') }}</p>
@@ -93,7 +93,7 @@ onMounted(async () => {
           </p>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <FilmIcon class="h-5 w-5 text-red-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('contentLibrary.videoCount') }}</p>
@@ -103,7 +103,7 @@ onMounted(async () => {
           </p>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <PhotoIcon class="h-5 w-5 text-purple-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('contentLibrary.imageCount') }}</p>
@@ -113,7 +113,7 @@ onMounted(async () => {
           </p>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <FolderIcon class="h-5 w-5 text-amber-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('contentLibrary.folderCount') }}</p>
@@ -166,9 +166,9 @@ onMounted(async () => {
       <!-- Empty state -->
       <div
         v-else
-        class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-16 dark:border-gray-600"
+        class="card py-16 text-center"
       >
-        <ArchiveBoxIcon class="mb-3 h-12 w-12 text-gray-400 dark:text-gray-500" />
+        <ArchiveBoxIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-500" />
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $t('contentLibrary.noItems') }}</p>
         <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ $t('contentLibrary.noItemsDesc') }}</p>
       </div>

@@ -85,7 +85,7 @@ function handleBack() {
       <!-- ===== Board List Mode ===== -->
       <template v-if="!selectedBoard">
         <!-- Summary Cards -->
-        <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
           <!-- Total Boards -->
           <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <div class="flex items-center gap-2 mb-2">
@@ -146,7 +146,7 @@ function handleBack() {
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">({{ store.boards.length }})</span>
           </h2>
 
-          <div v-if="store.boards.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div v-if="store.boards.length > 0" class="grid grid-cols-1 tablet:grid-cols-2 desktop:grid-cols-4 gap-4">
             <MoodBoardCard
               v-for="board in store.boards"
               :key="board.id"

@@ -2,7 +2,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { useMediaQuery } from '@vueuse/core'
 import {
   ChartBarIcon,
   ChatBubbleLeftRightIcon,
@@ -11,6 +10,7 @@ import {
   MinusCircleIcon,
   FaceFrownIcon,
 } from '@heroicons/vue/24/outline'
+import OTabs from '@/components/ui/OTabs.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -22,7 +22,6 @@ import type { SentimentType } from '@/types/socialListening'
 
 const { t } = useI18n({ useScope: 'global' })
 const store = useSocialListeningStore()
-const isTablet = useMediaQuery('(min-width: 768px)')
 
 const { report, loading, selectedPeriod, sentimentRatio } = storeToRefs(store)
 
@@ -114,17 +113,17 @@ onMounted(() => {
       <!-- Stats Row -->
       <div class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-4">
         <!-- Total mentions -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
             {{ $t('socialListening.totalMentions') }}
           </p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
             {{ report.totalMentions.toLocaleString() }}
           </p>
         </div>
 
         <!-- Positive -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <FaceSmileIcon class="h-4 w-4 text-green-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -146,7 +145,7 @@ onMounted(() => {
         </div>
 
         <!-- Neutral -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <MinusCircleIcon class="h-4 w-4 text-gray-400" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -168,7 +167,7 @@ onMounted(() => {
         </div>
 
         <!-- Negative -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <FaceFrownIcon class="h-4 w-4 text-red-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -191,31 +190,14 @@ onMounted(() => {
       </div>
 
       <!-- Tabs -->
-      <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav :class="isTablet ? '-mb-px flex gap-6' : '-mb-px flex'">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            :class="[
-              isTablet
-                ? 'inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-medium transition-colors'
-                : 'flex-1 border-b-2 px-1 py-3 text-center text-xs font-medium transition-colors',
-              activeTab === tab.key
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
-            ]"
-            @click="activeTab = tab.key"
-          >
-            <component :is="tab.icon" :class="isTablet ? 'h-5 w-5' : 'mx-auto mb-1 h-5 w-5'" />
-            {{ tab.label }}
-          </button>
-        </nav>
+      <div class="mb-6">
+        <OTabs v-model="activeTab" :tabs="tabs" />
       </div>
 
       <!-- Overview Tab -->
       <div v-if="activeTab === 'overview'" class="space-y-6">
         <!-- Sentiment Trend Chart -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
             {{ $t('socialListening.sentimentTrend') }}
           </h3>
@@ -232,7 +214,7 @@ onMounted(() => {
         </div>
 
         <!-- Top Keywords -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
             {{ $t('socialListening.topKeywords') }}
           </h3>

@@ -38,7 +38,7 @@ onMounted(() => {
     <PageHeader :title="$t('videoSeo.title')" :description="$t('videoSeo.description')" />
 
     <!-- Summary Cards -->
-    <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
       <!-- 총 분석 -->
       <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm">
         <div class="flex items-center gap-3">
@@ -103,7 +103,7 @@ onMounted(() => {
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ analyses.length }})</span>
         </h2>
 
-        <div v-if="analyses.length > 0" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div v-if="analyses.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
           <SeoAnalysisCard
             v-for="analysis in analyses"
             :key="analysis.id"

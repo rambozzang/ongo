@@ -157,37 +157,26 @@
     </div>
 
     <!-- Apply Success Modal -->
-    <Teleport to="body">
-      <div
-        v-if="showSuccessModal"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div class="fixed inset-0 bg-black/50" @click="showSuccessModal = false" />
-        <div class="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
-          <div class="mb-4 flex justify-center">
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <CheckCircleIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-          <h3 class="mb-2 text-center text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {{ $t('aiCalendar.applySuccess.title') }}
-          </h3>
-          <p class="mb-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            {{ $t('aiCalendar.applySuccess.message', { count: appliedCount }) }}
-          </p>
-          <div class="flex gap-3">
-            <button class="btn-secondary flex-1" @click="showSuccessModal = false">
-              {{ $t('aiCalendar.applySuccess.stay') }}
-            </button>
-            <router-link to="/schedule" class="btn-primary flex-1 text-center">
-              {{ $t('aiCalendar.applySuccess.goToSchedule') }}
-            </router-link>
+    <BaseModal v-model="showSuccessModal" :title="$t('aiCalendar.applySuccess.title')" max-width="sm">
+      <div class="text-center">
+        <div class="mb-4 flex justify-center">
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+            <CheckCircleIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
           </div>
         </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('aiCalendar.applySuccess.message', { count: appliedCount }) }}
+        </p>
       </div>
-    </Teleport>
+      <template #footer>
+        <button class="btn-secondary flex-1" @click="showSuccessModal = false">
+          {{ $t('aiCalendar.applySuccess.stay') }}
+        </button>
+        <router-link to="/schedule" class="btn-primary flex-1 text-center">
+          {{ $t('aiCalendar.applySuccess.goToSchedule') }}
+        </router-link>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -202,6 +191,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import AiCalendarSettings from '@/components/aicalendar/AiCalendarSettings.vue'
 import AiCalendarGrid from '@/components/aicalendar/AiCalendarGrid.vue'
 import AiCalendarActions from '@/components/aicalendar/AiCalendarActions.vue'

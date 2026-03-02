@@ -50,22 +50,7 @@
     </div>
 
     <!-- Tab Navigation (Mobile) -->
-    <div class="border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="flex-1 border-b-2 px-1 py-3 text-center text-xs font-medium transition-colors"
-          :class="activeTab === tab.key
-            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-          @click="store.setActiveTab(tab.key)"
-        >
-          <component :is="tab.icon" class="mx-auto mb-1 h-5 w-5" />
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="tabs" class="mb-4" />
 
     <!-- Tab Content (Mobile) -->
     <div v-if="activeTab === 'active'">
@@ -192,22 +177,7 @@
     </div>
 
     <!-- Tab Navigation (Desktop) -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex gap-6">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-medium transition-colors"
-          :class="activeTab === tab.key
-            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-            : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
-          @click="store.setActiveTab(tab.key)"
-        >
-          <component :is="tab.icon" class="h-5 w-5" />
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
     <!-- Tab Content (Desktop) -->
     <div class="mt-6">
@@ -288,6 +258,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import AbTestCard from '@/components/abtest/AbTestCard.vue'
 import CreateTestForm from '@/components/abtest/CreateTestForm.vue'
 import { useAbTestStore } from '@/stores/abtest'

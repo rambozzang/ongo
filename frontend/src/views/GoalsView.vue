@@ -156,8 +156,8 @@ const formatNumber = (value: number): string => {
     <div class="mt-6">
 
       <!-- Stats Overview -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div class="grid grid-cols-2 desktop:grid-cols-4 gap-4 mb-8">
+        <div class="card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.activeGoals') }}</p>
@@ -171,7 +171,7 @@ const formatNumber = (value: number): string => {
           </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div class="card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.completed') }}</p>
@@ -185,7 +185,7 @@ const formatNumber = (value: number): string => {
           </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div class="card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.overallProgress') }}</p>
@@ -199,7 +199,7 @@ const formatNumber = (value: number): string => {
           </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div class="card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.nextDeadline') }}</p>
@@ -263,7 +263,7 @@ const formatNumber = (value: number): string => {
           <FunnelIcon class="w-5 h-5 text-gray-400" />
           <select
             v-model="sortBy"
-            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
           >
             <option value="deadline">{{ $t('goals.sortDeadline') }}</option>
             <option value="progress">{{ $t('goals.sortProgress') }}</option>
@@ -273,7 +273,7 @@ const formatNumber = (value: number): string => {
       </div>
 
       <!-- Goals Grid -->
-      <div v-if="displayedGoals.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div v-if="displayedGoals.length > 0" class="grid grid-cols-1 desktop:grid-cols-2 gap-6">
         <GoalCard
           v-for="goal in displayedGoals"
           :key="goal.id"
@@ -289,7 +289,7 @@ const formatNumber = (value: number): string => {
       <!-- Empty State -->
       <div
         v-else
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center"
+        class="card p-12 text-center"
       >
         <ChartBarIcon class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">

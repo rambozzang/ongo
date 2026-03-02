@@ -12,18 +12,19 @@ import { useCreatorMilestoneStore } from '@/stores/creatorMilestone'
 import MilestoneCard from '@/components/creatormilestone/MilestoneCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 
 const store = useCreatorMilestoneStore()
 const { milestones, summary, isLoading } = storeToRefs(store)
 
 const activeTab = ref<'ALL' | 'IN_PROGRESS' | 'ACHIEVED' | 'PENDING'>('ALL')
 
-const tabs = [
-  { key: 'ALL' as const, label: '전체' },
-  { key: 'IN_PROGRESS' as const, label: '진행중' },
-  { key: 'ACHIEVED' as const, label: '달성' },
-  { key: 'PENDING' as const, label: '대기' },
-]
+const tabItems = computed(() => [
+  { key: 'ALL', label: '전체', count: milestones.value.length },
+  { key: 'IN_PROGRESS', label: '진행중', count: milestones.value.filter((m) => m.status === 'IN_PROGRESS').length },
+  { key: 'ACHIEVED', label: '달성', count: milestones.value.filter((m) => m.status === 'ACHIEVED').length },
+  { key: 'PENDING', label: '대기', count: milestones.value.filter((m) => m.status === 'PENDING').length },
+])
 
 const filteredMilestones = computed(() => {
   if (activeTab.value === 'ALL') return milestones.value
@@ -103,7 +104,7 @@ onMounted(() => {
     <!-- Next Milestone Highlight -->
     <div
       v-if="nextMilestone"
-      class="mb-6 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-5 shadow-sm dark:border-blue-800 dark:from-blue-900/20 dark:to-indigo-900/20"
+      class="mb-6 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-primary-50 p-5 shadow-sm dark:border-blue-800 dark:from-blue-900/20 dark:to-primary-900/20"
     >
       <div class="flex items-center gap-2 mb-2">
         <StarIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -136,33 +137,7 @@ onMounted(() => {
     </div>
 
     <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex gap-8">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          @click="handleTabChange(tab.key)"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === tab.key
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          {{ tab.label }}
-          <span
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === tab.key
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ tab.key === 'ALL' ? milestones.length : milestones.filter((m) => m.status === tab.key).length }}
-          </span>
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="tabItems" class="mb-6" @update:model-value="handleTabChange($event as typeof activeTab)" />
 
     <!-- Loading -->
     <LoadingSpinner v-if="isLoading" :full-page="true" size="lg" />

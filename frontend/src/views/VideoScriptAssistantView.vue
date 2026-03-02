@@ -83,8 +83,8 @@ onMounted(() => {
         <!-- Average Word Count -->
         <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
           <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
-              <DocumentDuplicateIcon class="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30">
+              <DocumentDuplicateIcon class="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400">평균 단어수</p>

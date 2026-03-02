@@ -14,6 +14,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useTeamStore } from '@/stores/team'
 import { useApprovalStore } from '@/stores/approval'
+import OTabs from '@/components/ui/OTabs.vue'
 import TeamMemberCard from '@/components/team/TeamMemberCard.vue'
 import InviteMemberModal from '@/components/team/InviteMemberModal.vue'
 import TeamActivityFeed from '@/components/team/TeamActivityFeed.vue'
@@ -71,6 +72,19 @@ const inviteStatus = computed(() => {
   const pending = teamStore.invites.filter((i) => i.status === 'pending').length
   const expired = teamStore.invites.filter((i) => i.status === 'expired').length
   return { pending, expired }
+})
+
+const tabs = computed(() => {
+  const base = [
+    { key: 'members', label: t('team.tabs.members'), icon: UserGroupIcon, count: teamStore.members.length },
+    { key: 'invites', label: t('team.tabs.invites'), icon: EnvelopeIcon, count: inviteStatus.value.pending > 0 ? inviteStatus.value.pending : undefined },
+    { key: 'activity', label: t('team.tabs.activity'), icon: ClockIcon },
+  ]
+  if (canManage.value) {
+    base.push({ key: 'permissions', label: t('team.tabs.permissions'), icon: ShieldCheckIcon })
+  }
+  base.push({ key: 'workflow', label: t('team.tabs.workflow'), icon: ViewColumnsIcon })
+  return base
 })
 
 const handleCancelInvite = (inviteId: number) => {
@@ -131,23 +145,19 @@ watch(activeTab, (tab) => {
     <PageGuide :title="$t('team.pageGuideTitle')" :items="($tm('team.pageGuide') as string[])" />
 
     <!-- Stats -->
-    <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-      <div
-        class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
-      >
+    <div class="mb-6 grid grid-cols-2 gap-4 mobile:grid-cols-4">
+      <div class="card">
         <div class="flex items-center">
-          <UserGroupIcon class="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+          <UserGroupIcon class="h-8 w-8 text-primary-600 dark:text-primary-400" />
           <div class="ml-3">
             <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('team.stats.totalMembers') }}</p>
-            <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               {{ teamStore.members.length }}
             </p>
           </div>
         </div>
       </div>
-      <div
-        class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
-      >
+      <div class="card">
         <div class="flex items-center">
           <div
             class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
@@ -156,33 +166,29 @@ watch(activeTab, (tab) => {
           </div>
           <div class="ml-3">
             <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('team.stats.online') }}</p>
-            <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               {{ teamStore.onlineMembers.length }}
             </p>
           </div>
         </div>
       </div>
-      <div
-        class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
-      >
+      <div class="card">
         <div class="flex items-center">
           <EnvelopeIcon class="h-8 w-8 text-blue-600 dark:text-blue-400" />
           <div class="ml-3">
             <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('team.stats.pendingInvites') }}</p>
-            <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               {{ inviteStatus.pending }}
             </p>
           </div>
         </div>
       </div>
-      <div
-        class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
-      >
+      <div class="card">
         <div class="flex items-center">
           <ClockIcon class="h-8 w-8 text-purple-600 dark:text-purple-400" />
           <div class="ml-3">
             <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('team.stats.recentActivity') }}</p>
-            <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               {{ teamStore.activities.length }}
             </p>
           </div>
@@ -191,105 +197,18 @@ watch(activeTab, (tab) => {
     </div>
 
       <!-- Tabs -->
-      <div class="border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex space-x-8">
-          <button
-            @click="activeTab = 'members'"
-            :class="[
-              activeTab === 'members'
-                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
-              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
-            ]"
-          >
-            <UserGroupIcon class="mr-2 h-5 w-5" />
-            {{ $t('team.tabs.members') }}
-            <span
-              :class="[
-                activeTab === 'members'
-                  ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-                'ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium',
-              ]"
-            >
-              {{ teamStore.members.length }}
-            </span>
-          </button>
-          <button
-            @click="activeTab = 'invites'"
-            :class="[
-              activeTab === 'invites'
-                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
-              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
-            ]"
-          >
-            <EnvelopeIcon class="mr-2 h-5 w-5" />
-            {{ $t('team.tabs.invites') }}
-            <span
-              v-if="inviteStatus.pending > 0"
-              :class="[
-                activeTab === 'invites'
-                  ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-                'ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium',
-              ]"
-            >
-              {{ inviteStatus.pending }}
-            </span>
-          </button>
-          <button
-            @click="activeTab = 'activity'"
-            :class="[
-              activeTab === 'activity'
-                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
-              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
-            ]"
-          >
-            <ClockIcon class="mr-2 h-5 w-5" />
-            {{ $t('team.tabs.activity') }}
-          </button>
-          <button
-            v-if="canManage"
-            @click="activeTab = 'permissions'"
-            :class="[
-              activeTab === 'permissions'
-                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
-              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
-            ]"
-          >
-            <ShieldCheckIcon class="mr-2 h-5 w-5" />
-            {{ $t('team.tabs.permissions') }}
-          </button>
-          <button
-            @click="activeTab = 'workflow'"
-            :class="[
-              activeTab === 'workflow'
-                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
-              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
-            ]"
-          >
-            <ViewColumnsIcon class="mr-2 h-5 w-5" />
-            {{ $t('team.tabs.workflow') }}
-          </button>
-        </nav>
-      </div>
+      <OTabs v-model="activeTab" :tabs="tabs" />
 
       <!-- Tab Content -->
       <div class="mt-8">
         <!-- Members Tab -->
         <div v-if="activeTab === 'members'" class="space-y-6">
           <!-- Role Distribution -->
-          <div
-            class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
-          >
-            <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+          <div class="card">
+            <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">
               {{ $t('team.roleDistribution') }}
             </h3>
-            <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div class="mt-4 grid grid-cols-2 gap-4 mobile:grid-cols-4">
               <div
                 v-for="stat in roleStats"
                 :key="stat.role"
@@ -306,7 +225,7 @@ watch(activeTab, (tab) => {
           </div>
 
           <!-- Members Grid -->
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="grid gap-4 mobile:grid-cols-2 desktop:grid-cols-3">
             <TeamMemberCard
               v-for="member in teamStore.members"
               :key="member.id"
@@ -323,7 +242,7 @@ watch(activeTab, (tab) => {
             class="text-center py-12"
           >
             <EnvelopeIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
-            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
               {{ $t('team.noInvites') }}
             </h3>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -342,12 +261,12 @@ watch(activeTab, (tab) => {
           <div
             v-for="invite in teamStore.invites"
             :key="invite.id"
-            class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+            class="card"
           >
             <div class="flex items-start justify-between">
               <div class="flex-1">
                 <div class="flex items-center space-x-3">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {{ invite.email }}
                   </p>
                   <RoleBadge :role="invite.role" />
@@ -403,7 +322,7 @@ watch(activeTab, (tab) => {
         <!-- Activity Tab -->
         <div v-if="activeTab === 'activity'">
           <div
-            class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+            class="card"
           >
             <TeamActivityFeed />
           </div>
@@ -412,7 +331,7 @@ watch(activeTab, (tab) => {
         <!-- Permissions Tab -->
         <div v-if="activeTab === 'permissions'">
           <div
-            class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+            class="card"
           >
             <PermissionMatrix />
           </div>
@@ -422,17 +341,17 @@ watch(activeTab, (tab) => {
         <div v-if="activeTab === 'workflow'" class="space-y-8">
           <!-- Kanban Board -->
           <div>
-            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
               {{ $t('team.workflowBoard') }}
             </h3>
             <WorkflowBoard />
           </div>
 
           <!-- My Tasks & Pending Reviews -->
-          <div class="grid gap-6 lg:grid-cols-2">
+          <div class="grid gap-6 desktop:grid-cols-2">
             <!-- 내 작업 -->
-            <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-              <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-white">
+            <div class="card">
+              <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
                 {{ $t('team.myTasks') }}
               </h3>
               <div v-if="approvalStore.myTasks">
@@ -447,7 +366,7 @@ watch(activeTab, (tab) => {
                       class="flex items-center justify-between rounded-md border border-gray-100 p-3 dark:border-gray-700"
                     >
                       <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ task.videoTitle }}</p>
+                        <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ task.videoTitle }}</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.requesterName }}</p>
                       </div>
                       <span
@@ -475,7 +394,7 @@ watch(activeTab, (tab) => {
                       class="flex items-center justify-between rounded-md border border-gray-100 p-3 dark:border-gray-700"
                     >
                       <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ task.videoTitle }}</p>
+                        <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ task.videoTitle }}</p>
                         <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.reviewerName ?? $t('team.noReviewer') }}</p>
                       </div>
                       <span
@@ -505,9 +424,9 @@ watch(activeTab, (tab) => {
             </div>
 
             <!-- 대기 중인 검토 -->
-            <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+            <div class="card">
               <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
                   {{ $t('team.pendingReviews') }}
                 </h3>
                 <span
@@ -525,7 +444,7 @@ watch(activeTab, (tab) => {
                     class="flex items-center justify-between rounded-md border border-gray-100 p-3 dark:border-gray-700"
                   >
                     <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ review.videoTitle }}</p>
+                      <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ review.videoTitle }}</p>
                       <p class="text-xs text-gray-500 dark:text-gray-400">{{ review.requesterName }}</p>
                     </div>
                     <div class="ml-2 flex flex-wrap gap-1">

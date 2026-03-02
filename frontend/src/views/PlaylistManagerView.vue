@@ -176,164 +176,119 @@ onMounted(async () => {
     </div>
 
     <!-- ============ Create Playlist Modal ============ -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showCreateModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          @click="showCreateModal = false"
-        >
-          <Transition
-            enter-active-class="transition-all duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition-all duration-200"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="showCreateModal"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
-              @click.stop
-            >
-              <!-- Modal Header -->
-              <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  새 재생목록 만들기
-                </h2>
-                <button
-                  @click="showCreateModal = false"
-                  class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <XMarkIcon class="w-5 h-5" />
-                </button>
-              </div>
-
-              <!-- Modal Body -->
-              <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                <!-- Title -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    재생목록 제목 *
-                  </label>
-                  <input
-                    v-model="form.title"
-                    type="text"
-                    placeholder="재생목록 이름을 입력하세요"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Description -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    설명
-                  </label>
-                  <textarea
-                    v-model="form.description"
-                    rows="3"
-                    placeholder="재생목록 설명을 입력하세요"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 resize-none"
-                  />
-                </div>
-
-                <!-- Platform -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    플랫폼
-                  </label>
-                  <select
-                    v-model="form.platform"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  >
-                    <option value="YOUTUBE">YouTube</option>
-                    <option value="TIKTOK">TikTok</option>
-                    <option value="INSTAGRAM">Instagram</option>
-                    <option value="NAVER_CLIP">Naver Clip</option>
-                  </select>
-                </div>
-
-                <!-- Visibility -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    공개 설정
-                  </label>
-                  <select
-                    v-model="form.visibility"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  >
-                    <option value="PUBLIC">공개</option>
-                    <option value="UNLISTED">미등록</option>
-                    <option value="PRIVATE">비공개</option>
-                  </select>
-                </div>
-
-                <!-- Tags -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    태그
-                  </label>
-                  <div class="flex items-center gap-2">
-                    <div class="relative flex-1">
-                      <TagIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        v-model="tagInput"
-                        type="text"
-                        placeholder="태그를 입력하고 Enter"
-                        class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 pl-9 pr-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                        @keydown.enter.prevent="addTag"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      @click="addTag"
-                      class="btn-secondary px-3 py-2 text-sm"
-                    >
-                      추가
-                    </button>
-                  </div>
-                  <div v-if="form.tags && form.tags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
-                    <span
-                      v-for="tag in form.tags"
-                      :key="tag"
-                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
-                    >
-                      #{{ tag }}
-                      <button @click="removeTag(tag)" class="hover:text-primary-900 dark:hover:text-primary-100">
-                        <XMarkIcon class="w-3 h-3" />
-                      </button>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Modal Footer -->
-              <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
-                <button
-                  @click="showCreateModal = false"
-                  class="btn-secondary"
-                >
-                  취소
-                </button>
-                <button
-                  @click="handleCreate"
-                  :disabled="!form.title.trim()"
-                  class="btn-primary"
-                >
-                  만들기
-                </button>
-              </div>
-            </div>
-          </Transition>
+    <BaseModal v-model="showCreateModal" title="새 재생목록 만들기">
+      <div class="space-y-4">
+        <!-- Title -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            재생목록 제목 *
+          </label>
+          <input
+            v-model="form.title"
+            type="text"
+            placeholder="재생목록 이름을 입력하세요"
+            class="input-field w-full"
+          />
         </div>
-      </Transition>
-    </Teleport>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            설명
+          </label>
+          <textarea
+            v-model="form.description"
+            rows="3"
+            placeholder="재생목록 설명을 입력하세요"
+            class="input-field w-full resize-none"
+          />
+        </div>
+
+        <!-- Platform -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            플랫폼
+          </label>
+          <select
+            v-model="form.platform"
+            class="input-field w-full"
+          >
+            <option value="YOUTUBE">YouTube</option>
+            <option value="TIKTOK">TikTok</option>
+            <option value="INSTAGRAM">Instagram</option>
+            <option value="NAVER_CLIP">Naver Clip</option>
+          </select>
+        </div>
+
+        <!-- Visibility -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            공개 설정
+          </label>
+          <select
+            v-model="form.visibility"
+            class="input-field w-full"
+          >
+            <option value="PUBLIC">공개</option>
+            <option value="UNLISTED">미등록</option>
+            <option value="PRIVATE">비공개</option>
+          </select>
+        </div>
+
+        <!-- Tags -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            태그
+          </label>
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <TagIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                v-model="tagInput"
+                type="text"
+                placeholder="태그를 입력하고 Enter"
+                class="input-field w-full pl-9"
+                @keydown.enter.prevent="addTag"
+              />
+            </div>
+            <button
+              type="button"
+              @click="addTag"
+              class="btn-secondary px-3 py-2 text-sm"
+            >
+              추가
+            </button>
+          </div>
+          <div v-if="form.tags && form.tags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+            <span
+              v-for="tag in form.tags"
+              :key="tag"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+            >
+              #{{ tag }}
+              <button @click="removeTag(tag)" class="hover:text-primary-900 dark:hover:text-primary-100">
+                <XMarkIcon class="w-3 h-3" />
+              </button>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <button
+          @click="showCreateModal = false"
+          class="btn-secondary"
+        >
+          취소
+        </button>
+        <button
+          @click="handleCreate"
+          :disabled="!form.title.trim()"
+          class="btn-primary"
+        >
+          만들기
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>

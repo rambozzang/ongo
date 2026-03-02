@@ -16,7 +16,7 @@
     <PageGuide :title="$t('ideas.pageGuideTitle')" :items="($tm('ideas.pageGuide') as string[])" />
 
     <!-- Filters -->
-    <div class="mb-6 flex flex-col gap-4 sm:flex-row">
+    <div class="mb-6 flex flex-col gap-4 mobile:flex-row">
       <!-- Search -->
       <div class="flex-1">
         <div class="relative">
@@ -27,7 +27,7 @@
             v-model="searchQuery"
             type="text"
             :placeholder="$t('ideas.searchPlaceholder')"
-            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+            class="input-field pl-10"
           />
         </div>
       </div>
@@ -41,7 +41,7 @@
           :class="[
             'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
             selectedPriority === priority.value
-              ? 'bg-indigo-600 dark:bg-indigo-500 text-white'
+              ? 'bg-primary-600 dark:bg-primary-500 text-white'
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]"
         >
@@ -51,7 +51,7 @@
     </div>
 
     <!-- Kanban Board -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-[calc(100vh-16rem)]">
+    <div class="grid grid-cols-1 tablet:grid-cols-2 desktop:grid-cols-4 gap-6 h-[calc(100vh-16rem)]">
       <IdeaColumn
         :title="$t('ideas.columns.idea')"
         status="idea"

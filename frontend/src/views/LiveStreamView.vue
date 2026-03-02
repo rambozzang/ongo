@@ -11,6 +11,7 @@ import StreamCard from '@/components/livestream/StreamCard.vue'
 import ChatMessageRow from '@/components/livestream/ChatMessageRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import { useLocale } from '@/composables/useLocale'
 
 const { t } = useLocale()
@@ -19,12 +20,12 @@ const store = useLiveStreamStore()
 const activeFilter = ref<'ALL' | 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED'>('ALL')
 const selectedStreamId = ref<number | null>(null)
 
-const filterTabs: { value: typeof activeFilter.value; label: string }[] = [
-  { value: 'ALL', label: t('liveStream.filterAll') },
-  { value: 'LIVE', label: 'LIVE' },
-  { value: 'SCHEDULED', label: t('liveStream.filterScheduled') },
-  { value: 'ENDED', label: t('liveStream.filterEnded') },
-  { value: 'CANCELLED', label: t('liveStream.filterCancelled') },
+const filterTabs = [
+  { key: 'ALL', label: t('liveStream.filterAll') },
+  { key: 'LIVE', label: 'LIVE' },
+  { key: 'SCHEDULED', label: t('liveStream.filterScheduled') },
+  { key: 'ENDED', label: t('liveStream.filterEnded') },
+  { key: 'CANCELLED', label: t('liveStream.filterCancelled') },
 ]
 
 const filteredStreams = computed(() => {
@@ -106,29 +107,7 @@ onMounted(() => {
       </div>
 
       <!-- Status Filter Tabs -->
-      <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex gap-6">
-          <button
-            v-for="tab in filterTabs"
-            :key="tab.value"
-            @click="activeFilter = tab.value"
-            :class="[
-              'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors',
-              activeFilter === tab.value
-                ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
-            ]"
-          >
-            {{ tab.label }}
-            <span
-              v-if="tab.value === 'LIVE' && (store.summary?.liveNow ?? 0) > 0"
-              class="ml-1.5 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-300"
-            >
-              {{ store.summary?.liveNow }}
-            </span>
-          </button>
-        </nav>
-      </div>
+      <OTabs v-model="activeFilter" :tabs="filterTabs" class="mb-6" />
 
       <!-- Stream Card Grid -->
       <div v-if="filteredStreams.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">

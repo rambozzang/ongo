@@ -19,21 +19,7 @@
     <PageGuide :title="$t('brandVoice.pageGuideTitle')" :items="($tm('brandVoice.pageGuide') as string[])" />
 
     <!-- Tab Navigation -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex gap-6">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="border-b-2 px-1 py-3 text-sm font-medium transition-colors"
-          :class="activeTab === tab.key
-            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-            : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
     <!-- Tab Content -->
     <div class="mt-6">
@@ -98,7 +84,7 @@
       <div v-show="activeTab === 'generate'">
         <div class="grid gap-6 desktop:grid-cols-2">
           <!-- Input Panel -->
-          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm">
+          <div class="card">
             <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
               {{ $t('brandVoice.generate.title') }}
             </h2>
@@ -111,7 +97,7 @@
                 </label>
                 <select
                   v-model="generateForm.profileId"
-                  class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  class="input-field"
                   :disabled="store.generating"
                 >
                   <option :value="null" disabled>
@@ -135,7 +121,7 @@
                 <textarea
                   v-model="generateForm.prompt"
                   rows="4"
-                  class="w-full resize-y rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  class="input-field resize-y"
                   :placeholder="$t('brandVoice.generate.promptPlaceholder')"
                   :disabled="store.generating"
                 />
@@ -148,7 +134,7 @@
                 </label>
                 <select
                   v-model="generateForm.platform"
-                  class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  class="input-field"
                   :disabled="store.generating"
                 >
                   <option value="" disabled>{{ $t('brandVoice.generate.platformSelect') }}</option>
@@ -168,7 +154,7 @@
                     v-model.number="generateForm.maxLength"
                     type="number"
                     min="0"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    class="input-field"
                     :placeholder="$t('brandVoice.generate.maxLengthPlaceholder')"
                     :disabled="store.generating"
                   />
@@ -205,7 +191,7 @@
             <!-- Result -->
             <div
               v-if="store.generatedResult"
-              class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
+              class="card"
             >
               <div class="mb-3 flex items-center justify-between">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -290,7 +276,7 @@
       <div v-show="activeTab === 'analysis'">
         <div class="grid gap-6 desktop:grid-cols-2">
           <!-- Input Panel -->
-          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm">
+          <div class="card">
             <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
               {{ $t('brandVoice.analysis.title') }}
             </h2>
@@ -303,7 +289,7 @@
                 <textarea
                   v-model="analysisText"
                   rows="8"
-                  class="w-full resize-y rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  class="input-field resize-y"
                   :placeholder="$t('brandVoice.analysis.inputPlaceholder')"
                   :disabled="store.analyzing"
                 />
@@ -381,6 +367,7 @@ import {
   ArrowPathIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/vue/24/outline'
+import OTabs from '@/components/ui/OTabs.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import VoiceProfileCard from '@/components/brandvoice/VoiceProfileCard.vue'

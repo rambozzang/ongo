@@ -91,7 +91,7 @@ onMounted(() => {
     <template v-else>
       <!-- 최적 업로드 시간 섹션 -->
       <div class="mb-8">
-        <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
+        <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
           <ClockIcon class="h-5 w-5 text-primary-500" />
           {{ $t('calendarInsights.optimalUploadTime') }}
         </h2>
@@ -120,7 +120,7 @@ onMounted(() => {
 
       <!-- 일별 인사이트 그리드 -->
       <div class="mb-8">
-        <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
+        <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
           <CalendarDaysIcon class="h-5 w-5 text-primary-500" />
           {{ $t('calendarInsights.dailyInsights') }}
         </h2>
@@ -149,7 +149,7 @@ onMounted(() => {
 
       <!-- 업로드 패턴 섹션 -->
       <div class="mb-8">
-        <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
+        <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
           <ChartBarIcon class="h-5 w-5 text-primary-500" />
           {{ $t('calendarInsights.uploadPatterns') }}
         </h2>

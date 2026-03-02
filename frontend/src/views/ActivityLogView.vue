@@ -36,7 +36,7 @@ const summaryCards: SummaryCardData[] = [
   { label: 'activityLog.summary.upload', key: 'upload', icon: ArrowUpTrayIcon, colorClass: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' },
   { label: 'activityLog.summary.publish', key: 'publish', icon: CheckCircleIcon, colorClass: 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30' },
   { label: 'activityLog.summary.schedule', key: 'schedule', icon: ClockIcon, colorClass: 'text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30' },
-  { label: 'activityLog.summary.aiGenerate', key: 'ai_generate', icon: SparklesIcon, colorClass: 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30' },
+  { label: 'activityLog.summary.aiGenerate', key: 'ai_generate', icon: SparklesIcon, colorClass: 'text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30' },
   { label: 'activityLog.summary.delete', key: 'delete', icon: TrashIcon, colorClass: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30' },
   { label: 'activityLog.summary.channelConnect', key: 'channel_connect', icon: LinkIcon, colorClass: 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/30' },
 ]

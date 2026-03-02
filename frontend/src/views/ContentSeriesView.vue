@@ -9,6 +9,7 @@ import {
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import SeriesCard from '@/components/contentseries/SeriesCard.vue'
 import EpisodeList from '@/components/contentseries/EpisodeList.vue'
 import SeriesAnalyticsPanel from '@/components/contentseries/SeriesAnalyticsPanel.vue'
@@ -170,248 +171,74 @@ function removeTag(tag: string) {
     </div>
 
     <!-- ============ Create Series Modal ============ -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showCreateModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          @click="showCreateModal = false"
-        >
-          <Transition
-            enter-active-class="transition-all duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition-all duration-200"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="showCreateModal"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
-              @click.stop
-            >
-              <!-- Modal Header -->
-              <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {{ $t('contentSeries.createModalTitle') }}
-                </h2>
-                <button
-                  @click="showCreateModal = false"
-                  class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <XMarkIcon class="w-5 h-5" />
-                </button>
-              </div>
-
-              <!-- Modal Body -->
-              <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                <!-- Title -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {{ $t('contentSeries.formTitle') }}
-                  </label>
-                  <input
-                    v-model="form.title"
-                    type="text"
-                    :placeholder="$t('contentSeries.formTitlePlaceholder')"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Description -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {{ $t('contentSeries.formDescription') }}
-                  </label>
-                  <textarea
-                    v-model="form.description"
-                    rows="3"
-                    :placeholder="$t('contentSeries.formDescriptionPlaceholder')"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 resize-none"
-                  ></textarea>
-                </div>
-
-                <!-- Platform -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {{ $t('contentSeries.formPlatform') }}
-                  </label>
-                  <select
-                    v-model="form.platform"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  >
-                    <option value="youtube">YouTube</option>
-                    <option value="tiktok">TikTok</option>
-                    <option value="instagram">Instagram</option>
-                    <option value="naverclip">Naver Clip</option>
-                  </select>
-                </div>
-
-                <!-- Frequency -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {{ $t('contentSeries.formFrequency') }}
-                  </label>
-                  <select
-                    v-model="form.frequency"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  >
-                    <option value="DAILY">{{ $t('contentSeries.freqDaily') }}</option>
-                    <option value="WEEKLY">{{ $t('contentSeries.freqWeekly') }}</option>
-                    <option value="BIWEEKLY">{{ $t('contentSeries.freqBiweekly') }}</option>
-                    <option value="MONTHLY">{{ $t('contentSeries.freqMonthly') }}</option>
-                    <option value="CUSTOM">{{ $t('contentSeries.freqCustom') }}</option>
-                  </select>
-                </div>
-
-                <!-- Planned Episodes -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {{ $t('contentSeries.formPlannedEpisodes') }}
-                  </label>
-                  <input
-                    v-model.number="form.plannedEpisodes"
-                    type="number"
-                    min="1"
-                    max="999"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Tags -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {{ $t('contentSeries.formTags') }}
-                  </label>
-                  <div class="flex items-center gap-2">
-                    <div class="relative flex-1">
-                      <TagIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        v-model="tagInput"
-                        type="text"
-                        :placeholder="$t('contentSeries.formTagPlaceholder')"
-                        class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 pl-9 pr-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                        @keydown.enter.prevent="addTag"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      @click="addTag"
-                      class="btn-secondary px-3 py-2 text-sm"
-                    >
-                      {{ $t('contentSeries.add') }}
-                    </button>
-                  </div>
-                  <div v-if="form.tags && form.tags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
-                    <span
-                      v-for="tag in form.tags"
-                      :key="tag"
-                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
-                    >
-                      #{{ tag }}
-                      <button @click="removeTag(tag)" class="hover:text-primary-900 dark:hover:text-primary-100">
-                        <XMarkIcon class="w-3 h-3" />
-                      </button>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Modal Footer -->
-              <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
-                <button
-                  @click="showCreateModal = false"
-                  class="btn-secondary"
-                >
-                  {{ $t('contentSeries.cancel') }}
-                </button>
-                <button
-                  @click="handleCreate"
-                  :disabled="!form.title.trim()"
-                  class="btn-primary"
-                >
-                  {{ $t('contentSeries.create') }}
-                </button>
-              </div>
-            </div>
-          </Transition>
+    <BaseModal v-model="showCreateModal" :title="$t('contentSeries.createModalTitle')" max-width="lg">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('contentSeries.formTitle') }}</label>
+          <input v-model="form.title" type="text" :placeholder="$t('contentSeries.formTitlePlaceholder')" class="input-field" />
         </div>
-      </Transition>
-    </Teleport>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('contentSeries.formDescription') }}</label>
+          <textarea v-model="form.description" rows="3" :placeholder="$t('contentSeries.formDescriptionPlaceholder')" class="input-field resize-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('contentSeries.formPlatform') }}</label>
+          <select v-model="form.platform" class="input-field">
+            <option value="youtube">YouTube</option>
+            <option value="tiktok">TikTok</option>
+            <option value="instagram">Instagram</option>
+            <option value="naverclip">Naver Clip</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('contentSeries.formFrequency') }}</label>
+          <select v-model="form.frequency" class="input-field">
+            <option value="DAILY">{{ $t('contentSeries.freqDaily') }}</option>
+            <option value="WEEKLY">{{ $t('contentSeries.freqWeekly') }}</option>
+            <option value="BIWEEKLY">{{ $t('contentSeries.freqBiweekly') }}</option>
+            <option value="MONTHLY">{{ $t('contentSeries.freqMonthly') }}</option>
+            <option value="CUSTOM">{{ $t('contentSeries.freqCustom') }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('contentSeries.formPlannedEpisodes') }}</label>
+          <input v-model.number="form.plannedEpisodes" type="number" min="1" max="999" class="input-field" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('contentSeries.formTags') }}</label>
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <TagIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input v-model="tagInput" type="text" :placeholder="$t('contentSeries.formTagPlaceholder')" class="input-field pl-9" @keydown.enter.prevent="addTag" />
+            </div>
+            <button type="button" @click="addTag" class="btn-secondary px-3 py-2 text-sm">{{ $t('contentSeries.add') }}</button>
+          </div>
+          <div v-if="form.tags && form.tags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+            <span v-for="tag in form.tags" :key="tag" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+              #{{ tag }}
+              <button @click="removeTag(tag)" class="hover:text-primary-900 dark:hover:text-primary-100"><XMarkIcon class="w-3 h-3" /></button>
+            </span>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <button @click="showCreateModal = false" class="btn-secondary">{{ $t('contentSeries.cancel') }}</button>
+        <button @click="handleCreate" :disabled="!form.title.trim()" class="btn-primary">{{ $t('contentSeries.create') }}</button>
+      </template>
+    </BaseModal>
 
     <!-- ============ Detail / Analytics Modal ============ -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showDetailModal && selectedSeries"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          @click="showDetailModal = false"
-        >
-          <Transition
-            enter-active-class="transition-all duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition-all duration-200"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="showDetailModal && selectedSeries"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
-              @click.stop
-            >
-              <!-- Detail Header -->
-              <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <div class="flex items-start justify-between">
-                  <div class="flex-1 min-w-0">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 truncate">
-                      {{ selectedSeries.title }}
-                    </h2>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {{ selectedSeries.description }}
-                    </p>
-                  </div>
-                  <button
-                    @click="showDetailModal = false"
-                    class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ml-4"
-                  >
-                    <XMarkIcon class="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              <!-- Detail Body -->
-              <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-                <!-- Episodes -->
-                <EpisodeList
-                  :episodes="selectedSeries.episodes"
-                  @select-episode="() => {}"
-                />
-
-                <!-- Analytics -->
-                <SeriesAnalyticsPanel
-                  v-if="store.analytics && store.analytics.seriesId === selectedSeries.id"
-                  :analytics="store.analytics"
-                />
-              </div>
-            </div>
-          </Transition>
+    <BaseModal v-model="showDetailModal" :title="selectedSeries?.title ?? ''" max-width="xl">
+      <template v-if="selectedSeries">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">{{ selectedSeries.description }}</p>
+        <div class="space-y-6">
+          <EpisodeList :episodes="selectedSeries.episodes" @select-episode="() => {}" />
+          <SeriesAnalyticsPanel
+            v-if="store.analytics && store.analytics.seriesId === selectedSeries.id"
+            :analytics="store.analytics"
+          />
         </div>
-      </Transition>
-    </Teleport>
+      </template>
+    </BaseModal>
   </div>
 </template>

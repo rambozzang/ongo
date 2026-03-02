@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
   UsersIcon,
@@ -13,6 +13,7 @@ import BehaviorCard from '@/components/faninsights/BehaviorCard.vue'
 import FanSegmentCard from '@/components/faninsights/FanSegmentCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import { useLocale } from '@/composables/useLocale'
 
 const { t } = useLocale()
@@ -23,15 +24,11 @@ type TabType = 'demographics' | 'behaviors' | 'segments'
 
 const activeTab = ref<TabType>('demographics')
 
-const tabs: { value: TabType; label: string }[] = [
-  { value: 'demographics', label: t('fanInsights.tabDemographics') },
-  { value: 'behaviors', label: t('fanInsights.tabBehaviors') },
-  { value: 'segments', label: t('fanInsights.tabSegments') },
-]
-
-const handleTabChange = (tab: TabType) => {
-  activeTab.value = tab
-}
+const tabItems = computed(() => [
+  { key: 'demographics', label: t('fanInsights.tabDemographics') },
+  { key: 'behaviors', label: t('fanInsights.tabBehaviors') },
+  { key: 'segments', label: t('fanInsights.tabSegments') },
+])
 
 onMounted(() => {
   store.fetchDemographics()
@@ -94,21 +91,7 @@ onMounted(() => {
 
     <template v-else>
       <!-- Tabs -->
-      <div class="mb-6 flex gap-2 border-b border-gray-200 dark:border-gray-700">
-        <button
-          v-for="tab in tabs"
-          :key="tab.value"
-          @click="handleTabChange(tab.value)"
-          :class="[
-            'px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px',
-            activeTab === tab.value
-              ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
-          ]"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
+      <OTabs v-model="activeTab" :tabs="tabItems" class="mb-6" />
 
       <!-- Demographics Tab -->
       <div v-if="activeTab === 'demographics'">

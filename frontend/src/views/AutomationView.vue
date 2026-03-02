@@ -10,6 +10,7 @@ import AutomationFormModal from '@/components/automation/AutomationFormModal.vue
 import SmartTriggerTemplateSelector from '@/components/automation/SmartTriggerTemplateSelector.vue'
 import WorkflowNodeEditor from '@/components/automation/WorkflowNodeEditor.vue'
 import WorkflowExecutionHistory from '@/components/automation/WorkflowExecutionHistory.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import type { AutomationRule, ConditionOperator, Workflow, WorkflowTriggerType, WorkflowActionType } from '@/types/automation'
 import type { SmartTriggerTemplate } from '@/components/automation/SmartTriggerTemplateSelector.vue'
@@ -22,6 +23,11 @@ const automationStore = useAutomationStore()
 const notification = useNotification()
 
 const activeTab = ref<'rules' | 'workflows' | 'logs'>('rules')
+const automationTabs = computed(() => [
+  { key: 'rules', label: t('automation.tabRules'), count: automationStore.rules.length },
+  { key: 'workflows', label: t('automation.tabWorkflows'), count: workflows.value.length },
+  { key: 'logs', label: t('automation.tabLogs'), count: automationStore.logs.length },
+])
 const isModalOpen = ref(false)
 const editingRule = ref<AutomationRule | undefined>(undefined)
 
@@ -232,78 +238,10 @@ onUnmounted(() => {
       <PageGuide :title="$t('automation.pageGuideTitle')" :items="($tm('automation.pageGuide') as string[])" />
 
       <!-- Tabs -->
-      <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex gap-8">
-          <button
-            @click="activeTab = 'rules'"
-            :class="[
-              'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-              activeTab === 'rules'
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            ]"
-          >
-            {{ $t('automation.tabRules') }}
-            <span
-              :class="[
-                'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-                activeTab === 'rules'
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-              ]"
-            >
-              {{ automationStore.rules.length }}
-            </span>
-          </button>
-
-          <button
-            @click="activeTab = 'workflows'"
-            :class="[
-              'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-              activeTab === 'workflows'
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            ]"
-          >
-            {{ $t('automation.tabWorkflows') }}
-            <span
-              :class="[
-                'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-                activeTab === 'workflows'
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-              ]"
-            >
-              {{ workflows.length }}
-            </span>
-          </button>
-
-          <button
-            @click="activeTab = 'logs'"
-            :class="[
-              'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-              activeTab === 'logs'
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-            ]"
-          >
-            {{ $t('automation.tabLogs') }}
-            <span
-              :class="[
-                'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-                activeTab === 'logs'
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-              ]"
-            >
-              {{ automationStore.logs.length }}
-            </span>
-          </button>
-        </nav>
-      </div>
+      <OTabs v-model="activeTab" :tabs="automationTabs" class="mb-6" />
 
       <!-- Smart Trigger Templates -->
-      <div v-if="activeTab === 'rules' && smartTemplates.length > 0" class="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+      <div v-if="activeTab === 'rules' && smartTemplates.length > 0" class="card mb-6">
         <SmartTriggerTemplateSelector
           :templates="smartTemplates"
           @select="handleSmartTriggerSelect"
@@ -348,7 +286,7 @@ onUnmounted(() => {
       <!-- Workflows Tab -->
       <div v-if="activeTab === 'workflows'">
         <!-- Workflow Editor -->
-        <div v-if="showWorkflowEditor" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div v-if="showWorkflowEditor" class="card mb-6">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {{ editingWorkflow ? $t('automation.editWorkflow') : $t('automation.newWorkflow') }}
@@ -378,7 +316,7 @@ onUnmounted(() => {
               {{ $t('automation.workflowSubtitle') }}
             </p>
             <button
-              class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              class="btn-primary inline-flex items-center gap-2"
               @click="openWorkflowEditor()"
             >
               <PlusIcon class="w-4 h-4" />
@@ -390,7 +328,7 @@ onUnmounted(() => {
             <div
               v-for="wf in workflows"
               :key="wf.id"
-              class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+              class="card"
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">

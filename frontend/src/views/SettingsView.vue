@@ -6,24 +6,7 @@
     <PageGuide :title="t('settings.pageGuideTitle')" :items="(tm('settings.pageGuide') as string[])" />
 
     <!-- Tab Navigation -->
-    <div class="mb-6 overflow-x-auto border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex space-x-6 desktop:space-x-8" aria-label="Settings tabs">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors"
-          :class="
-            activeTab === tab.key
-              ? 'border-primary-600 text-primary-600'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300'
-          "
-          @click="activeTab = tab.key"
-        >
-          <component :is="tab.icon" class="h-5 w-5" />
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="settingsTabs" class="mb-6" />
 
     <!-- Profile Tab -->
     <div v-if="activeTab === 'profile'" class="space-y-6">
@@ -567,6 +550,7 @@ import {
   ShieldExclamationIcon,
   ClockIcon,
 } from '@heroicons/vue/24/outline'
+import OTabs from '@/components/ui/OTabs.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import ActivityFilter from '@/components/activity/ActivityFilter.vue'
@@ -599,7 +583,7 @@ type SettingsTab = 'profile' | 'notifications' | 'defaults' | 'account' | 'activ
 
 const activeTab = ref<SettingsTab>('profile')
 
-const tabs = computed<{ key: SettingsTab; label: string; icon: typeof UserIcon }[]>(() => [
+const settingsTabs = computed(() => [
   { key: 'profile', label: t('settings.tabs.profile'), icon: UserIcon },
   { key: 'notifications', label: t('settings.tabs.notifications'), icon: BellIcon },
   { key: 'defaults', label: t('settings.tabs.defaults'), icon: Cog6ToothIcon },

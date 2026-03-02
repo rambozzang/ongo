@@ -2,15 +2,16 @@
 import { ref, computed, onMounted } from 'vue'
 import {
   PlusIcon,
-  XMarkIcon,
   CurrencyDollarIcon,
   BriefcaseIcon,
   ClockIcon,
   CheckCircleIcon,
   FunnelIcon,
+  XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import DealCard from '@/components/sponsorshiptracker/DealCard.vue'
 import DeliverableList from '@/components/sponsorshiptracker/DeliverableList.vue'
 import RevenueChart from '@/components/sponsorshiptracker/RevenueChart.vue'
@@ -126,7 +127,7 @@ onMounted(async () => {
 
     <!-- Summary Stats -->
     <div v-if="summary" class="grid grid-cols-2 tablet:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-6">
+      <div class="card">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
             <BriefcaseIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -140,7 +141,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-6">
+      <div class="card">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
             <CheckCircleIcon class="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -154,7 +155,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-6">
+      <div class="card">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
             <CurrencyDollarIcon class="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -168,7 +169,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-6">
+      <div class="card">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
             <ClockIcon class="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
@@ -186,7 +187,7 @@ onMounted(async () => {
     <!-- Revenue Chart -->
     <div
       v-if="summary && summary.revenueByMonth.length > 0"
-      class="bg-white/80 dark:bg-gray-900/80 backdrop-blur rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg p-6 mb-6"
+      class="card mb-6"
     >
       <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         월별 매출
@@ -246,161 +247,116 @@ onMounted(async () => {
     </div>
 
     <!-- ============ Create Deal Modal ============ -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showCreateModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          @click="showCreateModal = false"
-        >
-          <Transition
-            enter-active-class="transition-all duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition-all duration-200"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="showCreateModal"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
-              @click.stop
-            >
-              <!-- Modal Header -->
-              <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  새 스폰서십 등록
-                </h2>
-                <button
-                  @click="showCreateModal = false"
-                  class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <XMarkIcon class="w-5 h-5" />
-                </button>
-              </div>
-
-              <!-- Modal Body -->
-              <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                <!-- Brand Name -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    브랜드명 *
-                  </label>
-                  <input
-                    v-model="form.brandName"
-                    type="text"
-                    placeholder="예: 삼성전자, 나이키"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Contact Name -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    담당자명
-                  </label>
-                  <input
-                    v-model="form.contactName"
-                    type="text"
-                    placeholder="담당자 이름"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Contact Email -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    담당자 이메일
-                  </label>
-                  <input
-                    v-model="form.contactEmail"
-                    type="email"
-                    placeholder="email@brand.com"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Deal Value -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    딜 금액 (KRW)
-                  </label>
-                  <input
-                    v-model.number="form.dealValue"
-                    type="number"
-                    min="0"
-                    step="100000"
-                    placeholder="0"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Dates -->
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      시작일
-                    </label>
-                    <input
-                      v-model="form.startDate"
-                      type="date"
-                      class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      종료일
-                    </label>
-                    <input
-                      v-model="form.endDate"
-                      type="date"
-                      class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                    />
-                  </div>
-                </div>
-
-                <!-- Notes -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    메모
-                  </label>
-                  <textarea
-                    v-model="form.notes"
-                    rows="3"
-                    placeholder="추가 메모사항..."
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 resize-none"
-                  />
-                </div>
-              </div>
-
-              <!-- Modal Footer -->
-              <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
-                <button
-                  @click="showCreateModal = false"
-                  class="btn-secondary"
-                >
-                  취소
-                </button>
-                <button
-                  @click="handleCreate"
-                  :disabled="!form.brandName.trim()"
-                  class="btn-primary"
-                >
-                  등록
-                </button>
-              </div>
-            </div>
-          </Transition>
+    <BaseModal v-model="showCreateModal" title="새 스폰서십 등록">
+      <div class="space-y-4">
+        <!-- Brand Name -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            브랜드명 *
+          </label>
+          <input
+            v-model="form.brandName"
+            type="text"
+            placeholder="예: 삼성전자, 나이키"
+            class="input-field w-full"
+          />
         </div>
-      </Transition>
-    </Teleport>
+
+        <!-- Contact Name -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            담당자명
+          </label>
+          <input
+            v-model="form.contactName"
+            type="text"
+            placeholder="담당자 이름"
+            class="input-field w-full"
+          />
+        </div>
+
+        <!-- Contact Email -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            담당자 이메일
+          </label>
+          <input
+            v-model="form.contactEmail"
+            type="email"
+            placeholder="email@brand.com"
+            class="input-field w-full"
+          />
+        </div>
+
+        <!-- Deal Value -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            딜 금액 (KRW)
+          </label>
+          <input
+            v-model.number="form.dealValue"
+            type="number"
+            min="0"
+            step="100000"
+            placeholder="0"
+            class="input-field w-full"
+          />
+        </div>
+
+        <!-- Dates -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              시작일
+            </label>
+            <input
+              v-model="form.startDate"
+              type="date"
+              class="input-field w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              종료일
+            </label>
+            <input
+              v-model="form.endDate"
+              type="date"
+              class="input-field w-full"
+            />
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            메모
+          </label>
+          <textarea
+            v-model="form.notes"
+            rows="3"
+            placeholder="추가 메모사항..."
+            class="input-field w-full resize-none"
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <button
+          @click="showCreateModal = false"
+          class="btn-secondary"
+        >
+          취소
+        </button>
+        <button
+          @click="handleCreate"
+          :disabled="!form.brandName.trim()"
+          class="btn-primary"
+        >
+          등록
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- ============ Deal Detail Drawer ============ -->
     <Teleport to="body">

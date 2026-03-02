@@ -6,6 +6,7 @@ import {
   ChartBarIcon,
   ScaleIcon,
 } from '@heroicons/vue/24/outline'
+import OTabs from '@/components/ui/OTabs.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -19,12 +20,12 @@ const store = useContentAbAnalyzerStore()
 const selectedTest = ref<ContentAbTest | null>(null)
 const activeStatusFilter = ref<string>('ALL')
 
-const statusFilters = [
+const statusFilters = computed(() => [
   { key: 'ALL', label: '전체' },
   { key: 'RUNNING', label: '진행중' },
   { key: 'COMPLETED', label: '완료' },
   { key: 'PAUSED', label: '일시정지' },
-]
+])
 
 onMounted(() => {
   store.fetchTests()
@@ -76,7 +77,7 @@ function handleSelectTest(id: number) {
       <!-- Summary Cards -->
       <div class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
         <!-- Total Tests -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2 mb-2">
             <div class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
               <BeakerIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -89,7 +90,7 @@ function handleSelectTest(id: number) {
         </div>
 
         <!-- Completed -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2 mb-2">
             <div class="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
               <CheckCircleIcon class="w-4 h-4 text-green-600 dark:text-green-400" />
@@ -102,7 +103,7 @@ function handleSelectTest(id: number) {
         </div>
 
         <!-- Average Confidence -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2 mb-2">
             <div class="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
               <ChartBarIcon class="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -115,7 +116,7 @@ function handleSelectTest(id: number) {
         </div>
 
         <!-- A/B Win Rate -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2 mb-2">
             <div class="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
               <ScaleIcon class="w-4 h-4 text-orange-600 dark:text-orange-400" />
@@ -131,23 +132,7 @@ function handleSelectTest(id: number) {
       </div>
 
       <!-- Status Filter Tabs -->
-      <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex space-x-6">
-          <button
-            v-for="filter in statusFilters"
-            :key="filter.key"
-            @click="activeStatusFilter = filter.key"
-            :class="[
-              activeStatusFilter === filter.key
-                ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400',
-              'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
-            ]"
-          >
-            {{ filter.label }}
-          </button>
-        </nav>
-      </div>
+      <OTabs v-model="activeStatusFilter" :tabs="statusFilters" class="mb-6" />
 
       <!-- Test Cards List -->
       <section class="mb-6">
@@ -162,7 +147,7 @@ function handleSelectTest(id: number) {
 
         <div
           v-else
-          class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-12 text-center shadow-sm"
+          class="card p-12 text-center"
         >
           <BeakerIcon class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">

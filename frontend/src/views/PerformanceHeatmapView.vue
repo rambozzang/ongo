@@ -16,7 +16,7 @@
         </label>
         <select
           v-model="store.selectedPlatform"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 tablet:w-40"
+          class="input-field tablet:w-40"
           @change="handleFilterChange"
         >
           <option value="youtube">{{ $t('performanceHeatmap.platformYoutube') }}</option>
@@ -33,7 +33,7 @@
         </label>
         <select
           v-model="store.selectedMetric"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 tablet:w-40"
+          class="input-field tablet:w-40"
           @change="handleFilterChange"
         >
           <option value="VIEWS">{{ $t('performanceHeatmap.metricViews') }}</option>
@@ -51,7 +51,7 @@
         </label>
         <select
           v-model="store.selectedPeriod"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 tablet:w-40"
+          class="input-field tablet:w-40"
           @change="handleFilterChange"
         >
           <option value="7d">{{ $t('performanceHeatmap.period7d') }}</option>

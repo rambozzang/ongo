@@ -4,7 +4,6 @@ import { storeToRefs } from 'pinia'
 import {
   UsersIcon,
   PlusIcon,
-  XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import { useFanCommunityStore } from '@/stores/fanCommunity'
 import PostCard from '@/components/fancommunity/PostCard.vue'
@@ -12,6 +11,7 @@ import PostTypeFilter from '@/components/fancommunity/PostTypeFilter.vue'
 import CommunityStats from '@/components/fancommunity/CommunityStats.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import type { PostType, CommunityPost } from '@/types/fanCommunity'
 
 const store = useFanCommunityStore()
@@ -159,125 +159,38 @@ onMounted(() => {
     </div>
 
     <!-- New Post Modal -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showNewPostModal"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          @click.self="closeNewPostModal"
-        >
-          <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
-            <!-- Modal header -->
-            <div class="mb-5 flex items-center justify-between">
-              <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">새 게시글</h2>
-              <button
-                class="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-                @click="closeNewPostModal"
-              >
-                <XMarkIcon class="h-5 w-5" />
-              </button>
-            </div>
-
-            <!-- Form -->
-            <div class="space-y-4">
-              <!-- Post type -->
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  게시글 타입
-                </label>
-                <select
-                  v-model="newPostType"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                >
-                  <option
-                    v-for="opt in typeOptions"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    {{ opt.label }}
-                  </option>
-                </select>
-              </div>
-
-              <!-- Title -->
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  제목
-                </label>
-                <input
-                  v-model="newPostTitle"
-                  type="text"
-                  placeholder="게시글 제목을 입력하세요"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-                />
-              </div>
-
-              <!-- Content -->
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  내용
-                </label>
-                <textarea
-                  v-model="newPostContent"
-                  rows="5"
-                  placeholder="게시글 내용을 입력하세요"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-                />
-              </div>
-
-              <!-- Tags -->
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  태그
-                </label>
-                <input
-                  v-model="newPostTags"
-                  type="text"
-                  placeholder="쉼표로 구분 (예: 공지, 이벤트)"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-                />
-              </div>
-
-              <!-- Pin toggle -->
-              <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  게시글 고정
-                </label>
-                <label class="relative inline-flex cursor-pointer items-center">
-                  <input v-model="newPostPinned" type="checkbox" class="peer sr-only" />
-                  <div
-                    class="h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:bg-gray-700 dark:peer-focus:ring-primary-800"
-                  />
-                </label>
-              </div>
-            </div>
-
-            <!-- Modal actions -->
-            <div class="mt-6 flex items-center justify-end gap-3">
-              <button
-                class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                @click="closeNewPostModal"
-              >
-                취소
-              </button>
-              <button
-                class="btn-primary text-sm"
-                :disabled="!newPostTitle.trim() || !newPostContent.trim()"
-                @click="handleCreatePost"
-              >
-                게시글 작성
-              </button>
-            </div>
-          </div>
+    <BaseModal v-model="showNewPostModal" title="새 게시글" max-width="lg">
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">게시글 타입</label>
+          <select v-model="newPostType" class="input-field">
+            <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
         </div>
-      </Transition>
-    </Teleport>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">제목</label>
+          <input v-model="newPostTitle" type="text" placeholder="게시글 제목을 입력하세요" class="input-field" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">내용</label>
+          <textarea v-model="newPostContent" rows="5" placeholder="게시글 내용을 입력하세요" class="input-field" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">태그</label>
+          <input v-model="newPostTags" type="text" placeholder="쉼표로 구분 (예: 공지, 이벤트)" class="input-field" />
+        </div>
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300">게시글 고정</label>
+          <label class="relative inline-flex cursor-pointer items-center">
+            <input v-model="newPostPinned" type="checkbox" class="peer sr-only" />
+            <div class="h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:bg-gray-700 dark:peer-focus:ring-primary-800" />
+          </label>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="closeNewPostModal">취소</button>
+        <button class="btn-primary" :disabled="!newPostTitle.trim() || !newPostContent.trim()" @click="handleCreatePost">게시글 작성</button>
+      </template>
+    </BaseModal>
   </div>
 </template>

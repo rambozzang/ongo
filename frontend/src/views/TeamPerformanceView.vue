@@ -37,7 +37,7 @@ onMounted(() => {
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div class="card">
         <div class="flex items-center gap-2">
           <UsersIcon class="h-5 w-5 text-primary-500" />
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 멤버</p>
@@ -47,7 +47,7 @@ onMounted(() => {
         </p>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div class="card">
         <div class="flex items-center gap-2">
           <ChartBarIcon class="h-5 w-5 text-green-500" />
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">평균 완료율</p>
@@ -57,7 +57,7 @@ onMounted(() => {
         </p>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div class="card">
         <div class="flex items-center gap-2">
           <CheckCircleIcon class="h-5 w-5 text-blue-500" />
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 완료 작업</p>
@@ -67,7 +67,7 @@ onMounted(() => {
         </p>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div class="card">
         <div class="flex items-center gap-2">
           <DocumentTextIcon class="h-5 w-5 text-yellow-500" />
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">총 콘텐츠 수</p>
@@ -115,7 +115,7 @@ onMounted(() => {
       <div class="mb-8 grid grid-cols-1 gap-6 desktop:grid-cols-3">
         <!-- 팀원 카드 그리드 (2/3) -->
         <div class="desktop:col-span-2">
-          <h2 class="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-gray-100">
+          <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
             <UsersIcon class="h-5 w-5 text-primary-500" />
             팀원 현황
           </h2>
@@ -130,7 +130,7 @@ onMounted(() => {
 
           <div
             v-else
-            class="rounded-xl border border-gray-200 bg-white py-12 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
+            class="card py-12 text-center"
           >
             <UsersIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">

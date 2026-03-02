@@ -90,7 +90,7 @@ onMounted(() => {
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div class="card">
         <div class="flex items-center gap-2">
           <ChartBarSquareIcon class="h-5 w-5 text-primary-500" />
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.totalMetrics') }}</p>
@@ -100,7 +100,7 @@ onMounted(() => {
         </p>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div class="card">
         <div class="flex items-center gap-2">
           <ArrowTrendingUpIcon class="h-5 w-5 text-green-500" />
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.aboveAvg') }}</p>
@@ -110,7 +110,7 @@ onMounted(() => {
         </p>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div class="card">
         <div class="flex items-center gap-2">
           <TrophyIcon class="h-5 w-5 text-yellow-500" />
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.topPercentile') }}</p>
@@ -120,7 +120,7 @@ onMounted(() => {
         </p>
       </div>
 
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div class="card">
         <div class="flex items-center gap-2">
           <ExclamationTriangleIcon class="h-5 w-5 text-orange-500" />
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.weakestMetric') }}</p>
@@ -142,7 +142,7 @@ onMounted(() => {
           :class="[
             'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
             platformFilter === opt.value
-              ? 'bg-blue-600 text-white dark:bg-blue-500'
+              ? 'bg-primary-600 text-white dark:bg-primary-500'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
           ]"
         >
@@ -169,7 +169,7 @@ onMounted(() => {
         </div>
         <div
           v-else
-          class="rounded-xl border border-gray-200 bg-white py-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
+          class="card py-10 text-center"
         >
           <ChartBarSquareIcon class="mx-auto mb-2 h-10 w-10 text-gray-400 dark:text-gray-600" />
           <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.noBenchmarkData') }}</p>
@@ -192,7 +192,7 @@ onMounted(() => {
         </div>
         <div
           v-else
-          class="rounded-xl border border-gray-200 bg-white py-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
+          class="card py-10 text-center"
         >
           <ChartBarSquareIcon class="mx-auto mb-2 h-10 w-10 text-gray-400 dark:text-gray-600" />
           <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.noPercentileData') }}</p>
@@ -204,7 +204,7 @@ onMounted(() => {
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
           {{ $t('creatorBenchmark.peerComparison') }}
         </h2>
-        <div v-if="filteredPeers.length > 0" class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div v-if="filteredPeers.length > 0" class="card overflow-x-auto">
           <table class="w-full min-w-[600px]">
             <thead>
               <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
@@ -236,7 +236,7 @@ onMounted(() => {
         </div>
         <div
           v-else
-          class="rounded-xl border border-gray-200 bg-white py-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
+          class="card py-10 text-center"
         >
           <UserGroupIcon class="mx-auto mb-2 h-10 w-10 text-gray-400 dark:text-gray-600" />
           <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('creatorBenchmark.noPeerData') }}</p>

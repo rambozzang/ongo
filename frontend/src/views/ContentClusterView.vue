@@ -115,7 +115,7 @@ onMounted(() => {
           <div class="flex items-start gap-3 mb-3">
             <RectangleGroupIcon class="h-6 w-6 flex-shrink-0 text-blue-500" />
             <div>
-              <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {{ selectedCluster.name }}
               </h2>
               <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">

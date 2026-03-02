@@ -178,7 +178,7 @@ function handleCloseDeliveryLog() {
     <div v-else>
       <!-- Summary cards -->
       <div class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-3">
-        <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div class="card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.total') }}</p>
@@ -191,7 +191,7 @@ function handleCloseDeliveryLog() {
             </div>
           </div>
         </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div class="card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.active') }}</p>
@@ -204,7 +204,7 @@ function handleCloseDeliveryLog() {
             </div>
           </div>
         </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div class="card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.errors') }}</p>

@@ -169,7 +169,7 @@ const cancelSelection = () => {
               })
             "
             :placeholder="$t('inbox.searchPlaceholder')"
-            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+            class="input-field flex-1"
           />
         </div>
 
@@ -182,7 +182,7 @@ const cancelSelection = () => {
                   platform: ($event.target as HTMLSelectElement).value as MessagePlatform | 'ALL',
                 })
               "
-              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="input-field"
             >
               <option v-for="option in platformOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -196,7 +196,7 @@ const cancelSelection = () => {
                   type: ($event.target as HTMLSelectElement).value as MessageType | 'ALL',
                 })
               "
-              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="input-field"
             >
               <option v-for="option in typeOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -210,7 +210,7 @@ const cancelSelection = () => {
                   status: ($event.target as HTMLSelectElement).value as MessageStatus | 'ALL',
                 })
               "
-              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="input-field"
             >
               <option v-for="option in statusOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -258,7 +258,7 @@ const cancelSelection = () => {
     <!-- Main Content: Split Layout -->
     <div class="flex h-[calc(100vh-20rem)] overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
       <!-- Desktop: Split View -->
-      <div class="hidden md:flex flex-1">
+      <div class="hidden tablet:flex flex-1">
         <!-- Left: Message List (1/3 width) -->
         <div class="w-1/3 border-r border-gray-200 dark:border-gray-700">
           <InboxMessageList
@@ -287,7 +287,7 @@ const cancelSelection = () => {
       </div>
 
       <!-- Mobile: List or Detail -->
-      <div class="md:hidden flex-1">
+      <div class="tablet:hidden flex-1">
         <!-- Message List -->
         <div v-show="!showMobileDetail" class="h-full">
           <InboxMessageList

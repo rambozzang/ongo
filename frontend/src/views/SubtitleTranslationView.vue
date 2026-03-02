@@ -17,6 +17,7 @@ import TranslationLineEditor from '@/components/subtitletranslation/TranslationL
 import LanguageSelector from '@/components/subtitletranslation/LanguageSelector.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 
 const { t } = useLocale()
 const store = useSubtitleTranslationStore()
@@ -223,73 +224,37 @@ onMounted(() => {
     </div>
 
     <!-- Create Translation Modal -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="showCreateModal"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          @click.self="closeCreateModal"
-        >
-          <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
-            <div class="mb-5 flex items-center justify-between">
-              <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-                {{ $t('subtitleTranslation.newRequest') }}
-              </h2>
-              <button
-                class="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-                @click="closeCreateModal"
-              >
-                <XMarkIcon class="h-5 w-5" />
-              </button>
-            </div>
-
-            <div class="space-y-4">
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {{ $t('subtitleTranslation.videoTitle') }}
-                </label>
-                <input
-                  v-model="newVideoTitle"
-                  type="text"
-                  :placeholder="$t('subtitleTranslation.videoTitlePlaceholder')"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-                />
-              </div>
-
-              <LanguageSelector
-                v-model="newSourceLang"
-                :label="$t('subtitleTranslation.sourceLanguage')"
-                :languages="[{ code: 'ko', name: 'Korean', nativeName: '한국어' }, ...supportedLanguages]"
-                :placeholder="$t('subtitleTranslation.sourceLanguagePlaceholder')"
-              />
-
-              <LanguageSelector
-                v-model="newTargetLang"
-                :label="$t('subtitleTranslation.targetLanguage')"
-                :languages="supportedLanguages"
-                :placeholder="$t('subtitleTranslation.targetLanguagePlaceholder')"
-              />
-            </div>
-
-            <div class="mt-6 flex items-center justify-end gap-3">
-              <button
-                class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                @click="closeCreateModal"
-              >
-                {{ $t('subtitleTranslation.cancel') }}
-              </button>
-              <button
-                class="btn-primary text-sm"
-                :disabled="!newVideoTitle.trim() || !newTargetLang"
-                @click="handleCreate"
-              >
-                {{ $t('subtitleTranslation.requestTranslation') }}
-              </button>
-            </div>
-          </div>
+    <BaseModal v-model="showCreateModal" :title="$t('subtitleTranslation.newRequest')" max-width="lg">
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('subtitleTranslation.videoTitle') }}
+          </label>
+          <input
+            v-model="newVideoTitle"
+            type="text"
+            :placeholder="$t('subtitleTranslation.videoTitlePlaceholder')"
+            class="input-field"
+          />
         </div>
-      </Transition>
-    </Teleport>
+        <LanguageSelector
+          v-model="newSourceLang"
+          :label="$t('subtitleTranslation.sourceLanguage')"
+          :languages="[{ code: 'ko', name: 'Korean', nativeName: '한국어' }, ...supportedLanguages]"
+          :placeholder="$t('subtitleTranslation.sourceLanguagePlaceholder')"
+        />
+        <LanguageSelector
+          v-model="newTargetLang"
+          :label="$t('subtitleTranslation.targetLanguage')"
+          :languages="supportedLanguages"
+          :placeholder="$t('subtitleTranslation.targetLanguagePlaceholder')"
+        />
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="closeCreateModal">{{ $t('subtitleTranslation.cancel') }}</button>
+        <button class="btn-primary" :disabled="!newVideoTitle.trim() || !newTargetLang" @click="handleCreate">{{ $t('subtitleTranslation.requestTranslation') }}</button>
+      </template>
+    </BaseModal>
 
     <!-- Translation Detail Side Panel -->
     <Teleport to="body">

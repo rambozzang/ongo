@@ -33,8 +33,8 @@ onMounted(() => {
 
     <div v-else class="space-y-8">
       <!-- Summary Cards -->
-      <div v-if="summary" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div v-if="summary" class="grid grid-cols-1 gap-4 mobile:grid-cols-2 desktop:grid-cols-4">
+        <div class="card">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
               <FilmIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -48,7 +48,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
               <ArrowTrendingUpIcon class="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -62,7 +62,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
               <FunnelIcon class="h-5 w-5 text-purple-600 dark:text-purple-400" />
@@ -76,7 +76,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
               <ExclamationTriangleIcon class="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -102,7 +102,7 @@ onMounted(() => {
           <div
             v-for="funnel in funnels"
             :key="funnel.id"
-            class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+            class="card"
           >
             <div class="mb-4 flex items-center justify-between">
               <div>
@@ -123,7 +123,7 @@ onMounted(() => {
 
         <div
           v-else
-          class="rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
+          class="card py-16 text-center"
         >
           <FunnelIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('contentFunnel.noFunnelTitle') }}</h3>

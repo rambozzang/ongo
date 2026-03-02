@@ -59,14 +59,14 @@
     </div>
 
     <!-- Mobile Tabs -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700 lg:hidden">
+    <div class="mb-6 border-b border-gray-200 dark:border-gray-700 desktop:hidden">
       <div class="flex gap-4">
         <button
           @click="activeTab = 'editor'"
           :class="[
             'border-b-2 py-3 text-sm font-medium transition-colors',
             activeTab === 'editor'
-              ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+              ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
           ]"
         >
@@ -77,7 +77,7 @@
           :class="[
             'border-b-2 py-3 text-sm font-medium transition-colors',
             activeTab === 'preview'
-              ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+              ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
           ]"
         >
@@ -88,12 +88,12 @@
 
     <!-- Main Content -->
     <div>
-      <div class="flex flex-col gap-8 lg:flex-row">
+      <div class="flex flex-col gap-8 desktop:flex-row">
         <!-- Editor Panel -->
         <div
           :class="[
             'flex-1',
-            activeTab === 'preview' ? 'hidden lg:block' : 'block',
+            activeTab === 'preview' ? 'hidden desktop:block' : 'block',
           ]"
         >
           <BioEditor
@@ -112,8 +112,8 @@
         <!-- Preview Panel -->
         <div
           :class="[
-            'lg:w-[400px]',
-            activeTab === 'editor' ? 'hidden lg:block' : 'block',
+            'desktop:w-[400px]',
+            activeTab === 'editor' ? 'hidden desktop:block' : 'block',
           ]"
         >
           <div class="sticky top-8">

@@ -9,6 +9,7 @@ import {
 import { useCreatorMarketplaceStore } from '@/stores/creatorMarketplace'
 import ListingCard from '@/components/creatormarketplace/ListingCard.vue'
 import OrderRow from '@/components/creatormarketplace/OrderRow.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import { useLocale } from '@/composables/useLocale'
@@ -20,14 +21,14 @@ const store = useCreatorMarketplaceStore()
 type ServiceFilter = 'ALL' | 'EDITING' | 'THUMBNAIL' | 'SCRIPT' | 'VOICEOVER' | 'CONSULTING' | 'COLLAB'
 const activeFilter = ref<ServiceFilter>('ALL')
 
-const filterTabs = computed<{ value: ServiceFilter; label: string }[]>(() => [
-  { value: 'ALL', label: t('creatorMarketplace.filterAll') },
-  { value: 'EDITING', label: t('creatorMarketplace.filterEditing') },
-  { value: 'THUMBNAIL', label: t('creatorMarketplace.filterThumbnail') },
-  { value: 'SCRIPT', label: t('creatorMarketplace.filterScript') },
-  { value: 'VOICEOVER', label: t('creatorMarketplace.filterVoiceover') },
-  { value: 'CONSULTING', label: t('creatorMarketplace.filterConsulting') },
-  { value: 'COLLAB', label: t('creatorMarketplace.filterCollab') },
+const filterTabs = computed<{ key: ServiceFilter; label: string }[]>(() => [
+  { key: 'ALL', label: t('creatorMarketplace.filterAll') },
+  { key: 'EDITING', label: t('creatorMarketplace.filterEditing') },
+  { key: 'THUMBNAIL', label: t('creatorMarketplace.filterThumbnail') },
+  { key: 'SCRIPT', label: t('creatorMarketplace.filterScript') },
+  { key: 'VOICEOVER', label: t('creatorMarketplace.filterVoiceover') },
+  { key: 'CONSULTING', label: t('creatorMarketplace.filterConsulting') },
+  { key: 'COLLAB', label: t('creatorMarketplace.filterCollab') },
 ])
 
 const filteredListings = computed(() => {
@@ -72,7 +73,7 @@ onMounted(() => {
       <!-- Summary Cards -->
       <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">
         <!-- Total Listings -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <ShoppingBagIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorMarketplace.totalListings') }}</p>
@@ -83,7 +84,7 @@ onMounted(() => {
         </div>
 
         <!-- Active Orders -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <ClipboardDocumentListIcon class="h-5 w-5 text-blue-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorMarketplace.activeOrders') }}</p>
@@ -94,7 +95,7 @@ onMounted(() => {
         </div>
 
         <!-- Total Revenue -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <CurrencyDollarIcon class="h-5 w-5 text-green-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorMarketplace.totalRevenue') }}</p>
@@ -105,7 +106,7 @@ onMounted(() => {
         </div>
 
         <!-- Average Rating -->
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-2">
             <StarIcon class="h-5 w-5 text-yellow-400" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorMarketplace.avgRating') }}</p>
@@ -118,23 +119,7 @@ onMounted(() => {
       </div>
 
       <!-- Service Type Filter Tabs -->
-      <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex flex-wrap gap-4">
-          <button
-            v-for="tab in filterTabs"
-            :key="tab.value"
-            @click="activeFilter = tab.value"
-            :class="[
-              'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors',
-              activeFilter === tab.value
-                ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
-            ]"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
-      </div>
+      <OTabs v-model="activeFilter" :tabs="filterTabs" class="mb-6" />
 
       <!-- Listing Card Grid -->
       <div v-if="filteredListings.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
@@ -149,7 +134,7 @@ onMounted(() => {
       <!-- Empty state -->
       <div
         v-else
-        class="rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
+        class="card py-16 text-center"
       >
         <ShoppingBagIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -171,7 +156,7 @@ onMounted(() => {
 
         <div
           v-if="store.orders.length > 0"
-          class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+          class="card overflow-hidden"
         >
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -200,7 +185,7 @@ onMounted(() => {
         <!-- Empty orders -->
         <div
           v-else
-          class="rounded-xl border border-gray-200 bg-white py-12 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
+          class="card py-12 text-center"
         >
           <ClipboardDocumentListIcon class="mx-auto mb-3 h-10 w-10 text-gray-400 dark:text-gray-600" />
           <p class="text-sm text-gray-500 dark:text-gray-400">

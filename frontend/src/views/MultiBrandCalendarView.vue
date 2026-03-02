@@ -12,6 +12,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import BrandTag from '@/components/multibrandcalendar/BrandTag.vue'
 import ScheduleCard from '@/components/multibrandcalendar/ScheduleCard.vue'
 import ConflictAlert from '@/components/multibrandcalendar/ConflictAlert.vue'
@@ -314,299 +315,203 @@ function removeEditor(editor: string) {
     </div>
 
     <!-- ============ Create Brand Modal ============ -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showCreateBrandModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          @click="showCreateBrandModal = false"
-        >
-          <Transition
-            enter-active-class="transition-all duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition-all duration-200"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="showCreateBrandModal"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
-              @click.stop
-            >
-              <!-- Modal Header -->
-              <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  새 브랜드 추가
-                </h2>
-                <button
-                  @click="showCreateBrandModal = false"
-                  class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <XMarkIcon class="w-5 h-5" />
-                </button>
-              </div>
-
-              <!-- Modal Body -->
-              <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                <!-- Name -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    브랜드 이름
-                  </label>
-                  <input
-                    v-model="brandForm.name"
-                    type="text"
-                    placeholder="예: 뷰티 브랜드 A"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Color picker -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    브랜드 색상
-                  </label>
-                  <div class="flex flex-wrap gap-3">
-                    <button
-                      v-for="option in brandColorOptions"
-                      :key="option.key"
-                      @click="brandForm.color = option.key"
-                      :class="[
-                        'w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center',
-                        brandForm.color === option.key
-                          ? 'border-gray-900 dark:border-white scale-110 shadow-lg'
-                          : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600',
-                      ]"
-                      :style="{ backgroundColor: option.hex }"
-                      :title="option.label"
-                    >
-                      <span
-                        v-if="brandForm.color === option.key"
-                        class="text-white text-sm font-bold"
-                      >
-                        &#10003;
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Category -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    카테고리
-                  </label>
-                  <input
-                    v-model="brandForm.category"
-                    type="text"
-                    placeholder="예: 뷰티, 테크, 음식"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Assigned Editors -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    담당 에디터
-                  </label>
-                  <div class="flex items-center gap-2">
-                    <div class="relative flex-1">
-                      <UserIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        v-model="editorInput"
-                        type="text"
-                        placeholder="에디터 이름 입력"
-                        class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 pl-9 pr-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                        @keydown.enter.prevent="addEditor"
-                      />
-                    </div>
-                    <button type="button" @click="addEditor" class="btn-secondary px-3 py-2 text-sm">
-                      추가
-                    </button>
-                  </div>
-                  <div v-if="brandForm.assignedEditors && brandForm.assignedEditors.length > 0" class="flex flex-wrap gap-1.5 mt-2">
-                    <span
-                      v-for="editor in brandForm.assignedEditors"
-                      :key="editor"
-                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
-                    >
-                      {{ editor }}
-                      <button @click="removeEditor(editor)" class="hover:text-primary-900 dark:hover:text-primary-100">
-                        <XMarkIcon class="w-3 h-3" />
-                      </button>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Modal Footer -->
-              <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
-                <button @click="showCreateBrandModal = false" class="btn-secondary">
-                  취소
-                </button>
-                <button
-                  @click="handleCreateBrand"
-                  :disabled="!brandForm.name.trim()"
-                  class="btn-primary"
-                >
-                  브랜드 추가
-                </button>
-              </div>
-            </div>
-          </Transition>
+    <BaseModal v-model="showCreateBrandModal" title="새 브랜드 추가" max-width="lg">
+      <div class="space-y-4">
+        <!-- Name -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            브랜드 이름
+          </label>
+          <input
+            v-model="brandForm.name"
+            type="text"
+            placeholder="예: 뷰티 브랜드 A"
+            class="input-field"
+          />
         </div>
-      </Transition>
-    </Teleport>
+
+        <!-- Color picker -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            브랜드 색상
+          </label>
+          <div class="flex flex-wrap gap-3">
+            <button
+              v-for="option in brandColorOptions"
+              :key="option.key"
+              @click="brandForm.color = option.key"
+              :class="[
+                'w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center',
+                brandForm.color === option.key
+                  ? 'border-gray-900 dark:border-white scale-110 shadow-lg'
+                  : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600',
+              ]"
+              :style="{ backgroundColor: option.hex }"
+              :title="option.label"
+            >
+              <span
+                v-if="brandForm.color === option.key"
+                class="text-white text-sm font-bold"
+              >
+                &#10003;
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            카테고리
+          </label>
+          <input
+            v-model="brandForm.category"
+            type="text"
+            placeholder="예: 뷰티, 테크, 음식"
+            class="input-field"
+          />
+        </div>
+
+        <!-- Assigned Editors -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            담당 에디터
+          </label>
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <UserIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                v-model="editorInput"
+                type="text"
+                placeholder="에디터 이름 입력"
+                class="input-field pl-9"
+                @keydown.enter.prevent="addEditor"
+              />
+            </div>
+            <button type="button" @click="addEditor" class="btn-secondary px-3 py-2 text-sm">
+              추가
+            </button>
+          </div>
+          <div v-if="brandForm.assignedEditors && brandForm.assignedEditors.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+            <span
+              v-for="editor in brandForm.assignedEditors"
+              :key="editor"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+            >
+              {{ editor }}
+              <button @click="removeEditor(editor)" class="hover:text-primary-900 dark:hover:text-primary-100">
+                <XMarkIcon class="w-3 h-3" />
+              </button>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <button @click="showCreateBrandModal = false" class="btn-secondary">
+          취소
+        </button>
+        <button
+          @click="handleCreateBrand"
+          :disabled="!brandForm.name.trim()"
+          class="btn-primary"
+        >
+          브랜드 추가
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- ============ Create Schedule Modal ============ -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showCreateScheduleModal"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          @click="showCreateScheduleModal = false"
-        >
-          <Transition
-            enter-active-class="transition-all duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition-all duration-200"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="showCreateScheduleModal"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
-              @click.stop
-            >
-              <!-- Modal Header -->
-              <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  새 일정 추가
-                </h2>
-                <button
-                  @click="showCreateScheduleModal = false"
-                  class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <XMarkIcon class="w-5 h-5" />
-                </button>
-              </div>
-
-              <!-- Modal Body -->
-              <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                <!-- Brand select -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    브랜드
-                  </label>
-                  <select
-                    v-model="scheduleForm.brandId"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  >
-                    <option v-for="brand in store.brands" :key="brand.id" :value="brand.id">
-                      {{ brand.name }}
-                    </option>
-                  </select>
-                </div>
-
-                <!-- Title -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    콘텐츠 제목
-                  </label>
-                  <input
-                    v-model="scheduleForm.title"
-                    type="text"
-                    placeholder="예: 봄 신상 메이크업 리뷰"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Platform -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    플랫폼
-                  </label>
-                  <select
-                    v-model="scheduleForm.platform"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  >
-                    <option v-for="platform in platformOptions" :key="platform.value" :value="platform.value">
-                      {{ platform.label }}
-                    </option>
-                  </select>
-                </div>
-
-                <!-- Date / Time -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    예약 날짜 / 시간
-                  </label>
-                  <input
-                    v-model="scheduleForm.scheduledAt"
-                    type="datetime-local"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Assigned Editor -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    담당 에디터
-                  </label>
-                  <input
-                    v-model="scheduleForm.assignedTo"
-                    type="text"
-                    placeholder="에디터 이름 (선택)"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
-                  />
-                </div>
-
-                <!-- Notes -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    메모
-                  </label>
-                  <textarea
-                    v-model="scheduleForm.notes"
-                    rows="3"
-                    placeholder="추가 메모 (선택)"
-                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 resize-none"
-                  ></textarea>
-                </div>
-              </div>
-
-              <!-- Modal Footer -->
-              <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
-                <button @click="showCreateScheduleModal = false" class="btn-secondary">
-                  취소
-                </button>
-                <button
-                  @click="handleCreateSchedule"
-                  :disabled="!scheduleForm.title.trim() || !scheduleForm.scheduledAt"
-                  class="btn-primary"
-                >
-                  일정 추가
-                </button>
-              </div>
-            </div>
-          </Transition>
+    <BaseModal v-model="showCreateScheduleModal" title="새 일정 추가" max-width="lg">
+      <div class="space-y-4">
+        <!-- Brand select -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            브랜드
+          </label>
+          <select v-model="scheduleForm.brandId" class="input-field">
+            <option v-for="brand in store.brands" :key="brand.id" :value="brand.id">
+              {{ brand.name }}
+            </option>
+          </select>
         </div>
-      </Transition>
-    </Teleport>
+
+        <!-- Title -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            콘텐츠 제목
+          </label>
+          <input
+            v-model="scheduleForm.title"
+            type="text"
+            placeholder="예: 봄 신상 메이크업 리뷰"
+            class="input-field"
+          />
+        </div>
+
+        <!-- Platform -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            플랫폼
+          </label>
+          <select v-model="scheduleForm.platform" class="input-field">
+            <option v-for="platform in platformOptions" :key="platform.value" :value="platform.value">
+              {{ platform.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Date / Time -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            예약 날짜 / 시간
+          </label>
+          <input
+            v-model="scheduleForm.scheduledAt"
+            type="datetime-local"
+            class="input-field"
+          />
+        </div>
+
+        <!-- Assigned Editor -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            담당 에디터
+          </label>
+          <input
+            v-model="scheduleForm.assignedTo"
+            type="text"
+            placeholder="에디터 이름 (선택)"
+            class="input-field"
+          />
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            메모
+          </label>
+          <textarea
+            v-model="scheduleForm.notes"
+            rows="3"
+            placeholder="추가 메모 (선택)"
+            class="input-field resize-none"
+          ></textarea>
+        </div>
+      </div>
+
+      <template #footer>
+        <button @click="showCreateScheduleModal = false" class="btn-secondary">
+          취소
+        </button>
+        <button
+          @click="handleCreateSchedule"
+          :disabled="!scheduleForm.title.trim() || !scheduleForm.scheduledAt"
+          class="btn-primary"
+        >
+          일정 추가
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>

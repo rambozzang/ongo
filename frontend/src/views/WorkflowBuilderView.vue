@@ -12,6 +12,7 @@ import {
   DocumentDuplicateIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import WorkflowToolbar from '@/components/workflow/WorkflowToolbar.vue'
 import WorkflowCanvas from '@/components/workflow/WorkflowCanvas.vue'
 import NodePalette from '@/components/workflow/NodePalette.vue'
@@ -166,7 +167,7 @@ function formatDate(date: string | null): string {
           <div class="flex items-center gap-3">
             <button
               @click="openTemplates"
-              class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
+              class="btn-secondary inline-flex items-center gap-2"
             >
               <DocumentDuplicateIcon class="w-5 h-5" />
               {{ $t('workflowBuilder.templates') }}
@@ -188,7 +189,7 @@ function formatDate(date: string | null): string {
           <div
             v-for="wf in workflows"
             :key="wf.id"
-            class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow"
+            class="card hover:shadow-md transition-shadow"
           >
             <div class="flex flex-col gap-3 tablet:flex-row tablet:items-center tablet:justify-between">
               <div class="flex items-center gap-4 min-w-0">
@@ -259,7 +260,7 @@ function formatDate(date: string | null): string {
         <!-- Empty state -->
         <div
           v-else-if="!loading"
-          class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+          class="card text-center py-16"
         >
           <BoltIcon class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -271,7 +272,7 @@ function formatDate(date: string | null): string {
           <div class="flex items-center justify-center gap-3">
             <button
               @click="openTemplates"
-              class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
+              class="btn-secondary inline-flex items-center gap-2"
             >
               <DocumentDuplicateIcon class="w-5 h-5" />
               {{ $t('workflowBuilder.startFromTemplate') }}
@@ -288,54 +289,33 @@ function formatDate(date: string | null): string {
 
         <!-- Loading -->
         <div v-if="loading" class="flex items-center justify-center py-16">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
       </div>
 
       <!-- Template selection modal -->
-      <teleport to="body">
-        <div
-          v-if="showTemplateModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        >
-          <div class="fixed inset-0 bg-black/50" @click="showTemplateModal = false" />
-          <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {{ $t('workflowBuilder.selectTemplate') }}
-              </h2>
-              <button
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                @click="showTemplateModal = false"
-              >
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+      <BaseModal v-model="showTemplateModal" :title="$t('workflowBuilder.selectTemplate')" max-width="lg">
+        <div class="grid grid-cols-1 tablet:grid-cols-2 gap-4">
+          <button
+            v-for="tmpl in WORKFLOW_TEMPLATES"
+            :key="tmpl.id"
+            class="text-left p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 bg-white dark:bg-gray-800 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all"
+            @click="applyTemplate(tmpl)"
+          >
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              {{ tmpl.name }}
+            </h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              {{ tmpl.description }}
+            </p>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-medium">
+                {{ $t('workflowBuilder.nodesCount', { count: tmpl.nodes.length }) }}
+              </span>
             </div>
-            <div class="p-6 overflow-y-auto max-h-[60vh] grid grid-cols-1 tablet:grid-cols-2 gap-4">
-              <button
-                v-for="tmpl in WORKFLOW_TEMPLATES"
-                :key="tmpl.id"
-                class="text-left p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all"
-                @click="applyTemplate(tmpl)"
-              >
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                  {{ tmpl.name }}
-                </h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                  {{ tmpl.description }}
-                </p>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">
-                    {{ $t('workflowBuilder.nodesCount', { count: tmpl.nodes.length }) }}
-                  </span>
-                </div>
-              </button>
-            </div>
-          </div>
+          </button>
         </div>
-      </teleport>
+      </BaseModal>
     </template>
 
     <!-- ═══ EDITOR MODE ═══ -->

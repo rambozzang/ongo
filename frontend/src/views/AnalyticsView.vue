@@ -41,65 +41,7 @@
     <PageGuide :title="$t('analyticsView.pageGuideTitle')" :items="($tm('analyticsView.pageGuide') as string[])" />
 
     <!-- Sub-tab Navigation -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex space-x-6">
-        <button
-          @click="analyticsSubTab = 'overview'"
-          :class="[
-            analyticsSubTab === 'overview'
-              ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400',
-            'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
-          ]"
-        >
-          {{ $t('analyticsView.tabs.overview') }}
-        </button>
-        <button
-          @click="analyticsSubTab = 'cohort'"
-          :class="[
-            analyticsSubTab === 'cohort'
-              ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400',
-            'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
-          ]"
-        >
-          {{ $t('analyticsView.tabs.cohort') }}
-        </button>
-        <button
-          @click="analyticsSubTab = 'retention'"
-          :class="[
-            analyticsSubTab === 'retention'
-              ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400',
-            'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
-          ]"
-        >
-          {{ $t('analyticsView.tabs.retention') }}
-        </button>
-        <button
-          @click="analyticsSubTab = 'crossPlatform'"
-          :class="[
-            analyticsSubTab === 'crossPlatform'
-              ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400',
-            'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
-          ]"
-        >
-          {{ $t('analyticsView.tabs.crossPlatform') }}
-        </button>
-        <button
-          @click="analyticsSubTab = 'deep'"
-          :class="[
-            analyticsSubTab === 'deep'
-              ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400',
-            'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
-          ]"
-        >
-          {{ $t('analyticsView.tabs.deep') }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="analyticsSubTab" :tabs="analyticsTabs" class="mb-6" />
 
     <!-- Cross-Platform Tab -->
     <div v-if="analyticsSubTab === 'crossPlatform'" class="space-y-6">
@@ -253,7 +195,7 @@
               @click="retentionVideoId = video.videoId"
               :class="[
                 retentionVideoId === video.videoId
-                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-900/20 dark:text-indigo-400'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-400'
                   : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300',
                 'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
               ]"
@@ -566,7 +508,7 @@
                 <td class="hidden px-3 py-3 tablet:table-cell">
                   <button
                     @click="selectRetentionVideo(video.videoId)"
-                    class="rounded-md px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
+                    class="rounded-md px-2 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20"
                   >
                     {{ $t('analyticsView.retention.button') }}
                   </button>
@@ -739,6 +681,7 @@ import {
   ArrowsRightLeftIcon,
   ArrowDownTrayIcon,
 } from '@heroicons/vue/24/outline'
+import OTabs from '@/components/ui/OTabs.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import SummaryCard from '@/components/dashboard/SummaryCard.vue'
@@ -772,6 +715,13 @@ import type { TagPerformance } from '@/types/analytics'
 // ----- Analytics Sub-tab -----
 type AnalyticsSubTab = 'overview' | 'cohort' | 'retention' | 'crossPlatform' | 'deep'
 const analyticsSubTab = ref<AnalyticsSubTab>('overview')
+const analyticsTabs = computed(() => [
+  { key: 'overview', label: t('analyticsView.tabs.overview') },
+  { key: 'cohort', label: t('analyticsView.tabs.cohort') },
+  { key: 'retention', label: t('analyticsView.tabs.retention') },
+  { key: 'crossPlatform', label: t('analyticsView.tabs.crossPlatform') },
+  { key: 'deep', label: t('analyticsView.tabs.deep') },
+])
 const retentionVideoId = ref<number | undefined>(undefined)
 
 function selectRetentionVideo(videoId: number) {

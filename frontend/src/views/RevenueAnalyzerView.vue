@@ -49,7 +49,7 @@ onMounted(() => {
 
     <div v-else class="space-y-8">
       <!-- Summary Cards -->
-      <div v-if="summary" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div v-if="summary" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
         <!-- Total Revenue -->
         <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
           <div class="flex items-center gap-3">
@@ -118,7 +118,7 @@ onMounted(() => {
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ streams.length }})</span>
         </h2>
 
-        <div v-if="streams.length > 0" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div v-if="streams.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
           <RevenueStreamCard
             v-for="stream in streams"
             :key="stream.id"

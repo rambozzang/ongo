@@ -5,7 +5,7 @@
       <template #actions>
         <select
           v-model="platformFilter"
-          class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+          class="input-field"
         >
           <option value="">{{ $t('creatorNetwork.allPlatforms') }}</option>
           <option value="youtube">YouTube</option>
@@ -29,7 +29,7 @@
     <template v-else>
       <!-- Summary Stats -->
       <div v-if="store.summary" class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-3 desktop:grid-cols-5">
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
             {{ $t('creatorNetwork.totalConnections') }}
           </p>
@@ -37,7 +37,7 @@
             {{ store.summary.totalConnections }}
           </p>
         </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
             {{ $t('creatorNetwork.pendingRequests') }}
           </p>
@@ -45,7 +45,7 @@
             {{ store.summary.pendingRequests }}
           </p>
         </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
             {{ $t('creatorNetwork.sentRequests') }}
           </p>
@@ -53,7 +53,7 @@
             {{ store.summary.sentRequests }}
           </p>
         </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
             {{ $t('creatorNetwork.avgMatchScore') }}
           </p>
@@ -61,7 +61,7 @@
             {{ store.summary.avgMatchScore }}
           </p>
         </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
             {{ $t('creatorNetwork.collabCompleted') }}
           </p>
@@ -102,9 +102,9 @@
       <!-- Empty state -->
       <div
         v-else
-        class="mb-8 flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-16 dark:border-gray-600"
+        class="card py-16 text-center"
       >
-        <svg class="mb-3 h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <svg class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $t('creatorNetwork.noCreators') }}</p>
@@ -117,7 +117,7 @@
           {{ $t('creatorNetwork.collabRequests') }}
         </h2>
 
-        <div v-if="store.collabRequests.length === 0" class="flex items-center justify-center rounded-xl border border-dashed border-gray-300 py-12 dark:border-gray-600">
+        <div v-if="store.collabRequests.length === 0" class="card py-12 text-center">
           <p class="text-sm text-gray-400 dark:text-gray-500">{{ $t('creatorNetwork.noCollabRequests') }}</p>
         </div>
 

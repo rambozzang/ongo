@@ -34,7 +34,7 @@
 
     <template v-else>
       <!-- Check Form (Mobile) -->
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div class="card">
         <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
           {{ $t('qualityScore.checkForm') }}
         </h2>
@@ -48,7 +48,7 @@
             v-model="form.title"
             type="text"
             :placeholder="$t('qualityScore.videoTitlePlaceholder')"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+            class="input-field w-full"
           />
         </div>
 
@@ -61,7 +61,7 @@
             v-model="form.description"
             rows="3"
             :placeholder="$t('qualityScore.videoDescriptionPlaceholder')"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+            class="input-field w-full"
           />
         </div>
 
@@ -105,7 +105,7 @@
           </label>
           <select
             v-model="form.platform"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+            class="input-field w-full"
           >
             <option value="youtube">YouTube</option>
             <option value="tiktok">TikTok</option>
@@ -139,7 +139,7 @@
 
       <!-- Report Section (Mobile) -->
       <template v-if="currentReport">
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <h2 class="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
             {{ $t('qualityScore.report') }}
           </h2>
@@ -189,7 +189,7 @@
         </div>
 
         <!-- Top Issues (Mobile) -->
-        <div v-if="currentReport.topIssues.length > 0" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div v-if="currentReport.topIssues.length > 0" class="card">
           <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
             <ExclamationTriangleIcon class="mr-1 inline h-4 w-4 text-yellow-500" />
             {{ $t('qualityScore.topIssues') }}
@@ -207,7 +207,7 @@
         </div>
 
         <!-- Improvements (Mobile) -->
-        <div v-if="currentReport.improvements.length > 0" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div v-if="currentReport.improvements.length > 0" class="card">
           <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
             <ArrowTrendingUpIcon class="mr-1 inline h-4 w-4 text-green-500" />
             {{ $t('qualityScore.improvements') }}
@@ -223,7 +223,7 @@
       </template>
 
       <!-- History (Mobile) -->
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div class="card">
         <h2 class="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
           {{ $t('qualityScore.history') }}
         </h2>
@@ -299,7 +299,7 @@
         <!-- Left Panel: Check Form -->
         <div class="col-span-12 desktop:col-span-5">
           <div class="sticky top-6 space-y-6">
-            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <div class="card">
               <h2 class="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
                 {{ $t('qualityScore.checkForm') }}
               </h2>
@@ -313,7 +313,7 @@
                   v-model="form.title"
                   type="text"
                   :placeholder="$t('qualityScore.videoTitlePlaceholder')"
-                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+                  class="input-field w-full"
                 />
               </div>
 
@@ -326,7 +326,7 @@
                   v-model="form.description"
                   rows="4"
                   :placeholder="$t('qualityScore.videoDescriptionPlaceholder')"
-                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+                  class="input-field w-full"
                 />
               </div>
 
@@ -370,7 +370,7 @@
                 </label>
                 <select
                   v-model="form.platform"
-                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  class="input-field w-full"
                 >
                   <option value="youtube">YouTube</option>
                   <option value="tiktok">TikTok</option>
@@ -403,7 +403,7 @@
             </div>
 
             <!-- History (Desktop) -->
-            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <div class="card">
               <h2 class="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
                 {{ $t('qualityScore.history') }}
               </h2>
@@ -449,7 +449,7 @@
         <div class="col-span-12 desktop:col-span-7">
           <template v-if="currentReport">
             <!-- Overall Score Card -->
-            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <div class="card">
               <div class="flex flex-col items-center gap-6 tablet:flex-row">
                 <ScoreGauge
                   :score="currentReport.overallScore"
@@ -504,7 +504,7 @@
 
             <!-- Top Issues -->
             <div v-if="currentReport.topIssues.length > 0" class="mt-6">
-              <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+              <div class="card">
                 <h2 class="mb-4 flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-gray-100">
                   <ExclamationTriangleIcon class="h-5 w-5 text-yellow-500" />
                   {{ $t('qualityScore.topIssues') }}
@@ -524,7 +524,7 @@
 
             <!-- Improvements -->
             <div v-if="currentReport.improvements.length > 0" class="mt-6">
-              <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+              <div class="card">
                 <h2 class="mb-4 flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-gray-100">
                   <ArrowTrendingUpIcon class="h-5 w-5 text-green-500" />
                   {{ $t('qualityScore.improvements') }}
@@ -541,7 +541,7 @@
           </template>
 
           <!-- Empty state -->
-          <div v-else class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-20 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+          <div v-else class="card py-20 text-center">
             <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
               <ChartBarIcon class="h-8 w-8 text-gray-400 dark:text-gray-500" />
             </div>

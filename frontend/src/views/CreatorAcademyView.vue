@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import {
-  XMarkIcon,
   PlayCircleIcon,
   ClockIcon,
   UserGroupIcon,
@@ -9,6 +8,8 @@ import {
   BookOpenIcon,
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
+import OTabs from '@/components/ui/OTabs.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import CourseCard from '@/components/creatoracademy/CourseCard.vue'
@@ -23,6 +24,11 @@ const selectedCategory = ref<string>('ALL')
 const activeTab = ref<'all' | 'enrolled'>('all')
 const showDetailModal = ref(false)
 const selectedCourse = ref<Course | null>(null)
+
+const tabList = computed(() => [
+  { key: 'all', label: '전체 강좌', count: store.courses.length },
+  { key: 'enrolled', label: '내 학습', count: store.enrolledCourses.length },
+])
 
 onMounted(async () => {
   await Promise.all([store.fetchCourses(), store.fetchProgress()])
@@ -130,36 +136,7 @@ const isDetailCompleted = computed(() => {
       />
 
       <!-- Tab Switcher -->
-      <div class="flex items-center gap-4 border-b border-gray-200 dark:border-gray-700">
-        <button
-          @click="activeTab = 'all'"
-          :class="[
-            'pb-3 px-1 text-sm font-medium border-b-2 transition-colors',
-            activeTab === 'all'
-              ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-          ]"
-        >
-          전체 강좌
-          <span class="ml-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-            {{ store.courses.length }}
-          </span>
-        </button>
-        <button
-          @click="activeTab = 'enrolled'"
-          :class="[
-            'pb-3 px-1 text-sm font-medium border-b-2 transition-colors',
-            activeTab === 'enrolled'
-              ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-          ]"
-        >
-          내 학습
-          <span class="ml-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-            {{ store.enrolledCourses.length }}
-          </span>
-        </button>
-      </div>
+      <OTabs v-model="activeTab" :tabs="tabList" />
 
       <!-- Category Filter -->
       <CategoryFilter
@@ -185,7 +162,7 @@ const isDetailCompleted = computed(() => {
       <!-- Empty State -->
       <div
         v-else
-        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-12 text-center shadow-sm"
+        class="card p-12 text-center"
       >
         <BookOpenIcon class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
@@ -198,217 +175,172 @@ const isDetailCompleted = computed(() => {
     </div>
 
     <!-- ============ Course Detail Modal ============ -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showDetailModal && selectedCourse"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          @click="showDetailModal = false"
-        >
-          <Transition
-            enter-active-class="transition-all duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition-all duration-200"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="showDetailModal && selectedCourse"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
-              @click.stop
+    <BaseModal v-model="showDetailModal" :title="selectedCourse?.title ?? ''" max-width="lg">
+      <template v-if="selectedCourse">
+        <div class="space-y-6">
+          <!-- Level & Category badges -->
+          <div class="flex items-center gap-2">
+            <span
+              :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', levelConfig[selectedCourse.level].color]"
             >
-              <!-- Modal Header -->
-              <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <div class="flex items-start justify-between">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-2">
-                      <span
-                        :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', levelConfig[selectedCourse.level].color]"
-                      >
-                        {{ levelConfig[selectedCourse.level].label }}
-                      </span>
-                      <span class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ categoryLabels[selectedCourse.category] }}
-                      </span>
-                    </div>
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                      {{ selectedCourse.title }}
-                    </h2>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {{ selectedCourse.description }}
-                    </p>
-                  </div>
-                  <button
-                    @click="showDetailModal = false"
-                    class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ml-4"
-                  >
-                    <XMarkIcon class="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
+              {{ levelConfig[selectedCourse.level].label }}
+            </span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              {{ categoryLabels[selectedCourse.category] }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            {{ selectedCourse.description }}
+          </p>
 
-              <!-- Modal Body -->
-              <div class="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-                <!-- Course stats -->
-                <div class="grid grid-cols-2 tablet:grid-cols-4 gap-3">
-                  <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                    <ClockIcon class="w-5 h-5 text-gray-400 mx-auto mb-1" />
-                    <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ formatDuration(selectedCourse.duration) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">총 시간</p>
-                  </div>
-                  <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                    <PlayCircleIcon class="w-5 h-5 text-gray-400 mx-auto mb-1" />
-                    <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ selectedCourse.totalLessons }}개</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">레슨</p>
-                  </div>
-                  <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                    <UserGroupIcon class="w-5 h-5 text-gray-400 mx-auto mb-1" />
-                    <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ selectedCourse.enrolledCount.toLocaleString('ko-KR') }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">수강생</p>
-                  </div>
-                  <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                    <SparklesIcon class="w-5 h-5 text-yellow-400 mx-auto mb-1" />
-                    <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ selectedCourse.creditReward }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">크레딧 보상</p>
-                  </div>
-                </div>
+          <!-- Course stats -->
+          <div class="grid grid-cols-2 tablet:grid-cols-4 gap-3">
+            <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <ClockIcon class="w-5 h-5 text-gray-400 mx-auto mb-1" />
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ formatDuration(selectedCourse.duration) }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">총 시간</p>
+            </div>
+            <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <PlayCircleIcon class="w-5 h-5 text-gray-400 mx-auto mb-1" />
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ selectedCourse.totalLessons }}개</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">레슨</p>
+            </div>
+            <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <UserGroupIcon class="w-5 h-5 text-gray-400 mx-auto mb-1" />
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ selectedCourse.enrolledCount.toLocaleString('ko-KR') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">수강생</p>
+            </div>
+            <div class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <SparklesIcon class="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ selectedCourse.creditReward }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">크레딧 보상</p>
+            </div>
+          </div>
 
-                <!-- Instructor -->
-                <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                  <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      {{ selectedCourse.instructorName.charAt(0) }}
-                    </span>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ selectedCourse.instructorName }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">강사</p>
-                  </div>
-                  <div class="ml-auto flex items-center gap-1">
-                    <StarIconSolid class="w-4 h-4 text-yellow-400" />
-                    <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ selectedCourse.rating }}</span>
-                  </div>
-                </div>
+          <!-- Instructor -->
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                {{ selectedCourse.instructorName.charAt(0) }}
+              </span>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ selectedCourse.instructorName }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">강사</p>
+            </div>
+            <div class="ml-auto flex items-center gap-1">
+              <StarIconSolid class="w-4 h-4 text-yellow-400" />
+              <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ selectedCourse.rating }}</span>
+            </div>
+          </div>
 
-                <!-- Progress (if enrolled) -->
-                <div v-if="isDetailEnrolled" class="space-y-2">
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-700 dark:text-gray-300 font-medium">학습 진행률</span>
-                    <span class="text-gray-500 dark:text-gray-400">
-                      {{ selectedCourse.completedLessons }}/{{ selectedCourse.totalLessons }} 레슨 완료
-                    </span>
-                  </div>
-                  <div class="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      :class="[
-                        'h-full rounded-full transition-all duration-500',
-                        isDetailCompleted
-                          ? 'bg-green-500 dark:bg-green-400'
-                          : 'bg-gradient-to-r from-blue-500 to-purple-500 dark:from-blue-400 dark:to-purple-400',
-                      ]"
-                      :style="{ width: `${detailProgressPercent}%` }"
-                    />
-                  </div>
-                </div>
+          <!-- Progress (if enrolled) -->
+          <div v-if="isDetailEnrolled" class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-700 dark:text-gray-300 font-medium">학습 진행률</span>
+              <span class="text-gray-500 dark:text-gray-400">
+                {{ selectedCourse.completedLessons }}/{{ selectedCourse.totalLessons }} 레슨 완료
+              </span>
+            </div>
+            <div class="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                :class="[
+                  'h-full rounded-full transition-all duration-500',
+                  isDetailCompleted
+                    ? 'bg-green-500 dark:bg-green-400'
+                    : 'bg-gradient-to-r from-blue-500 to-purple-500 dark:from-blue-400 dark:to-purple-400',
+                ]"
+                :style="{ width: `${detailProgressPercent}%` }"
+              />
+            </div>
+          </div>
 
-                <!-- Lessons list -->
-                <div>
-                  <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                    커리큘럼 ({{ selectedCourse.totalLessons }}개 레슨)
-                  </h3>
-                  <div v-if="selectedCourse.lessons.length > 0" class="space-y-2">
-                    <div
-                      v-for="lesson in selectedCourse.lessons"
-                      :key="lesson.id"
-                      class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <div
-                        :class="[
-                          'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-medium',
-                          lesson.status === 'COMPLETED'
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                            : lesson.status === 'IN_PROGRESS'
-                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                              : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
-                        ]"
-                      >
-                        {{ lesson.orderNumber }}
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {{ lesson.title }}
-                        </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatDuration(lesson.duration) }}</p>
-                      </div>
-                      <span
-                        v-if="lesson.status === 'COMPLETED'"
-                        class="text-xs text-green-600 dark:text-green-400 font-medium"
-                      >
-                        완료
-                      </span>
-                      <span
-                        v-else-if="lesson.status === 'IN_PROGRESS'"
-                        class="text-xs text-blue-600 dark:text-blue-400 font-medium"
-                      >
-                        학습 중
-                      </span>
-                    </div>
-                  </div>
-                  <p v-else class="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
-                    커리큘럼 상세 정보가 준비 중입니다
+          <!-- Lessons list -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              커리큘럼 ({{ selectedCourse.totalLessons }}개 레슨)
+            </h3>
+            <div v-if="selectedCourse.lessons.length > 0" class="space-y-2">
+              <div
+                v-for="lesson in selectedCourse.lessons"
+                :key="lesson.id"
+                class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div
+                  :class="[
+                    'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-medium',
+                    lesson.status === 'COMPLETED'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                      : lesson.status === 'IN_PROGRESS'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                        : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
+                  ]"
+                >
+                  {{ lesson.orderNumber }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {{ lesson.title }}
                   </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatDuration(lesson.duration) }}</p>
                 </div>
-
-                <!-- Tags -->
-                <div v-if="selectedCourse.tags.length > 0">
-                  <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">태그</h3>
-                  <div class="flex flex-wrap gap-1.5">
-                    <span
-                      v-for="tag in selectedCourse.tags"
-                      :key="tag"
-                      class="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
-                    >
-                      #{{ tag }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Modal Footer -->
-              <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
-                <button
-                  @click="showDetailModal = false"
-                  class="btn-secondary"
-                >
-                  닫기
-                </button>
-                <button
-                  v-if="!isDetailCompleted"
-                  @click="handleModalEnroll"
-                  class="btn-primary inline-flex items-center gap-2"
-                >
-                  <PlayCircleIcon class="w-5 h-5" />
-                  {{ isDetailEnrolled ? '이어서 학습' : '수강 시작' }}
-                </button>
                 <span
-                  v-else
-                  class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 rounded-lg"
+                  v-if="lesson.status === 'COMPLETED'"
+                  class="text-xs text-green-600 dark:text-green-400 font-medium"
                 >
-                  수강 완료
+                  완료
+                </span>
+                <span
+                  v-else-if="lesson.status === 'IN_PROGRESS'"
+                  class="text-xs text-blue-600 dark:text-blue-400 font-medium"
+                >
+                  학습 중
                 </span>
               </div>
             </div>
-          </Transition>
+            <p v-else class="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
+              커리큘럼 상세 정보가 준비 중입니다
+            </p>
+          </div>
+
+          <!-- Tags -->
+          <div v-if="selectedCourse.tags.length > 0">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">태그</h3>
+            <div class="flex flex-wrap gap-1.5">
+              <span
+                v-for="tag in selectedCourse.tags"
+                :key="tag"
+                class="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+              >
+                #{{ tag }}
+              </span>
+            </div>
+          </div>
         </div>
-      </Transition>
-    </Teleport>
+      </template>
+
+      <template #footer>
+        <button
+          @click="showDetailModal = false"
+          class="btn-secondary"
+        >
+          닫기
+        </button>
+        <button
+          v-if="selectedCourse && !isDetailCompleted"
+          @click="handleModalEnroll"
+          class="btn-primary inline-flex items-center gap-2"
+        >
+          <PlayCircleIcon class="w-5 h-5" />
+          {{ isDetailEnrolled ? '이어서 학습' : '수강 시작' }}
+        </button>
+        <span
+          v-else-if="selectedCourse && isDetailCompleted"
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 rounded-lg"
+        >
+          수강 완료
+        </span>
+      </template>
+    </BaseModal>
   </div>
 </template>

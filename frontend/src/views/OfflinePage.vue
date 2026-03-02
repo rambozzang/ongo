@@ -15,7 +15,7 @@
       </p>
 
       <button
-        class="rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600"
+        class="btn-primary"
         @click="refresh"
       >
         <ArrowPathIcon class="mr-1.5 inline h-4 w-4 align-text-bottom" />

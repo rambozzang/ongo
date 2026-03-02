@@ -22,23 +22,7 @@
     <PageGuide :title="$t('commerce.pageGuideTitle')" :items="($tm('commerce.pageGuide') as string[])" />
 
     <!-- 탭 네비게이션 -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="flex gap-6 overflow-x-auto">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          :class="[
-            'whitespace-nowrap border-b-2 pb-3 text-sm font-medium transition-colors',
-            activeTab === tab.key
-              ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
-          ]"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
     <!-- 로딩 상태 -->
     <div v-if="store.loading" class="flex items-center justify-center py-12">
@@ -49,7 +33,7 @@
       <!-- ========== 대시보드 탭 ========== -->
       <template v-if="activeTab === 'dashboard'">
         <!-- KPI 카드 -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-4 mobile:grid-cols-2 desktop:grid-cols-4">
           <CommerceKpiCard
             :label="$t('commerce.totalRevenue')"
             :formatted-value="formatCurrency(store.kpi.totalRevenue)"
@@ -97,7 +81,7 @@
         </div>
 
         <!-- 플랫폼별 성과 & 상위 상품 -->
-        <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div class="mt-6 grid grid-cols-1 gap-6 desktop:grid-cols-2">
           <!-- 플랫폼별 성과 -->
           <div class="card">
             <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -183,19 +167,19 @@
       <!-- ========== 상품 관리 탭 ========== -->
       <template v-if="activeTab === 'products'">
         <!-- 검색 / 필터 -->
-        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div class="mb-4 flex flex-col gap-3 mobile:flex-row mobile:items-center">
           <div class="relative flex-1">
             <MagnifyingGlassIcon class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               v-model="productSearch"
               type="text"
               :placeholder="$t('commerce.searchProducts')"
-              class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+              class="input-field pl-10"
             />
           </div>
           <select
             v-model="productPlatformFilter"
-            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            class="input-field"
           >
             <option value="">{{ $t('commerce.allPlatforms') }}</option>
             <option value="COUPANG">{{ $t('commerce.platformCoupang') }}</option>
@@ -205,7 +189,7 @@
         </div>
 
         <!-- 상품 그리드 -->
-        <div v-if="filteredProducts.length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div v-if="filteredProducts.length > 0" class="grid gap-4 mobile:grid-cols-2 desktop:grid-cols-3 xl:grid-cols-4">
           <ProductCard
             v-for="product in filteredProducts"
             :key="product.id"
@@ -225,7 +209,7 @@
 
       <!-- ========== 연동 설정 탭 ========== -->
       <template v-if="activeTab === 'settings'">
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-4 mobile:grid-cols-2 desktop:grid-cols-3">
           <CommercePlatformCard
             v-for="conn in store.platforms"
             :key="conn.platform"
@@ -251,6 +235,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useCommerceStore } from '@/stores/commerce'
 import type { CommercePlatform } from '@/types/commerce'
+import OTabs from '@/components/ui/OTabs.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import CommerceKpiCard from '@/components/commerce/CommerceKpiCard.vue'

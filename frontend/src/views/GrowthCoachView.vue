@@ -31,26 +31,7 @@
     />
 
     <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav :class="isTablet ? '-mb-px flex gap-6' : '-mb-px flex'">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          :class="[
-            isTablet
-              ? 'inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-medium transition-colors'
-              : 'flex-1 border-b-2 px-1 py-3 text-center text-xs font-medium transition-colors',
-            activeTab === tab.key
-              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
-          ]"
-          @click="activeTab = tab.key"
-        >
-          <component :is="tab.icon" :class="isTablet ? 'h-5 w-5' : 'mx-auto mb-1 h-5 w-5'" />
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
     <!-- Loading -->
     <div v-if="loading" class="flex items-center justify-center py-12">
@@ -356,7 +337,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { useMediaQuery } from '@vueuse/core'
 import {
   SparklesIcon,
   ArrowTrendingUpIcon,
@@ -372,6 +352,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import GoalProgressCard from '@/components/growthcoach/GoalProgressCard.vue'
 import WeeklyReportCard from '@/components/growthcoach/WeeklyReportCard.vue'
 import InsightCard from '@/components/growthcoach/InsightCard.vue'
@@ -384,7 +365,6 @@ const { t } = useI18n({ useScope: 'global' })
 const store = useGrowthCoachStore()
 const { balance: creditBalance, checkAndUse } = useCredit()
 const notification = useNotification()
-const isTablet = useMediaQuery('(min-width: 768px)')
 
 const {
   session,

@@ -9,7 +9,9 @@ import {
   ChatBubbleBottomCenterTextIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import SubtitleJobCard from '@/components/subtitlegenerator/SubtitleJobCard.vue'
 import SubtitleSegmentRow from '@/components/subtitlegenerator/SubtitleSegmentRow.vue'
 import { useSubtitleGeneratorStore } from '@/stores/subtitleGenerator'
@@ -30,13 +32,13 @@ const filteredJobs = computed(() => {
   return store.jobs.filter((j) => j.status === statusFilter.value)
 })
 
-const statusFilters: { key: SubtitleJob['status'] | 'ALL'; label: string }[] = [
-  { key: 'ALL', label: '전체' },
-  { key: 'PENDING', label: '대기중' },
-  { key: 'PROCESSING', label: '처리중' },
-  { key: 'COMPLETED', label: '완료' },
-  { key: 'FAILED', label: '실패' },
-]
+const statusTabItems = computed(() => [
+  { key: 'ALL', label: '전체', count: store.jobs.length },
+  { key: 'PENDING', label: '대기중', count: store.jobs.filter((j) => j.status === 'PENDING').length },
+  { key: 'PROCESSING', label: '처리중', count: store.jobs.filter((j) => j.status === 'PROCESSING').length },
+  { key: 'COMPLETED', label: '완료', count: store.jobs.filter((j) => j.status === 'COMPLETED').length },
+  { key: 'FAILED', label: '실패', count: store.jobs.filter((j) => j.status === 'FAILED').length },
+])
 
 function handleSelectJob(id: number) {
   selectedJobId.value = selectedJobId.value === id ? null : id
@@ -59,16 +61,7 @@ onMounted(async () => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('subtitleGenerator.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('subtitleGenerator.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('subtitleGenerator.title')" :description="$t('subtitleGenerator.description')" />
 
     <PageGuide
       :title="$t('subtitleGenerator.pageGuideTitle')"
@@ -123,7 +116,7 @@ onMounted(async () => {
 
         <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
           <div class="flex items-center gap-2">
-            <LanguageIcon class="h-5 w-5 text-indigo-500" />
+            <LanguageIcon class="h-5 w-5 text-primary-500" />
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('subtitleGenerator.recentLanguage') }}</p>
           </div>
           <p class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
@@ -133,27 +126,7 @@ onMounted(async () => {
       </div>
 
       <!-- Status Filter -->
-      <div class="mb-6 flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-0">
-        <button
-          v-for="filter in statusFilters"
-          :key="filter.key"
-          class="border-b-2 px-4 py-3 text-sm font-medium transition-colors"
-          :class="
-            statusFilter === filter.key
-              ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-          "
-          @click="statusFilter = filter.key"
-        >
-          {{ filter.label }}
-          <span
-            v-if="filter.key === 'ALL'"
-            class="ml-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-700"
-          >
-            {{ store.jobs.length }}
-          </span>
-        </button>
-      </div>
+      <OTabs v-model="statusFilter" :tabs="statusTabItems" class="mb-6" />
 
       <!-- Main content: Job list + Segment panel -->
       <div class="flex flex-col gap-6 desktop:flex-row">

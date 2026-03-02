@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
   HashtagIcon,
   SparklesIcon,
   PlusIcon,
-  XMarkIcon,
   ArrowTrendingUpIcon,
   HeartIcon,
   TrophyIcon,
@@ -17,11 +16,19 @@ import RecommendationList from '@/components/hashtaganalytics/RecommendationList
 import HashtagGroupCard from '@/components/hashtaganalytics/HashtagGroupCard.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import OTabs from '@/components/ui/OTabs.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 
 const store = useHashtagAnalyticsStore()
 const { performances, recommendations, groups, summary, isLoading } = storeToRefs(store)
 
 const activeTab = ref<'performance' | 'recommendations' | 'groups'>('performance')
+
+const hashtagTabs = computed(() => [
+  { key: 'performance', label: '성과', count: performances.value.length },
+  { key: 'recommendations', label: '추천', count: recommendations.value.length > 0 ? recommendations.value.length : undefined },
+  { key: 'groups', label: '그룹', count: groups.value.length },
+])
 
 // ---- Analyze Modal ----
 const showAnalyzeModal = ref(false)
@@ -173,76 +180,7 @@ onMounted(() => {
     </div>
 
     <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex gap-8">
-        <button
-          @click="activeTab = 'performance'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'performance'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          성과
-          <span
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === 'performance'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ performances.length }}
-          </span>
-        </button>
-
-        <button
-          @click="activeTab = 'recommendations'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'recommendations'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          추천
-          <span
-            v-if="recommendations.length > 0"
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === 'recommendations'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ recommendations.length }}
-          </span>
-        </button>
-
-        <button
-          @click="activeTab = 'groups'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'groups'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          그룹
-          <span
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === 'groups'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ groups.length }}
-          </span>
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="hashtagTabs" class="mb-6" />
 
     <!-- Loading -->
     <LoadingSpinner v-if="isLoading" :full-page="true" size="lg" />
@@ -282,7 +220,7 @@ onMounted(() => {
             v-model="recTopic"
             type="text"
             placeholder="예: 여행, 먹방, 패션..."
-            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+            class="input-field"
             @keyup.enter="handleQuickAnalyze"
           />
         </div>
@@ -290,7 +228,7 @@ onMounted(() => {
           <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">플랫폼</label>
           <select
             v-model="recPlatform"
-            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            class="input-field"
           >
             <option v-for="opt in platformOptions" :key="opt.value" :value="opt.value">
               {{ opt.label }}
@@ -353,166 +291,122 @@ onMounted(() => {
     </div>
 
     <!-- Analyze Modal -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="showAnalyzeModal"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          @click.self="closeAnalyzeModal"
-        >
-          <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
-            <div class="mb-5 flex items-center justify-between">
-              <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-                해시태그 분석
-              </h2>
-              <button
-                class="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-                @click="closeAnalyzeModal"
-              >
-                <XMarkIcon class="h-5 w-5" />
-              </button>
-            </div>
-
-            <div class="space-y-4">
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  주제
-                </label>
-                <input
-                  v-model="analyzeTopic"
-                  type="text"
-                  placeholder="분석할 주제를 입력하세요"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-                />
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  플랫폼
-                </label>
-                <select
-                  v-model="analyzePlatform"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                >
-                  <option v-for="opt in platformOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  추천 개수
-                </label>
-                <input
-                  v-model.number="analyzeCount"
-                  type="number"
-                  min="1"
-                  max="30"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                />
-              </div>
-            </div>
-
-            <div class="mt-6 flex items-center justify-end gap-3">
-              <button
-                class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                @click="closeAnalyzeModal"
-              >
-                취소
-              </button>
-              <button
-                class="btn-primary text-sm"
-                :disabled="!analyzeTopic.trim()"
-                @click="handleAnalyze"
-              >
-                분석 시작
-              </button>
-            </div>
-          </div>
+    <BaseModal v-model="showAnalyzeModal" title="해시태그 분석" max-width="lg">
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            주제
+          </label>
+          <input
+            v-model="analyzeTopic"
+            type="text"
+            placeholder="분석할 주제를 입력하세요"
+            class="input-field"
+          />
         </div>
-      </Transition>
-    </Teleport>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            플랫폼
+          </label>
+          <select
+            v-model="analyzePlatform"
+            class="input-field"
+          >
+            <option v-for="opt in platformOptions" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            추천 개수
+          </label>
+          <input
+            v-model.number="analyzeCount"
+            type="number"
+            min="1"
+            max="30"
+            class="input-field"
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <button
+          class="btn-secondary"
+          @click="closeAnalyzeModal"
+        >
+          취소
+        </button>
+        <button
+          class="btn-primary"
+          :disabled="!analyzeTopic.trim()"
+          @click="handleAnalyze"
+        >
+          분석 시작
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- Group Create Modal -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="showGroupModal"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          @click.self="closeGroupModal"
-        >
-          <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
-            <div class="mb-5 flex items-center justify-between">
-              <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-                새 해시태그 그룹
-              </h2>
-              <button
-                class="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-                @click="closeGroupModal"
-              >
-                <XMarkIcon class="h-5 w-5" />
-              </button>
-            </div>
-
-            <div class="space-y-4">
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  그룹명
-                </label>
-                <input
-                  v-model="newGroupName"
-                  type="text"
-                  placeholder="예: 여행 세트"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-                />
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  해시태그 (쉼표 구분)
-                </label>
-                <textarea
-                  v-model="newGroupHashtags"
-                  rows="3"
-                  placeholder="#여행, #여행브이로그, #travel, #vlog"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-                />
-              </div>
-
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  플랫폼
-                </label>
-                <select
-                  v-model="newGroupPlatform"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                >
-                  <option v-for="opt in platformOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
-              </div>
-            </div>
-
-            <div class="mt-6 flex items-center justify-end gap-3">
-              <button
-                class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                @click="closeGroupModal"
-              >
-                취소
-              </button>
-              <button
-                class="btn-primary text-sm"
-                :disabled="!newGroupName.trim() || !newGroupHashtags.trim()"
-                @click="handleCreateGroup"
-              >
-                그룹 생성
-              </button>
-            </div>
-          </div>
+    <BaseModal v-model="showGroupModal" title="새 해시태그 그룹" max-width="lg">
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            그룹명
+          </label>
+          <input
+            v-model="newGroupName"
+            type="text"
+            placeholder="예: 여행 세트"
+            class="input-field"
+          />
         </div>
-      </Transition>
-    </Teleport>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            해시태그 (쉼표 구분)
+          </label>
+          <textarea
+            v-model="newGroupHashtags"
+            rows="3"
+            placeholder="#여행, #여행브이로그, #travel, #vlog"
+            class="input-field"
+          />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            플랫폼
+          </label>
+          <select
+            v-model="newGroupPlatform"
+            class="input-field"
+          >
+            <option v-for="opt in platformOptions" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <template #footer>
+        <button
+          class="btn-secondary"
+          @click="closeGroupModal"
+        >
+          취소
+        </button>
+        <button
+          class="btn-primary"
+          :disabled="!newGroupName.trim() || !newGroupHashtags.trim()"
+          @click="handleCreateGroup"
+        >
+          그룹 생성
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>

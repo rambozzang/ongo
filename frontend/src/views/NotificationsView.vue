@@ -80,15 +80,15 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
       <template #actions>
         <button
           v-if="store.unreadCount > 0"
-          class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          class="btn-secondary inline-flex items-center gap-1.5"
           @click="store.markAllAsRead()"
         >
           <CheckIcon class="h-4 w-4" />
           {{ $t('notifications.markAllRead') }}
         </button>
         <button
-          class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
-          :class="showSettings ? 'text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-600' : 'text-gray-700 dark:text-gray-300'"
+          class="btn-secondary inline-flex items-center gap-1.5"
+          :class="showSettings ? 'text-primary-600 dark:text-primary-400 border-primary-300 dark:border-primary-600' : ''"
           @click="showSettings = !showSettings"
         >
           <Cog6ToothIcon class="h-4 w-4" />
@@ -145,12 +145,12 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
     <!-- Empty state -->
     <div
       v-else
-      class="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 dark:border-gray-700 dark:bg-gray-800"
+      class="card py-16 text-center"
     >
-      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
         <BellSlashIcon class="h-8 w-8 text-gray-400 dark:text-gray-500" />
       </div>
-      <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-white">{{ $t('notifications.empty') }}</h3>
+      <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('notifications.empty') }}</h3>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
         {{ store.activeCategory ? $t('notifications.emptyCategory') : $t('notifications.emptyDescription') }}
       </p>

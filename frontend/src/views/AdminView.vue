@@ -12,7 +12,7 @@
           v-model="searchQuery"
           type="text"
           :placeholder="t('admin.searchPlaceholder')"
-          class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+          class="input-field pl-10"
           @input="debouncedSearch"
         />
       </div>
@@ -172,7 +172,7 @@
               <div class="flex flex-wrap gap-2">
                 <button
                   v-if="detailData && detailData.role !== 'ADMIN'"
-                  class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  class="btn-secondary"
                   @click="toggleRole"
                   :disabled="actionLoading"
                 >
@@ -198,21 +198,7 @@
               </div>
 
               <!-- Tabs -->
-              <div class="border-b border-gray-200 dark:border-gray-700">
-                <nav class="flex gap-6">
-                  <button
-                    v-for="tab in detailTabs"
-                    :key="tab.key"
-                    class="border-b-2 pb-2 text-sm font-medium transition-colors"
-                    :class="activeTab === tab.key
-                      ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'"
-                    @click="activeTab = tab.key"
-                  >
-                    {{ tab.label }}
-                  </button>
-                </nav>
-              </div>
+              <OTabs v-model="activeTab" :tabs="detailTabs" />
 
               <!-- Videos Tab -->
               <div v-if="activeTab === 'videos'">
@@ -374,97 +360,74 @@
     </Teleport>
 
     <!-- Storage Quota Modal -->
-    <Teleport to="body">
-      <div v-if="showQuotaModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" :aria-label="t('admin.quotaModalTitle')" @click.self="closeQuotaModal">
-        <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('admin.quotaModalTitle') }}</h3>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {{ selectedUser?.name }} ({{ selectedUser?.email }})
+    <BaseModal v-model="showQuotaModal" :title="t('admin.quotaModalTitle')">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        {{ selectedUser?.name }} ({{ selectedUser?.email }})
+      </p>
+
+      <div class="mt-4 space-y-4">
+        <!-- Current usage -->
+        <div>
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.currentUsage') }}</label>
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            {{ formatBytes(selectedUser?.storageUsedBytes ?? 0) }} / {{ formatBytes(selectedUser?.storageLimitBytes ?? 0) }}
           </p>
+        </div>
 
-          <div class="mt-4 space-y-4">
-            <!-- Current usage -->
-            <div>
-              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.currentUsage') }}</label>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ formatBytes(selectedUser?.storageUsedBytes ?? 0) }} / {{ formatBytes(selectedUser?.storageLimitBytes ?? 0) }}
-              </p>
-            </div>
-
-            <!-- Quota input -->
-            <div>
-              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.newQuotaGB') }}</label>
-              <div class="mt-1 flex items-center gap-2">
-                <input
-                  v-model.number="quotaInputGB"
-                  type="number"
-                  min="0"
-                  step="1"
-                  class="input"
-                />
-                <span class="text-sm text-gray-500 dark:text-gray-400">GB</span>
-              </div>
-            </div>
-
-            <!-- Reset to plan default -->
-            <button
-              class="text-sm text-primary-600 underline hover:text-primary-700 dark:text-primary-400"
-              @click="resetToDefault"
-            >
-              {{ t('admin.resetToDefault') }}
-            </button>
-          </div>
-
-          <div class="mt-6 flex justify-end gap-3">
-            <button
-              class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-              @click="closeQuotaModal"
-            >
-              {{ t('action.cancel') }}
-            </button>
-            <button
-              class="btn-primary"
-              :disabled="saving"
-              @click="saveQuota"
-            >
-              {{ saving ? t('action.loading') : t('action.save') }}
-            </button>
+        <!-- Quota input -->
+        <div>
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.newQuotaGB') }}</label>
+          <div class="mt-1 flex items-center gap-2">
+            <input
+              v-model.number="quotaInputGB"
+              type="number"
+              min="0"
+              step="1"
+              class="input"
+            />
+            <span class="text-sm text-gray-500 dark:text-gray-400">GB</span>
           </div>
         </div>
+
+        <!-- Reset to plan default -->
+        <button
+          class="text-sm text-primary-600 underline hover:text-primary-700 dark:text-primary-400"
+          @click="resetToDefault"
+        >
+          {{ t('admin.resetToDefault') }}
+        </button>
       </div>
-    </Teleport>
+
+      <template #footer>
+        <button class="btn-secondary" @click="closeQuotaModal">{{ t('action.cancel') }}</button>
+        <button class="btn-primary" :disabled="saving" @click="saveQuota">
+          {{ saving ? t('action.loading') : t('action.save') }}
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- Confirm Dialog -->
-    <Teleport to="body">
-      <div v-if="showConfirm" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" :aria-label="confirmTitle" @click.self="cancelConfirm">
-        <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ confirmTitle }}</h3>
-          <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ confirmMessage }}</p>
-          <div class="mt-6 flex justify-end gap-3">
-            <button
-              class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-              @click="cancelConfirm"
-            >
-              {{ t('action.cancel') }}
-            </button>
-            <button
-              class="rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              :class="confirmDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'"
-              :disabled="actionLoading"
-              @click="executeConfirm"
-            >
-              {{ actionLoading ? t('action.loading') : t('action.confirm') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <BaseModal v-model="showConfirm" :title="confirmTitle" max-width="sm">
+      <p class="text-sm text-gray-600 dark:text-gray-400">{{ confirmMessage }}</p>
+      <template #footer>
+        <button class="btn-secondary" @click="cancelConfirm">{{ t('action.cancel') }}</button>
+        <button
+          :class="confirmDanger ? 'btn-danger' : 'btn-primary'"
+          :disabled="actionLoading"
+          @click="executeConfirm"
+        >
+          {{ actionLoading ? t('action.loading') : t('action.confirm') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import OTabs from '@/components/ui/OTabs.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import { useLocale } from '@/composables/useLocale'

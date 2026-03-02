@@ -9,6 +9,7 @@ import {
   CalendarDaysIcon,
 } from '@heroicons/vue/24/outline'
 import { useRecyclingStore } from '@/stores/recycling'
+import OTabs from '@/components/ui/OTabs.vue'
 import RecyclingQueueCard from '@/components/recycling/RecyclingQueueCard.vue'
 import RecyclingCreateModal from '@/components/recycling/RecyclingCreateModal.vue'
 import RecyclingHistoryComponent from '@/components/recycling/RecyclingHistory.vue'
@@ -22,6 +23,12 @@ const recyclingStore = useRecyclingStore()
 
 const activeTab = ref<'queues' | 'history' | 'suggestions'>('queues')
 const isModalOpen = ref(false)
+
+const tabList = computed(() => [
+  { key: 'queues', label: t('recycling.tabQueues'), count: recyclingStore.queues.length },
+  { key: 'history', label: t('recycling.tabHistory'), count: recyclingStore.history.length },
+  { key: 'suggestions', label: t('recycling.tabSuggestions'), count: recyclingStore.suggestions.filter((s: { status: string }) => s.status === 'PENDING').length },
+])
 const editingQueue = ref<RecyclingQueue | undefined>(undefined)
 
 const activeQueueCount = computed(() => recyclingStore.activeQueues.length)
@@ -168,74 +175,8 @@ onMounted(() => {
     </div>
 
     <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex gap-8">
-        <button
-          @click="activeTab = 'queues'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'queues'
-              ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          {{ $t('recycling.tabQueues') }}
-          <span
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === 'queues'
-                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ recyclingStore.queues.length }}
-          </span>
-        </button>
-
-        <button
-          @click="activeTab = 'history'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'history'
-              ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          {{ $t('recycling.tabHistory') }}
-          <span
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === 'history'
-                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ recyclingStore.history.length }}
-          </span>
-        </button>
-
-        <button
-          @click="activeTab = 'suggestions'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'suggestions'
-              ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          {{ $t('recycling.tabSuggestions') }}
-          <span
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === 'suggestions'
-                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ recyclingStore.suggestions.filter(s => s.status === 'PENDING').length }}
-          </span>
-        </button>
-      </nav>
+    <div class="mb-6">
+      <OTabs v-model="activeTab" :tabs="tabList" />
     </div>
 
     <!-- Queues Tab -->

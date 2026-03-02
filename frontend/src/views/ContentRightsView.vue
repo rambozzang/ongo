@@ -4,7 +4,6 @@ import { storeToRefs } from 'pinia'
 import {
   ShieldCheckIcon,
   PlusIcon,
-  XMarkIcon,
   BellAlertIcon,
 } from '@heroicons/vue/24/outline'
 import { useContentRightsStore } from '@/stores/contentRights'
@@ -13,6 +12,8 @@ import RightCard from '@/components/contentrights/RightCard.vue'
 import AlertBanner from '@/components/contentrights/AlertBanner.vue'
 import RightsSummaryCards from '@/components/contentrights/RightsSummaryCards.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import OTabs from '@/components/ui/OTabs.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import type { ContentRight, AssetType, LicenseType } from '@/types/contentRights'
 
 const store = useContentRightsStore()
@@ -183,33 +184,7 @@ onMounted(() => {
 
     <template v-else>
       <!-- Tabs -->
-      <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex gap-8">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            @click="activeTab = tab.key"
-            :class="[
-              'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-              activeTab === tab.key
-                ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-            ]"
-          >
-            {{ tab.label }}
-            <span
-              :class="[
-                'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-                activeTab === tab.key
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-              ]"
-            >
-              {{ tab.count }}
-            </span>
-          </button>
-        </nav>
-      </div>
+      <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
       <!-- Rights Grid -->
       <div v-if="filteredRights.length > 0" class="grid gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
@@ -247,167 +222,55 @@ onMounted(() => {
     </template>
 
     <!-- Create Right Modal -->
-    <Teleport to="body">
-      <div
-        v-if="showCreateModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        @click.self="closeCreateModal"
-      >
-        <div class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
-          <!-- Modal header -->
-          <div class="mb-5 flex items-center justify-between">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-              에셋 등록
-            </h2>
-            <button
-              class="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-              @click="closeCreateModal"
-            >
-              <XMarkIcon class="h-5 w-5" />
-            </button>
+    <BaseModal v-model="showCreateModal" title="에셋 등록" max-width="lg">
+      <div class="max-h-[60vh] overflow-y-auto space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">에셋 이름 *</label>
+          <input v-model="newAssetName" type="text" placeholder="예: Spring Vibes - BGM" class="input-field" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">에셋 유형</label>
+          <select v-model="newAssetType" class="input-field">
+            <option v-for="opt in assetTypeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">사용 영상 제목 *</label>
+          <input v-model="newVideoTitle" type="text" placeholder="예: 봄 메이크업 튜토리얼" class="input-field" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">라이선스 유형</label>
+          <select v-model="newLicenseType" class="input-field">
+            <option v-for="opt in licenseTypeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">출처</label>
+          <input v-model="newSource" type="text" placeholder="예: Artlist, Unsplash, Google Fonts" class="input-field" />
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">라이선스 URL</label>
+          <input v-model="newLicenseUrl" type="url" placeholder="https://..." class="input-field" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">만료일</label>
+            <input v-model="newExpiresAt" type="date" class="input-field" />
           </div>
-
-          <!-- Form -->
-          <div class="space-y-4">
-            <!-- Asset name -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                에셋 이름 *
-              </label>
-              <input
-                v-model="newAssetName"
-                type="text"
-                placeholder="예: Spring Vibes - BGM"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-
-            <!-- Asset type -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                에셋 유형
-              </label>
-              <select
-                v-model="newAssetType"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option v-for="opt in assetTypeOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Video title -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                사용 영상 제목 *
-              </label>
-              <input
-                v-model="newVideoTitle"
-                type="text"
-                placeholder="예: 봄 메이크업 튜토리얼"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-
-            <!-- License type -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                라이선스 유형
-              </label>
-              <select
-                v-model="newLicenseType"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option v-for="opt in licenseTypeOptions" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Source -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                출처
-              </label>
-              <input
-                v-model="newSource"
-                type="text"
-                placeholder="예: Artlist, Unsplash, Google Fonts"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-
-            <!-- License URL -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                라이선스 URL
-              </label>
-              <input
-                v-model="newLicenseUrl"
-                type="url"
-                placeholder="https://..."
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-
-            <!-- Expiration & Cost row -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  만료일
-                </label>
-                <input
-                  v-model="newExpiresAt"
-                  type="date"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                />
-              </div>
-              <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  비용 (원)
-                </label>
-                <input
-                  v-model.number="newCost"
-                  type="number"
-                  min="0"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                />
-              </div>
-            </div>
-
-            <!-- Notes -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                메모
-              </label>
-              <textarea
-                v-model="newNotes"
-                rows="2"
-                placeholder="라이선스 관련 추가 메모"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-          </div>
-
-          <!-- Modal actions -->
-          <div class="mt-6 flex items-center justify-end gap-3">
-            <button
-              class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-              @click="closeCreateModal"
-            >
-              취소
-            </button>
-            <button
-              class="btn-primary text-sm"
-              :disabled="!newAssetName.trim() || !newVideoTitle.trim()"
-              @click="handleCreateRight"
-            >
-              등록
-            </button>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">비용 (원)</label>
+            <input v-model.number="newCost" type="number" min="0" class="input-field" />
           </div>
         </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">메모</label>
+          <textarea v-model="newNotes" rows="2" placeholder="라이선스 관련 추가 메모" class="input-field" />
+        </div>
       </div>
-    </Teleport>
+      <template #footer>
+        <button class="btn-secondary" @click="closeCreateModal">취소</button>
+        <button class="btn-primary" :disabled="!newAssetName.trim() || !newVideoTitle.trim()" @click="handleCreateRight">등록</button>
+      </template>
+    </BaseModal>
   </div>
 </template>

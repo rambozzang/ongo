@@ -7,6 +7,7 @@ import FolderSidebar from '@/components/assets/FolderSidebar.vue'
 import AssetCard from '@/components/assets/AssetCard.vue'
 import AssetUploadModal from '@/components/assets/AssetUploadModal.vue'
 import AssetPreviewModal from '@/components/assets/AssetPreviewModal.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import {
   PlusIcon,
@@ -248,10 +249,10 @@ onUnmounted(() => {
     ]" />
 
     <!-- Toolbar -->
-    <div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div class="card mb-6">
+      <div class="flex flex-col gap-3 desktop:flex-row desktop:items-center desktop:justify-between">
         <!-- Search -->
-        <div class="relative flex-1 lg:max-w-sm">
+        <div class="relative flex-1 desktop:max-w-sm">
           <MagnifyingGlassIcon
             class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
           />
@@ -259,7 +260,7 @@ onUnmounted(() => {
             v-model="searchKeyword"
             type="text"
             placeholder="파일명 또는 태그 검색..."
-            class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-9 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
+            class="input-field pl-10 pr-9"
             @input="onSearchInput"
           />
           <button
@@ -341,7 +342,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Main Content -->
-    <div class="flex flex-col gap-6 lg:flex-row">
+    <div class="flex flex-col gap-6 desktop:flex-row">
       <!-- Folder Sidebar -->
       <FolderSidebar />
 
@@ -395,7 +396,7 @@ onUnmounted(() => {
         <!-- Grid View -->
         <div
           v-else-if="viewMode === 'grid'"
-          class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          class="grid grid-cols-1 gap-4 mobile:grid-cols-2 desktop:grid-cols-3 xl:grid-cols-4"
         >
           <AssetCard
             v-for="asset in filteredAssets"
@@ -509,89 +510,41 @@ onUnmounted(() => {
     />
 
     <!-- Move to Folder Modal (Single) -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showMoveModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="폴더 이동"
-        >
-          <div class="absolute inset-0 bg-black/50" @click="showMoveModal = false" />
-          <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800">
-            <h3 class="mb-4 text-lg font-bold text-gray-900 dark:text-white">폴더 이동</h3>
-            <select
-              v-model="moveTargetFolderId"
-              class="input mb-4"
-            >
-              <option :value="null">전체 (루트)</option>
-              <option v-for="folder in folders" :key="folder.id" :value="folder.id">
-                {{ folder.name }}
-              </option>
-            </select>
-            <div class="flex justify-end gap-3">
-              <button
-                class="btn-secondary"
-                @click="showMoveModal = false"
-              >
-                취소
-              </button>
-              <button
-                class="btn-primary"
-                @click="confirmMove"
-              >
-                이동
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <BaseModal v-model="showMoveModal" title="폴더 이동" max-width="sm">
+      <select
+        v-model="moveTargetFolderId"
+        class="input mb-4"
+      >
+        <option :value="null">전체 (루트)</option>
+        <option v-for="folder in folders" :key="folder.id" :value="folder.id">
+          {{ folder.name }}
+        </option>
+      </select>
+      <template #footer>
+        <button class="btn-secondary" @click="showMoveModal = false">취소</button>
+        <button class="btn-primary" @click="confirmMove">이동</button>
+      </template>
+    </BaseModal>
 
     <!-- Bulk Move Modal -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-if="showBulkMoveModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="일괄 폴더 이동"
-        >
-          <div class="absolute inset-0 bg-black/50" @click="showBulkMoveModal = false" />
-          <div class="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800">
-            <h3 class="mb-2 text-lg font-bold text-gray-900 dark:text-white">폴더 이동</h3>
-            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
-              {{ selectedCount }}개의 에셋을 이동할 폴더를 선택하세요.
-            </p>
-            <select
-              v-model="bulkMoveFolderId"
-              class="input mb-4"
-            >
-              <option :value="null">전체 (루트)</option>
-              <option v-for="folder in folders" :key="folder.id" :value="folder.id">
-                {{ folder.name }}
-              </option>
-            </select>
-            <div class="flex justify-end gap-3">
-              <button
-                class="btn-secondary"
-                @click="showBulkMoveModal = false"
-              >
-                취소
-              </button>
-              <button
-                class="btn-primary"
-                @click="confirmBulkMove"
-              >
-                이동
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <BaseModal v-model="showBulkMoveModal" title="폴더 이동" max-width="sm">
+      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+        {{ selectedCount }}개의 에셋을 이동할 폴더를 선택하세요.
+      </p>
+      <select
+        v-model="bulkMoveFolderId"
+        class="input mb-4"
+      >
+        <option :value="null">전체 (루트)</option>
+        <option v-for="folder in folders" :key="folder.id" :value="folder.id">
+          {{ folder.name }}
+        </option>
+      </select>
+      <template #footer>
+        <button class="btn-secondary" @click="showBulkMoveModal = false">취소</button>
+        <button class="btn-primary" @click="confirmBulkMove">이동</button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 

@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import {
   ChatBubbleLeftRightIcon,
   PlusIcon,
-  XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import { useSmartReplyStore } from '@/stores/smartReply'
+import OTabs from '@/components/ui/OTabs.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import SuggestionCard from '@/components/smartreply/SuggestionCard.vue'
 import ReplyRuleCard from '@/components/smartreply/ReplyRuleCard.vue'
 import ReplyStatsPanel from '@/components/smartreply/ReplyStatsPanel.vue'
@@ -22,6 +23,12 @@ const store = useSmartReplyStore()
 const { suggestions, rules, stats, loading, pendingCount } = storeToRefs(store)
 
 const activeTab = ref<'suggestions' | 'rules' | 'stats'>('suggestions')
+
+const tabList = computed(() => [
+  { key: 'suggestions', label: t('smartReply.tabSuggestions'), count: pendingCount.value > 0 ? pendingCount.value : undefined },
+  { key: 'rules', label: t('smartReply.tabRules'), count: rules.value.length },
+  { key: 'stats', label: t('smartReply.tabStats') },
+])
 
 // ─── New Rule Modal ──────────────────────────────────────
 const showRuleModal = ref(false)
@@ -139,65 +146,8 @@ onMounted(() => {
     <PageGuide :title="$t('smartReply.pageGuideTitle')" :items="($tm('smartReply.pageGuide') as string[])" />
 
     <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex gap-8">
-        <button
-          @click="activeTab = 'suggestions'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'suggestions'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          {{ $t('smartReply.tabSuggestions') }}
-          <span
-            v-if="pendingCount > 0"
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === 'suggestions'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ pendingCount }}
-          </span>
-        </button>
-
-        <button
-          @click="activeTab = 'rules'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'rules'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          {{ $t('smartReply.tabRules') }}
-          <span
-            :class="[
-              'ml-2 px-2 py-0.5 rounded-full text-xs font-semibold',
-              activeTab === 'rules'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-            ]"
-          >
-            {{ rules.length }}
-          </span>
-        </button>
-
-        <button
-          @click="activeTab = 'stats'"
-          :class="[
-            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
-            activeTab === 'stats'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-          ]"
-        >
-          {{ $t('smartReply.tabStats') }}
-        </button>
-      </nav>
+    <div class="mb-6">
+      <OTabs v-model="activeTab" :tabs="tabList" />
     </div>
 
     <!-- Loading -->
@@ -218,7 +168,7 @@ onMounted(() => {
       <!-- Empty state -->
       <div
         v-else
-        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-16 text-center shadow-sm"
+        class="card py-16 text-center"
       >
         <ChatBubbleLeftRightIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -245,7 +195,7 @@ onMounted(() => {
       <!-- Empty state -->
       <div
         v-else
-        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-16 text-center shadow-sm"
+        class="card py-16 text-center"
       >
         <ChatBubbleLeftRightIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -270,7 +220,7 @@ onMounted(() => {
 
       <div
         v-else
-        class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-16 text-center shadow-sm"
+        class="card py-16 text-center"
       >
         <p class="text-sm text-gray-500 dark:text-gray-400">
           {{ $t('smartReply.noStats') }}
@@ -279,150 +229,128 @@ onMounted(() => {
     </div>
 
     <!-- New Rule Modal -->
-    <Teleport to="body">
-      <div
-        v-if="showRuleModal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        @click.self="closeRuleModal"
-      >
-        <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
-          <!-- Modal header -->
-          <div class="mb-5 flex items-center justify-between">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-              {{ $t('smartReply.newRuleTitle') }}
-            </h2>
-            <button
-              class="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-              @click="closeRuleModal"
+    <BaseModal v-model="showRuleModal" :title="$t('smartReply.newRuleTitle')">
+      <!-- Form -->
+      <div class="space-y-4">
+        <!-- Rule name -->
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('smartReply.ruleName') }}
+          </label>
+          <input
+            v-model="newRuleName"
+            type="text"
+            :placeholder="$t('smartReply.ruleNamePlaceholder')"
+            class="input-field w-full"
+          />
+        </div>
+
+        <!-- Context -->
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('smartReply.ruleContext') }}
+          </label>
+          <select
+            v-model="newRuleContext"
+            class="input-field w-full"
+          >
+            <option
+              v-for="opt in contextOptions"
+              :key="opt.value"
+              :value="opt.value"
             >
-              <XMarkIcon class="h-5 w-5" />
-            </button>
-          </div>
+              {{ $t(opt.labelKey) }}
+            </option>
+          </select>
+        </div>
 
-          <!-- Form -->
-          <div class="space-y-4">
-            <!-- Rule name -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ $t('smartReply.ruleName') }}
-              </label>
-              <input
-                v-model="newRuleName"
-                type="text"
-                :placeholder="$t('smartReply.ruleNamePlaceholder')"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-
-            <!-- Context -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ $t('smartReply.ruleContext') }}
-              </label>
-              <select
-                v-model="newRuleContext"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option
-                  v-for="opt in contextOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ $t(opt.labelKey) }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Tone -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ $t('smartReply.ruleTone') }}
-              </label>
-              <select
-                v-model="newRuleTone"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option
-                  v-for="opt in toneOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ $t(opt.labelKey) }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Trigger keywords -->
-            <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ $t('smartReply.ruleKeywords') }}
-              </label>
-              <input
-                v-model="newRuleKeywords"
-                type="text"
-                :placeholder="$t('smartReply.ruleKeywordsPlaceholder')"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-
-            <!-- AI toggle -->
-            <div class="flex items-center justify-between">
-              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ $t('smartReply.ruleUseAi') }}
-              </label>
-              <label class="relative inline-flex cursor-pointer items-center">
-                <input v-model="newRuleUseAi" type="checkbox" class="peer sr-only" />
-                <div
-                  class="h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:bg-gray-700 dark:peer-focus:ring-primary-800"
-                />
-              </label>
-            </div>
-
-            <!-- Template text (if not AI) -->
-            <div v-if="!newRuleUseAi">
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ $t('smartReply.ruleTemplate') }}
-              </label>
-              <textarea
-                v-model="newRuleTemplate"
-                rows="3"
-                :placeholder="$t('smartReply.ruleTemplatePlaceholder')"
-                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-            </div>
-
-            <!-- Auto-send toggle -->
-            <div class="flex items-center justify-between">
-              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {{ $t('smartReply.ruleAutoSend') }}
-              </label>
-              <label class="relative inline-flex cursor-pointer items-center">
-                <input v-model="newRuleAutoSend" type="checkbox" class="peer sr-only" />
-                <div
-                  class="h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:bg-gray-700 dark:peer-focus:ring-primary-800"
-                />
-              </label>
-            </div>
-          </div>
-
-          <!-- Modal actions -->
-          <div class="mt-6 flex items-center justify-end gap-3">
-            <button
-              class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-              @click="closeRuleModal"
+        <!-- Tone -->
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('smartReply.ruleTone') }}
+          </label>
+          <select
+            v-model="newRuleTone"
+            class="input-field w-full"
+          >
+            <option
+              v-for="opt in toneOptions"
+              :key="opt.value"
+              :value="opt.value"
             >
-              {{ $t('smartReply.cancel') }}
-            </button>
-            <button
-              class="btn-primary text-sm"
-              :disabled="!newRuleName.trim()"
-              @click="handleCreateRule"
-            >
-              {{ $t('smartReply.createRule') }}
-            </button>
-          </div>
+              {{ $t(opt.labelKey) }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Trigger keywords -->
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('smartReply.ruleKeywords') }}
+          </label>
+          <input
+            v-model="newRuleKeywords"
+            type="text"
+            :placeholder="$t('smartReply.ruleKeywordsPlaceholder')"
+            class="input-field w-full"
+          />
+        </div>
+
+        <!-- AI toggle -->
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('smartReply.ruleUseAi') }}
+          </label>
+          <label class="relative inline-flex cursor-pointer items-center">
+            <input v-model="newRuleUseAi" type="checkbox" class="peer sr-only" />
+            <div
+              class="h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:bg-gray-700 dark:peer-focus:ring-primary-800"
+            />
+          </label>
+        </div>
+
+        <!-- Template text (if not AI) -->
+        <div v-if="!newRuleUseAi">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('smartReply.ruleTemplate') }}
+          </label>
+          <textarea
+            v-model="newRuleTemplate"
+            rows="3"
+            :placeholder="$t('smartReply.ruleTemplatePlaceholder')"
+            class="input-field w-full"
+          />
+        </div>
+
+        <!-- Auto-send toggle -->
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('smartReply.ruleAutoSend') }}
+          </label>
+          <label class="relative inline-flex cursor-pointer items-center">
+            <input v-model="newRuleAutoSend" type="checkbox" class="peer sr-only" />
+            <div
+              class="h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-300 dark:bg-gray-700 dark:peer-focus:ring-primary-800"
+            />
+          </label>
         </div>
       </div>
-    </Teleport>
+
+      <template #footer>
+        <button
+          class="btn-secondary"
+          @click="closeRuleModal"
+        >
+          {{ $t('smartReply.cancel') }}
+        </button>
+        <button
+          class="btn-primary text-sm"
+          :disabled="!newRuleName.trim()"
+          @click="handleCreateRule"
+        >
+          {{ $t('smartReply.createRule') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>

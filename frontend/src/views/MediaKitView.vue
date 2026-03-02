@@ -52,21 +52,7 @@
         </h2>
 
         <!-- Tabs: All / Published / Drafts -->
-        <div class="mb-4 flex gap-4 border-b border-gray-200 dark:border-gray-700">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            :class="[
-              'border-b-2 pb-3 text-sm font-medium transition-colors',
-              activeTab === tab.key
-                ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
-            ]"
-            @click="activeTab = tab.key"
-          >
-            {{ tab.label }} ({{ tab.count }})
-          </button>
-        </div>
+        <OTabs v-model="activeTab" :tabs="tabs" class="mb-4" />
 
         <!-- Kit Cards Grid -->
         <div class="grid gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
@@ -209,6 +195,7 @@ import {
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import TemplateSelector from '@/components/mediakit/TemplateSelector.vue'
 import MediaKitPreview from '@/components/mediakit/MediaKitPreview.vue'
 import RateCardEditor from '@/components/mediakit/RateCardEditor.vue'

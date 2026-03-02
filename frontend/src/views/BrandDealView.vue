@@ -16,28 +16,12 @@
     <PageGuide :title="t('brandDeal.pageGuideTitle')" :items="(tm('brandDeal.pageGuide') as string[])" />
 
     <!-- 탭 -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="flex gap-6">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          :class="[
-            'pb-3 text-sm font-medium border-b-2 transition-colors',
-            activeTab === tab.key
-              ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-          ]"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
     <!-- 딜 트래커 탭 -->
     <div v-if="activeTab === 'tracker'">
       <div class="mb-4">
-        <select v-model="statusFilter" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300" @change="filterDeals">
+        <select v-model="statusFilter" class="input-field" @change="filterDeals">
           <option value="">{{ t('brandDeal.status.all') }}</option>
           <option value="INQUIRY">{{ t('brandDeal.status.inquiry') }}</option>
           <option value="NEGOTIATION">{{ t('brandDeal.status.negotiation') }}</option>
@@ -59,11 +43,11 @@
       </div>
 
       <!-- 딜 카드 목록 -->
-      <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-else class="grid gap-4 mobile:grid-cols-2 desktop:grid-cols-3">
         <div
           v-for="deal in store.deals"
           :key="deal.id"
-          class="rounded-lg border border-gray-200 bg-white p-5 space-y-3 transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+          class="card space-y-3 transition-shadow hover:shadow-md"
         >
           <div class="flex items-start justify-between">
             <h3 class="truncate text-base font-semibold text-gray-900 dark:text-gray-100">{{ deal.brandName }}</h3>
@@ -104,13 +88,13 @@
 
     <!-- 미디어키트 탭 -->
     <div v-if="activeTab === 'mediakit'">
-      <div class="rounded-lg border border-gray-200 bg-white p-6 space-y-5 dark:border-gray-700 dark:bg-gray-800">
+      <div class="card space-y-5">
         <div>
           <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.displayName') }}</label>
           <input
             v-model="mkForm.displayName"
             type="text"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+            class="input-field"
             :placeholder="t('brandDeal.mediaKit.displayNamePlaceholder')"
           />
         </div>
@@ -119,7 +103,7 @@
           <textarea
             v-model="mkForm.bio"
             rows="3"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+            class="input-field"
             :placeholder="t('brandDeal.mediaKit.bioPlaceholder')"
           />
         </div>
@@ -128,7 +112,7 @@
           <input
             v-model="mkCategoriesInput"
             type="text"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+            class="input-field"
             :placeholder="t('brandDeal.mediaKit.categoriesPlaceholder')"
           />
         </div>
@@ -140,7 +124,7 @@
               <input
                 v-model="mkSocialLinks[platform]"
                 type="url"
-                class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                class="input-field flex-1"
                 :placeholder="`https://${platform.toLowerCase()}.com/...`"
               />
             </div>
@@ -151,7 +135,7 @@
           <input
             v-model="mkForm.slug"
             type="text"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+            class="input-field"
             :placeholder="t('brandDeal.mediaKit.slugPlaceholder')"
           />
         </div>
@@ -177,16 +161,13 @@
     </div>
 
     <!-- 새 딜 추가 모달 -->
-    <Teleport to="body">
-      <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" :aria-label="t('brandDeal.modal.title')" @click.self="showCreateModal = false">
-        <div class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl space-y-4 dark:bg-gray-800">
-          <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ t('brandDeal.modal.title') }}</h2>
+    <BaseModal v-model="showCreateModal" :title="t('brandDeal.modal.title')" max-width="lg">
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.brandName') }}</label>
             <input
               v-model="newDeal.brandName"
               type="text"
-              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+              class="input-field"
               :placeholder="t('brandDeal.modal.brandNamePlaceholder')"
             />
           </div>
@@ -196,7 +177,7 @@
               <input
                 v-model="newDeal.contactName"
                 type="text"
-                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                class="input-field"
                 :placeholder="t('brandDeal.modal.contactNamePlaceholder')"
               />
             </div>
@@ -205,7 +186,7 @@
               <input
                 v-model="newDeal.contactEmail"
                 type="email"
-                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                class="input-field"
                 placeholder="email@brand.com"
               />
             </div>
@@ -216,7 +197,7 @@
               <input
                 v-model.number="newDeal.dealValue"
                 type="number"
-                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                class="input-field"
                 placeholder="0"
               />
             </div>
@@ -225,7 +206,7 @@
               <input
                 v-model="newDeal.deadline"
                 type="date"
-                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+                class="input-field"
               />
             </div>
           </div>
@@ -234,11 +215,11 @@
             <textarea
               v-model="newDeal.notes"
               rows="3"
-              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+              class="input-field"
               :placeholder="t('brandDeal.modal.notesPlaceholder')"
             />
           </div>
-          <div class="flex justify-end gap-3 pt-2">
+          <template #footer>
             <button
               class="btn-secondary"
               @click="showCreateModal = false"
@@ -252,10 +233,8 @@
             >
               {{ t('brandDeal.modal.add') }}
             </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+          </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -264,6 +243,8 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PlusIcon } from '@heroicons/vue/24/outline'
 import { useBrandDealStore } from '@/stores/branddeal'
+import OTabs from '@/components/ui/OTabs.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 

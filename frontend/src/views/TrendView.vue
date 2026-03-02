@@ -16,23 +16,7 @@
     <PageGuide :title="$t('trend.pageGuideTitle')" :items="($tm('trend.pageGuide') as string[])" />
 
     <!-- 탭 -->
-    <div class="border-b border-gray-200 dark:border-gray-700">
-      <nav class="flex gap-6">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          :class="[
-            'pb-3 text-sm font-medium border-b-2 transition-colors',
-            activeTab === tab.key
-              ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-          ]"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="tabs" />
 
     <!-- 트렌드 차트 탭 -->
     <div v-if="activeTab === 'trends'" class="mt-6">
@@ -41,10 +25,10 @@
           v-model="searchKeyword"
           type="text"
           :placeholder="$t('trend.searchPlaceholder')"
-          class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm w-64 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          class="input-field w-64"
           @keyup.enter="searchTrends"
         />
-        <select v-model="sourceFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" @change="loadTrends">
+        <select v-model="sourceFilter" class="input-field" @change="loadTrends">
           <option value="">{{ $t('trend.allSources') }}</option>
           <option value="GOOGLE_TRENDS">Google Trends</option>
           <option value="YOUTUBE">YouTube</option>
@@ -60,12 +44,12 @@
         {{ $t('trend.analysisEmpty') }}
       </div>
       <div v-else class="space-y-4">
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h3 class="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100">{{ $t('trend.analysisSummary') }}</h3>
+        <div class="card">
+          <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('trend.analysisSummary') }}</h3>
           <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ store.analysis.summary }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h3 class="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100">{{ $t('trend.contentRecommendations') }}</h3>
+        <div class="card">
+          <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('trend.contentRecommendations') }}</h3>
           <ul class="space-y-2">
             <li v-for="(rec, i) in store.analysis.recommendations" :key="i" class="flex gap-2 text-sm text-gray-700 dark:text-gray-300">
               <span class="text-primary-600 dark:text-primary-400 font-bold">{{ i + 1 }}.</span>
@@ -88,6 +72,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTrendStore } from '@/stores/trend'
 import { useNotification } from '@/composables/useNotification'
+import OTabs from '@/components/ui/OTabs.vue'
 import TrendChart from '@/components/trend/TrendChart.vue'
 import TrendAlertManager from '@/components/trend/TrendAlertManager.vue'
 import PageGuide from '@/components/common/PageGuide.vue'

@@ -5,10 +5,10 @@ import {
   PlusIcon,
   DocumentTextIcon,
   SparklesIcon,
-  XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import ScriptCard from '@/components/scriptwriter/ScriptCard.vue'
 import ScriptEditor from '@/components/scriptwriter/ScriptEditor.vue'
 import GenerateModal from '@/components/scriptwriter/GenerateModal.vue'
@@ -181,63 +181,17 @@ function formatDuration(seconds: number): string {
     />
 
     <!-- Detail / Editor Modal -->
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showDetailModal && selectedScript"
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          @click="showDetailModal = false"
-        >
-          <Transition
-            enter-active-class="transition-all duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition-all duration-200"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="showDetailModal && selectedScript"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
-              @click.stop
-            >
-              <!-- Detail Header -->
-              <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <div class="flex-1 min-w-0">
-                  <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
-                    {{ selectedScript.title }}
-                  </h2>
-                  <div class="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    <span>{{ formatDuration(selectedScript.targetDuration) }}</span>
-                    <span class="text-gray-300 dark:text-gray-600">|</span>
-                    <span>{{ selectedScript.estimatedWordCount.toLocaleString() }}자</span>
-                    <span class="text-gray-300 dark:text-gray-600">|</span>
-                    <span>{{ selectedScript.targetAudience || '대상 미지정' }}</span>
-                  </div>
-                </div>
-                <button
-                  @click="showDetailModal = false"
-                  class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ml-4"
-                >
-                  <XMarkIcon class="w-5 h-5" />
-                </button>
-              </div>
-
-              <!-- Detail Body -->
-              <div class="flex-1 overflow-y-auto px-6 py-6">
-                <ScriptEditor :script="selectedScript" />
-              </div>
-            </div>
-          </Transition>
+    <BaseModal v-model="showDetailModal" :title="selectedScript?.title ?? ''" max-width="lg">
+      <template v-if="selectedScript">
+        <div class="mb-4 flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+          <span>{{ formatDuration(selectedScript.targetDuration) }}</span>
+          <span class="text-gray-300 dark:text-gray-600">|</span>
+          <span>{{ selectedScript.estimatedWordCount.toLocaleString() }}자</span>
+          <span class="text-gray-300 dark:text-gray-600">|</span>
+          <span>{{ selectedScript.targetAudience || '대상 미지정' }}</span>
         </div>
-      </Transition>
-    </Teleport>
+        <ScriptEditor :script="selectedScript" />
+      </template>
+    </BaseModal>
   </div>
 </template>

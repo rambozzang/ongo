@@ -86,7 +86,7 @@
                   type="text"
                   maxlength="20"
                   placeholder="활동할 닉네임을 입력하세요"
-                  class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-4 py-3 text-sm transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                  class="input-field w-full"
                   :class="{ 'border-red-400 focus:border-red-500 focus:ring-red-500/20': nicknameError }"
                   @input="nicknameError = ''"
                 />
@@ -310,7 +310,7 @@
 
             <div class="space-y-3">
               <button
-                class="w-full rounded-xl bg-primary-600 px-6 py-3.5 text-sm font-medium text-white shadow-lg transition-all hover:bg-primary-700 hover:shadow-xl tablet:w-auto tablet:px-10"
+                class="btn-primary w-full tablet:w-auto px-10 py-3.5"
                 @click="goToUpload"
               >
                 첫 영상 업로드하기
@@ -332,7 +332,7 @@
       <div v-if="currentStep > 0 && currentStep <= 4" class="mt-8 flex items-center justify-between">
         <button
           v-if="currentStep > 1"
-          class="flex items-center gap-1 rounded-xl border border-gray-300 dark:border-gray-600 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+          class="btn-secondary flex items-center gap-1"
           @click="prevStep"
         >
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -352,7 +352,7 @@
           </button>
           <button
             :disabled="isSubmitting"
-            class="flex items-center gap-1 rounded-xl bg-primary-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
+            class="btn-primary flex items-center gap-1"
             @click="nextStep"
           >
             <span v-if="isSubmitting" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>

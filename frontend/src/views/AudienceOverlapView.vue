@@ -58,7 +58,7 @@ function formatNumber(num: number): string {
 
     <template v-else>
       <!-- Summary Cards -->
-      <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
         <!-- Total Analyses -->
         <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
           <div class="flex items-center gap-2 mb-2">
@@ -119,7 +119,7 @@ function formatNumber(num: number): string {
           <span class="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">({{ store.results.length }})</span>
         </h2>
 
-        <div v-if="store.results.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div v-if="store.results.length > 0" class="grid grid-cols-1 tablet:grid-cols-2 desktop:grid-cols-4 gap-4">
           <div
             v-for="result in store.results"
             :key="result.id"

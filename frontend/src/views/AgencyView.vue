@@ -58,35 +58,7 @@
       </div>
 
       <!-- Tabs -->
-      <div class="border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex space-x-4 overflow-x-auto scrollbar-hide tablet:space-x-8">
-          <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            :class="[
-              activeTab === tab.id
-                ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300',
-              'flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium',
-            ]"
-            @click="activeTab = tab.id"
-          >
-            <component :is="tab.icon" class="mr-2 h-5 w-5" />
-            {{ tab.label }}
-            <span
-              v-if="tab.count !== undefined"
-              :class="[
-                activeTab === tab.id
-                  ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-                'ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium',
-              ]"
-            >
-              {{ tab.count }}
-            </span>
-          </button>
-        </nav>
-      </div>
+      <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
       <!-- Tab Content -->
       <div class="mt-6">
@@ -99,11 +71,11 @@
                 v-model="searchQuery"
                 type="text"
                 :placeholder="$t('agency.searchCreators')"
-                class="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
+                class="input-field pl-9"
               />
             </div>
           </div>
-          <div class="grid gap-4 sm:grid-cols-2 desktop:grid-cols-3">
+          <div class="grid gap-4 mobile:grid-cols-2 desktop:grid-cols-3">
             <WorkspaceCard
               v-for="creator in filteredCreators"
               :key="creator.id"
@@ -125,7 +97,7 @@
 
         <!-- Batch Schedule Tab -->
         <div v-else-if="activeTab === 'schedule'" class="space-y-4">
-          <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          <div class="card">
             <div class="border-b border-gray-100 p-4 dark:border-gray-700">
               <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
                 {{ $t('agency.batchSchedule') }}
@@ -223,6 +195,7 @@ import {
   CalendarDaysIcon,
   UserCircleIcon,
 } from '@heroicons/vue/24/outline'
+import OTabs from '@/components/ui/OTabs.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import AgencyKpiCard from '@/components/agency/AgencyKpiCard.vue'
@@ -240,11 +213,11 @@ type TabType = 'workspaces' | 'comparison' | 'schedule' | 'clients'
 const activeTab = ref<TabType>('workspaces')
 const searchQuery = ref('')
 
-const tabs = computed<{ id: TabType; label: string; icon: Component; count?: number }[]>(() => [
-  { id: 'workspaces', label: t('agency.tabs.workspaces'), icon: Squares2X2Icon, count: agencyStore.creators.length },
-  { id: 'comparison', label: t('agency.tabs.comparison'), icon: ChartBarSquareIcon },
-  { id: 'schedule', label: t('agency.tabs.schedule'), icon: CalendarDaysIcon, count: agencyStore.schedules.length },
-  { id: 'clients', label: t('agency.tabs.clients'), icon: UserCircleIcon, count: agencyStore.clientLinks.length },
+const tabs = computed<{ key: TabType; label: string; icon: Component; count?: number }[]>(() => [
+  { key: 'workspaces', label: t('agency.tabs.workspaces'), icon: Squares2X2Icon, count: agencyStore.creators.length },
+  { key: 'comparison', label: t('agency.tabs.comparison'), icon: ChartBarSquareIcon },
+  { key: 'schedule', label: t('agency.tabs.schedule'), icon: CalendarDaysIcon, count: agencyStore.schedules.length },
+  { key: 'clients', label: t('agency.tabs.clients'), icon: UserCircleIcon, count: agencyStore.clientLinks.length },
 ])
 
 const filteredCreators = computed(() => {

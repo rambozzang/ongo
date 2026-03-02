@@ -40,8 +40,8 @@ onMounted(() => {
 
     <div v-else class="space-y-8">
       <!-- Summary Cards -->
-      <div v-if="summary" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div v-if="summary" class="grid grid-cols-1 gap-4 mobile:grid-cols-2 desktop:grid-cols-4">
+        <div class="card">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
               <ClockIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -55,7 +55,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
               <CheckCircleIcon class="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -69,7 +69,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
               <ChartBarIcon class="h-5 w-5 text-purple-600 dark:text-purple-400" />
@@ -83,7 +83,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div class="card">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30">
               <CalendarDaysIcon class="h-5 w-5 text-orange-600 dark:text-orange-400" />
@@ -105,11 +105,11 @@ onMounted(() => {
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ slots.length }})</span>
         </h2>
 
-        <div v-if="slots.length > 0" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div v-if="slots.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
           <div
             v-for="slot in slots"
             :key="slot.id"
-            class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+            class="card"
           >
             <div class="mb-2 flex items-center justify-between">
               <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ slot.dayOfWeek }} {{ slot.timeSlot }}</span>
@@ -135,7 +135,7 @@ onMounted(() => {
           <span class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">({{ recommendations.length }})</span>
         </h2>
 
-        <div v-if="recommendations.length > 0" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <div v-if="recommendations.length > 0" class="card overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead>
@@ -176,7 +176,7 @@ onMounted(() => {
 
         <div
           v-else
-          class="rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
+          class="card py-16 text-center"
         >
           <ClockIcon class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600" />
           <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('scheduleOptimizer.noRecommendations') }}</h3>

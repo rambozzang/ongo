@@ -84,23 +84,7 @@
       </div>
 
       <!-- Tabs -->
-      <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-        <nav class="-mb-px flex space-x-6">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            @click="activeTab = tab.key"
-            :class="[
-              activeTab === tab.key
-                ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400',
-              'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
-            ]"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
-      </div>
+      <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
       <!-- ========== Overview Tab ========== -->
       <template v-if="activeTab === 'overview'">
@@ -350,6 +334,7 @@ import type { FundingSource } from '@/types/fanFunding'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import FundingChart from '@/components/fanfunding/FundingChart.vue'
 import DonorCard from '@/components/fanfunding/DonorCard.vue'
 import GoalCard from '@/components/fanfunding/GoalCard.vue'

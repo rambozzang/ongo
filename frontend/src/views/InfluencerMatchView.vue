@@ -22,23 +22,7 @@
     />
 
     <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
-      <nav class="flex gap-6">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          :class="[
-            'pb-3 text-sm font-medium border-b-2 transition-colors',
-            activeTab === tab.key
-              ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-          ]"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
     <!-- Matches Tab -->
     <div v-if="activeTab === 'matches'">
@@ -46,7 +30,7 @@
       <div class="mb-4 flex flex-wrap gap-3">
         <select
           v-model="filter.category"
-          class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+          class="input-field"
         >
           <option value="">{{ $t('influencerMatch.filter.allCategories') }}</option>
           <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
@@ -54,7 +38,7 @@
 
         <select
           v-model="filter.platform"
-          class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+          class="input-field"
         >
           <option value="">{{ $t('influencerMatch.filter.allPlatforms') }}</option>
           <option value="youtube">YouTube</option>
@@ -65,7 +49,7 @@
 
         <select
           v-model="followerRange"
-          class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+          class="input-field"
         >
           <option value="">{{ $t('influencerMatch.filter.allFollowers') }}</option>
           <option value="micro">1K - 10K</option>
@@ -81,7 +65,7 @@
           max="100"
           step="0.1"
           :placeholder="$t('influencerMatch.filter.minEngagement')"
-          class="w-36 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+          class="w-36 input-field"
         />
       </div>
 
@@ -192,6 +176,7 @@ import {
   UserGroupIcon,
   ChatBubbleLeftRightIcon,
 } from '@heroicons/vue/24/outline'
+import OTabs from '@/components/ui/OTabs.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'

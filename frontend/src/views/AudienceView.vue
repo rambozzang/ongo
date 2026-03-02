@@ -5,28 +5,12 @@
     <PageGuide :title="$t('audience.pageGuideTitle')" :items="($tm('audience.pageGuide') as string[])" />
 
     <!-- 탭 -->
-    <div class="border-b border-gray-200 dark:border-gray-700">
-      <nav class="flex gap-6">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          :class="[
-            'pb-3 text-sm font-medium border-b-2 transition-colors',
-            activeTab === tab.key
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
-          ]"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
     <!-- 팬 프로필 탭 -->
     <div v-if="activeTab === 'profiles'">
       <div class="mb-4 flex gap-3">
-        <select v-model="sortBy" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" @change="loadProfiles">
+        <select v-model="sortBy" class="input-field" @change="loadProfiles">
           <option value="engagement_score">{{ $t('audience.sort.engagementScore') }}</option>
           <option value="total_interactions">{{ $t('audience.sort.totalInteractions') }}</option>
           <option value="last_seen_at">{{ $t('audience.sort.lastSeenAt') }}</option>
@@ -41,19 +25,19 @@
         {{ $t('audience.emptyProfiles') }}
       </div>
 
-      <div v-else class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div v-else class="card overflow-hidden !p-0">
         <table class="w-full text-sm">
-          <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-900">
             <tr>
-              <th class="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.profile') }}</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.platform') }}</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.engagement') }}</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.tags') }}</th>
-              <th class="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.interactions') }}</th>
-              <th class="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{{ $t('audience.table.lastActivity') }}</th>
+              <th class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.profile') }}</th>
+              <th class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.platform') }}</th>
+              <th class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.engagement') }}</th>
+              <th class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.tags') }}</th>
+              <th class="text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.interactions') }}</th>
+              <th class="text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.lastActivity') }}</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="profile in store.profiles" :key="profile.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
@@ -65,7 +49,7 @@
                   />
                   <div
                     v-else
-                    class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold"
+                    class="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-bold"
                   >
                     {{ profile.authorName.charAt(0) }}
                   </div>
@@ -107,7 +91,7 @@
         <div class="flex gap-2">
           <button
             :disabled="currentPage === 0"
-            class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-700 dark:text-gray-300"
+            class="btn-secondary text-sm"
             @click="changePage(currentPage - 1)"
           >
             {{ $t('audience.pagination.previous') }}
@@ -117,7 +101,7 @@
           </span>
           <button
             :disabled="(currentPage + 1) * 20 >= store.totalProfiles"
-            class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 text-gray-700 dark:text-gray-300"
+            class="btn-secondary text-sm"
             @click="changePage(currentPage + 1)"
           >
             {{ $t('audience.pagination.next') }}
@@ -145,11 +129,11 @@
         {{ $t('audience.segment.empty') }}
       </div>
 
-      <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-else class="grid gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
         <div
           v-for="segment in store.segments"
           :key="segment.id"
-          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow"
+          class="card"
         >
           <div class="flex items-start justify-between mb-2">
             <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ segment.name }}</h3>
@@ -165,7 +149,7 @@
           <p v-if="segment.description" class="text-sm text-gray-500 dark:text-gray-400 mb-3">{{ segment.description }}</p>
           <div class="flex items-center justify-between text-sm">
             <span class="text-gray-600 dark:text-gray-400">
-              <span class="font-medium text-indigo-600 dark:text-indigo-400">{{ segment.memberCount.toLocaleString() }}</span>{{ $t('audience.members') }}
+              <span class="font-medium text-primary-600 dark:text-primary-400">{{ segment.memberCount.toLocaleString() }}</span>{{ $t('audience.members') }}
             </span>
             <span v-if="segment.autoUpdate" class="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded text-xs">
               {{ $t('audience.autoUpdate') }}
@@ -176,72 +160,65 @@
     </div>
 
     <!-- 세그먼트 추가 모달 -->
-    <div
-      v-if="showSegmentModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      @click.self="closeModal"
-    >
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6">
-        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{{ $t('audience.segment.modal.title') }}</h2>
-        <form @submit.prevent="handleCreateSegment">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('audience.segment.modal.name') }}</label>
-              <input
-                v-model="segmentForm.name"
-                type="text"
-                required
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                :placeholder="$t('audience.segment.modal.namePlaceholder')"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('audience.segment.modal.description') }}</label>
-              <textarea
-                v-model="segmentForm.description"
-                rows="2"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                :placeholder="$t('audience.segment.modal.descriptionPlaceholder')"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $t('audience.segment.modal.conditions') }}</label>
-              <input
-                v-model="segmentForm.conditions"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                :placeholder="$t('audience.segment.modal.conditionsPlaceholder')"
-              />
-            </div>
-            <div class="flex items-center gap-2">
-              <input
-                id="autoUpdate"
-                v-model="segmentForm.autoUpdate"
-                type="checkbox"
-                class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label for="autoUpdate" class="text-sm text-gray-700 dark:text-gray-300">{{ $t('audience.segment.modal.autoUpdate') }}</label>
-            </div>
+    <BaseModal v-model="showSegmentModal" :title="$t('audience.segment.modal.title')">
+      <form @submit.prevent="handleCreateSegment">
+        <div class="space-y-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('audience.segment.modal.name') }}</label>
+            <input
+              v-model="segmentForm.name"
+              type="text"
+              required
+              class="input-field"
+              :placeholder="$t('audience.segment.modal.namePlaceholder')"
+            />
           </div>
-          <div class="mt-6 flex justify-end gap-3">
-            <button
-              type="button"
-              class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-              @click="closeModal"
-            >
-              {{ $t('audience.segment.modal.cancel') }}
-            </button>
-            <button
-              type="submit"
-              :disabled="!segmentForm.name || creating"
-              class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {{ creating ? $t('audience.segment.modal.creating') : $t('audience.segment.modal.add') }}
-            </button>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('audience.segment.modal.description') }}</label>
+            <textarea
+              v-model="segmentForm.description"
+              rows="2"
+              class="input-field"
+              :placeholder="$t('audience.segment.modal.descriptionPlaceholder')"
+            />
           </div>
-        </form>
-      </div>
-    </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('audience.segment.modal.conditions') }}</label>
+            <input
+              v-model="segmentForm.conditions"
+              type="text"
+              class="input-field"
+              :placeholder="$t('audience.segment.modal.conditionsPlaceholder')"
+            />
+          </div>
+          <div class="flex items-center gap-2">
+            <input
+              id="autoUpdate"
+              v-model="segmentForm.autoUpdate"
+              type="checkbox"
+              class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+            />
+            <label for="autoUpdate" class="text-sm text-gray-700 dark:text-gray-300">{{ $t('audience.segment.modal.autoUpdate') }}</label>
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            class="btn-secondary"
+            @click="closeModal"
+          >
+            {{ $t('audience.segment.modal.cancel') }}
+          </button>
+          <button
+            type="submit"
+            :disabled="!segmentForm.name || creating"
+            class="btn-primary"
+          >
+            {{ creating ? $t('audience.segment.modal.creating') : $t('audience.segment.modal.add') }}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
   </div>
 </template>
 
@@ -249,6 +226,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAudienceStore } from '@/stores/audience'
+import OTabs from '@/components/ui/OTabs.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 

@@ -22,23 +22,7 @@
     <PageGuide :title="$t('revenue.pageGuideTitle')" :items="($tm('revenue.pageGuide') as string[])" />
 
     <!-- Sub-tab Navigation -->
-    <div class="border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex space-x-6">
-        <button
-          v-for="tab in revenueTabs"
-          :key="tab.key"
-          @click="activeTab = tab.key"
-          :class="[
-            activeTab === tab.key
-              ? 'border-primary-500 text-primary-600 dark:border-primary-400 dark:text-primary-400'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400',
-            'whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium',
-          ]"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
-    </div>
+    <OTabs v-model="activeTab" :tabs="revenueTabs" class="mb-0" />
 
     <!-- Loading State -->
     <div v-if="revenueStore.loading" class="flex items-center justify-center py-12">
@@ -49,7 +33,7 @@
       <!-- 개요 탭 -->
       <template v-if="activeTab === 'overview'">
         <!-- Summary Cards -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
           <!-- Total Revenue -->
           <div class="card border-t-4 border-primary-600">
             <div class="flex items-start justify-between">
@@ -146,7 +130,7 @@
         </div>
 
         <!-- Platform Breakdown & Bar Chart -->
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div class="grid grid-cols-1 gap-6 desktop:grid-cols-2">
           <!-- Platform Breakdown Doughnut -->
           <div class="card">
             <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -248,7 +232,7 @@
         </div>
         <template v-else-if="revenueStore.brandDealData">
           <!-- 브랜드딜 요약 -->
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="grid grid-cols-1 gap-4 tablet:grid-cols-2">
             <div class="card border-t-4 border-orange-500">
               <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('revenue.brandDealTotalRevenue') }}</p>
               <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -340,6 +324,7 @@ import {
 import { PLATFORM_CONFIG } from '@/types/channel'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import OTabs from '@/components/ui/OTabs.vue'
 import RevenueChart from '@/components/revenue/RevenueChart.vue'
 import RevenuePlatformBreakdown from '@/components/revenue/RevenuePlatformBreakdown.vue'
 import RevenueTable from '@/components/revenue/RevenueTable.vue'
@@ -483,7 +468,7 @@ function dealStatusClass(status: string): string {
   const classes: Record<string, string> = {
     NEGOTIATING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
     CONFIRMED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    IN_PROGRESS: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
+    IN_PROGRESS: 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400',
     COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
     CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   }
