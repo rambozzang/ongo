@@ -9,6 +9,7 @@ import {
 import { useThumbnailAbTestStore } from '@/stores/thumbnailAbTest'
 import ThumbnailTestCard from '@/components/thumbnailabtest/ThumbnailTestCard.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 useI18n({ useScope: 'global' })
@@ -37,24 +38,16 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ $t('thumbnailAbTest.title') }}
-          </h1>
-          <span
-            v-if="store.activeCount > 0"
-            class="rounded-full bg-green-600 px-2.5 py-0.5 text-xs font-semibold text-white"
-          >
-            {{ store.activeCount }} Active
-          </span>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('thumbnailAbTest.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('thumbnailAbTest.title')" :description="$t('thumbnailAbTest.description')">
+      <template #title-suffix>
+        <span
+          v-if="store.activeCount > 0"
+          class="rounded-full bg-green-600 px-2.5 py-0.5 text-xs font-semibold text-white"
+        >
+          {{ store.activeCount }} Active
+        </span>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('thumbnailAbTest.pageGuideTitle')"

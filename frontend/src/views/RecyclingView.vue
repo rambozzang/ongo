@@ -15,6 +15,7 @@ import RecyclingHistoryComponent from '@/components/recycling/RecyclingHistory.v
 import { LightBulbIcon } from '@heroicons/vue/24/outline'
 import type { RecyclingQueue, RecyclingQueueCreateRequest } from '@/types/recycling'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const { t } = useI18n()
 const recyclingStore = useRecyclingStore()
@@ -113,16 +114,8 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('recycling.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('recycling.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('recycling.title')" :description="$t('recycling.description')">
+      <template #actions>
         <button
           @click="openCreateModal"
           class="btn-primary inline-flex items-center gap-2"
@@ -130,8 +123,8 @@ onMounted(() => {
           <PlusIcon class="h-5 w-5" />
           {{ $t('recycling.newQueue') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('recycling.pageGuideTitle')" :items="($tm('recycling.pageGuide') as string[])" />
 

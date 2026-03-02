@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBrandKitStore } from '@/stores/brandkit'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/vue/24/outline'
 import ColorPalette from '@/components/brandkit/ColorPalette.vue'
 import TypographySection from '@/components/brandkit/TypographySection.vue'
@@ -73,16 +74,8 @@ function handleUpdateGuidelines(text: string) {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('brandKit.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('brandKit.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('brandKit.title')" :description="$t('brandKit.description')">
+      <template #actions>
         <button
           @click="handleSave"
           :disabled="!brandKitStore.isDirty"
@@ -96,8 +89,8 @@ function handleUpdateGuidelines(text: string) {
           </svg>
           <span>{{ brandKitStore.isDirty ? $t('brandKit.saveChanges') : $t('brandKit.saved') }}</span>
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('brandKit.pageGuideTitle')" :items="($tm('brandKit.pageGuide') as string[])" />
 

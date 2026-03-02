@@ -1,16 +1,6 @@
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('videoCompare.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('videoCompare.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('videoCompare.title')" :description="$t('videoCompare.description')" />
 
     <PageGuide :title="$t('videoCompare.pageGuideTitle')" :items="($tm('videoCompare.pageGuide') as string[])" />
 
@@ -267,6 +257,7 @@ import VideoComparisonCard from '@/components/analytics/VideoComparisonCard.vue'
 import MetricDifferenceCard from '@/components/analytics/MetricDifferenceCard.vue'
 import InsightItem from '@/components/analytics/InsightItem.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)

@@ -9,6 +9,7 @@ import {
   ServerStackIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import LibraryItemCard from '@/components/contentlibrary/LibraryItemCard.vue'
 import LibraryFolderCard from '@/components/contentlibrary/LibraryFolderCard.vue'
@@ -59,16 +60,7 @@ onMounted(async () => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('contentLibrary.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('contentLibrary.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('contentLibrary.title')" :description="$t('contentLibrary.description')" />
 
     <PageGuide
       :title="$t('contentLibrary.pageGuideTitle')"

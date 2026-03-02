@@ -1,16 +1,6 @@
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('subscription.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('subscription.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('subscription.title')" :description="$t('subscription.description')" />
 
     <PageGuide :title="$t('subscription.pageGuideTitle')" :items="($tm('subscription.pageGuide') as string[])" />
 
@@ -511,6 +501,7 @@ import PlanComparisonTable from '@/components/subscription/PlanComparisonTable.v
 import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
 import PaymentModal from '@/components/subscription/PaymentModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useSubscriptionStore } from '@/stores/subscription'
 import { useCreditStore } from '@/stores/credit'
 import { useChannelStore } from '@/stores/channel'

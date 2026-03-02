@@ -13,6 +13,7 @@ import SentimentResultCard from '@/components/sentimentanalyzer/SentimentResultC
 import CommentSentimentRow from '@/components/sentimentanalyzer/CommentSentimentRow.vue'
 import SentimentChart from '@/components/sentimentanalyzer/SentimentChart.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const store = useSentimentAnalyzerStore()
 const { results, currentComments, summary, isLoading } = storeToRefs(store)
@@ -55,18 +56,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            AI 감정 분석기
-          </h1>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          댓글의 감정을 AI로 분석하여 시청자 반응을 한눈에 파악하세요
-        </p>
-      </div>
-    </div>
+    <PageHeader title="AI 감정 분석기" description="댓글의 감정을 AI로 분석하여 시청자 반응을 한눈에 파악하세요" />
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">

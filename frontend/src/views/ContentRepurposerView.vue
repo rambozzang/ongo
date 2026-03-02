@@ -11,6 +11,7 @@ import { useContentRepurposerStore } from '@/stores/contentRepurposer'
 import RepurposeJobCard from '@/components/contentrepurposer/RepurposeJobCard.vue'
 import RepurposeTemplateCard from '@/components/contentrepurposer/RepurposeTemplateCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useLocale } from '@/composables/useLocale'
 
 useLocale()
@@ -34,17 +35,7 @@ onMounted(() => {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('contentRepurposer.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('contentRepurposer.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('contentRepurposer.title')" :description="$t('contentRepurposer.description')" />
 
     <!-- Summary Cards -->
     <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -10,6 +10,7 @@ import { useLiveStreamStore } from '@/stores/liveStream'
 import StreamCard from '@/components/livestream/StreamCard.vue'
 import ChatMessageRow from '@/components/livestream/ChatMessageRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useLocale } from '@/composables/useLocale'
 
 const { t } = useLocale()
@@ -49,16 +50,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('liveStream.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('liveStream.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('liveStream.title')" :description="$t('liveStream.description')" />
 
     <!-- Loading -->
     <div v-if="store.loading" class="flex items-center justify-center py-20">

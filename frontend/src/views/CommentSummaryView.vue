@@ -9,6 +9,7 @@ import {
 import { useCommentSummaryStore } from '@/stores/commentSummary'
 import CommentSummaryCard from '@/components/commentsummary/CommentSummaryCard.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { TopComment } from '@/types/commentSummary'
 
@@ -51,16 +52,8 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('commentSummary.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('commentSummary.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('commentSummary.title')" :description="$t('commentSummary.description')">
+      <template #actions>
         <div class="relative">
           <FunnelIcon class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <select
@@ -77,8 +70,8 @@ onMounted(() => {
             </option>
           </select>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('commentSummary.pageGuideTitle')"

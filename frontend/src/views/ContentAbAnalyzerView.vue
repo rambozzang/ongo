@@ -7,6 +7,7 @@ import {
   ScaleIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import AbTestCard from '@/components/contentabanalyzer/AbTestCard.vue'
 import VariantCompareBar from '@/components/contentabanalyzer/VariantCompareBar.vue'
@@ -54,17 +55,7 @@ function handleSelectTest(id: number) {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          콘텐츠 A/B 분석기
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          두 가지 콘텐츠 변형을 비교하여 최적의 전략을 찾으세요
-        </p>
-      </div>
-    </div>
+    <PageHeader title="콘텐츠 A/B 분석기" description="두 가지 콘텐츠 변형을 비교하여 최적의 전략을 찾으세요" />
 
     <PageGuide
       title="콘텐츠 A/B 분석기 가이드"

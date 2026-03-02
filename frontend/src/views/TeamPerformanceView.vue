@@ -13,6 +13,7 @@ import MemberCard from '@/components/teamperformance/MemberCard.vue'
 import ActivityFeed from '@/components/teamperformance/ActivityFeed.vue'
 import PerformanceRanking from '@/components/teamperformance/PerformanceRanking.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const store = useTeamPerformanceStore()
 const { members, activities, summary, isLoading } = storeToRefs(store)
@@ -32,18 +33,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            팀 성과 대시보드
-          </h1>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          팀원별 성과를 추적하고 활동 현황을 한눈에 확인하세요
-        </p>
-      </div>
-    </div>
+    <PageHeader title="팀 성과 대시보드" description="팀원별 성과를 추적하고 활동 현황을 한눈에 확인하세요" />
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">

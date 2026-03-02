@@ -1,22 +1,14 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('agency.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('agency.description', { count: agencyStore.activeCreators.length }) }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('agency.title')" :description="$t('agency.description', { count: agencyStore.activeCreators.length })">
+      <template #actions>
         <button class="btn-secondary inline-flex items-center gap-1.5 text-sm" @click="handleExport">
           <ArrowDownTrayIcon class="h-4 w-4" />
           {{ $t('agency.exportReport') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('agency.pageGuideTitle')" :items="($tm('agency.pageGuide') as string[])" />
 
@@ -232,6 +224,7 @@ import {
   UserCircleIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import AgencyKpiCard from '@/components/agency/AgencyKpiCard.vue'
 import WorkspaceCard from '@/components/agency/WorkspaceCard.vue'
 import CreatorComparisonChart from '@/components/agency/CreatorComparisonChart.vue'

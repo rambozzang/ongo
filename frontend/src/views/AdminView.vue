@@ -1,16 +1,6 @@
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ t('admin.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ t('admin.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="t('admin.title')" :description="t('admin.description')" />
 
     <PageGuide :title="t('admin.pageGuideTitle')" :items="(tm('admin.pageGuide') as string[])" />
 
@@ -476,6 +466,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useLocale } from '@/composables/useLocale'
 import { adminApi } from '@/api/admin'
 import type {

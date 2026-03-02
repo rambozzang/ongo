@@ -21,6 +21,7 @@ import RoleBadge from '@/components/team/RoleBadge.vue'
 import PermissionMatrix from '@/components/team/PermissionMatrix.vue'
 import WorkflowBoard from '@/components/team/WorkflowBoard.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -114,16 +115,8 @@ watch(activeTab, (tab) => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ teamStore.teamName }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('team.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="teamStore.teamName" :description="$t('team.description')">
+      <template #actions>
         <button
           v-if="canManage"
           class="btn-primary inline-flex items-center gap-2"
@@ -132,8 +125,8 @@ watch(activeTab, (tab) => {
           <UserPlusIcon class="h-5 w-5" />
           {{ $t('team.inviteMember') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('team.pageGuideTitle')" :items="($tm('team.pageGuide') as string[])" />
 

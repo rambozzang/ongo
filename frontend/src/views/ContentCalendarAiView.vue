@@ -12,6 +12,7 @@ import SuggestionCard from '@/components/contentcalendarai/SuggestionCard.vue'
 import TimeSlotGrid from '@/components/contentcalendarai/TimeSlotGrid.vue'
 import CalendarTimeline from '@/components/contentcalendarai/CalendarTimeline.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const store = useContentCalendarAiStore()
 const { suggestions, slots, summary, isLoading } = storeToRefs(store)
@@ -33,18 +34,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            AI 콘텐츠 캘린더
-          </h1>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          AI가 분석한 최적의 콘텐츠 일정과 업로드 시간대를 확인하세요
-        </p>
-      </div>
-    </div>
+    <PageHeader title="AI 콘텐츠 캘린더" description="AI가 분석한 최적의 콘텐츠 일정과 업로드 시간대를 확인하세요" />
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">

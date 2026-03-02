@@ -8,6 +8,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import ScriptCard from '@/components/scriptwriter/ScriptCard.vue'
 import ScriptEditor from '@/components/scriptwriter/ScriptEditor.vue'
 import GenerateModal from '@/components/scriptwriter/GenerateModal.vue'
@@ -81,19 +82,11 @@ function formatDuration(seconds: number): string {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            AI 스크립트 작성기
-          </h1>
-          <SparklesIcon class="w-6 h-6 text-primary-600 dark:text-primary-400" />
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          AI를 활용하여 영상 스크립트를 자동으로 생성하고 편집하세요
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader title="AI 스크립트 작성기" description="AI를 활용하여 영상 스크립트를 자동으로 생성하고 편집하세요">
+      <template #title-suffix>
+        <SparklesIcon class="w-6 h-6 text-primary-600 dark:text-primary-400" />
+      </template>
+      <template #actions>
         <button
           @click="openGenerateModal"
           class="btn-primary inline-flex items-center gap-2"
@@ -101,8 +94,8 @@ function formatDuration(seconds: number): string {
           <PlusIcon class="w-5 h-5" />
           스크립트 생성
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Summary Stats -->
     <div

@@ -12,6 +12,7 @@ import SuggestionCard from '@/components/smartreply/SuggestionCard.vue'
 import ReplyRuleCard from '@/components/smartreply/ReplyRuleCard.vue'
 import ReplyStatsPanel from '@/components/smartreply/ReplyStatsPanel.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { SmartReplyRule, ReplyTone, ReplyContext } from '@/types/smartReply'
 
@@ -114,24 +115,16 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ $t('smartReply.title') }}
-          </h1>
-          <span
-            v-if="pendingCount > 0"
-            class="rounded-full bg-primary-600 px-2.5 py-0.5 text-xs font-semibold text-white"
-          >
-            {{ pendingCount }}
-          </span>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('smartReply.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('smartReply.title')" :description="$t('smartReply.description')">
+      <template #title-suffix>
+        <span
+          v-if="pendingCount > 0"
+          class="rounded-full bg-primary-600 px-2.5 py-0.5 text-xs font-semibold text-white"
+        >
+          {{ pendingCount }}
+        </span>
+      </template>
+      <template #actions>
         <button
           v-if="activeTab === 'rules'"
           class="btn-primary inline-flex items-center gap-2"
@@ -140,8 +133,8 @@ onMounted(() => {
           <PlusIcon class="h-5 w-5" />
           {{ $t('smartReply.newRule') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('smartReply.pageGuideTitle')" :items="($tm('smartReply.pageGuide') as string[])" />
 

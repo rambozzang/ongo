@@ -10,14 +10,8 @@
     </template>
     <template v-else>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('linkBioView.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('linkBioView.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('linkBioView.title')" :description="$t('linkBioView.description')">
+      <template #actions>
         <!-- Publish URL -->
         <div class="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700">
           <span class="text-sm text-gray-600 dark:text-gray-400">{{ publishUrl }}</span>
@@ -37,8 +31,8 @@
           <CheckIcon class="h-5 w-5" />
           {{ $t('linkBioView.save') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('linkBioView.pageGuideTitle')" :items="($tm('linkBioView.pageGuide') as string[])" />
 
@@ -154,6 +148,7 @@ import { ref, computed, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { ClipboardDocumentIcon, CheckIcon } from '@heroicons/vue/24/outline'
 import { useLinkBioStore } from '@/stores/linkbio'
 import BioEditor from '@/components/linkbio/BioEditor.vue'

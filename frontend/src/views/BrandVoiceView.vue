@@ -1,12 +1,8 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('brandVoice.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $t('brandVoice.description') }}</p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('brandVoice.title')" :description="$t('brandVoice.description')">
+      <template #actions>
         <div
           class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm"
           :class="isLow ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'"
@@ -17,8 +13,8 @@
             {{ balance.toLocaleString() }}
           </span>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('brandVoice.pageGuideTitle')" :items="($tm('brandVoice.pageGuide') as string[])" />
 
@@ -386,6 +382,7 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import VoiceProfileCard from '@/components/brandvoice/VoiceProfileCard.vue'
 import TrainVoiceModal from '@/components/brandvoice/TrainVoiceModal.vue'
 import VoiceAnalysisResult from '@/components/brandvoice/VoiceAnalysisResult.vue'

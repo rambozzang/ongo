@@ -1,16 +1,8 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('ideas.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('ideas.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('ideas.title')" :description="$t('ideas.description')">
+      <template #actions>
         <button
           class="btn-primary inline-flex items-center gap-2"
           @click="openCreateModal"
@@ -18,8 +10,8 @@
           <PlusIcon class="h-5 w-5" />
           {{ $t('ideas.newIdea') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('ideas.pageGuideTitle')" :items="($tm('ideas.pageGuide') as string[])" />
 
@@ -142,6 +134,7 @@ import IdeaCard from '@/components/ideas/IdeaCard.vue'
 import IdeaColumn from '@/components/ideas/IdeaColumn.vue'
 import IdeaFormModal from '@/components/ideas/IdeaFormModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { PlusIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n({ useScope: 'global' })

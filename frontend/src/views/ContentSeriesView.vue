@@ -7,6 +7,7 @@ import {
   TagIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import SeriesCard from '@/components/contentseries/SeriesCard.vue'
 import EpisodeList from '@/components/contentseries/EpisodeList.vue'
@@ -95,16 +96,8 @@ function removeTag(tag: string) {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('contentSeries.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('contentSeries.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('contentSeries.title')" :description="$t('contentSeries.description')">
+      <template #actions>
         <button
           @click="openCreate"
           class="btn-primary inline-flex items-center gap-2"
@@ -112,8 +105,8 @@ function removeTag(tag: string) {
           <PlusIcon class="w-5 h-5" />
           {{ $t('contentSeries.newSeries') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('contentSeries.pageGuideTitle')" :items="($tm('contentSeries.pageGuide') as string[])" />
 

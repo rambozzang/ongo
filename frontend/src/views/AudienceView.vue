@@ -1,14 +1,6 @@
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('audience.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('audience.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('audience.title')" :description="$t('audience.description')" />
 
     <PageGuide :title="$t('audience.pageGuideTitle')" :items="($tm('audience.pageGuide') as string[])" />
 
@@ -258,6 +250,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAudienceStore } from '@/stores/audience'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const store = useAudienceStore()

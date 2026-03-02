@@ -1,16 +1,8 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ t('brandDeal.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ t('brandDeal.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="t('brandDeal.title')" :description="t('brandDeal.description')">
+      <template #actions>
         <button
           class="btn-primary inline-flex items-center gap-2"
           @click="showCreateModal = true"
@@ -18,8 +10,8 @@
           <PlusIcon class="h-5 w-5" />
           {{ t('brandDeal.addDeal') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="t('brandDeal.pageGuideTitle')" :items="(tm('brandDeal.pageGuide') as string[])" />
 
@@ -273,6 +265,7 @@ import { useI18n } from 'vue-i18n'
 import { PlusIcon } from '@heroicons/vue/24/outline'
 import { useBrandDealStore } from '@/stores/branddeal'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const { t, tm } = useI18n({ useScope: 'global' })
 const store = useBrandDealStore()

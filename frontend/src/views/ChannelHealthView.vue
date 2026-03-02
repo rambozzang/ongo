@@ -11,6 +11,7 @@ import { useChannelHealthStore } from '@/stores/channelHealth'
 import HealthMetricCard from '@/components/channelhealth/HealthMetricCard.vue'
 import TrendRow from '@/components/channelhealth/TrendRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const { t } = useLocale()
 const store = useChannelHealthStore()
@@ -46,16 +47,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('channelHealth.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('channelHealth.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('channelHealth.title')" :description="$t('channelHealth.description')" />
 
     <!-- Loading -->
     <LoadingSpinner v-if="store.loading" :full-page="true" size="lg" />

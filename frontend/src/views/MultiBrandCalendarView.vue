@@ -11,6 +11,7 @@ import {
   UserIcon,
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import BrandTag from '@/components/multibrandcalendar/BrandTag.vue'
 import ScheduleCard from '@/components/multibrandcalendar/ScheduleCard.vue'
 import ConflictAlert from '@/components/multibrandcalendar/ConflictAlert.vue'
@@ -175,23 +176,8 @@ function removeEditor(editor: string) {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <div class="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30">
-            <CalendarDaysIcon class="w-7 h-7 text-primary-600 dark:text-primary-400" />
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              다중 브랜드 캘린더
-            </h1>
-            <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-              {{ store.brands.length }}개 브랜드의 일정을 한눈에 관리하세요
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader title="다중 브랜드 캘린더" :description="`${store.brands.length}개 브랜드의 일정을 한눈에 관리하세요`">
+      <template #actions>
         <button @click="openCreateBrand" class="btn-secondary inline-flex items-center gap-2">
           <PlusIcon class="w-5 h-5" />
           브랜드 추가
@@ -200,8 +186,8 @@ function removeEditor(editor: string) {
           <PlusIcon class="w-5 h-5" />
           일정 추가
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Loading -->
     <LoadingSpinner v-if="store.isLoading" :full-page="true" size="lg" />

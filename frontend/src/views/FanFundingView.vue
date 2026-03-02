@@ -1,16 +1,8 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('fanFunding.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('fanFunding.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
+    <PageHeader :title="$t('fanFunding.title')" :description="$t('fanFunding.description')">
+      <template #actions>
         <button
           v-for="option in periodOptions"
           :key="option.value"
@@ -24,8 +16,8 @@
         >
           {{ option.label }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('fanFunding.pageGuideTitle')"
@@ -356,6 +348,7 @@ import { useI18n } from 'vue-i18n'
 import { useFanFundingStore } from '@/stores/fanFunding'
 import type { FundingSource } from '@/types/fanFunding'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import FundingChart from '@/components/fanfunding/FundingChart.vue'
 import DonorCard from '@/components/fanfunding/DonorCard.vue'

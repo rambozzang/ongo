@@ -12,6 +12,7 @@ import {
   FaceFrownIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import SentimentChart from '@/components/sociallistening/SentimentChart.vue'
 import MentionCard from '@/components/sociallistening/MentionCard.vue'
@@ -83,16 +84,8 @@ onMounted(() => {
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('socialListening.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('socialListening.description') }}
-        </p>
-      </div>
-      <div class="flex gap-1">
+    <PageHeader :title="$t('socialListening.title')" :description="$t('socialListening.description')">
+      <template #actions>
         <button
           v-for="p in periods"
           :key="p.value"
@@ -106,8 +99,8 @@ onMounted(() => {
         >
           {{ p.label }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('socialListening.pageGuideTitle')"

@@ -1,14 +1,8 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('commerce.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('commerce.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
+    <PageHeader :title="$t('commerce.title')" :description="$t('commerce.description')">
+      <template #actions>
         <button
           v-for="option in periodOptions"
           :key="option.value"
@@ -22,8 +16,8 @@
         >
           {{ option.label }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('commerce.pageGuideTitle')" :items="($tm('commerce.pageGuide') as string[])" />
 
@@ -258,6 +252,7 @@ import {
 import { useCommerceStore } from '@/stores/commerce'
 import type { CommercePlatform } from '@/types/commerce'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import CommerceKpiCard from '@/components/commerce/CommerceKpiCard.vue'
 import CommerceRevenueChart from '@/components/commerce/CommerceRevenueChart.vue'
 import ProductCard from '@/components/commerce/ProductCard.vue'

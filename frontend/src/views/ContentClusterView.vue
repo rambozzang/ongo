@@ -13,6 +13,7 @@ import type { ContentCluster } from '@/types/contentCluster'
 import ClusterCard from '@/components/contentcluster/ClusterCard.vue'
 import ClusterContentRow from '@/components/contentcluster/ClusterContentRow.vue'
 import TagCloud from '@/components/contentcluster/TagCloud.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const store = useContentClusterStore()
@@ -49,19 +50,7 @@ onMounted(() => {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            콘텐츠 클러스터
-          </h1>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          유사한 콘텐츠를 자동으로 그룹화하여 성과 패턴을 분석합니다
-        </p>
-      </div>
-    </div>
+    <PageHeader title="콘텐츠 클러스터" description="유사한 콘텐츠를 자동으로 그룹화하여 성과 패턴을 분석합니다" />
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">

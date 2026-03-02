@@ -10,6 +10,7 @@ import {
   CalendarIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useGoalsStore } from '@/stores/goals'
 import type { Goal } from '@/types/goal'
 import GoalCard from '@/components/goals/GoalCard.vue'
@@ -138,16 +139,8 @@ const formatNumber = (value: number): string => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('goals.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('goals.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('goals.title')" :description="$t('goals.description')">
+      <template #actions>
         <button
           @click="handleCreateGoal"
           class="btn-primary inline-flex items-center gap-2"
@@ -155,8 +148,8 @@ const formatNumber = (value: number): string => {
           <PlusIcon class="w-5 h-5" />
           {{ $t('goals.newGoal') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('goals.pageGuideTitle')" :items="($tm('goals.pageGuide') as string[])" />
 

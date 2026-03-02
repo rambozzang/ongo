@@ -1,16 +1,8 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('creatorNetwork.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('creatorNetwork.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('creatorNetwork.title')" :description="$t('creatorNetwork.description')">
+      <template #actions>
         <select
           v-model="platformFilter"
           class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
@@ -21,8 +13,8 @@
           <option value="instagram">Instagram</option>
           <option value="naverclip">Naver Clip</option>
         </select>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('creatorNetwork.pageGuideTitle')"
@@ -166,6 +158,7 @@ import { useI18n } from 'vue-i18n'
 import { useCreatorNetworkStore } from '@/stores/creatorNetwork'
 import type { CreatorCategory } from '@/types/creatorNetwork'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import CreatorCard from '@/components/creatornetwork/CreatorCard.vue'
 import CollabRequestRow from '@/components/creatornetwork/CollabRequestRow.vue'

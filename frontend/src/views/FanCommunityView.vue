@@ -11,6 +11,7 @@ import PostCard from '@/components/fancommunity/PostCard.vue'
 import PostTypeFilter from '@/components/fancommunity/PostTypeFilter.vue'
 import CommunityStats from '@/components/fancommunity/CommunityStats.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import type { PostType, CommunityPost } from '@/types/fanCommunity'
 
 const store = useFanCommunityStore()
@@ -101,16 +102,8 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">팬 커뮤니티</h1>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          팬들과 소통하고 커뮤니티를 성장시키세요
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader title="팬 커뮤니티" description="팬들과 소통하고 커뮤니티를 성장시키세요">
+      <template #actions>
         <button
           class="btn-primary inline-flex items-center gap-2"
           @click="openNewPostModal"
@@ -118,8 +111,8 @@ onMounted(() => {
           <PlusIcon class="h-5 w-5" />
           새 게시글
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Community Stats -->
     <div class="mb-6">

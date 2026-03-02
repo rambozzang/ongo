@@ -11,6 +11,7 @@ import {
 import { useCreatorMilestoneStore } from '@/stores/creatorMilestone'
 import MilestoneCard from '@/components/creatormilestone/MilestoneCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const store = useCreatorMilestoneStore()
 const { milestones, summary, isLoading } = storeToRefs(store)
@@ -54,18 +55,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            크리에이터 마일스톤
-          </h1>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          채널 성장 목표를 설정하고 달성 현황을 추적하세요
-        </p>
-      </div>
-    </div>
+    <PageHeader title="크리에이터 마일스톤" description="채널 성장 목표를 설정하고 달성 현황을 추적하세요" />
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">

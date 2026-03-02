@@ -1,21 +1,12 @@
 <template>
   <div>
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('hashtagStrategy.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('hashtagStrategy.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
+    <PageHeader :title="$t('hashtagStrategy.title')" :description="$t('hashtagStrategy.description')">
+      <template #actions>
         <span class="text-xs text-gray-400 dark:text-gray-500">
           {{ $t('hashtagStrategy.creditsRemaining') }}: {{ creditBalance }}
         </span>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('hashtagStrategy.pageGuideTitle')" :items="($tm('hashtagStrategy.pageGuide') as string[])" />
 
@@ -136,6 +127,7 @@ import { computed, onMounted, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { SparklesIcon, HashtagIcon } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import HashtagSetCard from '@/components/hashtagstrategy/HashtagSetCard.vue'
 import { useHashtagStrategyStore } from '@/stores/hashtagStrategy'
 import { useCredit } from '@/composables/useCredit'

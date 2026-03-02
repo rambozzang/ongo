@@ -15,6 +15,7 @@ import { useHashtagAnalyticsStore } from '@/stores/hashtagAnalytics'
 import HashtagCard from '@/components/hashtaganalytics/HashtagCard.vue'
 import RecommendationList from '@/components/hashtaganalytics/RecommendationList.vue'
 import HashtagGroupCard from '@/components/hashtaganalytics/HashtagGroupCard.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const store = useHashtagAnalyticsStore()
@@ -116,19 +117,8 @@ onMounted(() => {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            AI 해시태그 분석기
-          </h1>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          AI 기반 해시태그 성과 분석 및 추천으로 콘텐츠 도달률을 극대화하세요
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader title="AI 해시태그 분석기" description="AI 기반 해시태그 성과 분석 및 추천으로 콘텐츠 도달률을 극대화하세요">
+      <template #actions>
         <button
           class="btn-primary inline-flex items-center gap-2"
           @click="openAnalyzeModal"
@@ -136,8 +126,8 @@ onMounted(() => {
           <MagnifyingGlassIcon class="h-5 w-5" />
           해시태그 분석
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">

@@ -11,6 +11,7 @@ import { useLocale } from '@/composables/useLocale'
 import { useContentFunnelStore } from '@/stores/contentFunnel'
 import FunnelChart from '@/components/contentfunnel/FunnelChart.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 useLocale()
 const store = useContentFunnelStore()
@@ -25,16 +26,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('contentFunnel.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('contentFunnel.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('contentFunnel.title')" :description="$t('contentFunnel.description')" />
 
     <!-- Loading -->
     <LoadingSpinner v-if="loading" :full-page="true" size="lg" />

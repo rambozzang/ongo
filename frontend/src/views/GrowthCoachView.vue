@@ -1,25 +1,16 @@
 <template>
   <div>
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ $t('growthCoach.title') }}
-          </h1>
-          <span
-            v-if="session"
-            class="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400"
-          >
-            <ArrowTrendingUpIcon class="h-3.5 w-3.5" />
-            {{ $t('growthCoach.overallGrowthRate') }}: +{{ session.overallGrowthRate }}%
-          </span>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('growthCoach.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('growthCoach.title')" :description="$t('growthCoach.description')">
+      <template #title-suffix>
+        <span
+          v-if="session"
+          class="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-semibold text-green-700 dark:text-green-400"
+        >
+          <ArrowTrendingUpIcon class="h-3.5 w-3.5" />
+          {{ $t('growthCoach.overallGrowthRate') }}: +{{ session.overallGrowthRate }}%
+        </span>
+      </template>
+      <template #actions>
         <span class="text-xs text-gray-400 dark:text-gray-500">
           {{ $t('growthCoach.creditsRemaining') }}: {{ creditBalance }}
         </span>
@@ -31,8 +22,8 @@
           <SparklesIcon class="h-4 w-4" />
           {{ generatingReport ? $t('growthCoach.generatingReport') : $t('growthCoach.generateReport') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('growthCoach.pageGuideTitle')"
@@ -380,6 +371,7 @@ import {
   ClipboardDocumentListIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import GoalProgressCard from '@/components/growthcoach/GoalProgressCard.vue'
 import WeeklyReportCard from '@/components/growthcoach/WeeklyReportCard.vue'
 import InsightCard from '@/components/growthcoach/InsightCard.vue'

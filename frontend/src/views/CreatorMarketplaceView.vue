@@ -10,6 +10,7 @@ import { useCreatorMarketplaceStore } from '@/stores/creatorMarketplace'
 import ListingCard from '@/components/creatormarketplace/ListingCard.vue'
 import OrderRow from '@/components/creatormarketplace/OrderRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useLocale } from '@/composables/useLocale'
 
 const { t } = useLocale()
@@ -60,16 +61,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('creatorMarketplace.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('creatorMarketplace.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('creatorMarketplace.title')" :description="$t('creatorMarketplace.description')" />
 
     <!-- Loading -->
     <div v-if="store.loading" class="flex items-center justify-center py-20">

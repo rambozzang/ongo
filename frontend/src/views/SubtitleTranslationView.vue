@@ -16,6 +16,7 @@ import TranslationCard from '@/components/subtitletranslation/TranslationCard.vu
 import TranslationLineEditor from '@/components/subtitletranslation/TranslationLineEditor.vue'
 import LanguageSelector from '@/components/subtitletranslation/LanguageSelector.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const { t } = useLocale()
 const store = useSubtitleTranslationStore()
@@ -104,18 +105,8 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ $t('subtitleTranslation.title') }}
-          </h1>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('subtitleTranslation.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('subtitleTranslation.title')" :description="$t('subtitleTranslation.description')">
+      <template #actions>
         <button
           class="btn-primary inline-flex items-center gap-2"
           @click="openCreateModal"
@@ -123,8 +114,8 @@ onMounted(() => {
           <PlusIcon class="h-5 w-5" />
           {{ $t('subtitleTranslation.newRequest') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-5">

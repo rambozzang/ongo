@@ -11,6 +11,7 @@ import { useFanSegmentCampaignStore } from '@/stores/fanSegmentCampaign'
 import CampaignCard from '@/components/fansegmentcampaign/CampaignCard.vue'
 import SegmentRow from '@/components/fansegmentcampaign/SegmentRow.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useLocale } from '@/composables/useLocale'
 
 useLocale()
@@ -26,17 +27,7 @@ onMounted(() => {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('fanSegmentCampaign.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('fanSegmentCampaign.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('fanSegmentCampaign.title')" :description="$t('fanSegmentCampaign.description')" />
 
     <!-- Loading -->
     <LoadingSpinner v-if="loading" :full-page="true" size="lg" />

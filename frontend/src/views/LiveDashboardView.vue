@@ -1,31 +1,22 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ $t('liveDashboard.title') }}
-          </h1>
-          <!-- Connection status indicator -->
-          <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
-            :class="isConnected
-              ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
-              : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'"
-          >
-            <span
-              class="inline-block h-2 w-2 rounded-full"
-              :class="isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'"
-            />
-            {{ isConnected ? $t('liveDashboard.connected') : $t('liveDashboard.disconnected') }}
-          </span>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('liveDashboard.description') }}
-        </p>
-      </div>
-
-      <div class="flex items-center gap-4">
+    <PageHeader :title="$t('liveDashboard.title')" :description="$t('liveDashboard.description')">
+      <template #title-suffix>
+        <!-- Connection status indicator -->
+        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+          :class="isConnected
+            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+            : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'"
+        >
+          <span
+            class="inline-block h-2 w-2 rounded-full"
+            :class="isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'"
+          />
+          {{ isConnected ? $t('liveDashboard.connected') : $t('liveDashboard.disconnected') }}
+        </span>
+      </template>
+      <template #actions>
         <!-- Last updated -->
         <span v-if="lastUpdated" class="text-xs text-gray-400 dark:text-gray-500">
           {{ $t('liveDashboard.lastUpdated', { time: lastUpdatedFormatted }) }}
@@ -60,8 +51,8 @@
           <ArrowPathIcon class="h-4 w-4" :class="{ 'animate-spin': loading }" />
           {{ $t('liveDashboard.refresh') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Page Guide -->
     <PageGuide
@@ -129,6 +120,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ArrowPathIcon, BellSlashIcon } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LiveMetricCard from '@/components/livedashboard/LiveMetricCard.vue'
 import LiveAlertItem from '@/components/livedashboard/LiveAlertItem.vue'
 import { useLiveDashboardStore } from '@/stores/liveDashboard'

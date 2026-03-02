@@ -1,25 +1,19 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('fanPoll.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('fanPoll.description') }}
-        </p>
-      </div>
-      <button
-        class="btn-primary inline-flex items-center gap-2"
-        @click="showCreateForm = !showCreateForm"
-      >
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-        </svg>
-        {{ $t('fanPoll.createPoll') }}
-      </button>
-    </div>
+    <PageHeader :title="$t('fanPoll.title')" :description="$t('fanPoll.description')">
+      <template #actions>
+        <button
+          class="btn-primary inline-flex items-center gap-2"
+          @click="showCreateForm = !showCreateForm"
+        >
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          {{ $t('fanPoll.createPoll') }}
+        </button>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('fanPoll.pageGuideTitle')"
@@ -295,6 +289,7 @@ import { useI18n } from 'vue-i18n'
 import { useFanPollStore } from '@/stores/fanPoll'
 import type { FanPoll, PollType } from '@/types/fanPoll'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PollCard from '@/components/fanpoll/PollCard.vue'
 import PollResultChart from '@/components/fanpoll/PollResultChart.vue'

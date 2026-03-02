@@ -7,6 +7,7 @@ import NotificationItem from '@/components/notifications/NotificationItem.vue'
 import NotificationFilter from '@/components/notifications/NotificationFilter.vue'
 import NotificationSettings from '@/components/notifications/NotificationSettings.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import type { Notification, NotificationCategory } from '@/types/notification'
 import {
   Cog6ToothIcon,
@@ -72,15 +73,11 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('notifications.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ store.unreadCount > 0 ? $t('notifications.unreadCount', { count: store.unreadCount }) : $t('notifications.allRead') }}
-        </p>
-      </div>
-
-      <div class="flex items-center gap-3">
+    <PageHeader
+      :title="$t('notifications.title')"
+      :description="store.unreadCount > 0 ? $t('notifications.unreadCount', { count: store.unreadCount }) : $t('notifications.allRead')"
+    >
+      <template #actions>
         <button
           v-if="store.unreadCount > 0"
           class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -97,8 +94,8 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
           <Cog6ToothIcon class="h-4 w-4" />
           {{ $t('notifications.settings') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('notifications.pageGuideTitle')" :items="($tm('notifications.pageGuide') as string[])" />
 

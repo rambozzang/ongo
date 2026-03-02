@@ -8,6 +8,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import ReportCard from '@/components/performancereport/ReportCard.vue'
 import ReportSectionItem from '@/components/performancereport/ReportSectionItem.vue'
@@ -68,17 +69,7 @@ const summaryCards = computed(() => {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          콘텐츠 성과 보고서
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          기간별 콘텐츠 성과를 분석하고 인사이트를 확인하세요
-        </p>
-      </div>
-    </div>
+    <PageHeader title="콘텐츠 성과 보고서" description="기간별 콘텐츠 성과를 분석하고 인사이트를 확인하세요" />
 
     <PageGuide
       title="성과 보고서 가이드"

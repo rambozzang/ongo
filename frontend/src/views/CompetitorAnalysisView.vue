@@ -13,6 +13,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import CompetitorCard from '@/components/competitorAnalysis/CompetitorCard.vue'
 import ContentGapTable from '@/components/competitorAnalysis/ContentGapTable.vue'
 import TrendingTopicCard from '@/components/competitorAnalysis/TrendingTopicCard.vue'
@@ -137,16 +138,8 @@ onMounted(async () => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('competitorAnalysis.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('competitorAnalysis.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('competitorAnalysis.title')" :description="$t('competitorAnalysis.description')">
+      <template #actions>
         <!-- Period selector -->
         <div class="flex gap-1">
           <button
@@ -171,8 +164,8 @@ onMounted(async () => {
           <PlusIcon class="h-5 w-5" />
           {{ $t('competitorAnalysis.addCompetitor') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('competitorAnalysis.pageGuideTitle')"

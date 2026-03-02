@@ -15,6 +15,7 @@ import SegmentCard from '@/components/audiencesegment/SegmentCard.vue'
 import InsightPanel from '@/components/audiencesegment/InsightPanel.vue'
 import SegmentCompareChart from '@/components/audiencesegment/SegmentCompareChart.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import type { AudienceSegment, SegmentType } from '@/types/audienceSegment'
 
 const store = useAudienceSegmentStore()
@@ -119,24 +120,16 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            오디언스 세분화
-          </h1>
-          <span
-            v-if="totalAudience > 0"
-            class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-          >
-            {{ formatNumber(totalAudience) }}명
-          </span>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          시청자를 세그먼트로 분류하고 각 그룹에 맞는 AI 인사이트를 확인하세요
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader title="오디언스 세분화" description="시청자를 세그먼트로 분류하고 각 그룹에 맞는 AI 인사이트를 확인하세요">
+      <template #title-suffix>
+        <span
+          v-if="totalAudience > 0"
+          class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+        >
+          {{ formatNumber(totalAudience) }}명
+        </span>
+      </template>
+      <template #actions>
         <!-- View toggle -->
         <div class="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <button
@@ -166,8 +159,8 @@ onMounted(() => {
           <PlusIcon class="h-5 w-5" />
           새 세그먼트
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Stats Cards -->
     <div class="mb-6 grid grid-cols-2 gap-4 tablet:grid-cols-4">

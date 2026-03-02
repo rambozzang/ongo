@@ -7,6 +7,7 @@ import {
   UserGroupIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import OverlapResultCard from '@/components/audienceoverlap/OverlapResultCard.vue'
 import OverlapVennDiagram from '@/components/audienceoverlap/OverlapVennDiagram.vue'
@@ -39,17 +40,7 @@ function formatNumber(num: number): string {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          오디언스 오버랩
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          플랫폼 간 오디언스 중복을 분석하여 크로스 프로모션 전략을 수립하세요
-        </p>
-      </div>
-    </div>
+    <PageHeader title="오디언스 오버랩" description="플랫폼 간 오디언스 중복을 분석하여 크로스 프로모션 전략을 수립하세요" />
 
     <PageGuide
       title="오디언스 오버랩 활용 가이드"

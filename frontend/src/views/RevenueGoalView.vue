@@ -11,6 +11,7 @@ import RevenueGoalCard from '@/components/revenuegoal/RevenueGoalCard.vue'
 import GoalProgressRing from '@/components/revenuegoal/GoalProgressRing.vue'
 import GoalMilestoneList from '@/components/revenuegoal/GoalMilestoneList.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 useI18n({ useScope: 'global' })
@@ -64,24 +65,16 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ $t('revenueGoal.title') }}
-          </h1>
-          <span
-            v-if="store.activeGoalCount > 0"
-            class="rounded-full bg-primary-600 px-2.5 py-0.5 text-xs font-semibold text-white"
-          >
-            {{ store.activeGoalCount }} {{ $t('revenueGoal.active') }}
-          </span>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('revenueGoal.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('revenueGoal.title')" :description="$t('revenueGoal.description')">
+      <template #title-suffix>
+        <span
+          v-if="store.activeGoalCount > 0"
+          class="rounded-full bg-primary-600 px-2.5 py-0.5 text-xs font-semibold text-white"
+        >
+          {{ store.activeGoalCount }} {{ $t('revenueGoal.active') }}
+        </span>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('revenueGoal.pageGuideTitle')"

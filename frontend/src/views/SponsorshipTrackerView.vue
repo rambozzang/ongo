@@ -10,6 +10,7 @@ import {
   FunnelIcon,
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import DealCard from '@/components/sponsorshiptracker/DealCard.vue'
 import DeliverableList from '@/components/sponsorshiptracker/DeliverableList.vue'
 import RevenueChart from '@/components/sponsorshiptracker/RevenueChart.vue'
@@ -111,16 +112,8 @@ onMounted(async () => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          스폰서십 트래커
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          브랜드 협찬 딜을 추적하고 관리하세요
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader title="스폰서십 트래커" description="브랜드 협찬 딜을 추적하고 관리하세요">
+      <template #actions>
         <button
           @click="openCreate"
           class="btn-primary inline-flex items-center gap-2"
@@ -128,8 +121,8 @@ onMounted(async () => {
           <PlusIcon class="w-5 h-5" />
           새 딜 등록
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Summary Stats -->
     <div v-if="summary" class="grid grid-cols-2 tablet:grid-cols-4 gap-4 mb-6">

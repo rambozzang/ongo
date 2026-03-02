@@ -10,6 +10,7 @@ import { useVideoScriptAssistantStore } from '@/stores/videoScriptAssistant'
 import ScriptCard from '@/components/videoscriptassistant/ScriptCard.vue'
 import SuggestionItem from '@/components/videoscriptassistant/SuggestionItem.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const store = useVideoScriptAssistantStore()
 
@@ -41,16 +42,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          AI 비디오 스크립트 어시스턴트
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          AI가 비디오 스크립트를 분석하고 개선 제안을 제공합니다
-        </p>
-      </div>
-    </div>
+    <PageHeader title="AI 비디오 스크립트 어시스턴트" description="AI가 비디오 스크립트를 분석하고 개선 제안을 제공합니다" />
 
     <!-- Loading -->
     <LoadingSpinner v-if="store.loading" :full-page="true" size="lg" />

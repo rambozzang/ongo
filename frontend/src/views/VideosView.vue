@@ -1,20 +1,14 @@
 <template>
   <div ref="pageContainerRef" class="relative" :class="{ 'overflow-hidden': isMobile }">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('videos.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('videos.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('videos.title')" :description="$t('videos.description')">
+      <template #actions>
         <router-link to="/upload" class="btn-primary inline-flex items-center gap-2">
           <PlusIcon class="h-5 w-5" />
           {{ $t('videos.uploadNew') }}
         </router-link>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('videos.pageGuideTitle')" :items="($tm('videos.pageGuide') as string[])" />
 
@@ -635,6 +629,7 @@ import ScrollToTop from '@/components/common/ScrollToTop.vue'
 import BatchProgressPanel from '@/components/ai/BatchProgressPanel.vue'
 import { aiApi } from '@/api/ai'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useI18n } from 'vue-i18n'
 import { BATCH_OPERATIONS } from '@/types/ai'
 import type { AiBatchOperation, AiBatchResponse } from '@/types/ai'

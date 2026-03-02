@@ -1,14 +1,8 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('revenue.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('revenue.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
+    <PageHeader :title="$t('revenue.title')" :description="$t('revenue.description')">
+      <template #actions>
         <button
           v-for="option in periodOptions"
           :key="option.value"
@@ -22,8 +16,8 @@
         >
           {{ option.label }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('revenue.pageGuideTitle')" :items="($tm('revenue.pageGuide') as string[])" />
 
@@ -345,6 +339,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { PLATFORM_CONFIG } from '@/types/channel'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import RevenueChart from '@/components/revenue/RevenueChart.vue'
 import RevenuePlatformBreakdown from '@/components/revenue/RevenuePlatformBreakdown.vue'
 import RevenueTable from '@/components/revenue/RevenueTable.vue'

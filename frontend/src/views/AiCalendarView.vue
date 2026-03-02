@@ -1,16 +1,8 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('aiCalendar.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('aiCalendar.description') }}
-        </p>
-      </div>
-      <div v-if="calendarStore.calendarResult" class="flex items-center gap-2">
+    <PageHeader :title="$t('aiCalendar.title')" :description="$t('aiCalendar.description')">
+      <template v-if="calendarStore.calendarResult" #actions>
         <button
           :class="[
             'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
@@ -33,8 +25,8 @@
         >
           {{ $t('aiCalendar.monthly') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('aiCalendar.pageGuideTitle')"
@@ -209,6 +201,7 @@ import {
   CheckCircleIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import AiCalendarSettings from '@/components/aicalendar/AiCalendarSettings.vue'
 import AiCalendarGrid from '@/components/aicalendar/AiCalendarGrid.vue'
 import AiCalendarActions from '@/components/aicalendar/AiCalendarActions.vue'

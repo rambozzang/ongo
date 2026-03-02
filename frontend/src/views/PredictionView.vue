@@ -1,17 +1,13 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('prediction.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $t('prediction.description') }}</p>
-      </div>
-      <div class="flex items-center gap-2">
+    <PageHeader :title="$t('prediction.title')" :description="$t('prediction.description')">
+      <template #actions>
         <span class="text-xs text-gray-400 dark:text-gray-500">
           {{ $t('prediction.creditsRemaining') }}: {{ creditBalance }}
         </span>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('prediction.pageGuideTitle')" :items="($tm('prediction.pageGuide') as string[])" />
 
@@ -240,6 +236,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import PredictionCard from '@/components/prediction/PredictionCard.vue'
 import PredictionHeatmap from '@/components/prediction/PredictionHeatmap.vue'
 import PredictionComparison from '@/components/prediction/PredictionComparison.vue'

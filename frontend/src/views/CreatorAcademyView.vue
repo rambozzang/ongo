@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import {
-  AcademicCapIcon,
   XMarkIcon,
   PlayCircleIcon,
   ClockIcon,
@@ -11,6 +10,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import CourseCard from '@/components/creatoracademy/CourseCard.vue'
 import ProgressDashboard from '@/components/creatoracademy/ProgressDashboard.vue'
 import CategoryFilter from '@/components/creatoracademy/CategoryFilter.vue'
@@ -117,23 +117,7 @@ const isDetailCompleted = computed(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <div class="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30">
-            <AcademicCapIcon class="w-7 h-7 text-primary-600 dark:text-primary-400" />
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              크리에이터 아카데미
-            </h1>
-            <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-              성장하는 크리에이터를 위한 맞춤형 학습 플랫폼
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <PageHeader title="크리에이터 아카데미" description="성장하는 크리에이터를 위한 맞춤형 학습 플랫폼" />
 
     <!-- Loading -->
     <LoadingSpinner v-if="store.isLoading" :full-page="true" size="lg" />

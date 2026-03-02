@@ -1,16 +1,8 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('trend.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('trend.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('trend.title')" :description="$t('trend.description')">
+      <template #actions>
         <button
           :disabled="analyzing"
           class="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
@@ -18,8 +10,8 @@
         >
           {{ analyzing ? $t('trend.analyzing') : $t('trend.analyzeButton') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('trend.pageGuideTitle')" :items="($tm('trend.pageGuide') as string[])" />
 
@@ -99,6 +91,7 @@ import { useNotification } from '@/composables/useNotification'
 import TrendChart from '@/components/trend/TrendChart.vue'
 import TrendAlertManager from '@/components/trend/TrendAlertManager.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const { t } = useI18n()
 const store = useTrendStore()

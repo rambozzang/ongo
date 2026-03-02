@@ -15,6 +15,7 @@ import ActivityLogFilter from '@/components/activitylog/ActivityLogFilter.vue'
 import ActivityLogTimeline from '@/components/activitylog/ActivityLogTimeline.vue'
 import { useActivityLogsStore } from '@/stores/activityLogs'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import type { ActivityLog, ActivityAction, ActivityDateRange, ActivityDateCustomRange } from '@/types/activitylog'
 
 const router = useRouter()
@@ -95,16 +96,8 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('activityLog.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('activityLog.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('activityLog.title')" :description="$t('activityLog.description')">
+      <template #actions>
         <button
           class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           @click="handleExport"
@@ -112,8 +105,8 @@ onMounted(() => {
           <ArrowDownTrayIcon class="h-4 w-4" />
           {{ $t('activityLog.exportCsv') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('activityLog.pageGuideTitle')" :items="($tm('activityLog.pageGuide') as string[])" />
 

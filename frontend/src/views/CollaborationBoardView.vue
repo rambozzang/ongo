@@ -10,6 +10,7 @@ import {
   XMarkIcon,
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import BoardColumnView from '@/components/collaborationboard/BoardColumnView.vue'
 import TaskCreateModal from '@/components/collaborationboard/TaskCreateModal.vue'
 import { useCollaborationBoardStore } from '@/stores/collaborationBoard'
@@ -99,19 +100,11 @@ function formatDate(dateStr: string): string {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            협업 보드
-          </h1>
-          <ViewColumnsIcon class="w-6 h-6 text-primary-600 dark:text-primary-400" />
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          콘텐츠 제작 워크플로우를 칸반 보드로 관리하세요
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader title="협업 보드" description="콘텐츠 제작 워크플로우를 칸반 보드로 관리하세요">
+      <template #title-suffix>
+        <ViewColumnsIcon class="w-6 h-6 text-primary-600 dark:text-primary-400" />
+      </template>
+      <template #actions>
         <button
           @click="openCreateModal()"
           class="btn-primary inline-flex items-center gap-2"
@@ -119,8 +112,8 @@ function formatDate(dateStr: string): string {
           <PlusIcon class="w-5 h-5" />
           작업 추가
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Summary Stats -->
     <div

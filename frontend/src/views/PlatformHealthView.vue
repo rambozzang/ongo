@@ -8,6 +8,7 @@ import {
 import { usePlatformHealthStore } from '@/stores/platformHealth'
 import PlatformHealthCard from '@/components/platformhealth/PlatformHealthCard.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { HealthIssue } from '@/types/platformHealth'
 
@@ -48,17 +49,7 @@ onMounted(() => {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('platformHealth.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('platformHealth.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('platformHealth.title')" :description="$t('platformHealth.description')" />
 
     <PageGuide
       :title="$t('platformHealth.pageGuideTitle')"

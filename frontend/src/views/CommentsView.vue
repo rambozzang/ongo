@@ -1,17 +1,8 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('commentsView.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('commentsView.totalComments', { count: commentStats.total }) }}
-          <span v-if="lastSyncedAt" class="ml-2 text-xs text-gray-400">
-            · {{ $t('commentsView.lastSync', { time: formatSyncTime(lastSyncedAt) }) }}
-          </span>
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('commentsView.title')" :description="headerDescription">
+      <template #actions>
         <button
           class="btn-secondary inline-flex items-center gap-2"
           :disabled="batchDraftLoading || selectedCommentIds.length === 0"
@@ -31,8 +22,8 @@
           />
           {{ syncing ? $t('commentsView.syncing') : $t('commentsView.syncComments') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('commentsView.pageGuideTitle')" :items="($tm('commentsView.pageGuide') as string[])" />
 
@@ -423,6 +414,7 @@ import { storeToRefs } from 'pinia'
 import { useCommentsStore } from '@/stores/comments'
 import CommentCard from '@/components/comments/CommentCard.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import type { SentimentTrendPoint } from '@/types/comment'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -535,6 +527,14 @@ const handleBatchAiDraft = async () => {
   if (selectedCommentIds.value.length === 0) return
   await commentsStore.generateBatchDrafts(selectedCommentIds.value)
 }
+
+const headerDescription = computed(() => {
+  const base = t('commentsView.totalComments', { count: commentStats.value.total })
+  if (lastSyncedAt.value) {
+    return base + ' · ' + t('commentsView.lastSync', { time: formatSyncTime(lastSyncedAt.value) })
+  }
+  return base
+})
 
 const formatSyncTime = (iso: string) => {
   try {

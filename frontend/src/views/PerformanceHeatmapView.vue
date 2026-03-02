@@ -1,16 +1,6 @@
 <template>
   <div>
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('performanceHeatmap.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('performanceHeatmap.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('performanceHeatmap.title')" :description="$t('performanceHeatmap.description')" />
 
     <PageGuide
       :title="$t('performanceHeatmap.pageGuideTitle')"
@@ -174,6 +164,7 @@ import {
   ChartBarIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import HeatmapGrid from '@/components/performanceheatmap/HeatmapGrid.vue'
 import TimeSlotCard from '@/components/performanceheatmap/TimeSlotCard.vue'
 import RecommendationCard from '@/components/performanceheatmap/RecommendationCard.vue'

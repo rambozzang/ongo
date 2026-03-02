@@ -1,11 +1,7 @@
 <template>
   <div>
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ t('upload.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('upload.description') }}</p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="t('upload.title')" :description="t('upload.description')">
+      <template #actions>
         <!-- Queue button -->
         <button
           v-if="uploadQueueStore.queue.length > 0"
@@ -18,8 +14,8 @@
             {{ uploadQueueStore.queue.length }}
           </span>
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('upload.pageGuideTitle')" :items="($tm('upload.pageGuide') as string[])" />
 
@@ -287,6 +283,7 @@ import ThumbnailSelector from '@/components/video/ThumbnailSelector.vue'
 import AiPipelineBuilder from '@/components/ai/AiPipelineBuilder.vue'
 import AiPipelineProgress from '@/components/ai/AiPipelineProgress.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useUploadStore } from '@/stores/upload'
 import { useChannelStore } from '@/stores/channel'
 import { useCreditStore } from '@/stores/credit'

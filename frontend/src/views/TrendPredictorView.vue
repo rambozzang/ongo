@@ -7,6 +7,7 @@ import {
   TagIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import TrendPredictionCard from '@/components/trendpredictor/TrendPredictionCard.vue'
 import TrendTopicRow from '@/components/trendpredictor/TrendTopicRow.vue'
@@ -62,17 +63,7 @@ const summaryCards = computed(() => {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          AI 트렌드 예측기
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          AI가 분석한 트렌드 예측과 추천 토픽을 확인하세요
-        </p>
-      </div>
-    </div>
+    <PageHeader title="AI 트렌드 예측기" description="AI가 분석한 트렌드 예측과 추천 토픽을 확인하세요" />
 
     <PageGuide
       title="트렌드 예측기 가이드"

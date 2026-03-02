@@ -10,14 +10,8 @@
 
     <template v-else-if="portfolio">
       <!-- Header -->
-      <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ t('portfolio.title') }}</h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {{ t('portfolio.description') }}
-          </p>
-        </div>
-        <div class="flex items-center gap-3">
+      <PageHeader :title="t('portfolio.title')" :description="t('portfolio.description')">
+        <template #actions>
           <!-- Public URL -->
           <div v-if="portfolio.isPublic" class="hidden items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 sm:flex">
             <span class="max-w-[200px] truncate text-sm text-gray-600 dark:text-gray-400">{{ portfolio.publicUrl }}</span>
@@ -40,8 +34,8 @@
             <CheckIcon class="h-5 w-5" />
             {{ store.isDirty ? t('portfolio.saveChanges') : t('portfolio.saved') }}
           </button>
-        </div>
-      </div>
+        </template>
+      </PageHeader>
 
       <PageGuide :title="t('portfolio.pageGuideTitle')" :items="(tm('portfolio.pageGuide') as string[])" />
 
@@ -171,6 +165,7 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { ClipboardDocumentIcon, CheckIcon } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
 import PortfolioHeader from '@/components/portfolio/PortfolioHeader.vue'
 import PortfolioStats from '@/components/portfolio/PortfolioStats.vue'

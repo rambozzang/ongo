@@ -8,6 +8,7 @@ import {
   BellAlertIcon,
 } from '@heroicons/vue/24/outline'
 import { useContentRightsStore } from '@/stores/contentRights'
+import PageHeader from '@/components/common/PageHeader.vue'
 import RightCard from '@/components/contentrights/RightCard.vue'
 import AlertBanner from '@/components/contentrights/AlertBanner.vue'
 import RightsSummaryCards from '@/components/contentrights/RightsSummaryCards.vue'
@@ -153,31 +154,23 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            콘텐츠 저작권 관리
-          </h1>
-          <span
-            v-if="unreadAlerts.length > 0"
-            class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400"
-          >
-            <BellAlertIcon class="h-3.5 w-3.5" />
-            {{ unreadAlerts.length }}
-          </span>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          영상에 사용된 에셋의 라이선스 상태를 관리하고 만료 알림을 받으세요
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader title="콘텐츠 저작권 관리" description="영상에 사용된 에셋의 라이선스 상태를 관리하고 만료 알림을 받으세요">
+      <template #title-suffix>
+        <span
+          v-if="unreadAlerts.length > 0"
+          class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400"
+        >
+          <BellAlertIcon class="h-3.5 w-3.5" />
+          {{ unreadAlerts.length }}
+        </span>
+      </template>
+      <template #actions>
         <button class="btn-primary inline-flex items-center gap-2" @click="openCreateModal">
           <PlusIcon class="h-5 w-5" />
           에셋 등록
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Alert Banner -->
     <AlertBanner :alerts="unreadAlerts" @dismiss="handleDismissAlert" />

@@ -1,44 +1,42 @@
 <template>
   <div>
     <!-- Header with period selector -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $t('analyticsView.description') }}</p>
-      </div>
-      <div class="flex flex-col gap-2 mobile:flex-row">
-        <div class="flex gap-2">
-          <button
-            v-for="p in periods"
-            :key="p.value"
-            class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
-            :class="
-              period === p.value
-                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            "
-            @click="setPeriod(p.value)"
-          >
-            {{ p.label }}
-          </button>
+    <PageHeader :title="$t('analyticsView.title')" :description="$t('analyticsView.description')">
+      <template #actions>
+        <div class="flex flex-col gap-2 mobile:flex-row">
+          <div class="flex gap-2">
+            <button
+              v-for="p in periods"
+              :key="p.value"
+              class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+              :class="
+                period === p.value
+                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              "
+              @click="setPeriod(p.value)"
+            >
+              {{ p.label }}
+            </button>
+          </div>
+          <div class="flex gap-2">
+            <router-link
+              to="/analytics/compare"
+              class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <ArrowsRightLeftIcon class="h-4 w-4" />
+              {{ $t('analyticsView.videoComparison') }}
+            </router-link>
+            <ExportDropdown
+              v-if="hasExportData"
+              :data="exportData"
+              :columns="exportColumns"
+              :filename-prefix="exportFilename"
+            />
+          </div>
         </div>
-        <div class="flex gap-2">
-          <router-link
-            to="/analytics/compare"
-            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <ArrowsRightLeftIcon class="h-4 w-4" />
-            {{ $t('analyticsView.videoComparison') }}
-          </router-link>
-          <ExportDropdown
-            v-if="hasExportData"
-            :data="exportData"
-            :columns="exportColumns"
-            :filename-prefix="exportFilename"
-          />
-        </div>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('analyticsView.pageGuideTitle')" :items="($tm('analyticsView.pageGuide') as string[])" />
 
@@ -757,6 +755,7 @@ import DemographicsChart from '@/components/analytics/DemographicsChart.vue'
 import CTRTrendChart from '@/components/analytics/CTRTrendChart.vue'
 import SubscriberConversionChart from '@/components/analytics/SubscriberConversionChart.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { analyticsApi } from '@/api/analytics'
 import { useAnalyticsStore } from '@/stores/analytics'
 import { useAiStore } from '@/stores/ai'

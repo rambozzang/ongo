@@ -10,6 +10,7 @@ import {
   LightBulbIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import SummaryCard from '@/components/dashboard/SummaryCard.vue'
 import PlatformShareChart from '@/components/crossanalytics/PlatformShareChart.vue'
 import ContentCompareTable from '@/components/crossanalytics/ContentCompareTable.vue'
@@ -77,16 +78,8 @@ onMounted(async () => {
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('crossAnalytics.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('crossAnalytics.description') }}
-        </p>
-      </div>
-      <div class="flex gap-1">
+    <PageHeader :title="$t('crossAnalytics.title')" :description="$t('crossAnalytics.description')">
+      <template #actions>
         <button
           v-for="p in periods"
           :key="p.value"
@@ -100,8 +93,8 @@ onMounted(async () => {
         >
           {{ p.label }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('crossAnalytics.pageGuideTitle')"

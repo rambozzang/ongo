@@ -96,17 +96,8 @@
 
   <!-- Desktop/Tablet Layout -->
   <div v-else>
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('contentStudio.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('contentStudio.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('contentStudio.title')" :description="$t('contentStudio.description')">
+      <template #actions>
         <div
           class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm"
           :class="isLow
@@ -119,8 +110,8 @@
             {{ balance.toLocaleString() }}
           </span>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('contentStudio.pageGuideTitle')"
@@ -214,6 +205,7 @@ import {
   PhotoIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import ClipEditor from '@/components/contentstudio/ClipEditor.vue'
 import CaptionEditor from '@/components/contentstudio/CaptionEditor.vue'
 import ThumbnailGenerator from '@/components/contentstudio/ThumbnailGenerator.vue'

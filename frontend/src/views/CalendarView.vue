@@ -1,16 +1,9 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('calendar.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('calendar.description') }}
-        </p>
-      </div>
-
+    <PageHeader :title="$t('calendar.title')" :description="$t('calendar.description')">
       <!-- View Mode Toggle -->
-      <div class="flex items-center gap-2">
+      <template #actions>
         <button
           :class="[
             'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
@@ -33,8 +26,8 @@
         >
           {{ $t('calendar.weekly') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('calendar.pageGuideTitle')" :items="($tm('calendar.pageGuide') as string[])" />
 
@@ -77,6 +70,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import CalendarGrid from '@/components/schedule/CalendarGrid.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useScheduleStore } from '@/stores/schedule'
 import { useLocale } from '@/composables/useLocale'
 import type { Platform } from '@/types/channel'

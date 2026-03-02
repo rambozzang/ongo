@@ -6,6 +6,7 @@ import type { MessagePlatform, MessageType, MessageStatus } from '@/types/inbox'
 import InboxMessageList from '@/components/inbox/InboxMessageList.vue'
 import InboxMessageDetail from '@/components/inbox/InboxMessageDetail.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import {
   FunnelIcon,
   MagnifyingGlassIcon,
@@ -133,30 +134,24 @@ const cancelSelection = () => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('inbox.title') }}</h1>
-          <span
-            v-if="inboxStore.unreadCount > 0"
-            class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-600 text-white"
-          >
-            {{ inboxStore.unreadCount }}
-          </span>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('inbox.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('inbox.title')" :description="$t('inbox.description')">
+      <template #title-suffix>
+        <span
+          v-if="inboxStore.unreadCount > 0"
+          class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-600 text-white"
+        >
+          {{ inboxStore.unreadCount }}
+        </span>
+      </template>
+      <template #actions>
         <button
           @click="toggleSelectionMode"
           class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           {{ showCheckboxes ? $t('inbox.cancelSelection') : $t('inbox.select') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('inbox.pageGuideTitle')" :items="($tm('inbox.pageGuide') as string[])" />
 

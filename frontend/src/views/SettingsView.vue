@@ -1,16 +1,7 @@
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ t('settings.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ t('settings.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="t('settings.title')" :description="t('settings.description')" />
 
     <PageGuide :title="t('settings.pageGuideTitle')" :items="(tm('settings.pageGuide') as string[])" />
 
@@ -581,6 +572,7 @@ import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import ActivityFilter from '@/components/activity/ActivityFilter.vue'
 import ActivityTimeline from '@/components/activity/ActivityTimeline.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notification'

@@ -1,16 +1,7 @@
 <template>
   <div>
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('revenueForecaster.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('revenueForecaster.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('revenueForecaster.title')" :description="$t('revenueForecaster.description')">
+      <template #actions>
         <span class="text-xs text-gray-400 dark:text-gray-500">
           {{ $t('revenueForecaster.creditsRemaining') }}: {{ creditBalance }}
         </span>
@@ -22,8 +13,8 @@
           <SparklesIcon class="h-4 w-4" />
           {{ generating ? $t('revenueForecaster.generating') : $t('revenueForecaster.generateButton') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide
       :title="$t('revenueForecaster.pageGuideTitle')"
@@ -168,6 +159,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import ForecastChart from '@/components/revenueforecaster/ForecastChart.vue'
 import ScenarioCard from '@/components/revenueforecaster/ScenarioCard.vue'
 import BreakdownTable from '@/components/revenueforecaster/BreakdownTable.vue'

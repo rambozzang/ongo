@@ -1,13 +1,8 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('scheduleView.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ $t('scheduleView.description') }}</p>
-      </div>
-
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('scheduleView.title')" :description="$t('scheduleView.description')">
+      <template #actions>
         <!-- Sort dropdown (only in list view) -->
         <select
           v-if="calendarView === 'list'"
@@ -51,8 +46,8 @@
             {{ view.label }}
           </button>
         </div>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('scheduleView.pageGuideTitle')" :items="($tm('scheduleView.pageGuide') as string[])" />
 
@@ -685,6 +680,7 @@ import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import DraggableScheduleItem from '@/components/schedule/DraggableScheduleItem.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import RecurrenceSelector from '@/components/schedule/RecurrenceSelector.vue'
 import OptimalTimeRecommendation from '@/components/schedule/OptimalTimeRecommendation.vue'
 import { useScheduleStore } from '@/stores/schedule'

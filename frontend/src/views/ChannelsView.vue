@@ -1,20 +1,14 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('channels.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('channels.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('channels.title')" :description="$t('channels.description')">
+      <template #actions>
         <button class="btn-primary inline-flex items-center gap-2" @click="showConnectModal = true">
           <PlusIcon class="h-5 w-5" />
           {{ $t('channels.addChannel') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('channels.pageGuideTitle')" :items="($tm('channels.pageGuide') as string[])" />
 
@@ -164,6 +158,7 @@ import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import ChannelHealthCard from '@/components/channel/ChannelHealthCard.vue'
 import ConnectChannelModal from '@/components/channel/ConnectChannelModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useChannelStore } from '@/stores/channel'
 import { useNotification } from '@/composables/useNotification'
 import { useI18n } from 'vue-i18n'

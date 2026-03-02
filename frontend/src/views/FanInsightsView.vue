@@ -12,6 +12,7 @@ import DemographicChart from '@/components/faninsights/DemographicChart.vue'
 import BehaviorCard from '@/components/faninsights/BehaviorCard.vue'
 import FanSegmentCard from '@/components/faninsights/FanSegmentCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import { useLocale } from '@/composables/useLocale'
 
 const { t } = useLocale()
@@ -43,18 +44,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ $t('fanInsights.title') }}
-          </h1>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('fanInsights.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('fanInsights.title')" :description="$t('fanInsights.description')" />
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">

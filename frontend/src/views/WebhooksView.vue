@@ -17,6 +17,7 @@ import WebhookCard from '@/components/webhooks/WebhookCard.vue'
 import WebhookFormModal from '@/components/webhooks/WebhookFormModal.vue'
 import WebhookDeliveryLog from '@/components/webhooks/WebhookDeliveryLog.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import type { Webhook, WebhookEvent } from '@/types/webhook'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -144,14 +145,8 @@ function handleCloseDeliveryLog() {
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('webhooks.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('webhooks.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('webhooks.title')" :description="$t('webhooks.description')">
+      <template #actions>
         <button
           class="btn-primary inline-flex items-center gap-2"
           @click="handleCreate"
@@ -159,8 +154,8 @@ function handleCloseDeliveryLog() {
           <PlusIcon class="h-5 w-5" />
           {{ $t('webhooks.newWebhook') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('webhooks.pageGuideTitle')" :items="($tm('webhooks.pageGuide') as string[])" />
 

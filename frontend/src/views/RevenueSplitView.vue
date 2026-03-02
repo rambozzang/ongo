@@ -16,6 +16,7 @@ import SplitCard from '@/components/revenuesplit/SplitCard.vue'
 import SplitPieChart from '@/components/revenuesplit/SplitPieChart.vue'
 import MemberList from '@/components/revenuesplit/MemberList.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import type { RevenueSplit, RevenueSplitStatus } from '@/types/revenueSplit'
 
 const store = useRevenueSplitStore()
@@ -145,18 +146,8 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            수익 분배 관리
-          </h1>
-        </div>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          팀 멤버 간 수익을 공정하게 분배하고 관리하세요
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader title="수익 분배 관리" description="팀 멤버 간 수익을 공정하게 분배하고 관리하세요">
+      <template #actions>
         <button
           class="btn-primary inline-flex items-center gap-2"
           @click="openCreateModal"
@@ -164,8 +155,8 @@ onMounted(() => {
           <PlusIcon class="h-5 w-5" />
           새 분배
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Summary Stats -->
     <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">

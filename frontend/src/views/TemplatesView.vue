@@ -13,6 +13,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import type { TemplateCategory } from '@/types/template'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const { t } = useI18n()
 const templatesStore = useTemplatesStore()
@@ -56,14 +57,8 @@ const handleCloseModal = () => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ $t('templates.title') }}</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('templates.description') }}
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader :title="$t('templates.title')" :description="$t('templates.description')">
+      <template #actions>
         <button
           @click="handleCreateNew"
           class="btn-primary inline-flex items-center gap-2"
@@ -71,8 +66,8 @@ const handleCloseModal = () => {
           <PlusIcon class="h-5 w-5" />
           {{ $t('templates.newTemplate') }}
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <PageGuide :title="$t('templates.pageGuideTitle')" :items="($tm('templates.pageGuide') as string[])" />
 

@@ -8,6 +8,7 @@ import {
   QueueListIcon,
 } from '@heroicons/vue/24/outline'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import PlaylistCard from '@/components/playlistmanager/PlaylistCard.vue'
 import PlatformFilter from '@/components/playlistmanager/PlatformFilter.vue'
 import PlaylistStats from '@/components/playlistmanager/PlaylistStats.vue'
@@ -105,16 +106,8 @@ onMounted(async () => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          재생목록 관리
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          플랫폼별 재생목록을 관리하고 동기화하세요
-        </p>
-      </div>
-      <div class="flex items-center gap-3">
+    <PageHeader title="재생목록 관리" description="플랫폼별 재생목록을 관리하고 동기화하세요">
+      <template #actions>
         <button
           @click="handleSyncAll"
           :disabled="isSyncingAll"
@@ -130,8 +123,8 @@ onMounted(async () => {
           <PlusIcon class="w-5 h-5" />
           새 재생목록
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <!-- Stats -->
     <div class="mb-6">

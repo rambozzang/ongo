@@ -10,6 +10,7 @@ import {
 import { useRevenueAnalyzerStore } from '@/stores/revenueAnalyzer'
 import RevenueStreamCard from '@/components/revenueanalyzer/RevenueStreamCard.vue'
 import ProjectionRow from '@/components/revenueanalyzer/ProjectionRow.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const store = useRevenueAnalyzerStore()
@@ -41,17 +42,7 @@ onMounted(() => {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          수익 분석기
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          채널별 수익 현황 분석 및 예측
-        </p>
-      </div>
-    </div>
+    <PageHeader title="수익 분석기" description="채널별 수익 현황 분석 및 예측" />
 
     <!-- Loading -->
     <LoadingSpinner v-if="loading" :full-page="true" size="lg" />

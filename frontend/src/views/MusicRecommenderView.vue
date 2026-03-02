@@ -7,6 +7,7 @@ import {
   ChartBarIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import RecommendationCard from '@/components/musicrecommender/RecommendationCard.vue'
 import MusicTrackRow from '@/components/musicrecommender/MusicTrackRow.vue'
@@ -46,17 +47,7 @@ function handleMoodSelect(_mood: string) {
 
 <template>
   <div class="relative">
-    <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          AI 음악 추천
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          영상에 어울리는 배경음악을 AI가 자동으로 추천합니다
-        </p>
-      </div>
-    </div>
+    <PageHeader title="AI 음악 추천" description="영상에 어울리는 배경음악을 AI가 자동으로 추천합니다" />
 
     <PageGuide
       title="AI 음악 추천 가이드"

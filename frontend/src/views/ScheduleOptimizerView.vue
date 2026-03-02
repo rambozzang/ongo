@@ -10,6 +10,7 @@ import {
 import { useScheduleOptimizerStore } from '@/stores/scheduleOptimizer'
 import { useLocale } from '@/composables/useLocale'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 const { t } = useLocale()
 const store = useScheduleOptimizerStore()
@@ -32,16 +33,7 @@ onMounted(() => {
 <template>
   <div class="relative">
     <!-- Header -->
-    <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ $t('scheduleOptimizer.title') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ $t('scheduleOptimizer.description') }}
-        </p>
-      </div>
-    </div>
+    <PageHeader :title="$t('scheduleOptimizer.title')" :description="$t('scheduleOptimizer.description')" />
 
     <!-- Loading -->
     <LoadingSpinner v-if="loading" :full-page="true" size="lg" />
