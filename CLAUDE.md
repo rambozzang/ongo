@@ -12,7 +12,7 @@ Reference: `CreFlow_Development_Guide_v2.0_1.md` contains the full specification
 
 - **Backend**: Spring Boot 4.0.2 + JDK 25 + Kotlin, Gradle 9
 - **DB Access**: jOOQ 3.19+ (sole DB access layer — no JPA/Hibernate)
-- **AI**: Spring AI 2.x (Anthropic Claude as primary, OpenAI Whisper for STT)
+- **AI**: Spring AI 2.x (7개 제공자: Claude, Gemini, OpenAI, Qwen, Kimi, GLM, MiniMax — 기본값 QWEN, STT는 Whisper)
 - **Frontend**: Vue.js 3 + Vite + Tailwind CSS
 - **Database**: PostgreSQL 16 (JSONB, partitioning, full-text search)
 - **Cache**: Caffeine (in-process) + Bucket4j for rate limiting
@@ -39,6 +39,7 @@ Key architectural decisions:
 - **Caffeine + Spring Events + Virtual Threads** — no Redis/RabbitMQ in Phase 1
 - Platform API clients use `@HttpExchange` interfaces (youtube/, tiktok/, instagram/, naverclip/)
 - AI calls use `ChatClient.builder()` with Structured Output for typed JSON responses
+- AI 제공자는 `ChatClientRegistryImpl`에서 동적 선택 (사용자 설정 기반), DashScope로 중국 모델 4종 통합
 
 ## API Response Convention
 
@@ -108,6 +109,25 @@ Swagger UI available at `http://localhost:8777/swagger-ui.html` when backend is 
 ## API Prefix
 
 All endpoints use `/api/v1/` prefix. Key groups: `auth/`, `channels/`, `videos/`, `schedules/`, `analytics/`, `ai/`, `credits/`, `subscriptions/`, `payments/`
+
+## Frontend Common Components
+
+페이지 헤더는 반드시 `PageHeader.vue` 공통 컴포넌트를 사용할 것:
+
+```vue
+<PageHeader :title="$t('xxx.title')" :description="$t('xxx.description')">
+  <template #actions><!-- 우측 CTA 버튼 --></template>
+  <template #title-suffix><!-- 제목 옆 배지 --></template>
+</PageHeader>
+```
+
+주요 공통 컴포넌트 (`frontend/src/components/common/`):
+- `PageHeader.vue` — 페이지 헤더 (title + description + actions/title-suffix 슬롯)
+- `PageGuide.vue` — 접을 수 있는 페이지 안내
+- `EmptyState.vue` — 빈 상태 표시
+- `ConfirmModal.vue` — 확인/취소 모달
+- `LoadingSpinner.vue` — 로딩 스피너
+- `CreditDisplay.vue` — AI 크레딧 잔여량 표시
 
 ## User Manual Maintenance
 
