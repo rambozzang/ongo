@@ -12,7 +12,7 @@ Reference: `CreFlow_Development_Guide_v2.0_1.md` contains the full specification
 
 - **Backend**: Spring Boot 4.0.2 + JDK 25 + Kotlin, Gradle 9
 - **DB Access**: jOOQ 3.19+ (sole DB access layer — no JPA/Hibernate)
-- **AI**: Spring AI 2.x (7개 제공자: Claude, Gemini, OpenAI, Qwen, Kimi, GLM, MiniMax — 기본값 QWEN, STT는 Whisper)
+- **AI**: Spring AI 2.x + Alibaba Cloud Model Studio (Qwen, Kimi, GLM, MiniMax 4종을 DashScope API 하나로 통합, 기본값 QWEN, STT는 Whisper)
 - **Frontend**: Vue.js 3 + Vite + Tailwind CSS
 - **Database**: PostgreSQL 16 (JSONB, partitioning, full-text search)
 - **Cache**: Caffeine (in-process) + Bucket4j for rate limiting
@@ -39,7 +39,8 @@ Key architectural decisions:
 - **Caffeine + Spring Events + Virtual Threads** — no Redis/RabbitMQ in Phase 1
 - Platform API clients use `@HttpExchange` interfaces (youtube/, tiktok/, instagram/, naverclip/)
 - AI calls use `ChatClient.builder()` with Structured Output for typed JSON responses
-- AI 제공자는 `ChatClientRegistryImpl`에서 동적 선택 (사용자 설정 기반), DashScope로 중국 모델 4종 통합
+- AI 제공자는 `ChatClientRegistryImpl`에서 동적 선택 (사용자 설정 기반)
+- Alibaba Cloud Model Studio(DashScope) — `sk-` API 키 하나로 Qwen/Kimi/GLM/MiniMax 4종 호출, OpenAI 호환 API
 
 ## API Response Convention
 
