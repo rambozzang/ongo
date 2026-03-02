@@ -87,6 +87,11 @@
           <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">로그인 처리 중...</p>
         </div>
 
+        <!-- Session expired message -->
+        <div v-if="sessionExpired" class="mt-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-3 text-center text-sm text-yellow-700 dark:text-yellow-400">
+          세션이 만료되었습니다. 다시 로그인해주세요.
+        </div>
+
         <!-- Error message -->
         <div v-if="errorMessage" class="mt-4 rounded-lg bg-red-50 dark:bg-red-900/20 p-3 text-center text-sm text-red-600 dark:text-red-400">
           {{ errorMessage }}
@@ -124,6 +129,13 @@ import { useAuthStore } from '@/stores/auth'
 const authStore = useAuthStore()
 const isLoading = ref(false)
 const errorMessage = ref('')
+const sessionExpired = ref(false)
+
+// 세션 만료로 리다이렉트된 경우 안내 메시지 표시
+if (sessionStorage.getItem('sessionExpired')) {
+  sessionExpired.value = true
+  sessionStorage.removeItem('sessionExpired')
+}
 
 async function devLogin() {
   isLoading.value = true

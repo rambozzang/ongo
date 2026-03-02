@@ -10,6 +10,16 @@ const apiClient = axios.create({
 })
 
 let isRefreshing = false
+let isLoggingOut = false
+
+function forceLogout() {
+  if (isLoggingOut) return
+  isLoggingOut = true
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+  sessionStorage.setItem('sessionExpired', '1')
+  window.location.href = '/login'
+}
 let failedQueue: Array<{
   resolve: (token: string) => void
   reject: (error: unknown) => void
@@ -88,23 +98,7 @@ apiClient.interceptors.response.use(
         throw new Error('Token refresh failed')
       } catch (refreshError) {
         processQueue(refreshError, null)
-        // 현재 토큰 캡처 — 새 로그인이 발생했는지 비교용
-        const failedToken = localStorage.getItem('accessToken')
-        import('@/stores/auth').then(({ useAuthStore }) => {
-          const authStore = useAuthStore()
-          // 새 로그인으로 토큰이 교체된 경우 logout 하지 않음 (레이스 컨디션 방지)
-          const currentToken = localStorage.getItem('accessToken')
-          if (!currentToken || currentToken === failedToken) {
-            authStore.logout()
-          }
-        }).catch(() => {
-          const currentToken = localStorage.getItem('accessToken')
-          if (!currentToken || currentToken === failedToken) {
-            localStorage.removeItem('accessToken')
-            localStorage.removeItem('refreshToken')
-            window.location.href = '/login'
-          }
-        })
+        forceLogout()
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false
