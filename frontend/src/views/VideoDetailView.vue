@@ -160,33 +160,6 @@
         </div>
       </div>
 
-      <!-- Media Info / Thumbnails / Captions Tabs -->
-      <div class="mb-6">
-        <div class="card">
-          <div class="mb-4 flex gap-2 border-b border-gray-200 dark:border-gray-700">
-            <button
-              v-for="tab in detailTabs"
-              :key="tab.id"
-              class="px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px"
-              :class="activeDetailTab === tab.id ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'"
-              @click="activeDetailTab = tab.id"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
-
-          <VideoMediaInfoPanel v-if="activeDetailTab === 'media'" :media-info="mediaInfo" />
-          <ThumbnailSelector
-            v-if="activeDetailTab === 'thumbnails'"
-            :thumbnails="video.autoThumbnails || []"
-            :selected-index="video.selectedThumbnailIndex || 0"
-            :video-id="video.id"
-            @select="loadVideo"
-          />
-          <CaptionEditor v-if="activeDetailTab === 'captions'" :video-id="video.id" />
-        </div>
-      </div>
-
       <!-- Performance Score Section -->
       <div v-if="video.uploads.length > 0" class="mb-6">
         <PerformanceScore :video="video" :analytics="analyticsData" />
@@ -559,15 +532,10 @@ import PerformanceScoreCard from '@/components/analytics/PerformanceScoreCard.vu
 import AnomalyAlertCard from '@/components/analytics/AnomalyAlertCard.vue'
 import FavoriteButton from '@/components/video/FavoriteButton.vue'
 import VideoPreviewModal from '@/components/video/VideoPreviewModal.vue'
-import VideoMediaInfoPanel from '@/components/video/VideoMediaInfoPanel.vue'
-import ThumbnailSelector from '@/components/video/ThumbnailSelector.vue'
-import CaptionEditor from '@/components/video/CaptionEditor.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { useVideoStore } from '@/stores/video'
-import { videoApi } from '@/api/video'
 import { analyticsApi } from '@/api/analytics'
 import type { VideoAnalytics } from '@/types/analytics'
-import type { VideoMediaInfo } from '@/types/video'
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
 
@@ -591,14 +559,6 @@ const showPreviewModal = ref(false)
 const selectedPlatform = ref<Platform | null>(null)
 const analyticsData = ref<VideoAnalytics[]>([])
 const analyticsLoading = ref(false)
-const activeDetailTab = ref<string>('media')
-const mediaInfo = ref<VideoMediaInfo | null>(null)
-
-const detailTabs = [
-  { id: 'media', label: '미디어 정보' },
-  { id: 'thumbnails', label: '썸네일' },
-  { id: 'captions', label: '자막' },
-]
 
 // ---- Computed ----
 
@@ -741,23 +701,9 @@ async function fetchAnalytics(videoId: number) {
 
 // ---- Lifecycle ----
 
-async function loadVideo() {
-  const videoId = Number(props.id)
-  await videoStore.fetchVideo(videoId)
-}
-
-async function loadMediaInfo(videoId: number) {
-  try {
-    mediaInfo.value = await videoApi.getMediaInfo(videoId)
-  } catch {
-    // Media info may not be available yet
-  }
-}
-
 onMounted(async () => {
   const videoId = Number(props.id)
   await videoStore.fetchVideo(videoId)
-  loadMediaInfo(videoId)
 
   if (video.value && video.value.uploads.length > 0) {
     selectedPlatform.value = video.value.uploads[0].platform

@@ -1,9 +1,12 @@
 package com.ongo.application.channel
 
+import com.ongo.common.enums.NotificationType
 import com.ongo.common.enums.Platform
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.notification.Notification
+import com.ongo.domain.notification.NotificationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -16,7 +19,8 @@ import java.time.LocalDateTime
 class ChannelScheduler(
     private val channelRepository: ChannelRepository,
     private val platformClientPort: PlatformClientPort,
-    private val tokenEncryptionPort: TokenEncryptionPort
+    private val tokenEncryptionPort: TokenEncryptionPort,
+    private val notificationRepository: NotificationRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -91,6 +95,14 @@ class ChannelScheduler(
                     else -> {
                         log.error("토큰 갱신 실패 [${channel.platform}:${channel.id}]: ${e.message}")
                         channelRepository.update(channel.copy(status = "EXPIRED", updatedAt = LocalDateTime.now()))
+                        notificationRepository.save(Notification(
+                            userId = channel.userId,
+                            type = NotificationType.CHANNEL_TOKEN_EXPIRED,
+                            title = "${channel.platform.name} 채널 토큰 만료",
+                            message = "${channel.channelName} 채널의 인증 토큰이 만료되었습니다. 채널 관리에서 재연결해주세요.",
+                            referenceType = "channel",
+                            referenceId = channel.id,
+                        ))
                     }
                 }
             }

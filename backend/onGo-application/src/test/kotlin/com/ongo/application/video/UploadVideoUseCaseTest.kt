@@ -10,7 +10,6 @@ import com.ongo.domain.video.VideoRepository
 import io.mockk.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.context.ApplicationEventPublisher
 import kotlin.test.assertFailsWith
 
 class UploadVideoUseCaseTest {
@@ -19,7 +18,6 @@ class UploadVideoUseCaseTest {
     private val subscriptionRepository = mockk<SubscriptionRepository>()
     private val storageService = mockk<StorageService>()
     private val storageQuotaUseCase = mockk<StorageQuotaUseCase>(relaxed = true)
-    private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
 
     private lateinit var useCase: UploadVideoUseCase
 
@@ -27,7 +25,7 @@ class UploadVideoUseCaseTest {
     fun setUp() {
         clearAllMocks()
         useCase = UploadVideoUseCase(
-            videoRepository, subscriptionRepository, storageService, storageQuotaUseCase, eventPublisher,
+            videoRepository, subscriptionRepository, storageService, storageQuotaUseCase,
         )
     }
 
@@ -43,26 +41,6 @@ class UploadVideoUseCaseTest {
         fileUrl = fileUrl,
         status = status,
     )
-
-    @Test
-    fun `completeUpload should publish VideoPostProcessEvent`() {
-        val video = createVideo(id = 1L, userId = 100L)
-        val fileUrl = "https://storage.example.com/videos/1/video.mp4"
-
-        every { videoRepository.findById(1L) } returns video
-        every { videoRepository.findByContentHash(any()) } returns null
-        every { videoRepository.update(any()) } returns video.copy(fileUrl = fileUrl)
-
-        useCase.completeUpload(1L, fileUrl, "hash123")
-
-        verify {
-            eventPublisher.publishEvent(match<VideoPostProcessEvent> {
-                it.videoId == 1L &&
-                    it.userId == 100L &&
-                    it.fileUrl == fileUrl
-            })
-        }
-    }
 
     @Test
     fun `completeUpload should throw NotFoundException for non-existent video`() {

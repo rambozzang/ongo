@@ -112,7 +112,6 @@ import {
   BuildingOfficeIcon,
   ClockIcon,
   CubeTransparentIcon,
-  ScissorsIcon,
   LanguageIcon,
   MagnifyingGlassCircleIcon,
   BeakerIcon,
@@ -266,13 +265,13 @@ const sectionsKo: ManualSection[] = [
     content: [
       {
         subtitle: '업로드 프로세스',
-        text: 'onGo는 Tus 프로토콜 기반의 이어받기 업로드를 지원합니다. 네트워크가 끊겨도 이어서 업로드할 수 있습니다.',
+        text: 'onGo는 Presigned URL 방식으로 파일을 클라우드 스토리지(S3)에 직접 업로드합니다. 서버를 거치지 않아 빠르고 안정적입니다.',
         steps: [
           '사이드바에서 "업로드"를 클릭합니다.',
           '영상 파일을 드래그 앤 드롭하거나 파일 선택으로 업로드합니다.',
-          '제목, 설명, 태그 등 메타데이터를 입력합니다.',
-          '업로드할 플랫폼을 선택합니다 (복수 선택 가능).',
-          '"업로드" 버튼을 클릭하여 업로드를 시작합니다.',
+          '파일이 S3 스토리지에 직접 전송되며, 실시간 진행률이 표시됩니다.',
+          '업로드 완료 후 제목, 설명, 태그 등 메타데이터를 입력합니다.',
+          '제목, 설명, 태그 등 메타데이터를 입력하고 업로드할 플랫폼을 선택합니다.',
         ],
       },
       {
@@ -292,57 +291,17 @@ const sectionsKo: ManualSection[] = [
         ],
       },
       {
-        subtitle: '미디어 분석 (FFprobe)',
-        text: '업로드된 영상은 FFprobe를 통해 자동으로 분석됩니다. 영상 상세 페이지의 "미디어 분석 정보" 탭에서 결과를 확인할 수 있습니다.',
-        items: [
-          '비디오 트랙: 코덱(H.264/H.265 등), 해상도, FPS, 비트레이트, 프로파일',
-          '오디오 트랙: 코덱(AAC 등), 비트레이트, 샘플레이트, 채널 수',
-          '색상 정보: 색 공간, 픽셀 포맷',
-          '플랫폼 호환성: YouTube, TikTok, Instagram, Naver Clip 등 13개 플랫폼과의 호환성 여부를 자동 판단하여 배지로 표시합니다.',
-        ],
-      },
-      {
         subtitle: '다이렉트 원본 업로드',
         text: '원본 영상 파일이 별도의 트랜스코딩 없이 각 플랫폼에 직접 업로드됩니다. 플랫폼이 자체적으로 최적 처리를 수행하므로 품질 손실 없이 빠르게 업로드할 수 있습니다.',
       },
       {
-        subtitle: '실시간 처리 진행률',
-        text: '업로드 후 영상 처리 과정을 실시간으로 확인할 수 있습니다. SSE(Server-Sent Events)를 통해 각 처리 단계의 진행률이 자동 업데이트됩니다.',
+        subtitle: '다이렉트 업로드 방식',
+        text: 'Presigned URL을 활용한 S3 직접 업로드로 빠르고 효율적인 전송을 제공합니다.',
         items: [
-          '처리 단계: 미디어 분석 → 썸네일 생성 → 자막 생성 → 플랫폼 업로드',
-          '전체 진행률과 단계별 진행률을 동시에 확인할 수 있습니다.',
-          '예상 남은 시간이 자동 계산되어 표시됩니다.',
-          '연결이 끊긴 경우 자동 재접속을 시도합니다.',
-        ],
-      },
-      {
-        subtitle: 'AI 썸네일 생성',
-        text: '업로드 후 FFmpeg를 활용하여 자동으로 썸네일 후보를 생성합니다.',
-        items: [
-          '씬 감지: 장면 전환 지점에서 시각적으로 흥미로운 프레임을 자동 추출합니다.',
-          '균등 간격 추출: 영상 전체에 걸쳐 균등한 간격으로 프레임을 추출합니다.',
-          '총 10개 내외의 후보가 생성되며, 그리드에서 원하는 썸네일을 클릭하여 대표 이미지로 선택합니다.',
-          '커스텀 썸네일: JPG, PNG, WebP 형식의 이미지를 직접 업로드할 수 있습니다 (최대 5MB).',
-        ],
-      },
-      {
-        subtitle: 'AI 자동 자막 (Whisper STT)',
-        text: 'OpenAI Whisper를 사용하여 영상의 음성을 자동으로 텍스트로 변환합니다.',
-        items: [
-          '한국어와 영어 자막 생성을 지원합니다.',
-          '생성된 SRT 형식 자막을 인라인 편집기에서 직접 수정할 수 있습니다.',
-          '수정된 자막은 저장 버튼으로 서버에 저장됩니다.',
-          'SRT 또는 VTT 형식으로 다운로드할 수 있습니다.',
-          '자막 생성에는 AI 크레딧 5개가 차감됩니다 (생성 전 확인 팝업 표시).',
-        ],
-      },
-      {
-        subtitle: '향상된 업로드',
-        text: 'Tus 프로토콜 기반 업로드가 더욱 개선되었습니다.',
-        items: [
-          '적응형 청크 사이즈: 네트워크 속도에 따라 2MB~20MB 사이에서 청크 크기가 자동 조절됩니다.',
+          '서버 우회: 파일이 S3 스토리지에 직접 전송되어 서버 부하 없이 빠르게 업로드됩니다.',
           '업로드 속도와 남은 시간이 실시간으로 표시됩니다.',
-          '24시간 이내 중단된 업로드를 자동으로 이어받기할 수 있습니다.',
+          '업로드가 중단된 경우 재시도 버튼으로 새로 업로드할 수 있습니다.',
+          '업로드 큐를 통해 여러 파일을 동시에 관리하고 최대 2개까지 병렬 업로드가 가능합니다.',
         ],
       },
     ],
@@ -429,7 +388,7 @@ const sectionsKo: ManualSection[] = [
           'GLM-5 — 중국어/한국어에 강점이 있습니다.',
           'MiniMax M2.5 — 코딩 및 분석에 특화되어 있습니다.',
           '선택한 AI 제공자는 메타 생성, 해시태그 추천, 아이디어 생성 등 모든 AI 기능에 적용됩니다.',
-          '음성 인식(STT)은 항상 OpenAI Whisper를 사용합니다.',
+          '선택한 AI 제공자는 모든 AI 기능에 동일하게 적용됩니다.',
         ],
       },
       {
@@ -527,7 +486,7 @@ const sectionsKo: ManualSection[] = [
     content: [
       {
         subtitle: '업로드가 중간에 끊기면 어떻게 하나요?',
-        text: 'onGo는 이어받기 업로드(Tus 프로토콜)를 지원합니다. 네트워크가 복구되면 자동으로 이어서 업로드됩니다. 수동으로 재시도하려면 업로드 목록에서 "재시도" 버튼을 클릭하세요.',
+        text: '업로드가 중단되면 업로드 목록에서 "재시도" 버튼을 클릭하여 다시 업로드할 수 있습니다. 파일은 클라우드 스토리지에 직접 전송되므로 재시도 시에도 빠르게 처리됩니다.',
       },
       {
         subtitle: '한 플랫폼에서만 업로드가 실패하면?',
@@ -854,64 +813,13 @@ const sectionsKo: ManualSection[] = [
     ],
   },
   {
-    id: 'ai-video-resizer',
-    title: 'AI 비디오 리사이저',
-    icon: ScissorsIcon,
-    content: [
-      {
-        subtitle: '개요',
-        text: 'AI 비디오 리사이저는 하나의 원본 영상을 각 플랫폼에 최적화된 비율과 해상도로 자동 변환하는 기능입니다. AI가 피사체를 인식하여 스마트 크롭을 수행합니다.',
-      },
-      {
-        subtitle: '플랫폼 프리셋',
-        text: '각 플랫폼의 권장 사양에 맞는 프리셋을 제공합니다.',
-        items: [
-          'YouTube: 16:9 (1920x1080), Shorts 9:16 (1080x1920)',
-          'TikTok: 9:16 (1080x1920)',
-          'Instagram Reels: 9:16 (1080x1920), 피드 1:1 (1080x1080), 피드 4:5 (1080x1350)',
-          'Naver Clip: 9:16 (1080x1920)',
-          '커스텀 비율과 해상도를 직접 설정할 수도 있습니다.',
-        ],
-      },
-      {
-        subtitle: '스마트 크롭',
-        text: 'AI가 영상 내 피사체(얼굴, 사물 등)를 인식하여 중요한 부분이 잘리지 않도록 자동으로 크롭 영역을 조정합니다.',
-        items: [
-          '얼굴 인식: 인물이 포함된 영상에서 얼굴이 항상 프레임 내에 위치하도록 합니다.',
-          '모션 트래킹: 움직이는 피사체를 따라 크롭 영역이 자동으로 이동합니다.',
-          '수동 조정: AI의 크롭 결과를 미리보기에서 확인하고 수동으로 조정할 수 있습니다.',
-        ],
-      },
-      {
-        subtitle: '작업 관리',
-        text: '리사이즈 작업을 효율적으로 관리할 수 있습니다.',
-        items: [
-          '여러 프리셋을 선택하여 한 번에 일괄 리사이즈를 실행할 수 있습니다.',
-          '작업 대기열에서 진행 상황을 실시간으로 확인합니다.',
-          '완료된 리사이즈 영상을 바로 플랫폼에 업로드할 수 있습니다.',
-          '작업 이력에서 이전 리사이즈 결과를 다시 다운로드할 수 있습니다.',
-        ],
-      },
-    ],
-  },
-  {
     id: 'subtitle-editor',
     title: '자막 에디터',
     icon: LanguageIcon,
     content: [
       {
         subtitle: '개요',
-        text: '자막 에디터는 AI 자동 자막 생성부터 타임라인 기반 편집, 다양한 형식 내보내기까지 자막 작업의 전 과정을 지원하는 전문 도구입니다.',
-      },
-      {
-        subtitle: 'AI 자막 생성',
-        text: 'OpenAI Whisper STT를 활용하여 영상의 음성을 자동으로 자막으로 변환합니다.',
-        steps: [
-          '자막 에디터에서 대상 영상을 선택합니다.',
-          '자막 언어(한국어, 영어 등)를 선택합니다.',
-          '"AI 자막 생성" 버튼을 클릭합니다 (5 크레딧 소모).',
-          '생성이 완료되면 타임라인에 자막이 자동으로 배치됩니다.',
-        ],
+        text: '자막 에디터는 타임라인 기반 편집과 다양한 형식 내보내기를 지원하는 전문 자막 도구입니다.',
       },
       {
         subtitle: '편집',
@@ -3230,12 +3138,13 @@ const sectionsEn: ManualSection[] = [
     content: [
       {
         subtitle: 'Upload Process',
-        text: 'onGo supports resumable uploads based on the Tus protocol. Your upload can continue even if the network is interrupted.',
+        text: 'onGo uploads files directly to cloud storage (S3) using Presigned URLs. This bypasses the server for faster and more reliable transfers.',
         steps: [
           'Click "Upload" in the sidebar.',
           'Drag and drop a video file or use the file selector.',
-          'Enter metadata such as title, description, and tags.',
-          'Select target platforms (multiple selection available).',
+          'The file is transferred directly to S3 storage with real-time progress tracking.',
+          'After upload, enter metadata such as title, description, and tags.',
+          'Enter metadata and select target platforms for publishing.',
           'Click "Upload" to start the upload.',
         ],
       },
@@ -3256,57 +3165,17 @@ const sectionsEn: ManualSection[] = [
         ],
       },
       {
-        subtitle: 'Media Analysis (FFprobe)',
-        text: 'Uploaded videos are automatically analyzed using FFprobe. View the results in the "Media Analysis Info" tab on the video detail page.',
-        items: [
-          'Video Track: Codec (H.264/H.265 etc.), resolution, FPS, bitrate, profile',
-          'Audio Track: Codec (AAC etc.), bitrate, sample rate, channel count',
-          'Color Info: Color space, pixel format',
-          'Platform Compatibility: Automatically evaluates and displays compatibility badges for all 13 supported platforms.',
-        ],
-      },
-      {
         subtitle: 'Direct Original Upload',
         text: 'Original video files are uploaded directly to each platform without any transcoding. Each platform handles its own optimal processing, allowing for fast uploads with no quality loss.',
       },
       {
-        subtitle: 'Real-time Processing Progress',
-        text: 'Monitor the video processing pipeline in real-time after upload. Each processing stage is automatically updated via SSE (Server-Sent Events).',
+        subtitle: 'Direct Upload',
+        text: 'S3 direct upload via Presigned URLs provides fast and efficient file transfers.',
         items: [
-          'Processing Stages: Media Analysis → Thumbnail Generation → Caption Generation → Platform Upload',
-          'View both overall and per-stage progress simultaneously.',
-          'Estimated time remaining is automatically calculated and displayed.',
-          'Automatic reconnection is attempted if the connection is lost.',
-        ],
-      },
-      {
-        subtitle: 'AI Thumbnail Generation',
-        text: 'After upload, thumbnail candidates are automatically generated using FFmpeg.',
-        items: [
-          'Scene Detection: Visually interesting frames are automatically extracted at scene transition points.',
-          'Even Spacing: Frames are extracted at even intervals across the entire video.',
-          'Approximately 10 candidates are generated. Click your preferred thumbnail in the grid to set it as the featured image.',
-          'Custom Thumbnails: Upload your own images in JPG, PNG, or WebP format (max 5MB).',
-        ],
-      },
-      {
-        subtitle: 'AI Auto Captions (Whisper STT)',
-        text: 'Uses OpenAI Whisper to automatically transcribe video audio to text.',
-        items: [
-          'Supports Korean and English caption generation.',
-          'Edit generated SRT captions directly in the inline editor.',
-          'Save edited captions to the server with the Save button.',
-          'Download in SRT or VTT format.',
-          'Caption generation costs 5 AI credits (confirmation popup shown before generation).',
-        ],
-      },
-      {
-        subtitle: 'Enhanced Upload',
-        text: 'Tus protocol-based uploads have been further improved.',
-        items: [
-          'Adaptive Chunk Sizing: Chunk size automatically adjusts between 2MB and 20MB based on network speed.',
+          'Server bypass: Files are transferred directly to S3 storage without server overhead for faster uploads.',
           'Upload speed and estimated time remaining are displayed in real-time.',
-          'Interrupted uploads within 24 hours can be automatically resumed.',
+          'If an upload is interrupted, use the retry button to restart the upload.',
+          'The upload queue supports managing multiple files with up to 2 concurrent uploads.',
         ],
       },
     ],
@@ -3393,7 +3262,7 @@ const sectionsEn: ManualSection[] = [
           'GLM-5 — Strength in Chinese/Korean languages.',
           'MiniMax M2.5 — Specialized in coding and analysis.',
           'The selected AI provider applies to all AI features including meta generation, hashtag recommendations, and idea generation.',
-          'Speech-to-text (STT) always uses OpenAI Whisper.',
+          'The selected AI provider applies to all AI features.',
         ],
       },
       {
@@ -3491,7 +3360,7 @@ const sectionsEn: ManualSection[] = [
     content: [
       {
         subtitle: 'What if my upload gets interrupted?',
-        text: 'onGo supports resumable uploads (Tus protocol). When the network recovers, the upload resumes automatically. To retry manually, click the "Retry" button in the upload list.',
+        text: 'If an upload is interrupted, click the "Retry" button in the upload list to restart. Files are transferred directly to cloud storage, so retries are processed quickly.',
       },
       {
         subtitle: 'What if the upload fails on only one platform?',
@@ -3818,64 +3687,13 @@ const sectionsEn: ManualSection[] = [
     ],
   },
   {
-    id: 'ai-video-resizer',
-    title: 'AI Video Resizer',
-    icon: ScissorsIcon,
-    content: [
-      {
-        subtitle: 'Overview',
-        text: 'AI Video Resizer automatically converts a single original video to the optimal aspect ratio and resolution for each platform. AI recognizes subjects in the frame to perform smart cropping.',
-      },
-      {
-        subtitle: 'Platform Presets',
-        text: 'Presets matching each platform\'s recommended specifications are provided.',
-        items: [
-          'YouTube: 16:9 (1920x1080), Shorts 9:16 (1080x1920)',
-          'TikTok: 9:16 (1080x1920)',
-          'Instagram Reels: 9:16 (1080x1920), Feed 1:1 (1080x1080), Feed 4:5 (1080x1350)',
-          'Naver Clip: 9:16 (1080x1920)',
-          'You can also set custom aspect ratios and resolutions.',
-        ],
-      },
-      {
-        subtitle: 'Smart Crop',
-        text: 'AI recognizes subjects (faces, objects, etc.) in the video and automatically adjusts the crop area to ensure important elements are not cut off.',
-        items: [
-          'Face Detection: Ensures faces are always within the frame in videos featuring people.',
-          'Motion Tracking: The crop area automatically follows moving subjects.',
-          'Manual Adjustment: Preview AI crop results and adjust manually if needed.',
-        ],
-      },
-      {
-        subtitle: 'Job Management',
-        text: 'Efficiently manage your resize jobs.',
-        items: [
-          'Select multiple presets to run batch resizing in one go.',
-          'Monitor progress in real-time from the job queue.',
-          'Upload completed resized videos directly to platforms.',
-          'Re-download previous resize results from the job history.',
-        ],
-      },
-    ],
-  },
-  {
     id: 'subtitle-editor',
     title: 'Subtitle Editor',
     icon: LanguageIcon,
     content: [
       {
         subtitle: 'Overview',
-        text: 'The Subtitle Editor is a professional tool that supports the entire subtitle workflow, from AI auto-generation to timeline-based editing and export in various formats.',
-      },
-      {
-        subtitle: 'AI Subtitle Generation',
-        text: 'Uses OpenAI Whisper STT to automatically convert video audio into subtitles.',
-        steps: [
-          'Select the target video in the Subtitle Editor.',
-          'Choose the subtitle language (Korean, English, etc.).',
-          'Click the "AI Subtitle Generation" button (costs 5 credits).',
-          'Once generation is complete, subtitles are automatically placed on the timeline.',
-        ],
+        text: 'The Subtitle Editor is a professional tool that supports timeline-based editing and export in various formats.',
       },
       {
         subtitle: 'Editing',

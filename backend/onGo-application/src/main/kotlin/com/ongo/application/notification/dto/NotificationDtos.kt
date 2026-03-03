@@ -15,6 +15,7 @@ data class NotificationResponse(
 
 data class NotificationListResponse(
     val notifications: List<NotificationResponse>,
+    val totalElements: Long,
     val page: Int,
     val size: Int,
 )

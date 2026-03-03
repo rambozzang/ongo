@@ -16,6 +16,9 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
   // State
   const logs = ref<ActivityLog[]>([])
   const isLoading = ref(false)
+  const page = ref(0)
+  const pageSize = ref(20)
+  const totalCount = ref(0)
   const filter = ref<ActivityLogFilter>({
     action: null,
     dateRange: null,
@@ -31,7 +34,8 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
   async function fetchLogs() {
     isLoading.value = true
     try {
-      const result = await activityLogApi.list({ page: 0, size: 100 })
+      const result = await activityLogApi.list({ page: page.value, size: pageSize.value })
+      totalCount.value = result.totalElements ?? 0
       if (result.logs && result.logs.length > 0) {
         logs.value = result.logs.map((log) => ({
           id: String(log.id),
@@ -52,6 +56,20 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
       logs.value = []
     } finally {
       isLoading.value = false
+    }
+  }
+
+  function nextPage() {
+    if (hasNextPage.value) {
+      page.value++
+      fetchLogs()
+    }
+  }
+
+  function prevPage() {
+    if (hasPrevPage.value) {
+      page.value--
+      fetchLogs()
     }
   }
 
@@ -232,6 +250,10 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
     return counts as Record<ActivityAction | 'all', number>
   })
 
+  const totalPages = computed(() => Math.ceil(totalCount.value / pageSize.value))
+  const hasNextPage = computed(() => (page.value + 1) * pageSize.value < totalCount.value)
+  const hasPrevPage = computed(() => page.value > 0)
+
   const uniqueUsers = computed(() => {
     const usersMap = new Map<string, { id: string; name: string }>()
     logs.value.forEach((log) => {
@@ -246,10 +268,15 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
     // State
     logs,
     isLoading,
+    page,
+    pageSize,
+    totalCount,
     filter,
     customDateRange,
     // Actions
     fetchLogs,
+    nextPage,
+    prevPage,
     filterByAction,
     filterByDate,
     filterByUser,
@@ -260,6 +287,9 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
     filteredLogs,
     groupedByDate,
     actionCounts,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
     uniqueUsers,
   }
 })

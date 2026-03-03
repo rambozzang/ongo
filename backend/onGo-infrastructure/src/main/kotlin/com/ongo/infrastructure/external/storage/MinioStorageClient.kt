@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.storage
 
 import io.minio.*
+import io.minio.errors.ErrorResponseException
 import io.minio.http.Method
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
@@ -76,15 +77,6 @@ class MinioStorageClient(
         ).map { it.get().objectName() }
     }
 
-    override fun downloadFile(key: String): InputStream {
-        return minioClient.getObject(
-            GetObjectArgs.builder()
-                .bucket(storageProperties.bucket)
-                .`object`(key)
-                .build(),
-        )
-    }
-
     override fun generatePresignedDownloadUrl(key: String, expirationMinutes: Int): String {
         log.debug("MinIO presigned GET URL 생성: key={}, expiry={}분", key, expirationMinutes)
 
@@ -96,6 +88,34 @@ class MinioStorageClient(
                 .expiry(expirationMinutes, TimeUnit.MINUTES)
                 .build(),
         )
+    }
+
+    override fun objectExists(key: String): Boolean = try {
+        minioClient.statObject(
+            StatObjectArgs.builder()
+                .bucket(storageProperties.bucket)
+                .`object`(key)
+                .build(),
+        )
+        true
+    } catch (_: ErrorResponseException) {
+        false
+    }
+
+    override fun getObjectMetadata(key: String): ObjectMetadata? = try {
+        val stat = minioClient.statObject(
+            StatObjectArgs.builder()
+                .bucket(storageProperties.bucket)
+                .`object`(key)
+                .build(),
+        )
+        ObjectMetadata(
+            contentLength = stat.size(),
+            contentType = stat.contentType(),
+            eTag = stat.etag(),
+        )
+    } catch (_: ErrorResponseException) {
+        null
     }
 
     private fun ensureBucketExists() {

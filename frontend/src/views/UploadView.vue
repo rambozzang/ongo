@@ -195,7 +195,7 @@
     <!-- Step 3: Platform Publish -->
     <div v-if="step === 3" class="card">
       <PlatformSelector
-        :connected-platforms="channelStore.connectedPlatforms"
+        :channels="channelStore.channels"
         :base-title="metadata.title"
         :base-description="metadata.description"
         :base-tags="metadata.tags"
@@ -245,18 +245,6 @@
       </div>
     </div>
 
-    <!-- Processing Progress (shown after publish starts, video only) -->
-    <div v-if="publishedVideoId && !uploadStore.isImage" class="mt-6 space-y-6">
-      <ProcessingProgressPanel :video-id="publishedVideoId" />
-      <ThumbnailSelector
-        v-if="autoThumbnails.length > 0"
-        :thumbnails="autoThumbnails"
-        :selected-index="selectedThumbIndex"
-        :video-id="publishedVideoId"
-        @select="handleThumbnailSelect"
-      />
-    </div>
-
     <!-- Upload Queue Panel -->
     <UploadQueuePanel v-model="queuePanelOpen" />
   </div>
@@ -264,6 +252,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 
 import { CheckIcon } from '@heroicons/vue/24/solid'
@@ -278,8 +267,6 @@ import OptimizationSuggestionList from '@/components/preview/OptimizationSuggest
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BulkUploadQueue from '@/components/upload/BulkUploadQueue.vue'
 import UploadQueuePanel from '@/components/upload/UploadQueuePanel.vue'
-import ProcessingProgressPanel from '@/components/video/ProcessingProgressPanel.vue'
-import ThumbnailSelector from '@/components/video/ThumbnailSelector.vue'
 import AiPipelineBuilder from '@/components/ai/AiPipelineBuilder.vue'
 import AiPipelineProgress from '@/components/ai/AiPipelineProgress.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
@@ -289,6 +276,7 @@ import { useChannelStore } from '@/stores/channel'
 import { useCreditStore } from '@/stores/credit'
 import { useNotificationStore } from '@/stores/notification'
 import { useUploadQueueStore } from '@/stores/uploadQueue'
+import { useVideoStore } from '@/stores/video'
 import { useLocale } from '@/composables/useLocale'
 import { videoApi } from '@/api/video'
 import { aiApi } from '@/api/ai'
@@ -297,11 +285,13 @@ import type { PlatformPublishConfig, OptimizationResult } from '@/types/video'
 import type { ScheduleSuggestion, PipelineStepType, AiPipelineResponse } from '@/types/ai'
 
 
+const router = useRouter()
 const uploadStore = useUploadStore()
 const channelStore = useChannelStore()
 const creditStore = useCreditStore()
 const notify = useNotificationStore()
 const uploadQueueStore = useUploadQueueStore()
+const videoStore = useVideoStore()
 const { t } = useLocale()
 
 // step and metadata live in the store so they survive route navigation
@@ -320,15 +310,11 @@ const useStt = ref(false)
 const aiGenerating = ref(false)
 const publishing = ref(false)
 const publishedVideoId = ref<number | null>(null)
-const autoThumbnails = ref<string[]>([])
-const selectedThumbIndex = ref(0)
 const scheduledAt = ref<string | undefined>(undefined)
 const scheduleSuggestions = ref<ScheduleSuggestion[]>([])
 const queuePanelOpen = ref(false)
 const pipelineMode = ref(false)
 const pipelineId = ref<string | null>(null)
-let thumbnailPollTimer: ReturnType<typeof setTimeout> | null = null
-
 const platformConfigs = ref<PlatformPublishConfig[]>([])
 
 const platformConfigsAsMetadata = computed(() => {
@@ -428,10 +414,6 @@ onUnmounted(() => {
     URL.revokeObjectURL(videoPreviewUrl.value)
     videoPreviewUrl.value = null
   }
-  if (thumbnailPollTimer) {
-    clearTimeout(thumbnailPollTimer)
-    thumbnailPollTimer = null
-  }
 })
 
 function handleFileSelect(file: File) {
@@ -475,7 +457,7 @@ async function handleStep2Next() {
     return
   }
 
-  // For video uploads, the videoId is already created during initUpload (Tus flow)
+  // For video uploads, the videoId is already created during initUpload (presigned URL flow)
   if (!videoId.value && uploadStore.videoId) {
     videoId.value = uploadStore.videoId
   }
@@ -582,7 +564,7 @@ async function handleAiGenerate() {
 }
 
 async function handleStartPipeline(steps: PipelineStepType[], channelId?: number) {
-  // Use videoId from upload store if available (video was created during Tus init)
+  // Use videoId from upload store if available (video was created during presigned URL init)
   if (!videoId.value && uploadStore.videoId) {
     videoId.value = uploadStore.videoId
   }
@@ -714,10 +696,11 @@ async function handlePublish() {
     notify.success(scheduledAt.value ? t('upload.success.scheduled') : t('upload.success.publishing'))
     publishedVideoId.value = videoId.value
 
-    // Poll for thumbnails only for video content
-    if (!uploadStore.isImage) {
-      pollThumbnails(videoId.value)
-    }
+    // 영상 스토어 캐시 무효화 (다음 영상 목록 진입 시 자동 재로드)
+    videoStore.invalidateCache()
+
+    // 영상 상세로 이동하여 후처리 진행률 확인
+    router.push({ name: 'video-detail', params: { id: String(videoId.value) } })
   } catch {
     notify.error(t('upload.error.publishFailed'))
   } finally {
@@ -725,30 +708,5 @@ async function handlePublish() {
   }
 }
 
-function pollThumbnails(vid: number, attempt = 0) {
-  if (attempt >= 30) return
-  thumbnailPollTimer = setTimeout(async () => {
-    try {
-      const result = await videoApi.getThumbnails(vid)
-      if (result.thumbnails && result.thumbnails.length > 0) {
-        autoThumbnails.value = result.thumbnails
-        selectedThumbIndex.value = result.selectedIndex ?? 0
-        return
-      }
-    } catch {
-      // Thumbnails not ready yet
-    }
-    pollThumbnails(vid, attempt + 1)
-  }, 10000)
-}
 
-async function handleThumbnailSelect(index: number) {
-  if (!publishedVideoId.value) return
-  try {
-    await videoApi.selectThumbnail(publishedVideoId.value, index)
-    selectedThumbIndex.value = index
-  } catch {
-    notify.error(t('video.thumbnail.selectError'))
-  }
-}
 </script>

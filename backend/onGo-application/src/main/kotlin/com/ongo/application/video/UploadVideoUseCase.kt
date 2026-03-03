@@ -4,12 +4,12 @@ import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.DuplicateResourceException
+import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.YearMonth
@@ -20,7 +20,6 @@ class UploadVideoUseCase(
     private val subscriptionRepository: SubscriptionRepository,
     private val storageService: StorageService,
     private val storageQuotaUseCase: StorageQuotaUseCase,
-    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     @Transactional
@@ -93,6 +92,18 @@ class UploadVideoUseCase(
     }
 
     @Transactional
+    fun confirmDirectUpload(userId: Long, videoId: Long) {
+        val video = videoRepository.findById(videoId)
+            ?: throw com.ongo.common.exception.NotFoundException("영상", videoId)
+        if (video.userId != userId) {
+            throw ForbiddenException("해당 영상에 대한 권한이 없습니다")
+        }
+
+        val fileUrl = storageService.getFileUrl(videoId)
+        completeUpload(videoId, fileUrl, null)
+    }
+
+    @Transactional
     fun completeUpload(videoId: Long, fileUrl: String, contentHash: String?) {
         val video = videoRepository.findById(videoId)
             ?: throw com.ongo.common.exception.NotFoundException("영상", videoId)
@@ -113,19 +124,6 @@ class UploadVideoUseCase(
             )
         )
 
-        // 이미지는 후처리 불필요
-        if (video.mediaType == MediaType.IMAGE) {
-            return
-        }
-
-        // 동영상 후처리 이벤트 발행: probe → thumbnail → caption (트랜스코딩 없이)
-        eventPublisher.publishEvent(
-            VideoPostProcessEvent(
-                videoId = videoId,
-                userId = video.userId,
-                fileUrl = fileUrl,
-            )
-        )
     }
 }
 

@@ -283,12 +283,6 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '클라이언트 포탈' },
       },
       {
-        path: 'video-resizer',
-        name: 'video-resizer',
-        component: () => import('@/views/VideoResizerView.vue'),
-        meta: { breadcrumb: 'AI 비디오 리사이저' },
-      },
-      {
         path: 'subtitle-editor',
         name: 'subtitle-editor',
         component: () => import('@/views/SubtitleEditorView.vue'),

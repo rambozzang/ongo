@@ -9,6 +9,9 @@ const SETTINGS_STORAGE_KEY = 'ongo_notification_settings'
 export const useNotificationCenterStore = defineStore('notificationCenter', () => {
   const notifications = ref<Notification[]>([])
   const activeCategory = ref<NotificationCategory | null>(null)
+  const page = ref(0)
+  const pageSize = ref(20)
+  const totalCount = ref(0)
   const settings = ref<NotificationSetting[]>([
     { category: 'upload', inApp: true, email: true, kakao: false },
     { category: 'schedule', inApp: true, email: true, kakao: true },
@@ -159,9 +162,14 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     }
   }
 
+  const totalPages = computed(() => Math.ceil(totalCount.value / pageSize.value))
+  const hasNextPage = computed(() => (page.value + 1) * pageSize.value < totalCount.value)
+  const hasPrevPage = computed(() => page.value > 0)
+
   async function fetchNotifications() {
     try {
-      const result = await notificationApi.list({ page: 0, size: 50 })
+      const result = await notificationApi.list({ page: page.value, size: pageSize.value })
+      totalCount.value = result.totalElements ?? 0
       if (result.notifications) {
         notifications.value = result.notifications.map((n) => ({
           id: n.id,
@@ -182,6 +190,20 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     }
   }
 
+  function nextPage() {
+    if (hasNextPage.value) {
+      page.value++
+      fetchNotifications()
+    }
+  }
+
+  function prevPage() {
+    if (hasPrevPage.value) {
+      page.value--
+      fetchNotifications()
+    }
+  }
+
   async function syncUnreadCount() {
     try {
       await fetchNotifications()
@@ -193,6 +215,9 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
   return {
     notifications,
     activeCategory,
+    page,
+    pageSize,
+    totalCount,
     settings,
     unreadCount,
     hasUnread,
@@ -200,6 +225,9 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     filteredNotifications,
     unreadCountByCategory,
     groupedByDate,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
     markAsRead,
     markAllAsRead,
     deleteNotification,
@@ -208,17 +236,22 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     filterByCategory,
     updateSetting,
     fetchNotifications,
+    nextPage,
+    prevPage,
     syncUnreadCount,
   }
 })
 
+const TYPE_CATEGORY_MAP: Record<string, NotificationCategory> = {
+  'UPLOAD_COMPLETE': 'upload',
+  'UPLOAD_FAILED': 'upload',
+  'CREDIT_LOW': 'ai',
+  'SCHEDULE_REMINDER': 'schedule',
+  'COMMENT': 'upload',
+  'SYSTEM': 'upload',
+  'CHANNEL_TOKEN_EXPIRED': 'channel',
+}
+
 function mapTypeToCategory(type: string): NotificationCategory {
-  const t = type.toLowerCase()
-  if (t.includes('upload') || t.includes('platform')) return 'upload'
-  if (t.includes('schedule')) return 'schedule'
-  if (t.includes('token') || t.includes('channel')) return 'channel'
-  if (t.includes('credit')) return 'ai'
-  if (t.includes('milestone') || t.includes('report')) return 'analytics'
-  if (t.includes('payment') || t.includes('subscription')) return 'subscription'
-  return 'upload'
+  return TYPE_CATEGORY_MAP[type.toUpperCase()] ?? 'upload'
 }

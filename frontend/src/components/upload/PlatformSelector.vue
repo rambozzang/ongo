@@ -10,9 +10,11 @@
           class="relative rounded-xl border-2 p-4 transition-all"
           :class="
             isConnected(platform)
-              ? isSelected(platform)
-                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                : 'cursor-pointer border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+              ? getChannel(platform)?.tokenStatus === 'EXPIRED'
+                ? 'cursor-not-allowed border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/10 opacity-70'
+                : isSelected(platform)
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                  : 'cursor-pointer border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
               : 'cursor-default border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 opacity-60'
           "
           @click="togglePlatform(platform)"
@@ -28,7 +30,13 @@
             </div>
             <div class="flex-1">
               <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ PLATFORM_CONFIG[platform].label }}</p>
-              <p v-if="isConnected(platform)" class="text-xs text-green-600">연동됨</p>
+              <p v-if="getChannel(platform)?.tokenStatus === 'EXPIRED'" class="text-xs text-red-600">
+                토큰 만료 — 재연결 필요
+              </p>
+              <p v-else-if="getChannel(platform)?.tokenStatus === 'EXPIRING_SOON'" class="text-xs text-amber-600">
+                토큰 만료 임박
+              </p>
+              <p v-else-if="isConnected(platform)" class="text-xs text-green-600">연동됨</p>
               <router-link
                 v-else
                 to="/channels"
@@ -247,7 +255,7 @@
 import { ref, reactive, watch, computed } from 'vue'
 import { XMarkIcon, CalendarDaysIcon } from '@heroicons/vue/24/outline'
 import { SparklesIcon } from '@heroicons/vue/24/solid'
-import type { Platform } from '@/types/channel'
+import type { Platform, Channel } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
 import type { Visibility, PlatformPublishConfig } from '@/types/video'
 import type { ScheduleSuggestion } from '@/types/ai'
@@ -262,7 +270,7 @@ const PLATFORM_LIMITS: Partial<Record<Platform, { title: number; description: nu
 }
 
 const props = defineProps<{
-  connectedPlatforms: Platform[]
+  channels: Channel[]
   baseTitle: string
   baseDescription: string
   baseTags: string[]
@@ -318,8 +326,12 @@ watch(
   { immediate: true },
 )
 
+function getChannel(platform: Platform): Channel | undefined {
+  return props.channels.find((c) => c.platform === platform)
+}
+
 function isConnected(platform: Platform): boolean {
-  return props.connectedPlatforms.includes(platform)
+  return !!getChannel(platform)
 }
 
 function isSelected(platform: Platform): boolean {
@@ -327,7 +339,8 @@ function isSelected(platform: Platform): boolean {
 }
 
 function togglePlatform(platform: Platform) {
-  if (!isConnected(platform)) return
+  const ch = getChannel(platform)
+  if (!ch || ch.tokenStatus === 'EXPIRED') return
 
   const idx = selectedPlatforms.value.indexOf(platform)
   if (idx >= 0) {

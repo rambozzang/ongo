@@ -68,6 +68,10 @@ export const useVideoStore = defineStore('video', () => {
     fetchVideos()
   }
 
+  function invalidateCache() {
+    videos.value = null
+  }
+
   return {
     videos,
     currentVideo,
@@ -83,5 +87,6 @@ export const useVideoStore = defineStore('video', () => {
     deleteVideo,
     setFilter,
     setSort,
+    invalidateCache,
   }
 })

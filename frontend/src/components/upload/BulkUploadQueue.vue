@@ -114,7 +114,7 @@
                     <button
                       class="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400"
                       title="업로드 시작"
-                      @click="queueStore.tusUpload(item.id)"
+                      @click="queueStore.presignedUpload(item.id)"
                     >
                       <PlayIcon class="h-4 w-4" />
                     </button>

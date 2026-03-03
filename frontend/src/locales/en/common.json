@@ -109,7 +109,6 @@
     "sidebarCollapse": "Collapse sidebar",
     "mainNavigation": "Main navigation",
     "admin": "Admin",
-    "videoResizer": "Video Resizer",
     "subtitleEditor": "Subtitle Editor",
     "competitorAnalysis": "Competitor Deep Analysis",
     "hashtagStrategy": "Hashtag Strategy",
@@ -1357,13 +1356,14 @@
       "pipelineCancelled": "AI pipeline cancelled."
     },
     "description": "Upload video files, auto-generate metadata with AI, and publish to multiple platforms",
-    "pageGuideTitle": "Video Upload",
+    "pageGuideTitle": "Upload Process Guide",
     "pageGuide": [
-      "Step 1: Drag or click to select video files. Selecting multiple files will add them to the upload queue",
+      "Step 1: Drag or click to select video/photo files. Files are uploaded directly to cloud storage (S3) for speed and reliability",
       "Step 2: Enter title, description, and tags manually, or use the AI auto-generate button (15 credits with STT, 5 credits basic)",
       "Enable AI Pipeline mode to auto-process metadata generation, hashtag extraction, and optimization in one step",
       "Step 3: Select target platforms and configure different titles, descriptions, and scheduled times per platform",
-      "Use the upload queue button to manage pending files - publish immediately or add to queue for batch publishing"
+      "Selecting multiple files adds them to the upload queue. Use the queue button to manage pending/active uploads",
+      "Upload flow: File select → Direct S3 transfer → Server confirmation → Auto media analysis, thumbnails, captions → Platform publish"
     ],
     "stepsAriaLabel": "Upload steps",
     "stepAriaLabel": "Step {step}: {label}{completed}",
@@ -1894,7 +1894,11 @@
     ],
     "empty": "No notifications",
     "emptyCategory": "No notifications in the selected category.",
-    "emptyDescription": "New notifications will appear here when they arrive."
+    "emptyDescription": "New notifications will appear here when they arrive.",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    }
   },
   "ideas": {
     "title": "Content Ideas",
@@ -2040,6 +2044,10 @@
       "login": "Logins",
       "settings": "Settings Changes",
       "channel": "Channel Connections"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
     }
   },
   "subscription": {
@@ -2788,53 +2796,6 @@
       "TIKTOK": "TikTok",
       "INSTAGRAM": "Instagram",
       "NAVER": "Naver"
-    }
-  },
-  "videoResizer": {
-    "title": "AI Video Resizer",
-    "description": "AI automatically resizes your videos to fit different platform aspect ratios",
-    "pageGuideTitle": "Video Resizer Guide",
-    "pageGuideMobile": [
-      "Select a video and choose the target platforms",
-      "Smart crop automatically detects important scenes",
-      "Resize to multiple platforms simultaneously"
-    ],
-    "pageGuideDesktop": [
-      "Select a video and click the platform presets you want",
-      "Enable Smart Crop for AI-powered subject tracking",
-      "Drag the focus point to manually adjust the crop position",
-      "Select multiple platforms to resize in one batch"
-    ],
-    "creditsRemaining": "Credits remaining",
-    "selectVideo": "Select Video",
-    "chooseVideo": "Choose a video to resize",
-    "noVideos": "No uploaded videos found",
-    "platformPresets": "Platform Presets",
-    "presetReels": "Instagram Reels",
-    "presetNaverClip": "Naver Clip",
-    "presetShorts": "YouTube Shorts",
-    "smartCrop": "Smart Crop",
-    "smartCropDesc": "AI automatically detects and tracks the main subject for cropping",
-    "smartCropActive": "Smart Crop active",
-    "original": "Original",
-    "startResize": "Start Resize",
-    "resizing": "Resizing...",
-    "targets": "targets",
-    "cancel": "Cancel",
-    "download": "Download",
-    "delete": "Delete",
-    "dismiss": "Dismiss",
-    "jobHistory": "Job History",
-    "jobCount": "jobs",
-    "noJobs": "No resize jobs yet",
-    "noJobsHint": "Select a video and start resizing",
-    "previewPlaceholder": "Preview",
-    "previewHint": "Select a video and platform to see preview",
-    "status": {
-      "PENDING": "Pending",
-      "PROCESSING": "Processing",
-      "COMPLETED": "Completed",
-      "FAILED": "Failed"
     }
   },
   "hashtagStrategy": {

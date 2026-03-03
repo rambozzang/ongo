@@ -80,15 +80,6 @@ class S3StorageClient(
         return s3Client.listObjectsV2(request).contents().map { it.key() }
     }
 
-    override fun downloadFile(key: String): InputStream {
-        val request = GetObjectRequest.builder()
-            .bucket(storageProperties.bucket)
-            .key(key)
-            .build()
-
-        return s3Client.getObject(request)
-    }
-
     override fun generatePresignedDownloadUrl(key: String, expirationMinutes: Int): String {
         log.debug("S3 presigned GET URL 생성: key={}, expiry={}분", key, expirationMinutes)
 
@@ -103,5 +94,33 @@ class S3StorageClient(
             .build()
 
         return s3Presigner.presignGetObject(presignRequest).url().toExternalForm()
+    }
+
+    override fun objectExists(key: String): Boolean = try {
+        s3Client.headObject(
+            HeadObjectRequest.builder()
+                .bucket(storageProperties.bucket)
+                .key(key)
+                .build(),
+        )
+        true
+    } catch (_: NoSuchKeyException) {
+        false
+    }
+
+    override fun getObjectMetadata(key: String): ObjectMetadata? = try {
+        val response = s3Client.headObject(
+            HeadObjectRequest.builder()
+                .bucket(storageProperties.bucket)
+                .key(key)
+                .build(),
+        )
+        ObjectMetadata(
+            contentLength = response.contentLength(),
+            contentType = response.contentType(),
+            eTag = response.eTag(),
+        )
+    } catch (_: NoSuchKeyException) {
+        null
     }
 }

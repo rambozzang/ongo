@@ -18,8 +18,6 @@ data class Video(
     val originalFilename: String? = null,
     val contentHash: String? = null,
     val thumbnailUrls: List<String> = emptyList(),
-    val autoThumbnails: List<String> = emptyList(),
-    val selectedThumbnailIndex: Int = 0,
     val mediaType: MediaType = MediaType.VIDEO,
     val status: UploadStatus = UploadStatus.DRAFT,
     val createdAt: LocalDateTime? = null,

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { UploadQueueItem, UploadQueueStats } from '@/types/uploadQueue'
-import { useTusUpload } from '@/composables/useTusUpload'
+import { usePresignedUpload } from '@/composables/usePresignedUpload'
 
 const MAX_CONCURRENT = 3
 
@@ -142,7 +142,7 @@ export const useBulkUploadQueueStore = defineStore('bulkUploadQueue', () => {
     processQueue()
   }
 
-  // --- Internal: real upload via Tus protocol ---
+  // --- Internal: real upload via Presigned URL ---
 
   function processQueue() {
     const currentlyUploading = items.value.filter((i) => i.status === 'uploading').length
@@ -151,11 +151,11 @@ export const useBulkUploadQueueStore = defineStore('bulkUploadQueue', () => {
 
     const pendingItems = items.value.filter((i) => i.status === 'pending')
     for (let i = 0; i < Math.min(slotsAvailable, pendingItems.length); i++) {
-      tusUpload(pendingItems[i].id)
+      presignedUpload(pendingItems[i].id)
     }
   }
 
-  async function tusUpload(id: string) {
+  async function presignedUpload(id: string) {
     const item = items.value.find((i) => i.id === id)
     if (!item) return
 
@@ -163,7 +163,7 @@ export const useBulkUploadQueueStore = defineStore('bulkUploadQueue', () => {
     item.startedAt = new Date().toISOString()
     item.error = undefined
 
-    const { upload } = useTusUpload({
+    const { upload } = usePresignedUpload({
       shouldContinue: (itemId) => {
         const current = items.value.find((i) => i.id === itemId)
         return !!current && current.status === 'uploading'

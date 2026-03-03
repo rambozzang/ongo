@@ -24,6 +24,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      # MinIO 기본 CORS가 모든 origin 허용 — 프론트엔드 직접 PUT 업로드 가능
+      # 프로덕션(R2/S3)에서는 버킷 CORS 정책을 별도 설정 필요
     ports:
       - "9000:9000"
       - "9001:9001"

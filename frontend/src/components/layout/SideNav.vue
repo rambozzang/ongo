@@ -187,7 +187,6 @@ import {
   BuildingOffice2Icon,
   CalendarIcon,
   CubeTransparentIcon,
-  FilmIcon as VideoResizerIcon,
   LanguageIcon,
   MagnifyingGlassCircleIcon,
   HashtagIcon,
@@ -317,7 +316,6 @@ const navGroups = computed<NavGroup[]>(() => [
         key: 'create-video-edit',
         label: t('nav.subVideoEdit'),
         items: [
-          { to: '/video-resizer', label: t('nav.videoResizer'), icon: VideoResizerIcon },
           { to: '/thumbnail-generator', label: t('nav.thumbnailGenerator'), icon: PhotoIcon },
           { to: '/mood-board', label: t('nav.moodBoard'), icon: PaintBrushIcon },
           { to: '/music-recommender', label: t('nav.musicRecommender'), icon: MusicalNoteIcon },

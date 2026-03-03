@@ -14,6 +14,7 @@ export interface NotificationResponse {
 
 export interface NotificationListResponse {
   notifications: NotificationResponse[]
+  totalElements: number
   page: number
   size: number
 }

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Platform } from '@/types/channel'
 import type { MediaType } from '@/types/video'
-import { useTusUpload } from '@/composables/useTusUpload'
+import { usePresignedUpload } from '@/composables/usePresignedUpload'
 import { useNotificationStore } from '@/stores/notification'
 
 export type QueueItemStatus = 'queued' | 'uploading' | 'processing' | 'completed' | 'failed' | 'paused'
@@ -366,9 +366,9 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
   }
 
   /**
-   * Upload file via Tus protocol
+   * Upload file via Presigned URL
    */
-  async function tusUpload(id: string) {
+  async function presignedUpload(id: string) {
     const item = queue.value.find((item) => item.id === id)
     if (!item) return
 
@@ -383,7 +383,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
       item.platformProgress[platform as Platform].progress = 0
     })
 
-    const { upload } = useTusUpload({
+    const { upload } = usePresignedUpload({
       shouldContinue: (itemId) => {
         const current = queue.value.find((i) => i.id === itemId)
         return current?.status !== 'paused'
@@ -434,7 +434,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
 
     const nextItem = queue.value.find((item) => item.status === 'queued')
     if (nextItem) {
-      tusUpload(nextItem.id)
+      presignedUpload(nextItem.id)
     }
   }
 
@@ -447,7 +447,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
     const slotsAvailable = MAX_CONCURRENT - activeCount.value
 
     for (let i = 0; i < Math.min(slotsAvailable, queued.length); i++) {
-      tusUpload(queued[i].id)
+      presignedUpload(queued[i].id)
     }
   }
 
@@ -490,7 +490,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
     pauseAll,
     resumeAll,
     startProcessing,
-    tusUpload,
+    presignedUpload,
     startUpload, // legacy
   }
 })

@@ -5,13 +5,9 @@ import type {
   VideoCreateRequest,
   VideoPublishRequest,
   VideoListFilter,
-  VideoMediaInfo,
-  VideoSubtitle,
-  ThumbnailResult,
   ContentImage,
   OptimizationCheckRequest,
   OptimizationCheckResponse,
-  VideoResize,
   VideoTranslation,
 } from '@/types/video'
 
@@ -42,58 +38,13 @@ export const videoApi = {
     return apiClient.delete<ResData<void>>(`/videos/${id}`).then(unwrapResponse)
   },
 
+  confirmUpload(videoId: number) {
+    return apiClient.post<ResData<void>>(`/videos/${videoId}/upload/complete`).then(unwrapResponse)
+  },
+
   optimizationCheck(request: OptimizationCheckRequest) {
     return apiClient
       .post<ResData<OptimizationCheckResponse>>('/videos/optimization-check', request)
-      .then(unwrapResponse)
-  },
-
-  // Media Info
-  getMediaInfo(videoId: number) {
-    return apiClient
-      .get<ResData<VideoMediaInfo>>(`/videos/${videoId}/media-info`)
-      .then(unwrapResponse)
-  },
-
-  // Thumbnails
-  getThumbnails(videoId: number) {
-    return apiClient
-      .get<ResData<ThumbnailResult>>(`/videos/${videoId}/thumbnails`)
-      .then(unwrapResponse)
-  },
-
-  selectThumbnail(videoId: number, index: number) {
-    return apiClient
-      .post<ResData<void>>(`/videos/${videoId}/thumbnails/select`, { index })
-      .then(unwrapResponse)
-  },
-
-  uploadCustomThumbnail(videoId: number, file: File) {
-    const formData = new FormData()
-    formData.append('file', file)
-    return apiClient
-      .post<ResData<{ url: string }>>(`/videos/${videoId}/thumbnails/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      .then(unwrapResponse)
-  },
-
-  // Captions
-  getCaptions(videoId: number) {
-    return apiClient
-      .get<ResData<VideoSubtitle[]>>(`/videos/${videoId}/captions`)
-      .then(unwrapResponse)
-  },
-
-  generateCaption(videoId: number, language: string = 'ko') {
-    return apiClient
-      .post<ResData<void>>(`/videos/${videoId}/captions/generate`, { language })
-      .then(unwrapResponse)
-  },
-
-  updateCaption(videoId: number, language: string, content: string) {
-    return apiClient
-      .put<ResData<VideoSubtitle>>(`/videos/${videoId}/captions`, { language, content })
       .then(unwrapResponse)
   },
 
@@ -118,19 +69,6 @@ export const videoApi = {
   reorderImages(videoId: number, imageIds: number[]) {
     return apiClient
       .put<ResData<void>>(`/videos/${videoId}/images/reorder`, { imageIds })
-      .then(unwrapResponse)
-  },
-
-  // Resize
-  requestResize(videoId: number, aspectRatios: string[]) {
-    return apiClient
-      .post<ResData<VideoResize[]>>(`/videos/${videoId}/resize`, { aspectRatios })
-      .then(unwrapResponse)
-  },
-
-  getResizes(videoId: number) {
-    return apiClient
-      .get<ResData<VideoResize[]>>(`/videos/${videoId}/resizes`)
       .then(unwrapResponse)
   },
 

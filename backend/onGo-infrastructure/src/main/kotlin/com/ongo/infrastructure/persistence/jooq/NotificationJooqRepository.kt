@@ -39,6 +39,12 @@ class NotificationJooqRepository(
             .fetch()
             .map { it.toNotification() }
 
+    override fun countByUserId(userId: Long): Long =
+        dsl.selectCount()
+            .from(NOTIFICATIONS)
+            .where(USER_ID.eq(userId))
+            .fetchOne(0, Long::class.java) ?: 0L
+
     override fun countUnreadByUserId(userId: Long): Int =
         dsl.selectCount()
             .from(NOTIFICATIONS)

@@ -15,8 +15,6 @@ class VideoQueryUseCaseTest {
     private val videoUploadRepository = mockk<VideoUploadRepository>()
     private val videoPlatformMetaRepository = mockk<VideoPlatformMetaRepository>()
     private val contentImageRepository = mockk<ContentImageRepository>(relaxed = true)
-    private val mediaInfoRepository = mockk<VideoMediaInfoRepository>(relaxed = true)
-    private val subtitleRepository = mockk<VideoSubtitleRepository>(relaxed = true)
     private val storageService = mockk<StorageService>(relaxed = true)
 
     private lateinit var useCase: VideoQueryUseCase
@@ -26,8 +24,7 @@ class VideoQueryUseCaseTest {
         clearAllMocks()
         useCase = VideoQueryUseCase(
             videoRepository, videoUploadRepository, videoPlatformMetaRepository,
-            contentImageRepository, mediaInfoRepository,
-            subtitleRepository, storageService,
+            contentImageRepository, storageService,
         )
     }
 

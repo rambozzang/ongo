@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { Channel } from '@/types/channel'
 import type { Platform } from '@/types/channel'
 import { channelApi } from '@/api/channel'
+import { useVideoStore } from '@/stores/video'
 
 export const useChannelStore = defineStore('channel', () => {
   const channels = ref<Channel[]>([])
@@ -31,6 +32,10 @@ export const useChannelStore = defineStore('channel', () => {
   async function disconnectChannel(id: number) {
     await channelApi.disconnect(id)
     channels.value = channels.value.filter((c) => c.id !== id)
+
+    // 관련 스토어 캐시 무효화
+    const videoStore = useVideoStore()
+    videoStore.invalidateCache()
   }
 
   async function syncChannel(id: number) {

@@ -1,20 +1,13 @@
 package com.ongo.api.video
 
 import com.ongo.api.video.dto.*
-import com.ongo.application.video.CaptionUseCase
 import com.ongo.application.video.CrossPlatformOptimizationUseCase
 import com.ongo.application.video.PublishVideoUseCase
 import com.ongo.application.video.PlatformUploadConfig
-import com.ongo.application.video.ThumbnailUseCase
 import com.ongo.application.video.UploadVideoUseCase
-import com.ongo.application.video.VideoProcessingProgressUseCase
 import com.ongo.application.video.VideoQueryUseCase
-import com.ongo.application.video.VideoResizeUseCase
 import com.ongo.application.video.dto.OptimizationCheckRequest
 import com.ongo.application.video.dto.OptimizationCheckResponse
-import com.ongo.application.video.dto.ResizeRequest
-import com.ongo.application.video.dto.VideoResizeResponse
-import com.ongo.domain.video.VideoMediaInfoRepository
 import com.ongo.common.ResData
 import com.ongo.common.annotation.RequiresPermission
 import com.ongo.common.config.PageResponse
@@ -33,7 +26,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
 @Tag(name = "영상 관리", description = "영상 업로드, 멀티플랫폼 게시, 조회, 수정, 삭제")
 @RestController
@@ -43,11 +35,6 @@ class VideoController(
     private val publishVideoUseCase: PublishVideoUseCase,
     private val videoQueryUseCase: VideoQueryUseCase,
     private val crossPlatformOptimizationUseCase: CrossPlatformOptimizationUseCase,
-    private val thumbnailUseCase: ThumbnailUseCase,
-    private val captionUseCase: CaptionUseCase,
-    private val progressUseCase: VideoProcessingProgressUseCase,
-    private val mediaInfoRepository: VideoMediaInfoRepository,
-    private val videoResizeUseCase: VideoResizeUseCase,
 ) {
 
     @Operation(
@@ -109,6 +96,25 @@ class VideoController(
                 mediaType = result.mediaType,
             )
         )
+    }
+
+    @Operation(
+        summary = "업로드 완료 확인",
+        description = "Presigned URL로 S3/MinIO에 직접 업로드 완료 후, 백엔드에 파일 존재 확인 및 후처리를 요청합니다."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "업로드 완료 확인 성공"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "403", description = "권한 없음"),
+        ApiResponse(responseCode = "404", description = "영상을 찾을 수 없음"),
+    )
+    @PostMapping("/{id}/upload/complete")
+    fun confirmUpload(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Parameter(description = "영상 ID") @PathVariable id: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        uploadVideoUseCase.confirmDirectUpload(userId, id)
+        return ResData.success(null, "업로드 완료")
     }
 
     @Operation(
@@ -298,123 +304,6 @@ class VideoController(
         return ResData.success(null, "재업로드가 시작되었습니다")
     }
 
-    @Operation(summary = "미디어 분석 정보", description = "FFprobe 기반 미디어 분석 정보를 조회합니다.")
-    @GetMapping("/{id}/media-info")
-    fun getMediaInfo(
-        @AuthenticationPrincipal userId: Long,
-        @PathVariable id: Long,
-    ): ResponseEntity<ResData<Any?>> {
-        videoQueryUseCase.validateOwnership(userId, id)
-        val info = mediaInfoRepository.findByVideoId(id)
-        return ResData.success(info)
-    }
-
-    @Operation(summary = "자동 생성 썸네일 목록", description = "FFmpeg 씬 감지로 자동 생성된 썸네일 목록을 조회합니다.")
-    @GetMapping("/{id}/thumbnails")
-    fun getThumbnails(
-        @AuthenticationPrincipal userId: Long,
-        @PathVariable id: Long,
-    ): ResponseEntity<ResData<Any>> {
-        val result = thumbnailUseCase.getThumbnails(userId, id)
-        return ResData.success(result)
-    }
-
-    @Operation(summary = "대표 썸네일 선택", description = "자동 생성된 썸네일 중 대표 이미지를 선택합니다.")
-    @PostMapping("/{id}/thumbnails/select")
-    fun selectThumbnail(
-        @AuthenticationPrincipal userId: Long,
-        @PathVariable id: Long,
-        @RequestBody body: Map<String, Int>,
-    ): ResponseEntity<ResData<Nothing?>> {
-        val index = body["index"] ?: throw IllegalArgumentException("index 필수")
-        thumbnailUseCase.selectThumbnail(userId, id, index)
-        return ResData.success(null, "썸네일이 선택되었습니다")
-    }
-
-    @Operation(summary = "커스텀 썸네일 업로드", description = "사용자가 직접 썸네일 이미지를 업로드합니다.")
-    @PostMapping("/{id}/thumbnails/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun uploadCustomThumbnail(
-        @AuthenticationPrincipal userId: Long,
-        @PathVariable id: Long,
-        @RequestParam("file") file: MultipartFile,
-    ): ResponseEntity<ResData<Map<String, String>>> {
-        val url = thumbnailUseCase.uploadCustomThumbnail(
-            userId, id, file.inputStream, file.contentType ?: "image/jpeg", file.size,
-        )
-        return ResData.success(mapOf("url" to url))
-    }
-
-    @Operation(summary = "자막 조회", description = "영상의 자동 생성된 자막 또는 편집된 자막을 조회합니다.")
-    @GetMapping("/{id}/captions")
-    fun getCaptions(
-        @AuthenticationPrincipal userId: Long,
-        @PathVariable id: Long,
-    ): ResponseEntity<ResData<Any>> {
-        val captions = captionUseCase.getCaptions(userId, id)
-        return ResData.success(captions)
-    }
-
-    @Operation(summary = "자막 생성", description = "AI(Whisper)를 사용하여 자막을 자동 생성합니다. AI 크레딧이 차감됩니다.")
-    @PostMapping("/{id}/captions/generate")
-    fun generateCaption(
-        @AuthenticationPrincipal userId: Long,
-        @PathVariable id: Long,
-        @RequestBody body: Map<String, String>,
-    ): ResponseEntity<ResData<Nothing?>> {
-        val language = body["language"] ?: "ko"
-        captionUseCase.generateCaption(userId, id, language)
-        return ResData.success(null, "자막 생성이 시작되었습니다")
-    }
-
-    @Operation(summary = "자막 수정", description = "자동 생성된 자막을 직접 편집합니다.")
-    @PutMapping("/{id}/captions")
-    fun updateCaption(
-        @AuthenticationPrincipal userId: Long,
-        @PathVariable id: Long,
-        @RequestBody body: Map<String, String>,
-    ): ResponseEntity<ResData<Any>> {
-        val language = body["language"] ?: "ko"
-        val content = body["content"] ?: throw IllegalArgumentException("content 필수")
-        val result = captionUseCase.updateCaption(userId, id, language, content)
-        return ResData.success(result)
-    }
-
-    @Operation(summary = "처리 진행률 SSE 스트림", description = "영상 처리(분석/트랜스코딩/썸네일/자막) 진행률을 SSE로 실시간 스트리밍합니다.")
-    @GetMapping("/{id}/progress", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
-    fun streamProgress(
-        @AuthenticationPrincipal userId: Long,
-        @PathVariable id: Long,
-    ): SseEmitter {
-        progressUseCase.validateAccess(userId, id)
-
-        val emitter = SseEmitter(300_000L) // 5 min timeout
-
-        Thread.startVirtualThread {
-            try {
-                while (true) {
-                    val progressList = progressUseCase.fetchProgress(id)
-                    emitter.send(
-                        SseEmitter.event()
-                            .name("progress")
-                            .data(progressList)
-                    )
-
-                    val allDone = progressList.isNotEmpty() && progressList.all { it.progressPercent >= 100 }
-                    if (allDone) {
-                        emitter.complete()
-                        break
-                    }
-
-                    Thread.sleep(1000)
-                }
-            } catch (_: Exception) {
-                emitter.completeWithError(Exception("SSE stream ended"))
-            }
-        }
-
-        return emitter
-    }
-
     @Operation(summary = "이미지 업로드", description = "콘텐츠 이미지를 업로드합니다 (다중 파일 지원).")
     @RequiresPermission(Permission.VIDEO_CREATE)
     @PostMapping("/{id}/images", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -449,23 +338,6 @@ class VideoController(
         return ResData.success(null, "이미지 순서가 변경되었습니다")
     }
 
-    @Operation(summary = "영상 리사이즈 요청", description = "원본 영상을 선택한 비율(9:16, 1:1, 4:5, 16:9)로 리사이즈합니다. AI 크레딧이 차감됩니다.")
-    @PostMapping("/{id}/resize")
-    fun requestResize(
-        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
-        @PathVariable id: Long,
-        @RequestBody request: ResizeRequest,
-    ): ResponseEntity<ResData<List<VideoResizeResponse>>> =
-        ResData.success(videoResizeUseCase.requestResize(userId, id, request))
-
-    @Operation(summary = "리사이즈 결과 조회", description = "영상의 리사이즈 결과 목록을 조회합니다.")
-    @GetMapping("/{id}/resizes")
-    fun getResizes(
-        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
-        @PathVariable id: Long,
-    ): ResponseEntity<ResData<List<VideoResizeResponse>>> =
-        ResData.success(videoResizeUseCase.getResizes(userId, id))
-
     @Operation(
         summary = "크로스 플랫폼 최적화 검사",
         description = "영상 메타데이터를 각 플랫폼 기준에 맞게 최적화 검사합니다. 플랫폼별 점수(0-100)와 개선 제안을 반환합니다."
@@ -495,8 +367,6 @@ private fun com.ongo.application.video.VideoDetailResult.toResponse() = VideoDet
     duration = duration,
     resolution = resolution,
     thumbnails = thumbnails,
-    autoThumbnails = autoThumbnails,
-    selectedThumbnailIndex = selectedThumbnailIndex,
     mediaType = mediaType,
     status = status,
     contentImages = contentImages.map { img ->

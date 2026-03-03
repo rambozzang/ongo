@@ -155,5 +155,31 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
         {{ store.activeCategory ? $t('notifications.emptyCategory') : $t('notifications.emptyDescription') }}
       </p>
     </div>
+
+    <!-- Pagination -->
+    <div
+      v-if="store.totalPages > 1"
+      class="mt-4 flex items-center justify-between"
+    >
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        {{ store.page * store.pageSize + 1 }}–{{ Math.min((store.page + 1) * store.pageSize, store.totalCount) }} / {{ store.totalCount }}
+      </p>
+      <div class="flex gap-2">
+        <button
+          class="btn-secondary text-sm"
+          :disabled="!store.hasPrevPage"
+          @click="store.prevPage()"
+        >
+          {{ $t('notifications.pagination.previous') }}
+        </button>
+        <button
+          class="btn-secondary text-sm"
+          :disabled="!store.hasNextPage"
+          @click="store.nextPage()"
+        >
+          {{ $t('notifications.pagination.next') }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>

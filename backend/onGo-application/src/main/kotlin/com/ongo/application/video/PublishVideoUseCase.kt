@@ -4,10 +4,12 @@ import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.util.safeValueOfOrThrow
+import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.video.*
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class PublishVideoUseCase(
@@ -15,6 +17,7 @@ class PublishVideoUseCase(
     private val videoUploadRepository: VideoUploadRepository,
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    private val channelRepository: ChannelRepository,
 ) {
 
     @Transactional
@@ -36,6 +39,20 @@ class PublishVideoUseCase(
         val fileUrl = video.fileUrl
         if (fileUrl.isNullOrBlank()) {
             throw IllegalStateException("파일 업로드가 완료되지 않은 영상입니다")
+        }
+
+        // 게시 전 채널 토큰 검증
+        configs.forEach { config ->
+            val channel = channelRepository.findByUserIdAndPlatform(userId, config.platform)
+                ?: throw NotFoundException("채널", "${config.platform}")
+
+            val tokenExpiresAt = channel.tokenExpiresAt
+            if (channel.status == "EXPIRED" || channel.status == "DISCONNECTED" ||
+                (tokenExpiresAt != null && tokenExpiresAt.isBefore(LocalDateTime.now()))) {
+                throw IllegalStateException(
+                    "${config.platform.name} 채널의 인증 토큰이 만료되었습니다. 채널 관리에서 재연결 후 다시 시도해주세요."
+                )
+            }
         }
 
         // 영상 상태를 UPLOADING으로 변경

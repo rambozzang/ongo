@@ -10,10 +10,8 @@ import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.video.ContentImage
 import com.ongo.domain.video.ContentImageRepository
 import com.ongo.domain.video.Video
-import com.ongo.domain.video.VideoMediaInfoRepository
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.video.VideoRepository
-import com.ongo.domain.video.VideoSubtitleRepository
 import com.ongo.domain.video.VideoUploadRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -27,8 +25,6 @@ class VideoQueryUseCase(
     private val videoUploadRepository: VideoUploadRepository,
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val contentImageRepository: ContentImageRepository,
-    private val mediaInfoRepository: VideoMediaInfoRepository,
-    private val subtitleRepository: VideoSubtitleRepository,
     private val storageService: StorageService,
 ) {
 
@@ -160,8 +156,6 @@ class VideoQueryUseCase(
             duration = video.durationSeconds,
             resolution = video.resolution,
             thumbnails = video.thumbnailUrls,
-            autoThumbnails = video.autoThumbnails,
-            selectedThumbnailIndex = video.selectedThumbnailIndex,
             mediaType = video.mediaType,
             status = video.status,
             contentImages = images,
@@ -312,8 +306,6 @@ data class VideoDetailResult(
     val duration: Int?,
     val resolution: String?,
     val thumbnails: List<String>,
-    val autoThumbnails: List<String> = emptyList(),
-    val selectedThumbnailIndex: Int = 0,
     val mediaType: MediaType = MediaType.VIDEO,
     val status: UploadStatus,
     val contentImages: List<ContentImageResult> = emptyList(),

@@ -46,15 +46,6 @@ class VideoStorageService(
         log.info("영상 파일 삭제 완료: videoId={}", videoId)
     }
 
-    override fun downloadFile(videoId: Long): InputStream {
-        val prefix = "videos/$videoId/"
-        val keys = storageClient.listObjects(prefix)
-        val firstKey = keys.firstOrNull()
-            ?: throw IllegalStateException("업로드된 파일을 찾을 수 없습니다: videoId=$videoId")
-
-        return storageClient.downloadFile(firstKey)
-    }
-
     override fun uploadFile(key: String, inputStream: InputStream, contentType: String, size: Long): String {
         storageClient.uploadFile(key, inputStream, contentType, size)
         return storageClient.getFileUrl(key)

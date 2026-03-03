@@ -17,8 +17,6 @@ data class VideoDetailResponse(
     val duration: Int?,
     val resolution: String?,
     val thumbnails: List<String>,
-    val autoThumbnails: List<String> = emptyList(),
-    val selectedThumbnailIndex: Int = 0,
     val mediaType: MediaType = MediaType.VIDEO,
     val status: UploadStatus,
     val contentImages: List<ContentImageItem> = emptyList(),

@@ -17,8 +17,10 @@ class NotificationUseCase(
 
     fun listNotifications(userId: Long, page: Int, size: Int): NotificationListResponse {
         val notifications = notificationRepository.findByUserId(userId, page, size)
+        val total = notificationRepository.countByUserId(userId)
         return NotificationListResponse(
             notifications = notifications.map { it.toResponse() },
+            totalElements = total,
             page = page,
             size = size,
         )

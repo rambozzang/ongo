@@ -21,8 +21,10 @@ import type { ActivityLog, ActivityAction, ActivityDateRange, ActivityDateCustom
 const router = useRouter()
 const activityLogsStore = useActivityLogsStore()
 
-const { isLoading, filter, customDateRange, groupedByDate, actionCounts, uniqueUsers } =
-  storeToRefs(activityLogsStore)
+const {
+  isLoading, filter, customDateRange, groupedByDate, actionCounts, uniqueUsers,
+  page, pageSize, totalCount, totalPages, hasNextPage, hasPrevPage,
+} = storeToRefs(activityLogsStore)
 
 // Summary cards showing today's activity counts
 interface SummaryCardData {
@@ -160,6 +162,32 @@ onMounted(() => {
         :is-loading="isLoading"
         @click-entity="handleEntityClick"
       />
+    </div>
+
+    <!-- Pagination -->
+    <div
+      v-if="totalPages > 1"
+      class="mt-4 flex items-center justify-between"
+    >
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        {{ page * pageSize + 1 }}–{{ Math.min((page + 1) * pageSize, totalCount) }} / {{ totalCount }}
+      </p>
+      <div class="flex gap-2">
+        <button
+          class="btn-secondary text-sm"
+          :disabled="!hasPrevPage"
+          @click="activityLogsStore.prevPage()"
+        >
+          {{ $t('activityLog.pagination.previous') }}
+        </button>
+        <button
+          class="btn-secondary text-sm"
+          :disabled="!hasNextPage"
+          @click="activityLogsStore.nextPage()"
+        >
+          {{ $t('activityLog.pagination.next') }}
+        </button>
+      </div>
     </div>
   </div>
 </template>

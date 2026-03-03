@@ -7,4 +7,5 @@ enum class NotificationType {
     SCHEDULE_REMINDER,
     COMMENT,
     SYSTEM,
+    CHANNEL_TOKEN_EXPIRED,
 }
