@@ -192,7 +192,7 @@ deploy_frontend() {
     info "Frontend 배포 완료: $WWW_DIR"
 
     # Nginx 재로드
-    sudo nginx -t && sudo systemctl reload nginx
+    # sudo nginx -t && sudo systemctl reload nginx
 
     # 오래된 백업 정리 (최근 3개만 유지)
     ls -dt "$WWW_DIR".backup.* 2>/dev/null | tail -n +4 | xargs rm -rf 2>/dev/null || true
