@@ -147,6 +147,33 @@
     display: none;
   }
 
+  /* Dark-mode aware thin scrollbar */
+  .scrollbar-dark {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(209 213 219) transparent;
+  }
+
+  .dark .scrollbar-dark {
+    scrollbar-color: rgb(55 65 81) transparent;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb {
+    background-color: rgb(209 213 219);
+    border-radius: 9999px;
+  }
+
+  .dark .scrollbar-dark::-webkit-scrollbar-thumb {
+    background-color: rgb(55 65 81);
+  }
+
   /* Notification bell pulse animation */
   .notification-bell-pulse {
     animation: notification-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;

@@ -33,7 +33,7 @@
     <WorkspaceSwitcher :collapsed="collapsed" />
 
     <!-- Navigation -->
-    <nav role="navigation" :aria-label="t('nav.mainNavigation')" class="flex-1 overflow-y-auto px-2 py-4">
+    <nav role="navigation" :aria-label="t('nav.mainNavigation')" class="flex-1 overflow-y-auto px-2 py-4 scrollbar-dark">
       <div
         v-for="(group, groupIndex) in navGroups"
         :key="groupIndex"
