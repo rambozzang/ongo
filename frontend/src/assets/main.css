@@ -147,18 +147,23 @@
     display: none;
   }
 
-  /* Dark-mode aware thin scrollbar */
+  /* Dark-mode aware thin scrollbar — visible on hover */
   .scrollbar-dark {
     scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.2s;
+  }
+
+  .scrollbar-dark:hover {
     scrollbar-color: rgb(209 213 219) transparent;
   }
 
-  .dark .scrollbar-dark {
-    scrollbar-color: rgb(55 65 81) transparent;
+  .dark .scrollbar-dark:hover {
+    scrollbar-color: rgb(75 85 99) transparent;
   }
 
   .scrollbar-dark::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
   }
 
   .scrollbar-dark::-webkit-scrollbar-track {
@@ -166,12 +171,17 @@
   }
 
   .scrollbar-dark::-webkit-scrollbar-thumb {
-    background-color: rgb(209 213 219);
+    background-color: transparent;
     border-radius: 9999px;
+    transition: background-color 0.2s;
   }
 
-  .dark .scrollbar-dark::-webkit-scrollbar-thumb {
-    background-color: rgb(55 65 81);
+  .scrollbar-dark:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(209 213 219);
+  }
+
+  .dark .scrollbar-dark:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(75 85 99);
   }
 
   /* Notification bell pulse animation */
