@@ -15,6 +15,7 @@ class NaverClipClient(
     private val naverClipApi: NaverClipApi,
     private val naverOAuthApi: NaverOAuthApi,
     private val naverClipConfig: NaverClipConfig,
+    private val fileTransferHelper: PlatformFileTransferHelper,
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(NaverClipClient::class.java)
@@ -26,15 +27,20 @@ class NaverClipClient(
 
         val visibility = mapVisibility(request.visibility)
 
+        var tempFile: java.nio.file.Path? = null
         try {
-            // Step 1: Initialize upload
+            // Step 1: S3에서 파일 다운로드
+            tempFile = fileTransferHelper.downloadToTempFile(request.fileUrl)
+            val fileSize = java.nio.file.Files.size(tempFile)
+
+            // Step 2: 업로드 초기화 (uploadId + uploadUrl 획득)
             val initResponse = naverClipApi.initUpload(
                 authorization = "Bearer ${request.accessToken}",
                 request = NaverClipUploadInitRequest(
                     title = request.title.take(100),
                     description = request.description.take(1000),
                     tags = request.tags,
-                    fileSize = request.fileSize,
+                    fileSize = fileSize,
                     visibility = visibility,
                 ),
             )
@@ -48,13 +54,19 @@ class NaverClipClient(
 
             val uploadId = initResponse.uploadId
                 ?: throw PlatformUploadException("Naver Clip", "upload_id를 받지 못했습니다")
+            val uploadUrl = initResponse.uploadUrl
+                ?: throw PlatformUploadException("Naver Clip", "upload_url을 받지 못했습니다")
 
             log.debug("Naver Clip 업로드 초기화 완료: uploadId={}", uploadId)
 
-            // Step 2: Upload file to the provided uploadUrl
-            // In production: upload file binary to initResponse.uploadUrl
+            // Step 3: uploadUrl에 파일 바이너리 업로드
+            fileTransferHelper.uploadToNaverClip(
+                uploadUrl = uploadUrl,
+                filePath = tempFile,
+                authHeader = "Bearer ${request.accessToken}",
+            )
 
-            // Step 3: Complete upload
+            // Step 4: 업로드 완료 처리
             val completeResponse = naverClipApi.completeUpload(
                 authorization = "Bearer ${request.accessToken}",
                 request = NaverClipUploadCompleteRequest(uploadId = uploadId),
@@ -82,6 +94,8 @@ class NaverClipClient(
         } catch (e: Exception) {
             log.error("Naver Clip 업로드 실패: {}", e.message, e)
             throw PlatformUploadException("Naver Clip", e.message ?: "알 수 없는 오류", e)
+        } finally {
+            fileTransferHelper.cleanupTempFile(tempFile)
         }
     }
 

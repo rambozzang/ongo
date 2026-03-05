@@ -71,6 +71,7 @@ class YouTubeConfig {
 
     fun getClientId(): String = clientId
     fun getClientSecret(): String = clientSecret
+    fun getUploadBaseUrl(): String = uploadBaseUrl
     fun getApiKey(): String = apiKey
 
     private fun createRequestFactory(): SimpleClientHttpRequestFactory {

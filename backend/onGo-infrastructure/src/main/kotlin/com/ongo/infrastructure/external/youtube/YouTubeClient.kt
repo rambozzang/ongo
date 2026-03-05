@@ -16,6 +16,7 @@ class YouTubeClient(
     private val youTubeAnalyticsApi: YouTubeAnalyticsApi,
     private val googleOAuthApi: GoogleOAuthApi,
     private val youTubeConfig: YouTubeConfig,
+    private val fileTransferHelper: PlatformFileTransferHelper,
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(YouTubeClient::class.java)
@@ -39,23 +40,35 @@ class YouTubeClient(
             ),
         )
 
+        var tempFile: java.nio.file.Path? = null
         try {
-            val response = youTubeApi.initiateResumableUpload(
-                authorization = "Bearer ${request.accessToken}",
-                contentType = "application/json",
+            // Step 1: S3에서 파일 다운로드
+            tempFile = fileTransferHelper.downloadToTempFile(request.fileUrl)
+            val fileSize = java.nio.file.Files.size(tempFile)
+
+            // Step 2: Resumable upload 세션 URI 획득
+            val sessionUri = fileTransferHelper.initiateYouTubeResumableUpload(
+                uploadBaseUrl = youTubeConfig.getUploadBaseUrl(),
                 metadata = metadata,
+                accessToken = request.accessToken,
+                fileSize = fileSize,
             )
 
-            log.info("YouTube 업로드 완료: videoId={}", response.id)
+            // Step 3: 세션 URI에 전체 파일 업로드 → videoId 반환
+            val videoId = fileTransferHelper.uploadToYouTubeSession(sessionUri, tempFile)
+
+            log.info("YouTube 업로드 완료: videoId={}", videoId)
 
             return PlatformUploadResult(
-                platformVideoId = response.id,
-                platformUrl = "https://www.youtube.com/watch?v=${response.id}",
-                status = response.status?.uploadStatus ?: "uploaded",
+                platformVideoId = videoId,
+                platformUrl = "https://www.youtube.com/watch?v=$videoId",
+                status = "uploaded",
             )
         } catch (e: Exception) {
             log.error("YouTube 업로드 실패: {}", e.message, e)
             throw PlatformUploadException("YouTube", e.message ?: "알 수 없는 오류", e)
+        } finally {
+            fileTransferHelper.cleanupTempFile(tempFile)
         }
     }
 
