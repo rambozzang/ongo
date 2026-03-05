@@ -13,6 +13,7 @@ data class UpdateBrandRequest(
     val name: String? = null,
     val color: String? = null,
     val category: String? = null,
+    val assignedEditors: List<String>? = null,
     val isActive: Boolean? = null,
 )
 
@@ -22,7 +23,7 @@ data class BrandResponse(
     val logoUrl: String?,
     val color: String,
     val category: String?,
-    val assignedEditors: String,
+    val assignedEditors: List<String>,
     val totalScheduled: Int,
     val totalPublished: Int,
     val isActive: Boolean,
@@ -44,6 +45,7 @@ data class UpdateScheduleRequest(
     val scheduledAt: LocalDateTime? = null,
     val status: String? = null,
     val assignedTo: String? = null,
+    val notes: String? = null,
 )
 
 data class BrandScheduleItemResponse(
@@ -60,10 +62,36 @@ data class BrandScheduleItemResponse(
     val notes: String?,
 )
 
+data class CalendarConflictResponse(
+    val date: String,
+    val items: List<BrandScheduleItemResponse>,
+    val severity: String,
+    val message: String,
+)
+
+data class BrandPerformanceReportResponse(
+    val brandId: Long,
+    val brandName: String,
+    val period: String,
+    val totalUploads: Int,
+    val totalViews: Long,
+    val totalEngagement: Long,
+    val avgCtr: Double,
+    val revenueGenerated: Long,
+    val topContent: List<TopContentItem>,
+)
+
+data class TopContentItem(
+    val title: String,
+    val views: Long,
+    val platform: String,
+)
+
 data class MultiBrandSummaryResponse(
     val totalBrands: Int,
     val activeBrands: Int,
     val totalScheduledThisWeek: Int,
     val totalPublishedThisMonth: Int,
-    val conflicts: String,
+    val conflicts: List<CalendarConflictResponse>,
+    val brandPerformances: List<BrandPerformanceReportResponse>,
 )

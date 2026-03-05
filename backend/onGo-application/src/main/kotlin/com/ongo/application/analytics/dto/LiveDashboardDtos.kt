@@ -1,28 +1,45 @@
 package com.ongo.application.analytics.dto
 
-import java.time.LocalDateTime
-
+/**
+ * 라이브 대시보드 전체 상태 응답.
+ * 프론트엔드 LiveDashboardState 타입과 1:1 매핑.
+ */
 data class LiveDashboardStateResponse(
-    val totalViewers: Int,
-    val activeStreams: Int,
-    val peakViewers: Int,
-    val avgWatchTime: Int,
-    val platforms: List<LivePlatformState>,
+    val metrics: List<LiveMetricResponse>,
+    val alerts: List<LiveAlertResponse>,
+    val activePlatforms: List<String>,
+    val lastUpdated: String,
+    val isConnected: Boolean,
 )
 
-data class LivePlatformState(
-    val platform: String,
-    val viewers: Int,
-    val isLive: Boolean,
+/**
+ * 개별 지표 카드 데이터.
+ * 프론트엔드 LiveMetric 타입과 매핑.
+ */
+data class LiveMetricResponse(
+    val type: String,
+    val currentValue: Long,
+    val previousValue: Long,
+    val changePercent: Double,
+    val trend: String,
+    val history: List<LiveMetricPointResponse>,
+)
+
+data class LiveMetricPointResponse(
+    val timestamp: String,
+    val value: Long,
 )
 
 data class LiveAlertResponse(
     val id: Long,
     val type: String,
-    val message: String,
-    val severity: String,
-    val isRead: Boolean,
-    val createdAt: LocalDateTime?,
+    val title: String,
+    val description: String,
+    val metric: String,
+    val value: Long,
+    val threshold: Long,
+    val createdAt: String?,
+    val read: Boolean,
 )
 
 data class LiveAlertConfigResponse(

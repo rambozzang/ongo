@@ -107,6 +107,16 @@ class BrandScheduleItemJooqRepository(
             .where(USER_ID.eq(userId))
             .and(SCHEDULED_AT.ge(startDate))
             .and(SCHEDULED_AT.le(endDate))
+            .orderBy(SCHEDULED_AT.asc())
+            .fetch().map { it.toBrandScheduleItem() }
+
+    override fun findByUserIdAndBrandIdAndDateRange(userId: Long, brandId: Long, startDate: LocalDateTime, endDate: LocalDateTime): List<BrandScheduleItem> =
+        dsl.select().from(TABLE)
+            .where(USER_ID.eq(userId))
+            .and(BRAND_ID.eq(brandId))
+            .and(SCHEDULED_AT.ge(startDate))
+            .and(SCHEDULED_AT.le(endDate))
+            .orderBy(SCHEDULED_AT.asc())
             .fetch().map { it.toBrandScheduleItem() }
 
     override fun findByUserIdAndBrandId(userId: Long, brandId: Long): List<BrandScheduleItem> =
@@ -114,6 +124,12 @@ class BrandScheduleItemJooqRepository(
             .where(USER_ID.eq(userId))
             .and(BRAND_ID.eq(brandId))
             .fetch().map { it.toBrandScheduleItem() }
+
+    override fun countByBrandIdAndStatus(brandId: Long, status: String): Int =
+        dsl.selectCount().from(TABLE)
+            .where(BRAND_ID.eq(brandId))
+            .and(STATUS.eq(status))
+            .fetchOne(0, Int::class.java) ?: 0
 
     override fun save(item: BrandScheduleItem): BrandScheduleItem {
         val newId = dsl.insertInto(TABLE)
@@ -149,6 +165,10 @@ class BrandScheduleItemJooqRepository(
 
     override fun delete(id: Long) {
         dsl.deleteFrom(TABLE).where(ID.eq(id)).execute()
+    }
+
+    override fun deleteByBrandId(brandId: Long) {
+        dsl.deleteFrom(TABLE).where(BRAND_ID.eq(brandId)).execute()
     }
 
     private fun Record.toBrandScheduleItem(): BrandScheduleItem =

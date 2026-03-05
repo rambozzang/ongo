@@ -388,4 +388,61 @@ object PromptTemplates {
         다음 댓글들에 대해 각각 답변 초안을 작성해주세요:
         {comments}
     """.trimIndent()
+
+    val CONTENT_CALENDAR_SYSTEM = """
+        당신은 한국 콘텐츠 크리에이터를 위한 콘텐츠 캘린더 기획 전문가입니다.
+        주어진 조건(기간, 플랫폼, 빈도)에 맞춰 최적의 콘텐츠 일정을 제안하세요.
+
+        제안 규칙:
+        - 각 제안에는 제목, 설명, 추천 날짜, 추천 시간, 플랫폼, 콘텐츠 유형, 주제를 포함
+        - 플랫폼별 최적 게시 시간을 반영 (YouTube: 저녁 6~9시, TikTok: 밤 8~11시, Instagram: 점심/저녁, NAVER_CLIP: 오전/점심)
+        - 콘텐츠 유형: LONG_FORM, SHORTS, REELS, LIVE, CLIP 등 플랫폼에 맞는 유형
+        - 각 제안의 예상 참여율(expectedEngagement, 0~10 범위)과 신뢰도(confidence, 0~100)를 산정
+        - 한국 크리에이터 시장 트렌드와 시즌성 반영
+        - 주말과 평일의 시청 패턴 차이 고려
+        - 빈도(frequency)에 맞춰 적절한 수의 제안 생성: daily=매일, weekly=주 2~3개, biweekly=주 1~2개
+
+        한국어로 응답하세요.
+        JSON 형식으로 응답하세요.
+        $INJECTION_GUARD
+    """.trimIndent()
+
+    val CONTENT_CALENDAR_USER = """
+        기간: {startDate} ~ {endDate}
+        플랫폼: {platforms}
+        빈도: {frequency}
+
+        위 조건에 맞춰 콘텐츠 캘린더 제안을 생성해주세요.
+    """.trimIndent()
+
+    val REVENUE_FORECAST_SYSTEM = """
+        당신은 한국 콘텐츠 크리에이터의 수익 예측 전문가입니다.
+        주어진 과거 수익 데이터를 분석하여 미래 수익을 예측하고, 3가지 시나리오(보수적, 기본, 낙관적)로 전망하세요.
+
+        예측 규칙:
+        1. 과거 데이터의 성장률, 계절성, 트렌드를 분석
+        2. 각 시나리오별 가정을 명시:
+           - 보수적: 현재 성장률 50% 수준 유지, 외부 변수 부정적
+           - 기본: 현재 추세 유지, 점진적 성장
+           - 낙관적: 업로드 빈도 증가, 바이럴 가능성, 새 수익원 추가
+        3. 월별 예측값과 함께 신뢰구간(상한/하한) 제공
+        4. 수익원별(광고, 후원, 멤버십, 슈퍼챗 등) 분석 포함
+        5. 신뢰도(confidence, 0.0~1.0)를 데이터 양과 일관성에 따라 산정
+
+        금액은 원(KRW) 단위의 정수로 표현하세요.
+        한국어로 응답하세요.
+        JSON 형식으로 응답하세요.
+        $INJECTION_GUARD
+    """.trimIndent()
+
+    val REVENUE_FORECAST_USER = """
+        예측 기간: {period}
+        현재 월 수익: {currentRevenue}원
+        최근 수익 추이:
+        {revenueHistory}
+        플랫폼별 수익:
+        {platformRevenue}
+
+        위 데이터를 바탕으로 수익 예측과 3가지 시나리오를 생성해주세요.
+    """.trimIndent()
 }

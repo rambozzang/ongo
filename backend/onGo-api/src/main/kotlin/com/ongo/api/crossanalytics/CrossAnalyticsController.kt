@@ -51,7 +51,7 @@ class CrossAnalyticsController(
     fun getAnalytics(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @RequestParam(required = false) period: String?,
-    ): ResponseEntity<ResData<CrossPlatformReportResponse>> {
+    ): ResponseEntity<ResData<CrossAnalyticsResponse>> {
         val result = crossAnalyticsUseCase.getAnalytics(userId, period)
         return ResData.success(result)
     }

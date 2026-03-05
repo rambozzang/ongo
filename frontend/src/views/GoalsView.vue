@@ -27,7 +27,7 @@ const showCompleted = ref(false)
 const sortBy = ref<'deadline' | 'progress' | 'recent'>('deadline')
 
 onMounted(() => {
-  goalsStore.loadFromLocalStorage()
+  goalsStore.fetchGoals()
 })
 
 const displayedGoals = computed(() => {
@@ -127,7 +127,6 @@ const handleAddMilestone = (goalId: number, milestone: { title: string; targetVa
       completedAt: null,
     }
     goal.milestones.push(newMilestone)
-    goalsStore.saveToLocalStorage()
   }
 }
 

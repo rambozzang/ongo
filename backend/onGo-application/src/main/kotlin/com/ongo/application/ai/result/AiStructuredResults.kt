@@ -181,3 +181,53 @@ data class RevenueReportResult(
         val suggestion: String,
     )
 }
+
+data class ContentCalendarResult(
+    val suggestions: List<CalendarSuggestionItem>,
+) {
+    data class CalendarSuggestionItem(
+        val title: String,
+        val description: String,
+        val suggestedDate: String,
+        val suggestedTime: String,
+        val platform: String,
+        val contentType: String,
+        val topic: String,
+        val expectedEngagement: Double,
+        val confidence: Int,
+    )
+}
+
+data class RevenueForecastResult(
+    val currentMonthlyRevenue: Long,
+    val forecastedMonthlyRevenue: Long,
+    val growthRate: Double,
+    val confidence: Double,
+    val breakdowns: List<RevenueBreakdownItem>,
+    val scenarios: List<ForecastScenarioItem>,
+    val chartData: List<ChartDataPoint>,
+) {
+    data class RevenueBreakdownItem(
+        val source: String,
+        val currentMonthly: Long,
+        val forecastMonthly: Long,
+        val growthRate: Double,
+        val share: Double,
+    )
+    data class ForecastScenarioItem(
+        val name: String,
+        val description: String,
+        val uploadFrequency: Int,
+        val avgViewsPerVideo: Long,
+        val subscriberGrowthRate: Double,
+        val forecastData: List<ChartDataPoint>,
+        val totalForecast: Long,
+    )
+    data class ChartDataPoint(
+        val month: String,
+        val actual: Long? = null,
+        val forecast: Long? = null,
+        val lowerBound: Long? = null,
+        val upperBound: Long? = null,
+    )
+}

@@ -97,123 +97,63 @@ export const useGoalsStore = defineStore('goals', {
       try {
         const data = await goalApi.list()
         this.goals = data.map(mapApiToGoal)
-      } catch (e) {
-
-        useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
-        this.loadFromLocalStorage()
+      } catch {
+        useNotificationStore().error('목표 목록을 불러오는 중 오류가 발생했습니다')
       } finally {
         this.loading = false
       }
     },
 
     async createGoal(goal: Omit<Goal, 'id' | 'createdAt' | 'completedAt'>) {
-      try {
-        const data = await goalApi.create({
-          title: goal.title,
-          description: goal.description,
-          metricType: METRIC_MAP[goal.type] || 'VIEWS',
-          targetValue: goal.targetValue,
-          startDate: goal.startDate,
-          endDate: goal.endDate,
-        })
-        this.goals.unshift(mapApiToGoal(data))
-      } catch (e) {
-
-        useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
-        const newGoal: Goal = {
-          ...goal,
-          id: Math.max(...this.goals.map(g => g.id), 0) + 1,
-          createdAt: new Date().toISOString(),
-          completedAt: null,
-        }
-        this.goals.unshift(newGoal)
-        this.saveToLocalStorage()
-      }
+      const data = await goalApi.create({
+        title: goal.title,
+        description: goal.description,
+        metricType: METRIC_MAP[goal.type] || 'VIEWS',
+        targetValue: goal.targetValue,
+        startDate: goal.startDate,
+        endDate: goal.endDate,
+      })
+      this.goals.unshift(mapApiToGoal(data))
     },
 
     async updateGoal(id: number, updates: Partial<Goal>) {
-      try {
-        const data = await goalApi.update(id, {
-          title: updates.title,
-          description: updates.description,
-          metricType: updates.type ? METRIC_MAP[updates.type] : undefined,
-          targetValue: updates.targetValue,
-          startDate: updates.startDate,
-          endDate: updates.endDate,
-          status: updates.status?.toUpperCase(),
-        })
-        const index = this.goals.findIndex(g => g.id === id)
-        if (index !== -1) {
-          this.goals[index] = mapApiToGoal(data)
-        }
-      } catch (e) {
-
-        useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
-        const index = this.goals.findIndex(g => g.id === id)
-        if (index !== -1) {
-          this.goals[index] = { ...this.goals[index], ...updates }
-          if (updates.currentValue !== undefined) {
-            const goal = this.goals[index]
-            if (goal.currentValue >= goal.targetValue && goal.status === 'active') {
-              goal.status = 'completed'
-              goal.completedAt = new Date().toISOString()
-            }
-          }
-          this.saveToLocalStorage()
-        }
+      const data = await goalApi.update(id, {
+        title: updates.title,
+        description: updates.description,
+        metricType: updates.type ? METRIC_MAP[updates.type] : undefined,
+        targetValue: updates.targetValue,
+        startDate: updates.startDate,
+        endDate: updates.endDate,
+        status: updates.status?.toUpperCase(),
+      })
+      const index = this.goals.findIndex(g => g.id === id)
+      if (index !== -1) {
+        this.goals[index] = mapApiToGoal(data)
       }
     },
 
     async deleteGoal(id: number) {
-      try {
-        await goalApi.delete(id)
-        const index = this.goals.findIndex(g => g.id === id)
-        if (index !== -1) {
-          this.goals.splice(index, 1)
-        }
-      } catch (e) {
-
-        useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
-        const index = this.goals.findIndex(g => g.id === id)
-        if (index !== -1) {
-          this.goals.splice(index, 1)
-          this.saveToLocalStorage()
-        }
+      await goalApi.delete(id)
+      const index = this.goals.findIndex(g => g.id === id)
+      if (index !== -1) {
+        this.goals.splice(index, 1)
       }
     },
 
     async updateProgress(id: number, currentValue: number) {
-      try {
-        const data = await goalApi.updateProgress(id, currentValue)
-        const index = this.goals.findIndex(g => g.id === id)
-        if (index !== -1) {
-          this.goals[index] = mapApiToGoal(data)
-        }
-      } catch (e) {
-
-        useNotificationStore().error('목표 처리 중 오류가 발생했습니다')
-        this.updateGoal(id, { currentValue })
-        const goal = this.goals.find(g => g.id === id)
-        if (goal) {
-          goal.milestones.forEach(milestone => {
-            if (!milestone.isCompleted && currentValue >= milestone.targetValue) {
-              milestone.isCompleted = true
-              milestone.completedAt = new Date().toISOString()
-            }
-          })
-          this.saveToLocalStorage()
-        }
+      const data = await goalApi.updateProgress(id, currentValue)
+      const index = this.goals.findIndex(g => g.id === id)
+      if (index !== -1) {
+        this.goals[index] = mapApiToGoal(data)
       }
     },
 
-    completeMilestone(goalId: number, milestoneId: number) {
+    async completeMilestone(goalId: number, milestoneId: number) {
       const goal = this.goals.find(g => g.id === goalId)
       if (goal) {
         const milestone = goal.milestones.find(m => m.id === milestoneId)
         if (milestone && !milestone.isCompleted) {
-          milestone.isCompleted = true
-          milestone.completedAt = new Date().toISOString()
-          this.saveToLocalStorage()
+          await this.updateProgress(goalId, milestone.targetValue)
         }
       }
     },
@@ -224,21 +164,6 @@ export const useGoalsStore = defineStore('goals', {
 
     async resumeGoal(id: number) {
       await this.updateGoal(id, { status: 'active' })
-    },
-
-    saveToLocalStorage() {
-      localStorage.setItem('ongo-goals', JSON.stringify(this.goals))
-    },
-
-    loadFromLocalStorage() {
-      const stored = localStorage.getItem('ongo-goals')
-      if (stored) {
-        try {
-          this.goals = JSON.parse(stored)
-        } catch (e) {
-
-        }
-      }
     },
   },
 })

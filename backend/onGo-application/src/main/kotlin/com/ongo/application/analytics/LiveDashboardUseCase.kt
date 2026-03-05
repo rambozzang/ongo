@@ -4,63 +4,69 @@ import com.ongo.application.analytics.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.analytics.*
+import com.ongo.domain.channel.ChannelRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Service
 class LiveDashboardUseCase(
     private val analyticsRepository: AnalyticsRepository,
     private val liveAlertRepository: LiveAlertRepository,
     private val liveAlertConfigRepository: LiveAlertConfigRepository,
+    private val channelRepository: ChannelRepository,
 ) {
 
     /**
-     * 라이브 대시보드 현황 - 현재 활성 analytics_daily 기반 + 채널 정보
+     * 라이브 대시보드 현황 - analytics_daily 기반 지표 + 알림 + 연동 플랫폼.
+     * 현재 기간(오늘) vs 이전 기간(어제)을 비교하고, 최근 7일 history를 제공한다.
      */
     fun getLiveState(userId: Long): LiveDashboardStateResponse {
         val today = LocalDate.now()
-        val allAnalytics = analyticsRepository.findAllByUserId(userId)
-        val todayData = allAnalytics.filter { it.date == today }
+        val historyFrom = today.minusDays(7)
 
-        val totalViewers = todayData.sumOf { it.views }
-        val peakViewers = todayData.maxOfOrNull { it.views } ?: 0
-        val avgWatchTime = if (todayData.isNotEmpty()) {
-            (todayData.sumOf { it.avgViewDurationSeconds } / todayData.size)
-        } else 0
+        // 최근 7일 일별 집계 (히스토리 + 현재/이전 비교용)
+        val dailyAggregates = analyticsRepository.getDailyAggregates(userId, historyFrom, today)
+        val aggregateByDate = dailyAggregates.associateBy { it.date }
 
-        // 플랫폼별 현황은 analytics_daily에서 직접 추출 불가하므로 채널 인사이트 기반
-        val platformStates = todayData.groupBy { "ALL" }.map { (_, records) ->
-            LivePlatformState(
-                platform = "ALL",
-                viewers = records.sumOf { it.views },
-                isLive = records.isNotEmpty(),
-            )
-        }
+        // 현재 값: 오늘 데이터 (없으면 가장 최근 날짜)
+        val currentAggregate = aggregateByDate[today]
+            ?: dailyAggregates.lastOrNull()
+            ?: DailyAggregate(today, 0, 0, 0, 0, 0, 0, 0)
+
+        // 이전 값: 어제 또는 그 이전 날짜
+        val yesterday = today.minusDays(1)
+        val previousAggregate = aggregateByDate[yesterday]
+            ?: dailyAggregates.dropLast(1).lastOrNull()
+            ?: DailyAggregate(yesterday, 0, 0, 0, 0, 0, 0, 0)
+
+        // 6개 지표 카드 생성
+        val metrics = buildMetrics(currentAggregate, previousAggregate, dailyAggregates)
+
+        // 알림 목록
+        val alerts = liveAlertRepository.findByUserId(userId).map { it.toAlertResponse() }
+
+        // 연동된 활성 플랫폼
+        val activePlatforms = channelRepository.findByUserId(userId)
+            .filter { it.status == "ACTIVE" }
+            .map { it.platform.name.lowercase() }
 
         return LiveDashboardStateResponse(
-            totalViewers = totalViewers,
-            activeStreams = if (todayData.isNotEmpty()) 1 else 0,
-            peakViewers = peakViewers,
-            avgWatchTime = avgWatchTime,
-            platforms = platformStates,
+            metrics = metrics,
+            alerts = alerts,
+            activePlatforms = activePlatforms,
+            lastUpdated = LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toString(),
+            isConnected = activePlatforms.isNotEmpty(),
         )
     }
 
     /**
-     * 미읽은 알림 목록
+     * 알림 목록 조회
      */
     fun getAlerts(userId: Long): List<LiveAlertResponse> {
-        return liveAlertRepository.findByUserId(userId).map { alert ->
-            LiveAlertResponse(
-                id = alert.id!!,
-                type = alert.type,
-                message = alert.message,
-                severity = alert.severity,
-                isRead = alert.isRead,
-                createdAt = alert.createdAt,
-            )
-        }
+        return liveAlertRepository.findByUserId(userId).map { it.toAlertResponse() }
     }
 
     /**
@@ -158,5 +164,99 @@ class LiveDashboardUseCase(
         return recommendations
             .sortedByDescending { it.score }
             .take(10)
+    }
+
+    // ── 내부 헬퍼 ──────────────────────────────────────────────────────
+
+    /**
+     * 6개 지표 카드(VIEWS, SUBSCRIBERS, LIKES, COMMENTS, WATCH_TIME, REVENUE) 생성
+     */
+    private fun buildMetrics(
+        current: DailyAggregate,
+        previous: DailyAggregate,
+        dailyAggregates: List<DailyAggregate>,
+    ): List<LiveMetricResponse> {
+        data class MetricDef(
+            val type: String,
+            val extract: (DailyAggregate) -> Long,
+        )
+
+        val definitions = listOf(
+            MetricDef("VIEWS") { it.views },
+            MetricDef("SUBSCRIBERS") { it.subscriberGained },
+            MetricDef("LIKES") { it.likes },
+            MetricDef("COMMENTS") { it.comments },
+            MetricDef("WATCH_TIME") { it.watchTimeSeconds },
+            MetricDef("REVENUE") { it.revenueMicro },
+        )
+
+        return definitions.map { def ->
+            val currentValue = def.extract(current)
+            val previousValue = def.extract(previous)
+            val changePercent = calculateChangePercent(previousValue, currentValue)
+            val trend = when {
+                changePercent > 1.0 -> "UP"
+                changePercent < -1.0 -> "DOWN"
+                else -> "STABLE"
+            }
+
+            val history = dailyAggregates.map { agg ->
+                LiveMetricPointResponse(
+                    timestamp = agg.date.atStartOfDay(ZoneId.systemDefault()).toInstant().toString(),
+                    value = def.extract(agg),
+                )
+            }
+
+            LiveMetricResponse(
+                type = def.type,
+                currentValue = currentValue,
+                previousValue = previousValue,
+                changePercent = Math.round(changePercent * 100) / 100.0,
+                trend = trend,
+                history = history,
+            )
+        }
+    }
+
+    private fun calculateChangePercent(previous: Long, current: Long): Double =
+        if (previous == 0L) {
+            if (current > 0) 100.0 else 0.0
+        } else {
+            ((current - previous).toDouble() / previous.toDouble()) * 100.0
+        }
+
+    /** LiveAlert 도메인 → LiveAlertResponse DTO 변환 */
+    private fun LiveAlert.toAlertResponse() = LiveAlertResponse(
+        id = id!!,
+        type = mapAlertType(type),
+        title = extractAlertTitle(message),
+        description = message,
+        metric = mapAlertMetric(type),
+        value = 0L,
+        threshold = 0L,
+        createdAt = createdAt?.atZone(ZoneId.systemDefault())?.toInstant()?.toString(),
+        read = isRead,
+    )
+
+    /** 알림 type → 프론트엔드 alert type 매핑 */
+    private fun mapAlertType(type: String): String = when (type.uppercase()) {
+        "SPIKE", "VIEWS_SPIKE" -> "SPIKE"
+        "DROP", "VIEWS_DROP" -> "DROP"
+        "MILESTONE" -> "MILESTONE"
+        "VIRAL" -> "VIRAL"
+        else -> "SPIKE"
+    }
+
+    /** 알림 type → 관련 지표 매핑 */
+    private fun mapAlertMetric(type: String): String = when (type.uppercase()) {
+        "SPIKE", "VIEWS_SPIKE", "DROP", "VIEWS_DROP", "VIRAL" -> "VIEWS"
+        "MILESTONE" -> "SUBSCRIBERS"
+        else -> "VIEWS"
+    }
+
+    /** 알림 메시지에서 제목 추출 (첫 줄 또는 전체 메시지의 앞 50자) */
+    private fun extractAlertTitle(message: String): String {
+        val firstLine = message.lineSequence().firstOrNull() ?: message
+        return if (firstLine.length > 50) firstLine.take(50) + "..." else firstLine
     }
 }

@@ -20,4 +20,6 @@ enum class AiFeature(
     REVENUE_REPORT("수익 분석 리포트", 8),
     FAQ_CLUSTERING("FAQ 자동 분류", 5),
     BATCH_REPLY_DRAFT("배치 답변 초안", 3),
+    CONTENT_CALENDAR("AI 콘텐츠 캘린더", 8),
+    REVENUE_FORECAST("AI 수익 예측", 10),
 }

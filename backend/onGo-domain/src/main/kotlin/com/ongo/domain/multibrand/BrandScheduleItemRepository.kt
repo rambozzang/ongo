@@ -6,8 +6,11 @@ interface BrandScheduleItemRepository {
     fun findById(id: Long): BrandScheduleItem?
     fun findByUserId(userId: Long): List<BrandScheduleItem>
     fun findByUserIdAndDateRange(userId: Long, startDate: LocalDateTime, endDate: LocalDateTime): List<BrandScheduleItem>
+    fun findByUserIdAndBrandIdAndDateRange(userId: Long, brandId: Long, startDate: LocalDateTime, endDate: LocalDateTime): List<BrandScheduleItem>
     fun findByUserIdAndBrandId(userId: Long, brandId: Long): List<BrandScheduleItem>
+    fun countByBrandIdAndStatus(brandId: Long, status: String): Int
     fun save(item: BrandScheduleItem): BrandScheduleItem
     fun update(item: BrandScheduleItem): BrandScheduleItem
     fun delete(id: Long)
+    fun deleteByBrandId(brandId: Long)
 }

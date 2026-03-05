@@ -19,6 +19,16 @@ interface AnalyticsRepository {
     fun upsertChannelInsights(insights: ChannelInsightsDaily)
     fun findChannelInsights(userId: Long, platform: com.ongo.common.enums.Platform?, startDate: LocalDate, endDate: LocalDate): List<ChannelInsightsDaily>
     fun findCrossPlatformMetrics(userId: Long, days: Int): List<CrossPlatformRaw>
+
+    /**
+     * 라이브 대시보드용: 기간별 일별 집계 데이터 (조회수, 좋아요, 댓글, 시청시간, 구독자, 수익)
+     */
+    fun getDailyAggregates(userId: Long, from: LocalDate, to: LocalDate): List<DailyAggregate>
+
+    /**
+     * 크로스 분석용: 영상별 + 플랫폼별 상세 메트릭 (thumbnailUrl, publishedAt 포함)
+     */
+    fun findCrossPlatformDetailMetrics(userId: Long, days: Int): List<CrossPlatformDetailRaw>
 }
 
 /**
@@ -28,6 +38,40 @@ interface AnalyticsRepository {
 data class CrossPlatformRaw(
     val videoId: Long,
     val videoTitle: String?,
+    val platform: String,
+    val videoUploadId: Long,
+    val views: Long,
+    val likes: Long,
+    val comments: Long,
+    val shares: Long,
+    val watchTimeSeconds: Long,
+    val revenueMicro: Long,
+    val impressions: Long,
+    val avgViewDurationSeconds: Long,
+)
+
+/**
+ * 라이브 대시보드용 일별 집계 데이터
+ */
+data class DailyAggregate(
+    val date: LocalDate,
+    val views: Long,
+    val likes: Long,
+    val comments: Long,
+    val shares: Long,
+    val watchTimeSeconds: Long,
+    val subscriberGained: Long,
+    val revenueMicro: Long,
+)
+
+/**
+ * 크로스 분석용 영상별 + 플랫폼별 상세 데이터 (썸네일, 게시일 포함)
+ */
+data class CrossPlatformDetailRaw(
+    val videoId: Long,
+    val videoTitle: String?,
+    val thumbnailUrls: List<String>,
+    val publishedAt: java.time.LocalDateTime?,
     val platform: String,
     val videoUploadId: Long,
     val views: Long,
