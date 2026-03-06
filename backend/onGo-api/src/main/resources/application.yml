@@ -3,6 +3,10 @@ server:
   servlet:
     context-path: /
 
+# CORS — 프로덕션에서 실제 도메인으로 설정 (쉼표 구분)
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+
 spring:
   application:
     name: ongo-api
@@ -121,6 +125,9 @@ payment:
       starter: ${PADDLE_PRICE_STARTER:pri_starter_placeholder}
       pro: ${PADDLE_PRICE_PRO:pri_pro_placeholder}
       business: ${PADDLE_PRICE_BUSINESS:pri_business_placeholder}
+      starter-yearly: ${PADDLE_PRICE_STARTER_YEARLY:pri_starter_yearly_placeholder}
+      pro-yearly: ${PADDLE_PRICE_PRO_YEARLY:pri_pro_yearly_placeholder}
+      business-yearly: ${PADDLE_PRICE_BUSINESS_YEARLY:pri_business_yearly_placeholder}
       credit-starter: ${PADDLE_PRICE_CREDIT_STARTER:pri_credit_starter_placeholder}
       credit-basic: ${PADDLE_PRICE_CREDIT_BASIC:pri_credit_basic_placeholder}
       credit-pro: ${PADDLE_PRICE_CREDIT_PRO:pri_credit_pro_placeholder}
