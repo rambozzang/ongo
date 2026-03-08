@@ -118,7 +118,7 @@ class ABTestUseCase(
                 id = it.id!!,
                 title = it.title,
                 thumbnailUrl = it.thumbnailUrls.firstOrNull(),
-                duration = it.durationSeconds,
+                duration = null,
             )
         }
     }

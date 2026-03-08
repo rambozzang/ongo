@@ -32,9 +32,7 @@ export interface Video {
   fileUrl: string
   thumbnailUrl: string | null
   thumbnailCandidates: string[]
-  duration: number | null
   fileSize: number | null
-  resolution: string | null
   status: UploadStatus
   visibility: Visibility
   createdAt: string

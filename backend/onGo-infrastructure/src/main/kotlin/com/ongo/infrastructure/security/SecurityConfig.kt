@@ -87,12 +87,8 @@ class SecurityConfig(
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
         configuration.allowedHeaders = listOf(
             "Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin",
-            "Tus-Resumable", "Upload-Length", "Upload-Offset", "Upload-Metadata",
         )
-        configuration.exposedHeaders = listOf(
-            "Location", "Upload-Offset", "Upload-Length", "Tus-Resumable",
-            "Tus-Version", "Tus-Extension", "Tus-Max-Size",
-        )
+        configuration.exposedHeaders = listOf("Location")
         configuration.allowCredentials = true
         configuration.maxAge = 3600L
 

@@ -299,13 +299,6 @@
             <div v-else class="flex h-full items-center justify-center">
               <VideoCameraIcon class="h-12 w-12 text-gray-300" />
             </div>
-            <!-- Duration Overlay -->
-            <span
-              v-if="video.duration"
-              class="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-xs font-medium text-white"
-            >
-              {{ formatDuration(video.duration) }}
-            </span>
           </div>
 
           <!-- Info -->
@@ -408,12 +401,6 @@
                       </p>
                       <div class="flex items-center gap-2">
                         <StatusBadge :status="video.status" />
-                        <span
-                          v-if="video.duration"
-                          class="text-xs text-gray-400"
-                        >
-                          {{ formatDuration(video.duration) }}
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -1005,12 +992,6 @@ function formatNumber(num: number): string {
     return (num / 1_000).toFixed(1).replace(/\.0$/, '') + 'K'
   }
   return num.toLocaleString('ko-KR')
-}
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 // --- Video stats helpers ---

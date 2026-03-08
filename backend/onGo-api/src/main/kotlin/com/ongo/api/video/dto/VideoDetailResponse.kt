@@ -14,8 +14,6 @@ data class VideoDetailResponse(
     val category: String?,
     val fileUrl: String?,
     val fileSize: Long?,
-    val duration: Int?,
-    val resolution: String?,
     val thumbnails: List<String>,
     val mediaType: MediaType = MediaType.VIDEO,
     val status: UploadStatus,

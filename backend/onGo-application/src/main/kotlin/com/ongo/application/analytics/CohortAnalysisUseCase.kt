@@ -92,7 +92,7 @@ class CohortAnalysisUseCase(
         }
 
         // Build retention curve from daily analytics (simulate retention over video timeline)
-        val durationSeconds = video.durationSeconds ?: 300 // default 5 minutes
+        val durationSeconds = 300 // default 5 minutes
         val intervalSeconds = maxOf(durationSeconds / 20, 1) // 20 data points across the video
 
         val totalViews = allAnalytics.sumOf { it.views.toLong() }.coerceAtLeast(1)

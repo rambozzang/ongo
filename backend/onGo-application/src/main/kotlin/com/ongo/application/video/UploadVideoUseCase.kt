@@ -3,7 +3,6 @@ package com.ongo.application.video
 import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
-import com.ongo.common.exception.DuplicateResourceException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.common.util.FileValidationUtil
@@ -100,30 +99,20 @@ class UploadVideoUseCase(
         }
 
         val fileUrl = storageService.getFileUrl(videoId)
-        completeUpload(videoId, fileUrl, null)
+        completeUpload(videoId, fileUrl)
     }
 
     @Transactional
-    fun completeUpload(videoId: Long, fileUrl: String, contentHash: String?) {
+    fun completeUpload(videoId: Long, fileUrl: String) {
         val video = videoRepository.findById(videoId)
             ?: throw com.ongo.common.exception.NotFoundException("영상", videoId)
-
-        // 중복 콘텐츠 해시 확인
-        if (contentHash != null) {
-            val existing = videoRepository.findByContentHash(contentHash)
-            if (existing != null && existing.id != videoId) {
-                throw DuplicateResourceException("영상", "contentHash=$contentHash")
-            }
-        }
 
         videoRepository.update(
             video.copy(
                 fileUrl = fileUrl,
-                contentHash = contentHash,
                 status = UploadStatus.DRAFT,
             )
         )
-
     }
 }
 

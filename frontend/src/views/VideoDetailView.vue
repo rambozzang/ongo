@@ -45,18 +45,10 @@
               <div v-else class="flex h-full items-center justify-center">
                 <VideoCameraIcon class="h-16 w-16 text-gray-600 dark:text-gray-300" />
               </div>
-              <!-- Duration overlay -->
-              <span
-                v-if="video.duration"
-                class="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 text-xs font-medium text-white"
-              >
-                {{ formatDuration(video.duration) }}
-              </span>
             </div>
             <!-- Status bar -->
             <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 px-4 py-3">
               <StatusBadge :status="video.status" />
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{ video.resolution ?? '-' }}</span>
             </div>
           </div>
         </div>
@@ -82,12 +74,6 @@
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">업로드일</p>
                 <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {{ formatDate(video.createdAt) }}
-                </p>
-              </div>
-              <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">영상 길이</p>
-                <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {{ video.duration ? formatDuration(video.duration) : '-' }}
                 </p>
               </div>
               <div>
@@ -581,17 +567,6 @@ const maxTrendValue = computed(() => {
 })
 
 // ---- Formatters ----
-
-/** Format seconds into mm:ss or h:mm:ss */
-function formatDuration(seconds: number): string {
-  const hrs = Math.floor(seconds / 3600)
-  const mins = Math.floor((seconds % 3600) / 60)
-  const secs = seconds % 60
-  if (hrs > 0) {
-    return `${hrs}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
-  }
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
-}
 
 /** Format bytes into human-readable MB/GB */
 function formatFileSize(bytes: number): string {

@@ -22,7 +22,7 @@ class ContentStudioUseCase(
             VideoSummaryResponse(
                 id = it.id!!,
                 title = it.title,
-                duration = it.durationSeconds,
+                duration = null,
                 thumbnailUrl = it.thumbnailUrls.firstOrNull(),
                 fileUrl = it.fileUrl,
             )

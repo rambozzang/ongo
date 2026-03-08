@@ -74,17 +74,6 @@
         @update-caption="handleUpdateCaption"
         @delete-caption="handleDeleteCaption"
       />
-      <ThumbnailGenerator
-        v-show="activeTab === 'thumbnails'"
-        :videos="videos"
-        :selected-video="selectedVideo"
-        :thumbnails="selectedVideoThumbnails"
-        :processing="processing"
-        @select-video="handleSelectVideo"
-        @change-video="handleChangeVideo"
-        @generate-thumbnail="handleGenerateThumbnail"
-        @delete-thumbnail="handleDeleteThumbnail"
-      />
     </div>
 
     <!-- 히스토리 -->
@@ -170,17 +159,6 @@
         @update-caption="handleUpdateCaption"
         @delete-caption="handleDeleteCaption"
       />
-      <ThumbnailGenerator
-        v-show="activeTab === 'thumbnails'"
-        :videos="videos"
-        :selected-video="selectedVideo"
-        :thumbnails="selectedVideoThumbnails"
-        :processing="processing"
-        @select-video="handleSelectVideo"
-        @change-video="handleChangeVideo"
-        @generate-thumbnail="handleGenerateThumbnail"
-        @delete-thumbnail="handleDeleteThumbnail"
-      />
     </div>
 
     <!-- 히스토리 -->
@@ -202,17 +180,15 @@ import {
   SparklesIcon,
   ScissorsIcon,
   LanguageIcon,
-  PhotoIcon,
 } from '@heroicons/vue/24/outline'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import ClipEditor from '@/components/contentstudio/ClipEditor.vue'
 import CaptionEditor from '@/components/contentstudio/CaptionEditor.vue'
-import ThumbnailGenerator from '@/components/contentstudio/ThumbnailGenerator.vue'
 import HistorySection from '@/components/contentstudio/HistorySection.vue'
 import { useContentStudioStore } from '@/stores/contentStudio'
 import { useCredit } from '@/composables/useCredit'
-import type { ThumbnailStyle, CaptionSegment } from '@/types/contentStudio'
+import type { CaptionSegment } from '@/types/contentStudio'
 
 const { t } = useI18n({ useScope: 'global' })
 const store = useContentStudioStore()
@@ -225,7 +201,6 @@ const {
   selectedVideo,
   selectedVideoClips,
   selectedVideoCaptions,
-  selectedVideoThumbnails,
   history,
   activeTab,
   processing,
@@ -236,7 +211,6 @@ const {
 const tabs = computed(() => [
   { key: 'clips' as const, label: t('contentStudio.tabs.clips'), icon: ScissorsIcon },
   { key: 'captions' as const, label: t('contentStudio.tabs.captions'), icon: LanguageIcon },
-  { key: 'thumbnails' as const, label: t('contentStudio.tabs.thumbnails'), icon: PhotoIcon },
 ])
 
 // 영상 선택
@@ -278,21 +252,6 @@ async function handleUpdateCaption(id: number, data: { segments: CaptionSegment[
 
 async function handleDeleteCaption(id: number) {
   await store.deleteCaption(id)
-}
-
-// 썸네일 생성
-async function handleGenerateThumbnail(data: { videoId: number; style: ThumbnailStyle; overlayText?: string; count: number }) {
-  await store.generateThumbnail({
-    videoId: data.videoId,
-    style: data.style,
-    overlayText: data.overlayText,
-    count: data.count,
-  })
-  await fetchBalance()
-}
-
-async function handleDeleteThumbnail(id: number) {
-  await store.deleteThumbnail(id)
 }
 
 onMounted(() => {

@@ -202,10 +202,7 @@ class AnalyticsJooqRepository(
             DSL.field("v.category", String::class.java),
             DSL.field("v.file_url", String::class.java),
             DSL.field("v.file_size_bytes", Long::class.java),
-            DSL.field("v.duration_seconds", Int::class.java),
-            DSL.field("v.resolution", String::class.java),
             DSL.field("v.original_filename", String::class.java),
-            DSL.field("v.content_hash", String::class.java),
             DSL.field("v.thumbnail_urls"),
             DSL.field("v.status", String::class.java),
             DSL.field("v.created_at", java.time.LocalDateTime::class.java),
@@ -221,8 +218,8 @@ class AnalyticsJooqRepository(
             .and(DSL.field("ad.date", LocalDate::class.java).greaterOrEqual(from))
             .groupBy(videoIdField, DSL.field("v.user_id"), DSL.field("v.title"), DSL.field("v.description"),
                 DSL.field("v.tags"), DSL.field("v.category"), DSL.field("v.file_url"),
-                DSL.field("v.file_size_bytes"), DSL.field("v.duration_seconds"), DSL.field("v.resolution"),
-                DSL.field("v.original_filename"), DSL.field("v.content_hash"), DSL.field("v.thumbnail_urls"),
+                DSL.field("v.file_size_bytes"),
+                DSL.field("v.original_filename"), DSL.field("v.thumbnail_urls"),
                 DSL.field("v.status"), DSL.field("v.created_at"), DSL.field("v.updated_at"))
             .orderBy(viewsSum.desc())
             .limit(limit)
@@ -244,10 +241,7 @@ class AnalyticsJooqRepository(
                     category = record.get("category", String::class.java),
                     fileUrl = record.get("file_url", String::class.java),
                     fileSizeBytes = record.get("file_size_bytes", Long::class.java),
-                    durationSeconds = record.get("duration_seconds", Int::class.java),
-                    resolution = record.get("resolution", String::class.java),
                     originalFilename = record.get("original_filename", String::class.java),
-                    contentHash = record.get("content_hash", String::class.java),
                     thumbnailUrls = emptyList(),
                     status = UploadStatus.valueOf(record.get("status", String::class.java)),
                     createdAt = record.get("created_at", java.time.LocalDateTime::class.java),

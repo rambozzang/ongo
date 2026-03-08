@@ -12,5 +12,4 @@ interface VideoRepository {
     fun save(video: Video): Video
     fun update(video: Video): Video
     fun delete(id: Long)
-    fun findByContentHash(contentHash: String): Video?
 }

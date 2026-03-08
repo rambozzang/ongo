@@ -325,12 +325,6 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '저작권 사전검증' },
       },
       {
-        path: 'thumbnail-generator',
-        name: 'thumbnail-generator',
-        component: () => import('@/views/ThumbnailGeneratorView.vue'),
-        meta: { breadcrumb: 'AI 썸네일 생성기' },
-      },
-      {
         path: 'performance-heatmap',
         name: 'performance-heatmap',
         component: () => import('@/views/PerformanceHeatmapView.vue'),

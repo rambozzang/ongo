@@ -43,7 +43,7 @@ class RecyclingUseCase(
 
             // Determine suggestion type based on video age and characteristics
             val ageInDays = java.time.Duration.between(videoCreatedAt, LocalDateTime.now()).toDays()
-            val duration = video.durationSeconds ?: 0
+            val duration = 0
 
             val suggestionType = when {
                 ageInDays > 180 -> "REPOST"

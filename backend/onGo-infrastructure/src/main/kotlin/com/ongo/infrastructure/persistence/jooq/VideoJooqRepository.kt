@@ -5,15 +5,12 @@ import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.CATEGORY
-import com.ongo.infrastructure.persistence.jooq.Fields.CONTENT_HASH
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.DESCRIPTION
-import com.ongo.infrastructure.persistence.jooq.Fields.DURATION_SECONDS
 import com.ongo.infrastructure.persistence.jooq.Fields.FILE_SIZE_BYTES
 import com.ongo.infrastructure.persistence.jooq.Fields.FILE_URL
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.ORIGINAL_FILENAME
-import com.ongo.infrastructure.persistence.jooq.Fields.RESOLUTION
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.TAGS
@@ -109,10 +106,7 @@ class VideoJooqRepository(
             .set(CATEGORY, video.category)
             .set(FILE_URL, video.fileUrl)
             .set(FILE_SIZE_BYTES, video.fileSizeBytes)
-            .set(DURATION_SECONDS, video.durationSeconds)
-            .set(RESOLUTION, video.resolution)
             .set(ORIGINAL_FILENAME, video.originalFilename)
-            .set(CONTENT_HASH, video.contentHash)
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
             .set(MEDIA_TYPE, video.mediaType.name)
             .set(STATUS, video.status.name)
@@ -134,10 +128,7 @@ class VideoJooqRepository(
             .set(CATEGORY, video.category)
             .set(FILE_URL, video.fileUrl)
             .set(FILE_SIZE_BYTES, video.fileSizeBytes)
-            .set(DURATION_SECONDS, video.durationSeconds)
-            .set(RESOLUTION, video.resolution)
             .set(ORIGINAL_FILENAME, video.originalFilename)
-            .set(CONTENT_HASH, video.contentHash)
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
             .set(MEDIA_TYPE, video.mediaType.name)
             .set(STATUS, video.status.name)
@@ -152,13 +143,6 @@ class VideoJooqRepository(
             .where(ID.eq(id))
             .execute()
     }
-
-    override fun findByContentHash(contentHash: String): Video? =
-        dsl.select()
-            .from(VIDEOS)
-            .where(CONTENT_HASH.eq(contentHash))
-            .fetchOne()
-            ?.toVideo()
 
     @Suppress("UNCHECKED_CAST")
     private fun Record.toVideo(): Video {
@@ -187,10 +171,7 @@ class VideoJooqRepository(
             category = get(CATEGORY),
             fileUrl = get(FILE_URL),
             fileSizeBytes = get(FILE_SIZE_BYTES),
-            durationSeconds = get(DURATION_SECONDS),
-            resolution = get(RESOLUTION),
             originalFilename = get(ORIGINAL_FILENAME),
-            contentHash = get(CONTENT_HASH),
             thumbnailUrls = thumbnailUrls,
             mediaType = try { MediaType.valueOf(mediaTypeStr) } catch (_: Exception) { MediaType.VIDEO },
             status = try { UploadStatus.valueOf(statusStr) } catch (_: Exception) { UploadStatus.DRAFT },

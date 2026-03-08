@@ -37,13 +37,6 @@ async function loadVideos() {
 onMounted(loadVideos)
 
 // ── Helpers ──────────────────────────────────────────────────────────
-function formatDuration(seconds: number | null): string {
-  if (!seconds) return '--:--'
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
 function formatDate(dateStr: string): string {
   return dateStr.slice(0, 10)
 }
@@ -162,10 +155,6 @@ function confirmSelection(): void {
                 class="h-full w-full object-cover"
               />
               <FilmIcon v-else class="mx-auto mt-3 h-8 w-8 text-gray-400" />
-              <!-- Duration badge -->
-              <span class="absolute bottom-0.5 right-0.5 rounded bg-black/75 px-1 py-0.5 text-[10px] font-medium text-white">
-                {{ formatDuration(video.duration) }}
-              </span>
             </div>
 
             <!-- Info -->
