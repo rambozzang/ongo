@@ -47,13 +47,14 @@ class StreamPublishUseCase(
     fun initiate(userId: Long, file: MultipartFile, request: StreamPublishRequest): StreamPublishResponse {
         val fileSize = file.size
 
-        // 1. 플랜 한도 확인 (월간 업로드 횟수)
+        // 1. 플랜 한도 확인 (월간 업로드 횟수 + 스토리지 쿼터)
         val subscription = subscriptionRepository.findByUserId(userId)
         val planType = subscription?.planType ?: PlanType.FREE
         val monthlyCount = videoRepository.countByUserIdAndMonth(userId, YearMonth.now())
         if (monthlyCount >= planType.monthlyUploads) {
             throw PlanLimitExceededException("월간 업로드", planType.monthlyUploads)
         }
+        storageQuotaUseCase.checkQuota(userId, fileSize)
 
         // 2. Video 레코드 생성 (fileUrl = null, status = UPLOADING)
         val video = videoRepository.save(
@@ -163,23 +164,32 @@ class StreamPublishUseCase(
                 return
             }
 
-            // 병렬로 initSession() 호출
+            // 병렬로 initSession() 호출 — 실패한 플랫폼은 FAILED 처리 후 제외, 나머지는 계속
+            val activeWriterMap: MutableMap<StreamPlatformContext, PlatformStreamWriter> = mutableMapOf()
             Executors.newVirtualThreadPerTaskExecutor().use { executor ->
                 val initFutures = writerMap.map { (ctx, writer) ->
-                    executor.submit<Unit> {
-                        try {
-                            val sessionId = writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize)
-                            log.info("플랫폼 {} 업로드 세션 초기화: videoId={}, sessionId={}", ctx.platform, videoId, sessionId)
-                        } catch (e: Exception) {
-                            log.error("플랫폼 {} 세션 초기화 실패: videoId={}", ctx.platform, videoId, e)
-                            throw e
-                        }
+                    ctx to executor.submit<Unit> {
+                        val sessionId = writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize)
+                        log.info("플랫폼 {} 업로드 세션 초기화: videoId={}, sessionId={}", ctx.platform, videoId, sessionId)
                     }
                 }
-                initFutures.forEach { it.get() }
+                initFutures.forEach { (ctx, future) ->
+                    try {
+                        future.get()
+                        activeWriterMap[ctx] = writerMap[ctx]!!
+                    } catch (e: Exception) {
+                        log.error("플랫폼 {} 세션 초기화 실패: videoId={}", ctx.platform, videoId, e)
+                        updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, "세션 초기화 실패: ${e.cause?.message ?: e.message}")
+                    }
+                }
             }
 
-            // 청크 스트리밍: 256KB 버퍼로 읽어 모든 writer에 병렬 전송
+            if (activeWriterMap.isEmpty()) {
+                log.warn("영상 {} — 세션 초기화 성공한 플랫폼이 없습니다", videoId)
+                return
+            }
+
+            // 청크 스트리밍: 256KB 버퍼로 읽어 각 writer에 순차 전달 (writeChunk는 메모리 append라 I/O 없음)
             tempFile.inputStream().buffered().use { input ->
                 val buffer = ByteArray(CHUNK_SIZE)
                 var offset = 0L
@@ -189,7 +199,7 @@ class StreamPublishUseCase(
                     val chunk = if (bytesRead < CHUNK_SIZE) buffer.copyOf(bytesRead) else buffer.copyOf()
                     val currentOffset = offset
 
-                    writerMap.values.parallelStream().forEach { writer ->
+                    activeWriterMap.values.forEach { writer ->
                         writer.writeChunk(chunk, currentOffset, fileSize)
                     }
 
@@ -199,7 +209,7 @@ class StreamPublishUseCase(
 
             // 완료 후 각 writer complete() 호출 및 상태 업데이트
             Executors.newVirtualThreadPerTaskExecutor().use { executor ->
-                val completeFutures = writerMap.map { (ctx, writer) ->
+                val completeFutures = activeWriterMap.map { (ctx, writer) ->
                     executor.submit<Unit> {
                         try {
                             val result = writer.complete()
