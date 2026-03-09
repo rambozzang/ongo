@@ -2,8 +2,6 @@ package com.ongo.infrastructure.external.naverclip
 
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformUploadException
-import com.ongo.infrastructure.external.naverclip.dto.NaverClipUploadCompleteRequest
-import com.ongo.infrastructure.external.naverclip.dto.NaverClipUploadInitRequest
 import com.ongo.infrastructure.external.platform.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -15,7 +13,6 @@ class NaverClipClient(
     private val naverClipApi: NaverClipApi,
     private val naverOAuthApi: NaverOAuthApi,
     private val naverClipConfig: NaverClipConfig,
-    private val fileTransferHelper: PlatformFileTransferHelper,
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(NaverClipClient::class.java)
@@ -23,80 +20,11 @@ class NaverClipClient(
     override val platform: Platform = Platform.NAVER_CLIP
 
     override fun uploadVideo(request: PlatformUploadRequest): PlatformUploadResult {
-        log.info("Naver Clip 영상 업로드 시작: title={}", request.title)
-
-        val visibility = mapVisibility(request.visibility)
-
-        var tempFile: java.nio.file.Path? = null
-        try {
-            // Step 1: S3에서 파일 다운로드
-            tempFile = fileTransferHelper.downloadToTempFile(request.fileUrl)
-            val fileSize = java.nio.file.Files.size(tempFile)
-
-            // Step 2: 업로드 초기화 (uploadId + uploadUrl 획득)
-            val initResponse = naverClipApi.initUpload(
-                authorization = "Bearer ${request.accessToken}",
-                request = NaverClipUploadInitRequest(
-                    title = request.title.take(100),
-                    description = request.description.take(1000),
-                    tags = request.tags,
-                    fileSize = fileSize,
-                    visibility = visibility,
-                ),
-            )
-
-            if (initResponse.error != null) {
-                throw PlatformUploadException(
-                    "Naver Clip",
-                    "업로드 초기화 실패: ${initResponse.error.message}",
-                )
-            }
-
-            val uploadId = initResponse.uploadId
-                ?: throw PlatformUploadException("Naver Clip", "upload_id를 받지 못했습니다")
-            val uploadUrl = initResponse.uploadUrl
-                ?: throw PlatformUploadException("Naver Clip", "upload_url을 받지 못했습니다")
-
-            log.debug("Naver Clip 업로드 초기화 완료: uploadId={}", uploadId)
-
-            // Step 3: uploadUrl에 파일 바이너리 업로드
-            fileTransferHelper.uploadToNaverClip(
-                uploadUrl = uploadUrl,
-                filePath = tempFile,
-                authHeader = "Bearer ${request.accessToken}",
-            )
-
-            // Step 4: 업로드 완료 처리
-            val completeResponse = naverClipApi.completeUpload(
-                authorization = "Bearer ${request.accessToken}",
-                request = NaverClipUploadCompleteRequest(uploadId = uploadId),
-            )
-
-            if (completeResponse.error != null) {
-                throw PlatformUploadException(
-                    "Naver Clip",
-                    "업로드 완료 처리 실패: ${completeResponse.error.message}",
-                )
-            }
-
-            val clipId = completeResponse.clipId
-                ?: throw PlatformUploadException("Naver Clip", "clip_id를 받지 못했습니다")
-
-            log.info("Naver Clip 업로드 완료: clipId={}", clipId)
-
-            return PlatformUploadResult(
-                platformVideoId = clipId,
-                platformUrl = completeResponse.clipUrl ?: "",
-                status = completeResponse.status ?: "PROCESSING",
-            )
-        } catch (e: PlatformUploadException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("Naver Clip 업로드 실패: {}", e.message, e)
-            throw PlatformUploadException("Naver Clip", e.message ?: "알 수 없는 오류", e)
-        } finally {
-            fileTransferHelper.cleanupTempFile(tempFile)
-        }
+        // 스트리밍 업로드가 기본이므로 이 메서드는 더 이상 사용하지 않습니다.
+        // 실제 업로드는 NaverClipStreamWriter (StreamPublishUseCase)에서 처리합니다.
+        throw UnsupportedOperationException(
+            "NaverClipClient.uploadVideo()는 더 이상 사용하지 않습니다. StreamPublishUseCase를 사용하세요."
+        )
     }
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
@@ -246,11 +174,4 @@ class NaverClipClient(
     override fun getCommentCapabilities(): PlatformCommentCapabilities =
         PlatformCommentCapabilities()
 
-    private fun mapVisibility(visibility: String): String =
-        when (visibility.uppercase()) {
-            "PUBLIC" -> "PUBLIC"
-            "PRIVATE" -> "PRIVATE"
-            "UNLISTED" -> "PRIVATE" // Naver Clip doesn't have unlisted
-            else -> "PRIVATE"
-        }
 }

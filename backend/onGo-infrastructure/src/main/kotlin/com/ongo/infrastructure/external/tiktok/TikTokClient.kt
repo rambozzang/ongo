@@ -3,7 +3,6 @@ package com.ongo.infrastructure.external.tiktok
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
-import com.ongo.infrastructure.external.tiktok.dto.TikTokInitUploadRequest
 import com.ongo.infrastructure.external.tiktok.dto.TikTokPublishStatusRequest
 import com.ongo.infrastructure.external.tiktok.dto.TikTokVideoQueryRequest
 import org.slf4j.LoggerFactory
@@ -15,79 +14,18 @@ class TikTokClient(
     private val tikTokApi: TikTokApi,
     private val tikTokOAuthApi: TikTokOAuthApi,
     private val tikTokConfig: TikTokConfig,
-    private val fileTransferHelper: PlatformFileTransferHelper,
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(TikTokClient::class.java)
 
     override val platform: Platform = Platform.TIKTOK
 
-    companion object {
-        private const val DEFAULT_CHUNK_SIZE = 10_000_000L // 10MB
-    }
-
     override fun uploadVideo(request: PlatformUploadRequest): PlatformUploadResult {
-        log.info("TikTok 영상 업로드 시작: title={}", request.title)
-
-        val privacyLevel = mapVisibility(request.visibility)
-
-        var tempFile: java.nio.file.Path? = null
-        try {
-            // Step 1: S3에서 파일 다운로드
-            tempFile = fileTransferHelper.downloadToTempFile(request.fileUrl)
-            val videoSize = java.nio.file.Files.size(tempFile)
-
-            // Step 2: 업로드 초기화 (publishId + uploadUrl 획득)
-            val initRequest = TikTokInitUploadRequest(
-                postInfo = TikTokInitUploadRequest.PostInfo(
-                    title = request.title.take(150),
-                    privacyLevel = privacyLevel,
-                ),
-                sourceInfo = TikTokInitUploadRequest.SourceInfo(
-                    source = "FILE_UPLOAD",
-                    videoSize = videoSize,
-                    chunkSize = DEFAULT_CHUNK_SIZE,
-                    totalChunkCount = maxOf(1, ((videoSize + DEFAULT_CHUNK_SIZE - 1) / DEFAULT_CHUNK_SIZE).toInt()),
-                ),
-            )
-
-            val initResponse = tikTokApi.initVideoUpload(
-                authorization = "Bearer ${request.accessToken}",
-                request = initRequest,
-            )
-
-            if (initResponse.error != null) {
-                throw PlatformUploadException(
-                    "TikTok",
-                    "업로드 초기화 실패: ${initResponse.error.message}",
-                )
-            }
-
-            val publishId = initResponse.data?.publishId
-                ?: throw PlatformUploadException("TikTok", "publish_id를 받지 못했습니다")
-            val uploadUrl = initResponse.data.uploadUrl
-                ?: throw PlatformUploadException("TikTok", "upload_url을 받지 못했습니다")
-
-            log.info("TikTok 업로드 초기화 완료: publishId={}", publishId)
-
-            // Step 3: uploadUrl로 파일 청크 업로드
-            fileTransferHelper.uploadChunkedToTikTok(uploadUrl, tempFile, DEFAULT_CHUNK_SIZE)
-
-            log.info("TikTok 파일 업로드 완료: publishId={}", publishId)
-
-            return PlatformUploadResult(
-                platformVideoId = publishId,
-                platformUrl = "", // URL available after publish completes
-                status = "PROCESSING_UPLOAD",
-            )
-        } catch (e: PlatformUploadException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("TikTok 업로드 실패: {}", e.message, e)
-            throw PlatformUploadException("TikTok", e.message ?: "알 수 없는 오류", e)
-        } finally {
-            fileTransferHelper.cleanupTempFile(tempFile)
-        }
+        // 스트리밍 업로드가 기본이므로 이 메서드는 더 이상 사용하지 않습니다.
+        // 실제 업로드는 TikTokStreamWriter (StreamPublishUseCase)에서 처리합니다.
+        throw UnsupportedOperationException(
+            "TikTokClient.uploadVideo()는 더 이상 사용하지 않습니다. StreamPublishUseCase를 사용하세요."
+        )
     }
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
@@ -279,11 +217,4 @@ class TikTokClient(
         }
     }
 
-    private fun mapVisibility(visibility: String): String =
-        when (visibility.uppercase()) {
-            "PUBLIC" -> "PUBLIC_TO_EVERYONE"
-            "PRIVATE" -> "SELF_ONLY"
-            "UNLISTED" -> "MUTUAL_FOLLOW_FRIENDS"
-            else -> "SELF_ONLY"
-        }
 }

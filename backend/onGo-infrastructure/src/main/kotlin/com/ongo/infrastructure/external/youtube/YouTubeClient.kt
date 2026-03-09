@@ -4,7 +4,6 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.youtube.dto.YouTubeCommentInsertRequest
-import com.ongo.infrastructure.external.youtube.dto.YouTubeUploadRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -16,7 +15,6 @@ class YouTubeClient(
     private val youTubeAnalyticsApi: YouTubeAnalyticsApi,
     private val googleOAuthApi: GoogleOAuthApi,
     private val youTubeConfig: YouTubeConfig,
-    private val fileTransferHelper: PlatformFileTransferHelper,
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(YouTubeClient::class.java)
@@ -24,52 +22,11 @@ class YouTubeClient(
     override val platform: Platform = Platform.YOUTUBE
 
     override fun uploadVideo(request: PlatformUploadRequest): PlatformUploadResult {
-        log.info("YouTube 영상 업로드 시작: title={}", request.title)
-
-        val privacyStatus = mapVisibility(request.visibility)
-
-        val metadata = YouTubeUploadRequest(
-            snippet = YouTubeUploadRequest.Snippet(
-                title = request.title.take(100),
-                description = request.description.take(5000),
-                tags = request.tags,
-            ),
-            status = YouTubeUploadRequest.Status(
-                privacyStatus = privacyStatus,
-                publishAt = request.scheduledAt?.format(DateTimeFormatter.ISO_DATE_TIME),
-            ),
+        // 스트리밍 업로드가 기본이므로 이 메서드는 더 이상 사용하지 않습니다.
+        // 실제 업로드는 YouTubeStreamWriter (StreamPublishUseCase)에서 처리합니다.
+        throw UnsupportedOperationException(
+            "YouTubeClient.uploadVideo()는 더 이상 사용하지 않습니다. StreamPublishUseCase를 사용하세요."
         )
-
-        var tempFile: java.nio.file.Path? = null
-        try {
-            // Step 1: S3에서 파일 다운로드
-            tempFile = fileTransferHelper.downloadToTempFile(request.fileUrl)
-            val fileSize = java.nio.file.Files.size(tempFile)
-
-            // Step 2: Resumable upload 세션 URI 획득
-            val sessionUri = fileTransferHelper.initiateYouTubeResumableUpload(
-                uploadBaseUrl = youTubeConfig.getUploadBaseUrl(),
-                metadata = metadata,
-                accessToken = request.accessToken,
-                fileSize = fileSize,
-            )
-
-            // Step 3: 세션 URI에 전체 파일 업로드 → videoId 반환
-            val videoId = fileTransferHelper.uploadToYouTubeSession(sessionUri, tempFile)
-
-            log.info("YouTube 업로드 완료: videoId={}", videoId)
-
-            return PlatformUploadResult(
-                platformVideoId = videoId,
-                platformUrl = "https://www.youtube.com/watch?v=$videoId",
-                status = "uploaded",
-            )
-        } catch (e: Exception) {
-            log.error("YouTube 업로드 실패: {}", e.message, e)
-            throw PlatformUploadException("YouTube", e.message ?: "알 수 없는 오류", e)
-        } finally {
-            fileTransferHelper.cleanupTempFile(tempFile)
-        }
     }
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
@@ -306,11 +263,4 @@ class YouTubeClient(
             null
         }
 
-    private fun mapVisibility(visibility: String): String =
-        when (visibility.uppercase()) {
-            "PUBLIC" -> "public"
-            "PRIVATE" -> "private"
-            "UNLISTED" -> "unlisted"
-            else -> "private"
-        }
 }

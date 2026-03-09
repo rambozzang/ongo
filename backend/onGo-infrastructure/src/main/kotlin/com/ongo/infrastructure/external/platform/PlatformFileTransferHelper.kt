@@ -2,20 +2,16 @@ package com.ongo.infrastructure.external.platform
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
-import org.springframework.core.io.FileSystemResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
-import java.net.URI
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import java.time.Duration
 
 /**
- * S3 등 외부 URL에서 파일을 다운로드하고, 플랫폼 업로드 URL로 전송하는 헬퍼.
+ * 플랫폼 업로드 URL로 파일 데이터를 전송하는 헬퍼.
+ * ByteArray 기반으로 동작 — S3 다운로드 및 임시 파일 불필요.
  */
 @Component
 class PlatformFileTransferHelper(
@@ -27,25 +23,6 @@ class PlatformFileTransferHelper(
     private val transferClient: RestClient = RestClient.builder()
         .requestFactory(createUploadRequestFactory())
         .build()
-
-    /**
-     * URL에서 파일을 다운로드하여 임시 파일로 저장.
-     */
-    fun downloadToTempFile(url: String): Path {
-        log.debug("파일 다운로드 시작: {}", url.take(80))
-        val tempFile = Files.createTempFile("ongo-upload-", ".tmp")
-        try {
-            URI.create(url).toURL().openStream().use { input ->
-                Files.copy(input, tempFile, StandardCopyOption.REPLACE_EXISTING)
-            }
-            val size = Files.size(tempFile)
-            log.debug("파일 다운로드 완료: {} bytes", size)
-            return tempFile
-        } catch (e: Exception) {
-            Files.deleteIfExists(tempFile)
-            throw e
-        }
-    }
 
     /**
      * YouTube Resumable Upload: 세션 URI 획득 (POST metadata → Location 헤더).
@@ -78,18 +55,17 @@ class PlatformFileTransferHelper(
     }
 
     /**
-     * YouTube: 세션 URI에 전체 파일을 단일 PUT으로 업로드.
+     * YouTube: 세션 URI에 ByteArray 전체를 단일 PUT으로 업로드.
      * 응답 body에 video resource JSON이 담겨 있어 videoId를 추출.
      */
-    fun uploadToYouTubeSession(sessionUri: String, filePath: Path): String {
-        val fileSize = Files.size(filePath)
-        log.info("YouTube 파일 업로드: {} bytes → session", fileSize)
+    fun uploadToYouTubeSession(sessionUri: String, data: ByteArray): String {
+        log.info("YouTube 파일 업로드: {} bytes → session", data.size)
 
         val responseBody = transferClient.put()
             .uri(sessionUri)
             .header(HttpHeaders.CONTENT_TYPE, "video/*")
-            .header(HttpHeaders.CONTENT_LENGTH, fileSize.toString())
-            .body(FileSystemResource(filePath))
+            .header(HttpHeaders.CONTENT_LENGTH, data.size.toString())
+            .body(data)
             .retrieve()
             .body(String::class.java)
 
@@ -105,70 +81,53 @@ class PlatformFileTransferHelper(
     }
 
     /**
-     * TikTok: uploadUrl에 파일을 청크 단위로 PUT 업로드.
+     * TikTok: uploadUrl에 ByteArray를 청크 단위로 PUT 업로드.
      * Content-Range: bytes {start}-{end}/{total} 형식.
      */
-    fun uploadChunkedToTikTok(uploadUrl: String, filePath: Path, chunkSize: Long) {
-        val fileSize = Files.size(filePath)
+    fun uploadChunkedToTikTok(uploadUrl: String, data: ByteArray, chunkSize: Long) {
+        val fileSize = data.size.toLong()
         var offset = 0L
 
         log.info("TikTok 청크 업로드 시작: {} bytes, chunkSize={}", fileSize, chunkSize)
 
-        Files.newInputStream(filePath).use { input ->
-            while (offset < fileSize) {
-                val end = minOf(offset + chunkSize, fileSize) - 1
-                val currentChunkSize = (end - offset + 1).toInt()
-                val chunk = input.readNBytes(currentChunkSize)
+        while (offset < fileSize) {
+            val end = minOf(offset + chunkSize, fileSize) - 1
+            val chunk = data.copyOfRange(offset.toInt(), (end + 1).toInt())
+            val contentRange = "bytes $offset-$end/$fileSize"
 
-                val contentRange = "bytes $offset-$end/$fileSize"
-                log.debug("TikTok 청크 업로드: {}", contentRange)
+            log.debug("TikTok 청크 업로드: {}", contentRange)
 
-                transferClient.put()
-                    .uri(uploadUrl)
-                    .header(HttpHeaders.CONTENT_TYPE, "video/mp4")
-                    .header(HttpHeaders.CONTENT_LENGTH, currentChunkSize.toString())
-                    .header("Content-Range", contentRange)
-                    .body(chunk)
-                    .retrieve()
-                    .toBodilessEntity()
+            transferClient.put()
+                .uri(uploadUrl)
+                .header(HttpHeaders.CONTENT_TYPE, "video/mp4")
+                .header(HttpHeaders.CONTENT_LENGTH, chunk.size.toString())
+                .header("Content-Range", contentRange)
+                .body(chunk)
+                .retrieve()
+                .toBodilessEntity()
 
-                offset = end + 1
-            }
+            offset = end + 1
         }
 
         log.info("TikTok 청크 업로드 완료")
     }
 
     /**
-     * Naver Clip: uploadUrl에 전체 파일을 단일 PUT 업로드.
+     * Naver Clip: uploadUrl에 ByteArray 전체를 단일 PUT 업로드.
      */
-    fun uploadToNaverClip(uploadUrl: String, filePath: Path, authHeader: String) {
-        val fileSize = Files.size(filePath)
-        log.info("Naver Clip 파일 업로드: {} bytes", fileSize)
+    fun uploadToNaverClip(uploadUrl: String, data: ByteArray, authHeader: String) {
+        log.info("Naver Clip 파일 업로드: {} bytes", data.size)
 
         transferClient.put()
             .uri(uploadUrl)
             .header(HttpHeaders.CONTENT_TYPE, "video/mp4")
-            .header(HttpHeaders.CONTENT_LENGTH, fileSize.toString())
+            .header(HttpHeaders.CONTENT_LENGTH, data.size.toString())
             .header(HttpHeaders.AUTHORIZATION, authHeader)
-            .body(FileSystemResource(filePath))
+            .body(data)
             .retrieve()
             .toBodilessEntity()
 
         log.info("Naver Clip 파일 업로드 완료")
-    }
-
-    /**
-     * 임시 파일 정리.
-     */
-    fun cleanupTempFile(path: Path?) {
-        if (path != null) {
-            try {
-                Files.deleteIfExists(path)
-            } catch (e: Exception) {
-                log.warn("임시 파일 삭제 실패: {}", e.message)
-            }
-        }
     }
 
     companion object {
