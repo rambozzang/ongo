@@ -18,6 +18,8 @@ import com.ongo.domain.video.VideoUploadRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile
 import java.nio.file.Files
 import java.time.LocalDateTime
@@ -123,10 +125,15 @@ class StreamPublishUseCase(
             throw e
         }
 
-        // 5. Virtual Thread에서 비동기 스트리밍 업로드 처리
-        Thread.ofVirtual().name("stream-publish-$videoId").start {
-            runStreamingUpload(videoId, tempFile.toFile(), fileSize, platformConfigs)
-        }
+        // 5. 트랜잭션 커밋 후 Virtual Thread에서 비동기 스트리밍 시작
+        // (afterCommit: DB 레코드가 확실히 커밋된 후 읽기 가능)
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                Thread.ofVirtual().name("stream-publish-$videoId").start {
+                    runStreamingUpload(videoId, tempFile.toFile(), fileSize, platformConfigs)
+                }
+            }
+        })
 
         return StreamPublishResponse(videoId = videoId)
     }
@@ -277,7 +284,7 @@ private data class StreamPlatformContext(
     val videoUploadId: Long,
     val meta: VideoPlatformMeta,
     val accessToken: String,
-    val platformChannelId: String,
+    val platformChannelId: String?,
     val scheduledAt: LocalDateTime?,
 )
 
