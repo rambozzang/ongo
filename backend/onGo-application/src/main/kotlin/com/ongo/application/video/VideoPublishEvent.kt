@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 data class VideoPublishEvent(
     val videoId: Long,
     val userId: Long,
-    val fileUrl: String,
+    val fileUrl: String?,  // null = streaming upload (no permanent file)
     val platformConfigs: List<PlatformUploadConfig>,
 )
 

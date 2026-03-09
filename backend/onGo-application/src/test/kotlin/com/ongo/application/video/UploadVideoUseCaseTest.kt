@@ -1,99 +1,44 @@
 package com.ongo.application.video
 
-import com.ongo.application.storage.StorageQuotaUseCase
+import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
-import com.ongo.common.exception.DuplicateResourceException
-import com.ongo.common.exception.NotFoundException
-import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import io.mockk.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import kotlin.test.assertFailsWith
+import kotlin.test.assertEquals
 
 class UploadVideoUseCaseTest {
 
     private val videoRepository = mockk<VideoRepository>()
-    private val subscriptionRepository = mockk<SubscriptionRepository>()
-    private val storageService = mockk<StorageService>()
-    private val storageQuotaUseCase = mockk<StorageQuotaUseCase>(relaxed = true)
 
     private lateinit var useCase: UploadVideoUseCase
 
     @BeforeEach
     fun setUp() {
         clearAllMocks()
-        useCase = UploadVideoUseCase(
-            videoRepository, subscriptionRepository, storageService, storageQuotaUseCase,
+        useCase = UploadVideoUseCase(videoRepository)
+    }
+
+    @Test
+    fun `createVideo should save video with DRAFT status`() {
+        val savedVideo = Video(
+            id = 1L,
+            userId = 100L,
+            title = "테스트 영상",
+            status = UploadStatus.DRAFT,
+            mediaType = MediaType.VIDEO,
         )
-    }
+        every { videoRepository.save(any()) } returns savedVideo
 
-    private fun createVideo(
-        id: Long = 1L,
-        userId: Long = 100L,
-        fileUrl: String? = null,
-        status: UploadStatus = UploadStatus.DRAFT,
-    ) = Video(
-        id = id,
-        userId = userId,
-        title = "test video",
-        fileUrl = fileUrl,
-        status = status,
-    )
+        val result = useCase.createVideo(
+            userId = 100L,
+            title = "테스트 영상",
+        )
 
-    @Test
-    fun `completeUpload should throw NotFoundException for non-existent video`() {
-        every { videoRepository.findById(999L) } returns null
-
-        assertFailsWith<NotFoundException> {
-            useCase.completeUpload(999L, "https://example.com/file.mp4", null)
-        }
-    }
-
-    @Test
-    fun `completeUpload should throw DuplicateResourceException for duplicate contentHash`() {
-        val video = createVideo(id = 1L)
-        val existing = createVideo(id = 2L) // 다른 ID
-
-        every { videoRepository.findById(1L) } returns video
-        every { videoRepository.findByContentHash("dup_hash") } returns existing
-
-        assertFailsWith<DuplicateResourceException> {
-            useCase.completeUpload(1L, "https://example.com/file.mp4", "dup_hash")
-        }
-    }
-
-    @Test
-    fun `completeUpload should allow same video with same contentHash`() {
-        val video = createVideo(id = 1L, userId = 100L)
-        val fileUrl = "https://storage.example.com/videos/1/video.mp4"
-
-        every { videoRepository.findById(1L) } returns video
-        // 같은 ID의 영상이 반환 → 중복 아님
-        every { videoRepository.findByContentHash("hash123") } returns video
-        every { videoRepository.update(any()) } returns video.copy(fileUrl = fileUrl)
-
-        useCase.completeUpload(1L, fileUrl, "hash123")
-
-        verify { videoRepository.update(any()) }
-    }
-
-    @Test
-    fun `completeUpload should still update video when contentHash is null`() {
-        val video = createVideo(id = 1L, userId = 100L)
-        val fileUrl = "https://storage.example.com/videos/1/video.mp4"
-
-        every { videoRepository.findById(1L) } returns video
-        every { videoRepository.update(any()) } returns video.copy(fileUrl = fileUrl)
-
-        useCase.completeUpload(1L, fileUrl, null)
-
-        verify {
-            videoRepository.update(match {
-                it.fileUrl == fileUrl && it.contentHash == null && it.status == UploadStatus.DRAFT
-            })
-        }
-        verify(exactly = 0) { videoRepository.findByContentHash(any()) }
+        assertEquals(1L, result.id)
+        assertEquals(UploadStatus.DRAFT, result.status)
+        verify { videoRepository.save(match { it.status == UploadStatus.DRAFT && it.title == "테스트 영상" }) }
     }
 }

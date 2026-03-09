@@ -35,12 +35,6 @@ class PublishVideoUseCase(
             throw IllegalStateException("DRAFT 상태의 영상만 게시할 수 있습니다. 현재 상태: ${video.status}")
         }
 
-        // 파일 업로드 완료 확인
-        val fileUrl = video.fileUrl
-        if (fileUrl.isNullOrBlank()) {
-            throw IllegalStateException("파일 업로드가 완료되지 않은 영상입니다")
-        }
-
         // 게시 전 채널 토큰 검증
         configs.forEach { config ->
             val channel = channelRepository.findByUserIdAndPlatform(userId, config.platform)
@@ -88,7 +82,7 @@ class PublishVideoUseCase(
             VideoPublishEvent(
                 videoId = videoId,
                 userId = userId,
-                fileUrl = fileUrl,
+                fileUrl = video.fileUrl,
                 platformConfigs = platformConfigs,
             )
         )
@@ -129,6 +123,9 @@ class PublishVideoUseCase(
             )
         )
 
+        // video.fileUrl이 null이면 스트리밍 업로드로 재시도 불가
+        val fileUrl = video.fileUrl ?: throw IllegalStateException("스트리밍 방식으로 업로드된 영상은 재시도를 지원하지 않습니다. 새로 업로드해주세요.")
+
         val uploadId = upload.id!!
         val meta = videoPlatformMetaRepository.findByVideoUploadId(uploadId)
 
@@ -137,7 +134,7 @@ class PublishVideoUseCase(
             VideoPublishEvent(
                 videoId = videoId,
                 userId = userId,
-                fileUrl = video.fileUrl!!,
+                fileUrl = fileUrl,
                 platformConfigs = listOf(
                     PlatformUploadConfig(
                         platform = platform,

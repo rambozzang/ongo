@@ -63,9 +63,16 @@ class VideoPublishEventListener(
             return
         }
 
+        val fileUrl = event.fileUrl
+        if (fileUrl == null) {
+            log.warn("영상 {} 에 fileUrl이 없어 플랫폼 업로드를 건너뜁니다 (스트리밍 업로드)", event.videoId)
+            updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, "파일 URL이 없습니다. 스트리밍 방식으로 업로드된 영상입니다.")
+            return
+        }
+
         try {
             log.info("플랫폼 {} 업로드 시작: videoId={}", config.platform, event.videoId)
-            val result = service.upload(config, event.fileUrl, event.userId)
+            val result = service.upload(config, fileUrl, event.userId)
 
             if (result.success) {
                 updateUploadStatus(

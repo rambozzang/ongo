@@ -66,58 +66,6 @@ class VideoController(
     }
 
     @Operation(
-        summary = "업로드 초기화",
-        description = "영상 업로드를 위한 Tus 엔드포인트와 업로드 URL을 생성합니다. 파일 확장자 및 크기 검증이 수행됩니다."
-    )
-    @ApiResponses(
-        ApiResponse(responseCode = "200", description = "업로드 초기화 성공"),
-        ApiResponse(responseCode = "400", description = "잘못된 요청 (지원하지 않는 파일 형식 또는 파일 크기 초과)"),
-        ApiResponse(responseCode = "401", description = "인증 실패 (유효하지 않은 Access Token)"),
-        ApiResponse(responseCode = "500", description = "서버 내부 오류")
-    )
-    @RequiresPermission(Permission.VIDEO_CREATE)
-    @PostMapping("/upload/init")
-    fun initUpload(
-        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
-        @Valid @RequestBody req: InitUploadRequest,
-    ): ResponseEntity<ResData<InitUploadResponse>> {
-        val result = uploadVideoUseCase.initUpload(
-            userId = userId,
-            filename = req.filename,
-            fileSize = req.fileSize,
-            contentType = req.contentType,
-            mediaType = req.mediaType,
-        )
-        return ResData.success(
-            InitUploadResponse(
-                videoId = result.videoId,
-                uploadUrl = result.uploadUrl,
-                tusEndpoint = result.tusEndpoint,
-                mediaType = result.mediaType,
-            )
-        )
-    }
-
-    @Operation(
-        summary = "업로드 완료 확인",
-        description = "Presigned URL로 S3/MinIO에 직접 업로드 완료 후, 백엔드에 파일 존재 확인 및 후처리를 요청합니다."
-    )
-    @ApiResponses(
-        ApiResponse(responseCode = "200", description = "업로드 완료 확인 성공"),
-        ApiResponse(responseCode = "401", description = "인증 실패"),
-        ApiResponse(responseCode = "403", description = "권한 없음"),
-        ApiResponse(responseCode = "404", description = "영상을 찾을 수 없음"),
-    )
-    @PostMapping("/{id}/upload/complete")
-    fun confirmUpload(
-        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
-        @Parameter(description = "영상 ID") @PathVariable id: Long,
-    ): ResponseEntity<ResData<Nothing?>> {
-        uploadVideoUseCase.confirmDirectUpload(userId, id)
-        return ResData.success(null, "업로드 완료")
-    }
-
-    @Operation(
         summary = "멀티플랫폼 게시",
         description = "업로드 완료된 영상을 선택한 플랫폼들에 동시 게시합니다. 각 플랫폼별 제목, 설명, 태그, 공개 설정을 개별 지정할 수 있습니다."
     )

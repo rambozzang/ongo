@@ -1,69 +1,16 @@
 package com.ongo.application.video
 
-import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
-import com.ongo.common.exception.ForbiddenException
-import com.ongo.common.exception.PlanLimitExceededException
-import com.ongo.common.util.FileValidationUtil
-import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.YearMonth
 
 @Service
 class UploadVideoUseCase(
     private val videoRepository: VideoRepository,
-    private val subscriptionRepository: SubscriptionRepository,
-    private val storageService: StorageService,
-    private val storageQuotaUseCase: StorageQuotaUseCase,
 ) {
-
-    @Transactional
-    fun initUpload(userId: Long, filename: String, fileSize: Long, contentType: String, mediaType: MediaType?): InitUploadResult {
-        // 1. 미디어 타입 결정 (명시적 지정 또는 자동 감지)
-        val resolvedMediaType = mediaType ?: FileValidationUtil.detectMediaType(contentType)
-
-        // 2. 파일 검증: 미디어 타입에 맞는 확장자 + MIME 타입 + 크기
-        FileValidationUtil.validateByMediaType(filename, contentType, fileSize, resolvedMediaType)
-
-        // 3. 플랜 한도 확인 (월간 업로드 횟수)
-        val subscription = subscriptionRepository.findByUserId(userId)
-        val planType = subscription?.planType ?: com.ongo.common.enums.PlanType.FREE
-        val monthlyCount = videoRepository.countByUserIdAndMonth(userId, YearMonth.now())
-        if (monthlyCount >= planType.monthlyUploads) {
-            throw PlanLimitExceededException("월간 업로드", planType.monthlyUploads)
-        }
-
-        // 3-1. 스토리지 쿼터 확인
-        storageQuotaUseCase.checkQuota(userId, fileSize)
-
-        // 4. Video 레코드 생성 (DRAFT 상태)
-        val video = videoRepository.save(
-            Video(
-                userId = userId,
-                title = filename.substringBeforeLast('.'),
-                originalFilename = filename,
-                fileSizeBytes = fileSize,
-                mediaType = resolvedMediaType,
-                status = UploadStatus.DRAFT,
-            )
-        )
-
-        // 5. 스토리지 업로드 URL 생성 (Tus 엔드포인트)
-        val savedVideoId = video.id!!
-        val uploadUrl = storageService.generateUploadUrl(savedVideoId, filename, contentType)
-        val tusEndpoint = storageService.getTusEndpoint(savedVideoId)
-
-        return InitUploadResult(
-            videoId = savedVideoId,
-            uploadUrl = uploadUrl,
-            tusEndpoint = tusEndpoint,
-            mediaType = resolvedMediaType,
-        )
-    }
 
     @Transactional
     fun createVideo(
@@ -89,36 +36,4 @@ class UploadVideoUseCase(
         )
         return video
     }
-
-    @Transactional
-    fun confirmDirectUpload(userId: Long, videoId: Long) {
-        val video = videoRepository.findById(videoId)
-            ?: throw com.ongo.common.exception.NotFoundException("영상", videoId)
-        if (video.userId != userId) {
-            throw ForbiddenException("해당 영상에 대한 권한이 없습니다")
-        }
-
-        val fileUrl = storageService.getFileUrl(videoId)
-        completeUpload(videoId, fileUrl)
-    }
-
-    @Transactional
-    fun completeUpload(videoId: Long, fileUrl: String) {
-        val video = videoRepository.findById(videoId)
-            ?: throw com.ongo.common.exception.NotFoundException("영상", videoId)
-
-        videoRepository.update(
-            video.copy(
-                fileUrl = fileUrl,
-                status = UploadStatus.DRAFT,
-            )
-        )
-    }
 }
-
-data class InitUploadResult(
-    val videoId: Long,
-    val uploadUrl: String,
-    val tusEndpoint: String,
-    val mediaType: MediaType,
-)
