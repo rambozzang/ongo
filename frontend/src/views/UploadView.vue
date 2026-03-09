@@ -58,7 +58,7 @@
         @error="(msg) => notify.error(msg)"
       />
 
-      <!-- Video upload progress -->
+      <!-- Video upload progress (파일 선택 완료 상태 표시) -->
       <UploadProgress
         v-else-if="!uploadStore.isImage"
         :file-name="uploadStore.file.name"
@@ -66,8 +66,6 @@
         :uploading="uploadStore.uploading"
         :completed="uploadCompleted"
         :error="uploadStore.uploadError"
-        @pause="uploadStore.pauseUpload()"
-        @resume="uploadStore.resumeUpload()"
         @cancel="handleUploadCancel"
       />
 
@@ -236,10 +234,12 @@
           <button
             :disabled="platformConfigs.length === 0 || publishing"
             class="btn-primary inline-flex items-center gap-2"
-            @click="handlePublish"
+            @click="handleStreamPublish"
           >
             <LoadingSpinner v-if="publishing" size="sm" />
-            {{ scheduledAt ? t('upload.publishScheduled') : t('upload.publishNow') }}
+            {{ uploadStore.isImage
+                ? (scheduledAt ? t('upload.publishScheduled') : t('upload.publishNow'))
+                : (publishing ? '업로드 중...' : '업로드 & 게시') }}
           </button>
         </div>
       </div>
@@ -457,13 +457,8 @@ async function handleStep2Next() {
     return
   }
 
-  // For video uploads, the videoId is already created during initUpload (presigned URL flow)
-  if (!videoId.value && uploadStore.videoId) {
-    videoId.value = uploadStore.videoId
-  }
-
-  // Create video/content record if not yet created (image uploads, etc.)
-  if (!videoId.value) {
+  // 이미지인 경우에만 Step 2에서 videoId 생성
+  if (uploadStore.isImage && !videoId.value) {
     try {
       const video = await videoApi.create({
         title: metadata.value.title,
@@ -471,14 +466,11 @@ async function handleStep2Next() {
         tags: metadata.value.tags.length > 0 ? metadata.value.tags : undefined,
         category: metadata.value.category || undefined,
         thumbnailUrl: metadata.value.thumbnailUrl || undefined,
-        visibility: metadata.value.visibility,
-        mediaType: uploadStore.mediaType,
+        mediaType: 'IMAGE',
       })
       videoId.value = video.id
-      thumbnailCandidates.value = video.thumbnailCandidates || []
 
-      // For images, upload them now
-      if (uploadStore.isImage && uploadStore.imageFiles.length > 0) {
+      if (uploadStore.imageFiles.length > 0) {
         try {
           await uploadStore.uploadImagesToServer(video.id)
         } catch {
@@ -490,7 +482,8 @@ async function handleStep2Next() {
       notify.error(t('upload.error.saveFailed'))
       return
     }
-  } else {
+  } else if (uploadStore.isImage && videoId.value) {
+    // 기존 이미지 videoId 업데이트
     try {
       await videoApi.update(videoId.value, {
         title: metadata.value.title,
@@ -498,21 +491,21 @@ async function handleStep2Next() {
         tags: metadata.value.tags.length > 0 ? metadata.value.tags : undefined,
         category: metadata.value.category || undefined,
         thumbnailUrl: metadata.value.thumbnailUrl || undefined,
-        visibility: metadata.value.visibility,
       })
     } catch {
       notify.error(t('upload.error.updateFailed'))
       return
     }
   }
+  // 비디오의 경우: videoId 생성하지 않음 (stream-publish에서 한번에 처리)
 
-  // Load AI schedule suggestions
+  // AI 스케줄 추천 로드
   if (channelStore.channels.length > 0) {
     try {
       const res = await aiApi.suggestSchedule({ channelId: channelStore.channels[0].id })
       scheduleSuggestions.value = res.suggestions
     } catch {
-      // Non-critical, continue without suggestions
+      // Non-critical
     }
   }
 
@@ -520,7 +513,7 @@ async function handleStep2Next() {
 }
 
 async function handleAiGenerate() {
-  if (!videoId.value && !uploadStore.uploadUrl) {
+  if (!videoId.value) {
     notify.error(t('upload.error.fileRequired'))
     return
   }
@@ -564,11 +557,6 @@ async function handleAiGenerate() {
 }
 
 async function handleStartPipeline(steps: PipelineStepType[], channelId?: number) {
-  // Use videoId from upload store if available (video was created during presigned URL init)
-  if (!videoId.value && uploadStore.videoId) {
-    videoId.value = uploadStore.videoId
-  }
-
   if (!videoId.value) {
     try {
       const video = await videoApi.create({
@@ -638,7 +626,7 @@ function handlePipelineCancelled() {
 }
 
 async function handleAddToQueue() {
-  if (!videoId.value || !uploadStore.file) {
+  if (!uploadStore.file) {
     notify.error(t('upload.error.fileRequired'))
     return
   }
@@ -675,9 +663,10 @@ async function handleAddToQueue() {
   uploadStore.resetUpload()
 }
 
-async function handlePublish() {
-  if (!videoId.value) {
-    notify.error(t('upload.error.contentRequired'))
+async function handleStreamPublish() {
+  if (!uploadStore.file || uploadStore.isImage) {
+    // 이미지 업로드는 기존 방식 유지
+    await handlePublishImage()
     return
   }
 
@@ -688,21 +677,67 @@ async function handlePublish() {
 
   publishing.value = true
   try {
-    await videoApi.publish(videoId.value, {
+    const result = await uploadStore.streamPublish(
+      uploadStore.file,
+      metadata.value,
+      platformConfigs.value,
+    )
+
+    notify.success(t('upload.success.publishing'))
+    publishedVideoId.value = result.videoId
+
+    // 영상 스토어 캐시 무효화
+    videoStore.invalidateCache()
+
+    // 영상 상세로 이동
+    await router.push(`/videos/${result.videoId}`)
+    uploadStore.resetUpload()
+  } catch (error) {
+    notify.error(error instanceof Error ? error.message : t('upload.error.uploadFailed'))
+  } finally {
+    publishing.value = false
+  }
+}
+
+async function handlePublishImage() {
+  if (platformConfigs.value.length === 0) {
+    notify.error(t('upload.error.platformRequired'))
+    return
+  }
+
+  publishing.value = true
+  try {
+    // videoId가 없으면 생성
+    if (!videoId.value) {
+      const video = await videoApi.create({
+        title: metadata.value.title,
+        description: metadata.value.description || undefined,
+        tags: metadata.value.tags.length > 0 ? metadata.value.tags : undefined,
+        category: metadata.value.category || undefined,
+        thumbnailUrl: metadata.value.thumbnailUrl || undefined,
+        mediaType: 'IMAGE',
+      })
+      videoId.value = video.id
+      if (uploadStore.isImage && uploadStore.imageFiles.length > 0) {
+        await uploadStore.uploadImagesToServer(video.id)
+      }
+    }
+
+    await videoApi.publish(videoId.value!, {
       platforms: platformConfigs.value,
       scheduledAt: scheduledAt.value,
     })
 
     notify.success(scheduledAt.value ? t('upload.success.scheduled') : t('upload.success.publishing'))
-    publishedVideoId.value = videoId.value
+    publishedVideoId.value = videoId.value!
 
-    // 영상 스토어 캐시 무효화 (다음 영상 목록 진입 시 자동 재로드)
+    // 영상 스토어 캐시 무효화
     videoStore.invalidateCache()
 
-    // 영상 상세로 이동하여 후처리 진행률 확인
-    router.push({ name: 'video-detail', params: { id: String(videoId.value) } })
+    await router.push(`/videos/${videoId.value}`)
+    uploadStore.resetUpload()
   } catch {
-    notify.error(t('upload.error.publishFailed'))
+    notify.error(t('upload.error.uploadFailed'))
   } finally {
     publishing.value = false
   }

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { MediaType, UploadProgress, ContentImage, Visibility } from '@/types/video'
+import type { MediaType, UploadProgress, ContentImage, Visibility, PlatformPublishConfig } from '@/types/video'
 import { videoApi } from '@/api/video'
 
 export interface UploadMetadata {
@@ -43,8 +43,6 @@ export const useUploadStore = defineStore('upload', () => {
   })
   const uploading = ref(false)
   const uploadError = ref<string | null>(null)
-  const uploadUrl = ref<string | null>(null)
-  const xhrUpload = ref<XMLHttpRequest | null>(null)
 
   // Session state — persists across route navigation
   const step = ref(1)
@@ -64,117 +62,14 @@ export const useUploadStore = defineStore('upload', () => {
 
     file.value = selectedFile
     mediaType.value = 'VIDEO'
-    uploading.value = true
     uploadError.value = null
-    lastTimestamp = Date.now()
-    lastBytesUploaded = 0
-
-    const baseUrl = (import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_BASE_URL || '/api/v1'
-    const token = localStorage.getItem('accessToken')
-
-    try {
-      // Step 1: Init upload — videoId + presigned URL 발급
-      const initResponse = await fetch(`${baseUrl}/videos/upload/init`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          filename: selectedFile.name,
-          fileSize: selectedFile.size,
-          contentType: selectedFile.type || 'video/mp4',
-        }),
-      })
-
-      if (!initResponse.ok) {
-        throw new Error(`업로드 초기화 실패: ${initResponse.status}`)
-      }
-
-      const initData = await initResponse.json()
-      videoId.value = initData.data?.videoId
-      const presignedUrl = initData.data?.uploadUrl
-
-      if (!videoId.value) {
-        throw new Error('videoId를 받지 못했습니다')
-      }
-      if (!presignedUrl) {
-        throw new Error('presigned URL을 받지 못했습니다')
-      }
-
-      // Step 2: PUT 파일을 presigned URL로 직접 업로드
-      const xhr = new XMLHttpRequest()
-      xhrUpload.value = xhr
-
-      xhr.upload.onprogress = (e: ProgressEvent) => {
-        if (!e.lengthComputable) return
-
-        const now = Date.now()
-        const elapsed = (now - lastTimestamp) / 1000
-        const bytesDelta = e.loaded - lastBytesUploaded
-
-        const speed = elapsed > 0 ? bytesDelta / elapsed : 0
-        const remaining = speed > 0 ? (e.total - e.loaded) / speed : 0
-
-        progress.value = {
-          bytesUploaded: e.loaded,
-          bytesTotal: e.total,
-          percentage: Math.round((e.loaded / e.total) * 100),
-          speed,
-          remainingSeconds: Math.round(remaining),
-        }
-
-        lastTimestamp = now
-        lastBytesUploaded = e.loaded
-      }
-
-      xhr.onload = async () => {
-        xhrUpload.value = null
-
-        if (xhr.status >= 200 && xhr.status < 300) {
-          // Step 3: 백엔드에 업로드 완료 알림
-          try {
-            const confirmRes = await fetch(`${baseUrl}/videos/${videoId.value}/upload/complete`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-            })
-            if (!confirmRes.ok) {
-              const body = await confirmRes.json().catch(() => null)
-              throw new Error(body?.message || `업로드 완료 확인 실패: ${confirmRes.status}`)
-            }
-            uploading.value = false
-            uploadUrl.value = presignedUrl
-            progress.value.percentage = 100
-          } catch (err) {
-            uploading.value = false
-            uploadError.value = err instanceof Error ? err.message : '업로드 완료 확인 실패'
-          }
-        } else {
-          uploading.value = false
-          uploadError.value = `S3 업로드 실패: ${xhr.status}`
-        }
-      }
-
-      xhr.onerror = () => {
-        xhrUpload.value = null
-        uploading.value = false
-        uploadError.value = '네트워크 오류로 업로드 실패'
-      }
-
-      xhr.onabort = () => {
-        xhrUpload.value = null
-        uploading.value = false
-      }
-
-      xhr.open('PUT', presignedUrl)
-      xhr.setRequestHeader('Content-Type', selectedFile.type || 'video/mp4')
-      xhr.send(selectedFile)
-    } catch (error) {
-      uploading.value = false
-      uploadError.value = error instanceof Error ? error.message : '업로드 실패'
+    // 업로드 없음 — 진행률을 100%로 설정해서 "완료" 상태로 표시
+    progress.value = {
+      bytesUploaded: selectedFile.size,
+      bytesTotal: selectedFile.size,
+      percentage: 100,
+      speed: 0,
+      remainingSeconds: 0,
     }
   }
 
@@ -224,22 +119,104 @@ export const useUploadStore = defineStore('upload', () => {
     }
   }
 
-  function pauseUpload() {
-    xhrUpload.value?.abort()
-    uploading.value = false
-  }
+  async function streamPublish(
+    targetFile: File,
+    publishMetadata: UploadMetadata,
+    platformConfigs: PlatformPublishConfig[],
+  ): Promise<{ videoId: number }> {
+    uploading.value = true
+    uploadError.value = null
+    progress.value = { bytesUploaded: 0, bytesTotal: targetFile.size, percentage: 0, speed: 0, remainingSeconds: 0 }
+    lastTimestamp = Date.now()
+    lastBytesUploaded = 0
 
-  function resumeUpload() {
-    // Presigned URL은 이어받기 불가 — 처음부터 재시작 (새 Video 레코드 생성)
-    if (file.value && !uploading.value) {
-      videoId.value = null
-      uploadError.value = null
-      startUpload(file.value)
-    }
+    const baseUrl = (import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_BASE_URL || '/api/v1'
+    const token = localStorage.getItem('accessToken')
+
+    const metadataJson = JSON.stringify({
+      title: publishMetadata.title,
+      description: publishMetadata.description || null,
+      tags: publishMetadata.tags,
+      category: publishMetadata.category || null,
+      thumbnailUrl: publishMetadata.thumbnailUrl || null,
+      platforms: platformConfigs.map(pc => ({
+        platform: pc.platform,
+        title: pc.title,
+        description: pc.description,
+        tags: pc.tags,
+        visibility: pc.visibility,
+        scheduledAt: (pc as PlatformPublishConfig & { scheduledAt?: string }).scheduledAt || null,
+      })),
+    })
+
+    const formData = new FormData()
+    formData.append('metadata', new Blob([metadataJson], { type: 'application/json' }))
+    formData.append('file', targetFile)
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+
+      xhr.upload.onprogress = (e: ProgressEvent) => {
+        if (!e.lengthComputable) return
+        const now = Date.now()
+        const elapsed = (now - lastTimestamp) / 1000
+        const bytesDelta = e.loaded - lastBytesUploaded
+        const speed = elapsed > 0 ? bytesDelta / elapsed : 0
+        const remaining = speed > 0 ? (e.total - e.loaded) / speed : 0
+        progress.value = {
+          bytesUploaded: e.loaded,
+          bytesTotal: e.total,
+          percentage: Math.round((e.loaded / e.total) * 100),
+          speed,
+          remainingSeconds: Math.round(remaining),
+        }
+        lastTimestamp = now
+        lastBytesUploaded = e.loaded
+      }
+
+      xhr.onload = () => {
+        uploading.value = false
+        if (xhr.status === 202 || xhr.status === 200) {
+          try {
+            const data = JSON.parse(xhr.responseText)
+            const vid = data?.data?.videoId
+            if (vid) {
+              videoId.value = vid
+              progress.value.percentage = 100
+              resolve({ videoId: vid })
+            } else {
+              reject(new Error('videoId를 받지 못했습니다'))
+            }
+          } catch {
+            reject(new Error('응답 파싱 실패'))
+          }
+        } else {
+          try {
+            const body = JSON.parse(xhr.responseText)
+            reject(new Error(body?.message || body?.error || `업로드 실패: ${xhr.status}`))
+          } catch {
+            reject(new Error(`업로드 실패: ${xhr.status}`))
+          }
+        }
+      }
+
+      xhr.onerror = () => {
+        uploading.value = false
+        reject(new Error('네트워크 오류'))
+      }
+
+      xhr.onabort = () => {
+        uploading.value = false
+        reject(new Error('업로드가 취소되었습니다'))
+      }
+
+      xhr.open('POST', `${baseUrl}/videos/stream-publish`)
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      xhr.send(formData)
+    })
   }
 
   function resetUpload() {
-    xhrUpload.value?.abort()
     file.value = null
     imageFiles.value = []
     mediaType.value = 'VIDEO'
@@ -247,8 +224,6 @@ export const useUploadStore = defineStore('upload', () => {
     contentImages.value = []
     uploading.value = false
     uploadError.value = null
-    uploadUrl.value = null
-    xhrUpload.value = null
     progress.value = {
       bytesUploaded: 0,
       bytesTotal: 0,
@@ -271,15 +246,13 @@ export const useUploadStore = defineStore('upload', () => {
     isUploading,
     isImage,
     uploadError,
-    uploadUrl,
     step,
     metadata,
     hasActiveSession,
     startUpload,
     startImageUpload,
     uploadImagesToServer,
-    pauseUpload,
-    resumeUpload,
+    streamPublish,
     resetUpload,
   }
 })
