@@ -234,8 +234,8 @@ if [ -f "$PID_FILE" ] && ps -p $(cat "$PID_FILE") > /dev/null 2>&1; then
 else
     echo "  - Backend:  inactive"
 fi
-echo "  - Nginx:    $(systemctl is-active nginx 2>/dev/null || echo 'unknown')"
-echo ""
+# echo "  - Nginx:    $(systemctl is-active nginx 2>/dev/null || echo 'unknown')"
+# echo ""
 echo "접속 URL:"
 DOMAIN="ongo.codelabtiger.com"
 echo "  - 웹 UI:    https://${DOMAIN}"
