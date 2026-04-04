@@ -1,34 +1,29 @@
 package com.ongo.application.schedule
 
-import com.ongo.application.video.PlatformUploadConfig
-import com.ongo.application.video.VideoPublishEvent
-import com.ongo.common.enums.Platform
 import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.enums.UploadStatus
-import com.ongo.common.enums.Visibility
-import com.ongo.common.util.safeValueOfOrThrow
-import com.ongo.domain.event.ScheduleFailedEvent
 import com.ongo.domain.schedule.ScheduleRepository
-import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUploadRepository
-import com.ongo.domain.video.VideoPlatformMetaRepository
-import com.ongo.domain.video.VideoUpload
-import com.ongo.domain.video.VideoPlatformMeta
 import org.slf4j.LoggerFactory
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.ZoneId
 
+/**
+ * 예약 게시 상태 모니터링.
+ *
+ * onGo는 영상을 직접 저장하지 않으므로, 업로드 시점에 플랫폼 네이티브 스케줄링
+ * (YouTube publishAt, TikTok schedule_time 등)을 활용하여 즉시 업로드합니다.
+ *
+ * 이 스케줄러는 플랫폼에 예약 상태로 업로드된 영상의 실제 게시 상태를
+ * 주기적으로 확인하여 Schedule 레코드의 상태를 동기화합니다.
+ */
 @Component
 class ScheduleExecutor(
     private val scheduleRepository: ScheduleRepository,
-    private val videoRepository: VideoRepository,
     private val videoUploadRepository: VideoUploadRepository,
-    private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
-    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -36,92 +31,55 @@ class ScheduleExecutor(
         private val KST = ZoneId.of("Asia/Seoul")
     }
 
+    /**
+     * 예약 시간이 지난 SCHEDULED 상태의 레코드를 확인하여 상태를 동기화합니다.
+     * - 플랫폼 업로드가 PUBLISHED → Schedule도 PUBLISHED
+     * - 플랫폼 업로드가 FAILED → Schedule도 FAILED
+     * - 아직 PROCESSING 중 → 다음 주기에 재확인
+     */
     @Scheduled(fixedRate = 60000)
     @Transactional
-    fun executeDueSchedules() {
+    fun syncScheduleStatuses() {
         val now = LocalDateTime.now(KST)
         val dueSchedules = scheduleRepository.findDueSchedules(now)
 
         if (dueSchedules.isEmpty()) return
-        log.info("실행할 예약 ${dueSchedules.size}건 발견")
+        log.debug("상태 확인할 예약 {}건", dueSchedules.size)
 
         dueSchedules.forEach { schedule ->
             try {
-                scheduleRepository.update(schedule.copy(status = ScheduleStatus.PROCESSING))
+                // 24시간 이상 상태 변화 없으면 타임���웃 처리
+                val timeoutHours = 24L
+                val isTimedOut = schedule.scheduledAt.plusHours(timeoutHours).isBefore(now)
 
-                val video = videoRepository.findById(schedule.videoId)
-                if (video == null) {
-                    log.error("예약된 영상을 찾을 수 없습니다 [videoId=${schedule.videoId}]")
-                    scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
+                val uploads = videoUploadRepository.findByVideoId(schedule.videoId)
+                if (uploads.isEmpty()) {
+                    if (isTimedOut) {
+                        scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
+                        log.error("예약 타임아웃 — 업로드 레코드 없음 [scheduleId={}, videoId={}]", schedule.id, schedule.videoId)
+                    } else {
+                        log.debug("예약 {}에 대한 업로드 레코드가 아직 없습니다 [videoId={}]", schedule.id, schedule.videoId)
+                    }
                     return@forEach
                 }
 
-                val fileUrl = video.fileUrl
-                if (fileUrl.isNullOrBlank()) {
-                    log.error("파일 업로드가 완료되지 않은 영상입니다 [videoId=${schedule.videoId}]")
-                    scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
-                    return@forEach
+                val newStatus = when {
+                    uploads.all { it.status == UploadStatus.PUBLISHED } -> ScheduleStatus.PUBLISHED
+                    uploads.all { it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED } -> ScheduleStatus.FAILED
+                    uploads.any { it.status == UploadStatus.PROCESSING || it.status == UploadStatus.REVIEW } -> ScheduleStatus.PROCESSING
+                    isTimedOut -> {
+                        log.error("예약 타임아웃 — {}시간 이상 완료되지 않음 [scheduleId={}]", timeoutHours, schedule.id)
+                        ScheduleStatus.FAILED
+                    }
+                    else -> null // 아직 업로드 진행 중 — 다음 주기에 재확인
                 }
 
-                val platforms = schedule.platforms.keys.map { safeValueOfOrThrow<Platform>(it) }
-
-                // Create VideoUpload + PlatformMeta for each platform, build configs
-                val platformConfigs = platforms.map { platform ->
-                    val upload = videoUploadRepository.save(
-                        VideoUpload(
-                            videoId = schedule.videoId,
-                            platform = platform,
-                            status = UploadStatus.UPLOADING,
-                        )
-                    )
-                    val uploadId = upload.id!!
-
-                    videoPlatformMetaRepository.save(
-                        VideoPlatformMeta(
-                            videoUploadId = uploadId,
-                            title = video.title,
-                            description = video.description,
-                            tags = video.tags,
-                            visibility = Visibility.PUBLIC,
-                        )
-                    )
-
-                    PlatformUploadConfig(
-                        platform = platform,
-                        videoUploadId = uploadId,
-                        title = video.title,
-                        description = video.description,
-                        tags = video.tags,
-                        visibility = Visibility.PUBLIC,
-                        thumbnailUrl = video.thumbnailUrls.firstOrNull(),
-                        scheduledAt = schedule.scheduledAt,
-                    )
+                if (newStatus != null && newStatus != schedule.status) {
+                    scheduleRepository.update(schedule.copy(status = newStatus))
+                    log.info("예약 상태 갱신 [scheduleId={}, {} → {}]", schedule.id, schedule.status, newStatus)
                 }
-
-                // Update video status
-                videoRepository.update(video.copy(status = UploadStatus.UPLOADING))
-
-                eventPublisher.publishEvent(
-                    VideoPublishEvent(
-                        videoId = schedule.videoId,
-                        userId = schedule.userId,
-                        fileUrl = fileUrl,
-                        platformConfigs = platformConfigs,
-                    )
-                )
-                scheduleRepository.update(schedule.copy(status = ScheduleStatus.PUBLISHED))
-                log.info("예약 실행 완료 [scheduleId=${schedule.id}, videoId=${schedule.videoId}]")
             } catch (e: Exception) {
-                log.error("예약 실행 실패 [scheduleId=${schedule.id}]: ${e.message}", e)
-                scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
-                eventPublisher.publishEvent(
-                    ScheduleFailedEvent(
-                        scheduleId = schedule.id!!,
-                        videoId = schedule.videoId,
-                        userId = schedule.userId,
-                        reason = e.message ?: "알 수 없는 오류"
-                    )
-                )
+                log.error("예약 상태 동기화 실패 [scheduleId={}]: {}", schedule.id, e.message, e)
             }
         }
     }

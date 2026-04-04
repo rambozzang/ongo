@@ -11,6 +11,8 @@ data class NaverClipUploadInitRequest(
     val tags: List<String>,
     @JsonProperty("file_size") val fileSize: Long,
     val visibility: String, // PUBLIC, PRIVATE
+    /** 예약 게시 시간 (ISO 8601), null이면 즉시 게시 */
+    @JsonProperty("publish_at") val publishAt: String? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

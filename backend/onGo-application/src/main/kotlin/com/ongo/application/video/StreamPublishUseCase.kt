@@ -1,13 +1,17 @@
 package com.ongo.application.video
 
+import com.ongo.application.config.ExecutorConfig
 import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.PlanType
+import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.schedule.Schedule
+import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoPlatformMeta
@@ -24,7 +28,6 @@ import org.springframework.web.multipart.MultipartFile
 import java.nio.file.Files
 import java.time.LocalDateTime
 import java.time.YearMonth
-import java.util.concurrent.Executors
 
 @Service
 class StreamPublishUseCase(
@@ -35,6 +38,7 @@ class StreamPublishUseCase(
     private val channelRepository: ChannelRepository,
     private val storageQuotaUseCase: StorageQuotaUseCase,
     private val streamWriterFactories: List<PlatformStreamWriterFactory>,
+    private val scheduleRepository: ScheduleRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -117,7 +121,25 @@ class StreamPublishUseCase(
             )
         }
 
-        // 4. 파일을 임시 파일로 저장
+        // 4. 예약 게시인 경우 Schedule 레코드 생성 (상태 추적용)
+        val hasSchedule = platformConfigs.any { it.scheduledAt != null }
+        if (hasSchedule) {
+            val earliestScheduledAt = platformConfigs.mapNotNull { it.scheduledAt }.min()
+            val platformMap = platformConfigs.filter { it.scheduledAt != null }
+                .associate { it.platform.name to mapOf("scheduledAt" to it.scheduledAt.toString()) }
+            scheduleRepository.save(
+                Schedule(
+                    videoId = videoId,
+                    userId = userId,
+                    scheduledAt = earliestScheduledAt,
+                    status = ScheduleStatus.PROCESSING,
+                    platforms = platformMap,
+                )
+            )
+            log.info("예약 게시 스케줄 생성: videoId={}, scheduledAt={}", videoId, earliestScheduledAt)
+        }
+
+        // 5. 파일을 임시 파일로 저장
         val tempFile = Files.createTempFile("ongo-stream-", "-${file.originalFilename ?: "upload"}")
         try {
             file.transferTo(tempFile.toFile())
@@ -126,12 +148,17 @@ class StreamPublishUseCase(
             throw e
         }
 
-        // 5. 트랜잭션 커밋 후 Virtual Thread에서 비동기 스트리밍 시작
+        // 6. 트랜잭션 커밋 후 Virtual Thread에서 비동기 스트리밍 시작
         // (afterCommit: DB 레코드가 확실히 커밋된 후 읽기 가능)
         TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
             override fun afterCommit() {
                 Thread.ofVirtual().name("stream-publish-$videoId").start {
-                    runStreamingUpload(videoId, tempFile.toFile(), fileSize, platformConfigs)
+                    ExecutorConfig.uploadSemaphore.acquire()
+                    try {
+                        runStreamingUpload(videoId, tempFile.toFile(), fileSize, platformConfigs)
+                    } finally {
+                        ExecutorConfig.uploadSemaphore.release()
+                    }
                 }
             }
         })
@@ -166,11 +193,13 @@ class StreamPublishUseCase(
 
             // 병렬로 initSession() 호출 — 실패한 플랫폼은 FAILED 처리 후 제외, 나머지는 계속
             val activeWriterMap: MutableMap<StreamPlatformContext, PlatformStreamWriter> = mutableMapOf()
-            Executors.newVirtualThreadPerTaskExecutor().use { executor ->
+            ExecutorConfig.newVirtualExecutor().use { executor ->
                 val initFutures = writerMap.map { (ctx, writer) ->
                     ctx to executor.submit<Unit> {
-                        val sessionId = writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize)
-                        log.info("플랫폼 {} 업로드 세션 초기화: videoId={}, sessionId={}", ctx.platform, videoId, sessionId)
+                        val sessionId = writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize, ctx.scheduledAt)
+                        val scheduleInfo = if (ctx.scheduledAt != null) ", scheduledAt=${ctx.scheduledAt}" else ""
+                        log.info("플랫폼 {} 업로드 세션 초기화: videoId={}, sessionId={}{}",
+                            ctx.platform, videoId, sessionId, scheduleInfo)
                     }
                 }
                 initFutures.forEach { (ctx, future) ->
@@ -208,7 +237,7 @@ class StreamPublishUseCase(
             }
 
             // 완료 후 각 writer complete() 호출 및 상태 업데이트
-            Executors.newVirtualThreadPerTaskExecutor().use { executor ->
+            ExecutorConfig.newVirtualExecutor().use { executor ->
                 val completeFutures = activeWriterMap.map { (ctx, writer) ->
                     executor.submit<Unit> {
                         try {

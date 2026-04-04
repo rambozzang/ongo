@@ -27,12 +27,12 @@
       </kbd>
     </button>
 
-    <div class="ml-auto flex items-center gap-3">
-      <!-- AI Credit Display -->
-      <CreditDisplay />
+    <div class="ml-auto flex items-center gap-2 tablet:gap-3">
+      <!-- AI Credit Display (tablet+) -->
+      <CreditDisplay class="hidden tablet:flex" />
 
-      <!-- Language Toggle -->
-      <LanguageToggle />
+      <!-- Language Toggle (tablet+) -->
+      <LanguageToggle class="hidden tablet:block" />
 
       <!-- Theme Toggle -->
       <ThemeToggle />
@@ -78,7 +78,7 @@
           v-if="profileOpen"
           role="menu"
           aria-label="프로필 메뉴"
-          class="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-gray-200 bg-white py-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+          class="absolute right-0 top-full z-50 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white py-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
         >
           <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-700">
             <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ user?.nickname || user?.name }}</p>

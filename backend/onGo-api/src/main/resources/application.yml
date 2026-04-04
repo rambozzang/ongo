@@ -17,10 +17,11 @@ spring:
     password: ${DB_PASSWORD:aaaAAA111!!!}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:50}
+      minimum-idle: ${HIKARI_MIN_IDLE:10}
       idle-timeout: 30000
       max-lifetime: 1800000
+      pool-name: ongo-hikari
 
   # jOOQ
   jooq:
@@ -192,6 +193,14 @@ resilience4j:
           - org.springframework.web.client.ResourceAccessException
         ignore-exceptions:
           - com.ongo.common.exception.PlatformUploadException
+      aiApi:
+        max-attempts: 2
+        wait-duration: 3s
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+          - org.springframework.web.client.ResourceAccessException
   circuitbreaker:
     instances:
       platformApi:
@@ -200,6 +209,13 @@ resilience4j:
         wait-duration-in-open-state: 60s
         permitted-number-of-calls-in-half-open-state: 3
         slow-call-duration-threshold: 30s
+        slow-call-rate-threshold: 80
+      aiApi:
+        sliding-window-size: 10
+        failure-rate-threshold: 60
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        slow-call-duration-threshold: 60s
         slow-call-rate-threshold: 80
 
 # Logging (production defaults - use application-dev.yml for DEBUG)
@@ -210,16 +226,30 @@ logging:
     org.jooq: WARN
     org.springframework.ai: INFO
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId:-}] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{requestId:-}] %-5level %logger{36} - %msg%n"
   file:
     name: logs/ongo-api.log
 
-# Actuator
+# Actuator & Monitoring
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,caches,scheduledtasks
   endpoint:
     health:
       show-details: when-authorized
+      show-components: when-authorized
+    metrics:
+      enabled: true
+    caches:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 100ms,500ms,1s,5s

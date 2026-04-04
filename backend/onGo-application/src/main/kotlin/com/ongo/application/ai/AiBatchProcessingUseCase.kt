@@ -1,6 +1,7 @@
 package com.ongo.application.ai
 
 import com.ongo.application.ai.dto.*
+import com.ongo.application.config.ExecutorConfig
 import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AiFeature
 import com.ongo.common.enums.Platform
@@ -11,8 +12,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
-import java.util.concurrent.Semaphore
 
 @Service
 class AiBatchProcessingUseCase(
@@ -25,7 +24,6 @@ class AiBatchProcessingUseCase(
 
     private val log = LoggerFactory.getLogger(AiBatchProcessingUseCase::class.java)
     private val batchStore = ConcurrentHashMap<String, AiBatchResponse>()
-    private val concurrencyLimit = Semaphore(3)
 
     fun startBatch(userId: Long, request: AiBatchRequest): AiBatchResponse {
         if (request.videoIds.isEmpty()) {
@@ -67,9 +65,8 @@ class AiBatchProcessingUseCase(
 
         batchStore[batchId] = batchResponse
 
-        // Process asynchronously using virtual threads
-        val executor = Executors.newVirtualThreadPerTaskExecutor()
-        executor.submit {
+        // Process asynchronously using virtual thread
+        Thread.ofVirtual().name("ai-batch-$batchId").start {
             processBatch(userId, batchId, request)
         }
 
@@ -89,33 +86,34 @@ class AiBatchProcessingUseCase(
         val currentBatch = batchStore[batchId] ?: return
         val updatedItems = currentBatch.items.toMutableList()
 
-        val executor = Executors.newVirtualThreadPerTaskExecutor()
-        val futures = request.videoIds.mapIndexed { index, videoId ->
-            executor.submit<Unit> {
-                concurrencyLimit.acquire()
-                try {
-                    // Update status to PROCESSING
-                    updateItemStatus(batchId, index, ItemStatus.PROCESSING)
+        ExecutorConfig.newVirtualExecutor().use { executor ->
+            val futures = request.videoIds.mapIndexed { index, videoId ->
+                executor.submit<Unit> {
+                    ExecutorConfig.aiBatchSemaphore.acquire()
+                    try {
+                        // Update status to PROCESSING
+                        updateItemStatus(batchId, index, ItemStatus.PROCESSING)
 
-                    processVideoItem(userId, videoId, request.operation, request.platform)
+                        processVideoItem(userId, videoId, request.operation, request.platform)
 
-                    // Update status to COMPLETED
-                    updateItemStatus(batchId, index, ItemStatus.COMPLETED)
-                } catch (e: Exception) {
-                    log.error("배치 아이템 처리 실패: videoId={}, operation={}", videoId, request.operation, e)
-                    updateItemStatus(batchId, index, ItemStatus.FAILED, error = e.message)
-                } finally {
-                    concurrencyLimit.release()
+                        // Update status to COMPLETED
+                        updateItemStatus(batchId, index, ItemStatus.COMPLETED)
+                    } catch (e: Exception) {
+                        log.error("배치 아이템 처리 실패: videoId={}, operation={}", videoId, request.operation, e)
+                        updateItemStatus(batchId, index, ItemStatus.FAILED, error = e.message)
+                    } finally {
+                        ExecutorConfig.aiBatchSemaphore.release()
+                    }
                 }
             }
-        }
 
-        // Wait for all to complete
-        futures.forEach { future ->
-            try {
-                future.get()
-            } catch (e: Exception) {
-                log.error("배치 Future 처리 실패", e)
+            // Wait for all to complete
+            futures.forEach { future ->
+                try {
+                    future.get()
+                } catch (e: Exception) {
+                    log.error("배치 Future 처리 실패", e)
+                }
             }
         }
 

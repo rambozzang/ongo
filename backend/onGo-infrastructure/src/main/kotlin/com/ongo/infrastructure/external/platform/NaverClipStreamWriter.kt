@@ -11,6 +11,9 @@ import com.ongo.infrastructure.external.naverclip.dto.NaverClipUploadInitRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Component
 class NaverClipStreamWriterFactory(
@@ -32,14 +35,35 @@ class NaverClipStreamWriter(
     private var uploadUrl: String? = null
     private var accessTokenRef: String? = null
 
+    companion object {
+        private const val MAX_MEMORY_FILE_SIZE = 2L * 1024 * 1024 * 1024 // 2GB — 메모리 버퍼링 상한
+    }
+
     override fun initSession(
         meta: VideoPlatformMeta,
         accessToken: String,
         platformChannelId: String?,
         fileSize: Long,
+        scheduledAt: LocalDateTime?,
     ): String {
+        if (fileSize > MAX_MEMORY_FILE_SIZE) {
+            throw IllegalArgumentException(
+                "스트리밍 업로드 최대 파일 크기(${MAX_MEMORY_FILE_SIZE / 1024 / 1024}MB)를 초과합니다: ${fileSize / 1024 / 1024}MB"
+            )
+        }
+
         accessTokenRef = accessToken
         val visibility = mapVisibility(meta.visibility.name)
+
+        // Naver Clip 예약 게시: publish_at (ISO 8601)
+        val publishAtIso = scheduledAt?.let {
+            it.atZone(ZoneId.of("Asia/Seoul"))
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+        }
+
+        if (publishAtIso != null) {
+            log.info("Naver Clip 예약 게시 설정: publishAt={}", publishAtIso)
+        }
 
         val initResponse = naverClipApi.initUpload(
             authorization = "Bearer $accessToken",
@@ -49,6 +73,7 @@ class NaverClipStreamWriter(
                 tags = meta.tags,
                 fileSize = fileSize,
                 visibility = visibility,
+                publishAt = publishAtIso,
             ),
         )
 

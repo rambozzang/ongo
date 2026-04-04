@@ -339,102 +339,138 @@
       </div>
 
       <!-- List View -->
-      <div v-else class="card overflow-hidden p-0">
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[800px]">
-            <thead>
-              <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <th v-if="selectionMode" class="w-10 px-4 py-3">
-                  <input
-                    type="checkbox"
-                    :checked="isAllSelected"
-                    :indeterminate="isPartiallySelected"
-                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
-                    @change="toggleSelectAll"
-                  />
-                </th>
-                <th class="px-4 py-3">{{ $t('videos.tableVideo') }}</th>
-                <th class="px-4 py-3">{{ $t('videos.tablePlatform') }}</th>
-                <th class="px-4 py-3">{{ $t('videos.tableViews') }}</th>
-                <th class="px-4 py-3">{{ $t('videos.tableLikes') }}</th>
-                <th class="px-4 py-3">{{ $t('videos.tableDate') }}</th>
-                <th class="w-10 px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr
-                v-for="video in displayedVideos.content"
-                :key="video.id"
-                class="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-                :class="{ 'bg-primary-50 dark:bg-primary-900/20': selectionMode && selectedIds.has(video.id) }"
+      <div v-else>
+        <!-- Mobile: Card list -->
+        <div class="space-y-3 tablet:hidden">
+          <div
+            v-for="video in displayedVideos.content"
+            :key="video.id"
+            class="card cursor-pointer p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+            :class="{ '!bg-primary-50 dark:!bg-primary-900/20': selectionMode && selectedIds.has(video.id) }"
+            @click="goToDetail(video.id)"
+          >
+            <div class="flex gap-3">
+              <!-- Selection checkbox -->
+              <div v-if="selectionMode" class="flex items-start pt-1" @click.stop>
+                <input
+                  type="checkbox"
+                  :checked="selectedIds.has(video.id)"
+                  class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                  @change="toggleSelect(video.id)"
+                />
+              </div>
+              <!-- Thumbnail -->
+              <div class="h-16 w-24 flex-shrink-0 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+                <img v-if="video.thumbnailUrl" :src="video.thumbnailUrl" :alt="video.title" class="h-full w-full object-cover" />
+                <div v-else class="flex h-full items-center justify-center">
+                  <VideoCameraIcon class="h-6 w-6 text-gray-300" />
+                </div>
+              </div>
+              <!-- Info -->
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ video.title }}</p>
+                <div class="mt-1 flex items-center gap-2">
+                  <StatusBadge :status="video.status" />
+                  <div class="flex gap-1">
+                    <PlatformBadge v-for="upload in video.uploads" :key="upload.id" :platform="upload.platform" />
+                  </div>
+                </div>
+                <div class="mt-1.5 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                  <span>{{ $t('videos.tableViews') }} {{ formatNumber(getTotalViews(video)) }}</span>
+                  <span>{{ $t('videos.tableLikes') }} {{ formatNumber(getTotalLikes(video)) }}</span>
+                  <span>{{ formatDate(video.createdAt) }}</span>
+                </div>
+              </div>
+              <!-- Actions -->
+              <button
+                class="flex-shrink-0 self-start rounded-full p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                @click.stop="openContextMenu(video, $event)"
               >
-                <td v-if="selectionMode" class="px-4 py-3" @click.stop>
-                  <div class="flex items-center gap-2">
+                <EllipsisVerticalIcon class="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tablet+: Table -->
+        <div class="card hidden overflow-hidden p-0 tablet:block">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[700px]">
+              <thead>
+                <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <th v-if="selectionMode" class="w-10 px-4 py-3">
                     <input
                       type="checkbox"
-                      :checked="selectedIds.has(video.id)"
+                      :checked="isAllSelected"
+                      :indeterminate="isPartiallySelected"
                       class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
-                      @change="toggleSelect(video.id)"
+                      @change="toggleSelectAll"
                     />
-                    <FavoriteButton :video-id="video.id" size="sm" />
-                  </div>
-                </td>
-                <td class="px-4 py-3" @click="goToDetail(video.id)">
-                  <div class="flex items-center gap-3">
-                    <!-- Favorite Button (List view, when not in selection mode) -->
-                    <FavoriteButton v-if="!selectionMode" :video-id="video.id" size="sm" />
-                    <!-- Small Thumbnail -->
-                    <div class="h-12 w-20 flex-shrink-0 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
-                      <img
-                        v-if="video.thumbnailUrl"
-                        :src="video.thumbnailUrl"
-                        :alt="video.title"
-                        class="h-full w-full object-cover"
+                  </th>
+                  <th class="px-4 py-3">{{ $t('videos.tableVideo') }}</th>
+                  <th class="px-4 py-3">{{ $t('videos.tablePlatform') }}</th>
+                  <th class="px-4 py-3">{{ $t('videos.tableViews') }}</th>
+                  <th class="px-4 py-3">{{ $t('videos.tableLikes') }}</th>
+                  <th class="px-4 py-3">{{ $t('videos.tableDate') }}</th>
+                  <th class="w-10 px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tr
+                  v-for="video in displayedVideos.content"
+                  :key="video.id"
+                  class="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+                  :class="{ 'bg-primary-50 dark:bg-primary-900/20': selectionMode && selectedIds.has(video.id) }"
+                >
+                  <td v-if="selectionMode" class="px-4 py-3" @click.stop>
+                    <div class="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        :checked="selectedIds.has(video.id)"
+                        class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                        @change="toggleSelect(video.id)"
                       />
-                      <div v-else class="flex h-full items-center justify-center">
-                        <VideoCameraIcon class="h-6 w-6 text-gray-300" />
+                      <FavoriteButton :video-id="video.id" size="sm" />
+                    </div>
+                  </td>
+                  <td class="px-4 py-3" @click="goToDetail(video.id)">
+                    <div class="flex items-center gap-3">
+                      <FavoriteButton v-if="!selectionMode" :video-id="video.id" size="sm" />
+                      <div class="h-12 w-20 flex-shrink-0 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+                        <img v-if="video.thumbnailUrl" :src="video.thumbnailUrl" :alt="video.title" class="h-full w-full object-cover" />
+                        <div v-else class="flex h-full items-center justify-center">
+                          <VideoCameraIcon class="h-6 w-6 text-gray-300" />
+                        </div>
+                      </div>
+                      <div class="min-w-0">
+                        <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100" :title="video.title">{{ video.title }}</p>
+                        <div class="flex items-center gap-2">
+                          <StatusBadge :status="video.status" />
+                        </div>
                       </div>
                     </div>
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100" :title="video.title">
-                        {{ video.title }}
-                      </p>
-                      <div class="flex items-center gap-2">
-                        <StatusBadge :status="video.status" />
-                      </div>
+                  </td>
+                  <td class="px-4 py-3" @click="goToDetail(video.id)">
+                    <div class="flex flex-wrap gap-1">
+                      <PlatformBadge v-for="upload in video.uploads" :key="upload.id" :platform="upload.platform" />
+                      <span v-if="video.uploads.length === 0" class="text-xs text-gray-400">-</span>
                     </div>
-                  </div>
-                </td>
-                <td class="px-4 py-3" @click="goToDetail(video.id)">
-                  <div class="flex flex-wrap gap-1">
-                    <PlatformBadge
-                      v-for="upload in video.uploads"
-                      :key="upload.id"
-                      :platform="upload.platform"
-                    />
-                    <span v-if="video.uploads.length === 0" class="text-xs text-gray-400">-</span>
-                  </div>
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300" @click="goToDetail(video.id)">
-                  {{ formatNumber(getTotalViews(video)) }}
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300" @click="goToDetail(video.id)">
-                  {{ formatNumber(getTotalLikes(video)) }}
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400" @click="goToDetail(video.id)">
-                  {{ formatDate(video.createdAt) }}
-                </td>
-                <td class="px-4 py-3" @click.stop>
-                  <button
-                    class="rounded-full p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
-                    @click="openContextMenu(video, $event)"
-                  >
-                    <EllipsisVerticalIcon class="h-5 w-5" />
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300" @click="goToDetail(video.id)">{{ formatNumber(getTotalViews(video)) }}</td>
+                  <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300" @click="goToDetail(video.id)">{{ formatNumber(getTotalLikes(video)) }}</td>
+                  <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400" @click="goToDetail(video.id)">{{ formatDate(video.createdAt) }}</td>
+                  <td class="px-4 py-3" @click.stop>
+                    <button
+                      class="rounded-full p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
+                      @click="openContextMenu(video, $event)"
+                    >
+                      <EllipsisVerticalIcon class="h-5 w-5" />
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

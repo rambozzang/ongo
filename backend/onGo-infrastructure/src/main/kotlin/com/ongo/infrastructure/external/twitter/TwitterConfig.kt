@@ -62,6 +62,7 @@ class TwitterConfig {
 
     fun getClientId(): String = clientId
     fun getClientSecret(): String = clientSecret
+    fun getUploadBaseUrl(): String = uploadBaseUrl
 
     private fun createRequestFactory(): SimpleClientHttpRequestFactory {
         return SimpleClientHttpRequestFactory().apply {

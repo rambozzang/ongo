@@ -161,88 +161,14 @@ import {
   ChevronRightIcon,
   BanknotesIcon,
   LightBulbIcon,
-  UserGroupIcon,
-  BoltIcon,
   InboxIcon,
-  GlobeAltIcon,
   DocumentDuplicateIcon,
-  BeakerIcon,
-  PresentationChartLineIcon,
   SwatchIcon,
-  FlagIcon,
   BellIcon,
-  ArrowPathIcon,
-  FolderIcon,
-  CodeBracketIcon,
   ClockIcon,
   BookOpenIcon,
   ShieldCheckIcon,
-  FireIcon,
-  UsersIcon,
-  BriefcaseIcon,
   ScissorsIcon,
-  SignalIcon,
-  IdentificationIcon,
-  ShoppingCartIcon,
-  BuildingOffice2Icon,
-  CalendarIcon,
-  CubeTransparentIcon,
-  LanguageIcon,
-  MagnifyingGlassCircleIcon,
-  HashtagIcon,
-  SpeakerWaveIcon,
-  ArrowsPointingOutIcon,
-  AcademicCapIcon,
-  DocumentMagnifyingGlassIcon,
-  PhotoIcon,
-  TableCellsIcon,
-  BoltIcon as LiveBoltIcon,
-  CurrencyDollarIcon,
-  DocumentTextIcon,
-  MegaphoneIcon,
-  UserPlusIcon,
-  ClipboardDocumentCheckIcon,
-  DocumentArrowUpIcon,
-  HeartIcon,
-  RectangleStackIcon,
-  ChatBubbleBottomCenterTextIcon,
-  ShieldExclamationIcon,
-  PencilSquareIcon,
-  ViewColumnsIcon,
-  GiftIcon,
-  QueueListIcon,
-  FaceSmileIcon,
-  DocumentChartBarIcon,
-  TrophyIcon,
-  CpuChipIcon,
-  CalendarIcon as AiCalendarIcon2,
-  ScaleIcon,
-  CircleStackIcon,
-  EyeIcon,
-  ArrowPathRoundedSquareIcon,
-  Square3Stack3DIcon,
-  MagnifyingGlassIcon,
-  PaintBrushIcon,
-  PhotoIcon as ThumbnailAbIcon,
-  CurrencyDollarIcon as RevenueGoalIcon,
-  ChatBubbleLeftRightIcon,
-  HeartIcon as HealthIcon,
-  MicrophoneIcon,
-  FolderOpenIcon,
-  HandRaisedIcon,
-  UserCircleIcon,
-  ArrowTrendingUpIcon,
-  DocumentChartBarIcon as ReportIcon2,
-  VideoCameraIcon,
-  ShoppingBagIcon,
-  MusicalNoteIcon,
-  AdjustmentsHorizontalIcon,
-  GiftIcon as RewardIcon2,
-  CogIcon,
-  ClockIcon as OptimizerIcon,
-  RectangleGroupIcon,
-  MegaphoneIcon as CampaignIcon,
-  FunnelIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -300,7 +226,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/dashboard', label: t('nav.dashboard'), icon: HomeIcon },
     ],
   },
-  // ── 2. 콘텐츠 제작: 영상 기획 → 제작 → 관리 ──
+  // ── 2. 콘텐츠 제작 ──
   {
     label: t('nav.groupCreate'),
     items: [
@@ -310,281 +236,40 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/ai', label: t('nav.ai'), icon: SparklesIcon },
       { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
       { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
-    ],
-    subGroups: [
-      {
-        key: 'create-video-edit',
-        label: t('nav.subVideoEdit'),
-        items: [
-          { to: '/thumbnail-generator', label: t('nav.thumbnailGenerator'), icon: PhotoIcon },
-          { to: '/mood-board', label: t('nav.moodBoard'), icon: PaintBrushIcon },
-          { to: '/music-recommender', label: t('nav.musicRecommender'), icon: MusicalNoteIcon },
-        ],
-      },
-      {
-        key: 'create-subtitle',
-        label: t('nav.subSubtitle'),
-        items: [
-          { to: '/subtitle-editor', label: t('nav.subtitleEditor'), icon: LanguageIcon },
-          { to: '/subtitle-translation', label: t('nav.subtitleTranslation'), icon: LanguageIcon },
-          { to: '/subtitle-generator', label: t('nav.subtitleGenerator'), icon: MicrophoneIcon },
-        ],
-      },
-      {
-        key: 'create-script',
-        label: t('nav.subScript'),
-        items: [
-          { to: '/script-writer', label: t('nav.scriptWriter'), icon: PencilSquareIcon },
-          { to: '/video-script-assistant', label: t('nav.videoScriptAssistant'), icon: PencilSquareIcon },
-          { to: '/content-rewriter', label: t('nav.contentRewriter'), icon: DocumentTextIcon },
-          { to: '/content-translator', label: t('nav.contentTranslator'), icon: LanguageIcon },
-        ],
-      },
-      {
-        key: 'create-content-manage',
-        label: t('nav.subContentManage'),
-        items: [
-          { to: '/assets', label: t('nav.assets'), icon: FolderIcon },
-          { to: '/content-library', label: t('nav.contentLibrary'), icon: FolderOpenIcon },
-          { to: '/content-series', label: t('nav.contentSeries'), icon: RectangleStackIcon },
-          { to: '/content-versioning', label: t('nav.contentVersioning'), icon: DocumentChartBarIcon },
-          { to: '/content-cluster', label: t('nav.contentCluster'), icon: CircleStackIcon },
-          { to: '/playlist-manager', label: t('nav.playlistManager'), icon: QueueListIcon },
-        ],
-      },
-      {
-        key: 'create-recycle',
-        label: t('nav.subRecycle'),
-        items: [
-          { to: '/recycling', label: t('nav.recycling'), icon: ArrowPathIcon },
-          { to: '/content-repurposer', label: t('nav.contentRepurposer'), icon: ArrowPathRoundedSquareIcon },
-        ],
-      },
-    ],
-  },
-  // ── 3. 최적화: SEO·품질·브랜드·A/B 테스트 ──
-  {
-    label: t('nav.groupOptimize'),
-    items: [
-      { to: '/video-seo', label: t('nav.videoSeo'), icon: MagnifyingGlassIcon },
-      { to: '/quality-score', label: t('nav.qualityScore'), icon: ClipboardDocumentCheckIcon },
       { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
-      { to: '/brand-voice', label: t('nav.brandVoice'), icon: SpeakerWaveIcon },
-    ],
-    subGroups: [
-      {
-        key: 'optimize-hashtag',
-        label: t('nav.subHashtag'),
-        items: [
-          { to: '/hashtag-strategy', label: t('nav.hashtagStrategy'), icon: HashtagIcon },
-          { to: '/hashtag-analytics', label: t('nav.hashtagAnalytics'), icon: HashtagIcon },
-        ],
-      },
-      {
-        key: 'optimize-copyright',
-        label: t('nav.subCopyrightSafety'),
-        items: [
-          { to: '/copyright-check', label: t('nav.copyrightCheck'), icon: DocumentMagnifyingGlassIcon },
-          { to: '/content-rights', label: t('nav.contentRights'), icon: ShieldExclamationIcon },
-          { to: '/brand-safety', label: t('nav.brandSafety'), icon: ShieldExclamationIcon },
-        ],
-      },
-      {
-        key: 'optimize-abtest',
-        label: t('nav.subAbTest'),
-        items: [
-          { to: '/abtest', label: t('nav.abtest'), icon: BeakerIcon },
-          { to: '/ab-test-results', label: t('nav.abTestResults'), icon: BeakerIcon },
-          { to: '/thumbnail-ab-test', label: t('nav.thumbnailAbTest'), icon: ThumbnailAbIcon },
-          { to: '/content-ab-analyzer', label: t('nav.contentAbAnalyzer'), icon: AdjustmentsHorizontalIcon },
-        ],
-      },
     ],
   },
-  // ── 4. 게시 & 자동화: 스케줄·캘린더·워크플로우 ──
+  // ── 3. 게시 & 스케줄 ──
   {
     label: t('nav.groupPublish'),
     items: [
       { to: '/schedule', label: t('nav.schedule'), icon: CalendarDaysIcon },
       { to: '/calendar', label: t('nav.calendar'), icon: CalendarDaysIcon },
-      { to: '/automation', label: t('nav.automation'), icon: BoltIcon },
-    ],
-    subGroups: [
-      {
-        key: 'publish-ai-scheduling',
-        label: t('nav.subAiScheduling'),
-        items: [
-          { to: '/ai-calendar', label: t('nav.aiCalendar'), icon: CalendarIcon },
-          { to: '/content-calendar-ai', label: t('nav.contentCalendarAi'), icon: AiCalendarIcon2 },
-          { to: '/schedule-optimizer', label: t('nav.scheduleOptimizer'), icon: OptimizerIcon },
-          { to: '/calendar-insights', label: t('nav.calendarInsights'), icon: CalendarDaysIcon },
-        ],
-      },
-      {
-        key: 'publish-workflow',
-        label: t('nav.subWorkflow'),
-        items: [
-          { to: '/workflow-builder', label: t('nav.workflowBuilder'), icon: CubeTransparentIcon },
-          { to: '/platform-automation-pro', label: t('nav.platformAutomationPro'), icon: CogIcon },
-          { to: '/multi-brand-calendar', label: t('nav.multiBrandCalendar'), icon: CalendarDaysIcon },
-        ],
-      },
     ],
   },
-  // ── 5. 분석: 성과·채널·경쟁사·성장 ──
+  // ── 4. 분석 ──
   {
     label: t('nav.groupAnalytics'),
     items: [
       { to: '/analytics', label: t('nav.analytics'), icon: ChartBarIcon },
-      { to: '/live-dashboard', label: t('nav.liveDashboard'), icon: LiveBoltIcon },
-      { to: '/trends', label: t('nav.trends'), icon: FireIcon },
-      { to: '/goals', label: t('nav.goals'), icon: FlagIcon },
-    ],
-    subGroups: [
-      {
-        key: 'analytics-performance',
-        label: t('nav.subPerformance'),
-        items: [
-          { to: '/prediction', label: t('nav.prediction'), icon: SignalIcon },
-          { to: '/performance-heatmap', label: t('nav.performanceHeatmap'), icon: TableCellsIcon },
-          { to: '/performance-report', label: t('nav.performanceReport'), icon: ReportIcon2 },
-          { to: '/cross-analytics', label: t('nav.crossAnalytics'), icon: ArrowsPointingOutIcon },
-          { to: '/content-funnel', label: t('nav.contentFunnel'), icon: FunnelIcon },
-          { to: '/team-performance', label: t('nav.teamPerformance'), icon: ChartBarIcon },
-        ],
-      },
-      {
-        key: 'analytics-channel-health',
-        label: t('nav.subChannelHealth'),
-        items: [
-          { to: '/platform-health', label: t('nav.platformHealth'), icon: HealthIcon },
-          { to: '/channel-health', label: t('nav.channelHealth'), icon: HealthIcon },
-          { to: '/algorithm-insights', label: t('nav.algorithmInsights'), icon: CpuChipIcon },
-        ],
-      },
-      {
-        key: 'analytics-competitor',
-        label: t('nav.subCompetitor'),
-        items: [
-          { to: '/competitor', label: t('nav.competitor'), icon: PresentationChartLineIcon },
-          { to: '/competitor-analysis', label: t('nav.competitorAnalysis'), icon: MagnifyingGlassCircleIcon },
-          { to: '/creator-benchmark', label: t('nav.creatorBenchmark'), icon: ScaleIcon },
-          { to: '/audience-overlap', label: t('nav.audienceOverlap'), icon: Square3Stack3DIcon },
-        ],
-      },
-      {
-        key: 'analytics-growth',
-        label: t('nav.subGrowth'),
-        items: [
-          { to: '/growth-coach', label: t('nav.growthCoach'), icon: AcademicCapIcon },
-          { to: '/trend-predictor', label: t('nav.trendPredictor'), icon: ArrowTrendingUpIcon },
-          { to: '/creator-milestone', label: t('nav.creatorMilestone'), icon: TrophyIcon },
-          { to: '/creator-academy', label: t('nav.creatorAcademy'), icon: BookOpenIcon },
-        ],
-      },
-    ],
-  },
-  // ── 6. 수익: 매출·비즈니스·스폰서 ──
-  {
-    label: t('nav.groupRevenue'),
-    items: [
       { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
-      { to: '/commerce', label: t('nav.commerce'), icon: ShoppingCartIcon },
-    ],
-    subGroups: [
-      {
-        key: 'revenue-analysis',
-        label: t('nav.subRevenueAnalysis'),
-        items: [
-          { to: '/revenue-forecaster', label: t('nav.revenueForecaster'), icon: CurrencyDollarIcon },
-          { to: '/revenue-split', label: t('nav.revenueSplit'), icon: BanknotesIcon },
-          { to: '/revenue-goal', label: t('nav.revenueGoal'), icon: RevenueGoalIcon },
-          { to: '/revenue-analyzer', label: t('nav.revenueAnalyzer'), icon: BanknotesIcon },
-        ],
-      },
-      {
-        key: 'revenue-business',
-        label: t('nav.subBusiness'),
-        items: [
-          { to: '/portfolio', label: t('nav.portfolio'), icon: IdentificationIcon },
-          { to: '/portfolio-builder', label: t('nav.portfolioBuilder'), icon: RectangleGroupIcon },
-          { to: '/media-kit', label: t('nav.mediaKit'), icon: DocumentArrowUpIcon },
-          { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
-          { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
-        ],
-      },
-      {
-        key: 'revenue-sponsor',
-        label: t('nav.subSponsor'),
-        items: [
-          { to: '/sponsorship-tracker', label: t('nav.sponsorshipTracker'), icon: GiftIcon },
-          { to: '/fan-segment-campaign', label: t('nav.fanSegmentCampaign'), icon: CampaignIcon },
-        ],
-      },
     ],
   },
-  // ── 7. 오디언스: 댓글·팬·크리에이터 네트워크 ──
+  // ── 5. 소통 ──
   {
     label: t('nav.groupAudience'),
     items: [
       { to: '/comments', label: t('nav.comments'), icon: ChatBubbleLeftEllipsisIcon },
-      { to: '/audience', label: t('nav.audience'), icon: UsersIcon },
       { to: '/inbox', label: t('nav.inbox'), icon: InboxIcon },
       { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
     ],
-    subGroups: [
-      {
-        key: 'audience-ai-comment',
-        label: t('nav.subAiComment'),
-        items: [
-          { to: '/smart-reply', label: t('nav.smartReply'), icon: ChatBubbleBottomCenterTextIcon },
-          { to: '/comment-summary', label: t('nav.commentSummary'), icon: ChatBubbleLeftRightIcon },
-          { to: '/sentiment-analyzer', label: t('nav.sentimentAnalyzer'), icon: FaceSmileIcon },
-        ],
-      },
-      {
-        key: 'audience-fan-manage',
-        label: t('nav.subFanManage'),
-        items: [
-          { to: '/fan-community', label: t('nav.fanCommunity'), icon: UserGroupIcon },
-          { to: '/fan-insights', label: t('nav.fanInsights'), icon: EyeIcon },
-          { to: '/fan-poll', label: t('nav.fanPoll'), icon: HandRaisedIcon },
-          { to: '/fan-reward', label: t('nav.fanReward'), icon: RewardIcon2 },
-          { to: '/fan-funding', label: t('nav.fanFunding'), icon: HeartIcon },
-          { to: '/audience-segments', label: t('nav.audienceSegments'), icon: UsersIcon },
-        ],
-      },
-      {
-        key: 'audience-creator-network',
-        label: t('nav.subCreatorNetwork'),
-        items: [
-          { to: '/social-listening', label: t('nav.socialListening'), icon: MegaphoneIcon },
-          { to: '/influencer-match', label: t('nav.influencerMatch'), icon: UserPlusIcon },
-          { to: '/creator-network', label: t('nav.creatorNetwork'), icon: UserCircleIcon },
-          { to: '/creator-marketplace', label: t('nav.creatorMarketplace'), icon: ShoppingBagIcon },
-          { to: '/live-stream', label: t('nav.liveStream'), icon: VideoCameraIcon },
-        ],
-      },
-    ],
   },
-  // ── 8. 채널 운영: 채널·팀·협업 ──
+  // ── 6. 채널 운영 ──
   {
     label: t('nav.groupOperations'),
     items: [
       { to: '/channels', label: t('nav.channels'), icon: LinkIcon },
-      { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
-      { to: '/agency', label: t('nav.agency'), icon: BuildingOffice2Icon },
-    ],
-    subGroups: [
-      {
-        key: 'ops-collaboration',
-        label: t('nav.subCollaboration'),
-        items: [
-          { to: '/collaboration-board', label: t('nav.collaborationBoard'), icon: ViewColumnsIcon },
-          { to: '/webhooks', label: t('nav.webhooks'), icon: CodeBracketIcon },
-          { to: '/activity-log', label: t('nav.activityLog'), icon: ClockIcon },
-        ],
-      },
+      { to: '/activity-log', label: t('nav.activityLog'), icon: ClockIcon },
     ],
   },
 ])

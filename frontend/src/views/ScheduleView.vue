@@ -332,7 +332,38 @@
           <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('scheduleView.noFiltered') }}</p>
         </div>
 
-        <table v-else class="w-full min-w-[640px]">
+        <!-- Mobile: Schedule cards -->
+        <div v-if="filteredSchedules.length > 0" class="space-y-3 px-4 py-4 tablet:hidden">
+          <div
+            v-for="schedule in sortedListSchedules"
+            :key="schedule.id"
+            class="card p-4"
+          >
+            <div class="flex items-start justify-between">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ schedule.videoTitle }}</p>
+                <div class="mt-1 flex items-center gap-2">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(schedule.scheduledAt) }} {{ formatTime(schedule.scheduledAt) }}</span>
+                  <span :class="getStatusBadgeClass(schedule.status)">{{ getStatusLabel(schedule.status) }}</span>
+                </div>
+                <div class="mt-2 flex flex-wrap gap-1">
+                  <PlatformBadge v-for="sp in schedule.platforms" :key="sp.platform" :platform="sp.platform" />
+                </div>
+              </div>
+              <div v-if="schedule.status === 'SCHEDULED'" class="flex items-center gap-1 pl-2">
+                <button :aria-label="$t('scheduleView.edit')" class="rounded p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" @click="openScheduleDetail(schedule)">
+                  <PencilSquareIcon class="h-4 w-4" />
+                </button>
+                <button :aria-label="$t('action.cancel')" class="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20" @click="confirmCancel(schedule)">
+                  <XMarkIcon class="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tablet+: Table -->
+        <table v-if="filteredSchedules.length > 0" class="hidden w-full tablet:table">
           <thead>
             <tr class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
               <th v-if="sortMode === 'manual'" class="w-8" />

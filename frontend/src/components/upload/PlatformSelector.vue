@@ -3,7 +3,7 @@
     <!-- Platform toggle cards -->
     <div>
       <label class="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">게시할 플랫폼 선택</label>
-      <div class="grid gap-3 tablet:grid-cols-2 lg:grid-cols-4">
+      <div class="grid gap-3 tablet:grid-cols-2 desktop:grid-cols-4">
         <div
           v-for="platform in ALL_PLATFORMS"
           :key="platform"
@@ -12,9 +12,11 @@
             isConnected(platform)
               ? getChannel(platform)?.tokenStatus === 'EXPIRED'
                 ? 'cursor-not-allowed border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/10 opacity-70'
-                : isSelected(platform)
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'cursor-pointer border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                : STREAM_UNSUPPORTED.has(platform)
+                  ? 'cursor-not-allowed border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 opacity-70'
+                  : isSelected(platform)
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                    : 'cursor-pointer border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
               : 'cursor-default border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 opacity-60'
           "
           @click="togglePlatform(platform)"
@@ -35,6 +37,9 @@
               </p>
               <p v-else-if="getChannel(platform)?.tokenStatus === 'EXPIRING_SOON'" class="text-xs text-amber-600">
                 토큰 만료 임박
+              </p>
+              <p v-else-if="isConnected(platform) && STREAM_UNSUPPORTED.has(platform)" class="text-xs text-amber-600">
+                스트리밍 업로드 미지원 (준비 중)
               </p>
               <p v-else-if="isConnected(platform)" class="text-xs text-green-600">연동됨</p>
               <router-link
@@ -262,6 +267,9 @@ import type { ScheduleSuggestion } from '@/types/ai'
 
 const ALL_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP']
 
+/** 스트리밍 업로드 미지원 플랫폼 (공개 URL 필요) */
+const STREAM_UNSUPPORTED: Set<Platform> = new Set(['INSTAGRAM'])
+
 const PLATFORM_LIMITS: Partial<Record<Platform, { title: number; description: number }>> = {
   YOUTUBE: { title: 100, description: 5000 },
   TIKTOK: { title: 150, description: 2200 },
@@ -341,6 +349,7 @@ function isSelected(platform: Platform): boolean {
 function togglePlatform(platform: Platform) {
   const ch = getChannel(platform)
   if (!ch || ch.tokenStatus === 'EXPIRED') return
+  if (STREAM_UNSUPPORTED.has(platform)) return
 
   const idx = selectedPlatforms.value.indexOf(platform)
   if (idx >= 0) {

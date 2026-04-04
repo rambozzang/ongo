@@ -10,6 +10,9 @@ import com.ongo.infrastructure.external.youtube.dto.YouTubeUploadRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Component
 class YouTubeStreamWriterFactory(
@@ -29,12 +32,41 @@ class YouTubeStreamWriter(
     private val buffer = ByteArrayOutputStream()
     private var sessionUri: String? = null
 
+    companion object {
+        private const val MAX_FILE_SIZE = 256L * 1024 * 1024 * 1024 // 256GB — YouTube 제한이지만 메모리 보호를 위해 실질 제한 적용
+        private const val MAX_MEMORY_FILE_SIZE = 2L * 1024 * 1024 * 1024 // 2GB — 메모리 버퍼링 상한
+    }
+
     override fun initSession(
         meta: VideoPlatformMeta,
         accessToken: String,
         platformChannelId: String?,
         fileSize: Long,
+        scheduledAt: LocalDateTime?,
     ): String {
+        if (fileSize > MAX_MEMORY_FILE_SIZE) {
+            throw IllegalArgumentException(
+                "스트리밍 업로드 최대 파일 크기(${MAX_MEMORY_FILE_SIZE / 1024 / 1024}MB)를 초과합니다: ${fileSize / 1024 / 1024}MB"
+            )
+        }
+
+        // YouTube 예약 게시: privacyStatus=private + publishAt 설정
+        // 업로드 후 publishAt 시점에 자동으로 public 전환됨
+        // 주의: YouTube는 예약 게시 시 반드시 private→public 전환만 지원
+        //       UNLISTED 예약은 YouTube API에서 미지원
+        val isScheduled = scheduledAt != null
+        val userVisibility = mapVisibility(meta.visibility.name)
+        val privacyStatus = if (isScheduled) "private" else userVisibility
+        val publishAtIso = scheduledAt?.let {
+            it.atZone(ZoneId.of("Asia/Seoul"))
+                .withZoneSameInstant(ZoneId.of("UTC"))
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+        }
+
+        if (isScheduled && userVisibility != "public") {
+            log.warn("YouTube 예약 게시는 public 전환만 지원합니다. 요청된 visibility={}, 예약 시간에 public으로 전환됩니다.", userVisibility)
+        }
+
         val uploadRequest = YouTubeUploadRequest(
             snippet = YouTubeUploadRequest.Snippet(
                 title = (meta.title ?: "Untitled").take(100),
@@ -42,9 +74,14 @@ class YouTubeStreamWriter(
                 tags = meta.tags,
             ),
             status = YouTubeUploadRequest.Status(
-                privacyStatus = mapVisibility(meta.visibility.name),
+                privacyStatus = privacyStatus,
+                publishAt = publishAtIso,
             ),
         )
+
+        if (isScheduled) {
+            log.info("YouTube 예약 게시 설정: publishAt={}", publishAtIso)
+        }
 
         val uri = fileTransferHelper.initiateYouTubeResumableUpload(
             uploadBaseUrl = youTubeConfig.getUploadBaseUrl(),

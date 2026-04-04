@@ -10,16 +10,16 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
 /**
- * Instagram Graph API는 공개 URL이 필요해 직접 스트리밍 업로드 불가.
- * 향후 임시 presigned URL 방식으로 구현 예정.
+ * Threads Graph API는 공개 URL이 필요해 직접 스트리밍 업로드 불가.
+ * Instagram과 동일한 제약 — 향후 임시 presigned URL 방식으로 구현 예정.
  */
 @Component
-class InstagramStreamWriterFactory : PlatformStreamWriterFactory {
-    override val platform = Platform.INSTAGRAM
-    override fun createWriter(): PlatformStreamWriter = InstagramStreamWriter()
+class ThreadsStreamWriterFactory : PlatformStreamWriterFactory {
+    override val platform = Platform.THREADS
+    override fun createWriter(): PlatformStreamWriter = ThreadsStreamWriter()
 }
 
-class InstagramStreamWriter : PlatformStreamWriter {
+class ThreadsStreamWriter : PlatformStreamWriter {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -31,20 +31,20 @@ class InstagramStreamWriter : PlatformStreamWriter {
         scheduledAt: LocalDateTime?,
     ): String {
         if (scheduledAt != null) {
-            log.warn("Instagram 예약 게시는 스트리밍 업로드에서 지원하지 않습니다. scheduledAt={} 무시됨", scheduledAt)
+            log.warn("Threads 예약 게시는 스트리밍 업로드에서 지원하지 않습니다. scheduledAt={} 무시됨", scheduledAt)
         }
-        log.warn("Instagram 스트리밍 업로드는 현재 지원하지 않습니다. Instagram 단독 업로드를 사용하세요.")
-        return "instagram-not-supported"
+        log.warn("Threads 스트리밍 업로드는 현재 지원하지 않습니다. Threads는 공개 비디오 URL이 필요합니다.")
+        return "threads-not-supported"
     }
 
     override fun writeChunk(chunk: ByteArray, offset: Long, totalSize: Long) {
-        // no-op: Instagram은 스트리밍 불가
+        // no-op: Threads는 스트리밍 불가
     }
 
     override fun complete(): PlatformUploadResult {
         return PlatformUploadResult(
             success = false,
-            errorMessage = "Instagram 스트리밍 업로드는 현재 지원하지 않습니다. 500MB 이하 단독 업로드를 사용하세요.",
+            errorMessage = "Threads 스트리밍 업로드는 현재 지원하지 않습니다. Threads는 공개 비디오 URL이 필요합니다.",
         )
     }
 }

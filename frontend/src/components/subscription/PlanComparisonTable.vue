@@ -1,6 +1,6 @@
 <template>
-  <div class="-mx-6 overflow-x-auto px-6">
-    <table class="w-full min-w-[800px] text-sm">
+  <div class="-mx-6 overflow-x-auto px-6 scrollbar-dark">
+    <table class="w-full min-w-[600px] tablet:min-w-[800px] text-sm">
       <thead>
         <tr class="border-b-2 border-gray-200 dark:border-gray-700">
           <th class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">

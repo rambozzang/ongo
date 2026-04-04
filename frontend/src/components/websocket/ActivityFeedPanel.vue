@@ -36,7 +36,7 @@ const ACTIVITY_COLORS: Record<string, string> = {
   PUBLISH: 'text-green-500 bg-green-100 dark:bg-green-900/30',
   COMMENT: 'text-amber-500 bg-amber-100 dark:bg-amber-900/30',
   NOTIFICATION: 'text-purple-500 bg-purple-100 dark:bg-purple-900/30',
-  ANALYTICS: 'text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30',
+  ANALYTICS: 'text-primary-500 bg-primary-100 dark:bg-primary-900/30',
   SCHEDULE: 'text-teal-500 bg-teal-100 dark:bg-teal-900/30',
 }
 
@@ -87,7 +87,7 @@ function formatTime(timestamp: number): string {
   <Transition name="slide-right">
     <div
       v-if="isOpen"
-      class="fixed right-0 top-0 z-50 flex h-full w-80 flex-col border-l border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
+      class="fixed right-0 top-0 z-50 flex h-full w-full max-w-80 flex-col border-l border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
     >
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">

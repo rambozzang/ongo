@@ -130,6 +130,64 @@ class PlatformFileTransferHelper(
         log.info("Naver Clip 파일 업로드 완료")
     }
 
+    /**
+     * Twitter Media Upload APPEND: 미디어 데이터를 청크 단위로 전송.
+     * multipart/form-data 형태로 command, media_id, segment_index, media_data(binary) 전송.
+     */
+    fun appendToTwitterMedia(
+        uploadUrl: String,
+        accessToken: String,
+        mediaId: String,
+        segmentIndex: Int,
+        chunkData: ByteArray,
+    ) {
+        log.debug("Twitter APPEND: mediaId={}, segment={}, bytes={}", mediaId, segmentIndex, chunkData.size)
+
+        val boundary = "----OnGoTwitterUpload${System.nanoTime()}"
+        val body = buildTwitterAppendMultipart(boundary, mediaId, segmentIndex, chunkData)
+
+        transferClient.post()
+            .uri(uploadUrl)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
+            .header(HttpHeaders.CONTENT_TYPE, "multipart/form-data; boundary=$boundary")
+            .body(body)
+            .retrieve()
+            .toBodilessEntity()
+    }
+
+    private fun buildTwitterAppendMultipart(
+        boundary: String,
+        mediaId: String,
+        segmentIndex: Int,
+        chunkData: ByteArray,
+    ): ByteArray {
+        val output = java.io.ByteArrayOutputStream()
+        val crlf = "\r\n"
+
+        fun writePart(name: String, value: String) {
+            output.write("--$boundary$crlf".toByteArray())
+            output.write("Content-Disposition: form-data; name=\"$name\"$crlf".toByteArray())
+            output.write(crlf.toByteArray())
+            output.write(value.toByteArray())
+            output.write(crlf.toByteArray())
+        }
+
+        writePart("command", "APPEND")
+        writePart("media_id", mediaId)
+        writePart("segment_index", segmentIndex.toString())
+
+        // Binary part
+        output.write("--$boundary$crlf".toByteArray())
+        output.write("Content-Disposition: form-data; name=\"media\"; filename=\"chunk.mp4\"$crlf".toByteArray())
+        output.write("Content-Type: application/octet-stream$crlf".toByteArray())
+        output.write(crlf.toByteArray())
+        output.write(chunkData)
+        output.write(crlf.toByteArray())
+        output.write("--$boundary--$crlf".toByteArray())
+
+        return output.toByteArray()
+    }
+
     companion object {
         private fun createUploadRequestFactory(): SimpleClientHttpRequestFactory {
             return SimpleClientHttpRequestFactory().apply {

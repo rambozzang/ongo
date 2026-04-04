@@ -1,5 +1,6 @@
 package com.ongo.application.video
 
+import com.ongo.application.config.ExecutorConfig
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.video.VideoRepository
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 import java.time.LocalDateTime
-import java.util.concurrent.Executors
 
 @Component
 class VideoPublishEventListener(
@@ -28,11 +28,16 @@ class VideoPublishEventListener(
         log.info("영상 게시 이벤트 수신: videoId={}, platforms={}", event.videoId,
             event.platformConfigs.map { it.platform })
 
-        // Virtual Thread 기반 병렬 업로드
-        Executors.newVirtualThreadPerTaskExecutor().use { executor ->
+        // Virtual Thread 기반 병렬 업로드 (Semaphore로 동시 실행 제한)
+        ExecutorConfig.newVirtualExecutor().use { executor ->
             val futures = event.platformConfigs.map { config ->
                 executor.submit<Unit> {
-                    uploadToPlatform(event, config)
+                    ExecutorConfig.uploadSemaphore.acquire()
+                    try {
+                        uploadToPlatform(event, config)
+                    } finally {
+                        ExecutorConfig.uploadSemaphore.release()
+                    }
                 }
             }
 

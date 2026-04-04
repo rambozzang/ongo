@@ -61,7 +61,7 @@ class ScheduleJooqRepository(
         dsl.select()
             .from(SCHEDULES)
             .where(SCHEDULED_AT.lessOrEqual(now))
-            .and(STATUS_TEXT.eq(ScheduleStatus.SCHEDULED.name))
+            .and(STATUS_TEXT.`in`(ScheduleStatus.SCHEDULED.name, ScheduleStatus.PROCESSING.name))
             .orderBy(SCHEDULED_AT.asc())
             .forUpdate()
             .skipLocked()

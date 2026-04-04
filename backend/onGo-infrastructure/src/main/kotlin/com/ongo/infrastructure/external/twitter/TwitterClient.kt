@@ -340,7 +340,7 @@ class TwitterClient(
 
     private fun waitForMediaProcessing(mediaId: String, accessToken: String) {
         var attempts = 0
-        val maxAttempts = 30
+        val maxAttempts = 60
 
         while (attempts < maxAttempts) {
             val status = twitterMediaApi.checkStatus(

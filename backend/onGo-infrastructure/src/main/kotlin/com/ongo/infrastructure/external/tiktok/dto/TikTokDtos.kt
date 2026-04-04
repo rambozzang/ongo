@@ -32,6 +32,10 @@ data class TikTokInitUploadRequest(
         @JsonProperty("disable_comment") val disableComment: Boolean = false,
         @JsonProperty("disable_stitch") val disableStitch: Boolean = false,
         @JsonProperty("video_cover_timestamp_ms") val videoCoverTimestampMs: Long = 0,
+        /** DIRECT_POST(기본) 또는 SCHEDULE_VIDEO(예약 시) */
+        @JsonProperty("post_mode") val postMode: String = "DIRECT_POST",
+        /** SCHEDULE_VIDEO일 때 필수 — UTC Unix timestamp (초 단위) */
+        @JsonProperty("schedule_time") val scheduleTime: Long? = null,
     )
 
     data class SourceInfo(
