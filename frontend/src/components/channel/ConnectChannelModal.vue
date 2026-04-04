@@ -107,11 +107,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { CheckIcon, LinkIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
-import { useI18n } from 'vue-i18n'
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
-
-const { t } = useI18n()
 
 const SUPPORTED_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP', 'TWITTER', 'FACEBOOK', 'THREADS']
 

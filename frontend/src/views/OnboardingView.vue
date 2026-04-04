@@ -582,7 +582,7 @@ function goToDashboard() {
 // Load existing connected channels
 async function loadConnectedChannels() {
   try {
-    const channels = await channelApi.list()
+    const { channels } = await channelApi.list()
     channels.forEach((ch) => connectedPlatforms.value.add(ch.platform))
   } catch {
     // No channels yet, that's fine

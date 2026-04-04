@@ -11,7 +11,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { videoApi } from '@/api/video'
 import { channelApi } from '@/api/channel'
-import { PLATFORM_CONFIG } from '@/types/channel'
+import { PLATFORM_CONFIG, type Channel } from '@/types/channel'
 
 export interface SearchResult {
   id: string
@@ -120,7 +120,7 @@ export function useSearch() {
         // Fetch videos and channels from the API in parallel
         const [videosPage, channelsList] = await Promise.all([
           videoApi.list({ keyword: searchQuery, page: 0, size: 10 }).catch(() => null),
-          channelApi.list().catch(() => []),
+          channelApi.list().then(res => res.channels).catch(() => [] as Channel[]),
         ])
 
         // Map video results
