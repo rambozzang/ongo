@@ -9,6 +9,7 @@ import type {
   OptimizationCheckRequest,
   OptimizationCheckResponse,
   VideoTranslation,
+  VideoFeedResponse,
 } from '@/types/video'
 
 export const videoApi = {
@@ -94,6 +95,12 @@ export const videoApi = {
   deleteTranslation(videoId: number, translationId: number) {
     return apiClient
       .delete<ResData<void>>(`/videos/${videoId}/translations/${translationId}`)
+      .then(unwrapResponse)
+  },
+
+  feed(params: { platform?: string; page?: number; size?: number; sort?: string }) {
+    return apiClient
+      .get<ResData<VideoFeedResponse>>('/videos/feed', { params })
       .then(unwrapResponse)
   },
 }

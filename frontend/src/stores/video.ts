@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { Video, VideoListFilter, VideoCreateRequest } from '@/types/video'
+import type { Video, VideoListFilter, VideoCreateRequest, VideoFeedItem } from '@/types/video'
+import type { Platform } from '@/types/channel'
 import type { PageResponse } from '@/types/api'
 import { videoApi } from '@/api/video'
 
@@ -12,6 +13,13 @@ export const useVideoStore = defineStore('video', () => {
   const filter = ref<VideoListFilter>({})
   const sortField = ref<string>('createdAt')
   const sortDirection = ref<'ASC' | 'DESC'>('DESC')
+
+  // Feed state
+  const feedItems = ref<VideoFeedItem[]>([])
+  const feedPlatforms = ref<Platform[]>([])
+  const feedErrors = ref<string[] | null>(null)
+  const isFeedLoading = ref(false)
+  const feedFilter = ref<{ platform?: string; sort: string }>({ sort: 'recent' })
 
   // Backwards-compatible loading ref
   const loading = isLoadingList
@@ -68,6 +76,25 @@ export const useVideoStore = defineStore('video', () => {
     fetchVideos()
   }
 
+  async function fetchFeed(page = 0, size = 20) {
+    isFeedLoading.value = true
+    try {
+      const result = await videoApi.feed({
+        platform: feedFilter.value.platform,
+        page,
+        size,
+        sort: feedFilter.value.sort,
+      })
+      feedItems.value = result.items
+      feedPlatforms.value = result.platforms
+      feedErrors.value = result.errors
+    } catch {
+      feedItems.value = []
+    } finally {
+      isFeedLoading.value = false
+    }
+  }
+
   function invalidateCache() {
     videos.value = null
   }
@@ -88,5 +115,11 @@ export const useVideoStore = defineStore('video', () => {
     setFilter,
     setSort,
     invalidateCache,
+    feedItems,
+    feedPlatforms,
+    feedErrors,
+    isFeedLoading,
+    feedFilter,
+    fetchFeed,
   }
 })

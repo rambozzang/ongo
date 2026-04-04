@@ -1409,8 +1409,8 @@
     "close": "닫기"
   },
   "videos": {
-    "title": "영상 관리",
-    "description": "업로드한 영상을 관리하고 플랫폼별 성과를 확인하세요",
+    "title": "콘텐츠 피드",
+    "description": "연결된 채널의 모든 콘텐츠를 한눈에 확인하세요",
     "uploadNew": "새 영상 업로드",
     "pageGuideTitle": "영상 관리",
     "pageGuide": [
@@ -1425,6 +1425,7 @@
     "sortLatest": "최신순",
     "sortViews": "조회수순",
     "sortLikes": "좋아요순",
+    "sortComments": "댓글순",
     "selectionMode": "선택 모드",
     "viewMode": "보기 모드",
     "gridView": "그리드 보기",
@@ -1477,7 +1478,24 @@
     "labelRejected": "거부됨",
     "batchStartSuccess": "AI 배치 처리가 시작되었습니다",
     "batchStartError": "AI 배치 처리 시작에 실패했습니다",
-    "batchCompleteSuccess": "AI 배치 처리가 완료되었습니다"
+    "batchCompleteSuccess": "AI 배치 처리가 완료되었습니다",
+    "allPlatforms": "전체",
+    "sortRecent": "최신순",
+    "views": "조회수",
+    "likes": "좋아요",
+    "comments": "댓글",
+    "shares": "공유",
+    "publishedAt": "게시일",
+    "noChannels": "연결된 채널이 없습니다",
+    "noChannelsDesc": "채널을 연결하면 모든 콘텐츠를 여기서 확인할 수 있습니다",
+    "connectChannel": "채널 연결하기",
+    "noVideos": "콘텐츠가 없습니다",
+    "platformError": "{platform} 조회에 실패했습니다",
+    "viewOnPlatform": "플랫폼에서 보기",
+    "recentComments": "최근 댓글",
+    "manageAllComments": "전체 댓글 관리",
+    "replyPlaceholder": "답글 입력...",
+    "reply": "답글"
   },
   "calendar": {
     "title": "캘린더",

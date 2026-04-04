@@ -134,3 +134,24 @@ export interface VideoTranslation {
   status: string
   createdAt?: string
 }
+
+export interface VideoFeedItem {
+  platformVideoId: string
+  platform: Platform
+  channelName: string
+  title: string
+  description: string | null
+  thumbnailUrl: string | null
+  platformUrl: string | null
+  viewCount: number
+  likeCount: number
+  commentCount: number
+  shareCount: number
+  publishedAt: string | null
+}
+
+export interface VideoFeedResponse {
+  items: VideoFeedItem[]
+  platforms: Platform[]
+  errors: string[] | null
+}

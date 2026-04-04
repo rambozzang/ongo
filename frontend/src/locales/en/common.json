@@ -1409,8 +1409,8 @@
     "close": "Close"
   },
   "videos": {
-    "title": "Video Management",
-    "description": "Manage your uploaded videos and check platform performance",
+    "title": "Content Feed",
+    "description": "View all content from your connected channels at a glance",
     "uploadNew": "Upload Video",
     "pageGuideTitle": "Video Management",
     "pageGuide": [
@@ -1423,8 +1423,9 @@
     "searchPlaceholder": "Search by title or tags...",
     "searchLabel": "Search videos",
     "sortLatest": "Newest",
-    "sortViews": "Most Views",
-    "sortLikes": "Most Likes",
+    "sortViews": "Most Viewed",
+    "sortLikes": "Most Liked",
+    "sortComments": "Most Comments",
     "selectionMode": "Selection Mode",
     "viewMode": "View Mode",
     "gridView": "Grid View",
@@ -1477,7 +1478,24 @@
     "labelRejected": "Rejected",
     "batchStartSuccess": "AI batch processing started",
     "batchStartError": "Failed to start AI batch processing",
-    "batchCompleteSuccess": "AI batch processing completed"
+    "batchCompleteSuccess": "AI batch processing completed",
+    "allPlatforms": "All",
+    "sortRecent": "Latest",
+    "views": "Views",
+    "likes": "Likes",
+    "comments": "Comments",
+    "shares": "Shares",
+    "publishedAt": "Published",
+    "noChannels": "No connected channels",
+    "noChannelsDesc": "Connect a channel to see all your content here",
+    "connectChannel": "Connect Channel",
+    "noVideos": "No content found",
+    "platformError": "Failed to load {platform}",
+    "viewOnPlatform": "View on Platform",
+    "recentComments": "Recent Comments",
+    "manageAllComments": "Manage All Comments",
+    "replyPlaceholder": "Write a reply...",
+    "reply": "Reply"
   },
   "calendar": {
     "title": "Calendar",
