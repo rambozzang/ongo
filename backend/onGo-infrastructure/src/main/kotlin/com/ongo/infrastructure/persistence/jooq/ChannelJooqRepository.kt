@@ -91,6 +91,7 @@ class ChannelJooqRepository(
             .set(REFRESH_TOKEN, channel.refreshToken)
             .set(TOKEN_EXPIRES_AT, channel.tokenExpiresAt)
             .set(STATUS, channel.status)
+            .set(UPDATED_AT, channel.updatedAt)
             .where(ID.eq(channel.id))
             .execute()
 

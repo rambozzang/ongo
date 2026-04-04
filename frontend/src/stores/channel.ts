@@ -7,6 +7,7 @@ import { useVideoStore } from '@/stores/video'
 
 export const useChannelStore = defineStore('channel', () => {
   const channels = ref<Channel[]>([])
+  const maxAllowed = ref(0)
   const isLoadingChannels = ref(false)
   const isSyncingChannel = ref(false)
 
@@ -20,7 +21,9 @@ export const useChannelStore = defineStore('channel', () => {
   async function fetchChannels() {
     isLoadingChannels.value = true
     try {
-      channels.value = await channelApi.list()
+      const data = await channelApi.list()
+      channels.value = data.channels
+      maxAllowed.value = data.maxAllowed
     } catch {
       // Guest mode or API error - continue with empty channels
       channels.value = []
@@ -46,8 +49,6 @@ export const useChannelStore = defineStore('channel', () => {
       if (index !== -1) {
         channels.value[index] = updated
       }
-    } catch {
-      // sync failed silently
     } finally {
       isSyncingChannel.value = false
     }
@@ -55,6 +56,7 @@ export const useChannelStore = defineStore('channel', () => {
 
   return {
     channels,
+    maxAllowed,
     loading,
     isLoadingChannels,
     isSyncingChannel,

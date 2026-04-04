@@ -139,7 +139,9 @@ class ChannelUseCase(
             profileImageUrl = profileImageUrl,
             status = status,
             tokenStatus = tokenStatus,
-            connectedAt = connectedAt
+            connectedAt = connectedAt,
+            lastSyncedAt = updatedAt ?: connectedAt,
+            tokenExpiresAt = tokenExpiresAt,
         )
     }
 }

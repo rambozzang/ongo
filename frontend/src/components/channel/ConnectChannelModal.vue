@@ -15,9 +15,12 @@
       <div class="relative w-full max-w-2xl rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl">
         <!-- Header -->
         <div class="mb-6">
-          <h3 id="connect-channel-title" class="text-xl font-bold text-gray-900 dark:text-gray-100">새 채널 연결</h3>
+          <h3 id="connect-channel-title" class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ $t('channels.connectModalTitle') }}</h3>
           <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-            콘텐츠를 업로드할 플랫폼을 연결하세요.
+            {{ $t('channels.connectModalDescription') }}
+          </p>
+          <p v-if="maxAllowed > 0" class="mt-1 text-xs" :class="isAtLimit ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'">
+            {{ isAtLimit ? $t('channels.limitReached', { current: currentCount, max: maxAllowed }) : $t('channels.channelsConnected', { current: currentCount, max: maxAllowed }) }}
           </p>
         </div>
 
@@ -28,8 +31,8 @@
             :key="platform"
             class="relative rounded-lg border-2 p-6 transition-all"
             :class="{
-              'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-md cursor-pointer': !isConnected(platform),
-              'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/30 cursor-not-allowed': isConnected(platform),
+              'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-md cursor-pointer': !isConnected(platform) && !isAtLimit,
+              'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/30 cursor-not-allowed': isConnected(platform) || isAtLimit,
             }"
             @click="handleConnect(platform)"
           >
@@ -69,21 +72,21 @@
                 disabled
               >
                 <CheckIcon class="h-4 w-4 inline-block mr-1" />
-                연결됨
+                {{ $t('channels.connected') }}
               </button>
               <button
                 v-else
                 class="btn-primary w-full"
-                :disabled="connectingPlatform === platform"
+                :disabled="connectingPlatform === platform || isAtLimit"
                 @click.stop="handleConnect(platform)"
               >
                 <template v-if="connectingPlatform === platform">
                   <ArrowPathIcon class="h-4 w-4 inline-block mr-1 animate-spin" />
-                  연결 중...
+                  {{ $t('channels.connecting') }}
                 </template>
                 <template v-else>
                   <LinkIcon class="h-4 w-4 inline-block mr-1" />
-                  연결하기
+                  {{ $t('channels.connect') }}
                 </template>
               </button>
             </div>
@@ -93,7 +96,7 @@
         <!-- Footer -->
         <div class="mt-6 flex justify-end border-t border-gray-100 dark:border-gray-700 pt-4">
           <button class="btn-secondary" @click="close">
-            닫기
+            {{ $t('channels.close') }}
           </button>
         </div>
       </div>
@@ -102,16 +105,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { CheckIcon, LinkIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
+import { useI18n } from 'vue-i18n'
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
+
+const { t } = useI18n()
 
 const SUPPORTED_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP', 'TWITTER', 'FACEBOOK', 'THREADS']
 
 const props = defineProps<{
   modelValue: boolean
   connectedPlatforms: Platform[]
+  maxAllowed: number
+  currentCount: number
 }>()
 
 const emit = defineEmits<{
@@ -120,6 +128,8 @@ const emit = defineEmits<{
 }>()
 
 const connectingPlatform = ref<Platform | null>(null)
+
+const isAtLimit = computed(() => props.currentCount >= props.maxAllowed && props.maxAllowed > 0)
 
 function close() {
   emit('update:modelValue', false)
@@ -156,7 +166,7 @@ function getPlatformDescription(platform: Platform): string {
 }
 
 function handleConnect(platform: Platform) {
-  if (isConnected(platform) || connectingPlatform.value) return
+  if (isConnected(platform) || isAtLimit.value || connectingPlatform.value) return
 
   connectingPlatform.value = platform
 

@@ -12,7 +12,9 @@ data class ChannelResponse(
     val profileImageUrl: String?,
     val status: String,
     val tokenStatus: String,
-    val connectedAt: LocalDateTime?
+    val connectedAt: LocalDateTime?,
+    val lastSyncedAt: LocalDateTime?,
+    val tokenExpiresAt: LocalDateTime?,
 )
 
 data class ConnectChannelRequest(

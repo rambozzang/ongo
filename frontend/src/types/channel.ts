@@ -3,20 +3,20 @@ export type Platform =
   | 'TWITTER' | 'FACEBOOK' | 'THREADS' | 'PINTEREST' | 'LINKEDIN'
   | 'WORDPRESS' | 'TUMBLR' | 'VIMEO' | 'DAILYMOTION'
 
-export type TokenStatus = 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED'
+export type TokenStatus = 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'DISCONNECTED'
 
 export interface Channel {
   id: number
-  userId: number
   platform: Platform
-  channelId: string
   channelName: string
   channelUrl: string | null
   profileImageUrl: string | null
   subscriberCount: number
+  status: string
   tokenStatus: TokenStatus
   connectedAt: string
   lastSyncedAt: string | null
+  tokenExpiresAt: string | null
 }
 
 export interface ChannelConnectRequest {

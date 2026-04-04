@@ -1398,7 +1398,15 @@
     "syncAllSuccess": "All channels synced successfully.",
     "syncAllError": "Some channels failed to sync.",
     "disconnectSuccess": "{name} channel has been disconnected.",
-    "disconnectError": "Failed to disconnect. Please try again."
+    "disconnectError": "Failed to disconnect. Please try again.",
+    "connectModalTitle": "Connect New Channel",
+    "connectModalDescription": "Connect a platform to upload your content.",
+    "limitReached": "Channel limit reached ({current}/{max})",
+    "channelsConnected": "{current}/{max} connected",
+    "connected": "Connected",
+    "connecting": "Connecting...",
+    "connect": "Connect",
+    "close": "Close"
   },
   "videos": {
     "title": "Video Management",

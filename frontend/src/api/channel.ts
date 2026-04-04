@@ -8,12 +8,11 @@ export const channelApi = {
     return apiClient
       .get<ResData<{ channels: Channel[]; maxAllowed: number; currentCount: number }>>('/channels')
       .then(unwrapResponse)
-      .then((data) => data.channels)
   },
 
   connect(platform: Platform, request: ChannelConnectRequest) {
     return apiClient
-      .post<ResData<Channel>>(`/channels/connect/${platform.toLowerCase()}`, request)
+      .post<ResData<{ channel: Channel }>>(`/channels/connect/${platform.toLowerCase()}`, request)
       .then(unwrapResponse)
   },
 

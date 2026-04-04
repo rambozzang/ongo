@@ -125,6 +125,8 @@
     <ConnectChannelModal
       v-model="showConnectModal"
       :connected-platforms="connectedPlatforms"
+      :max-allowed="maxAllowed"
+      :current-count="channels.length"
       @connect="handleConnect"
     />
 
@@ -170,7 +172,7 @@ import { buildOAuthUrl } from '@/utils/oauth'
 const { t } = useI18n()
 const channelStore = useChannelStore()
 const notification = useNotification()
-const { channels, loading, connectedPlatforms } = storeToRefs(channelStore)
+const { channels, loading, connectedPlatforms, maxAllowed } = storeToRefs(channelStore)
 
 // --- State ---
 const showConnectModal = ref(false)
@@ -208,10 +210,8 @@ const disconnectMessage = computed(() => {
 })
 
 // --- Helpers ---
-function getTokenExpiryDate(_channel: Channel): string | null {
-  // Token expiry is not currently available from the API.
-  // The ChannelHealthCard infers status from channel.tokenStatus instead.
-  return null
+function getTokenExpiryDate(channel: Channel): string | null {
+  return channel.tokenExpiresAt ?? null
 }
 
 // --- Actions ---
