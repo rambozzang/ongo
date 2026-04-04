@@ -5,6 +5,8 @@ import com.ongo.domain.channel.PlatformAnalyticsResult
 import com.ongo.domain.channel.PlatformChannelInfoResult
 import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.channel.PlatformTokenRefreshResult
+import com.ongo.domain.channel.PlatformFeedPortResult
+import com.ongo.domain.channel.FeedItemResult
 import com.ongo.domain.channel.PlatformVideoMetadataResult
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import io.github.resilience4j.retry.annotation.Retry
@@ -108,6 +110,34 @@ class PlatformClientPortAdapter(
         } catch (e: Exception) {
             log.warn("플랫폼 {} 영상 메타데이터 조회 실패: {}", platform, e.message)
             null
+        }
+    }
+
+    override fun listVideos(platform: Platform, accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedPortResult {
+        return try {
+            val client = platformClientFactory.getClient(platform)
+            val result = client.listVideos(accessToken, platformChannelId, maxResults, pageToken)
+            PlatformFeedPortResult(
+                items = result.items.map { item ->
+                    FeedItemResult(
+                        platformVideoId = item.platformVideoId,
+                        title = item.title,
+                        description = item.description,
+                        thumbnailUrl = item.thumbnailUrl,
+                        platformUrl = item.platformUrl,
+                        viewCount = item.viewCount,
+                        likeCount = item.likeCount,
+                        commentCount = item.commentCount,
+                        shareCount = item.shareCount,
+                        publishedAt = item.publishedAt,
+                    )
+                },
+                nextPageToken = result.nextPageToken,
+                totalCount = result.totalCount,
+            )
+        } catch (e: Exception) {
+            log.warn("플랫폼 {} 영상 목록 조회 실패: {}", platform, e.message)
+            PlatformFeedPortResult(emptyList())
         }
     }
 

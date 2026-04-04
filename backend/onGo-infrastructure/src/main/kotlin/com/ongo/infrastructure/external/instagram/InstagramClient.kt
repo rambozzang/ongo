@@ -219,6 +219,40 @@ class InstagramClient(
         return false
     }
 
+    override fun listVideos(accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedResult {
+        try {
+            val userId = platformChannelId ?: "me"
+            val response = instagramApi.listMedia(
+                userId = userId,
+                fields = "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count",
+                limit = maxResults,
+                after = pageToken,
+                accessToken = accessToken,
+            )
+            val items = response.data
+                .filter { it.mediaType in listOf("VIDEO", "REELS") }
+                .map { media ->
+                    PlatformFeedItem(
+                        platformVideoId = media.id,
+                        title = media.caption?.take(100) ?: "",
+                        description = media.caption,
+                        thumbnailUrl = media.thumbnailUrl ?: media.mediaUrl,
+                        platformUrl = media.permalink,
+                        likeCount = media.likeCount?.toLong() ?: 0,
+                        commentCount = media.commentsCount?.toLong() ?: 0,
+                        publishedAt = media.timestamp,
+                    )
+                }
+            return PlatformFeedResult(
+                items = items,
+                nextPageToken = response.paging?.cursors?.after,
+            )
+        } catch (e: Exception) {
+            log.error("Instagram 미디어 목록 조회 실패: {}", e.message)
+            return PlatformFeedResult(emptyList())
+        }
+    }
+
     // --- Comment API ---
 
     override fun getCommentCapabilities(): PlatformCommentCapabilities =

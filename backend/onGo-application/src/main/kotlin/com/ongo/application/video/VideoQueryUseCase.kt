@@ -7,8 +7,6 @@ import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.util.FileValidationUtil
-import com.ongo.domain.channel.ChannelRepository
-import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.video.ContentImage
 import com.ongo.domain.video.ContentImageRepository
 import com.ongo.domain.video.Video
@@ -28,8 +26,6 @@ class VideoQueryUseCase(
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val contentImageRepository: ContentImageRepository,
     private val storageService: StorageService,
-    private val channelRepository: ChannelRepository,
-    private val platformClientPort: PlatformClientPort,
 ) {
 
     private val log = LoggerFactory.getLogger(VideoQueryUseCase::class.java)
@@ -187,40 +183,7 @@ class VideoQueryUseCase(
         )
         videoRepository.update(updatedVideo)
 
-        // 플랫폼 메타데이터 동기화 (PUBLISHED 상태인 업로드만)
-        syncMetadataToPlatforms(userId, videoId, newTitle, newDescription, newTags)
-
         return getVideoDetail(userId, videoId)
-    }
-
-    private fun syncMetadataToPlatforms(userId: Long, videoId: Long, title: String, description: String, tags: List<String>) {
-        val uploads = videoUploadRepository.findByVideoId(videoId)
-            .filter { it.status == UploadStatus.PUBLISHED && it.platformVideoId != null }
-
-        if (uploads.isEmpty()) return
-
-        for (upload in uploads) {
-            val channel = channelRepository.findByUserIdAndPlatform(userId, upload.platform)
-            if (channel == null) {
-                log.warn("영상 {} 메타 동기화 실패 — {} 채널을 찾을 수 없음", videoId, upload.platform)
-                continue
-            }
-
-            val success = platformClientPort.updateVideoMetadata(
-                platform = upload.platform,
-                platformVideoId = upload.platformVideoId!!,
-                accessToken = channel.accessToken,
-                title = title,
-                description = description,
-                tags = tags,
-            )
-
-            if (success) {
-                log.info("플랫폼 {} 메타 동기화 완료: videoId={}, platformVideoId={}", upload.platform, videoId, upload.platformVideoId)
-            } else {
-                log.warn("플랫폼 {} 메타 동기화 실패 또는 미지원: videoId={}, platformVideoId={}", upload.platform, videoId, upload.platformVideoId)
-            }
-        }
     }
 
     @Transactional
@@ -234,9 +197,6 @@ class VideoQueryUseCase(
 
         log.info("[AUDIT] 영상 삭제: userId={}, videoId={}, title={}", userId, videoId, video.title)
 
-        // 플랫폼에서 영상 삭제 (PUBLISHED 상태인 업로드만)
-        deleteFromPlatforms(userId, videoId)
-
         // 스토리지에서 파일 삭제
         try {
             storageService.deleteFile(videoId)
@@ -247,31 +207,6 @@ class VideoQueryUseCase(
         // 관련 레코드 삭제
         contentImageRepository.deleteByVideoId(videoId)
         videoRepository.delete(videoId)
-    }
-
-    private fun deleteFromPlatforms(userId: Long, videoId: Long) {
-        val uploads = videoUploadRepository.findByVideoId(videoId)
-            .filter { it.platformVideoId != null && it.status == UploadStatus.PUBLISHED }
-
-        for (upload in uploads) {
-            val channel = channelRepository.findByUserIdAndPlatform(userId, upload.platform)
-            if (channel == null) {
-                log.warn("영상 {} 플랫폼 삭제 실패 — {} 채널을 찾을 수 없음", videoId, upload.platform)
-                continue
-            }
-
-            val success = platformClientPort.deleteVideo(
-                platform = upload.platform,
-                platformVideoId = upload.platformVideoId!!,
-                accessToken = channel.accessToken,
-            )
-
-            if (success) {
-                log.info("플랫폼 {} 영상 삭제 완료: videoId={}, platformVideoId={}", upload.platform, videoId, upload.platformVideoId)
-            } else {
-                log.warn("플랫폼 {} 영상 삭제 실패 또는 미지원: videoId={}", upload.platform, videoId)
-            }
-        }
     }
 
     @Transactional

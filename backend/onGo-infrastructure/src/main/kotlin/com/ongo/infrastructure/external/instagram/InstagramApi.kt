@@ -63,6 +63,16 @@ interface InstagramApi {
         @RequestParam("access_token") accessToken: String,
     ): InstagramUserResponse
 
+    // List user's media
+    @GetExchange("/{userId}/media")
+    fun listMedia(
+        @PathVariable("userId") userId: String,
+        @RequestParam("fields") fields: String,
+        @RequestParam("limit") limit: Int,
+        @RequestParam("after", required = false) after: String?,
+        @RequestParam("access_token") accessToken: String,
+    ): InstagramMediaListResponse
+
     // --- Comment API ---
 
     @GetExchange("/{mediaId}/comments")

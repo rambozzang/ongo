@@ -161,6 +161,36 @@ data class TwitterLikeResponse(
     )
 }
 
+// --- Tweet List ---
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class TwitterTweetListResponse(
+    val data: List<TweetListItem>? = null,
+    val meta: TweetListMeta? = null,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class TweetListItem(
+        val id: String,
+        val text: String? = null,
+        @JsonProperty("created_at") val createdAt: String? = null,
+        @JsonProperty("public_metrics") val publicMetrics: TweetPublicMetrics? = null,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class TweetPublicMetrics(
+        @JsonProperty("impression_count") val impressionCount: Long? = null,
+        @JsonProperty("like_count") val likeCount: Long? = null,
+        @JsonProperty("reply_count") val replyCount: Long? = null,
+        @JsonProperty("retweet_count") val retweetCount: Long? = null,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class TweetListMeta(
+        @JsonProperty("next_token") val nextToken: String? = null,
+        @JsonProperty("result_count") val resultCount: Int? = null,
+    )
+}
+
 // --- OAuth ---
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class TwitterTokenResponse(

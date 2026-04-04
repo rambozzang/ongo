@@ -92,6 +92,7 @@ data class YouTubeChannelListResponse(
         val id: String,
         val snippet: ChannelSnippet?,
         val statistics: ChannelStatistics?,
+        val contentDetails: ChannelContentDetails? = null,
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -116,6 +117,11 @@ data class YouTubeChannelListResponse(
         val subscriberCount: String?,
         val viewCount: String?,
         val videoCount: String?,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class ChannelContentDetails(
+        val relatedPlaylists: Map<String, String>? = null,
     )
 }
 
@@ -195,6 +201,45 @@ data class YouTubeCommentResponse(
         val parentId: String?,
         val textDisplay: String?,
     )
+}
+
+// --- Playlist Items ---
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class YouTubePlaylistItemListResponse(
+    val items: List<PlaylistItem> = emptyList(),
+    val nextPageToken: String? = null,
+    val pageInfo: PlaylistPageInfo? = null,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class PlaylistItem(
+        val snippet: PlaylistSnippet?,
+        val contentDetails: PlaylistContentDetails?,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class PlaylistSnippet(
+        val title: String?,
+        val description: String?,
+        val thumbnails: PlaylistThumbnails?,
+        val publishedAt: String?,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class PlaylistThumbnails(
+        val default: PlaylistThumbnail?,
+        val medium: PlaylistThumbnail?,
+        val high: PlaylistThumbnail?,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class PlaylistThumbnail(val url: String?)
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class PlaylistContentDetails(val videoId: String?)
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class PlaylistPageInfo(val totalResults: Int?)
 }
 
 // --- OAuth Token ---

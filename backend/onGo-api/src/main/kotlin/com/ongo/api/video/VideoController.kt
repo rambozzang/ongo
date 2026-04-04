@@ -5,6 +5,8 @@ import com.ongo.application.video.CrossPlatformOptimizationUseCase
 import com.ongo.application.video.PublishVideoUseCase
 import com.ongo.application.video.PlatformUploadConfig
 import com.ongo.application.video.UploadVideoUseCase
+import com.ongo.application.video.VideoFeedUseCase
+import com.ongo.application.video.VideoFeedResponse
 import com.ongo.application.video.VideoQueryUseCase
 import com.ongo.application.video.dto.OptimizationCheckRequest
 import com.ongo.application.video.dto.OptimizationCheckResponse
@@ -34,6 +36,7 @@ class VideoController(
     private val uploadVideoUseCase: UploadVideoUseCase,
     private val publishVideoUseCase: PublishVideoUseCase,
     private val videoQueryUseCase: VideoQueryUseCase,
+    private val videoFeedUseCase: VideoFeedUseCase,
     private val crossPlatformOptimizationUseCase: CrossPlatformOptimizationUseCase,
 ) {
 
@@ -109,6 +112,26 @@ class VideoController(
                 },
             )
         )
+    }
+
+    @Operation(
+        summary = "플랫폼 콘텐츠 피드",
+        description = "연결된 각 채널의 영상 목록을 플랫폼 API에서 조회하여 통합 피드로 반환합니다. Caffeine 캐시(5분) 적용."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "피드 조회 성공"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+    )
+    @GetMapping("/feed")
+    fun getVideoFeed(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Parameter(description = "플랫폼 필터") @RequestParam(required = false) platform: Platform?,
+        @Parameter(description = "페이지 번호") @RequestParam(defaultValue = "0") page: Int,
+        @Parameter(description = "페이지당 항목 수") @RequestParam(defaultValue = "20") size: Int,
+        @Parameter(description = "정렬 기준 (recent, views, likes, comments)") @RequestParam(defaultValue = "recent") sort: String,
+    ): ResponseEntity<ResData<VideoFeedResponse>> {
+        val result = videoFeedUseCase.getFeed(userId, platform, page, size.coerceIn(1, 50), sort)
+        return ResData.success(result)
     }
 
     @Operation(

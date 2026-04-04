@@ -160,6 +160,38 @@ data class TikTokCommentListResponse(
     )
 }
 
+// --- Video List ---
+
+data class TikTokVideoListRequest(
+    @JsonProperty("max_count") val maxCount: Int = 20,
+    val cursor: Long? = null,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class TikTokVideoListResponse(
+    val data: VideoListData? = null,
+    val error: TikTokError? = null,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class VideoListData(
+        val videos: List<VideoListItem> = emptyList(),
+        val cursor: Long? = null,
+        @JsonProperty("has_more") val hasMore: Boolean = false,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class VideoListItem(
+        val id: String,
+        val title: String? = null,
+        @JsonProperty("cover_image_url") val coverImageUrl: String? = null,
+        @JsonProperty("create_time") val createTime: Long? = null,
+        @JsonProperty("like_count") val likeCount: Long? = null,
+        @JsonProperty("comment_count") val commentCount: Long? = null,
+        @JsonProperty("share_count") val shareCount: Long? = null,
+        @JsonProperty("view_count") val viewCount: Long? = null,
+    )
+}
+
 // --- Common Error ---
 
 @JsonIgnoreProperties(ignoreUnknown = true)

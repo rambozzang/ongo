@@ -33,6 +33,12 @@ interface TikTokApi {
         @RequestHeader("Authorization") authorization: String,
     ): TikTokCreatorInfoResponse
 
+    @PostExchange("/v2/video/list/")
+    fun listVideos(
+        @RequestHeader("Authorization") authorization: String,
+        @RequestBody request: TikTokVideoListRequest,
+    ): TikTokVideoListResponse
+
     // --- Comment API ---
 
     @PostExchange("/v2/comment/list/")

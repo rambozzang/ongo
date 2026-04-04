@@ -207,6 +207,47 @@ class TwitterClient(
         }
     }
 
+    override fun listVideos(accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedResult {
+        try {
+            val userId = platformChannelId ?: run {
+                val me = twitterApi.getMe(
+                    userFields = "id",
+                    authorization = "Bearer $accessToken",
+                )
+                me.data?.id ?: return PlatformFeedResult(emptyList())
+            }
+            val response = twitterApi.listUserTweets(
+                userId = userId,
+                maxResults = maxResults.coerceIn(5, 100),
+                paginationToken = pageToken,
+                tweetFields = "created_at,public_metrics",
+                mediaFields = "preview_image_url,url",
+                expansions = "attachments.media_keys",
+                authorization = "Bearer $accessToken",
+            )
+            val items = (response.data ?: emptyList()).map { tweet ->
+                PlatformFeedItem(
+                    platformVideoId = tweet.id,
+                    title = tweet.text?.take(100) ?: "",
+                    description = tweet.text,
+                    platformUrl = "https://twitter.com/i/status/${tweet.id}",
+                    viewCount = tweet.publicMetrics?.impressionCount ?: 0,
+                    likeCount = tweet.publicMetrics?.likeCount ?: 0,
+                    commentCount = tweet.publicMetrics?.replyCount ?: 0,
+                    shareCount = tweet.publicMetrics?.retweetCount ?: 0,
+                    publishedAt = tweet.createdAt,
+                )
+            }
+            return PlatformFeedResult(
+                items = items,
+                nextPageToken = response.meta?.nextToken,
+            )
+        } catch (e: Exception) {
+            log.error("Twitter 트윗 목록 조회 실패: {}", e.message)
+            return PlatformFeedResult(emptyList())
+        }
+    }
+
     // --- Comment API ---
 
     override fun getCommentCapabilities(): PlatformCommentCapabilities =

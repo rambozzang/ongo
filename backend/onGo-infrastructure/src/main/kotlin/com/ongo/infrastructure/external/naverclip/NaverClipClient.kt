@@ -168,6 +168,39 @@ class NaverClipClient(
         }
     }
 
+    override fun listVideos(accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedResult {
+        try {
+            val page = pageToken?.toIntOrNull() ?: 0
+            val response = naverClipApi.listClips(
+                authorization = "Bearer $accessToken",
+                page = page,
+                size = maxResults,
+            )
+            if (response.error != null) return PlatformFeedResult(emptyList())
+            val items = response.clips.map { clip ->
+                PlatformFeedItem(
+                    platformVideoId = clip.clipId,
+                    title = clip.title ?: "",
+                    thumbnailUrl = clip.thumbnailUrl,
+                    platformUrl = clip.clipUrl,
+                    viewCount = clip.viewCount ?: 0,
+                    likeCount = clip.likeCount ?: 0,
+                    commentCount = clip.commentCount ?: 0,
+                    publishedAt = clip.createdAt,
+                )
+            }
+            val nextPage = if (items.size == maxResults) (page + 1).toString() else null
+            return PlatformFeedResult(
+                items = items,
+                nextPageToken = nextPage,
+                totalCount = response.totalCount,
+            )
+        } catch (e: Exception) {
+            log.error("Naver Clip 목록 조회 실패: {}", e.message)
+            return PlatformFeedResult(emptyList())
+        }
+    }
+
     // --- Comment API ---
     // Naver Clip does not provide a public comment API.
 

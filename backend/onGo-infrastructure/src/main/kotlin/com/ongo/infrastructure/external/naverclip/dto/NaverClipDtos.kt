@@ -89,3 +89,24 @@ data class NaverClipError(
     val code: String?,
     val message: String?,
 )
+
+// --- Clip List ---
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class NaverClipListResponse(
+    val clips: List<ClipListItem> = emptyList(),
+    val totalCount: Int? = null,
+    val error: NaverClipError? = null,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class ClipListItem(
+        val clipId: String,
+        val title: String? = null,
+        val thumbnailUrl: String? = null,
+        val clipUrl: String? = null,
+        val viewCount: Long? = null,
+        val likeCount: Long? = null,
+        val commentCount: Long? = null,
+        val createdAt: String? = null,
+    )
+}

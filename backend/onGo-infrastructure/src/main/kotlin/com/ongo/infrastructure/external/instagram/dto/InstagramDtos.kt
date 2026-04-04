@@ -125,6 +125,33 @@ data class InstagramCommentReplyResponse(
     val id: String? = null,
 )
 
+// --- Media List ---
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class InstagramMediaListResponse(
+    val data: List<MediaListItem> = emptyList(),
+    val paging: MediaListPaging? = null,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class MediaListItem(
+        val id: String,
+        val caption: String? = null,
+        @JsonProperty("media_type") val mediaType: String? = null,
+        @JsonProperty("media_url") val mediaUrl: String? = null,
+        @JsonProperty("thumbnail_url") val thumbnailUrl: String? = null,
+        val permalink: String? = null,
+        val timestamp: String? = null,
+        @JsonProperty("like_count") val likeCount: Int? = null,
+        @JsonProperty("comments_count") val commentsCount: Int? = null,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class MediaListPaging(val cursors: Cursors? = null) {
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class Cursors(val after: String?)
+    }
+}
+
 // --- Common Error ---
 
 @JsonIgnoreProperties(ignoreUnknown = true)

@@ -37,6 +37,17 @@ interface TwitterApi {
         @RequestHeader("Authorization") authorization: String,
     ): TwitterUserResponse
 
+    @GetExchange("/2/users/{userId}/tweets")
+    fun listUserTweets(
+        @org.springframework.web.bind.annotation.PathVariable("userId") userId: String,
+        @RequestParam("max_results") maxResults: Int,
+        @RequestParam("pagination_token", required = false) paginationToken: String?,
+        @RequestParam("tweet.fields") tweetFields: String,
+        @RequestParam("media.fields") mediaFields: String,
+        @RequestParam("expansions") expansions: String,
+        @RequestHeader("Authorization") authorization: String,
+    ): TwitterTweetListResponse
+
     // --- Comment API (Replies) ---
 
     @GetExchange("/2/tweets/search/recent")

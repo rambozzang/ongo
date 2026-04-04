@@ -21,8 +21,11 @@ interface PlatformClientPort {
     /** 플랫폼의 영상 메타데이터(제목, 설명, 태그) 업데이트. 성공 시 true, 미지원/실패 시 false */
     fun updateVideoMetadata(platform: Platform, platformVideoId: String, accessToken: String, title: String, description: String, tags: List<String>): Boolean
 
-    /** 플랫폼에서 영상 메타데이�� 조회 (제목, 설명, 조회수 등). 미지원 시 null */
+    /** 플랫폼에서 영상 메타데이터 조회 (제목, 설명, 조회수 등). 미지원 시 null */
     fun getVideoMetadata(platform: Platform, platformVideoId: String, accessToken: String): PlatformVideoMetadataResult?
+
+    /** 플랫폼에서 사용자의 영상 목록을 조회 */
+    fun listVideos(platform: Platform, accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedPortResult
 }
 
 data class PlatformVideoMetadataResult(
@@ -33,6 +36,25 @@ data class PlatformVideoMetadataResult(
     val viewCount: Long = 0,
     val likeCount: Long = 0,
     val commentCount: Long = 0,
+)
+
+data class PlatformFeedPortResult(
+    val items: List<FeedItemResult>,
+    val nextPageToken: String? = null,
+    val totalCount: Int? = null,
+)
+
+data class FeedItemResult(
+    val platformVideoId: String,
+    val title: String,
+    val description: String? = null,
+    val thumbnailUrl: String? = null,
+    val platformUrl: String? = null,
+    val viewCount: Long = 0,
+    val likeCount: Long = 0,
+    val commentCount: Long = 0,
+    val shareCount: Long = 0,
+    val publishedAt: String? = null,
 )
 
 data class PlatformAnalyticsResult(

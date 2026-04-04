@@ -27,6 +27,14 @@ interface PlatformClient {
         tags: List<String>,
     ): Boolean = false
 
+    /** 플랫폼에서 사용자의 영상 목록을 조회 */
+    fun listVideos(
+        accessToken: String,
+        platformChannelId: String?,
+        maxResults: Int = 20,
+        pageToken: String? = null,
+    ): PlatformFeedResult = PlatformFeedResult(emptyList())
+
     // --- Comment API (default implementations for unsupported platforms) ---
 
     fun getCommentCapabilities(): PlatformCommentCapabilities = PlatformCommentCapabilities()
@@ -98,6 +106,25 @@ data class PlatformVideoMetadata(
     val viewCount: Long = 0,
     val likeCount: Long = 0,
     val commentCount: Long = 0,
+)
+
+data class PlatformFeedItem(
+    val platformVideoId: String,
+    val title: String,
+    val description: String? = null,
+    val thumbnailUrl: String? = null,
+    val platformUrl: String? = null,
+    val viewCount: Long = 0,
+    val likeCount: Long = 0,
+    val commentCount: Long = 0,
+    val shareCount: Long = 0,
+    val publishedAt: String? = null,
+)
+
+data class PlatformFeedResult(
+    val items: List<PlatformFeedItem>,
+    val nextPageToken: String? = null,
+    val totalCount: Int? = null,
 )
 
 data class PlatformChannelInfo(

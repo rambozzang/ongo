@@ -60,6 +60,15 @@ interface YouTubeApi {
         @RequestParam("key") key: String,
     ): YouTubeChannelListResponse
 
+    @GetExchange("/youtube/v3/playlistItems")
+    fun listPlaylistItems(
+        @RequestParam("playlistId") playlistId: String,
+        @RequestParam("part") part: String,
+        @RequestParam("maxResults") maxResults: Int,
+        @RequestParam("pageToken", required = false) pageToken: String?,
+        @RequestHeader("Authorization") authorization: String,
+    ): YouTubePlaylistItemListResponse
+
     // --- Comment API ---
 
     @GetExchange("/youtube/v3/commentThreads")

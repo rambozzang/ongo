@@ -24,6 +24,7 @@ class CaffeineCacheConfig {
         const val OPTIMAL_TIMES_CACHE = "optimalTimes"
         const val COHORT_ANALYSIS_CACHE = "cohortAnalysis"
         const val PERMISSIONS_CACHE = "permissions"
+        const val VIDEO_FEED_CACHE = "videoFeed"
     }
 
     @Bean
@@ -39,6 +40,7 @@ class CaffeineCacheConfig {
             buildCache(OPTIMAL_TIMES_CACHE, 30, TimeUnit.MINUTES, 500),
             buildCache(COHORT_ANALYSIS_CACHE, 15, TimeUnit.MINUTES, 500),
             buildCache(PERMISSIONS_CACHE, 10, TimeUnit.MINUTES, 1000),
+            buildCache(VIDEO_FEED_CACHE, 5, TimeUnit.MINUTES, 200),
         )
 
         return SimpleCacheManager().apply {

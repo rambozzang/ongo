@@ -49,6 +49,13 @@ interface NaverClipApi {
         @PathVariable("clipId") clipId: String,
         @RequestHeader("Authorization") authorization: String,
     )
+
+    @GetExchange("/v1/clips")
+    fun listClips(
+        @RequestHeader("Authorization") authorization: String,
+        @RequestParam("page") page: Int,
+        @RequestParam("size") size: Int,
+    ): NaverClipListResponse
 }
 
 @HttpExchange

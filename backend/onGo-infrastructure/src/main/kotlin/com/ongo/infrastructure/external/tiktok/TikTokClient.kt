@@ -4,6 +4,7 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.tiktok.dto.TikTokPublishStatusRequest
+import com.ongo.infrastructure.external.tiktok.dto.TikTokVideoListRequest
 import com.ongo.infrastructure.external.tiktok.dto.TikTokVideoQueryRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -165,6 +166,38 @@ class TikTokClient(
         // Deletion must be done by the user through the TikTok app.
         log.warn("TikTok API는 영상 삭제를 지원하지 않습니다")
         return false
+    }
+
+    override fun listVideos(accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedResult {
+        try {
+            val cursor = pageToken?.toLongOrNull()
+            val response = tikTokApi.listVideos(
+                authorization = "Bearer $accessToken",
+                request = TikTokVideoListRequest(maxCount = maxResults, cursor = cursor),
+            )
+            val data = response.data ?: return PlatformFeedResult(emptyList())
+            val items = data.videos.map { video ->
+                PlatformFeedItem(
+                    platformVideoId = video.id,
+                    title = video.title ?: "",
+                    thumbnailUrl = video.coverImageUrl,
+                    viewCount = video.viewCount ?: 0,
+                    likeCount = video.likeCount ?: 0,
+                    commentCount = video.commentCount ?: 0,
+                    shareCount = video.shareCount ?: 0,
+                    publishedAt = video.createTime?.let {
+                        java.time.Instant.ofEpochSecond(it).toString()
+                    },
+                )
+            }
+            return PlatformFeedResult(
+                items = items,
+                nextPageToken = if (data.hasMore) data.cursor?.toString() else null,
+            )
+        } catch (e: Exception) {
+            log.error("TikTok 영상 목록 조회 실패: {}", e.message)
+            return PlatformFeedResult(emptyList())
+        }
     }
 
     // --- Comment API ---

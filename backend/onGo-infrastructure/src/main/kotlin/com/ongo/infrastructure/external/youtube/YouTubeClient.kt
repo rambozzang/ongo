@@ -231,6 +231,66 @@ class YouTubeClient(
         }
     }
 
+    override fun listVideos(accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedResult {
+        try {
+            // 1. 채널의 uploads playlist ID 조회
+            val channelResponse = youTubeApi.listChannels(
+                part = "contentDetails",
+                mine = true,
+                authorization = "Bearer $accessToken",
+            )
+            val uploadsPlaylistId = channelResponse.items.firstOrNull()
+                ?.contentDetails?.relatedPlaylists?.get("uploads")
+                ?: return PlatformFeedResult(emptyList())
+
+            // 2. playlist items 조회
+            val playlistResponse = youTubeApi.listPlaylistItems(
+                playlistId = uploadsPlaylistId,
+                part = "snippet,contentDetails",
+                maxResults = maxResults,
+                pageToken = pageToken,
+                authorization = "Bearer $accessToken",
+            )
+
+            val videoIds = playlistResponse.items.mapNotNull { it.contentDetails?.videoId }
+            if (videoIds.isEmpty()) return PlatformFeedResult(emptyList(), playlistResponse.nextPageToken)
+
+            // 3. 통계 데이터 조회 (batch)
+            val statsResponse = youTubeApi.listVideos(
+                id = videoIds.joinToString(","),
+                part = "statistics",
+                authorization = "Bearer $accessToken",
+            )
+            val statsMap = statsResponse.items.associateBy { it.id }
+
+            val items = playlistResponse.items.mapNotNull { item ->
+                val videoId = item.contentDetails?.videoId ?: return@mapNotNull null
+                val stats = statsMap[videoId]?.statistics
+                PlatformFeedItem(
+                    platformVideoId = videoId,
+                    title = item.snippet?.title ?: "",
+                    description = item.snippet?.description,
+                    thumbnailUrl = item.snippet?.thumbnails?.high?.url
+                        ?: item.snippet?.thumbnails?.medium?.url,
+                    platformUrl = "https://www.youtube.com/watch?v=$videoId",
+                    viewCount = stats?.viewCount?.toLongOrNull() ?: 0,
+                    likeCount = stats?.likeCount?.toLongOrNull() ?: 0,
+                    commentCount = stats?.commentCount?.toLongOrNull() ?: 0,
+                    publishedAt = item.snippet?.publishedAt,
+                )
+            }
+
+            return PlatformFeedResult(
+                items = items,
+                nextPageToken = playlistResponse.nextPageToken,
+                totalCount = playlistResponse.pageInfo?.totalResults,
+            )
+        } catch (e: Exception) {
+            log.error("YouTube 영상 목록 조회 실패: {}", e.message)
+            return PlatformFeedResult(emptyList())
+        }
+    }
+
     // --- Comment API ---
 
     override fun getCommentCapabilities(): PlatformCommentCapabilities =
