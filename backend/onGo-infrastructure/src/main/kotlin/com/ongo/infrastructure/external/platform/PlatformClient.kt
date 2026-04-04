@@ -15,6 +15,18 @@ interface PlatformClient {
     fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult
     fun deleteVideo(platformVideoId: String, accessToken: String): Boolean
 
+    /** 플랫폼에서 영상 메타데이터를 조회하여 최신 상태를 반환 */
+    fun getVideoMetadata(platformVideoId: String, accessToken: String): PlatformVideoMetadata? = null
+
+    /** 플랫폼의 영상 메타데이터 업데이트. 미지원 플랫폼은 false 반환 */
+    fun updateVideoMetadata(
+        platformVideoId: String,
+        accessToken: String,
+        title: String,
+        description: String,
+        tags: List<String>,
+    ): Boolean = false
+
     // --- Comment API (default implementations for unsupported platforms) ---
 
     fun getCommentCapabilities(): PlatformCommentCapabilities = PlatformCommentCapabilities()
@@ -76,6 +88,16 @@ data class PlatformAnalytics(
     val shares: Long,
     val watchTimeSeconds: Long,
     val subscriberGained: Int,
+)
+
+data class PlatformVideoMetadata(
+    val title: String,
+    val description: String,
+    val tags: List<String> = emptyList(),
+    val status: String,
+    val viewCount: Long = 0,
+    val likeCount: Long = 0,
+    val commentCount: Long = 0,
 )
 
 data class PlatformChannelInfo(

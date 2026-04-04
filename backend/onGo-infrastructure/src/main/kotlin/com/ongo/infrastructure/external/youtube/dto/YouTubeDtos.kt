@@ -62,6 +62,7 @@ data class YouTubeVideoListResponse(
         val title: String?,
         val description: String?,
         val channelId: String?,
+        val categoryId: String? = null,
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)

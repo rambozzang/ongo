@@ -29,6 +29,29 @@ class YouTubeClient(
         )
     }
 
+    override fun getVideoMetadata(platformVideoId: String, accessToken: String): PlatformVideoMetadata? {
+        return try {
+            val response = youTubeApi.listVideos(
+                id = platformVideoId,
+                part = "snippet,status,statistics",
+                authorization = "Bearer $accessToken",
+            )
+            val item = response.items.firstOrNull() ?: return null
+            PlatformVideoMetadata(
+                title = item.snippet?.title ?: "",
+                description = item.snippet?.description ?: "",
+                tags = emptyList(), // YouTube snippet.tags는 별도 part 필요
+                status = item.status?.uploadStatus ?: "unknown",
+                viewCount = item.statistics?.viewCount?.toLongOrNull() ?: 0,
+                likeCount = item.statistics?.likeCount?.toLongOrNull() ?: 0,
+                commentCount = item.statistics?.commentCount?.toLongOrNull() ?: 0,
+            )
+        } catch (e: Exception) {
+            log.warn("YouTube 영상 메타데이터 조회 실패: {}", e.message)
+            null
+        }
+    }
+
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
         log.debug("YouTube 영상 상태 조회: videoId={}", platformVideoId)
 
@@ -167,6 +190,43 @@ class YouTubeClient(
             true
         } catch (e: Exception) {
             log.error("YouTube 영상 삭제 실패: {}", e.message)
+            false
+        }
+    }
+
+    override fun updateVideoMetadata(
+        platformVideoId: String,
+        accessToken: String,
+        title: String,
+        description: String,
+        tags: List<String>,
+    ): Boolean {
+        log.info("YouTube 영상 메타데이터 업데이트: videoId={}", platformVideoId)
+        return try {
+            // YouTube API는 snippet 업데이트 시 categoryId가 필수 — 기존 영상에서 조회
+            val existing = youTubeApi.listVideos(
+                id = platformVideoId,
+                part = "snippet",
+                authorization = "Bearer $accessToken",
+            )
+            val categoryId = existing.items?.firstOrNull()?.snippet?.categoryId ?: "22"
+
+            val body = mapOf(
+                "id" to platformVideoId,
+                "snippet" to mapOf(
+                    "title" to title.take(100),
+                    "description" to description.take(5000),
+                    "tags" to tags,
+                    "categoryId" to categoryId,
+                ),
+            )
+            youTubeApi.updateVideo(
+                authorization = "Bearer $accessToken",
+                body = body,
+            )
+            true
+        } catch (e: Exception) {
+            log.error("YouTube 영상 메타데이터 업데이트 실패: {}", e.message)
             false
         }
     }

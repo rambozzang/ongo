@@ -3,6 +3,8 @@ package com.ongo.application.video
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.video.*
 import io.mockk.*
 import org.junit.jupiter.api.BeforeEach
@@ -16,6 +18,8 @@ class VideoQueryUseCaseTest {
     private val videoPlatformMetaRepository = mockk<VideoPlatformMetaRepository>()
     private val contentImageRepository = mockk<ContentImageRepository>(relaxed = true)
     private val storageService = mockk<StorageService>(relaxed = true)
+    private val channelRepository = mockk<ChannelRepository>(relaxed = true)
+    private val platformClientPort = mockk<PlatformClientPort>(relaxed = true)
 
     private lateinit var useCase: VideoQueryUseCase
 
@@ -24,7 +28,7 @@ class VideoQueryUseCaseTest {
         clearAllMocks()
         useCase = VideoQueryUseCase(
             videoRepository, videoUploadRepository, videoPlatformMetaRepository,
-            contentImageRepository, storageService,
+            contentImageRepository, storageService, channelRepository, platformClientPort,
         )
     }
 
@@ -86,6 +90,7 @@ class VideoQueryUseCaseTest {
         val video = createVideo(id = 1L, userId = 100L)
 
         every { videoRepository.findById(1L) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
         every { contentImageRepository.deleteByVideoId(1L) } just runs
         every { videoRepository.delete(1L) } just runs
 

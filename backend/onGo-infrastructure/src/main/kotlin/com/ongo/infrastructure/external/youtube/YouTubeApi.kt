@@ -8,6 +8,7 @@ import org.springframework.web.service.annotation.DeleteExchange
 import org.springframework.web.service.annotation.GetExchange
 import org.springframework.web.service.annotation.HttpExchange
 import org.springframework.web.service.annotation.PostExchange
+import org.springframework.web.service.annotation.PutExchange
 
 @HttpExchange
 interface YouTubeApi {
@@ -32,6 +33,12 @@ interface YouTubeApi {
         @RequestParam("mine") mine: Boolean,
         @RequestHeader("Authorization") authorization: String,
     ): YouTubeChannelListResponse
+
+    @PutExchange("/youtube/v3/videos?part=snippet")
+    fun updateVideo(
+        @RequestHeader("Authorization") authorization: String,
+        @RequestBody body: Any,
+    ): YouTubeVideoListResponse
 
     @DeleteExchange("/youtube/v3/videos")
     fun deleteVideo(
