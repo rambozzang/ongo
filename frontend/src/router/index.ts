@@ -234,12 +234,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/AdminView.vue'),
         meta: { breadcrumb: '관리자', requiresAdmin: true },
       },
-      {
-        path: 'content-studio',
-        name: 'content-studio',
-        component: () => import('@/views/ContentStudioView.vue'),
-        meta: { breadcrumb: 'AI 콘텐츠 스튜디오' },
-      },
     ],
   },
   {

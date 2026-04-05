@@ -105,7 +105,6 @@ import {
   QuestionMarkCircleIcon,
   ListBulletIcon,
   ChevronDownIcon,
-  FilmIcon,
   PresentationChartLineIcon,
   BriefcaseIcon,
   ShoppingCartIcon,
@@ -503,58 +502,6 @@ const sectionsKo: ManualSection[] = [
       {
         subtitle: '비밀번호를 잊어버렸어요.',
         text: 'onGo는 소셜 로그인만 지원하므로 별도의 비밀번호가 없습니다. Google 또는 Kakao 계정의 비밀번호를 해당 서비스에서 재설정해 주세요.',
-      },
-    ],
-  },
-  {
-    id: 'ai-content-studio',
-    title: 'AI 콘텐츠 스튜디오',
-    icon: FilmIcon,
-    content: [
-      {
-        subtitle: '개요',
-        text: 'AI 콘텐츠 스튜디오는 영상 클립 생성, 캡션 자동 생성, AI 썸네일 생성 등 콘텐츠 제작에 필요한 AI 도구를 통합 제공하는 공간입니다.',
-      },
-      {
-        subtitle: '클립 생성',
-        text: 'AI가 원본 영상에서 하이라이트 구간을 자동으로 감지하여 숏폼 클립을 생성합니다.',
-        steps: [
-          '영상 상세 페이지에서 "AI 클립 생성" 버튼을 클릭합니다.',
-          'AI가 영상을 분석하여 핵심 구간을 자동으로 추출합니다.',
-          '생성된 클립 목록에서 원하는 클립을 선택합니다.',
-          '시작/종료 지점을 직접 미세 조정할 수 있습니다.',
-          '선택한 클립을 TikTok, Instagram Reels 등에 바로 업로드할 수 있습니다.',
-        ],
-      },
-      {
-        subtitle: '캡션 생성',
-        text: 'AI가 영상 내용을 분석하여 SNS에 적합한 캡션(게시글 텍스트)을 자동 생성합니다.',
-        steps: [
-          '"캡션 생성" 탭에서 대상 영상을 선택합니다.',
-          '톤(전문적, 캐주얼, 유머 등)과 길이를 설정합니다.',
-          '플랫폼별 최적화된 캡션이 생성됩니다.',
-          '생성된 캡션을 편집하거나 바로 적용할 수 있습니다.',
-        ],
-      },
-      {
-        subtitle: '썸네일 생성',
-        text: 'AI가 영상의 핵심 장면을 분석하여 클릭률 높은 썸네일 후보를 자동 생성합니다.',
-        items: [
-          '영상에서 시각적으로 가장 매력적인 프레임을 자동 추출합니다.',
-          '텍스트 오버레이, 필터 등 기본 편집이 가능합니다.',
-          '생성된 썸네일을 업로드 시 바로 적용할 수 있습니다.',
-        ],
-      },
-      {
-        subtitle: '크레딧 소모 안내',
-        text: 'AI 콘텐츠 스튜디오의 각 기능은 AI 크레딧을 소모합니다.',
-        items: [
-          '클립 생성: 10 크레딧',
-          '캡션 생성: 3 크레딧',
-          '썸네일 생성: 5 크레딧',
-          '각 기능 실행 전 크레딧 차감 안내 팝업이 표시됩니다.',
-          '잔여 크레딧이 부족하면 기능이 비활성화됩니다.',
-        ],
       },
     ],
   },
@@ -3377,58 +3324,6 @@ const sectionsEn: ManualSection[] = [
       {
         subtitle: 'I forgot my password.',
         text: 'onGo uses social login only, so there is no separate password. Please reset your Google or Kakao account password through their respective services.',
-      },
-    ],
-  },
-  {
-    id: 'ai-content-studio',
-    title: 'AI Content Studio',
-    icon: FilmIcon,
-    content: [
-      {
-        subtitle: 'Overview',
-        text: 'AI Content Studio is an integrated workspace that provides AI-powered tools for content creation, including video clip generation, automatic caption generation, and AI thumbnail creation.',
-      },
-      {
-        subtitle: 'Clip Generation',
-        text: 'AI automatically detects highlight segments from your original video and generates short-form clips.',
-        steps: [
-          'Click the "AI Clip Generation" button on the video detail page.',
-          'AI analyzes the video and automatically extracts key segments.',
-          'Select your preferred clips from the generated clip list.',
-          'Fine-tune the start/end points manually if needed.',
-          'Upload the selected clips directly to TikTok, Instagram Reels, and more.',
-        ],
-      },
-      {
-        subtitle: 'Caption Generation',
-        text: 'AI analyzes the video content and automatically generates social media-optimized captions (post text).',
-        steps: [
-          'Select the target video from the "Caption Generation" tab.',
-          'Set the tone (professional, casual, humorous, etc.) and length.',
-          'Platform-optimized captions are generated.',
-          'Edit the generated captions or apply them directly.',
-        ],
-      },
-      {
-        subtitle: 'Thumbnail Generation',
-        text: 'AI analyzes key scenes in the video and automatically generates high-CTR thumbnail candidates.',
-        items: [
-          'Automatically extracts the most visually appealing frames from the video.',
-          'Basic editing such as text overlays and filters is available.',
-          'Generated thumbnails can be applied directly during upload.',
-        ],
-      },
-      {
-        subtitle: 'Credit Consumption',
-        text: 'Each feature in AI Content Studio consumes AI credits.',
-        items: [
-          'Clip Generation: 10 credits',
-          'Caption Generation: 3 credits',
-          'Thumbnail Generation: 5 credits',
-          'A credit deduction confirmation popup is shown before each operation.',
-          'Features are disabled when remaining credits are insufficient.',
-        ],
       },
     ],
   },

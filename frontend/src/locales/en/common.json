@@ -69,7 +69,6 @@
     "audience": "Audience",
     "activityLog": "Activity Log",
     "brandDeals": "Brand Deals",
-    "contentStudio": "AI Studio",
     "prediction": "AI Prediction",
     "portfolio": "Portfolio",
     "commerce": "Social Commerce",
@@ -2441,107 +2440,6 @@
       "message": "{count} content slots have been added to your schedule",
       "stay": "Keep Editing",
       "goToSchedule": "View Schedule"
-    }
-  },
-  "contentStudio": {
-    "title": "AI Content Studio",
-    "description": "Transform videos, generate captions, and create thumbnails with AI",
-    "pageGuideTitle": "AI Content Studio Guide",
-    "pageGuide": [
-      "Automatically convert long videos into short-form clips",
-      "AI generates and edits video captions automatically",
-      "Boost click-through rates with AI-generated thumbnails"
-    ],
-    "pageGuideMobile": [
-      "Video clips, captions, and thumbnail creation",
-      "AI automatically extracts highlights"
-    ],
-    "remaining": "Credits Remaining",
-    "tabs": {
-      "clips": "Clip Creator",
-      "captions": "Caption Generator",
-      "thumbnails": "Thumbnail Creator"
-    },
-    "clips": {
-      "title": "AI Clip Creator",
-      "selectVideo": "Select Source Video",
-      "searchVideo": "Search videos...",
-      "generating": "AI is analyzing highlights...",
-      "clipCount": "{count} clips generated",
-      "startTime": "Start",
-      "endTime": "End",
-      "duration": "Duration",
-      "aspectRatio": "Aspect Ratio",
-      "portrait": "Portrait (9:16)",
-      "landscape": "Landscape (16:9)",
-      "square": "Square (1:1)",
-      "generate": "Generate Clips",
-      "regenerate": "Regenerate",
-      "download": "Download",
-      "downloadAll": "Download All",
-      "noClips": "No clips generated yet",
-      "noClipsDesc": "Select a video and start AI clip generation",
-      "highlight": "Highlight Score",
-      "preview": "Preview",
-      "cost": "Clip generation: 10 credits"
-    },
-    "captions": {
-      "title": "AI Caption Generator",
-      "selectVideo": "Select Video",
-      "language": "Caption Language",
-      "languages": {
-        "ko": "Korean",
-        "en": "English",
-        "ja": "Japanese",
-        "zh": "Chinese"
-      },
-      "generate": "Generate Captions",
-      "generating": "AI is analyzing audio...",
-      "edit": "Edit Captions",
-      "timestamp": "Timestamp",
-      "text": "Caption Text",
-      "addLine": "Add Caption",
-      "deleteLine": "Delete",
-      "export": "Export Captions",
-      "exportFormat": "Export Format",
-      "srt": "SRT File",
-      "vtt": "WebVTT File",
-      "noCaptions": "No captions generated yet",
-      "noCaptionsDesc": "Select a video and start AI caption generation",
-      "style": "Caption Style",
-      "styles": {
-        "default": "Default",
-        "bold": "Bold",
-        "karaoke": "Karaoke",
-        "minimal": "Minimal"
-      },
-      "cost": "Caption generation: 10 credits"
-    },
-    "thumbnails": {
-      "title": "AI Thumbnail Generator",
-      "selectVideo": "Select Video",
-      "style": "Style",
-      "styles": {
-        "dramatic": "Dramatic",
-        "clean": "Clean",
-        "bold": "Bold Text",
-        "minimal": "Minimal",
-        "colorful": "Colorful"
-      },
-      "textOverlay": "Text Overlay",
-      "textPlaceholder": "Text to display on thumbnail",
-      "generate": "Generate Thumbnails",
-      "generating": "AI is generating thumbnails...",
-      "count": "Generation Count",
-      "download": "Download",
-      "setAsThumbnail": "Set as Thumbnail",
-      "noThumbnails": "No thumbnails generated yet",
-      "noThumbnailsDesc": "Select a video and start AI thumbnail generation",
-      "cost": "Thumbnail generation: 5 credits"
-    },
-    "history": {
-      "title": "Conversion History",
-      "empty": "No conversion history yet"
     }
   },
   "workflowBuilder": {

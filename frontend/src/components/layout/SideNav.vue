@@ -168,7 +168,6 @@ import {
   ClockIcon,
   BookOpenIcon,
   ShieldCheckIcon,
-  ScissorsIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -232,7 +231,6 @@ const navGroups = computed<NavGroup[]>(() => [
     items: [
       { to: '/upload', label: t('nav.upload'), icon: ArrowUpTrayIcon },
       { to: '/videos', label: t('nav.videos'), icon: FilmIcon },
-      { to: '/content-studio', label: t('nav.contentStudio'), icon: ScissorsIcon },
       { to: '/ai', label: t('nav.ai'), icon: SparklesIcon },
       { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
       { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
