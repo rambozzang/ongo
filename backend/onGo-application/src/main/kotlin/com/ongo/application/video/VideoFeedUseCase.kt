@@ -3,18 +3,22 @@ package com.ongo.application.video
 import com.ongo.common.enums.Platform
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.PlatformClientPort
+import com.ongo.domain.channel.TokenEncryptionPort
 import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.StructuredTaskScope
 
 @Service
 class VideoFeedUseCase(
     private val channelRepository: ChannelRepository,
     private val platformClientPort: PlatformClientPort,
+    private val tokenEncryptionPort: TokenEncryptionPort,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @Cacheable(value = ["videoFeed"], key = "#userId + '-' + (#platform?.name() ?: 'ALL') + '-' + #page")
+    @Cacheable(value = ["videoFeed"], key = "#userId + '-' + (#platform?.name ?: 'ALL') + '-' + #page + '-' + #size + '-' + (#sort ?: 'recent')")
     fun getFeed(
         userId: Long,
         platform: Platform?,
@@ -30,39 +34,49 @@ class VideoFeedUseCase(
             return VideoFeedResponse(items = emptyList(), platforms = emptyList())
         }
 
-        val allItems = mutableListOf<VideoFeedItem>()
-        val platformErrors = mutableListOf<String>()
+        val allItems = ConcurrentLinkedQueue<VideoFeedItem>()
+        val platformErrors = ConcurrentLinkedQueue<String>()
 
-        for (channel in channels) {
-            try {
-                val result = platformClientPort.listVideos(
-                    platform = channel.platform,
-                    accessToken = channel.accessToken,
-                    platformChannelId = channel.platformChannelId,
-                    maxResults = size,
-                    pageToken = if (page > 0) page.toString() else null,
-                )
-                result.items.forEach { item ->
-                    allItems.add(
-                        VideoFeedItem(
-                            platformVideoId = item.platformVideoId,
+        StructuredTaskScope.ShutdownOnFailure().use { scope ->
+            channels.forEach { channel ->
+                scope.fork {
+                    try {
+                        val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
+                        val result = platformClientPort.listVideos(
                             platform = channel.platform,
-                            channelName = channel.channelName,
-                            title = item.title,
-                            description = item.description,
-                            thumbnailUrl = item.thumbnailUrl,
-                            platformUrl = item.platformUrl,
-                            viewCount = item.viewCount,
-                            likeCount = item.likeCount,
-                            commentCount = item.commentCount,
-                            shareCount = item.shareCount,
-                            publishedAt = item.publishedAt,
+                            accessToken = decryptedToken,
+                            platformChannelId = channel.platformChannelId,
+                            maxResults = size,
+                            pageToken = if (page > 0) page.toString() else null,
                         )
-                    )
+                        result.items.forEach { item ->
+                            allItems.add(
+                                VideoFeedItem(
+                                    platformVideoId = item.platformVideoId,
+                                    platform = channel.platform,
+                                    channelName = channel.channelName,
+                                    title = item.title,
+                                    description = item.description,
+                                    thumbnailUrl = item.thumbnailUrl,
+                                    platformUrl = item.platformUrl,
+                                    viewCount = item.viewCount,
+                                    likeCount = item.likeCount,
+                                    commentCount = item.commentCount,
+                                    shareCount = item.shareCount,
+                                    publishedAt = item.publishedAt,
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        log.error("플랫폼 {} 피드 조회 실패: {}", channel.platform, e.message)
+                        platformErrors.add(channel.platform.name)
+                    }
                 }
-            } catch (e: Exception) {
-                log.error("플랫폼 {} 피드 조회 실패: {}", channel.platform, e.message)
-                platformErrors.add(channel.platform.name)
+            }
+            try {
+                scope.join()
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
             }
         }
 
@@ -76,7 +90,7 @@ class VideoFeedUseCase(
         return VideoFeedResponse(
             items = sorted.take(size),
             platforms = channels.map { it.platform }.distinct(),
-            errors = platformErrors.ifEmpty { null },
+            errors = platformErrors.toList().ifEmpty { null },
         )
     }
 }

@@ -174,6 +174,12 @@ data class TwitterTweetListResponse(
         val text: String? = null,
         @JsonProperty("created_at") val createdAt: String? = null,
         @JsonProperty("public_metrics") val publicMetrics: TweetPublicMetrics? = null,
+        val attachments: TweetAttachments? = null,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class TweetAttachments(
+        @JsonProperty("media_keys") val mediaKeys: List<String>? = null,
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)

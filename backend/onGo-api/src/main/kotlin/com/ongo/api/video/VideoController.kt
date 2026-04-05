@@ -122,6 +122,7 @@ class VideoController(
         ApiResponse(responseCode = "200", description = "피드 조회 성공"),
         ApiResponse(responseCode = "401", description = "인증 실패"),
     )
+    @RequiresPermission(Permission.VIDEO_READ)
     @GetMapping("/feed")
     fun getVideoFeed(
         @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,

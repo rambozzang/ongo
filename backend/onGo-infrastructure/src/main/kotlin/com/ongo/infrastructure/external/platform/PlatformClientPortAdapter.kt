@@ -113,6 +113,8 @@ class PlatformClientPortAdapter(
         }
     }
 
+    @Retry(name = "platformApi")
+    @CircuitBreaker(name = "platformApi", fallbackMethod = "listVideosFallback")
     override fun listVideos(platform: Platform, accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedPortResult {
         return try {
             val client = platformClientFactory.getClient(platform)
@@ -139,6 +141,19 @@ class PlatformClientPortAdapter(
             log.warn("플랫폼 {} 영상 목록 조회 실패: {}", platform, e.message)
             PlatformFeedPortResult(emptyList())
         }
+    }
+
+    @Suppress("unused")
+    private fun listVideosFallback(
+        platform: Platform,
+        accessToken: String,
+        platformChannelId: String?,
+        maxResults: Int,
+        pageToken: String?,
+        e: Throwable,
+    ): PlatformFeedPortResult {
+        log.warn("플랫폼 {} 영상 목록 조회 실패 (Circuit Breaker): {}", platform, e.message)
+        return PlatformFeedPortResult(emptyList())
     }
 
     @Suppress("unused")

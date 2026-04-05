@@ -87,7 +87,7 @@
           class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"
           @click="showFullDesc = !showFullDesc"
         >
-          {{ showFullDesc ? '접기' : '더 보기' }}
+          {{ showFullDesc ? $t('common.collapse') : $t('common.showMore') }}
         </button>
       </div>
 
@@ -111,6 +111,7 @@ import { ref } from 'vue'
 import { XMarkIcon, FilmIcon, ChatBubbleLeftIcon } from '@heroicons/vue/24/outline'
 import type { VideoFeedItem } from '@/types/video'
 import { PLATFORM_CONFIG } from '@/types/channel'
+import { formatCount, formatDate } from '@/utils/format'
 
 defineProps<{
   item: VideoFeedItem
@@ -121,19 +122,4 @@ defineEmits<{
 }>()
 
 const showFullDesc = ref(false)
-
-function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  return n.toString()
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '-'
-  try {
-    return new Date(iso).toLocaleDateString()
-  } catch {
-    return iso
-  }
-}
 </script>

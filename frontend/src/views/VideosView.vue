@@ -42,7 +42,7 @@
         </div>
 
         <!-- Sort -->
-        <select v-model="sortBy" class="input text-sm w-auto" @change="loadFeed">
+        <select v-model="sortBy" class="input-field text-sm w-auto" @change="loadFeed">
           <option value="recent">{{ $t('videos.sortRecent') }}</option>
           <option value="views">{{ $t('videos.sortViews') }}</option>
           <option value="likes">{{ $t('videos.sortLikes') }}</option>
@@ -226,6 +226,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import VideoDetailPanel from '@/components/video/VideoDetailPanel.vue'
 import { useVideoStore } from '@/stores/video'
 import { storeToRefs } from 'pinia'
+import { formatCount, formatDate } from '@/utils/format'
 
 const videoStore = useVideoStore()
 const { feedItems, feedPlatforms, feedErrors, isFeedLoading: loading } = storeToRefs(videoStore)
@@ -249,21 +250,6 @@ function loadFeed() {
 
 function openDetail(item: VideoFeedItem) {
   selectedItem.value = item
-}
-
-function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  return n.toString()
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '-'
-  try {
-    return new Date(iso).toLocaleDateString()
-  } catch {
-    return iso
-  }
 }
 
 onMounted(() => {

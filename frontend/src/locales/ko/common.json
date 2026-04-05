@@ -3112,6 +3112,7 @@
     "thumbnailCount": "{count}개 썸네일",
     "expand": "펼치기",
     "collapse": "접기",
+    "showMore": "더 보기",
     "styles": {
       "BOLD_TEXT": "볼드 텍스트",
       "MINIMALIST": "미니멀리스트",

@@ -225,7 +225,9 @@ class TwitterClient(
                 expansions = "attachments.media_keys",
                 authorization = "Bearer $accessToken",
             )
-            val items = (response.data ?: emptyList()).map { tweet ->
+            val items = (response.data ?: emptyList())
+                .filter { it.attachments?.mediaKeys?.isNotEmpty() == true }
+                .map { tweet ->
                 PlatformFeedItem(
                     platformVideoId = tweet.id,
                     title = tweet.text?.take(100) ?: "",

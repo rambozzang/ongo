@@ -221,7 +221,7 @@ class InstagramClient(
 
     override fun listVideos(accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedResult {
         try {
-            val userId = platformChannelId ?: "me"
+            val userId = platformChannelId ?: return PlatformFeedResult(emptyList())
             val response = instagramApi.listMedia(
                 userId = userId,
                 fields = "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count",
