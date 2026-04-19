@@ -7,6 +7,8 @@ import com.ongo.domain.contentsource.ContentSourceType
 import com.ongo.domain.contentsource.DriveImportJob
 import com.ongo.domain.contentsource.DriveImportJobRepository
 import com.ongo.domain.contentsource.DriveImportStatus
+import com.ongo.infrastructure.persistence.jooq.Fields.ID
+import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Tables.DRIVE_IMPORT_JOBS
 import com.ongo.infrastructure.persistence.jooq.Tables.USER_CONTENT_SOURCES
 import org.jooq.DSLContext
@@ -125,6 +127,24 @@ class DriveImportJobJooqRepositoryIT {
                 ),
             )
         }
+    }
+
+    @Test
+    fun `listStale returns jobs older than cutoff`() {
+        val v1 = insertTestVideo()
+        val v2 = insertTestVideo()
+        val oldJob = repo.save(newJob(100L, v1, "old", status = DriveImportStatus.DOWNLOADING))
+        repo.save(newJob(100L, v2, "new", status = DriveImportStatus.PENDING))
+
+        // old job의 updated_at을 10분 전으로 강제 변경
+        dsl.update(DRIVE_IMPORT_JOBS)
+            .set(UPDATED_AT, java.time.LocalDateTime.now().minusSeconds(600))
+            .where(ID.eq(oldJob.id))
+            .execute()
+
+        val stale = repo.listStale(olderThanSeconds = 300) // 5분 초과된 것
+        assertEquals(1, stale.size)
+        assertEquals("old", stale[0].driveFileId)
     }
 
     // --- helpers ---
