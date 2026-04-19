@@ -12,6 +12,20 @@
 
 ---
 
+## ⚠ 프로젝트 jOOQ 컨벤션 (중요)
+
+이 프로젝트는 **jOOQ 코드 생성 플러그인을 사용하지 않는다**. 대신:
+
+- `backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/jooq/Tables.kt` 에 `object Tables { val USERS = DSL.table("users") ... }` 와 `object Fields { val ID = DSL.field("id", Long::class.java) ... }` 형태로 **수동 선언**.
+- Repository 구현 이름: `*JooqRepository` (예: `ChannelJooqRepository`) — 위치: `persistence/jooq/` 디렉터리 (도메인별 하위 폴더 없음).
+- Record 클래스 없음. `org.jooq.Record.get(Field<T>)` 를 extension 함수와 함께 사용. 날짜는 `record.localDateTime(FIELD)` 헬퍼 사용.
+- PostgreSQL enum: DB 컬럼은 ENUM 타입이지만 jOOQ에서는 `String` 으로 저장/조회. 비교 시 `::text` cast 필드(예: `STATUS_TEXT = DSL.field("status::text", String::class.java)`) 사용. insert/update는 `.set(STATUS, source.status.name)` 같이 String 전달.
+- 예시 참고 파일: `ChannelJooqRepository.kt` (라인 1~120).
+
+이 플랜의 Task 2, 6, 7은 이 컨벤션에 맞춰져 있다. 생성 코드 기반 표현(`UserContentSourcesRecord`, `ContentSourceStatusEnum` 등)은 등장하지 않는다.
+
+---
+
 ## Phase 구조
 
 - **Phase 1** — DB 마이그레이션 + 도메인 모델 + jOOQ 재생성 (기반)
@@ -117,29 +131,71 @@ git commit -m "feat: V42 마이그레이션 — user_content_sources + drive_imp
 
 ---
 
-### Task 2: jOOQ 코드 재생성
+### Task 2: Tables.kt에 신규 테이블/필드 수동 등록
+
+⚠ 프로젝트는 jOOQ codegen을 쓰지 않고 `Tables.kt` 에 모든 테이블/필드를 수동 선언한다 (플랜 상단 "프로젝트 jOOQ 컨벤션" 참고). 따라서 "재생성" 개념이 없고, 이번 V42에서 추가된 2개 테이블과 `videos`의 새 컬럼을 수동으로 등록한다.
 
 **Files:**
-- Modify (regenerated): `backend/onGo-infrastructure/build/generated-src/jooq/**` (자동 생성이므로 git 추적 정책 확인)
+- Modify: `backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/jooq/Tables.kt`
 
-- [ ] **Step 1: jOOQ 재생성**
+- [ ] **Step 1: `object Tables` 블록에 두 개 테이블 추가**
 
-Run: `./gradlew generateJooq`
-Expected: 컴파일 에러 없이 생성 완료. `UserContentSources`, `DriveImportJobs` 테이블 레코드 클래스가 생성됨.
+파일 상단의 `object Tables { ... }` 블록 안 (기존 테이블 목록 끝에) 추가:
 
-- [ ] **Step 2: 컴파일 확인**
+```kotlin
+// Content sources (Phase 1: Google Drive import)
+val USER_CONTENT_SOURCES = DSL.table("user_content_sources")
+val DRIVE_IMPORT_JOBS = DSL.table("drive_import_jobs")
+```
+
+- [ ] **Step 2: `object Fields` 블록에 신규 필드 추가**
+
+파일 하단의 `object Fields { ... }` 블록 안 (적절한 위치 — 보통 파일 맨 끝 `}` 직전) 에 아래 블록 추가:
+
+```kotlin
+// user_content_sources
+val SOURCE_TYPE = DSL.field("source_type", String::class.java)
+val SOURCE_TYPE_TEXT = DSL.field("source_type::text", String::class.java)
+val EXTERNAL_ACCOUNT_ID = DSL.field("external_account_id", String::class.java)
+val ACCOUNT_EMAIL = DSL.field("account_email", String::class.java)
+val ACCOUNT_DISPLAY_NAME = DSL.field("account_display_name", String::class.java)
+val GRANTED_SCOPES = DSL.field("granted_scopes", String::class.java)
+val LAST_ERROR = DSL.field("last_error", String::class.java)
+val LAST_USED_AT = DSL.field("last_used_at", java.time.LocalDateTime::class.java)
+
+// drive_import_jobs
+val VIDEO_ID = DSL.field("video_id", Long::class.java)
+val CONTENT_SOURCE_ID = DSL.field("content_source_id", Long::class.java)
+val DRIVE_FILE_ID = DSL.field("drive_file_id", String::class.java)
+val DRIVE_FILE_NAME = DSL.field("drive_file_name", String::class.java)
+val BYTES_TRANSFERRED = DSL.field("bytes_transferred", Long::class.java)
+val S3_KEY = DSL.field("s3_key", String::class.java)
+val ERROR_MESSAGE = DSL.field("error_message", String::class.java)
+val RETRY_COUNT = DSL.field("retry_count", Int::class.java)
+val STARTED_AT = DSL.field("started_at", java.time.LocalDateTime::class.java)
+val COMPLETED_AT = DSL.field("completed_at", java.time.LocalDateTime::class.java)
+
+// videos extended (Google Drive import)
+val SOURCE = DSL.field("source", String::class.java)
+val SOURCE_TEXT = DSL.field("source::text", String::class.java)
+val SOURCE_REFERENCE = DSL.field("source_reference", Any::class.java)
+```
+
+**주의:**
+- `STATUS` (content_source_status, drive_import_status) 와 `FILE_SIZE_BYTES`, `USER_ID`, `ID`, `CREATED_AT`, `UPDATED_AT` 등은 기존에 이미 선언되어 있으므로 **재선언 금지**. 파일을 Read로 열어 중복 여부 확인 후 신규 필드만 추가.
+- `SOURCE_TYPE_TEXT`, `SOURCE_TEXT` 같은 `::text` cast 필드는 enum 비교(`.where(SOURCE_TYPE_TEXT.eq("GOOGLE_DRIVE"))`)용.
+- `SOURCE_REFERENCE` 는 JSONB 컬럼 — `Any::class.java` 로 선언 (기존 `THUMBNAIL_URLS` 와 동일 패턴).
+
+- [ ] **Step 3: 컴파일 확인**
 
 Run: `./gradlew :onGo-infrastructure:compileKotlin`
-Expected: BUILD SUCCESSFUL
+Expected: BUILD SUCCESSFUL. 컴파일 실패 시 중복 필드 선언 확인.
 
-- [ ] **Step 3: 커밋 (생성 결과를 커밋하는 프로젝트 정책이라면)**
-
-프로젝트가 jOOQ generated 소스를 git에 커밋하지 않는 정책이면 이 스텝은 스킵. `.gitignore` 확인 후 결정.
+- [ ] **Step 4: 커밋**
 
 ```bash
-# 커밋 정책일 경우만:
-git add backend/onGo-infrastructure/build/generated-src/jooq
-git commit -m "chore: V42 jOOQ 재생성"
+git add backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/jooq/Tables.kt
+git commit -m "feat: Tables.kt에 user_content_sources / drive_import_jobs 테이블 및 신규 필드 등록"
 ```
 
 ---
@@ -509,88 +565,172 @@ git commit -m "feat: ContentSource/DriveImportJob Repository 인터페이스 + �
 
 ### Task 6: jOOQ Repository 구현 — ContentSource
 
+⚠ 프로젝트 컨벤션: Repository는 `persistence/jooq/` 디렉터리에 `*JooqRepository` 이름으로 배치하며 단일 파일에 toDomain 확장 함수까지 포함한다 (별도 Mapper 파일 없음). 참고 파일: `ChannelJooqRepository.kt`.
+
 **Files:**
-- Create: `backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/contentsource/ContentSourceRepositoryImpl.kt`
-- Create: `backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/contentsource/ContentSourceMapper.kt`
-- Test: `backend/onGo-infrastructure/src/test/kotlin/com/ongo/infrastructure/persistence/contentsource/ContentSourceRepositoryImplIT.kt` (@SpringBootTest + Testcontainers)
+- Create: `backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/jooq/ContentSourceJooqRepository.kt`
+- Test: `backend/onGo-infrastructure/src/test/kotlin/com/ongo/infrastructure/persistence/jooq/ContentSourceJooqRepositoryIT.kt` (@SpringBootTest + Testcontainers)
 
-- [ ] **Step 1: 매퍼 작성 (jOOQ Record ↔ Domain)**
+- [ ] **Step 1: Repository + toDomain 확장 함수 (단일 파일)**
 
-`ContentSourceMapper.kt`:
+`ContentSourceJooqRepository.kt` 전체:
 ```kotlin
-package com.ongo.infrastructure.persistence.contentsource
+package com.ongo.infrastructure.persistence.jooq
 
 import com.ongo.domain.contentsource.ContentSource
+import com.ongo.domain.contentsource.ContentSourceRepository
 import com.ongo.domain.contentsource.ContentSourceStatus
 import com.ongo.domain.contentsource.ContentSourceType
-import com.ongo.jooq.tables.records.UserContentSourcesRecord
+import com.ongo.infrastructure.persistence.jooq.Fields.*
+import com.ongo.infrastructure.persistence.jooq.Tables.USER_CONTENT_SOURCES
+import org.jooq.DSLContext
+import org.jooq.Record
+import org.springframework.stereotype.Repository
+import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneOffset
 
-object ContentSourceMapper {
-    fun toDomain(r: UserContentSourcesRecord) = ContentSource(
-        id = r.id!!,
-        userId = r.userId!!,
-        sourceType = ContentSourceType.valueOf(r.sourceType!!.literal),
-        externalAccountId = r.externalAccountId!!,
-        accountEmail = r.accountEmail!!,
-        accountDisplayName = r.accountDisplayName,
-        accessTokenEncrypted = r.accessToken!!,
-        refreshTokenEncrypted = r.refreshToken,
-        tokenExpiresAt = r.tokenExpiresAt?.toInstant(ZoneOffset.UTC),
-        grantedScopes = r.grantedScopes,
-        status = ContentSourceStatus.valueOf(r.status!!.literal),
-        lastError = r.lastError,
-        connectedAt = r.connectedAt!!.toInstant(ZoneOffset.UTC),
-        lastUsedAt = r.lastUsedAt?.toInstant(ZoneOffset.UTC),
-        updatedAt = r.updatedAt!!.toInstant(ZoneOffset.UTC),
-    )
-}
-```
-
-- [ ] **Step 2: Repository 구현**
-
-`ContentSourceRepositoryImpl.kt` — jOOQ DSLContext 사용. 기존 `ChannelRepositoryImpl` 파일을 참고해 동일 컨벤션으로 구현. 핵심 메서드 시그니처:
-
-```kotlin
 @Repository
-class ContentSourceRepositoryImpl(private val dsl: DSLContext) : ContentSourceRepository {
-    private val t = USER_CONTENT_SOURCES
+class ContentSourceJooqRepository(
+    private val dsl: DSLContext,
+) : ContentSourceRepository {
 
-    override fun findById(id: Long): ContentSource? = ...
-    override fun findByUserAndType(userId: Long, type: ContentSourceType): ContentSource? = ...
-    override fun findAllByUser(userId: Long): List<ContentSource> = ...
+    override fun findById(id: Long): ContentSource? =
+        dsl.select().from(USER_CONTENT_SOURCES).where(ID.eq(id))
+            .fetchOne()?.toContentSource()
+
+    override fun findByUserAndType(userId: Long, type: ContentSourceType): ContentSource? =
+        dsl.select().from(USER_CONTENT_SOURCES)
+            .where(USER_ID.eq(userId))
+            .and(SOURCE_TYPE_TEXT.eq(type.name))
+            .fetchOne()?.toContentSource()
+
+    override fun findAllByUser(userId: Long): List<ContentSource> =
+        dsl.select().from(USER_CONTENT_SOURCES)
+            .where(USER_ID.eq(userId))
+            .orderBy(CONNECTED_AT.desc())
+            .fetch().map { it.toContentSource() }
 
     override fun save(source: ContentSource): ContentSource {
-        // id == 0L 이면 insert, 아니면 update
-        // returning(t.ID) 으로 생성 id 획득
-        // updated_at = NOW()
+        val now = LocalDateTime.now()
+        val id = if (source.id == 0L) {
+            dsl.insertInto(USER_CONTENT_SOURCES)
+                .set(USER_ID, source.userId)
+                .set(SOURCE_TYPE, source.sourceType.name)
+                .set(EXTERNAL_ACCOUNT_ID, source.externalAccountId)
+                .set(ACCOUNT_EMAIL, source.accountEmail)
+                .set(ACCOUNT_DISPLAY_NAME, source.accountDisplayName)
+                .set(ACCESS_TOKEN, source.accessTokenEncrypted)
+                .set(REFRESH_TOKEN, source.refreshTokenEncrypted)
+                .set(TOKEN_EXPIRES_AT, source.tokenExpiresAt?.atZone(ZoneOffset.UTC)?.toLocalDateTime())
+                .set(GRANTED_SCOPES, source.grantedScopes)
+                .set(STATUS, source.status.name)
+                .set(UPDATED_AT, now)
+                .returningResult(ID).fetchOne()!!.get(ID)
+        } else {
+            dsl.update(USER_CONTENT_SOURCES)
+                .set(ACCOUNT_EMAIL, source.accountEmail)
+                .set(ACCOUNT_DISPLAY_NAME, source.accountDisplayName)
+                .set(EXTERNAL_ACCOUNT_ID, source.externalAccountId)
+                .set(ACCESS_TOKEN, source.accessTokenEncrypted)
+                .set(REFRESH_TOKEN, source.refreshTokenEncrypted)
+                .set(TOKEN_EXPIRES_AT, source.tokenExpiresAt?.atZone(ZoneOffset.UTC)?.toLocalDateTime())
+                .set(GRANTED_SCOPES, source.grantedScopes)
+                .set(STATUS, source.status.name)
+                .set(LAST_ERROR, source.lastError)
+                .set(UPDATED_AT, now)
+                .where(ID.eq(source.id)).execute()
+            source.id
+        }
+        return findById(id)!!
     }
 
     override fun updateStatus(id: Long, status: ContentSourceStatus, lastError: String?) {
-        dsl.update(t)
-            .set(t.STATUS, ContentSourceStatusEnum.valueOf(status.name))
-            .set(t.LAST_ERROR, lastError)
-            .set(t.UPDATED_AT, LocalDateTime.now())
-            .where(t.ID.eq(id))
-            .execute()
+        dsl.update(USER_CONTENT_SOURCES)
+            .set(STATUS, status.name)
+            .set(LAST_ERROR, lastError)
+            .set(UPDATED_AT, LocalDateTime.now())
+            .where(ID.eq(id)).execute()
     }
 
-    override fun updateTokens(id: Long, accessTokenEncrypted: String, refreshTokenEncrypted: String?, expiresAt: Instant?) { ... }
-    override fun markUsed(id: Long) { ... }
-    override fun delete(id: Long) { dsl.deleteFrom(t).where(t.ID.eq(id)).execute() }
+    override fun updateTokens(id: Long, accessTokenEncrypted: String, refreshTokenEncrypted: String?, expiresAt: Instant?) {
+        dsl.update(USER_CONTENT_SOURCES)
+            .set(ACCESS_TOKEN, accessTokenEncrypted)
+            .set(REFRESH_TOKEN, refreshTokenEncrypted)
+            .set(TOKEN_EXPIRES_AT, expiresAt?.atZone(ZoneOffset.UTC)?.toLocalDateTime())
+            .set(STATUS, ContentSourceStatus.ACTIVE.name)
+            .set(LAST_ERROR, null as String?)
+            .set(UPDATED_AT, LocalDateTime.now())
+            .where(ID.eq(id)).execute()
+    }
+
+    override fun markUsed(id: Long) {
+        val now = LocalDateTime.now()
+        dsl.update(USER_CONTENT_SOURCES)
+            .set(LAST_USED_AT, now)
+            .set(UPDATED_AT, now)
+            .where(ID.eq(id)).execute()
+    }
+
+    override fun delete(id: Long) {
+        dsl.deleteFrom(USER_CONTENT_SOURCES).where(ID.eq(id)).execute()
+    }
+
+    private fun Record.toContentSource(): ContentSource {
+        val sourceTypeStr = get(SOURCE_TYPE) ?: "GOOGLE_DRIVE"
+        val statusStr = get(STATUS) ?: "ACTIVE"
+        return ContentSource(
+            id = get(ID),
+            userId = get(USER_ID),
+            sourceType = try { ContentSourceType.valueOf(sourceTypeStr) } catch (_: Exception) { ContentSourceType.GOOGLE_DRIVE },
+            externalAccountId = get(EXTERNAL_ACCOUNT_ID),
+            accountEmail = get(ACCOUNT_EMAIL),
+            accountDisplayName = get(ACCOUNT_DISPLAY_NAME),
+            accessTokenEncrypted = get(ACCESS_TOKEN),
+            refreshTokenEncrypted = get(REFRESH_TOKEN),
+            tokenExpiresAt = localDateTime(TOKEN_EXPIRES_AT)?.atZone(ZoneOffset.UTC)?.toInstant(),
+            grantedScopes = get(GRANTED_SCOPES),
+            status = try { ContentSourceStatus.valueOf(statusStr) } catch (_: Exception) { ContentSourceStatus.ACTIVE },
+            lastError = get(LAST_ERROR),
+            connectedAt = localDateTime(CONNECTED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
+            lastUsedAt = localDateTime(LAST_USED_AT)?.atZone(ZoneOffset.UTC)?.toInstant(),
+            updatedAt = localDateTime(UPDATED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
+        )
+    }
 }
 ```
 
-**참고 파일:** `ChannelRepositoryImpl` 동일 패턴. `ContentSourceStatusEnum`은 jOOQ가 생성한 enum 매핑.
+**주의:**
+- `ChannelJooqRepository.kt` 패턴과 동일: enum은 `.set(STATUS, source.status.name)` 으로 String 저장, 비교는 `SOURCE_TYPE_TEXT.eq(type.name)` 으로 `::text` cast 사용.
+- `Record.toContentSource()` 확장은 private 으로 파일 하단. 기존 `ChannelJooqRepository.toChannel()` 과 동일 패턴.
+- `localDateTime(FIELD)` 은 `Tables.kt` 상단에 정의된 Record 확장 함수 (Import 불필요, 같은 패키지).
 
-- [ ] **Step 3: 통합 테스트 (Testcontainers)**
+- [ ] **Step 2: 통합 테스트 (Testcontainers)**
 
-`ContentSourceRepositoryImplIT.kt`:
+`ContentSourceJooqRepositoryIT.kt`:
 ```kotlin
+package com.ongo.infrastructure.persistence.jooq
+
+import com.ongo.domain.contentsource.*
+import com.ongo.infrastructure.persistence.jooq.Tables.USER_CONTENT_SOURCES
+import org.jooq.DSLContext
+import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions.*
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.dao.DuplicateKeyException
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
+import java.time.Instant
+
 @SpringBootTest
 @Testcontainers
 @ActiveProfiles("test")
-class ContentSourceRepositoryImplIT {
+class ContentSourceJooqRepositoryIT {
     @Autowired lateinit var repo: ContentSourceRepository
     @Autowired lateinit var dsl: DSLContext
 
@@ -610,8 +750,7 @@ class ContentSourceRepositoryImplIT {
     @BeforeEach fun cleanup() { dsl.deleteFrom(USER_CONTENT_SOURCES).execute() }
 
     @Test fun `save and findByUserAndType roundtrip`() {
-        val src = newActiveSource(userId = 100L)
-        val saved = repo.save(src)
+        val saved = repo.save(newActiveSource(userId = 100L))
         val found = repo.findByUserAndType(100L, ContentSourceType.GOOGLE_DRIVE)
         assertEquals(saved.id, found?.id)
         assertEquals("user@gmail.com", found?.accountEmail)
@@ -626,94 +765,201 @@ class ContentSourceRepositoryImplIT {
     }
 
     @Test fun `unique constraint on user and source type`() {
-        val userId = 100L
-        repo.save(newActiveSource(userId = userId))
-        assertThrows<DataIntegrityViolationException> {
-            repo.save(newActiveSource(userId = userId))
+        repo.save(newActiveSource(userId = 100L))
+        assertThrows<DuplicateKeyException> {
+            repo.save(newActiveSource(userId = 100L))
         }
     }
+
+    private fun newActiveSource(userId: Long) = ContentSource(
+        id = 0L, userId = userId, sourceType = ContentSourceType.GOOGLE_DRIVE,
+        externalAccountId = "google-sub-${userId}", accountEmail = "user@gmail.com",
+        accountDisplayName = "User", accessTokenEncrypted = "enc:at",
+        refreshTokenEncrypted = "enc:rt", tokenExpiresAt = Instant.now().plusSeconds(3600),
+        grantedScopes = "drive.readonly", status = ContentSourceStatus.ACTIVE,
+        lastError = null, connectedAt = Instant.now(), lastUsedAt = null, updatedAt = Instant.now(),
+    )
 }
 ```
 
-- [ ] **Step 4: 테스트 실행**
+- [ ] **Step 3: 테스트 실행**
 
-Run: `./gradlew :onGo-infrastructure:test --tests "*.ContentSourceRepositoryImplIT"`
+Run: `./gradlew :onGo-infrastructure:test --tests "*.ContentSourceJooqRepositoryIT"`
 Expected: 모든 테스트 PASS
 
-- [ ] **Step 5: 커밋**
+- [ ] **Step 4: 커밋**
 
 ```bash
-git add backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/contentsource/ \
-        backend/onGo-infrastructure/src/test/kotlin/com/ongo/infrastructure/persistence/contentsource/
-git commit -m "feat: ContentSourceRepository jOOQ 구현 + 통합 테스트"
+git add backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/jooq/ContentSourceJooqRepository.kt \
+        backend/onGo-infrastructure/src/test/kotlin/com/ongo/infrastructure/persistence/jooq/ContentSourceJooqRepositoryIT.kt
+git commit -m "feat: ContentSourceJooqRepository + 통합 테스트"
 ```
 
 ---
 
 ### Task 7: jOOQ Repository 구현 — DriveImportJob
 
+Task 6과 동일 구조. `persistence/jooq/` 디렉터리, 단일 파일, `::text` cast + String 저장 패턴.
+
 **Files:**
-- Create: `backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/contentsource/DriveImportJobRepositoryImpl.kt`
-- Create: `backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/contentsource/DriveImportJobMapper.kt`
-- Test: `backend/onGo-infrastructure/src/test/kotlin/com/ongo/infrastructure/persistence/contentsource/DriveImportJobRepositoryImplIT.kt`
+- Create: `backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/jooq/DriveImportJobJooqRepository.kt`
+- Test: `backend/onGo-infrastructure/src/test/kotlin/com/ongo/infrastructure/persistence/jooq/DriveImportJobJooqRepositoryIT.kt`
 
-Task 6과 동일 구조. 핵심 쿼리:
+- [ ] **Step 1: Repository + toDomain 확장 (단일 파일)**
 
-- [ ] **Step 1: 매퍼 + Repository 구현**
-
-핵심 메서드:
+`DriveImportJobJooqRepository.kt` 핵심 구조:
 ```kotlin
-override fun findActiveByUserAndFileId(userId: Long, driveFileId: String): List<DriveImportJob> =
-    dsl.selectFrom(t)
-        .where(t.USER_ID.eq(userId))
-        .and(t.DRIVE_FILE_ID.eq(driveFileId))
-        .and(t.STATUS.`in`(
-            DriveImportStatusEnum.PENDING,
-            DriveImportStatusEnum.DOWNLOADING,
-            DriveImportStatusEnum.COMPLETED,
-        ))
-        .forUpdate()          // 동시 클릭 직렬화
-        .fetch(DriveImportJobMapper::toDomain)
+package com.ongo.infrastructure.persistence.jooq
 
-override fun countActiveByUser(userId: Long): Int =
-    dsl.fetchCount(t,
-        t.USER_ID.eq(userId).and(t.STATUS.`in`(
-            DriveImportStatusEnum.PENDING, DriveImportStatusEnum.DOWNLOADING
-        )))
+import com.ongo.domain.contentsource.DriveImportJob
+import com.ongo.domain.contentsource.DriveImportJobRepository
+import com.ongo.domain.contentsource.DriveImportStatus
+import com.ongo.infrastructure.persistence.jooq.Fields.*
+import com.ongo.infrastructure.persistence.jooq.Tables.DRIVE_IMPORT_JOBS
+import org.jooq.DSLContext
+import org.jooq.Record
+import org.jooq.impl.DSL
+import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
-override fun listStale(olderThanSeconds: Long): List<DriveImportJob> =
-    dsl.selectFrom(t)
-        .where(t.STATUS.`in`(DriveImportStatusEnum.PENDING, DriveImportStatusEnum.DOWNLOADING))
-        .and(t.UPDATED_AT.lt(LocalDateTime.now().minusSeconds(olderThanSeconds)))
-        .fetch(DriveImportJobMapper::toDomain)
+@Repository
+class DriveImportJobJooqRepository(private val dsl: DSLContext) : DriveImportJobRepository {
 
-override fun updateProgress(id: Long, bytesTransferred: Long) {
-    dsl.update(t)
-        .set(t.BYTES_TRANSFERRED, bytesTransferred)
-        .set(t.UPDATED_AT, LocalDateTime.now())
-        .where(t.ID.eq(id))
-        .execute()
+    private val STATUS_TEXT_DRIVE = DSL.field("status::text", String::class.java)
+
+    override fun findById(id: Long): DriveImportJob? =
+        dsl.select().from(DRIVE_IMPORT_JOBS).where(ID.eq(id))
+            .fetchOne()?.toDriveImportJob()
+
+    override fun findByVideoId(videoId: Long): DriveImportJob? =
+        dsl.select().from(DRIVE_IMPORT_JOBS).where(VIDEO_ID.eq(videoId))
+            .fetchOne()?.toDriveImportJob()
+
+    override fun findActiveByUserAndFileId(userId: Long, driveFileId: String): List<DriveImportJob> =
+        dsl.select().from(DRIVE_IMPORT_JOBS)
+            .where(USER_ID.eq(userId))
+            .and(DRIVE_FILE_ID.eq(driveFileId))
+            .and(STATUS_TEXT_DRIVE.`in`("PENDING", "DOWNLOADING", "COMPLETED"))
+            .forUpdate()
+            .fetch().map { it.toDriveImportJob() }
+
+    override fun countActiveByUser(userId: Long): Int =
+        dsl.selectCount().from(DRIVE_IMPORT_JOBS)
+            .where(USER_ID.eq(userId))
+            .and(STATUS_TEXT_DRIVE.`in`("PENDING", "DOWNLOADING"))
+            .fetchOne(0, Int::class.java) ?: 0
+
+    override fun listActiveByUser(userId: Long): List<DriveImportJob> =
+        dsl.select().from(DRIVE_IMPORT_JOBS)
+            .where(USER_ID.eq(userId))
+            .and(STATUS_TEXT_DRIVE.`in`("PENDING", "DOWNLOADING"))
+            .orderBy(CREATED_AT.desc())
+            .fetch().map { it.toDriveImportJob() }
+
+    override fun listStale(olderThanSeconds: Long): List<DriveImportJob> =
+        dsl.select().from(DRIVE_IMPORT_JOBS)
+            .where(STATUS_TEXT_DRIVE.`in`("PENDING", "DOWNLOADING"))
+            .and(UPDATED_AT.lt(LocalDateTime.now().minusSeconds(olderThanSeconds)))
+            .fetch().map { it.toDriveImportJob() }
+
+    override fun save(job: DriveImportJob): DriveImportJob {
+        val now = LocalDateTime.now()
+        val id = if (job.id == 0L) {
+            dsl.insertInto(DRIVE_IMPORT_JOBS)
+                .set(VIDEO_ID, job.videoId)
+                .set(USER_ID, job.userId)
+                .set(CONTENT_SOURCE_ID, job.contentSourceId)
+                .set(DRIVE_FILE_ID, job.driveFileId)
+                .set(DRIVE_FILE_NAME, job.driveFileName)
+                .set(FILE_SIZE_BYTES, job.fileSizeBytes)
+                .set(BYTES_TRANSFERRED, job.bytesTransferred)
+                .set(STATUS, job.status.name)
+                .set(S3_KEY, job.s3Key)
+                .set(ERROR_MESSAGE, job.errorMessage)
+                .set(RETRY_COUNT, job.retryCount)
+                .set(UPDATED_AT, now)
+                .returningResult(ID).fetchOne()!!.get(ID)
+        } else { job.id }
+        return findById(id)!!
+    }
+
+    override fun updateStatus(id: Long, status: DriveImportStatus, errorMessage: String?) {
+        val now = LocalDateTime.now()
+        val q = dsl.update(DRIVE_IMPORT_JOBS)
+            .set(STATUS, status.name)
+            .set(ERROR_MESSAGE, errorMessage)
+            .set(UPDATED_AT, now)
+        // DOWNLOADING 첫 진입 시 started_at 설정
+        if (status == DriveImportStatus.DOWNLOADING) q.set(STARTED_AT, now)
+        if (status.isTerminal()) q.set(COMPLETED_AT, now)
+        q.where(ID.eq(id)).execute()
+    }
+
+    override fun updateProgress(id: Long, bytesTransferred: Long) {
+        dsl.update(DRIVE_IMPORT_JOBS)
+            .set(BYTES_TRANSFERRED, bytesTransferred)
+            .set(UPDATED_AT, LocalDateTime.now())
+            .where(ID.eq(id)).execute()
+    }
+
+    override fun markCompleted(id: Long, s3Key: String) {
+        val now = LocalDateTime.now()
+        dsl.update(DRIVE_IMPORT_JOBS)
+            .set(STATUS, DriveImportStatus.COMPLETED.name)
+            .set(S3_KEY, s3Key)
+            .set(COMPLETED_AT, now)
+            .set(UPDATED_AT, now)
+            .where(ID.eq(id)).execute()
+    }
+
+    private fun Record.toDriveImportJob(): DriveImportJob {
+        val statusStr = get(STATUS) ?: "PENDING"
+        return DriveImportJob(
+            id = get(ID),
+            videoId = get(VIDEO_ID),
+            userId = get(USER_ID),
+            contentSourceId = get(CONTENT_SOURCE_ID),
+            driveFileId = get(DRIVE_FILE_ID),
+            driveFileName = get(DRIVE_FILE_NAME),
+            fileSizeBytes = get(FILE_SIZE_BYTES),
+            bytesTransferred = get(BYTES_TRANSFERRED),
+            status = try { DriveImportStatus.valueOf(statusStr) } catch (_: Exception) { DriveImportStatus.PENDING },
+            s3Key = get(S3_KEY),
+            errorMessage = get(ERROR_MESSAGE),
+            retryCount = get(RETRY_COUNT),
+            startedAt = localDateTime(STARTED_AT)?.atZone(ZoneOffset.UTC)?.toInstant(),
+            completedAt = localDateTime(COMPLETED_AT)?.atZone(ZoneOffset.UTC)?.toInstant(),
+            createdAt = localDateTime(CREATED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
+            updatedAt = localDateTime(UPDATED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
+        )
+    }
 }
 ```
 
+**주의:**
+- `STATUS_TEXT_DRIVE` 는 이 Repository 로컬로 선언. Fields.kt의 `STATUS_TEXT` 는 `channels.status::text` 용도로 이미 쓰이지만 구문상 동일(`"status::text"`) 이라 공용 가능. 명확성을 위해 로컬 변수명 사용.
+- `forUpdate()` 로 동시 클릭 직렬화 (중복 검사 단계 보호).
+- DB의 `drive_import_status` enum 과 Kotlin `DriveImportStatus` enum 이름·값 완전히 일치.
+
 - [ ] **Step 2: 통합 테스트**
 
-테스트 케이스:
-- save/findById roundtrip
-- findActiveByUserAndFileId — 같은 fileId로 COMPLETED job만 있는 경우도 감지되는지
-- countActiveByUser — PENDING + DOWNLOADING만 카운트
-- listStale — 5분 이상 된 DOWNLOADING job만 반환
-- updateProgress — bytes_transferred 증가 반영
-- CHECK 제약 — bytesTransferred > fileSizeBytes 저장 시도 → 예외
+`DriveImportJobJooqRepositoryIT.kt` — Task 6의 Testcontainers 테스트와 동일한 `@SpringBootTest + @Testcontainers + @DynamicPropertySource` 셋업 사용. 테스트 케이스:
+- `save/findById roundtrip` — 전체 필드 값 왕복 확인
+- `findActiveByUserAndFileId returns PENDING/DOWNLOADING/COMPLETED jobs` — COMPLETED 도 포함되는지 확인
+- `findActiveByUserAndFileId excludes FAILED/CANCELLED`
+- `countActiveByUser returns only PENDING+DOWNLOADING`
+- `listStale returns jobs older than cutoff` — 테스트에서 `updated_at` 을 과거로 돌려 검증
+- `updateProgress increments bytes_transferred`
+- `CHECK constraint rejects bytesTransferred > fileSizeBytes` — insert 시 `DataIntegrityViolationException` 기대
 
 - [ ] **Step 3: 실행 + 커밋**
 
 ```bash
-./gradlew :onGo-infrastructure:test --tests "*.DriveImportJobRepositoryImplIT"
-git add backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/contentsource/DriveImportJobRepositoryImpl.kt \
-        backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/contentsource/DriveImportJobMapper.kt \
-        backend/onGo-infrastructure/src/test/kotlin/com/ongo/infrastructure/persistence/contentsource/DriveImportJobRepositoryImplIT.kt
-git commit -m "feat: DriveImportJobRepository jOOQ 구현 + 동시성 테스트"
+./gradlew :onGo-infrastructure:test --tests "*.DriveImportJobJooqRepositoryIT"
+git add backend/onGo-infrastructure/src/main/kotlin/com/ongo/infrastructure/persistence/jooq/DriveImportJobJooqRepository.kt \
+        backend/onGo-infrastructure/src/test/kotlin/com/ongo/infrastructure/persistence/jooq/DriveImportJobJooqRepositoryIT.kt
+git commit -m "feat: DriveImportJobJooqRepository + 동시성/CHECK 테스트"
 ```
 
 ---
