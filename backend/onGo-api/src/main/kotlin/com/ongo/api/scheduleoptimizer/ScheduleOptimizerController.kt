@@ -17,6 +17,16 @@ class ScheduleOptimizerController(
     private val scheduleOptimizerUseCase: ScheduleOptimizerUseCase
 ) {
 
+    @Operation(summary = "AI 최적 시간대 생성")
+    @PostMapping("/generate")
+    fun generateSlots(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam platform: String,
+    ): ResponseEntity<ResData<List<OptimalSlotResponse>>> {
+        val result = scheduleOptimizerUseCase.generateOptimalSlots(userId, platform)
+        return ResData.success(result, "최적 시간대가 생성되었습니다")
+    }
+
     @Operation(summary = "최적 시간대 조회")
     @GetMapping("/slots")
     fun getSlots(

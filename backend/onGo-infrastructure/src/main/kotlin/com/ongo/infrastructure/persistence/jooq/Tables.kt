@@ -89,6 +89,9 @@ object Tables {
 
     // AI
     val WEEKLY_DIGESTS = DSL.table("weekly_digests")
+    val OPTIMAL_SLOTS = DSL.table("optimal_slots")
+    val SCHEDULE_RECOMMENDATIONS = DSL.table("schedule_recommendations")
+    val CHANNEL_AUDIT_REPORTS = DSL.table("channel_audit_reports")
 
     // Content Images (image support)
     val CONTENT_IMAGES = DSL.table("content_images")
@@ -146,11 +149,22 @@ object Tables {
     val LIVE_DASHBOARD_ALERTS = DSL.table("live_dashboard_alerts")
     val LIVE_ALERT_CONFIGS = DSL.table("live_alert_configs")
 
+    // Revenue Intelligence (V95)
+    val REVENUE_ALERT_CONFIGS = DSL.table("revenue_alert_configs")
+    val REVENUE_INSIGHTS = DSL.table("revenue_insights")
+
     // Pricing V2
     val WEBHOOK_EVENTS = DSL.table("webhook_events")
     val COUPONS = DSL.table("coupons")
     val COUPON_USAGES = DSL.table("coupon_usages")
     val USAGE_ALERT_CONFIGS = DSL.table("usage_alert_configs")
+
+    // Content Repurpose (AI 리퍼포징)
+    val REPURPOSE_JOBS = DSL.table("repurpose_jobs")
+    val REPURPOSE_CLIPS = DSL.table("repurpose_clips")
+
+    // Keyword Research (V39)
+    val KEYWORD_RESEARCH_HISTORY = DSL.table("keyword_research_history")
 }
 
 object Fields {
@@ -790,10 +804,45 @@ object Fields {
     val THRESHOLD_PERCENT = DSL.field("threshold_percent", Int::class.java)
     val LAST_ALERTED_AT = DSL.field("last_alerted_at", java.time.LocalDateTime::class.java)
 
+    // revenue_alert_configs
+    val ALERT_TYPE_FIELD = DSL.field("alert_type", String::class.java)
+    val THRESHOLD_VALUE = DSL.field("threshold_value", java.math.BigDecimal::class.java)
+    val SCHEDULE_TIME_FIELD = DSL.field("schedule_time", java.time.LocalTime::class.java)
+    val IS_ENABLED = DSL.field("is_enabled", Boolean::class.java)
+
+    // channel_audit_reports
+    val OVERALL_SCORE = DSL.field("overall_score", Int::class.java)
+
+    // optimal_slots
+    val DAY_OF_WEEK_STR = DSL.field("day_of_week", String::class.java)
+    val HOUR = DSL.field("hour", Int::class.java)
+    val SCORE_INT = DSL.field("score", Int::class.java)
+    val AUDIENCE_ONLINE = DSL.field("audience_online", Int::class.java)
+    val COMPETITION_LEVEL = DSL.field("competition_level", String::class.java)
+    val REASON = DSL.field("reason", String::class.java)
+
+    // revenue_insights
+    val INSIGHT_TYPE = DSL.field("insight_type", String::class.java)
+
     // subscriptions new fields
     val TRIAL_START = DSL.field("trial_start", java.time.LocalDateTime::class.java)
     val TRIAL_END = DSL.field("trial_end", java.time.LocalDateTime::class.java)
     val TRIAL_PLAN_TYPE = DSL.field("trial_plan_type", String::class.java)
     val PAUSED_AT = DSL.field("paused_at", java.time.LocalDateTime::class.java)
     val RESUME_AT = DSL.field("resume_at", java.time.LocalDateTime::class.java)
+
+    // repurpose_jobs / repurpose_clips
+    val CLIP_COUNT = DSL.field("clip_count", Int::class.java)
+
+    // repurpose_clips
+    val JOB_ID = DSL.field("job_id", Long::class.java)
+    val START_TIME = DSL.field("start_time", String::class.java)
+    val END_TIME = DSL.field("end_time", String::class.java)
+    val VIRAL_SCORE = DSL.field("viral_score", Int::class.java)
+    val REASONING = DSL.field("reasoning", String::class.java)
+    val SUGGESTED_PLATFORM = DSL.field("suggested_platform", String::class.java)
+
+    // keyword_research_history
+    val RESULT_JSON = DSL.field("result_json", String::class.java)
+    val PLATFORMS_LIST = DSL.field("platforms", String::class.java)
 }

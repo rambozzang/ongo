@@ -168,6 +168,10 @@ import {
   ClockIcon,
   BookOpenIcon,
   ShieldCheckIcon,
+  BeakerIcon,
+  UsersIcon,
+  ClipboardDocumentCheckIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -235,6 +239,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
       { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
       { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
+      { to: '/abtest', label: t('nav.abtest'), icon: BeakerIcon },
     ],
   },
   // ── 3. 게시 & 스케줄 ──
@@ -251,6 +256,9 @@ const navGroups = computed<NavGroup[]>(() => [
     items: [
       { to: '/analytics', label: t('nav.analytics'), icon: ChartBarIcon },
       { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
+      { to: '/competitor', label: t('nav.competitor'), icon: UsersIcon },
+      { to: '/channel-audit', label: t('nav.channelAudit'), icon: ClipboardDocumentCheckIcon },
+      { to: '/keyword-research', label: t('nav.keywordResearch'), icon: MagnifyingGlassIcon },
     ],
   },
   // ── 5. 소통 ──

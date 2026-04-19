@@ -145,6 +145,8 @@
     "subtitleTranslation": "Subtitle Translation",
     "sentimentAnalyzer": "Sentiment Analyzer",
     "contentVersioning": "Content Versioning",
+    "channelAudit": "Channel Audit",
+    "keywordResearch": "Keyword Research",
     "creatorMilestone": "Creator Milestones",
     "algorithmInsights": "Algorithm Insights",
     "contentCalendarAi": "AI Content Calendar",
@@ -1273,7 +1275,49 @@
       "Track daily sentiment changes with the trend chart, and use FAQ auto-classification to identify frequently asked questions",
       "Select comments and click the AI reply button to generate draft replies for multiple comments at once"
     ],
-    "originalComment": "Original"
+    "originalComment": "Original",
+    "crisis": {
+      "title": "Negative Comment Surge Detected",
+      "description": "{changePercent}% increase · {count} negative comments",
+      "keywords": "Top Keywords",
+      "dismiss": "Dismiss"
+    },
+    "aiReply": {
+      "title": "AI Reply Suggestions",
+      "originalComment": "Original Comment",
+      "selectTone": "Reply Tone",
+      "toneFriendly": "Friendly",
+      "toneProfessional": "Professional",
+      "toneHumorous": "Humorous",
+      "generate": "Generate AI Reply",
+      "generating": "Generating...",
+      "credits": "2 credits",
+      "use": "Use This Reply",
+      "noResults": "Generate AI replies to see suggestions",
+      "editPlaceholder": "You can edit the reply here..."
+    },
+    "batch": {
+      "selected": "{count} selected",
+      "reply": "Batch Reply",
+      "hide": "Batch Hide",
+      "cancel": "Cancel Selection",
+      "replyModalTitle": "Compose Batch Reply",
+      "replyPlaceholder": "Enter a reply to send to {count} selected comments...",
+      "confirm": "Send Reply",
+      "replySuccess": "Batch reply sent successfully",
+      "hideSuccess": "Selected comments have been hidden"
+    },
+    "keywordCloud": {
+      "title": "Keyword Cloud",
+      "description": "Frequently mentioned keywords in comments",
+      "load": "Load",
+      "loading": "Loading...",
+      "empty": "No keyword data. Click Load to fetch keywords",
+      "filterHint": "Click to filter comments by this keyword",
+      "days7": "Last 7 days",
+      "days30": "Last 30 days",
+      "days90": "Last 90 days"
+    }
   },
   "linkBioView": {
     "noPage": "No link page found",
@@ -1496,6 +1540,30 @@
     "replyPlaceholder": "Write a reply...",
     "reply": "Reply"
   },
+  "videosView": {
+    "aiRewrite": {
+      "button": "AI Rewrite",
+      "buttonTitle": "Optimize title & description with AI",
+      "modalTitle": "AI Metadata Rewriter",
+      "prompt": "AI will optimize the title and description for '{title}'",
+      "creditNotice": "AI credits will be consumed",
+      "analyzing": "AI is analyzing...",
+      "original": "Original",
+      "suggestions": "AI Suggestions",
+      "run": "Run AI Optimization",
+      "creditsUsed": "{count} credits used"
+    },
+    "repurpose": {
+      "button": "Short Clips",
+      "buttonTitle": "AI analyzes clip candidates for short-form",
+      "modalTitle": "AI Short-Form Extraction",
+      "prompt": "AI will find viral clip candidates from '{title}'",
+      "creditNotice": "AI credits will be consumed",
+      "analyzing": "AI is analyzing the video...",
+      "run": "Run AI Analysis",
+      "clipsFound": "Found {count} clip candidates"
+    }
+  },
   "calendar": {
     "title": "Calendar",
     "description": "View scheduled content on the calendar",
@@ -1511,7 +1579,26 @@
     ],
     "dateFormatMonthly": "{month}/{year}",
     "dateFormatWeeklySameMonth": "{month}/{startDate} - {endDate}, {year}",
-    "dateFormatWeeklyCrossMonth": "{startMonth}/{startDate} - {endMonth}/{endDate}, {year}"
+    "dateFormatWeeklyCrossMonth": "{startMonth}/{startDate} - {endMonth}/{endDate}, {year}",
+    "aiOptimalTime": "AI Optimal Time Analysis",
+    "aiOptimalTimeDesc": "AI analyzes your channel data to recommend the best upload times per platform",
+    "aiCalendarGenerate": "AI Calendar Generate",
+    "aiCalendarGenerateDesc": "AI automatically plans your content calendar",
+    "generating": "Generating...",
+    "selectPlatform": "Select Platform",
+    "selectDateRange": "Select Date Range",
+    "selectFrequency": "Select Frequency",
+    "frequencyDaily": "Daily",
+    "frequencyWeekly": "2-3 times/week",
+    "frequencyBiweekly": "1-2 times/week",
+    "score": "Score",
+    "audience": "Est. Audience",
+    "competition": "Competition",
+    "reason": "Analysis",
+    "accept": "Accept",
+    "accepted": "Accepted",
+    "pending": "Pending",
+    "credits": "Credits"
   },
   "templates": {
     "title": "Content Templates",
@@ -1831,7 +1918,9 @@
     "avgRpm": "Average RPM",
     "topPlatform": "Top Revenue Platform",
     "revenueTrend": "Revenue Trend",
-    "platformBreakdown": "Platform Revenue Breakdown",
+    "platformBreakdown": {
+      "totalRevenue": "Total Revenue"
+    },
     "platformComparison": "Platform Comparison",
     "monthlyRevenueTable": "Monthly Revenue Details",
     "loading": "Loading...",
@@ -1866,7 +1955,61 @@
     "statusConfirmed": "Confirmed",
     "statusInProgress": "In Progress",
     "statusCompleted": "Completed",
-    "statusCancelled": "Cancelled"
+    "statusCancelled": "Cancelled",
+    "insights": {
+      "title": "AI Revenue Insights",
+      "description": "AI analyzes your revenue data to provide personalized insights",
+      "generate": "Generate AI Insights",
+      "generateHint": "5 credits",
+      "generating": "Analyzing...",
+      "empty": "No insights generated yet",
+      "emptyHint": "Click the Generate AI Insights button to start analysis",
+      "confidence": {
+        "HIGH": "High",
+        "MEDIUM": "Medium",
+        "LOW": "Low"
+      },
+      "type": {
+        "REVENUE_TREND": "Revenue Trend",
+        "PLATFORM_PERFORMANCE": "Platform Performance",
+        "ANOMALY": "Anomaly Detected",
+        "OPPORTUNITY": "Growth Opportunity",
+        "FORECAST": "Revenue Forecast"
+      }
+    },
+    "alerts": {
+      "title": "Revenue Alert Settings",
+      "save": "Save",
+      "cancel": "Cancel",
+      "DAILY_SUMMARY": {
+        "title": "Daily Revenue Summary",
+        "description": "Receive a daily revenue summary notification at your set time",
+        "timeLabel": "Notification Time"
+      },
+      "ANOMALY_DETECTION": {
+        "title": "Revenue Anomaly Detection",
+        "description": "Get notified when revenue changes significantly from the baseline",
+        "thresholdLabel": "Detection Threshold (%)",
+        "thresholdHint": "e.g. 30 detects changes of ±30% or more"
+      },
+      "GOAL_ACHIEVEMENT": {
+        "title": "Goal Achievement Alert",
+        "description": "Set a monthly revenue goal and get notified when achieved",
+        "goalLabel": "Monthly Revenue Goal (KRW)"
+      },
+      "MILESTONE": {
+        "title": "Milestone Alert",
+        "description": "Automatically get notified when you reach revenue milestones like 1M KRW, 10M KRW, etc."
+      }
+    },
+    "table": {
+      "period": "Period",
+      "total": "Total",
+      "change": "Change"
+    },
+    "chart": {
+      "totalRevenue": "Total Revenue"
+    }
   },
   "inbox": {
     "title": "Social Inbox",
@@ -1948,7 +2091,15 @@
       "planning": "Planning",
       "producing": "Producing",
       "completed": "Completed"
-    }
+    },
+    "aiGenerate": "AI Generate Ideas",
+    "aiGenerateDesc": "AI recommends content ideas tailored to your channel",
+    "generating": "Generating ideas...",
+    "selectCategory": "Select Category (optional)",
+    "estimatedViews": "Est. Views",
+    "difficulty": "Difficulty",
+    "aiGenerated": "AI Generated",
+    "credits": "5 Credits"
   },
   "team": {
     "description": "Manage team members and track collaboration activities",
@@ -2444,80 +2595,6 @@
   },
   "workflowBuilder": {
     "title": "Visual Workflow Builder",
-    "description": "Visually build automation workflows with drag and drop",
-    "pageGuideTitle": "Visual Workflow Builder Guide",
-    "pageGuide": [
-      "Drag nodes to build automation workflows",
-      "Connect triggers, conditions, and actions to create complex automations",
-      "Test and activate your workflows"
-    ],
-    "pageGuideMobile": [
-      "Build automation workflows visually",
-      "Connect triggers, conditions, and actions"
-    ],
-    "toolbar": {
-      "save": "Save",
-      "test": "Test",
-      "activate": "Activate",
-      "deactivate": "Deactivate",
-      "zoomIn": "Zoom In",
-      "zoomOut": "Zoom Out",
-      "fitView": "Fit View",
-      "undo": "Undo",
-      "redo": "Redo"
-    },
-    "palette": {
-      "title": "Node Palette",
-      "triggers": "Triggers",
-      "conditions": "Conditions",
-      "actions": "Actions"
-    },
-    "config": {
-      "title": "Node Settings",
-      "name": "Node Name",
-      "description": "Description",
-      "selectNode": "Select a node"
-    },
-    "templates": {
-      "title": "Workflow Templates",
-      "autoPublish": "Auto Multi-Platform Publish",
-      "commentReply": "Auto Comment Reply",
-      "trendAlert": "Trend Alert",
-      "performanceAlert": "Performance Alert"
-    },
-    "status": {
-      "active": "Active",
-      "inactive": "Inactive",
-      "draft": "Draft",
-      "error": "Error"
-    },
-    "list": {
-      "title": "My Workflows",
-      "create": "New Workflow",
-      "empty": "No workflows",
-      "emptyDesc": "Create a new workflow or start from a template",
-      "lastTriggered": "Last triggered",
-      "triggerCount": "Trigger count"
-    },
-    "mobile": {
-      "title": "Workflows (Mobile)",
-      "hint": "Use tablet or desktop for complex workflow editing",
-      "steps": "steps",
-      "addStep": "Add Step"
-    }
-  },
-  "clientPortal": {
-    "title": "Client Portal",
-    "description": "Share performance reports with brands and clients",
-    "overview": "Overview",
-    "campaign": "Campaign Progress",
-    "analytics": "Performance Analytics",
-    "calendar": "Content Calendar",
-    "downloadReport": "Download Report",
-    "powered": "Powered by onGo"
-  },
-  "workflowBuilder": {
-    "title": "Visual Workflow Builder",
     "description": "Visually compose automation rules with triggers, conditions, and actions",
     "pageGuideTitle": "Workflow Builder Guide",
     "pageGuide": [
@@ -2568,6 +2645,16 @@
     "addNode": "Add Node",
     "emptyCanvas": "Add nodes to build your workflow",
     "mobileHint": "On mobile, workflows are edited in a list format"
+  },
+  "clientPortal": {
+    "title": "Client Portal",
+    "description": "Share performance reports with brands and clients",
+    "overview": "Overview",
+    "campaign": "Campaign Progress",
+    "analytics": "Performance Analytics",
+    "calendar": "Content Calendar",
+    "downloadReport": "Download Report",
+    "powered": "Powered by onGo"
   },
   "subtitleEditor": {
     "title": "AI Subtitle Editor",
@@ -3579,61 +3666,91 @@
     }
   },
   "mediaKit": {
-    "title": "Media Kit Generator",
-    "description": "Auto-generate professional media kits for brand proposals with AI",
-    "pageGuideTitle": "How to use Media Kit",
+    "title": "AI Media Kit",
+    "description": "AI analyzes your channel data to automatically generate professional media kits",
+    "pageGuideTitle": "Media Kit Guide",
     "pageGuide": [
-      "AI automatically generates media kits based on your actual channel statistics",
-      "Choose from 4 design styles to create a kit that matches your brand",
-      "Include rate cards and campaign results for a professional pitch deck",
-      "Share links or download PDFs to send to brands"
+      "Select a template style and click the AI generate button to create a media kit (5 credits)",
+      "You can edit rate cards directly in the generated media kit",
+      "Publishing a media kit creates a unique URL you can share with brands",
+      "Platform stats, audience data, and campaign results are included automatically"
     ],
-    "generate": "Generate AI Media Kit",
-    "generating": "Generating...",
     "creditsRemaining": "Credits remaining",
-    "templateStyle": "Design Style",
-    "modern": "Modern",
-    "classic": "Classic",
-    "minimal": "Minimal",
-    "creative": "Creative",
-    "selectTemplate": "Select a style",
+    "generateButton": "Generate AI Media Kit",
+    "generating": "Generating...",
+    "generatingDesc": "AI is analyzing your channel data to generate the media kit...",
+    "generateSuccess": "Media kit has been generated",
+    "selectTemplate": "Select Template Style",
+    "templateStyles": {
+      "MODERN": "Modern",
+      "CLASSIC": "Classic",
+      "MINIMAL": "Minimal",
+      "CREATIVE": "Creative"
+    },
+    "templateDesc": {
+      "MODERN": "Clean and sophisticated design",
+      "CLASSIC": "Traditional and trustworthy style",
+      "MINIMAL": "Simple and focused on essentials",
+      "CREATIVE": "Unique and expressive layout"
+    },
     "myKits": "My Media Kits",
+    "tabs": {
+      "all": "All",
+      "published": "Published",
+      "draft": "Drafts"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published"
+    },
     "noKits": "No media kits yet",
-    "noKitsDesc": "Create your first media kit using AI",
-    "draft": "Draft",
-    "published": "Published",
+    "noKitsDesc": "Select a template and click Generate to create your first media kit",
+    "preview": "Media Kit Preview",
+    "closePreview": "Close",
     "publish": "Publish",
+    "publishSuccess": "Media kit has been published",
     "copyLink": "Copy Link",
-    "downloadPdf": "Download PDF",
-    "delete": "Delete",
-    "deleteConfirm": "Are you sure you want to delete this media kit?",
-    "publishSuccess": "Media kit published successfully",
     "linkCopied": "Link copied to clipboard",
-    "generateError": "An error occurred while generating the media kit",
-    "preview": "Preview",
+    "linkCopyFailed": "Failed to copy link",
+    "confirmDelete": "Are you sure you want to delete this media kit?",
+    "deleteSuccess": "Media kit has been deleted",
     "platformStats": "Platform Statistics",
-    "demographics": "Audience Demographics",
-    "topContent": "Top Content",
-    "rateCards": "Rate Cards",
-    "campaignResults": "Campaign Results",
-    "contactInfo": "Contact",
     "followers": "Followers",
-    "avgViews": "Avg Views",
-    "engagementRate": "Engagement Rate",
-    "growthRate": "Growth Rate",
-    "rateType": {
+    "avgViews": "Avg. Views",
+    "engagement": "Engagement",
+    "growth": "Growth",
+    "demographics": "Audience Demographics",
+    "gender": {
+      "MALE": "Male",
+      "FEMALE": "Female",
+      "OTHER": "Other"
+    },
+    "topContent": "Top Content",
+    "views": "views",
+    "rateCards": "Rate Cards",
+    "addRateCard": "Add Rate Card",
+    "noRateCards": "No rate cards registered",
+    "addFirstRateCard": "Add your first rate card",
+    "rateCardType": "Type",
+    "rateCardTypes": {
       "SPONSORED_VIDEO": "Sponsored Video",
       "PRODUCT_PLACEMENT": "Product Placement",
       "STORY_POST": "Story/Post",
-      "SHORT_FORM": "Short Form",
+      "SHORT_FORM": "Short-form Content",
       "LIVE_STREAM": "Live Stream",
-      "BUNDLE": "Bundle"
+      "BUNDLE": "Package Bundle"
     },
-    "addRateCard": "Add Rate",
-    "removeRateCard": "Remove",
     "price": "Price",
-    "rateDescription": "Description",
-    "bio": "Bio"
+    "pricePlaceholder": "0",
+    "rateCardDescription": "Description",
+    "rateCardDescPlaceholder": "Briefly describe the service",
+    "removeRateCard": "Remove Rate Card",
+    "campaignResults": "Campaign Results",
+    "brand": "Brand",
+    "campaign": "Campaign",
+    "campaignViews": "Views",
+    "campaignEngagement": "Engagement",
+    "contact": "Contact"
   },
   "fanFunding": {
     "title": "Fan Funding Tracker",
@@ -3727,69 +3844,60 @@
   },
   "contentSeries": {
     "title": "Content Series Manager",
-    "description": "Plan, manage, and track content series performance systematically",
-    "pageGuideTitle": "How to use Series Manager",
-    "pageGuide": [
-      "Create content series and manage episodes",
-      "Analyze view trends and audience return rates per series",
-      "Set upload schedules to maintain consistent content distribution",
-      "Compare episode performance to optimize your series strategy"
-    ],
+    "description": "Manage your series content systematically and analyze performance",
     "newSeries": "New Series",
+    "pageGuideTitle": "Series Management",
+    "pageGuide": [
+      "Create a series with the New Series button and set the platform, frequency, and target episode count",
+      "Check key metrics like progress, average views, and retention at a glance on each series card",
+      "Click a series to view the episode list and detailed analytics",
+      "Completed and archived series are managed in a separate section below"
+    ],
     "activeSeries": "Active Series",
-    "completedSeries": "Completed Series",
-    "noSeries": "No series yet",
-    "noSeriesDesc": "Create your first content series",
-    "createSeries": "Create Series",
-    "seriesTitle": "Series Title",
-    "seriesDescription": "Series Description",
-    "selectPlatform": "Select Platform",
-    "frequency": "Upload Frequency",
-    "plannedEpisodes": "Planned Episodes",
-    "tags": "Tags",
-    "tagsPlaceholder": "Type a tag and press Enter",
+    "completedArchived": "Completed / Archived",
+    "emptyActiveTitle": "No active series",
+    "emptyActiveDesc": "Create a new series to manage your content systematically.",
+    "createFirst": "Create First Series",
+    "noCover": "No Cover",
+    "episodes": "Episodes",
+    "avgViews": "Avg Views",
+    "totalViews": "Total Views",
+    "avgRetention": "Avg Retention",
+    "viewDetails": "View Details",
+    "delete": "Delete",
+    "createModalTitle": "Create New Series",
+    "formTitle": "Series Title",
+    "formTitlePlaceholder": "e.g., Weekly Food Tour",
+    "formDescription": "Description",
+    "formDescriptionPlaceholder": "Enter a brief description for this series",
+    "formPlatform": "Platform",
+    "formFrequency": "Upload Frequency",
+    "freqDaily": "Daily",
+    "freqWeekly": "Weekly",
+    "freqBiweekly": "Biweekly",
+    "freqMonthly": "Monthly",
+    "freqCustom": "Custom",
+    "formPlannedEpisodes": "Planned Episodes",
+    "formTags": "Tags",
+    "formTagPlaceholder": "Type a tag and press Enter",
+    "add": "Add",
     "cancel": "Cancel",
     "create": "Create",
-    "episodes": "Episodes",
-    "analytics": "Series Analytics",
-    "status": {
-      "ACTIVE": "Active",
-      "PAUSED": "Paused",
-      "COMPLETED": "Completed",
-      "ARCHIVED": "Archived"
-    },
-    "episodeStatus": {
-      "PLANNED": "Planned",
-      "DRAFTED": "Drafted",
-      "PUBLISHED": "Published",
-      "SKIPPED": "Skipped"
-    },
-    "frequencyLabel": {
-      "DAILY": "Daily",
-      "WEEKLY": "Weekly",
-      "BIWEEKLY": "Biweekly",
-      "MONTHLY": "Monthly",
-      "CUSTOM": "Custom"
-    },
-    "totalViews": "Total Views",
-    "avgViews": "Avg Views",
-    "avgRetention": "Avg Retention",
-    "episodeProgress": "Episode Progress",
+    "episodeList": "Episode List",
+    "episodeCount": " episodes",
+    "noEpisodes": "No episodes yet",
+    "views": "Views",
+    "likes": "Likes",
+    "comments": "Comments",
+    "retention": "Retention",
+    "viewsTrend": "Views Trend by Episode",
+    "noTrendData": "No analytics data available",
     "subscriberGrowth": "Subscriber Growth",
     "avgEngagement": "Avg Engagement",
     "dropOffRate": "Drop-off Rate",
     "audienceReturnRate": "Audience Return Rate",
-    "bestEpisode": "Best Episode",
-    "viewsTrend": "Views Trend",
-    "episode": "Episode",
-    "views": "Views",
-    "likes": "Likes",
-    "comments": "Comments",
-    "scheduledDate": "Scheduled",
-    "publishedDate": "Published",
-    "delete": "Delete",
-    "deleteConfirm": "Are you sure you want to delete this series?",
-    "createError": "An error occurred while creating the series"
+    "bestEpisode": "Best Performing Episode",
+    "deleteConfirm": "Are you sure you want to delete this series?"
   },
   "smartReply": {
     "title": "Smart Reply",
@@ -3861,150 +3969,6 @@
     "positive": "Positive",
     "negative": "Negative",
     "neutral": "Neutral"
-  },
-  "mediaKit": {
-    "title": "AI Media Kit",
-    "description": "AI analyzes your channel data to automatically generate professional media kits",
-    "pageGuideTitle": "Media Kit Guide",
-    "pageGuide": [
-      "Select a template style and click the AI generate button to create a media kit (5 credits)",
-      "You can edit rate cards directly in the generated media kit",
-      "Publishing a media kit creates a unique URL you can share with brands",
-      "Platform stats, audience data, and campaign results are included automatically"
-    ],
-    "creditsRemaining": "Credits remaining",
-    "generateButton": "Generate AI Media Kit",
-    "generating": "Generating...",
-    "generatingDesc": "AI is analyzing your channel data to generate the media kit...",
-    "generateSuccess": "Media kit has been generated",
-    "selectTemplate": "Select Template Style",
-    "templateStyles": {
-      "MODERN": "Modern",
-      "CLASSIC": "Classic",
-      "MINIMAL": "Minimal",
-      "CREATIVE": "Creative"
-    },
-    "templateDesc": {
-      "MODERN": "Clean and sophisticated design",
-      "CLASSIC": "Traditional and trustworthy style",
-      "MINIMAL": "Simple and focused on essentials",
-      "CREATIVE": "Unique and expressive layout"
-    },
-    "myKits": "My Media Kits",
-    "tabs": {
-      "all": "All",
-      "published": "Published",
-      "draft": "Drafts"
-    },
-    "status": {
-      "DRAFT": "Draft",
-      "PUBLISHED": "Published"
-    },
-    "noKits": "No media kits yet",
-    "noKitsDesc": "Select a template and click Generate to create your first media kit",
-    "preview": "Media Kit Preview",
-    "closePreview": "Close",
-    "publish": "Publish",
-    "publishSuccess": "Media kit has been published",
-    "copyLink": "Copy Link",
-    "linkCopied": "Link copied to clipboard",
-    "linkCopyFailed": "Failed to copy link",
-    "confirmDelete": "Are you sure you want to delete this media kit?",
-    "deleteSuccess": "Media kit has been deleted",
-    "platformStats": "Platform Statistics",
-    "followers": "Followers",
-    "avgViews": "Avg. Views",
-    "engagement": "Engagement",
-    "growth": "Growth",
-    "demographics": "Audience Demographics",
-    "gender": {
-      "MALE": "Male",
-      "FEMALE": "Female",
-      "OTHER": "Other"
-    },
-    "topContent": "Top Content",
-    "views": "views",
-    "rateCards": "Rate Cards",
-    "addRateCard": "Add Rate Card",
-    "noRateCards": "No rate cards registered",
-    "addFirstRateCard": "Add your first rate card",
-    "rateCardType": "Type",
-    "rateCardTypes": {
-      "SPONSORED_VIDEO": "Sponsored Video",
-      "PRODUCT_PLACEMENT": "Product Placement",
-      "STORY_POST": "Story/Post",
-      "SHORT_FORM": "Short-form Content",
-      "LIVE_STREAM": "Live Stream",
-      "BUNDLE": "Package Bundle"
-    },
-    "price": "Price",
-    "pricePlaceholder": "0",
-    "rateCardDescription": "Description",
-    "rateCardDescPlaceholder": "Briefly describe the service",
-    "removeRateCard": "Remove Rate Card",
-    "campaignResults": "Campaign Results",
-    "brand": "Brand",
-    "campaign": "Campaign",
-    "campaignViews": "Views",
-    "campaignEngagement": "Engagement",
-    "contact": "Contact"
-  },
-  "contentSeries": {
-    "title": "Content Series Manager",
-    "description": "Manage your series content systematically and analyze performance",
-    "newSeries": "New Series",
-    "pageGuideTitle": "Series Management",
-    "pageGuide": [
-      "Create a series with the New Series button and set the platform, frequency, and target episode count",
-      "Check key metrics like progress, average views, and retention at a glance on each series card",
-      "Click a series to view the episode list and detailed analytics",
-      "Completed and archived series are managed in a separate section below"
-    ],
-    "activeSeries": "Active Series",
-    "completedArchived": "Completed / Archived",
-    "emptyActiveTitle": "No active series",
-    "emptyActiveDesc": "Create a new series to manage your content systematically.",
-    "createFirst": "Create First Series",
-    "noCover": "No Cover",
-    "episodes": "Episodes",
-    "avgViews": "Avg Views",
-    "totalViews": "Total Views",
-    "avgRetention": "Avg Retention",
-    "viewDetails": "View Details",
-    "delete": "Delete",
-    "createModalTitle": "Create New Series",
-    "formTitle": "Series Title",
-    "formTitlePlaceholder": "e.g., Weekly Food Tour",
-    "formDescription": "Description",
-    "formDescriptionPlaceholder": "Enter a brief description for this series",
-    "formPlatform": "Platform",
-    "formFrequency": "Upload Frequency",
-    "freqDaily": "Daily",
-    "freqWeekly": "Weekly",
-    "freqBiweekly": "Biweekly",
-    "freqMonthly": "Monthly",
-    "freqCustom": "Custom",
-    "formPlannedEpisodes": "Planned Episodes",
-    "formTags": "Tags",
-    "formTagPlaceholder": "Type a tag and press Enter",
-    "add": "Add",
-    "cancel": "Cancel",
-    "create": "Create",
-    "episodeList": "Episode List",
-    "episodeCount": " episodes",
-    "noEpisodes": "No episodes yet",
-    "views": "Views",
-    "likes": "Likes",
-    "comments": "Comments",
-    "retention": "Retention",
-    "viewsTrend": "Views Trend by Episode",
-    "noTrendData": "No analytics data available",
-    "subscriberGrowth": "Subscriber Growth",
-    "avgEngagement": "Avg Engagement",
-    "dropOffRate": "Drop-off Rate",
-    "audienceReturnRate": "Audience Return Rate",
-    "bestEpisode": "Best Performing Episode",
-    "deleteConfirm": "Are you sure you want to delete this series?"
   },
   "contentRepurposer": {
     "title": "Content Repurposing",
@@ -4388,5 +4352,81 @@
     "statusNeedsImprovement": "Needs Improvement",
     "noFunnelTitle": "No funnel data available",
     "noFunnelDesc": "Funnel analysis will begin when you upload videos"
+  },
+  "comments": {
+    "card": {
+      "pinned": "Pinned comment",
+      "myReply": "My reply:",
+      "comment": "Comment",
+      "reply": "Reply",
+      "show": "Show",
+      "hide": "Hide",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "timeAgo": {
+        "justNow": "Just now",
+        "minutesAgo": "{n}m ago",
+        "hoursAgo": "{n}h ago",
+        "daysAgo": "{n}d ago",
+        "monthsAgo": "{n}mo ago"
+      },
+      "sentiment": {
+        "positive": "Positive",
+        "negative": "Negative",
+        "neutral": "Neutral"
+      }
+    },
+    "replyForm": {
+      "placeholder": "Write a reply...",
+      "aiSuggestions": "AI suggested replies (click to select)",
+      "aiGenerating": "Generating...",
+      "aiReply": "AI Reply",
+      "submitting": "Submitting...",
+      "submit": "Reply"
+    }
+  },
+  "channelAudit": {
+    "title": "Channel Audit",
+    "description": "AI diagnoses your entire channel and suggests actionable improvements",
+    "generateButton": "Generate AI Audit",
+    "generating": "AI analyzing...",
+    "emptyTitle": "No audit reports yet",
+    "emptyDescription": "Generate an AI audit to see your channel health and improvement areas",
+    "detailTitle": "Channel Audit Detail",
+    "overall": "Overall",
+    "consistency": "Consistency",
+    "engagement": "Engagement",
+    "growth": "Growth",
+    "quality": "Quality",
+    "summaryLabel": "AI Diagnosis Summary",
+    "strengths": "Strengths",
+    "weaknesses": "Weaknesses",
+    "actionItems": "Action Items",
+    "outlierVideos": "Outlier Videos"
+  },
+  "keywordResearch": {
+    "title": "Keyword Research",
+    "description": "AI analyzes search volume, competition, and trends per platform",
+    "analyzeButton": "AI Analyze",
+    "analyzing": "AI analyzing...",
+    "keywordLabel": "Keyword",
+    "keywordPlaceholder": "Enter a keyword to analyze",
+    "platformLabel": "Platforms",
+    "resultTitle": "Results for '{keyword}'",
+    "platform": "Platform",
+    "searchVolume": "Search Volume",
+    "competition": "Competition",
+    "trend": "Trend",
+    "opportunityScore": "Opportunity",
+    "relatedKeywords": "Related Keywords",
+    "competition_LOW": "Low",
+    "competition_MEDIUM": "Medium",
+    "competition_HIGH": "High",
+    "trend_RISING": "Rising",
+    "trend_STABLE": "Stable",
+    "trend_DECLINING": "Declining",
+    "historyTitle": "Search History",
+    "historyEmpty": "No search history yet",
+    "historyEmptyDesc": "Your keyword analyses will be saved here"
   }
 }

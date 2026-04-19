@@ -1,17 +1,22 @@
 package com.ongo.application.idea
 
+import com.ongo.application.ai.GenerateIdeasUseCase
 import com.ongo.application.idea.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.idea.Idea
 import com.ongo.domain.idea.IdeaRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class IdeaUseCase(
     private val ideaRepository: IdeaRepository,
+    private val generateIdeasUseCase: GenerateIdeasUseCase,
 ) {
+
+    private val log = LoggerFactory.getLogger(IdeaUseCase::class.java)
 
     fun listIdeas(userId: Long, status: String?, category: String?, priority: String?): List<IdeaResponse> {
         return ideaRepository.findByUserId(userId, status, category, priority)
@@ -68,6 +73,33 @@ class IdeaUseCase(
 
         val updated = idea.copy(status = request.status)
         return ideaRepository.update(updated).toResponse()
+    }
+
+    @Transactional
+    fun generateAiIdeas(userId: Long, category: String?): List<IdeaResponse> {
+        // 최근 아이디어 제목을 수집하여 중복 방지
+        val recentTitles = ideaRepository.findByUserId(userId, null, null, null)
+            .take(10)
+            .map { it.title }
+
+        val result = generateIdeasUseCase.execute(
+            userId = userId,
+            category = category ?: "일반",
+            recentTitles = recentTitles,
+        )
+
+        // AI가 생성한 아이디어를 DB에 저장
+        return result.ideas.map { item ->
+            val idea = Idea(
+                userId = userId,
+                title = item.title,
+                description = item.description,
+                status = "BACKLOG",
+                category = category,
+                source = "AI",
+            )
+            ideaRepository.save(idea).toResponse()
+        }
     }
 
     private fun Idea.toResponse(): IdeaResponse = IdeaResponse(

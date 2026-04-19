@@ -5,6 +5,20 @@
       <!-- View Mode Toggle -->
       <template #actions>
         <button
+          class="btn-secondary inline-flex items-center gap-2"
+          @click="showAiOptimalModal = true"
+        >
+          <SparklesIcon class="h-4 w-4" />
+          {{ $t('calendar.aiOptimalTime') }}
+        </button>
+        <button
+          class="btn-primary inline-flex items-center gap-2"
+          @click="showAiCalendarModal = true"
+        >
+          <SparklesIcon class="h-4 w-4" />
+          {{ $t('calendar.aiCalendarGenerate') }}
+        </button>
+        <button
           :class="[
             'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
             viewMode === 'monthly'
@@ -62,17 +76,194 @@
 
     <!-- Calendar Grid -->
     <CalendarGrid :events="events" :current-date="currentDate" :view-mode="viewMode" />
+
+    <!-- AI 최적 시간 모달 -->
+    <BaseModal
+      v-model="showAiOptimalModal"
+      :title="$t('calendar.aiOptimalTime')"
+      max-width="lg"
+    >
+      <div class="space-y-4">
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('calendar.aiOptimalTimeDesc') }}</p>
+
+        <!-- Platform Select -->
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('calendar.selectPlatform') }}
+          </label>
+          <select v-model="optimalPlatform" class="input-field">
+            <option value="YOUTUBE">YouTube</option>
+            <option value="TIKTOK">TikTok</option>
+            <option value="INSTAGRAM">Instagram</option>
+            <option value="NAVER_CLIP">Naver Clip</option>
+          </select>
+        </div>
+
+        <button
+          class="btn-primary inline-flex w-full items-center justify-center gap-2"
+          :disabled="optimalLoading"
+          @click="generateOptimalSlots"
+        >
+          <SparklesIcon class="h-4 w-4" />
+          {{ optimalLoading ? $t('calendar.generating') : $t('calendar.aiOptimalTime') }}
+        </button>
+
+        <!-- Results -->
+        <div v-if="optimalSlots.length > 0" class="space-y-3">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {{ optimalPlatform }} - {{ $t('calendar.aiOptimalTime') }}
+          </h3>
+          <div class="grid grid-cols-1 gap-3 mobile:grid-cols-2">
+            <div
+              v-for="slot in optimalSlots"
+              :key="slot.id"
+              class="card rounded-lg p-3"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {{ slot.dayOfWeek }} {{ slot.hour }}:00
+                </span>
+                <span class="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
+                  {{ $t('calendar.score') }} {{ slot.score }}
+                </span>
+              </div>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {{ $t('calendar.audience') }}: {{ slot.estimatedAudience.toLocaleString() }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ $t('calendar.competition') }}: {{ slot.competition }}
+              </p>
+              <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">{{ slot.reason }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </BaseModal>
+
+    <!-- AI 캘린더 생성 모달 -->
+    <BaseModal
+      v-model="showAiCalendarModal"
+      :title="$t('calendar.aiCalendarGenerate')"
+      max-width="lg"
+    >
+      <div class="space-y-4">
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('calendar.aiCalendarGenerateDesc') }}</p>
+
+        <!-- Date Range -->
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('calendar.selectDateRange') }}
+          </label>
+          <div class="flex gap-2">
+            <input v-model="calendarForm.startDate" type="date" class="input-field flex-1" />
+            <input v-model="calendarForm.endDate" type="date" class="input-field flex-1" />
+          </div>
+        </div>
+
+        <!-- Platforms -->
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('calendar.selectPlatform') }}
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <label
+              v-for="p in availablePlatforms"
+              :key="p.value"
+              class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors"
+              :class="calendarForm.platforms.includes(p.value)
+                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400'
+                : 'border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300'"
+            >
+              <input
+                type="checkbox"
+                :value="p.value"
+                v-model="calendarForm.platforms"
+                class="hidden"
+              />
+              {{ p.label }}
+            </label>
+          </div>
+        </div>
+
+        <!-- Frequency -->
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('calendar.selectFrequency') }}
+          </label>
+          <select v-model="calendarForm.frequency" class="input-field">
+            <option value="DAILY">{{ $t('calendar.frequencyDaily') }}</option>
+            <option value="WEEKLY_2_3">{{ $t('calendar.frequencyWeekly') }}</option>
+            <option value="WEEKLY_1_2">{{ $t('calendar.frequencyBiweekly') }}</option>
+          </select>
+        </div>
+
+        <button
+          class="btn-primary inline-flex w-full items-center justify-center gap-2"
+          :disabled="calendarLoading || calendarForm.platforms.length === 0"
+          @click="generateCalendar"
+        >
+          <SparklesIcon class="h-4 w-4" />
+          {{ calendarLoading ? $t('calendar.generating') : $t('calendar.aiCalendarGenerate') }}
+        </button>
+
+        <!-- Results -->
+        <div v-if="calendarSuggestions.length > 0" class="space-y-3">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {{ $t('calendar.aiCalendarGenerateDesc') }}
+          </h3>
+          <div class="max-h-64 space-y-2 overflow-y-auto">
+            <div
+              v-for="suggestion in calendarSuggestions"
+              :key="suggestion.id"
+              class="card flex items-center justify-between rounded-lg p-3"
+            >
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                    {{ suggestion.platform }}
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ suggestion.suggestedDate }}</span>
+                </div>
+                <p class="mt-1 truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {{ suggestion.title }}
+                </p>
+                <p v-if="suggestion.reason" class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ suggestion.reason }}
+                </p>
+              </div>
+              <button
+                v-if="suggestion.status !== 'ACCEPTED'"
+                class="btn-primary ml-3 shrink-0 px-3 py-1 text-xs"
+                @click="acceptSuggestion(suggestion.id)"
+              >
+                {{ $t('calendar.accept') }}
+              </button>
+              <span
+                v-else
+                class="ml-3 shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400"
+              >
+                {{ $t('calendar.accepted') }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
+import { ChevronLeftIcon, ChevronRightIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import CalendarGrid from '@/components/schedule/CalendarGrid.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import { useScheduleStore } from '@/stores/schedule'
 import { useLocale } from '@/composables/useLocale'
+import { useNotificationStore } from '@/stores/notification'
+import { scheduleOptimizerApi, type OptimalSlot } from '@/api/scheduleOptimizer'
+import { contentCalendarAiApi, type ContentCalendarSuggestion } from '@/api/contentCalendarAi'
 import type { Platform } from '@/types/channel'
 
 export interface CalendarEvent {
@@ -86,10 +277,76 @@ export interface CalendarEvent {
 }
 
 const scheduleStore = useScheduleStore()
+const notificationStore = useNotificationStore()
 const { t } = useLocale()
 
 const currentDate = ref(new Date())
 const viewMode = ref<'monthly' | 'weekly'>('monthly')
+
+// AI 최적 시간
+const showAiOptimalModal = ref(false)
+const optimalPlatform = ref('YOUTUBE')
+const optimalLoading = ref(false)
+const optimalSlots = ref<OptimalSlot[]>([])
+
+// AI 캘린더 생성
+const showAiCalendarModal = ref(false)
+const calendarLoading = ref(false)
+const calendarSuggestions = ref<ContentCalendarSuggestion[]>([])
+
+const today = new Date()
+const calendarForm = ref({
+  startDate: today.toISOString().split('T')[0],
+  endDate: new Date(today.getFullYear(), today.getMonth() + 1, today.getDate()).toISOString().split('T')[0],
+  platforms: ['YOUTUBE'] as string[],
+  frequency: 'WEEKLY_2_3',
+})
+
+const availablePlatforms = [
+  { value: 'YOUTUBE', label: 'YouTube' },
+  { value: 'TIKTOK', label: 'TikTok' },
+  { value: 'INSTAGRAM', label: 'Instagram' },
+  { value: 'NAVER_CLIP', label: 'Naver Clip' },
+]
+
+async function generateOptimalSlots() {
+  optimalLoading.value = true
+  try {
+    optimalSlots.value = await scheduleOptimizerApi.generateSlots(optimalPlatform.value)
+  } catch {
+    notificationStore.error('AI 최적 시간 분석에 실패했습니다')
+  } finally {
+    optimalLoading.value = false
+  }
+}
+
+async function generateCalendar() {
+  calendarLoading.value = true
+  try {
+    calendarSuggestions.value = await contentCalendarAiApi.generate({
+      startDate: calendarForm.value.startDate,
+      endDate: calendarForm.value.endDate,
+      platforms: calendarForm.value.platforms,
+      frequency: calendarForm.value.frequency,
+    })
+  } catch {
+    notificationStore.error('AI 캘린더 생성에 실패했습니다')
+  } finally {
+    calendarLoading.value = false
+  }
+}
+
+async function acceptSuggestion(id: number) {
+  try {
+    const updated = await contentCalendarAiApi.acceptSuggestion(id)
+    const idx = calendarSuggestions.value.findIndex((s) => s.id === id)
+    if (idx !== -1) {
+      calendarSuggestions.value[idx] = updated
+    }
+  } catch {
+    notificationStore.error('적용에 실패했습니다')
+  }
+}
 
 const formattedCurrentDate = computed(() => {
   const year = currentDate.value.getFullYear()

@@ -4,11 +4,13 @@ import com.ongo.application.competitor.dto.*
 import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.common.enums.PlanType
 import com.ongo.domain.analytics.AnalyticsRepository
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.competitor.ChannelLookupPort
 import com.ongo.domain.competitor.Competitor
 import com.ongo.domain.competitor.CompetitorRepository
+import com.ongo.domain.subscription.SubscriptionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,6 +22,7 @@ class CompetitorUseCase(
     private val channelLookupPort: ChannelLookupPort,
     private val analyticsRepository: AnalyticsRepository,
     private val channelRepository: ChannelRepository,
+    private val subscriptionRepository: SubscriptionRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(CompetitorUseCase::class.java)
@@ -55,8 +58,13 @@ class CompetitorUseCase(
 
     @Transactional
     fun addCompetitor(userId: Long, request: CreateCompetitorRequest): CompetitorResponse {
+        val planType = subscriptionRepository.findByUserId(userId)?.planType ?: PlanType.FREE
+        val limit = planType.competitorLimit
         val count = competitorRepository.countByUserId(userId)
-        if (count >= 5) throw BusinessException("COMPETITOR_LIMIT", "경쟁자는 최대 5개까지 추가할 수 있습니다")
+        if (count >= limit) throw BusinessException(
+            "COMPETITOR_LIMIT",
+            "현재 요금제(${planType.displayName})에서는 경쟁 채널을 최대 ${limit}개까지 추가할 수 있습니다",
+        )
 
         val competitor = Competitor(
             userId = userId,

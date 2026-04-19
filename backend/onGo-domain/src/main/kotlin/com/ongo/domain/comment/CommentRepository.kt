@@ -42,4 +42,13 @@ interface CommentRepository {
     fun findRecentNegativeComments(userId: Long, limit: Int): List<Comment>
 
     fun findByIds(ids: List<Long>): List<Comment>
+
+    fun countByUserIdAndSentimentBetween(
+        userId: Long,
+        sentiment: String,
+        from: java.time.LocalDateTime,
+        to: java.time.LocalDateTime,
+    ): Int
+
+    fun findByUserIdWithContent(userId: Long, videoId: Long?, days: Int, limit: Int): List<Comment>
 }

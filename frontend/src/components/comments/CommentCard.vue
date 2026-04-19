@@ -10,7 +10,7 @@
     <!-- Pin indicator -->
     <div v-if="comment.isPinned" class="mb-2 flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400">
       <span>📌</span>
-      <span class="font-medium">고정된 댓글</span>
+      <span class="font-medium">{{ $t('comments.card.pinned') }}</span>
     </div>
 
     <div class="flex gap-3">
@@ -87,7 +87,7 @@
           v-if="comment.isReplied && comment.replyContent"
           class="mb-2 rounded-lg bg-gray-50 p-2 text-sm dark:bg-gray-800"
         >
-          <span class="text-xs font-medium text-primary-600 dark:text-primary-400">내 답글:</span>
+          <span class="text-xs font-medium text-primary-600 dark:text-primary-400">{{ $t('comments.card.myReply') }}</span>
           <p class="mt-1 text-gray-700 dark:text-gray-300">{{ comment.replyContent }}</p>
         </div>
 
@@ -99,7 +99,7 @@
             </svg>
             {{ comment.likeCount }}
           </span>
-          <span>댓글 {{ comment.replyCount }}</span>
+          <span>{{ $t('comments.card.comment') }} {{ comment.replyCount }}</span>
           <span
             class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
             :class="sentimentBadgeClass"
@@ -119,19 +119,19 @@
             class="text-xs font-medium text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="isReplying = true"
           >
-            답글
+            {{ $t('comments.card.reply') }}
           </button>
           <button
             class="text-xs font-medium text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="emit('hide', comment.id)"
           >
-            {{ comment.isHidden ? '표시' : '숨기기' }}
+            {{ comment.isHidden ? $t('comments.card.show') : $t('comments.card.hide') }}
           </button>
           <button
             class="text-xs font-medium text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="emit('pin', comment.id)"
           >
-            {{ comment.isPinned ? '고정 해제' : '고정' }}
+            {{ comment.isPinned ? $t('comments.card.unpin') : $t('comments.card.pin') }}
           </button>
           <button
             v-if="platformCaps?.canDelete"
@@ -157,9 +157,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Comment, CommentCapabilities } from '@/types/comment'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import CommentReplyForm from './CommentReplyForm.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   comment: Comment
@@ -187,14 +190,14 @@ const relativeTime = computed(() => {
     const now = Date.now()
     const diff = now - new Date(props.comment.createdAt).getTime()
     const minutes = Math.floor(diff / 60000)
-    if (minutes < 1) return '방금 전'
-    if (minutes < 60) return `${minutes}분 전`
+    if (minutes < 1) return t('comments.card.timeAgo.justNow')
+    if (minutes < 60) return t('comments.card.timeAgo.minutesAgo', { n: minutes })
     const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours}시간 전`
+    if (hours < 24) return t('comments.card.timeAgo.hoursAgo', { n: hours })
     const days = Math.floor(hours / 24)
-    if (days < 30) return `${days}일 전`
+    if (days < 30) return t('comments.card.timeAgo.daysAgo', { n: days })
     const months = Math.floor(days / 30)
-    return `${months}개월 전`
+    return t('comments.card.timeAgo.monthsAgo', { n: months })
   } catch {
     return props.comment.createdAt
   }
@@ -234,11 +237,11 @@ const sentimentBadgeClass = computed(() => {
 const sentimentLabel = computed(() => {
   switch (props.comment.sentiment) {
     case 'positive':
-      return '긍정'
+      return t('comments.card.sentiment.positive')
     case 'negative':
-      return '부정'
+      return t('comments.card.sentiment.negative')
     default:
-      return '중립'
+      return t('comments.card.sentiment.neutral')
   }
 })
 

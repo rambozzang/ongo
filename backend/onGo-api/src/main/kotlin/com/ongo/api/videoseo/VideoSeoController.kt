@@ -1,57 +1,32 @@
 package com.ongo.api.videoseo
 
 import com.ongo.application.videoseo.VideoSeoUseCase
-import com.ongo.application.videoseo.dto.*
+import com.ongo.application.videoseo.dto.VideoSeoScoreResponse
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-@Tag(name = "비디오 SEO 최적화", description = "비디오 검색 최적화 분석 및 키워드 추천")
+@Tag(name = "비디오 SEO", description = "영상 SEO 점수 분석")
 @RestController
-@RequestMapping("/api/v1/video-seo")
+@RequestMapping("/api/v1/videos")
 class VideoSeoController(
-    private val useCase: VideoSeoUseCase
+    private val videoSeoUseCase: VideoSeoUseCase,
 ) {
 
-    @Operation(summary = "SEO 분석 목록 조회")
-    @GetMapping
-    fun getAnalyses(
+    @Operation(summary = "SEO 점수 분석", description = "AI가 영상 메타데이터(제목/설명/태그)를 분석하여 SEO 점수와 개선 제안을 제공합니다. 크레딧 2개 소모.")
+    @PostMapping("/{videoId}/seo-score")
+    fun analyzeSeoScore(
         @Parameter(hidden = true) @CurrentUser userId: Long,
-        @RequestParam(required = false) platform: String?,
-    ): ResponseEntity<ResData<List<SeoAnalysisResponse>>> {
-        val result = useCase.getAnalyses(userId, platform)
-        return ResData.success(result)
-    }
-
-    @Operation(summary = "SEO 분석 실행")
-    @PostMapping("/analyze")
-    fun analyze(
-        @Parameter(hidden = true) @CurrentUser userId: Long,
-        @RequestBody request: SeoOptimizeRequest,
-    ): ResponseEntity<ResData<SeoAnalysisResponse>> {
-        val result = useCase.analyze(userId, request)
-        return ResData.success(result)
-    }
-
-    @Operation(summary = "SEO 키워드 목록 조회")
-    @GetMapping("/{analysisId}/keywords")
-    fun getKeywords(
-        @PathVariable analysisId: Long,
-    ): ResponseEntity<ResData<List<SeoKeywordResponse>>> {
-        val result = useCase.getKeywords(analysisId)
-        return ResData.success(result)
-    }
-
-    @Operation(summary = "SEO 요약")
-    @GetMapping("/summary")
-    fun getSummary(
-        @Parameter(hidden = true) @CurrentUser userId: Long,
-    ): ResponseEntity<ResData<VideoSeoSummaryResponse>> {
-        val result = useCase.getSummary(userId)
-        return ResData.success(result)
+        @PathVariable videoId: Long,
+    ): ResponseEntity<ResData<VideoSeoScoreResponse>> {
+        val result = videoSeoUseCase.analyzeVideoSeo(userId, videoId)
+        return ResData.success(result, "SEO 점수 분석이 완료되었습니다")
     }
 }

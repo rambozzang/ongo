@@ -9,6 +9,7 @@ import ComparisonChart from '@/components/competitor/ComparisonChart.vue'
 import AddCompetitorModal from '@/components/competitor/AddCompetitorModal.vue'
 import TrendingVideoList from '@/components/competitor/TrendingVideoList.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
 
 type Tab = 'list' | 'comparison' | 'trending'
 
@@ -83,16 +84,8 @@ function formatNumber(num: number): string {
 <template>
   <div class="relative">
       <!-- Header -->
-      <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ $t('competitor.title') }}
-          </h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {{ $t('competitor.description') }}
-          </p>
-        </div>
-        <div class="flex items-center gap-3">
+      <PageHeader :title="$t('competitor.title')" :description="$t('competitor.description')">
+        <template #actions>
           <button
             @click="handleRefresh"
             :disabled="isRefreshing"
@@ -110,8 +103,8 @@ function formatNumber(num: number): string {
             <PlusIcon class="w-5 h-5" />
             <span>{{ $t('competitor.addChannel') }}</span>
           </button>
-        </div>
-      </div>
+        </template>
+      </PageHeader>
 
       <PageGuide :title="$t('competitor.pageGuideTitle')" :items="($tm('competitor.pageGuide') as string[])" />
 

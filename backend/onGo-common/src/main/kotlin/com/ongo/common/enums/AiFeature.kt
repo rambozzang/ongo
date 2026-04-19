@@ -22,4 +22,13 @@ enum class AiFeature(
     BATCH_REPLY_DRAFT("배치 답변 초안", 3),
     CONTENT_CALENDAR("AI 콘텐츠 캘린더", 8),
     REVENUE_FORECAST("AI 수익 예측", 10),
+    REVENUE_INSIGHT("수익 인사이트 생성", 5),
+    META_REWRITE("메타데이터 리라이트", 3),
+    CONTENT_REPURPOSE("콘텐츠 리퍼포징", 10),
+    CHANNEL_AUDIT("채널 오디트", 15),
+    KEYWORD_RESEARCH("키워드 리서치", 3),
+    VIDEO_SEO_SCORE("비디오 SEO 점수", 2),
+    VIEWS_PREDICTION("조회수 예측", 3),
+    PUBLISH_CHECKLIST("게시 전 체크리스트", 2),
+    ENGAGEMENT_BENCHMARK("참여율 벤치마크", 3),
 }

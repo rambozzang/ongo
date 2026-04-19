@@ -231,3 +231,83 @@ data class RevenueForecastResult(
         val upperBound: Long? = null,
     )
 }
+
+data class RevenueInsightResult(
+    val insightType: String,
+    val summary: String,
+    val details: List<String>,
+    val recommendations: List<String>,
+    val confidence: Double,
+)
+
+data class MetaRewriteResult(
+    val suggestedTitle: String,
+    val suggestedDescription: String,
+    val suggestedTags: List<String>,
+    val reasoning: String,
+    val expectedImpactPercent: Int,
+)
+
+data class ContentRepurposeResult(
+    val clips: List<ClipSuggestion>,
+) {
+    data class ClipSuggestion(
+        val startTime: String,
+        val endTime: String,
+        val title: String,
+        val description: String,
+        val viralScore: Int,
+        val reasoning: String,
+        val suggestedPlatform: String,
+    )
+}
+
+data class ChannelAuditResult(
+    val overallScore: Int,
+    val strengths: List<String>,
+    val weaknesses: List<String>,
+    val actionItems: List<ActionItem>,
+    val outlierVideos: List<OutlierVideo>,
+    val growthForecast: String,
+) {
+    data class ActionItem(
+        val priority: String,
+        val action: String,
+        val expectedImpact: String,
+    )
+
+    data class OutlierVideo(
+        val videoTitle: String,
+        val metric: String,
+        val reason: String,
+    )
+}
+
+data class VideoSeoScoreResult(
+    val overallScore: Int,
+    val titleScore: Int,
+    val descriptionScore: Int,
+    val tagsScore: Int,
+    val generalScore: Int,
+    val titleSuggestions: List<String>,
+    val descriptionSuggestions: List<String>,
+    val tagsSuggestions: List<String>,
+    val generalSuggestions: List<String>,
+    val competitorKeywords: List<String>,
+)
+
+data class KeywordResearchResult(
+    val keyword: String,
+    val platforms: List<PlatformKeywordAnalysis>,
+    val overallOpportunity: String,
+    val suggestions: List<String>,
+) {
+    data class PlatformKeywordAnalysis(
+        val platform: String,
+        val searchVolume: String,
+        val competition: String,
+        val trend: String,
+        val opportunityScore: Int,
+        val relatedKeywords: List<String>,
+    )
+}

@@ -285,6 +285,37 @@ class CommentJooqRepository(
             .map { it.toComment() }
     }
 
+    override fun countByUserIdAndSentimentBetween(
+        userId: Long,
+        sentiment: String,
+        from: LocalDateTime,
+        to: LocalDateTime,
+    ): Int =
+        dsl.selectCount()
+            .from(COMMENTS)
+            .where(USER_ID.eq(userId))
+            .and(SENTIMENT.eq(sentiment))
+            .and(CREATED_AT.greaterOrEqual(from))
+            .and(CREATED_AT.lessOrEqual(to))
+            .fetchOne(0, Int::class.java) ?: 0
+
+    override fun findByUserIdWithContent(userId: Long, videoId: Long?, days: Int, limit: Int): List<Comment> {
+        val cutoff = LocalDateTime.now().minusDays(days.toLong())
+        val conditions = mutableListOf(
+            USER_ID.eq(userId),
+            CREATED_AT.greaterOrEqual(cutoff),
+        )
+        videoId?.let { conditions.add(VIDEO_ID.eq(it)) }
+
+        return dsl.select()
+            .from(COMMENTS)
+            .where(conditions)
+            .orderBy(CREATED_AT.desc())
+            .limit(limit)
+            .fetch()
+            .map { it.toComment() }
+    }
+
     private fun buildFilterConditions(
         userId: Long,
         videoId: Long?,

@@ -80,13 +80,34 @@ class SmartReplyUseCase(
     }
 
     fun getStats(userId: Long): SmartReplyStatsResponse {
+        val rules = smartReplyRuleRepository.findByUserId(userId)
+
+        // 규칙별 reply_count 합산 → 총 자동 답변 수
+        val totalRepliesSent = rules.sumOf { it.replyCount }
+
+        // auto_send 규칙 비율 → 자동화 비율
+        val automatedPercentage = if (rules.isNotEmpty()) {
+            rules.count { it.autoSend }.toDouble() / rules.size * 100.0
+        } else {
+            0.0
+        }
+
+        // 플랫폼별 답변 수 집계
+        val repliesByPlatform = rules
+            .filter { it.platform != null && it.replyCount > 0 }
+            .groupBy { it.platform!! }
+            .map { (platform, platformRules) ->
+                """{"platform":"$platform","count":${platformRules.sumOf { it.replyCount }}}"""
+            }
+            .joinToString(",", "[", "]")
+
         return SmartReplyStatsResponse(
-            totalRepliesSent = 0,
+            totalRepliesSent = totalRepliesSent,
             avgResponseTime = 0.0,
             sentimentBreakdown = "{}",
             topKeywords = "[]",
-            repliesByPlatform = "[]",
-            automatedPercentage = 0.0,
+            repliesByPlatform = repliesByPlatform,
+            automatedPercentage = automatedPercentage,
             satisfactionScore = 0.0,
         )
     }

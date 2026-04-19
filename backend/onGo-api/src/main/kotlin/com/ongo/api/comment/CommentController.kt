@@ -3,12 +3,18 @@ package com.ongo.api.comment
 import com.ongo.api.config.CurrentUser
 import com.ongo.application.ai.FaqClusteringUseCase
 import com.ongo.application.ai.GenerateReplyUseCase
+import com.ongo.application.comment.CommentAiReplyUseCase
+import com.ongo.application.comment.CommentBatchUseCase
 import com.ongo.application.comment.CommentEngagementUseCase
 import com.ongo.application.comment.CommentSyncUseCase
 import com.ongo.application.comment.CommentUseCase
+import com.ongo.application.comment.CrisisDetectionUseCase
+import com.ongo.application.comment.KeywordCloudUseCase
 import com.ongo.application.comment.dto.*
 import com.ongo.common.ResData
 import com.ongo.common.enums.Platform
+import com.ongo.domain.comment.CrisisDetectionConfig
+import com.ongo.domain.comment.CrisisDetectionConfigRepository
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -29,6 +35,11 @@ class CommentController(
     private val commentEngagementUseCase: CommentEngagementUseCase,
     private val faqClusteringUseCase: FaqClusteringUseCase,
     private val generateReplyUseCase: GenerateReplyUseCase,
+    private val commentAiReplyUseCase: CommentAiReplyUseCase,
+    private val commentBatchUseCase: CommentBatchUseCase,
+    private val crisisDetectionUseCase: CrisisDetectionUseCase,
+    private val keywordCloudUseCase: KeywordCloudUseCase,
+    private val crisisDetectionConfigRepository: CrisisDetectionConfigRepository,
 ) {
 
     @Operation(summary = "댓글 목록 조회", description = "사용자의 댓글을 복합 필터링하여 조회합니다.")
@@ -185,5 +196,82 @@ class CommentController(
     ): ResponseEntity<ResData<BatchAiDraftResponse>> {
         val result = generateReplyUseCase.executeBatch(userId, request.commentIds, request.tone)
         return ResData.success(result, "AI 답변 초안이 생성되었습니다")
+    }
+
+    @Operation(summary = "AI 답변 후보 생성", description = "단일 댓글에 대해 3가지 톤의 AI 답변 후보를 생성합니다. 크레딧 2개 차감.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "AI 답변 후보 생성 성공"),
+        ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음"),
+    )
+    @PostMapping("/ai-reply/generate")
+    fun generateAiReplyCandidates(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @Valid @RequestBody request: GenerateAiReplyRequest,
+    ): ResponseEntity<ResData<AiReplyCandidatesResponse>> {
+        val result = commentAiReplyUseCase.generateReplies(userId, request)
+        return ResData.success(result, "AI 답변 후보가 생성되었습니다")
+    }
+
+    @Operation(summary = "일괄 답변", description = "선택한 댓글 목록에 동일한 내용으로 일괄 답변합니다.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "일괄 답변 완료"),
+    )
+    @PostMapping("/batch/reply")
+    fun batchReply(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @Valid @RequestBody request: BatchReplyRequest,
+    ): ResponseEntity<ResData<BatchResultResponse>> {
+        val result = commentBatchUseCase.batchReply(userId, request)
+        return ResData.success(result, "일괄 답변이 처리되었습니다")
+    }
+
+    @Operation(summary = "일괄 숨김", description = "선택한 댓글 목록을 일괄 숨깁니다.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "일괄 숨김 완료"),
+    )
+    @PostMapping("/batch/hide")
+    fun batchHide(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @Valid @RequestBody request: BatchHideRequest,
+    ): ResponseEntity<ResData<BatchResultResponse>> {
+        val result = commentBatchUseCase.batchHide(userId, request)
+        return ResData.success(result, "일괄 숨김이 처리되었습니다")
+    }
+
+    @Operation(summary = "위기 감지 상태 조회", description = "부정 댓글 급증 여부를 감지하여 위기 상태를 반환합니다.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "위기 감지 조회 성공"),
+    )
+    @GetMapping("/crisis-detection")
+    fun getCrisisDetection(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<CrisisDetectionResponse>> {
+        val config = crisisDetectionConfigRepository.findByUserId(userId)
+            ?: CrisisDetectionConfig(userId = userId)
+        val result = crisisDetectionUseCase.detect(userId)
+        val response = CrisisDetectionResponse(
+            isInCrisis = result.isInCrisis,
+            currentNegativeCount = result.currentNegativeCount,
+            previousNegativeCount = result.previousNegativeCount,
+            changePercent = result.changePercent,
+            topKeywords = result.topKeywords,
+            windowHours = config.windowHours,
+            thresholdPct = config.negativeThresholdPct,
+        )
+        return ResData.success(response)
+    }
+
+    @Operation(summary = "키워드 클라우드 조회", description = "댓글 내용에서 빈도 높은 키워드를 집계합니다.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "키워드 클라우드 조회 성공"),
+    )
+    @GetMapping("/keyword-cloud")
+    fun getKeywordCloud(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(required = false) videoId: Long?,
+        @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<Map<String, Int>>> {
+        val result = keywordCloudUseCase.getKeywordCloud(userId, videoId, days)
+        return ResData.success(result)
     }
 }

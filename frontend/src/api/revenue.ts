@@ -1,6 +1,16 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
-import type { RevenueSummary, RevenueTrend, PlatformRevenueData, CpmRpmResponse, BrandDealRevenueResponse } from '@/types/revenue'
+import type {
+  RevenueSummary,
+  RevenueTrend,
+  PlatformRevenueData,
+  CpmRpmResponse,
+  BrandDealRevenueResponse,
+  RevenueInsight,
+  RevenueInsightListResponse,
+  RevenueAlertConfig,
+  RevenueAlertConfigListResponse,
+} from '@/types/revenue'
 
 function periodToDays(period: string): number {
   const match = period.match(/^(\d+)d$/)
@@ -46,6 +56,44 @@ export const revenueApi = {
     const days = periodToDays(period)
     return apiClient
       .get<ResData<BrandDealRevenueResponse>>('/analytics/revenue/brand-deals', { params: { days } })
+      .then(unwrapResponse)
+  },
+
+  // AI 인사이트
+  insights(page = 0, size = 10) {
+    return apiClient
+      .get<ResData<RevenueInsightListResponse>>('/revenue/insights', { params: { page, size } })
+      .then(unwrapResponse)
+  },
+
+  generateInsight() {
+    return apiClient
+      .post<ResData<RevenueInsight>>('/revenue/insights/generate', {})
+      .then(unwrapResponse)
+  },
+
+  // 알림 설정
+  alertConfigs() {
+    return apiClient
+      .get<ResData<RevenueAlertConfigListResponse>>('/revenue/alerts/config')
+      .then(unwrapResponse)
+  },
+
+  saveAlertConfig(config: Omit<RevenueAlertConfig, 'id'>) {
+    return apiClient
+      .post<ResData<RevenueAlertConfig>>('/revenue/alerts/config', config)
+      .then(unwrapResponse)
+  },
+
+  updateAlertConfig(id: number, config: Partial<RevenueAlertConfig>) {
+    return apiClient
+      .put<ResData<RevenueAlertConfig>>(`/revenue/alerts/config/${id}`, config)
+      .then(unwrapResponse)
+  },
+
+  deleteAlertConfig(id: number) {
+    return apiClient
+      .delete<ResData<void>>(`/revenue/alerts/config/${id}`)
       .then(unwrapResponse)
   },
 }

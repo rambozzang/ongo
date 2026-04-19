@@ -4,6 +4,13 @@
     <PageHeader :title="$t('revenue.title')" :description="$t('revenue.description')">
       <template #actions>
         <button
+          class="btn-secondary flex items-center gap-1.5 text-sm"
+          @click="showAlertModal = true"
+        >
+          <BellIcon class="h-4 w-4" />
+          {{ $t('revenue.alerts.title') }}
+        </button>
+        <button
           v-for="option in periodOptions"
           :key="option.value"
           class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
@@ -19,6 +26,9 @@
       </template>
     </PageHeader>
 
+    <!-- 알림 설정 모달 -->
+    <RevenueAlertModal v-model="showAlertModal" />
+
     <PageGuide :title="$t('revenue.pageGuideTitle')" :items="($tm('revenue.pageGuide') as string[])" />
 
     <!-- Sub-tab Navigation -->
@@ -32,6 +42,53 @@
     <template v-else>
       <!-- 개요 탭 -->
       <template v-if="activeTab === 'overview'">
+        <!-- AI 인사이트 섹션 -->
+        <div class="card">
+          <div class="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <SparklesIcon class="h-5 w-5 text-primary-600" />
+                {{ $t('revenue.insights.title') }}
+              </h2>
+              <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                {{ $t('revenue.insights.description') }}
+              </p>
+            </div>
+            <button
+              class="btn-primary flex shrink-0 items-center gap-2 text-sm"
+              :disabled="revenueStore.generateInsightLoading"
+              @click="handleGenerateInsight"
+            >
+              <SparklesIcon class="h-4 w-4" />
+              <span>{{ revenueStore.generateInsightLoading ? $t('revenue.insights.generating') : $t('revenue.insights.generate') }}</span>
+              <span class="rounded-full bg-primary-500/30 px-1.5 py-0.5 text-xs">
+                {{ $t('revenue.insights.generateHint') }}
+              </span>
+            </button>
+          </div>
+
+          <!-- 로딩 -->
+          <div v-if="revenueStore.insightsLoading" class="flex items-center justify-center py-8">
+            <div class="text-sm text-gray-500 dark:text-gray-400">{{ $t('revenue.loading') }}</div>
+          </div>
+
+          <!-- 인사이트 목록 -->
+          <div v-else-if="revenueStore.revenueInsights.length > 0" class="space-y-3">
+            <RevenueInsightCard
+              v-for="insight in revenueStore.revenueInsights"
+              :key="insight.id"
+              :insight="insight"
+            />
+          </div>
+
+          <!-- 빈 상태 -->
+          <div v-else class="flex flex-col items-center justify-center py-10 text-center">
+            <SparklesIcon class="mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $t('revenue.insights.empty') }}</p>
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ $t('revenue.insights.emptyHint') }}</p>
+          </div>
+        </div>
+
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
           <!-- Total Revenue -->
@@ -320,6 +377,7 @@ import {
   ChartBarIcon,
   TrophyIcon,
   SparklesIcon,
+  BellIcon,
 } from '@heroicons/vue/24/outline'
 import { PLATFORM_CONFIG } from '@/types/channel'
 import PageGuide from '@/components/common/PageGuide.vue'
@@ -328,6 +386,8 @@ import OTabs from '@/components/ui/OTabs.vue'
 import RevenueChart from '@/components/revenue/RevenueChart.vue'
 import RevenuePlatformBreakdown from '@/components/revenue/RevenuePlatformBreakdown.vue'
 import RevenueTable from '@/components/revenue/RevenueTable.vue'
+import RevenueInsightCard from '@/components/revenue/RevenueInsightCard.vue'
+import RevenueAlertModal from '@/components/revenue/RevenueAlertModal.vue'
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -344,6 +404,18 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const { t } = useI18n()
 const revenueStore = useRevenueStore()
+
+// 알림 모달
+const showAlertModal = ref(false)
+
+// AI 인사이트 생성
+async function handleGenerateInsight() {
+  try {
+    await revenueStore.generateInsight()
+  } catch (e) {
+    console.error(t('revenue.insights.generateFailed'), e)
+  }
+}
 
 // ----- 탭 -----
 type RevenueTab = 'overview' | 'cpmRpm' | 'brandDeals' | 'aiReport'
@@ -393,7 +465,7 @@ const platformBarData = computed(() => {
     labels,
     datasets: [
       {
-        label: '총 수익',
+        label: t('revenue.chart.totalRevenue'),
         data,
         backgroundColor: colors,
       },
@@ -477,5 +549,6 @@ function dealStatusClass(status: string): string {
 
 onMounted(() => {
   revenueStore.fetchRevenue()
+  revenueStore.fetchInsights()
 })
 </script>

@@ -28,6 +28,46 @@
     <PageGuide :title="$t('commentsView.pageGuideTitle')" :items="($tm('commentsView.pageGuide') as string[])" />
 
     <div class="space-y-6">
+
+    <!-- 위기 감지 배너 -->
+    <div
+      v-if="crisisStatus?.isInCrisis && !crisisDismissed"
+      class="rounded-xl border border-red-300 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-start gap-3">
+          <ExclamationTriangleIcon class="h-5 w-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+          <div>
+            <h4 class="text-sm font-semibold text-red-800 dark:text-red-300">
+              {{ $t('commentsView.crisis.title') }}
+            </h4>
+            <p class="mt-0.5 text-xs text-red-700 dark:text-red-400">
+              {{ $t('commentsView.crisis.description', { changePercent: crisisStatus.changePercent, count: crisisStatus.currentNegativeCount }) }}
+            </p>
+            <!-- 주요 키워드 태그 -->
+            <div v-if="crisisStatus.topKeywords.length > 0" class="mt-2 flex flex-wrap gap-1.5">
+              <span class="text-xs font-medium text-red-700 dark:text-red-400">
+                {{ $t('commentsView.crisis.keywords') }}:
+              </span>
+              <span
+                v-for="kw in crisisStatus.topKeywords"
+                :key="kw"
+                class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300"
+              >
+                {{ kw }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <button
+          class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 shrink-0"
+          @click="crisisDismissed = true"
+        >
+          {{ $t('commentsView.crisis.dismiss') }}
+        </button>
+      </div>
+    </div>
+
     <!-- Sentiment summary -->
     <div v-if="commentStats.total > 0" class="card">
       <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $t('commentsView.sentimentSummary') }}</h3>
@@ -153,6 +193,14 @@
         {{ $t('commentsView.noTrendData') }}
       </div>
     </div>
+
+    <!-- 키워드 클라우드 -->
+    <KeywordCloudSection
+      :keywords="keywordCloud"
+      :loading="keywordCloudLoading"
+      @load="handleKeywordCloudLoad"
+      @filter="handleKeywordFilter"
+    />
 
     <!-- FAQ Clusters -->
     <div class="card">
@@ -354,7 +402,7 @@
             type="checkbox"
             :checked="selectedCommentIds.includes(comment.id)"
             class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
-            @change="toggleCommentSelection(comment.id)"
+            @change="commentsStore.toggleCommentSelection(comment.id)"
           />
         </div>
         <div class="pl-8">
@@ -366,6 +414,20 @@
             @pin="handlePin"
             @delete="handleDelete"
           />
+          <!-- AI 답변 패널 (선택된 댓글에 표시) -->
+          <CommentAiReplyPanel
+            v-if="activeAiPanelId === comment.id"
+            :comment="comment"
+            @use="handleAiReplyUse"
+          />
+          <!-- AI 패널 토글 버튼 -->
+          <button
+            class="mt-1 ml-1 inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"
+            @click="toggleAiPanel(comment.id)"
+          >
+            <SparklesIcon class="h-3.5 w-3.5" />
+            {{ activeAiPanelId === comment.id ? $t('commentsView.aiReply.panelClose') : $t('commentsView.aiReply.panelOpen') }}
+          </button>
         </div>
       </div>
     </div>
@@ -396,6 +458,63 @@
       </div>
     </div>
     </div>
+
+    <!-- 일괄 처리 액션 바 (하단 고정) -->
+    <Transition name="slide-up">
+      <div
+        v-if="selectedCommentIds.length > 0"
+        class="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-3 shadow-xl dark:border-gray-700 dark:bg-gray-900"
+      >
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {{ $t('commentsView.batch.selected', { count: selectedCommentIds.length }) }}
+        </span>
+        <div class="h-4 w-px bg-gray-300 dark:bg-gray-600" />
+        <button
+          class="btn-primary text-xs"
+          :disabled="batchActionLoading"
+          @click="showBatchReplyModal = true"
+        >
+          {{ $t('commentsView.batch.reply') }}
+        </button>
+        <button
+          class="btn-secondary text-xs"
+          :disabled="batchActionLoading"
+          @click="handleBatchHide"
+        >
+          {{ $t('commentsView.batch.hide') }}
+        </button>
+        <button
+          class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          @click="commentsStore.clearSelection()"
+        >
+          {{ $t('commentsView.batch.cancel') }}
+        </button>
+      </div>
+    </Transition>
+
+    <!-- 일괄 답변 모달 -->
+    <BaseModal v-model="showBatchReplyModal" :title="$t('commentsView.batch.replyModalTitle')">
+      <div class="space-y-3">
+        <textarea
+          v-model="batchReplyText"
+          rows="4"
+          class="input-field w-full"
+          :placeholder="$t('commentsView.batch.replyPlaceholder', { count: selectedCommentIds.length })"
+        />
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="showBatchReplyModal = false">
+          {{ $t('commentsView.batch.cancel') }}
+        </button>
+        <button
+          class="btn-primary text-sm"
+          :disabled="!batchReplyText.trim() || batchActionLoading"
+          @click="handleBatchReply"
+        >
+          {{ $t('commentsView.batch.confirm') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -409,12 +528,16 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   MinusIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline'
 import { storeToRefs } from 'pinia'
 import { useCommentsStore } from '@/stores/comments'
 import CommentCard from '@/components/comments/CommentCard.vue'
+import CommentAiReplyPanel from '@/components/comments/CommentAiReplyPanel.vue'
+import KeywordCloudSection from '@/components/comments/KeywordCloudSection.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import type { SentimentTrendPoint } from '@/types/comment'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -440,11 +563,20 @@ const {
   faqLoading,
   batchDrafts,
   batchDraftLoading,
+  // 신규 스토어 상태
+  selectedCommentIds,
+  crisisStatus,
+  keywordCloud,
+  keywordCloudLoading,
+  batchActionLoading,
 } = storeToRefs(commentsStore)
 
 const sortBy = ref<'recent' | 'likes' | 'replies'>('recent')
 const trendDays = ref(30)
-const selectedCommentIds = ref<number[]>([])
+const crisisDismissed = ref(false)
+const activeAiPanelId = ref<number | null>(null)
+const showBatchReplyModal = ref(false)
+const batchReplyText = ref('')
 
 const sortOptions = [
   { value: 'recent', label: t('commentsView.sortRecent') },
@@ -475,13 +607,8 @@ const sortedComments = computed(() => {
   return [...pinnedComments, ...unpinnedComments]
 })
 
-const toggleCommentSelection = (id: number) => {
-  const idx = selectedCommentIds.value.indexOf(id)
-  if (idx === -1) {
-    selectedCommentIds.value.push(id)
-  } else {
-    selectedCommentIds.value.splice(idx, 1)
-  }
+const toggleAiPanel = (id: number) => {
+  activeAiPanelId.value = activeAiPanelId.value === id ? null : id
 }
 
 const getPercent = (value: number, point: SentimentTrendPoint) => {
@@ -528,6 +655,31 @@ const handleBatchAiDraft = async () => {
   await commentsStore.generateBatchDrafts(selectedCommentIds.value)
 }
 
+const handleAiReplyUse = async (commentId: number, text: string) => {
+  await commentsStore.replyToComment(commentId, text)
+  activeAiPanelId.value = null
+}
+
+const handleBatchReply = async () => {
+  if (!batchReplyText.value.trim()) return
+  await commentsStore.batchReply(selectedCommentIds.value, batchReplyText.value.trim())
+  showBatchReplyModal.value = false
+  batchReplyText.value = ''
+}
+
+const handleBatchHide = async () => {
+  await commentsStore.batchHide(selectedCommentIds.value)
+}
+
+const handleKeywordCloudLoad = (days: number) => {
+  commentsStore.fetchKeywordCloud(undefined, days)
+}
+
+const handleKeywordFilter = (keyword: string) => {
+  filters.value.searchText = keyword
+  commentsStore.fetchComments()
+}
+
 const headerDescription = computed(() => {
   const base = t('commentsView.totalComments', { count: commentStats.value.total })
   if (lastSyncedAt.value) {
@@ -562,9 +714,22 @@ watch(() => filters.value.searchText, () => {
 onMounted(() => {
   commentsStore.fetchComments()
   commentsStore.fetchSentimentTrend(trendDays.value)
+  commentsStore.fetchCrisisDetection()
 })
 
 onUnmounted(() => {
   clearTimeout(searchTimeout)
 })
 </script>
+
+<style scoped>
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateX(-50%) translateY(16px);
+  opacity: 0;
+}
+</style>

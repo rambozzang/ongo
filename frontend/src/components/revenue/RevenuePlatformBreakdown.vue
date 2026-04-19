@@ -4,7 +4,7 @@
     <div
       class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center"
     >
-      <div class="text-xs text-gray-500 dark:text-gray-400">총 수익</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('revenue.platformBreakdown.totalRevenue') }}</div>
       <div class="text-xl font-bold text-gray-900 dark:text-gray-100">
         {{ formatCurrency(totalRevenue) }}
       </div>

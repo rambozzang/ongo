@@ -2,7 +2,7 @@
   <div class="mt-3 space-y-2 border-l-2 border-primary-200 pl-4 dark:border-primary-800">
     <textarea
       v-model="replyText"
-      placeholder="답글을 입력하세요..."
+      :placeholder="$t('comments.replyForm.placeholder')"
       rows="3"
       class="input"
       :disabled="submitting"
@@ -10,7 +10,7 @@
 
     <!-- AI 답글 추천 -->
     <div v-if="showAiSuggestions && aiSuggestions.length > 0" class="space-y-2">
-      <p class="text-xs font-medium text-gray-600 dark:text-gray-400">AI 추천 답글 (클릭하여 선택)</p>
+      <p class="text-xs font-medium text-gray-600 dark:text-gray-400">{{ $t('comments.replyForm.aiSuggestions') }}</p>
       <div
         v-for="(suggestion, idx) in aiSuggestions"
         :key="idx"
@@ -41,7 +41,7 @@
           <svg v-else class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
           </svg>
-          {{ generatingAi ? 'AI 생성 중...' : 'AI 답글' }}
+          {{ generatingAi ? $t('comments.replyForm.aiGenerating') : $t('comments.replyForm.aiReply') }}
         </button>
       </div>
       <div class="flex gap-2">
@@ -59,7 +59,7 @@
           :disabled="!replyText.trim() || submitting || replyText.length > 500"
           @click="handleSubmit"
         >
-          {{ submitting ? '답글 작성 중...' : '답글 달기' }}
+          {{ submitting ? $t('comments.replyForm.submitting') : $t('comments.replyForm.submit') }}
         </button>
       </div>
     </div>

@@ -199,6 +199,18 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '트렌드 모니터링' },
       },
       {
+        path: 'channel-audit',
+        name: 'channel-audit',
+        component: () => import('@/views/ChannelAuditView.vue'),
+        meta: { breadcrumb: '채널 오디트' },
+      },
+      {
+        path: 'keyword-research',
+        name: 'keyword-research',
+        component: () => import('@/views/KeywordResearchView.vue'),
+        meta: { breadcrumb: '키워드 리서치' },
+      },
+      {
         path: 'audience',
         name: 'audience',
         component: () => import('@/views/AudienceView.vue'),

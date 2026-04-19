@@ -4,6 +4,13 @@
     <PageHeader :title="$t('ideas.title')" :description="$t('ideas.description')">
       <template #actions>
         <button
+          class="btn-secondary inline-flex items-center gap-2"
+          @click="showAiModal = true"
+        >
+          <SparklesIcon class="h-4 w-4" />
+          {{ $t('ideas.aiGenerate') }}
+        </button>
+        <button
           class="btn-primary inline-flex items-center gap-2"
           @click="openCreateModal"
         >
@@ -122,6 +129,39 @@
       @update="handleUpdate"
       @delete="handleDelete"
     />
+
+    <!-- AI 아이디어 생성 모달 -->
+    <BaseModal
+      v-model="showAiModal"
+      :title="$t('ideas.aiGenerate')"
+      max-width="sm"
+    >
+      <div class="space-y-4">
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('ideas.aiGenerateDesc') }}</p>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('ideas.selectCategory') }}
+          </label>
+          <input
+            v-model="aiCategory"
+            type="text"
+            :placeholder="$t('ideas.selectCategory')"
+            class="input-field"
+          />
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          {{ $t('ideas.credits') }}
+        </p>
+        <button
+          class="btn-primary inline-flex w-full items-center justify-center gap-2"
+          :disabled="aiGenerating"
+          @click="handleAiGenerate"
+        >
+          <SparklesIcon class="h-4 w-4" />
+          {{ aiGenerating ? $t('ideas.generating') : $t('ideas.aiGenerate') }}
+        </button>
+      </div>
+    </BaseModal>
   </div>
 </template>
 
@@ -129,21 +169,46 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useIdeasStore } from '@/stores/ideas'
+import { useNotificationStore } from '@/stores/notification'
+import { ideaApi } from '@/api/idea'
 import type { ContentIdea, IdeaStatus, IdeaPriority } from '@/types/idea'
 import IdeaCard from '@/components/ideas/IdeaCard.vue'
 import IdeaColumn from '@/components/ideas/IdeaColumn.vue'
 import IdeaFormModal from '@/components/ideas/IdeaFormModal.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
-import { PlusIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, MagnifyingGlassIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n({ useScope: 'global' })
 const ideasStore = useIdeasStore()
+const notificationStore = useNotificationStore()
 
 const isModalOpen = ref(false)
 const selectedIdea = ref<ContentIdea | null>(null)
 const searchQuery = ref('')
 const selectedPriority = ref<IdeaPriority | 'all'>('all')
+
+// AI 아이디어 생성
+const showAiModal = ref(false)
+const aiCategory = ref('')
+const aiGenerating = ref(false)
+
+async function handleAiGenerate() {
+  aiGenerating.value = true
+  try {
+    const category = aiCategory.value.trim() || undefined
+    await ideaApi.generateAiIdeas(category)
+    showAiModal.value = false
+    aiCategory.value = ''
+    await ideasStore.fetchIdeas()
+    notificationStore.success('AI 아이디어가 생성되었습니다')
+  } catch {
+    notificationStore.error('AI 아이디어 생성에 실패했습니다')
+  } finally {
+    aiGenerating.value = false
+  }
+}
 
 const priorityFilters = computed(() => [
   { label: t('ideas.priority.all'), value: 'all' as const },

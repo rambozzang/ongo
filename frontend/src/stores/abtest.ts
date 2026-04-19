@@ -81,6 +81,38 @@ export const useAbTestStore = defineStore('abTest', () => {
     }
   }
 
+  async function resumeTest(testId: number) {
+    try {
+      const updated = await abTestApi.startTest(testId)
+      const idx = tests.value.findIndex(t => t.id === testId)
+      if (idx >= 0) tests.value[idx] = updated
+      if (selectedTest.value?.id === testId) selectedTest.value = updated
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to resume test'
+    }
+  }
+
+  async function completeTest(testId: number) {
+    try {
+      const updated = await abTestApi.completeTest(testId)
+      const idx = tests.value.findIndex(t => t.id === testId)
+      if (idx >= 0) tests.value[idx] = updated
+      if (selectedTest.value?.id === testId) selectedTest.value = updated
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to complete test'
+    }
+  }
+
+  async function deleteTest(testId: number) {
+    try {
+      await abTestApi.deleteTest(testId)
+      tests.value = tests.value.filter(t => t.id !== testId)
+      if (selectedTest.value?.id === testId) selectedTest.value = null
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to delete test'
+    }
+  }
+
   async function applyWinner(testId: number) {
     try {
       await abTestApi.applyWinner(testId)
@@ -114,6 +146,9 @@ export const useAbTestStore = defineStore('abTest', () => {
     createTest,
     startTest,
     pauseTest,
+    resumeTest,
+    completeTest,
+    deleteTest,
     applyWinner,
     selectTest,
     setActiveTab,

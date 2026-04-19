@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Platform } from '@/types/channel'
-import type { RevenueSummary, PlatformRevenueData, RevenueTrendPoint, CpmRpmResponse, BrandDealRevenueResponse } from '@/types/revenue'
+import type { RevenueSummary, PlatformRevenueData, RevenueTrendPoint, CpmRpmResponse, BrandDealRevenueResponse, RevenueInsight, RevenueAlertConfig } from '@/types/revenue'
 import { revenueApi } from '@/api/revenue'
 
 export interface RevenueData {
@@ -38,6 +38,15 @@ export const useRevenueStore = defineStore('revenue', () => {
   const brandDealData = ref<BrandDealRevenueResponse | null>(null)
   const cpmRpmLoading = ref(false)
   const brandDealLoading = ref(false)
+
+  // AI 인사이트
+  const revenueInsights = ref<RevenueInsight[]>([])
+  const insightsLoading = ref(false)
+  const generateInsightLoading = ref(false)
+
+  // 알림 설정
+  const alertConfigs = ref<RevenueAlertConfig[]>([])
+  const alertConfigLoading = ref(false)
 
   function calculateSummary(data: RevenueData[]): RevenueSummaryLocal {
     if (data.length === 0) {
@@ -188,6 +197,61 @@ export const useRevenueStore = defineStore('revenue', () => {
     }
   }
 
+  async function fetchInsights() {
+    insightsLoading.value = true
+    try {
+      // 백엔드가 { insights, totalElements, page, size } 래퍼 반환
+      const response = await revenueApi.insights()
+      revenueInsights.value = response.insights
+    } catch {
+      // silently ignore
+    } finally {
+      insightsLoading.value = false
+    }
+  }
+
+  async function generateInsight() {
+    generateInsightLoading.value = true
+    try {
+      const insight = await revenueApi.generateInsight()
+      revenueInsights.value = [insight, ...revenueInsights.value]
+      return insight
+    } finally {
+      generateInsightLoading.value = false
+    }
+  }
+
+  async function fetchAlertConfigs() {
+    alertConfigLoading.value = true
+    try {
+      // 백엔드가 { configs: [...] } 래퍼 반환
+      const response = await revenueApi.alertConfigs()
+      alertConfigs.value = response.configs
+    } catch {
+      // silently ignore
+    } finally {
+      alertConfigLoading.value = false
+    }
+  }
+
+  async function saveAlertConfig(config: Omit<RevenueAlertConfig, 'id'>) {
+    const saved = await revenueApi.saveAlertConfig(config)
+    alertConfigs.value.push(saved)
+    return saved
+  }
+
+  async function updateAlertConfig(id: number, config: Partial<RevenueAlertConfig>) {
+    const updated = await revenueApi.updateAlertConfig(id, config)
+    const idx = alertConfigs.value.findIndex(c => c.id === id)
+    if (idx !== -1) alertConfigs.value[idx] = updated
+    return updated
+  }
+
+  async function deleteAlertConfig(id: number) {
+    await revenueApi.deleteAlertConfig(id)
+    alertConfigs.value = alertConfigs.value.filter(c => c.id !== id)
+  }
+
   return {
     monthlyRevenue,
     summary,
@@ -205,5 +269,16 @@ export const useRevenueStore = defineStore('revenue', () => {
     brandDealLoading,
     fetchCpmRpm,
     fetchBrandDealRevenue,
+    revenueInsights,
+    insightsLoading,
+    generateInsightLoading,
+    alertConfigs,
+    alertConfigLoading,
+    fetchInsights,
+    generateInsight,
+    fetchAlertConfigs,
+    saveAlertConfig,
+    updateAlertConfig,
+    deleteAlertConfig,
   }
 })

@@ -8,4 +8,5 @@ enum class NotificationType {
     COMMENT,
     SYSTEM,
     CHANNEL_TOKEN_EXPIRED,
+    REVENUE_ALERT,
 }

@@ -60,6 +60,16 @@ class IdeaController(
         return ResData.success(null, "아이디어가 삭제되었습니다")
     }
 
+    @Operation(summary = "AI 아이디어 생성", description = "AI가 채널 카테고리와 최근 영상을 분석하여 콘텐츠 아이디어를 생성합니다")
+    @PostMapping("/ai-generate")
+    fun generateAiIdeas(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @RequestParam(required = false) category: String?,
+    ): ResponseEntity<ResData<List<IdeaResponse>>> {
+        val result = ideaUseCase.generateAiIdeas(userId, category)
+        return ResData.success(result, "AI 아이디어가 생성되었습니다")
+    }
+
     @Operation(summary = "아이디어 상태 변경")
     @PutMapping("/{id}/status")
     fun changeStatus(

@@ -120,3 +120,44 @@ export interface BatchAiDraftResponse {
   drafts: AiDraftItem[]
   totalCreditsUsed: number
 }
+
+// AI 답변 후보 단건 (백엔드 AiReplyCandidate DTO와 일치)
+export interface AiReplyCandidate {
+  id: number
+  generatedReply: string
+  tone: string
+  isUsed: boolean
+  createdAt: string | null
+}
+
+// AI 개별 답변 생성 (백엔드 AiReplyCandidatesResponse DTO와 일치)
+export interface AiReplyGenerateResponse {
+  commentId: number
+  commentContent: string
+  candidates: AiReplyCandidate[]
+}
+
+// 위기 감지 (백엔드 CrisisDetectionResponse DTO와 일치)
+export interface CrisisDetectionResult {
+  isInCrisis: boolean
+  currentNegativeCount: number
+  previousNegativeCount: number
+  changePercent: number
+  topKeywords: string[]
+  windowHours: number
+  thresholdPct: number
+}
+
+// 키워드 클라우드
+export interface KeywordCloudItem {
+  keyword: string
+  count: number
+  sentiment: 'positive' | 'neutral' | 'negative'
+}
+
+// 일괄 처리 결과 (백엔드 BatchResultResponse DTO와 일치)
+export interface BatchActionResult {
+  successCount: number
+  failCount: number
+  totalRequested: number
+}

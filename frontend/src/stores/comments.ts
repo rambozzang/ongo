@@ -8,6 +8,9 @@ import type {
   SentimentTrendResponse,
   FaqClusterResponse,
   AiDraftItem,
+  AiReplyGenerateResponse,
+  CrisisDetectionResult,
+  KeywordCloudItem,
 } from '@/types/comment'
 import type { Platform } from '@/types/channel'
 import { commentsApi } from '@/api/comments'
@@ -36,6 +39,16 @@ export const useCommentsStore = defineStore('comments', () => {
   const faqLoading = ref(false)
   const batchDrafts = ref<AiDraftItem[]>([])
   const batchDraftLoading = ref(false)
+
+  // 신규: AI 개별 답변, 위기 감지, 키워드 클라우드, 일괄 선택
+  const aiReplies = ref<Record<number, AiReplyGenerateResponse>>({})
+  const aiReplyLoading = ref<Record<number, boolean>>({})
+  const crisisStatus = ref<CrisisDetectionResult | null>(null)
+  const crisisLoading = ref(false)
+  const keywordCloud = ref<KeywordCloudItem[]>([])
+  const keywordCloudLoading = ref(false)
+  const selectedCommentIds = ref<number[]>([])
+  const batchActionLoading = ref(false)
 
   const filters = ref<CommentFilters>({
     platform: 'ALL',
@@ -196,6 +209,88 @@ export const useCommentsStore = defineStore('comments', () => {
     }
   }
 
+  const generateAiReply = async (commentId: number, tone = 'FRIENDLY') => {
+    aiReplyLoading.value = { ...aiReplyLoading.value, [commentId]: true }
+    try {
+      const result = await commentsApi.aiReplyGenerate(commentId, tone)
+      aiReplies.value = { ...aiReplies.value, [commentId]: result }
+      return result
+    } catch {
+      return null
+    } finally {
+      aiReplyLoading.value = { ...aiReplyLoading.value, [commentId]: false }
+    }
+  }
+
+  const batchReply = async (commentIds: number[], replyText: string) => {
+    batchActionLoading.value = true
+    try {
+      const result = await commentsApi.batchReply(commentIds, replyText)
+      selectedCommentIds.value = []
+      await fetchComments(false)
+      return result
+    } catch {
+      return null
+    } finally {
+      batchActionLoading.value = false
+    }
+  }
+
+  const batchHide = async (commentIds: number[]) => {
+    batchActionLoading.value = true
+    try {
+      const result = await commentsApi.batchHide(commentIds)
+      selectedCommentIds.value = []
+      await fetchComments(false)
+      return result
+    } catch {
+      return null
+    } finally {
+      batchActionLoading.value = false
+    }
+  }
+
+  const fetchCrisisDetection = async () => {
+    crisisLoading.value = true
+    try {
+      crisisStatus.value = await commentsApi.crisisDetection()
+    } catch {
+      crisisStatus.value = null
+    } finally {
+      crisisLoading.value = false
+    }
+  }
+
+  const fetchKeywordCloud = async (videoId?: number, days?: number) => {
+    keywordCloudLoading.value = true
+    try {
+      // 백엔드는 Map<String, Int> 형태로 반환 → KeywordCloudItem[] 변환
+      const result = await commentsApi.keywordCloud(videoId, days)
+      keywordCloud.value = Object.entries(result).map(([keyword, count]) => ({
+        keyword,
+        count,
+        sentiment: 'neutral' as const,
+      }))
+    } catch {
+      keywordCloud.value = []
+    } finally {
+      keywordCloudLoading.value = false
+    }
+  }
+
+  const toggleCommentSelection = (id: number) => {
+    const idx = selectedCommentIds.value.indexOf(id)
+    if (idx === -1) {
+      selectedCommentIds.value.push(id)
+    } else {
+      selectedCommentIds.value.splice(idx, 1)
+    }
+  }
+
+  const clearSelection = () => {
+    selectedCommentIds.value = []
+  }
+
   const nextPage = () => {
     if ((page.value + 1) * pageSize.value < totalCount.value) {
       page.value++
@@ -251,7 +346,22 @@ export const useCommentsStore = defineStore('comments', () => {
     fetchSentimentTrend,
     fetchFaqClusters,
     generateBatchDrafts,
+    generateAiReply,
+    batchReply,
+    batchHide,
+    fetchCrisisDetection,
+    fetchKeywordCloud,
+    toggleCommentSelection,
+    clearSelection,
     nextPage,
     prevPage,
+    aiReplies,
+    aiReplyLoading,
+    crisisStatus,
+    crisisLoading,
+    keywordCloud,
+    keywordCloudLoading,
+    selectedCommentIds,
+    batchActionLoading,
   }
 })

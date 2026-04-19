@@ -60,6 +60,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { RevenueData } from '@/stores/revenue'
 
 interface Props {
@@ -68,20 +69,22 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const { t } = useI18n()
+
 interface Column {
   key: string
   label: string
 }
 
-const columns: Column[] = [
-  { key: 'period', label: '기간' },
+const columns = computed<Column[]>(() => [
+  { key: 'period', label: t('revenue.table.period') },
   { key: 'youtube', label: 'YouTube' },
   { key: 'tiktok', label: 'TikTok' },
   { key: 'instagram', label: 'Instagram' },
   { key: 'naverClip', label: 'Naver Clip' },
-  { key: 'total', label: '합계' },
-  { key: 'change', label: '증감' },
-]
+  { key: 'total', label: t('revenue.table.total') },
+  { key: 'change', label: t('revenue.table.change') },
+])
 
 const sortKey = ref<string>('period')
 const sortOrder = ref<'asc' | 'desc'>('asc')

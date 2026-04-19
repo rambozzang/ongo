@@ -60,4 +60,9 @@ export const ideaApi = {
   changeStatus(id: number, status: string) {
     return apiClient.put<ResData<IdeaResponse>>(`/ideas/${id}/status`, { status }).then(unwrapResponse)
   },
+
+  generateAiIdeas: (category?: string) =>
+    apiClient
+      .post<ResData<IdeaResponse[]>>('/ideas/ai-generate', null, { params: { category } })
+      .then(unwrapResponse),
 }

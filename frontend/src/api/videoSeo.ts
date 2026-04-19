@@ -1,34 +1,24 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
-import type {
-  SeoAnalysis,
-  SeoKeyword,
-  SeoOptimizeRequest,
-  VideoSeoSummary,
-} from '@/types/videoSeo'
+
+export interface SeoScoreCategory {
+  name: string
+  score: number
+  maxScore: number
+}
+
+export interface SeoScoreResponse {
+  videoId: number
+  overallScore: number
+  categories: SeoScoreCategory[]
+  suggestions: string[]
+  creditsUsed: number
+}
 
 export const videoSeoApi = {
-  getAnalyses(platform?: string) {
+  analyze(videoId: number) {
     return apiClient
-      .get<ResData<SeoAnalysis[]>>('/video-seo', { params: { platform } })
-      .then(unwrapResponse)
-  },
-
-  analyze(request: SeoOptimizeRequest) {
-    return apiClient
-      .post<ResData<SeoAnalysis>>('/video-seo/analyze', request)
-      .then(unwrapResponse)
-  },
-
-  getKeywords(analysisId: number) {
-    return apiClient
-      .get<ResData<SeoKeyword[]>>(`/video-seo/${analysisId}/keywords`)
-      .then(unwrapResponse)
-  },
-
-  getSummary() {
-    return apiClient
-      .get<ResData<VideoSeoSummary>>('/video-seo/summary')
+      .post<ResData<SeoScoreResponse>>(`/videos/${videoId}/seo-score`)
       .then(unwrapResponse)
   },
 }
