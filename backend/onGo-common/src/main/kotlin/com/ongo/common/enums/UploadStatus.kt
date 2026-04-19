@@ -8,4 +8,6 @@ enum class UploadStatus {
     PUBLISHED,
     FAILED,
     REJECTED,
+    IMPORTING,
+    IMPORT_FAILED,
 }

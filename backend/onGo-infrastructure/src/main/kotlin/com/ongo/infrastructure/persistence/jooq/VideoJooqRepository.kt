@@ -2,6 +2,7 @@ package com.ongo.infrastructure.persistence.jooq
 
 import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
+import com.ongo.domain.contentsource.VideoSource
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.CATEGORY
@@ -11,6 +12,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.FILE_SIZE_BYTES
 import com.ongo.infrastructure.persistence.jooq.Fields.FILE_URL
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.ORIGINAL_FILENAME
+import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.TAGS
@@ -22,6 +24,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.VIDEOS
 import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.jooq.DSLContext
 import org.jooq.JSONB
@@ -97,6 +100,7 @@ class VideoJooqRepository(
     override fun save(video: Video): Video {
         val tagsArray = video.tags.toTypedArray()
         val thumbnailJson = JSONB.jsonb(objectMapper.writeValueAsString(video.thumbnailUrls))
+        val sourceRefJson = video.sourceReference?.let { JSONB.jsonb(objectMapper.writeValueAsString(it)) }
 
         val id = dsl.insertInto(VIDEOS)
             .set(USER_ID, video.userId)
@@ -110,6 +114,8 @@ class VideoJooqRepository(
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
             .set(MEDIA_TYPE, video.mediaType.name)
             .set(STATUS, video.status.name)
+            .set(DSL.field("source", String::class.java), video.source.name)
+            .set(DSL.field("source_reference", JSONB::class.java), sourceRefJson)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -120,6 +126,7 @@ class VideoJooqRepository(
     override fun update(video: Video): Video {
         val tagsArray = video.tags.toTypedArray()
         val thumbnailJson = JSONB.jsonb(objectMapper.writeValueAsString(video.thumbnailUrls))
+        val sourceRefJson = video.sourceReference?.let { JSONB.jsonb(objectMapper.writeValueAsString(it)) }
 
         dsl.update(VIDEOS)
             .set(TITLE, video.title)
@@ -132,6 +139,8 @@ class VideoJooqRepository(
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
             .set(MEDIA_TYPE, video.mediaType.name)
             .set(STATUS, video.status.name)
+            .set(DSL.field("source", String::class.java), video.source.name)
+            .set(DSL.field("source_reference", JSONB::class.java), sourceRefJson)
             .where(ID.eq(video.id))
             .execute()
 
@@ -162,6 +171,26 @@ class VideoJooqRepository(
 
         val statusStr = get(STATUS) ?: "DRAFT"
         val mediaTypeStr = get(MEDIA_TYPE) ?: "VIDEO"
+
+        val sourceStr = runCatching { get(SOURCE_TEXT) }.getOrNull() ?: "UPLOAD_PC"
+        val sourceReferenceJson: JsonNode? = runCatching {
+            val raw = get("source_reference")
+            when (raw) {
+                null -> null
+                is JSONB -> {
+                    val data = raw.data()
+                    if (data.isNullOrBlank() || data == "null") null else objectMapper.readTree(data)
+                }
+                is String -> {
+                    if (raw.isBlank() || raw == "null") null else objectMapper.readTree(raw)
+                }
+                else -> {
+                    val s = raw.toString()
+                    if (s.isBlank() || s == "null") null else objectMapper.readTree(s)
+                }
+            }
+        }.getOrNull()
+
         return Video(
             id = get(ID),
             userId = get(USER_ID),
@@ -177,6 +206,8 @@ class VideoJooqRepository(
             status = try { UploadStatus.valueOf(statusStr) } catch (_: Exception) { UploadStatus.DRAFT },
             createdAt = localDateTime(CREATED_AT),
             updatedAt = localDateTime(UPDATED_AT),
+            source = try { VideoSource.valueOf(sourceStr) } catch (_: Exception) { VideoSource.UPLOAD_PC },
+            sourceReference = sourceReferenceJson,
         )
     }
 

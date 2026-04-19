@@ -1,7 +1,9 @@
 package com.ongo.domain.video
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
+import com.ongo.domain.contentsource.VideoSource
 import java.time.LocalDateTime
 
 data class Video(
@@ -19,4 +21,6 @@ data class Video(
     val status: UploadStatus = UploadStatus.DRAFT,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
+    val source: VideoSource = VideoSource.UPLOAD_PC,
+    val sourceReference: JsonNode? = null,
 )
