@@ -1,9 +1,12 @@
--- V42__content_sources_and_drive_import.sql
+-- V42: 외부 콘텐츠 소스 연결 및 드라이브 임포트 테이블
 
 CREATE TYPE content_source_type AS ENUM ('GOOGLE_DRIVE');
 CREATE TYPE content_source_status AS ENUM ('ACTIVE', 'EXPIRED', 'REVOKED');
 CREATE TYPE video_source AS ENUM ('UPLOAD_PC', 'GOOGLE_DRIVE');
 CREATE TYPE drive_import_status AS ENUM ('PENDING', 'DOWNLOADING', 'COMPLETED', 'FAILED', 'CANCELLED');
+
+ALTER TYPE video_status ADD VALUE IF NOT EXISTS 'IMPORTING';
+ALTER TYPE video_status ADD VALUE IF NOT EXISTS 'IMPORT_FAILED';
 
 CREATE TABLE IF NOT EXISTS user_content_sources (
     id                      BIGSERIAL PRIMARY KEY,
@@ -23,7 +26,7 @@ CREATE TABLE IF NOT EXISTS user_content_sources (
     updated_at              TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_user_content_sources UNIQUE (user_id, source_type)
 );
-CREATE INDEX idx_user_content_sources_user ON user_content_sources(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_content_sources_user ON user_content_sources(user_id);
 
 COMMENT ON TABLE user_content_sources IS '영상 입력 소스 연결 (드라이브 등)';
 COMMENT ON COLUMN user_content_sources.access_token IS 'AES-256 암호화된 OAuth 액세스 토큰';
@@ -37,7 +40,7 @@ ALTER TABLE videos
 COMMENT ON COLUMN videos.source IS '영상 원본 출처 (PC 업로드 / 구글 드라이브)';
 COMMENT ON COLUMN videos.source_reference IS '소스별 원본 참조 JSON';
 
-CREATE INDEX idx_videos_user_source ON videos(user_id, source);
+CREATE INDEX IF NOT EXISTS idx_videos_user_source ON videos(user_id, source);
 
 CREATE TABLE IF NOT EXISTS drive_import_jobs (
     id                      BIGSERIAL PRIMARY KEY,
@@ -58,8 +61,8 @@ CREATE TABLE IF NOT EXISTS drive_import_jobs (
     updated_at              TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT chk_drive_import_bytes CHECK (bytes_transferred >= 0 AND bytes_transferred <= file_size_bytes)
 );
-CREATE INDEX idx_drive_import_jobs_user_status ON drive_import_jobs(user_id, status);
-CREATE INDEX idx_drive_import_jobs_status_updated ON drive_import_jobs(status, updated_at)
+CREATE INDEX IF NOT EXISTS idx_drive_import_jobs_user_status ON drive_import_jobs(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_drive_import_jobs_status_updated ON drive_import_jobs(status, updated_at)
     WHERE status IN ('PENDING', 'DOWNLOADING');
 
 COMMENT ON TABLE drive_import_jobs IS '구글 드라이브 → S3 복사 작업 추적';
