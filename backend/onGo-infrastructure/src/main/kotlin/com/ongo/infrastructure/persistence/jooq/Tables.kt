@@ -165,6 +165,10 @@ object Tables {
 
     // Keyword Research (V39)
     val KEYWORD_RESEARCH_HISTORY = DSL.table("keyword_research_history")
+
+    // Content sources (Phase 1: Google Drive import)
+    val USER_CONTENT_SOURCES = DSL.table("user_content_sources")
+    val DRIVE_IMPORT_JOBS = DSL.table("drive_import_jobs")
 }
 
 object Fields {
@@ -845,4 +849,25 @@ object Fields {
     // keyword_research_history
     val RESULT_JSON = DSL.field("result_json", String::class.java)
     val PLATFORMS_LIST = DSL.field("platforms", String::class.java)
+
+    // user_content_sources (Phase 1: Google Drive import)
+    val SOURCE_TYPE = DSL.field("source_type", String::class.java)
+    val SOURCE_TYPE_TEXT = DSL.field("source_type::text", String::class.java)
+    val EXTERNAL_ACCOUNT_ID = DSL.field("external_account_id", String::class.java)
+    val ACCOUNT_EMAIL = DSL.field("account_email", String::class.java)
+    val ACCOUNT_DISPLAY_NAME = DSL.field("account_display_name", String::class.java)
+    val GRANTED_SCOPES = DSL.field("granted_scopes", String::class.java)
+    val LAST_ERROR = DSL.field("last_error", String::class.java)
+    val LAST_USED_AT = DSL.field("last_used_at", java.time.LocalDateTime::class.java)
+
+    // drive_import_jobs
+    val CONTENT_SOURCE_ID = DSL.field("content_source_id", Long::class.java)
+    val DRIVE_FILE_ID = DSL.field("drive_file_id", String::class.java)
+    val DRIVE_FILE_NAME = DSL.field("drive_file_name", String::class.java)
+    val BYTES_TRANSFERRED = DSL.field("bytes_transferred", Long::class.java)
+    val S3_KEY = DSL.field("s3_key", String::class.java)
+
+    // videos extended (Google Drive import)
+    val SOURCE_TEXT = DSL.field("source::text", String::class.java)
+    val SOURCE_REFERENCE = DSL.field("source_reference", Any::class.java)
 }
