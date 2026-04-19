@@ -12,6 +12,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.FILE_SIZE_BYTES
 import com.ongo.infrastructure.persistence.jooq.Fields.FILE_URL
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.ORIGINAL_FILENAME
+import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE
 import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS_TEXT
@@ -114,7 +115,7 @@ class VideoJooqRepository(
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
             .set(MEDIA_TYPE, video.mediaType.name)
             .set(STATUS, video.status.name)
-            .set(DSL.field("source", String::class.java), video.source.name)
+            .set(SOURCE, video.source.name)
             .set(DSL.field("source_reference", JSONB::class.java), sourceRefJson)
             .returningResult(ID)
             .fetchOne()!!
@@ -139,7 +140,7 @@ class VideoJooqRepository(
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
             .set(MEDIA_TYPE, video.mediaType.name)
             .set(STATUS, video.status.name)
-            .set(DSL.field("source", String::class.java), video.source.name)
+            .set(SOURCE, video.source.name)
             .set(DSL.field("source_reference", JSONB::class.java), sourceRefJson)
             .where(ID.eq(video.id))
             .execute()
