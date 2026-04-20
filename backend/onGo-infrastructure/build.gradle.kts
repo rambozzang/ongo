@@ -41,6 +41,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
 
+    // Reactive WebClient (Google Drive OAuth + streaming download — Task 10/17)
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+
     // JWT
     implementation(libs.jjwt.api)
     runtimeOnly(libs.jjwt.impl)
@@ -56,6 +59,10 @@ dependencies {
     // Testcontainers (for @SpringBootTest integration tests with real PostgreSQL)
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
+
+    // MockWebServer (Google Drive OAuth 클라이언트 단위 테스트용)
+    // — okhttp 4.12.0이 minio를 통해 이미 classpath에 있으므로 동일 버전 사용
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }
 
 // Test classpath에 onGo-api의 Flyway 마이그레이션만 공유 (db/migration/*.sql)
