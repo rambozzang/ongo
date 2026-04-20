@@ -95,8 +95,10 @@ class GoogleDriveOAuthClient(
             .block()
         true
     } catch (e: WebClientResponseException) {
-        // 이미 revoke된 토큰은 400을 반환 — 멱등 처리
-        e.statusCode.value() == 400
+        // 이미 revoke된 토큰은 400을 반환 — 멱등 처리. 그 외 상태는 예외로 재전파해
+        // 호출자(DisconnectContentSourceUseCase 등)가 에러 원인을 인지하도록 한다.
+        if (e.statusCode.value() == 400) true
+        else throw OAuthTokenExchangeException("revoke failed: ${e.statusCode}", e)
     }
 }
 
