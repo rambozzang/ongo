@@ -17,4 +17,12 @@ class GoogleDriveAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(WebClient::class)
     fun googleDriveWebClient(): WebClient = WebClient.builder().build()
+
+    /**
+     * OAuth state 발급/검증 매니저.
+     * secret은 [GoogleDriveProperties.oauthStateSecret]에서 주입.
+     */
+    @Bean
+    fun oauthStateManager(props: GoogleDriveProperties): OAuthStateManager =
+        OAuthStateManager(secret = props.oauthStateSecret, ttlSeconds = 300)
 }
