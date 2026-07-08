@@ -1,5 +1,6 @@
 package com.ongo.application.sponsorship
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.sponsorship.dto.*
 import com.ongo.domain.sponsorship.*
 import org.springframework.stereotype.Service
@@ -7,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+@Profile("wip")
 @Service
 class SponsorshipUseCase(
     private val sponsorshipRepository: SponsorshipRepository,

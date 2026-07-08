@@ -1,5 +1,6 @@
 package com.ongo.application.fansegmentcampaign
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.fansegmentcampaign.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.math.RoundingMode
 
+@Profile("wip")
 @Service
 class FanSegmentCampaignUseCase(
     private val campaignRepository: FanCampaignRepository,

@@ -36,6 +36,7 @@ export type CreatorCategory =
 export interface LoginRequest {
   code: string
   redirectUri: string
+  state: string
 }
 
 export interface AuthTokens {

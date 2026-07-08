@@ -1,5 +1,6 @@
 package com.ongo.application.contentrights
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentrights.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -10,6 +11,7 @@ import com.ongo.domain.contentrights.RightsAlertRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class ContentRightsUseCase(
     private val contentRightRepository: ContentRightRepository,

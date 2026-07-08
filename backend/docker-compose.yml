@@ -12,7 +12,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ongo_user -d ongo_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-ongo_user} -d $${POSTGRES_DB:-ongo_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,6 +38,21 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: ongo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
   minio_data:
+  redis_data:

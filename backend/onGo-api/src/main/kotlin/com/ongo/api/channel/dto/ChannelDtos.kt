@@ -1,6 +1,7 @@
 package com.ongo.api.channel.dto
 
 import com.ongo.common.enums.Platform
+import com.ongo.domain.channel.ChannelStatus
 import java.time.LocalDateTime
 
 data class ChannelResponse(
@@ -10,7 +11,7 @@ data class ChannelResponse(
     val channelUrl: String?,
     val subscriberCount: Long,
     val profileImageUrl: String?,
-    val status: String,
+    val status: ChannelStatus,
     val tokenStatus: String,
     val connectedAt: LocalDateTime?
 )
@@ -21,7 +22,10 @@ data class ConnectChannelRequest(
     val authorizationCode: String,
     @field:jakarta.validation.constraints.NotBlank(message = "리다이렉트 URI는 필수입니다")
     @field:jakarta.validation.constraints.Size(max = 2048, message = "리다이렉트 URI는 최대 2048자까지 입력할 수 있습니다")
-    val redirectUri: String
+    val redirectUri: String,
+    /** Twitter OAuth 2.0 PKCE code_verifier (Twitter 연동 시 필수) */
+    @field:jakarta.validation.constraints.Size(max = 2048, message = "code_verifier는 최대 2048자까지 입력할 수 있습니다")
+    val codeVerifier: String? = null,
 )
 
 data class ConnectChannelResponse(

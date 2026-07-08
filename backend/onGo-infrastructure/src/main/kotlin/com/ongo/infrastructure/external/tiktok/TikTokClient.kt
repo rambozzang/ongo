@@ -121,7 +121,7 @@ class TikTokClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("TikTok OAuth 인가 코드 교환")
 
         val response = tikTokOAuthApi.refreshToken(
@@ -211,6 +211,7 @@ class TikTokClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("TikTok 댓글 조회: videoId={}", platformVideoId)
 

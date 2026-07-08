@@ -235,7 +235,7 @@ export const useIdeasStore = defineStore('ideas', {
         try {
           this.ideas = JSON.parse(stored)
         } catch (e) {
-
+          // ignore parse error
         }
       }
     }

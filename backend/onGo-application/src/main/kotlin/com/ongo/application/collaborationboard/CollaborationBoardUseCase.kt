@@ -1,5 +1,6 @@
 package com.ongo.application.collaborationboard
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.collaborationboard.dto.*
 import com.ongo.domain.collaborationboard.BoardActivity
 import com.ongo.domain.collaborationboard.BoardActivityRepository
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
+@Profile("wip")
 @Service
 class CollaborationBoardUseCase(
     private val taskRepository: BoardTaskRepository,

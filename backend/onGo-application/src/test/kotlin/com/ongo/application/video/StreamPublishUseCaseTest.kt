@@ -17,6 +17,7 @@ import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoPlatformMeta
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import io.mockk.clearAllMocks
@@ -123,7 +124,7 @@ class StreamPublishUseCaseTest {
         platformChannelId = "UC_test_channel",
         channelName = "테스트 채널",
         accessToken = "access-token-value",
-        status = "ACTIVE",
+        status = ChannelStatus.ACTIVE,
     )
 
     private fun buildSavedVideo(id: Long = 100L) = Video(
@@ -204,7 +205,7 @@ class StreamPublishUseCaseTest {
         stubMonthlyCount(0L)
         every { videoRepository.save(any()) } returns buildSavedVideo()
 
-        val expiredChannel = buildActiveChannel().copy(status = "EXPIRED")
+        val expiredChannel = buildActiveChannel().copy(status = ChannelStatus.EXPIRED)
         every { channelRepository.findByUserIdAndPlatform(userId, Platform.YOUTUBE) } returns expiredChannel
 
         val file = buildFile()
@@ -227,7 +228,7 @@ class StreamPublishUseCaseTest {
         every { videoRepository.save(any()) } returns buildSavedVideo()
 
         val expiredChannel = buildActiveChannel().copy(
-            status = "ACTIVE",
+            status = ChannelStatus.ACTIVE,
             tokenExpiresAt = LocalDateTime.now().minusDays(1),
         )
         every { channelRepository.findByUserIdAndPlatform(userId, Platform.YOUTUBE) } returns expiredChannel

@@ -1,5 +1,6 @@
 package com.ongo.api.audiencesegment
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.audiencesegment.AudienceSegmentUseCase
 import com.ongo.application.audiencesegment.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "오디언스 세분화", description = "AI 기반 오디언스 세그먼트 분석 및 인사이트")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/audience-segments")
 class AudienceSegmentController(

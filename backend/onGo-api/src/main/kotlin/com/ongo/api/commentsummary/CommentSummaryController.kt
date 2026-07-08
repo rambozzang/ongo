@@ -1,5 +1,6 @@
 package com.ongo.api.commentsummary
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.commentsummary.CommentSummaryUseCase
 import com.ongo.application.commentsummary.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "AI 댓글 요약", description = "AI 기반 댓글 요약 및 감정 분석")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/comment-summary")
 class CommentSummaryController(

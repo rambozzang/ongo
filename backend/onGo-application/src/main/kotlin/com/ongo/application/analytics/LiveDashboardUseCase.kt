@@ -5,6 +5,7 @@ import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.analytics.*
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.ChannelStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -50,7 +51,7 @@ class LiveDashboardUseCase(
 
         // 연동된 활성 플랫폼
         val activePlatforms = channelRepository.findByUserId(userId)
-            .filter { it.status == "ACTIVE" }
+            .filter { it.status == ChannelStatus.ACTIVE }
             .map { it.platform.name.lowercase() }
 
         return LiveDashboardStateResponse(

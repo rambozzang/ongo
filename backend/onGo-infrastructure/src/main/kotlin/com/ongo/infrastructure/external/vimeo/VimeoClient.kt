@@ -127,7 +127,7 @@ class VimeoClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("Vimeo OAuth 인가 코드 교환")
 
         val response = vimeoOAuthApi.exchangeToken(
@@ -191,6 +191,7 @@ class VimeoClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("Vimeo 댓글 조회: videoId={}", platformVideoId)
 

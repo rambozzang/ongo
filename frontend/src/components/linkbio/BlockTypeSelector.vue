@@ -3,8 +3,8 @@
     <button
       v-for="blockType in blockTypes"
       :key="blockType.type"
-      @click="$emit('select', blockType.type)"
       class="flex flex-col items-center gap-2 rounded-lg border border-gray-200 p-4 transition-all hover:border-blue-500 hover:bg-blue-50 dark:border-gray-700 dark:hover:border-blue-500 dark:hover:bg-blue-950"
+      @click="$emit('select', blockType.type)"
     >
       <span class="text-2xl">{{ blockType.icon }}</span>
       <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ blockType.label }}</span>

@@ -14,7 +14,8 @@
         :key="video.videoId"
         class="flex items-start gap-2"
       >
-        <div class="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold"
+        <div
+class="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold"
           :class="getRankClass(index)"
         >
           {{ index + 1 }}

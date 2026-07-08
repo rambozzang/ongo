@@ -192,13 +192,13 @@
             <button
               v-for="video in topVideos.slice(0, 8)"
               :key="video.videoId"
-              @click="retentionVideoId = video.videoId"
               :class="[
                 retentionVideoId === video.videoId
                   ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-400'
                   : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300',
                 'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
               ]"
+              @click="retentionVideoId = video.videoId"
             >
               {{ video.title.length > 20 ? video.title.slice(0, 20) + '...' : video.title }}
             </button>
@@ -507,8 +507,8 @@
                 </td>
                 <td class="hidden px-3 py-3 tablet:table-cell">
                   <button
-                    @click="selectRetentionVideo(video.videoId)"
                     class="rounded-md px-2 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20"
+                    @click="selectRetentionVideo(video.videoId)"
                   >
                     {{ $t('analyticsView.retention.button') }}
                   </button>

@@ -10,6 +10,7 @@ import com.ongo.domain.credit.CreditRepository
 import com.ongo.domain.notification.Notification
 import com.ongo.domain.notification.NotificationRepository
 import com.ongo.domain.subscription.Subscription
+import com.ongo.domain.lock.DistributedLockPort
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.User
 import com.ongo.domain.user.UserRepository
@@ -43,6 +44,9 @@ class BillingSchedulerTest {
     @MockK
     private lateinit var creditRepository: CreditRepository
 
+    @MockK
+    private lateinit var distributedLockPort: DistributedLockPort
+
     private lateinit var billingScheduler: BillingScheduler
 
     private val now = LocalDateTime.now()
@@ -50,11 +54,14 @@ class BillingSchedulerTest {
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
+        every { distributedLockPort.tryLock(any()) } returns true
+        every { distributedLockPort.releaseLock(any()) } returns Unit
         billingScheduler = BillingScheduler(
             subscriptionRepository,
             userRepository,
             notificationRepository,
             creditRepository,
+            distributedLockPort,
         )
     }
 
@@ -112,6 +119,7 @@ class BillingSchedulerTest {
         )
         val user = createUser(1L, PlanType.PRO)
 
+        every { distributedLockPort.tryLock(any()) } returns true
         stubEmptyDefaults()
         every { subscriptionRepository.findTrialExpired(any()) } returns listOf(sub)
         every { subscriptionRepository.update(any()) } answers { firstArg() }

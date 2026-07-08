@@ -1,5 +1,6 @@
 package com.ongo.application.contentabanalyzer
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentabanalyzer.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
+@Profile("wip")
 @Service
 class ContentAbAnalyzerUseCase(
     private val testRepository: ContentAbTestRepository,

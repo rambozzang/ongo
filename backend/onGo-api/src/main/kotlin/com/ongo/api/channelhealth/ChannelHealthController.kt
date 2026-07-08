@@ -1,5 +1,6 @@
 package com.ongo.api.channelhealth
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.channelhealth.ChannelHealthUseCase
 import com.ongo.application.channelhealth.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "채널 건강도 대시보드", description = "채널 종합 건강도 지표 분석")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/channel-health")
 class ChannelHealthController(

@@ -1,5 +1,6 @@
 package com.ongo.application.influencermatch
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.influencermatch.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
+@Profile("wip")
 @Service
 class InfluencerMatchUseCase(
     private val influencerProfileRepository: InfluencerProfileRepository,

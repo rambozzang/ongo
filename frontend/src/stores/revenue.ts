@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, shallowRef, computed } from 'vue'
 import type { Platform } from '@/types/channel'
 import type { RevenueSummary, PlatformRevenueData, RevenueTrendPoint, CpmRpmResponse, BrandDealRevenueResponse, RevenueInsight, RevenueAlertConfig } from '@/types/revenue'
 import { revenueApi } from '@/api/revenue'
@@ -22,7 +22,7 @@ export interface RevenueSummaryLocal {
 }
 
 export const useRevenueStore = defineStore('revenue', () => {
-  const monthlyRevenue = ref<RevenueData[]>([])
+  const monthlyRevenue = shallowRef<RevenueData[]>([])
   const summary = ref<RevenueSummaryLocal>({
     totalRevenue: 0,
     monthlyGrowth: 0,
@@ -32,7 +32,7 @@ export const useRevenueStore = defineStore('revenue', () => {
   })
   const loading = ref(false)
   const apiSummary = ref<RevenueSummary | null>(null)
-  const apiTrends = ref<RevenueTrendPoint[]>([])
+  const apiTrends = shallowRef<RevenueTrendPoint[]>([])
   const apiPlatformRevenue = ref<PlatformRevenueData | null>(null)
   const cpmRpmData = ref<CpmRpmResponse | null>(null)
   const brandDealData = ref<BrandDealRevenueResponse | null>(null)
@@ -40,12 +40,12 @@ export const useRevenueStore = defineStore('revenue', () => {
   const brandDealLoading = ref(false)
 
   // AI 인사이트
-  const revenueInsights = ref<RevenueInsight[]>([])
+  const revenueInsights = shallowRef<RevenueInsight[]>([])
   const insightsLoading = ref(false)
   const generateInsightLoading = ref(false)
 
   // 알림 설정
-  const alertConfigs = ref<RevenueAlertConfig[]>([])
+  const alertConfigs = shallowRef<RevenueAlertConfig[]>([])
   const alertConfigLoading = ref(false)
 
   function calculateSummary(data: RevenueData[]): RevenueSummaryLocal {
@@ -236,14 +236,13 @@ export const useRevenueStore = defineStore('revenue', () => {
 
   async function saveAlertConfig(config: Omit<RevenueAlertConfig, 'id'>) {
     const saved = await revenueApi.saveAlertConfig(config)
-    alertConfigs.value.push(saved)
+    alertConfigs.value = [...alertConfigs.value, saved]
     return saved
   }
 
   async function updateAlertConfig(id: number, config: Partial<RevenueAlertConfig>) {
     const updated = await revenueApi.updateAlertConfig(id, config)
-    const idx = alertConfigs.value.findIndex(c => c.id === id)
-    if (idx !== -1) alertConfigs.value[idx] = updated
+    alertConfigs.value = alertConfigs.value.map(c => c.id === id ? updated : c)
     return updated
   }
 

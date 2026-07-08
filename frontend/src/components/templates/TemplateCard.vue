@@ -89,9 +89,9 @@ const handleApply = () => {
 
 <template>
   <div
+    class="relative bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow p-5 border border-gray-200 dark:border-gray-700"
     @mouseenter="showHover = true"
     @mouseleave="showHover = false; showDeleteConfirm = false"
-    class="relative bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow p-5 border border-gray-200 dark:border-gray-700"
   >
     <!-- Hover Overlay -->
     <div
@@ -99,8 +99,8 @@ const handleApply = () => {
       class="absolute inset-0 bg-blue-600 dark:bg-blue-500 bg-opacity-90 rounded-lg flex items-center justify-center z-10 transition-opacity"
     >
       <button
-        @click="handleApply"
         class="px-6 py-3 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        @click="handleApply"
       >
         <CheckIcon class="w-5 h-5 inline-block mr-2" />
         적용
@@ -117,8 +117,8 @@ const handleApply = () => {
           </h3>
         </div>
         <button
-          @click="handleToggleFavorite"
           class="ml-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+          @click="handleToggleFavorite"
         >
           <StarIconSolid
             v-if="template.isFavorite"
@@ -183,21 +183,20 @@ const handleApply = () => {
         <!-- Actions -->
         <div class="flex items-center gap-1">
           <button
-            @click="handleDuplicate"
             class="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             title="복사"
+            @click="handleDuplicate"
           >
             <DocumentDuplicateIcon class="w-4 h-4" />
           </button>
           <button
-            @click="handleEdit"
             class="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             title="수정"
+            @click="handleEdit"
           >
             <PencilIcon class="w-4 h-4" />
           </button>
           <button
-            @click="handleDelete"
             :class="[
               'p-1.5 rounded transition-colors',
               showDeleteConfirm
@@ -205,6 +204,7 @@ const handleApply = () => {
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700',
             ]"
             :title="showDeleteConfirm ? '다시 클릭하여 확인' : '삭제'"
+            @click="handleDelete"
           >
             <TrashIcon class="w-4 h-4" />
           </button>

@@ -9,6 +9,7 @@ import com.ongo.common.exception.UnauthorizedException
 import com.ongo.domain.auth.AuthTokenPort
 import com.ongo.domain.auth.OAuth2Port
 import com.ongo.domain.auth.RefreshTokenPort
+import com.ongo.domain.auth.TokenBlacklistPort
 import com.ongo.domain.credit.AiCredit
 import com.ongo.domain.credit.CreditRepository
 import com.ongo.domain.settings.UserSettings
@@ -36,6 +37,7 @@ class AuthUseCase(
     private val authTokenPort: AuthTokenPort,
     private val oAuth2Port: OAuth2Port,
     private val refreshTokenPort: RefreshTokenPort,
+    private val tokenBlacklistPort: TokenBlacklistPort,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -51,7 +53,6 @@ class AuthUseCase(
      */
     @Transactional
     fun socialLogin(providerName: String, code: String, redirectUri: String): AuthResult {
-
         val provider = oAuth2Port.resolveProvider(providerName)
         val oAuth2UserInfo = oAuth2Port.getUserInfo(provider, code, redirectUri)
 
@@ -135,10 +136,16 @@ class AuthUseCase(
 
     /**
      * 로그아웃을 처리합니다.
-     * 해당 사용자의 모든 리프레시 토큰을 무효화합니다.
+     * 해당 사용자의 Access Token을 블랙리스트에 추가하고 모든 리프레시 토큰을 무효화합니다.
      */
     @Transactional
-    fun logout(userId: Long) {
+    fun logout(userId: Long, accessToken: String? = null) {
+        accessToken?.let { token ->
+            val jti = authTokenPort.getTokenJti(token)
+                ?: token.hashCode().toString()
+            val ttl = authTokenPort.getTokenRemainingExpiryMillis(token)
+            tokenBlacklistPort.blacklist(jti, ttl)
+        }
         refreshTokenPort.deleteByUserId(userId)
         log.info("로그아웃: userId={}, refresh tokens revoked", userId)
     }

@@ -1,5 +1,6 @@
 package com.ongo.api.copyrightcheck
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.copyrightcheck.CopyrightCheckUseCase
 import com.ongo.application.copyrightcheck.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "저작권 검사", description = "영상 저작권 검사 실행 및 결과 조회")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/copyright-check")
 class CopyrightCheckController(

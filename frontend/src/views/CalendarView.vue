@@ -175,9 +175,9 @@
                 : 'border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300'"
             >
               <input
+                v-model="calendarForm.platforms"
                 type="checkbox"
                 :value="p.value"
-                v-model="calendarForm.platforms"
                 class="hidden"
               />
               {{ p.label }}

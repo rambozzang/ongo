@@ -1,5 +1,6 @@
 package com.ongo.api.subtitleeditor
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.subtitleeditor.SubtitleEditorUseCase
 import com.ongo.application.subtitleeditor.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "자막 편집기", description = "자막 트랙 생성, 수정, 삭제 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/subtitle-editor")
 class SubtitleEditorController(

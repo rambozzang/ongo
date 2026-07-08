@@ -176,10 +176,11 @@ class InstagramClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("Instagram OAuth 인가 코드 교환")
 
-        val response = instagramOAuthApi.exchangeCodeForToken(
+        // Step 1: Short-Lived Token 획득
+        val shortLivedResponse = instagramOAuthApi.exchangeCodeForToken(
             mapOf(
                 "client_id" to instagramConfig.getAppId(),
                 "client_secret" to instagramConfig.getAppSecret(),
@@ -189,10 +190,19 @@ class InstagramClient(
             ),
         )
 
+        // Step 2: Short-Lived → Long-Lived Token 교환 (60일 유효)
+        val longLivedResponse = instagramOAuthApi.exchangeLongLivedToken(
+            grantType = "ig_exchange_token",
+            clientSecret = instagramConfig.getAppSecret(),
+            accessToken = shortLivedResponse.accessToken,
+        )
+
+        log.info("Instagram Long-Lived Token 교환 완료: expiresIn={}", longLivedResponse.expiresIn)
+
         return PlatformTokenResult(
-            accessToken = response.accessToken,
+            accessToken = longLivedResponse.accessToken,
             refreshToken = null, // Instagram uses same token as refresh mechanism
-            expiresIn = response.expiresIn ?: 3600, // Short-lived token, 1 hour default
+            expiresIn = longLivedResponse.expiresIn ?: 5184000, // 60 days default
         )
     }
 
@@ -217,6 +227,17 @@ class InstagramClient(
         // Instagram Graph API does not support Reels deletion via API.
         log.warn("Instagram API는 Reels 삭제를 지원하지 않습니다")
         return false
+    }
+
+    override fun revokeToken(accessToken: String): Boolean {
+        log.info("Instagram OAuth 권한 폐기")
+        return try {
+            instagramApi.revokePermissions(accessToken)
+            true
+        } catch (e: Exception) {
+            log.warn("Instagram 권한 폐기 실패: {}", e.message)
+            false
+        }
     }
 
     override fun listVideos(accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedResult {
@@ -263,6 +284,7 @@ class InstagramClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("Instagram 댓글 조회: mediaId={}", platformVideoId)
 

@@ -69,7 +69,7 @@ if [ "$SKIP_GIT" = false ]; then
     step "최신 소스코드 가져오기 (git pull)..."
     git fetch --all
     BEFORE_HASH=$(git rev-parse HEAD)
-    git pull origin main 2>/dev/null || git pull origin master
+    git pull origin main 2>/dev/null || { error "Failed to pull from main branch"; exit 1; }
     AFTER_HASH=$(git rev-parse HEAD)
 
     if [ "$BEFORE_HASH" = "$AFTER_HASH" ] && [ "$DEPLOY_TARGET" = "all" ]; then
@@ -101,7 +101,10 @@ deploy_backend() {
 
     # JAR 파일 복사
     mkdir -p "$JAR_DIR"
-    JAR_FILE=$(ls -t onGo-api/build/libs/ongo-api-*.jar 2>/dev/null | head -1)
+    JAR_FILE=$(ls -t onGo-api/build/libs/ongo-api-*-boot.jar 2>/dev/null | head -1)
+    if [ -z "$JAR_FILE" ]; then
+        JAR_FILE=$(ls -t onGo-api/build/libs/ongo-api-*.jar 2>/dev/null | grep -v plain | head -1)
+    fi
     if [ -z "$JAR_FILE" ]; then
         error "JAR 파일을 찾을 수 없습니다. 빌드 실패!"
         exit 1

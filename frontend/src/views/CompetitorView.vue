@@ -87,9 +87,9 @@ function formatNumber(num: number): string {
       <PageHeader :title="$t('competitor.title')" :description="$t('competitor.description')">
         <template #actions>
           <button
-            @click="handleRefresh"
             :disabled="isRefreshing"
             class="btn-secondary inline-flex items-center gap-2"
+            @click="handleRefresh"
           >
             <ArrowPathIcon
               :class="['w-5 h-5', isRefreshing && 'animate-spin']"
@@ -97,8 +97,8 @@ function formatNumber(num: number): string {
             <span>{{ $t('competitor.refresh') }}</span>
           </button>
           <button
-            @click="isAddModalOpen = true"
             class="btn-primary inline-flex items-center gap-2"
+            @click="isAddModalOpen = true"
           >
             <PlusIcon class="w-5 h-5" />
             <span>{{ $t('competitor.addChannel') }}</span>
@@ -176,8 +176,8 @@ function formatNumber(num: number): string {
           >
             <p class="mb-4">{{ $t('competitor.emptyList') }}</p>
             <button
-              @click="isAddModalOpen = true"
               class="btn-primary inline-flex items-center gap-2"
+              @click="isAddModalOpen = true"
             >
               <PlusIcon class="w-5 h-5" />
               <span>{{ $t('competitor.addChannelAction') }}</span>
@@ -206,8 +206,8 @@ function formatNumber(num: number): string {
               {{ $t('competitor.selectChannel') }}
             </p>
             <button
-              @click="activeTab = 'list'"
               class="btn-primary"
+              @click="activeTab = 'list'"
             >
               {{ $t('competitor.goToList') }}
             </button>
@@ -269,9 +269,9 @@ function formatNumber(num: number): string {
               {{ $t('competitor.aiInsightTitle') }}
             </h2>
             <button
-              @click="competitorStore.fetchInsight()"
               :disabled="competitorStore.insightLoading"
               class="btn-primary text-sm"
+              @click="competitorStore.fetchInsight()"
             >
               {{ competitorStore.insightLoading ? $t('competitor.aiAnalyzing') : $t('competitor.aiAnalyzeButton') }}
             </button>

@@ -73,24 +73,24 @@ function parseMarkdown(text: string): string {
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <button
-          @click="isPreview = false"
           :class="[
             'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
             !isPreview
               ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           ]"
+          @click="isPreview = false"
         >
           편집
         </button>
         <button
-          @click="isPreview = true"
           :class="[
             'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
             isPreview
               ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           ]"
+          @click="isPreview = true"
         >
           미리보기
         </button>

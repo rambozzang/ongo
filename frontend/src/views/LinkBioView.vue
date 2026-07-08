@@ -16,17 +16,17 @@
         <div class="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-700">
           <span class="text-sm text-gray-600 dark:text-gray-400">{{ publishUrl }}</span>
           <button
-            @click="copyLink"
             class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+            @click="copyLink"
           >
             <ClipboardDocumentIcon class="h-5 w-5" />
           </button>
         </div>
         <!-- Save Button -->
         <button
-          @click="handleSave"
           :disabled="!isDirty"
           class="btn-primary inline-flex items-center gap-2"
+          @click="handleSave"
         >
           <CheckIcon class="h-5 w-5" />
           {{ $t('linkBioView.save') }}
@@ -62,24 +62,24 @@
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700 desktop:hidden">
       <div class="flex gap-4">
         <button
-          @click="activeTab = 'editor'"
           :class="[
             'border-b-2 py-3 text-sm font-medium transition-colors',
             activeTab === 'editor'
               ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
           ]"
+          @click="activeTab = 'editor'"
         >
           {{ $t('linkBioView.tabEditor') }}
         </button>
         <button
-          @click="activeTab = 'preview'"
           :class="[
             'border-b-2 py-3 text-sm font-medium transition-colors',
             activeTab === 'preview'
               ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
           ]"
+          @click="activeTab = 'preview'"
         >
           {{ $t('linkBioView.tabPreview') }}
         </button>

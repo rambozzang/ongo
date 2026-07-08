@@ -65,4 +65,13 @@ interface NaverOAuthApi {
     fun refreshToken(
         @RequestBody body: Map<String, String>,
     ): NaverClipTokenResponse
+
+    @GetExchange("/oauth2.0/token")
+    fun revokeToken(
+        @RequestParam("grant_type") grantType: String,
+        @RequestParam("client_id") clientId: String,
+        @RequestParam("client_secret") clientSecret: String,
+        @RequestParam("access_token") accessToken: String,
+        @RequestParam("service_provider") serviceProvider: String = "NAVER",
+    )
 }

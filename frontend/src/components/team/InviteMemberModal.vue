@@ -110,9 +110,9 @@ const handleClose = () => {
               팀 멤버 초대
             </h3>
             <button
-              @click="handleClose"
               aria-label="모달 닫기"
               class="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+              @click="handleClose"
             >
               <XMarkIcon class="h-5 w-5" />
             </button>
@@ -130,10 +130,10 @@ const handleClose = () => {
               <input
                 id="email"
                 v-model="emailInput"
-                @input="handleEmailInput"
                 type="text"
                 placeholder="example@email.com (여러 개는 쉼표로 구분)"
                 class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+                @input="handleEmailInput"
               />
               <p v-if="emailError" class="mt-1 text-xs text-red-600 dark:text-red-400">
                 {{ emailError }}
@@ -201,15 +201,15 @@ const handleClose = () => {
 
           <div class="mt-6 flex justify-end space-x-3">
             <button
-              @click="handleClose"
               class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              @click="handleClose"
             >
               취소
             </button>
             <button
-              @click="handleInvite"
               :disabled="!isValid"
               class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:disabled:bg-gray-600"
+              @click="handleInvite"
             >
               <PaperAirplaneIcon class="mr-2 h-4 w-4" />
               초대 보내기

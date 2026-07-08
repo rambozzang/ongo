@@ -53,6 +53,7 @@ class MinioStorageClient(
     }
 
     override fun generatePresignedUploadUrl(key: String, contentType: String, expirationMinutes: Int): String {
+        validateStorageKey(key)
         log.debug("MinIO presigned URL 생성: key={}, expiry={}분", key, expirationMinutes)
 
         ensureBucketExists()
@@ -78,6 +79,7 @@ class MinioStorageClient(
     }
 
     override fun generatePresignedDownloadUrl(key: String, expirationMinutes: Int): String {
+        validateStorageKey(key)
         log.debug("MinIO presigned GET URL 생성: key={}, expiry={}분", key, expirationMinutes)
 
         return minioClient.getPresignedObjectUrl(
@@ -131,6 +133,12 @@ class MinioStorageClient(
                     .build(),
             )
             log.info("MinIO 버킷 생성 완료: {}", storageProperties.bucket)
+        }
+    }
+
+    private fun validateStorageKey(key: String) {
+        if (key.contains("..") || key.startsWith("/") || !key.matches(Regex("^[a-zA-Z0-9\\-_./]+$"))) {
+            throw IllegalArgumentException("Invalid storage key")
         }
     }
 }

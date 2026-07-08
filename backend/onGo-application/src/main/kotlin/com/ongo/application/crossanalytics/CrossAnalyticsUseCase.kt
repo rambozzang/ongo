@@ -1,5 +1,6 @@
 package com.ongo.application.crossanalytics
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.crossanalytics.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -15,6 +16,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
+@Profile("wip")
 @Service
 class CrossAnalyticsUseCase(
     private val crossAnalyticsRepository: CrossAnalyticsRepository,

@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="credit-modal-title">
-      <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="close" aria-hidden="true" />
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" @click="close" />
       <div class="relative w-full max-w-2xl rounded-2xl bg-white/95 dark:bg-gray-800/95 p-8 shadow-2xl border border-gray-200 dark:border-gray-700">
         <!-- Header -->
         <div class="mb-6 flex items-center justify-between">
@@ -9,7 +9,7 @@
             <SparklesIcon class="mr-2 inline h-7 w-7 text-primary-600" aria-hidden="true" />
             AI 크레딧 충전
           </h3>
-          <button class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" @click="close" aria-label="모달 닫기">
+          <button class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" aria-label="모달 닫기" @click="close">
             <XMarkIcon class="h-6 w-6" />
           </button>
         </div>

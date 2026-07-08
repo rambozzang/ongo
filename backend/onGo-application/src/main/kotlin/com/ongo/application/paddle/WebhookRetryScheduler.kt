@@ -1,32 +1,30 @@
 package com.ongo.application.paddle
 
+import com.ongo.domain.lock.DistributedLockPort
 import com.ongo.domain.webhook.WebhookEventRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
-import javax.sql.DataSource
 
 @Component
 class WebhookRetryScheduler(
     private val webhookEventRepository: WebhookEventRepository,
     private val paddleWebhookService: PaddleWebhookService,
-    private val dataSource: DataSource,
+    private val distributedLockPort: DistributedLockPort,
 ) {
 
     private val log = LoggerFactory.getLogger(WebhookRetryScheduler::class.java)
 
-    companion object {
-        private const val LOCK_WEBHOOK_RETRY = 100010L
-    }
+    private val lockId = javaClass.name.hashCode().toLong()
 
     /**
      * 1분마다 실패한 웹훅 이벤트 재처리
      */
     @Scheduled(fixedDelay = 60_000)
     fun retryFailedWebhooks() {
-        if (!tryAdvisoryLock(LOCK_WEBHOOK_RETRY)) {
-            log.info("다른 인스턴스에서 웹훅 재처리 실행 중, 스킵")
+        if (!distributedLockPort.tryLock(lockId)) {
+            log.debug("다른 인스턴스에서 웹훅 재처리 실행 중, 스킵")
             return
         }
         try {
@@ -78,32 +76,7 @@ class WebhookRetryScheduler(
 
             log.info("웹훅 재처리 완료. 성공: {}, 실패: {}", successCount, failCount)
         } finally {
-            releaseAdvisoryLock(LOCK_WEBHOOK_RETRY)
-        }
-    }
-
-    private fun tryAdvisoryLock(lockId: Long): Boolean = try {
-        dataSource.connection.use { conn ->
-            conn.prepareStatement("SELECT pg_try_advisory_lock(?)").use { stmt ->
-                stmt.setLong(1, lockId)
-                stmt.executeQuery().use { rs -> rs.next() && rs.getBoolean(1) }
-            }
-        }
-    } catch (e: Exception) {
-        log.warn("Advisory lock 획득 실패: lockId=$lockId", e)
-        false
-    }
-
-    private fun releaseAdvisoryLock(lockId: Long) {
-        try {
-            dataSource.connection.use { conn ->
-                conn.prepareStatement("SELECT pg_advisory_unlock(?)").use { stmt ->
-                    stmt.setLong(1, lockId)
-                    stmt.execute()
-                }
-            }
-        } catch (e: Exception) {
-            log.warn("Advisory lock 해제 실패: lockId=$lockId", e)
+            distributedLockPort.releaseLock(lockId)
         }
     }
 }

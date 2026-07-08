@@ -12,7 +12,7 @@ interface PlatformClient {
     fun getVideoAnalytics(platformVideoId: String, accessToken: String, startDate: LocalDate, endDate: LocalDate): PlatformAnalytics
     fun getChannelInfo(accessToken: String): PlatformChannelInfo
     fun refreshToken(refreshToken: String): PlatformTokenResult
-    fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult
+    fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String? = null): PlatformTokenResult
     fun deleteVideo(platformVideoId: String, accessToken: String): Boolean
 
     /** 플랫폼에서 영상 메타데이터를 조회하여 최신 상태를 반환 */
@@ -35,6 +35,9 @@ interface PlatformClient {
         pageToken: String? = null,
     ): PlatformFeedResult = PlatformFeedResult(emptyList())
 
+    /** 플랫폼 OAuth 토큰 폐기. 지원하지 않는 플랫폼은 true 반환 */
+    fun revokeToken(accessToken: String): Boolean = true
+
     // --- Comment API (default implementations for unsupported platforms) ---
 
     fun getCommentCapabilities(): PlatformCommentCapabilities = PlatformCommentCapabilities()
@@ -44,6 +47,7 @@ interface PlatformClient {
         accessToken: String,
         pageToken: String? = null,
         maxResults: Int = 100,
+        publishedAfter: java.time.LocalDateTime? = null,
     ): PlatformCommentListResult = PlatformCommentListResult(emptyList())
 
     fun replyToComment(
@@ -96,6 +100,8 @@ data class PlatformAnalytics(
     val shares: Long,
     val watchTimeSeconds: Long,
     val subscriberGained: Int,
+    val impressions: Long = 0,
+    val avgViewDurationSeconds: Long = 0,
 )
 
 data class PlatformVideoMetadata(

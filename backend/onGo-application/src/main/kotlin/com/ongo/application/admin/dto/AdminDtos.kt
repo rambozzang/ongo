@@ -2,6 +2,7 @@ package com.ongo.application.admin.dto
 
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
+import com.ongo.domain.channel.ChannelStatus
 
 data class AdminUserListItem(
     val id: Long,
@@ -52,7 +53,7 @@ data class AdminChannelItem(
     val channelName: String,
     val channelUrl: String?,
     val subscriberCount: Long,
-    val status: String,
+    val status: ChannelStatus,
     val tokenExpiresAt: String?,
     val connectedAt: String?,
 )

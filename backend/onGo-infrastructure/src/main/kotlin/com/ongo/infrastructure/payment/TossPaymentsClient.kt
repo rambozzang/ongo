@@ -5,7 +5,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.web.client.RestClient
+import java.time.Duration
 import java.util.Base64
 
 @Component
@@ -17,6 +19,12 @@ class TossPaymentsClient(
 
     private val restClient = RestClient.builder()
         .baseUrl(baseUrl)
+        .requestFactory(
+            SimpleClientHttpRequestFactory().apply {
+                setConnectTimeout(Duration.ofMillis(10_000))
+                setReadTimeout(Duration.ofMillis(30_000))
+            }
+        )
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
         .build()
 

@@ -2,12 +2,40 @@ import type { Platform } from '@/types/channel'
 
 const REDIRECT_URI_PATH = '/auth/channel-callback'
 
+function base64URLEncode(buffer: Uint8Array): string {
+  return btoa(String.fromCharCode(...buffer))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '')
+}
+
+function generateCodeVerifier(): string {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return base64URLEncode(array)
+}
+
+async function generateCodeChallenge(verifier: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(verifier)
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  return base64URLEncode(new Uint8Array(digest))
+}
+
+/** PKCE 파라미터를 생성하고 sessionStorage에 verifier를 저장합니다. */
+export async function generatePKCE(storageKey: string): Promise<{ verifier: string; challenge: string }> {
+  const verifier = generateCodeVerifier()
+  const challenge = await generateCodeChallenge(verifier)
+  sessionStorage.setItem(storageKey, verifier)
+  return { verifier, challenge }
+}
+
 /**
  * Build the OAuth authorization URL for a given platform.
  * The `state` parameter encodes `PLATFORM|returnPath` so the callback
  * view can route the user back after the token exchange.
  */
-export function buildOAuthUrl(platform: Platform, returnPath: string): string {
+export function buildOAuthUrl(platform: Platform, returnPath: string, codeChallenge?: string): string {
   const redirectUri = `${window.location.origin}${REDIRECT_URI_PATH}`
   const state = `${platform}|${returnPath}`
 
@@ -48,16 +76,20 @@ export function buildOAuthUrl(platform: Platform, returnPath: string): string {
         state,
       })}`
 
-    case 'TWITTER':
+    case 'TWITTER': {
+      if (!codeChallenge) {
+        throw new Error('Twitter OAuth requires PKCE code_challenge. Use generatePKCE() first.')
+      }
       return `https://twitter.com/i/oauth2/authorize?${new URLSearchParams({
         client_id: import.meta.env.VITE_TWITTER_CLIENT_ID || '',
         redirect_uri: redirectUri,
         response_type: 'code',
         scope: 'tweet.read tweet.write users.read offline.access',
-        code_challenge: 'challenge',
-        code_challenge_method: 'plain',
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256',
         state,
       })}`
+    }
 
     case 'FACEBOOK':
       return `https://www.facebook.com/v21.0/dialog/oauth?${new URLSearchParams({

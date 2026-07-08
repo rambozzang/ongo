@@ -8,8 +8,8 @@
       :class="variant === 'compact' ? 'h-12 w-12' : 'h-16 w-16'"
     >
       <component
-        v-if="icon"
         :is="icon"
+        v-if="icon"
         class="text-gray-400 dark:text-gray-500"
         :class="variant === 'compact' ? 'h-6 w-6' : 'h-8 w-8'"
       />

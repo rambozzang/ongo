@@ -1,5 +1,6 @@
 package com.ongo.api.fancommunity
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.fancommunity.FanCommunityUseCase
 import com.ongo.application.fancommunity.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "팬 커뮤니티", description = "팬 커뮤니티 게시판 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/fan-community")
 class FanCommunityController(

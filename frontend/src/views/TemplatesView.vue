@@ -60,8 +60,8 @@ const handleCloseModal = () => {
     <PageHeader :title="$t('templates.title')" :description="$t('templates.description')">
       <template #actions>
         <button
-          @click="handleCreateNew"
           class="btn-primary inline-flex items-center gap-2"
+          @click="handleCreateNew"
         >
           <PlusIcon class="h-5 w-5" />
           {{ $t('templates.newTemplate') }}
@@ -78,13 +78,13 @@ const handleCloseModal = () => {
         <button
           v-for="cat in categories"
           :key="cat.value"
-          @click="categoryFilter = cat.value"
           :class="[
             'px-3 py-1.5 rounded-lg font-medium text-xs transition-colors',
             categoryFilter === cat.value
               ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600',
           ]"
+          @click="categoryFilter = cat.value"
         >
           {{ cat.label }}
         </button>
@@ -120,13 +120,13 @@ const handleCloseModal = () => {
 
         <!-- Favorites Toggle -->
         <button
-          @click="showFavoritesOnly = !showFavoritesOnly"
           :class="[
             'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
             showFavoritesOnly
               ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'
               : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700',
           ]"
+          @click="showFavoritesOnly = !showFavoritesOnly"
         >
           <StarIcon
             :class="[
@@ -168,8 +168,8 @@ const handleCloseModal = () => {
           {{ $t('templates.emptyDescription') }}
         </p>
         <button
-          @click="handleCreateNew"
           class="btn-primary inline-flex items-center gap-2"
+          @click="handleCreateNew"
         >
           <PlusIcon class="h-5 w-5" />
           {{ $t('templates.createTemplate') }}

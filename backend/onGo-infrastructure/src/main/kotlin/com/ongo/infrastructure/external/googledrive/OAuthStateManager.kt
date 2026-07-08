@@ -64,6 +64,43 @@ class OAuthStateManager(
         return userId
     }
 
+    /** 소셜 로그인용 CSRF state 발급 (userId 바인딩 없음) */
+    fun issueAnonymous(): String {
+        val nonce = UUID.randomUUID().toString()
+        val issuedAt = Instant.now().epochSecond
+        val payload = "anonymous:$nonce:$issuedAt"
+        val sig = hmac(payload)
+        val payloadB64 = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(payload.toByteArray(StandardCharsets.UTF_8))
+        return "$payloadB64.$sig"
+    }
+
+    /** 소셜 로그인용 CSRF state 검증 */
+    fun verifyAnonymous(state: String): Boolean {
+        val parts = state.split(".")
+        if (parts.size != 2) return false
+        val (payloadB64, sigB64) = parts
+        val payload = try {
+            String(Base64.getUrlDecoder().decode(payloadB64), StandardCharsets.UTF_8)
+        } catch (_: IllegalArgumentException) {
+            return false
+        }
+        val expectedSig = hmac(payload)
+        if (!MessageDigest.isEqual(
+                expectedSig.toByteArray(StandardCharsets.UTF_8),
+                sigB64.toByteArray(StandardCharsets.UTF_8),
+            )
+        ) {
+            return false
+        }
+        val segments = payload.split(":")
+        if (segments.size != 3) return false
+        val (prefix, _, issuedAtStr) = segments
+        if (prefix != "anonymous") return false
+        val issuedAt = issuedAtStr.toLongOrNull() ?: return false
+        return Instant.now().epochSecond - issuedAt <= ttlSeconds
+    }
+
     private fun hmac(payload: String): String {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(secret.toByteArray(StandardCharsets.UTF_8), "HmacSHA256"))

@@ -106,7 +106,7 @@ export function useErrorHandler() {
           }
           break
 
-        default:
+        default: {
           // Try to extract error message from response
           const responseData = error.response?.data as { error?: string; message?: string }
           result.message =
@@ -119,6 +119,8 @@ export function useErrorHandler() {
           if (!context?.silent) {
             notification.error(result.message)
           }
+          break
+        }
       }
 
       return result

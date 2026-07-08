@@ -26,17 +26,17 @@
       <div v-if="block.type === 'link'" class="space-y-1">
         <input
           v-model="localTitle"
-          @blur="updateBlock"
           type="text"
           placeholder="링크 제목"
           class="w-full border-0 bg-transparent p-0 text-sm font-medium text-gray-900 placeholder-gray-400 focus:ring-0 dark:text-gray-100"
+          @blur="updateBlock"
         />
         <input
           v-model="localUrl"
-          @blur="updateBlock"
           type="url"
           placeholder="https://"
           class="w-full border-0 bg-transparent p-0 text-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-400"
+          @blur="updateBlock"
         />
         <div class="text-xs text-gray-400 dark:text-gray-500">클릭 {{ block.clickCount }}회</div>
       </div>
@@ -44,18 +44,18 @@
       <div v-else-if="block.type === 'header'" class="space-y-1">
         <input
           v-model="localText"
-          @blur="updateBlock"
           type="text"
           placeholder="헤더 텍스트"
           class="w-full border-0 bg-transparent p-0 text-sm font-semibold text-gray-900 placeholder-gray-400 focus:ring-0 dark:text-gray-100"
+          @blur="updateBlock"
         />
       </div>
 
       <div v-else-if="block.type === 'social'" class="space-y-1">
         <select
           v-model="localPlatform"
-          @change="updateBlock"
           class="w-full border-0 bg-transparent p-0 text-sm font-medium text-gray-900 focus:ring-0 dark:text-gray-100"
+          @change="updateBlock"
         >
           <option value="instagram">Instagram</option>
           <option value="twitter">Twitter</option>
@@ -65,37 +65,37 @@
         </select>
         <input
           v-model="localUrl"
-          @blur="updateBlock"
           type="url"
           placeholder="https://"
           class="w-full border-0 bg-transparent p-0 text-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-400"
+          @blur="updateBlock"
         />
       </div>
 
       <div v-else-if="block.type === 'video'" class="space-y-1">
         <input
           v-model="localTitle"
-          @blur="updateBlock"
           type="text"
           placeholder="영상 제목"
           class="w-full border-0 bg-transparent p-0 text-sm font-medium text-gray-900 placeholder-gray-400 focus:ring-0 dark:text-gray-100"
+          @blur="updateBlock"
         />
         <input
           v-model="localVideoUrl"
-          @blur="updateBlock"
           type="url"
           placeholder="영상 URL"
           class="w-full border-0 bg-transparent p-0 text-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-400"
+          @blur="updateBlock"
         />
       </div>
 
       <div v-else-if="block.type === 'text'" class="space-y-1">
         <textarea
           v-model="localContent"
-          @blur="updateBlock"
           placeholder="텍스트 내용"
           rows="2"
           class="w-full resize-none border-0 bg-transparent p-0 text-sm text-gray-700 placeholder-gray-400 focus:ring-0 dark:text-gray-300"
+          @blur="updateBlock"
         />
       </div>
 
@@ -107,15 +107,15 @@
     <!-- Actions -->
     <div class="flex items-center gap-2">
       <button
-        @click="$emit('toggle-visibility')"
         class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+        @click="$emit('toggle-visibility')"
       >
         <EyeIcon v-if="block.isVisible" class="h-5 w-5" />
         <EyeSlashIcon v-else class="h-5 w-5" />
       </button>
       <button
-        @click="handleDelete"
         class="text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+        @click="handleDelete"
       >
         <TrashIcon class="h-5 w-5" />
       </button>

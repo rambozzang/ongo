@@ -226,8 +226,8 @@ onUnmounted(() => {
         </div>
         <div class="flex items-center gap-3">
           <button
-            @click="openCreateModal"
             class="btn-primary inline-flex items-center gap-2"
+            @click="openCreateModal"
           >
             <PlusIcon class="w-5 h-5" />
             {{ $t('automation.newRule') }}
@@ -274,8 +274,8 @@ onUnmounted(() => {
             {{ $t('automation.emptyRulesDesc') }}
           </p>
           <button
-            @click="openCreateModal"
             class="btn-primary inline-flex items-center gap-2"
+            @click="openCreateModal"
           >
             <PlusIcon class="w-5 h-5" />
             {{ $t('automation.createFirstRule') }}

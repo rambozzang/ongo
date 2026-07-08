@@ -6,7 +6,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.web.client.RestClient
+import java.time.Duration
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -23,6 +25,12 @@ class PaddleClient(
     private val restClient: RestClient by lazy {
         RestClient.builder()
             .baseUrl(baseUrl)
+            .requestFactory(
+                SimpleClientHttpRequestFactory().apply {
+                    setConnectTimeout(Duration.ofMillis(10_000))
+                    setReadTimeout(Duration.ofMillis(30_000))
+                }
+            )
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer ${config.apiKey}")
             .build()

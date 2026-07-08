@@ -1,5 +1,6 @@
 package com.ongo.api.contentversioning
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentversioning.ContentVersioningUseCase
 import com.ongo.application.contentversioning.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "콘텐츠 버전 관리", description = "콘텐츠 수정 이력 추적 및 성과 비교")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/content-versioning")
 class ContentVersioningController(

@@ -1,5 +1,6 @@
 package com.ongo.api.creatornetwork
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.creatornetwork.CreatorNetworkUseCase
 import com.ongo.application.creatornetwork.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "크리에이터 네트워크", description = "크리에이터 간 협업 네트워크")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/creator-network")
 class CreatorNetworkController(

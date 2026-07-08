@@ -10,6 +10,7 @@ import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.subscription.SubscriptionRepository
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile
+import java.net.URI
 import java.nio.file.Files
 import java.time.LocalDateTime
 import java.time.YearMonth
@@ -83,7 +85,7 @@ class StreamPublishUseCase(
                 ?: throw IllegalStateException("${platformReq.platform.name} 채널이 연동되어 있지 않습니다.")
 
             val tokenExpiresAt = channel.tokenExpiresAt
-            if (channel.status == "EXPIRED" || channel.status == "DISCONNECTED" ||
+            if (channel.status == ChannelStatus.EXPIRED || channel.status == ChannelStatus.REVOKED ||
                 (tokenExpiresAt != null && tokenExpiresAt.isBefore(LocalDateTime.now()))
             ) {
                 throw IllegalStateException(
@@ -314,6 +316,135 @@ class StreamPublishUseCase(
         }
 
         videoRepository.update(video.copy(status = overallStatus))
+    }
+
+    /**
+     * 예약된 영상을 플랫폼에 업로드합니다.
+     * ScheduleUseCase.createSchedule()으로 생성된 SCHEDULED 상태의 예약을 처리합니다.
+     */
+    @Transactional
+    fun executeScheduledUpload(schedule: Schedule) {
+        val video = videoRepository.findById(schedule.videoId) ?: run {
+            log.error("예약 업로드 실패 — 영상 없음 [scheduleId={}, videoId={}]", schedule.id, schedule.videoId)
+            scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
+            return
+        }
+
+        val fileUrl = video.fileUrl
+        if (fileUrl.isNullOrBlank()) {
+            log.error("예약 업로드 실패 — fileUrl 없음 [scheduleId={}, videoId={}]", schedule.id, schedule.videoId)
+            scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
+            return
+        }
+
+        val fileSize = video.fileSizeBytes ?: run {
+            log.error("예약 업로드 실패 — fileSize 없음 [scheduleId={}, videoId={}]", schedule.id, schedule.videoId)
+            scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
+            return
+        }
+
+        val platforms = schedule.platforms.keys.mapNotNull { platformStr ->
+            try { Platform.valueOf(platformStr) } catch (_: Exception) { null }
+        }
+
+        if (platforms.isEmpty()) {
+            log.error("예약 업로드 실패 — 유효한 플랫폼 없음 [scheduleId={}]", schedule.id)
+            scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
+            return
+        }
+
+        val platformContexts = platforms.mapNotNull { platform ->
+            val channel = channelRepository.findByUserIdAndPlatform(schedule.userId, platform)
+            if (channel == null) {
+                log.warn("예약 업로드 — 채널 없음 [platform={}, scheduleId={}]", platform, schedule.id)
+                return@mapNotNull null
+            }
+            if (channel.status != ChannelStatus.ACTIVE) {
+                log.warn("예약 업로드 — 채널 비활성 [platform={}, scheduleId={}]", platform, schedule.id)
+                return@mapNotNull null
+            }
+
+            val upload = videoUploadRepository.save(
+                VideoUpload(
+                    videoId = schedule.videoId,
+                    platform = platform,
+                    status = UploadStatus.UPLOADING,
+                )
+            )
+            val uploadId = upload.id!!
+
+            val meta = videoPlatformMetaRepository.save(
+                VideoPlatformMeta(
+                    videoUploadId = uploadId,
+                    title = video.title,
+                    description = video.description,
+                    tags = video.tags,
+                    visibility = Visibility.PUBLIC,
+                    customThumbnailUrl = video.thumbnailUrls.firstOrNull(),
+                )
+            )
+
+            StreamPlatformContext(
+                platform = platform,
+                videoUploadId = uploadId,
+                meta = meta,
+                accessToken = channel.accessToken,
+                platformChannelId = channel.platformChannelId,
+                scheduledAt = null,
+            )
+        }
+
+        if (platformContexts.isEmpty()) {
+            log.error("예약 업로드 실패 — 유효한 플랫폼 컨텍스트 없음 [scheduleId={}]", schedule.id)
+            scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
+            return
+        }
+
+        scheduleRepository.update(schedule.copy(status = ScheduleStatus.PROCESSING))
+
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                Thread.ofVirtual().name("scheduled-publish-${schedule.id}").start {
+                    ExecutorConfig.uploadSemaphore.acquire()
+                    try {
+                        downloadAndStreamUpload(schedule.videoId, fileUrl, fileSize, platformContexts)
+                    } finally {
+                        ExecutorConfig.uploadSemaphore.release()
+                    }
+                }
+            }
+        })
+    }
+
+    private fun downloadAndStreamUpload(
+        videoId: Long,
+        fileUrl: String,
+        fileSize: Long,
+        platformContexts: List<StreamPlatformContext>,
+    ) {
+        val tempFile = Files.createTempFile("ongo-scheduled-", "-upload").toFile()
+        try {
+            val url = URI.create(fileUrl).toURL()
+            url.openStream().use { input ->
+                tempFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            log.info("예약 업로드 파일 다운로드 완료 [videoId={}, size={}]", videoId, fileSize)
+            runStreamingUpload(videoId, tempFile, fileSize, platformContexts)
+        } catch (e: Exception) {
+            log.error("예약 업로드 실패 [videoId={}]: {}", videoId, e.message, e)
+            platformContexts.forEach { ctx ->
+                updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, "예약 업로드 실패: ${e.message}")
+            }
+            updateOverallVideoStatus(videoId)
+        } finally {
+            try {
+                Files.deleteIfExists(tempFile.toPath())
+            } catch (e: Exception) {
+                log.warn("임시 파일 삭제 실패: {}", tempFile.absolutePath, e)
+            }
+        }
     }
 }
 

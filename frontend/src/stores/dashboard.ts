@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import type { DashboardKpi, TrendDataPoint, PlatformComparison, TopVideo } from '@/types/analytics'
 import type { Video } from '@/types/video'
 import type { Schedule } from '@/types/schedule'
@@ -9,11 +9,11 @@ import { scheduleApi } from '@/api/schedule'
 
 export const useDashboardStore = defineStore('dashboard', () => {
   const kpi = ref<DashboardKpi | null>(null)
-  const trendData = ref<TrendDataPoint[]>([])
-  const platformComparison = ref<PlatformComparison[]>([])
-  const recentVideos = ref<Video[]>([])
-  const upcomingSchedules = ref<Schedule[]>([])
-  const topVideos = ref<TopVideo[]>([])
+  const trendData = shallowRef<TrendDataPoint[]>([])
+  const platformComparison = shallowRef<PlatformComparison[]>([])
+  const recentVideos = shallowRef<Video[]>([])
+  const upcomingSchedules = shallowRef<Schedule[]>([])
+  const topVideos = shallowRef<TopVideo[]>([])
   const isLoadingDashboard = ref(false)
   const period = ref<'7d' | '30d'>('7d')
 

@@ -1,5 +1,6 @@
 package com.ongo.api.hashtaganalytics
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.hashtaganalytics.HashtagAnalyticsUseCase
 import com.ongo.application.hashtaganalytics.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "해시태그 분석기", description = "AI 해시태그 성과 분석 및 추천")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/hashtag-analytics")
 class HashtagAnalyticsController(

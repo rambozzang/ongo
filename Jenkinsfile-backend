@@ -18,7 +18,7 @@ pipeline {
             ],
             regexpFilterText: '$changed_files',
             regexpFilterExpression: '.*(backend)/.*',  // backend/ 변경 시 트리거
-            token: 'ongo-backend'
+            token: '${JENKINS_WEBHOOK_TOKEN_BACKEND}'
         )
     }
 

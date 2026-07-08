@@ -16,6 +16,9 @@ interface AnalyticsRepository {
     fun findDailyAnalyticsByChannelIds(userId: Long, platform: com.ongo.common.enums.Platform?): List<AnalyticsDaily>
     fun findByVideoUploadIds(uploadIds: List<Long>): List<AnalyticsDaily>
     fun findAllByUserId(userId: Long): List<AnalyticsDaily>
+
+    /** 해당 upload의 가장 최근 동기화된 날짜를 반환 (없으면 null) */
+    fun findLatestDateByVideoUploadId(videoUploadId: Long): LocalDate?
     fun upsertChannelInsights(insights: ChannelInsightsDaily)
     fun findChannelInsights(userId: Long, platform: com.ongo.common.enums.Platform?, startDate: LocalDate, endDate: LocalDate): List<ChannelInsightsDaily>
     fun findCrossPlatformMetrics(userId: Long, days: Int): List<CrossPlatformRaw>

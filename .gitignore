@@ -29,6 +29,9 @@ backend/onGo-api/logs/
 .env
 .env.local
 .envrc
+deploy/**/.env*
+!deploy/**/.env.example
+!deploy/**/.env.production.example
 
 # Test results
 frontend/test-results/

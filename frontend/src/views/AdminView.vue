@@ -119,7 +119,7 @@
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('admin.userDetail') }}</h2>
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ detailUser?.name }} ({{ detailUser?.email }})</p>
               </div>
-              <button @click="closeDetailDrawer" class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300">
+              <button class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300" @click="closeDetailDrawer">
                 <XMarkIcon class="h-5 w-5" />
               </button>
             </div>
@@ -173,8 +173,8 @@
                 <button
                   v-if="detailData && detailData.role !== 'ADMIN'"
                   class="btn-secondary"
-                  @click="toggleRole"
                   :disabled="actionLoading"
+                  @click="toggleRole"
                 >
                   {{ detailData.role === 'USER' ? t('admin.promoteAdmin') : t('admin.demoteUser') }}
                 </button>
@@ -184,8 +184,8 @@
                   :class="subscriptionDetail?.status === 'SUSPENDED'
                     ? 'border border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-400 dark:hover:bg-green-900/30'
                     : 'border border-red-300 text-red-700 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/30'"
-                  @click="toggleActivation"
                   :disabled="actionLoading"
+                  @click="toggleActivation"
                 >
                   {{ subscriptionDetail?.status === 'SUSPENDED' ? t('admin.activate') : t('admin.deactivate') }}
                 </button>

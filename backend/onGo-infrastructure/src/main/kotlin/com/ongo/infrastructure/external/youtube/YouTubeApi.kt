@@ -122,4 +122,9 @@ interface GoogleOAuthApi {
     fun refreshToken(
         @RequestBody body: Map<String, String>,
     ): YouTubeTokenResponse
+
+    @PostExchange("/revoke")
+    fun revokeToken(
+        @RequestParam("token") token: String,
+    )
 }

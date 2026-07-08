@@ -151,14 +151,14 @@ function getFontStyle(family: string, weight: string) {
             />
             <div class="flex gap-2">
               <button
-                @click="confirmEdit(font.id)"
                 class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+                @click="confirmEdit(font.id)"
               >
                 저장
               </button>
               <button
-                @click="cancelEdit"
                 class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm font-medium rounded-md transition-colors"
+                @click="cancelEdit"
               >
                 취소
               </button>
@@ -190,16 +190,16 @@ function getFontStyle(family: string, weight: string) {
             </div>
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
-                @click="startEdit(font)"
                 class="p-1.5 bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
                 title="편집"
+                @click="startEdit(font)"
               >
                 <PencilIcon class="w-4 h-4 text-gray-600 dark:text-gray-300" />
               </button>
               <button
-                @click="handleRemove(font.id)"
                 class="p-1.5 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
                 title="삭제"
+                @click="handleRemove(font.id)"
               >
                 <TrashIcon class="w-4 h-4 text-gray-600 dark:text-gray-300" />
               </button>
@@ -264,14 +264,14 @@ function getFontStyle(family: string, weight: string) {
           </div>
           <div class="flex gap-2">
             <button
-              @click="confirmAdd"
               class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+              @click="confirmAdd"
             >
               추가
             </button>
             <button
-              @click="cancelAdd"
               class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm font-medium rounded-md transition-colors"
+              @click="cancelAdd"
             >
               취소
             </button>
@@ -282,8 +282,8 @@ function getFontStyle(family: string, weight: string) {
       <!-- Add Button -->
       <button
         v-if="!isAdding"
-        @click="startAdd"
         class="w-full bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors flex items-center justify-center gap-2"
+        @click="startAdd"
       >
         <PlusIcon class="w-5 h-5 text-gray-400 dark:text-gray-500" />
         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">서체 추가</span>

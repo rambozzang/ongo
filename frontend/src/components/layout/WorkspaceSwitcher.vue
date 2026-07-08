@@ -27,8 +27,8 @@ function getInitial(name: string): string {
 <template>
   <div class="relative px-2 py-2">
     <button
-      @click="isOpen = !isOpen"
       class="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+      @click="isOpen = !isOpen"
     >
       <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30 text-sm font-bold text-primary-700 dark:text-primary-400">
         {{ workspaceStore.activeWorkspace ? getInitial(workspaceStore.activeWorkspace.name) : '?' }}
@@ -54,8 +54,8 @@ function getInitial(name: string): string {
       <button
         v-for="ws in workspaceStore.workspaces"
         :key="ws.id"
-        @click="selectWorkspace(ws.id)"
         class="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+        @click="selectWorkspace(ws.id)"
       >
         <div class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-gray-100 dark:bg-gray-700 text-xs font-bold text-gray-600 dark:text-gray-300">
           {{ getInitial(ws.name) }}
@@ -66,8 +66,8 @@ function getInitial(name: string): string {
       <div class="border-t border-gray-100 dark:border-gray-700 mt-1 pt-1">
         <router-link
           to="/settings?tab=workspaces"
-          @click="isOpen = false"
           class="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+          @click="isOpen = false"
         >
           <PlusIcon class="h-4 w-4" />
           워크스페이스 관리

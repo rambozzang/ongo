@@ -8,7 +8,7 @@ import com.ongo.common.enums.Platform
  * Implemented by infrastructure layer (OAuth2ServiceFactory adapter).
  */
 interface PlatformOAuth2Port {
-    fun exchangeCodeForTokens(platform: Platform, authorizationCode: String, redirectUri: String): PlatformOAuth2TokenResult
+    fun exchangeCodeForTokens(platform: Platform, authorizationCode: String, redirectUri: String, codeVerifier: String? = null): PlatformOAuth2TokenResult
 }
 
 data class PlatformOAuth2TokenResult(

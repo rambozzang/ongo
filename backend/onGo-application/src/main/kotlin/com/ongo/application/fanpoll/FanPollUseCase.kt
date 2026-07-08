@@ -1,11 +1,13 @@
 package com.ongo.application.fanpoll
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.fanpoll.dto.*
 import com.ongo.domain.fanpoll.FanPollRepository
 import com.ongo.domain.fanpoll.PollOptionRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 @Transactional(readOnly = true)
 class FanPollUseCase(

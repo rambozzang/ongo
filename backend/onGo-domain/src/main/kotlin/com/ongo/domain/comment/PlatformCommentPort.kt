@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 
 interface PlatformCommentPort {
     fun getCommentCapabilities(platform: Platform): CommentCapabilities
-    fun fetchComments(platform: Platform, platformVideoId: String, accessToken: String, pageToken: String? = null, maxResults: Int = 100): FetchedCommentList
+    fun fetchComments(platform: Platform, platformVideoId: String, accessToken: String, pageToken: String? = null, maxResults: Int = 100, publishedAfter: LocalDateTime? = null): FetchedCommentList
     fun postReply(platform: Platform, platformCommentId: String, content: String, accessToken: String, platformVideoId: String? = null): PostReplyResult
     fun deleteComment(platform: Platform, platformCommentId: String, accessToken: String): DeleteCommentResult
     fun likeComment(platform: Platform, platformCommentId: String, accessToken: String): Boolean

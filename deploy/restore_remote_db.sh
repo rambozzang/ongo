@@ -10,7 +10,12 @@ TARGET_PORT="54332"
 TARGET_DB="ongo"
 TARGET_USER="ongo"
 # Password for remote DB
-TARGET_PASSWORD="aaaAAA111!!!"
+# Load password from environment variable (required)
+if [ -z "$TARGET_PASSWORD" ]; then
+    echo "[ERROR] TARGET_PASSWORD environment variable is not set."
+    echo "Usage: TARGET_PASSWORD=<password> $0 <backup_file.sql>"
+    exit 1
+fi
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <backup_file.sql>"
@@ -30,6 +35,7 @@ echo "============================================"
 echo "Source File: $BACKUP_FILE"
 echo "Target: $TARGET_HOST:$TARGET_PORT / DB: $TARGET_DB"
 echo "User: $TARGET_USER"
+echo "Password: (loaded from environment variable)"
 echo "--------------------------------------------"
 
 echo "⚠️  WARNING: This will overwrite data in the target database '$TARGET_DB'!"

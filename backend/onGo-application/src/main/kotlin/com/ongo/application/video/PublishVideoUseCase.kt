@@ -5,6 +5,7 @@ import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.util.safeValueOfOrThrow
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.video.*
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -41,7 +42,7 @@ class PublishVideoUseCase(
                 ?: throw NotFoundException("채널", "${config.platform}")
 
             val tokenExpiresAt = channel.tokenExpiresAt
-            if (channel.status == "EXPIRED" || channel.status == "DISCONNECTED" ||
+            if (channel.status == ChannelStatus.EXPIRED || channel.status == ChannelStatus.REVOKED ||
                 (tokenExpiresAt != null && tokenExpiresAt.isBefore(LocalDateTime.now()))) {
                 throw IllegalStateException(
                     "${config.platform.name} 채널의 인증 토큰이 만료되었습니다. 채널 관리에서 재연결 후 다시 시도해주세요."

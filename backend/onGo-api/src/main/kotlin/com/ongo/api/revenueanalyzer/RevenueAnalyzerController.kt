@@ -1,5 +1,6 @@
 package com.ongo.api.revenueanalyzer
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.revenueanalyzer.RevenueAnalyzerUseCase
 import com.ongo.application.revenueanalyzer.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "수익 분석기", description = "수익원별 상세 분석 및 예측")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/revenue-analyzer")
 class RevenueAnalyzerController(

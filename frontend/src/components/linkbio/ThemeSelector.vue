@@ -3,13 +3,13 @@
     <button
       v-for="theme in themes"
       :key="theme.name"
-      @click="$emit('select', theme.name)"
       :class="[
         'flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all',
         selectedTheme === theme.name
           ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
           : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600',
       ]"
+      @click="$emit('select', theme.name)"
     >
       <div
         class="h-16 w-24 rounded-md border border-gray-300 dark:border-gray-600"

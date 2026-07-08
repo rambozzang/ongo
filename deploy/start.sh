@@ -26,27 +26,14 @@ if [ -z "$JWT_SECRET" ]; then
     exit 1
 fi
 
-# AI API 키 예외 처리 (값이 비어있으면 Spring AI 초기화 실패 방지용 더미 값 설정)
-if [ -z "$OPENAI_API_KEY" ]; then
-    export OPENAI_API_KEY="dummy-openai-key"
-fi
-if [ -z "$ANTHROPIC_API_KEY" ]; then
-    export ANTHROPIC_API_KEY="dummy-anthropic-key"
-fi
-
-# OAuth 키 예외 처리 (값이 비어있으면 초기화 실패 방지용 더미 값 설정)
-if [ -z "$GOOGLE_CLIENT_ID" ]; then
-    export GOOGLE_CLIENT_ID="dummy-google-client-id"
-fi
-if [ -z "$GOOGLE_CLIENT_SECRET" ]; then
-    export GOOGLE_CLIENT_SECRET="dummy-google-client-secret"
-fi
-if [ -z "$KAKAO_CLIENT_ID" ]; then
-    export KAKAO_CLIENT_ID="dummy-kakao-client-id"
-fi
-if [ -z "$KAKAO_CLIENT_SECRET" ]; then
-    export KAKAO_CLIENT_SECRET="dummy-kakao-client-secret"
-fi
+# 필수 환경변수 검증
+REQUIRED_VARS="DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET"
+for var in $REQUIRED_VARS; do
+    if [ -z "${!var}" ]; then
+        echo "[ERROR] $var 환경변수가 설정되지 않았습니다. $ENV_FILE 파일을 확인해주세요."
+        exit 1
+    fi
+done
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] $APP_NAME 시작..."
 
@@ -66,6 +53,8 @@ setsid java \
     -Dfile.encoding=UTF-8 \
     -Xms512m -Xmx2g \
     -XX:+UseG1GC \
+    -XX:+CrashOnOutOfMemoryError \
+    -Djava.awt.headless=true \
     -jar "$JAR_PATH" \
     > "$LOG_DIR/backend.log" 2>&1 &
 

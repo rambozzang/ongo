@@ -44,13 +44,13 @@
         <button
           v-for="priority in priorityFilters"
           :key="priority.value"
-          @click="setPriorityFilter(priority.value)"
           :class="[
             'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
             selectedPriority === priority.value
               ? 'bg-primary-600 dark:bg-primary-500 text-white'
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]"
+          @click="setPriorityFilter(priority.value)"
         >
           {{ priority.label }}
         </button>

@@ -3,6 +3,7 @@ package com.ongo.infrastructure.persistence.jooq
 import com.ongo.common.enums.Platform
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.ChannelStatus
 import com.ongo.infrastructure.persistence.jooq.Fields.ACCESS_TOKEN
 import com.ongo.infrastructure.persistence.jooq.Fields.CHANNEL_NAME
 import com.ongo.infrastructure.persistence.jooq.Fields.CHANNEL_URL
@@ -40,7 +41,7 @@ class ChannelJooqRepository(
     override fun findAllActive(): List<Channel> =
         dsl.select()
             .from(CHANNELS)
-            .where(STATUS_TEXT.eq("ACTIVE"))
+            .where(STATUS_TEXT.eq(ChannelStatus.ACTIVE.name))
             .orderBy(CONNECTED_AT.desc())
             .fetch()
             .map { it.toChannel() }
@@ -73,7 +74,7 @@ class ChannelJooqRepository(
             .set(ACCESS_TOKEN, channel.accessToken)
             .set(REFRESH_TOKEN, channel.refreshToken)
             .set(TOKEN_EXPIRES_AT, channel.tokenExpiresAt)
-            .set(STATUS, channel.status)
+            .set(STATUS, channel.status.name)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -90,7 +91,7 @@ class ChannelJooqRepository(
             .set(ACCESS_TOKEN, channel.accessToken)
             .set(REFRESH_TOKEN, channel.refreshToken)
             .set(TOKEN_EXPIRES_AT, channel.tokenExpiresAt)
-            .set(STATUS, channel.status)
+            .set(STATUS, channel.status.name)
             .set(UPDATED_AT, channel.updatedAt)
             .where(ID.eq(channel.id))
             .execute()
@@ -124,7 +125,12 @@ class ChannelJooqRepository(
             accessToken = get(ACCESS_TOKEN),
             refreshToken = get(REFRESH_TOKEN),
             tokenExpiresAt = localDateTime(TOKEN_EXPIRES_AT),
-            status = get(STATUS),
+            status = get(STATUS)?.let {
+                when (it) {
+                    "DISCONNECTED" -> ChannelStatus.REVOKED
+                    else -> try { ChannelStatus.valueOf(it) } catch (_: Exception) { ChannelStatus.ACTIVE }
+                }
+            } ?: ChannelStatus.ACTIVE,
             connectedAt = localDateTime(CONNECTED_AT),
             updatedAt = localDateTime(UPDATED_AT),
         )

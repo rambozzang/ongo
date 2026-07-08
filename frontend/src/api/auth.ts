@@ -3,6 +3,12 @@ import type { ResData } from '@/types/api'
 import type { LoginRequest, LoginResponse, AuthTokens, User, CreatorCategory } from '@/types/user'
 
 export const authApi = {
+  getOAuthState(provider: 'google' | 'kakao') {
+    return apiClient
+      .get<ResData<{ state: string }>>(`/auth/${provider}/state`)
+      .then(unwrapResponse)
+  },
+
   login(provider: 'google' | 'kakao', request: LoginRequest) {
     return apiClient
       .post<ResData<LoginResponse>>(`/auth/login/${provider}`, request)

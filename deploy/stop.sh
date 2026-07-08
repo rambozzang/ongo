@@ -27,5 +27,21 @@ if [ -f "$PID_FILE" ]; then
         rm -f "$PID_FILE"
     fi
 else
-    echo "$APP_NAME이 실행 중이 아닙니다."
+    # PID 파일이 없는 경우, 프로세스 이름으로 확인
+    PID=$(pgrep -f "ongo-api.jar" | head -1)
+    if [ -n "$PID" ]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $APP_NAME (PID: $PID) 중지 중 (PID 파일 없음)..."
+        kill $PID
+        for i in {1..30}; do
+            if ! ps -p $PID > /dev/null 2>&1; then
+                echo "$APP_NAME 중지 완료."
+                exit 0
+            fi
+            sleep 1
+        done
+        echo "강제 종료(SIGKILL)..."
+        kill -9 $PID
+    else
+        echo "$APP_NAME이 실행 중이 아닙니다."
+    fi
 fi

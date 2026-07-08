@@ -1,5 +1,6 @@
 package com.ongo.api.contentrewriter
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentrewriter.ContentRewriterUseCase
 import com.ongo.application.contentrewriter.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "콘텐츠 리라이터", description = "콘텐츠를 다양한 포맷으로 리라이트")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/content-rewriter")
 class ContentRewriterController(

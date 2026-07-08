@@ -1,434 +1,53 @@
 <template>
   <div>
-  <!-- Mobile Layout (below 768px) -->
-  <div v-if="!isTablet" class="space-y-5 px-4 pb-6">
-    <!-- Compact Greeting Header -->
-    <div class="flex items-center justify-between pt-2">
-      <div class="flex items-center gap-2">
-        <h1 class="text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
-          {{ greeting }}, {{ userName }}님 👋
-        </h1>
-      </div>
-      <div class="text-sm text-gray-500 dark:text-gray-400">
-        {{ currentDate }}
-      </div>
-    </div>
+    <!-- Mobile Layout (below 768px) -->
+    <MobileDashboard
+      class="md:hidden"
+      :loading="loading"
+      :kpi="kpi"
+      :greeting="greeting"
+      :user-name="userName"
+      :current-date="currentDate"
+      :credit-percentage="creditPercentage"
+      :recent-videos="recentVideos"
+      :trend-data="trendData"
+      :period="period"
+      :today-and-tomorrow-schedules="todayAndTomorrowSchedules"
+      :grouped-schedules="groupedSchedules"
+      @set-period="dashboardStore.setPeriod"
+    />
 
-    <PageGuide :title="$t('dashboard.pageGuideTitle')" :items="($tm('dashboard.pageGuideMobile') as string[])" />
+    <!-- Desktop/Tablet Layout (768px+) -->
+    <DesktopDashboard
+      class="hidden md:block"
+      :loading="loading"
+      :kpi="kpi"
+      :greeting="greeting"
+      :user-name="userName"
+      :today-schedule-count="todayScheduleCount"
+      :credit-balance="creditBalance"
+      :credit-percentage="creditPercentage"
+      :trend-data="trendData"
+      :period="period"
+      :platform-comparison="platformComparison"
+      :recent-videos="recentVideos"
+      :upcoming-schedules="upcomingSchedules"
+      :top-videos="topVideos"
+      :visible-widgets="visibleWidgets"
+      :show-widget-customizer="showWidgetCustomizer"
+      @set-period="dashboardStore.setPeriod"
+      @open-customizer="showWidgetCustomizer = true"
+      @recycle="handleRecycleVideo"
+      @update:show-widget-customizer="showWidgetCustomizer = $event"
+    />
 
-    <DashboardSkeleton v-if="loading" />
-
-    <template v-else>
-      <!-- Onboarding Banner -->
-      <OnboardingBanner />
-
-      <!-- Start Guide (if shown) -->
-      <StartGuide />
-
-      <!-- KPI Summary - 2x2 Grid -->
-      <div class="grid grid-cols-2 gap-2">
-        <div
-          class="card cursor-pointer p-3 transition-all duration-200 hover:-translate-y-0.5"
-          role="button"
-          tabindex="0"
-          @click="$router.push('/analytics')"
-          @keydown.enter="$router.push('/analytics')"
-        >
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalViews') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ formatCompact(kpi?.totalViews ?? 0) }}
-          </p>
-          <div v-if="kpi?.viewsChangePercent !== undefined" class="mt-1 flex items-center gap-1 text-xs">
-            <span :class="changeColor(kpi.viewsChangePercent)">
-              {{ changeIcon(kpi.viewsChangePercent) }}{{ Math.abs(kpi.viewsChangePercent) }}%
-            </span>
-          </div>
-        </div>
-
-        <div
-          class="card cursor-pointer p-3 transition-all duration-200 hover:-translate-y-0.5"
-          role="button"
-          tabindex="0"
-          @click="$router.push('/channels')"
-          @keydown.enter="$router.push('/channels')"
-        >
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalSubscribers') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ formatCompact(kpi?.totalSubscribers ?? 0) }}
-          </p>
-          <div v-if="kpi?.subscribersChange !== undefined" class="mt-1 flex items-center gap-1 text-xs">
-            <span :class="changeColor(kpi.subscribersChange)">
-              {{ changeIcon(kpi.subscribersChange) }}{{ Math.abs(kpi.subscribersChange) }}
-            </span>
-          </div>
-        </div>
-
-        <div
-          class="card cursor-pointer p-3 transition-all duration-200 hover:-translate-y-0.5"
-          role="button"
-          tabindex="0"
-          @click="$router.push('/analytics')"
-          @keydown.enter="$router.push('/analytics')"
-        >
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalLikes') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ formatCompact(kpi?.totalLikes ?? 0) }}
-          </p>
-          <div v-if="kpi?.likesChangePercent !== undefined" class="mt-1 flex items-center gap-1 text-xs">
-            <span :class="changeColor(kpi.likesChangePercent)">
-              {{ changeIcon(kpi.likesChangePercent) }}{{ Math.abs(kpi.likesChangePercent) }}%
-            </span>
-          </div>
-        </div>
-
-        <div
-          class="card cursor-pointer p-3 transition-all duration-200 hover:-translate-y-0.5"
-          role="button"
-          tabindex="0"
-          @click="$router.push('/subscription')"
-          @keydown.enter="$router.push('/subscription')"
-        >
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.aiCredits') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {{ (kpi?.creditBalance ?? 0).toLocaleString() }}
-          </p>
-          <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-            <div
-              class="h-full rounded-full transition-all"
-              :class="creditPercentage <= 20 ? 'bg-red-500' : 'bg-primary-500'"
-              :style="{ width: `${creditPercentage}%` }"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style="scroll-snap-type: x mandatory">
-        <router-link
-          to="/upload"
-          class="btn-primary btn-press inline-flex flex-shrink-0 items-center gap-1.5 text-sm"
-          style="scroll-snap-align: start"
-        >
-          <PlusIcon class="h-4 w-4" />
-          {{ $t('dashboard.newUpload') }}
-        </router-link>
-        <router-link
-          to="/ai"
-          class="btn-secondary btn-press inline-flex flex-shrink-0 items-center gap-1.5 text-sm"
-          style="scroll-snap-align: start"
-        >
-          <SparklesIcon class="h-4 w-4" />
-          {{ $t('dashboard.aiTools') }}
-        </router-link>
-        <router-link
-          to="/schedule"
-          class="btn-secondary btn-press inline-flex flex-shrink-0 items-center gap-1.5 text-sm"
-          style="scroll-snap-align: start"
-        >
-          <CalendarDaysIcon class="h-4 w-4" />
-          {{ $t('dashboard.checkSchedule') }}
-        </router-link>
-      </div>
-
-      <!-- Recent Videos - Horizontal Scroll -->
-      <div v-if="recentVideos.length > 0" class="card p-4">
-        <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.recentUploads') }}</h3>
-          <router-link to="/videos" class="text-xs text-primary-600 hover:underline">
-            {{ $t('dashboard.viewAll') }}
-          </router-link>
-        </div>
-        <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style="scroll-snap-type: x mandatory">
-          <div
-            v-for="video in recentVideos.slice(0, 5)"
-            :key="video.id"
-            class="flex-shrink-0 cursor-pointer"
-            style="width: 160px; scroll-snap-align: start"
-            @click="$router.push(`/videos/${video.id}`)"
-          >
-            <div class="aspect-video w-full overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-              <img
-                v-if="video.thumbnailUrl"
-                :src="video.thumbnailUrl"
-                :alt="video.title"
-                class="h-full w-full object-cover"
-              />
-              <div v-else class="flex h-full w-full items-center justify-center">
-                <FilmIcon class="h-6 w-6 text-gray-300 dark:text-gray-600" />
-              </div>
-            </div>
-            <p class="mt-2 line-clamp-1 text-xs font-medium text-gray-900 dark:text-gray-100">
-              {{ video.title }}
-            </p>
-            <div class="mt-1 flex flex-wrap items-center gap-1">
-              <PlatformBadge
-                v-for="upload in video.uploads.slice(0, 2)"
-                :key="upload.platform"
-                :platform="upload.platform"
-                class="scale-75 origin-left"
-              />
-            </div>
-            <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-              {{ timeAgo(video.createdAt) }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Trend Chart - Simplified -->
-      <div class="card" style="height: 280px">
-        <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.viewsTrend') }}</h3>
-          <div class="flex rounded-lg border border-gray-200 dark:border-gray-700">
-            <button
-              class="px-2 py-1 text-xs transition-colors"
-              :class="period === '7d' ? 'bg-primary-500 text-white' : 'text-gray-600 dark:text-gray-300'"
-              @click="dashboardStore.setPeriod('7d')"
-            >
-              {{ $t('dashboard.days7') }}
-            </button>
-            <button
-              class="px-2 py-1 text-xs transition-colors"
-              :class="period === '30d' ? 'bg-primary-500 text-white' : 'text-gray-600 dark:text-gray-300'"
-              @click="dashboardStore.setPeriod('30d')"
-            >
-              {{ $t('dashboard.days30') }}
-            </button>
-          </div>
-        </div>
-        <div class="h-48">
-          <TrendChart
-            :data="trendData"
-            :period="period"
-            @update:period="dashboardStore.setPeriod"
-          />
-        </div>
-      </div>
-
-      <!-- Upcoming Schedules - Today & Tomorrow only -->
-      <div v-if="todayAndTomorrowSchedules.length > 0" class="card">
-        <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.scheduledUploads') }}</h3>
-          <router-link to="/schedule" class="text-xs text-primary-600 hover:underline">
-            {{ $t('dashboard.viewCalendar') }}
-          </router-link>
-        </div>
-        <div class="divide-y divide-gray-100 dark:divide-gray-700">
-          <div v-for="group in groupedSchedules" :key="group.label" class="py-3 first:pt-0 last:pb-0">
-            <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">{{ group.label }}</p>
-            <div class="space-y-2">
-              <div
-                v-for="schedule in group.schedules"
-                :key="schedule.id"
-                class="flex items-start gap-2"
-              >
-                <div class="flex-shrink-0 text-xs font-medium text-primary-600 dark:text-primary-400">
-                  {{ formatTime(schedule.scheduledAt) }}
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="line-clamp-1 text-xs font-medium text-gray-900 dark:text-gray-100">
-                    {{ schedule.videoTitle }}
-                  </p>
-                  <div class="mt-1 flex flex-wrap gap-1">
-                    <PlatformBadge
-                      v-for="sp in schedule.platforms"
-                      :key="sp.platform"
-                      :platform="sp.platform"
-                      class="scale-75 origin-left"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <EmptyState
-        v-else
-        variant="compact"
-        :title="$t('dashboard.noScheduleTitle')"
-        :description="$t('dashboard.noScheduleDescription')"
-        :icon="CalendarDaysIcon"
-        :action-label="$t('dashboard.createSchedule')"
-        action-to="/schedule"
-        :secondary-action-label="$t('dashboard.uploadVideo')"
-        secondary-action-to="/upload"
-      />
-    </template>
-
-    <!-- Recycle Modal -->
+    <!-- Recycle Modal (shared) -->
     <RecycleModal
       v-if="recycleVideo"
       v-model="showRecycleModal"
       :video="recycleVideo"
       @confirm="handleRecycleConfirm"
     />
-  </div>
-
-  <!-- Desktop/Tablet Layout (768px+) -->
-  <div v-else class="px-6 pb-8 pt-4">
-    <!-- Personalized Header -->
-    <div class="mb-8">
-      <div class="flex items-start justify-between">
-        <div class="flex-1">
-          <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            {{ greeting }}, {{ userName }}님!
-          </h1>
-          <p class="mt-2 text-base font-medium text-gray-500 dark:text-gray-400">
-            <span v-if="todayScheduleCount > 0">
-              {{ $t('dashboard.scheduledToday', { count: todayScheduleCount }) }}
-            </span>
-            <span v-else>{{ $t('dashboard.noScheduledToday') }}</span>
-            <span class="mx-2 text-gray-300 dark:text-gray-600">·</span>
-            <span>{{ $t('dashboard.creditsRemaining', { count: creditBalance }) }}</span>
-          </p>
-        </div>
-        <button
-          class="btn-secondary btn-press inline-flex items-center gap-1.5 text-sm"
-          @click="showWidgetCustomizer = true"
-        >
-          <Cog6ToothIcon class="h-4 w-4" />
-          {{ $t('dashboard.customize') }}
-        </button>
-      </div>
-      <div class="mt-4 flex flex-wrap gap-2">
-        <router-link to="/upload" class="btn-primary btn-press inline-flex items-center gap-1.5 text-sm">
-          <PlusIcon class="h-4 w-4" />
-          {{ $t('dashboard.newUpload') }}
-        </router-link>
-        <router-link to="/ai" class="btn-secondary btn-press inline-flex items-center gap-1.5 text-sm">
-          <SparklesIcon class="h-4 w-4" />
-          {{ $t('dashboard.aiTools') }}
-        </router-link>
-        <router-link to="/schedule" class="btn-secondary btn-press inline-flex items-center gap-1.5 text-sm">
-          <CalendarDaysIcon class="h-4 w-4" />
-          {{ $t('dashboard.checkSchedule') }}
-        </router-link>
-      </div>
-    </div>
-
-    <PageGuide :title="$t('dashboard.pageGuideTitle')" :items="($tm('dashboard.pageGuideDesktop') as string[])" />
-
-    <DashboardSkeleton v-if="loading" />
-
-    <template v-else>
-      <!-- Onboarding Banner -->
-      <OnboardingBanner />
-
-      <!-- Start Guide -->
-      <StartGuide />
-
-      <!-- Recycle Suggestions -->
-      <RecycleSuggestions @recycle="handleRecycleVideo" />
-
-      <!-- Favorites Section -->
-      <FavoritesSection />
-
-      <!-- Dynamic Widgets with TransitionGroup -->
-      <div class="space-y-6">
-        <TransitionGroup name="widget-list">
-          <template v-for="widget in visibleWidgets" :key="widget.id">
-            <!-- Summary Cards Widget -->
-            <div v-if="widget.id === 'summary'" class="grid grid-cols-2 gap-4 desktop:grid-cols-4">
-              <SummaryCard
-                :title="$t('dashboard.totalViews')"
-                :value="kpi?.totalViews ?? 0"
-                :change="kpi?.viewsChangePercent"
-                change-type="percent"
-                :icon="EyeIcon"
-                color="blue"
-                @click="$router.push('/analytics')"
-              />
-              <SummaryCard
-                :title="$t('dashboard.totalSubscribers')"
-                :value="kpi?.totalSubscribers ?? 0"
-                :change="kpi?.subscribersChange"
-                change-type="number"
-                :icon="UsersIcon"
-                color="green"
-                @click="$router.push('/channels')"
-              />
-              <SummaryCard
-                :title="$t('dashboard.totalLikes')"
-                :value="kpi?.totalLikes ?? 0"
-                :change="kpi?.likesChangePercent"
-                change-type="percent"
-                :icon="HeartIcon"
-                color="rose"
-                @click="$router.push('/analytics')"
-              />
-              <SummaryCard
-                :title="$t('dashboard.aiCredits')"
-                :value="kpi?.creditBalance ?? 0"
-                :icon="SparklesIcon"
-                color="purple"
-                format="number"
-                :progress-bar="true"
-                :progress-percent="creditPercentage"
-                @click="$router.push('/subscription')"
-              />
-            </div>
-
-            <!-- AI Weekly Digest Widget -->
-            <div v-else-if="widget.id === 'weeklyDigest'" class="grid grid-cols-1 gap-4 desktop:grid-cols-2">
-              <WeeklyDigestCard />
-              <ContentGapCard />
-            </div>
-
-            <!-- Trend Chart Widget -->
-            <div v-else-if="widget.id === 'trend'">
-              <TrendChart
-                :data="trendData"
-                :period="period"
-                @update:period="dashboardStore.setPeriod"
-              />
-            </div>
-
-            <!-- Platform Pie Chart Widget -->
-            <PlatformPieChart
-              v-else-if="widget.id === 'platform'"
-              :data="platformComparison"
-            />
-
-            <!-- Recent Videos Widget -->
-            <RecentVideosList
-              v-else-if="widget.id === 'videos'"
-              :videos="recentVideos"
-            />
-
-            <!-- Upcoming Schedules Widget -->
-            <UpcomingSchedules
-              v-else-if="widget.id === 'schedules'"
-              :schedules="upcomingSchedules"
-            />
-
-            <!-- Mini Widgets Grid -->
-            <div v-else-if="widget.id === 'miniWidgets'" class="grid grid-cols-2 gap-4 desktop:grid-cols-4">
-              <AudienceGrowthWidget
-                :total-subscribers="kpi?.totalSubscribers ?? 0"
-                :change="kpi?.subscribersChange"
-                :trend-data="trendData"
-              />
-              <ContentCalendarWidget :schedules="upcomingSchedules" />
-              <TopPerformingWidget :top-videos="topVideos" />
-              <QuickActionsWidget />
-            </div>
-          </template>
-        </TransitionGroup>
-      </div>
-    </template>
-
-    <!-- Widget Customizer Panel -->
-    <WidgetCustomizer v-model="showWidgetCustomizer" />
-
-    <!-- Recycle Modal -->
-    <RecycleModal
-      v-if="recycleVideo"
-      v-model="showRecycleModal"
-      :video="recycleVideo"
-      @confirm="handleRecycleConfirm"
-    />
-  </div>
   </div>
 </template>
 
@@ -436,41 +55,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
-import { useMediaQuery } from '@vueuse/core'
-import {
-  EyeIcon,
-  UsersIcon,
-  HeartIcon,
-  SparklesIcon,
-  PlusIcon,
-  CalendarDaysIcon,
-  FilmIcon,
-  Cog6ToothIcon,
-} from '@heroicons/vue/24/outline'
-import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton.vue'
-import StartGuide from '@/components/dashboard/StartGuide.vue'
-import SummaryCard from '@/components/dashboard/SummaryCard.vue'
-import TrendChart from '@/components/dashboard/TrendChart.vue'
-import PlatformPieChart from '@/components/dashboard/PlatformPieChart.vue'
-import RecentVideosList from '@/components/dashboard/RecentVideosList.vue'
-import UpcomingSchedules from '@/components/dashboard/UpcomingSchedules.vue'
-import WidgetCustomizer from '@/components/dashboard/WidgetCustomizer.vue'
-import PlatformBadge from '@/components/common/PlatformBadge.vue'
-import RecycleSuggestions from '@/components/video/RecycleSuggestions.vue'
-import RecycleModal from '@/components/video/RecycleModal.vue'
-import FavoritesSection from '@/components/video/FavoritesSection.vue'
-import AudienceGrowthWidget from '@/components/dashboard/AudienceGrowthWidget.vue'
-import ContentCalendarWidget from '@/components/dashboard/ContentCalendarWidget.vue'
-import TopPerformingWidget from '@/components/dashboard/TopPerformingWidget.vue'
-import QuickActionsWidget from '@/components/dashboard/QuickActionsWidget.vue'
-
-import PageGuide from '@/components/common/PageGuide.vue'
-import OnboardingBanner from '@/components/common/OnboardingBanner.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
-import { useDashboardStore } from '@/stores/dashboard'
 import { useAuthStore } from '@/stores/auth'
+import { useDashboardStore } from '@/stores/dashboard'
 import { useCreditStore } from '@/stores/credit'
 import { useWidgetSettingsStore } from '@/stores/widgetSettings'
+import MobileDashboard from '@/components/dashboard/MobileDashboard.vue'
+import DesktopDashboard from '@/components/dashboard/DesktopDashboard.vue'
+import RecycleModal from '@/components/video/RecycleModal.vue'
 import type { Video } from '@/types/video'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -488,9 +79,6 @@ const { t } = useI18n({ useScope: 'global' })
 
 const { kpi, trendData, platformComparison, recentVideos, upcomingSchedules, topVideos, loading, period } =
   storeToRefs(dashboardStore)
-
-// Media query for responsive layout
-const isTablet = useMediaQuery('(min-width: 768px)')
 
 const userName = computed(() => authStore.user?.nickname || authStore.user?.name || '크리에이터')
 const creditBalance = computed(() => creditStore.totalBalance)
@@ -522,29 +110,6 @@ const creditPercentage = computed(() => {
   if (!kpi.value || kpi.value.creditTotal === 0) return 0
   return Math.round((kpi.value.creditBalance / kpi.value.creditTotal) * 100)
 })
-
-// Mobile-specific helper functions
-function formatCompact(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`
-  return value.toLocaleString()
-}
-
-function changeIcon(change: number): string {
-  return change >= 0 ? '↑' : '↓'
-}
-
-function changeColor(change: number): string {
-  return change >= 0 ? 'text-green-600' : 'text-red-600'
-}
-
-function timeAgo(date: string): string {
-  return dayjs(date).fromNow()
-}
-
-function formatTime(date: string): string {
-  return dayjs(date).format('HH:mm')
-}
 
 // Filter schedules for today and tomorrow only (mobile)
 const todayAndTomorrowSchedules = computed(() => {

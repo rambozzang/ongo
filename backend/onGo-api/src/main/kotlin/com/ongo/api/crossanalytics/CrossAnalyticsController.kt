@@ -1,5 +1,6 @@
 package com.ongo.api.crossanalytics
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.crossanalytics.CrossAnalyticsUseCase
 import com.ongo.application.crossanalytics.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "크로스 분석", description = "크로스 플랫폼 분석 리포트 생성 및 조회")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/cross-analytics")
 class CrossAnalyticsController(

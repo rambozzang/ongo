@@ -1,5 +1,6 @@
 package com.ongo.api.trendpredictor
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.trendpredictor.TrendPredictorUseCase
 import com.ongo.application.trendpredictor.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "AI 트렌드 예측기", description = "AI 기반 콘텐츠 트렌드 예측")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/trend-predictor")
 class TrendPredictorController(

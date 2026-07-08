@@ -16,9 +16,9 @@
             </label>
             <input
               v-model="localDisplayName"
-              @blur="updateProfile"
               type="text"
               class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              @blur="updateProfile"
             />
           </div>
         </div>
@@ -28,9 +28,9 @@
           </label>
           <textarea
             v-model="localBio"
-            @blur="updateProfile"
             rows="3"
             class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            @blur="updateProfile"
           />
         </div>
       </div>
@@ -49,9 +49,9 @@
           </label>
           <input
             :value="page.backgroundColor"
-            @input="updateColor('backgroundColor', ($event.target as HTMLInputElement).value)"
             type="color"
             class="h-10 w-full cursor-pointer rounded-md border border-gray-300 dark:border-gray-600"
+            @input="updateColor('backgroundColor', ($event.target as HTMLInputElement).value)"
           />
         </div>
         <div>
@@ -60,9 +60,9 @@
           </label>
           <input
             :value="page.textColor"
-            @input="updateColor('textColor', ($event.target as HTMLInputElement).value)"
             type="color"
             class="h-10 w-full cursor-pointer rounded-md border border-gray-300 dark:border-gray-600"
+            @input="updateColor('textColor', ($event.target as HTMLInputElement).value)"
           />
         </div>
         <div>
@@ -71,9 +71,9 @@
           </label>
           <input
             :value="page.buttonColor"
-            @input="updateColor('buttonColor', ($event.target as HTMLInputElement).value)"
             type="color"
             class="h-10 w-full cursor-pointer rounded-md border border-gray-300 dark:border-gray-600"
+            @input="updateColor('buttonColor', ($event.target as HTMLInputElement).value)"
           />
         </div>
         <div>
@@ -82,9 +82,9 @@
           </label>
           <input
             :value="page.buttonTextColor"
-            @input="updateColor('buttonTextColor', ($event.target as HTMLInputElement).value)"
             type="color"
             class="h-10 w-full cursor-pointer rounded-md border border-gray-300 dark:border-gray-600"
+            @input="updateColor('buttonTextColor', ($event.target as HTMLInputElement).value)"
           />
         </div>
       </div>
@@ -95,8 +95,8 @@
       <div class="mb-4 flex items-center justify-between">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">블록</h3>
         <button
-          @click="showBlockSelector = !showBlockSelector"
           class="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          @click="showBlockSelector = !showBlockSelector"
         >
           <PlusIcon class="h-4 w-4" />
           블록 추가

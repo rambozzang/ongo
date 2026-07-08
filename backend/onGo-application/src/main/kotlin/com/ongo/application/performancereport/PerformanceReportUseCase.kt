@@ -1,5 +1,6 @@
 package com.ongo.application.performancereport
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.performancereport.dto.*
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.performancereport.PerformanceReport
@@ -9,6 +10,7 @@ import com.ongo.domain.performancereport.ReportSectionRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class PerformanceReportUseCase(
     private val reportRepository: PerformanceReportRepository,

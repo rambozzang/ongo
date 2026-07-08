@@ -1,5 +1,6 @@
 package com.ongo.api.creatorbenchmark
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.creatorbenchmark.CreatorBenchmarkUseCase
 import com.ongo.application.creatorbenchmark.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "크리에이터 벤치마크", description = "동일 분야 크리에이터와 성과 비교 분석")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/creator-benchmark")
 class CreatorBenchmarkController(

@@ -1,5 +1,6 @@
 package com.ongo.api.collaborationboard
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.collaborationboard.CollaborationBoardUseCase
 import com.ongo.application.collaborationboard.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "협업 보드", description = "칸반 스타일 콘텐츠 제작 협업 보드")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/board")
 class CollaborationBoardController(

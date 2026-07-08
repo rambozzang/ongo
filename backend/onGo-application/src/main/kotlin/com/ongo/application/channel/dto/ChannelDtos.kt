@@ -1,6 +1,7 @@
 package com.ongo.application.channel.dto
 
 import com.ongo.common.enums.Platform
+import com.ongo.domain.channel.ChannelStatus
 import java.time.LocalDateTime
 
 data class ChannelResponse(
@@ -10,7 +11,7 @@ data class ChannelResponse(
     val channelUrl: String?,
     val subscriberCount: Long,
     val profileImageUrl: String?,
-    val status: String,
+    val status: ChannelStatus,
     val tokenStatus: String,
     val connectedAt: LocalDateTime?,
     val lastSyncedAt: LocalDateTime?,
@@ -19,7 +20,9 @@ data class ChannelResponse(
 
 data class ConnectChannelRequest(
     val authorizationCode: String,
-    val redirectUri: String
+    val redirectUri: String,
+    /** Twitter OAuth 2.0 PKCE code_verifier (Twitter 연동 시 필수) */
+    val codeVerifier: String? = null,
 )
 
 data class ConnectChannelResponse(

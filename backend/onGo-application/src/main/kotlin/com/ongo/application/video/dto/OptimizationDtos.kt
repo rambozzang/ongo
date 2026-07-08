@@ -31,3 +31,22 @@ data class OptimizationCheckRequest(
 data class OptimizationCheckResponse(
     val results: List<OptimizationResult>,
 )
+
+data class AiOptimizationRequest(
+    val title: String,
+    val description: String? = null,
+    val tags: List<String> = emptyList(),
+    val platforms: List<Platform> = emptyList(),
+)
+
+data class AiOptimizedContent(
+    val title: String,
+    val description: String? = null,
+    val tags: List<String> = emptyList(),
+    val reasoning: String? = null,
+)
+
+data class AiOptimizationResponse(
+    val original: AiOptimizationRequest,
+    val optimized: Map<Platform, AiOptimizedContent>,
+)

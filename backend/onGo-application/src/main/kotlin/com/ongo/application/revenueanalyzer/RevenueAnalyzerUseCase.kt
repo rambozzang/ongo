@@ -1,5 +1,6 @@
 package com.ongo.application.revenueanalyzer
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.revenueanalyzer.dto.*
 import com.ongo.domain.revenueanalyzer.RevenueProjection
 import com.ongo.domain.revenueanalyzer.RevenueProjectionRepository
@@ -8,6 +9,7 @@ import com.ongo.domain.revenueanalyzer.RevenueStreamRepository
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 
+@Profile("wip")
 @Service
 class RevenueAnalyzerUseCase(
     private val streamRepository: RevenueStreamRepository,

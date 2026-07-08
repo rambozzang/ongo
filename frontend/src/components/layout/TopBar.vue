@@ -38,7 +38,7 @@
       <ThemeToggle />
 
       <!-- Notifications -->
-      <div class="relative" ref="notificationRef">
+      <div ref="notificationRef" class="relative">
         <button
           :aria-label="getNotificationButtonLabel()"
           :aria-expanded="notificationOpen"
@@ -59,7 +59,7 @@
       </div>
 
       <!-- Profile -->
-      <div class="relative" ref="profileRef">
+      <div ref="profileRef" class="relative">
         <button
           :aria-label="getProfileButtonLabel()"
           :aria-expanded="profileOpen"

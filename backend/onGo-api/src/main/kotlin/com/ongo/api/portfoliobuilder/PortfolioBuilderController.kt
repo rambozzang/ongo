@@ -1,5 +1,6 @@
 package com.ongo.api.portfoliobuilder
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.portfoliobuilder.PortfolioBuilderUseCase
 import com.ongo.application.portfoliobuilder.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "포트폴리오 빌더", description = "크리에이터 포트폴리오 자동 생성")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/portfolio-builder")
 class PortfolioBuilderController(

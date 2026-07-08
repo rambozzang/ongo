@@ -1,5 +1,6 @@
 package com.ongo.application.trendpredictor
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.trendpredictor.dto.*
 import com.ongo.domain.trendpredictor.TrendPredictionRepository
 import com.ongo.domain.trendpredictor.TrendTopicRepository
@@ -7,6 +8,7 @@ import com.ongo.domain.trendpredictor.TrendPrediction
 import com.ongo.domain.trendpredictor.TrendTopic
 import org.springframework.stereotype.Service
 
+@Profile("wip")
 @Service
 class TrendPredictorUseCase(
     private val predictionRepository: TrendPredictionRepository,

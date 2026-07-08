@@ -183,9 +183,10 @@ function handleClose() {
               {{ modalTitle }}
             </h2>
             <button
-              @click="handleClose"
+              type="button"
               class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               aria-label="모달 닫기"
+              @click="handleClose"
             >
               <XMarkIcon class="w-5 h-5" />
             </button>
@@ -215,13 +216,14 @@ function handleClose() {
                 <button
                   v-for="option in FREQUENCY_OPTIONS"
                   :key="option.value"
-                  @click="frequency = option.value"
+                  type="button"
                   :class="[
                     'flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors',
                     frequency === option.value
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                       : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500',
                   ]"
+                  @click="frequency = option.value"
                 >
                   {{ option.label }}
                 </button>
@@ -237,13 +239,14 @@ function handleClose() {
                 <button
                   v-for="day in DAY_OPTIONS"
                   :key="day.value"
-                  @click="toggleDay(day.value)"
+                  type="button"
                   :class="[
                     'w-10 h-10 rounded-lg text-sm font-medium transition-colors',
                     scheduleDays.includes(day.value)
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600',
                   ]"
+                  @click="toggleDay(day.value)"
                 >
                   {{ day.label }}
                 </button>
@@ -271,13 +274,14 @@ function handleClose() {
                 <button
                   v-for="platform in PLATFORM_OPTIONS"
                   :key="platform.value"
-                  @click="togglePlatform(platform.value)"
+                  type="button"
                   :class="[
                     'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors',
                     platforms.includes(platform.value)
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                       : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500',
                   ]"
+                  @click="togglePlatform(platform.value)"
                 >
                   <span
                     :class="[
@@ -358,13 +362,14 @@ function handleClose() {
                 <button
                   v-for="option in TITLE_VARIATION_OPTIONS"
                   :key="option.value"
-                  @click="titleVariation = option.value"
+                  type="button"
                   :class="[
                     'w-full flex items-start gap-3 px-4 py-3 rounded-lg border text-left transition-colors',
                     titleVariation === option.value
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
                       : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500',
                   ]"
+                  @click="titleVariation = option.value"
                 >
                   <span
                     :class="[
@@ -402,13 +407,14 @@ function handleClose() {
           <!-- Footer -->
           <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
             <button
-              @click="handleClose"
+              type="button"
               class="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              @click="handleClose"
             >
               취소
             </button>
             <button
-              @click="handleSubmit"
+              type="submit"
               :disabled="!isValid"
               :class="[
                 'px-6 py-2.5 text-sm font-medium text-white rounded-lg transition-colors',
@@ -416,6 +422,7 @@ function handleClose() {
                   ? 'bg-blue-600 hover:bg-blue-700'
                   : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed',
               ]"
+              @click="handleSubmit"
             >
               {{ isEditing ? '수정' : '생성' }}
             </button>

@@ -1,9 +1,11 @@
 package com.ongo.application.contentrepurposer
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentrepurposer.dto.*
 import com.ongo.domain.contentrepurposer.*
 import org.springframework.stereotype.Service
 
+@Profile("wip")
 @Service
 class ContentRepurposerUseCase(
     private val jobRepository: RepurposeJobRepository,

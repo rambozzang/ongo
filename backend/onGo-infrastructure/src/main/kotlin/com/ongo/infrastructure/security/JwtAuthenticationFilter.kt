@@ -12,6 +12,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 class JwtAuthenticationFilter(
     private val jwtTokenProvider: JwtTokenProvider,
+    private val tokenBlacklistService: TokenBlacklistService,
 ) : OncePerRequestFilter() {
 
     companion object {
@@ -40,6 +41,15 @@ class JwtAuthenticationFilter(
         val token = resolveToken(request)
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
+            val jti = jwtTokenProvider.getTokenJti(token)
+                ?: token.hashCode().toString()
+            if (tokenBlacklistService.isBlacklisted(jti)) {
+                response.status = HttpServletResponse.SC_UNAUTHORIZED
+                response.writer.write("{\"success\":false,\"message\":\"토큰이 무효화되었습니다\"}")
+                response.contentType = "application/json;charset=UTF-8"
+                return
+            }
+
             val tokenType = jwtTokenProvider.getTokenType(token)
             if (tokenType == "access" || tokenType == "sse") {
                 val userId = jwtTokenProvider.getUserIdFromToken(token)

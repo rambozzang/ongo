@@ -1,6 +1,7 @@
 #!/bin/bash
 # Backup Local Docker Database
 # Usage: ./backup_local_db.sh
+set -euo pipefail
 
 CONTAINER_NAME=ongo-postgres
 DB_USER=ongo_user

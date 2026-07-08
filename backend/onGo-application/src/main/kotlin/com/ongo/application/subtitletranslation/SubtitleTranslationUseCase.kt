@@ -1,10 +1,12 @@
 package com.ongo.application.subtitletranslation
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.subtitletranslation.dto.*
 import com.ongo.domain.subtitletranslation.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class SubtitleTranslationUseCase(
     private val translationRepository: SubtitleTranslationRepository,

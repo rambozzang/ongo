@@ -24,16 +24,17 @@
               {{ isEditMode ? '아이디어 수정' : '새 아이디어' }}
             </h2>
             <button
-              @click="closeModal"
+              type="button"
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               aria-label="모달 닫기"
+              @click="closeModal"
             >
               <XMarkIcon class="w-6 h-6" />
             </button>
           </div>
 
           <!-- Form -->
-          <form @submit.prevent="handleSubmit" class="space-y-4">
+          <form class="space-y-4" @submit.prevent="handleSubmit">
             <!-- Title -->
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -101,36 +102,36 @@
               <div class="grid grid-cols-2 gap-2">
                 <label class="flex items-center space-x-2 cursor-pointer">
                   <input
+                    v-model="formData.platform"
                     type="checkbox"
                     value="YOUTUBE"
-                    v-model="formData.platform"
                     class="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400"
                   />
                   <span class="text-sm text-gray-700 dark:text-gray-300">YouTube</span>
                 </label>
                 <label class="flex items-center space-x-2 cursor-pointer">
                   <input
+                    v-model="formData.platform"
                     type="checkbox"
                     value="TIKTOK"
-                    v-model="formData.platform"
                     class="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400"
                   />
                   <span class="text-sm text-gray-700 dark:text-gray-300">TikTok</span>
                 </label>
                 <label class="flex items-center space-x-2 cursor-pointer">
                   <input
+                    v-model="formData.platform"
                     type="checkbox"
                     value="INSTAGRAM"
-                    v-model="formData.platform"
                     class="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400"
                   />
                   <span class="text-sm text-gray-700 dark:text-gray-300">Instagram</span>
                 </label>
                 <label class="flex items-center space-x-2 cursor-pointer">
                   <input
+                    v-model="formData.platform"
                     type="checkbox"
                     value="NAVER_CLIP"
-                    v-model="formData.platform"
                     class="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400"
                   />
                   <span class="text-sm text-gray-700 dark:text-gray-300">Naver Clip</span>
@@ -182,8 +183,8 @@
                 <button
                   v-if="isEditMode"
                   type="button"
-                  @click="handleDelete"
                   class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  @click="handleDelete"
                 >
                   삭제
                 </button>
@@ -191,8 +192,8 @@
               <div class="flex gap-2">
                 <button
                   type="button"
-                  @click="closeModal"
                   class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  @click="closeModal"
                 >
                   취소
                 </button>

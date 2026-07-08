@@ -1,5 +1,6 @@
 package com.ongo.application.creatornetwork
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.creatornetwork.dto.*
 import com.ongo.domain.creatornetwork.CollaborationRequest
 import com.ongo.domain.creatornetwork.CollaborationRequestRepository
@@ -7,6 +8,7 @@ import com.ongo.domain.creatornetwork.CreatorProfileRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 @Transactional(readOnly = true)
 class CreatorNetworkUseCase(

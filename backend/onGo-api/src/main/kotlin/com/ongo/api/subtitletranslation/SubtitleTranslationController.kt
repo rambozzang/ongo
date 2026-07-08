@@ -1,5 +1,6 @@
 package com.ongo.api.subtitletranslation
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.subtitletranslation.SubtitleTranslationUseCase
 import com.ongo.application.subtitletranslation.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "자막 번역", description = "AI 자동 자막 번역 및 편집")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/subtitle-translations")
 class SubtitleTranslationController(

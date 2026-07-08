@@ -55,6 +55,7 @@ class S3StorageClient(
     }
 
     override fun generatePresignedUploadUrl(key: String, contentType: String, expirationMinutes: Int): String {
+        validateStorageKey(key)
         log.debug("S3 presigned URL 생성: key={}, expiry={}분", key, expirationMinutes)
 
         val putObjectRequest = PutObjectRequest.builder()
@@ -81,6 +82,7 @@ class S3StorageClient(
     }
 
     override fun generatePresignedDownloadUrl(key: String, expirationMinutes: Int): String {
+        validateStorageKey(key)
         log.debug("S3 presigned GET URL 생성: key={}, expiry={}분", key, expirationMinutes)
 
         val getObjectRequest = GetObjectRequest.builder()
@@ -122,5 +124,11 @@ class S3StorageClient(
         )
     } catch (_: NoSuchKeyException) {
         null
+    }
+
+    private fun validateStorageKey(key: String) {
+        if (key.contains("..") || key.startsWith("/") || !key.matches(Regex("^[a-zA-Z0-9\\-_./]+$"))) {
+            throw IllegalArgumentException("Invalid storage key")
+        }
     }
 }

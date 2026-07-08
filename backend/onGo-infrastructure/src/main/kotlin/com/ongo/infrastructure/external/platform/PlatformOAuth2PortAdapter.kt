@@ -14,9 +14,10 @@ class PlatformOAuth2PortAdapter(
         platform: Platform,
         authorizationCode: String,
         redirectUri: String,
+        codeVerifier: String?,
     ): PlatformOAuth2TokenResult {
         val client = platformClientFactory.getClient(platform)
-        val result = client.exchangeCodeForTokens(authorizationCode, redirectUri)
+        val result = client.exchangeCodeForTokens(authorizationCode, redirectUri, codeVerifier)
         return PlatformOAuth2TokenResult(
             accessToken = result.accessToken,
             refreshToken = result.refreshToken,

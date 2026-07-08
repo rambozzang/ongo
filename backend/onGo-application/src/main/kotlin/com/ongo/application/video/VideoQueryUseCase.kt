@@ -7,6 +7,10 @@ import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.util.FileValidationUtil
+import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.ChannelStatus
+import com.ongo.domain.channel.PlatformClientPort
+import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.video.ContentImage
 import com.ongo.domain.video.ContentImageRepository
 import com.ongo.domain.video.Video
@@ -26,6 +30,9 @@ class VideoQueryUseCase(
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val contentImageRepository: ContentImageRepository,
     private val storageService: StorageService,
+    private val channelRepository: ChannelRepository,
+    private val tokenEncryptionPort: TokenEncryptionPort,
+    private val platformClientPort: PlatformClientPort,
 ) {
 
     private val log = LoggerFactory.getLogger(VideoQueryUseCase::class.java)
@@ -183,6 +190,33 @@ class VideoQueryUseCase(
         )
         videoRepository.update(updatedVideo)
 
+        // 플랫폼 메타데이터 동기화 (제목/설명/태그 변경 시)
+        if (title != null || description != null || tags != null) {
+            val uploads = videoUploadRepository.findByVideoId(videoId)
+            uploads.forEach { upload ->
+                val platformVideoId = upload.platformVideoId
+                if (platformVideoId != null && upload.status == UploadStatus.PUBLISHED) {
+                    try {
+                        val channel = channelRepository.findByUserIdAndPlatform(userId, upload.platform)
+                        if (channel != null && channel.status == ChannelStatus.ACTIVE) {
+                            val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
+                            platformClientPort.updateVideoMetadata(
+                                upload.platform,
+                                platformVideoId,
+                                accessToken,
+                                newTitle,
+                                newDescription,
+                                newTags,
+                            )
+                            log.info("플랫폼 영상 메타데이터 업데이트 완료: platform={}, videoId={}", upload.platform, platformVideoId)
+                        }
+                    } catch (e: Exception) {
+                        log.warn("플랫폼 영상 메타데이터 업데이트 실패 (계속 진행): platform={}, videoId={}, error={}", upload.platform, platformVideoId, e.message)
+                    }
+                }
+            }
+        }
+
         return getVideoDetail(userId, videoId)
     }
 
@@ -196,6 +230,24 @@ class VideoQueryUseCase(
         }
 
         log.info("[AUDIT] 영상 삭제: userId={}, videoId={}, title={}", userId, videoId, video.title)
+
+        // 외부 플랫폼에서 영상 삭제
+        val uploads = videoUploadRepository.findByVideoId(videoId)
+        uploads.forEach { upload ->
+            val platformVideoId = upload.platformVideoId
+            if (platformVideoId != null) {
+                try {
+                    val channel = channelRepository.findByUserIdAndPlatform(userId, upload.platform)
+                    if (channel != null && channel.status == ChannelStatus.ACTIVE) {
+                        val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
+                        platformClientPort.deleteVideo(upload.platform, platformVideoId, accessToken)
+                        log.info("플랫폼 영상 삭제 완료: platform={}, videoId={}", upload.platform, platformVideoId)
+                    }
+                } catch (e: Exception) {
+                    log.warn("플랫폼 영상 삭제 실패 (계속 진행): platform={}, videoId={}, error={}", upload.platform, platformVideoId, e.message)
+                }
+            }
+        }
 
         // 스토리지에서 파일 삭제
         try {

@@ -166,7 +166,7 @@ import { useNotification } from '@/composables/useNotification'
 import { useI18n } from 'vue-i18n'
 import type { Channel, Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
-import { buildOAuthUrl } from '@/utils/oauth'
+import { buildOAuthUrl, generatePKCE } from '@/utils/oauth'
 
 // --- Stores ---
 const { t } = useI18n()
@@ -242,7 +242,12 @@ async function handleSyncAll() {
   }
 }
 
-function handleReconnect(platform: Platform) {
+async function handleReconnect(platform: Platform) {
+  if (platform === 'TWITTER') {
+    const { challenge } = await generatePKCE('twitter_code_verifier')
+    window.location.href = buildOAuthUrl(platform, '/channels', challenge)
+    return
+  }
   window.location.href = buildOAuthUrl(platform, '/channels')
 }
 
@@ -264,7 +269,12 @@ async function handleDisconnect() {
   }
 }
 
-function handleConnect(platform: Platform) {
+async function handleConnect(platform: Platform) {
+  if (platform === 'TWITTER') {
+    const { challenge } = await generatePKCE('twitter_code_verifier')
+    window.location.href = buildOAuthUrl(platform, '/channels', challenge)
+    return
+  }
   window.location.href = buildOAuthUrl(platform, '/channels')
 }
 

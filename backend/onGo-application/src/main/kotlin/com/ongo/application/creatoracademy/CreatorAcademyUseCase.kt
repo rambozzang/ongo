@@ -1,5 +1,6 @@
 package com.ongo.application.creatoracademy
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.creatoracademy.dto.*
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.creatoracademy.AcademyCourseRepository
@@ -8,6 +9,7 @@ import com.ongo.domain.creatoracademy.AcademyEnrollmentRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class CreatorAcademyUseCase(
     private val academyCourseRepository: AcademyCourseRepository,

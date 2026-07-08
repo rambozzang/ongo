@@ -1,10 +1,14 @@
 package com.ongo.infrastructure.external.googledrive
 
+import io.netty.channel.ChannelOption
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.netty.http.client.HttpClient
+import java.time.Duration
 
 @Configuration
 @EnableConfigurationProperties(GoogleDriveProperties::class)
@@ -16,7 +20,14 @@ class GoogleDriveAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean(WebClient::class)
-    fun googleDriveWebClient(): WebClient = WebClient.builder().build()
+    fun googleDriveWebClient(): WebClient {
+        val httpClient = HttpClient.create()
+            .responseTimeout(Duration.ofSeconds(30))
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10_000)
+        return WebClient.builder()
+            .clientConnector(ReactorClientHttpConnector(httpClient))
+            .build()
+    }
 
     /**
      * OAuth state 발급/검증 매니저.

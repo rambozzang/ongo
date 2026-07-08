@@ -106,33 +106,33 @@ const handleRemove = () => {
               </div>
               <MenuItem v-slot="{ active }">
                 <button
-                  @click="handleRoleChange('admin')"
                   :class="[
                     active ? 'bg-gray-100 dark:bg-gray-600' : '',
                     'block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200',
                   ]"
+                  @click="handleRoleChange('admin')"
                 >
                   관리자
                 </button>
               </MenuItem>
               <MenuItem v-slot="{ active }">
                 <button
-                  @click="handleRoleChange('editor')"
                   :class="[
                     active ? 'bg-gray-100 dark:bg-gray-600' : '',
                     'block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200',
                   ]"
+                  @click="handleRoleChange('editor')"
                 >
                   에디터
                 </button>
               </MenuItem>
               <MenuItem v-slot="{ active }">
                 <button
-                  @click="handleRoleChange('viewer')"
                   :class="[
                     active ? 'bg-gray-100 dark:bg-gray-600' : '',
                     'block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200',
                   ]"
+                  @click="handleRoleChange('viewer')"
                 >
                   뷰어
                 </button>
@@ -140,11 +140,11 @@ const handleRemove = () => {
               <hr class="my-1 border-gray-200 dark:border-gray-600" />
               <MenuItem v-slot="{ active }">
                 <button
-                  @click="showDeleteConfirm = true"
                   :class="[
                     active ? 'bg-red-50 dark:bg-red-900/20' : '',
                     'block w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400',
                   ]"
+                  @click="showDeleteConfirm = true"
                 >
                   <UserMinusIcon class="inline-block h-4 w-4 mr-2" />
                   멤버 제거
@@ -177,14 +177,14 @@ const handleRemove = () => {
         </p>
         <div class="mt-6 flex justify-end space-x-3">
           <button
-            @click="showDeleteConfirm = false"
             class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+            @click="showDeleteConfirm = false"
           >
             취소
           </button>
           <button
-            @click="handleRemove"
             class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+            @click="handleRemove"
           >
             제거
           </button>

@@ -161,9 +161,9 @@ onUnmounted(() => {
         </div>
         <button
           v-if="hasChanges"
-          @click="saveChanges"
           :disabled="saving"
           class="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+          @click="saveChanges"
         >
           <ArrowPathIcon v-if="saving" class="h-4 w-4 animate-spin" />
           <CheckIcon v-else-if="saved" class="h-4 w-4" />
@@ -236,7 +236,6 @@ onUnmounted(() => {
                 class="px-3 py-2 text-center"
               >
                 <button
-                  @click="togglePermission(member, perm)"
                   :disabled="member.role.toUpperCase() === 'OWNER'"
                   :class="[
                     getCellColor(member, perm),
@@ -249,6 +248,7 @@ onUnmounted(() => {
                       : 'cursor-pointer hover:shadow-sm',
                   ]"
                   :title="getStatusLabel(member, perm)"
+                  @click="togglePermission(member, perm)"
                 >
                   <CheckIcon
                     v-if="isPermissionEnabled(member, perm)"

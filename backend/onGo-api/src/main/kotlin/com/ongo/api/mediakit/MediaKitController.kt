@@ -1,5 +1,6 @@
 package com.ongo.api.mediakit
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.mediakit.MediaKitUseCase
 import com.ongo.application.mediakit.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "미디어 킷", description = "AI 미디어 킷 생성 및 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/media-kit")
 class MediaKitController(

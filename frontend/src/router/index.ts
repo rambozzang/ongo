@@ -257,6 +257,7 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior: () => ({ top: 0 }),
 })
 
 // 배포 후 이전 JS 청크가 삭제되어 동적 import 실패 시 자동 새로고침
@@ -271,6 +272,14 @@ router.onError((error, to) => {
       sessionStorage.setItem(reloadKey, '1')
       window.location.assign(to.fullPath)
     }
+  }
+})
+
+router.afterEach((to) => {
+  // Hook for future page-view analytics
+  if (import.meta.env.DEV) {
+     
+    console.log('[router] navigated to', to.fullPath)
   }
 })
 

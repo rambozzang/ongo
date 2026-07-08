@@ -10,4 +10,7 @@ data class SocialLoginRequest(
     @field:NotBlank(message = "리다이렉트 URI는 필수입니다")
     @field:Size(max = 2048, message = "리다이렉트 URI는 최대 2048자까지 입력할 수 있습니다")
     val redirectUri: String,
+    @field:NotBlank(message = "CSRF state는 필수입니다")
+    @field:Size(max = 512, message = "state는 최대 512자까지 입력할 수 있습니다")
+    val state: String,
 )

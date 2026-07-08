@@ -1,5 +1,6 @@
 package com.ongo.api.scheduleoptimizer
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.scheduleoptimizer.ScheduleOptimizerUseCase
 import com.ongo.application.scheduleoptimizer.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "AI 일정 최적화", description = "AI 기반 최적 게시 시간 추천")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/schedule-optimizer")
 class ScheduleOptimizerController(

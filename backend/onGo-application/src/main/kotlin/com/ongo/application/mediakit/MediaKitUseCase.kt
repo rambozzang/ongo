@@ -1,5 +1,6 @@
 package com.ongo.application.mediakit
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.mediakit.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -8,6 +9,7 @@ import com.ongo.domain.mediakit.MediaKitRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class MediaKitUseCase(
     private val mediaKitRepository: MediaKitRepository,

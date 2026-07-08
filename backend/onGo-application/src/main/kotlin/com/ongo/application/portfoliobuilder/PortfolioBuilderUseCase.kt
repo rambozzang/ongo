@@ -1,5 +1,6 @@
 package com.ongo.application.portfoliobuilder
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.portfoliobuilder.dto.*
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.portfoliobuilder.Portfolio
@@ -9,6 +10,7 @@ import com.ongo.domain.portfoliobuilder.PortfolioSectionRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class PortfolioBuilderUseCase(
     private val portfolioRepository: PortfolioRepository,

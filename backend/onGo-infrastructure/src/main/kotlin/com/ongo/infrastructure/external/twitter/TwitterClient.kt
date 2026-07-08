@@ -154,18 +154,20 @@ class TwitterClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("Twitter OAuth 인가 코드 교환")
 
-        val response = twitterOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "authorization_code",
-                "code" to authorizationCode,
-                "redirect_uri" to redirectUri,
-                "client_id" to twitterConfig.getClientId(),
-                "code_verifier" to "challenge",
-            ),
+        val body = mutableMapOf(
+            "grant_type" to "authorization_code",
+            "code" to authorizationCode,
+            "redirect_uri" to redirectUri,
+            "client_id" to twitterConfig.getClientId(),
         )
+        if (!codeVerifier.isNullOrBlank()) {
+            body["code_verifier"] = codeVerifier
+        }
+
+        val response = twitterOAuthApi.exchangeToken(body)
 
         return PlatformTokenResult(
             accessToken = response.accessToken,
@@ -190,6 +192,23 @@ class TwitterClient(
             refreshToken = response.refreshToken,
             expiresIn = response.expiresIn,
         )
+    }
+
+    override fun revokeToken(accessToken: String): Boolean {
+        log.info("Twitter OAuth 토큰 폐기")
+        return try {
+            twitterOAuthApi.revokeToken(
+                mapOf(
+                    "token" to accessToken,
+                    "token_type_hint" to "access_token",
+                    "client_id" to twitterConfig.getClientId(),
+                ),
+            )
+            true
+        } catch (e: Exception) {
+            log.warn("Twitter 토큰 폐기 실패: {}", e.message)
+            false
+        }
     }
 
     override fun deleteVideo(platformVideoId: String, accessToken: String): Boolean {
@@ -260,6 +279,7 @@ class TwitterClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("Twitter 답글 조회: tweetId={}", platformVideoId)
 

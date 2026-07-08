@@ -1,5 +1,6 @@
 package com.ongo.api.contenttranslator
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contenttranslator.ContentTranslatorUseCase
 import com.ongo.application.contenttranslator.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "콘텐츠 번역기", description = "AI 기반 다국어 콘텐츠 번역")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/content-translator")
 class ContentTranslatorController(

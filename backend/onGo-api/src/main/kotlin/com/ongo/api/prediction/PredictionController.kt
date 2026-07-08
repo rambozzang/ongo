@@ -1,5 +1,6 @@
 package com.ongo.api.prediction
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.prediction.PredictionUseCase
 import com.ongo.application.prediction.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "성과 예측", description = "AI 기반 콘텐츠 성과 예측")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/predictions")
 class PredictionController(

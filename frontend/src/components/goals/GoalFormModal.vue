@@ -199,9 +199,9 @@ const handleBackdropClick = (e: MouseEvent) => {
                 {{ isEditMode ? '목표 수정' : '새 목표 만들기' }}
               </h2>
               <button
-                @click="emit('close')"
                 class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 aria-label="모달 닫기"
+                @click="emit('close')"
               >
                 <XMarkIcon class="w-5 h-5" />
               </button>
@@ -219,13 +219,13 @@ const handleBackdropClick = (e: MouseEvent) => {
                     v-for="preset in typePresets"
                     :key="preset.value"
                     type="button"
-                    @click="formData.type = preset.value as GoalType"
                     :class="[
                       'px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all',
                       formData.type === preset.value
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                         : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
                     ]"
+                    @click="formData.type = preset.value as GoalType"
                   >
                     <span class="mr-1">{{ preset.icon }}</span>
                     {{ preset.label }}
@@ -269,13 +269,13 @@ const handleBackdropClick = (e: MouseEvent) => {
                     v-for="period in periodOptions"
                     :key="period.value"
                     type="button"
-                    @click="formData.period = period.value as GoalPeriod"
                     :class="[
                       'px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all',
                       formData.period === period.value
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                         : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
                     ]"
+                    @click="formData.period = period.value as GoalPeriod"
                   >
                     {{ period.label }}
                   </button>
@@ -361,8 +361,8 @@ const handleBackdropClick = (e: MouseEvent) => {
                   </label>
                   <button
                     type="button"
-                    @click="addMilestone"
                     class="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                    @click="addMilestone"
                   >
                     <PlusIcon class="w-4 h-4" />
                     추가
@@ -395,8 +395,8 @@ const handleBackdropClick = (e: MouseEvent) => {
                     </div>
                     <button
                       type="button"
-                      @click="removeMilestone(index)"
                       class="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      @click="removeMilestone(index)"
                     >
                       <TrashIcon class="w-4 h-4" />
                     </button>
@@ -412,14 +412,14 @@ const handleBackdropClick = (e: MouseEvent) => {
             <!-- Footer -->
             <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
               <button
-                @click="emit('close')"
                 class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                @click="emit('close')"
               >
                 취소
               </button>
               <button
-                @click="handleSubmit"
                 class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors"
+                @click="handleSubmit"
               >
                 {{ isEditMode ? '수정' : '생성' }}
               </button>

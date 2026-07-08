@@ -1,9 +1,11 @@
 package com.ongo.application.faninsights
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.faninsights.dto.*
 import com.ongo.domain.faninsights.*
 import org.springframework.stereotype.Service
 
+@Profile("wip")
 @Service
 class FanInsightsUseCase(
     private val demographicRepository: FanDemographicRepository,

@@ -1,5 +1,6 @@
 package com.ongo.api.contentlibrary
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentlibrary.ContentLibraryUseCase
 import com.ongo.application.contentlibrary.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "콘텐츠 라이브러리", description = "업로드 콘텐츠 체계적 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/content-library")
 class ContentLibraryController(

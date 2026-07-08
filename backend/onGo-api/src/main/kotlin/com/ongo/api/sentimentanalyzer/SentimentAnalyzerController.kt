@@ -1,5 +1,6 @@
 package com.ongo.api.sentimentanalyzer
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.sentimentanalyzer.SentimentAnalyzerUseCase
 import com.ongo.application.sentimentanalyzer.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "감정 분석기", description = "콘텐츠 댓글 감정 분석 및 인사이트")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/sentiment-analyzer")
 class SentimentAnalyzerController(

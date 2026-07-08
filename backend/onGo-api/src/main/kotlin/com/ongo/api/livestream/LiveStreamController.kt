@@ -1,5 +1,6 @@
 package com.ongo.api.livestream
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.livestream.LiveStreamUseCase
 import com.ongo.application.livestream.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "라이브 스트림 관리", description = "멀티플랫폼 라이브 스트리밍 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/live-streams")
 class LiveStreamController(

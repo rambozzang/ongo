@@ -26,6 +26,9 @@ interface PlatformClientPort {
 
     /** 플랫폼에서 사용자의 영상 목록을 조회 */
     fun listVideos(platform: Platform, accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedPortResult
+
+    /** 플랫폼 OAuth 토큰 폐기. 성공 시 true, 실패/미지원 시 false */
+    fun revokeToken(platform: Platform, accessToken: String): Boolean
 }
 
 data class PlatformVideoMetadataResult(

@@ -1,11 +1,13 @@
 package com.ongo.application.creatormilestone
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.creatormilestone.dto.*
 import com.ongo.domain.creatormilestone.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
+@Profile("wip")
 @Service
 class CreatorMilestoneUseCase(
     private val milestoneRepository: CreatorMilestoneRepository,

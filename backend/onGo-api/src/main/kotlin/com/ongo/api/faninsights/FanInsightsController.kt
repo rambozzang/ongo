@@ -1,5 +1,6 @@
 package com.ongo.api.faninsights
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.faninsights.FanInsightsUseCase
 import com.ongo.application.faninsights.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "팬 인사이트", description = "팬 행동 패턴 및 인구 통계 분석")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/fan-insights")
 class FanInsightsController(

@@ -54,6 +54,10 @@ onBeforeUnmount(() => {
   if (instance?.chart) {
     instance.chart.destroy()
   }
+  const tooltipEl = document.getElementById('chartjs-tooltip')
+  if (tooltipEl) {
+    tooltipEl.remove()
+  }
 })
 
 const props = defineProps<{

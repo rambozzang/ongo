@@ -17,7 +17,7 @@ import java.time.LocalDateTime
  * @property accessToken 플랫폼 API 접근용 토큰 (암호화되어 저장됨)
  * @property refreshToken 토큰 갱신용 리프레시 토큰 (암호화되어 저장됨)
  * @property tokenExpiresAt 액세스 토큰 만료 일시
- * @property status 채널 상태 (ACTIVE, DISCONNECTED 등)
+ * @property status 채널 상태 (ACTIVE, INACTIVE, EXPIRED, REVOKED)
  */
 data class Channel(
     val id: Long? = null,
@@ -31,7 +31,7 @@ data class Channel(
     val accessToken: String,
     val refreshToken: String? = null,
     val tokenExpiresAt: LocalDateTime? = null,
-    val status: String = "ACTIVE",
+    val status: ChannelStatus = ChannelStatus.ACTIVE,
     val connectedAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
 )

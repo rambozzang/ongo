@@ -33,9 +33,10 @@ class PlatformCommentPortAdapter(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): FetchedCommentList {
         val result = platformClientFactory.getClient(platform)
-            .listComments(platformVideoId, accessToken, pageToken, maxResults)
+            .listComments(platformVideoId, accessToken, pageToken, maxResults, publishedAfter)
         return FetchedCommentList(
             comments = result.comments.map { it.toDomain() },
             nextPageToken = result.nextPageToken,
@@ -94,6 +95,7 @@ class PlatformCommentPortAdapter(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
         e: Throwable,
     ): FetchedCommentList {
         log.warn("플랫폼 {} 댓글 조회 실패 (Circuit Breaker): {}", platform, e.message)

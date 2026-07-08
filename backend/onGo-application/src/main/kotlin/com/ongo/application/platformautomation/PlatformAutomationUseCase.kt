@@ -1,5 +1,6 @@
 package com.ongo.application.platformautomation
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.platformautomation.dto.*
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.platformautomation.AutomationLog
@@ -9,6 +10,7 @@ import com.ongo.domain.platformautomation.AutomationRuleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class PlatformAutomationUseCase(
     private val ruleRepository: AutomationRuleRepository,

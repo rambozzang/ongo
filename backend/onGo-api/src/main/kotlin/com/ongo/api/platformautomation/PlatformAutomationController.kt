@@ -1,5 +1,6 @@
 package com.ongo.api.platformautomation
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.platformautomation.PlatformAutomationUseCase
 import com.ongo.application.platformautomation.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "플랫폼 자동화", description = "플랫폼별 자동 게시 규칙 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/platform-automation")
 class PlatformAutomationController(

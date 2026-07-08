@@ -1,5 +1,6 @@
 package com.ongo.api.fansegmentcampaign
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.fansegmentcampaign.FanSegmentCampaignUseCase
 import com.ongo.application.fansegmentcampaign.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "팬 세그먼트 캠페인", description = "팬 세그먼트별 맞춤 캠페인 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/fan-segment-campaigns")
 class FanSegmentCampaignController(

@@ -54,8 +54,8 @@
             <!-- Close button -->
             <button
               class="shrink-0 text-gray-400 opacity-60 transition-opacity hover:opacity-100 dark:text-gray-500"
-              @click="removeToast(toast.id)"
               aria-label="알림 닫기"
+              @click="removeToast(toast.id)"
             >
               <XMarkIcon class="h-4 w-4" />
             </button>

@@ -11,6 +11,8 @@ import com.ongo.infrastructure.persistence.jooq.Tables.REFRESH_TOKENS
 import org.jooq.DSLContext
 import org.jooq.Record
 import org.springframework.stereotype.Repository
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.time.LocalDateTime
 
 @Repository
@@ -19,23 +21,27 @@ class RefreshTokenJooqRepository(
 ) : RefreshTokenPort {
 
     override fun save(userId: Long, token: String, expiresAt: LocalDateTime) {
+        val hashedToken = hashToken(token)
         dsl.insertInto(REFRESH_TOKENS)
             .set(USER_ID, userId)
-            .set(TOKEN, token)
+            .set(TOKEN, hashedToken)
             .set(EXPIRES_AT, expiresAt)
             .execute()
     }
 
-    override fun findByToken(token: String): RefreshTokenInfo? =
-        dsl.select()
+    override fun findByToken(token: String): RefreshTokenInfo? {
+        val hashedToken = hashToken(token)
+        return dsl.select()
             .from(REFRESH_TOKENS)
-            .where(TOKEN.eq(token))
+            .where(TOKEN.eq(hashedToken))
             .fetchOne()
             ?.toRefreshTokenInfo()
+    }
 
     override fun deleteByToken(token: String) {
+        val hashedToken = hashToken(token)
         dsl.deleteFrom(REFRESH_TOKENS)
-            .where(TOKEN.eq(token))
+            .where(TOKEN.eq(hashedToken))
             .execute()
     }
 
@@ -58,5 +64,10 @@ class RefreshTokenJooqRepository(
         expiresAt = localDateTime(EXPIRES_AT)!!,
         createdAt = localDateTime(CREATED_AT)!!,
     )
-}
 
+    private fun hashToken(token: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val hashBytes = digest.digest(token.toByteArray(StandardCharsets.UTF_8))
+        return hashBytes.joinToString("") { "%02x".format(it) }
+    }
+}

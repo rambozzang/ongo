@@ -1,5 +1,6 @@
 package com.ongo.api.moodboard
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.moodboard.MoodBoardUseCase
 import com.ongo.application.moodboard.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "크리에이터 무드보드", description = "콘텐츠 기획 비주얼 보드 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/mood-boards")
 class MoodBoardController(

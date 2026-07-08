@@ -121,7 +121,7 @@ class DailymotionClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("Dailymotion OAuth 인가 코드 교환")
 
         val response = dailymotionOAuthApi.exchangeToken(
@@ -185,6 +185,7 @@ class DailymotionClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("Dailymotion 댓글 조회: videoId={}", platformVideoId)
 

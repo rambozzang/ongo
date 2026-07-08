@@ -150,9 +150,9 @@ function formatDate(dateString: string) {
             />
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
               <button
-                @click="handlePreview(asset)"
                 class="opacity-0 group-hover:opacity-100 p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg transition-opacity"
                 title="미리보기"
+                @click="handlePreview(asset)"
               >
                 <EyeIcon class="w-5 h-5 text-gray-700 dark:text-gray-300" />
               </button>
@@ -177,17 +177,17 @@ function formatDate(dateString: string) {
           <!-- Actions -->
           <div class="flex gap-1 pt-2 border-t border-gray-200 dark:border-gray-700">
             <button
-              @click="handleDownload(asset)"
               class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors"
               title="다운로드"
+              @click="handleDownload(asset)"
             >
               <ArrowDownTrayIcon class="w-4 h-4" />
               <span>다운로드</span>
             </button>
             <button
-              @click="handleRemove(asset.id)"
               class="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
               title="삭제"
+              @click="handleRemove(asset.id)"
             >
               <TrashIcon class="w-4 h-4 text-gray-600 dark:text-gray-300" />
             </button>
@@ -197,8 +197,8 @@ function formatDate(dateString: string) {
 
       <!-- Upload Button -->
       <button
-        @click="handleUpload"
         class="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors flex flex-col items-center justify-center gap-2 aspect-square"
+        @click="handleUpload"
       >
         <PlusIcon class="w-8 h-8 text-gray-400 dark:text-gray-500" />
         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">에셋 업로드</span>
@@ -235,9 +235,9 @@ function formatDate(dateString: string) {
               </div>
             </div>
             <button
-              @click="closePreview"
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
               aria-label="모달 닫기"
+              @click="closePreview"
             >
               <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -263,15 +263,15 @@ function formatDate(dateString: string) {
         </div>
         <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-2">
           <button
-            @click="handleDownload(selectedAsset)"
             class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors flex items-center justify-center gap-2"
+            @click="handleDownload(selectedAsset)"
           >
             <ArrowDownTrayIcon class="w-5 h-5" />
             <span>다운로드</span>
           </button>
           <button
-            @click="closePreview"
             class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 font-medium rounded-md transition-colors"
+            @click="closePreview"
           >
             닫기
           </button>

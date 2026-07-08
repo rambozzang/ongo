@@ -9,10 +9,12 @@ import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.common.util.safeValueOfOrThrow
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.channel.PlatformOAuth2Port
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.user.UserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -28,6 +30,7 @@ class ChannelUseCase(
     private val platformClientPort: PlatformClientPort,
     private val tokenEncryptionPort: TokenEncryptionPort
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * 사용자가 연동한 채널 목록을 조회합니다.
@@ -59,19 +62,42 @@ class ChannelUseCase(
             throw PlanLimitExceededException("연동 플랫폼", user.planType.maxPlatforms)
         }
 
-        // 이미 연동된 플랫폼 확인
+        // 이미 연동된 플랫폼 확인 (ACTIVE 상태일 때만 중복 처리)
         val existing = channelRepository.findByUserIdAndPlatform(userId, platform)
-        if (existing != null) {
+        if (existing != null && existing.status == ChannelStatus.ACTIVE) {
             throw com.ongo.common.exception.DuplicateResourceException("채널", platform.name)
         }
 
-        // OAuth 토큰 교환
-        val tokenResult = platformOAuth2Port.exchangeCodeForTokens(platform, request.authorizationCode, request.redirectUri)
+        // OAuth 토큰 교환 (Twitter는 PKCE code_verifier 필요)
+        val tokenResult = platformOAuth2Port.exchangeCodeForTokens(platform, request.authorizationCode, request.redirectUri, request.codeVerifier)
 
         // 플랫폼에서 채널 정보 조회
         val channelInfo = platformClientPort.getChannelInfo(platform, tokenResult.accessToken)
 
-        // 토큰 암호화 후 저장
+        // 토큰 암호화
+        val encryptedToken = tokenEncryptionPort.encrypt(tokenResult.accessToken)
+        val encryptedRefresh = tokenResult.refreshToken?.let { rt: String -> tokenEncryptionPort.encrypt(rt) }
+        val expiresAt = LocalDateTime.now().plusSeconds(tokenResult.expiresIn)
+
+        // 기존 EXPIRED/REVOKED 채널이 있으면 재연동 (업데이트)
+        if (existing != null) {
+            val updated = existing.copy(
+                platformChannelId = channelInfo.channelId,
+                channelName = channelInfo.channelName,
+                channelUrl = channelInfo.channelUrl,
+                subscriberCount = channelInfo.subscriberCount,
+                profileImageUrl = channelInfo.profileImageUrl,
+                accessToken = encryptedToken,
+                refreshToken = encryptedRefresh,
+                tokenExpiresAt = expiresAt,
+                status = ChannelStatus.ACTIVE,
+                updatedAt = LocalDateTime.now()
+            )
+            channelRepository.update(updated)
+            return ConnectChannelResponse(channel = updated.toResponse())
+        }
+
+        // 신규 채널 저장
         val channel = Channel(
             userId = userId,
             platform = platform,
@@ -80,10 +106,10 @@ class ChannelUseCase(
             channelUrl = channelInfo.channelUrl,
             subscriberCount = channelInfo.subscriberCount,
             profileImageUrl = channelInfo.profileImageUrl,
-            accessToken = tokenEncryptionPort.encrypt(tokenResult.accessToken),
-            refreshToken = tokenResult.refreshToken?.let { rt: String -> tokenEncryptionPort.encrypt(rt) },
-            tokenExpiresAt = LocalDateTime.now().plusSeconds(tokenResult.expiresIn),
-            status = "ACTIVE",
+            accessToken = encryptedToken,
+            refreshToken = encryptedRefresh,
+            tokenExpiresAt = expiresAt,
+            status = ChannelStatus.ACTIVE,
             connectedAt = LocalDateTime.now()
         )
 
@@ -98,6 +124,16 @@ class ChannelUseCase(
     fun disconnectChannel(userId: Long, channelId: Long) {
         val channel = channelRepository.findById(channelId) ?: throw NotFoundException("채널", channelId)
         if (channel.userId != userId) throw ForbiddenException("해당 채널에 대한 권한이 없습니다")
+
+        // 플랫폼 OAuth 토큰 폐기
+        try {
+            val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
+            platformClientPort.revokeToken(channel.platform, decryptedToken)
+            log.info("플랫폼 토큰 폐기 완료: platform={}, channelId={}", channel.platform, channelId)
+        } catch (e: Exception) {
+            log.warn("플랫폼 토큰 폐기 실패 (계속 진행): platform={}, error={}", channel.platform, e.message)
+        }
+
         channelRepository.delete(channelId)
     }
 
@@ -125,7 +161,7 @@ class ChannelUseCase(
     private fun Channel.toResponse(): ChannelResponse {
         val expiresAt = tokenExpiresAt
         val tokenStatus = when {
-            status == "DISCONNECTED" -> "DISCONNECTED"
+            status == ChannelStatus.REVOKED -> "DISCONNECTED"
             expiresAt != null && expiresAt.isBefore(LocalDateTime.now()) -> "EXPIRED"
             expiresAt != null && expiresAt.isBefore(LocalDateTime.now().plusDays(3)) -> "EXPIRING_SOON"
             else -> "ACTIVE"

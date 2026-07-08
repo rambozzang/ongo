@@ -137,7 +137,7 @@
           <!-- Right Controls -->
           <div class="flex items-center gap-2">
             <!-- Playback Speed -->
-            <div class="relative" ref="speedMenuRef">
+            <div ref="speedMenuRef" class="relative">
               <button
                 class="rounded px-2 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
                 @click.stop="showSpeedMenu = !showSpeedMenu"

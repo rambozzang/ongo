@@ -1,5 +1,6 @@
 package com.ongo.api.musicrecommender
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.musicrecommender.MusicRecommenderUseCase
 import com.ongo.application.musicrecommender.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "AI 음악 추천기", description = "AI 기반 배경음악 추천")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/music-recommender")
 class MusicRecommenderController(

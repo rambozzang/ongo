@@ -144,7 +144,7 @@
               <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ formatDate(item.publishedAt) }}</td>
               <td class="px-4 py-3 text-center" @click.stop>
                 <!-- AI 도구 드롭다운 -->
-                <div class="relative inline-block" :ref="(el) => setDropdownRef(el, `${item.platform}-${item.platformVideoId}`)">
+                <div :ref="(el) => setDropdownRef(el, `${item.platform}-${item.platformVideoId}`)" class="relative inline-block">
                   <button
                     class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
                     @click.stop="toggleDropdown(`${item.platform}-${item.platformVideoId}`)"

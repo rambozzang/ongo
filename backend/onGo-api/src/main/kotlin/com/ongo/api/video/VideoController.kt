@@ -8,6 +8,8 @@ import com.ongo.application.video.UploadVideoUseCase
 import com.ongo.application.video.VideoFeedUseCase
 import com.ongo.application.video.VideoFeedResponse
 import com.ongo.application.video.VideoQueryUseCase
+import com.ongo.application.video.dto.AiOptimizationRequest
+import com.ongo.application.video.dto.AiOptimizationResponse
 import com.ongo.application.video.dto.OptimizationCheckRequest
 import com.ongo.application.video.dto.OptimizationCheckResponse
 import com.ongo.common.ResData
@@ -325,6 +327,26 @@ class VideoController(
         @RequestBody request: OptimizationCheckRequest,
     ): ResponseEntity<ResData<OptimizationCheckResponse>> {
         return ResData.success(crossPlatformOptimizationUseCase.checkOptimization(request))
+    }
+
+    @Operation(
+        summary = "AI 크로스 플랫폼 콘텐츠 최적화",
+        description = "AI를 활용하여 원본 콘텐츠를 각 플랫폼 특성에 맞게 최적화합니다. 플랫폼별 최적화된 제목, 설명, 태그를 반환합니다."
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "AI 최적화 성공"),
+        ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "500", description = "AI 서비스 오류"),
+    )
+    @RequiresPermission(Permission.VIDEO_CREATE)
+    @PostMapping("/optimize")
+    fun optimizeContent(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @RequestBody request: AiOptimizationRequest,
+    ): ResponseEntity<ResData<AiOptimizationResponse>> {
+        val result = crossPlatformOptimizationUseCase.optimizeContent(userId, request)
+        return ResData.success(result)
     }
 }
 

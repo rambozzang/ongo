@@ -22,6 +22,8 @@ export interface Channel {
 export interface ChannelConnectRequest {
   authorizationCode: string
   redirectUri: string
+  /** Twitter OAuth 2.0 PKCE code_verifier (Twitter 연동 시 필수) */
+  codeVerifier?: string
 }
 
 export const PLATFORM_CONFIG: Record<

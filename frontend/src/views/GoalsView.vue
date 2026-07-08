@@ -141,8 +141,8 @@ const formatNumber = (value: number): string => {
     <PageHeader :title="$t('goals.title')" :description="$t('goals.description')">
       <template #actions>
         <button
-          @click="handleCreateGoal"
           class="btn-primary inline-flex items-center gap-2"
+          @click="handleCreateGoal"
         >
           <PlusIcon class="w-5 h-5" />
           {{ $t('goals.newGoal') }}
@@ -235,24 +235,24 @@ const formatNumber = (value: number): string => {
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-2">
           <button
-            @click="showCompleted = false"
             :class="[
               'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
               !showCompleted
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
             ]"
+            @click="showCompleted = false"
           >
             {{ $t('goals.activeGoalsFilter', { count: stats.active }) }}
           </button>
           <button
-            @click="showCompleted = true"
             :class="[
               'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
               showCompleted
                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
             ]"
+            @click="showCompleted = true"
           >
             {{ $t('goals.completedGoalsFilter', { count: stats.completed }) }}
           </button>
@@ -299,8 +299,8 @@ const formatNumber = (value: number): string => {
         </p>
         <button
           v-if="!showCompleted"
-          @click="handleCreateGoal"
           class="btn-primary inline-flex items-center gap-2"
+          @click="handleCreateGoal"
         >
           <PlusIcon class="w-5 h-5" />
           {{ $t('goals.createFirstGoal') }}
@@ -356,8 +356,8 @@ const formatNumber = (value: number): string => {
                     </p>
                   </div>
                   <button
-                    @click="handleCloseDetails"
                     class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ml-4"
+                    @click="handleCloseDetails"
                   >
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

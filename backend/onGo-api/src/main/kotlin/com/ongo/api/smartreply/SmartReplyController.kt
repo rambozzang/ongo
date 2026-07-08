@@ -1,5 +1,6 @@
 package com.ongo.api.smartreply
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.smartreply.SmartReplyUseCase
 import com.ongo.application.smartreply.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "스마트 리플라이", description = "AI 기반 댓글 자동 답변 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/smart-reply")
 class SmartReplyController(

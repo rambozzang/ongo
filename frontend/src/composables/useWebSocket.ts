@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { Client } from '@stomp/stompjs'
-// @ts-ignore
+// @ts-expect-error SockJS type definitions are not fully compatible with STOMP
 import SockJS from 'sockjs-client/dist/sockjs'
 import { useNotificationCenterStore } from '@/stores/notificationCenter'
 import { useNotificationStore } from '@/stores/notification'

@@ -1,10 +1,12 @@
 package com.ongo.application.calendarinsights
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.calendarinsights.dto.*
 import com.ongo.domain.calendarinsights.*
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 
+@Profile("wip")
 @Service
 class CalendarInsightsUseCase(
     private val insightRepository: CalendarInsightRepository,

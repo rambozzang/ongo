@@ -4,6 +4,8 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.schedule.Schedule
+import com.ongo.domain.lock.DistributedLockPort
+import com.ongo.application.video.StreamPublishUseCase
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
@@ -29,6 +31,12 @@ class ScheduleExecutorTest {
     @MockK
     private lateinit var videoUploadRepository: VideoUploadRepository
 
+    @MockK
+    private lateinit var distributedLockPort: DistributedLockPort
+
+    @MockK(relaxed = true)
+    private lateinit var streamPublishUseCase: StreamPublishUseCase
+
     private lateinit var scheduleExecutor: ScheduleExecutor
 
     // KST 기준 현재 시각으로 간주하는 기준점 (테스트용 고정값)
@@ -37,7 +45,9 @@ class ScheduleExecutorTest {
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        scheduleExecutor = ScheduleExecutor(scheduleRepository, videoUploadRepository)
+        every { distributedLockPort.tryLock(any()) } returns true
+        every { distributedLockPort.releaseLock(any()) } returns Unit
+        scheduleExecutor = ScheduleExecutor(scheduleRepository, videoUploadRepository, distributedLockPort, streamPublishUseCase)
     }
 
     // ==================== 헬퍼 ====================
@@ -200,10 +210,27 @@ class ScheduleExecutorTest {
     }
 
     @Test
-    @DisplayName("업로드 레코드 없고 24시간 초과 시 FAILED 처리")
+    @DisplayName("업로드 레코드 없고 24시간 초과된 SCHEDULED도 executeScheduledUpload 호출")
+    fun `업로드 레코드 없고 24시간 초과된 SCHEDULED도 executeScheduledUpload 호출`() {
+        // given: scheduledAt이 25시간 전 → 24시간 타임아웃 초과, SCHEDULED 상태
+        val schedule = createSchedule(scheduledAt = now.minusHours(25), status = ScheduleStatus.SCHEDULED)
+
+        every { scheduleRepository.findDueSchedules(any()) } returns listOf(schedule)
+        every { videoUploadRepository.findByVideoId(schedule.videoId) } returns emptyList()
+
+        // when
+        scheduleExecutor.syncScheduleStatuses()
+
+        // then: SCHEDULED 상태이면 먼저 업로드 시도
+        verify(exactly = 1) { streamPublishUseCase.executeScheduledUpload(schedule) }
+        verify(exactly = 0) { scheduleRepository.update(any()) }
+    }
+
+    @Test
+    @DisplayName("업로드 레코드 없고 24시간 초과 시 FAILED 처리 — PROCESSING 상태")
     fun `업로드 레코드 없고 24시간 초과 시 FAILED 처리`() {
-        // given: scheduledAt이 25시간 전 → 24시간 타임아웃 초과
-        val schedule = createSchedule(scheduledAt = now.minusHours(25))
+        // given: scheduledAt이 25시간 전 → 24시간 타임아웃 초과, PROCESSING 상태
+        val schedule = createSchedule(scheduledAt = now.minusHours(25), status = ScheduleStatus.PROCESSING)
 
         every { scheduleRepository.findDueSchedules(any()) } returns listOf(schedule)
         every { videoUploadRepository.findByVideoId(schedule.videoId) } returns emptyList()
@@ -219,9 +246,9 @@ class ScheduleExecutorTest {
     }
 
     @Test
-    @DisplayName("업로드 레코드 없고 24시간 미만이면 상태 유지")
-    fun `업로드 레코드 없고 24시간 미만이면 상태 유지`() {
-        // given: scheduledAt이 1시간 전 → 24시간 이내
+    @DisplayName("업로드 레코드 없고 SCHEDULED 상태면 executeScheduledUpload 호출")
+    fun `업로드 레코드 없고 SCHEDULED 상태면 executeScheduledUpload 호출`() {
+        // given
         val schedule = createSchedule(scheduledAt = now.minusHours(1), status = ScheduleStatus.SCHEDULED)
 
         every { scheduleRepository.findDueSchedules(any()) } returns listOf(schedule)
@@ -230,7 +257,25 @@ class ScheduleExecutorTest {
         // when
         scheduleExecutor.syncScheduleStatuses()
 
+        // then
+        verify(exactly = 1) { streamPublishUseCase.executeScheduledUpload(schedule) }
+        verify(exactly = 0) { scheduleRepository.update(any()) }
+    }
+
+    @Test
+    @DisplayName("업로드 레코드 없고 PROCESSING 상태면 24시간 미만이면 상태 유지")
+    fun `업로드 레코드 없고 PROCESSING 상태면 24시간 미만이면 상태 유지`() {
+        // given: scheduledAt이 1시간 전 → 24시간 이내, PROCESSING 상태
+        val schedule = createSchedule(scheduledAt = now.minusHours(1), status = ScheduleStatus.PROCESSING)
+
+        every { scheduleRepository.findDueSchedules(any()) } returns listOf(schedule)
+        every { videoUploadRepository.findByVideoId(schedule.videoId) } returns emptyList()
+
+        // when
+        scheduleExecutor.syncScheduleStatuses()
+
         // then: 업데이트 호출 없어야 함
+        verify(exactly = 0) { streamPublishUseCase.executeScheduledUpload(any()) }
         verify(exactly = 0) { scheduleRepository.update(any()) }
     }
 

@@ -10,6 +10,7 @@ import com.ongo.application.auth.AuthUseCase
 import com.ongo.application.auth.dto.AuthResult
 import com.ongo.common.ResData
 import com.ongo.domain.auth.AuthTokenPort
+import com.ongo.infrastructure.external.googledrive.OAuthStateManager
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -31,6 +32,7 @@ class AuthController(
     private val authUseCase: AuthUseCase,
     private val authTokenPort: AuthTokenPort,
     private val authRateLimiter: AuthRateLimiter,
+    private val oAuthStateManager: OAuthStateManager,
 ) {
 
     @Operation(summary = "SSE 토큰 발급", description = "SSE(Server-Sent Events) 연결용 단기 토큰을 발급합니다 (5분 만료).")
@@ -42,6 +44,15 @@ class AuthController(
         return ResData.success(mapOf("token" to sseToken))
     }
 
+    @Operation(summary = "OAuth state 발급", description = "소셜 로그인 CSRF 방지용 state를 발급합니다.")
+    @GetMapping("/{provider}/state")
+    fun issueOAuthState(
+        @Parameter(description = "OAuth 제공자 (google, kakao)") @PathVariable provider: String,
+    ): ResponseEntity<ResData<Map<String, String>>> {
+        val state = oAuthStateManager.issueAnonymous()
+        return ResData.success(mapOf("state" to state))
+    }
+
     @Operation(
         summary = "소셜 로그인",
         description = "Google 또는 Kakao OAuth 인가 코드를 사용하여 로그인합니다. 신규 사용자는 자동으로 회원가입됩니다."
@@ -49,7 +60,7 @@ class AuthController(
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "로그인 성공"),
         ApiResponse(responseCode = "400", description = "잘못된 요청 (인가 코드 누락 또는 유효하지 않은 provider)"),
-        ApiResponse(responseCode = "500", description = "서버 내부 오류")
+        ApiResponse(responseCode = "500", description = "서버 낭부 오류")
     )
     @PostMapping("/login/{provider}")
     fun socialLogin(
@@ -58,6 +69,9 @@ class AuthController(
         httpRequest: HttpServletRequest,
     ): ResponseEntity<ResData<AuthResponse>> {
         authRateLimiter.checkLoginRateLimit(httpRequest.remoteAddr)
+        if (!oAuthStateManager.verifyAnonymous(request.state)) {
+            throw com.ongo.common.exception.UnauthorizedException("유효하지 않은 OAuth state입니다. CSRF 공격일 수 있습니다.")
+        }
         val result = authUseCase.socialLogin(provider, request.code, request.redirectUri)
         val response = toAuthResponse(result)
         return ResData.success(response, if (result.isNewUser) "회원가입이 완료되었습니다" else "로그인되었습니다")
@@ -71,7 +85,7 @@ class AuthController(
         ApiResponse(responseCode = "200", description = "토큰 갱신 성공"),
         ApiResponse(responseCode = "400", description = "잘못된 요청 (Refresh Token 누락)"),
         ApiResponse(responseCode = "401", description = "인증 실패 (만료되었거나 유효하지 않은 Refresh Token)"),
-        ApiResponse(responseCode = "500", description = "서버 내부 오류")
+        ApiResponse(responseCode = "500", description = "서버 낭부 오류")
     )
     @PostMapping("/refresh")
     fun refreshToken(
@@ -85,17 +99,28 @@ class AuthController(
 
     @Operation(
         summary = "로그아웃",
-        description = "현재 사용자의 Refresh Token을 무효화하여 로그아웃 처리합니다."
+        description = "현재 사용자의 Access Token과 Refresh Token을 무효화하여 로그아웃 처리합니다."
     )
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "로그아웃 성공"),
         ApiResponse(responseCode = "401", description = "인증 실패 (유효하지 않은 Access Token)"),
-        ApiResponse(responseCode = "500", description = "서버 내부 오류")
+        ApiResponse(responseCode = "500", description = "서버 낭부 오류")
     )
     @PostMapping("/logout")
-    fun logout(@Parameter(hidden = true) @CurrentUser userId: Long): ResponseEntity<ResData<Nothing>> {
-        authUseCase.logout(userId)
+    fun logout(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        request: HttpServletRequest,
+    ): ResponseEntity<ResData<Nothing>> {
+        val accessToken = resolveAccessToken(request)
+        authUseCase.logout(userId, accessToken)
         return ResponseEntity.ok(ResData(success = true, message = "로그아웃되었습니다"))
+    }
+
+    private fun resolveAccessToken(request: HttpServletRequest): String? {
+        val bearerToken = request.getHeader("Authorization")
+        return if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            bearerToken.substring(7)
+        } else null
     }
 
     @Operation(summary = "프로필 조회", description = "현재 로그인한 사용자의 프로필 정보를 조회합니다.")
@@ -138,11 +163,11 @@ class AuthController(
         )
     }
 
-    @Operation(summary = "온보딩 완료", description = "사용자의 온보딩을 완료 처리합니다.")
+    @Operation(summary = "온볼딩 완료", description = "사용자의 온볼딩을 완료 처리합니다.")
     @PostMapping("/onboarding/complete")
     fun completeOnboarding(@Parameter(hidden = true) @CurrentUser userId: Long): ResponseEntity<ResData<Nothing>> {
         authUseCase.completeOnboarding(userId)
-        return ResponseEntity.ok(ResData(success = true, message = "온보딩이 완료되었습니다"))
+        return ResponseEntity.ok(ResData(success = true, message = "온볼딩이 완료되었습니다"))
     }
 
     @Operation(summary = "계정 삭제", description = "현재 로그인한 사용자의 계정을 삭제합니다.")
@@ -186,4 +211,3 @@ class AuthController(
         )
     }
 }
-

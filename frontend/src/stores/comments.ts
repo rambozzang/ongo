@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, shallowRef, computed } from 'vue'
 import type {
   Comment,
   CommentSentiment,
@@ -14,6 +14,7 @@ import type {
 } from '@/types/comment'
 import type { Platform } from '@/types/channel'
 import { commentsApi } from '@/api/comments'
+import { useNotificationStore } from '@/stores/notification'
 
 interface CommentFilters {
   platform: Platform | 'ALL'
@@ -24,7 +25,7 @@ interface CommentFilters {
 }
 
 export const useCommentsStore = defineStore('comments', () => {
-  const comments = ref<Comment[]>([])
+  const comments = shallowRef<Comment[]>([])
   const loading = ref(false)
   const syncing = ref(false)
   const totalCount = ref(0)
@@ -99,7 +100,9 @@ export const useCommentsStore = defineStore('comments', () => {
       totalCount.value = response.totalCount
       stats.value = response.stats
       capabilities.value = response.capabilities
-    } catch {
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
       comments.value = []
       totalCount.value = 0
     } finally {
@@ -115,7 +118,9 @@ export const useCommentsStore = defineStore('comments', () => {
       // Refresh the list after sync
       await fetchComments()
       return result
-    } catch {
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
       return null
     } finally {
       syncing.value = false
@@ -125,51 +130,49 @@ export const useCommentsStore = defineStore('comments', () => {
   const hideComment = async (id: number) => {
     try {
       await commentsApi.hide(id)
-      const comment = comments.value.find((c) => c.id === id)
-      if (comment) {
-        comment.isHidden = !comment.isHidden
-      }
-    } catch {
-      // Silently handle
+      comments.value = comments.value.map((c) =>
+        c.id === id ? { ...c, isHidden: !c.isHidden } : c
+      )
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
     }
   }
 
   const pinComment = async (id: number) => {
     try {
       await commentsApi.pin(id)
-      const comment = comments.value.find((c) => c.id === id)
-      if (comment) {
-        comment.isPinned = !comment.isPinned
-      }
-    } catch {
-      // Silently handle
+      comments.value = comments.value.map((c) =>
+        c.id === id ? { ...c, isPinned: !c.isPinned } : c
+      )
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
     }
   }
 
   const replyToComment = async (id: number, text: string) => {
     try {
       await commentsApi.reply(id, text)
-      const comment = comments.value.find((c) => c.id === id)
-      if (comment) {
-        comment.isReplied = true
-        comment.replyContent = text
-        comment.replyCount++
-      }
-    } catch {
-      // Silently handle
+      comments.value = comments.value.map((c) =>
+        c.id === id
+          ? { ...c, isReplied: true, replyContent: text, replyCount: c.replyCount + 1 }
+          : c
+      )
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
     }
   }
 
   const deleteComment = async (id: number) => {
     try {
       await commentsApi.delete(id)
-      const index = comments.value.findIndex((c) => c.id === id)
-      if (index !== -1) {
-        comments.value.splice(index, 1)
-        totalCount.value--
-      }
-    } catch {
-      // Silently handle
+      comments.value = comments.value.filter((c) => c.id !== id)
+      totalCount.value--
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
     }
   }
 
@@ -177,7 +180,9 @@ export const useCommentsStore = defineStore('comments', () => {
     sentimentTrendLoading.value = true
     try {
       sentimentTrendData.value = await commentsApi.sentimentTrend(days)
-    } catch {
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
       sentimentTrendData.value = null
     } finally {
       sentimentTrendLoading.value = false
@@ -188,7 +193,9 @@ export const useCommentsStore = defineStore('comments', () => {
     faqLoading.value = true
     try {
       faqData.value = await commentsApi.faqClusters()
-    } catch {
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
       faqData.value = null
     } finally {
       faqLoading.value = false
@@ -201,7 +208,9 @@ export const useCommentsStore = defineStore('comments', () => {
       const response = await commentsApi.batchAiDraft(commentIds, tone)
       batchDrafts.value = response.drafts
       return response
-    } catch {
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
       batchDrafts.value = []
       return null
     } finally {
@@ -215,7 +224,9 @@ export const useCommentsStore = defineStore('comments', () => {
       const result = await commentsApi.aiReplyGenerate(commentId, tone)
       aiReplies.value = { ...aiReplies.value, [commentId]: result }
       return result
-    } catch {
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
       return null
     } finally {
       aiReplyLoading.value = { ...aiReplyLoading.value, [commentId]: false }
@@ -229,7 +240,9 @@ export const useCommentsStore = defineStore('comments', () => {
       selectedCommentIds.value = []
       await fetchComments(false)
       return result
-    } catch {
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
       return null
     } finally {
       batchActionLoading.value = false
@@ -243,7 +256,9 @@ export const useCommentsStore = defineStore('comments', () => {
       selectedCommentIds.value = []
       await fetchComments(false)
       return result
-    } catch {
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
       return null
     } finally {
       batchActionLoading.value = false
@@ -254,7 +269,9 @@ export const useCommentsStore = defineStore('comments', () => {
     crisisLoading.value = true
     try {
       crisisStatus.value = await commentsApi.crisisDetection()
-    } catch {
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
       crisisStatus.value = null
     } finally {
       crisisLoading.value = false
@@ -271,7 +288,9 @@ export const useCommentsStore = defineStore('comments', () => {
         count,
         sentiment: 'neutral' as const,
       }))
-    } catch {
+    } catch (error: any) {
+      const notificationStore = useNotificationStore()
+      notificationStore.error(error?.response?.data?.message || error?.message || '요청 처리 중 오류가 발생했습니다.')
       keywordCloud.value = []
     } finally {
       keywordCloudLoading.value = false

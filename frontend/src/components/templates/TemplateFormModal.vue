@@ -187,9 +187,9 @@ const handleClose = () => {
           {{ isEditMode ? '템플릿 수정' : '새 템플릿 만들기' }}
         </h2>
         <button
-          @click="handleClose"
           class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           aria-label="모달 닫기"
+          @click="handleClose"
         >
           <XMarkIcon class="w-6 h-6" />
         </button>
@@ -252,9 +252,9 @@ const handleClose = () => {
                 <button
                   v-for="variable in availableVariables"
                   :key="variable.value"
-                  @click="insertVariable(variable.value, formData.category === 'thumbnail' ? 'thumbnail' : formData.category === 'description' || formData.category === 'full' ? 'description' : 'title')"
                   class="px-2 py-1 text-xs font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                   :title="variable.label"
+                  @click="insertVariable(variable.value, formData.category === 'thumbnail' ? 'thumbnail' : formData.category === 'description' || formData.category === 'full' ? 'description' : 'title')"
                 >
                   {{ variable.value }}
                 </button>
@@ -294,10 +294,10 @@ const handleClose = () => {
               </label>
               <input
                 v-model="tagsInput"
-                @blur="handleTagsInput"
                 type="text"
                 placeholder="예: 뷰티, 메이크업, {{product_name}}"
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                @blur="handleTagsInput"
               />
             </div>
 
@@ -358,14 +358,14 @@ const handleClose = () => {
       <!-- Footer -->
       <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
         <button
-          @click="handleClose"
           class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors"
+          @click="handleClose"
         >
           취소
         </button>
         <button
-          @click="handleSave"
           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+          @click="handleSave"
         >
           {{ isEditMode ? '수정' : '저장' }}
         </button>

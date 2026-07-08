@@ -55,14 +55,20 @@ onMounted(async () => {
   returnPath = pathParts.join('|') || '/channels'
 
   try {
-    await channelApi.connect(platform, {
+    const request: import('@/types/channel').ChannelConnectRequest = {
       authorizationCode: code,
       redirectUri: getOAuthRedirectUri(),
-    })
+    }
+    if (platform === 'TWITTER') {
+      request.codeVerifier = sessionStorage.getItem('twitter_code_verifier') || undefined
+    }
+    await channelApi.connect(platform, request)
     router.replace(returnPath)
   } catch {
     errorMessage.value = '채널 연동에 실패했습니다. 다시 시도해주세요.'
     isProcessing.value = false
+  } finally {
+    sessionStorage.removeItem('twitter_code_verifier')
   }
 })
 </script>

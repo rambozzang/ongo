@@ -94,7 +94,7 @@ class ChannelScheduler(
                     }
                     else -> {
                         log.error("토큰 갱신 실패 [${channel.platform}:${channel.id}]: ${e.message}")
-                        channelRepository.update(channel.copy(status = "EXPIRED", updatedAt = LocalDateTime.now()))
+                        channelRepository.update(channel.copy(status = com.ongo.domain.channel.ChannelStatus.EXPIRED, updatedAt = LocalDateTime.now()))
                         notificationRepository.save(Notification(
                             userId = channel.userId,
                             type = NotificationType.CHANNEL_TOKEN_EXPIRED,
@@ -114,6 +114,22 @@ class ChannelScheduler(
                e is java.net.ConnectException ||
                e is java.io.IOException ||
                e.cause is java.net.SocketTimeoutException ||
-               e.cause is java.net.ConnectException
+               e.cause is java.net.ConnectException ||
+               isHttpTransientError(e)
+    }
+
+    private fun isHttpTransientError(e: Exception): Boolean {
+        return when (e) {
+            is org.springframework.web.client.HttpClientErrorException -> e.statusCode.value() == 429
+            is org.springframework.web.client.HttpServerErrorException -> e.statusCode.value() in 502..504
+            else -> {
+                val cause = e.cause
+                when (cause) {
+                    is org.springframework.web.client.HttpClientErrorException -> cause.statusCode.value() == 429
+                    is org.springframework.web.client.HttpServerErrorException -> cause.statusCode.value() in 502..504
+                    else -> false
+                }
+            }
+        }
     }
 }

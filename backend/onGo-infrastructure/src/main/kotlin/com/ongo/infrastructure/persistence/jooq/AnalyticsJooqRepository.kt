@@ -416,6 +416,13 @@ class AnalyticsJooqRepository(
             .map { it.toAnalyticsDaily() }
     }
 
+    override fun findLatestDateByVideoUploadId(videoUploadId: Long): LocalDate? {
+        return dsl.select(DSL.max(DATE))
+            .from(ANALYTICS_DAILY)
+            .where(VIDEO_UPLOAD_ID.eq(videoUploadId))
+            .fetchOne(0, LocalDate::class.java)
+    }
+
     private fun getUserUploadIds(userId: Long): List<Long> =
         dsl.select(DSL.field("vu.id", Long::class.java))
             .from(DSL.table("video_uploads").`as`("vu"))

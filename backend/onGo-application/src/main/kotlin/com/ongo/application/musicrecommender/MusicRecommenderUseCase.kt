@@ -1,11 +1,13 @@
 package com.ongo.application.musicrecommender
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.musicrecommender.dto.*
 import com.ongo.domain.musicrecommender.MusicRecommendation
 import com.ongo.domain.musicrecommender.MusicRecommendationRepository
 import com.ongo.domain.musicrecommender.MusicTrackRepository
 import org.springframework.stereotype.Service
 
+@Profile("wip")
 @Service
 class MusicRecommenderUseCase(
     private val recommendationRepository: MusicRecommendationRepository,

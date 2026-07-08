@@ -95,13 +95,13 @@ class YouTubeClient(
                 ids = "channel==MINE",
                 startDate = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
                 endDate = endDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                metrics = "views,likes,comments,shares,estimatedMinutesWatched,subscribersGained",
+                metrics = "views,likes,comments,shares,estimatedMinutesWatched,subscribersGained,impressions,averageViewDuration",
                 filters = "video==$platformVideoId",
                 authorization = "Bearer $accessToken",
             )
 
             val row = response.rows?.firstOrNull()
-            if (row != null && row.size >= 6) {
+            if (row != null && row.size >= 8) {
                 return PlatformAnalytics(
                     views = row[0].toLongOrNull() ?: 0,
                     likes = row[1].toLongOrNull() ?: 0,
@@ -109,6 +109,8 @@ class YouTubeClient(
                     shares = row[3].toLongOrNull() ?: 0,
                     watchTimeSeconds = (row[4].toLongOrNull() ?: 0) * 60, // minutes → seconds
                     subscriberGained = row[5].toIntOrNull() ?: 0,
+                    impressions = row[6].toLongOrNull() ?: 0,
+                    avgViewDurationSeconds = row[7].toLongOrNull() ?: 0,
                 )
             }
 
@@ -140,7 +142,7 @@ class YouTubeClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("Google OAuth 인가 코드 교환")
 
         val response = googleOAuthApi.refreshToken(
@@ -177,6 +179,17 @@ class YouTubeClient(
             refreshToken = response.refreshToken,
             expiresIn = response.expiresIn,
         )
+    }
+
+    override fun revokeToken(accessToken: String): Boolean {
+        log.info("Google OAuth 토큰 폐기")
+        return try {
+            googleOAuthApi.revokeToken(accessToken)
+            true
+        } catch (e: Exception) {
+            log.warn("Google 토큰 폐기 실패: {}", e.message)
+            false
+        }
     }
 
     override fun deleteVideo(platformVideoId: String, accessToken: String): Boolean {
@@ -301,6 +314,7 @@ class YouTubeClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("YouTube 댓글 조회: videoId={}", platformVideoId)
 

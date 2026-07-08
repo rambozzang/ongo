@@ -157,9 +157,9 @@ const close = () => {
               {{ rule ? '규칙 수정' : '새 자동화 규칙' }}
             </h3>
             <button
-              @click="close"
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               aria-label="모달 닫기"
+              @click="close"
             >
               <XMarkIcon class="w-6 h-6" />
             </button>
@@ -240,13 +240,13 @@ const close = () => {
               <button
                 v-for="trigger in triggerTypes"
                 :key="trigger.value"
-                @click="formData.triggerType = trigger.value as TriggerType"
                 :class="[
                   'p-4 rounded-lg border-2 text-left transition-all',
                   formData.triggerType === trigger.value
                     ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 ]"
+                @click="formData.triggerType = trigger.value as TriggerType"
               >
                 <div class="font-medium text-gray-900 dark:text-white">{{ trigger.label }}</div>
                 <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ trigger.description }}</div>
@@ -420,8 +420,8 @@ const close = () => {
               <button
                 v-for="action in actionTypes"
                 :key="action.value"
-                @click="addAction(action.value as ActionType)"
                 class="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 text-left transition-all"
+                @click="addAction(action.value as ActionType)"
               >
                 <div class="font-medium text-gray-900 dark:text-white">{{ action.label }}</div>
                 <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ action.description }}</div>
@@ -442,8 +442,8 @@ const close = () => {
                     {{ actionTypes.find(a => a.value === action.type)?.label }}
                   </span>
                   <button
-                    @click="removeAction(index)"
                     class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm"
+                    @click="removeAction(index)"
                   >
                     삭제
                   </button>
@@ -614,8 +614,8 @@ const close = () => {
         <div class="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
           <button
             v-if="currentStep > 1"
-            @click="prevStep"
             class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            @click="prevStep"
           >
             <ChevronLeftIcon class="w-5 h-5" />
             이전
@@ -624,17 +624,17 @@ const close = () => {
 
           <div class="flex items-center gap-3">
             <button
-              @click="close"
               class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              @click="close"
             >
               취소
             </button>
 
             <button
               v-if="currentStep < totalSteps"
-              @click="nextStep"
               :disabled="!canProceed"
               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              @click="nextStep"
             >
               다음
               <ChevronRightIcon class="w-5 h-5" />
@@ -642,8 +642,8 @@ const close = () => {
 
             <button
               v-else
-              @click="handleSave"
               class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              @click="handleSave"
             >
               저장
             </button>

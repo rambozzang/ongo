@@ -1,5 +1,6 @@
 package com.ongo.api.contentseries
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentseries.ContentSeriesUseCase
 import com.ongo.application.contentseries.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "콘텐츠 시리즈", description = "콘텐츠 시리즈 관리 및 에피소드 추적")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/content-series")
 class ContentSeriesController(

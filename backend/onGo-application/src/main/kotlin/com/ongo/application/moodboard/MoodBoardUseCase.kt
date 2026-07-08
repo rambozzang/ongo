@@ -1,9 +1,11 @@
 package com.ongo.application.moodboard
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.moodboard.dto.*
 import com.ongo.domain.moodboard.*
 import org.springframework.stereotype.Service
 
+@Profile("wip")
 @Service
 class MoodBoardUseCase(
     private val boardRepository: MoodBoardRepository,

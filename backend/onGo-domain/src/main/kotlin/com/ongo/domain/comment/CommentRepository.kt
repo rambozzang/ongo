@@ -12,6 +12,10 @@ interface CommentRepository {
     fun delete(id: Long)
 
     fun findByPlatformAndPlatformCommentId(platform: String, platformCommentId: String): Comment?
+    fun findByPlatformAndPlatformCommentIdsIn(platform: String, platformCommentIds: List<String>): List<Comment>
+    fun findByVideoIdAndPlatform(videoId: Long, platform: String): List<Comment>
+    fun findLatestSyncedAtByVideoIdAndPlatform(videoId: Long, platform: String): java.time.LocalDateTime?
+    fun softDeleteByPlatformCommentIds(platform: String, platformCommentIds: List<String>): Int
     fun upsertBatch(comments: List<Comment>): Int
     fun findByUserIdFiltered(
         userId: Long,

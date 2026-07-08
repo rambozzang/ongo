@@ -96,6 +96,11 @@ interface InstagramApi {
         @PathVariable("commentId") commentId: String,
         @RequestParam("access_token") accessToken: String,
     )
+
+    @DeleteExchange("/me/permissions")
+    fun revokePermissions(
+        @RequestParam("access_token") accessToken: String,
+    )
 }
 
 @HttpExchange
@@ -104,6 +109,14 @@ interface InstagramOAuthApi {
     @PostExchange("/oauth/access_token")
     fun exchangeCodeForToken(
         @RequestBody body: Map<String, String>,
+    ): InstagramTokenResponse
+
+    /** Short-Lived Token → Long-Lived Token 교환 */
+    @GetExchange("/access_token")
+    fun exchangeLongLivedToken(
+        @RequestParam("grant_type") grantType: String,
+        @RequestParam("client_secret") clientSecret: String,
+        @RequestParam("access_token") accessToken: String,
     ): InstagramTokenResponse
 
     @GetExchange("/refresh_access_token")

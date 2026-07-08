@@ -1,5 +1,6 @@
 package com.ongo.api.creatoracademy
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.creatoracademy.CreatorAcademyUseCase
 import com.ongo.application.creatoracademy.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "크리에이터 아카데미", description = "크리에이터 교육 과정 및 학습 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/academy")
 class CreatorAcademyController(

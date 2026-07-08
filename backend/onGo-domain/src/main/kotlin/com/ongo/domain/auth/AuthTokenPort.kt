@@ -9,5 +9,7 @@ interface AuthTokenPort {
     fun getUserIdFromToken(token: String): Long
     fun getTokenType(token: String): String
     fun getRoleFromToken(token: String): String?
+    fun getTokenJti(token: String): String?
+    fun getTokenRemainingExpiryMillis(token: String): Long
     fun getRefreshTokenExpiryMillis(): Long
 }

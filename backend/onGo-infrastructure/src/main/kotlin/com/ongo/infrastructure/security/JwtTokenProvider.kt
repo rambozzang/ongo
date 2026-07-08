@@ -8,6 +8,7 @@ import com.ongo.domain.auth.AuthTokenPort
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.util.Date
+import java.util.UUID
 import javax.crypto.SecretKey
 
 @Component
@@ -43,6 +44,7 @@ class JwtTokenProvider(
 
         val builder = Jwts.builder()
             .subject(userId.toString())
+            .id(UUID.randomUUID().toString())
             .claim("type", type)
         if (role != null) {
             builder.claim("role", role)
@@ -78,6 +80,24 @@ class JwtTokenProvider(
     override fun getRoleFromToken(token: String): String? {
         val claims = parseClaims(token)
         return claims["role"] as? String
+    }
+
+    override fun getTokenJti(token: String): String? {
+        return try {
+            parseClaims(token).id
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override fun getTokenRemainingExpiryMillis(token: String): Long {
+        return try {
+            val claims = parseClaims(token)
+            val remaining = claims.expiration.time - System.currentTimeMillis()
+            remaining.coerceAtLeast(0)
+        } catch (e: Exception) {
+            0
+        }
     }
 
     override fun getRefreshTokenExpiryMillis(): Long = refreshTokenExpiry

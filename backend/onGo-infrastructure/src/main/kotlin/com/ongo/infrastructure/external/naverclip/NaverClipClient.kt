@@ -114,7 +114,7 @@ class NaverClipClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("Naver OAuth 인가 코드 교환")
 
         val response = naverOAuthApi.refreshToken(
@@ -151,6 +151,22 @@ class NaverClipClient(
             refreshToken = response.refreshToken,
             expiresIn = response.expiresIn,
         )
+    }
+
+    override fun revokeToken(accessToken: String): Boolean {
+        log.info("Naver OAuth 토큰 폐기")
+        return try {
+            naverOAuthApi.revokeToken(
+                grantType = "delete",
+                clientId = naverClipConfig.getClientId(),
+                clientSecret = naverClipConfig.getClientSecret(),
+                accessToken = accessToken,
+            )
+            true
+        } catch (e: Exception) {
+            log.warn("Naver 토큰 폐기 실패: {}", e.message)
+            false
+        }
     }
 
     override fun deleteVideo(platformVideoId: String, accessToken: String): Boolean {

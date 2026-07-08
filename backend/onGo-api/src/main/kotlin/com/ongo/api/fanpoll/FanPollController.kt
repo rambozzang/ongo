@@ -1,5 +1,6 @@
 package com.ongo.api.fanpoll
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.fanpoll.FanPollUseCase
 import com.ongo.application.fanpoll.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "팬 투표", description = "팬 대상 투표/설문 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/fan-polls")
 class FanPollController(

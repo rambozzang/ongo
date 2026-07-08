@@ -1,5 +1,6 @@
 package com.ongo.api.contentrights
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentrights.ContentRightsUseCase
 import com.ongo.application.contentrights.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "콘텐츠 저작권", description = "콘텐츠 저작권 및 라이선싱 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/content-rights")
 class ContentRightsController(

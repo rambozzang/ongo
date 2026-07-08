@@ -7,6 +7,7 @@ import com.ongo.application.comment.CommentAiReplyUseCase
 import com.ongo.application.comment.CommentBatchUseCase
 import com.ongo.application.comment.CommentEngagementUseCase
 import com.ongo.application.comment.CommentSyncUseCase
+import com.ongo.application.comment.VideoCommentSyncService
 import com.ongo.application.comment.CommentUseCase
 import com.ongo.application.comment.CrisisDetectionUseCase
 import com.ongo.application.comment.KeywordCloudUseCase
@@ -32,6 +33,7 @@ import java.time.LocalDateTime
 class CommentController(
     private val commentUseCase: CommentUseCase,
     private val commentSyncUseCase: CommentSyncUseCase,
+    private val videoCommentSyncService: VideoCommentSyncService,
     private val commentEngagementUseCase: CommentEngagementUseCase,
     private val faqClusteringUseCase: FaqClusteringUseCase,
     private val generateReplyUseCase: GenerateReplyUseCase,
@@ -86,7 +88,7 @@ class CommentController(
         @RequestParam platformVideoId: String,
     ): ResponseEntity<ResData<CommentSyncResult>> {
         val platformEnum = Platform.valueOf(platform.uppercase())
-        val (synced, newCount) = commentSyncUseCase.syncVideoComments(
+        val (synced, newCount) = videoCommentSyncService.syncVideoComments(
             userId = userId,
             videoId = videoId,
             platform = platformEnum,

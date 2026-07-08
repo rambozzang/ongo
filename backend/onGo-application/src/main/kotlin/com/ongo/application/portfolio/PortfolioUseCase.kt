@@ -1,5 +1,6 @@
 package com.ongo.application.portfolio
 
+import org.springframework.context.annotation.Profile
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.portfolio.dto.*
@@ -9,6 +10,7 @@ import com.ongo.domain.portfolio.PortfolioRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class PortfolioUseCase(
     private val portfolioRepository: PortfolioRepository,

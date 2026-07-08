@@ -138,7 +138,7 @@ class TumblrClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("Tumblr OAuth 인가 코드 교환")
 
         val response = tumblrOAuthApi.exchangeToken(
@@ -203,6 +203,7 @@ class TumblrClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("Tumblr notes 조회: postId={}", platformVideoId)
 

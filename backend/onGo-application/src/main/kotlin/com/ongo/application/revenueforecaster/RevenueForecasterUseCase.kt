@@ -1,5 +1,6 @@
 package com.ongo.application.revenueforecaster
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.ai.AiRateLimiter
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.PromptTemplates
@@ -19,6 +20,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+@Profile("wip")
 @Service
 class RevenueForecasterUseCase(
     private val chatClientResolver: ChatClientResolver,

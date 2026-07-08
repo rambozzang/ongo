@@ -250,8 +250,8 @@ watch(activeTab, (tab) => {
             </p>
             <button
               v-if="canManage"
-              @click="showInviteModal = true"
               class="btn-primary mt-4 inline-flex items-center gap-2"
+              @click="showInviteModal = true"
             >
               <UserPlusIcon class="h-5 w-5" />
               {{ $t('team.inviteMember') }}
@@ -301,16 +301,16 @@ watch(activeTab, (tab) => {
 
               <div v-if="canManage && invite.status === 'pending'" class="flex space-x-2">
                 <button
-                  @click="handleResendInvite(invite.id)"
                   class="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                   :title="$t('team.resendInvite')"
+                  @click="handleResendInvite(invite.id)"
                 >
                   <ArrowPathIcon class="h-5 w-5" />
                 </button>
                 <button
-                  @click="handleCancelInvite(invite.id)"
                   class="rounded-md p-2 text-gray-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                   :title="$t('team.cancelInvite')"
+                  @click="handleCancelInvite(invite.id)"
                 >
                   <XCircleIcon class="h-5 w-5" />
                 </button>

@@ -145,8 +145,8 @@ const cancelSelection = () => {
       </template>
       <template #actions>
         <button
-          @click="toggleSelectionMode"
           class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          @click="toggleSelectionMode"
         >
           {{ showCheckboxes ? $t('inbox.cancelSelection') : $t('inbox.select') }}
         </button>
@@ -163,13 +163,13 @@ const cancelSelection = () => {
           <input
             type="text"
             :value="inboxStore.filters.searchText"
+            :placeholder="$t('inbox.searchPlaceholder')"
+            class="input-field flex-1"
             @input="
               inboxStore.setFilters({
                 searchText: ($event.target as HTMLInputElement).value,
               })
             "
-            :placeholder="$t('inbox.searchPlaceholder')"
-            class="input-field flex-1"
           />
         </div>
 
@@ -177,12 +177,12 @@ const cancelSelection = () => {
             <FunnelIcon class="w-5 h-5 text-gray-400 dark:text-gray-500" />
             <select
               :value="inboxStore.filters.platform"
+              class="input-field"
               @change="
                 inboxStore.setFilters({
                   platform: ($event.target as HTMLSelectElement).value as MessagePlatform | 'ALL',
                 })
               "
-              class="input-field"
             >
               <option v-for="option in platformOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -191,12 +191,12 @@ const cancelSelection = () => {
 
             <select
               :value="inboxStore.filters.type"
+              class="input-field"
               @change="
                 inboxStore.setFilters({
                   type: ($event.target as HTMLSelectElement).value as MessageType | 'ALL',
                 })
               "
-              class="input-field"
             >
               <option v-for="option in typeOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -205,12 +205,12 @@ const cancelSelection = () => {
 
             <select
               :value="inboxStore.filters.status"
+              class="input-field"
               @change="
                 inboxStore.setFilters({
                   status: ($event.target as HTMLSelectElement).value as MessageStatus | 'ALL',
                 })
               "
-              class="input-field"
             >
               <option v-for="option in statusOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -231,22 +231,22 @@ const cancelSelection = () => {
         </span>
         <div class="flex items-center gap-2">
           <button
-            @click="handleBulkMarkRead"
             class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
+            @click="handleBulkMarkRead"
           >
             <CheckIcon class="w-4 h-4" />
             <span>{{ $t('inbox.markRead') }}</span>
           </button>
           <button
-            @click="handleBulkArchive"
             class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
+            @click="handleBulkArchive"
           >
             <ArchiveBoxIcon class="w-4 h-4" />
             <span>{{ $t('inbox.archive') }}</span>
           </button>
           <button
-            @click="cancelSelection"
             class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            @click="cancelSelection"
           >
             <XMarkIcon class="w-4 h-4" />
             <span>{{ $t('inbox.cancel') }}</span>
@@ -306,8 +306,8 @@ const cancelSelection = () => {
         <div v-show="showMobileDetail" class="h-full flex flex-col">
           <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
             <button
-              @click="handleCloseMobileDetail"
               class="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              @click="handleCloseMobileDetail"
             >
               <XMarkIcon class="w-5 h-5" />
               <span>{{ $t('inbox.backToList') }}</span>

@@ -7,6 +7,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.AUTHOR_CHANNEL_URL
 import com.ongo.infrastructure.persistence.jooq.Fields.AUTHOR_NAME
 import com.ongo.infrastructure.persistence.jooq.Fields.CONTENT
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
+import com.ongo.infrastructure.persistence.jooq.Fields.DELETED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.IS_HIDDEN
 import com.ongo.infrastructure.persistence.jooq.Fields.IS_PINNED
@@ -52,6 +53,7 @@ class CommentJooqRepository(
         dsl.select()
             .from(COMMENTS)
             .where(USER_ID.eq(userId))
+            .and(DELETED_AT.isNull)
             .orderBy(CREATED_AT.desc())
             .limit(size)
             .offset(page * size)
@@ -63,6 +65,7 @@ class CommentJooqRepository(
             .from(COMMENTS)
             .where(USER_ID.eq(userId))
             .and(VIDEO_ID.eq(videoId))
+            .and(DELETED_AT.isNull)
             .orderBy(CREATED_AT.desc())
             .limit(size)
             .offset(page * size)
@@ -74,6 +77,7 @@ class CommentJooqRepository(
             .from(COMMENTS)
             .where(USER_ID.eq(userId))
             .and(PLATFORM.eq(platform))
+            .and(DELETED_AT.isNull)
             .orderBy(CREATED_AT.desc())
             .limit(size)
             .offset(page * size)
@@ -85,6 +89,7 @@ class CommentJooqRepository(
             .from(COMMENTS)
             .where(USER_ID.eq(userId))
             .and(SENTIMENT.eq(sentiment))
+            .and(DELETED_AT.isNull)
             .orderBy(CREATED_AT.desc())
             .limit(size)
             .offset(page * size)
@@ -95,6 +100,7 @@ class CommentJooqRepository(
         dsl.selectCount()
             .from(COMMENTS)
             .where(USER_ID.eq(userId))
+            .and(DELETED_AT.isNull)
             .fetchOne(0, Int::class.java) ?: 0
 
     override fun save(comment: Comment): Comment {
@@ -161,6 +167,44 @@ class CommentJooqRepository(
             .fetchOne()
             ?.toComment()
 
+    override fun findByPlatformAndPlatformCommentIdsIn(platform: String, platformCommentIds: List<String>): List<Comment> {
+        if (platformCommentIds.isEmpty()) return emptyList()
+        return dsl.select()
+            .from(COMMENTS)
+            .where(PLATFORM.eq(platform))
+            .and(PLATFORM_COMMENT_ID.`in`(platformCommentIds))
+            .and(DELETED_AT.isNull)
+            .fetch()
+            .map { it.toComment() }
+    }
+
+    override fun findByVideoIdAndPlatform(videoId: Long, platform: String): List<Comment> =
+        dsl.select()
+            .from(COMMENTS)
+            .where(VIDEO_ID.eq(videoId))
+            .and(PLATFORM.eq(platform))
+            .and(DELETED_AT.isNull)
+            .fetch()
+            .map { it.toComment() }
+
+    override fun findLatestSyncedAtByVideoIdAndPlatform(videoId: Long, platform: String): LocalDateTime? =
+        dsl.select(DSL.max(SYNCED_AT))
+            .from(COMMENTS)
+            .where(VIDEO_ID.eq(videoId))
+            .and(PLATFORM.eq(platform))
+            .and(DELETED_AT.isNull)
+            .fetchOne(0, LocalDateTime::class.java)
+
+    override fun softDeleteByPlatformCommentIds(platform: String, platformCommentIds: List<String>): Int {
+        if (platformCommentIds.isEmpty()) return 0
+        return dsl.update(COMMENTS)
+            .set(DELETED_AT, java.time.LocalDateTime.now())
+            .where(PLATFORM.eq(platform))
+            .and(PLATFORM_COMMENT_ID.`in`(platformCommentIds))
+            .and(DELETED_AT.isNull)
+            .execute()
+    }
+
     override fun upsertBatch(comments: List<Comment>): Int {
         if (comments.isEmpty()) return 0
 
@@ -194,6 +238,7 @@ class CommentJooqRepository(
                 .set(LIKE_COUNT, comment.likeCount)
                 .set(REPLY_COUNT, comment.replyCount)
                 .set(SYNCED_AT, comment.syncedAt)
+                .set(DELETED_AT, null as java.time.LocalDateTime?)
                 .execute()
             upserted += result
         }
@@ -244,6 +289,7 @@ class CommentJooqRepository(
         dsl.select(SENTIMENT, DSL.count())
             .from(COMMENTS)
             .where(USER_ID.eq(userId))
+            .and(DELETED_AT.isNull)
             .groupBy(SENTIMENT)
             .fetch()
             .associate { (it.get(SENTIMENT) ?: "NEUTRAL") to (it.get(1, Int::class.java) ?: 0) }
@@ -256,6 +302,7 @@ class CommentJooqRepository(
             .from(COMMENTS)
             .where(USER_ID.eq(userId))
             .and(CREATED_AT.greaterOrEqual(cutoff))
+            .and(DELETED_AT.isNull)
             .groupBy(dateField, SENTIMENT)
             .orderBy(dateField.asc())
             .fetch()
@@ -271,6 +318,7 @@ class CommentJooqRepository(
             .from(COMMENTS)
             .where(USER_ID.eq(userId))
             .and(SENTIMENT.eq("NEGATIVE"))
+            .and(DELETED_AT.isNull)
             .orderBy(CREATED_AT.desc())
             .limit(limit)
             .fetch()
@@ -297,6 +345,7 @@ class CommentJooqRepository(
             .and(SENTIMENT.eq(sentiment))
             .and(CREATED_AT.greaterOrEqual(from))
             .and(CREATED_AT.lessOrEqual(to))
+            .and(DELETED_AT.isNull)
             .fetchOne(0, Int::class.java) ?: 0
 
     override fun findByUserIdWithContent(userId: Long, videoId: Long?, days: Int, limit: Int): List<Comment> {
@@ -304,6 +353,7 @@ class CommentJooqRepository(
         val conditions = mutableListOf(
             USER_ID.eq(userId),
             CREATED_AT.greaterOrEqual(cutoff),
+            DELETED_AT.isNull,
         )
         videoId?.let { conditions.add(VIDEO_ID.eq(it)) }
 
@@ -327,6 +377,7 @@ class CommentJooqRepository(
     ): List<Condition> {
         val conditions = mutableListOf<Condition>()
         conditions.add(USER_ID.eq(userId))
+        conditions.add(DELETED_AT.isNull)
 
         videoId?.let { conditions.add(VIDEO_ID.eq(it)) }
         platform?.let { conditions.add(PLATFORM.eq(it)) }
@@ -368,6 +419,7 @@ class CommentJooqRepository(
         repliedAt = localDateTime(REPLIED_AT),
         publishedAt = localDateTime(PUBLISHED_AT),
         syncedAt = localDateTime(SYNCED_AT),
+        deletedAt = localDateTime(DELETED_AT),
         createdAt = localDateTime(CREATED_AT),
         updatedAt = localDateTime(UPDATED_AT),
     )

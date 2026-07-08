@@ -13,8 +13,6 @@ export const useUserStore = defineStore('user', () => {
       await authApi.updateProfile(profile)
       const authStore = useAuthStore()
       await authStore.fetchProfile()
-    } catch (e) {
-      throw e
     } finally {
       loading.value = false
     }

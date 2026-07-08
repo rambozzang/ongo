@@ -1,5 +1,6 @@
 package com.ongo.application.prediction
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.prediction.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.math.RoundingMode
 
+@Profile("wip")
 @Service
 class PredictionUseCase(
     private val predictionRepository: PredictionRepository,

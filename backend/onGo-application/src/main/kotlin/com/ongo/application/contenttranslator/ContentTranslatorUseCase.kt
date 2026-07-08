@@ -1,5 +1,6 @@
 package com.ongo.application.contenttranslator
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contenttranslator.dto.*
 import com.ongo.domain.contenttranslator.TranslationGlossary
 import com.ongo.domain.contenttranslator.TranslationGlossaryRepository
@@ -8,6 +9,7 @@ import com.ongo.domain.contenttranslator.TranslationJobRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class ContentTranslatorUseCase(
     private val jobRepository: TranslationJobRepository,

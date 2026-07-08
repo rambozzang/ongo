@@ -149,7 +149,7 @@ class LinkedInClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("LinkedIn OAuth 인가 코드 교환")
 
         val response = linkedInOAuthApi.exchangeToken(
@@ -213,6 +213,7 @@ class LinkedInClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("LinkedIn 댓글 조회: activityId={}", platformVideoId)
 

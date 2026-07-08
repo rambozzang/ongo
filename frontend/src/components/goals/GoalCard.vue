@@ -232,31 +232,31 @@ const formatDate = (dateStr: string): string => {
     >
       <button
         v-if="goal.status === 'paused'"
-        @click="emit('resume', goal.id)"
         class="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
         title="재개"
+        @click="emit('resume', goal.id)"
       >
         <PlayIcon class="w-4 h-4" />
       </button>
       <button
         v-else-if="goal.status === 'active'"
-        @click="emit('pause', goal.id)"
         class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
         title="일시정지"
+        @click="emit('pause', goal.id)"
       >
         <PauseIcon class="w-4 h-4" />
       </button>
       <button
-        @click="emit('edit', goal)"
         class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
         title="수정"
+        @click="emit('edit', goal)"
       >
         <PencilIcon class="w-4 h-4" />
       </button>
       <button
-        @click="emit('delete', goal.id)"
         class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
         title="삭제"
+        @click="emit('delete', goal.id)"
       >
         <TrashIcon class="w-4 h-4" />
       </button>

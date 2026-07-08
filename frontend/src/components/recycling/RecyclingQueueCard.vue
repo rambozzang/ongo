@@ -83,13 +83,13 @@ const nextScheduleFormatted = computed(() => {
 
       <!-- Toggle Switch -->
       <button
-        @click="emit('toggle', queue.id)"
         :class="[
           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800',
           queue.isActive ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600',
         ]"
         role="switch"
         :aria-checked="queue.isActive"
+        @click="emit('toggle', queue.id)"
       >
         <span
           :class="[
@@ -137,15 +137,15 @@ const nextScheduleFormatted = computed(() => {
     <!-- Actions -->
     <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
       <button
-        @click="emit('edit', queue.id)"
         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+        @click="emit('edit', queue.id)"
       >
         <PencilIcon class="w-4 h-4" />
         수정
       </button>
       <button
-        @click="emit('delete', queue.id)"
         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+        @click="emit('delete', queue.id)"
       >
         <TrashIcon class="w-4 h-4" />
         삭제

@@ -1,5 +1,6 @@
 package com.ongo.api.contentrepurposer
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentrepurposer.ContentRepurposerUseCase
 import com.ongo.application.contentrepurposer.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "콘텐츠 리퍼포징", description = "긴 콘텐츠를 숏폼으로 자동 변환")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/content-repurposer")
 class ContentRepurposerController(

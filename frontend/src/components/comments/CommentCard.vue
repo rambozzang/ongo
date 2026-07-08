@@ -71,6 +71,7 @@
           <span v-if="!expanded && comment.content.length > 200">
             {{ comment.content.slice(0, 200) }}...
             <button
+              type="button"
               class="ml-1 font-medium text-primary-600 hover:underline dark:text-primary-400"
               @click="expanded = true"
             >
@@ -116,18 +117,21 @@
         >
           <button
             v-if="platformCaps?.canReply && !comment.isReplied"
+            type="button"
             class="text-xs font-medium text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="isReplying = true"
           >
             {{ $t('comments.card.reply') }}
           </button>
           <button
+            type="button"
             class="text-xs font-medium text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="emit('hide', comment.id)"
           >
             {{ comment.isHidden ? $t('comments.card.show') : $t('comments.card.hide') }}
           </button>
           <button
+            type="button"
             class="text-xs font-medium text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="emit('pin', comment.id)"
           >
@@ -135,6 +139,7 @@
           </button>
           <button
             v-if="platformCaps?.canDelete"
+            type="button"
             class="text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
             @click="handleDelete"
           >

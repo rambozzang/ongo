@@ -177,7 +177,7 @@
                   </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
+                  <button class="btn-secondary" :disabled="aiStore.loading" @click="closeTool">{{ $t('aiView.form.cancel') }}</button>
                   <button
                     class="btn-primary inline-flex items-center gap-2"
                     :disabled="!metaForm.script || metaForm.platforms.length === 0 || !metaForm.category || aiStore.loading"
@@ -314,7 +314,7 @@
                   </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
+                  <button class="btn-secondary" :disabled="aiStore.loading" @click="closeTool">{{ $t('aiView.form.cancel') }}</button>
                   <button
                     class="btn-primary inline-flex items-center gap-2"
                     :disabled="!hashtagForm.title || !hashtagForm.category || hashtagForm.platforms.length === 0 || aiStore.loading"
@@ -379,7 +379,7 @@
                   </select>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
+                  <button class="btn-secondary" :disabled="aiStore.loading" @click="closeTool">{{ $t('aiView.form.cancel') }}</button>
                   <button
                     class="btn-primary inline-flex items-center gap-2"
                     :disabled="!ideasForm.category || aiStore.loading"
@@ -456,15 +456,15 @@
                           : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
                         aiStore.loading ? 'opacity-50 pointer-events-none' : ''
                       ]"
-                      @click="reportForm.period = p.value"
                       :disabled="aiStore.loading"
+                      @click="reportForm.period = p.value"
                     >
                       {{ p.label }}
                     </button>
                   </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
+                  <button class="btn-secondary" :disabled="aiStore.loading" @click="closeTool">{{ $t('aiView.form.cancel') }}</button>
                   <button
                     class="btn-primary inline-flex items-center gap-2"
                     :disabled="aiStore.loading"
@@ -526,7 +526,7 @@
                   </label>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
+                  <button class="btn-secondary" :disabled="aiStore.loading" @click="closeTool">{{ $t('aiView.form.cancel') }}</button>
                   <button
                     class="btn-primary inline-flex items-center gap-2"
                     :disabled="aiStore.loading"
@@ -642,15 +642,15 @@
                           : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
                         aiStore.loading ? 'opacity-50 pointer-events-none' : ''
                       ]"
-                      @click="revenueReportForm.period = p.value"
                       :disabled="aiStore.loading"
+                      @click="revenueReportForm.period = p.value"
                     >
                       {{ p.label }}
                     </button>
                   </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" @click="closeTool" :disabled="aiStore.loading">{{ $t('aiView.form.cancel') }}</button>
+                  <button class="btn-secondary" :disabled="aiStore.loading" @click="closeTool">{{ $t('aiView.form.cancel') }}</button>
                   <button
                     class="btn-primary inline-flex items-center gap-2"
                     :disabled="aiStore.loading"

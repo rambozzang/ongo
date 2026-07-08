@@ -124,8 +124,8 @@ onMounted(() => {
     <PageHeader :title="$t('recycling.title')" :description="$t('recycling.description')">
       <template #actions>
         <button
-          @click="openCreateModal"
           class="btn-primary inline-flex items-center gap-2"
+          @click="openCreateModal"
         >
           <PlusIcon class="h-5 w-5" />
           {{ $t('recycling.newQueue') }}
@@ -205,8 +205,8 @@ onMounted(() => {
           {{ $t('recycling.emptyQueuesDescription') }}
         </p>
         <button
-          @click="openCreateModal"
           class="btn-primary inline-flex items-center gap-2"
+          @click="openCreateModal"
         >
           <PlusIcon class="h-5 w-5" />
           {{ $t('recycling.createFirstQueue') }}
@@ -223,9 +223,9 @@ onMounted(() => {
     <div v-if="activeTab === 'suggestions'">
       <div class="mb-4 flex justify-end">
         <button
-          @click="handleGenerateSuggestions"
           :disabled="recyclingStore.suggestionsLoading"
           class="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
+          @click="handleGenerateSuggestions"
         >
           <LightBulbIcon class="h-5 w-5" />
           {{ recyclingStore.suggestionsLoading ? $t('recycling.analyzing') : $t('recycling.generateSuggestions') }}
@@ -273,14 +273,14 @@ onMounted(() => {
             </div>
             <div v-if="suggestion.status === 'PENDING'" class="ml-4 flex gap-2">
               <button
-                @click="handleAcceptSuggestion(suggestion.id)"
                 class="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                @click="handleAcceptSuggestion(suggestion.id)"
               >
                 {{ $t('recycling.accept') }}
               </button>
               <button
-                @click="handleDismissSuggestion(suggestion.id)"
                 class="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                @click="handleDismissSuggestion(suggestion.id)"
               >
                 {{ $t('recycling.dismiss') }}
               </button>
@@ -301,8 +301,8 @@ onMounted(() => {
           {{ $t('recycling.emptySuggestionsDescription') }}
         </p>
         <button
-          @click="handleGenerateSuggestions"
           class="btn-primary inline-flex items-center gap-2"
+          @click="handleGenerateSuggestions"
         >
           <LightBulbIcon class="h-5 w-5" />
           {{ $t('recycling.generateSuggestionsBtn') }}

@@ -100,20 +100,20 @@ const handleCheckClick = (e: Event) => {
 
 <template>
   <div
-    @click="handleClick"
     class="flex items-start gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
     :class="{
       'bg-blue-50 dark:bg-blue-900/20': isActive,
       'bg-white dark:bg-gray-800': !isActive,
     }"
+    @click="handleClick"
   >
     <!-- Checkbox (when in selection mode) -->
     <div v-if="showCheckbox" class="flex items-center pt-1">
       <input
         type="checkbox"
         :checked="isChecked"
-        @click="handleCheckClick"
         class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:bg-gray-700"
+        @click="handleCheckClick"
       />
     </div>
 
@@ -183,7 +183,7 @@ const handleCheckClick = (e: Event) => {
     <!-- Right Side: Time & Star -->
     <div class="flex flex-col items-end gap-2 flex-shrink-0">
       <span class="text-xs text-gray-500 dark:text-gray-400">{{ timeAgo }}</span>
-      <button @click="handleStarClick" class="text-gray-400 hover:text-yellow-500 transition-colors">
+      <button class="text-gray-400 hover:text-yellow-500 transition-colors" @click="handleStarClick">
         <StarIcon v-if="message.isStarred" class="w-5 h-5 text-yellow-500" />
         <StarIconOutline v-else class="w-5 h-5" />
       </button>

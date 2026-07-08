@@ -1,5 +1,6 @@
 package com.ongo.api.creatormilestone
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.creatormilestone.CreatorMilestoneUseCase
 import com.ongo.application.creatormilestone.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "크리에이터 마일스톤", description = "크리에이터 성장 목표 및 달성 추적")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/creator-milestones")
 class CreatorMilestoneController(

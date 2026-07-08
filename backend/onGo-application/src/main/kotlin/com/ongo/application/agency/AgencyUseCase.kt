@@ -4,10 +4,12 @@ import com.ongo.application.agency.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.agency.*
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
+@Profile("wip")
 @Service
 class AgencyUseCase(
     private val agencyRepository: AgencyRepository,

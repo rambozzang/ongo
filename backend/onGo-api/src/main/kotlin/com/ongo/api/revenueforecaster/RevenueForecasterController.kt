@@ -1,5 +1,6 @@
 package com.ongo.api.revenueforecaster
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.revenueforecaster.RevenueForecasterUseCase
 import com.ongo.application.revenueforecaster.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "수익 예측기", description = "AI 기반 수익 예측 및 시나리오 분석")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/revenue-forecaster")
 class RevenueForecasterController(

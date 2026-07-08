@@ -1,5 +1,6 @@
 package com.ongo.application.contentlibrary
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentlibrary.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -9,6 +10,7 @@ import com.ongo.domain.contentlibrary.LibraryItemRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 @Transactional(readOnly = true)
 class ContentLibraryUseCase(

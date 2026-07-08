@@ -83,8 +83,8 @@ const handleToggleCheck = (id: number) => {
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">메시지</h3>
         <button
           v-if="hasMessages"
-          @click="emit('mark-all-read')"
           class="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+          @click="emit('mark-all-read')"
         >
           <CheckCircleIcon class="w-4 h-4" />
           <span>모두 읽음</span>

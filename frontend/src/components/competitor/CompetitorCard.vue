@@ -97,9 +97,9 @@ function formatNumber(num: number): string {
       <!-- Action buttons -->
       <div class="flex items-center space-x-1">
         <button
-          @click.stop="emit('toggle-tracking', competitor.id)"
           :title="competitor.isTracking ? '추적 중지' : '추적 시작'"
           class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          @click.stop="emit('toggle-tracking', competitor.id)"
         >
           <StarIconSolid
             v-if="competitor.isTracking"
@@ -108,9 +108,9 @@ function formatNumber(num: number): string {
           <StarIcon v-else class="w-5 h-5 text-gray-400 dark:text-gray-500" />
         </button>
         <button
-          @click.stop="emit('remove', competitor.id)"
           title="삭제"
           class="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+          @click.stop="emit('remove', competitor.id)"
         >
           <TrashIcon class="w-5 h-5 text-red-600 dark:text-red-400" />
         </button>

@@ -125,6 +125,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { authApi } from '@/api/auth'
 
 const authStore = useAuthStore()
 const isLoading = ref(false)
@@ -152,35 +153,52 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID
 const REDIRECT_URI = `${window.location.origin}/auth/callback`
 
-function loginWithGoogle() {
+async function loginWithGoogle() {
   isLoading.value = true
   errorMessage.value = ''
-  const params = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: `${REDIRECT_URI}/google`,
-    response_type: 'code',
-    scope: 'openid email profile',
-    access_type: 'offline',
-    prompt: 'consent',
-  })
-  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
+  try {
+    const { state } = await authApi.getOAuthState('google')
+    sessionStorage.setItem('oauth_state', state)
+    const params = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: `${REDIRECT_URI}/google`,
+      response_type: 'code',
+      scope: 'openid email profile',
+      access_type: 'offline',
+      prompt: 'consent',
+      state,
+    })
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
+  } catch (e: unknown) {
+    errorMessage.value = e instanceof Error ? e.message : '로그인 준비에 실패했습니다.'
+    isLoading.value = false
+  }
 }
 
-function loginWithKakao() {
+async function loginWithKakao() {
   isLoading.value = true
   errorMessage.value = ''
-  const params = new URLSearchParams({
-    client_id: KAKAO_CLIENT_ID,
-    redirect_uri: `${REDIRECT_URI}/kakao`,
-    response_type: 'code',
-  })
-  window.location.href = `https://kauth.kakao.com/oauth/authorize?${params}`
+  try {
+    const { state } = await authApi.getOAuthState('kakao')
+    sessionStorage.setItem('oauth_state', state)
+    const params = new URLSearchParams({
+      client_id: KAKAO_CLIENT_ID,
+      redirect_uri: `${REDIRECT_URI}/kakao`,
+      response_type: 'code',
+      state,
+    })
+    window.location.href = `https://kauth.kakao.com/oauth/authorize?${params}`
+  } catch (e: unknown) {
+    errorMessage.value = e instanceof Error ? e.message : '로그인 준비에 실패했습니다.'
+    isLoading.value = false
+  }
 }
 
 // Handle OAuth callback if code is present in URL
 async function handleOAuthCallback() {
   const url = new URL(window.location.href)
   const code = url.searchParams.get('code')
+  const state = url.searchParams.get('state')
   const path = url.pathname
 
   if (!code) return
@@ -195,6 +213,7 @@ async function handleOAuthCallback() {
     await authStore.login(provider, {
       code,
       redirectUri: `${REDIRECT_URI}/${provider}`,
+      state: state ?? '',
     })
   } catch (e: unknown) {
     errorMessage.value = e instanceof Error ? e.message : '로그인에 실패했습니다. 다시 시도해주세요.'

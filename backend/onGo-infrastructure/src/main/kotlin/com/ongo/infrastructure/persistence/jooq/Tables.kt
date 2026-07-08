@@ -66,6 +66,11 @@ object Tables {
     val AUTOMATION_RULES = DSL.table("automation_rules")
     val WEBHOOKS = DSL.table("webhooks")
     val RECURRING_SCHEDULES = DSL.table("recurring_schedules")
+    val AI_CONTENT_CALENDARS = DSL.table("ai_content_calendars")
+    val CALENDAR_SUGGESTIONS = DSL.table("calendar_suggestions")
+    val CALENDAR_AI_SLOTS = DSL.table("calendar_ai_slots")
+    val CHANNEL_HEALTH_METRICS = DSL.table("channel_health_metrics")
+    val HEALTH_TRENDS = DSL.table("health_trends")
 
     // Workspace
     val WORKSPACES = DSL.table("workspaces")
@@ -356,6 +361,16 @@ object Fields {
     val REPLY_CONTENT = DSL.field("reply_content", String::class.java)
     val REPLIED_AT = DSL.field("replied_at", java.time.LocalDateTime::class.java)
     val SYNCED_AT = DSL.field("synced_at", java.time.LocalDateTime::class.java)
+    val DELETED_AT = DSL.field("deleted_at", java.time.LocalDateTime::class.java)
+
+    // content calendar
+    val CALENDAR_DATA = DSL.field("calendar_data", String::class.java)
+    val SUGGESTED_DATE = DSL.field("suggested_date", java.time.LocalDate::class.java)
+    val SUGGESTED_TIME = DSL.field("suggested_time", String::class.java)
+    val TOPIC = DSL.field("topic", String::class.java)
+    val EXPECTED_ENGAGEMENT = DSL.field("expected_engagement", java.math.BigDecimal::class.java)
+    val SLOT_DATE = DSL.field("slot_date", java.time.LocalDate::class.java)
+    val SLOT_TIME = DSL.field("slot_time", String::class.java)
 
     // templates
     val TITLE_TEMPLATE = DSL.field("title_template", String::class.java)
@@ -816,6 +831,15 @@ object Fields {
 
     // channel_audit_reports
     val OVERALL_SCORE = DSL.field("overall_score", Int::class.java)
+    val GROWTH_SCORE = DSL.field("growth_score", Int::class.java)
+    val ENGAGEMENT_SCORE_INT = DSL.field("engagement_score", Int::class.java)
+    val CONSISTENCY_SCORE = DSL.field("consistency_score", Int::class.java)
+    val AUDIENCE_SCORE = DSL.field("audience_score", Int::class.java)
+    val MONETIZATION_SCORE = DSL.field("monetization_score", Int::class.java)
+    val METRIC_ID = DSL.field("metric_id", Long::class.java)
+    val TREND_DATE = DSL.field("trend_date", java.time.LocalDate::class.java)
+    val CHANGE_VALUE = DSL.field("change_value", java.math.BigDecimal::class.java)
+    val RECOMMENDATION = DSL.field("recommendation", String::class.java)
 
     // optimal_slots
     val DAY_OF_WEEK_STR = DSL.field("day_of_week", String::class.java)

@@ -8,6 +8,7 @@ import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.comment.CommentRepository
 import com.ongo.domain.comment.PlatformCommentPort
@@ -41,31 +42,30 @@ class CommentEngagementUseCase(
         val commentPlatform = comment.platform
         val commentPlatformCommentId = comment.platformCommentId
         if (commentPlatform != null && commentPlatformCommentId != null) {
-            try {
-                val platform = Platform.valueOf(commentPlatform)
-                val capabilities = platformCommentPort.getCommentCapabilities(platform)
+            val platform = Platform.valueOf(commentPlatform)
+            val capabilities = platformCommentPort.getCommentCapabilities(platform)
 
-                if (capabilities.canReply) {
-                    val channel = channelRepository.findByUserIdAndPlatform(userId, platform)
-                    if (channel != null) {
-                        val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
-                        val result = platformCommentPort.postReply(
-                            platform = platform,
-                            platformCommentId = commentPlatformCommentId,
-                            content = content,
-                            accessToken = accessToken,
-                            platformVideoId = comment.platformVideoId,
+            if (capabilities.canReply) {
+                val channel = channelRepository.findByUserIdAndPlatform(userId, platform)
+                if (channel != null) {
+                    val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
+                    val result = platformCommentPort.postReply(
+                        platform = platform,
+                        platformCommentId = commentPlatformCommentId,
+                        content = content,
+                        accessToken = accessToken,
+                        platformVideoId = comment.platformVideoId,
+                    )
+                    if (result.success) {
+                        platformReplyId = result.platformCommentId
+                        log.info("플랫폼 답글 전송 성공: platform={}, replyId={}", platform, platformReplyId)
+                    } else {
+                        throw com.ongo.common.exception.PlatformApiException(
+                            platform.name,
+                            "댓글 답변 실패: ${result.errorMessage}"
                         )
-                        if (result.success) {
-                            platformReplyId = result.platformCommentId
-                            log.info("플랫폼 답글 전송 성공: platform={}, replyId={}", platform, platformReplyId)
-                        } else {
-                            log.warn("플랫폼 답글 전송 실패: platform={}, error={}", platform, result.errorMessage)
-                        }
                     }
                 }
-            } catch (e: Exception) {
-                log.warn("플랫폼 답글 전송 중 오류: {}", e.message)
             }
         }
 
@@ -89,26 +89,25 @@ class CommentEngagementUseCase(
         val delPlatform = comment.platform
         val delPlatformCommentId = comment.platformCommentId
         if (delPlatform != null && delPlatformCommentId != null) {
-            try {
-                val platform = Platform.valueOf(delPlatform)
-                val capabilities = platformCommentPort.getCommentCapabilities(platform)
+            val platform = Platform.valueOf(delPlatform)
+            val capabilities = platformCommentPort.getCommentCapabilities(platform)
 
-                if (capabilities.canDelete || capabilities.canHide) {
-                    val channel = channelRepository.findByUserIdAndPlatform(userId, platform)
-                    if (channel != null) {
-                        val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
-                        val result = platformCommentPort.deleteComment(
-                            platform = platform,
-                            platformCommentId = delPlatformCommentId,
-                            accessToken = accessToken,
+            if (capabilities.canDelete || capabilities.canHide) {
+                val channel = channelRepository.findByUserIdAndPlatform(userId, platform)
+                if (channel != null) {
+                    val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
+                    val result = platformCommentPort.deleteComment(
+                        platform = platform,
+                        platformCommentId = delPlatformCommentId,
+                        accessToken = accessToken,
+                    )
+                    if (!result.success) {
+                        throw com.ongo.common.exception.PlatformApiException(
+                            platform.name,
+                            "댓글 삭제 실패: ${result.errorMessage}"
                         )
-                        if (!result.success) {
-                            log.warn("플랫폼 댓글 삭제 실패: platform={}, error={}", platform, result.errorMessage)
-                        }
                     }
                 }
-            } catch (e: Exception) {
-                log.warn("플랫폼 댓글 삭제 중 오류: {}", e.message)
             }
         }
 
@@ -150,7 +149,7 @@ class CommentEngagementUseCase(
 
     fun getCapabilitiesMap(userId: Long): Map<String, CommentCapabilitiesDto> {
         val channels = channelRepository.findByUserId(userId)
-            .filter { it.status == "ACTIVE" }
+            .filter { it.status == ChannelStatus.ACTIVE }
 
         return channels.associate { channel ->
             channel.platform.name to getCapabilities(channel.platform)

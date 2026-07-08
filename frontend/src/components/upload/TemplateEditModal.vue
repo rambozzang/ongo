@@ -1,6 +1,7 @@
 <template>
   <Transition name="backdrop">
     <div
+      v-if="true"
       class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm tablet:items-center"
       role="dialog"
       aria-modal="true"
@@ -9,6 +10,7 @@
     >
       <Transition name="sheet">
         <div
+          v-if="true"
           class="flex max-h-[90vh] w-full flex-col rounded-t-2xl bg-white dark:bg-gray-800 shadow-2xl tablet:max-w-2xl tablet:rounded-2xl"
           @click.stop
           @keydown.escape="emit('close')"

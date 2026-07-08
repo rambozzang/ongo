@@ -107,16 +107,16 @@ const formatDate = (dateString: string | null) => {
       </div>
       <div class="flex items-center gap-2 ml-4">
         <button
-          @click="emit('edit', rule.id)"
           class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           title="수정"
+          @click="emit('edit', rule.id)"
         >
           <PencilIcon class="w-5 h-5" />
         </button>
         <button
-          @click="emit('delete', rule.id)"
           class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           title="삭제"
+          @click="emit('delete', rule.id)"
         >
           <TrashIcon class="w-5 h-5" />
         </button>
@@ -161,8 +161,8 @@ const formatDate = (dateString: string | null) => {
         <input
           type="checkbox"
           :checked="rule.isEnabled"
-          @change="emit('toggle', rule.id)"
           class="sr-only peer"
+          @change="emit('toggle', rule.id)"
         >
         <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
         <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">

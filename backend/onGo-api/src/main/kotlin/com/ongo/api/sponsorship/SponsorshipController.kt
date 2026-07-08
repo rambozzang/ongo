@@ -1,5 +1,6 @@
 package com.ongo.api.sponsorship
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.sponsorship.SponsorshipUseCase
 import com.ongo.application.sponsorship.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "스폰서십 트래커", description = "스폰서십 딜 및 산출물 추적 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/sponsorships")
 class SponsorshipController(

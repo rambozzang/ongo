@@ -1,5 +1,6 @@
 package com.ongo.api.sociallistening
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.sociallistening.SocialListeningUseCase
 import com.ongo.application.sociallistening.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "소셜 리스닝", description = "브랜드 멘션 모니터링 및 키워드 알림 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/social-listening")
 class SocialListeningController(

@@ -1,5 +1,6 @@
 package com.ongo.api.brandvoice
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.brandvoice.BrandVoiceUseCase
 import com.ongo.application.brandvoice.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "브랜드 보이스", description = "브랜드 보이스 프로필 생성 및 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/brand-voice")
 class BrandVoiceController(

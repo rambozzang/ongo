@@ -1,5 +1,6 @@
 package com.ongo.api.influencermatch
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.influencermatch.InfluencerMatchUseCase
 import com.ongo.application.influencermatch.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "인플루언서 매칭", description = "AI 기반 인플루언서 매칭 및 협업 요청 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/influencer-match")
 class InfluencerMatchController(

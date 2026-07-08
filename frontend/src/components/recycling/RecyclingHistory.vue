@@ -98,8 +98,8 @@ function getPlatformLabels(platforms: string[]): string {
         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">필터</span>
         <button
           v-if="hasActiveFilters"
-          @click="clearFilters"
           class="ml-auto text-xs text-blue-600 dark:text-blue-400 hover:underline"
+          @click="clearFilters"
         >
           초기화
         </button>

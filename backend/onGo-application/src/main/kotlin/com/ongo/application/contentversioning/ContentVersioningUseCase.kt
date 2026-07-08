@@ -1,9 +1,11 @@
 package com.ongo.application.contentversioning
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.contentversioning.dto.*
 import com.ongo.domain.contentversioning.*
 import org.springframework.stereotype.Service
 
+@Profile("wip")
 @Service
 class ContentVersioningUseCase(
     private val groupRepository: ContentVersionGroupRepository,

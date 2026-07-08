@@ -1,5 +1,6 @@
 package com.ongo.api.performancereport
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.performancereport.PerformanceReportUseCase
 import com.ongo.application.performancereport.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "콘텐츠 성과 보고서", description = "종합 성과 리포트 생성 및 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/performance-reports")
 class PerformanceReportController(

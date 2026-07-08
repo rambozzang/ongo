@@ -1,5 +1,6 @@
 package com.ongo.api.competitoranalysis
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.competitoranalysis.CompetitorAnalysisUseCase
 import com.ongo.application.competitoranalysis.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "경쟁자 분석", description = "경쟁자 프로필 및 분석 리포트 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/competitor-analysis")
 class CompetitorAnalysisController(

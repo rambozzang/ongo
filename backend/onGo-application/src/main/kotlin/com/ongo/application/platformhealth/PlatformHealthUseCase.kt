@@ -1,9 +1,11 @@
 package com.ongo.application.platformhealth
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.platformhealth.dto.*
 import com.ongo.domain.platformhealth.*
 import org.springframework.stereotype.Service
 
+@Profile("wip")
 @Service
 class PlatformHealthUseCase(
     private val scoreRepository: PlatformHealthScoreRepository,

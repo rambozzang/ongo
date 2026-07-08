@@ -77,12 +77,12 @@ function handleUpdateGuidelines(text: string) {
     <PageHeader :title="$t('brandKit.title')" :description="$t('brandKit.description')">
       <template #actions>
         <button
-          @click="handleSave"
           :disabled="!brandKitStore.isDirty"
           :class="[
             'btn-primary inline-flex items-center gap-2',
             !brandKitStore.isDirty && 'opacity-50 cursor-not-allowed'
           ]"
+          @click="handleSave"
         >
           <svg v-if="brandKitStore.isDirty" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -99,8 +99,8 @@ function handleUpdateGuidelines(text: string) {
       <!-- Color Palette Section -->
       <section class="card overflow-hidden p-0">
         <button
-          @click="toggleSection('colors')"
           class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          @click="toggleSection('colors')"
         >
           <div>
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -128,8 +128,8 @@ function handleUpdateGuidelines(text: string) {
       <!-- Typography Section -->
       <section class="card overflow-hidden p-0">
         <button
-          @click="toggleSection('typography')"
           class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          @click="toggleSection('typography')"
         >
           <div>
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -157,8 +157,8 @@ function handleUpdateGuidelines(text: string) {
       <!-- Brand Assets Section -->
       <section class="card overflow-hidden p-0">
         <button
-          @click="toggleSection('assets')"
           class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          @click="toggleSection('assets')"
         >
           <div>
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -185,8 +185,8 @@ function handleUpdateGuidelines(text: string) {
       <!-- Brand Guidelines Section -->
       <section class="card overflow-hidden p-0">
         <button
-          @click="toggleSection('guidelines')"
           class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          @click="toggleSection('guidelines')"
         >
           <div>
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">

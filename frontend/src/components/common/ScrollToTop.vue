@@ -10,9 +10,9 @@
     <button
       v-if="isVisible"
       class="fixed bottom-20 right-6 z-30 rounded-full bg-primary-600 p-3 text-white shadow-lg hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-      @click="scrollToTop"
       aria-label="맨 위로 스크롤"
       title="맨 위로"
+      @click="scrollToTop"
     >
       <ChevronUpIcon class="h-6 w-6" />
     </button>

@@ -1,5 +1,6 @@
 package com.ongo.api.portfolio
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.portfolio.PortfolioUseCase
 import com.ongo.application.portfolio.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "포트폴리오", description = "크리에이터 포트폴리오 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/portfolios")
 class PortfolioController(

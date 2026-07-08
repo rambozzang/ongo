@@ -9,8 +9,8 @@
       </div>
       <button
         class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
-        @click="dismiss"
         title="닫기"
+        @click="dismiss"
       >
         <XMarkIcon class="h-5 w-5" />
       </button>

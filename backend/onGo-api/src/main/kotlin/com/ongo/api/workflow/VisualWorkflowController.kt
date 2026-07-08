@@ -1,5 +1,6 @@
 package com.ongo.api.workflow
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.workflow.VisualWorkflowUseCase
 import com.ongo.application.workflow.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "비주얼 워크플로우", description = "비주얼 워크플로우 빌더")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/workflows")
 class VisualWorkflowController(

@@ -7,10 +7,12 @@ import com.ongo.common.annotation.CurrentUser
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.springframework.context.annotation.Profile
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "에이전시", description = "에이전시 워크스페이스 및 크리에이터 관리")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/agency")
 class AgencyController(

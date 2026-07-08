@@ -120,7 +120,7 @@ class WordPressClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("WordPress OAuth 인가 코드 교환")
 
         val response = wordPressOAuthApi.exchangeToken(
@@ -176,6 +176,7 @@ class WordPressClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("WordPress 댓글 조회: postId={}", platformVideoId)
 

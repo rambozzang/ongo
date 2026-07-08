@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd backend && ./gradlew :onGo-infrastructure:test --tests \\\"*.ContentSourceJooqRepositoryIT\\\" --info 2>&1 | grep -A 3 \\\"PSQLException\\\\|SQL state\\\\|ERROR:\\\" | head -40\",\"timeout\":120000,\"d...",
+  "error": "Exit code 1\n(eval):cd:1: no such file or directory: backend",
+  "timestamp": "2026-04-19T14:45:24.304Z",
+  "retry_count": 1
+}

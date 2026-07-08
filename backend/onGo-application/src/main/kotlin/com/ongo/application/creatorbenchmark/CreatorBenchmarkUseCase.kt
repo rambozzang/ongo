@@ -1,9 +1,11 @@
 package com.ongo.application.creatorbenchmark
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.creatorbenchmark.dto.*
 import com.ongo.domain.creatorbenchmark.*
 import org.springframework.stereotype.Service
 
+@Profile("wip")
 @Service
 class CreatorBenchmarkUseCase(
     private val resultRepository: BenchmarkResultRepository,

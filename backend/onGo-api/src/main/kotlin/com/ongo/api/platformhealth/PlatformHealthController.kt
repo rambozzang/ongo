@@ -1,5 +1,6 @@
 package com.ongo.api.platformhealth
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.platformhealth.PlatformHealthUseCase
 import com.ongo.application.platformhealth.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "플랫폼 건강 점수", description = "각 플랫폼별 채널 건강 상태 분석")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/platform-health")
 class PlatformHealthController(

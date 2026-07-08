@@ -105,36 +105,36 @@ const handleReply = (content: string) => {
       <!-- Action Buttons -->
       <div class="flex items-center gap-2 mb-4">
         <button
-          @click="emit('toggle-read')"
           :title="message.status === 'unread' ? '읽음으로 표시' : '안읽음으로 표시'"
           class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
+          @click="emit('toggle-read')"
         >
           <EnvelopeOpenIcon v-if="message.status === 'unread'" class="w-5 h-5" />
           <EnvelopeIcon v-else class="w-5 h-5" />
         </button>
 
         <button
-          @click="emit('toggle-star')"
           :title="message.isStarred ? '별표 해제' : '별표'"
           class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           :class="message.isStarred ? 'text-yellow-500' : 'text-gray-600 dark:text-gray-400'"
+          @click="emit('toggle-star')"
         >
           <StarIconFilled v-if="message.isStarred" class="w-5 h-5" />
           <StarIconSolid v-else class="w-5 h-5" />
         </button>
 
         <button
-          @click="emit('archive')"
           title="보관"
           class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
+          @click="emit('archive')"
         >
           <ArchiveBoxIcon class="w-5 h-5" />
         </button>
 
         <button
-          @click="emit('delete')"
           title="삭제"
           class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400 transition-colors"
+          @click="emit('delete')"
         >
           <TrashIcon class="w-5 h-5" />
         </button>

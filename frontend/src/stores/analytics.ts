@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import type {
   DashboardKpi,
   TrendDataPoint,
@@ -19,11 +19,11 @@ import { useNotificationStore } from '@/stores/notification'
 
 export const useAnalyticsStore = defineStore('analytics', () => {
   const kpi = ref<DashboardKpi | null>(null)
-  const trendData = ref<TrendDataPoint[]>([])
-  const platformComparison = ref<PlatformComparison[]>([])
-  const heatmapData = ref<HeatmapData[]>([])
-  const postingHeatmapData = ref<HeatmapData[]>([])
-  const topVideos = ref<TopVideo[]>([])
+  const trendData = shallowRef<TrendDataPoint[]>([])
+  const platformComparison = shallowRef<PlatformComparison[]>([])
+  const heatmapData = shallowRef<HeatmapData[]>([])
+  const postingHeatmapData = shallowRef<HeatmapData[]>([])
+  const topVideos = shallowRef<TopVideo[]>([])
   const loading = ref(false)
   const period = ref<AnalyticsPeriod>('7d')
 

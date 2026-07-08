@@ -1,10 +1,12 @@
 package com.ongo.application.hashtaganalytics
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.hashtaganalytics.dto.*
 import com.ongo.domain.hashtaganalytics.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class HashtagAnalyticsUseCase(
     private val performanceRepository: HashtagPerformanceRepository,

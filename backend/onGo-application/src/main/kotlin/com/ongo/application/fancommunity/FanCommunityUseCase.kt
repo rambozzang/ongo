@@ -1,10 +1,12 @@
 package com.ongo.application.fancommunity
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.fancommunity.dto.*
 import com.ongo.domain.fancommunity.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class FanCommunityUseCase(
     private val postRepository: CommunityPostRepository,

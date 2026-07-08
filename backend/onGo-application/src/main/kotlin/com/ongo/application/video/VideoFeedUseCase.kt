@@ -2,6 +2,7 @@ package com.ongo.application.video
 
 import com.ongo.common.enums.Platform
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.channel.TokenEncryptionPort
 import org.slf4j.LoggerFactory
@@ -27,7 +28,7 @@ class VideoFeedUseCase(
         sort: String?,
     ): VideoFeedResponse {
         val channels = channelRepository.findByUserId(userId)
-            .filter { it.status == "ACTIVE" }
+            .filter { it.status == ChannelStatus.ACTIVE }
             .filter { platform == null || it.platform == platform }
 
         if (channels.isEmpty()) {

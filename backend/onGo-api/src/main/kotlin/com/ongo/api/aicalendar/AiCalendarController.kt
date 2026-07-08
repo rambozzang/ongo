@@ -1,5 +1,6 @@
 package com.ongo.api.aicalendar
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.aicalendar.AiCalendarUseCase
 import com.ongo.application.aicalendar.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "AI 캘린더", description = "AI 기반 콘텐츠 캘린더 자동 생성")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/ai-calendars")
 class AiCalendarController(

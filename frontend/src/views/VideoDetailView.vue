@@ -12,7 +12,8 @@
       <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">영상 상세</h1>
     </div>
 
-    <PageGuide title="영상 상세" :items="[
+    <PageGuide
+title="영상 상세" :items="[
       '미디어 정보·썸네일·자막 탭에서 영상의 기술 정보를 확인하고 썸네일 선택·자막 편집이 가능합니다',
       '플랫폼 탭을 전환하면 YouTube·TikTok·Instagram·Naver Clip별 조회수·좋아요·댓글·공유 성과를 비교할 수 있습니다',
       '일별 조회수 추이 차트에서 막대 위에 마우스를 올리면 해당 날짜의 정확한 수치를 확인할 수 있습니다',

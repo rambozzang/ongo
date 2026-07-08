@@ -103,4 +103,9 @@ interface TwitterOAuthApi {
     fun exchangeToken(
         @RequestBody body: Map<String, String>,
     ): TwitterTokenResponse
+
+    @PostExchange("/2/oauth2/revoke")
+    fun revokeToken(
+        @RequestBody body: Map<String, String>,
+    )
 }

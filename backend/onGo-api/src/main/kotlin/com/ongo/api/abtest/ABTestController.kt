@@ -1,5 +1,6 @@
 package com.ongo.api.abtest
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.abtest.ABTestStatisticsService
 import com.ongo.application.abtest.ABTestUseCase
 import com.ongo.application.abtest.dto.ABTestListResponse
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "A/B 테스트", description = "A/B 테스트 생성, 관리, 시작/중지")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/ab-tests")
 class ABTestController(

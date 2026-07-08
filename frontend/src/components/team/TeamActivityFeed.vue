@@ -77,8 +77,8 @@ const clearFilter = () => {
         </select>
         <button
           v-if="selectedMemberId !== null"
-          @click="clearFilter"
           class="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+          @click="clearFilter"
         >
           필터 지우기
         </button>
@@ -136,8 +136,8 @@ const clearFilter = () => {
     <!-- Load More Button -->
     <div v-if="hasMore" class="flex justify-center">
       <button
-        @click="loadMore"
         class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+        @click="loadMore"
       >
         더 보기
       </button>

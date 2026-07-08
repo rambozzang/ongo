@@ -1,11 +1,19 @@
 package com.ongo.application.video
 
+import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.video.dto.*
 import com.ongo.common.enums.Platform
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class CrossPlatformOptimizationUseCase {
+class CrossPlatformOptimizationUseCase(
+    private val chatClientResolver: ChatClientResolver,
+    private val objectMapper: ObjectMapper,
+) {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     fun checkOptimization(request: OptimizationCheckRequest): OptimizationCheckResponse {
         val platforms = request.platforms.ifEmpty { Platform.entries }
@@ -253,5 +261,94 @@ class CrossPlatformOptimizationUseCase {
                 OptimizationSuggestion("tags", OptimizationSeverity.WARNING, "태그를 추가하면 네이버 검색 노출이 향상됩니다", "0개", "5개 이상 권장")
             )
         }
+    }
+
+    /**
+     * AI를 활용하여 각 플랫폼별로 콘텐츠를 최적화합니다.
+     */
+    fun optimizeContent(userId: Long, request: AiOptimizationRequest): AiOptimizationResponse {
+        val platforms = request.platforms.ifEmpty { Platform.entries }
+        val optimized = platforms.associate { platform ->
+            try {
+                val content = optimizeForPlatform(userId, platform, request)
+                platform to content
+            } catch (e: Exception) {
+                log.warn("AI 최적화 실패: platform={}, userId={}: {}", platform, userId, e.message)
+                platform to AiOptimizedContent(
+                    title = request.title,
+                    description = request.description,
+                    tags = request.tags,
+                    reasoning = "AI 최적화 실패: ${e.message}",
+                )
+            }
+        }
+        return AiOptimizationResponse(original = request, optimized = optimized)
+    }
+
+    private fun optimizeForPlatform(
+        userId: Long,
+        platform: Platform,
+        request: AiOptimizationRequest,
+    ): AiOptimizedContent {
+        val systemPrompt = buildSystemPrompt(platform)
+        val userPrompt = buildUserPrompt(platform, request)
+
+        val response = chatClientResolver.resolve(userId).prompt()
+            .system(systemPrompt)
+            .user(userPrompt)
+            .call()
+            .content()
+            ?: throw IllegalStateException("AI 응답이 비어있습니다")
+
+        return parseAiResponse(response)
+    }
+
+    private fun buildSystemPrompt(platform: Platform): String {
+        return """
+            당신은 ${platform.name} 플랫폼의 콘텐츠 최적화 전문가입니다.
+            주어진 원본 콘텐츠를 ${platform.name}의 특성과 알고리즘에 맞게 최적화하세요.
+            
+            ${platform.name} 플랫폼 특성:
+            ${getPlatformCharacteristics(platform)}
+            
+            응답은 다음 JSON 형식으로 반환하세요:
+            {
+                "title": "최적화된 제목",
+                "description": "최적화된 설명 (없으면 null)",
+                "tags": ["태그1", "태그2", "태그3"],
+                "reasoning": "왜 이렇게 최적화했는지 간단한 설명"
+            }
+        """.trimIndent()
+    }
+
+    private fun getPlatformCharacteristics(platform: Platform): String {
+        return when (platform) {
+            Platform.YOUTUBE -> "- 제목: 10-70자, 키워드 앞 배치\n- 설명: 200자 이상, 타임스탬프와 링크 포함\n- 태그: 3-15개"
+            Platform.TIKTOK -> "- 제목: 짧고 임팩트 있게, 해시태그 중심\n- 설명: 링크 제거, #해시태그 5-8개\n- 트렌디하고 젊은 어조"
+            Platform.INSTAGRAM -> "- 캡션: 첫 줄에 후킹 문장, 이모지 활용\n- 해시태그: 10-20개, 다양한 규모 혼합\n- 시각적 중심"
+            Platform.NAVER_CLIP -> "- 한국어 키워드 필수\n- 제목: 100자 이내\n- 태그: 5개 이상, 한국어 중심"
+            Platform.TWITTER -> "- 제목: 280자 이내, 간결하게\n- 해시태그: 1-2개\n- 실시성과 참여 유도"
+            else -> "- 제목: 간결하고 명확하게\n- 태그: 3-10개\n- 플랫폼 특성에 맞는 어조"
+        }
+    }
+
+    private fun buildUserPrompt(platform: Platform, request: AiOptimizationRequest): String {
+        return """
+            플랫폼: ${platform.name}
+            원본 제목: ${request.title}
+            원본 설명: ${request.description ?: "(없음)"}
+            원본 태그: ${request.tags.joinToString(", ")}
+            
+            위 콘텐츠를 ${platform.name}에 최적화해주세요.
+        """.trimIndent()
+    }
+
+    private fun parseAiResponse(response: String): AiOptimizedContent {
+        val json = response.trim()
+            .removePrefix("```json")
+            .removePrefix("```")
+            .removeSuffix("```")
+            .trim()
+        return objectMapper.readValue(json, AiOptimizedContent::class.java)
     }
 }

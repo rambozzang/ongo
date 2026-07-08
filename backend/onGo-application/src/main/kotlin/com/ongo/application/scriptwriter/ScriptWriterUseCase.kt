@@ -1,5 +1,6 @@
 package com.ongo.application.scriptwriter
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.scriptwriter.dto.*
 import com.ongo.domain.scriptwriter.Script
 import com.ongo.domain.scriptwriter.ScriptRepository
@@ -8,6 +9,7 @@ import com.ongo.domain.scriptwriter.ScriptSectionRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class ScriptWriterUseCase(
     private val scriptRepository: ScriptRepository,

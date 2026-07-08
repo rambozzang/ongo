@@ -15,9 +15,9 @@
       </span>
       <div class="flex gap-1">
         <component
+          :is="platformIcon(platform)"
           v-for="platform in idea.platform"
           :key="platform"
-          :is="platformIcon(platform)"
           class="w-4 h-4 text-gray-500 dark:text-gray-400"
         />
       </div>

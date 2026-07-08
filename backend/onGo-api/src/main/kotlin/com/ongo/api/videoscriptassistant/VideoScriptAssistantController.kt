@@ -1,5 +1,6 @@
 package com.ongo.api.videoscriptassistant
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.videoscriptassistant.VideoScriptAssistantUseCase
 import com.ongo.application.videoscriptassistant.dto.*
 import com.ongo.common.ResData
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "AI 비디오 스크립트 어시스턴트", description = "AI 기반 비디오 스크립트 작성 및 개선")
+@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/video-script-assistant")
 class VideoScriptAssistantController(

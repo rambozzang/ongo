@@ -130,7 +130,7 @@ class PinterestClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("Pinterest OAuth 인가 코드 교환")
 
         val response = pinterestOAuthApi.exchangeToken(

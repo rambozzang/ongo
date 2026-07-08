@@ -130,7 +130,7 @@ class FacebookClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("Facebook OAuth 인가 코드 교환")
 
         val response = facebookOAuthApi.exchangeToken(
@@ -189,6 +189,7 @@ class FacebookClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("Facebook 댓글 조회: postId={}", platformVideoId)
 

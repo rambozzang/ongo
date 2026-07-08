@@ -1,5 +1,6 @@
 package com.ongo.application.videoscriptassistant
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.videoscriptassistant.dto.*
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.videoscriptassistant.ScriptSuggestionRepository
@@ -8,6 +9,7 @@ import com.ongo.domain.videoscriptassistant.VideoScriptRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+@Profile("wip")
 @Service
 class VideoScriptAssistantUseCase(
     private val scriptRepository: VideoScriptRepository,

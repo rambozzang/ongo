@@ -137,7 +137,7 @@ class ThreadsClient(
         )
     }
 
-    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String): PlatformTokenResult {
+    override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
         log.debug("Threads OAuth 인가 코드 교환")
 
         val shortLived = threadsOAuthApi.exchangeToken(
@@ -193,6 +193,7 @@ class ThreadsClient(
         accessToken: String,
         pageToken: String?,
         maxResults: Int,
+        publishedAfter: java.time.LocalDateTime?,
     ): PlatformCommentListResult {
         log.debug("Threads 답글 조회: mediaId={}", platformVideoId)
 

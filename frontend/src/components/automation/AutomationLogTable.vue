@@ -158,9 +158,9 @@ const pageNumbers = computed(() => {
 
       <div class="flex items-center gap-2">
         <button
-          @click="goToPage(currentPage - 1)"
           :disabled="currentPage === 1"
           class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          @click="goToPage(currentPage - 1)"
         >
           이전
         </button>
@@ -168,21 +168,21 @@ const pageNumbers = computed(() => {
         <button
           v-for="page in pageNumbers"
           :key="page"
-          @click="goToPage(page)"
           :class="[
             'px-3 py-1 rounded-lg text-sm font-medium transition-colors',
             page === currentPage
               ? 'bg-blue-600 text-white'
               : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]"
+          @click="goToPage(page)"
         >
           {{ page }}
         </button>
 
         <button
-          @click="goToPage(currentPage + 1)"
           :disabled="currentPage === totalPages"
           class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          @click="goToPage(currentPage + 1)"
         >
           다음
         </button>

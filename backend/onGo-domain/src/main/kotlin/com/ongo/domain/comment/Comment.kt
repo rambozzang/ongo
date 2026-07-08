@@ -26,6 +26,7 @@ data class Comment(
     val repliedAt: LocalDateTime? = null,
     val publishedAt: LocalDateTime? = null,
     val syncedAt: LocalDateTime? = null,
+    val deletedAt: LocalDateTime? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
 )

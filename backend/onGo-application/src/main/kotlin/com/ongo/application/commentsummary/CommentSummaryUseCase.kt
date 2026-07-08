@@ -1,9 +1,11 @@
 package com.ongo.application.commentsummary
 
+import org.springframework.context.annotation.Profile
 import com.ongo.application.commentsummary.dto.*
 import com.ongo.domain.commentsummary.*
 import org.springframework.stereotype.Service
 
+@Profile("wip")
 @Service
 class CommentSummaryUseCase(
     private val resultRepository: CommentSummaryResultRepository,

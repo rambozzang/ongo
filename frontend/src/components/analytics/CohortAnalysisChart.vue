@@ -167,13 +167,13 @@ function formatNumber(n: number): string {
         <button
           v-for="opt in groupByOptions"
           :key="opt.value"
-          @click="groupBy = opt.value"
           :class="[
             groupBy === opt.value
               ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300',
             'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
           ]"
+          @click="groupBy = opt.value"
         >
           {{ opt.label }}
         </button>
