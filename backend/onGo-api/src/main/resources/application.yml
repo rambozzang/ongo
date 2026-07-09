@@ -139,7 +139,12 @@ platform:
   token:
     encryption-key: ${PLATFORM_TOKEN_ENCRYPTION_KEY}
   google:
+    client-id: ${GOOGLE_CLIENT_ID:}
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
     api-key: ${GOOGLE_API_KEY:dummy-google-api}
+  tiktok:
+    client-key: ${TIKTOK_CLIENT_KEY:}
+    client-secret: ${TIKTOK_CLIENT_SECRET:}
   twitter:
     client-id: ${TWITTER_CLIENT_ID:dummy-twitter-id}
     client-secret: ${TWITTER_CLIENT_SECRET:dummy-twitter-secret}
