@@ -5,7 +5,12 @@ import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.twitter.dto.TwitterCreateTweetRequest
 import org.slf4j.LoggerFactory
+import org.springframework.core.io.ByteArrayResource
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
+import org.springframework.util.MultiValueMap
+import org.springframework.util.LinkedMultiValueMap
+import org.springframework.web.client.RestClient
 import java.time.LocalDate
 
 @Component
@@ -24,32 +29,63 @@ class TwitterClient(
         log.info("Twitter 영상 업로드 시작: title={}", request.title)
 
         try {
-            // Step 1: Init chunked media upload
+            // Step 1: Download file from fileUrl
+            val fileBytes = downloadFileBytes(request.fileUrl)
+
+            // Step 2: Init chunked media upload
             val initResponse = twitterMediaApi.initUpload(
                 authorization = "Bearer ${request.accessToken}",
                 command = "INIT",
-                totalBytes = request.fileSize,
+                totalBytes = fileBytes.size.toLong(),
                 mediaType = "video/mp4",
                 mediaCategory = "tweet_video",
             )
 
             val mediaId = initResponse.mediaIdString
 
-            // Step 2: Finalize (assumes file is uploaded via chunks externally)
+            // Step 3: Append file chunks
+            val chunkSize = 5 * 1024 * 1024 // 5MB
+            var segmentIndex = 0
+            var offset = 0
+            val uploadRestClient = RestClient.create(twitterConfig.getUploadBaseUrl())
+            while (offset < fileBytes.size) {
+                val end = minOf(offset + chunkSize, fileBytes.size)
+                val chunk = fileBytes.copyOfRange(offset, end)
+                val mediaResource = object : ByteArrayResource(chunk) {
+                    override fun getFilename(): String = "media"
+                }
+                val body: MultiValueMap<String, Any> = LinkedMultiValueMap<String, Any>().apply {
+                    add("command", "APPEND")
+                    add("media_id", mediaId)
+                    add("segment_index", segmentIndex)
+                    add("media", mediaResource)
+                }
+                uploadRestClient.post()
+                    .uri("/1.1/media/upload.json")
+                    .header("Authorization", "Bearer ${request.accessToken}")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(body)
+                    .retrieve()
+                    .toBodilessEntity()
+                offset = end
+                segmentIndex++
+            }
+
+            // Step 4: Finalize
             val finalizeResponse = twitterMediaApi.finalizeUpload(
                 authorization = "Bearer ${request.accessToken}",
                 command = "FINALIZE",
                 mediaId = mediaId,
             )
 
-            // Step 3: Wait for processing if needed
+            // Step 5: Wait for processing if needed
             if (finalizeResponse.processingInfo?.state == "pending" ||
                 finalizeResponse.processingInfo?.state == "in_progress"
             ) {
                 waitForMediaProcessing(mediaId, request.accessToken)
             }
 
-            // Step 4: Create tweet with media
+            // Step 6: Create tweet with media
             val tweetText = request.title.take(280)
             val tweetRequest = TwitterCreateTweetRequest(
                 text = tweetText,

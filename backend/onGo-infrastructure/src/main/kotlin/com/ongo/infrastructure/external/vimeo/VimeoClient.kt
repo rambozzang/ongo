@@ -207,7 +207,7 @@ class VimeoClient(
             val comments = response.data?.mapNotNull { comment ->
                 val commentId = comment.uri?.substringAfterLast("/") ?: return@mapNotNull null
                 PlatformComment(
-                    platformCommentId = commentId,
+                    platformCommentId = "$platformVideoId:$commentId",
                     authorName = comment.user?.name ?: "Unknown",
                     authorAvatarUrl = comment.user?.pictures?.sizes?.lastOrNull()?.link,
                     authorChannelUrl = comment.user?.link,
@@ -240,14 +240,17 @@ class VimeoClient(
         log.info("Vimeo 댓글 답글: videoId={}, commentId={}", platformVideoId, platformCommentId)
 
         return try {
-            val videoId = platformVideoId ?: return PlatformCommentReplyResult("", success = false, errorMessage = "videoId required")
+            val videoId = platformVideoId ?: platformCommentId.substringBefore(":", "")
+            if (videoId.isBlank()) {
+                return PlatformCommentReplyResult("", success = false, errorMessage = "videoId required")
+            }
             val response = vimeoApi.createComment(
                 videoId = videoId,
                 authorization = "Bearer $accessToken",
                 body = VimeoCommentRequest(text = content),
             )
             val replyId = response.uri?.substringAfterLast("/") ?: ""
-            PlatformCommentReplyResult(platformCommentId = replyId, success = replyId.isNotEmpty())
+            PlatformCommentReplyResult(platformCommentId = "$videoId:$replyId", success = replyId.isNotEmpty())
         } catch (e: Exception) {
             log.error("Vimeo 댓글 답글 실패: {}", e.message)
             PlatformCommentReplyResult("", success = false, errorMessage = e.message)

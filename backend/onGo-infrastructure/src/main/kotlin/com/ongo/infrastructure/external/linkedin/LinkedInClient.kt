@@ -7,6 +7,7 @@ import com.ongo.infrastructure.external.linkedin.dto.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
+import org.springframework.web.client.RestClient
 
 @Component
 class LinkedInClient(
@@ -41,7 +42,23 @@ class LinkedInClient(
             val assetUrn = registerResponse.value?.asset
                 ?: throw PlatformUploadException("LinkedIn", "업로드 에셋 생성 실패")
 
-            // Step 2: Create UGC post
+            val uploadUrl = registerResponse.value?.uploadMechanism?.httpRequest?.uploadUrl
+                ?: throw PlatformUploadException("LinkedIn", "업로드 URL을 가져올 수 없습니다")
+
+            // Step 2: Upload binary to uploadUrl
+            val fileBytes = downloadFileBytes(request.fileUrl)
+            val uploadResponse = RestClient.create()
+                .put()
+                .uri(uploadUrl)
+                .header("Content-Type", "application/octet-stream")
+                .body(fileBytes)
+                .retrieve()
+                .toBodilessEntity()
+            if (!uploadResponse.statusCode.is2xxSuccessful) {
+                throw PlatformUploadException("LinkedIn", "업로드 URL로 파일 전송 실패: ${uploadResponse.statusCode}")
+            }
+
+            // Step 3: Create UGC post
             val ugcPost = LinkedInUgcPostRequest(
                 author = "urn:li:person:$personId",
                 specificContent = LinkedInUgcPostRequest.SpecificContent(

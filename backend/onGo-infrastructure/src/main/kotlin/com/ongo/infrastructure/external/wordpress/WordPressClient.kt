@@ -196,8 +196,9 @@ class WordPressClient(
             )
 
             val comments = response.comments?.mapNotNull { comment ->
+                val commentId = comment.id ?: return@mapNotNull null
                 PlatformComment(
-                    platformCommentId = comment.id ?: return@mapNotNull null,
+                    platformCommentId = "$siteId:$commentId",
                     authorName = comment.author?.name ?: "Unknown",
                     authorAvatarUrl = comment.author?.avatarUrl,
                     authorChannelUrl = comment.author?.url,
@@ -255,10 +256,16 @@ class WordPressClient(
         log.info("WordPress 댓글 삭제: commentId={}", platformCommentId)
 
         return try {
-            // Need siteId - extract from comment context or use a default
+            val parts = platformCommentId.split(":")
+            val siteId = parts.getOrElse(0) { "" }
+            val commentId = parts.getOrElse(1) { platformCommentId }
+            if (siteId.isBlank() || commentId.isBlank()) {
+                return PlatformCommentDeleteResult(success = false, errorMessage = "유효하지 않은 댓글 ID입니다")
+            }
+
             wordPressApi.deleteComment(
-                siteId = "default",
-                commentId = platformCommentId,
+                siteId = siteId,
+                commentId = commentId,
                 authorization = "Bearer $accessToken",
             )
             PlatformCommentDeleteResult(success = true)
@@ -275,9 +282,16 @@ class WordPressClient(
         log.info("WordPress 댓글 좋아요: commentId={}", platformCommentId)
 
         return try {
+            val parts = platformCommentId.split(":")
+            val siteId = parts.getOrElse(0) { "" }
+            val commentId = parts.getOrElse(1) { platformCommentId }
+            if (siteId.isBlank() || commentId.isBlank()) {
+                return false
+            }
+
             val response = wordPressApi.likeComment(
-                siteId = "default",
-                commentId = platformCommentId,
+                siteId = siteId,
+                commentId = commentId,
                 authorization = "Bearer $accessToken",
             )
             response.success ?: false

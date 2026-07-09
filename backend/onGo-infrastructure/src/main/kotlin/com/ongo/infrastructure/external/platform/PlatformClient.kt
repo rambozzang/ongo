@@ -1,8 +1,30 @@
 package com.ongo.infrastructure.external.platform
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformUploadException
+import org.springframework.web.client.RestClient
 import java.time.LocalDate
 import java.time.LocalDateTime
+
+private val fileDownloadClient: RestClient = RestClient.create()
+
+/**
+ * 파일 URL에서 바이너리를 다운로드한다.
+ * 플랫폼 업로드 시 fileUrl만으로는 실제 파일 내용을 전송할 수 없으므로
+ * 필요한 클라이언트에서 이 함수를 사용한다.
+ */
+fun downloadFileBytes(fileUrl: String): ByteArray {
+    val response = fileDownloadClient.get()
+        .uri(fileUrl)
+        .retrieve()
+        .toEntity(ByteArray::class.java)
+
+    if (!response.statusCode.is2xxSuccessful || response.body == null) {
+        throw PlatformUploadException("DOWNLOAD", "파일 다운로드 실패: $fileUrl (status=${response.statusCode})")
+    }
+
+    return response.body!!
+}
 
 interface PlatformClient {
     val platform: Platform
