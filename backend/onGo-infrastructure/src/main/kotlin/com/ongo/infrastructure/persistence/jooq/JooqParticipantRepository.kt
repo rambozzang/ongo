@@ -18,6 +18,9 @@ class JooqParticipantRepository(
     private val dsl: DSLContext,
 ) : ParticipantRepository {
 
+    override fun findById(id: Long): CampaignParticipant? =
+        dsl.select().from(UGC_CAMPAIGN_PARTICIPANTS).where(ID.eq(id)).fetchOne()?.toParticipant()
+
     override fun existsByCampaignIdAndCreatorId(campaignId: Long, creatorId: Long): Boolean =
         dsl.fetchExists(
             dsl.selectOne().from(UGC_CAMPAIGN_PARTICIPANTS)

@@ -192,6 +192,10 @@ object Tables {
 
     // UGC 캠페인 게시물 (V50)
     val UGC_CAMPAIGN_POSTS = DSL.table("ugc_campaign_posts")
+
+    // UGC 지표/보상 (V51)
+    val UGC_POST_METRIC_SNAPSHOTS = DSL.table("ugc_post_metric_snapshots")
+    val UGC_REWARD_CONFIRMATIONS = DSL.table("ugc_reward_confirmations")
 }
 
 object Fields {
@@ -955,4 +959,21 @@ object Fields {
     val EXTERNAL_POST_URL = DSL.field("external_post_url", String::class.java)
     val PLATFORM_POST_ID = DSL.field("platform_post_id", String::class.java)
     val IDEMPOTENCY_KEY = DSL.field("idempotency_key", String::class.java)
+
+    // UGC 지표/보상 (V51)
+    // 재사용: CAMPAIGN_ID, CREATOR_ID, STATUS, CREATED_AT, UPDATED_AT
+    // 지표는 BIGINT이므로 기존 Int VIEWS/LIKES/SHARES와 별개로 Long 필드를 둔다.
+    val CAMPAIGN_POST_ID = DSL.field("campaign_post_id", Long::class.java)
+    val CAPTURED_AT = DSL.field("captured_at", java.time.LocalDateTime::class.java)
+    val VIEWS_LONG = DSL.field("views", Long::class.java)
+    val LIKES_LONG = DSL.field("likes", Long::class.java)
+    // COMMENTS_LONG 은 기존(content_variants)과 컬럼명 동일하여 재사용
+    val SHARES_LONG = DSL.field("shares", Long::class.java)
+    val PARTICIPANT_ID = DSL.field("participant_id", Long::class.java)
+    val BASE_AMOUNT = DSL.field("base_amount", Long::class.java)
+    val BONUS_AMOUNT = DSL.field("bonus_amount", Long::class.java)
+    val TOTAL_AMOUNT = DSL.field("total_amount", Long::class.java)
+    val CONFIRMED_BY = DSL.field("confirmed_by", Long::class.java)
+    val CONFIRMED_AT = DSL.field("confirmed_at", java.time.LocalDateTime::class.java)
+    val NOTE = DSL.field("note", String::class.java)
 }

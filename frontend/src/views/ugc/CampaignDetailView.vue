@@ -20,6 +20,9 @@
           <button v-if="campaign.status !== 'DRAFT'" class="btn-secondary" @click="router.push(`/ugc/campaigns/${campaign.id}/submissions`)">
             {{ $t('ugc.reviewSubmissions') }}
           </button>
+          <button v-if="campaign.status !== 'DRAFT'" class="btn-secondary" @click="router.push(`/ugc/campaigns/${campaign.id}/rewards`)">
+            {{ $t('ugc.rewardsSection') }}
+          </button>
           <button v-if="campaign.status === 'DRAFT'" class="btn-secondary" @click="router.push(`/ugc/campaigns/${campaign.id}/edit`)">
             {{ $t('ugc.edit') }}
           </button>

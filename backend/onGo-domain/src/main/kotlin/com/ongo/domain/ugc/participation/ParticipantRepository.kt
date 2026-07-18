@@ -1,6 +1,8 @@
 package com.ongo.domain.ugc.participation
 
 interface ParticipantRepository {
+    fun findById(id: Long): CampaignParticipant?
+
     fun existsByCampaignIdAndCreatorId(campaignId: Long, creatorId: Long): Boolean
 
     fun findByCampaignId(campaignId: Long): List<CampaignParticipant>

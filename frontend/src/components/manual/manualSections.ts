@@ -148,6 +148,15 @@ export const sectionsKo: ManualSection[] = [
           '외부 URL은 플랫폼 허용 도메인만 등록됩니다.',
         ],
       },
+      {
+        subtitle: '성과와 정산',
+        text: '"성과·정산"에서 게시물별 지표(조회수·좋아요·댓글·공유)와 마지막 동기화 시각을 확인하고, 참여자별 보상을 확정·지급 완료 표시하며 지급 대상 CSV를 내보냅니다.',
+        items: [
+          '확정 총액이 캠페인 예산을 넘으면 확정이 차단됩니다.',
+          '보상은 미확정 → 확정 → 지급 완료 순으로 진행됩니다.',
+          'CSV는 UTF-8 BOM으로 한글 Excel에서 열리며, 수식 주입을 방지합니다.',
+        ],
+      },
     ],
   },
   {
@@ -3025,6 +3034,15 @@ export const sectionsEn: ManualSection[] = [
           'Publishing is tracked per platform; if one platform fails, successful results are preserved.',
           'Re-publishing the same submission does not create duplicate posts (idempotent).',
           'External URLs are only accepted for allowed platform domains.',
+        ],
+      },
+      {
+        subtitle: 'Performance and payouts',
+        text: 'Under "Performance & payouts", review per-post metrics (views, likes, comments, shares) and the last sync time, confirm and mark rewards as paid per participant, and export the payout CSV.',
+        items: [
+          'Confirmation is blocked when the confirmed total would exceed the campaign budget.',
+          'Rewards flow: Draft → Confirmed → Paid.',
+          'The CSV uses a UTF-8 BOM so it opens correctly in Excel and prevents formula injection.',
         ],
       },
     ],
