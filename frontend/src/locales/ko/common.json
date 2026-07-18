@@ -212,6 +212,7 @@
       "PAID_EXTERNALLY": "지급 완료",
       "CANCELLED": "취소"
     },
+    "auditLog": "감사 로그",
     "status": {
       "DRAFT": "초안",
       "RECRUITING": "모집중",

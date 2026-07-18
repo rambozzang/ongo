@@ -69,6 +69,17 @@
           </div>
         </div>
       </div>
+
+      <!-- Audit log -->
+      <div v-if="auditEvents.length" class="card mt-4">
+        <h3 class="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('ugc.auditLog') }}</h3>
+        <ul class="space-y-1">
+          <li v-for="ev in auditEvents" :key="ev.id" class="flex items-center justify-between text-sm">
+            <span class="text-gray-700 dark:text-gray-300">{{ ev.action }} <span v-if="ev.detail" class="text-xs text-gray-400">({{ ev.detail }})</span></span>
+            <span class="text-xs text-gray-400">#{{ ev.actorId }} · {{ ev.createdAt?.slice(0, 16)?.replace('T', ' ') }}</span>
+          </li>
+        </ul>
+      </div>
     </template>
   </div>
 </template>
@@ -79,7 +90,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useNotificationStore } from '@/stores/notification'
-import { ugcRewardApi, type CampaignAnalyticsResponse, type ParticipantRewardListResponse, type ParticipantRewardResponse } from '@/api/ugcReward'
+import { ugcRewardApi, type AuditEventResponse, type CampaignAnalyticsResponse, type ParticipantRewardListResponse, type ParticipantRewardResponse } from '@/api/ugcReward'
 import PageHeader from '@/components/common/PageHeader.vue'
 import { ChevronLeftIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline'
 
@@ -92,6 +103,7 @@ const notify = useNotificationStore()
 const campaignId = Number(route.params.id)
 const analytics = ref<CampaignAnalyticsResponse | null>(null)
 const rewards = ref<ParticipantRewardListResponse | null>(null)
+const auditEvents = ref<AuditEventResponse[]>([])
 const loading = ref(true)
 const acting = ref<number | null>(null)
 
@@ -120,6 +132,7 @@ async function fetchAll() {
     const ws = workspaceId()
     analytics.value = await ugcRewardApi.getAnalytics(ws, campaignId)
     rewards.value = await ugcRewardApi.listParticipants(ws, campaignId)
+    auditEvents.value = (await ugcRewardApi.listAuditEvents(ws, campaignId)).items
   } catch (e) {
     notify.error(e instanceof Error ? e.message : t('ugc.loadFailed'))
   } finally {

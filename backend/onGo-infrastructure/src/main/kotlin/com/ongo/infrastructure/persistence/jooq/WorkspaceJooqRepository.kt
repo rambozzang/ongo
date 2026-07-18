@@ -60,15 +60,16 @@ class WorkspaceJooqRepository(
             .orderBy(DSL.field("w.created_at").asc())
             .fetch()
             .map { record ->
+                // SELECT 필드가 DSL.field("w.xxx") 로 선언되어 Record 필드명이 "w.xxx" 이므로 동일하게 조회한다.
                 Workspace(
-                    id = record.get("id", Long::class.java),
-                    ownerId = record.get("owner_id", Long::class.java),
-                    name = record.get("name", String::class.java),
-                    slug = record.get("slug", String::class.java),
-                    description = record.get("description", String::class.java),
-                    logoUrl = record.get("logo_url", String::class.java),
-                    createdAt = record.get("created_at", LocalDateTime::class.java),
-                    updatedAt = record.get("updated_at", LocalDateTime::class.java),
+                    id = record.get("w.id", Long::class.java),
+                    ownerId = record.get("w.owner_id", Long::class.java),
+                    name = record.get("w.name", String::class.java),
+                    slug = record.get("w.slug", String::class.java),
+                    description = record.get("w.description", String::class.java),
+                    logoUrl = record.get("w.logo_url", String::class.java),
+                    createdAt = record.get("w.created_at", LocalDateTime::class.java),
+                    updatedAt = record.get("w.updated_at", LocalDateTime::class.java),
                 )
             }
     }

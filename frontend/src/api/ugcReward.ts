@@ -48,6 +48,23 @@ export interface UpdateRewardRequest {
   note?: string | null
 }
 
+export interface AuditEventResponse {
+  id: number
+  actorId: number
+  action: string
+  resourceType: string | null
+  resourceId: number | null
+  detail: string | null
+  createdAt: string | null
+}
+
+export interface AuditEventListResponse {
+  items: AuditEventResponse[]
+  totalElements: number
+  page: number
+  size: number
+}
+
 const wsBase = (workspaceId: number) => `/workspaces/${workspaceId}/ugc`
 
 export const ugcRewardApi = {
@@ -91,5 +108,11 @@ export const ugcRewardApi = {
     return apiClient
       .get(`${wsBase(workspaceId)}/campaigns/${campaignId}/rewards.csv`, { responseType: 'blob' })
       .then((r) => r.data as Blob)
+  },
+
+  listAuditEvents(workspaceId: number, campaignId: number) {
+    return apiClient
+      .get<ResData<AuditEventListResponse>>(`${wsBase(workspaceId)}/campaigns/${campaignId}/audit-events`)
+      .then(unwrapResponse)
   },
 }

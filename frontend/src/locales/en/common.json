@@ -212,6 +212,7 @@
       "PAID_EXTERNALLY": "Paid",
       "CANCELLED": "Cancelled"
     },
+    "auditLog": "Audit log",
     "status": {
       "DRAFT": "Draft",
       "RECRUITING": "Recruiting",

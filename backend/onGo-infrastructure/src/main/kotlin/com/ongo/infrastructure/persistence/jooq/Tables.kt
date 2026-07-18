@@ -196,6 +196,9 @@ object Tables {
     // UGC 지표/보상 (V51)
     val UGC_POST_METRIC_SNAPSHOTS = DSL.table("ugc_post_metric_snapshots")
     val UGC_REWARD_CONFIRMATIONS = DSL.table("ugc_reward_confirmations")
+
+    // UGC 감사 로그 (V52)
+    val UGC_AUDIT_EVENTS = DSL.table("ugc_audit_events")
 }
 
 object Fields {
@@ -976,4 +979,8 @@ object Fields {
     val CONFIRMED_BY = DSL.field("confirmed_by", Long::class.java)
     val CONFIRMED_AT = DSL.field("confirmed_at", java.time.LocalDateTime::class.java)
     val NOTE = DSL.field("note", String::class.java)
+
+    // UGC 감사 로그 (V52) — 재사용: WORKSPACE_ID, CAMPAIGN_ID, ACTION, RESOURCE_TYPE, RESOURCE_ID, CREATED_AT
+    val ACTOR_ID = DSL.field("actor_id", Long::class.java)
+    val DETAIL = DSL.field("detail", String::class.java)
 }

@@ -30,6 +30,8 @@ class RewardUseCaseTest {
     @MockK lateinit var campaignRepository: CampaignRepository
     @MockK lateinit var workspaceRepository: WorkspaceRepository
 
+    @MockK(relaxUnitFun = true) lateinit var auditRecorder: AuditRecorder
+
     @InjectMockKs lateinit var useCase: RewardUseCase
 
     private val userId = 1L

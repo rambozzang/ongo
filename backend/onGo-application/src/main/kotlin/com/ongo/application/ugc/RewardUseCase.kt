@@ -28,6 +28,7 @@ class RewardUseCase(
     private val participantRepository: ParticipantRepository,
     private val campaignRepository: CampaignRepository,
     private val workspaceRepository: WorkspaceRepository,
+    private val auditRecorder: AuditRecorder,
 ) {
 
     fun listParticipantRewards(userId: Long, workspaceId: Long, campaignId: Long): ParticipantRewardListResponse {
@@ -78,6 +79,11 @@ class RewardUseCase(
             )
         }
         val confirmed = rewardRepository.update(reward.confirm(userId))
+        auditRecorder.record(
+            workspaceId = workspaceId, campaignId = campaign.id, actorId = userId,
+            action = "REWARD_CONFIRMED", resourceType = "reward", resourceId = confirmed.id,
+            detail = "total=${confirmed.totalAmount}",
+        )
         return toResponse(participant, confirmed)
     }
 
@@ -87,6 +93,11 @@ class RewardUseCase(
         val participant = loadParticipantInWorkspace(workspaceId, participantId)
         val reward = rewardRepository.findByParticipantId(participantId) ?: throw NotFoundException("보상", participantId)
         val paid = rewardRepository.update(reward.markPaid())
+        auditRecorder.record(
+            workspaceId = workspaceId, campaignId = participant.campaignId, actorId = userId,
+            action = "REWARD_PAID", resourceType = "reward", resourceId = paid.id,
+            detail = "total=${paid.totalAmount}",
+        )
         return toResponse(participant, paid)
     }
 
