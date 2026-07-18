@@ -172,6 +172,8 @@ import {
   UsersIcon,
   ClipboardDocumentCheckIcon,
   MagnifyingGlassIcon,
+  MegaphoneIcon,
+  HandRaisedIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -276,6 +278,14 @@ const navGroups = computed<NavGroup[]>(() => [
     items: [
       { to: '/channels', label: t('nav.channels'), icon: LinkIcon },
       { to: '/activity-log', label: t('nav.activityLog'), icon: ClockIcon },
+    ],
+  },
+  // ── 7. UGC 캠페인 ──
+  {
+    label: t('nav.groupUgc'),
+    items: [
+      { to: '/ugc/campaigns', label: t('nav.ugcCampaigns'), icon: MegaphoneIcon },
+      { to: '/creator/campaigns', label: t('nav.creatorCampaigns'), icon: HandRaisedIcon },
     ],
   },
 ])

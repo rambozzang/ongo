@@ -93,6 +93,46 @@ export interface ManualSection {
 
 export const sectionsKo: ManualSection[] = [
   {
+    id: 'ugc-campaigns',
+    title: 'UGC 캠페인',
+    icon: MegaphoneIcon,
+    content: [
+      {
+        subtitle: '캠페인 만들기',
+        text: '브랜드가 크리에이터에게 UGC 콘텐츠 제작을 의뢰하는 캠페인을 생성합니다. 사이드바의 "UGC 캠페인"에서 시작합니다.',
+        steps: [
+          '"새 캠페인"을 클릭합니다.',
+          '기본 정보(이름, 목표) → 플레이북(제작 지침) → 보상·일정(예산, 고정 보상, 기간) → 검토 순서로 입력합니다.',
+          '"임시저장"을 누르면 초안(DRAFT) 상태로 저장됩니다.',
+        ],
+      },
+      {
+        subtitle: '플레이북',
+        text: '크리에이터가 따라야 할 콘텐츠 제작 지침입니다. 제목, 요약, 콘텐츠 유형과 단계별 지침을 등록합니다. 캠페인을 공개하려면 플레이북이 반드시 필요합니다.',
+      },
+      {
+        subtitle: '캠페인 공개와 상태',
+        text: '초안 상태에서 플레이북과 시작·종료일시가 준비되면 캠페인을 공개할 수 있습니다. 캠페인은 워크스페이스 단위로 관리되며, 다른 워크스페이스의 캠페인에는 접근할 수 없습니다.',
+        items: [
+          '초안(DRAFT): 작성·수정 가능',
+          '모집중(RECRUITING): 공개되어 크리에이터 모집 단계',
+          '진행중(ACTIVE): 캠페인 진행',
+          '일시중지(PAUSED): 일시 중단',
+          '종료됨(COMPLETED): 캠페인 종료',
+        ],
+      },
+      {
+        subtitle: '크리에이터 모집과 지원',
+        text: '캠페인을 공개한 뒤 "지원자 관리"에서 초대 링크를 발급합니다. 크리에이터는 링크로 캠페인을 확인하고 지원하며, 브랜드는 지원을 수락하거나 거절합니다. 수락하면 참여자로 등록됩니다.',
+        items: [
+          '초대 링크는 만료일과 사용 횟수를 설정할 수 있고, 토큰 원문은 발급 시 1회만 표시됩니다.',
+          '크리에이터는 "내 캠페인"에서 지원 현황을 확인합니다.',
+          '동일 캠페인에 중복 지원은 차단됩니다.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'getting-started',
     title: '시작하기',
     icon: RocketLaunchIcon,
@@ -2913,6 +2953,46 @@ export const sectionsKo: ManualSection[] = [
 ]
 
 export const sectionsEn: ManualSection[] = [
+  {
+    id: 'ugc-campaigns',
+    title: 'UGC Campaigns',
+    icon: MegaphoneIcon,
+    content: [
+      {
+        subtitle: 'Create a campaign',
+        text: 'Brands create campaigns to commission UGC content from creators. Start from "UGC Campaigns" in the sidebar.',
+        steps: [
+          'Click "New Campaign".',
+          'Fill in Basics (name, objective) → Playbook (production guide) → Reward & Schedule (budget, fixed reward, period) → Review.',
+          'Click "Save draft" to store it in DRAFT status.',
+        ],
+      },
+      {
+        subtitle: 'Playbook',
+        text: 'The playbook is the production guide creators follow. Register a title, summary, content type, and step-by-step instructions. A playbook is required before a campaign can be published.',
+      },
+      {
+        subtitle: 'Publishing and status',
+        text: 'A draft can be published once a playbook and start/end date-time are set. Campaigns are scoped to a workspace; you cannot access campaigns in other workspaces.',
+        items: [
+          'DRAFT: editable',
+          'RECRUITING: published and recruiting creators',
+          'ACTIVE: campaign in progress',
+          'PAUSED: temporarily paused',
+          'COMPLETED: campaign ended',
+        ],
+      },
+      {
+        subtitle: 'Recruiting and applications',
+        text: 'After publishing a campaign, issue an invite link from "Applications". Creators view and apply via the link, and brands accept or reject applicants. Accepting registers the creator as a participant.',
+        items: [
+          'Invite links support an expiry and usage limit; the raw token is shown only once at creation.',
+          'Creators track their applications under "My Campaigns".',
+          'Duplicate applications to the same campaign are blocked.',
+        ],
+      },
+    ],
+  },
   {
     id: 'getting-started',
     title: 'Getting Started',

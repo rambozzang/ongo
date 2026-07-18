@@ -103,6 +103,48 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '채널 관리' },
       },
       {
+        path: 'ugc/campaigns',
+        name: 'ugc-campaigns',
+        component: () => import('@/views/ugc/CampaignListView.vue'),
+        meta: { breadcrumb: 'UGC 캠페인' },
+      },
+      {
+        path: 'ugc/campaigns/new',
+        name: 'ugc-campaign-new',
+        component: () => import('@/views/ugc/CampaignBuilderView.vue'),
+        meta: { breadcrumb: 'UGC 캠페인 생성' },
+      },
+      {
+        path: 'ugc/campaigns/:id',
+        name: 'ugc-campaign-detail',
+        component: () => import('@/views/ugc/CampaignDetailView.vue'),
+        meta: { breadcrumb: 'UGC 캠페인 상세' },
+      },
+      {
+        path: 'ugc/campaigns/:id/edit',
+        name: 'ugc-campaign-edit',
+        component: () => import('@/views/ugc/CampaignBuilderView.vue'),
+        meta: { breadcrumb: 'UGC 캠페인 수정' },
+      },
+      {
+        path: 'ugc/campaigns/:id/applications',
+        name: 'ugc-campaign-applications',
+        component: () => import('@/views/ugc/CampaignApplicationsView.vue'),
+        meta: { breadcrumb: 'UGC 지원자 관리' },
+      },
+      {
+        path: 'ugc/invite/:token',
+        name: 'ugc-invite',
+        component: () => import('@/views/ugc/CampaignInviteView.vue'),
+        meta: { breadcrumb: 'UGC 캠페인 초대' },
+      },
+      {
+        path: 'creator/campaigns',
+        name: 'creator-campaigns',
+        component: () => import('@/views/ugc/CreatorCampaignsView.vue'),
+        meta: { breadcrumb: '내 캠페인' },
+      },
+      {
         path: 'subscription',
         name: 'subscription',
         component: () => import('@/views/SubscriptionView.vue'),

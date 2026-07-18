@@ -174,6 +174,16 @@ object Tables {
     // Content sources (Phase 1: Google Drive import)
     val USER_CONTENT_SOURCES = DSL.table("user_content_sources")
     val DRIVE_IMPORT_JOBS = DSL.table("drive_import_jobs")
+
+    // UGC 캠페인 (V47)
+    val UGC_CAMPAIGNS = DSL.table("ugc_campaigns")
+    val UGC_PLAYBOOKS = DSL.table("ugc_playbooks")
+    val UGC_PLAYBOOK_STEPS = DSL.table("ugc_playbook_steps")
+
+    // UGC 지원/참여/초대 (V48)
+    val UGC_CAMPAIGN_APPLICATIONS = DSL.table("ugc_campaign_applications")
+    val UGC_CAMPAIGN_PARTICIPANTS = DSL.table("ugc_campaign_participants")
+    val UGC_CAMPAIGN_INVITES = DSL.table("ugc_campaign_invites")
 }
 
 object Fields {
@@ -894,4 +904,30 @@ object Fields {
     // videos extended (Google Drive import)
     val SOURCE_TEXT = DSL.field("source::text", String::class.java)
     val SOURCE_REFERENCE = DSL.field("source_reference", Any::class.java)
+
+    // UGC 캠페인/플레이북 (V47)
+    // 재사용: ID, WORKSPACE_ID, NAME, DESCRIPTION, STATUS, CURRENCY, TITLE,
+    //        SUMMARY, CONTENT_TYPE, SORT_ORDER, CREATED_AT, UPDATED_AT
+    val CAMPAIGN_ID = DSL.field("campaign_id", Long::class.java)
+    val OBJECTIVE = DSL.field("objective", String::class.java)
+    val TOTAL_BUDGET = DSL.field("total_budget", Long::class.java)
+    val FIXED_REWARD_PER_CREATOR = DSL.field("fixed_reward_per_creator", Long::class.java)
+    val START_AT = DSL.field("start_at", java.time.LocalDateTime::class.java)
+    val END_AT = DSL.field("end_at", java.time.LocalDateTime::class.java)
+    val CREATED_BY = DSL.field("created_by", Long::class.java)
+    val VERSION = DSL.field("version", Long::class.java)
+    val PLAYBOOK_ID = DSL.field("playbook_id", Long::class.java)
+    val REVISION = DSL.field("revision", Int::class.java)
+    val STEP_TYPE = DSL.field("step_type", String::class.java)
+    val INSTRUCTION = DSL.field("instruction", String::class.java)
+    val EXAMPLE_URL = DSL.field("example_url", String::class.java)
+    val REQUIRED = DSL.field("required", Boolean::class.java)
+
+    // UGC 지원/참여/초대 (V48)
+    // 재사용: MESSAGE, STATUS, DECIDED_AT, JOINED_AT, ACTIVE, MAX_USES, USED_COUNT, EXPIRES_AT, CAMPAIGN_ID, CREATED_BY
+    val CREATOR_ID = DSL.field("creator_id", Long::class.java)
+    val PORTFOLIO_URL = DSL.field("portfolio_url", String::class.java)
+    val DECIDED_BY = DSL.field("decided_by", Long::class.java)
+    val AGREED_REWARD = DSL.field("agreed_reward", Long::class.java)
+    val TOKEN_HASH = DSL.field("token_hash", String::class.java)
 }

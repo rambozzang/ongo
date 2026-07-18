@@ -156,6 +156,10 @@ class TeamUseCase(
         Permission.AUTOMATION_CREATE -> "자동화 규칙 생성"
         Permission.AUTOMATION_UPDATE -> "자동화 규칙 수정"
         Permission.AUTOMATION_DELETE -> "자동화 규칙 삭제"
+        Permission.CAMPAIGN_VIEW -> "UGC 캠페인 조회"
+        Permission.CAMPAIGN_MANAGE -> "UGC 캠페인 생성 및 관리"
+        Permission.CAMPAIGN_REVIEW -> "UGC 제출물 검수"
+        Permission.CAMPAIGN_REWARD_MANAGE -> "UGC 보상 확정 및 지급 관리"
     }
 
     private fun TeamMember.toResponse(): TeamMemberResponse = TeamMemberResponse(
