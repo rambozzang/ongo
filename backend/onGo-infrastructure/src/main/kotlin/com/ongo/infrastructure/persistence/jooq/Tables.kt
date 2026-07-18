@@ -184,6 +184,11 @@ object Tables {
     val UGC_CAMPAIGN_APPLICATIONS = DSL.table("ugc_campaign_applications")
     val UGC_CAMPAIGN_PARTICIPANTS = DSL.table("ugc_campaign_participants")
     val UGC_CAMPAIGN_INVITES = DSL.table("ugc_campaign_invites")
+
+    // UGC 제출/에셋/검수 (V49)
+    val UGC_CONTENT_SUBMISSIONS = DSL.table("ugc_content_submissions")
+    val UGC_SUBMISSION_ASSETS = DSL.table("ugc_submission_assets")
+    val UGC_SUBMISSION_REVIEWS = DSL.table("ugc_submission_reviews")
 }
 
 object Fields {
@@ -930,4 +935,14 @@ object Fields {
     val DECIDED_BY = DSL.field("decided_by", Long::class.java)
     val AGREED_REWARD = DSL.field("agreed_reward", Long::class.java)
     val TOKEN_HASH = DSL.field("token_hash", String::class.java)
+
+    // UGC 제출/에셋/검수 (V49)
+    // 재사용: STATUS, REVISION, APPROVED_AT, REVIEWER_ID, COMMENT, ASSET_TYPE, SORT_ORDER, CAMPAIGN_ID, CREATOR_ID
+    val CAPTION = DSL.field("caption", String::class.java)
+    val SUBMITTED_AT = DSL.field("submitted_at", java.time.LocalDateTime::class.java)
+    val SUBMISSION_ID = DSL.field("submission_id", Long::class.java)
+    val RESOURCE_TYPE = DSL.field("resource_type", String::class.java)
+    val RESOURCE_ID = DSL.field("resource_id", Long::class.java)
+    val EXTERNAL_URL = DSL.field("external_url", String::class.java)
+    val DECISION = DSL.field("decision", String::class.java)
 }

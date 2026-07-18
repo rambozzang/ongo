@@ -23,6 +23,13 @@
             <span>{{ $t('ugc.appliedAt') }}: {{ item.application.createdAt?.slice(0, 10) }}</span>
           </div>
         </div>
+        <button
+          v-if="item.application.status === 'ACCEPTED'"
+          class="btn-primary shrink-0 text-xs"
+          @click="router.push(`/creator/campaigns/${item.application.campaignId}/submit`)"
+        >
+          {{ $t('ugc.submitContent') }}
+        </button>
       </div>
     </div>
 
@@ -37,11 +44,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { useNotificationStore } from '@/stores/notification'
 import { ugcParticipationApi, type MyApplicationResponse, type ApplicationStatus } from '@/api/ugcParticipation'
 import PageHeader from '@/components/common/PageHeader.vue'
 
 const { t } = useI18n({ useScope: 'global' })
+const router = useRouter()
 const notify = useNotificationStore()
 
 const items = ref<MyApplicationResponse[]>([])

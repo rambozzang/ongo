@@ -130,6 +130,15 @@ export const sectionsKo: ManualSection[] = [
           '동일 캠페인에 중복 지원은 차단됩니다.',
         ],
       },
+      {
+        subtitle: '콘텐츠 제출과 검수',
+        text: '수락된 크리에이터는 "제출하기"에서 캡션과 첨부 URL을 등록해 제출합니다. 브랜드는 "제출물 검수"에서 확인하고 수정 요청 또는 승인합니다.',
+        items: [
+          '제출은 초안 → 검수 대기 → (수정 요청 시) 재제출 → 승인 순으로 진행됩니다.',
+          '수정 요청에는 사유가 필수이며, 모든 검수 판단은 이력으로 남습니다.',
+          '승인 전에는 게시할 수 없습니다.',
+        ],
+      },
     ],
   },
   {
@@ -2989,6 +2998,15 @@ export const sectionsEn: ManualSection[] = [
           'Invite links support an expiry and usage limit; the raw token is shown only once at creation.',
           'Creators track their applications under "My Campaigns".',
           'Duplicate applications to the same campaign are blocked.',
+        ],
+      },
+      {
+        subtitle: 'Content submission and review',
+        text: 'Accepted creators submit from "Submit" by adding a caption and attachment URLs. Brands review under "Review submissions" and request changes or approve.',
+        items: [
+          'Submissions flow: Draft → In review → (if changes requested) resubmit → Approved.',
+          'A reason is required for change requests, and every review decision is recorded in history.',
+          'Publishing is not possible before approval.',
         ],
       },
     ],

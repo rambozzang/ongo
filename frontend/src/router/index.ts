@@ -145,6 +145,18 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '내 캠페인' },
       },
       {
+        path: 'ugc/campaigns/:id/submissions',
+        name: 'ugc-campaign-submissions',
+        component: () => import('@/views/ugc/CampaignSubmissionsView.vue'),
+        meta: { breadcrumb: 'UGC 제출물 검수' },
+      },
+      {
+        path: 'creator/campaigns/:id/submit',
+        name: 'creator-submit',
+        component: () => import('@/views/ugc/CreatorSubmitView.vue'),
+        meta: { breadcrumb: '콘텐츠 제출' },
+      },
+      {
         path: 'subscription',
         name: 'subscription',
         component: () => import('@/views/SubscriptionView.vue'),
