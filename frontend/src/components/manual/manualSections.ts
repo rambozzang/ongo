@@ -139,6 +139,15 @@ export const sectionsKo: ManualSection[] = [
           '승인 전에는 게시할 수 없습니다.',
         ],
       },
+      {
+        subtitle: '멀티 SNS 게시',
+        text: '승인된 제출물은 브랜드가 "게시"에서 플랫폼을 선택해 크리에이터 채널로 게시하거나, 크리에이터가 이미 올린 게시물 URL을 "외부 게시물 등록"으로 연결합니다.',
+        items: [
+          '게시는 플랫폼별로 추적되며, 한 플랫폼이 실패해도 성공한 결과는 유지됩니다.',
+          '같은 제출물을 다시 게시해도 중복 게시되지 않습니다(멱등성).',
+          '외부 URL은 플랫폼 허용 도메인만 등록됩니다.',
+        ],
+      },
     ],
   },
   {
@@ -3007,6 +3016,15 @@ export const sectionsEn: ManualSection[] = [
           'Submissions flow: Draft → In review → (if changes requested) resubmit → Approved.',
           'A reason is required for change requests, and every review decision is recorded in history.',
           'Publishing is not possible before approval.',
+        ],
+      },
+      {
+        subtitle: 'Multi-platform publishing',
+        text: 'Approved submissions can be published by the brand to the creator\'s channels via "Publish", or the creator can link an already-posted URL via "Register external post".',
+        items: [
+          'Publishing is tracked per platform; if one platform fails, successful results are preserved.',
+          'Re-publishing the same submission does not create duplicate posts (idempotent).',
+          'External URLs are only accepted for allowed platform domains.',
         ],
       },
     ],

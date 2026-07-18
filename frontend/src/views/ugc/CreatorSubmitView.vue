@@ -59,6 +59,29 @@
           <button class="btn-primary" :disabled="busy || !hasContent" @click="saveAndSubmit">{{ $t('ugc.submitNow') }}</button>
         </div>
       </div>
+
+      <!-- External post registration (after approval) -->
+      <div v-if="canRegisterExternal" class="card mt-4 space-y-3">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('ugc.externalTitle') }}</h3>
+        <p class="text-xs text-gray-400">{{ $t('ugc.externalHint') }}</p>
+        <div class="grid grid-cols-1 gap-2 mobile:grid-cols-3">
+          <select v-model="extPlatform" class="input-field">
+            <option v-for="p in externalPlatforms" :key="p" :value="p">{{ p }}</option>
+          </select>
+          <input v-model="extUrl" type="url" class="input-field mobile:col-span-2" placeholder="https://" />
+        </div>
+        <div class="flex justify-end">
+          <button class="btn-primary text-xs" :disabled="registering || !extUrl.trim()" @click="registerExternal">
+            {{ $t('ugc.registerExternal') }}
+          </button>
+        </div>
+        <ul v-if="myPosts.length" class="space-y-1 border-t border-gray-100 pt-2 dark:border-gray-700">
+          <li v-for="post in myPosts" :key="post.id" class="flex items-center justify-between text-sm">
+            <span class="truncate text-gray-700 dark:text-gray-300">{{ post.platform }}</span>
+            <span class="text-xs text-gray-400">{{ $t(`ugc.postStatus.${post.status}`) }}</span>
+          </li>
+        </ul>
+      </div>
     </template>
   </div>
 </template>
@@ -69,6 +92,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotificationStore } from '@/stores/notification'
 import { ugcSubmissionApi, type SubmissionResponse, type SubmissionStatus } from '@/api/ugcSubmission'
+import { ugcPublishingApi, type CampaignPostResponse } from '@/api/ugcPublishing'
 import PageHeader from '@/components/common/PageHeader.vue'
 import { ChevronLeftIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
@@ -83,9 +107,42 @@ const caption = ref('')
 const assets = ref<{ url: string }[]>([])
 const loading = ref(true)
 const busy = ref(false)
+const extPlatform = ref('YOUTUBE')
+const extUrl = ref('')
+const registering = ref(false)
+const myPosts = ref<CampaignPostResponse[]>([])
+const externalPlatforms = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP', 'TWITTER', 'FACEBOOK', 'THREADS']
 
 const editable = computed(() => !submission.value || submission.value.status === 'DRAFT' || submission.value.status === 'CHANGES_REQUESTED')
 const hasContent = computed(() => assets.value.some((a) => a.url.trim()))
+const canRegisterExternal = computed(() =>
+  submission.value != null && ['APPROVED', 'PUBLISHING', 'PUBLISHED'].includes(submission.value.status),
+)
+
+async function loadMyPosts() {
+  if (!submission.value) return
+  try {
+    const res = await ugcPublishingApi.myPosts(submission.value.id)
+    myPosts.value = res.items
+  } catch {
+    // 게시물 로드 실패는 조용히 무시
+  }
+}
+
+async function registerExternal() {
+  if (!submission.value) return
+  registering.value = true
+  try {
+    await ugcPublishingApi.registerExternal(submission.value.id, { platform: extPlatform.value, externalPostUrl: extUrl.value.trim() })
+    notify.success(t('ugc.externalRegistered'))
+    extUrl.value = ''
+    await loadMyPosts()
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : t('ugc.saveFailed'))
+  } finally {
+    registering.value = false
+  }
+}
 
 function subStatusClass(status: SubmissionStatus): string {
   switch (status) {
@@ -152,6 +209,7 @@ onMounted(async () => {
       assets.value = res.items[0].assets
         .filter((a) => a.externalUrl)
         .map((a) => ({ url: a.externalUrl as string }))
+      await loadMyPosts()
     }
   } catch (e) {
     notify.error(e instanceof Error ? e.message : t('ugc.loadFailed'))

@@ -40,6 +40,12 @@ data class ContentSubmission(
         return copy(status = SubmissionStatus.REJECTED)
     }
 
+    /** APPROVED → PUBLISHING. 게시 시작 시 호출. */
+    fun markPublishing(): ContentSubmission {
+        requireTransition(SubmissionStatus.PUBLISHING)
+        return copy(status = SubmissionStatus.PUBLISHING)
+    }
+
     /** 크리에이터가 내용을 수정할 수 있는지(초안/수정요청). */
     fun assertEditable() {
         if (!status.isEditable()) {

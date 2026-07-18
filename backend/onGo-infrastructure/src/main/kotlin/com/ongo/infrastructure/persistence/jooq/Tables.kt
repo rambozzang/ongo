@@ -189,6 +189,9 @@ object Tables {
     val UGC_CONTENT_SUBMISSIONS = DSL.table("ugc_content_submissions")
     val UGC_SUBMISSION_ASSETS = DSL.table("ugc_submission_assets")
     val UGC_SUBMISSION_REVIEWS = DSL.table("ugc_submission_reviews")
+
+    // UGC 캠페인 게시물 (V50)
+    val UGC_CAMPAIGN_POSTS = DSL.table("ugc_campaign_posts")
 }
 
 object Fields {
@@ -945,4 +948,11 @@ object Fields {
     val RESOURCE_ID = DSL.field("resource_id", Long::class.java)
     val EXTERNAL_URL = DSL.field("external_url", String::class.java)
     val DECISION = DSL.field("decision", String::class.java)
+
+    // UGC 캠페인 게시물 (V50)
+    // 재사용: CAMPAIGN_ID, SUBMISSION_ID, CREATOR_ID, PLATFORM, STATUS, VIDEO_UPLOAD_ID, ERROR_MESSAGE
+    val POST_TYPE = DSL.field("post_type", String::class.java)
+    val EXTERNAL_POST_URL = DSL.field("external_post_url", String::class.java)
+    val PLATFORM_POST_ID = DSL.field("platform_post_id", String::class.java)
+    val IDEMPOTENCY_KEY = DSL.field("idempotency_key", String::class.java)
 }

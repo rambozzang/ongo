@@ -170,6 +170,22 @@
       "CHANGES_REQUESTED": "Changes requested",
       "REJECTED": "Rejected"
     },
+    "publishSection": "Publish",
+    "publishNow": "Publish",
+    "publishStarted": "Publishing started.",
+    "posts": "Posts",
+    "external": "external",
+    "externalTitle": "Register external post",
+    "externalHint": "Register the URL of a post you already published on social media.",
+    "registerExternal": "Register",
+    "externalRegistered": "External post registered.",
+    "postStatus": {
+      "PENDING": "Pending",
+      "PUBLISHING": "Publishing",
+      "PUBLISHED": "Published",
+      "FAILED": "Failed",
+      "EXTERNAL": "External"
+    },
     "status": {
       "DRAFT": "Draft",
       "RECRUITING": "Recruiting",

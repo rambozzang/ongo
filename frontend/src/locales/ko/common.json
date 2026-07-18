@@ -170,6 +170,22 @@
       "CHANGES_REQUESTED": "수정 요청",
       "REJECTED": "거절"
     },
+    "publishSection": "게시",
+    "publishNow": "게시하기",
+    "publishStarted": "게시를 시작했습니다.",
+    "posts": "게시물",
+    "external": "외부",
+    "externalTitle": "외부 게시물 등록",
+    "externalHint": "이미 SNS에 올린 게시물 URL을 등록하세요.",
+    "registerExternal": "등록",
+    "externalRegistered": "외부 게시물을 등록했습니다.",
+    "postStatus": {
+      "PENDING": "대기",
+      "PUBLISHING": "게시 중",
+      "PUBLISHED": "게시됨",
+      "FAILED": "실패",
+      "EXTERNAL": "외부 등록"
+    },
     "status": {
       "DRAFT": "초안",
       "RECRUITING": "모집중",
