@@ -93,6 +93,74 @@ export interface ManualSection {
 
 export const sectionsKo: ManualSection[] = [
   {
+    id: 'ugc-campaigns',
+    title: 'UGC 캠페인',
+    icon: MegaphoneIcon,
+    content: [
+      {
+        subtitle: '캠페인 만들기',
+        text: '브랜드가 크리에이터에게 UGC 콘텐츠 제작을 의뢰하는 캠페인을 생성합니다. 사이드바의 "UGC 캠페인"에서 시작합니다.',
+        steps: [
+          '"새 캠페인"을 클릭합니다.',
+          '기본 정보(이름, 목표) → 플레이북(제작 지침) → 보상·일정(예산, 고정 보상, 기간) → 검토 순서로 입력합니다.',
+          '"임시저장"을 누르면 초안(DRAFT) 상태로 저장됩니다.',
+        ],
+      },
+      {
+        subtitle: '플레이북',
+        text: '크리에이터가 따라야 할 콘텐츠 제작 지침입니다. 제목, 요약, 콘텐츠 유형과 단계별 지침을 등록합니다. 캠페인을 공개하려면 플레이북이 반드시 필요합니다.',
+      },
+      {
+        subtitle: '캠페인 공개와 상태',
+        text: '초안 상태에서 플레이북과 시작·종료일시가 준비되면 캠페인을 공개할 수 있습니다. 캠페인은 워크스페이스 단위로 관리되며, 다른 워크스페이스의 캠페인에는 접근할 수 없습니다.',
+        items: [
+          '초안(DRAFT): 작성·수정 가능',
+          '모집중(RECRUITING): 공개되어 크리에이터 모집 단계',
+          '진행중(ACTIVE): 캠페인 진행',
+          '일시중지(PAUSED): 일시 중단',
+          '종료됨(COMPLETED): 캠페인 종료',
+        ],
+      },
+      {
+        subtitle: '크리에이터 모집과 지원',
+        text: '캠페인을 공개한 뒤 "지원자 관리"에서 초대 링크를 발급합니다. 크리에이터는 링크로 캠페인을 확인하고 지원하며, 브랜드는 지원을 수락하거나 거절합니다. 수락하면 참여자로 등록됩니다.',
+        items: [
+          '초대 링크는 만료일과 사용 횟수를 설정할 수 있고, 토큰 원문은 발급 시 1회만 표시됩니다.',
+          '크리에이터는 "내 캠페인"에서 지원 현황을 확인합니다.',
+          '동일 캠페인에 중복 지원은 차단됩니다.',
+        ],
+      },
+      {
+        subtitle: '콘텐츠 제출과 검수',
+        text: '수락된 크리에이터는 "제출하기"에서 캡션과 첨부 URL을 등록해 제출합니다. 브랜드는 "제출물 검수"에서 확인하고 수정 요청 또는 승인합니다.',
+        items: [
+          '제출은 초안 → 검수 대기 → (수정 요청 시) 재제출 → 승인 순으로 진행됩니다.',
+          '수정 요청에는 사유가 필수이며, 모든 검수 판단은 이력으로 남습니다.',
+          '승인 전에는 게시할 수 없습니다.',
+        ],
+      },
+      {
+        subtitle: '멀티 SNS 게시',
+        text: '승인된 제출물은 브랜드가 "게시"에서 플랫폼을 선택해 크리에이터 채널로 게시하거나, 크리에이터가 이미 올린 게시물 URL을 "외부 게시물 등록"으로 연결합니다.',
+        items: [
+          '게시는 플랫폼별로 추적되며, 한 플랫폼이 실패해도 성공한 결과는 유지됩니다.',
+          '같은 제출물을 다시 게시해도 중복 게시되지 않습니다(멱등성).',
+          '외부 URL은 플랫폼 허용 도메인만 등록됩니다.',
+        ],
+      },
+      {
+        subtitle: '성과와 정산',
+        text: '"성과·정산"에서 게시물별 지표(조회수·좋아요·댓글·공유)와 마지막 동기화 시각을 확인하고, 참여자별 보상을 확정·지급 완료 표시하며 지급 대상 CSV를 내보냅니다.',
+        items: [
+          '확정 총액이 캠페인 예산을 넘으면 확정이 차단됩니다.',
+          '보상은 미확정 → 확정 → 지급 완료 순으로 진행됩니다.',
+          'CSV는 UTF-8 BOM으로 한글 Excel에서 열리며, 수식 주입을 방지합니다.',
+          '보상 확정·지급 등 주요 변경은 감사 로그에 기록되어 운영자가 확인할 수 있습니다.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'getting-started',
     title: '시작하기',
     icon: RocketLaunchIcon,
@@ -2913,6 +2981,74 @@ export const sectionsKo: ManualSection[] = [
 ]
 
 export const sectionsEn: ManualSection[] = [
+  {
+    id: 'ugc-campaigns',
+    title: 'UGC Campaigns',
+    icon: MegaphoneIcon,
+    content: [
+      {
+        subtitle: 'Create a campaign',
+        text: 'Brands create campaigns to commission UGC content from creators. Start from "UGC Campaigns" in the sidebar.',
+        steps: [
+          'Click "New Campaign".',
+          'Fill in Basics (name, objective) → Playbook (production guide) → Reward & Schedule (budget, fixed reward, period) → Review.',
+          'Click "Save draft" to store it in DRAFT status.',
+        ],
+      },
+      {
+        subtitle: 'Playbook',
+        text: 'The playbook is the production guide creators follow. Register a title, summary, content type, and step-by-step instructions. A playbook is required before a campaign can be published.',
+      },
+      {
+        subtitle: 'Publishing and status',
+        text: 'A draft can be published once a playbook and start/end date-time are set. Campaigns are scoped to a workspace; you cannot access campaigns in other workspaces.',
+        items: [
+          'DRAFT: editable',
+          'RECRUITING: published and recruiting creators',
+          'ACTIVE: campaign in progress',
+          'PAUSED: temporarily paused',
+          'COMPLETED: campaign ended',
+        ],
+      },
+      {
+        subtitle: 'Recruiting and applications',
+        text: 'After publishing a campaign, issue an invite link from "Applications". Creators view and apply via the link, and brands accept or reject applicants. Accepting registers the creator as a participant.',
+        items: [
+          'Invite links support an expiry and usage limit; the raw token is shown only once at creation.',
+          'Creators track their applications under "My Campaigns".',
+          'Duplicate applications to the same campaign are blocked.',
+        ],
+      },
+      {
+        subtitle: 'Content submission and review',
+        text: 'Accepted creators submit from "Submit" by adding a caption and attachment URLs. Brands review under "Review submissions" and request changes or approve.',
+        items: [
+          'Submissions flow: Draft → In review → (if changes requested) resubmit → Approved.',
+          'A reason is required for change requests, and every review decision is recorded in history.',
+          'Publishing is not possible before approval.',
+        ],
+      },
+      {
+        subtitle: 'Multi-platform publishing',
+        text: 'Approved submissions can be published by the brand to the creator\'s channels via "Publish", or the creator can link an already-posted URL via "Register external post".',
+        items: [
+          'Publishing is tracked per platform; if one platform fails, successful results are preserved.',
+          'Re-publishing the same submission does not create duplicate posts (idempotent).',
+          'External URLs are only accepted for allowed platform domains.',
+        ],
+      },
+      {
+        subtitle: 'Performance and payouts',
+        text: 'Under "Performance & payouts", review per-post metrics (views, likes, comments, shares) and the last sync time, confirm and mark rewards as paid per participant, and export the payout CSV.',
+        items: [
+          'Confirmation is blocked when the confirmed total would exceed the campaign budget.',
+          'Rewards flow: Draft → Confirmed → Paid.',
+          'The CSV uses a UTF-8 BOM so it opens correctly in Excel and prevents formula injection.',
+          'Key changes such as reward confirmation and payout are recorded in an audit log for operators.',
+        ],
+      },
+    ],
+  },
   {
     id: 'getting-started',
     title: 'Getting Started',

@@ -174,6 +174,31 @@ object Tables {
     // Content sources (Phase 1: Google Drive import)
     val USER_CONTENT_SOURCES = DSL.table("user_content_sources")
     val DRIVE_IMPORT_JOBS = DSL.table("drive_import_jobs")
+
+    // UGC 캠페인 (V47)
+    val UGC_CAMPAIGNS = DSL.table("ugc_campaigns")
+    val UGC_PLAYBOOKS = DSL.table("ugc_playbooks")
+    val UGC_PLAYBOOK_STEPS = DSL.table("ugc_playbook_steps")
+
+    // UGC 지원/참여/초대 (V48)
+    val UGC_CAMPAIGN_APPLICATIONS = DSL.table("ugc_campaign_applications")
+    val UGC_CAMPAIGN_PARTICIPANTS = DSL.table("ugc_campaign_participants")
+    val UGC_CAMPAIGN_INVITES = DSL.table("ugc_campaign_invites")
+
+    // UGC 제출/에셋/검수 (V49)
+    val UGC_CONTENT_SUBMISSIONS = DSL.table("ugc_content_submissions")
+    val UGC_SUBMISSION_ASSETS = DSL.table("ugc_submission_assets")
+    val UGC_SUBMISSION_REVIEWS = DSL.table("ugc_submission_reviews")
+
+    // UGC 캠페인 게시물 (V50)
+    val UGC_CAMPAIGN_POSTS = DSL.table("ugc_campaign_posts")
+
+    // UGC 지표/보상 (V51)
+    val UGC_POST_METRIC_SNAPSHOTS = DSL.table("ugc_post_metric_snapshots")
+    val UGC_REWARD_CONFIRMATIONS = DSL.table("ugc_reward_confirmations")
+
+    // UGC 감사 로그 (V52)
+    val UGC_AUDIT_EVENTS = DSL.table("ugc_audit_events")
 }
 
 object Fields {
@@ -894,4 +919,68 @@ object Fields {
     // videos extended (Google Drive import)
     val SOURCE_TEXT = DSL.field("source::text", String::class.java)
     val SOURCE_REFERENCE = DSL.field("source_reference", Any::class.java)
+
+    // UGC 캠페인/플레이북 (V47)
+    // 재사용: ID, WORKSPACE_ID, NAME, DESCRIPTION, STATUS, CURRENCY, TITLE,
+    //        SUMMARY, CONTENT_TYPE, SORT_ORDER, CREATED_AT, UPDATED_AT
+    val CAMPAIGN_ID = DSL.field("campaign_id", Long::class.java)
+    val OBJECTIVE = DSL.field("objective", String::class.java)
+    val TOTAL_BUDGET = DSL.field("total_budget", Long::class.java)
+    val FIXED_REWARD_PER_CREATOR = DSL.field("fixed_reward_per_creator", Long::class.java)
+    val START_AT = DSL.field("start_at", java.time.LocalDateTime::class.java)
+    val END_AT = DSL.field("end_at", java.time.LocalDateTime::class.java)
+    val CREATED_BY = DSL.field("created_by", Long::class.java)
+    val VERSION = DSL.field("version", Long::class.java)
+    val PLAYBOOK_ID = DSL.field("playbook_id", Long::class.java)
+    val REVISION = DSL.field("revision", Int::class.java)
+    val STEP_TYPE = DSL.field("step_type", String::class.java)
+    val INSTRUCTION = DSL.field("instruction", String::class.java)
+    val EXAMPLE_URL = DSL.field("example_url", String::class.java)
+    val REQUIRED = DSL.field("required", Boolean::class.java)
+
+    // UGC 지원/참여/초대 (V48)
+    // 재사용: MESSAGE, STATUS, DECIDED_AT, JOINED_AT, ACTIVE, MAX_USES, USED_COUNT, EXPIRES_AT, CAMPAIGN_ID, CREATED_BY
+    val CREATOR_ID = DSL.field("creator_id", Long::class.java)
+    val PORTFOLIO_URL = DSL.field("portfolio_url", String::class.java)
+    val DECIDED_BY = DSL.field("decided_by", Long::class.java)
+    val AGREED_REWARD = DSL.field("agreed_reward", Long::class.java)
+    val TOKEN_HASH = DSL.field("token_hash", String::class.java)
+
+    // UGC 제출/에셋/검수 (V49)
+    // 재사용: STATUS, REVISION, APPROVED_AT, REVIEWER_ID, COMMENT, ASSET_TYPE, SORT_ORDER, CAMPAIGN_ID, CREATOR_ID
+    val CAPTION = DSL.field("caption", String::class.java)
+    val SUBMITTED_AT = DSL.field("submitted_at", java.time.LocalDateTime::class.java)
+    val SUBMISSION_ID = DSL.field("submission_id", Long::class.java)
+    val RESOURCE_TYPE = DSL.field("resource_type", String::class.java)
+    val RESOURCE_ID = DSL.field("resource_id", Long::class.java)
+    val EXTERNAL_URL = DSL.field("external_url", String::class.java)
+    val DECISION = DSL.field("decision", String::class.java)
+
+    // UGC 캠페인 게시물 (V50)
+    // 재사용: CAMPAIGN_ID, SUBMISSION_ID, CREATOR_ID, PLATFORM, STATUS, VIDEO_UPLOAD_ID, ERROR_MESSAGE
+    val POST_TYPE = DSL.field("post_type", String::class.java)
+    val EXTERNAL_POST_URL = DSL.field("external_post_url", String::class.java)
+    val PLATFORM_POST_ID = DSL.field("platform_post_id", String::class.java)
+    val IDEMPOTENCY_KEY = DSL.field("idempotency_key", String::class.java)
+
+    // UGC 지표/보상 (V51)
+    // 재사용: CAMPAIGN_ID, CREATOR_ID, STATUS, CREATED_AT, UPDATED_AT
+    // 지표는 BIGINT이므로 기존 Int VIEWS/LIKES/SHARES와 별개로 Long 필드를 둔다.
+    val CAMPAIGN_POST_ID = DSL.field("campaign_post_id", Long::class.java)
+    val CAPTURED_AT = DSL.field("captured_at", java.time.LocalDateTime::class.java)
+    val VIEWS_LONG = DSL.field("views", Long::class.java)
+    val LIKES_LONG = DSL.field("likes", Long::class.java)
+    // COMMENTS_LONG 은 기존(content_variants)과 컬럼명 동일하여 재사용
+    val SHARES_LONG = DSL.field("shares", Long::class.java)
+    val PARTICIPANT_ID = DSL.field("participant_id", Long::class.java)
+    val BASE_AMOUNT = DSL.field("base_amount", Long::class.java)
+    val BONUS_AMOUNT = DSL.field("bonus_amount", Long::class.java)
+    val TOTAL_AMOUNT = DSL.field("total_amount", Long::class.java)
+    val CONFIRMED_BY = DSL.field("confirmed_by", Long::class.java)
+    val CONFIRMED_AT = DSL.field("confirmed_at", java.time.LocalDateTime::class.java)
+    val NOTE = DSL.field("note", String::class.java)
+
+    // UGC 감사 로그 (V52) — 재사용: WORKSPACE_ID, CAMPAIGN_ID, ACTION, RESOURCE_TYPE, RESOURCE_ID, CREATED_AT
+    val ACTOR_ID = DSL.field("actor_id", Long::class.java)
+    val DETAIL = DSL.field("detail", String::class.java)
 }
