@@ -2,18 +2,14 @@ package com.ongo.infrastructure.security
 
 import com.ongo.domain.auth.TokenBlacklistPort
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.core.StringRedisTemplate
-import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 /**
  * Redis 기반 토큰 블랙리스트 — 분산 환경(다중 인스턴스)에서도 공유됨.
- * RedisConnectionFactory 빈이 있을 때만 활성화된다.
+ * 빈 등록은 [TokenBlacklistConfig] 가 담당한다(RedisConnectionFactory 있을 때 사용).
  */
-@Component
-@ConditionalOnBean(RedisConnectionFactory::class)
 class RedisTokenBlacklistService(
     connectionFactory: RedisConnectionFactory,
 ) : TokenBlacklistPort {

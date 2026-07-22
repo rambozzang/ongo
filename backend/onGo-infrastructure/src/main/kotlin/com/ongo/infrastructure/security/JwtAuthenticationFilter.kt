@@ -1,5 +1,6 @@
 package com.ongo.infrastructure.security
 
+import com.ongo.domain.auth.TokenBlacklistPort
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -12,7 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 class JwtAuthenticationFilter(
     private val jwtTokenProvider: JwtTokenProvider,
-    private val tokenBlacklistService: TokenBlacklistService,
+    private val tokenBlacklist: TokenBlacklistPort,
 ) : OncePerRequestFilter() {
 
     companion object {
@@ -43,7 +44,7 @@ class JwtAuthenticationFilter(
         if (token != null && jwtTokenProvider.validateToken(token)) {
             val jti = jwtTokenProvider.getTokenJti(token)
                 ?: token.hashCode().toString()
-            if (tokenBlacklistService.isBlacklisted(jti)) {
+            if (tokenBlacklist.isBlacklisted(jti)) {
                 response.status = HttpServletResponse.SC_UNAUTHORIZED
                 response.writer.write("{\"success\":false,\"message\":\"토큰이 무효화되었습니다\"}")
                 response.contentType = "application/json;charset=UTF-8"
