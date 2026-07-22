@@ -21,7 +21,7 @@ export const useChannelAuditStore = defineStore('channelAudit', () => {
     if (resetPage) page.value = 0
     try {
       const response = await channelAuditApi.getAudits(page.value, pageSize.value)
-      reports.value = response.reports
+      reports.value = response.audits
       totalCount.value = response.totalCount
     } catch {
       reports.value = []

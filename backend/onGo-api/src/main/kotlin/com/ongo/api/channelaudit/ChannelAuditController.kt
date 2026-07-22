@@ -4,6 +4,7 @@ import com.ongo.application.channelaudit.ChannelAuditListResponse
 import com.ongo.application.channelaudit.ChannelAuditResponse
 import com.ongo.application.channelaudit.ChannelAuditUseCase
 import com.ongo.common.ResData
+import com.ongo.common.annotation.CurrentUser
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -24,7 +25,7 @@ class ChannelAuditController(
     )
     @PostMapping
     fun generateAudit(
-        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Parameter(hidden = true) @CurrentUser userId: Long,
     ): ResponseEntity<ResData<ChannelAuditResponse>> {
         val result = channelAuditUseCase.generateAudit(userId)
         return ResData.success(result, "채널 오디트가 생성되었습니다")
@@ -36,7 +37,7 @@ class ChannelAuditController(
     )
     @GetMapping
     fun getAudits(
-        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Parameter(hidden = true) @CurrentUser userId: Long,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "10") size: Int,
     ): ResponseEntity<ResData<ChannelAuditListResponse>> {
@@ -50,7 +51,7 @@ class ChannelAuditController(
     )
     @GetMapping("/{id}")
     fun getAuditDetail(
-        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable id: Long,
     ): ResponseEntity<ResData<ChannelAuditResponse>> {
         val result = channelAuditUseCase.getAuditDetail(userId, id)

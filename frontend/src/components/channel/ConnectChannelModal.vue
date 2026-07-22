@@ -12,11 +12,11 @@
       <div class="fixed inset-0 bg-black/50" aria-hidden="true" @click="close" />
 
       <!-- Modal Content -->
-      <div class="relative w-full max-w-2xl rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl">
+      <div class="relative flex max-h-[calc(100vh-2rem)] w-full max-w-lg flex-col rounded-xl bg-white p-4 shadow-xl dark:bg-gray-800 tablet:p-5">
         <!-- Header -->
-        <div class="mb-6">
-          <h3 id="connect-channel-title" class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ $t('channels.connectModalTitle') }}</h3>
-          <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+        <div class="mb-4 shrink-0">
+          <h3 id="connect-channel-title" class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ $t('channels.connectModalTitle') }}</h3>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
             {{ $t('channels.connectModalDescription') }}
           </p>
           <p v-if="maxAllowed > 0" class="mt-1 text-xs" :class="isAtLimit ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'">
@@ -25,11 +25,12 @@
         </div>
 
         <!-- Platform Cards Grid -->
-        <div class="grid grid-cols-1 gap-4 tablet:grid-cols-2">
+        <div class="min-h-0 overflow-y-auto pr-1">
+          <div class="grid grid-cols-2 gap-2.5">
           <div
             v-for="platform in SUPPORTED_PLATFORMS"
             :key="platform"
-            class="relative rounded-lg border-2 p-6 transition-all"
+            class="relative rounded-lg border p-3 transition-all"
             :class="{
               'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-md cursor-pointer': !isConnected(platform) && !isAtLimit,
               'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/30 cursor-not-allowed': isConnected(platform) || isAtLimit,
@@ -45,9 +46,9 @@
             </div>
 
             <!-- Platform Icon -->
-            <div class="mb-4 flex items-center justify-center">
-              <div
-                class="flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold text-white shadow-lg"
+              <div class="mb-2 flex items-center justify-center">
+                <div
+                class="flex h-10 w-10 items-center justify-center rounded-full text-lg font-bold text-white shadow-lg"
                 :style="{ backgroundColor: PLATFORM_CONFIG[platform].color }"
               >
                 {{ getPlatformInitial(platform) }}
@@ -56,16 +57,16 @@
 
             <!-- Platform Name -->
             <div class="text-center">
-              <h4 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+              <h4 class="text-sm font-bold text-gray-900 dark:text-gray-100">
                 {{ PLATFORM_CONFIG[platform].label }}
               </h4>
-              <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              <p class="mt-1 text-[11px] leading-4 text-gray-600 dark:text-gray-400">
                 {{ getPlatformDescription(platform) }}
               </p>
             </div>
 
             <!-- Action Button -->
-            <div class="mt-4">
+            <div class="mt-2">
               <button
                 v-if="isConnected(platform)"
                 class="btn-secondary w-full cursor-not-allowed opacity-60"
@@ -91,10 +92,11 @@
               </button>
             </div>
           </div>
+          </div>
         </div>
 
         <!-- Footer -->
-        <div class="mt-6 flex justify-end border-t border-gray-100 dark:border-gray-700 pt-4">
+        <div class="mt-4 flex shrink-0 justify-end border-t border-gray-100 pt-3 dark:border-gray-700">
           <button class="btn-secondary" @click="close">
             {{ $t('channels.close') }}
           </button>

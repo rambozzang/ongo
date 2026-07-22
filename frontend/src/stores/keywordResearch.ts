@@ -2,13 +2,15 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { KeywordPlatform, KeywordResearchResult, KeywordHistoryItem } from '@/types/keywordResearch'
 import { keywordResearchApi } from '@/api/keywordResearch'
+import { useNotificationStore } from '@/stores/notification'
 
 export const useKeywordResearchStore = defineStore('keywordResearch', () => {
   const history = ref<KeywordHistoryItem[]>([])
   const loading = ref(false)
   const researching = ref(false)
   const totalCount = ref(0)
-  const page = ref(0)
+  // The backend history query uses 1-based pages.
+  const page = ref(1)
   const pageSize = ref(10)
   const currentResult = ref<KeywordResearchResult | null>(null)
 
@@ -22,7 +24,10 @@ export const useKeywordResearchStore = defineStore('keywordResearch', () => {
     try {
       currentResult.value = await keywordResearchApi.research(keyword, platforms)
       return currentResult.value
-    } catch {
+    } catch (error: any) {
+      useNotificationStore().error(
+        error?.response?.data?.message || error?.message || '키워드 분석에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      )
       return null
     } finally {
       researching.value = false
@@ -31,12 +36,17 @@ export const useKeywordResearchStore = defineStore('keywordResearch', () => {
 
   const fetchHistory = async (resetPage = true) => {
     loading.value = true
-    if (resetPage) page.value = 0
+    if (resetPage) page.value = 1
     try {
       const response = await keywordResearchApi.getHistory(page.value, pageSize.value)
       history.value = response.items
       totalCount.value = response.totalCount
-    } catch {
+    } catch (error: any) {
+      if (error?.response?.status !== 404) {
+        useNotificationStore().error(
+          error?.response?.data?.message || error?.message || '검색 이력을 불러오지 못했습니다.',
+        )
+      }
       history.value = []
       totalCount.value = 0
     } finally {

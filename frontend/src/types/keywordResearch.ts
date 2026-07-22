@@ -2,7 +2,7 @@ export type KeywordPlatform = 'YOUTUBE' | 'TIKTOK' | 'INSTAGRAM' | 'NAVER_CLIP'
 
 export interface KeywordPlatformResult {
   platform: KeywordPlatform
-  searchVolume: number
+  searchVolume: string
   competition: 'LOW' | 'MEDIUM' | 'HIGH'
   trend: 'RISING' | 'STABLE' | 'DECLINING'
   opportunityScore: number

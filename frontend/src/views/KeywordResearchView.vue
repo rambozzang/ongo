@@ -80,7 +80,7 @@
             >
               <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ platformLabel(row.platform) }}</td>
               <td class="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">
-                {{ row.searchVolume.toLocaleString() }}
+                {{ searchVolumeLabel(row.searchVolume) }}
               </td>
               <td class="px-4 py-3 text-center">
                 <span
@@ -164,7 +164,7 @@
             {{ $t('action.prev') }}
           </button>
           <span class="text-sm text-gray-500 dark:text-gray-400">
-            {{ store.page + 1 }} / {{ store.totalPages }}
+            {{ store.page }} / {{ store.totalPages }}
           </span>
           <button :disabled="!store.hasNextPage" class="btn-secondary disabled:opacity-40" @click="store.nextPage()">
             {{ $t('action.next') }}
@@ -205,6 +205,15 @@ const platformLabelMap: Record<KeywordPlatform, string> = {
 
 function platformLabel(p: KeywordPlatform): string {
   return platformLabelMap[p] ?? p
+}
+
+function searchVolumeLabel(value: string): string {
+  const labels: Record<string, string> = {
+    HIGH: '높음',
+    MEDIUM: '보통',
+    LOW: '낮음',
+  }
+  return labels[value.toUpperCase()] ?? value
 }
 
 function togglePlatform(p: KeywordPlatform) {

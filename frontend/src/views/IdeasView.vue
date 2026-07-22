@@ -71,6 +71,7 @@
             :key="idea.id"
             :idea="idea"
             @click="openEditModal(idea)"
+            @delete="handleDelete(idea.id)"
           />
         </IdeaColumn>
 
@@ -86,6 +87,7 @@
             :key="idea.id"
             :idea="idea"
             @click="openEditModal(idea)"
+            @delete="handleDelete(idea.id)"
           />
         </IdeaColumn>
 
@@ -101,6 +103,7 @@
             :key="idea.id"
             :idea="idea"
             @click="openEditModal(idea)"
+            @delete="handleDelete(idea.id)"
           />
         </IdeaColumn>
 
@@ -116,6 +119,7 @@
             :key="idea.id"
             :idea="idea"
             @click="openEditModal(idea)"
+            @delete="handleDelete(idea.id)"
           />
         </IdeaColumn>
     </div>
@@ -219,7 +223,7 @@ const priorityFilters = computed(() => [
 
 // Load from localStorage on mount
 onMounted(() => {
-  ideasStore.loadFromLocalStorage()
+  ideasStore.fetchIdeas()
 })
 
 // Computed filtered ideas by status
@@ -284,7 +288,9 @@ const handleUpdate = (id: number, data: Partial<ContentIdea>) => {
 }
 
 const handleDelete = (id: number) => {
-  ideasStore.deleteIdea(id)
+  if (confirm('이 콘텐츠 아이디어를 삭제하시겠습니까?')) {
+    ideasStore.deleteIdea(id)
+  }
 }
 
 const handleDrop = (ideaId: number, newStatus: IdeaStatus) => {

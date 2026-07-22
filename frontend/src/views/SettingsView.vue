@@ -310,6 +310,9 @@
         <div class="mb-8">
           <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.visibility') }}</h3>
           <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.visibilityDesc') }}</p>
+          <p class="mb-3 rounded-lg bg-primary-50 px-3 py-2 text-xs leading-5 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
+            {{ t('settings.defaults.visibilityWhy') }}
+          </p>
           <div class="flex flex-wrap gap-3">
             <label
               v-for="option in visibilityOptions"

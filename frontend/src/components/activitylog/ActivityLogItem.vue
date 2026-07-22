@@ -66,6 +66,42 @@ const iconBgClass = computed(() => iconBgMap[props.log.action])
 const description = computed(() => {
   const name = props.log.userName
   const entity = props.log.entityName ? `'${props.log.entityName}'` : ''
+  const details = props.log.details ?? {}
+
+  const detailLabels: Record<string, string> = {
+    title: '제목',
+    description: '설명',
+    visibility: '공개 설정',
+    platform: '플랫폼',
+    provider: '로그인 방식',
+    type: '기능',
+    setting: '설정 항목',
+    field: '수정 항목',
+  }
+  const fieldLabels: Record<string, string> = {
+    title: '제목',
+    description: '설명',
+    tags: '태그',
+    thumbnail: '썸네일',
+    visibility: '공개 설정',
+  }
+  const valueLabels: Record<string, string> = {
+    PUBLIC: '공개',
+    PRIVATE: '비공개',
+    UNLISTED: '미등록',
+    GOOGLE: 'Google',
+    KAKAO: '카카오',
+    FRIENDLY: '친근한 톤',
+    PROFESSIONAL: '전문적인 톤',
+    HUMOR: '유머 톤',
+  }
+  const detail = (key: string, fallback = '') => {
+    const value = details[key]
+    if (value === undefined || value === null || value === '') return fallback
+    const rawValue = String(value)
+    const label = valueLabels[rawValue.toUpperCase()] ?? (key === 'field' ? fieldLabels[rawValue] ?? rawValue : rawValue)
+    return `${detailLabels[key] ?? key}: ${label}`
+  }
 
   switch (props.log.action) {
     case 'upload':
@@ -73,25 +109,25 @@ const description = computed(() => {
     case 'publish':
       return `${name}님이 ${entity} 영상을 게시했습니다`
     case 'edit':
-      return `${name}님이 ${entity} ${props.log.details?.field ? `${props.log.details.field}을(를)` : '정보를'} 수정했습니다`
+      return `${name}님이 ${entity} ${detail('field', '정보')}을(를) 수정했습니다`
     case 'delete':
       return `${name}님이 ${entity} 영상을 삭제했습니다`
     case 'schedule':
       return `${name}님이 ${entity} 예약 업로드를 설정했습니다`
     case 'ai_generate':
-      return `${name}님이 ${entity} ${props.log.details?.type ?? 'AI 기능'}을 사용했습니다${props.log.details?.creditsUsed ? ` (${props.log.details.creditsUsed} 크레딧)` : ''}`
+      return `${name}님이 ${entity} ${detail('type', 'AI 기능')}을 사용했습니다${details.creditsUsed ? ` (${details.creditsUsed} 크레딧)` : ''}`
     case 'channel_connect':
       return `${name}님이 ${entity} 채널을 연결했습니다`
     case 'channel_disconnect':
       return `${name}님이 ${entity} 채널 연결을 해제했습니다`
     case 'settings_change':
-      return `${name}님이 ${props.log.details?.setting ?? '설정'}을 변경했습니다`
+      return `${name}님이 ${detail('setting', '설정')}을 변경했습니다`
     case 'team_invite':
       return `${name}님이 ${entity}님을 팀에 초대했습니다`
     case 'team_remove':
       return `${name}님이 ${entity}님을 팀에서 제거했습니다`
     case 'login':
-      return `${name}님이 ${props.log.details?.provider ?? ''} 계정으로 로그인했습니다`
+      return `${name}님이 ${detail('provider', '소셜')} 계정으로 로그인했습니다`
     case 'credit_purchase':
       return `${name}님이 크레딧 ${props.log.details?.amount ?? ''}개를 구매했습니다${props.log.details?.price ? ` (${props.log.details.price})` : ''}`
     default:

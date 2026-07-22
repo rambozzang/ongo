@@ -5,7 +5,7 @@
       <template #actions>
         <button
           class="btn-secondary inline-flex items-center gap-2"
-          :disabled="batchDraftLoading || selectedCommentIds.length === 0"
+          :disabled="featureUnavailable || batchDraftLoading || selectedCommentIds.length === 0"
           @click="handleBatchAiDraft"
         >
           <SparklesIcon class="h-4 w-4" />
@@ -13,7 +13,7 @@
         </button>
         <button
           class="btn-primary inline-flex items-center gap-2"
-          :disabled="syncing"
+          :disabled="featureUnavailable || syncing"
           @click="handleSync"
         >
           <ArrowPathIcon
@@ -27,7 +27,15 @@
 
     <PageGuide :title="$t('commentsView.pageGuideTitle')" :items="($tm('commentsView.pageGuide') as string[])" />
 
-    <div class="space-y-6">
+    <EmptyState
+      v-if="featureUnavailable"
+      :title="$t('commentsView.planRequiredTitle')"
+      :description="$t('commentsView.planRequiredDescription')"
+      action-label="플랜 확인하기"
+      action-to="/subscription"
+    />
+
+    <div v-else class="space-y-6">
 
     <!-- 위기 감지 배너 -->
     <div
@@ -538,6 +546,7 @@ import KeywordCloudSection from '@/components/comments/KeywordCloudSection.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { SentimentTrendPoint } from '@/types/comment'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -569,6 +578,7 @@ const {
   keywordCloud,
   keywordCloudLoading,
   batchActionLoading,
+  featureUnavailable,
 } = storeToRefs(commentsStore)
 
 const sortBy = ref<'recent' | 'likes' | 'replies'>('recent')

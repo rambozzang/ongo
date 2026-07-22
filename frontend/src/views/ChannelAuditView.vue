@@ -42,7 +42,7 @@
         class="card cursor-pointer transition-colors hover:border-primary-300 dark:hover:border-primary-700"
         @click="openDetail(report)"
       >
-        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center justify-between gap-4">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-3 mb-2">
               <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
@@ -53,25 +53,7 @@
                 {{ formatDate(report.createdAt) }}
               </span>
             </div>
-            <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{{ report.summary }}</p>
-          </div>
-          <div class="hidden tablet:grid grid-cols-4 gap-4 text-center shrink-0">
-            <div>
-              <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ report.consistencyScore }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('channelAudit.consistency') }}</p>
-            </div>
-            <div>
-              <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ report.engagementScore }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('channelAudit.engagement') }}</p>
-            </div>
-            <div>
-              <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ report.growthScore }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('channelAudit.growth') }}</p>
-            </div>
-            <div>
-              <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ report.contentQualityScore }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('channelAudit.quality') }}</p>
-            </div>
+            <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{{ report.growthForecast || 'AI 분석 결과가 저장되었습니다.' }}</p>
           </div>
           <ChevronRightIcon class="h-5 w-5 text-gray-400 shrink-0" />
         </div>
@@ -99,31 +81,23 @@
     >
       <div v-if="store.selectedReport" class="space-y-6">
         <!-- Score Summary -->
-        <div class="grid grid-cols-2 tablet:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 gap-4">
           <div class="rounded-lg bg-primary-50 dark:bg-primary-900/20 p-4 text-center">
             <p class="text-3xl font-bold text-primary-600 dark:text-primary-400">
               {{ store.selectedReport.overallScore }}
             </p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $t('channelAudit.overall') }}</p>
           </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-4 text-center">
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ store.selectedReport.consistencyScore }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $t('channelAudit.consistency') }}</p>
-          </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-4 text-center">
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ store.selectedReport.engagementScore }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $t('channelAudit.engagement') }}</p>
-          </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-4 text-center">
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ store.selectedReport.growthScore }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $t('channelAudit.growth') }}</p>
+          <div class="rounded-lg bg-gray-50 p-4 text-center dark:bg-gray-800/50">
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ store.selectedReport.actionItems.length }}</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $t('channelAudit.actionItems') }}</p>
           </div>
         </div>
 
         <!-- Summary -->
         <div class="card">
           <h3 class="mb-2 text-sm font-semibold text-gray-900 dark:text-white">{{ $t('channelAudit.summaryLabel') }}</h3>
-          <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ store.selectedReport.summary }}</p>
+          <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ store.selectedReport.growthForecast || 'AI 진단 요약이 없습니다.' }}</p>
         </div>
 
         <!-- Strengths & Weaknesses -->
@@ -181,8 +155,8 @@
                 {{ item.priority }}
               </span>
               <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.title }}</p>
-                <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{{ item.description }}</p>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.action }}</p>
+                <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ item.expectedImpact }}</p>
               </div>
             </div>
           </div>
@@ -194,20 +168,12 @@
           <div class="space-y-3">
             <div
               v-for="video in store.selectedReport.outlierVideos"
-              :key="video.platformVideoId"
+              :key="`${video.videoTitle}-${video.metric}`"
               class="flex gap-3 items-start"
             >
-              <div class="h-10 w-16 shrink-0 overflow-hidden rounded bg-gray-200 dark:bg-gray-700">
-                <img
-                  v-if="video.thumbnailUrl"
-                  :src="video.thumbnailUrl"
-                  :alt="video.title"
-                  class="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
               <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ video.title }}</p>
+                <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ video.videoTitle }}</p>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ video.metric }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ video.reason }}</p>
               </div>
             </div>

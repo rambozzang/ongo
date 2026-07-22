@@ -13,13 +13,22 @@
       >
         {{ priorityLabel }}
       </span>
-      <div class="flex gap-1">
+      <div class="flex items-center gap-1">
         <component
           :is="platformIcon(platform)"
           v-for="platform in idea.platform"
           :key="platform"
           class="w-4 h-4 text-gray-500 dark:text-gray-400"
         />
+        <button
+          type="button"
+          class="ml-1 rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+          aria-label="아이디어 삭제"
+          title="아이디어 삭제"
+          @click.stop="$emit('delete')"
+        >
+          <TrashIcon class="h-4 w-4" />
+        </button>
       </div>
     </div>
 
@@ -55,7 +64,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ContentIdea } from '@/types/idea'
-import { CalendarIcon } from '@heroicons/vue/24/outline'
+import { CalendarIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
   idea: ContentIdea
@@ -64,6 +73,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'click'): void
   (e: 'dragstart', event: DragEvent): void
+  (e: 'delete'): void
 }>()
 
 const priorityClasses = computed(() => {

@@ -141,7 +141,9 @@ platform:
   google:
     client-id: ${GOOGLE_CLIENT_ID:}
     client-secret: ${GOOGLE_CLIENT_SECRET:}
-    api-key: ${GOOGLE_API_KEY:dummy-google-api}
+    # Do not use a fake fallback: YouTube returns API_KEY_INVALID and the UI
+    # can offer manual channel entry when this optional lookup key is absent.
+    api-key: ${GOOGLE_API_KEY:}
   tiktok:
     client-key: ${TIKTOK_CLIENT_KEY:}
     client-secret: ${TIKTOK_CLIENT_SECRET:}

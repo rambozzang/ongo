@@ -42,9 +42,9 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
           userId: String(log.userId),
           userName: String(log.userId),
           action: log.action as ActivityAction,
-          entityType: (log.entityType ?? 'video') as ActivityLog['entityType'],
+          entityType: (log.entityType ?? 'video').toLowerCase() as ActivityLog['entityType'],
           entityId: log.entityId ? String(log.entityId) : undefined,
-          details: log.details ? JSON.parse(log.details) : undefined,
+          details: parseDetails(log.details),
           ipAddress: log.ipAddress ?? undefined,
           createdAt: log.createdAt ?? new Date().toISOString(),
         }))
@@ -56,6 +56,16 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
       logs.value = []
     } finally {
       isLoading.value = false
+    }
+  }
+
+  function parseDetails(value: string | null | undefined): Record<string, any> | undefined {
+    if (!value) return undefined
+    try {
+      const parsed = JSON.parse(value)
+      return parsed && typeof parsed === 'object' ? parsed : undefined
+    } catch {
+      return undefined
     }
   }
 

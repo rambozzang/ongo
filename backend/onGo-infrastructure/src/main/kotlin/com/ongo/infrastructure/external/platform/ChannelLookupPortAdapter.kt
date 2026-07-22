@@ -5,6 +5,7 @@ import com.ongo.domain.competitor.ChannelLookupResult
 import com.ongo.infrastructure.external.youtube.YouTubeApi
 import com.ongo.infrastructure.external.youtube.YouTubeConfig
 import org.slf4j.LoggerFactory
+import org.springframework.web.client.HttpClientErrorException
 import org.springframework.stereotype.Component
 
 @Component
@@ -81,10 +82,18 @@ class ChannelLookupPortAdapter(
             )
         } catch (e: Exception) {
             log.error("YouTube 채널 조회 실패: query={}, error={}", query, e.message, e)
+            val invalidApiKey = e is HttpClientErrorException.BadRequest &&
+                (e.responseBodyAsString.contains("API_KEY_INVALID") ||
+                    e.responseBodyAsString.contains("API key not valid", ignoreCase = true))
             ChannelLookupResult(
                 found = false,
                 platform = "YOUTUBE",
-                message = "YouTube 채널 조회 중 오류가 발생했습니다: ${e.message}",
+                requiresManualInput = invalidApiKey,
+                message = if (invalidApiKey) {
+                    "YouTube API 키가 유효하지 않아 자동 조회를 사용할 수 없습니다. API 키를 설정하거나 채널 정보를 직접 입력해주세요."
+                } else {
+                    "YouTube 채널을 조회하지 못했습니다. URL 또는 핸들을 확인한 뒤 다시 시도해주세요."
+                },
             )
         }
     }

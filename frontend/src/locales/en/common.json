@@ -718,6 +718,7 @@
       "title": "Default Settings",
       "visibility": "Default Visibility",
       "visibilityDesc": "Default visibility setting applied when uploading videos.",
+      "visibilityWhy": "This saves your usual visibility choice for uploads. You can still change it for each video before publishing, helping prevent accidental public uploads.",
       "visibilityPublic": "Public",
       "visibilityPrivate": "Private",
       "visibilityUnlisted": "Unlisted",
@@ -1428,6 +1429,8 @@
   },
   "commentsView": {
     "title": "Comment Management",
+    "planRequiredTitle": "Comment management requires a Pro plan",
+    "planRequiredDescription": "Your current plan cannot access comment data. Check your plan to enable comment sync and analysis.",
     "totalComments": "{count} total comments",
     "lastSync": "Last sync: {time}",
     "aiBatchReply": "AI Reply ({count})",
@@ -2421,6 +2424,11 @@
     "export": "Export",
     "summary": {
       "upload": "Uploads",
+      "publish": "Published",
+      "schedule": "Scheduled",
+      "aiGenerate": "AI Generated",
+      "delete": "Deleted",
+      "channelConnect": "Channel Connections",
       "login": "Logins",
       "settings": "Settings Changes",
       "channel": "Channel Connections"
