@@ -1,6 +1,15 @@
 <template>
-  <div class="max-w-3xl">
+  <div class="mx-auto max-w-5xl">
     <PageHeader :title="isEdit ? $t('ugc.editTitle') : $t('ugc.createTitle')" :description="$t('ugc.builderDescription')" />
+
+    <div v-if="!hasWorkspace" class="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-900/20">
+      <ExclamationTriangleIcon class="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+      <div class="min-w-0 text-sm">
+        <p class="font-semibold text-amber-900 dark:text-amber-200">{{ $t('ugc.noWorkspace') }}</p>
+        <p class="mt-1 text-amber-800 dark:text-amber-300">{{ $t('ugc.noWorkspaceHint') }}</p>
+        <router-link to="/settings?tab=workspaces" class="mt-2 inline-flex font-medium text-amber-900 underline underline-offset-2 dark:text-amber-200">{{ $t('ugc.manageWorkspace') }}</router-link>
+      </div>
+    </div>
 
     <!-- Step indicator -->
     <ol class="mb-6 flex items-center gap-2 text-sm">
@@ -21,7 +30,8 @@
       </li>
     </ol>
 
-    <div class="card space-y-5">
+    <div class="grid gap-5 desktop:grid-cols-[minmax(0,1fr)_280px]">
+      <div class="card space-y-5">
       <!-- Step 1: 기본 정보 -->
       <template v-if="step === 1">
         <div>
@@ -95,13 +105,20 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('ugc.fixedReward') }}</label>
             <input v-model.number="form.fixedRewardPerCreator" type="number" min="0" class="input-field" />
           </div>
-          <div>
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('ugc.startAt') }}</label>
-            <input v-model="form.startAt" type="datetime-local" class="input-field" />
-          </div>
-          <div>
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('ugc.endAt') }}</label>
-            <input v-model="form.endAt" type="datetime-local" class="input-field" />
+          <div class="mobile:col-span-2">
+            <div class="mb-1.5 flex items-center justify-between gap-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('ugc.period') }}</label>
+              <button v-if="form.startAt || form.endAt" type="button" class="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200" @click="clearSchedule">{{ $t('ugc.noSchedule') }}</button>
+            </div>
+            <button type="button" class="flex min-h-14 w-full items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 text-left transition-colors hover:border-primary-400 hover:bg-primary-50/40 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-primary-500 dark:hover:bg-primary-900/10" @click="scheduleModalOpen = true">
+              <CalendarDaysIcon class="h-5 w-5 shrink-0 text-primary-600 dark:text-primary-400" />
+              <span class="min-w-0 flex-1">
+                <span v-if="form.startAt && form.endAt" class="block truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ formatSchedule(form.startAt, form.endAt) }}</span>
+                <span v-else class="block text-sm text-gray-500 dark:text-gray-400">{{ $t('ugc.scheduleModalDescription') }}</span>
+                <span class="mt-0.5 block text-xs text-primary-600 dark:text-primary-400">{{ $t('ugc.applySchedule') }}</span>
+              </span>
+              <ChevronRightIcon class="h-5 w-5 shrink-0 text-gray-400" />
+            </button>
           </div>
         </div>
         <p class="text-xs text-gray-400">{{ $t('ugc.publishHint') }}</p>
@@ -111,11 +128,11 @@
       <template v-else>
         <dl class="space-y-2 text-sm">
           <div class="flex justify-between gap-4"><dt class="text-gray-500">{{ $t('ugc.fieldName') }}</dt><dd class="font-medium text-gray-900 dark:text-gray-100">{{ form.name || '-' }}</dd></div>
-          <div class="flex justify-between gap-4"><dt class="text-gray-500">{{ $t('ugc.fieldObjective') }}</dt><dd class="text-gray-900 dark:text-gray-100">{{ form.objective }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-gray-500">{{ $t('ugc.fieldObjective') }}</dt><dd class="text-gray-900 dark:text-gray-100">{{ objectiveLabel }}</dd></div>
           <div class="flex justify-between gap-4"><dt class="text-gray-500">{{ $t('ugc.playbookTitle') }}</dt><dd class="text-gray-900 dark:text-gray-100">{{ form.playbookTitle || '-' }} ({{ form.steps.length }} {{ $t('ugc.stepsUnit') }})</dd></div>
           <div class="flex justify-between gap-4"><dt class="text-gray-500">{{ $t('ugc.totalBudget') }}</dt><dd class="text-gray-900 dark:text-gray-100">{{ form.totalBudget.toLocaleString() }}</dd></div>
           <div class="flex justify-between gap-4"><dt class="text-gray-500">{{ $t('ugc.fixedReward') }}</dt><dd class="text-gray-900 dark:text-gray-100">{{ form.fixedRewardPerCreator.toLocaleString() }}</dd></div>
-          <div class="flex justify-between gap-4"><dt class="text-gray-500">{{ $t('ugc.period') }}</dt><dd class="text-gray-900 dark:text-gray-100">{{ form.startAt || '?' }} ~ {{ form.endAt || '?' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-gray-500">{{ $t('ugc.period') }}</dt><dd class="text-right text-gray-900 dark:text-gray-100">{{ form.startAt && form.endAt ? formatSchedule(form.startAt, form.endAt) : $t('ugc.noSchedule') }}</dd></div>
         </dl>
       </template>
 
@@ -124,14 +141,33 @@
         <button class="btn-secondary" @click="step > 1 ? step-- : cancel()">
           {{ step > 1 ? $t('ugc.prevStep') : $t('ugc.cancel') }}
         </button>
-        <button v-if="step < 4" class="btn-primary" :disabled="step === 1 && !form.name.trim()" @click="step++">
+        <button v-if="step < 4" class="btn-primary" :disabled="step === 1 && !form.name.trim()" @click="nextStep">
           {{ $t('ugc.nextStep') }}
         </button>
-        <button v-else class="btn-primary inline-flex items-center gap-2" :disabled="saving" @click="save">
+        <button v-else class="btn-primary inline-flex items-center gap-2" :disabled="saving || !hasWorkspace" @click="save">
           {{ saving ? $t('ugc.saving') : $t('ugc.saveDraft') }}
         </button>
       </div>
+      </div>
+
+      <aside class="hidden self-start rounded-xl border border-gray-200 bg-white p-4 desktop:block dark:border-gray-700 dark:bg-gray-900">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ $t('ugc.campaignContext') }}</p>
+        <p class="mt-2 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ workspaceStore.activeWorkspace?.name || $t('ugc.noWorkspace') }}</p>
+        <div class="mt-4 space-y-3 border-t border-gray-100 pt-4 text-xs dark:border-gray-800">
+          <div class="flex items-center justify-between gap-3"><span class="text-gray-500">{{ $t('ugc.fieldObjective') }}</span><span class="font-medium text-gray-800 dark:text-gray-200">{{ objectiveLabel }}</span></div>
+          <div class="flex items-center justify-between gap-3"><span class="text-gray-500">{{ $t('ugc.totalBudget') }}</span><span class="font-medium text-gray-800 dark:text-gray-200">{{ form.totalBudget.toLocaleString() }}</span></div>
+          <div class="flex items-center justify-between gap-3"><span class="text-gray-500">{{ $t('ugc.steps') }}</span><span class="font-medium text-gray-800 dark:text-gray-200">{{ form.steps.length }} {{ $t('ugc.stepsUnit') }}</span></div>
+        </div>
+        <p class="mt-4 rounded-lg bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500 dark:bg-gray-800 dark:text-gray-400">{{ $t('ugc.builderContextHint') }}</p>
+      </aside>
     </div>
+
+    <CampaignScheduleModal
+      v-model="scheduleModalOpen"
+      :start-at="form.startAt"
+      :end-at="form.endAt"
+      @save="applySchedule"
+    />
   </div>
 </template>
 
@@ -140,9 +176,11 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useUgcCampaignStore } from '@/stores/ugcCampaign'
+import { useWorkspaceStore } from '@/stores/workspace'
 import { useNotificationStore } from '@/stores/notification'
 import PageHeader from '@/components/common/PageHeader.vue'
-import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import CampaignScheduleModal from '@/components/ugc/CampaignScheduleModal.vue'
+import { CalendarDaysIcon, ChevronRightIcon, ExclamationTriangleIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 interface StepForm {
   stepType: string
@@ -156,6 +194,7 @@ const { t } = useI18n({ useScope: 'global' })
 const route = useRoute()
 const router = useRouter()
 const store = useUgcCampaignStore()
+const workspaceStore = useWorkspaceStore()
 const notify = useNotificationStore()
 
 const editId = computed(() => (route.params.id ? Number(route.params.id) : null))
@@ -163,6 +202,8 @@ const isEdit = computed(() => editId.value !== null)
 
 const step = ref(1)
 const saving = ref(false)
+const scheduleModalOpen = ref(false)
+const hasWorkspace = computed(() => workspaceStore.activeWorkspace != null)
 
 const stepLabels = computed(() => [
   t('ugc.stepBasic'),
@@ -185,6 +226,8 @@ const form = reactive({
   steps: [] as StepForm[],
 })
 
+const objectiveLabel = computed(() => t(`ugc.objective.${form.objective}`))
+
 function addStep() {
   form.steps.push({ stepType: 'INSTRUCTION', title: '', instruction: '', exampleUrl: '', required: true })
 }
@@ -195,6 +238,32 @@ function removeStep(index: number) {
 
 function cancel() {
   router.push('/ugc/campaigns')
+}
+
+function nextStep() {
+  if (step.value === 3 && form.startAt && form.endAt && form.endAt <= form.startAt) {
+    notify.error(t('ugc.periodInvalid'))
+    return
+  }
+  step.value += 1
+}
+
+function applySchedule(value: { startAt: string; endAt: string }) {
+  form.startAt = value.startAt
+  form.endAt = value.endAt
+}
+
+function clearSchedule() {
+  form.startAt = ''
+  form.endAt = ''
+}
+
+function formatSchedule(startAt: string, endAt: string): string {
+  const format = (value: string) => {
+    const [date, time] = value.slice(0, 16).split('T')
+    return `${date.replace(/-/g, '.')} ${time}`
+  }
+  return `${format(startAt)} ~ ${format(endAt)}`
 }
 
 function toLocalInput(value: string | null): string {
@@ -256,6 +325,7 @@ async function save() {
 }
 
 onMounted(async () => {
+  await workspaceStore.ensureActiveWorkspace()
   if (!isEdit.value) return
   try {
     const detail = await store.fetchCampaign(editId.value!)

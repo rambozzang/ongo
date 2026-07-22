@@ -86,8 +86,8 @@ const creatingInvite = ref(false)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(totalElements.value / size.value)))
 
-function workspaceId(): number {
-  const id = workspaceStore.activeWorkspaceId
+async function workspaceId(): Promise<number> {
+  const id = await workspaceStore.ensureActiveWorkspace()
   if (id == null) throw new Error(t('ugc.noWorkspace'))
   return id
 }
@@ -108,7 +108,7 @@ function appStatusClass(status: ApplicationStatus): string {
 async function fetchApplications() {
   loading.value = true
   try {
-    const res = await ugcParticipationApi.listApplications(workspaceId(), campaignId, { page: page.value, size: size.value })
+    const res = await ugcParticipationApi.listApplications(await workspaceId(), campaignId, { page: page.value, size: size.value })
     applications.value = res.items
     totalElements.value = res.totalElements
   } catch (e) {
@@ -126,7 +126,7 @@ function changePage(next: number) {
 async function createInvite() {
   creatingInvite.value = true
   try {
-    const invite = await ugcParticipationApi.createInvite(workspaceId(), campaignId, { expiresInDays: 30 })
+    const invite = await ugcParticipationApi.createInvite(await workspaceId(), campaignId, { expiresInDays: 30 })
     inviteUrl.value = `${window.location.origin}/ugc/invite/${invite.token}`
     copied.value = false
     notify.success(t('ugc.inviteCreated'))
@@ -149,8 +149,8 @@ async function copyInvite() {
 async function decide(applicationId: number, action: 'accept' | 'reject') {
   acting.value = applicationId
   try {
-    if (action === 'accept') await ugcParticipationApi.accept(workspaceId(), applicationId)
-    else await ugcParticipationApi.reject(workspaceId(), applicationId)
+    if (action === 'accept') await ugcParticipationApi.accept(await workspaceId(), applicationId)
+    else await ugcParticipationApi.reject(await workspaceId(), applicationId)
     notify.success(action === 'accept' ? t('ugc.accepted') : t('ugc.rejected'))
     await fetchApplications()
   } catch (e) {

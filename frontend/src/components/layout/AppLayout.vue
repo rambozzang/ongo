@@ -79,6 +79,7 @@ import UploadQueueIndicator from '@/components/upload/UploadQueueIndicator.vue'
 import UploadQueuePanel from '@/components/upload/UploadQueuePanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCreditStore } from '@/stores/credit'
+import { useWorkspaceStore } from '@/stores/workspace'
 import { useWebSocket } from '@/composables/useWebSocket'
 
 const isDesktop = useMediaQuery('(min-width: 1280px)')
@@ -88,12 +89,14 @@ const queuePanelOpen = ref(false)
 
 const authStore = useAuthStore()
 const creditStore = useCreditStore()
+const workspaceStore = useWorkspaceStore()
 const { connect, disconnect } = useWebSocket()
 
 onMounted(() => {
   // 병렬 실행 — 프로필 복원과 크레딧 조회를 동시에 시작
   authStore.initialize()
   creditStore.fetchBalance()
+  workspaceStore.fetchWorkspaces()
 
   // WebSocket 연결 (인증된 사용자)
   if (authStore.accessToken && authStore.user?.id) {

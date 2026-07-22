@@ -107,8 +107,8 @@ const auditEvents = ref<AuditEventResponse[]>([])
 const loading = ref(true)
 const acting = ref<number | null>(null)
 
-function workspaceId(): number {
-  const id = workspaceStore.activeWorkspaceId
+async function workspaceId(): Promise<number> {
+  const id = await workspaceStore.ensureActiveWorkspace()
   if (id == null) throw new Error(t('ugc.noWorkspace'))
   return id
 }
@@ -129,7 +129,7 @@ function rewardStatusClass(status: string): string {
 async function fetchAll() {
   loading.value = true
   try {
-    const ws = workspaceId()
+    const ws = await workspaceId()
     analytics.value = await ugcRewardApi.getAnalytics(ws, campaignId)
     rewards.value = await ugcRewardApi.listParticipants(ws, campaignId)
     auditEvents.value = (await ugcRewardApi.listAuditEvents(ws, campaignId)).items
@@ -143,9 +143,10 @@ async function fetchAll() {
 async function save(item: ParticipantRewardResponse) {
   acting.value = item.participantId
   try {
-    await ugcRewardApi.updateReward(workspaceId(), item.participantId, { baseAmount: item.baseAmount, bonusAmount: item.bonusAmount })
+    const ws = await workspaceId()
+    await ugcRewardApi.updateReward(ws, item.participantId, { baseAmount: item.baseAmount, bonusAmount: item.bonusAmount })
     notify.success(t('ugc.draftSaved'))
-    rewards.value = await ugcRewardApi.listParticipants(workspaceId(), campaignId)
+    rewards.value = await ugcRewardApi.listParticipants(ws, campaignId)
   } catch (e) {
     notify.error(e instanceof Error ? e.message : t('ugc.saveFailed'))
   } finally {
@@ -156,10 +157,11 @@ async function save(item: ParticipantRewardResponse) {
 async function confirm(item: ParticipantRewardResponse) {
   acting.value = item.participantId
   try {
-    await ugcRewardApi.updateReward(workspaceId(), item.participantId, { baseAmount: item.baseAmount, bonusAmount: item.bonusAmount })
-    await ugcRewardApi.confirmReward(workspaceId(), item.participantId)
+    const ws = await workspaceId()
+    await ugcRewardApi.updateReward(ws, item.participantId, { baseAmount: item.baseAmount, bonusAmount: item.bonusAmount })
+    await ugcRewardApi.confirmReward(ws, item.participantId)
     notify.success(t('ugc.rewardConfirmed'))
-    rewards.value = await ugcRewardApi.listParticipants(workspaceId(), campaignId)
+    rewards.value = await ugcRewardApi.listParticipants(ws, campaignId)
   } catch (e) {
     notify.error(e instanceof Error ? e.message : t('ugc.actionFailed'))
   } finally {
@@ -170,9 +172,10 @@ async function confirm(item: ParticipantRewardResponse) {
 async function markPaid(item: ParticipantRewardResponse) {
   acting.value = item.participantId
   try {
-    await ugcRewardApi.markPaid(workspaceId(), item.participantId)
+    const ws = await workspaceId()
+    await ugcRewardApi.markPaid(ws, item.participantId)
     notify.success(t('ugc.markedPaid'))
-    rewards.value = await ugcRewardApi.listParticipants(workspaceId(), campaignId)
+    rewards.value = await ugcRewardApi.listParticipants(ws, campaignId)
   } catch (e) {
     notify.error(e instanceof Error ? e.message : t('ugc.actionFailed'))
   } finally {
@@ -182,7 +185,7 @@ async function markPaid(item: ParticipantRewardResponse) {
 
 async function downloadCsv() {
   try {
-    const blob = await ugcRewardApi.downloadCsv(workspaceId(), campaignId)
+    const blob = await ugcRewardApi.downloadCsv(await workspaceId(), campaignId)
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

@@ -131,8 +131,8 @@ const selectedPosts = computed<CampaignPostResponse[]>(() =>
   selected.value ? allPosts.value.filter((p) => p.submissionId === selected.value!.submission.id) : [],
 )
 
-function workspaceId(): number {
-  const id = workspaceStore.activeWorkspaceId
+async function workspaceId(): Promise<number> {
+  const id = await workspaceStore.ensureActiveWorkspace()
   if (id == null) throw new Error(t('ugc.noWorkspace'))
   return id
 }
@@ -168,14 +168,14 @@ function postStatusClass(status: PostStatus): string {
 }
 
 async function refreshPosts() {
-  const res = await ugcPublishingApi.listCampaignPosts(workspaceId(), campaignId)
+  const res = await ugcPublishingApi.listCampaignPosts(await workspaceId(), campaignId)
   allPosts.value = res.items
 }
 
 async function fetchList() {
   loading.value = true
   try {
-    const res = await ugcSubmissionApi.list(workspaceId(), campaignId, { size: 50 })
+    const res = await ugcSubmissionApi.list(await workspaceId(), campaignId, { size: 50 })
     submissions.value = res.items
     await refreshPosts()
   } catch (e) {
@@ -189,7 +189,7 @@ async function publish() {
   if (!selected.value) return
   publishing.value = true
   try {
-    await ugcPublishingApi.publish(workspaceId(), selected.value.submission.id, { platforms: selectedPlatforms.value })
+    await ugcPublishingApi.publish(await workspaceId(), selected.value.submission.id, { platforms: selectedPlatforms.value })
     notify.success(t('ugc.publishStarted'))
     selectedPlatforms.value = []
     await refresh(selected.value.submission.id)
@@ -204,7 +204,7 @@ async function publish() {
 async function openDetail(submissionId: number) {
   reason.value = ''
   try {
-    selected.value = await ugcSubmissionApi.detail(workspaceId(), submissionId)
+    selected.value = await ugcSubmissionApi.detail(await workspaceId(), submissionId)
   } catch (e) {
     notify.error(e instanceof Error ? e.message : t('ugc.loadFailed'))
   }
@@ -218,7 +218,7 @@ async function requestChanges() {
   }
   acting.value = true
   try {
-    await ugcSubmissionApi.requestChanges(workspaceId(), selected.value.submission.id, { comment: reason.value.trim() })
+    await ugcSubmissionApi.requestChanges(await workspaceId(), selected.value.submission.id, { comment: reason.value.trim() })
     notify.success(t('ugc.changesRequested'))
     await refresh(selected.value.submission.id)
   } catch (e) {
@@ -232,7 +232,7 @@ async function approve() {
   if (!selected.value) return
   acting.value = true
   try {
-    await ugcSubmissionApi.approve(workspaceId(), selected.value.submission.id, { comment: reason.value.trim() || null })
+    await ugcSubmissionApi.approve(await workspaceId(), selected.value.submission.id, { comment: reason.value.trim() || null })
     notify.success(t('ugc.approved'))
     await refresh(selected.value.submission.id)
   } catch (e) {

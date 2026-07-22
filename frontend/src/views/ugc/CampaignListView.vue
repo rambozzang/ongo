@@ -2,12 +2,36 @@
   <div>
     <PageHeader :title="$t('ugc.title')" :description="$t('ugc.description')">
       <template #actions>
-        <button class="btn-primary inline-flex items-center gap-2" @click="goCreate">
+        <button class="btn-primary inline-flex items-center gap-2" :disabled="!hasWorkspace" @click="goCreate">
           <PlusIcon class="h-5 w-5" />
           {{ $t('ugc.newCampaign') }}
         </button>
       </template>
     </PageHeader>
+
+    <div class="mb-6 grid gap-3 mobile:grid-cols-[minmax(0,1fr)_auto]">
+      <div v-if="hasWorkspace" class="flex min-w-0 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-sm font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">{{ workspaceInitial }}</div>
+        <div class="min-w-0">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ $t('ugc.campaignContext') }}</p>
+          <p class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ workspaceStore.activeWorkspace?.name }}</p>
+        </div>
+        <span class="ml-auto inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500" />{{ $t('ugc.workspaceReady') }}</span>
+      </div>
+      <div v-else class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-900/20">
+        <ExclamationTriangleIcon class="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+        <div class="min-w-0 text-sm">
+          <p class="font-semibold text-amber-900 dark:text-amber-200">{{ $t('ugc.noWorkspace') }}</p>
+          <p class="mt-1 text-amber-800 dark:text-amber-300">{{ $t('ugc.noWorkspaceHint') }}</p>
+          <router-link to="/settings?tab=workspaces" class="mt-2 inline-flex font-medium text-amber-900 underline underline-offset-2 dark:text-amber-200">{{ $t('ugc.manageWorkspace') }}</router-link>
+        </div>
+      </div>
+      <div v-if="hasWorkspace" class="grid grid-cols-3 gap-2 rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
+        <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800"><p class="text-[11px] text-gray-400">{{ $t('ugc.totalCampaigns') }}</p><p class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ store.totalElements }}</p></div>
+        <div class="rounded-lg bg-blue-50 px-3 py-2 dark:bg-blue-900/20"><p class="text-[11px] text-blue-600 dark:text-blue-300">{{ $t('ugc.status.RECRUITING') }}</p><p class="mt-1 text-lg font-semibold text-blue-800 dark:text-blue-200">{{ recruitingCount }}</p></div>
+        <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800"><p class="text-[11px] text-gray-400">{{ $t('ugc.status.DRAFT') }}</p><p class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ draftCount }}</p></div>
+      </div>
+    </div>
 
     <!-- Filters -->
     <div class="mb-6 flex flex-col gap-3 mobile:flex-row mobile:items-center">
@@ -50,10 +74,13 @@
     >
       <MegaphoneIcon class="h-10 w-10 text-gray-300 dark:text-gray-600" />
       <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('ugc.empty') }}</p>
-      <button class="btn-primary mt-2 inline-flex items-center gap-2" @click="goCreate">
+      <router-link v-if="hasWorkspace" to="/ugc/campaigns/new" class="btn-primary mt-2 inline-flex items-center gap-2">
         <PlusIcon class="h-5 w-5" />
         {{ $t('ugc.newCampaign') }}
-      </button>
+      </router-link>
+      <router-link v-else to="/settings?tab=workspaces" class="btn-secondary mt-2 inline-flex items-center gap-2">
+        {{ $t('ugc.manageWorkspace') }}
+      </router-link>
     </div>
 
     <!-- List -->
@@ -104,6 +131,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useUgcCampaignStore } from '@/stores/ugcCampaign'
+import { useWorkspaceStore } from '@/stores/workspace'
 import { useNotificationStore } from '@/stores/notification'
 import type { CampaignStatus } from '@/api/ugcCampaign'
 import PageHeader from '@/components/common/PageHeader.vue'
@@ -112,14 +140,20 @@ import {
   MagnifyingGlassIcon,
   MegaphoneIcon,
   ChevronRightIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
 const store = useUgcCampaignStore()
+const workspaceStore = useWorkspaceStore()
 const notify = useNotificationStore()
 
 const searchInput = ref('')
+const hasWorkspace = computed(() => workspaceStore.activeWorkspace != null)
+const workspaceInitial = computed(() => workspaceStore.activeWorkspace?.name?.charAt(0).toUpperCase() ?? '?')
+const recruitingCount = computed(() => store.campaigns.filter(c => c.status === 'RECRUITING').length)
+const draftCount = computed(() => store.campaigns.filter(c => c.status === 'DRAFT').length)
 
 const statusOptions = computed<{ label: string; value: string | null }[]>(() => [
   { label: t('ugc.filterAll'), value: null },

@@ -26,8 +26,8 @@ export const useUgcCampaignStore = defineStore('ugcCampaign', () => {
   const hasNextPage = computed(() => page.value < totalPages.value - 1)
   const hasPrevPage = computed(() => page.value > 0)
 
-  function requireWorkspaceId(): number {
-    const id = workspaceStore.activeWorkspaceId
+  async function requireWorkspaceId(): Promise<number> {
+    const id = await workspaceStore.ensureActiveWorkspace()
     if (id == null) {
       throw new Error('활성 워크스페이스가 없습니다. 먼저 워크스페이스를 선택하세요.')
     }
@@ -37,7 +37,13 @@ export const useUgcCampaignStore = defineStore('ugcCampaign', () => {
   async function fetchCampaigns() {
     loading.value = true
     try {
-      const res = await ugcCampaignApi.list(requireWorkspaceId(), {
+      const id = await workspaceStore.ensureActiveWorkspace()
+      if (id == null) {
+        campaigns.value = []
+        totalElements.value = 0
+        return
+      }
+      const res = await ugcCampaignApi.list(id, {
         page: page.value,
         size: size.value,
         status: statusFilter.value ?? undefined,
@@ -75,40 +81,40 @@ export const useUgcCampaignStore = defineStore('ugcCampaign', () => {
   }
 
   async function fetchCampaign(id: number) {
-    current.value = await ugcCampaignApi.get(requireWorkspaceId(), id)
+    current.value = await ugcCampaignApi.get(await requireWorkspaceId(), id)
     return current.value
   }
 
-  function createCampaign(request: CreateCampaignRequest) {
-    return ugcCampaignApi.create(requireWorkspaceId(), request)
+  async function createCampaign(request: CreateCampaignRequest) {
+    return ugcCampaignApi.create(await requireWorkspaceId(), request)
   }
 
   async function updateCampaign(id: number, request: UpdateCampaignRequest) {
-    const result = await ugcCampaignApi.update(requireWorkspaceId(), id, request)
+    const result = await ugcCampaignApi.update(await requireWorkspaceId(), id, request)
     current.value = result
     return result
   }
 
   async function publish(id: number) {
-    const result = await ugcCampaignApi.publish(requireWorkspaceId(), id)
+    const result = await ugcCampaignApi.publish(await requireWorkspaceId(), id)
     current.value = result
     return result
   }
 
   async function pause(id: number) {
-    const result = await ugcCampaignApi.pause(requireWorkspaceId(), id)
+    const result = await ugcCampaignApi.pause(await requireWorkspaceId(), id)
     current.value = result
     return result
   }
 
   async function complete(id: number) {
-    const result = await ugcCampaignApi.complete(requireWorkspaceId(), id)
+    const result = await ugcCampaignApi.complete(await requireWorkspaceId(), id)
     current.value = result
     return result
   }
 
-  function upsertPlaybook(id: number, request: UpsertPlaybookRequest) {
-    return ugcCampaignApi.upsertPlaybook(requireWorkspaceId(), id, request)
+  async function upsertPlaybook(id: number, request: UpsertPlaybookRequest) {
+    return ugcCampaignApi.upsertPlaybook(await requireWorkspaceId(), id, request)
   }
 
   return {
