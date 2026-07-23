@@ -181,7 +181,7 @@ function handleStart() {
     <!-- Start Button -->
     <button
       :disabled="selectedSteps.length === 0 || !hasEnoughCredits"
-      class="w-full rounded-lg bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:from-primary-700 hover:to-primary-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:from-gray-400 disabled:to-gray-400"
+      class="btn-primary w-full rounded-lg px-6 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
       @click="handleStart"
     >
       <span v-if="!hasEnoughCredits">크레딧 부족</span>

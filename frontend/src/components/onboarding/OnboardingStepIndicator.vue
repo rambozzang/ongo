@@ -39,7 +39,7 @@
   <div class="mt-6 w-full max-w-md mx-auto">
     <div class="h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
       <div
-        class="h-full bg-gradient-to-r from-primary-600 to-purple-600 transition-all duration-500 ease-out"
+        class="h-full bg-primary-600 transition-all duration-500 ease-out"
         :style="{ width: `${progressPercentage}%` }"
       ></div>
     </div>

@@ -13,7 +13,7 @@
     <!-- Recommended badge -->
     <div
       v-if="isRecommended"
-      class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-primary-600 to-purple-600 px-3 py-1 text-xs font-semibold text-white shadow-lg"
+      class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary-600 px-3 py-1 text-xs font-semibold text-white shadow-md"
     >
       {{ t('onboarding.recommended') }}
     </div>

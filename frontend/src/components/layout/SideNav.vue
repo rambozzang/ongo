@@ -1,19 +1,19 @@
 <template>
   <aside
-    class="glass-sidebar flex flex-col transition-all duration-200"
-    :class="collapsed ? 'w-[60px]' : 'w-[240px]'"
+    class="glass-sidebar flex flex-col transition-[width] duration-200"
+    :class="collapsed ? 'w-[68px]' : 'w-[264px]'"
   >
     <!-- Logo -->
-    <div class="flex h-16 items-center border-b border-gray-200 px-4 dark:border-gray-700">
+    <div class="flex h-[72px] items-center border-b px-4" style="border-color: rgba(255,255,255,0.08)">
       <router-link to="/dashboard" class="flex items-center gap-2" @click="emit('navigate')">
-        <span class="text-2xl font-bold text-primary-600">on</span>
-        <span v-if="!collapsed" class="text-2xl font-bold text-gray-900 dark:text-gray-100">Go</span>
+        <span class="text-[1.65rem] font-bold tracking-[-0.08em] text-primary-300">on</span>
+        <span v-if="!collapsed" class="text-[1.65rem] font-bold tracking-[-0.08em] text-white">Go</span>
       </router-link>
       <button
         v-if="!collapsed"
         :aria-label="collapsed ? t('nav.sidebarExpand') : t('nav.sidebarCollapse')"
         :aria-expanded="!collapsed"
-        class="ml-auto hidden rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 desktop:block"
+        class="ml-auto hidden rounded-md p-1.5 text-gray-500 hover:bg-white/10 hover:text-white desktop:block"
         @click="emit('toggle')"
       >
         <ChevronLeftIcon class="h-5 w-5" />
@@ -22,7 +22,7 @@
         v-else
         :aria-label="collapsed ? t('nav.sidebarExpand') : t('nav.sidebarCollapse')"
         :aria-expanded="!collapsed"
-        class="ml-auto hidden rounded p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 desktop:block"
+        class="ml-auto hidden rounded-md p-1.5 text-gray-500 hover:bg-white/10 hover:text-white desktop:block"
         @click="emit('toggle')"
       >
         <ChevronRightIcon class="h-5 w-5" />
@@ -43,12 +43,12 @@
         <template v-if="group.label">
           <div
             v-if="collapsed"
-            class="mx-2 my-2 border-t border-gray-200 dark:border-gray-700"
+            class="sidebar-divider mx-2 my-2 border-t"
             aria-hidden="true"
           />
           <div
             v-else
-            class="mb-1 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500"
+            class="sidebar-label mb-1 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em]"
           >
             {{ group.label }}
           </div>
@@ -62,8 +62,8 @@
           role="menuitem"
           :aria-label="item.label"
           :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
-          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-          active-class="!bg-primary-50 !text-primary-700 dark:!bg-primary-900/30 dark:!text-primary-400"
+          class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+          active-class="nav-link-active"
           @click="emit('navigate')"
         >
           <component :is="item.icon" class="h-5 w-5 shrink-0" :aria-hidden="true" />
@@ -74,7 +74,7 @@
         <template v-if="!collapsed && group.subGroups">
           <div v-for="sub in group.subGroups" :key="sub.key" class="mt-0.5">
             <button
-              class="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              class="nav-link flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
               @click="toggleSubGroup(sub.key)"
             >
               <ChevronRightIcon
@@ -84,7 +84,7 @@
               <span>{{ sub.label }}</span>
               <span class="ml-auto text-[10px] text-gray-300 dark:text-gray-600">{{ sub.items.length }}</span>
             </button>
-            <div v-if="expandedSubGroups.has(sub.key)" class="ml-2 border-l border-gray-200 pl-1 dark:border-gray-700">
+            <div v-if="expandedSubGroups.has(sub.key)" class="ml-2 border-l border-white/10 pl-1">
               <router-link
                 v-for="item in sub.items"
                 :key="item.to"
@@ -92,8 +92,8 @@
                 role="menuitem"
                 :aria-label="item.label"
                 :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
-                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-                active-class="!bg-primary-50 !text-primary-700 dark:!bg-primary-900/30 dark:!text-primary-400"
+                class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+                active-class="nav-link-active"
                 @click="emit('navigate')"
               >
                 <component :is="item.icon" class="h-4 w-4 shrink-0" :aria-hidden="true" />
@@ -113,8 +113,8 @@
               role="menuitem"
               :aria-label="item.label"
               :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
-              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-              active-class="!bg-primary-50 !text-primary-700 dark:!bg-primary-900/30 dark:!text-primary-400"
+              class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+              active-class="nav-link-active"
               @click="emit('navigate')"
             >
               <component :is="item.icon" class="h-5 w-5 shrink-0" :aria-hidden="true" />
@@ -123,7 +123,7 @@
         </template>
       </div>
 
-      <div class="my-3 border-t border-gray-200 dark:border-gray-700" role="separator" aria-hidden="true" />
+      <div class="sidebar-divider my-3 border-t" role="separator" aria-hidden="true" />
 
       <router-link
         v-for="item in bottomNavItems"
@@ -132,8 +132,8 @@
         role="menuitem"
         :aria-label="item.label"
         :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-        active-class="!bg-primary-50 !text-primary-700 dark:!bg-primary-900/30 dark:!text-primary-400"
+        class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+        active-class="nav-link-active"
         @click="emit('navigate')"
       >
         <component :is="item.icon" class="h-5 w-5 shrink-0" :aria-hidden="true" />

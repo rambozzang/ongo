@@ -1,13 +1,13 @@
 <template>
-  <div class="px-6 pb-8 pt-4">
+  <div class="page-frame pb-10 pt-1">
     <!-- Personalized Header -->
     <div class="mb-8">
       <div class="flex items-start justify-between">
         <div class="flex-1">
-          <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+          <h1 class="text-[2rem] font-bold tracking-[-0.04em] text-gray-900 dark:text-gray-100">
             {{ greeting }}, {{ userName }}님!
           </h1>
-          <p class="mt-2 text-base font-medium text-gray-500 dark:text-gray-400">
+        <p class="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
             <span v-if="todayScheduleCount > 0">
               {{ $t('dashboard.scheduledToday', { count: todayScheduleCount }) }}
             </span>

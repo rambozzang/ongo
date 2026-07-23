@@ -1,5 +1,5 @@
 <template>
-  <header class="flex h-16 shrink-0 items-center border-b border-gray-200 bg-white/80 backdrop-blur-xl px-4 dark:border-gray-700 dark:bg-gray-900/80 tablet:px-6">
+  <header class="flex h-[72px] shrink-0 items-center border-b bg-white px-4 dark:bg-gray-900 tablet:px-7" style="border-color: var(--border-default)">
     <!-- Mobile menu toggle -->
     <button
       aria-label="메뉴 열기"
@@ -11,18 +11,18 @@
 
     <!-- Logo (mobile only) -->
     <router-link to="/dashboard" class="mr-4 tablet:hidden">
-      <span class="text-xl font-bold text-primary-600">onGo</span>
+      <span class="text-xl font-bold tracking-[-0.06em] text-primary-600">onGo</span>
     </router-link>
 
     <!-- Search Trigger -->
     <button
       aria-label="검색 열기 (단축키: Command+K)"
-      class="relative mx-4 hidden flex-1 items-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-2 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-700 tablet:flex tablet:max-w-md"
+      class="relative mx-4 hidden min-h-10 flex-1 items-center gap-3 rounded-lg border bg-gray-50 px-3.5 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-white dark:bg-gray-800 dark:text-gray-400 tablet:flex tablet:max-w-xl"
       @click="searchOpen = true"
     >
       <MagnifyingGlassIcon class="h-5 w-5 flex-shrink-0" aria-hidden="true" />
       <span class="flex-1">검색</span>
-      <kbd class="inline-flex h-5 items-center rounded border border-gray-300 bg-gray-100 px-2 font-mono text-xs font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300" aria-hidden="true">
+        <kbd class="inline-flex h-6 items-center rounded border border-gray-300 bg-white px-2 font-mono text-[11px] font-semibold text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300" aria-hidden="true">
         ⌘K
       </kbd>
     </button>
@@ -43,13 +43,13 @@
           :aria-label="getNotificationButtonLabel()"
           :aria-expanded="notificationOpen"
           aria-haspopup="dialog"
-          class="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+          class="relative rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
           @click="notificationOpen = !notificationOpen"
         >
           <BellIcon class="h-6 w-6" :class="{ 'notification-bell-pulse': notificationStore.hasUnread }" aria-hidden="true" />
           <span
             v-if="notificationStore.unreadCount > 0"
-            class="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white"
+            class="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
             aria-hidden="true"
           >
             {{ notificationStore.unreadCount > 9 ? '9+' : notificationStore.unreadCount }}
@@ -67,7 +67,7 @@
           class="flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
           @click="profileOpen = !profileOpen"
         >
-          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-medium text-primary-600 dark:bg-primary-900/30 dark:text-primary-400" aria-hidden="true">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-sm font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300" aria-hidden="true">
             {{ userInitial }}
           </div>
           <ChevronDownIcon class="hidden h-4 w-4 text-gray-400 tablet:block" aria-hidden="true" />
@@ -78,7 +78,8 @@
           v-if="profileOpen"
           role="menu"
           aria-label="프로필 메뉴"
-          class="absolute right-0 top-full z-50 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white py-2 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+            class="absolute right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border bg-white py-2 shadow-lg dark:bg-gray-800"
+            style="border-color: var(--border-default)"
         >
           <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-700">
             <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ user?.nickname || user?.name }}</p>

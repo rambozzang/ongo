@@ -27,7 +27,8 @@
         >
           <div
             v-if="isOpen"
-            class="w-full max-w-[560px] overflow-hidden rounded-xl border border-gray-200/50 bg-white/80 shadow-2xl backdrop-blur-xl dark:border-gray-700/50 dark:bg-gray-900/80"
+        class="w-full max-w-[560px] overflow-hidden rounded-xl border bg-white shadow-2xl dark:bg-gray-900"
+        style="border-color: var(--border-default)"
             @click.stop
           >
             <!-- Search Input -->

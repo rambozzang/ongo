@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
+  <div class="app-shell flex h-screen overflow-hidden">
     <!-- Offline Indicator (before everything) -->
     <OfflineIndicator />
 
@@ -29,20 +29,22 @@
     />
 
     <!-- Main content -->
-    <div class="flex flex-1 flex-col overflow-hidden" role="main">
+    <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
       <TopBar
         @toggle-menu="mobileMenuOpen = !mobileMenuOpen"
       />
       <Breadcrumb role="navigation" aria-label="Breadcrumb" />
 
-      <main id="main-content" class="flex-1 overflow-y-auto p-4 tablet:p-6 pb-20 tablet:pb-6">
-        <router-view v-slot="{ Component, route }">
-          <Transition name="page-fade" mode="out-in">
-            <ErrorBoundary :key="route.path">
-              <component :is="Component" />
-            </ErrorBoundary>
-          </Transition>
-        </router-view>
+      <main id="main-content" class="app-main flex-1 overflow-y-auto px-4 pb-20 tablet:px-7 tablet:pb-8">
+        <div class="page-frame">
+          <router-view v-slot="{ Component, route }">
+            <Transition name="page-fade" mode="out-in">
+              <ErrorBoundary :key="route.path">
+                <component :is="Component" />
+              </ErrorBoundary>
+            </Transition>
+          </router-view>
+        </div>
       </main>
     </div>
 

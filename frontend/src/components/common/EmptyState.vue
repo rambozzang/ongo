@@ -1,10 +1,10 @@
 <template>
   <div
-    class="flex animate-fade-in flex-col items-center justify-center py-12 text-center"
+    class="flex animate-fade-in flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 px-6 py-14 text-center dark:border-gray-700"
     :class="variant === 'compact' ? 'py-8' : 'py-12'"
   >
     <div
-      class="mb-4 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+      class="mb-4 flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800"
       :class="variant === 'compact' ? 'h-12 w-12' : 'h-16 w-16'"
     >
       <component

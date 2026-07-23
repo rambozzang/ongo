@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-5 px-4 pb-6">
+  <div class="page-frame space-y-5 pb-6">
     <!-- Compact Greeting Header -->
     <div class="flex items-center justify-between pt-2">
       <div class="flex items-center gap-2">

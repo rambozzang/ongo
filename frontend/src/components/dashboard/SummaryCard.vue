@@ -8,13 +8,13 @@
     <div class="flex items-center justify-between">
       <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ title }}</p>
       <div
-        class="flex h-10 w-10 items-center justify-center rounded-lg"
+        class="flex h-9 w-9 items-center justify-center rounded-lg"
         :class="iconBgClass"
       >
         <component :is="icon" class="h-5 w-5" :class="iconColorClass" />
       </div>
     </div>
-    <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">{{ formattedValue }}</p>
+    <p class="mt-3 text-[1.75rem] font-bold tracking-[-0.04em] text-gray-900 dark:text-gray-100">{{ formattedValue }}</p>
     <div v-if="change !== undefined" class="mt-1 flex items-center gap-1 text-sm">
       <span :class="changeColor">
         {{ changeIcon }}{{ Math.abs(change) }}{{ changeType === 'percent' ? '%' : '' }}

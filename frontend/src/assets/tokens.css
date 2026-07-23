@@ -1,74 +1,74 @@
 :root {
-  /* Surface */
+  /* onGo / Studio control room palette */
   --surface-primary: #ffffff;
-  --surface-secondary: #f9fafb;
-  --surface-tertiary: #f3f4f6;
+  --surface-secondary: #f5f6fa;
+  --surface-tertiary: #eceef5;
   --surface-elevated: #ffffff;
-  --surface-overlay: rgba(0, 0, 0, 0.5);
+  --surface-overlay: rgba(17, 19, 31, 0.56);
+  --surface-sidebar: #181a27;
+  --surface-sidebar-raised: #232638;
 
-  /* Text */
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
+  --text-primary: #181a27;
+  --text-secondary: #646979;
+  --text-tertiary: #9499a8;
   --text-inverse: #ffffff;
-  --text-link: #7c3aed;
+  --text-link: #5659d6;
 
-  /* Border */
-  --border-default: #e5e7eb;
-  --border-hover: #d1d5db;
-  --border-focus: #8b5cf6;
+  --border-default: #e1e3eb;
+  --border-hover: #c9cdd9;
+  --border-focus: #696de8;
 
-  /* Accent */
-  --accent-primary: #7c3aed;
-  --accent-primary-hover: #6d28d9;
-  --accent-primary-subtle: #ede9fe;
+  --accent-primary: #5659d6;
+  --accent-primary-hover: #4548bd;
+  --accent-primary-subtle: #eef0ff;
 
-  /* Semantic */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
+  --color-success: #159b74;
+  --color-warning: #bd7616;
+  --color-error: #c94b58;
+  --color-info: #3d76c9;
 
-  /* Elevation */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-xs: 0 1px 2px rgba(24, 26, 39, 0.04);
+  --shadow-sm: 0 2px 6px rgba(24, 26, 39, 0.06);
+  --shadow-md: 0 8px 20px rgba(24, 26, 39, 0.08);
+  --shadow-lg: 0 16px 36px rgba(24, 26, 39, 0.12);
+  --shadow-float: 0 24px 56px rgba(24, 26, 39, 0.18);
 
-  /* Radius */
   --radius-sm: 6px;
   --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
   --radius-full: 9999px;
 
-  /* Transition */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-fast: 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --transition-slow: 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .dark {
-  --surface-primary: #0f172a;
-  --surface-secondary: #1e293b;
-  --surface-tertiary: #334155;
-  --surface-elevated: #1e293b;
-  --surface-overlay: rgba(0, 0, 0, 0.7);
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
-  --text-link: #a78bfa;
-  --border-default: #334155;
-  --border-hover: #475569;
-  --border-focus: #a78bfa;
-  --accent-primary: #a78bfa;
-  --accent-primary-hover: #8b5cf6;
-  --accent-primary-subtle: rgba(124, 58, 237, 0.15);
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-  --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+  --surface-primary: #202330;
+  --surface-secondary: #151722;
+  --surface-tertiary: #2b2f40;
+  --surface-elevated: #282c3c;
+  --surface-overlay: rgba(0, 0, 0, 0.72);
+  --surface-sidebar: #11131d;
+  --surface-sidebar-raised: #1c1f2d;
+  --text-primary: #f4f5fa;
+  --text-secondary: #a8adbd;
+  --text-tertiary: #747a8e;
+  --text-link: #9da1ff;
+  --border-default: #373b4c;
+  --border-hover: #4a5064;
+  --border-focus: #9da1ff;
+  --accent-primary: #8589f1;
+  --accent-primary-hover: #9da1ff;
+  --accent-primary-subtle: rgba(105, 109, 232, 0.16);
+  --color-success: #43c79b;
+  --color-warning: #e3a048;
+  --color-error: #ed7881;
+  --color-info: #79a9ef;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.34);
+  --shadow-float: 0 24px 56px rgba(0, 0, 0, 0.42);
 }

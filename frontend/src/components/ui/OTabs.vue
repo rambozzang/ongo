@@ -4,7 +4,7 @@
       ref="tablistRef"
       role="tablist"
       :aria-label="ariaLabel"
-      class="flex gap-1"
+      class="flex gap-1 overflow-x-auto"
       :class="variant === 'line' ? 'border-b border-gray-200 dark:border-gray-700' : ''"
       @keydown="handleKeydown"
     >
@@ -17,7 +17,7 @@
         :aria-selected="modelValue === tab.key"
         :aria-controls="`${tabsId}-panel-${tab.key}`"
         :tabindex="modelValue === tab.key ? 0 : -1"
-        class="relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset"
+        class="relative inline-flex min-h-11 shrink-0 items-center gap-2 px-1.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset tablet:px-2"
         :class="getTabClass(tab.key)"
         @click="selectTab(tab.key)"
       >
@@ -38,7 +38,7 @@
         </span>
         <div
           v-if="variant === 'line' && modelValue === tab.key"
-          class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-primary-400"
+          class="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-primary-600 dark:bg-primary-400"
           style="animation: slideIn 0.2s ease-out"
           aria-hidden="true"
         />

@@ -18,13 +18,13 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['vite.svg'],
+      includeAssets: ['icons/icon.svg'],
       manifest: {
         name: 'onGo - 크리에이터 멀티 플랫폼 관리',
         short_name: 'onGo',
         description: '영상 크리에이터를 위한 멀티 플랫폼 관리 도구',
-        theme_color: '#7c3aed',
-        background_color: '#ffffff',
+        theme_color: '#181a27',
+        background_color: '#f5f6fa',
         display: 'standalone',
         orientation: 'portrait-primary',
         scope: '/',

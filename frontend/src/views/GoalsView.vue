@@ -379,7 +379,7 @@ const formatNumber = (value: number): string => {
                     </div>
                     <div class="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
-                        class="h-full bg-gradient-to-r from-blue-500 to-purple-500 dark:from-blue-400 dark:to-purple-400 transition-all duration-500 rounded-full"
+                        class="h-full bg-primary-600 transition-all duration-500 rounded-full"
                         :style="{ width: `${Math.min((viewingGoal.currentValue / viewingGoal.targetValue) * 100, 100)}%` }"
                       ></div>
                     </div>

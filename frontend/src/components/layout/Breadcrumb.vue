@@ -74,6 +74,20 @@ const routeLabels: Record<string, string> = {
   channels: '채널 관리',
   subscription: '구독 관리',
   settings: '설정',
+  comments: '댓글 관리',
+  competitor: '경쟁 채널',
+  'channel-audit': '채널 진단',
+  'keyword-research': '키워드 리서치',
+  'activity-log': '활동 기록',
+  'ugc-campaigns': 'UGC 캠페인',
+  'ugc-campaign-new': '캠페인 만들기',
+  'ugc-campaign-detail': '캠페인 상세',
+  'creator-campaigns': '참여 캠페인',
+  ideas: '아이디어 보관함',
+  inbox: '받은 편지함',
+  notifications: '알림',
+  brandkit: '브랜드 키트',
+  templates: '템플릿',
 }
 
 // Build breadcrumbs from current route
@@ -140,7 +154,7 @@ const currentPageLabel = computed(() => {
 
 <style scoped>
 .breadcrumb-container {
-  @apply px-4 py-3 tablet:px-6 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900;
+  @apply px-4 py-4 tablet:px-7;
   animation: slideDown 0.2s ease-out;
 }
 

@@ -21,7 +21,7 @@
         @keydown.escape="close"
       >
         <!-- Header -->
-        <div class="flex-shrink-0 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-primary-100 px-6 py-4 dark:border-gray-700 dark:from-gray-800 dark:to-gray-900">
+        <div class="flex-shrink-0 border-b border-gray-200 bg-primary-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-primary-600 p-2">
@@ -53,7 +53,7 @@
             </div>
             <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
               <div
-                class="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-300"
+                class="h-full rounded-full bg-primary-600 transition-all duration-300"
                 :style="{ width: `${queueStore.overallProgress}%` }"
               />
             </div>

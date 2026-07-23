@@ -103,16 +103,7 @@ function onRegenerate() {
 <style scoped>
 /* Gradient border accent */
 .ai-result-gradient {
-  border-left-color: transparent;
-  background-image: linear-gradient(to right, white, white),
-    linear-gradient(to bottom, #7c3aed, #8b5cf6, #a78bfa);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-}
-
-.dark .ai-result-gradient {
-  background-image: linear-gradient(to right, rgb(31 41 55), rgb(31 41 55)),
-    linear-gradient(to bottom, #7c3aed, #8b5cf6, #a78bfa);
+  border-left: 3px solid #696de8;
 }
 
 /* Item stagger animations */
