@@ -30,7 +30,7 @@
       </li>
     </ol>
 
-    <div class="grid gap-5 desktop:grid-cols-[minmax(0,1fr)_280px]">
+    <div class="page-grid page-grid--split">
       <div class="card space-y-5">
       <!-- Step 1: 기본 정보 -->
       <template v-if="step === 1">

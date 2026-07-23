@@ -109,7 +109,7 @@ function formatNumber(num: number): string {
       <PageGuide :title="$t('competitor.pageGuideTitle')" :items="($tm('competitor.pageGuide') as string[])" />
 
         <!-- Overview Cards -->
-        <div class="grid grid-cols-1 mobile:grid-cols-2 desktop:grid-cols-4 gap-4">
+        <div class="page-grid page-grid--metrics">
           <!-- Tracked channels -->
           <div class="card">
             <div class="flex items-center justify-between mb-2">
@@ -185,7 +185,7 @@ function formatNumber(num: number): string {
           </div>
           <div
             v-else
-            class="grid grid-cols-1 tablet:grid-cols-2 desktop:grid-cols-3 gap-4"
+            class="page-grid page-grid--cards"
           >
             <CompetitorCard
               v-for="competitor in competitorStore.competitors"
@@ -280,7 +280,7 @@ function formatNumber(num: number): string {
           <div v-if="competitorStore.aiInsight" class="space-y-4">
             <p class="text-gray-700 dark:text-gray-300">{{ competitorStore.aiInsight.summary }}</p>
 
-            <div class="grid grid-cols-1 tablet:grid-cols-2 gap-4">
+            <div class="page-grid page-grid--split">
               <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
                 <h3 class="font-medium text-green-800 dark:text-green-300 mb-2">{{ $t('competitor.strengths') }}</h3>
                 <ul class="space-y-1 text-sm text-green-700 dark:text-green-400">

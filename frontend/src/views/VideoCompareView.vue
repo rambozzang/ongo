@@ -5,7 +5,7 @@
     <PageGuide :title="$t('videoCompare.pageGuideTitle')" :items="($tm('videoCompare.pageGuide') as string[])" />
 
     <!-- Video Selectors -->
-    <div class="mb-6 grid gap-4 desktop:grid-cols-2">
+    <div class="page-grid page-grid--split mb-6">
       <!-- Video A Selector -->
       <div class="card">
         <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -180,7 +180,7 @@
       </div>
 
       <!-- Performance Difference Cards -->
-      <div class="mb-6 grid gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
+      <div class="page-grid page-grid--metrics mb-6">
         <MetricDifferenceCard
           :title="$t('videoCompare.views')"
           :value-a="selectedVideoA.totalViews"

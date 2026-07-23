@@ -113,7 +113,7 @@ onMounted(() => {
     <PageGuide :title="$t('activityLog.pageGuideTitle')" :items="($tm('activityLog.pageGuide') as string[])" />
 
     <!-- Today's activity summary cards -->
-    <div class="mb-6 grid grid-cols-2 gap-3 tablet:grid-cols-3 desktop:grid-cols-6">
+    <div class="page-grid page-grid--dense mb-6">
       <div
         v-for="card in summaryCards"
         :key="card.key"

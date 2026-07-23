@@ -39,7 +39,7 @@
       </PageHeader>
 
       <!-- Meta -->
-      <div class="card mb-4 grid grid-cols-2 gap-4 mobile:grid-cols-4">
+      <div class="page-grid page-grid--metrics card mb-4">
         <div>
           <p class="text-xs text-gray-400">{{ $t('ugc.fieldObjective') }}</p>
           <p class="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100">{{ campaign.objective }}</p>

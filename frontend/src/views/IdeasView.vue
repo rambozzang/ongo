@@ -58,7 +58,7 @@
     </div>
 
     <!-- Kanban Board -->
-    <div class="grid grid-cols-1 tablet:grid-cols-2 desktop:grid-cols-4 gap-6 h-[calc(100vh-16rem)]">
+    <div class="page-grid page-grid--dense h-[calc(100vh-16rem)]">
       <IdeaColumn
         :title="$t('ideas.columns.idea')"
         status="idea"

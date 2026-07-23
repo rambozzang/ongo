@@ -32,7 +32,7 @@ title="영상 상세" :items="[
 
     <template v-else>
       <!-- Video Preview + Basic Info -->
-      <div class="mb-6 grid gap-6 desktop:grid-cols-3">
+      <div class="page-grid page-grid--wide mb-6">
         <!-- Video Preview (thumbnail placeholder) -->
         <div class="desktop:col-span-1">
           <div class="card overflow-hidden p-0">
@@ -186,7 +186,7 @@ title="영상 상세" :items="[
         </div>
 
         <!-- Performance Cards -->
-        <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">
+        <div class="page-grid page-grid--metrics mb-6">
           <!-- Views -->
           <div class="card text-center">
             <EyeIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
@@ -243,7 +243,7 @@ title="영상 상세" :items="[
         </div>
 
         <!-- Charts Row -->
-        <div class="mb-6 grid gap-6 desktop:grid-cols-2">
+        <div class="page-grid page-grid--split mb-6">
           <!-- Daily Views Trend Line Chart Placeholder -->
           <div class="card">
             <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">일별 조회수 추이</h3>

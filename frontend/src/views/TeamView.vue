@@ -145,7 +145,7 @@ watch(activeTab, (tab) => {
     <PageGuide :title="$t('team.pageGuideTitle')" :items="($tm('team.pageGuide') as string[])" />
 
     <!-- Stats -->
-    <div class="mb-6 grid grid-cols-2 gap-4 mobile:grid-cols-4">
+    <div class="page-grid page-grid--metrics mb-6">
       <div class="card">
         <div class="flex items-center">
           <UserGroupIcon class="h-8 w-8 text-primary-600 dark:text-primary-400" />
@@ -225,7 +225,7 @@ watch(activeTab, (tab) => {
           </div>
 
           <!-- Members Grid -->
-          <div class="grid gap-4 mobile:grid-cols-2 desktop:grid-cols-3">
+          <div class="page-grid page-grid--cards">
             <TeamMemberCard
               v-for="member in teamStore.members"
               :key="member.id"
@@ -348,7 +348,7 @@ watch(activeTab, (tab) => {
           </div>
 
           <!-- My Tasks & Pending Reviews -->
-          <div class="grid gap-6 desktop:grid-cols-2">
+          <div class="page-grid page-grid--split">
             <!-- 내 작업 -->
             <div class="card">
               <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">

@@ -11,7 +11,7 @@
       {{ $t('ugc.noSubmissions') }}
     </div>
 
-    <div v-else class="grid grid-cols-1 gap-4 desktop:grid-cols-2">
+    <div v-else class="page-grid page-grid--split">
       <!-- List -->
       <div class="space-y-3">
         <button

@@ -37,7 +37,7 @@
     <PageGuide :title="$t('linkBioView.pageGuideTitle')" :items="($tm('linkBioView.pageGuide') as string[])" />
 
     <!-- Stats Bar -->
-    <div class="mb-6 grid grid-cols-3 gap-4">
+    <div class="page-grid page-grid--cards mb-6">
       <div class="card p-3">
         <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.totalViews') }}</div>
         <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">

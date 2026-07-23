@@ -124,7 +124,7 @@
     />
 
     <!-- Summary Cards (Desktop) -->
-    <div class="mb-8 grid grid-cols-4 gap-6">
+    <div class="page-grid page-grid--metrics mb-8">
       <div class="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
         <div class="flex items-center justify-between">
           <div>
@@ -183,7 +183,7 @@
     <div class="mt-6">
       <!-- Active Tests -->
       <div v-if="activeTab === 'active'">
-        <div v-if="activeTests.length > 0" class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div v-if="activeTests.length > 0" class="page-grid page-grid--split">
           <AbTestCard
             v-for="test in activeTests"
             :key="test.id"
@@ -212,7 +212,7 @@
 
       <!-- Completed Tests -->
       <div v-if="activeTab === 'completed'">
-        <div v-if="completedTests.length > 0" class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <div v-if="completedTests.length > 0" class="page-grid page-grid--split">
           <AbTestCard
             v-for="test in completedTests"
             :key="test.id"

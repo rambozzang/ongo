@@ -142,7 +142,7 @@ const handleCloseModal = () => {
     <!-- Templates Grid -->
     <div
       v-if="filteredTemplates.length > 0"
-      class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3"
+      class="page-grid page-grid--cards"
     >
       <TemplateCard
         v-for="template in filteredTemplates"

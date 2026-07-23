@@ -34,7 +34,7 @@
     <!-- Channels Overview -->
     <div v-else>
       <!-- Summary Section -->
-      <div class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
+      <div class="page-grid page-grid--metrics mb-6">
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
@@ -108,7 +108,7 @@
       </div>
 
       <!-- Channel Health Cards Grid -->
-      <div class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
+      <div class="page-grid page-grid--cards">
         <ChannelHealthCard
           v-for="channel in channels"
           :key="channel.id"

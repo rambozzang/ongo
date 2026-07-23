@@ -31,7 +31,7 @@
       <!-- AI Tools Tab -->
       <div v-show="activeTab === 'tools'">
         <!-- AI Tool Cards Grid -->
-    <div class="grid gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
+    <div class="page-grid page-grid--cards">
       <div
         v-for="tool in aiTools"
         :key="tool.id"

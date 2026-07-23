@@ -136,7 +136,7 @@ onMounted(() => {
     <PageGuide :title="$t('recycling.pageGuideTitle')" :items="($tm('recycling.pageGuide') as string[])" />
 
     <!-- Stats Cards -->
-    <div class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-3">
+    <div class="page-grid page-grid--cards mb-6">
       <div class="card">
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
@@ -181,7 +181,7 @@ onMounted(() => {
 
     <!-- Queues Tab -->
     <div v-if="activeTab === 'queues'">
-      <div v-if="sortedQueues.length > 0" class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
+      <div v-if="sortedQueues.length > 0" class="page-grid page-grid--cards">
         <RecyclingQueueCard
           v-for="queue in sortedQueues"
           :key="queue.id"

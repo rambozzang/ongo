@@ -129,7 +129,7 @@
         {{ $t('audience.segment.empty') }}
       </div>
 
-      <div v-else class="grid gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
+      <div v-else class="page-grid page-grid--cards">
         <div
           v-for="segment in store.segments"
           :key="segment.id"

@@ -56,6 +56,89 @@
     margin-inline: auto;
   }
 
+  /* Page layout primitives: every workspace page uses one of these structures. */
+  .page-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .page-grid {
+    display: grid;
+    gap: 24px;
+  }
+
+  .page-grid--metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .page-grid--cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .page-grid--split {
+    grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.9fr);
+  }
+
+  .page-grid--feature {
+    grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+  }
+
+  .page-grid--wide {
+    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+  }
+
+  .page-grid--dense {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .section-heading {
+    @apply flex items-end justify-between gap-4;
+  }
+
+  .section-heading h2,
+  .section-heading h3 {
+    @apply font-semibold tracking-[-0.02em];
+    color: var(--text-primary);
+  }
+
+  .section-heading p {
+    @apply mt-1 text-sm leading-5;
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 1279px) {
+    .page-grid--metrics,
+    .page-grid--dense {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .page-grid--cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .page-grid--split,
+    .page-grid--feature,
+    .page-grid--wide {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .page-stack,
+    .page-grid {
+      gap: 16px;
+    }
+
+    .page-grid--cards,
+    .page-grid--metrics,
+    .page-grid--dense {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .page-header {
     @apply mb-7 flex flex-col gap-4 tablet:flex-row tablet:items-end tablet:justify-between;
   }

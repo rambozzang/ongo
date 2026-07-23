@@ -155,7 +155,7 @@ const formatNumber = (value: number): string => {
     <div class="mt-6">
 
       <!-- Stats Overview -->
-      <div class="grid grid-cols-2 desktop:grid-cols-4 gap-4 mb-8">
+      <div class="page-grid page-grid--metrics mb-8">
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
@@ -272,7 +272,7 @@ const formatNumber = (value: number): string => {
       </div>
 
       <!-- Goals Grid -->
-      <div v-if="displayedGoals.length > 0" class="grid grid-cols-1 desktop:grid-cols-2 gap-6">
+      <div v-if="displayedGoals.length > 0" class="page-grid page-grid--split">
         <GoalCard
           v-for="goal in displayedGoals"
           :key="goal.id"

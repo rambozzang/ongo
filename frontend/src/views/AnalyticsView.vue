@@ -53,7 +53,7 @@
         <!-- 플랫폼 순위 -->
         <div v-if="Object.keys(analyticsStore.crossPlatformData.platformRankings).length > 0" class="card">
           <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.platformRankings') }}</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="page-grid page-grid--dense">
             <div
               v-for="(ranking, platform) in analyticsStore.crossPlatformData.platformRankings"
               :key="platform"
@@ -216,7 +216,7 @@
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $t('analyticsView.deepAnalyticsLoading') }}</p>
       </div>
       <template v-else>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="page-grid page-grid--split">
           <TrafficSourceChart :data="analyticsStore.trafficSources" />
           <DemographicsChart :data="analyticsStore.demographics" />
         </div>
@@ -243,7 +243,7 @@
 
     <template v-else>
       <!-- KPI Summary Cards -->
-      <div class="mb-6 grid grid-cols-2 gap-4 desktop:grid-cols-4">
+      <div class="page-grid page-grid--metrics mb-6">
         <SummaryCard
           :title="$t('analyticsView.totalViews')"
           :value="kpi?.totalViews ?? 0"
@@ -274,7 +274,7 @@
       </div>
 
       <!-- Views Trend + Platform Comparison -->
-      <div class="mb-6 grid gap-6 desktop:grid-cols-3">
+      <div class="page-grid page-grid--wide mb-6">
         <!-- Views Trend Line Chart -->
         <div class="card desktop:col-span-2">
           <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.viewsTrend') }}</h2>
@@ -418,7 +418,7 @@
       </div>
 
       <!-- Best Posting Time Section -->
-      <div class="mb-6 grid gap-6 desktop:grid-cols-3">
+      <div class="page-grid page-grid--wide mb-6">
         <!-- Posting Time Heatmap -->
         <div class="card desktop:col-span-2">
           <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.bestPostingTime') }}</h2>
@@ -582,7 +582,7 @@
       <!-- Hashtag Analytics Section -->
       <div class="card mb-6">
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.hashtagAnalysis') }}</h2>
-        <div class="grid gap-6 desktop:grid-cols-2">
+        <div class="page-grid page-grid--split">
           <div>
             <h3 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('analyticsView.tagCloud') }}</h3>
             <TagCloud :tags="tagData" :selected-tag="selectedTag" @tag-click="handleTagClick" />

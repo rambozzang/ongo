@@ -177,7 +177,7 @@ function handleCloseDeliveryLog() {
     <!-- Main content -->
     <div v-else>
       <!-- Summary cards -->
-      <div class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-3">
+      <div class="page-grid page-grid--cards mb-6">
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
@@ -241,7 +241,7 @@ function handleCloseDeliveryLog() {
       </div>
 
       <!-- Webhook cards grid -->
-      <div class="mb-6 grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
+      <div class="page-grid page-grid--cards mb-6">
         <WebhookCard
           v-for="webhook in webhooks"
           :key="webhook.id"

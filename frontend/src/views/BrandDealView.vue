@@ -43,7 +43,7 @@
       </div>
 
       <!-- 딜 카드 목록 -->
-      <div v-else class="grid gap-4 mobile:grid-cols-2 desktop:grid-cols-3">
+      <div v-else class="page-grid page-grid--cards">
         <div
           v-for="deal in store.deals"
           :key="deal.id"

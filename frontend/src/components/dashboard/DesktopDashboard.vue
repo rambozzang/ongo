@@ -62,7 +62,7 @@
         <TransitionGroup name="widget-list">
           <template v-for="widget in visibleWidgets" :key="widget.id">
             <!-- Summary Cards Widget -->
-            <div v-if="widget.id === 'summary'" class="grid grid-cols-2 gap-4 desktop:grid-cols-4">
+            <div v-if="widget.id === 'summary'" class="page-grid page-grid--metrics">
               <SummaryCard
                 :title="$t('dashboard.totalViews')"
                 :value="kpi?.totalViews ?? 0"
@@ -103,7 +103,7 @@
             </div>
 
             <!-- AI Weekly Digest Widget -->
-            <div v-else-if="widget.id === 'weeklyDigest'" class="grid grid-cols-1 gap-4 desktop:grid-cols-2">
+            <div v-else-if="widget.id === 'weeklyDigest'" class="page-grid page-grid--split">
               <WeeklyDigestCard />
               <ContentGapCard />
             </div>
@@ -136,7 +136,7 @@
             />
 
             <!-- Mini Widgets Grid -->
-            <div v-else-if="widget.id === 'miniWidgets'" class="grid grid-cols-2 gap-4 desktop:grid-cols-4">
+            <div v-else-if="widget.id === 'miniWidgets'" class="page-grid page-grid--metrics">
               <AudienceGrowthWidget
                 :total-subscribers="kpi?.totalSubscribers ?? 0"
                 :change="kpi?.subscribersChange"

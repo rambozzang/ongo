@@ -90,7 +90,7 @@
         </div>
 
         <!-- Summary Cards -->
-        <div class="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
+        <div class="page-grid page-grid--metrics">
           <!-- Total Revenue -->
           <div class="card border-t-4 border-primary-600">
             <div class="flex items-start justify-between">
@@ -187,7 +187,7 @@
         </div>
 
         <!-- Platform Breakdown & Bar Chart -->
-        <div class="grid grid-cols-1 gap-6 desktop:grid-cols-2">
+        <div class="page-grid page-grid--split">
           <!-- Platform Breakdown Doughnut -->
           <div class="card">
             <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">

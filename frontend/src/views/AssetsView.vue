@@ -397,7 +397,7 @@ title="에셋 라이브러리" :items="[
         <!-- Grid View -->
         <div
           v-else-if="viewMode === 'grid'"
-          class="grid grid-cols-1 gap-4 mobile:grid-cols-2 desktop:grid-cols-3 xl:grid-cols-4"
+          class="page-grid page-grid--cards"
         >
           <AssetCard
             v-for="asset in filteredAssets"
