@@ -8,155 +8,227 @@
     <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
     <!-- 팬 프로필 탭 -->
+    <!-- NOTE: 프로필은 서버 정렬 + 서버 페이지네이션(20건씩)이라 클라이언트 검색·선택 패턴을
+         적용하지 않는다. 현재 페이지만 훑는 검색은 "없음"을 잘못 알려주기 때문이다. -->
     <div v-if="activeTab === 'profiles'">
       <div class="mb-4 flex gap-3">
-        <select v-model="sortBy" class="input-field" @change="loadProfiles">
+        <select v-model="sortBy" class="input-field w-auto min-w-[8.5rem]" :aria-label="$t('list.sortLabel')" @change="loadProfiles">
           <option value="engagement_score">{{ $t('audience.sort.engagementScore') }}</option>
           <option value="total_interactions">{{ $t('audience.sort.totalInteractions') }}</option>
           <option value="last_seen_at">{{ $t('audience.sort.lastSeenAt') }}</option>
         </select>
       </div>
 
-      <div v-if="store.loading" class="text-center py-12 text-gray-400">
-        {{ $t('audience.loading') }}
-      </div>
-
-      <div v-else-if="store.profiles.length === 0" class="text-center py-12 text-gray-400">
-        {{ $t('audience.emptyProfiles') }}
-      </div>
-
-      <div v-else class="card overflow-hidden !p-0">
-        <table class="w-full text-body">
-          <thead class="bg-gray-50 dark:bg-gray-900">
-            <tr>
-              <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.profile') }}</th>
-              <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.platform') }}</th>
-              <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.engagement') }}</th>
-              <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.tags') }}</th>
-              <th class="text-right text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.interactions') }}</th>
-              <th class="text-right text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.lastActivity') }}</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            <tr v-for="profile in store.profiles" :key="profile.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-              <td class="px-4 py-3">
-                <div class="flex items-center gap-3">
-                  <img
-                    v-if="profile.avatarUrl"
-                    :src="profile.avatarUrl"
-                    :alt="profile.authorName"
-                    class="w-8 h-8 rounded-full object-cover"
-                  />
-                  <div
-                    v-else
-                    class="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-body-xs font-bold"
-                  >
-                    {{ profile.authorName.charAt(0) }}
-                  </div>
-                  <span class="font-medium text-gray-900 dark:text-gray-100">{{ profile.authorName }}</span>
-                </div>
-              </td>
-              <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ profile.platform }}</td>
-              <td class="px-4 py-3">
-                <div class="flex items-center gap-2">
-                  <div class="w-16 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                    <div
-                      class="h-full rounded-full"
-                      :class="scoreColor(profile.engagementScore)"
-                      :style="{ width: `${Math.min(profile.engagementScore, 100)}%` }"
+      <AsyncState
+        :loading="store.loading && store.profiles.length === 0"
+        :empty="store.profiles.length === 0"
+        skeleton="table"
+        :skeleton-count="6"
+        :empty-icon="UsersIcon"
+        :empty-title="$t('audience.emptyProfiles')"
+        :empty-description="$t('audience.emptyProfilesDescription')"
+        :retryable="false"
+      >
+        <div class="card overflow-hidden !p-0">
+          <table class="w-full text-body">
+            <thead class="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.profile') }}</th>
+                <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.platform') }}</th>
+                <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.engagement') }}</th>
+                <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.tags') }}</th>
+                <th class="text-right text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.interactions') }}</th>
+                <th class="text-right text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.lastActivity') }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-for="profile in store.profiles" :key="profile.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-3">
+                    <img
+                      v-if="profile.avatarUrl"
+                      :src="profile.avatarUrl"
+                      :alt="profile.authorName"
+                      class="w-8 h-8 rounded-full object-cover"
                     />
+                    <div
+                      v-else
+                      class="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-body-xs font-bold"
+                    >
+                      {{ profile.authorName.charAt(0) }}
+                    </div>
+                    <span class="font-medium text-gray-900 dark:text-gray-100">{{ profile.authorName }}</span>
                   </div>
-                  <span class="text-gray-700 dark:text-gray-300 text-body-xs">{{ profile.engagementScore }}</span>
-                </div>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex flex-wrap gap-1">
-                  <span
-                    v-for="tag in profile.tags"
-                    :key="tag"
-                    class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-body-xs"
-                  >
-                    {{ tag }}
-                  </span>
-                </div>
-              </td>
-              <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{{ profile.totalInteractions.toLocaleString() }}</td>
-              <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 text-body-xs">{{ formatDate(profile.lastSeenAt) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div v-if="store.totalProfiles > 20" class="flex justify-center mt-4">
-        <div class="flex gap-2">
-          <button
-            :disabled="currentPage === 0"
-            class="btn-secondary text-body"
-            @click="changePage(currentPage - 1)"
-          >
-            {{ $t('audience.pagination.previous') }}
-          </button>
-          <span class="px-3 py-1.5 text-body text-gray-600 dark:text-gray-400">
-            {{ currentPage + 1 }} / {{ Math.ceil(store.totalProfiles / 20) }}
-          </span>
-          <button
-            :disabled="(currentPage + 1) * 20 >= store.totalProfiles"
-            class="btn-secondary text-body"
-            @click="changePage(currentPage + 1)"
-          >
-            {{ $t('audience.pagination.next') }}
-          </button>
+                </td>
+                <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ profile.platform }}</td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-16 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                      <div
+                        class="h-full rounded-full"
+                        :class="scoreColor(profile.engagementScore)"
+                        :style="{ width: `${Math.min(profile.engagementScore, 100)}%` }"
+                      />
+                    </div>
+                    <span class="text-gray-700 dark:text-gray-300 text-body-xs">{{ profile.engagementScore }}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-1">
+                    <span
+                      v-for="tag in profile.tags"
+                      :key="tag"
+                      class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-body-xs"
+                    >
+                      {{ tag }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{{ profile.totalInteractions.toLocaleString() }}</td>
+                <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 text-body-xs">{{ formatDate(profile.lastSeenAt) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
+
+        <div v-if="store.totalProfiles > 20" class="flex justify-center mt-4">
+          <div class="flex gap-2">
+            <button
+              :disabled="currentPage === 0"
+              class="btn-secondary text-body"
+              @click="changePage(currentPage - 1)"
+            >
+              {{ $t('audience.pagination.previous') }}
+            </button>
+            <span class="px-3 py-1.5 text-body text-gray-600 dark:text-gray-400">
+              {{ currentPage + 1 }} / {{ Math.ceil(store.totalProfiles / 20) }}
+            </span>
+            <button
+              :disabled="(currentPage + 1) * 20 >= store.totalProfiles"
+              class="btn-secondary text-body"
+              @click="changePage(currentPage + 1)"
+            >
+              {{ $t('audience.pagination.next') }}
+            </button>
+          </div>
+        </div>
+      </AsyncState>
     </div>
 
     <!-- 세그먼트 탭 -->
     <div v-if="activeTab === 'segments'">
-      <div class="mb-4 flex justify-end">
-        <button
-          class="btn-primary inline-flex items-center gap-2"
-          @click="showSegmentModal = true"
-        >
-          {{ $t('audience.segment.add') }}
-        </button>
+      <!-- 검색 · 정렬 · 일괄 작업 -->
+      <ListToolbar
+        v-if="!isSourceEmpty"
+        v-model="query"
+        v-model:sort-key="sortKey"
+        v-model:sort-dir="sortDir"
+        :sort-options="sortOptions"
+        :selected-count="selectedCount"
+        :total-count="visibleCount"
+        :search-placeholder="$t('audience.segment.searchPlaceholder')"
+        :search-label="$t('audience.segment.searchLabel')"
+        @clear-selection="clearSelection"
+      >
+        <template #actions>
+          <button
+            class="btn-primary inline-flex items-center gap-2"
+            @click="showSegmentModal = true"
+          >
+            <PlusIcon class="h-5 w-5" />
+            {{ $t('audience.segment.add') }}
+          </button>
+        </template>
+
+        <template #bulk-actions>
+          <button
+            type="button"
+            class="btn-danger inline-flex items-center gap-1.5"
+            :disabled="bulkDeleting"
+            @click="showBulkDeleteModal = true"
+          >
+            <TrashIcon class="h-4 w-4" aria-hidden="true" />
+            {{ $t('list.bulkDelete') }}
+          </button>
+        </template>
+      </ListToolbar>
+
+      <!-- 전체 선택 -->
+      <div v-if="!isSourceEmpty && visibleCount > 0" class="mb-3 flex items-center gap-2">
+        <input
+          id="segments-select-all"
+          type="checkbox"
+          :class="CHECKBOX_CLASS"
+          :checked="allSelected"
+          :indeterminate="someSelected"
+          @change="toggleAll"
+        />
+        <label for="segments-select-all" class="cursor-pointer text-body text-gray-500 dark:text-gray-400">
+          {{ $t('list.selectAll', { count: visibleCount }) }}
+        </label>
       </div>
 
-      <div v-if="store.loading" class="text-center py-12 text-gray-400">
-        {{ $t('audience.loading') }}
-      </div>
+      <AsyncState
+        :loading="store.loading && isSourceEmpty"
+        :empty="isSourceEmpty"
+        skeleton="card"
+        :skeleton-count="3"
+        :empty-icon="UserGroupIcon"
+        :empty-title="$t('audience.segment.emptyTitle')"
+        :empty-description="$t('audience.segment.emptyDescription')"
+        :empty-action-label="$t('audience.segment.add')"
+        :retryable="false"
+        @empty-action="showSegmentModal = true"
+      >
+        <!-- 검색 결과만 비었을 때 -->
+        <EmptyState
+          v-if="isResultEmpty"
+          :icon="MagnifyingGlassIcon"
+          :title="$t('list.noResultsTitle')"
+          :description="$t('list.noResultsDescription')"
+          :action-label="$t('list.resetFilters')"
+          @action="resetFilters"
+        />
 
-      <div v-else-if="store.segments.length === 0" class="text-center py-12 text-gray-400">
-        {{ $t('audience.segment.empty') }}
-      </div>
-
-      <div v-else class="page-grid page-grid--cards">
-        <div
-          v-for="segment in store.segments"
-          :key="segment.id"
-          class="card"
-        >
-          <div class="flex items-start justify-between mb-2">
-            <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ segment.name }}</h3>
-            <button
-              class="text-gray-400 hover:text-error-strong transition-colors"
-              @click="handleDeleteSegment(segment.id)"
-            >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <p v-if="segment.description" class="text-body text-gray-500 dark:text-gray-400 mb-3">{{ segment.description }}</p>
-          <div class="flex items-center justify-between text-body">
-            <span class="text-gray-600 dark:text-gray-400">
-              <span class="font-medium text-primary-600 dark:text-primary-400">{{ segment.memberCount.toLocaleString() }}</span>{{ $t('audience.members') }}
-            </span>
-            <span v-if="segment.autoUpdate" class="px-2 py-0.5 bg-success-subtle text-success-strong rounded text-body-xs">
-              {{ $t('audience.autoUpdate') }}
-            </span>
+        <div v-else class="page-grid page-grid--cards">
+          <div
+            v-for="segment in filtered"
+            :key="segment.id"
+            class="flex items-start gap-2"
+          >
+            <input
+              type="checkbox"
+              :class="[CHECKBOX_CLASS, 'mt-5']"
+              :checked="isSelected(segment.id)"
+              :aria-label="$t('list.selectItem', { name: segment.name })"
+              @change="toggle(segment.id)"
+            />
+            <div class="card min-w-0 flex-1">
+              <div class="flex items-start justify-between mb-2">
+                <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ segment.name }}</h3>
+                <button
+                  class="text-gray-400 hover:text-error-strong transition-colors"
+                  :aria-label="$t('action.delete')"
+                  @click="handleDeleteSegment(segment.id)"
+                >
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <p v-if="segment.description" class="text-body text-gray-500 dark:text-gray-400 mb-3">{{ segment.description }}</p>
+              <div class="flex items-center justify-between text-body">
+                <span class="text-gray-600 dark:text-gray-400">
+                  <span class="font-medium text-primary-600 dark:text-primary-400">{{ segment.memberCount.toLocaleString() }}</span>{{ $t('audience.members') }}
+                </span>
+                <span v-if="segment.autoUpdate" class="px-2 py-0.5 bg-success-subtle text-success-strong rounded text-body-xs">
+                  {{ $t('audience.autoUpdate') }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </AsyncState>
     </div>
 
     <!-- 세그먼트 추가 모달 -->
@@ -230,21 +302,49 @@
       @confirm="confirmDeleteSegment"
       @cancel="deleteTargetId = null"
     />
+
+    <!-- 선택 항목 일괄 삭제 확인 -->
+    <ConfirmModal
+      v-model="showBulkDeleteModal"
+      :title="$t('audience.segment.bulkDeleteTitle')"
+      :message="$t('audience.segment.bulkDeleteMessage', { count: selectedCount })"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="handleBulkDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import {
+  MagnifyingGlassIcon,
+  PlusIcon,
+  TrashIcon,
+  UserGroupIcon,
+  UsersIcon,
+} from '@heroicons/vue/24/outline'
 import { useAudienceStore } from '@/stores/audience'
+import { useNotificationStore } from '@/stores/notification'
+import { useListControls, type ListSortOption } from '@/composables/useListControls'
 import OTabs from '@/components/ui/OTabs.vue'
+import AsyncState from '@/components/common/AsyncState.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import ListToolbar from '@/components/common/ListToolbar.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import type { AudienceSegment } from '@/types/audience'
 
 const { t } = useI18n({ useScope: 'global' })
 const store = useAudienceStore()
+const notificationStore = useNotificationStore()
+
+/** 체크박스 공통 스타일 — 목록 확산 시 그대로 복사해 쓴다. */
+const CHECKBOX_CLASS =
+  'h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-gray-600'
 
 const activeTab = ref('profiles')
 const sortBy = ref('engagement_score')
@@ -253,6 +353,8 @@ const showSegmentModal = ref(false)
 const creating = ref(false)
 const showDeleteModal = ref(false)
 const deleteTargetId = ref<number | null>(null)
+const showBulkDeleteModal = ref(false)
+const bulkDeleting = ref(false)
 
 const segmentForm = reactive({
   name: '',
@@ -265,6 +367,48 @@ const tabs = [
   { key: 'profiles', label: t('audience.tabs.profiles') },
   { key: 'segments', label: t('audience.tabs.segments') },
 ]
+
+// --- 세그먼트 검색 · 정렬 · 선택 ---
+const sortOptions = computed<ListSortOption<AudienceSegment>[]>(() => [
+  {
+    key: 'recent',
+    label: t('audience.segment.sortRecent'),
+    accessor: 'createdAt',
+    kind: 'date',
+    defaultDir: 'desc',
+  },
+  {
+    key: 'members',
+    label: t('audience.segment.sortMembers'),
+    accessor: 'memberCount',
+    kind: 'number',
+    defaultDir: 'desc',
+  },
+  { key: 'name', label: t('audience.segment.sortName'), accessor: 'name', kind: 'string', defaultDir: 'asc' },
+])
+
+const {
+  query,
+  sortKey,
+  sortDir,
+  filtered,
+  visibleCount,
+  isSourceEmpty,
+  isResultEmpty,
+  resetFilters,
+  selectedIds,
+  selectedCount,
+  allSelected,
+  someSelected,
+  isSelected,
+  toggle,
+  toggleAll,
+  clearSelection,
+} = useListControls<AudienceSegment>(() => store.segments, {
+  searchFields: ['name', 'description', 'conditions'],
+  sortOptions,
+  defaultSortKey: 'recent',
+})
 
 function scoreColor(score: number): string {
   if (score >= 80) return 'bg-success'
@@ -318,6 +462,22 @@ async function confirmDeleteSegment() {
     await store.deleteSegment(id)
   } catch (e) {
     console.error(t('audience.segment.deleteFailed'), e)
+  }
+}
+
+async function handleBulkDelete() {
+  const ids = [...selectedIds.value]
+  if (ids.length === 0) return
+  bulkDeleting.value = true
+  try {
+    await Promise.all(ids.map(id => store.deleteSegment(id)))
+    notificationStore.success(t('audience.segment.bulkDeleteDone', { count: ids.length }))
+  } catch (e) {
+    console.error(t('audience.segment.deleteFailed'), e)
+    notificationStore.error(t('audience.segment.bulkDeleteFailed'))
+  } finally {
+    bulkDeleting.value = false
+    clearSelection()
   }
 }
 

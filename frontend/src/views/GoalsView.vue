@@ -1,53 +1,87 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   PlusIcon,
-  FunnelIcon,
+  TrashIcon,
   CheckCircleIcon,
   ClockIcon,
   ChartBarIcon,
   CalendarIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/vue/24/outline'
+import AsyncState from '@/components/common/AsyncState.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import ListToolbar from '@/components/common/ListToolbar.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import { useGoalsStore } from '@/stores/goals'
+import { useNotificationStore } from '@/stores/notification'
+import { useListControls, type ListSortOption } from '@/composables/useListControls'
 import type { Goal } from '@/types/goal'
 import GoalCard from '@/components/goals/GoalCard.vue'
 import GoalFormModal from '@/components/goals/GoalFormModal.vue'
 import MilestoneList from '@/components/goals/MilestoneList.vue'
 
+const { t } = useI18n({ useScope: 'global' })
 const goalsStore = useGoalsStore()
+const notificationStore = useNotificationStore()
+
+/** 체크박스 공통 스타일 — 목록 확산 시 그대로 복사해 쓴다. */
+const CHECKBOX_CLASS =
+  'h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-gray-600'
 
 const showFormModal = ref(false)
 const editingGoal = ref<Goal | undefined>(undefined)
 const viewingGoal = ref<Goal | undefined>(undefined)
 const showCompleted = ref(false)
-const sortBy = ref<'deadline' | 'progress' | 'recent'>('deadline')
 const showDeleteModal = ref(false)
 const deleteTargetId = ref<number | null>(null)
+const showBulkDeleteModal = ref(false)
+const bulkDeleting = ref(false)
 
 onMounted(() => {
   goalsStore.fetchGoals()
 })
 
-const displayedGoals = computed(() => {
-  let goals = showCompleted.value ? goalsStore.completedGoals : goalsStore.activeGoals
+const progressRatio = (goal: Goal): number =>
+  goal.targetValue > 0 ? goal.currentValue / goal.targetValue : 0
 
-  // Sort
-  const sorted = [...goals].sort((a, b) => {
-    if (sortBy.value === 'deadline') {
-      return new Date(a.endDate).getTime() - new Date(b.endDate).getTime()
-    } else if (sortBy.value === 'progress') {
-      const aProgress = (a.currentValue / a.targetValue) * 100
-      const bProgress = (b.currentValue / b.targetValue) * 100
-      return bProgress - aProgress
-    } else {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    }
-  })
+const sortOptions = computed<ListSortOption<Goal>[]>(() => [
+  { key: 'deadline', label: t('goals.sortDeadline'), accessor: 'endDate', kind: 'date', defaultDir: 'asc' },
+  { key: 'progress', label: t('goals.sortProgress'), accessor: progressRatio, kind: 'number', defaultDir: 'desc' },
+  { key: 'recent', label: t('goals.sortRecent'), accessor: 'createdAt', kind: 'date', defaultDir: 'desc' },
+  { key: 'title', label: t('goals.sortTitle'), accessor: 'title', kind: 'string', defaultDir: 'asc' },
+])
 
-  return sorted
+const {
+  query,
+  hasQuery,
+  sortKey,
+  sortDir,
+  filtered,
+  visibleCount,
+  isSourceEmpty,
+  isResultEmpty,
+  resetFilters,
+  selectedIds,
+  selectedCount,
+  allSelected,
+  someSelected,
+  isSelected,
+  toggle,
+  toggleAll,
+  clearSelection,
+} = useListControls<Goal>(() => goalsStore.goals, {
+  searchFields: ['title', 'description'],
+  sortOptions,
+  defaultSortKey: 'deadline',
+  // 활성/달성 탭은 필터로 처리한다 — 원본이 비었는지(데이터 없음)와
+  // 탭 결과만 비었는지를 구분하려면 원본 배열을 그대로 넘겨야 한다.
+  filters: computed(() => [
+    (goal: Goal) => (showCompleted.value ? goal.status === 'completed' : goal.status === 'active'),
+  ]),
 })
 
 const stats = computed(() => {
@@ -89,11 +123,30 @@ const handleDeleteGoal = (goalId: number) => {
   showDeleteModal.value = true
 }
 
-const confirmDeleteGoal = () => {
+const confirmDeleteGoal = async () => {
   const goalId = deleteTargetId.value
   deleteTargetId.value = null
   if (goalId === null) return
-  goalsStore.deleteGoal(goalId)
+  try {
+    await goalsStore.deleteGoal(goalId)
+  } catch {
+    notificationStore.error(t('goals.deleteFailed'))
+  }
+}
+
+const handleBulkDelete = async () => {
+  const ids = [...selectedIds.value]
+  if (ids.length === 0) return
+  bulkDeleting.value = true
+  try {
+    await Promise.all(ids.map(id => goalsStore.deleteGoal(id)))
+    notificationStore.success(t('goals.bulkDeleteDone', { count: ids.length }))
+  } catch {
+    notificationStore.error(t('goals.deleteFailed'))
+  } finally {
+    bulkDeleting.value = false
+    clearSelection()
+  }
 }
 
 const handlePauseGoal = (goalId: number) => {
@@ -238,12 +291,24 @@ const formatNumber = (value: number): string => {
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-2">
+      <!-- 검색 · 정렬 · 일괄 작업 -->
+      <ListToolbar
+        v-if="!isSourceEmpty"
+        v-model="query"
+        v-model:sort-key="sortKey"
+        v-model:sort-dir="sortDir"
+        :sort-options="sortOptions"
+        :selected-count="selectedCount"
+        :total-count="visibleCount"
+        :search-placeholder="$t('goals.searchPlaceholder')"
+        :search-label="$t('goals.searchLabel')"
+        @clear-selection="clearSelection"
+      >
+        <template #filters>
           <button
+            type="button"
             :class="[
-              'px-4 py-2 text-body font-medium rounded-lg transition-colors',
+              'min-h-10 px-4 py-2 text-body font-medium rounded-lg transition-colors',
               !showCompleted
                 ? 'bg-info-subtle text-info-strong'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -253,8 +318,9 @@ const formatNumber = (value: number): string => {
             {{ $t('goals.activeGoalsFilter', { count: stats.active }) }}
           </button>
           <button
+            type="button"
             :class="[
-              'px-4 py-2 text-body font-medium rounded-lg transition-colors',
+              'min-h-10 px-4 py-2 text-body font-medium rounded-lg transition-colors',
               showCompleted
                 ? 'bg-info-subtle text-info-strong'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -263,56 +329,94 @@ const formatNumber = (value: number): string => {
           >
             {{ $t('goals.completedGoalsFilter', { count: stats.completed }) }}
           </button>
-        </div>
+        </template>
 
-        <div class="flex items-center gap-2">
-          <FunnelIcon class="w-5 h-5 text-gray-400" />
-          <select
-            v-model="sortBy"
-            class="px-3 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
+        <template #bulk-actions>
+          <button
+            type="button"
+            class="btn-danger inline-flex items-center gap-1.5"
+            :disabled="bulkDeleting"
+            @click="showBulkDeleteModal = true"
           >
-            <option value="deadline">{{ $t('goals.sortDeadline') }}</option>
-            <option value="progress">{{ $t('goals.sortProgress') }}</option>
-            <option value="recent">{{ $t('goals.sortRecent') }}</option>
-          </select>
-        </div>
-      </div>
+            <TrashIcon class="h-4 w-4" aria-hidden="true" />
+            {{ $t('list.bulkDelete') }}
+          </button>
+        </template>
+      </ListToolbar>
 
-      <!-- Goals Grid -->
-      <div v-if="displayedGoals.length > 0" class="page-grid page-grid--split">
-        <GoalCard
-          v-for="goal in displayedGoals"
-          :key="goal.id"
-          :goal="goal"
-          @edit="handleEditGoal"
-          @delete="handleDeleteGoal"
-          @pause="handlePauseGoal"
-          @resume="handleResumeGoal"
-          @view-details="handleViewDetails"
+      <!-- 전체 선택 -->
+      <div v-if="!isSourceEmpty && visibleCount > 0" class="mb-3 flex items-center gap-2">
+        <input
+          id="goals-select-all"
+          type="checkbox"
+          :class="CHECKBOX_CLASS"
+          :checked="allSelected"
+          :indeterminate="someSelected"
+          @change="toggleAll"
         />
+        <label for="goals-select-all" class="cursor-pointer text-body text-gray-500 dark:text-gray-400">
+          {{ $t('list.selectAll', { count: visibleCount }) }}
+        </label>
       </div>
 
-      <!-- Empty State -->
-      <div
-        v-else
-        class="card p-12 text-center"
+      <AsyncState
+        :loading="goalsStore.loading && isSourceEmpty"
+        :empty="isSourceEmpty"
+        skeleton="card"
+        :skeleton-count="4"
+        :empty-icon="ChartBarIcon"
+        :empty-title="$t('goals.emptyActiveTitle')"
+        :empty-description="$t('goals.emptyActiveDesc')"
+        :empty-action-label="$t('goals.createFirstGoal')"
+        :retryable="false"
+        @empty-action="handleCreateGoal"
       >
-        <ChartBarIcon class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-        <h3 class="text-title font-medium text-gray-900 dark:text-gray-100 mb-2">
-          {{ showCompleted ? $t('goals.emptyCompletedTitle') : $t('goals.emptyActiveTitle') }}
-        </h3>
-        <p class="text-body text-gray-600 dark:text-gray-400 mb-6">
-          {{ showCompleted ? $t('goals.emptyCompletedDesc') : $t('goals.emptyActiveDesc') }}
-        </p>
-        <button
-          v-if="!showCompleted"
-          class="btn-primary inline-flex items-center gap-2"
-          @click="handleCreateGoal"
-        >
-          <PlusIcon class="w-5 h-5" />
-          {{ $t('goals.createFirstGoal') }}
-        </button>
-      </div>
+        <!-- 검색 결과가 없을 때 -->
+        <EmptyState
+          v-if="isResultEmpty && hasQuery"
+          :icon="MagnifyingGlassIcon"
+          :title="$t('list.noResultsTitle')"
+          :description="$t('list.noResultsDescription')"
+          :action-label="$t('list.resetFilters')"
+          @action="resetFilters"
+        />
+
+        <!-- 탭에 해당하는 목표가 없을 때 -->
+        <EmptyState
+          v-else-if="isResultEmpty"
+          :icon="ChartBarIcon"
+          :title="showCompleted ? $t('goals.emptyCompletedTitle') : $t('goals.emptyActiveTitle')"
+          :description="showCompleted ? $t('goals.emptyCompletedDesc') : $t('goals.emptyActiveDesc')"
+          :action-label="showCompleted ? undefined : $t('goals.createFirstGoal')"
+          @action="handleCreateGoal"
+        />
+
+        <!-- Goals Grid -->
+        <div v-else class="page-grid page-grid--split">
+          <div
+            v-for="goal in filtered"
+            :key="goal.id"
+            class="flex items-start gap-3"
+          >
+            <input
+              type="checkbox"
+              :class="[CHECKBOX_CLASS, 'mt-6']"
+              :checked="isSelected(goal.id)"
+              :aria-label="$t('list.selectItem', { name: goal.title })"
+              @change="toggle(goal.id)"
+            />
+            <GoalCard
+              :goal="goal"
+              class="min-w-0 flex-1"
+              @edit="handleEditGoal"
+              @delete="handleDeleteGoal"
+              @pause="handlePauseGoal"
+              @resume="handleResumeGoal"
+              @view-details="handleViewDetails"
+            />
+          </div>
+        </div>
+      </AsyncState>
     </div>
 
     <!-- Goal Form Modal -->
@@ -381,13 +485,13 @@ const formatNumber = (value: number): string => {
                     <div class="flex items-center justify-between mb-2">
                       <span class="text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('goals.progressStatus') }}</span>
                       <span class="text-h1 font-bold text-gray-900 dark:text-gray-100">
-                        {{ Math.round((viewingGoal.currentValue / viewingGoal.targetValue) * 100) }}%
+                        {{ Math.round(progressRatio(viewingGoal) * 100) }}%
                       </span>
                     </div>
                     <div class="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
                         class="h-full bg-primary-600 transition-all duration-500 rounded-full"
-                        :style="{ width: `${Math.min((viewingGoal.currentValue / viewingGoal.targetValue) * 100, 100)}%` }"
+                        :style="{ width: `${Math.min(progressRatio(viewingGoal) * 100, 100)}%` }"
                       ></div>
                     </div>
                     <div class="flex items-center justify-between mt-2 text-body text-gray-600 dark:text-gray-400">
@@ -426,6 +530,16 @@ const formatNumber = (value: number): string => {
       danger
       @confirm="confirmDeleteGoal"
       @cancel="deleteTargetId = null"
+    />
+
+    <!-- 선택 항목 일괄 삭제 확인 -->
+    <ConfirmModal
+      v-model="showBulkDeleteModal"
+      :title="$t('goals.bulkDeleteTitle')"
+      :message="$t('goals.bulkDeleteMessage', { count: selectedCount })"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="handleBulkDelete"
     />
   </div>
 </template>

@@ -22,107 +22,119 @@
 
     <PageGuide :title="$t('ideas.pageGuideTitle')" :items="($tm('ideas.pageGuide') as string[])" />
 
-    <!-- Filters -->
-    <div class="mb-6 flex flex-col gap-4 mobile:flex-row">
-      <!-- Search -->
-      <div class="flex-1">
-        <div class="relative">
-          <MagnifyingGlassIcon
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-          />
-          <input
-            v-model="searchQuery"
-            type="text"
-            :placeholder="$t('ideas.searchPlaceholder')"
-            class="input-field pl-10"
-          />
-        </div>
-      </div>
-
-      <!-- Priority Filter -->
-      <div class="flex gap-2">
+    <!-- 검색 · 정렬 · 일괄 작업 -->
+    <ListToolbar
+      v-if="!isSourceEmpty"
+      v-model="query"
+      v-model:sort-key="sortKey"
+      v-model:sort-dir="sortDir"
+      :sort-options="sortOptions"
+      :selected-count="selectedCount"
+      :total-count="visibleCount"
+      :search-placeholder="$t('ideas.searchPlaceholder')"
+      :search-label="$t('ideas.searchLabel')"
+      @clear-selection="clearSelection"
+    >
+      <template #filters>
         <button
           v-for="priority in priorityFilters"
           :key="priority.value"
+          type="button"
           :class="[
-            'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+            'min-h-10 rounded-lg px-3 py-2 text-body font-medium transition-colors',
             selectedPriority === priority.value
-              ? 'bg-primary-600 dark:bg-primary-500 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              ? 'bg-primary-600 text-white dark:bg-primary-500'
+              : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
           ]"
           @click="setPriorityFilter(priority.value)"
         >
           {{ priority.label }}
         </button>
+      </template>
+
+      <template #bulk-actions>
+        <button
+          type="button"
+          class="btn-danger inline-flex items-center gap-1.5"
+          :disabled="bulkDeleting"
+          @click="showBulkDeleteModal = true"
+        >
+          <TrashIcon class="h-4 w-4" aria-hidden="true" />
+          {{ $t('list.bulkDelete') }}
+        </button>
+      </template>
+    </ListToolbar>
+
+    <!-- 전체 선택 -->
+    <div v-if="!isSourceEmpty && visibleCount > 0" class="mb-3 flex items-center gap-2">
+      <input
+        id="ideas-select-all"
+        type="checkbox"
+        :class="CHECKBOX_CLASS"
+        :checked="allSelected"
+        :indeterminate="someSelected"
+        @change="toggleAll"
+      />
+      <label for="ideas-select-all" class="cursor-pointer text-body text-gray-500 dark:text-gray-400">
+        {{ $t('list.selectAll', { count: visibleCount }) }}
+      </label>
+    </div>
+
+    <AsyncState
+      :loading="ideasStore.loading && isSourceEmpty"
+      :empty="isSourceEmpty"
+      skeleton="card"
+      :skeleton-count="4"
+      :empty-icon="LightBulbIcon"
+      :empty-title="$t('ideas.emptyTitle')"
+      :empty-description="$t('ideas.emptyDescription')"
+      :empty-action-label="$t('ideas.createFirstIdea')"
+      :retryable="false"
+      @empty-action="openCreateModal"
+    >
+      <!-- 검색·필터 결과만 비었을 때 -->
+      <EmptyState
+        v-if="isResultEmpty"
+        :icon="MagnifyingGlassIcon"
+        :title="$t('list.noResultsTitle')"
+        :description="$t('list.noResultsDescription')"
+        :action-label="$t('list.resetFilters')"
+        @action="resetSearchAndFilters"
+      />
+
+      <!-- Kanban Board -->
+      <div v-else class="page-grid page-grid--dense h-[calc(100vh-16rem)]">
+        <IdeaColumn
+          v-for="column in columns"
+          :key="column.status"
+          :title="column.title"
+          :status="column.status"
+          :ideas="ideasByStatus[column.status]"
+          :color="column.color"
+          @drop="handleDrop"
+        >
+          <div
+            v-for="idea in ideasByStatus[column.status]"
+            :key="idea.id"
+            class="flex items-start gap-2"
+          >
+            <input
+              type="checkbox"
+              :class="[CHECKBOX_CLASS, 'mt-4']"
+              :checked="isSelected(idea.id)"
+              :aria-label="$t('list.selectItem', { name: idea.title })"
+              @change="toggle(idea.id)"
+            />
+            <IdeaCard
+              :idea="idea"
+              class="min-w-0 flex-1"
+              @click="openEditModal(idea)"
+              @delete="handleDelete(idea.id)"
+            />
+          </div>
+        </IdeaColumn>
       </div>
-    </div>
-
-    <!-- Kanban Board -->
-    <div class="page-grid page-grid--dense h-[calc(100vh-16rem)]">
-      <IdeaColumn
-        :title="$t('ideas.columns.idea')"
-        status="idea"
-          :ideas="filteredIdeasByStatus.idea"
-          color="blue"
-          @drop="handleDrop"
-        >
-          <IdeaCard
-            v-for="idea in filteredIdeasByStatus.idea"
-            :key="idea.id"
-            :idea="idea"
-            @click="openEditModal(idea)"
-            @delete="handleDelete(idea.id)"
-          />
-        </IdeaColumn>
-
-        <IdeaColumn
-          :title="$t('ideas.columns.planning')"
-          status="planning"
-          :ideas="filteredIdeasByStatus.planning"
-          color="yellow"
-          @drop="handleDrop"
-        >
-          <IdeaCard
-            v-for="idea in filteredIdeasByStatus.planning"
-            :key="idea.id"
-            :idea="idea"
-            @click="openEditModal(idea)"
-            @delete="handleDelete(idea.id)"
-          />
-        </IdeaColumn>
-
-        <IdeaColumn
-          :title="$t('ideas.columns.producing')"
-          status="producing"
-          :ideas="filteredIdeasByStatus.producing"
-          color="green"
-          @drop="handleDrop"
-        >
-          <IdeaCard
-            v-for="idea in filteredIdeasByStatus.producing"
-            :key="idea.id"
-            :idea="idea"
-            @click="openEditModal(idea)"
-            @delete="handleDelete(idea.id)"
-          />
-        </IdeaColumn>
-
-        <IdeaColumn
-          :title="$t('ideas.columns.completed')"
-          status="completed"
-          :ideas="filteredIdeasByStatus.completed"
-          color="purple"
-          @drop="handleDrop"
-        >
-          <IdeaCard
-            v-for="idea in filteredIdeasByStatus.completed"
-            :key="idea.id"
-            :idea="idea"
-            @click="openEditModal(idea)"
-            @delete="handleDelete(idea.id)"
-          />
-        </IdeaColumn>
-    </div>
+    </AsyncState>
 
     <!-- Modal -->
     <IdeaFormModal
@@ -141,9 +153,9 @@
       max-width="sm"
     >
       <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('ideas.aiGenerateDesc') }}</p>
+        <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('ideas.aiGenerateDesc') }}</p>
         <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
             {{ $t('ideas.selectCategory') }}
           </label>
           <input
@@ -153,7 +165,7 @@
             class="input-field"
           />
         </div>
-        <p class="text-xs text-gray-500 dark:text-gray-400">
+        <p class="text-caption text-gray-500 dark:text-gray-400">
           {{ $t('ideas.credits') }}
         </p>
         <button
@@ -177,40 +189,136 @@
       @confirm="confirmDelete"
       @cancel="deleteTargetId = null"
     />
+
+    <!-- 선택 항목 일괄 삭제 확인 -->
+    <ConfirmModal
+      v-model="showBulkDeleteModal"
+      :title="$t('ideas.bulkDeleteTitle')"
+      :message="$t('ideas.bulkDeleteMessage', { count: selectedCount })"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="handleBulkDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useIdeasStore } from '@/stores/ideas'
 import { useNotificationStore } from '@/stores/notification'
+import { useListControls, type ListSortOption } from '@/composables/useListControls'
 import { ideaApi } from '@/api/idea'
 import type { ContentIdea, IdeaStatus, IdeaPriority } from '@/types/idea'
 import IdeaCard from '@/components/ideas/IdeaCard.vue'
 import IdeaColumn from '@/components/ideas/IdeaColumn.vue'
 import IdeaFormModal from '@/components/ideas/IdeaFormModal.vue'
+import AsyncState from '@/components/common/AsyncState.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import ListToolbar from '@/components/common/ListToolbar.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
-import { PlusIcon, MagnifyingGlassIcon, SparklesIcon } from '@heroicons/vue/24/outline'
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  SparklesIcon,
+  TrashIcon,
+  LightBulbIcon,
+} from '@heroicons/vue/24/outline'
 
 const { t } = useI18n({ useScope: 'global' })
 const ideasStore = useIdeasStore()
 const notificationStore = useNotificationStore()
 
+/** 체크박스 공통 스타일 — 목록 확산 시 그대로 복사해 쓴다. */
+const CHECKBOX_CLASS =
+  'h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-gray-600'
+
 const isModalOpen = ref(false)
 const selectedIdea = ref<ContentIdea | null>(null)
-const searchQuery = ref('')
 const selectedPriority = ref<IdeaPriority | 'all'>('all')
 const showDeleteModal = ref(false)
 const deleteTargetId = ref<number | null>(null)
+const showBulkDeleteModal = ref(false)
+const bulkDeleting = ref(false)
 
 // AI 아이디어 생성
 const showAiModal = ref(false)
 const aiCategory = ref('')
 const aiGenerating = ref(false)
+
+const PRIORITY_WEIGHT: Record<IdeaPriority, number> = { high: 3, medium: 2, low: 1 }
+
+const sortOptions = computed<ListSortOption<ContentIdea>[]>(() => [
+  { key: 'recent', label: t('ideas.sortRecent'), accessor: 'updatedAt', kind: 'date', defaultDir: 'desc' },
+  {
+    key: 'priority',
+    label: t('ideas.sortPriority'),
+    accessor: (idea) => PRIORITY_WEIGHT[idea.priority] ?? 0,
+    kind: 'number',
+    defaultDir: 'desc',
+  },
+  { key: 'dueDate', label: t('ideas.sortDueDate'), accessor: 'dueDate', kind: 'date', defaultDir: 'asc' },
+  { key: 'title', label: t('ideas.sortTitle'), accessor: 'title', kind: 'string', defaultDir: 'asc' },
+])
+
+const {
+  query,
+  sortKey,
+  sortDir,
+  filtered,
+  visibleCount,
+  isSourceEmpty,
+  isResultEmpty,
+  resetFilters,
+  selectedIds,
+  selectedCount,
+  allSelected,
+  someSelected,
+  isSelected,
+  toggle,
+  toggleAll,
+  clearSelection,
+} = useListControls<ContentIdea>(() => ideasStore.ideas, {
+  searchFields: ['title', 'description', 'tags'],
+  sortOptions,
+  defaultSortKey: 'recent',
+  filters: computed(() =>
+    selectedPriority.value === 'all'
+      ? []
+      : [(idea: ContentIdea) => idea.priority === selectedPriority.value],
+  ),
+})
+
+const priorityFilters = computed(() => [
+  { label: t('ideas.priority.all'), value: 'all' as const },
+  { label: t('ideas.priority.high'), value: 'high' as const },
+  { label: t('ideas.priority.medium'), value: 'medium' as const },
+  { label: t('ideas.priority.low'), value: 'low' as const },
+])
+
+const columns = computed<
+  { status: IdeaStatus; title: string; color: 'blue' | 'yellow' | 'green' | 'purple' }[]
+>(() => [
+  { status: 'idea', title: t('ideas.columns.idea'), color: 'blue' },
+  { status: 'planning', title: t('ideas.columns.planning'), color: 'yellow' },
+  { status: 'producing', title: t('ideas.columns.producing'), color: 'green' },
+  { status: 'completed', title: t('ideas.columns.completed'), color: 'purple' },
+])
+
+/** 검색·정렬·필터가 끝난 목록을 칸반 컬럼별로 나눈다. */
+const ideasByStatus = computed<Record<IdeaStatus, ContentIdea[]>>(() => ({
+  idea: filtered.value.filter(idea => idea.status === 'idea'),
+  planning: filtered.value.filter(idea => idea.status === 'planning'),
+  producing: filtered.value.filter(idea => idea.status === 'producing'),
+  completed: filtered.value.filter(idea => idea.status === 'completed'),
+}))
+
+onMounted(() => {
+  ideasStore.fetchIdeas()
+})
 
 async function handleAiGenerate() {
   aiGenerating.value = true
@@ -228,55 +336,14 @@ async function handleAiGenerate() {
   }
 }
 
-const priorityFilters = computed(() => [
-  { label: t('ideas.priority.all'), value: 'all' as const },
-  { label: t('ideas.priority.high'), value: 'high' as const },
-  { label: t('ideas.priority.medium'), value: 'medium' as const },
-  { label: t('ideas.priority.low'), value: 'low' as const },
-])
-
-// Load from localStorage on mount
-onMounted(() => {
-  ideasStore.fetchIdeas()
-})
-
-// Computed filtered ideas by status
-const filteredIdeasByStatus = computed(() => {
-  let ideas = ideasStore.ideas
-
-  // Apply search filter
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    ideas = ideas.filter(
-      idea =>
-        idea.title.toLowerCase().includes(query) ||
-        idea.description.toLowerCase().includes(query) ||
-        idea.tags.some(tag => tag.toLowerCase().includes(query))
-    )
-  }
-
-  // Apply priority filter
-  if (selectedPriority.value !== 'all') {
-    ideas = ideas.filter(idea => idea.priority === selectedPriority.value)
-  }
-
-  // Group by status
-  return {
-    idea: ideas.filter(idea => idea.status === 'idea'),
-    planning: ideas.filter(idea => idea.status === 'planning'),
-    producing: ideas.filter(idea => idea.status === 'producing'),
-    completed: ideas.filter(idea => idea.status === 'completed')
-  }
-})
-
 const setPriorityFilter = (priority: IdeaPriority | 'all') => {
   selectedPriority.value = priority
 }
 
-// Watch search query and update store filter
-watch(searchQuery, (newValue) => {
-  ideasStore.setFilter('search', newValue)
-})
+const resetSearchAndFilters = () => {
+  resetFilters()
+  selectedPriority.value = 'all'
+}
 
 const openCreateModal = () => {
   selectedIdea.value = null
@@ -311,6 +378,19 @@ const confirmDelete = () => {
   deleteTargetId.value = null
   if (id === null) return
   ideasStore.deleteIdea(id)
+}
+
+const handleBulkDelete = async () => {
+  const ids = [...selectedIds.value]
+  if (ids.length === 0) return
+  bulkDeleting.value = true
+  try {
+    await Promise.all(ids.map(id => ideasStore.deleteIdea(id)))
+    notificationStore.success(t('ideas.bulkDeleteDone', { count: ids.length }))
+  } finally {
+    bulkDeleting.value = false
+    clearSelection()
+  }
 }
 
 const handleDrop = (ideaId: number, newStatus: IdeaStatus) => {

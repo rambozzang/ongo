@@ -2,13 +2,28 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import OTabs from '@/components/ui/OTabs.vue'
-import { PlusIcon, ArrowPathIcon, UsersIcon, ChartBarIcon, TrophyIcon, ArrowTrendingUpIcon, SparklesIcon } from '@heroicons/vue/24/outline'
+import {
+  PlusIcon,
+  ArrowPathIcon,
+  UsersIcon,
+  ChartBarIcon,
+  TrophyIcon,
+  ArrowTrendingUpIcon,
+  SparklesIcon,
+  MagnifyingGlassIcon,
+  TrashIcon,
+} from '@heroicons/vue/24/outline'
 import { useCompetitorStore } from '@/stores/competitor'
+import { useNotificationStore } from '@/stores/notification'
+import { useListControls, type ListSortOption } from '@/composables/useListControls'
+import type { Competitor } from '@/types/competitor'
 import CompetitorCard from '@/components/competitor/CompetitorCard.vue'
 import ComparisonChart from '@/components/competitor/ComparisonChart.vue'
 import AddCompetitorModal from '@/components/competitor/AddCompetitorModal.vue'
 import TrendingVideoList from '@/components/competitor/TrendingVideoList.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import ListToolbar from '@/components/common/ListToolbar.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 
@@ -16,6 +31,7 @@ type Tab = 'list' | 'comparison' | 'trending'
 
 const { t } = useI18n()
 const competitorStore = useCompetitorStore()
+const notificationStore = useNotificationStore()
 const activeTab = ref<Tab>('list')
 const competitorTabs = computed(() => [
   { key: 'list', label: t('competitor.tabList') },
@@ -23,10 +39,87 @@ const competitorTabs = computed(() => [
   { key: 'trending', label: t('competitor.tabTrending') },
 ])
 const isAddModalOpen = ref(false)
+/** 비교 탭의 대상 채널 — 목록의 다중 선택(selectedIds)과는 별개다. */
 const selectedCompetitorId = ref<number | null>(null)
 const isRefreshing = ref(false)
 const showDeleteModal = ref(false)
 const deleteTargetId = ref<number | null>(null)
+const showBulkDeleteModal = ref(false)
+const bulkDeleting = ref(false)
+
+/** 체크박스 공통 스타일 — 목록 확산 시 그대로 복사해 쓴다. */
+const CHECKBOX_CLASS =
+  'h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-gray-600'
+
+const competitorSortOptions = computed<ListSortOption<Competitor>[]>(() => [
+  {
+    key: 'subscribers',
+    label: t('competitor.sortSubscribers'),
+    accessor: 'subscriberCount',
+    kind: 'number',
+    defaultDir: 'desc',
+  },
+  {
+    key: 'avgViews',
+    label: t('competitor.sortAvgViews'),
+    accessor: 'avgViews',
+    kind: 'number',
+    defaultDir: 'desc',
+  },
+  {
+    key: 'growth',
+    label: t('competitor.sortGrowth'),
+    accessor: 'growthRate',
+    kind: 'number',
+    defaultDir: 'desc',
+  },
+  { key: 'name', label: t('competitor.sortName'), accessor: 'name', kind: 'string', defaultDir: 'asc' },
+])
+
+/** 추적 상태 필터 — ListToolbar의 filters 슬롯에 얹는다. */
+const trackingFilter = ref<'all' | 'tracking' | 'untracked'>('all')
+
+const trackingFilters = computed(() => [
+  { label: t('competitor.filterAll'), value: 'all' as const },
+  { label: t('competitor.filterTracking'), value: 'tracking' as const },
+  { label: t('competitor.filterUntracked'), value: 'untracked' as const },
+])
+
+const {
+  query,
+  sortKey,
+  sortDir,
+  filtered: filteredCompetitors,
+  visibleCount,
+  isSourceEmpty,
+  isResultEmpty,
+  resetFilters,
+  selectedIds,
+  selectedCount,
+  allSelected,
+  someSelected,
+  isSelected,
+  toggle,
+  toggleAll,
+  clearSelection,
+} = useListControls<Competitor>(() => competitorStore.competitors, {
+  searchFields: ['name', 'platform', 'channelUrl'],
+  sortOptions: competitorSortOptions,
+  defaultSortKey: 'subscribers',
+  filters: computed(() =>
+    trackingFilter.value === 'all'
+      ? []
+      : [
+          (competitor: Competitor) =>
+            trackingFilter.value === 'tracking' ? competitor.isTracking : !competitor.isTracking,
+        ],
+  ),
+})
+
+const resetSearchAndFilters = () => {
+  resetFilters()
+  trackingFilter.value = 'all'
+}
 
 const selectedCompetitor = computed(() => {
   if (!selectedCompetitorId.value) return null
@@ -54,6 +147,25 @@ function confirmRemoveCompetitor() {
   competitorStore.removeCompetitor(id)
   if (selectedCompetitorId.value === id) {
     selectedCompetitorId.value = null
+  }
+}
+
+async function handleBulkRemove() {
+  const ids = [...selectedIds.value]
+  if (ids.length === 0) return
+  bulkDeleting.value = true
+  try {
+    await Promise.all(ids.map((id) => competitorStore.removeCompetitor(id)))
+    // 비교 대상이 삭제됐다면 비교 탭이 유령 채널을 가리키지 않도록 비운다.
+    if (selectedCompetitorId.value !== null && ids.includes(selectedCompetitorId.value)) {
+      selectedCompetitorId.value = null
+    }
+    notificationStore.success(t('competitor.bulkDeleteDone', { count: ids.length }))
+  } catch {
+    notificationStore.error(t('competitor.bulkDeleteFailed'))
+  } finally {
+    bulkDeleting.value = false
+    clearSelection()
   }
 }
 
@@ -179,32 +291,109 @@ function formatNumber(num: number): string {
       <div>
         <!-- Channel List Tab -->
         <div v-if="activeTab === 'list'">
-          <div
-            v-if="competitorStore.competitors.length === 0"
-            class="text-center py-12 text-gray-500 dark:text-gray-400"
+          <!-- 검색 · 정렬 · 일괄 작업 -->
+          <ListToolbar
+            v-if="!isSourceEmpty"
+            v-model="query"
+            v-model:sort-key="sortKey"
+            v-model:sort-dir="sortDir"
+            :sort-options="competitorSortOptions"
+            :selected-count="selectedCount"
+            :total-count="visibleCount"
+            :search-placeholder="$t('competitor.searchPlaceholder')"
+            :search-label="$t('competitor.searchLabel')"
+            @clear-selection="clearSelection"
           >
-            <p class="mb-4">{{ $t('competitor.emptyList') }}</p>
-            <button
-              class="btn-primary inline-flex items-center gap-2"
-              @click="isAddModalOpen = true"
-            >
-              <PlusIcon class="w-5 h-5" />
-              <span>{{ $t('competitor.addChannelAction') }}</span>
-            </button>
+            <template #filters>
+              <button
+                v-for="option in trackingFilters"
+                :key="option.value"
+                type="button"
+                :class="[
+                  'min-h-10 rounded-lg px-3 py-2 text-body font-medium transition-colors',
+                  trackingFilter === option.value
+                    ? 'bg-primary-600 text-white dark:bg-primary-500'
+                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                ]"
+                @click="trackingFilter = option.value"
+              >
+                {{ option.label }}
+              </button>
+            </template>
+
+            <template #bulk-actions>
+              <button
+                type="button"
+                class="btn-danger inline-flex items-center gap-1.5"
+                :disabled="bulkDeleting"
+                @click="showBulkDeleteModal = true"
+              >
+                <TrashIcon class="h-4 w-4" aria-hidden="true" />
+                {{ $t('list.bulkDelete') }}
+              </button>
+            </template>
+          </ListToolbar>
+
+          <!-- 전체 선택 -->
+          <div v-if="!isSourceEmpty && visibleCount > 0" class="mb-3 flex items-center gap-2">
+            <input
+              id="competitor-select-all"
+              type="checkbox"
+              :class="CHECKBOX_CLASS"
+              :checked="allSelected"
+              :indeterminate="someSelected"
+              @change="toggleAll"
+            />
+            <label for="competitor-select-all" class="cursor-pointer text-body text-gray-500 dark:text-gray-400">
+              {{ $t('list.selectAll', { count: visibleCount }) }}
+            </label>
           </div>
+
+          <!-- 등록된 채널이 하나도 없을 때 -->
+          <EmptyState
+            v-if="isSourceEmpty"
+            :icon="UsersIcon"
+            :title="$t('competitor.emptyList')"
+            :description="$t('competitor.emptyListDescription')"
+            :action-label="$t('competitor.addChannelAction')"
+            @action="isAddModalOpen = true"
+          />
+
+          <!-- 검색·필터 결과만 비었을 때 -->
+          <EmptyState
+            v-else-if="isResultEmpty"
+            :icon="MagnifyingGlassIcon"
+            :title="$t('list.noResultsTitle')"
+            :description="$t('list.noResultsDescription')"
+            :action-label="$t('list.resetFilters')"
+            @action="resetSearchAndFilters"
+          />
+
           <div
             v-else
             class="page-grid page-grid--cards"
           >
-            <CompetitorCard
-              v-for="competitor in competitorStore.competitors"
+            <div
+              v-for="competitor in filteredCompetitors"
               :key="competitor.id"
-              :competitor="competitor"
-              :selected="selectedCompetitorId === competitor.id"
-              @toggle-tracking="handleToggleTracking"
-              @remove="handleRemoveCompetitor"
-              @select="handleSelectCompetitor"
-            />
+              class="flex items-start gap-3"
+            >
+              <input
+                type="checkbox"
+                :class="[CHECKBOX_CLASS, 'mt-5']"
+                :checked="isSelected(competitor.id)"
+                :aria-label="$t('list.selectItem', { name: competitor.name })"
+                @change="toggle(competitor.id)"
+              />
+              <CompetitorCard
+                :competitor="competitor"
+                :selected="selectedCompetitorId === competitor.id"
+                class="min-w-0 flex-1"
+                @toggle-tracking="handleToggleTracking"
+                @remove="handleRemoveCompetitor"
+                @select="handleSelectCompetitor"
+              />
+            </div>
           </div>
         </div>
 
@@ -340,6 +529,16 @@ function formatNumber(num: number): string {
       danger
       @confirm="confirmRemoveCompetitor"
       @cancel="deleteTargetId = null"
+    />
+
+    <!-- 선택 항목 일괄 삭제 확인 -->
+    <ConfirmModal
+      v-model="showBulkDeleteModal"
+      :title="$t('competitor.bulkDeleteTitle')"
+      :message="$t('competitor.bulkDeleteMessage', { count: selectedCount })"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="handleBulkRemove"
     />
   </div>
 </template>

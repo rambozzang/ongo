@@ -839,7 +839,18 @@
       "미디어키트를 작성하여 브랜드에 공유할 수 있습니다",
       "딜 금액과 마감일을 기록하여 수익을 관리하세요"
     ],
-    "deleteTitle": "브랜드 딜을 삭제할까요?"
+    "deleteTitle": "브랜드 딜을 삭제할까요?",
+    "searchLabel": "브랜드 딜 검색",
+    "searchPlaceholder": "브랜드명 또는 캠페인으로 검색",
+    "sortRecent": "최근순",
+    "sortBrand": "브랜드명순",
+    "sortValue": "금액순",
+    "sortDeadline": "마감일순",
+    "bulkDeleteTitle": "선택한 브랜드 딜을 삭제할까요?",
+    "bulkDeleteMessage": "브랜드 딜 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+    "bulkDeleteDone": "브랜드 딜 {count}개를 삭제했습니다",
+    "bulkDeleteFailed": "브랜드 딜 삭제에 실패했습니다",
+    "emptyDealsDescription": "진행 중인 협찬이나 광고 계약을 등록해 수익을 관리하세요."
   },
   "audience": {
     "title": "오디언스 CRM",
@@ -887,7 +898,18 @@
         "creating": "생성 중...",
         "add": "추가"
       },
-      "deleteTitle": "세그먼트를 삭제할까요?"
+      "deleteTitle": "세그먼트를 삭제할까요?",
+      "searchLabel": "세그먼트 검색",
+      "searchPlaceholder": "세그먼트 이름으로 검색",
+      "sortName": "이름순",
+      "sortRecent": "최근순",
+      "sortMembers": "멤버 수순",
+      "bulkDeleteTitle": "선택한 세그먼트를 삭제할까요?",
+      "bulkDeleteMessage": "세그먼트 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "bulkDeleteDone": "세그먼트 {count}개를 삭제했습니다",
+      "bulkDeleteFailed": "세그먼트 삭제에 실패했습니다",
+      "emptyTitle": "아직 세그먼트가 없습니다",
+      "emptyDescription": "시청자를 조건별로 묶어두면 맞춤 캠페인을 보낼 수 있습니다."
     },
     "description": "팬 프로필과 세그먼트를 관리하여 오디언스를 분석하세요",
     "pageGuideTitle": "오디언스 CRM",
@@ -896,7 +918,8 @@
       "참여도·상호작용·최근 활동 순으로 정렬하여 핵심 팬을 파악하세요",
       "세그먼트 탭에서 조건 기반으로 팬을 그룹화하고 타겟 마케팅에 활용하세요",
       "자동 갱신 세그먼트를 설정하면 조건에 맞는 팬이 자동으로 추가됩니다"
-    ]
+    ],
+    "emptyProfilesDescription": "연동된 채널에서 시청자 정보를 수집하면 여기에 표시됩니다."
   },
   "schedule": {
     "recurrence": {
@@ -1935,7 +1958,12 @@
     "deleteMessage": "삭제한 템플릿은 되돌릴 수 없습니다.",
     "form": {
       "nameRequired": "템플릿 이름을 입력해주세요"
-    }
+    },
+    "searchLabel": "템플릿 검색",
+    "bulkDeleteTitle": "선택한 템플릿을 삭제할까요?",
+    "bulkDeleteMessage": "템플릿 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+    "bulkDeleteDone": "템플릿 {count}개를 삭제했습니다",
+    "emptyNoneDescription": "자주 쓰는 제목·설명·해시태그를 템플릿으로 저장해 업로드 시간을 줄이세요."
   },
   "brandKit": {
     "title": "브랜드 키트",
@@ -2014,7 +2042,19 @@
     "dismiss": "거절",
     "emptySuggestionsTitle": "재활용 제안이 없습니다",
     "emptySuggestionsDescription": "AI가 기존 영상을 분석하여 재활용 제안을 생성합니다",
-    "deleteConfirmTitle": "재활용 항목을 삭제할까요?"
+    "deleteConfirmTitle": "재활용 항목을 삭제할까요?",
+    "searchLabel": "재활용 항목 검색",
+    "searchPlaceholder": "영상 제목으로 검색",
+    "sortName": "이름순",
+    "sortActiveFirst": "활성 우선",
+    "sortNextSchedule": "다음 예약순",
+    "sortVideoCount": "영상 수순",
+    "filterAll": "전체",
+    "filterActive": "활성",
+    "filterInactive": "비활성",
+    "bulkDeleteTitle": "선택한 재활용 항목을 삭제할까요?",
+    "bulkDeleteMessage": "재활용 항목 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+    "bulkDeleteDone": "재활용 항목 {count}개를 삭제했습니다"
   },
   "trend": {
     "title": "트렌드 모니터링",
@@ -2077,7 +2117,14 @@
       "targetValueRequired": "목표값을 입력해주세요",
       "dateRangeRequired": "시작일과 종료일을 선택해주세요",
       "endDateAfterStartDate": "종료일은 시작일보다 뒤여야 합니다"
-    }
+    },
+    "searchLabel": "목표 검색",
+    "searchPlaceholder": "목표 이름으로 검색",
+    "sortTitle": "제목순",
+    "bulkDeleteTitle": "선택한 목표를 삭제할까요?",
+    "bulkDeleteMessage": "목표 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+    "bulkDeleteDone": "목표 {count}개를 삭제했습니다",
+    "deleteFailed": "목표 삭제에 실패했습니다"
   },
   "abTest": {
     "title": "A/B 테스트",
@@ -2199,7 +2246,21 @@
     "recommendations": "추천 행동",
     "aiInsightEmpty": "AI 분석 버튼을 눌러 경쟁자와의 비교 인사이트를 받아보세요",
     "confirmDelete": "정말 이 경쟁 채널을 삭제하시겠습니까?",
-    "deleteTitle": "경쟁 채널을 삭제할까요?"
+    "deleteTitle": "경쟁 채널을 삭제할까요?",
+    "searchLabel": "경쟁 채널 검색",
+    "searchPlaceholder": "채널 이름으로 검색",
+    "sortName": "이름순",
+    "sortSubscribers": "구독자순",
+    "sortGrowth": "성장률순",
+    "sortAvgViews": "평균 조회수순",
+    "filterAll": "전체",
+    "filterTracking": "추적 중",
+    "filterUntracked": "추적 안 함",
+    "bulkDeleteTitle": "선택한 경쟁 채널을 삭제할까요?",
+    "bulkDeleteMessage": "경쟁 채널 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+    "bulkDeleteDone": "경쟁 채널 {count}개를 삭제했습니다",
+    "bulkDeleteFailed": "경쟁 채널 삭제에 실패했습니다",
+    "emptyListDescription": "비교할 채널을 등록하면 구독자·조회수 추이를 나란히 볼 수 있습니다."
   },
   "automation": {
     "title": "자동화 규칙",
@@ -2236,7 +2297,21 @@
     "emptyWorkflowsDesc": "조건 분기와 다중 액션을 포함한 고급 자동화를 만들어보세요",
     "createFirstWorkflow": "첫 워크플로우 만들기",
     "deleteRuleTitle": "자동화 규칙을 삭제할까요?",
-    "deleteWorkflowTitle": "워크플로우를 삭제할까요?"
+    "deleteWorkflowTitle": "워크플로우를 삭제할까요?",
+    "searchRulesLabel": "자동화 규칙 검색",
+    "searchRulesPlaceholder": "규칙 이름으로 검색",
+    "searchWorkflowsLabel": "워크플로우 검색",
+    "searchWorkflowsPlaceholder": "워크플로우 이름으로 검색",
+    "sortName": "이름순",
+    "sortRecent": "최근순",
+    "sortEnabledFirst": "활성 우선",
+    "sortExecutions": "실행 횟수순",
+    "filterAll": "전체",
+    "filterEnabled": "활성",
+    "filterDisabled": "비활성",
+    "bulkDeleteRulesTitle": "선택한 규칙을 삭제할까요?",
+    "bulkDeleteWorkflowsTitle": "선택한 워크플로우를 삭제할까요?",
+    "bulkDeleteMessage": "{count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
   },
   "revenue": {
     "title": "수익 분석",
@@ -2446,7 +2521,18 @@
     "aiGenerated": "AI 생성",
     "credits": "5 크레딧",
     "deleteTitle": "아이디어를 삭제할까요?",
-    "deleteMessage": "삭제한 아이디어는 되돌릴 수 없습니다."
+    "deleteMessage": "삭제한 아이디어는 되돌릴 수 없습니다.",
+    "searchLabel": "아이디어 검색",
+    "sortTitle": "제목순",
+    "sortRecent": "최근순",
+    "sortPriority": "우선순위순",
+    "sortDueDate": "마감일순",
+    "bulkDeleteTitle": "선택한 아이디어를 삭제할까요?",
+    "bulkDeleteMessage": "아이디어 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+    "bulkDeleteDone": "아이디어 {count}개를 삭제했습니다",
+    "emptyTitle": "아직 아이디어가 없습니다",
+    "emptyDescription": "떠오른 콘텐츠 아이디어를 기록해두면 나중에 영상으로 만들 수 있습니다.",
+    "createFirstIdea": "첫 아이디어 추가"
   },
   "team": {
     "description": "팀 멤버 관리 및 협업 활동 추적",
@@ -2550,7 +2636,22 @@
       "retrySuccess": "재시도 성공 ({code})",
       "retryFailed": "재시도 실패 ({code})",
       "retryError": "재시도 중 오류가 발생했습니다."
-    }
+    },
+    "searchLabel": "웹훅 검색",
+    "searchPlaceholder": "URL 또는 이벤트로 검색",
+    "sortRecent": "최근순",
+    "sortUrl": "URL순",
+    "sortCreated": "생성일순",
+    "sortFailures": "실패 횟수순",
+    "filter": {
+      "all": "전체",
+      "active": "활성",
+      "inactive": "비활성",
+      "failing": "실패 중"
+    },
+    "bulkDeleteTitle": "선택한 웹훅을 삭제할까요?",
+    "bulkDeleteMessage": "웹훅 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+    "bulkDeleteDone": "웹훅 {count}개를 삭제했습니다"
   },
   "activityLog": {
     "title": "활동 로그",
@@ -4792,5 +4893,21 @@
       "deleteTitle": "폴더를 삭제할까요?",
       "deleteMessage": "폴더와 그 안의 에셋이 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
     }
+  },
+  "list": {
+    "searchLabel": "검색",
+    "searchPlaceholder": "검색어를 입력하세요",
+    "sortLabel": "정렬",
+    "sortAsc": "오름차순",
+    "sortDesc": "내림차순",
+    "resultCount": "{count}개",
+    "selectAll": "전체 선택 ({count}개)",
+    "selectItem": "{name} 선택",
+    "selectedCount": "{count}개 선택됨",
+    "clearSelection": "선택 해제",
+    "bulkDelete": "선택 삭제",
+    "noResultsTitle": "검색 결과가 없습니다",
+    "noResultsDescription": "다른 검색어나 필터를 시도해보세요.",
+    "resetFilters": "필터 초기화"
   }
 }

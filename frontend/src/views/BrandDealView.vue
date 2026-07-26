@@ -20,70 +20,133 @@
 
     <!-- 딜 트래커 탭 -->
     <div v-if="activeTab === 'tracker'">
-      <div class="mb-4">
-        <select v-model="statusFilter" class="input-field" @change="filterDeals">
-          <option value="">{{ t('brandDeal.status.all') }}</option>
-          <option value="INQUIRY">{{ t('brandDeal.status.inquiry') }}</option>
-          <option value="NEGOTIATION">{{ t('brandDeal.status.negotiation') }}</option>
-          <option value="CONTRACTED">{{ t('brandDeal.status.contracted') }}</option>
-          <option value="IN_PROGRESS">{{ t('brandDeal.status.inProgress') }}</option>
-          <option value="COMPLETED">{{ t('brandDeal.status.completed') }}</option>
-          <option value="CANCELLED">{{ t('brandDeal.status.cancelled') }}</option>
-        </select>
+      <!-- 검색 · 상태 필터 · 정렬 · 일괄 작업 -->
+      <ListToolbar
+        v-if="!isSourceEmpty"
+        v-model="query"
+        v-model:sort-key="sortKey"
+        v-model:sort-dir="sortDir"
+        :sort-options="sortOptions"
+        :selected-count="selectedCount"
+        :total-count="visibleCount"
+        :search-placeholder="t('brandDeal.searchPlaceholder')"
+        :search-label="t('brandDeal.searchLabel')"
+        @clear-selection="clearSelection"
+      >
+        <template #filters>
+          <select v-model="statusFilter" class="input-field w-auto min-w-[8.5rem]" :aria-label="t('action.filter')">
+            <option value="">{{ t('brandDeal.status.all') }}</option>
+            <option value="INQUIRY">{{ t('brandDeal.status.inquiry') }}</option>
+            <option value="NEGOTIATION">{{ t('brandDeal.status.negotiation') }}</option>
+            <option value="CONTRACTED">{{ t('brandDeal.status.contracted') }}</option>
+            <option value="IN_PROGRESS">{{ t('brandDeal.status.inProgress') }}</option>
+            <option value="COMPLETED">{{ t('brandDeal.status.completed') }}</option>
+            <option value="CANCELLED">{{ t('brandDeal.status.cancelled') }}</option>
+          </select>
+        </template>
+
+        <template #bulk-actions>
+          <button
+            type="button"
+            class="btn-danger inline-flex items-center gap-1.5"
+            :disabled="bulkDeleting"
+            @click="showBulkDeleteModal = true"
+          >
+            <TrashIcon class="h-4 w-4" aria-hidden="true" />
+            {{ t('list.bulkDelete') }}
+          </button>
+        </template>
+      </ListToolbar>
+
+      <!-- 전체 선택 -->
+      <div v-if="!isSourceEmpty && visibleCount > 0" class="mb-3 flex items-center gap-2">
+        <input
+          id="deals-select-all"
+          type="checkbox"
+          :class="CHECKBOX_CLASS"
+          :checked="allSelected"
+          :indeterminate="someSelected"
+          @change="toggleAll"
+        />
+        <label for="deals-select-all" class="cursor-pointer text-body text-gray-500 dark:text-gray-400">
+          {{ t('list.selectAll', { count: visibleCount }) }}
+        </label>
       </div>
 
-      <!-- 로딩 -->
-      <div v-if="store.loading" class="py-12 text-center text-gray-400 dark:text-gray-500">
-        {{ t('brandDeal.loading') }}
-      </div>
+      <AsyncState
+        :loading="store.loading && isSourceEmpty"
+        :empty="isSourceEmpty"
+        skeleton="card"
+        :skeleton-count="3"
+        :empty-icon="BriefcaseIcon"
+        :empty-title="t('brandDeal.emptyDeals')"
+        :empty-description="t('brandDeal.emptyDealsDescription')"
+        :empty-action-label="t('brandDeal.addDeal')"
+        :retryable="false"
+        @empty-action="showCreateModal = true"
+      >
+        <!-- 검색·필터 결과만 비었을 때 -->
+        <EmptyState
+          v-if="isResultEmpty"
+          :icon="MagnifyingGlassIcon"
+          :title="t('list.noResultsTitle')"
+          :description="t('list.noResultsDescription')"
+          :action-label="t('list.resetFilters')"
+          @action="resetSearchAndFilters"
+        />
 
-      <!-- 빈 상태 -->
-      <div v-else-if="store.deals.length === 0" class="py-12 text-center text-gray-400 dark:text-gray-500">
-        {{ t('brandDeal.emptyDeals') }}
-      </div>
+        <!-- 딜 카드 목록 -->
+        <div v-else class="page-grid page-grid--cards">
+          <div
+            v-for="deal in filtered"
+            :key="deal.id"
+            class="flex items-start gap-2"
+          >
+            <input
+              type="checkbox"
+              :class="[CHECKBOX_CLASS, 'mt-5']"
+              :checked="isSelected(deal.id)"
+              :aria-label="t('list.selectItem', { name: deal.brandName })"
+              @change="toggle(deal.id)"
+            />
+            <div class="card min-w-0 flex-1 space-y-3 transition-shadow hover:shadow-md">
+              <div class="flex items-start justify-between">
+                <h3 class="truncate text-h3 text-gray-900 dark:text-gray-100">{{ deal.brandName }}</h3>
+                <span
+                  :class="[
+                    'inline-flex items-center rounded-full px-2.5 py-0.5 text-caption',
+                    statusBadgeClass(deal.status),
+                  ]"
+                >
+                  {{ statusLabel(deal.status) }}
+                </span>
+              </div>
 
-      <!-- 딜 카드 목록 -->
-      <div v-else class="page-grid page-grid--cards">
-        <div
-          v-for="deal in store.deals"
-          :key="deal.id"
-          class="card space-y-3 transition-shadow hover:shadow-md"
-        >
-          <div class="flex items-start justify-between">
-            <h3 class="truncate text-h3 text-gray-900 dark:text-gray-100">{{ deal.brandName }}</h3>
-            <span
-              :class="[
-                'inline-flex items-center rounded-full px-2.5 py-0.5 text-caption',
-                statusBadgeClass(deal.status),
-              ]"
-            >
-              {{ statusLabel(deal.status) }}
-            </span>
-          </div>
+              <div v-if="deal.dealValue != null" class="text-title font-bold text-primary-600 dark:text-primary-400">
+                {{ formatKRW(deal.dealValue) }}
+              </div>
 
-          <div v-if="deal.dealValue != null" class="text-title font-bold text-primary-600 dark:text-primary-400">
-            {{ formatKRW(deal.dealValue) }}
-          </div>
+              <div class="space-y-1 text-body text-gray-500 dark:text-gray-400">
+                <div v-if="deal.contactName" class="flex items-center gap-1">
+                  <span class="font-medium text-gray-600 dark:text-gray-300">{{ t('brandDeal.contactPerson') }}</span> {{ deal.contactName }}
+                </div>
+                <div v-if="deal.deadline" class="flex items-center gap-1">
+                  <span class="font-medium text-gray-600 dark:text-gray-300">{{ t('brandDeal.deadline') }}</span> {{ deal.deadline }}
+                </div>
+              </div>
 
-          <div class="space-y-1 text-body text-gray-500 dark:text-gray-400">
-            <div v-if="deal.contactName" class="flex items-center gap-1">
-              <span class="font-medium text-gray-600 dark:text-gray-300">{{ t('brandDeal.contactPerson') }}</span> {{ deal.contactName }}
+              <div class="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
+                <button
+                  class="text-body-xs text-error-strong transition hover:opacity-80"
+                  @click="handleDeleteDeal(deal.id)"
+                >
+                  {{ t('brandDeal.delete') }}
+                </button>
+              </div>
             </div>
-            <div v-if="deal.deadline" class="flex items-center gap-1">
-              <span class="font-medium text-gray-600 dark:text-gray-300">{{ t('brandDeal.deadline') }}</span> {{ deal.deadline }}
-            </div>
-          </div>
-
-          <div class="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
-            <button
-              class="text-body-xs text-error-strong transition hover:opacity-80"
-              @click="handleDeleteDeal(deal.id)"
-            >
-              {{ t('brandDeal.delete') }}
-            </button>
           </div>
         </div>
-      </div>
+      </AsyncState>
     </div>
 
     <!-- 미디어키트 탭 -->
@@ -246,28 +309,53 @@
       @confirm="confirmDeleteDeal"
       @cancel="deleteTargetId = null"
     />
+
+    <!-- 선택 항목 일괄 삭제 확인 -->
+    <ConfirmModal
+      v-model="showBulkDeleteModal"
+      :title="$t('brandDeal.bulkDeleteTitle')"
+      :message="$t('brandDeal.bulkDeleteMessage', { count: selectedCount })"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="handleBulkDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { PlusIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, TrashIcon, BriefcaseIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 import { useBrandDealStore } from '@/stores/branddeal'
+import { useNotificationStore } from '@/stores/notification'
+import { useListControls, type ListSortOption } from '@/composables/useListControls'
 import OTabs from '@/components/ui/OTabs.vue'
+import AsyncState from '@/components/common/AsyncState.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import ListToolbar from '@/components/common/ListToolbar.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import type { BrandDeal } from '@/types/branddeal'
 
 const { t, tm } = useI18n({ useScope: 'global' })
 const store = useBrandDealStore()
+const notificationStore = useNotificationStore()
+
+/** 체크박스 공통 스타일 — 목록 확산 시 그대로 복사해 쓴다. */
+const CHECKBOX_CLASS =
+  'h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-gray-600'
 
 const activeTab = ref('tracker')
+/** 상태 필터 — 예전에는 서버 재조회(`loadDeals(status)`)였지만, "원본이 비었는지"와
+ *  "필터 결과만 비었는지"를 구분하려면 원본 배열이 유지되어야 하므로 클라이언트 필터로 옮겼다. */
 const statusFilter = ref('')
 const showCreateModal = ref(false)
 const showDeleteModal = ref(false)
 const deleteTargetId = ref<number | null>(null)
+const showBulkDeleteModal = ref(false)
+const bulkDeleting = ref(false)
 
 const newDeal = reactive({
   brandName: '',
@@ -324,8 +412,43 @@ function formatKRW(value: number): string {
   return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value)
 }
 
-async function filterDeals() {
-  await store.loadDeals(statusFilter.value || undefined)
+// --- 검색 · 정렬 · 선택 ---
+const sortOptions = computed<ListSortOption<BrandDeal>[]>(() => [
+  { key: 'recent', label: t('brandDeal.sortRecent'), accessor: 'createdAt', kind: 'date', defaultDir: 'desc' },
+  { key: 'deadline', label: t('brandDeal.sortDeadline'), accessor: 'deadline', kind: 'date', defaultDir: 'asc' },
+  { key: 'value', label: t('brandDeal.sortValue'), accessor: 'dealValue', kind: 'number', defaultDir: 'desc' },
+  { key: 'brand', label: t('brandDeal.sortBrand'), accessor: 'brandName', kind: 'string', defaultDir: 'asc' },
+])
+
+const {
+  query,
+  sortKey,
+  sortDir,
+  filtered,
+  visibleCount,
+  isSourceEmpty,
+  isResultEmpty,
+  resetFilters,
+  selectedIds,
+  selectedCount,
+  allSelected,
+  someSelected,
+  isSelected,
+  toggle,
+  toggleAll,
+  clearSelection,
+} = useListControls<BrandDeal>(() => store.deals, {
+  searchFields: ['brandName', 'contactName', 'contactEmail', 'notes', 'deliverables'],
+  sortOptions,
+  defaultSortKey: 'recent',
+  filters: computed(() =>
+    statusFilter.value === '' ? [] : [(deal: BrandDeal) => deal.status === statusFilter.value],
+  ),
+})
+
+const resetSearchAndFilters = () => {
+  resetFilters()
+  statusFilter.value = ''
 }
 
 function resetNewDeal() {
@@ -368,6 +491,22 @@ async function confirmDeleteDeal() {
     await store.deleteDeal(id)
   } catch (e) {
     console.error(t('brandDeal.deleteFailed'), e)
+  }
+}
+
+async function handleBulkDelete() {
+  const ids = [...selectedIds.value]
+  if (ids.length === 0) return
+  bulkDeleting.value = true
+  try {
+    await Promise.all(ids.map(id => store.deleteDeal(id)))
+    notificationStore.success(t('brandDeal.bulkDeleteDone', { count: ids.length }))
+  } catch (e) {
+    console.error(t('brandDeal.deleteFailed'), e)
+    notificationStore.error(t('brandDeal.bulkDeleteFailed'))
+  } finally {
+    bulkDeleting.value = false
+    clearSelection()
   }
 }
 
