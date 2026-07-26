@@ -9,6 +9,7 @@ import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.PlanLimitExceededException
+import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.schedule.Schedule
@@ -52,6 +53,8 @@ class StreamPublishUseCase(
     @Transactional
     fun initiate(userId: Long, file: MultipartFile, request: StreamPublishRequest): StreamPublishResponse {
         val fileSize = file.size
+
+        validateRequest(file, request)
 
         // 1. 플랜 한도 확인 (월간 업로드 횟수 + 스토리지 쿼터)
         val subscription = subscriptionRepository.findByUserId(userId)
@@ -168,12 +171,69 @@ class StreamPublishUseCase(
         return StreamPublishResponse(videoId = videoId)
     }
 
+    fun getCapabilities(): List<PlatformUploadCapability> = PlatformUploadCapabilities.all()
+
+    private fun validateRequest(file: MultipartFile, request: StreamPublishRequest) {
+        val filename = file.originalFilename?.trim().orEmpty()
+        val contentType = file.contentType?.trim().orEmpty()
+        FileValidationUtil.validate(filename, contentType, file.size)
+
+        require(request.title.isNotBlank()) { "제목을 입력해주세요." }
+        require(request.platforms.isNotEmpty()) { "게시할 플랫폼을 하나 이상 선택해주세요." }
+
+        val duplicates = request.platforms.groupingBy { it.platform }.eachCount().filterValues { it > 1 }.keys
+        require(duplicates.isEmpty()) { "같은 플랫폼을 중복 선택할 수 없습니다: ${duplicates.joinToString()}" }
+
+        val extension = filename.substringAfterLast('.', "").lowercase()
+        request.platforms.forEach { platformRequest ->
+            val capability = PlatformUploadCapabilities.get(platformRequest.platform)
+                ?: throw IllegalArgumentException("영상 직접 업로드를 지원하지 않는 플랫폼입니다: ${platformRequest.platform}")
+            require(capability.directVideoUpload) {
+                capability.unavailableReason ?: "${platformRequest.platform} 영상 직접 업로드는 현재 지원하지 않습니다."
+            }
+            require(streamWriterFactories.any { it.platform == platformRequest.platform }) {
+                "${platformRequest.platform} 업로드 모듈이 활성화되지 않았습니다."
+            }
+            require(file.size <= capability.maxFileSizeBytes) {
+                "${platformRequest.platform} 최대 파일 크기(${capability.maxFileSizeBytes / (1024 * 1024)}MB)를 초과합니다."
+            }
+            require(extension in capability.acceptedExtensions) {
+                "${platformRequest.platform}은(는) .$extension 파일을 지원하지 않습니다. 지원 형식: ${capability.acceptedExtensions.joinToString { ".$it" }}"
+            }
+            require(platformRequest.scheduledAt == null || capability.scheduling) {
+                "${platformRequest.platform}은(는) API 예약 게시를 지원하지 않습니다. 즉시 게시를 선택해주세요."
+            }
+            require(platformRequest.scheduledAt == null || platformRequest.scheduledAt.isAfter(LocalDateTime.now().plusMinutes(5))) {
+                "예약 시간은 현재보다 최소 5분 이후여야 합니다."
+            }
+
+            val title = platformRequest.title ?: request.title
+            val description = platformRequest.description ?: request.description.orEmpty()
+            val tags = platformRequest.tags ?: request.tags
+            require(title.isNotBlank()) { "${platformRequest.platform} 제목을 입력해주세요." }
+            require(title.length <= capability.maxTitleLength) {
+                "${platformRequest.platform} 제목은 ${capability.maxTitleLength}자까지 입력할 수 있습니다."
+            }
+            if (capability.maxDescriptionLength == 0) {
+                // 별도 설명 필드가 없는 플랫폼은 writer가 제목/태그만으로 게시 문구를 구성한다.
+            } else {
+                require(description.length <= capability.maxDescriptionLength) {
+                    "${platformRequest.platform} 설명은 ${capability.maxDescriptionLength}자까지 입력할 수 있습니다."
+                }
+            }
+            require(tags.size <= capability.maxTagCount) {
+                "${platformRequest.platform} 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다."
+            }
+        }
+    }
+
     private fun runStreamingUpload(
         videoId: Long,
         tempFile: java.io.File,
         fileSize: Long,
         platformContexts: List<StreamPlatformContext>,
     ) {
+        val openedWriters = mutableListOf<PlatformStreamWriter>()
         try {
             // 각 플랫폼별 writer 생성
             val writerMap: Map<StreamPlatformContext, PlatformStreamWriter> = platformContexts.mapNotNull { ctx ->
@@ -183,7 +243,9 @@ class StreamPublishUseCase(
                     updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, "지원되지 않는 플랫폼: ${ctx.platform}")
                     null
                 } else {
-                    ctx to factory.createWriter()
+                    val writer = factory.createWriter()
+                    openedWriters += writer
+                    ctx to writer
                 }
             }.toMap()
 
@@ -270,6 +332,7 @@ class StreamPublishUseCase(
                 updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, "스트리밍 업로드 실패: ${e.message}")
             }
         } finally {
+            openedWriters.forEach { writer -> runCatching { writer.abort() } }
             // 임시 파일 삭제
             try {
                 Files.deleteIfExists(tempFile.toPath())

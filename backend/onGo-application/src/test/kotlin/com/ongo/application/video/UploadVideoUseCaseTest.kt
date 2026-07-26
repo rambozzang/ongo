@@ -12,13 +12,14 @@ import kotlin.test.assertEquals
 class UploadVideoUseCaseTest {
 
     private val videoRepository = mockk<VideoRepository>()
+    private val storageService = mockk<StorageService>(relaxed = true)
 
     private lateinit var useCase: UploadVideoUseCase
 
     @BeforeEach
     fun setUp() {
         clearAllMocks()
-        useCase = UploadVideoUseCase(videoRepository)
+        useCase = UploadVideoUseCase(videoRepository, storageService)
     }
 
     @Test

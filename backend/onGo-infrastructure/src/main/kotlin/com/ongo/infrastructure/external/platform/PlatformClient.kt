@@ -5,6 +5,9 @@ import com.ongo.common.exception.PlatformUploadException
 import org.springframework.web.client.RestClient
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.net.HttpURLConnection
+import java.net.URI
+import java.nio.file.Files
 
 private val fileDownloadClient: RestClient = RestClient.create()
 
@@ -24,6 +27,29 @@ fun downloadFileBytes(fileUrl: String): ByteArray {
     }
 
     return response.body!!
+}
+
+fun downloadFileToTemp(fileUrl: String): java.io.File {
+    val tempFile = Files.createTempFile("ongo-cloud-source-", ".upload").toFile()
+    try {
+        val connection = URI.create(fileUrl).toURL().openConnection() as HttpURLConnection
+        connection.connectTimeout = 10_000
+        connection.readTimeout = 30 * 60 * 1000
+        connection.instanceFollowRedirects = true
+        connection.requestMethod = "GET"
+        val status = connection.responseCode
+        if (status !in 200..299) {
+            throw PlatformUploadException("DOWNLOAD", "파일 다운로드 실패 (status=$status)")
+        }
+        connection.inputStream.use { input ->
+            tempFile.outputStream().buffered().use { output -> input.copyTo(output) }
+        }
+        connection.disconnect()
+        return tempFile
+    } catch (e: Exception) {
+        Files.deleteIfExists(tempFile.toPath())
+        throw e
+    }
 }
 
 interface PlatformClient {

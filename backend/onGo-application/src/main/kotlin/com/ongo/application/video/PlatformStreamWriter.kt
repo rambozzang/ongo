@@ -24,4 +24,6 @@ interface PlatformStreamWriter {
     fun writeChunk(chunk: ByteArray, offset: Long, totalSize: Long)
     /** 업로드를 완료하고 결과를 반환 */
     fun complete(): PlatformUploadResult
+    /** 실패/취소 시 임시 리소스를 정리한다. */
+    fun abort() = Unit
 }

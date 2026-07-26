@@ -29,6 +29,11 @@ class StreamPublishController(
     private val objectMapper: ObjectMapper,
 ) {
 
+    @Operation(summary = "플랫폼별 영상 업로드 기능 및 제약 조회")
+    @RequiresPermission(Permission.VIDEO_CREATE)
+    @GetMapping("/stream-publish/capabilities")
+    fun capabilities() = ResData(data = streamPublishUseCase.getCapabilities())
+
     @Operation(
         summary = "스트리밍 게시",
         description = "영상 파일과 메타데이터를 받아 서버에 저장하지 않고 선택한 플랫폼에 직접 스트리밍 업로드합니다. 202 Accepted를 즉시 반환하며 실제 업로드는 백그라운드에서 진행됩니다."
@@ -45,7 +50,11 @@ class StreamPublishController(
         @RequestPart("metadata") metadataJson: String,
         @RequestPart("file") file: MultipartFile,
     ): ResponseEntity<ResData<StreamPublishResponse>> {
-        val metadataDto = objectMapper.readValue(metadataJson, StreamPublishMetadataRequest::class.java)
+        val metadataDto = try {
+            objectMapper.readValue(metadataJson, StreamPublishMetadataRequest::class.java)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("게시 정보 형식이 올바르지 않습니다: ${e.message}", e)
+        }
 
         val request = StreamPublishRequest(
             title = metadataDto.title,

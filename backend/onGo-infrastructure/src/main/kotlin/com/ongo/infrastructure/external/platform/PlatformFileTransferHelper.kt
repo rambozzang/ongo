@@ -7,11 +7,13 @@ import org.springframework.http.MediaType
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
+import org.springframework.core.io.FileSystemResource
+import java.io.File
 import java.time.Duration
 
 /**
  * 플랫폼 업로드 URL로 파일 데이터를 전송하는 헬퍼.
- * ByteArray 기반으로 동작 — S3 다운로드 및 임시 파일 불필요.
+ * 대용량 파일을 메모리에 올리지 않고 파일/제한된 크기의 청크로 전송한다.
  */
 @Component
 class PlatformFileTransferHelper(
@@ -58,14 +60,14 @@ class PlatformFileTransferHelper(
      * YouTube: 세션 URI에 ByteArray 전체를 단일 PUT으로 업로드.
      * 응답 body에 video resource JSON이 담겨 있어 videoId를 추출.
      */
-    fun uploadToYouTubeSession(sessionUri: String, data: ByteArray): String {
-        log.info("YouTube 파일 업로드: {} bytes → session", data.size)
+    fun uploadToYouTubeSession(sessionUri: String, file: File): String {
+        log.info("YouTube 파일 업로드: {} bytes → session", file.length())
 
         val responseBody = transferClient.put()
             .uri(sessionUri)
             .header(HttpHeaders.CONTENT_TYPE, "video/*")
-            .header(HttpHeaders.CONTENT_LENGTH, data.size.toString())
-            .body(data)
+            .header(HttpHeaders.CONTENT_LENGTH, file.length().toString())
+            .body(FileSystemResource(file))
             .retrieve()
             .body(String::class.java)
 
@@ -84,15 +86,17 @@ class PlatformFileTransferHelper(
      * TikTok: uploadUrl에 ByteArray를 청크 단위로 PUT 업로드.
      * Content-Range: bytes {start}-{end}/{total} 형식.
      */
-    fun uploadChunkedToTikTok(uploadUrl: String, data: ByteArray, chunkSize: Long) {
-        val fileSize = data.size.toLong()
+    fun uploadChunkedToTikTok(uploadUrl: String, file: File, chunkSize: Long) {
+        val fileSize = file.length()
         var offset = 0L
 
         log.info("TikTok 청크 업로드 시작: {} bytes, chunkSize={}", fileSize, chunkSize)
 
-        while (offset < fileSize) {
-            val end = minOf(offset + chunkSize, fileSize) - 1
-            val chunk = data.copyOfRange(offset.toInt(), (end + 1).toInt())
+        file.inputStream().buffered().use { input ->
+          while (offset < fileSize) {
+            val expected = minOf(chunkSize, fileSize - offset).toInt()
+            val chunk = input.readNBytes(expected)
+            val end = offset + chunk.size - 1
             val contentRange = "bytes $offset-$end/$fileSize"
 
             log.debug("TikTok 청크 업로드: {}", contentRange)
@@ -107,6 +111,7 @@ class PlatformFileTransferHelper(
                 .toBodilessEntity()
 
             offset = end + 1
+          }
         }
 
         log.info("TikTok 청크 업로드 완료")
@@ -115,15 +120,15 @@ class PlatformFileTransferHelper(
     /**
      * Naver Clip: uploadUrl에 ByteArray 전체를 단일 PUT 업로드.
      */
-    fun uploadToNaverClip(uploadUrl: String, data: ByteArray, authHeader: String) {
-        log.info("Naver Clip 파일 업로드: {} bytes", data.size)
+    fun uploadToNaverClip(uploadUrl: String, file: File, authHeader: String) {
+        log.info("Naver Clip 파일 업로드: {} bytes", file.length())
 
         transferClient.put()
             .uri(uploadUrl)
             .header(HttpHeaders.CONTENT_TYPE, "video/mp4")
-            .header(HttpHeaders.CONTENT_LENGTH, data.size.toString())
+            .header(HttpHeaders.CONTENT_LENGTH, file.length().toString())
             .header(HttpHeaders.AUTHORIZATION, authHeader)
-            .body(data)
+            .body(FileSystemResource(file))
             .retrieve()
             .toBodilessEntity()
 

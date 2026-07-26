@@ -3,11 +3,15 @@ package com.ongo.infrastructure.upload
 import com.ongo.application.video.PlatformUploadConfig
 import com.ongo.application.video.PlatformUploadResult
 import com.ongo.application.video.PlatformUploadService
+import com.ongo.application.video.PlatformStreamWriterFactory
+import com.ongo.application.video.PlatformUploadCapabilities
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.infrastructure.external.platform.PlatformClientFactory
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
+import com.ongo.infrastructure.external.platform.downloadFileToTemp
+import com.ongo.domain.video.VideoPlatformMeta
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.FileNotFoundException
@@ -19,6 +23,7 @@ import java.net.SocketTimeoutException
 class PlatformUploadServiceImpl(
     private val platformClientFactory: PlatformClientFactory,
     private val channelRepository: ChannelRepository,
+    private val streamWriterFactories: List<PlatformStreamWriterFactory>,
 ) : PlatformUploadService {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -41,12 +46,16 @@ class PlatformUploadServiceImpl(
         val channel = channelRepository.findByUserIdAndPlatform(userId, config.platform)
             ?: throw NotFoundException("채널", "${config.platform} (userId=$userId)")
 
-        val client = platformClientFactory.getClient(config.platform)
-
         var lastException: Exception? = null
         for (attempt in 0 until MAX_RETRIES) {
             try {
-                val result = client.uploadVideo(
+                val directFactory = streamWriterFactories.find { it.platform == config.platform }
+                    ?.takeIf { PlatformUploadCapabilities.get(config.platform)?.directVideoUpload == true }
+                val result = if (directFactory != null) {
+                    uploadFromCloudUrl(directFactory, config, fileUrl, channel.accessToken, channel.platformChannelId)
+                } else {
+                    val client = platformClientFactory.getClient(config.platform)
+                    val clientResult = client.uploadVideo(
                     PlatformUploadRequest(
                         fileUrl = fileUrl,
                         title = config.title,
@@ -59,13 +68,15 @@ class PlatformUploadServiceImpl(
                         fileSize = config.fileSize,
                         scheduledAt = config.scheduledAt,
                     )
-                )
+                    )
+                    PlatformUploadResult(
+                        success = true,
+                        platformVideoId = clientResult.platformVideoId,
+                        platformUrl = clientResult.platformUrl,
+                    )
+                }
 
-                return PlatformUploadResult(
-                    success = true,
-                    platformVideoId = result.platformVideoId,
-                    platformUrl = result.platformUrl,
-                )
+                return result
             } catch (e: Exception) {
                 lastException = e
                 if (!isTransient(e) || attempt == MAX_RETRIES - 1) {
@@ -85,6 +96,47 @@ class PlatformUploadServiceImpl(
             success = false,
             errorMessage = lastException?.message ?: "알 수 없는 오류가 발생했습니다",
         )
+    }
+
+    private fun uploadFromCloudUrl(
+        factory: PlatformStreamWriterFactory,
+        config: PlatformUploadConfig,
+        fileUrl: String,
+        accessToken: String,
+        platformChannelId: String?,
+    ): PlatformUploadResult {
+        val sourceFile = downloadFileToTemp(fileUrl)
+        val writer = factory.createWriter()
+        try {
+          writer.initSession(
+            meta = VideoPlatformMeta(
+                videoUploadId = config.videoUploadId,
+                title = config.title,
+                description = config.description,
+                tags = config.tags,
+                visibility = config.visibility,
+                customThumbnailUrl = config.thumbnailUrl,
+            ),
+            accessToken = accessToken,
+            platformChannelId = platformChannelId,
+            fileSize = sourceFile.length(),
+            scheduledAt = config.scheduledAt,
+        )
+          val chunkSize = 256 * 1024
+          var offset = 0L
+          sourceFile.inputStream().buffered().use { input ->
+            while (true) {
+              val chunk = input.readNBytes(chunkSize)
+              if (chunk.isEmpty()) break
+              writer.writeChunk(chunk, offset, sourceFile.length())
+              offset += chunk.size
+            }
+          }
+          return writer.complete()
+        } finally {
+          writer.abort()
+          java.nio.file.Files.deleteIfExists(sourceFile.toPath())
+        }
     }
 
     private fun isTransient(e: Exception): Boolean {

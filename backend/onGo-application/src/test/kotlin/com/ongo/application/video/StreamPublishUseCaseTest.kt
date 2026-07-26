@@ -48,13 +48,21 @@ class StreamPublishUseCaseTest {
     private val subscriptionRepository = mockk<SubscriptionRepository>()
     private val channelRepository = mockk<ChannelRepository>()
     private val storageQuotaUseCase = mockk<StorageQuotaUseCase>(relaxed = true)
-    private val streamWriterFactories = emptyList<PlatformStreamWriterFactory>()
+    private val streamWriterFactories = listOf(
+        stubFactory(Platform.YOUTUBE),
+        stubFactory(Platform.TIKTOK),
+    )
     private val scheduleRepository = mockk<ScheduleRepository>(relaxed = true)
 
     private lateinit var useCase: StreamPublishUseCase
 
     private val userId = 1L
     private val fileSize = 10_000_000L // 10MB
+
+    private fun stubFactory(targetPlatform: Platform) = object : PlatformStreamWriterFactory {
+        override val platform = targetPlatform
+        override fun createWriter(): PlatformStreamWriter = error("테스트에서는 비동기 writer를 실행하지 않습니다")
+    }
 
     @BeforeEach
     fun setUp() {
@@ -89,6 +97,7 @@ class StreamPublishUseCaseTest {
         val file = mockk<MultipartFile>()
         every { file.size } returns fileSize
         every { file.originalFilename } returns name
+        every { file.contentType } returns "video/mp4"
         every { file.transferTo(any<java.io.File>()) } just Runs
         every { file.inputStream } returns ByteArrayInputStream(ByteArray(0))
         return file

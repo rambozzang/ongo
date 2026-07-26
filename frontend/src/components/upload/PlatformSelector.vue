@@ -7,12 +7,16 @@
         <div
           v-for="platform in ALL_PLATFORMS"
           :key="platform"
+          role="button"
+          :tabindex="canSelect(platform) ? 0 : -1"
+          :aria-disabled="!canSelect(platform)"
+          :aria-pressed="isSelected(platform)"
           class="relative rounded-xl border-2 p-4 transition-all"
           :class="
             isConnected(platform)
               ? getChannel(platform)?.tokenStatus === 'EXPIRED'
                 ? 'cursor-not-allowed border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/10 opacity-70'
-                : STREAM_UNSUPPORTED.has(platform)
+                : !canUploadVideo(platform) && mediaType === 'VIDEO'
                   ? 'cursor-not-allowed border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 opacity-70'
                   : isSelected(platform)
                     ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
@@ -20,6 +24,8 @@
               : 'cursor-default border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 opacity-60'
           "
           @click="togglePlatform(platform)"
+          @keydown.enter.prevent="togglePlatform(platform)"
+          @keydown.space.prevent="togglePlatform(platform)"
         >
           <div class="flex items-center gap-3">
             <div
@@ -38,8 +44,11 @@
               <p v-else-if="getChannel(platform)?.tokenStatus === 'EXPIRING_SOON'" class="text-xs text-amber-600">
                 토큰 만료 임박
               </p>
-              <p v-else-if="isConnected(platform) && STREAM_UNSUPPORTED.has(platform)" class="text-xs text-amber-600">
-                스트리밍 업로드 미지원 (준비 중)
+              <p v-else-if="isConnected(platform) && getCapability(platform)?.cloudVideoUpload && !getCapability(platform)?.directVideoUpload && mediaType === 'VIDEO'" class="text-xs text-blue-700 dark:text-blue-400">
+                클라우드 경유 업로드
+              </p>
+              <p v-else-if="isConnected(platform) && !canUploadVideo(platform) && mediaType === 'VIDEO'" class="text-xs text-amber-700 dark:text-amber-400">
+                {{ getCapability(platform)?.unavailableReason || '영상 업로드 미지원' }}
               </p>
               <p v-else-if="isConnected(platform)" class="text-xs text-green-600">연동됨</p>
               <router-link
@@ -64,6 +73,20 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div
+      v-if="selectedPlatforms.length > 0"
+      class="rounded-lg border p-4"
+      :class="validationIssues.length > 0 ? 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30' : 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30'"
+      :role="validationIssues.length > 0 ? 'alert' : 'status'"
+    >
+      <p class="text-sm font-semibold" :class="validationIssues.length > 0 ? 'text-red-800 dark:text-red-300' : 'text-green-800 dark:text-green-300'">
+        {{ validationIssues.length > 0 ? `게시 전 ${validationIssues.length}개 항목을 확인해주세요` : `${selectedPlatforms.length}개 플랫폼에 게시할 준비가 됐습니다` }}
+      </p>
+      <ul v-if="validationIssues.length > 0" class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">
+        <li v-for="issue in validationIssues" :key="issue">{{ issue }}</li>
+      </ul>
     </div>
 
     <!-- Per-platform metadata tabs -->
@@ -134,11 +157,15 @@
             </span>
           </div>
           <textarea
+            v-if="(PLATFORM_LIMITS[activeTab]?.description || 0) > 0"
             v-model="platformMeta[activeTab]!.description"
             rows="3"
             class="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             @input="emitUpdate"
           />
+          <p v-else class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+            이 플랫폼은 별도 설명 필드를 제공하지 않아 제목과 태그로 게시 문구를 구성합니다.
+          </p>
         </div>
 
         <!-- Tags -->
@@ -202,6 +229,8 @@
                 ? 'bg-primary-600 text-white'
                 : 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
             "
+            :disabled="!allSelectedSupportScheduling"
+            :title="!allSelectedSupportScheduling ? '선택한 플랫폼 중 API 예약 게시를 지원하지 않는 플랫폼이 있습니다' : undefined"
             @click="scheduleMode = true"
           >
             <CalendarDaysIcon class="h-4 w-4" />
@@ -263,18 +292,19 @@ import { SparklesIcon } from '@heroicons/vue/24/solid'
 import type { Platform, Channel } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
 import type { Visibility, PlatformPublishConfig } from '@/types/video'
+import type { MediaType, PlatformUploadCapability } from '@/types/video'
 import type { ScheduleSuggestion } from '@/types/ai'
 
-const ALL_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP']
-
-/** 스트리밍 업로드 미지원 플랫폼 (공개 URL 필요) */
-const STREAM_UNSUPPORTED: Set<Platform> = new Set(['INSTAGRAM'])
+const ALL_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'FACEBOOK', 'NAVER_CLIP', 'TWITTER', 'THREADS']
 
 const PLATFORM_LIMITS: Partial<Record<Platform, { title: number; description: number }>> = {
   YOUTUBE: { title: 100, description: 5000 },
-  TIKTOK: { title: 150, description: 2200 },
-  INSTAGRAM: { title: 100, description: 2200 },
-  NAVER_CLIP: { title: 100, description: 2000 },
+  TIKTOK: { title: 2200, description: 0 },
+  INSTAGRAM: { title: 2200, description: 0 },
+  FACEBOOK: { title: 255, description: 5000 },
+  NAVER_CLIP: { title: 100, description: 1000 },
+  TWITTER: { title: 280, description: 0 },
+  THREADS: { title: 500, description: 0 },
 }
 
 const props = defineProps<{
@@ -285,11 +315,15 @@ const props = defineProps<{
   baseVisibility: Visibility
   scheduledAt?: string
   aiScheduleSuggestions: ScheduleSuggestion[]
+  capabilities: PlatformUploadCapability[]
+  file: File | null
+  mediaType: MediaType
 }>()
 
 const emit = defineEmits<{
   'update:platforms': [configs: PlatformPublishConfig[]]
   'update:scheduledAt': [value: string | undefined]
+  'update:valid': [value: boolean]
 }>()
 
 const selectedPlatforms = ref<Platform[]>([])
@@ -301,16 +335,92 @@ const showSuggestions = ref(false)
 const platformTagInput = ref('')
 
 const todayStr = computed(() => {
-  const d = new Date()
-  return d.toISOString().split('T')[0]
+  return formatLocalDate(new Date())
 })
 
 const platformMeta = reactive<Partial<Record<Platform, { title: string; description: string; tags: string[] }>>>({
   YOUTUBE: { title: '', description: '', tags: [] },
   TIKTOK: { title: '', description: '', tags: [] },
   INSTAGRAM: { title: '', description: '', tags: [] },
+  FACEBOOK: { title: '', description: '', tags: [] },
   NAVER_CLIP: { title: '', description: '', tags: [] },
+  TWITTER: { title: '', description: '', tags: [] },
+  THREADS: { title: '', description: '', tags: [] },
 })
+
+const capabilityMap = computed(() => new Map(props.capabilities.map((item) => [item.platform, item])))
+
+function getCapability(platform: Platform): PlatformUploadCapability | undefined {
+  return capabilityMap.value.get(platform)
+}
+
+function canSelect(platform: Platform): boolean {
+  const channel = getChannel(platform)
+  if (!channel || channel.tokenStatus === 'EXPIRED') return false
+  return props.mediaType !== 'VIDEO' || canUploadVideo(platform)
+}
+
+function canUploadVideo(platform: Platform): boolean {
+  const capability = getCapability(platform)
+  return capability?.directVideoUpload === true || capability?.cloudVideoUpload === true
+}
+
+const allSelectedSupportScheduling = computed(() =>
+  props.mediaType !== 'VIDEO' || selectedPlatforms.value.every((platform) => getCapability(platform)?.scheduling === true),
+)
+
+const validationIssues = computed(() => {
+  const issues: string[] = []
+  for (const platform of selectedPlatforms.value) {
+    const label = PLATFORM_CONFIG[platform].label
+    const capability = getCapability(platform)
+    const meta = platformMeta[platform]
+    if (props.mediaType === 'VIDEO' && !canUploadVideo(platform)) {
+      issues.push(`${label}: 영상 업로드를 지원하지 않습니다.`)
+      continue
+    }
+    if (!meta?.title.trim()) issues.push(`${label}: 제목이 필요합니다.`)
+    if (props.mediaType !== 'VIDEO') continue
+    if (props.file && capability) {
+      const extension = props.file.name.split('.').pop()?.toLowerCase() || ''
+      if (props.file.size > capability.maxFileSizeBytes) {
+        issues.push(`${label}: 파일 크기가 최대 ${formatFileSize(capability.maxFileSizeBytes)}를 초과합니다.`)
+      }
+      if (!capability.acceptedExtensions.includes(extension)) {
+        issues.push(`${label}: .${extension} 형식을 지원하지 않습니다.`)
+      }
+    }
+    if (meta && capability && meta.title.length > capability.maxTitleLength) {
+      issues.push(`${label}: 제목은 ${capability.maxTitleLength}자까지 입력할 수 있습니다.`)
+    }
+    if (meta && capability && capability.maxDescriptionLength > 0 && meta.description.length > capability.maxDescriptionLength) {
+      issues.push(`${label}: 설명은 ${capability.maxDescriptionLength}자까지 입력할 수 있습니다.`)
+    }
+    if (meta && capability && meta.tags.length > capability.maxTagCount) {
+      issues.push(`${label}: 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다.`)
+    }
+    if (props.scheduledAt && capability && !capability.scheduling) {
+      issues.push(`${label}: API 예약 게시를 지원하지 않습니다.`)
+    }
+  }
+  if (props.scheduledAt && new Date(props.scheduledAt).getTime() <= Date.now() + 5 * 60 * 1000) {
+    issues.push('예약 시간은 현재보다 최소 5분 이후여야 합니다.')
+  }
+  return issues
+})
+
+function formatFileSize(bytes: number): string {
+  return bytes >= 1024 ** 3 ? `${Math.round(bytes / 1024 ** 3)}GB` : `${Math.round(bytes / 1024 ** 2)}MB`
+}
+
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+watch(validationIssues, (issues) => emit('update:valid', selectedPlatforms.value.length > 0 && issues.length === 0), { immediate: true })
 
 // Sync base metadata when it changes
 watch(
@@ -347,9 +457,7 @@ function isSelected(platform: Platform): boolean {
 }
 
 function togglePlatform(platform: Platform) {
-  const ch = getChannel(platform)
-  if (!ch || ch.tokenStatus === 'EXPIRED') return
-  if (STREAM_UNSUPPORTED.has(platform)) return
+  if (!canSelect(platform)) return
 
   const idx = selectedPlatforms.value.indexOf(platform)
   if (idx >= 0) {
@@ -366,6 +474,10 @@ function togglePlatform(platform: Platform) {
       meta.tags = [...props.baseTags]
     }
     selectedPlatforms.value.push(platform)
+    if (!getCapability(platform)?.scheduling && scheduleMode.value) {
+      scheduleMode.value = false
+      emit('update:scheduledAt', undefined)
+    }
     if (!activeTab.value) activeTab.value = platform
   }
   emitUpdate()
@@ -402,6 +514,7 @@ function emitUpdate() {
       description: meta?.description || '',
       tags: meta?.tags || [],
       visibility: props.baseVisibility,
+      scheduledAt: props.mediaType !== 'VIDEO' || getCapability(p)?.scheduling ? props.scheduledAt : undefined,
     }
   })
   emit('update:platforms', configs)
@@ -412,6 +525,8 @@ function emitSchedule() {
     emit('update:scheduledAt', `${scheduleDate.value}T${scheduleTime.value}:00`)
   }
 }
+
+watch(() => props.scheduledAt, emitUpdate)
 
 function applySuggestion(sug: ScheduleSuggestion) {
   // Find the next occurrence of the suggested day
@@ -424,7 +539,7 @@ function applySuggestion(sug: ScheduleSuggestion) {
 
   const target = new Date(today)
   target.setDate(target.getDate() + daysToAdd)
-  scheduleDate.value = target.toISOString().split('T')[0]
+  scheduleDate.value = formatLocalDate(target)
   scheduleTime.value = sug.time
   showSuggestions.value = false
   emitSchedule()

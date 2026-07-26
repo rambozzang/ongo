@@ -85,6 +85,20 @@ export interface PlatformPublishConfig {
   description: string
   tags: string[]
   visibility: Visibility
+  scheduledAt?: string
+}
+
+export interface PlatformUploadCapability {
+  platform: Platform
+  directVideoUpload: boolean
+  cloudVideoUpload: boolean
+  scheduling: boolean
+  maxFileSizeBytes: number
+  maxTitleLength: number
+  maxDescriptionLength: number
+  maxTagCount: number
+  acceptedExtensions: string[]
+  unavailableReason: string | null
 }
 
 export interface UploadProgress {

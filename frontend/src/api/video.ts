@@ -10,9 +10,16 @@ import type {
   OptimizationCheckResponse,
   VideoTranslation,
   VideoFeedResponse,
+  PlatformUploadCapability,
 } from '@/types/video'
 
 export const videoApi = {
+  getUploadCapabilities() {
+    return apiClient
+      .get<ResData<PlatformUploadCapability[]>>('/videos/stream-publish/capabilities')
+      .then(unwrapResponse)
+  },
+
   list(filter: VideoListFilter & PageRequest) {
     return apiClient
       .get<ResData<PageResponse<Video>>>('/videos', { params: filter })

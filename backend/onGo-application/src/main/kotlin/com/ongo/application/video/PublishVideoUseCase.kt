@@ -1,6 +1,7 @@
 package com.ongo.application.video
 
 import com.ongo.common.enums.UploadStatus
+import com.ongo.common.enums.MediaType
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.util.safeValueOfOrThrow
@@ -29,6 +30,30 @@ class PublishVideoUseCase(
         // 소유자 검증
         if (video.userId != userId) {
             throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        }
+
+        require(configs.isNotEmpty()) { "게시할 플랫폼을 하나 이상 선택해주세요." }
+        val duplicatePlatforms = configs.groupingBy { it.platform }.eachCount().filterValues { it > 1 }.keys
+        require(duplicatePlatforms.isEmpty()) { "같은 플랫폼을 중복 선택할 수 없습니다: ${duplicatePlatforms.joinToString()}" }
+
+        if (video.mediaType == MediaType.VIDEO) {
+            require(video.fileUrl != null) { "업로드가 완료된 영상 파일을 찾을 수 없습니다." }
+            configs.forEach { config ->
+                val capability = PlatformUploadCapabilities.get(config.platform)
+                    ?: throw IllegalArgumentException("영상 게시를 지원하지 않는 플랫폼입니다: ${config.platform}")
+                require(capability.directVideoUpload || capability.cloudVideoUpload) {
+                    capability.unavailableReason ?: "${config.platform} 영상 게시를 지원하지 않습니다."
+                }
+                require(config.scheduledAt == null || capability.scheduling) {
+                    "${config.platform}은(는) API 예약 게시를 지원하지 않습니다."
+                }
+                require(config.title.length <= capability.maxTitleLength) {
+                    "${config.platform} 제목은 ${capability.maxTitleLength}자까지 입력할 수 있습니다."
+                }
+                require(config.tags.size <= capability.maxTagCount) {
+                    "${config.platform} 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다."
+                }
+            }
         }
 
         // DRAFT 상태인지 확인

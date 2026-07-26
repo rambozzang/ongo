@@ -174,6 +174,17 @@ import {
   MagnifyingGlassIcon,
   MegaphoneIcon,
   HandRaisedIcon,
+  QueueListIcon,
+  BoltIcon,
+  PhotoIcon,
+  ArrowPathIcon,
+  ArrowTrendingUpIcon,
+  FlagIcon,
+  IdentificationIcon,
+  BriefcaseIcon,
+  GlobeAltIcon,
+  UserGroupIcon,
+  SignalIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -239,17 +250,28 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/videos', label: t('nav.videos'), icon: FilmIcon },
       { to: '/ai', label: t('nav.ai'), icon: SparklesIcon },
       { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
-      { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
-      { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
       { to: '/abtest', label: t('nav.abtest'), icon: BeakerIcon },
+    ],
+    subGroups: [
+      {
+        key: 'create-library',
+        label: t('nav.subContentManage'),
+        items: [
+          { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
+          { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
+          { to: '/assets', label: t('nav.assets'), icon: PhotoIcon },
+          { to: '/recycling', label: t('nav.recycling'), icon: ArrowPathIcon },
+        ],
+      },
     ],
   },
   // ── 3. 게시 & 스케줄 ──
   {
     label: t('nav.groupPublish'),
     items: [
-      { to: '/schedule', label: t('nav.schedule'), icon: CalendarDaysIcon },
+      { to: '/schedule', label: t('nav.schedule'), icon: QueueListIcon },
       { to: '/calendar', label: t('nav.calendar'), icon: CalendarDaysIcon },
+      { to: '/automation', label: t('nav.automation'), icon: BoltIcon },
     ],
   },
   // ── 4. 분석 ──
@@ -258,9 +280,24 @@ const navGroups = computed<NavGroup[]>(() => [
     items: [
       { to: '/analytics', label: t('nav.analytics'), icon: ChartBarIcon },
       { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
-      { to: '/competitor', label: t('nav.competitor'), icon: UsersIcon },
-      { to: '/channel-audit', label: t('nav.channelAudit'), icon: ClipboardDocumentCheckIcon },
-      { to: '/keyword-research', label: t('nav.keywordResearch'), icon: MagnifyingGlassIcon },
+    ],
+    subGroups: [
+      {
+        key: 'analytics-competitor',
+        label: t('nav.subCompetitor'),
+        items: [
+          { to: '/competitor', label: t('nav.competitor'), icon: UsersIcon },
+          { to: '/channel-audit', label: t('nav.channelAudit'), icon: ClipboardDocumentCheckIcon },
+        ],
+      },
+      {
+        key: 'analytics-growth',
+        label: t('nav.subGrowth'),
+        items: [
+          { to: '/keyword-research', label: t('nav.keywordResearch'), icon: MagnifyingGlassIcon },
+          { to: '/trends', label: t('nav.trends'), icon: ArrowTrendingUpIcon },
+        ],
+      },
     ],
   },
   // ── 5. 소통 ──
@@ -270,6 +307,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { to: '/comments', label: t('nav.comments'), icon: ChatBubbleLeftEllipsisIcon },
       { to: '/inbox', label: t('nav.inbox'), icon: InboxIcon },
       { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
+      { to: '/audience', label: t('nav.audience'), icon: IdentificationIcon },
     ],
   },
   // ── 6. 채널 운영 ──
@@ -277,15 +315,28 @@ const navGroups = computed<NavGroup[]>(() => [
     label: t('nav.groupOperations'),
     items: [
       { to: '/channels', label: t('nav.channels'), icon: LinkIcon },
+      { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
+      { to: '/webhooks', label: t('nav.webhooks'), icon: SignalIcon },
       { to: '/activity-log', label: t('nav.activityLog'), icon: ClockIcon },
     ],
   },
-  // ── 7. UGC 캠페인 ──
+  // ── 7. 비즈니스 (UGC 캠페인 포함) ──
   {
-    label: t('nav.groupUgc'),
+    label: t('nav.groupBusiness'),
     items: [
-      { to: '/ugc/campaigns', label: t('nav.ugcCampaigns'), icon: MegaphoneIcon },
-      { to: '/creator/campaigns', label: t('nav.creatorCampaigns'), icon: HandRaisedIcon },
+      { to: '/goals', label: t('nav.goals'), icon: FlagIcon },
+      { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
+      { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
+    ],
+    subGroups: [
+      {
+        key: 'business-ugc',
+        label: t('nav.groupUgc'),
+        items: [
+          { to: '/ugc/campaigns', label: t('nav.ugcCampaigns'), icon: MegaphoneIcon },
+          { to: '/creator/campaigns', label: t('nav.creatorCampaigns'), icon: HandRaisedIcon },
+        ],
+      },
     ],
   },
 ])

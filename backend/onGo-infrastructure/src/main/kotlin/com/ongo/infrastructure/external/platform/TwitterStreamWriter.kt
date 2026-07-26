@@ -11,7 +11,6 @@ import com.ongo.infrastructure.external.twitter.TwitterMediaApi
 import com.ongo.infrastructure.external.twitter.dto.TwitterCreateTweetRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.io.ByteArrayOutputStream
 import java.time.LocalDateTime
 
 @Component
@@ -38,7 +37,7 @@ class TwitterStreamWriter(
 ) : PlatformStreamWriter {
 
     private val log = LoggerFactory.getLogger(javaClass)
-    private val buffer = ByteArrayOutputStream()
+    private val buffer = TempFileChunkBuffer("twitter")
 
     private var mediaId: String? = null
     private var accessTokenRef: String? = null
@@ -84,21 +83,21 @@ class TwitterStreamWriter(
     }
 
     override fun writeChunk(chunk: ByteArray, offset: Long, totalSize: Long) {
-        buffer.write(chunk)
+        buffer.write(chunk, offset)
     }
 
     override fun complete(): PlatformUploadResult {
         val currentMediaId = mediaId ?: throw IllegalStateException("initSession() 호출 필요")
         val token = accessTokenRef ?: throw IllegalStateException("initSession() 호출 필요")
-        val data = buffer.toByteArray()
+        val file = buffer.finish()
 
         return try {
             // APPEND: 5MB 청크로 분할 전송
             var segmentIndex = 0
-            var offset = 0
-            while (offset < data.size) {
-                val end = minOf(offset + APPEND_CHUNK_SIZE, data.size)
-                val chunk = data.copyOfRange(offset, end)
+            var offset = 0L
+            file.inputStream().buffered().use { input ->
+              while (offset < file.length()) {
+                val chunk = input.readNBytes(minOf(APPEND_CHUNK_SIZE.toLong(), file.length() - offset).toInt())
 
                 fileTransferHelper.appendToTwitterMedia(
                     uploadUrl = "${twitterConfig.getUploadBaseUrl()}/1.1/media/upload.json",
@@ -110,7 +109,8 @@ class TwitterStreamWriter(
 
                 log.debug("Twitter APPEND 완료: segment={}, bytes={}", segmentIndex, chunk.size)
                 segmentIndex++
-                offset = end
+                offset += chunk.size
+              }
             }
 
             // FINALIZE
@@ -152,8 +152,12 @@ class TwitterStreamWriter(
         } catch (e: Exception) {
             log.error("Twitter 스트리밍 업로드 실패", e)
             PlatformUploadResult(success = false, errorMessage = e.message)
+        } finally {
+            buffer.cleanup()
         }
     }
+
+    override fun abort() = buffer.cleanup()
 
     private fun waitForProcessing(mediaId: String, accessToken: String) {
         var attempts = 0

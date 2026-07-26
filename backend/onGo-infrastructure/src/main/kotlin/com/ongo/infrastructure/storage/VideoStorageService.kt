@@ -19,7 +19,11 @@ class VideoStorageService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun generateUploadUrl(videoId: Long, filename: String, contentType: String): String {
-        val objectName = "videos/$videoId/$filename"
+        val safeFilename = filename.substringAfterLast('/').substringAfterLast('\\')
+            .replace(Regex("[^a-zA-Z0-9._-]"), "_")
+            .takeLast(180)
+            .ifBlank { "upload.bin" }
+        val objectName = "videos/$videoId/$safeFilename"
         return storageClient.generatePresignedUploadUrl(objectName, contentType, 60)
     }
 

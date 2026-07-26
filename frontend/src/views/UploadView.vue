@@ -58,13 +58,12 @@
         @error="(msg) => notify.error(msg)"
       />
 
-      <!-- Video upload progress (파일 선택 완료 상태 표시) -->
+      <!-- 파일 선택 완료 상태 (실제 업로드는 3단계에서 수행) -->
       <UploadProgress
         v-else-if="!uploadStore.isImage"
+        variant="selected"
         :file-name="uploadStore.file.name"
         :progress="uploadStore.progress"
-        :uploading="uploadStore.uploading"
-        :completed="uploadCompleted"
         :error="uploadStore.uploadError"
         @cancel="handleUploadCancel"
       />
@@ -80,7 +79,7 @@
 
       <div class="mt-6 flex justify-end">
         <button
-          :disabled="!uploadCompleted"
+          :disabled="!step1Ready"
           class="btn-primary"
           @click="step = 2"
         >
@@ -200,8 +199,12 @@
         :base-visibility="metadata.visibility"
         :scheduled-at="scheduledAt"
         :ai-schedule-suggestions="scheduleSuggestions"
+        :capabilities="uploadCapabilities"
+        :file="uploadStore.file"
+        :media-type="uploadStore.mediaType"
         @update:platforms="(configs) => (platformConfigs = configs)"
         @update:scheduled-at="(v) => (scheduledAt = v)"
+        @update:valid="(v) => (platformSelectionValid = v)"
       />
 
       <!-- Step 3 Platform Preview (comparison mode) -->
@@ -215,6 +218,18 @@
         class="mt-6"
       />
 
+      <!-- 실제 업로드 진행률 (영상 게시 중에만 노출) -->
+      <UploadProgress
+        v-if="publishing && !uploadStore.isImage && uploadStore.file"
+        class="mt-6"
+        :file-name="uploadStore.file.name"
+        :progress="uploadStore.progress"
+        :uploading="uploadStore.uploading"
+        :error="uploadStore.uploadError"
+        :cancellable="uploadStore.canAbort"
+        @cancel="handlePublishCancel"
+      />
+
       <div class="mt-6 flex justify-between">
         <button
           class="btn-secondary"
@@ -224,7 +239,8 @@
         </button>
         <div class="flex items-center gap-2">
           <button
-            :disabled="platformConfigs.length === 0 || publishing"
+            v-if="!uploadStore.isImage"
+            :disabled="platformConfigs.length === 0 || publishing || !platformSelectionValid"
             class="btn-secondary inline-flex items-center gap-2"
             @click="handleAddToQueue"
           >
@@ -232,14 +248,14 @@
             {{ t('upload.addToQueue') }}
           </button>
           <button
-            :disabled="platformConfigs.length === 0 || publishing"
+            :disabled="platformConfigs.length === 0 || publishing || !platformSelectionValid"
             class="btn-primary inline-flex items-center gap-2"
             @click="handleStreamPublish"
           >
             <LoadingSpinner v-if="publishing" size="sm" />
             {{ uploadStore.isImage
                 ? (scheduledAt ? t('upload.publishScheduled') : t('upload.publishNow'))
-                : (publishing ? '업로드 중...' : '업로드 & 게시') }}
+                : (publishing ? t('upload.uploading') : t('upload.uploadAndPublish')) }}
           </button>
         </div>
       </div>
@@ -281,7 +297,7 @@ import { useLocale } from '@/composables/useLocale'
 import { videoApi } from '@/api/video'
 import { aiApi } from '@/api/ai'
 import type { Platform } from '@/types/channel'
-import type { PlatformPublishConfig, OptimizationResult } from '@/types/video'
+import type { PlatformPublishConfig, OptimizationResult, PlatformUploadCapability } from '@/types/video'
 import type { ScheduleSuggestion, PipelineStepType, AiPipelineResponse } from '@/types/ai'
 
 
@@ -316,6 +332,8 @@ const queuePanelOpen = ref(false)
 const pipelineMode = ref(false)
 const pipelineId = ref<string | null>(null)
 const platformConfigs = ref<PlatformPublishConfig[]>([])
+const platformSelectionValid = ref(false)
+const uploadCapabilities = ref<PlatformUploadCapability[]>([])
 
 const platformConfigsAsMetadata = computed(() => {
   const map: Partial<Record<Platform, { title: string; description: string; tags: string[] }>> = {}
@@ -328,6 +346,13 @@ const platformConfigsAsMetadata = computed(() => {
   }
   return map
 })
+
+const requiresCloudUpload = computed(() =>
+  platformConfigs.value.some((config) => {
+    const capability = uploadCapabilities.value.find((item) => item.platform === config.platform)
+    return capability?.directVideoUpload === false && capability.cloudVideoUpload
+  }),
+)
 
 // ─── Optimization check ──────────────────────────────────
 const optimizationResults = ref<OptimizationResult[]>([])
@@ -380,11 +405,13 @@ function handleApplyOptimization() {
   notify.success(t('upload.success.optimized'))
 }
 
-const uploadCompleted = computed(() => {
+// 1단계는 "파일 선택 완료" 여부만 판정한다 — 영상의 실제 업로드는 3단계에서 수행.
+// uploadError는 3단계 게시 실패로도 설정되므로 판정에서 제외한다(다음 단계 영구 비활성화 방지)
+const step1Ready = computed(() => {
   if (uploadStore.isImage) {
     return uploadStore.imageFiles.length > 0
   }
-  return uploadStore.progress.percentage === 100 && !uploadStore.uploading && !uploadStore.uploadError
+  return uploadStore.file !== null && !uploadStore.uploading
 })
 
 onMounted(async () => {
@@ -399,13 +426,13 @@ onMounted(async () => {
     uploadStore.resetUpload()
     uploadQueueStore.clearAll()
   }
-  try {
-    await Promise.all([
-      channelStore.fetchChannels(),
-      creditStore.fetchBalance(),
-    ])
-  } catch {
-    // API failures should not block page rendering
+  const [, , capabilityResult] = await Promise.allSettled([
+    channelStore.fetchChannels(),
+    creditStore.fetchBalance(),
+    videoApi.getUploadCapabilities().then((items) => (uploadCapabilities.value = items)),
+  ])
+  if (capabilityResult.status === 'rejected') {
+    notify.error('플랫폼 업로드 조건을 불러오지 못했습니다. 잠시 후 새로고침해주세요.')
   }
 })
 
@@ -451,6 +478,34 @@ function handleUploadCancel() {
   uploadStore.resetUpload()
 }
 
+function handlePublishCancel() {
+  uploadStore.abortPublish()
+}
+
+// 영상 경로는 3단계 stream-publish 전까지 videoId가 없다 —
+// videoId가 필요한 기능(AI 메타 생성, AI 파이프라인)에서 draft를 즉시 생성한다
+async function ensureVideoId(): Promise<number | null> {
+  if (videoId.value) return videoId.value
+
+  try {
+    const video = await videoApi.create({
+      title: metadata.value.title || t('upload.defaultTitle'),
+      description: metadata.value.description || undefined,
+      tags: metadata.value.tags.length > 0 ? metadata.value.tags : undefined,
+      category: metadata.value.category || undefined,
+      visibility: metadata.value.visibility,
+      mediaType: uploadStore.mediaType,
+    })
+    videoId.value = video.id
+    // 세션 복원(onMounted)이 스토어의 videoId를 읽으므로 함께 동기화
+    uploadStore.videoId = video.id
+    return video.id
+  } catch {
+    notify.error(t('upload.error.saveFailed'))
+    return null
+  }
+}
+
 async function handleStep2Next() {
   if (!metadata.value.title.trim()) {
     notify.error(t('upload.error.titleRequired'))
@@ -469,6 +524,7 @@ async function handleStep2Next() {
         mediaType: 'IMAGE',
       })
       videoId.value = video.id
+      uploadStore.videoId = video.id
 
       if (uploadStore.imageFiles.length > 0) {
         try {
@@ -496,6 +552,16 @@ async function handleStep2Next() {
       notify.error(t('upload.error.updateFailed'))
       return
     }
+
+    // AI 기능이 draft를 먼저 만든 경우 이미지가 아직 안 올라갔을 수 있음
+    if (uploadStore.imageFiles.length > 0 && uploadStore.contentImages.length === 0) {
+      try {
+        await uploadStore.uploadImagesToServer(videoId.value)
+      } catch {
+        notify.error(t('upload.error.imageFailed'))
+        return
+      }
+    }
   }
   // 비디오의 경우: videoId 생성하지 않음 (stream-publish에서 한번에 처리)
 
@@ -513,7 +579,7 @@ async function handleStep2Next() {
 }
 
 async function handleAiGenerate() {
-  if (!videoId.value) {
+  if (!uploadStore.file) {
     notify.error(t('upload.error.fileRequired'))
     return
   }
@@ -524,10 +590,14 @@ async function handleAiGenerate() {
     return
   }
 
+  // 영상은 이 시점에 videoId가 없으므로 draft를 먼저 생성
+  const targetVideoId = await ensureVideoId()
+  if (!targetVideoId) return
+
   aiGenerating.value = true
   try {
     const res = await aiApi.generateMeta({
-      videoId: videoId.value ?? undefined,
+      videoId: targetVideoId,
       useStt: useStt.value,
       targetPlatforms: channelStore.connectedPlatforms,
       tone: 'FRIENDLY',
@@ -557,25 +627,12 @@ async function handleAiGenerate() {
 }
 
 async function handleStartPipeline(steps: PipelineStepType[], channelId?: number) {
-  if (!videoId.value) {
-    try {
-      const video = await videoApi.create({
-        title: metadata.value.title || t('upload.defaultTitle'),
-        description: metadata.value.description || undefined,
-        tags: metadata.value.tags.length > 0 ? metadata.value.tags : undefined,
-        category: metadata.value.category || undefined,
-        visibility: metadata.value.visibility,
-      })
-      videoId.value = video.id
-    } catch {
-      notify.error(t('upload.error.saveFailed'))
-      return
-    }
-  }
+  const targetVideoId = await ensureVideoId()
+  if (!targetVideoId) return
 
   try {
     const res = await aiApi.startPipeline({
-      videoId: videoId.value,
+      videoId: targetVideoId,
       steps: steps,
       channelId: channelId,
     })
@@ -626,6 +683,10 @@ function handlePipelineCancelled() {
 }
 
 async function handleAddToQueue() {
+  if (uploadStore.isImage) {
+    notify.error('사진 콘텐츠는 즉시 게시 또는 예약 게시를 이용해주세요.')
+    return
+  }
   if (!uploadStore.file) {
     notify.error(t('upload.error.fileRequired'))
     return
@@ -647,7 +708,9 @@ async function handleAddToQueue() {
       title: metadata.value.title,
       description: metadata.value.description,
       tags: metadata.value.tags,
+      category: metadata.value.category,
     },
+    platformConfigs: platformConfigs.value,
   })
 
   notify.success(t('upload.success.queued'))
@@ -675,13 +738,16 @@ async function handleStreamPublish() {
     return
   }
 
+  if (!platformSelectionValid.value) {
+    notify.error('플랫폼별 게시 조건을 확인해주세요.')
+    return
+  }
+
   publishing.value = true
   try {
-    const result = await uploadStore.streamPublish(
-      uploadStore.file,
-      metadata.value,
-      platformConfigs.value,
-    )
+    const result = requiresCloudUpload.value
+      ? await uploadStore.cloudPublish(uploadStore.file, metadata.value, platformConfigs.value)
+      : await uploadStore.streamPublish(uploadStore.file, metadata.value, platformConfigs.value)
 
     notify.success(t('upload.success.publishing'))
     publishedVideoId.value = result.videoId

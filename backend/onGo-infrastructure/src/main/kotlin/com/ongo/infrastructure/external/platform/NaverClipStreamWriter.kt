@@ -10,7 +10,6 @@ import com.ongo.infrastructure.external.naverclip.dto.NaverClipUploadCompleteReq
 import com.ongo.infrastructure.external.naverclip.dto.NaverClipUploadInitRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.io.ByteArrayOutputStream
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -30,7 +29,7 @@ class NaverClipStreamWriter(
 ) : PlatformStreamWriter {
 
     private val log = LoggerFactory.getLogger(javaClass)
-    private val buffer = ByteArrayOutputStream()
+    private val buffer = TempFileChunkBuffer("naver-clip")
     private var uploadId: String? = null
     private var uploadUrl: String? = null
     private var accessTokenRef: String? = null
@@ -91,17 +90,17 @@ class NaverClipStreamWriter(
     }
 
     override fun writeChunk(chunk: ByteArray, offset: Long, totalSize: Long) {
-        buffer.write(chunk)
+        buffer.write(chunk, offset)
     }
 
     override fun complete(): PlatformUploadResult {
-        val data = buffer.toByteArray()
+        val file = buffer.finish()
         val uid = uploadId ?: throw IllegalStateException("initSession() 호출 필요")
         val url = uploadUrl ?: throw IllegalStateException("initSession() 호출 필요")
         val token = accessTokenRef ?: throw IllegalStateException("initSession() 호출 필요")
 
         return try {
-            fileTransferHelper.uploadToNaverClip(url, data, "Bearer $token")
+            fileTransferHelper.uploadToNaverClip(url, file, "Bearer $token")
 
             val completeResponse = naverClipApi.completeUpload(
                 authorization = "Bearer $token",
@@ -124,8 +123,12 @@ class NaverClipStreamWriter(
         } catch (e: Exception) {
             log.error("Naver Clip 스트리밍 업로드 실패", e)
             PlatformUploadResult(success = false, errorMessage = e.message)
+        } finally {
+            buffer.cleanup()
         }
     }
+
+    override fun abort() = buffer.cleanup()
 
     private fun mapVisibility(visibility: String) = when (visibility.uppercase()) {
         "PUBLIC" -> "PUBLIC"

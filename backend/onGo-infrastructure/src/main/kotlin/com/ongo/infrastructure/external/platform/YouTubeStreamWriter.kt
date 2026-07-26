@@ -9,7 +9,6 @@ import com.ongo.infrastructure.external.youtube.YouTubeConfig
 import com.ongo.infrastructure.external.youtube.dto.YouTubeUploadRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.io.ByteArrayOutputStream
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -29,7 +28,7 @@ class YouTubeStreamWriter(
 ) : PlatformStreamWriter {
 
     private val log = LoggerFactory.getLogger(javaClass)
-    private val buffer = ByteArrayOutputStream()
+    private val buffer = TempFileChunkBuffer("youtube")
     private var sessionUri: String? = null
 
     companion object {
@@ -95,14 +94,14 @@ class YouTubeStreamWriter(
     }
 
     override fun writeChunk(chunk: ByteArray, offset: Long, totalSize: Long) {
-        buffer.write(chunk)
+        buffer.write(chunk, offset)
     }
 
     override fun complete(): PlatformUploadResult {
-        val data = buffer.toByteArray()
+        val file = buffer.finish()
         val uri = sessionUri ?: throw IllegalStateException("initSession() 호출 필요")
         return try {
-            val videoId = fileTransferHelper.uploadToYouTubeSession(uri, data)
+            val videoId = fileTransferHelper.uploadToYouTubeSession(uri, file)
             log.info("YouTube 스트리밍 업로드 완료: videoId={}", videoId)
             PlatformUploadResult(
                 success = true,
@@ -112,8 +111,12 @@ class YouTubeStreamWriter(
         } catch (e: Exception) {
             log.error("YouTube 스트리밍 업로드 실패", e)
             PlatformUploadResult(success = false, errorMessage = e.message)
+        } finally {
+            buffer.cleanup()
         }
     }
+
+    override fun abort() = buffer.cleanup()
 
     private fun mapVisibility(visibility: String) = when (visibility.uppercase()) {
         "PUBLIC" -> "public"

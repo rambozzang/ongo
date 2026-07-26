@@ -10,6 +10,11 @@ import org.springframework.web.service.annotation.PostExchange
 @HttpExchange
 interface TikTokApi {
 
+    @PostExchange("/v2/post/publish/creator_info/query/")
+    fun queryCreatorPublishInfo(
+        @RequestHeader("Authorization") authorization: String,
+    ): TikTokCreatorPublishInfoResponse
+
     @PostExchange("/v2/post/publish/video/init/")
     fun initVideoUpload(
         @RequestHeader("Authorization") authorization: String,

@@ -14,6 +14,20 @@ export interface PresignedUploadItem {
   error?: string
   startedAt?: string
   completedAt?: string
+  metadata?: {
+    title: string
+    description?: string
+    tags?: string[]
+    category?: string
+  }
+  platformConfigs?: Array<{
+    platform: string
+    title: string
+    description: string
+    tags: string[]
+    visibility: string
+    scheduledAt?: string
+  }>
 }
 
 export interface PresignedUploadOptions {
@@ -41,7 +55,7 @@ export function usePresignedUpload(options: PresignedUploadOptions = {}) {
     return localStorage.getItem('accessToken') || ''
   }
 
-  async function upload(item: PresignedUploadItem): Promise<void> {
+  async function upload(item: PresignedUploadItem): Promise<number | null> {
     const baseUrl = getBaseUrl()
     const token = getToken()
 
@@ -61,7 +75,7 @@ export function usePresignedUpload(options: PresignedUploadOptions = {}) {
 
     if (!initResponse.ok) {
       const errorBody = await initResponse.json().catch(() => null)
-      const message = errorBody?.message || `업로드 초기화 실패: ${initResponse.status}`
+      const message = errorBody?.error || errorBody?.message || `업로드 초기화 실패: ${initResponse.status}`
       throw new Error(message)
     }
 
@@ -141,7 +155,7 @@ export function usePresignedUpload(options: PresignedUploadOptions = {}) {
 
     // Pause로 인한 중단인 경우 완료 처리 스킵
     if (options.shouldContinue && !options.shouldContinue(item.id)) {
-      return
+      return null
     }
 
     // Step 3: 백엔드에 업로드 완료 알림
@@ -155,12 +169,37 @@ export function usePresignedUpload(options: PresignedUploadOptions = {}) {
 
     if (!confirmResponse.ok) {
       const errorBody = await confirmResponse.json().catch(() => null)
-      const message = errorBody?.message || `업로드 완료 확인 실패: ${confirmResponse.status}`
+      const message = errorBody?.error || errorBody?.message || `업로드 완료 확인 실패: ${confirmResponse.status}`
       throw new Error(message)
+    }
+
+    if (item.metadata) {
+      const updateResponse = await fetch(`${baseUrl}/videos/${videoId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(item.metadata),
+      })
+      if (!updateResponse.ok) {
+        const body = await updateResponse.json().catch(() => null)
+        throw new Error(body?.error || body?.message || '콘텐츠 정보 저장에 실패했습니다.')
+      }
+    }
+
+    if (item.platformConfigs?.length) {
+      const publishResponse = await fetch(`${baseUrl}/videos/${videoId}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ platforms: item.platformConfigs }),
+      })
+      if (!publishResponse.ok) {
+        const body = await publishResponse.json().catch(() => null)
+        throw new Error(body?.error || body?.message || '멀티 플랫폼 게시 요청에 실패했습니다.')
+      }
     }
 
     options.onProgress?.(item.id, 100)
     options.onComplete?.(item.id)
+    return videoId
   }
 
   function abort(): void {

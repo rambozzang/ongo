@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Platform } from '@/types/channel'
-import type { MediaType } from '@/types/video'
+import type { MediaType, PlatformPublishConfig } from '@/types/video'
 import { usePresignedUpload } from '@/composables/usePresignedUpload'
 import { useNotificationStore } from '@/stores/notification'
 
@@ -32,7 +32,9 @@ export interface QueueItem {
     title: string
     description: string
     tags: string[]
+    category?: string
   }
+  platformConfigs?: PlatformPublishConfig[]
 }
 
 const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
@@ -406,7 +408,8 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
     })
 
     try {
-      await upload(item)
+      const uploadedVideoId = await upload(item)
+      if (uploadedVideoId === null) return
 
       // Upload complete
       item.status = 'completed'

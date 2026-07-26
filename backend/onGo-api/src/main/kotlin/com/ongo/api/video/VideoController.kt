@@ -42,6 +42,28 @@ class VideoController(
     private val crossPlatformOptimizationUseCase: CrossPlatformOptimizationUseCase,
 ) {
 
+    @Operation(summary = "Presigned 영상 업로드 초기화")
+    @RequiresPermission(Permission.VIDEO_CREATE)
+    @PostMapping("/upload/init")
+    fun initiateUpload(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Valid @RequestBody req: PresignedUploadRequest,
+    ): ResponseEntity<ResData<PresignedUploadResponse>> {
+        val result = uploadVideoUseCase.initiatePresignedUpload(userId, req.filename, req.contentType, req.fileSize)
+        return ResData.success(PresignedUploadResponse(result.videoId, result.uploadUrl))
+    }
+
+    @Operation(summary = "Presigned 영상 업로드 완료 확인")
+    @RequiresPermission(Permission.VIDEO_CREATE)
+    @PostMapping("/{id}/upload/complete")
+    fun confirmUpload(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        uploadVideoUseCase.confirmPresignedUpload(userId, id)
+        return ResData.success(null, "업로드가 확인되었습니다")
+    }
+
     @Operation(
         summary = "콘텐츠 생성",
         description = "메타데이터만으로 콘텐츠 레코드를 생성합니다. 이미지 업로드 또는 AI 파이프라인 등 파일 업로드 없이 레코드가 필요한 경우에 사용합니다."

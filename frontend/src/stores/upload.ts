@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { MediaType, UploadProgress, ContentImage, Visibility, PlatformPublishConfig } from '@/types/video'
 import { videoApi } from '@/api/video'
+import { usePresignedUpload } from '@/composables/usePresignedUpload'
 
 export interface UploadMetadata {
   title: string
@@ -43,6 +44,8 @@ export const useUploadStore = defineStore('upload', () => {
   })
   const uploading = ref(false)
   const uploadError = ref<string | null>(null)
+  // 게시 중인 업로드를 중단할 수 있는지 — streamPublish/cloudPublish가 핸들러를 등록한다
+  const canAbort = ref(false)
 
   // Session state — persists across route navigation
   const step = ref(1)
@@ -55,6 +58,18 @@ export const useUploadStore = defineStore('upload', () => {
   let lastTimestamp = 0
   let lastBytesUploaded = 0
 
+  // 진행 중인 업로드 취소 핸들러 — 경로별(stream/cloud)로 등록·해제한다
+  let abortHandler: (() => void) | null = null
+
+  function registerAbort(handler: (() => void) | null) {
+    abortHandler = handler
+    canAbort.value = handler !== null
+  }
+
+  function abortPublish() {
+    abortHandler?.()
+  }
+
   async function startUpload(selectedFile: File) {
     if (isImageFile(selectedFile)) {
       return startImageUpload([selectedFile])
@@ -62,12 +77,13 @@ export const useUploadStore = defineStore('upload', () => {
 
     file.value = selectedFile
     mediaType.value = 'VIDEO'
+    uploading.value = false
     uploadError.value = null
-    // 업로드 없음 — 진행률을 100%로 설정해서 "완료" 상태로 표시
+    // 실제 업로드는 3단계 stream-publish/cloud-publish에서 수행 — 여기서는 선택된 파일 크기만 기록
     progress.value = {
-      bytesUploaded: selectedFile.size,
+      bytesUploaded: 0,
       bytesTotal: selectedFile.size,
-      percentage: 100,
+      percentage: 0,
       speed: 0,
       remainingSeconds: 0,
     }
@@ -79,10 +95,11 @@ export const useUploadStore = defineStore('upload', () => {
     file.value = files[0]
     uploading.value = false
     uploadError.value = null
+    // 실제 업로드는 uploadImagesToServer에서 수행 — 여기서는 선택된 파일 크기만 기록
     progress.value = {
       bytesUploaded: 0,
-      bytesTotal: 0,
-      percentage: 100,
+      bytesTotal: files.reduce((sum, f) => sum + f.size, 0),
+      percentage: 0,
       speed: 0,
       remainingSeconds: 0,
     }
@@ -155,6 +172,7 @@ export const useUploadStore = defineStore('upload', () => {
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()
+      registerAbort(() => xhr.abort())
 
       xhr.upload.onprogress = (e: ProgressEvent) => {
         if (!e.lengthComputable) return
@@ -176,6 +194,7 @@ export const useUploadStore = defineStore('upload', () => {
 
       xhr.onload = () => {
         uploading.value = false
+        registerAbort(null)
         if (xhr.status === 202 || xhr.status === 200) {
           try {
             const data = JSON.parse(xhr.responseText)
@@ -202,11 +221,13 @@ export const useUploadStore = defineStore('upload', () => {
 
       xhr.onerror = () => {
         uploading.value = false
+        registerAbort(null)
         reject(new Error('네트워크 오류'))
       }
 
       xhr.onabort = () => {
         uploading.value = false
+        registerAbort(null)
         reject(new Error('업로드가 취소되었습니다'))
       }
 
@@ -214,6 +235,63 @@ export const useUploadStore = defineStore('upload', () => {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`)
       xhr.send(formData)
     })
+  }
+
+  async function cloudPublish(
+    targetFile: File,
+    publishMetadata: UploadMetadata,
+    platformConfigs: PlatformPublishConfig[],
+  ): Promise<{ videoId: number }> {
+    uploading.value = true
+    uploadError.value = null
+    progress.value = { bytesUploaded: 0, bytesTotal: targetFile.size, percentage: 0, speed: 0, remainingSeconds: 0 }
+
+    const { upload, abort } = usePresignedUpload({
+      onProgress: (_id, percentage) => {
+        progress.value = {
+          ...progress.value,
+          percentage,
+          bytesUploaded: Math.round(targetFile.size * percentage / 100),
+        }
+      },
+      onSpeedUpdate: (_id, bytesPerSecond, remainingSeconds) => {
+        progress.value = {
+          ...progress.value,
+          speed: bytesPerSecond,
+          remainingSeconds: Math.round(remainingSeconds),
+        }
+      },
+    })
+    registerAbort(abort)
+
+    try {
+      const id = crypto.randomUUID()
+      const resultId = await upload({
+        id,
+        file: targetFile,
+        fileName: targetFile.name,
+        fileSize: targetFile.size,
+        status: 'uploading',
+        progress: 0,
+        metadata: {
+          title: publishMetadata.title,
+          description: publishMetadata.description || undefined,
+          tags: publishMetadata.tags,
+          category: publishMetadata.category || undefined,
+        },
+        platformConfigs,
+      })
+      if (resultId === null) throw new Error('업로드가 취소되었습니다.')
+      videoId.value = resultId
+      progress.value.percentage = 100
+      return { videoId: resultId }
+    } catch (error) {
+      uploadError.value = error instanceof Error ? error.message : '업로드에 실패했습니다.'
+      throw error
+    } finally {
+      uploading.value = false
+      registerAbort(null)
+    }
   }
 
   function resetUpload() {
@@ -224,6 +302,7 @@ export const useUploadStore = defineStore('upload', () => {
     contentImages.value = []
     uploading.value = false
     uploadError.value = null
+    registerAbort(null)
     progress.value = {
       bytesUploaded: 0,
       bytesTotal: 0,
@@ -246,6 +325,7 @@ export const useUploadStore = defineStore('upload', () => {
     isUploading,
     isImage,
     uploadError,
+    canAbort,
     step,
     metadata,
     hasActiveSession,
@@ -253,6 +333,8 @@ export const useUploadStore = defineStore('upload', () => {
     startImageUpload,
     uploadImagesToServer,
     streamPublish,
+    cloudPublish,
+    abortPublish,
     resetUpload,
   }
 })
