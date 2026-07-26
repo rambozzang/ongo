@@ -46,7 +46,15 @@ export const useAuthStore = defineStore('auth', () => {
     await router.push('/dashboard')
   }
 
-  function logout() {
+  async function logout() {
+    // 서버 무효화를 먼저 시도한다. 로컬 토큰만 지우면 refresh token 이 7일,
+    // access token 이 30분 동안 그대로 유효해 "로그아웃했으니 안전하다"는 전제가 깨진다.
+    // 실패해도 로컬 정리는 진행한다 — 사용자를 로그인 상태에 붙잡아 둘 수는 없다.
+    try {
+      await authApi.logout()
+    } catch {
+      // 네트워크 단절·서버 오류 등. 로컬 정리로 폴백한다.
+    }
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
     // 전체 페이지 새로고침으로 이동 — 모든 Pinia 인메모리 상태 확실히 초기화

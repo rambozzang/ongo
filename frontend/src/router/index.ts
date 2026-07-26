@@ -9,6 +9,15 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
+    // 소셜 로그인 콜백. LoginView 가 pathname 에서 provider 를 판별해 처리한다.
+    // 이 라우트가 없으면 catch-all 이 /dashboard 로 보내면서 code·state 쿼리가 사라져
+    // 로그인이 조용히 실패한다.
+    path: '/auth/callback/:provider',
+    name: 'oauth-callback',
+    component: () => import('@/views/LoginView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/onboarding',
     name: 'onboarding',
     component: () => import('@/views/OnboardingView.vue'),

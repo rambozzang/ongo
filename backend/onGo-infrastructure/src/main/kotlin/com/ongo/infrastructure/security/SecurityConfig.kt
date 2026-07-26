@@ -43,6 +43,8 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 val publicPaths = mutableListOf(
                     "/api/v1/auth/login/**",
+                    // 소셜 로그인 CSRF용 state 발급 — 로그인 '전'에 호출되므로 인증을 요구하면 안 된다
+                    "/api/v1/auth/*/state",
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/dev-login", // 관리자 초기 계정 생성용 (모든 프로필 허용)
                     "/swagger-ui/**",

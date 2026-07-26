@@ -21,6 +21,11 @@ export const authApi = {
       .then(unwrapResponse)
   },
 
+  /** 서버 측 무효화 — access token 블랙리스트 등록 + refresh token 전량 삭제 */
+  logout() {
+    return apiClient.post<ResData<void>>('/auth/logout').then(unwrapResponse)
+  },
+
   getProfile() {
     return apiClient.get<ResData<User>>('/auth/profile').then(unwrapResponse)
   },
