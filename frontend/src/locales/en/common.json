@@ -969,7 +969,91 @@
     "aiCredits": "{count} AI credits/month",
     "scheduleDays": "{count}-day scheduled uploads",
     "storage": "Storage:",
-    "free": "Free"
+    "free": "Free",
+    "stepProgress": "{current} / {total}",
+    "welcome": {
+      "tagline": "The platform that gives\ncreators their time back",
+      "features": {
+        "multiUpload": {
+          "title": "One video, every platform",
+          "description": "Publish to YouTube, TikTok, Instagram and 13 more platforms at once"
+        },
+        "aiMetadata": {
+          "title": "AI writes your titles and tags",
+          "description": "Metadata tuned to each platform’s algorithm"
+        },
+        "analytics": {
+          "title": "Unified analytics dashboard",
+          "description": "See performance across every platform at a glance"
+        }
+      },
+      "start": "Get started",
+      "duration": "Takes about a minute"
+    },
+    "steps": {
+      "profile": "Profile",
+      "channels": "Channels",
+      "plan": "Plan",
+      "aiTrial": "Try AI"
+    },
+    "profile": {
+      "title": "Set up your profile",
+      "description": "Choose the name and category other creators will see.",
+      "nickname": "Nickname",
+      "nicknamePlaceholder": "Enter the nickname you’ll go by",
+      "nicknameLength": "2–20 characters",
+      "category": "Creator category",
+      "categoryHint": "Pick the kind of content you mainly create.",
+      "nicknameRequired": "Please enter a nickname.",
+      "nicknameMinLength": "Nickname must be at least 2 characters.",
+      "categoryRequired": "Please select a category.",
+      "saveError": "Failed to save your profile."
+    },
+    "channels": {
+      "title": "Connect your channels",
+      "description": "You need to connect at least one platform.",
+      "connected": "Connected",
+      "disconnect": "Disconnect",
+      "connect": "Connect",
+      "required": "Please connect at least one platform.",
+      "descriptions": {
+        "youtube": "Videos and Shorts",
+        "tiktok": "Short-form content",
+        "instagram": "Reels",
+        "naverClip": "Naver Clip videos",
+        "twitter": "Social video posts",
+        "facebook": "Page videos",
+        "threads": "Threads video posts"
+      }
+    },
+    "plan": {
+      "title": "Choose your plan",
+      "description": "You can change this anytime later."
+    },
+    "aiTrial": {
+      "title": "Try out the AI features",
+      "description": "Use your free credits to see how AI optimizes your content.",
+      "demoTitle": "AI title & tag generation",
+      "demoDescription": "Using a sample video, AI generates titles and hashtags\noptimized for each platform.",
+      "creditCost": "Uses {count} credits",
+      "generating": "Generating...",
+      "tryIt": "Try AI",
+      "resultTitle": "AI results",
+      "suggestedTitles": "Suggested titles",
+      "suggestedTags": "Suggested hashtags",
+      "error": "AI generation failed. Please try again."
+    },
+    "complete": {
+      "title": "Welcome, {nickname}!",
+      "description": "Your onGo setup is complete.",
+      "hint": "Now upload a video and publish it everywhere at once.",
+      "goToUpload": "Upload your first video",
+      "goToDashboard": "Go to dashboard"
+    },
+    "nav": {
+      "skip": "Skip",
+      "finish": "Finish"
+    }
   },
   "preview": {
     "howItLooks": "Preview",
@@ -4956,5 +5040,58 @@
     "noResultsTitle": "No matching results",
     "noResultsDescription": "Try a different search term or filter.",
     "resetFilters": "Reset filters"
+  },
+  "loginView": {
+    "heroTitle": "The platform that gives\ncreators their time back",
+    "heroSubtitle": "One video, every platform.\nAI optimizes it and publishes everywhere at once.",
+    "title": "Get started",
+    "subtitle": "Sign in quickly with your social account.",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithKakao": "Continue with Kakao",
+    "processing": "Signing you in...",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "devLogin": "Developer login",
+    "devLoginHint": "Test with the Admin account",
+    "terms": "By signing up, you agree to the {terms} and {privacy}.",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "devLoginError": "Developer login failed.",
+    "oauthPrepareError": "Couldn't start the sign-in process.",
+    "loginError": "Sign-in failed. Please try again."
+  },
+  "channelCallbackView": {
+    "connecting": "Connecting your channel…",
+    "goBack": "Go back",
+    "invalidCallback": "Invalid callback request. The authorization code or state parameter is missing.",
+    "connectError": "Failed to connect the channel. Please try again."
+  },
+  "videoDetail": {
+    "title": "Video Details",
+    "pageGuideTitle": "Video Details",
+    "backToList": "Back to videos",
+    "notFound": "Video not found",
+    "uploadedAt": "Uploaded",
+    "category": "Category",
+    "uncategorized": "Uncategorized",
+    "tags": "Tags",
+    "uploadPlatforms": "Published platforms",
+    "preview": "Preview",
+    "dailyViewsTrend": "Daily views trend",
+    "notEnoughData": "Not enough data yet",
+    "platformComparison": "Platform comparison",
+    "noAnalyticsData": "No analytics data",
+    "commentsPhase2": "Unified comment management arrives in Phase 2.",
+    "commentsPhase2Hint": "You'll be able to view and reply to comments on each platform.",
+    "noUploadsTitle": "Not published to any platform yet",
+    "noUploadsDescription": "Publish this video to a platform to see its performance data.",
+    "uploadNow": "Publish now",
+    "deleteMessage": "Delete this video? All linked platform data will be removed as well. This cannot be undone.",
+    "pageGuide": [
+      "Check technical details in the Media, Thumbnail, and Subtitles tabs — you can pick a thumbnail and edit subtitles there.",
+      "Switch platform tabs to compare views, likes, comments, and shares across YouTube, TikTok, Instagram, and Naver Clip.",
+      "Hover over a bar in the daily views chart to see the exact figure for that date.",
+      "Use the AI performance score card and anomaly alerts to analyze results and spot what to improve.",
+      "Manage the video with Edit, Recycle, Re-upload, and Delete. Recycling republishes popular content to other platforms."
+    ]
   }
 }

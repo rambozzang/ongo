@@ -4,7 +4,7 @@
       <!-- Loading -->
       <div v-if="isProcessing" class="space-y-4">
         <div class="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
-        <p class="text-gray-600 dark:text-gray-300">채널을 연결하고 있습니다…</p>
+        <p class="text-body text-gray-600 dark:text-gray-300">{{ $t('channelCallbackView.connecting') }}</p>
       </div>
 
       <!-- Error -->
@@ -14,8 +14,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <p class="text-error-strong">{{ errorMessage }}</p>
-        <button class="btn-primary mt-4" @click="goBack">돌아가기</button>
+        <p class="text-body text-error-strong">{{ errorMessage }}</p>
+        <button class="btn-primary mt-4" @click="goBack">{{ $t('channelCallbackView.goBack') }}</button>
       </div>
     </div>
   </div>
@@ -23,11 +23,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { channelApi } from '@/api/channel'
 import { getOAuthRedirectUri } from '@/utils/oauth'
 import type { Platform } from '@/types/channel'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 
@@ -44,7 +46,7 @@ onMounted(async () => {
   const state = route.query.state as string | undefined
 
   if (!code || !state) {
-    errorMessage.value = '잘못된 콜백 요청입니다. 인가 코드 또는 상태 정보가 누락되었습니다.'
+    errorMessage.value = t('channelCallbackView.invalidCallback')
     isProcessing.value = false
     return
   }
@@ -65,7 +67,7 @@ onMounted(async () => {
     await channelApi.connect(platform, request)
     router.replace(returnPath)
   } catch {
-    errorMessage.value = '채널 연동에 실패했습니다. 다시 시도해주세요.'
+    errorMessage.value = t('channelCallbackView.connectError')
     isProcessing.value = false
   } finally {
     sessionStorage.removeItem('twitter_code_verifier')

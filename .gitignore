@@ -40,3 +40,8 @@ frontend/tsconfig.node.tsbuildinfo
 
 # Claude local config
 .claude/
+
+# Agent tooling state (세션마다 갱신되어 diff 노이즈만 만든다)
+.omc/
+**/.omc/
+.impeccable.md

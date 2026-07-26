@@ -14,6 +14,7 @@ import {
   ViewColumnsIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/vue/24/outline'
+import { useAuthStore } from '@/stores/auth'
 import { useTeamStore } from '@/stores/team'
 import { useApprovalStore } from '@/stores/approval'
 import { useNotification } from '@/composables/useNotification'
@@ -34,6 +35,7 @@ import type { TeamMember, TeamInvite, TeamRole, InviteStatus } from '@/types/tea
 
 const { t } = useI18n({ useScope: 'global' })
 
+const authStore = useAuthStore()
 const teamStore = useTeamStore()
 const approvalStore = useApprovalStore()
 const notification = useNotification()
@@ -112,13 +114,22 @@ const {
 })
 
 /**
+ * 본인 판정. 로그인 계정의 이메일로 대조한다.
+ *
+ * `TeamMember.id`는 team_member 레코드의 id이지 user id가 아니라서(백엔드
+ * `TeamUseCase.toResponse`) 사용자 식별에 쓸 수 없다. 목록에 본인이 없으면
+ * 아무도 본인으로 판정되지 않으며, 그게 맞는 동작이다.
+ */
+const isSelf = (member: TeamMember): boolean =>
+  !!authStore.user?.email && member.email === authStore.user.email
+
+/**
  * 일괄 제거 대상에서 빠지는 멤버.
  * - **소유자**: 기존 `TeamMemberCard`의 가드(`canManage && member.role !== 'owner'`)를 그대로 따른다.
  * - **본인**: 스스로를 팀에서 빼면 관리 권한까지 함께 사라져 되돌릴 수 없다.
- *   (`currentUser`는 이 화면이 예전부터 쓰던 `members[0]` 규칙을 그대로 사용한다.)
  */
 const isRemovableMember = (member: TeamMember): boolean =>
-  member.role !== 'owner' && member.id !== currentUser.value?.id
+  member.role !== 'owner' && !isSelf(member)
 
 const removableMembers = computed(() => filteredMembers.value.filter(isRemovableMember))
 

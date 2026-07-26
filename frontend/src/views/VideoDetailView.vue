@@ -5,29 +5,28 @@
     <div class="mb-6 flex items-center gap-3">
       <button
         class="rounded-lg p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+        :aria-label="$t('videoDetail.backToList')"
         @click="router.push('/videos')"
       >
         <ArrowLeftIcon class="h-5 w-5" />
       </button>
-      <h1 class="text-h1 font-bold text-gray-900 dark:text-gray-100">영상 상세</h1>
+      <h1 class="text-h1 font-bold text-gray-900 dark:text-gray-100">{{ $t('videoDetail.title') }}</h1>
     </div>
 
     <PageGuide
-title="영상 상세" :items="[
-      '미디어 정보·썸네일·자막 탭에서 영상의 기술 정보를 확인하고 썸네일 선택·자막 편집이 가능합니다',
-      '플랫폼 탭을 전환하면 YouTube·TikTok·Instagram·Naver Clip별 조회수·좋아요·댓글·공유 성과를 비교할 수 있습니다',
-      '일별 조회수 추이 차트에서 막대 위에 마우스를 올리면 해당 날짜의 정확한 수치를 확인할 수 있습니다',
-      'AI 성과 점수 카드와 이상 탐지 알림으로 영상 성과를 분석하고 개선점을 파악하세요',
-      '수정·재활용·재업로드·삭제 버튼으로 영상을 관리하세요. 재활용 시 인기 콘텐츠를 다른 플랫폼에 재게시할 수 있습니다',
-    ]" />
+      :title="$t('videoDetail.pageGuideTitle')"
+      :items="($tm('videoDetail.pageGuide') as string[])"
+    />
 
     <LoadingSpinner v-if="loading" full-page />
 
     <!-- Not Found -->
     <div v-else-if="!video" class="card py-16 text-center">
       <ExclamationTriangleIcon class="mx-auto mb-4 h-12 w-12 text-gray-400 dark:text-gray-500" />
-      <p class="text-title font-medium text-gray-600 dark:text-gray-300">영상을 찾을 수 없습니다</p>
-      <button class="btn-primary mt-4" @click="router.push('/videos')">영상 목록으로</button>
+      <p class="text-title font-medium text-gray-600 dark:text-gray-300">{{ $t('videoDetail.notFound') }}</p>
+      <button class="btn-primary mt-4" @click="router.push('/videos')">
+        {{ $t('videoDetail.backToList') }}
+      </button>
     </div>
 
     <template v-else>
@@ -72,28 +71,32 @@ title="영상 상세" :items="[
             <!-- Info Grid -->
             <div class="mb-5 grid grid-cols-2 gap-4 tablet:grid-cols-4">
               <div>
-                <p class="text-caption text-gray-500 dark:text-gray-400">업로드일</p>
+                <p class="text-caption text-gray-500 dark:text-gray-400">{{ $t('videoDetail.uploadedAt') }}</p>
                 <p class="mt-0.5 text-body font-semibold text-gray-900 dark:text-gray-100">
                   {{ formatDate(video.createdAt) }}
                 </p>
               </div>
               <div>
-                <p class="text-caption text-gray-500 dark:text-gray-400">파일 크기</p>
+                <p class="text-caption text-gray-500 dark:text-gray-400">
+                  {{ $t('video.mediaInfo.fileSize') }}
+                </p>
                 <p class="mt-0.5 text-body font-semibold text-gray-900 dark:text-gray-100">
                   {{ video.fileSize ? formatFileSize(video.fileSize) : '-' }}
                 </p>
               </div>
               <div>
-                <p class="text-caption text-gray-500 dark:text-gray-400">카테고리</p>
+                <p class="text-caption text-gray-500 dark:text-gray-400">{{ $t('videoDetail.category') }}</p>
                 <p class="mt-0.5 text-body font-semibold text-gray-900 dark:text-gray-100">
-                  {{ video.category ?? '미지정' }}
+                  {{ video.category ?? $t('videoDetail.uncategorized') }}
                 </p>
               </div>
             </div>
 
             <!-- Tags -->
             <div v-if="video.tags.length > 0" class="mb-5">
-              <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">태그</p>
+              <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">
+                {{ $t('videoDetail.tags') }}
+              </p>
               <div class="flex flex-wrap gap-1.5">
                 <span
                   v-for="tag in video.tags"
@@ -107,7 +110,9 @@ title="영상 상세" :items="[
 
             <!-- Platform Upload Badges -->
             <div v-if="video.uploads.length > 0" class="mb-5">
-              <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">업로드 플랫폼</p>
+              <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">
+                {{ $t('videoDetail.uploadPlatforms') }}
+              </p>
               <div class="flex flex-wrap gap-2">
                 <div
                   v-for="upload in video.uploads"
@@ -124,23 +129,23 @@ title="영상 상세" :items="[
             <div class="flex flex-wrap gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
               <button class="btn-primary" @click="showPreviewModal = true">
                 <PlayIcon class="mr-1.5 h-4 w-4" />
-                미리보기
+                {{ $t('videoDetail.preview') }}
               </button>
               <button class="btn-primary" @click="handleEdit">
                 <PencilSquareIcon class="mr-1.5 h-4 w-4" />
-                수정
+                {{ $t('action.edit') }}
               </button>
               <button class="btn-secondary" @click="handleRecycle">
                 <ArrowPathRoundedSquareIcon class="mr-1.5 h-4 w-4" />
-                재활용
+                {{ $t('videos.contextRecycle') }}
               </button>
               <button class="btn-secondary" @click="handleReUpload">
                 <ArrowPathIcon class="mr-1.5 h-4 w-4" />
-                재업로드
+                {{ $t('videos.contextReupload') }}
               </button>
               <button class="btn-danger" @click="showDeleteModal = true">
                 <TrashIcon class="mr-1.5 h-4 w-4" />
-                삭제
+                {{ $t('action.delete') }}
               </button>
             </div>
           </div>
@@ -190,7 +195,7 @@ title="영상 상세" :items="[
           <!-- Views -->
           <div class="card text-center">
             <EyeIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
-            <p class="text-caption text-gray-500 dark:text-gray-400">조회수</p>
+            <p class="text-caption text-gray-500 dark:text-gray-400">{{ $t('videos.views') }}</p>
             <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
               {{ formatCompactNumber(currentAnalytics?.views ?? 0) }}
             </p>
@@ -208,7 +213,7 @@ title="영상 상세" :items="[
           <!-- Likes -->
           <div class="card text-center">
             <HeartIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
-            <p class="text-caption text-gray-500 dark:text-gray-400">좋아요</p>
+            <p class="text-caption text-gray-500 dark:text-gray-400">{{ $t('videos.likes') }}</p>
             <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
               {{ formatCompactNumber(currentAnalytics?.likes ?? 0) }}
             </p>
@@ -226,7 +231,7 @@ title="영상 상세" :items="[
           <!-- Comments -->
           <div class="card text-center">
             <ChatBubbleLeftEllipsisIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
-            <p class="text-caption text-gray-500 dark:text-gray-400">댓글</p>
+            <p class="text-caption text-gray-500 dark:text-gray-400">{{ $t('videos.comments') }}</p>
             <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
               {{ formatCompactNumber(currentAnalytics?.comments ?? 0) }}
             </p>
@@ -235,7 +240,7 @@ title="영상 상세" :items="[
           <!-- Shares -->
           <div class="card text-center">
             <ShareIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
-            <p class="text-caption text-gray-500 dark:text-gray-400">공유</p>
+            <p class="text-caption text-gray-500 dark:text-gray-400">{{ $t('videos.shares') }}</p>
             <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
               {{ formatCompactNumber(currentAnalytics?.shares ?? 0) }}
             </p>
@@ -246,7 +251,9 @@ title="영상 상세" :items="[
         <div class="page-grid page-grid--split mb-6">
           <!-- Daily Views Trend Line Chart Placeholder -->
           <div class="card">
-            <h3 class="mb-4 text-h3 text-gray-900 dark:text-gray-100">일별 조회수 추이</h3>
+            <h3 class="mb-4 text-h3 text-gray-900 dark:text-gray-100">
+              {{ $t('videoDetail.dailyViewsTrend') }}
+            </h3>
             <div
               v-if="currentAnalytics && currentAnalytics.dailyTrend.length > 0"
               class="relative h-64"
@@ -298,18 +305,24 @@ title="영상 상세" :items="[
             <div v-else class="flex h-64 items-center justify-center">
               <div class="text-center">
                 <ChartBarIcon class="mx-auto mb-2 h-10 w-10 text-gray-300 dark:text-gray-600" />
-                <p class="text-body text-gray-400 dark:text-gray-500">데이터가 충분하지 않습니다</p>
+                <p class="text-body text-gray-400 dark:text-gray-500">
+                  {{ $t('videoDetail.notEnoughData') }}
+                </p>
               </div>
             </div>
           </div>
 
           <!-- Platform Comparison Grouped Bar Chart Placeholder -->
           <div class="card">
-            <h3 class="mb-4 text-h3 text-gray-900 dark:text-gray-100">플랫폼 간 비교</h3>
+            <h3 class="mb-4 text-h3 text-gray-900 dark:text-gray-100">
+              {{ $t('videoDetail.platformComparison') }}
+            </h3>
             <div v-if="analyticsData.length > 0" class="h-64 space-y-4 overflow-y-auto">
               <!-- Views comparison -->
               <div>
-                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">조회수</p>
+                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">
+                  {{ $t('videos.views') }}
+                </p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
@@ -336,7 +349,9 @@ title="영상 상세" :items="[
               </div>
               <!-- Likes comparison -->
               <div>
-                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">좋아요</p>
+                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">
+                  {{ $t('videos.likes') }}
+                </p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
@@ -363,7 +378,9 @@ title="영상 상세" :items="[
               </div>
               <!-- Comments comparison -->
               <div>
-                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">댓글</p>
+                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">
+                  {{ $t('videos.comments') }}
+                </p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
@@ -390,7 +407,9 @@ title="영상 상세" :items="[
               </div>
               <!-- Shares comparison -->
               <div>
-                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">공유</p>
+                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">
+                  {{ $t('videos.shares') }}
+                </p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
@@ -419,7 +438,9 @@ title="영상 상세" :items="[
             <div v-else class="flex h-64 items-center justify-center">
               <div class="text-center">
                 <ChartBarIcon class="mx-auto mb-2 h-10 w-10 text-gray-300 dark:text-gray-600" />
-                <p class="text-body text-gray-400 dark:text-gray-500">분석 데이터가 없습니다</p>
+                <p class="text-body text-gray-400 dark:text-gray-500">
+                  {{ $t('videoDetail.noAnalyticsData') }}
+                </p>
               </div>
             </div>
           </div>
@@ -428,7 +449,9 @@ title="영상 상세" :items="[
         <!-- Recent Comments Section (Phase 2 placeholder) -->
         <div class="card">
           <div class="flex items-center justify-between">
-            <h3 class="text-h3 text-gray-900 dark:text-gray-100">최근 댓글</h3>
+            <h3 class="text-h3 text-gray-900 dark:text-gray-100">
+              {{ $t('videos.recentComments') }}
+            </h3>
             <span class="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-caption text-gray-500 dark:text-gray-400">
               Phase 2
             </span>
@@ -436,10 +459,10 @@ title="영상 상세" :items="[
           <div class="mt-6 flex flex-col items-center justify-center py-8 text-center">
             <ChatBubbleLeftEllipsisIcon class="mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
             <p class="text-body text-gray-500 dark:text-gray-400">
-              댓글 통합 관리 기능은 Phase 2에서 제공됩니다.
+              {{ $t('videoDetail.commentsPhase2') }}
             </p>
             <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">
-              플랫폼별 댓글 조회 및 답글 작성이 가능해집니다.
+              {{ $t('videoDetail.commentsPhase2Hint') }}
             </p>
           </div>
         </div>
@@ -448,13 +471,15 @@ title="영상 상세" :items="[
       <!-- No Uploads State -->
       <div v-else class="card py-12 text-center">
         <CloudArrowUpIcon class="mx-auto mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
-        <p class="mb-1 text-body-lg font-medium text-gray-600 dark:text-gray-300">아직 플랫폼에 업로드되지 않았습니다</p>
+        <p class="mb-1 text-body-lg font-medium text-gray-600 dark:text-gray-300">
+          {{ $t('videoDetail.noUploadsTitle') }}
+        </p>
         <p class="mb-4 text-body text-gray-400 dark:text-gray-500">
-          영상을 플랫폼에 업로드하면 성과 데이터를 확인할 수 있습니다.
+          {{ $t('videoDetail.noUploadsDescription') }}
         </p>
         <button class="btn-primary" @click="handleReUpload">
           <ArrowPathIcon class="mr-1.5 h-4 w-4" />
-          업로드하기
+          {{ $t('videoDetail.uploadNow') }}
         </button>
       </div>
     </template>
@@ -462,10 +487,10 @@ title="영상 상세" :items="[
     <!-- Delete Confirmation Modal -->
     <ConfirmModal
       v-model="showDeleteModal"
-      title="영상 삭제"
-      message="이 영상을 삭제하시겠습니까? 연결된 모든 플랫폼 데이터도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
-      confirm-text="삭제"
-      cancel-text="취소"
+      :title="$t('videos.deleteTitle')"
+      :message="$t('videoDetail.deleteMessage')"
+      :confirm-text="$t('action.delete')"
+      :cancel-text="$t('action.cancel')"
       danger
       @confirm="handleDelete"
     />
@@ -520,6 +545,7 @@ import AnomalyAlertCard from '@/components/analytics/AnomalyAlertCard.vue'
 import FavoriteButton from '@/components/video/FavoriteButton.vue'
 import VideoPreviewModal from '@/components/video/VideoPreviewModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import { useLocale } from '@/composables/useLocale'
 import { useVideoStore } from '@/stores/video'
 import { analyticsApi } from '@/api/analytics'
 import type { VideoAnalytics } from '@/types/analytics'
@@ -535,6 +561,7 @@ const props = defineProps<{
 // ---- Router & Store ----
 
 const router = useRouter()
+const { currentLocale } = useLocale()
 const videoStore = useVideoStore()
 const { currentVideo: video, loading } = storeToRefs(videoStore)
 
@@ -600,12 +627,14 @@ function formatShortDate(dateStr: string | undefined): string {
   return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
-/** Format large numbers with Korean units (천/만/억) */
+/** Compact number formatter — locale-aware units (ko: 천/만/억, en: K/M/B) */
+const compactNumberFormat = computed(
+  () => new Intl.NumberFormat(currentLocale.value, { notation: 'compact', maximumFractionDigits: 1 })
+)
+
+/** Format large numbers with locale-specific units */
 function formatCompactNumber(n: number): string {
-  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`
-  if (n >= 10_000) return `${(n / 10_000).toFixed(1)}만`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}천`
-  return n.toLocaleString('ko-KR')
+  return compactNumberFormat.value.format(n)
 }
 
 /** Format a change percentage with sign */

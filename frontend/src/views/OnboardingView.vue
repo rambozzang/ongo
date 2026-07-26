@@ -4,7 +4,9 @@
     <div class="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4">
       <div class="flex max-w-3xl items-center justify-between">
         <h1 class="text-h2 font-bold text-primary-600">onGo</h1>
-        <span v-if="currentStep > 0 && currentStep <= 4" class="text-body text-gray-400 dark:text-gray-500">{{ currentStep }} / 4</span>
+        <span v-if="currentStep > 0 && currentStep <= 4" class="text-body text-gray-400 dark:text-gray-500">
+          {{ t('onboarding.stepProgress', { current: currentStep, total: steps.length }) }}
+        </span>
       </div>
     </div>
 
@@ -24,8 +26,8 @@
           <div v-if="currentStep === 0" class="max-w-lg text-center">
             <div class="mb-8">
               <h1 class="text-display text-primary-600">onGo</h1>
-              <p class="mt-4 text-h2 text-gray-900 dark:text-gray-100">
-                크리에이터의 시간을<br />되돌려주는 플랫폼
+              <p class="mt-4 whitespace-pre-line text-h2 text-gray-900 dark:text-gray-100">
+                {{ t('onboarding.welcome.tagline') }}
               </p>
             </div>
 
@@ -35,8 +37,8 @@
                   <ArrowUpTrayIcon class="h-6 w-6 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
-                  <p class="font-semibold text-gray-900 dark:text-gray-100">영상 하나로, 모든 플랫폼에</p>
-                  <p class="text-body text-gray-500 dark:text-gray-400">YouTube, TikTok, Instagram 외 13개 플랫폼 동시 게시</p>
+                  <p class="font-semibold text-gray-900 dark:text-gray-100">{{ t('onboarding.welcome.features.multiUpload.title') }}</p>
+                  <p class="text-body text-gray-500 dark:text-gray-400">{{ t('onboarding.welcome.features.multiUpload.description') }}</p>
                 </div>
               </div>
 
@@ -45,8 +47,8 @@
                   <SparklesIcon class="h-6 w-6 text-info-strong" />
                 </div>
                 <div>
-                  <p class="font-semibold text-gray-900 dark:text-gray-100">AI가 제목, 태그를 자동 생성</p>
-                  <p class="text-body text-gray-500 dark:text-gray-400">플랫폼별 알고리즘에 최적화된 메타데이터</p>
+                  <p class="font-semibold text-gray-900 dark:text-gray-100">{{ t('onboarding.welcome.features.aiMetadata.title') }}</p>
+                  <p class="text-body text-gray-500 dark:text-gray-400">{{ t('onboarding.welcome.features.aiMetadata.description') }}</p>
                 </div>
               </div>
 
@@ -55,44 +57,44 @@
                   <ChartBarIcon class="h-6 w-6 text-success-strong" />
                 </div>
                 <div>
-                  <p class="font-semibold text-gray-900 dark:text-gray-100">통합 분석 대시보드</p>
-                  <p class="text-body text-gray-500 dark:text-gray-400">모든 플랫폼의 성과를 한눈에</p>
+                  <p class="font-semibold text-gray-900 dark:text-gray-100">{{ t('onboarding.welcome.features.analytics.title') }}</p>
+                  <p class="text-body text-gray-500 dark:text-gray-400">{{ t('onboarding.welcome.features.analytics.description') }}</p>
                 </div>
               </div>
             </div>
 
             <button class="btn-primary btn-press mt-8 w-full py-3 text-body-lg" @click="startOnboarding">
-              시작하기
+              {{ t('onboarding.welcome.start') }}
             </button>
-            <p class="mt-3 text-caption text-gray-400">1분이면 끝나요</p>
+            <p class="mt-3 text-caption text-gray-400">{{ t('onboarding.welcome.duration') }}</p>
           </div>
 
           <!-- Step 1: Profile -->
           <div v-else-if="currentStep === 1">
             <div class="mb-6 text-center">
-              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">프로필을 설정해주세요</h2>
-              <p class="mt-2 text-body text-gray-500 dark:text-gray-400">다른 크리에이터들에게 보여질 이름과 활동 분야를 선택하세요.</p>
+              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">{{ t('onboarding.profile.title') }}</h2>
+              <p class="mt-2 text-body text-gray-500 dark:text-gray-400">{{ t('onboarding.profile.description') }}</p>
             </div>
 
             <div class="rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-sm tablet:p-8">
               <!-- Nickname -->
               <div class="mb-6">
                 <label for="nickname" class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
-                  닉네임 <span class="text-error-strong">*</span>
+                  {{ t('onboarding.profile.nickname') }} <span class="text-error-strong">*</span>
                 </label>
                 <input
                   id="nickname"
                   v-model="profile.nickname"
                   type="text"
                   maxlength="20"
-                  placeholder="활동할 닉네임을 입력하세요"
+                  :placeholder="t('onboarding.profile.nicknamePlaceholder')"
                   class="input-field w-full"
                   :class="{ 'border-error focus:border-error focus:ring-error': nicknameError }"
                   @input="nicknameError = ''"
                 />
                 <div class="mt-1 flex items-center justify-between">
                   <p v-if="nicknameError" class="text-body-xs text-error-strong">{{ nicknameError }}</p>
-                  <span v-else class="text-body-xs text-gray-400 dark:text-gray-500">2~20자</span>
+                  <span v-else class="text-body-xs text-gray-400 dark:text-gray-500">{{ t('onboarding.profile.nicknameLength') }}</span>
                   <span class="text-body-xs text-gray-400 dark:text-gray-500">{{ profile.nickname.length }}/20</span>
                 </div>
               </div>
@@ -100,9 +102,9 @@
               <!-- Category -->
               <div>
                 <label class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
-                  크리에이터 카테고리 <span class="text-error-strong">*</span>
+                  {{ t('onboarding.profile.category') }} <span class="text-error-strong">*</span>
                 </label>
-                <p class="mb-3 text-body-xs text-gray-400">주로 제작하는 콘텐츠 분야를 선택하세요.</p>
+                <p class="mb-3 text-body-xs text-gray-400">{{ t('onboarding.profile.categoryHint') }}</p>
                 <div class="grid grid-cols-2 gap-2 tablet:grid-cols-4">
                   <button
                     v-for="cat in categories"
@@ -128,8 +130,8 @@
           <!-- Step 2: Channel Connect -->
           <div v-else-if="currentStep === 2">
             <div class="mb-6 text-center">
-              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">채널을 연동하세요</h2>
-              <p class="mt-2 text-body text-gray-500 dark:text-gray-400">최소 1개 이상의 플랫폼을 연동해야 합니다.</p>
+              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">{{ t('onboarding.channels.title') }}</h2>
+              <p class="mt-2 text-body text-gray-500 dark:text-gray-400">{{ t('onboarding.channels.description') }}</p>
             </div>
 
             <div class="space-y-3">
@@ -169,7 +171,7 @@
                   </div>
                   <div>
                     <p class="font-semibold text-gray-900 dark:text-gray-100">{{ platform.label }}</p>
-                    <p v-if="connectedPlatforms.has(platform.key)" class="text-body-xs text-success-strong">연동 완료</p>
+                    <p v-if="connectedPlatforms.has(platform.key)" class="text-body-xs text-success-strong">{{ t('onboarding.channels.connected') }}</p>
                     <p v-else class="text-body-xs text-gray-400 dark:text-gray-500">{{ platform.description }}</p>
                   </div>
                 </div>
@@ -178,7 +180,7 @@
                   class="rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-caption text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
                   @click="disconnectPlatform(platform.key)"
                 >
-                  연동 해제
+                  {{ t('onboarding.channels.disconnect') }}
                 </button>
                 <button
                   v-else
@@ -186,7 +188,7 @@
                   class="btn-primary text-body-xs"
                   @click="connectPlatform(platform.key)"
                 >
-                  연동하기
+                  {{ t('onboarding.channels.connect') }}
                 </button>
               </div>
             </div>
@@ -197,8 +199,8 @@
           <!-- Step 3: Plan Selection -->
           <div v-else-if="currentStep === 3">
             <div class="mb-6 text-center">
-              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">플랜을 선택하세요</h2>
-              <p class="mt-2 text-body text-gray-500 dark:text-gray-400">나중에 언제든지 변경할 수 있습니다.</p>
+              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">{{ t('onboarding.plan.title') }}</h2>
+              <p class="mt-2 text-body text-gray-500 dark:text-gray-400">{{ t('onboarding.plan.description') }}</p>
             </div>
 
             <div class="space-y-4">
@@ -216,9 +218,9 @@
           <!-- Step 4: AI Trial -->
           <div v-else-if="currentStep === 4">
             <div class="mb-6 text-center">
-              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">AI 기능을 체험해보세요</h2>
+              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">{{ t('onboarding.aiTrial.title') }}</h2>
               <p class="mt-2 text-body text-gray-500 dark:text-gray-400">
-                무료 크레딧으로 AI가 만드는 콘텐츠 최적화를 경험하세요.
+                {{ t('onboarding.aiTrial.description') }}
               </p>
             </div>
 
@@ -230,15 +232,15 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
                   </svg>
                 </div>
-                <h3 class="mb-2 text-title font-semibold text-gray-900 dark:text-gray-100">AI 제목/태그 자동 생성</h3>
-                <p class="mb-6 text-body text-gray-500 dark:text-gray-400">
-                  샘플 영상을 기반으로 AI가 플랫폼별 최적화된<br />제목과 해시태그를 생성합니다.
+                <h3 class="mb-2 text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('onboarding.aiTrial.demoTitle') }}</h3>
+                <p class="mb-6 whitespace-pre-line text-body text-gray-500 dark:text-gray-400">
+                  {{ t('onboarding.aiTrial.demoDescription') }}
                 </p>
                 <div class="mb-4 inline-flex items-center gap-1 rounded-full bg-warning-subtle px-3 py-1 text-body-xs text-warning-strong">
                   <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  5 크레딧 사용
+                  {{ t('onboarding.aiTrial.creditCost', { count: AI_TRIAL_CREDIT_COST }) }}
                 </div>
                 <div>
                   <button
@@ -248,9 +250,9 @@
                   >
                     <span v-if="isAiLoading" class="flex items-center gap-2">
                       <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                      AI 생성 중...
+                      {{ t('onboarding.aiTrial.generating') }}
                     </span>
-                    <span v-else>AI 체험하기</span>
+                    <span v-else>{{ t('onboarding.aiTrial.tryIt') }}</span>
                   </button>
                 </div>
                 <p v-if="aiTrialError" class="mt-3 text-body text-error-strong">{{ aiTrialError }}</p>
@@ -262,12 +264,12 @@
                   <svg class="h-5 w-5 text-success-strong" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <h3 class="font-semibold text-gray-900 dark:text-gray-100">AI 생성 결과</h3>
+                  <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ t('onboarding.aiTrial.resultTitle') }}</h3>
                 </div>
 
                 <div class="space-y-4">
                   <div class="rounded-xl bg-gray-50 dark:bg-gray-900 p-4">
-                    <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">추천 제목</p>
+                    <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">{{ t('onboarding.aiTrial.suggestedTitles') }}</p>
                     <ul class="space-y-1">
                       <li v-for="(title, i) in aiTrialResult.titles" :key="i" class="text-body text-gray-800 dark:text-gray-200">
                         {{ i + 1 }}. {{ title }}
@@ -275,7 +277,7 @@
                     </ul>
                   </div>
                   <div class="rounded-xl bg-gray-50 dark:bg-gray-900 p-4">
-                    <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">추천 해시태그</p>
+                    <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">{{ t('onboarding.aiTrial.suggestedTags') }}</p>
                     <div class="flex flex-wrap gap-1.5">
                       <span
                         v-for="tag in aiTrialResult.tags"
@@ -299,13 +301,13 @@
               </svg>
             </div>
             <h2 class="mb-3 text-display font-bold text-gray-900 dark:text-gray-100">
-              환영합니다, {{ profile.nickname }}님!
+              {{ t('onboarding.complete.title', { nickname: profile.nickname }) }}
             </h2>
             <p class="mb-2 text-gray-500 dark:text-gray-400">
-              onGo 설정이 모두 완료되었습니다.
+              {{ t('onboarding.complete.description') }}
             </p>
             <p class="mb-8 text-body text-gray-400 dark:text-gray-500">
-              이제 영상을 업로드하고 모든 플랫폼에 한 번에 게시해보세요.
+              {{ t('onboarding.complete.hint') }}
             </p>
 
             <div class="space-y-3">
@@ -313,14 +315,14 @@
                 class="btn-primary w-full tablet:w-auto px-10 py-3.5"
                 @click="goToUpload"
               >
-                첫 영상 업로드하기
+                {{ t('onboarding.complete.goToUpload') }}
               </button>
               <div>
                 <button
                   class="text-body font-medium text-gray-500 dark:text-gray-400 transition-colors hover:text-gray-700 dark:hover:text-gray-300"
                   @click="goToDashboard"
                 >
-                  대시보드로 이동
+                  {{ t('onboarding.complete.goToDashboard') }}
                 </button>
               </div>
             </div>
@@ -338,7 +340,7 @@
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
-          이전
+          {{ t('action.previous') }}
         </button>
         <div v-else></div>
 
@@ -348,7 +350,7 @@
             class="rounded-xl px-5 py-2.5 text-body font-medium text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
             @click="skipAiTrial"
           >
-            건너뛰기
+            {{ t('onboarding.nav.skip') }}
           </button>
           <button
             :disabled="isSubmitting"
@@ -357,7 +359,7 @@
           >
             <span v-if="isSubmitting" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
             <span v-else>
-              {{ currentStep === 4 ? '완료' : '다음' }}
+              {{ currentStep === 4 ? t('onboarding.nav.finish') : t('action.next') }}
             </span>
             <svg v-if="!isSubmitting" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -372,6 +374,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import type { CreatorCategory } from '@/types/user'
 import type { Platform } from '@/types/channel'
@@ -388,6 +391,10 @@ import { PLANS } from '@/types/subscription'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n({ useScope: 'global' })
+
+/** AI 체험 1회당 차감되는 크레딧 */
+const AI_TRIAL_CREDIT_COST = 5
 
 const currentStep = ref(0)
 const isSubmitting = ref(false)
@@ -415,33 +422,33 @@ const displayPlans = computed(() => PLANS.slice(0, 3))
 const aiTrialResult = ref<{ titles: string[]; tags: string[] } | null>(null)
 const aiTrialError = ref('')
 
-const steps = [
-  { number: 1, label: '프로필' },
-  { number: 2, label: '채널 연동' },
-  { number: 3, label: '플랜 선택' },
-  { number: 4, label: 'AI 체험' },
-]
+const steps = computed<{ number: number; label: string }[]>(() => [
+  { number: 1, label: t('onboarding.steps.profile') },
+  { number: 2, label: t('onboarding.steps.channels') },
+  { number: 3, label: t('onboarding.steps.plan') },
+  { number: 4, label: t('onboarding.steps.aiTrial') },
+])
 
-const categories: { value: CreatorCategory; label: string; icon: string }[] = [
-  { value: 'BEAUTY', label: '뷰티', icon: '💄' },
-  { value: 'FOOD', label: '먹방', icon: '🍔' },
-  { value: 'GAME', label: '게임', icon: '🎮' },
-  { value: 'DAILY', label: '일상', icon: '📸' },
-  { value: 'EDUCATION', label: '교육', icon: '📚' },
-  { value: 'IT', label: 'IT/테크', icon: '💻' },
-  { value: 'TRAVEL', label: '여행', icon: '✈️' },
-  { value: 'MUSIC', label: '음악', icon: '🎵' },
-]
+const categories = computed<{ value: CreatorCategory; label: string; icon: string }[]>(() => [
+  { value: 'BEAUTY', label: t('settings.categories.beauty'), icon: '💄' },
+  { value: 'FOOD', label: t('settings.categories.food'), icon: '🍔' },
+  { value: 'GAME', label: t('settings.categories.game'), icon: '🎮' },
+  { value: 'DAILY', label: t('settings.categories.daily'), icon: '📸' },
+  { value: 'EDUCATION', label: t('settings.categories.education'), icon: '📚' },
+  { value: 'IT', label: t('settings.categories.it'), icon: '💻' },
+  { value: 'TRAVEL', label: t('settings.categories.travel'), icon: '✈️' },
+  { value: 'MUSIC', label: t('settings.categories.music'), icon: '🎵' },
+])
 
-const platforms = [
-  { key: 'YOUTUBE' as Platform, label: 'YouTube', description: '영상, 쇼츠 업로드', bgColor: '#FF0000' },
-  { key: 'TIKTOK' as Platform, label: 'TikTok', description: '숏폼 콘텐츠 업로드', bgColor: '#000000' },
-  { key: 'INSTAGRAM' as Platform, label: 'Instagram Reels', description: '릴스 업로드', bgColor: '#E1306C' },
-  { key: 'NAVER_CLIP' as Platform, label: 'Naver Clip', description: '네이버 클립 업로드', bgColor: '#03C75A' },
-  { key: 'TWITTER' as Platform, label: 'X (Twitter)', description: 'SNS 영상 게시', bgColor: '#000000' },
-  { key: 'FACEBOOK' as Platform, label: 'Facebook', description: '페이지 영상 업로드', bgColor: '#1877F2' },
-  { key: 'THREADS' as Platform, label: 'Threads', description: '스레드 영상 게시', bgColor: '#000000' },
-]
+const platforms = computed<{ key: Platform; label: string; description: string; bgColor: string }[]>(() => [
+  { key: 'YOUTUBE', label: 'YouTube', description: t('onboarding.channels.descriptions.youtube'), bgColor: '#FF0000' },
+  { key: 'TIKTOK', label: 'TikTok', description: t('onboarding.channels.descriptions.tiktok'), bgColor: '#000000' },
+  { key: 'INSTAGRAM', label: 'Instagram Reels', description: t('onboarding.channels.descriptions.instagram'), bgColor: '#E1306C' },
+  { key: 'NAVER_CLIP', label: 'Naver Clip', description: t('onboarding.channels.descriptions.naverClip'), bgColor: '#03C75A' },
+  { key: 'TWITTER', label: 'X (Twitter)', description: t('onboarding.channels.descriptions.twitter'), bgColor: '#000000' },
+  { key: 'FACEBOOK', label: 'Facebook', description: t('onboarding.channels.descriptions.facebook'), bgColor: '#1877F2' },
+  { key: 'THREADS', label: 'Threads', description: t('onboarding.channels.descriptions.threads'), bgColor: '#000000' },
+])
 
 function startOnboarding() {
   currentStep.value = 1
@@ -451,15 +458,15 @@ function validateStep1(): boolean {
   let valid = true
 
   if (!profile.nickname.trim()) {
-    nicknameError.value = '닉네임을 입력해주세요.'
+    nicknameError.value = t('onboarding.profile.nicknameRequired')
     valid = false
   } else if (profile.nickname.trim().length < 2) {
-    nicknameError.value = '닉네임은 2자 이상이어야 합니다.'
+    nicknameError.value = t('onboarding.profile.nicknameMinLength')
     valid = false
   }
 
   if (!profile.category) {
-    categoryError.value = '카테고리를 선택해주세요.'
+    categoryError.value = t('onboarding.profile.categoryRequired')
     valid = false
   }
 
@@ -468,7 +475,7 @@ function validateStep1(): boolean {
 
 function validateStep2(): boolean {
   if (connectedPlatforms.value.size === 0) {
-    channelError.value = '최소 1개 이상의 플랫폼을 연동해주세요.'
+    channelError.value = t('onboarding.channels.required')
     return false
   }
   channelError.value = ''
@@ -489,7 +496,7 @@ async function nextStep() {
       })
       currentStep.value = 2
     } catch {
-      nicknameError.value = '프로필 저장에 실패했습니다.'
+      nicknameError.value = t('onboarding.profile.saveError')
     } finally {
       isSubmitting.value = false
     }
@@ -536,7 +543,7 @@ async function tryAiGeneration() {
     const result = await aiApi.demoGenerate(profile.category || 'DEFAULT')
     aiTrialResult.value = result
   } catch (e: unknown) {
-    aiTrialError.value = e instanceof Error ? e.message : 'AI 생성에 실패했습니다. 다시 시도해주세요.'
+    aiTrialError.value = e instanceof Error ? e.message : t('onboarding.aiTrial.error')
   } finally {
     isAiLoading.value = false
   }
