@@ -303,6 +303,13 @@
     "groupAudience": "Audience",
     "groupOperations": "Channel Ops",
     "groupBusiness": "Business",
+    "more": "More",
+    "allMenus": "All Menus",
+    "closeMenu": "Close menu",
+    "favorites": "Favorites",
+    "addFavorite": "Add to favorites",
+    "removeFavorite": "Remove from favorites",
+    "favoriteLimit": "You can add up to {max} favorites",
     "subVideoEdit": "Video Editing",
     "subSubtitle": "Subtitles",
     "subScript": "Script/Writing",
@@ -1517,7 +1524,9 @@
       "credits": "2 credits",
       "use": "Use This Reply",
       "noResults": "Generate AI replies to see suggestions",
-      "editPlaceholder": "You can edit the reply here..."
+      "editPlaceholder": "You can edit the reply here...",
+      "panelOpen": "View AI reply",
+      "panelClose": "Close AI panel"
     },
     "batch": {
       "selected": "{count} selected",
@@ -1528,7 +1537,8 @@
       "replyPlaceholder": "Enter a reply to send to {count} selected comments...",
       "confirm": "Send Reply",
       "replySuccess": "Batch reply sent successfully",
-      "hideSuccess": "Selected comments have been hidden"
+      "hideSuccess": "Selected comments have been hidden",
+      "selectOne": "Select this comment"
     },
     "keywordCloud": {
       "title": "Keyword Cloud",
@@ -2278,6 +2288,13 @@
       "read": "Read",
       "replied": "Replied",
       "archived": "Archived"
+    },
+    "hubTitle": "Communication Hub",
+    "hubDescription": "Review and respond to comments and messages in one place.",
+    "confirmDeleteTitle": "Delete this message?",
+    "tabs": {
+      "comments": "Comments",
+      "messages": "Messages"
     }
   },
   "notifications": {
@@ -4614,7 +4631,10 @@
         "positive": "Positive",
         "negative": "Negative",
         "neutral": "Neutral"
-      }
+      },
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete this comment?",
+      "deleteConfirmMessage": "Deleted comments cannot be restored."
     },
     "replyForm": {
       "placeholder": "Write a reply...",

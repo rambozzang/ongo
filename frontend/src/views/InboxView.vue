@@ -1,330 +1,105 @@
-<script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useInboxStore } from '@/stores/inbox'
-import type { MessagePlatform, MessageType, MessageStatus } from '@/types/inbox'
-import InboxMessageList from '@/components/inbox/InboxMessageList.vue'
-import InboxMessageDetail from '@/components/inbox/InboxMessageDetail.vue'
-import PageGuide from '@/components/common/PageGuide.vue'
-import PageHeader from '@/components/common/PageHeader.vue'
-import {
-  FunnelIcon,
-  MagnifyingGlassIcon,
-  XMarkIcon,
-  ArchiveBoxIcon,
-  CheckIcon,
-} from '@heroicons/vue/24/outline'
-
-const { t } = useI18n({ useScope: 'global' })
-
-const inboxStore = useInboxStore()
-
-const showMobileDetail = ref(false)
-const showCheckboxes = ref(false)
-
-const platformOptions = computed(() => [
-  { value: 'ALL' as const, label: t('inbox.filters.allPlatforms') },
-  { value: 'YOUTUBE' as const, label: 'YouTube' },
-  { value: 'TIKTOK' as const, label: 'TikTok' },
-  { value: 'INSTAGRAM' as const, label: 'Instagram' },
-  { value: 'NAVER_CLIP' as const, label: t('inbox.filters.naverClip') },
-])
-
-const typeOptions = computed(() => [
-  { value: 'ALL' as const, label: t('inbox.filters.allTypes') },
-  { value: 'comment' as const, label: t('inbox.filters.comment') },
-  { value: 'mention' as const, label: t('inbox.filters.mention') },
-  { value: 'dm' as const, label: 'DM' },
-  { value: 'reply' as const, label: t('inbox.filters.reply') },
-])
-
-const statusOptions = computed(() => [
-  { value: 'ALL' as const, label: t('inbox.filters.allStatuses') },
-  { value: 'unread' as const, label: t('inbox.filters.unread') },
-  { value: 'read' as const, label: t('inbox.filters.read') },
-  { value: 'replied' as const, label: t('inbox.filters.replied') },
-  { value: 'archived' as const, label: t('inbox.filters.archived') },
-])
-
-const selectedCount = computed(() => inboxStore.selectedMessageIds.size)
-const hasSelection = computed(() => selectedCount.value > 0)
-
-const handleSelectMessage = (id: number) => {
-  inboxStore.selectMessage(id)
-  showMobileDetail.value = true
-}
-
-const handleToggleStar = (id: number) => {
-  inboxStore.toggleStar(id)
-}
-
-const handleMarkAllRead = () => {
-  inboxStore.markAllAsRead()
-}
-
-const handleToggleRead = () => {
-  if (!inboxStore.selectedMessage) return
-  const message = inboxStore.selectedMessage
-  if (message.status === 'unread') {
-    inboxStore.markAsRead(message.id)
-  } else if (message.status === 'read') {
-    inboxStore.markAsUnread(message.id)
-  }
-}
-
-const handleArchive = () => {
-  if (!inboxStore.selectedMessage) return
-  inboxStore.archiveMessage(inboxStore.selectedMessage.id)
-  inboxStore.selectMessage(null)
-  showMobileDetail.value = false
-}
-
-const handleDelete = () => {
-  if (!inboxStore.selectedMessage) return
-  if (confirm(t('inbox.confirmDelete'))) {
-    const index = inboxStore.messages.findIndex(
-      (m) => m.id === inboxStore.selectedMessage?.id
-    )
-    if (index !== -1) {
-      inboxStore.messages.splice(index, 1)
-      inboxStore.selectMessage(null)
-      showMobileDetail.value = false
-    }
-  }
-}
-
-const handleReply = (content: string) => {
-  if (!inboxStore.selectedMessage) return
-  inboxStore.replyToMessage(inboxStore.selectedMessage.id, content)
-}
-
-const handleToggleCheck = (id: number) => {
-  inboxStore.toggleMessageSelection(id)
-}
-
-const handleBulkArchive = () => {
-  const ids = Array.from(inboxStore.selectedMessageIds)
-  inboxStore.bulkArchive(ids)
-  showCheckboxes.value = false
-}
-
-const handleBulkMarkRead = () => {
-  const ids = Array.from(inboxStore.selectedMessageIds)
-  inboxStore.bulkMarkRead(ids)
-  showCheckboxes.value = false
-}
-
-const handleCloseMobileDetail = () => {
-  showMobileDetail.value = false
-}
-
-const toggleSelectionMode = () => {
-  showCheckboxes.value = !showCheckboxes.value
-  if (!showCheckboxes.value) {
-    inboxStore.clearSelection()
-  }
-}
-
-const cancelSelection = () => {
-  showCheckboxes.value = false
-  inboxStore.clearSelection()
-}
-</script>
-
 <template>
   <div class="relative">
-    <!-- Header -->
-    <PageHeader :title="$t('inbox.title')" :description="$t('inbox.description')">
+    <PageHeader :title="$t('inbox.hubTitle')" :description="$t('inbox.hubDescription')">
       <template #title-suffix>
         <span
           v-if="inboxStore.unreadCount > 0"
-          class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-600 text-white"
+          class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-primary-600 text-white"
         >
           {{ inboxStore.unreadCount }}
         </span>
-      </template>
-      <template #actions>
-        <button
-          class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          @click="toggleSelectionMode"
-        >
-          {{ showCheckboxes ? $t('inbox.cancelSelection') : $t('inbox.select') }}
-        </button>
       </template>
     </PageHeader>
 
     <PageGuide :title="$t('inbox.pageGuideTitle')" :items="($tm('inbox.pageGuide') as string[])" />
 
-    <!-- Filters -->
-    <div class="mb-4">
-      <div class="flex flex-wrap gap-3 items-center">
-        <div class="flex items-center gap-2 flex-1 min-w-[200px]">
-          <MagnifyingGlassIcon class="w-5 h-5 text-gray-400 dark:text-gray-500" />
-          <input
-            type="text"
-            :value="inboxStore.filters.searchText"
-            :placeholder="$t('inbox.searchPlaceholder')"
-            class="input-field flex-1"
-            @input="
-              inboxStore.setFilters({
-                searchText: ($event.target as HTMLInputElement).value,
-              })
-            "
-          />
-        </div>
-
-          <div class="flex items-center gap-2">
-            <FunnelIcon class="w-5 h-5 text-gray-400 dark:text-gray-500" />
-            <select
-              :value="inboxStore.filters.platform"
-              class="input-field"
-              @change="
-                inboxStore.setFilters({
-                  platform: ($event.target as HTMLSelectElement).value as MessagePlatform | 'ALL',
-                })
-              "
-            >
-              <option v-for="option in platformOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-
-            <select
-              :value="inboxStore.filters.type"
-              class="input-field"
-              @change="
-                inboxStore.setFilters({
-                  type: ($event.target as HTMLSelectElement).value as MessageType | 'ALL',
-                })
-              "
-            >
-              <option v-for="option in typeOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-
-            <select
-              :value="inboxStore.filters.status"
-              class="input-field"
-              @change="
-                inboxStore.setFilters({
-                  status: ($event.target as HTMLSelectElement).value as MessageStatus | 'ALL',
-                })
-              "
-            >
-              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-    <!-- Bulk Action Bar -->
-    <div
-      v-if="hasSelection"
-      class="mb-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-4 py-3"
+    <OTabs
+      :model-value="activeTab"
+      :tabs="tabs"
+      :aria-label="$t('inbox.hubTitle')"
+      class="mb-6"
+      @update:model-value="selectTab"
     >
-      <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-blue-900 dark:text-blue-100">
-          {{ $t('inbox.selectedCount', { count: selectedCount }) }}
-        </span>
-        <div class="flex items-center gap-2">
-          <button
-            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
-            @click="handleBulkMarkRead"
-          >
-            <CheckIcon class="w-4 h-4" />
-            <span>{{ $t('inbox.markRead') }}</span>
-          </button>
-          <button
-            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
-            @click="handleBulkArchive"
-          >
-            <ArchiveBoxIcon class="w-4 h-4" />
-            <span>{{ $t('inbox.archive') }}</span>
-          </button>
-          <button
-            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            @click="cancelSelection"
-          >
-            <XMarkIcon class="w-4 h-4" />
-            <span>{{ $t('inbox.cancel') }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Content: Split Layout -->
-    <div class="flex h-[calc(100vh-20rem)] overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-      <!-- Desktop: Split View -->
-      <div class="hidden tablet:flex flex-1">
-        <!-- Left: Message List (1/3 width) -->
-        <div class="w-1/3 border-r border-gray-200 dark:border-gray-700">
-          <InboxMessageList
-            :messages="inboxStore.filteredMessages"
-            :selected-message-id="inboxStore.selectedMessageId"
-            :selected-message-ids="inboxStore.selectedMessageIds"
-            :show-checkboxes="showCheckboxes"
-            @select-message="handleSelectMessage"
-            @toggle-star="handleToggleStar"
-            @mark-all-read="handleMarkAllRead"
-            @toggle-check="handleToggleCheck"
-          />
-        </div>
-
-        <!-- Right: Message Detail (2/3 width) -->
-        <div class="flex-1">
-          <InboxMessageDetail
-            :message="inboxStore.selectedMessage"
-            @toggle-read="handleToggleRead"
-            @toggle-star="handleToggleStar(inboxStore.selectedMessage!.id)"
-            @archive="handleArchive"
-            @delete="handleDelete"
-            @reply="handleReply"
-          />
-        </div>
-      </div>
-
-      <!-- Mobile: List or Detail -->
-      <div class="tablet:hidden flex-1">
-        <!-- Message List -->
-        <div v-show="!showMobileDetail" class="h-full">
-          <InboxMessageList
-            :messages="inboxStore.filteredMessages"
-            :selected-message-id="inboxStore.selectedMessageId"
-            :selected-message-ids="inboxStore.selectedMessageIds"
-            :show-checkboxes="showCheckboxes"
-            @select-message="handleSelectMessage"
-            @toggle-star="handleToggleStar"
-            @mark-all-read="handleMarkAllRead"
-            @toggle-check="handleToggleCheck"
-          />
-        </div>
-
-        <!-- Message Detail -->
-        <div v-show="showMobileDetail" class="h-full flex flex-col">
-          <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
-            <button
-              class="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-              @click="handleCloseMobileDetail"
-            >
-              <XMarkIcon class="w-5 h-5" />
-              <span>{{ $t('inbox.backToList') }}</span>
-            </button>
+      <template #default="{ panelId, tabId }">
+        <div :id="panelId" role="tabpanel" :aria-labelledby="tabId" class="mt-6">
+          <div v-show="activeTab === 'comments'">
+            <CommentsPanel v-if="visited.comments" sync-query />
           </div>
-          <div class="flex-1 overflow-hidden">
-            <InboxMessageDetail
-              :message="inboxStore.selectedMessage"
-              @toggle-read="handleToggleRead"
-              @toggle-star="handleToggleStar(inboxStore.selectedMessage!.id)"
-              @archive="handleArchive"
-              @delete="handleDelete"
-              @reply="handleReply"
-            />
+          <div v-show="activeTab === 'messages'">
+            <InboxMessagesPanel v-if="visited.messages" sync-query />
           </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </OTabs>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+import { ChatBubbleLeftEllipsisIcon, InboxIcon } from '@heroicons/vue/24/outline'
+import { useInboxStore } from '@/stores/inbox'
+import { useCommentsStore } from '@/stores/comments'
+import CommentsPanel from '@/components/comments/CommentsPanel.vue'
+import InboxMessagesPanel from '@/components/inbox/InboxMessagesPanel.vue'
+import OTabs from '@/components/ui/OTabs.vue'
+import PageGuide from '@/components/common/PageGuide.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
+
+type HubTab = 'comments' | 'messages'
+
+const DEFAULT_TAB: HubTab = 'comments'
+
+const { t } = useI18n({ useScope: 'global' })
+const route = useRoute()
+const router = useRouter()
+const inboxStore = useInboxStore()
+const commentsStore = useCommentsStore()
+
+const readTab = (): HubTab => (route.query.tab === 'messages' ? 'messages' : DEFAULT_TAB)
+
+const activeTab = ref<HubTab>(readTab())
+
+// 탭을 한 번이라도 연 경우에만 패널을 마운트해 불필요한 API 호출을 막는다
+const visited = reactive<Record<HubTab, boolean>>({
+  comments: activeTab.value === 'comments',
+  messages: activeTab.value === 'messages',
+})
+
+const tabs = computed(() => [
+  {
+    key: 'comments',
+    label: t('inbox.tabs.comments'),
+    icon: ChatBubbleLeftEllipsisIcon,
+    count: visited.comments ? commentsStore.totalCount : undefined,
+  },
+  {
+    key: 'messages',
+    label: t('inbox.tabs.messages'),
+    icon: InboxIcon,
+    count: inboxStore.unreadCount > 0 ? inboxStore.unreadCount : undefined,
+  },
+])
+
+const selectTab = (value: string) => {
+  const tab: HubTab = value === 'messages' ? 'messages' : 'comments'
+  activeTab.value = tab
+}
+
+// 탭 전환 → history push (뒤로가기로 이전 탭 복귀)
+watch(activeTab, (tab) => {
+  visited[tab] = true
+  if (readTab() === tab) return
+  router.push({ query: { ...route.query, tab } })
+})
+
+// 주소창/뒤로가기 → 탭 반영
+watch(
+  () => route.query.tab,
+  () => {
+    const tab = readTab()
+    if (activeTab.value !== tab) activeTab.value = tab
+  },
+)
+</script>

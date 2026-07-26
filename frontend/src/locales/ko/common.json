@@ -303,6 +303,13 @@
     "groupAudience": "오디언스",
     "groupOperations": "채널 운영",
     "groupBusiness": "비즈니스",
+    "more": "더보기",
+    "allMenus": "전체 메뉴",
+    "closeMenu": "메뉴 닫기",
+    "favorites": "즐겨찾기",
+    "addFavorite": "즐겨찾기에 추가",
+    "removeFavorite": "즐겨찾기에서 제거",
+    "favoriteLimit": "즐겨찾기는 최대 {max}개까지 추가할 수 있습니다",
     "subVideoEdit": "영상 편집",
     "subSubtitle": "자막",
     "subScript": "스크립트/글쓰기",
@@ -1530,7 +1537,8 @@
       "replyPlaceholder": "선택한 {count}개 댓글에 보낼 답변을 입력하세요...",
       "confirm": "답변 전송",
       "replySuccess": "일괄 답변이 전송되었습니다",
-      "hideSuccess": "선택한 댓글이 숨겨졌습니다"
+      "hideSuccess": "선택한 댓글이 숨겨졌습니다",
+      "selectOne": "이 댓글 선택"
     },
     "keywordCloud": {
       "title": "키워드 클라우드",
@@ -2280,6 +2288,13 @@
       "read": "읽음",
       "replied": "답장함",
       "archived": "보관됨"
+    },
+    "hubTitle": "소통 허브",
+    "hubDescription": "댓글과 메시지를 한 곳에서 확인하고 응대하세요.",
+    "confirmDeleteTitle": "메시지를 삭제할까요?",
+    "tabs": {
+      "comments": "댓글",
+      "messages": "메시지"
     }
   },
   "notifications": {
@@ -4606,7 +4621,10 @@
         "positive": "긍정",
         "negative": "부정",
         "neutral": "중립"
-      }
+      },
+      "delete": "삭제",
+      "deleteConfirmTitle": "댓글을 삭제할까요?",
+      "deleteConfirmMessage": "삭제한 댓글은 복구할 수 없습니다."
     },
     "replyForm": {
       "placeholder": "답글을 입력하세요...",

@@ -32,7 +32,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
-import type { CalendarEvent } from '@/views/CalendarView.vue'
+import type { CalendarEvent } from '@/types/schedule'
 
 const props = defineProps<{
   event: CalendarEvent

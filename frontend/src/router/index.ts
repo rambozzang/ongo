@@ -42,10 +42,10 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '영상 업로드' },
       },
       {
+        // 예약 관리는 캘린더의 '리스트' 탭으로 통합됨 — 기존 북마크 URL 유지
         path: 'schedule',
         name: 'schedule',
-        component: () => import('@/views/ScheduleView.vue'),
-        meta: { breadcrumb: '예약 관리' },
+        redirect: { name: 'calendar', query: { view: 'list' } },
       },
       {
         path: 'calendar',
@@ -85,10 +85,10 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '영상 비교' },
       },
       {
+        // 댓글 관리는 소통 허브(인박스)의 '댓글' 탭으로 통합됨 — 기존 북마크 URL 유지
         path: 'comments',
         name: 'comments',
-        component: () => import('@/views/CommentsView.vue'),
-        meta: { requiresAuth: true, breadcrumb: '댓글 관리' },
+        redirect: { name: 'inbox', query: { tab: 'comments' } },
       },
       {
         path: 'ai',

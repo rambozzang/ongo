@@ -141,9 +141,9 @@
             v-if="platformCaps?.canDelete"
             type="button"
             class="text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-            @click="handleDelete"
+            @click="showDeleteConfirm = true"
           >
-            삭제
+            {{ $t('comments.card.delete') }}
           </button>
         </div>
 
@@ -157,6 +157,14 @@
         />
       </div>
     </div>
+
+    <ConfirmModal
+      v-model="showDeleteConfirm"
+      :title="$t('comments.card.deleteConfirmTitle')"
+      :message="$t('comments.card.deleteConfirmMessage')"
+      danger
+      @confirm="emit('delete', comment.id)"
+    />
   </div>
 </template>
 
@@ -165,6 +173,7 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Comment, CommentCapabilities } from '@/types/comment'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import CommentReplyForm from './CommentReplyForm.vue'
 
 const { t } = useI18n()
@@ -184,6 +193,7 @@ const emit = defineEmits<{
 const expanded = ref(false)
 const isReplying = ref(false)
 const showActions = ref(false)
+const showDeleteConfirm = ref(false)
 
 const platformCaps = computed(() => {
   if (!props.capabilities) return { canReply: true, canDelete: true, canLike: false, canHide: true, canListComments: true }
@@ -255,11 +265,6 @@ const handleReply = (text: string) => {
   isReplying.value = false
 }
 
-const handleDelete = () => {
-  if (confirm('이 댓글을 삭제하시겠습니까? 플랫폼에서도 삭제됩니다.')) {
-    emit('delete', props.comment.id)
-  }
-}
 </script>
 
 <style scoped>

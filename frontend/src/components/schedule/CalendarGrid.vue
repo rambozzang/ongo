@@ -112,7 +112,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import CalendarEventCard from './CalendarEventCard.vue'
-import type { CalendarEvent } from '@/views/CalendarView.vue'
+import type { CalendarEvent } from '@/types/schedule'
 
 interface Props {
   events: CalendarEvent[]

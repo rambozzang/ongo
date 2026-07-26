@@ -1,448 +1,408 @@
 <template>
-  <div class="relative">
-    <!-- Header -->
+  <div>
+    <!-- 헤더 -->
     <PageHeader :title="$t('calendar.title')" :description="$t('calendar.description')">
-      <!-- View Mode Toggle -->
       <template #actions>
-        <button
-          class="btn-secondary inline-flex items-center gap-2"
-          @click="showAiOptimalModal = true"
-        >
+        <button class="btn-secondary inline-flex items-center gap-2" @click="showAiOptimalModal = true">
           <SparklesIcon class="h-4 w-4" />
           {{ $t('calendar.aiOptimalTime') }}
         </button>
-        <button
-          class="btn-primary inline-flex items-center gap-2"
-          @click="showAiCalendarModal = true"
-        >
+        <button class="btn-primary inline-flex items-center gap-2" @click="showAiCalendarModal = true">
           <SparklesIcon class="h-4 w-4" />
           {{ $t('calendar.aiCalendarGenerate') }}
-        </button>
-        <button
-          :class="[
-            'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-            viewMode === 'monthly'
-              ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800',
-          ]"
-          @click="viewMode = 'monthly'"
-        >
-          {{ $t('calendar.monthly') }}
-        </button>
-        <button
-          :class="[
-            'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-            viewMode === 'weekly'
-              ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800',
-          ]"
-          @click="viewMode = 'weekly'"
-        >
-          {{ $t('calendar.weekly') }}
         </button>
       </template>
     </PageHeader>
 
     <PageGuide :title="$t('calendar.pageGuideTitle')" :items="($tm('calendar.pageGuide') as string[])" />
 
-    <!-- Calendar Controls -->
-    <div class="card flex items-center justify-between p-4">
-      <button
-        class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-        @click="previousPeriod"
-      >
-        <ChevronLeftIcon class="h-5 w-5" />
-      </button>
+    <!-- 캘린더 / 리스트 뷰 전환 -->
+    <OTabs
+      v-model="activeTab"
+      :tabs="viewTabs"
+      :aria-label="$t('calendar.title')"
+      class="mb-4"
+    />
 
-      <div class="flex items-center gap-4">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {{ formattedCurrentDate }}
-        </h2>
-        <button
-          class="rounded-lg px-3 py-1.5 text-sm font-medium text-primary-700 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/30"
-          @click="goToToday"
+    <!-- 뷰별 보조 컨트롤 -->
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+      <!-- 캘린더: 월간/주간 -->
+      <OTabs
+        v-if="activeTab === 'calendar'"
+        v-model="calendarMode"
+        :tabs="calendarModeTabs"
+        variant="pill"
+        :aria-label="$t('calendar.monthly')"
+      />
+
+      <!-- 리스트: 정렬 -->
+      <select v-else v-model="sortMode" class="input-field w-auto py-1.5 text-sm">
+        <option value="date">{{ $t('scheduleView.sort.date') }}</option>
+        <option value="platform">{{ $t('scheduleView.sort.platform') }}</option>
+        <option value="status">{{ $t('scheduleView.sort.status') }}</option>
+        <option value="manual">{{ $t('scheduleView.sort.manual') }}</option>
+      </select>
+
+      <!-- 필터 토글 -->
+      <button class="btn-secondary ml-auto flex items-center gap-1.5" @click="showFilters = !showFilters">
+        <FunnelIcon class="h-4 w-4" />
+        <span class="hidden tablet:inline">{{ $t('scheduleView.filter') }}</span>
+        <span
+          v-if="activeFilterCount > 0"
+          class="flex h-5 w-5 items-center justify-center rounded-full bg-primary-600 text-xs text-white"
         >
-          {{ $t('calendar.today') }}
-        </button>
-      </div>
-
-      <button
-        class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-        @click="nextPeriod"
-      >
-        <ChevronRightIcon class="h-5 w-5" />
+          {{ activeFilterCount }}
+        </span>
       </button>
     </div>
 
-    <!-- Calendar Grid -->
-    <CalendarGrid :events="events" :current-date="currentDate" :view-mode="viewMode" />
+    <!-- 필터 패널 -->
+    <ScheduleFilterPanel
+      v-model:platform="filterPlatform"
+      v-model:status="filterStatus"
+      :open="showFilters"
+      @reset="clearFilters"
+    />
 
-    <!-- AI 최적 시간 모달 -->
-    <BaseModal
-      v-model="showAiOptimalModal"
-      :title="$t('calendar.aiOptimalTime')"
-      max-width="lg"
-    >
-      <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('calendar.aiOptimalTimeDesc') }}</p>
+    <!-- 로딩 -->
+    <LoadingSpinner v-if="loading" full-page />
 
-        <!-- Platform Select -->
-        <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {{ $t('calendar.selectPlatform') }}
-          </label>
-          <select v-model="optimalPlatform" class="input-field">
-            <option value="YOUTUBE">YouTube</option>
-            <option value="TIKTOK">TikTok</option>
-            <option value="INSTAGRAM">Instagram</option>
-            <option value="NAVER_CLIP">Naver Clip</option>
-          </select>
-        </div>
+    <!-- 예약이 아예 없는 경우 -->
+    <EmptyState
+      v-else-if="schedules.length === 0"
+      :title="$t('scheduleView.noSchedules')"
+      :description="$t('scheduleView.noSchedulesDescription')"
+      :icon="CalendarDaysIcon"
+      :action-label="$t('scheduleView.uploadVideo')"
+      action-to="/upload"
+      :secondary-action-label="$t('scheduleView.viewMyVideos')"
+      secondary-action-to="/videos"
+    />
 
-        <button
-          class="btn-primary inline-flex w-full items-center justify-center gap-2"
-          :disabled="optimalLoading"
-          @click="generateOptimalSlots"
-        >
-          <SparklesIcon class="h-4 w-4" />
-          {{ optimalLoading ? $t('calendar.generating') : $t('calendar.aiOptimalTime') }}
-        </button>
+    <template v-else>
+      <!-- 기간 이동 -->
+      <SchedulePeriodNav
+        :title="navigationTitle"
+        @prev="navigatePrev"
+        @next="navigateNext"
+        @today="goToToday"
+      />
 
-        <!-- Results -->
-        <div v-if="optimalSlots.length > 0" class="space-y-3">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {{ optimalPlatform }} - {{ $t('calendar.aiOptimalTime') }}
-          </h3>
-          <div class="grid grid-cols-1 gap-3 mobile:grid-cols-2">
-            <div
-              v-for="slot in optimalSlots"
-              :key="slot.id"
-              class="card rounded-lg p-3"
-            >
-              <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {{ slot.dayOfWeek }} {{ slot.hour }}:00
-                </span>
-                <span class="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
-                  {{ $t('calendar.score') }} {{ slot.score }}
-                </span>
-              </div>
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {{ $t('calendar.audience') }}: {{ slot.estimatedAudience.toLocaleString() }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ $t('calendar.competition') }}: {{ slot.competition }}
-              </p>
-              <p class="mt-1 text-xs text-gray-600 dark:text-gray-300">{{ slot.reason }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </BaseModal>
+      <!-- 캘린더 탭 -->
+      <ScheduleMonthGrid
+        v-if="calendarView === 'month'"
+        :current-date="currentDate"
+        :schedules="filteredSchedules"
+        @select="selectedSchedule = $event"
+        @add="openQuickAdd"
+      />
+      <ScheduleWeekGrid
+        v-else-if="calendarView === 'week'"
+        :current-date="currentDate"
+        :schedules="filteredSchedules"
+        @select="selectedSchedule = $event"
+        @add="openQuickAdd"
+      />
 
-    <!-- AI 캘린더 생성 모달 -->
-    <BaseModal
-      v-model="showAiCalendarModal"
-      :title="$t('calendar.aiCalendarGenerate')"
-      max-width="lg"
-    >
-      <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('calendar.aiCalendarGenerateDesc') }}</p>
+      <!-- 리스트 탭 -->
+      <ScheduleListPanel
+        v-else
+        :schedules="filteredSchedules"
+        :sort-mode="sortMode"
+        @select="selectedSchedule = $event"
+        @cancel="confirmCancel"
+      />
+    </template>
 
-        <!-- Date Range -->
-        <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {{ $t('calendar.selectDateRange') }}
-          </label>
-          <div class="flex gap-2">
-            <input v-model="calendarForm.startDate" type="date" class="input-field flex-1" />
-            <input v-model="calendarForm.endDate" type="date" class="input-field flex-1" />
-          </div>
-        </div>
+    <!-- 예약 추가 -->
+    <ScheduleQuickAddModal
+      v-model="showQuickAdd"
+      :initial-date="quickAddDate"
+      @submit="handleQuickAddSubmit"
+    />
 
-        <!-- Platforms -->
-        <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {{ $t('calendar.selectPlatform') }}
-          </label>
-          <div class="flex flex-wrap gap-2">
-            <label
-              v-for="p in availablePlatforms"
-              :key="p.value"
-              class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors"
-              :class="calendarForm.platforms.includes(p.value)
-                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400'
-                : 'border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300'"
-            >
-              <input
-                v-model="calendarForm.platforms"
-                type="checkbox"
-                :value="p.value"
-                class="hidden"
-              />
-              {{ p.label }}
-            </label>
-          </div>
-        </div>
+    <!-- 예약 상세 -->
+    <ScheduleDetailModal
+      :schedule="selectedSchedule"
+      @close="selectedSchedule = null"
+      @cancel="confirmCancel"
+    />
 
-        <!-- Frequency -->
-        <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            {{ $t('calendar.selectFrequency') }}
-          </label>
-          <select v-model="calendarForm.frequency" class="input-field">
-            <option value="DAILY">{{ $t('calendar.frequencyDaily') }}</option>
-            <option value="WEEKLY_2_3">{{ $t('calendar.frequencyWeekly') }}</option>
-            <option value="WEEKLY_1_2">{{ $t('calendar.frequencyBiweekly') }}</option>
-          </select>
-        </div>
+    <!-- 예약 취소 확인 -->
+    <ConfirmModal
+      v-model="showCancelModal"
+      :title="$t('scheduleView.cancelModal.title')"
+      :message="$t('scheduleView.cancelModal.message')"
+      :confirm-text="$t('scheduleView.cancelModal.confirm')"
+      danger
+      @confirm="handleCancel"
+    />
 
-        <button
-          class="btn-primary inline-flex w-full items-center justify-center gap-2"
-          :disabled="calendarLoading || calendarForm.platforms.length === 0"
-          @click="generateCalendar"
-        >
-          <SparklesIcon class="h-4 w-4" />
-          {{ calendarLoading ? $t('calendar.generating') : $t('calendar.aiCalendarGenerate') }}
-        </button>
+    <!-- AI 최적 시간 분석 -->
+    <AiOptimalTimeModal v-model="showAiOptimalModal" />
 
-        <!-- Results -->
-        <div v-if="calendarSuggestions.length > 0" class="space-y-3">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {{ $t('calendar.aiCalendarGenerateDesc') }}
-          </h3>
-          <div class="max-h-64 space-y-2 overflow-y-auto">
-            <div
-              v-for="suggestion in calendarSuggestions"
-              :key="suggestion.id"
-              class="card flex items-center justify-between rounded-lg p-3"
-            >
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2">
-                  <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                    {{ suggestion.platform }}
-                  </span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ suggestion.suggestedDate }}</span>
-                </div>
-                <p class="mt-1 truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {{ suggestion.title }}
-                </p>
-                <p v-if="suggestion.reason" class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ suggestion.reason }}
-                </p>
-              </div>
-              <button
-                v-if="suggestion.status !== 'ACCEPTED'"
-                class="btn-primary ml-3 shrink-0 px-3 py-1 text-xs"
-                @click="acceptSuggestion(suggestion.id)"
-              >
-                {{ $t('calendar.accept') }}
-              </button>
-              <span
-                v-else
-                class="ml-3 shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400"
-              >
-                {{ $t('calendar.accepted') }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </BaseModal>
+    <!-- AI 캘린더 생성 -->
+    <AiCalendarGenerateModal v-model="showAiCalendarModal" @accepted="loadSchedules" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { ChevronLeftIcon, ChevronRightIcon, SparklesIcon } from '@heroicons/vue/24/outline'
-import CalendarGrid from '@/components/schedule/CalendarGrid.vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { CalendarDaysIcon, FunnelIcon, SparklesIcon } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
-import BaseModal from '@/components/common/BaseModal.vue'
+import OTabs from '@/components/ui/OTabs.vue'
+import AiCalendarGenerateModal from '@/components/schedule/AiCalendarGenerateModal.vue'
+import AiOptimalTimeModal from '@/components/schedule/AiOptimalTimeModal.vue'
+import ScheduleDetailModal from '@/components/schedule/ScheduleDetailModal.vue'
+import ScheduleFilterPanel from '@/components/schedule/ScheduleFilterPanel.vue'
+import ScheduleListPanel from '@/components/schedule/ScheduleListPanel.vue'
+import ScheduleMonthGrid from '@/components/schedule/ScheduleMonthGrid.vue'
+import SchedulePeriodNav from '@/components/schedule/SchedulePeriodNav.vue'
+import ScheduleQuickAddModal from '@/components/schedule/ScheduleQuickAddModal.vue'
+import ScheduleWeekGrid from '@/components/schedule/ScheduleWeekGrid.vue'
 import { useScheduleStore } from '@/stores/schedule'
 import { useLocale } from '@/composables/useLocale'
-import { useNotificationStore } from '@/stores/notification'
-import { scheduleOptimizerApi, type OptimalSlot } from '@/api/scheduleOptimizer'
-import { contentCalendarAiApi, type ContentCalendarSuggestion } from '@/api/contentCalendarAi'
+import { getWeekStart, toDateStr } from '@/utils/schedule'
+import type {
+  CalendarView,
+  Schedule,
+  ScheduleCreateRequest,
+  ScheduleSortMode,
+  ScheduleStatus,
+} from '@/types/schedule'
 import type { Platform } from '@/types/channel'
 
-export interface CalendarEvent {
-  id: string
-  videoId: string
-  title: string
-  platform: Platform | null
-  scheduledAt: string
-  status: 'scheduled' | 'published' | 'failed'
-  color?: string
-}
-
-const scheduleStore = useScheduleStore()
-const notificationStore = useNotificationStore()
+const route = useRoute()
+const router = useRouter()
 const { t } = useLocale()
 
+const scheduleStore = useScheduleStore()
+const { schedules, loading, calendarView } = storeToRefs(scheduleStore)
+const { fetchSchedules, createSchedule, cancelSchedule, setCalendarView } = scheduleStore
+
+// ─── 뷰 전환 + URL 쿼리 동기화 ────────────────────────────
+/** `?view=` 값 파싱 (구 링크 호환: `calendar` → `month`) */
+function parseView(raw: unknown): CalendarView | null {
+  if (raw === 'calendar') return 'month'
+  return raw === 'month' || raw === 'week' || raw === 'list' ? raw : null
+}
+
+// 최초 렌더 이전에 URL → 스토어를 동기 반영해 중복 fetch를 방지
+const initialView = parseView(route.query.view)
+if (initialView) setCalendarView(initialView)
+
+/** 캘린더 탭에서 마지막으로 본 하위 모드 (리스트 → 캘린더 복귀 시 복원) */
+const lastCalendarMode = ref<'month' | 'week'>(calendarView.value === 'week' ? 'week' : 'month')
+
+const viewTabs = computed(() => [
+  { key: 'calendar', label: t('calendar.title') },
+  { key: 'list', label: t('scheduleView.view.list') },
+])
+
+const calendarModeTabs = computed(() => [
+  { key: 'month', label: t('calendar.monthly') },
+  { key: 'week', label: t('calendar.weekly') },
+])
+
+/** 사용자가 뷰를 전환할 때: 스토어 반영 + URL 쿼리에 push (뒤로가기로 복귀 가능) */
+function applyView(view: CalendarView) {
+  setCalendarView(view)
+  if (view !== 'list') lastCalendarMode.value = view
+  if (route.query.view === view) return
+  router.push({ query: { ...route.query, view } })
+}
+
+const activeTab = computed<string>({
+  get: () => (calendarView.value === 'list' ? 'list' : 'calendar'),
+  set: (tab) => applyView(tab === 'list' ? 'list' : lastCalendarMode.value),
+})
+
+const calendarMode = computed<string>({
+  get: () => lastCalendarMode.value,
+  set: (mode) => applyView(mode === 'week' ? 'week' : 'month'),
+})
+
+// 뒤로/앞으로 가기 대응
+watch(
+  () => route.query.view,
+  (raw) => {
+    const view = parseView(raw)
+    if (!view || view === calendarView.value) return
+    setCalendarView(view)
+    if (view !== 'list') lastCalendarMode.value = view
+  },
+)
+
+// ─── 기간 이동 ────────────────────────────────────────────
 const currentDate = ref(new Date())
-const viewMode = ref<'monthly' | 'weekly'>('monthly')
 
-// AI 최적 시간
-const showAiOptimalModal = ref(false)
-const optimalPlatform = ref('YOUTUBE')
-const optimalLoading = ref(false)
-const optimalSlots = ref<OptimalSlot[]>([])
+const navigationTitle = computed(() => {
+  const d = currentDate.value
 
-// AI 캘린더 생성
-const showAiCalendarModal = ref(false)
-const calendarLoading = ref(false)
-const calendarSuggestions = ref<ContentCalendarSuggestion[]>([])
-
-const today = new Date()
-const calendarForm = ref({
-  startDate: today.toISOString().split('T')[0],
-  endDate: new Date(today.getFullYear(), today.getMonth() + 1, today.getDate()).toISOString().split('T')[0],
-  platforms: ['YOUTUBE'] as string[],
-  frequency: 'WEEKLY_2_3',
-})
-
-const availablePlatforms = [
-  { value: 'YOUTUBE', label: 'YouTube' },
-  { value: 'TIKTOK', label: 'TikTok' },
-  { value: 'INSTAGRAM', label: 'Instagram' },
-  { value: 'NAVER_CLIP', label: 'Naver Clip' },
-]
-
-async function generateOptimalSlots() {
-  optimalLoading.value = true
-  try {
-    optimalSlots.value = await scheduleOptimizerApi.generateSlots(optimalPlatform.value)
-  } catch {
-    notificationStore.error('AI 최적 시간 분석에 실패했습니다')
-  } finally {
-    optimalLoading.value = false
-  }
-}
-
-async function generateCalendar() {
-  calendarLoading.value = true
-  try {
-    calendarSuggestions.value = await contentCalendarAiApi.generate({
-      startDate: calendarForm.value.startDate,
-      endDate: calendarForm.value.endDate,
-      platforms: calendarForm.value.platforms,
-      frequency: calendarForm.value.frequency,
-    })
-  } catch {
-    notificationStore.error('AI 캘린더 생성에 실패했습니다')
-  } finally {
-    calendarLoading.value = false
-  }
-}
-
-async function acceptSuggestion(id: number) {
-  try {
-    const updated = await contentCalendarAiApi.acceptSuggestion(id)
-    const idx = calendarSuggestions.value.findIndex((s) => s.id === id)
-    if (idx !== -1) {
-      calendarSuggestions.value[idx] = updated
-    }
-  } catch {
-    notificationStore.error('적용에 실패했습니다')
-  }
-}
-
-const formattedCurrentDate = computed(() => {
-  const year = currentDate.value.getFullYear()
-  const month = currentDate.value.getMonth() + 1
-  const date = currentDate.value.getDate()
-
-  if (viewMode.value === 'monthly') {
-    return t('calendar.dateFormatMonthly', { year, month })
-  } else {
-    const weekStart = new Date(currentDate.value)
-    weekStart.setDate(date - currentDate.value.getDay())
+  if (calendarView.value === 'week') {
+    const weekStart = getWeekStart(d)
     const weekEnd = new Date(weekStart)
-    weekEnd.setDate(weekStart.getDate() + 6)
-
+    weekEnd.setDate(weekEnd.getDate() + 6)
     const startMonth = weekStart.getMonth() + 1
-    const startDate = weekStart.getDate()
     const endMonth = weekEnd.getMonth() + 1
-    const endDate = weekEnd.getDate()
 
-    if (startMonth === endMonth) {
-      return t('calendar.dateFormatWeeklySameMonth', { year, month: startMonth, startDate, endDate })
-    } else {
-      return t('calendar.dateFormatWeeklyCrossMonth', { year, startMonth, startDate, endMonth, endDate })
-    }
+    return startMonth === endMonth
+      ? t('calendar.dateFormatWeeklySameMonth', {
+          year: weekStart.getFullYear(),
+          month: startMonth,
+          startDate: weekStart.getDate(),
+          endDate: weekEnd.getDate(),
+        })
+      : t('calendar.dateFormatWeeklyCrossMonth', {
+          year: weekStart.getFullYear(),
+          startMonth,
+          startDate: weekStart.getDate(),
+          endMonth,
+          endDate: weekEnd.getDate(),
+        })
   }
+
+  return t('calendar.dateFormatMonthly', { year: d.getFullYear(), month: d.getMonth() + 1 })
 })
 
-// 현재 달의 시작/끝 날짜 계산
-function getDateRange() {
-  const year = currentDate.value.getFullYear()
-  const month = currentDate.value.getMonth()
-  const startDate = new Date(year, month, 1).toISOString().split('T')[0]
-  const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0]
-  return { startDate, endDate }
+function shiftPeriod(direction: 1 | -1) {
+  const d = new Date(currentDate.value)
+  if (calendarView.value === 'week') {
+    d.setDate(d.getDate() + 7 * direction)
+  } else {
+    d.setMonth(d.getMonth() + direction)
+  }
+  currentDate.value = d
+}
+
+const navigatePrev = () => shiftPeriod(-1)
+const navigateNext = () => shiftPeriod(1)
+const goToToday = () => {
+  currentDate.value = new Date()
+}
+
+// ─── 필터 / 정렬 ──────────────────────────────────────────
+const showFilters = ref(false)
+const filterPlatform = ref<Platform | null>(null)
+const filterStatus = ref<ScheduleStatus | null>(null)
+const sortMode = ref<ScheduleSortMode>('date')
+
+const activeFilterCount = computed(
+  () => (filterPlatform.value ? 1 : 0) + (filterStatus.value ? 1 : 0),
+)
+
+function clearFilters() {
+  filterPlatform.value = null
+  filterStatus.value = null
+}
+
+const filteredSchedules = computed(() =>
+  schedules.value.filter((s) => {
+    if (filterPlatform.value && !s.platforms.some((p) => p.platform === filterPlatform.value)) {
+      return false
+    }
+    return !(filterStatus.value && s.status !== filterStatus.value)
+  }),
+)
+
+// ─── 예약 추가 ────────────────────────────────────────────
+const showQuickAdd = ref(false)
+const quickAddDate = ref<Date | null>(null)
+
+function openQuickAdd(date: Date, hour?: number) {
+  const d = new Date(date)
+  d.setHours(hour ?? 9, 0, 0, 0)
+  quickAddDate.value = d
+  showQuickAdd.value = true
+}
+
+async function handleQuickAddSubmit(request: ScheduleCreateRequest) {
+  try {
+    await createSchedule(request)
+    showQuickAdd.value = false
+    await loadSchedules()
+  } catch {
+    // 에러는 스토어 / 전역 에러 핸들러가 처리
+  }
+}
+
+// ─── 예약 상세 / 취소 ─────────────────────────────────────
+const selectedSchedule = ref<Schedule | null>(null)
+const showCancelModal = ref(false)
+const cancelTargetId = ref<number | null>(null)
+
+function confirmCancel(schedule: Schedule) {
+  cancelTargetId.value = schedule.id
+  selectedSchedule.value = null
+  showCancelModal.value = true
+}
+
+async function handleCancel() {
+  if (cancelTargetId.value == null) return
+  try {
+    await cancelSchedule(cancelTargetId.value)
+    cancelTargetId.value = null
+    await loadSchedules()
+  } catch {
+    // 에러는 스토어 / 전역 에러 핸들러가 처리
+  }
+}
+
+// ─── AI 모달 ──────────────────────────────────────────────
+const showAiOptimalModal = ref(false)
+const showAiCalendarModal = ref(false)
+
+// ─── 데이터 로딩 ──────────────────────────────────────────
+function getDateRange(): { startDate: string; endDate: string } {
+  const d = currentDate.value
+
+  if (calendarView.value === 'week') {
+    const weekStart = getWeekStart(d)
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekEnd.getDate() + 6)
+    return { startDate: toDateStr(weekStart), endDate: toDateStr(weekEnd) }
+  }
+
+  if (calendarView.value === 'month') {
+    // 월간 그리드는 전/다음 달 잔여일까지 6행을 채우므로 범위를 확장
+    const firstDay = new Date(d.getFullYear(), d.getMonth(), 1)
+    const start = new Date(firstDay)
+    start.setDate(start.getDate() - firstDay.getDay())
+
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+    const end = new Date(lastDay)
+    end.setDate(end.getDate() + (6 - lastDay.getDay()))
+
+    return { startDate: toDateStr(start), endDate: toDateStr(end) }
+  }
+
+  // 리스트: 해당 월
+  return {
+    startDate: toDateStr(new Date(d.getFullYear(), d.getMonth(), 1)),
+    endDate: toDateStr(new Date(d.getFullYear(), d.getMonth() + 1, 0)),
+  }
 }
 
 async function loadSchedules() {
   const { startDate, endDate } = getDateRange()
-  await scheduleStore.fetchSchedules(startDate, endDate)
+  await fetchSchedules(startDate, endDate)
 }
 
-// 스케줄 데이터를 CalendarEvent 형식으로 변환
-const events = computed<CalendarEvent[]>(() => {
-  return scheduleStore.schedules.flatMap((schedule) => {
-    // 각 플랫폼별로 이벤트 생성
-    if (schedule.platforms && schedule.platforms.length > 0) {
-      return schedule.platforms.map((sp, index) => ({
-        id: `${schedule.id}-${index}`,
-        videoId: String(schedule.videoId),
-        title: schedule.videoTitle,
-        platform: sp.platform,
-        scheduledAt: sp.scheduledAt || schedule.scheduledAt,
-        status: (sp.status?.toLowerCase() ?? schedule.status.toLowerCase()) as 'scheduled' | 'published' | 'failed',
-      }))
-    }
-    return [{
-      id: String(schedule.id),
-      videoId: String(schedule.videoId),
-      title: schedule.videoTitle,
-      platform: null as Platform | null,
-      scheduledAt: schedule.scheduledAt,
-      status: schedule.status.toLowerCase() as 'scheduled' | 'published' | 'failed',
-    }]
-  })
-})
-
-// 날짜 변경 시 스케줄 다시 로드
-watch(currentDate, () => {
+watch([currentDate, calendarView], () => {
   loadSchedules()
 })
 
 onMounted(() => {
+  // URL에 유효한 view가 없으면 현재 뷰로 정규화 (공유·새로고침 대응)
+  if (!parseView(route.query.view)) {
+    router.replace({ query: { ...route.query, view: calendarView.value } })
+  }
   loadSchedules()
 })
-
-const previousPeriod = () => {
-  const newDate = new Date(currentDate.value)
-  if (viewMode.value === 'monthly') {
-    newDate.setMonth(newDate.getMonth() - 1)
-  } else {
-    newDate.setDate(newDate.getDate() - 7)
-  }
-  currentDate.value = newDate
-}
-
-const nextPeriod = () => {
-  const newDate = new Date(currentDate.value)
-  if (viewMode.value === 'monthly') {
-    newDate.setMonth(newDate.getMonth() + 1)
-  } else {
-    newDate.setDate(newDate.getDate() + 7)
-  }
-  currentDate.value = newDate
-}
-
-const goToToday = () => {
-  currentDate.value = new Date()
-}
 </script>

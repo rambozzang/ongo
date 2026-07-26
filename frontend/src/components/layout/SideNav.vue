@@ -34,6 +34,37 @@
 
     <!-- Navigation -->
     <nav role="navigation" :aria-label="t('nav.mainNavigation')" class="flex-1 overflow-y-auto px-2 py-4 scrollbar-dark">
+      <!-- Favorites (즐겨찾기가 있을 때만 노출) -->
+      <template v-if="favoriteItems.length > 0">
+        <div
+          v-if="collapsed"
+          class="sidebar-divider mx-2 mb-2 border-t"
+          aria-hidden="true"
+        />
+        <div
+          v-else
+          class="sidebar-label mb-1 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em]"
+        >
+          {{ t('nav.favorites') }}
+        </div>
+        <div v-for="item in favoriteItems" :key="`fav-${item.to}`" class="group flex items-center gap-1">
+          <router-link
+            :to="item.to"
+            role="menuitem"
+            :aria-label="item.label"
+            :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
+            class="nav-link flex flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+            active-class="nav-link-active"
+            @click="emit('navigate')"
+          >
+            <component :is="item.icon" class="h-5 w-5 shrink-0" :aria-hidden="true" />
+            <span v-if="!collapsed">{{ item.label }}</span>
+          </router-link>
+          <NavPinButton v-if="!collapsed" :path="item.to" :label="item.label" />
+        </div>
+        <div class="sidebar-divider my-3 border-t" role="separator" aria-hidden="true" />
+      </template>
+
       <div
         v-for="(group, groupIndex) in navGroups"
         :key="groupIndex"
@@ -55,50 +86,53 @@
         </template>
 
         <!-- Direct items -->
-        <router-link
-          v-for="item in group.items"
-          :key="item.to"
-          :to="item.to"
-          role="menuitem"
-          :aria-label="item.label"
-          :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
-          class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-          active-class="nav-link-active"
-          @click="emit('navigate')"
-        >
-          <component :is="item.icon" class="h-5 w-5 shrink-0" :aria-hidden="true" />
-          <span v-if="!collapsed">{{ item.label }}</span>
-        </router-link>
+        <div v-for="item in group.items" :key="item.to" class="group flex items-center gap-1">
+          <router-link
+            :to="item.to"
+            role="menuitem"
+            :aria-label="item.label"
+            :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
+            class="nav-link flex flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+            active-class="nav-link-active"
+            @click="emit('navigate')"
+          >
+            <component :is="item.icon" class="h-5 w-5 shrink-0" :aria-hidden="true" />
+            <span v-if="!collapsed">{{ item.label }}</span>
+          </router-link>
+          <NavPinButton v-if="!collapsed" :path="item.to" :label="item.label" :class="pinVisibilityClass" />
+        </div>
 
         <!-- Sub-groups (collapsible) -->
         <template v-if="!collapsed && group.subGroups">
           <div v-for="sub in group.subGroups" :key="sub.key" class="mt-0.5">
             <button
               class="nav-link flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+              :aria-expanded="isSubGroupExpanded(sub.key)"
               @click="toggleSubGroup(sub.key)"
             >
               <ChevronRightIcon
                 class="h-3.5 w-3.5 shrink-0 transition-transform duration-200"
-                :class="expandedSubGroups.has(sub.key) ? 'rotate-90' : ''"
+                :class="isSubGroupExpanded(sub.key) ? 'rotate-90' : ''"
               />
               <span>{{ sub.label }}</span>
               <span class="ml-auto text-[10px] text-gray-300 dark:text-gray-600">{{ sub.items.length }}</span>
             </button>
-            <div v-if="expandedSubGroups.has(sub.key)" class="ml-2 border-l border-white/10 pl-1">
-              <router-link
-                v-for="item in sub.items"
-                :key="item.to"
-                :to="item.to"
-                role="menuitem"
-                :aria-label="item.label"
-                :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
-                class="nav-link flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                active-class="nav-link-active"
-                @click="emit('navigate')"
-              >
-                <component :is="item.icon" class="h-4 w-4 shrink-0" :aria-hidden="true" />
-                <span>{{ item.label }}</span>
-              </router-link>
+            <div v-if="isSubGroupExpanded(sub.key)" class="ml-2 border-l border-white/10 pl-1">
+              <div v-for="item in sub.items" :key="item.to" class="group flex items-center gap-1">
+                <router-link
+                  :to="item.to"
+                  role="menuitem"
+                  :aria-label="item.label"
+                  :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
+                  class="nav-link flex flex-1 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+                  active-class="nav-link-active"
+                  @click="emit('navigate')"
+                >
+                  <component :is="item.icon" class="h-4 w-4 shrink-0" :aria-hidden="true" />
+                  <span>{{ item.label }}</span>
+                </router-link>
+                <NavPinButton :path="item.to" :label="item.label" :class="pinVisibilityClass" />
+              </div>
             </div>
           </div>
         </template>
@@ -125,69 +159,32 @@
 
       <div class="sidebar-divider my-3 border-t" role="separator" aria-hidden="true" />
 
-      <router-link
-        v-for="item in bottomNavItems"
-        :key="item.to"
-        :to="item.to"
-        role="menuitem"
-        :aria-label="item.label"
-        :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
-        class="nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-        active-class="nav-link-active"
-        @click="emit('navigate')"
-      >
-        <component :is="item.icon" class="h-5 w-5 shrink-0" :aria-hidden="true" />
-        <span v-if="!collapsed">{{ item.label }}</span>
-      </router-link>
+      <div v-for="item in bottomNavItems" :key="item.to" class="group flex items-center gap-1">
+        <router-link
+          :to="item.to"
+          role="menuitem"
+          :aria-label="item.label"
+          :aria-current="isCurrentRoute(item.to) ? 'page' : undefined"
+          class="nav-link flex flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+          active-class="nav-link-active"
+          @click="emit('navigate')"
+        >
+          <component :is="item.icon" class="h-5 w-5 shrink-0" :aria-hidden="true" />
+          <span v-if="!collapsed">{{ item.label }}</span>
+        </router-link>
+        <NavPinButton v-if="!collapsed" :path="item.to" :label="item.label" :class="pinVisibilityClass" />
+      </div>
     </nav>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import {
-  HomeIcon,
-  ArrowUpTrayIcon,
-  CalendarDaysIcon,
-  FilmIcon,
-  ChartBarIcon,
-  ChatBubbleLeftEllipsisIcon,
-  SparklesIcon,
-  LinkIcon,
-  CreditCardIcon,
-  Cog6ToothIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  BanknotesIcon,
-  LightBulbIcon,
-  InboxIcon,
-  DocumentDuplicateIcon,
-  SwatchIcon,
-  BellIcon,
-  ClockIcon,
-  BookOpenIcon,
-  ShieldCheckIcon,
-  BeakerIcon,
-  UsersIcon,
-  ClipboardDocumentCheckIcon,
-  MagnifyingGlassIcon,
-  MegaphoneIcon,
-  HandRaisedIcon,
-  QueueListIcon,
-  BoltIcon,
-  PhotoIcon,
-  ArrowPathIcon,
-  ArrowTrendingUpIcon,
-  FlagIcon,
-  IdentificationIcon,
-  BriefcaseIcon,
-  GlobeAltIcon,
-  UserGroupIcon,
-  SignalIcon,
-} from '@heroicons/vue/24/outline'
+import { computed } from 'vue'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
-import { useAuthStore } from '@/stores/auth'
+import { useNavigation, type NavItem } from '@/composables/useNavigation'
+import { useNavFavoritesStore } from '@/stores/navFavorites'
+import NavPinButton from '@/components/layout/NavPinButton.vue'
 import WorkspaceSwitcher from '@/components/layout/WorkspaceSwitcher.vue'
 
 defineProps<{
@@ -199,181 +196,18 @@ const emit = defineEmits<{
   navigate: []
 }>()
 
-const route = useRoute()
 const { t } = useLocale()
-const authStore = useAuthStore()
-const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
+const { navGroups, bottomNavItems, allNavItems, isCurrentRoute, isSubGroupExpanded, toggleSubGroup } = useNavigation()
+const navFavoritesStore = useNavFavoritesStore()
 
-interface NavItem {
-  to: string
-  label: string
-  icon: typeof HomeIcon
-}
+// 핀 버튼은 hover/focus 시에만 노출하고, 이미 즐겨찾기된 항목은 항상 노출
+const pinVisibilityClass = 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 aria-pressed:opacity-100'
 
-interface NavSubGroup {
-  key: string
-  label: string
-  items: NavItem[]
-}
-
-interface NavGroup {
-  label?: string
-  items: NavItem[]
-  subGroups?: NavSubGroup[]
-}
-
-// --- Sub-group expand/collapse state ---
-const expandedSubGroups = ref<Set<string>>(new Set())
-
-function toggleSubGroup(key: string) {
-  const next = new Set(expandedSubGroups.value)
-  if (next.has(key)) {
-    next.delete(key)
-  } else {
-    next.add(key)
-  }
-  expandedSubGroups.value = next
-}
-
-const navGroups = computed<NavGroup[]>(() => [
-  // ── 1. 대시보드 ──
-  {
-    items: [
-      { to: '/dashboard', label: t('nav.dashboard'), icon: HomeIcon },
-    ],
-  },
-  // ── 2. 콘텐츠 제작 ──
-  {
-    label: t('nav.groupCreate'),
-    items: [
-      { to: '/upload', label: t('nav.upload'), icon: ArrowUpTrayIcon },
-      { to: '/videos', label: t('nav.videos'), icon: FilmIcon },
-      { to: '/ai', label: t('nav.ai'), icon: SparklesIcon },
-      { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
-      { to: '/abtest', label: t('nav.abtest'), icon: BeakerIcon },
-    ],
-    subGroups: [
-      {
-        key: 'create-library',
-        label: t('nav.subContentManage'),
-        items: [
-          { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
-          { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
-          { to: '/assets', label: t('nav.assets'), icon: PhotoIcon },
-          { to: '/recycling', label: t('nav.recycling'), icon: ArrowPathIcon },
-        ],
-      },
-    ],
-  },
-  // ── 3. 게시 & 스케줄 ──
-  {
-    label: t('nav.groupPublish'),
-    items: [
-      { to: '/schedule', label: t('nav.schedule'), icon: QueueListIcon },
-      { to: '/calendar', label: t('nav.calendar'), icon: CalendarDaysIcon },
-      { to: '/automation', label: t('nav.automation'), icon: BoltIcon },
-    ],
-  },
-  // ── 4. 분석 ──
-  {
-    label: t('nav.groupAnalytics'),
-    items: [
-      { to: '/analytics', label: t('nav.analytics'), icon: ChartBarIcon },
-      { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
-    ],
-    subGroups: [
-      {
-        key: 'analytics-competitor',
-        label: t('nav.subCompetitor'),
-        items: [
-          { to: '/competitor', label: t('nav.competitor'), icon: UsersIcon },
-          { to: '/channel-audit', label: t('nav.channelAudit'), icon: ClipboardDocumentCheckIcon },
-        ],
-      },
-      {
-        key: 'analytics-growth',
-        label: t('nav.subGrowth'),
-        items: [
-          { to: '/keyword-research', label: t('nav.keywordResearch'), icon: MagnifyingGlassIcon },
-          { to: '/trends', label: t('nav.trends'), icon: ArrowTrendingUpIcon },
-        ],
-      },
-    ],
-  },
-  // ── 5. 소통 ──
-  {
-    label: t('nav.groupAudience'),
-    items: [
-      { to: '/comments', label: t('nav.comments'), icon: ChatBubbleLeftEllipsisIcon },
-      { to: '/inbox', label: t('nav.inbox'), icon: InboxIcon },
-      { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
-      { to: '/audience', label: t('nav.audience'), icon: IdentificationIcon },
-    ],
-  },
-  // ── 6. 채널 운영 ──
-  {
-    label: t('nav.groupOperations'),
-    items: [
-      { to: '/channels', label: t('nav.channels'), icon: LinkIcon },
-      { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
-      { to: '/webhooks', label: t('nav.webhooks'), icon: SignalIcon },
-      { to: '/activity-log', label: t('nav.activityLog'), icon: ClockIcon },
-    ],
-  },
-  // ── 7. 비즈니스 (UGC 캠페인 포함) ──
-  {
-    label: t('nav.groupBusiness'),
-    items: [
-      { to: '/goals', label: t('nav.goals'), icon: FlagIcon },
-      { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
-      { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
-    ],
-    subGroups: [
-      {
-        key: 'business-ugc',
-        label: t('nav.groupUgc'),
-        items: [
-          { to: '/ugc/campaigns', label: t('nav.ugcCampaigns'), icon: MegaphoneIcon },
-          { to: '/creator/campaigns', label: t('nav.creatorCampaigns'), icon: HandRaisedIcon },
-        ],
-      },
-    ],
-  },
-])
-
-// Auto-expand sub-group containing the current route
-watch(
-  () => route.path,
-  (path) => {
-    for (const group of navGroups.value) {
-      if (!group.subGroups) continue
-      for (const sub of group.subGroups) {
-        if (sub.items.some((item) => path === item.to || path.startsWith(item.to + '/'))) {
-          if (!expandedSubGroups.value.has(sub.key)) {
-            const next = new Set(expandedSubGroups.value)
-            next.add(sub.key)
-            expandedSubGroups.value = next
-          }
-        }
-      }
-    }
-  },
-  { immediate: true },
+// 저장된 즐겨찾기 경로 중 현재 네비게이션 정의에 존재하는 항목만 노출
+// (라우트가 제거되면 조회에 실패하므로 안전하게 무시된다)
+const favoriteItems = computed<NavItem[]>(() =>
+  navFavoritesStore.favoritePaths
+    .map((path) => allNavItems.value.find((item) => item.to === path))
+    .filter((item): item is NavItem => item !== undefined),
 )
-
-const bottomNavItems = computed(() => {
-  const items = [
-    { to: '/manual', label: t('nav.manual'), icon: BookOpenIcon },
-    { to: '/subscription', label: t('nav.subscription'), icon: CreditCardIcon },
-    { to: '/settings', label: t('nav.settings'), icon: Cog6ToothIcon },
-  ]
-  if (isAdmin.value) {
-    items.push({ to: '/admin', label: t('nav.admin'), icon: ShieldCheckIcon })
-  }
-  return items
-})
-
-function isCurrentRoute(to: string): boolean {
-  return route.path === to || route.path.startsWith(to + '/')
-}
 </script>

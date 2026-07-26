@@ -41,6 +41,19 @@ export interface ScheduleUpdateRequest {
 
 export type CalendarView = 'month' | 'week' | 'list'
 
+export type ScheduleSortMode = 'date' | 'platform' | 'status' | 'manual'
+
+/** 캘린더 그리드에 표시되는 단일 이벤트 (플랫폼 단위로 분해된 예약) */
+export interface CalendarEvent {
+  id: string
+  videoId: string
+  title: string
+  platform: Platform | null
+  scheduledAt: string
+  status: 'scheduled' | 'published' | 'failed'
+  color?: string
+}
+
 export type RecurrenceType = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY'
 
 export interface RecurrenceConfig {

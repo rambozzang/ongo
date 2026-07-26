@@ -47,7 +47,8 @@
 import DropIndicator from './DropIndicator.vue'
 
 const props = defineProps<{
-  item: Record<string, unknown>
+  /** 드래그 대상 원본 아이템 (렌더링에는 사용하지 않음 — 호출측 식별용) */
+  item: unknown
   index: number
   isDraggable?: boolean
   isDragging?: boolean
