@@ -9,7 +9,7 @@
       >
         <ArrowLeftIcon class="h-5 w-5" />
       </button>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">영상 상세</h1>
+      <h1 class="text-h1 font-bold text-gray-900 dark:text-gray-100">영상 상세</h1>
     </div>
 
     <PageGuide
@@ -26,7 +26,7 @@ title="영상 상세" :items="[
     <!-- Not Found -->
     <div v-else-if="!video" class="card py-16 text-center">
       <ExclamationTriangleIcon class="mx-auto mb-4 h-12 w-12 text-gray-400 dark:text-gray-500" />
-      <p class="text-lg font-medium text-gray-600 dark:text-gray-300">영상을 찾을 수 없습니다</p>
+      <p class="text-title font-medium text-gray-600 dark:text-gray-300">영상을 찾을 수 없습니다</p>
       <button class="btn-primary mt-4" @click="router.push('/videos')">영상 목록으로</button>
     </div>
 
@@ -60,10 +60,10 @@ title="영상 상세" :items="[
             <div class="mb-4 flex items-start justify-between gap-3">
               <div class="min-w-0 flex-1">
                 <div class="mb-1 flex items-center gap-2">
-                  <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ video.title }}</h2>
+                  <h2 class="text-h2 font-bold text-gray-900 dark:text-gray-100">{{ video.title }}</h2>
                   <FavoriteButton :video-id="video.id" />
                 </div>
-                <p v-if="video.description" class="line-clamp-3 text-sm text-gray-600 dark:text-gray-300">
+                <p v-if="video.description" class="line-clamp-3 text-body text-gray-600 dark:text-gray-300">
                   {{ video.description }}
                 </p>
               </div>
@@ -72,20 +72,20 @@ title="영상 상세" :items="[
             <!-- Info Grid -->
             <div class="mb-5 grid grid-cols-2 gap-4 tablet:grid-cols-4">
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">업로드일</p>
-                <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <p class="text-caption text-gray-500 dark:text-gray-400">업로드일</p>
+                <p class="mt-0.5 text-body font-semibold text-gray-900 dark:text-gray-100">
                   {{ formatDate(video.createdAt) }}
                 </p>
               </div>
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">파일 크기</p>
-                <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <p class="text-caption text-gray-500 dark:text-gray-400">파일 크기</p>
+                <p class="mt-0.5 text-body font-semibold text-gray-900 dark:text-gray-100">
                   {{ video.fileSize ? formatFileSize(video.fileSize) : '-' }}
                 </p>
               </div>
               <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">카테고리</p>
-                <p class="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <p class="text-caption text-gray-500 dark:text-gray-400">카테고리</p>
+                <p class="mt-0.5 text-body font-semibold text-gray-900 dark:text-gray-100">
                   {{ video.category ?? '미지정' }}
                 </p>
               </div>
@@ -93,7 +93,7 @@ title="영상 상세" :items="[
 
             <!-- Tags -->
             <div v-if="video.tags.length > 0" class="mb-5">
-              <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">태그</p>
+              <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">태그</p>
               <div class="flex flex-wrap gap-1.5">
                 <span
                   v-for="tag in video.tags"
@@ -107,7 +107,7 @@ title="영상 상세" :items="[
 
             <!-- Platform Upload Badges -->
             <div v-if="video.uploads.length > 0" class="mb-5">
-              <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">업로드 플랫폼</p>
+              <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">업로드 플랫폼</p>
               <div class="flex flex-wrap gap-2">
                 <div
                   v-for="upload in video.uploads"
@@ -169,7 +169,7 @@ title="영상 상세" :items="[
           <button
             v-for="upload in video.uploads"
             :key="upload.platform"
-            class="flex-shrink-0 rounded-md px-4 py-2 text-sm font-medium transition-colors"
+            class="flex-shrink-0 rounded-md px-4 py-2 text-body font-medium transition-colors"
             :class="
               selectedPlatform === upload.platform
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -190,13 +190,13 @@ title="영상 상세" :items="[
           <!-- Views -->
           <div class="card text-center">
             <EyeIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">조회수</p>
-            <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <p class="text-caption text-gray-500 dark:text-gray-400">조회수</p>
+            <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
               {{ formatCompactNumber(currentAnalytics?.views ?? 0) }}
             </p>
             <div
               v-if="currentAnalytics?.viewsChange != null"
-              class="mt-1 flex items-center justify-center gap-0.5 text-xs font-medium"
+              class="mt-1 flex items-center justify-center gap-0.5 text-caption"
               :class="changeColorClass(currentAnalytics.viewsChange)"
             >
               <ArrowTrendingUpIcon v-if="currentAnalytics.viewsChange > 0" class="h-3 w-3" />
@@ -208,13 +208,13 @@ title="영상 상세" :items="[
           <!-- Likes -->
           <div class="card text-center">
             <HeartIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">좋아요</p>
-            <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <p class="text-caption text-gray-500 dark:text-gray-400">좋아요</p>
+            <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
               {{ formatCompactNumber(currentAnalytics?.likes ?? 0) }}
             </p>
             <div
               v-if="currentAnalytics?.likesChange != null"
-              class="mt-1 flex items-center justify-center gap-0.5 text-xs font-medium"
+              class="mt-1 flex items-center justify-center gap-0.5 text-caption"
               :class="changeColorClass(currentAnalytics.likesChange)"
             >
               <ArrowTrendingUpIcon v-if="currentAnalytics.likesChange > 0" class="h-3 w-3" />
@@ -226,8 +226,8 @@ title="영상 상세" :items="[
           <!-- Comments -->
           <div class="card text-center">
             <ChatBubbleLeftEllipsisIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">댓글</p>
-            <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <p class="text-caption text-gray-500 dark:text-gray-400">댓글</p>
+            <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
               {{ formatCompactNumber(currentAnalytics?.comments ?? 0) }}
             </p>
           </div>
@@ -235,8 +235,8 @@ title="영상 상세" :items="[
           <!-- Shares -->
           <div class="card text-center">
             <ShareIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">공유</p>
-            <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <p class="text-caption text-gray-500 dark:text-gray-400">공유</p>
+            <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
               {{ formatCompactNumber(currentAnalytics?.shares ?? 0) }}
             </p>
           </div>
@@ -246,7 +246,7 @@ title="영상 상세" :items="[
         <div class="page-grid page-grid--split mb-6">
           <!-- Daily Views Trend Line Chart Placeholder -->
           <div class="card">
-            <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">일별 조회수 추이</h3>
+            <h3 class="mb-4 text-h3 text-gray-900 dark:text-gray-100">일별 조회수 추이</h3>
             <div
               v-if="currentAnalytics && currentAnalytics.dailyTrend.length > 0"
               class="relative h-64"
@@ -268,14 +268,14 @@ title="영상 상세" :items="[
                   />
                   <!-- Tooltip on hover -->
                   <div
-                    class="pointer-events-none absolute -top-10 left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white shadow group-hover:block"
+                    class="pointer-events-none absolute -top-10 left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-body-xs text-white shadow group-hover:block"
                   >
                     {{ formatShortDate(point.date) }}: {{ formatCompactNumber(point.totalViews) }}
                   </div>
                 </div>
               </div>
               <!-- X-axis labels -->
-              <div class="mt-2 flex justify-between text-xs text-gray-400 dark:text-gray-500">
+              <div class="mt-2 flex justify-between text-body-xs text-gray-400 dark:text-gray-500">
                 <span>{{ formatShortDate(currentAnalytics.dailyTrend[0]?.date) }}</span>
                 <span>
                   {{
@@ -298,25 +298,25 @@ title="영상 상세" :items="[
             <div v-else class="flex h-64 items-center justify-center">
               <div class="text-center">
                 <ChartBarIcon class="mx-auto mb-2 h-10 w-10 text-gray-300 dark:text-gray-600" />
-                <p class="text-sm text-gray-400 dark:text-gray-500">데이터가 충분하지 않습니다</p>
+                <p class="text-body text-gray-400 dark:text-gray-500">데이터가 충분하지 않습니다</p>
               </div>
             </div>
           </div>
 
           <!-- Platform Comparison Grouped Bar Chart Placeholder -->
           <div class="card">
-            <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">플랫폼 간 비교</h3>
+            <h3 class="mb-4 text-h3 text-gray-900 dark:text-gray-100">플랫폼 간 비교</h3>
             <div v-if="analyticsData.length > 0" class="h-64 space-y-4 overflow-y-auto">
               <!-- Views comparison -->
               <div>
-                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">조회수</p>
+                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">조회수</p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
                     :key="`views-${a.platform}`"
                     class="flex items-center gap-2"
                   >
-                    <span class="w-20 text-xs text-gray-600 dark:text-gray-300">
+                    <span class="w-20 text-body-xs text-gray-600 dark:text-gray-300">
                       {{ PLATFORM_CONFIG[a.platform].label }}
                     </span>
                     <div class="h-4 flex-1 rounded-full bg-gray-100 dark:bg-gray-800">
@@ -328,7 +328,7 @@ title="영상 상세" :items="[
                         }"
                       />
                     </div>
-                    <span class="w-14 text-right text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span class="w-14 text-right text-caption text-gray-700 dark:text-gray-300">
                       {{ formatCompactNumber(a.views) }}
                     </span>
                   </div>
@@ -336,14 +336,14 @@ title="영상 상세" :items="[
               </div>
               <!-- Likes comparison -->
               <div>
-                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">좋아요</p>
+                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">좋아요</p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
                     :key="`likes-${a.platform}`"
                     class="flex items-center gap-2"
                   >
-                    <span class="w-20 text-xs text-gray-600 dark:text-gray-300">
+                    <span class="w-20 text-body-xs text-gray-600 dark:text-gray-300">
                       {{ PLATFORM_CONFIG[a.platform].label }}
                     </span>
                     <div class="h-4 flex-1 rounded-full bg-gray-100 dark:bg-gray-800">
@@ -355,7 +355,7 @@ title="영상 상세" :items="[
                         }"
                       />
                     </div>
-                    <span class="w-14 text-right text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span class="w-14 text-right text-caption text-gray-700 dark:text-gray-300">
                       {{ formatCompactNumber(a.likes) }}
                     </span>
                   </div>
@@ -363,14 +363,14 @@ title="영상 상세" :items="[
               </div>
               <!-- Comments comparison -->
               <div>
-                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">댓글</p>
+                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">댓글</p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
                     :key="`comments-${a.platform}`"
                     class="flex items-center gap-2"
                   >
-                    <span class="w-20 text-xs text-gray-600 dark:text-gray-300">
+                    <span class="w-20 text-body-xs text-gray-600 dark:text-gray-300">
                       {{ PLATFORM_CONFIG[a.platform].label }}
                     </span>
                     <div class="h-4 flex-1 rounded-full bg-gray-100 dark:bg-gray-800">
@@ -382,7 +382,7 @@ title="영상 상세" :items="[
                         }"
                       />
                     </div>
-                    <span class="w-14 text-right text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span class="w-14 text-right text-caption text-gray-700 dark:text-gray-300">
                       {{ formatCompactNumber(a.comments) }}
                     </span>
                   </div>
@@ -390,14 +390,14 @@ title="영상 상세" :items="[
               </div>
               <!-- Shares comparison -->
               <div>
-                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">공유</p>
+                <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">공유</p>
                 <div class="space-y-1">
                   <div
                     v-for="a in analyticsData"
                     :key="`shares-${a.platform}`"
                     class="flex items-center gap-2"
                   >
-                    <span class="w-20 text-xs text-gray-600 dark:text-gray-300">
+                    <span class="w-20 text-body-xs text-gray-600 dark:text-gray-300">
                       {{ PLATFORM_CONFIG[a.platform].label }}
                     </span>
                     <div class="h-4 flex-1 rounded-full bg-gray-100 dark:bg-gray-800">
@@ -409,7 +409,7 @@ title="영상 상세" :items="[
                         }"
                       />
                     </div>
-                    <span class="w-14 text-right text-xs font-medium text-gray-700 dark:text-gray-300">
+                    <span class="w-14 text-right text-caption text-gray-700 dark:text-gray-300">
                       {{ formatCompactNumber(a.shares) }}
                     </span>
                   </div>
@@ -419,7 +419,7 @@ title="영상 상세" :items="[
             <div v-else class="flex h-64 items-center justify-center">
               <div class="text-center">
                 <ChartBarIcon class="mx-auto mb-2 h-10 w-10 text-gray-300 dark:text-gray-600" />
-                <p class="text-sm text-gray-400 dark:text-gray-500">분석 데이터가 없습니다</p>
+                <p class="text-body text-gray-400 dark:text-gray-500">분석 데이터가 없습니다</p>
               </div>
             </div>
           </div>
@@ -428,17 +428,17 @@ title="영상 상세" :items="[
         <!-- Recent Comments Section (Phase 2 placeholder) -->
         <div class="card">
           <div class="flex items-center justify-between">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">최근 댓글</h3>
-            <span class="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+            <h3 class="text-h3 text-gray-900 dark:text-gray-100">최근 댓글</h3>
+            <span class="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-caption text-gray-500 dark:text-gray-400">
               Phase 2
             </span>
           </div>
           <div class="mt-6 flex flex-col items-center justify-center py-8 text-center">
             <ChatBubbleLeftEllipsisIcon class="mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
-            <p class="text-sm text-gray-500 dark:text-gray-400">
+            <p class="text-body text-gray-500 dark:text-gray-400">
               댓글 통합 관리 기능은 Phase 2에서 제공됩니다.
             </p>
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+            <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">
               플랫폼별 댓글 조회 및 답글 작성이 가능해집니다.
             </p>
           </div>
@@ -448,8 +448,8 @@ title="영상 상세" :items="[
       <!-- No Uploads State -->
       <div v-else class="card py-12 text-center">
         <CloudArrowUpIcon class="mx-auto mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
-        <p class="mb-1 text-base font-medium text-gray-600 dark:text-gray-300">아직 플랫폼에 업로드되지 않았습니다</p>
-        <p class="mb-4 text-sm text-gray-400 dark:text-gray-500">
+        <p class="mb-1 text-body-lg font-medium text-gray-600 dark:text-gray-300">아직 플랫폼에 업로드되지 않았습니다</p>
+        <p class="mb-4 text-body text-gray-400 dark:text-gray-500">
           영상을 플랫폼에 업로드하면 성과 데이터를 확인할 수 있습니다.
         </p>
         <button class="btn-primary" @click="handleReUpload">
@@ -616,8 +616,8 @@ function formatChange(value: number): string {
 
 /** Return Tailwind color class based on positive/negative/zero change */
 function changeColorClass(value: number): string {
-  if (value > 0) return 'text-green-600'
-  if (value < 0) return 'text-red-500'
+  if (value > 0) return 'text-success-strong'
+  if (value < 0) return 'text-error-strong'
   return 'text-gray-400'
 }
 

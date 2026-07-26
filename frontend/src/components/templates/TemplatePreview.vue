@@ -47,10 +47,10 @@ const hint = computed(() => {
 <template>
   <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
     <div class="flex items-center justify-between mb-3">
-      <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+      <h4 class="text-body font-semibold text-gray-900 dark:text-white">
         {{ categoryLabels[category] }}
       </h4>
-      <span v-if="hint" class="text-xs text-gray-500 dark:text-gray-400">
+      <span v-if="hint" class="text-body-xs text-gray-500 dark:text-gray-400">
         {{ hint }}
       </span>
     </div>
@@ -66,20 +66,20 @@ const hint = computed(() => {
         <span
           v-for="(tag, index) in content.split(',')"
           :key="index"
-          class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded"
+          class="px-2 py-1 text-body bg-info-subtle text-info-strong rounded"
           v-html="tag.trim().replace(/\{\{([^}]+)\}\}/g, '<span class=\'variable-highlight\'>{{$1}}</span>')"
         />
       </div>
       <div
         v-else
-        class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
+        class="text-body text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
         v-html="highlightedContent"
       />
     </div>
 
     <div
       v-else
-      class="text-sm text-gray-400 dark:text-gray-500 italic"
+      class="text-body text-gray-400 dark:text-gray-500 italic"
     >
       내용을 입력하면 여기에 미리보기가 표시됩니다
     </div>
@@ -88,6 +88,6 @@ const hint = computed(() => {
 
 <style scoped>
 :deep(.variable-highlight) {
-  @apply bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300 px-1 rounded font-semibold;
+  @apply bg-info-subtle text-info-strong px-1 rounded font-semibold;
 }
 </style>

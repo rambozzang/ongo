@@ -30,7 +30,7 @@ const roleConfig: Record<TeamRole, { label: string; class: string }> = {
 <template>
   <span
     :class="roleConfig[role].class"
-    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-caption"
   >
     {{ roleConfig[role].label }}
   </span>

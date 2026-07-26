@@ -107,7 +107,7 @@ function onRenameKeydown(e: KeyboardEvent) {
     <div class="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
       <!-- Header -->
       <div class="mb-3 flex items-center justify-between">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">폴더</h3>
+        <h3 class="text-body font-semibold text-gray-900 dark:text-white">폴더</h3>
         <button
           class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
           title="새 폴더"
@@ -121,7 +121,7 @@ function onRenameKeydown(e: KeyboardEvent) {
       <nav class="space-y-0.5">
         <!-- All Assets -->
         <button
-          class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors"
+          class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-body transition-colors"
           :class="
             selectedFolderId === null
               ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
@@ -132,7 +132,7 @@ function onRenameKeydown(e: KeyboardEvent) {
           <ArchiveBoxIcon class="h-4 w-4 flex-shrink-0" />
           <span class="flex-1 truncate">전체 에셋</span>
           <span
-            class="rounded-full px-1.5 py-0.5 text-xs"
+            class="rounded-full px-1.5 py-0.5 text-body-xs"
             :class="
               selectedFolderId === null
                 ? 'bg-primary-100 text-primary-700 dark:bg-primary-800/50 dark:text-primary-400'
@@ -158,12 +158,12 @@ function onRenameKeydown(e: KeyboardEvent) {
             <input
               v-model="editingFolderName"
               type="text"
-              class="min-w-0 flex-1 rounded border border-primary-300 bg-white px-1.5 py-0.5 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-primary-600 dark:bg-gray-900 dark:text-gray-100"
+              class="min-w-0 flex-1 rounded border border-primary-300 bg-white px-1.5 py-0.5 text-body text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-primary-600 dark:bg-gray-900 dark:text-gray-100"
               autofocus
               @keydown="onRenameKeydown"
             />
             <button
-              class="rounded p-0.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+              class="rounded p-0.5 text-success-strong hover:bg-success-subtle"
               @click="confirmRename"
             >
               <CheckIcon class="h-3.5 w-3.5" />
@@ -179,7 +179,7 @@ function onRenameKeydown(e: KeyboardEvent) {
           <!-- Normal Mode -->
           <button
             v-else
-            class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors"
+            class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-body transition-colors"
             :class="
               selectedFolderId === folder.id
                 ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
@@ -206,7 +206,7 @@ function onRenameKeydown(e: KeyboardEvent) {
                 <PencilIcon class="h-3 w-3" />
               </button>
               <button
-                class="rounded p-0.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                class="rounded p-0.5 text-gray-400 hover:text-error-strong"
                 title="삭제"
                 @click="handleDeleteFolder(folder.id)"
               >
@@ -216,7 +216,7 @@ function onRenameKeydown(e: KeyboardEvent) {
 
             <!-- Count (hidden on hover) -->
             <span
-              class="flex group-hover:hidden rounded-full px-1.5 py-0.5 text-xs"
+              class="flex group-hover:hidden rounded-full px-1.5 py-0.5 text-body-xs"
               :class="
                 selectedFolderId === folder.id
                   ? 'bg-primary-100 text-primary-700 dark:bg-primary-800/50 dark:text-primary-400'
@@ -231,12 +231,12 @@ function onRenameKeydown(e: KeyboardEvent) {
         <!-- Unfiled -->
         <button
           v-if="unfiledCount > 0"
-          class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-gray-500 transition-colors hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50"
+          class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-body text-gray-500 transition-colors hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50"
           disabled
         >
           <FolderIcon class="h-4 w-4 flex-shrink-0 opacity-50" />
           <span class="flex-1 truncate italic">미분류</span>
-          <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-400 dark:bg-gray-700 dark:text-gray-500">
+          <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-body-xs text-gray-400 dark:bg-gray-700 dark:text-gray-500">
             {{ unfiledCount }}
           </span>
         </button>
@@ -251,12 +251,12 @@ function onRenameKeydown(e: KeyboardEvent) {
             v-model="newFolderName"
             type="text"
             placeholder="폴더 이름"
-            class="min-w-0 flex-1 rounded border border-primary-300 bg-white px-1.5 py-0.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-primary-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
+            class="min-w-0 flex-1 rounded border border-primary-300 bg-white px-1.5 py-0.5 text-body text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-primary-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder-gray-500"
             autofocus
             @keydown="onNewFolderKeydown"
           />
           <button
-            class="rounded p-0.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+            class="rounded p-0.5 text-success-strong hover:bg-success-subtle"
             @click="confirmCreateFolder"
           >
             <CheckIcon class="h-3.5 w-3.5" />

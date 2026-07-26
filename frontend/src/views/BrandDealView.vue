@@ -50,10 +50,10 @@
           class="card space-y-3 transition-shadow hover:shadow-md"
         >
           <div class="flex items-start justify-between">
-            <h3 class="truncate text-base font-semibold text-gray-900 dark:text-gray-100">{{ deal.brandName }}</h3>
+            <h3 class="truncate text-h3 text-gray-900 dark:text-gray-100">{{ deal.brandName }}</h3>
             <span
               :class="[
-                'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                'inline-flex items-center rounded-full px-2.5 py-0.5 text-caption',
                 statusBadgeClass(deal.status),
               ]"
             >
@@ -61,11 +61,11 @@
             </span>
           </div>
 
-          <div v-if="deal.dealValue != null" class="text-lg font-bold text-primary-600 dark:text-primary-400">
+          <div v-if="deal.dealValue != null" class="text-title font-bold text-primary-600 dark:text-primary-400">
             {{ formatKRW(deal.dealValue) }}
           </div>
 
-          <div class="space-y-1 text-sm text-gray-500 dark:text-gray-400">
+          <div class="space-y-1 text-body text-gray-500 dark:text-gray-400">
             <div v-if="deal.contactName" class="flex items-center gap-1">
               <span class="font-medium text-gray-600 dark:text-gray-300">{{ t('brandDeal.contactPerson') }}</span> {{ deal.contactName }}
             </div>
@@ -76,7 +76,7 @@
 
           <div class="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
             <button
-              class="text-xs text-red-500 hover:text-red-700"
+              class="text-body-xs text-error-strong transition hover:opacity-80"
               @click="handleDeleteDeal(deal.id)"
             >
               {{ t('brandDeal.delete') }}
@@ -90,7 +90,7 @@
     <div v-if="activeTab === 'mediakit'">
       <div class="card space-y-5">
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.displayName') }}</label>
+          <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.displayName') }}</label>
           <input
             v-model="mkForm.displayName"
             type="text"
@@ -99,7 +99,7 @@
           />
         </div>
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.bio') }}</label>
+          <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.bio') }}</label>
           <textarea
             v-model="mkForm.bio"
             rows="3"
@@ -108,7 +108,7 @@
           />
         </div>
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.categories') }}</label>
+          <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.categories') }}</label>
           <input
             v-model="mkCategoriesInput"
             type="text"
@@ -117,10 +117,10 @@
           />
         </div>
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.socialLinks') }}</label>
+          <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.socialLinks') }}</label>
           <div class="space-y-2">
             <div v-for="platform in socialPlatforms" :key="platform" class="flex items-center gap-2">
-              <span class="w-24 text-sm font-medium text-gray-600 dark:text-gray-300">{{ platform }}</span>
+              <span class="w-24 text-body font-medium text-gray-600 dark:text-gray-300">{{ platform }}</span>
               <input
                 v-model="mkSocialLinks[platform]"
                 type="url"
@@ -131,7 +131,7 @@
           </div>
         </div>
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.slug') }}</label>
+          <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.slug') }}</label>
           <input
             v-model="mkForm.slug"
             type="text"
@@ -146,7 +146,7 @@
             type="checkbox"
             class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
           />
-          <label for="isPublic" class="text-sm text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.isPublic') }}</label>
+          <label for="isPublic" class="text-body text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.isPublic') }}</label>
         </div>
         <div class="flex justify-end">
           <button
@@ -163,7 +163,7 @@
     <!-- 새 딜 추가 모달 -->
     <BaseModal v-model="showCreateModal" :title="t('brandDeal.modal.title')" max-width="lg">
           <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.brandName') }}</label>
+            <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.brandName') }}</label>
             <input
               v-model="newDeal.brandName"
               type="text"
@@ -173,7 +173,7 @@
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.contactPerson') }}</label>
+              <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.contactPerson') }}</label>
               <input
                 v-model="newDeal.contactName"
                 type="text"
@@ -182,7 +182,7 @@
               />
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.email') }}</label>
+              <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.email') }}</label>
               <input
                 v-model="newDeal.contactEmail"
                 type="email"
@@ -193,7 +193,7 @@
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.dealValue') }}</label>
+              <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.dealValue') }}</label>
               <input
                 v-model.number="newDeal.dealValue"
                 type="number"
@@ -202,7 +202,7 @@
               />
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.deadline') }}</label>
+              <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.deadline') }}</label>
               <input
                 v-model="newDeal.deadline"
                 type="date"
@@ -211,7 +211,7 @@
             </div>
           </div>
           <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.notes') }}</label>
+            <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.modal.notes') }}</label>
             <textarea
               v-model="newDeal.notes"
               rows="3"
@@ -311,11 +311,11 @@ function statusLabel(status: string): string {
 function statusBadgeClass(status: string): string {
   const map: Record<string, string> = {
     INQUIRY: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-    NEGOTIATION: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    CONTRACTED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    NEGOTIATION: 'bg-warning-subtle text-warning-strong',
+    CONTRACTED: 'bg-info-subtle text-info-strong',
     IN_PROGRESS: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400',
-    COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    COMPLETED: 'bg-success-subtle text-success-strong',
+    CANCELLED: 'bg-error-subtle text-error-strong',
   }
   return map[status] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
 }

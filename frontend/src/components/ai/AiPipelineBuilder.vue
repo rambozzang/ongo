@@ -86,7 +86,7 @@ function handleStart() {
   <div class="space-y-6">
     <!-- Step Selection -->
     <div>
-      <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+      <h3 class="text-body font-semibold text-gray-700 dark:text-gray-300 mb-3">
         AI 파이프라인 스텝 선택
       </h3>
       <div class="space-y-2">
@@ -108,14 +108,14 @@ function handleStart() {
           />
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <span class="text-body font-medium text-gray-900 dark:text-gray-100">
                 {{ step.displayName }}
               </span>
-              <span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300">
+              <span class="inline-flex items-center rounded-full bg-info-subtle px-2 py-0.5 text-body-xs font-medium text-info-strong">
                 {{ step.creditCost }} 크레딧
               </span>
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <p class="text-body-xs text-gray-500 dark:text-gray-400 mt-0.5">
               {{ step.description }}
             </p>
           </div>
@@ -125,7 +125,7 @@ function handleStart() {
 
     <!-- Step Order (drag-and-drop) -->
     <div v-if="orderedSteps.length > 0">
-      <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+      <h3 class="text-body font-semibold text-gray-700 dark:text-gray-300 mb-3">
         실행 순서 (드래그하여 변경)
       </h3>
       <div class="space-y-1">
@@ -139,10 +139,10 @@ function handleStart() {
           @dragover="(e) => handleDragOver(e, index)"
           @dragend="handleDragEnd"
         >
-          <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 text-xs font-bold text-primary-700 dark:text-primary-300">
+          <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 text-body-xs font-bold text-primary-700 dark:text-primary-300">
             {{ index + 1 }}
           </span>
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">
+          <span class="text-body font-medium text-gray-900 dark:text-gray-100 flex-1">
             {{ step.displayName }}
           </span>
           <!-- Connection arrow -->
@@ -155,23 +155,23 @@ function handleStart() {
 
     <!-- Credit Summary -->
     <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50">
-      <div class="space-y-2 text-sm">
+      <div class="space-y-2 text-body">
         <div class="flex justify-between text-gray-600 dark:text-gray-400">
           <span>스텝 합계</span>
           <span>{{ rawCost }} 크레딧</span>
         </div>
-        <div v-if="discountApplied" class="flex justify-between text-green-600 dark:text-green-400 font-medium">
+        <div v-if="discountApplied" class="flex justify-between text-success-strong font-medium">
           <span>파이프라인 할인 (20%)</span>
           <span>-{{ discountAmount }} 크레딧</span>
         </div>
-        <div v-else class="text-xs text-gray-500 dark:text-gray-500">
+        <div v-else class="text-body-xs text-gray-500 dark:text-gray-500">
           3개 이상 선택 시 20% 할인 적용
         </div>
         <div class="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-semibold text-gray-900 dark:text-gray-100">
           <span>총 비용</span>
           <span>{{ totalCost }} 크레딧</span>
         </div>
-        <div class="flex justify-between text-xs" :class="hasEnoughCredits ? 'text-gray-500 dark:text-gray-400' : 'text-red-600 dark:text-red-400'">
+        <div class="flex justify-between text-body-xs" :class="hasEnoughCredits ? 'text-gray-500 dark:text-gray-400' : 'text-error-strong'">
           <span>보유 크레딧</span>
           <span>{{ creditBalance }}</span>
         </div>
@@ -181,7 +181,7 @@ function handleStart() {
     <!-- Start Button -->
     <button
       :disabled="selectedSteps.length === 0 || !hasEnoughCredits"
-      class="btn-primary w-full rounded-lg px-6 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+      class="btn-primary w-full rounded-lg px-6 py-3 text-body disabled:cursor-not-allowed disabled:opacity-50"
       @click="handleStart"
     >
       <span v-if="!hasEnoughCredits">크레딧 부족</span>

@@ -8,7 +8,7 @@
             <button
               v-for="p in periods"
               :key="p.value"
-              class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+              class="rounded-lg px-3 py-1.5 text-body font-medium transition-colors"
               :class="
                 period === p.value
                   ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
@@ -22,7 +22,7 @@
           <div class="flex gap-2">
             <router-link
               to="/analytics/compare"
-              class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+              class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-body font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <ArrowsRightLeftIcon class="h-4 w-4" />
               {{ $t('analyticsView.videoComparison') }}
@@ -47,12 +47,12 @@
     <div v-if="analyticsSubTab === 'crossPlatform'" class="space-y-6">
       <div v-if="analyticsStore.crossPlatformLoading" class="text-center py-12">
         <LoadingSpinner />
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $t('analyticsView.crossPlatformLoading') }}</p>
+        <p class="mt-2 text-body text-gray-500 dark:text-gray-400">{{ $t('analyticsView.crossPlatformLoading') }}</p>
       </div>
       <template v-else-if="analyticsStore.crossPlatformData">
         <!-- 플랫폼 순위 -->
         <div v-if="Object.keys(analyticsStore.crossPlatformData.platformRankings).length > 0" class="card">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.platformRankings') }}</h2>
+          <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.platformRankings') }}</h2>
           <div class="page-grid page-grid--dense">
             <div
               v-for="(ranking, platform) in analyticsStore.crossPlatformData.platformRankings"
@@ -60,17 +60,17 @@
               class="rounded-lg border border-gray-200 dark:border-gray-700 p-4"
             >
               <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span class="text-body font-medium text-gray-900 dark:text-gray-100">
                   {{ platformLabel(platform as Platform) }}
                 </span>
                 <span
-                  class="inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-bold"
-                  :class="ranking.rank === 1 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
+                  class="inline-flex items-center justify-center h-6 w-6 rounded-full text-body-xs font-bold"
+                  :class="ranking.rank === 1 ? 'bg-warning-subtle text-warning-strong' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
                 >
                   {{ ranking.rank }}
                 </span>
               </div>
-              <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+              <div class="space-y-1 text-body text-gray-600 dark:text-gray-400">
                 <div class="flex justify-between">
                   <span>{{ $t('analyticsView.totalViews') }}</span>
                   <span class="font-medium text-gray-900 dark:text-gray-100">{{ formatNumber(ranking.totalViews) }}</span>
@@ -91,12 +91,12 @@
         <!-- 영상별 비교 -->
         <div v-for="video in analyticsStore.crossPlatformData.videos" :key="video.videoId" class="card">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+            <h3 class="text-body-lg font-semibold text-gray-900 dark:text-gray-100">
               {{ video.videoTitle || `${$t('analyticsView.videoPrefix')} #${video.videoId}` }}
             </h3>
             <span
               v-if="video.bestPlatform"
-              class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+              class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-body-xs font-medium bg-success-subtle text-success-strong"
             >
               Best: {{ video.bestPlatform }}
             </span>
@@ -104,9 +104,9 @@
 
           <!-- 지표 테이블 -->
           <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full text-body">
               <thead>
-                <tr class="border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
+                <tr class="border-b border-gray-200 dark:border-gray-700 text-body-xs uppercase text-gray-500 dark:text-gray-400">
                   <th class="px-3 py-2 text-left font-medium">{{ $t('analyticsView.table.platform') }}</th>
                   <th class="px-3 py-2 text-right font-medium">{{ $t('analyticsView.table.views') }}</th>
                   <th class="px-3 py-2 text-right font-medium">{{ $t('analyticsView.table.likes') }}</th>
@@ -131,7 +131,7 @@
                   <td class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">{{ formatNumber(pm.likes) }}</td>
                   <td class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">{{ formatNumber(pm.comments) }}</td>
                   <td class="px-3 py-2 text-right text-gray-700 dark:text-gray-300">{{ formatNumber(pm.shares) }}</td>
-                  <td class="px-3 py-2 text-right font-medium" :class="pm.engagementRate >= 5 ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'">
+                  <td class="px-3 py-2 text-right font-medium" :class="pm.engagementRate >= 5 ? 'text-success-strong' : 'text-gray-700 dark:text-gray-300'">
                     {{ pm.engagementRate }}%
                   </td>
                   <td class="hidden px-3 py-2 text-right text-gray-700 dark:text-gray-300 tablet:table-cell">
@@ -147,7 +147,7 @@
             <p
               v-for="(insight, idx) in video.insights"
               :key="idx"
-              class="text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1.5"
+              class="text-body-xs text-gray-500 dark:text-gray-400 flex items-start gap-1.5"
             >
               <span class="text-primary-500 mt-0.5">•</span>
               {{ insight }}
@@ -167,8 +167,8 @@
 
     <!-- Cohort Analysis Tab -->
     <div v-if="analyticsSubTab === 'cohort'" class="card">
-      <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.cohort.title') }}</h2>
-      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+      <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.cohort.title') }}</h2>
+      <p class="mb-4 text-body text-gray-500 dark:text-gray-400">
         {{ $t('analyticsView.cohort.description') }}
       </p>
       <CohortAnalysisChart />
@@ -177,14 +177,14 @@
     <!-- Retention Tab -->
     <div v-if="analyticsSubTab === 'retention'">
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.retention.title') }}</h2>
-        <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.retention.title') }}</h2>
+        <p class="mb-4 text-body text-gray-500 dark:text-gray-400">
           {{ $t('analyticsView.retention.description') }}
         </p>
 
         <!-- Video selector from top videos -->
         <div v-if="topVideos.length > 0" class="mb-4">
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
             {{ $t('analyticsView.retention.selectVideo') }}
           </label>
           <div class="flex flex-wrap gap-2">
@@ -195,7 +195,7 @@
                 retentionVideoId === video.videoId
                   ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-400'
                   : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300',
-                'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+                'rounded-lg border px-3 py-1.5 text-body-xs font-medium transition-colors',
               ]"
               @click="retentionVideoId = video.videoId"
             >
@@ -212,7 +212,7 @@
     <div v-if="analyticsSubTab === 'deep'" class="space-y-6">
       <div v-if="analyticsStore.deepAnalyticsLoading" class="text-center py-12">
         <LoadingSpinner />
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $t('analyticsView.deepAnalyticsLoading') }}</p>
+        <p class="mt-2 text-body text-gray-500 dark:text-gray-400">{{ $t('analyticsView.deepAnalyticsLoading') }}</p>
       </div>
       <template v-else>
         <div class="page-grid page-grid--split">
@@ -276,12 +276,12 @@
       <div class="page-grid page-grid--wide mb-6">
         <!-- Views Trend Line Chart -->
         <div class="card desktop:col-span-2">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.viewsTrend') }}</h2>
+          <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.viewsTrend') }}</h2>
           <div class="mb-3 flex flex-wrap gap-3">
             <span
               v-for="platformLegend in trendLegend"
               :key="platformLegend.key"
-              class="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300"
+              class="flex items-center gap-1.5 text-body-xs font-medium text-gray-600 dark:text-gray-300"
             >
               <span
                 class="inline-block h-2.5 w-2.5 rounded-full"
@@ -326,7 +326,7 @@
                 <span v-for="(label, idx) in trendXLabels" :key="idx">{{ label }}</span>
               </div>
             </template>
-            <div v-else class="flex h-full items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+            <div v-else class="flex h-full items-center justify-center text-body text-gray-400 dark:text-gray-500">
               {{ $t('analyticsView.noData') }}
             </div>
           </div>
@@ -334,14 +334,14 @@
 
         <!-- Platform Comparison Grouped Bar Chart -->
         <div class="card">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.platformComparison') }}</h2>
+          <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.platformComparison') }}</h2>
           <div v-if="platformComparison.length > 0" class="space-y-4">
             <!-- Metric tabs -->
             <div class="flex gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
               <button
                 v-for="metric in comparisonMetrics"
                 :key="metric.key"
-                class="flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
+                class="flex-1 rounded-md px-2 py-1 text-body-xs font-medium transition-colors"
                 :class="
                   activeMetric === metric.key
                     ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -359,7 +359,7 @@
                 :key="item.platform"
                 class="space-y-1"
               >
-                <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center justify-between text-body">
                   <span class="font-medium text-gray-700 dark:text-gray-300">
                     {{ platformLabel(item.platform) }}
                   </span>
@@ -379,7 +379,7 @@
               </div>
             </div>
           </div>
-          <div v-else class="flex h-48 items-center justify-center text-sm text-gray-400">
+          <div v-else class="flex h-48 items-center justify-center text-body text-gray-400">
             {{ $t('analyticsView.noData') }}
           </div>
         </div>
@@ -387,7 +387,7 @@
 
       <!-- Subscriber Trend Area Chart -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.subscriberTrend') }}</h2>
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.subscriberTrend') }}</h2>
         <div class="relative h-48 w-full overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-900">
           <template v-if="trendData.length > 0 && subscriberMaxValue > 0">
             <svg
@@ -410,7 +410,7 @@
               />
             </svg>
           </template>
-          <div v-else class="flex h-full items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+          <div v-else class="flex h-full items-center justify-center text-body text-gray-400 dark:text-gray-500">
             {{ $t('analyticsView.noSubscriberData') }}
           </div>
         </div>
@@ -420,7 +420,7 @@
       <div class="page-grid page-grid--wide mb-6">
         <!-- Posting Time Heatmap -->
         <div class="card desktop:col-span-2">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.bestPostingTime') }}</h2>
+          <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.bestPostingTime') }}</h2>
           <PostingHeatmap :data="postingHeatmapData" :best-time="bestPostingTime" />
         </div>
         <!-- Best Time Recommendations -->
@@ -429,11 +429,11 @@
 
       <!-- Top 10 Videos Table -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.topVideos') }}</h2>
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.topVideos') }}</h2>
         <div class="overflow-x-auto">
-          <table v-if="topVideos.length > 0" class="w-full text-left text-sm">
+          <table v-if="topVideos.length > 0" class="w-full text-left text-body">
             <thead>
-              <tr class="border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
+              <tr class="border-b border-gray-200 dark:border-gray-700 text-body-xs uppercase text-gray-500 dark:text-gray-400">
                 <th class="whitespace-nowrap px-3 py-3 font-medium">#</th>
                 <th class="whitespace-nowrap px-3 py-3 font-medium">{{ $t('analyticsView.table.video') }}</th>
                 <th class="whitespace-nowrap px-3 py-3 font-medium text-right">{{ $t('analyticsView.table.views') }}</th>
@@ -479,7 +479,7 @@
                           :key="platform"
                           :platform="platform"
                         />
-                        <span class="ml-1 text-xs text-gray-400">
+                        <span class="ml-1 text-body-xs text-gray-400">
                           {{ formatDate(video.publishedAt) }}
                         </span>
                       </div>
@@ -506,7 +506,7 @@
                 </td>
                 <td class="hidden px-3 py-3 tablet:table-cell">
                   <button
-                    class="rounded-md px-2 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20"
+                    class="rounded-md px-2 py-1 text-body-xs font-medium text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20"
                     @click="selectRetentionVideo(video.videoId)"
                   >
                     {{ $t('analyticsView.retention.button') }}
@@ -515,7 +515,7 @@
               </tr>
             </tbody>
           </table>
-          <div v-else class="flex h-32 items-center justify-center text-sm text-gray-400">
+          <div v-else class="flex h-32 items-center justify-center text-body text-gray-400">
             {{ $t('analyticsView.noTopVideos') }}
           </div>
         </div>
@@ -523,8 +523,8 @@
 
       <!-- Upload Time Analysis Heatmap -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.uploadTimeAnalysis') }}</h2>
-        <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ $t('analyticsView.uploadTimeHint') }}</p>
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.uploadTimeAnalysis') }}</h2>
+        <p class="mb-3 text-body-xs text-gray-400 dark:text-gray-500">{{ $t('analyticsView.uploadTimeHint') }}</p>
         <div class="overflow-x-auto">
           <div class="min-w-[640px]">
             <!-- Hour labels header -->
@@ -547,7 +547,7 @@
                 :key="dayIndex"
                 class="flex items-center"
               >
-                <div class="w-10 flex-shrink-0 pr-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
+                <div class="w-10 flex-shrink-0 pr-2 text-right text-body-xs font-medium text-gray-500 dark:text-gray-400">
                   {{ dayLabel }}
                 </div>
                 <div class="grid flex-1 grid-cols-24 gap-px">
@@ -580,14 +580,14 @@
 
       <!-- Hashtag Analytics Section -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.hashtagAnalysis') }}</h2>
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.hashtagAnalysis') }}</h2>
         <div class="page-grid page-grid--split">
           <div>
-            <h3 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('analyticsView.tagCloud') }}</h3>
+            <h3 class="mb-3 text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('analyticsView.tagCloud') }}</h3>
             <TagCloud :tags="tagData" :selected-tag="selectedTag" @tag-click="handleTagClick" />
           </div>
           <div>
-            <h3 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('analyticsView.tagPerformance') }}</h3>
+            <h3 class="mb-3 text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('analyticsView.tagPerformance') }}</h3>
             <TagPerformanceTable :tags="filteredTagData" />
           </div>
         </div>
@@ -597,10 +597,10 @@
       <div class="card">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <SparklesIcon class="h-5 w-5 text-purple-500" />
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.aiInsight') }}</h2>
+            <SparklesIcon class="h-5 w-5 text-info-strong" />
+            <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('analyticsView.aiInsight') }}</h2>
           </div>
-          <span class="text-xs text-gray-400 dark:text-gray-500">{{ $t('analyticsView.remainingCredits') }}: {{ kpi?.creditBalance ?? balance }}</span>
+          <span class="text-body-xs text-gray-400 dark:text-gray-500">{{ $t('analyticsView.remainingCredits') }}: {{ kpi?.creditBalance ?? balance }}</span>
         </div>
 
         <div class="mt-4">
@@ -623,14 +623,14 @@
 
             <!-- AI report result -->
             <div v-else class="space-y-3">
-              <div class="rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20 p-4">
+              <div class="rounded-lg border border-info bg-info-subtle p-4">
                 <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300" v-html="sanitizedMarkdown" />
               </div>
-              <div class="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
+              <div class="flex items-center justify-between text-body-xs text-gray-400 dark:text-gray-500">
                 <span>{{ $t('analyticsView.creditsUsed') }}: {{ aiReport.creditsUsed }} / {{ $t('analyticsView.remainingCredits') }}: {{ aiReport.creditsRemaining }}</span>
                 <div class="flex items-center gap-3">
                   <button
-                    class="inline-flex items-center gap-1 font-medium text-purple-600 hover:text-purple-800"
+                    class="inline-flex items-center gap-1 font-medium text-info-strong hover:text-info-strong"
                     :disabled="pdfExporting"
                     @click="handleExportPDF"
                   >
@@ -638,7 +638,7 @@
                     {{ pdfExporting ? $t('analyticsView.pdfExporting') : $t('analyticsView.pdfDownload') }}
                   </button>
                   <button
-                    class="font-medium text-purple-600 hover:text-purple-800"
+                    class="font-medium text-info-strong hover:text-info-strong"
                     @click="handleGenerateInsight"
                   >
                     {{ $t('analyticsView.regenerate') }}
@@ -1049,9 +1049,9 @@ const renderedMarkdown = computed(() => {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     // Headers
-    .replace(/^### (.+)$/gm, '<h3 class="mt-3 mb-1 text-sm font-bold text-gray-800">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="mt-4 mb-1 text-base font-bold text-gray-900">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="mt-4 mb-2 text-lg font-bold text-gray-900">$1</h1>')
+    .replace(/^### (.+)$/gm, '<h3 class="mt-3 mb-1 text-body font-bold text-gray-800">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="mt-4 mb-1 text-body-lg font-bold text-gray-900">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 class="mt-4 mb-2 text-title font-bold text-gray-900">$1</h1>')
     // Bold
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     // Italic

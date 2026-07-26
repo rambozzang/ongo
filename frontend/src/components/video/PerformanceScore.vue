@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <h3 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">성과 점수</h3>
+    <h3 class="mb-6 text-title font-semibold text-gray-900 dark:text-gray-100">성과 점수</h3>
 
     <div class="mb-8 grid gap-6 desktop:grid-cols-2">
       <!-- Overall Score Circle -->
@@ -37,7 +37,7 @@
             <span class="text-5xl font-bold text-gray-900 dark:text-gray-100">
               {{ displayOverallScore }}
             </span>
-            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">성과 점수</span>
+            <span class="text-body font-medium text-gray-500 dark:text-gray-400">성과 점수</span>
           </div>
         </div>
       </div>
@@ -69,10 +69,10 @@
               stroke-linecap="round"
             />
           </svg>
-          <span class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <span class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ displayReachScore }}
           </span>
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">도달률</span>
+          <span class="text-caption text-gray-500 dark:text-gray-400">도달률</span>
         </div>
 
         <!-- Engagement Score -->
@@ -100,10 +100,10 @@
               stroke-linecap="round"
             />
           </svg>
-          <span class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <span class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ displayEngagementScore }}
           </span>
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">참여율</span>
+          <span class="text-caption text-gray-500 dark:text-gray-400">참여율</span>
         </div>
 
         <!-- Growth Score -->
@@ -131,10 +131,10 @@
               stroke-linecap="round"
             />
           </svg>
-          <span class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <span class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ displayGrowthScore }}
           </span>
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">성장세</span>
+          <span class="text-caption text-gray-500 dark:text-gray-400">성장세</span>
         </div>
 
         <!-- Coverage Score -->
@@ -162,17 +162,17 @@
               stroke-linecap="round"
             />
           </svg>
-          <span class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <span class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ displayCoverageScore }}
           </span>
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">플랫폼 커버리지</span>
+          <span class="text-caption text-gray-500 dark:text-gray-400">플랫폼 커버리지</span>
         </div>
       </div>
     </div>
 
     <!-- Improvement Suggestions -->
     <div v-if="scoreResult.suggestions.length > 0" class="border-t border-gray-200 dark:border-gray-700 pt-6">
-      <h4 class="mb-4 flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-gray-100">
+      <h4 class="mb-4 flex items-center gap-2 text-h3 text-gray-900 dark:text-gray-100">
         <LightBulbIcon class="h-5 w-5 text-yellow-500" />
         개선 제안
       </h4>
@@ -188,16 +188,16 @@
               class="flex h-8 w-8 items-center justify-center rounded-full"
               :class="suggestionBgClass(suggestion.priority)"
             >
-              <span class="text-xs font-bold" :class="suggestionTextClass(suggestion.priority)">
+              <span class="text-body-xs font-bold" :class="suggestionTextClass(suggestion.priority)">
                 {{ idx + 1 }}
               </span>
             </div>
           </div>
           <div class="min-w-0 flex-1">
-            <p class="text-sm text-gray-700 dark:text-gray-300">{{ suggestion.text }}</p>
+            <p class="text-body text-gray-700 dark:text-gray-300">{{ suggestion.text }}</p>
             <button
               v-if="suggestion.actionLabel"
-              class="mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
+              class="mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-caption transition-colors"
               :class="suggestionButtonClass(suggestion.priority)"
               @click="handleSuggestionAction(suggestion)"
             >
@@ -262,9 +262,9 @@ const overallStrokeDashoffset = computed(() => {
 /** Get color class for overall score */
 const overallScoreColor = computed(() => {
   const score = displayOverallScore.value
-  if (score <= 30) return 'text-red-500'
-  if (score <= 60) return 'text-yellow-500'
-  if (score <= 80) return 'text-green-500'
+  if (score <= 30) return 'text-error-strong'
+  if (score <= 60) return 'text-warning-strong'
+  if (score <= 80) return 'text-success-strong'
   return 'text-primary-500'
 })
 
@@ -280,11 +280,11 @@ function getSubStrokeDashoffset(score: number): number {
 function suggestionBorderClass(priority: 'high' | 'medium' | 'low'): string {
   switch (priority) {
     case 'high':
-      return 'border-red-200 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10'
+      return 'border-error bg-error-subtle'
     case 'medium':
-      return 'border-yellow-200 dark:border-yellow-900/30 bg-yellow-50/50 dark:bg-yellow-900/10'
+      return 'border-warning bg-warning-subtle'
     case 'low':
-      return 'border-blue-200 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-900/10'
+      return 'border-info bg-info-subtle'
   }
 }
 
@@ -309,11 +309,11 @@ function suggestionTextClass(_priority: 'high' | 'medium' | 'low'): string {
 function suggestionButtonClass(priority: 'high' | 'medium' | 'low'): string {
   switch (priority) {
     case 'high':
-      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50'
+      return 'bg-error-subtle text-error-strong hover:opacity-80'
     case 'medium':
-      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
+      return 'bg-warning-subtle text-warning-strong hover:opacity-80'
     case 'low':
-      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+      return 'bg-info-subtle text-info-strong hover:opacity-80'
   }
 }
 

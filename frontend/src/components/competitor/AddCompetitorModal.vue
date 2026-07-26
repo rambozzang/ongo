@@ -201,7 +201,7 @@ function formatNumber(num: number): string {
           >
             <!-- Header -->
             <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 id="add-competitor-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 id="add-competitor-modal-title" class="text-title font-semibold text-gray-900 dark:text-white">
                 경쟁 채널 추가
               </h2>
               <button
@@ -217,26 +217,26 @@ function formatNumber(num: number): string {
             <div class="p-4 space-y-4">
               <!-- URL Input -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
                   채널 URL 또는 핸들
                 </label>
                 <input
                   v-model="channelUrl"
                   type="text"
                   placeholder="https://youtube.com/@channel 또는 @handle"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   @input="detectAndSetPlatform"
                 />
               </div>
 
               <!-- Platform Selector -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
                   플랫폼
                 </label>
                 <select
                   v-model="selectedPlatform"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="YOUTUBE">유튜브</option>
                   <option value="TIKTOK">틱톡</option>
@@ -257,9 +257,9 @@ function formatNumber(num: number): string {
               <!-- Error Message -->
               <div
                 v-if="errorMessage && !isManualInput"
-                class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+                class="p-3 bg-error-subtle border border-error rounded-lg"
               >
-                <p class="text-sm text-red-700 dark:text-red-400">{{ errorMessage }}</p>
+                <p class="text-body text-error-strong">{{ errorMessage }}</p>
               </div>
 
               <!-- Manual Input Form (for non-YouTube platforms) -->
@@ -273,25 +273,25 @@ function formatNumber(num: number): string {
               >
                 <div
                   v-if="isManualInput"
-                  class="p-4 border border-yellow-200 dark:border-yellow-800 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 space-y-3"
+                  class="p-4 border border-warning rounded-lg bg-warning-subtle space-y-3"
                 >
-                  <p class="text-sm text-yellow-700 dark:text-yellow-400">
+                  <p class="text-body text-warning-strong">
                     {{ errorMessage }}
                   </p>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      채널명 <span class="text-red-500">*</span>
+                    <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      채널명 <span class="text-error-strong">*</span>
                     </label>
                     <input
                       v-model="manualName"
                       type="text"
                       placeholder="채널 이름을 입력하세요"
-                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
                         구독자 수
                       </label>
                       <input
@@ -299,11 +299,11 @@ function formatNumber(num: number): string {
                         type="number"
                         min="0"
                         placeholder="0"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
                         영상 수
                       </label>
                       <input
@@ -311,7 +311,7 @@ function formatNumber(num: number): string {
                         type="number"
                         min="0"
                         placeholder="0"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
                   </div>
@@ -342,7 +342,7 @@ function formatNumber(num: number): string {
                       v-else
                       class="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center"
                     >
-                      <span class="text-lg font-bold text-gray-500 dark:text-gray-400">
+                      <span class="text-title font-bold text-gray-500 dark:text-gray-400">
                         {{ previewData.name.charAt(0) }}
                       </span>
                     </div>
@@ -350,12 +350,12 @@ function formatNumber(num: number): string {
                       <h3 class="font-semibold text-gray-900 dark:text-white">
                         {{ previewData.name }}
                       </h3>
-                      <p class="text-sm text-gray-600 dark:text-gray-400">
+                      <p class="text-body text-gray-600 dark:text-gray-400">
                         {{ selectedPlatform === 'YOUTUBE' ? '유튜브' : selectedPlatform === 'TIKTOK' ? '틱톡' : selectedPlatform === 'INSTAGRAM' ? '인스타그램' : '네이버 클립' }}
                       </p>
                     </div>
                   </div>
-                  <div class="grid grid-cols-2 gap-2 text-sm">
+                  <div class="grid grid-cols-2 gap-2 text-body">
                     <div>
                       <span class="text-gray-600 dark:text-gray-400">구독자</span>
                       <p class="font-semibold text-gray-900 dark:text-white">
@@ -383,7 +383,7 @@ function formatNumber(num: number): string {
               </button>
               <button
                 :disabled="!previewData && !canAddManual"
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 @click="handleAdd"
               >
                 추가

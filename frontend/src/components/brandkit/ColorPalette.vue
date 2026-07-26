@@ -128,17 +128,17 @@ onUnmounted(() => {
               v-model="editColor.name"
               type="text"
               placeholder="색상 이름"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <input
               v-model="editColor.hex"
               type="text"
               placeholder="#000000"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <select
               v-model="editColor.usage"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option v-for="option in usageOptions" :key="option" :value="option">
                 {{ option }}
@@ -146,13 +146,13 @@ onUnmounted(() => {
             </select>
             <div class="flex gap-2">
               <button
-                class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+                class="flex-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-body font-medium rounded-md transition-colors"
                 @click="confirmEdit(color.id)"
               >
                 저장
               </button>
               <button
-                class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm font-medium rounded-md transition-colors"
+                class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-body font-medium rounded-md transition-colors"
                 @click="cancelEdit"
               >
                 취소
@@ -169,11 +169,11 @@ onUnmounted(() => {
               @click="copyHex(color.hex, color.id)"
             ></div>
             <div>
-              <h4 class="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+              <h4 class="font-medium text-gray-900 dark:text-gray-100 text-body truncate">
                 {{ color.name }}
               </h4>
               <div class="flex items-center gap-1 mt-1">
-                <p class="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                <p class="text-body-xs text-gray-600 dark:text-gray-400 font-mono">
                   {{ color.hex }}
                 </p>
                 <button
@@ -181,25 +181,25 @@ onUnmounted(() => {
                   :title="`${color.hex} 복사`"
                   @click="copyHex(color.hex, color.id)"
                 >
-                  <CheckIcon v-if="copiedId === color.id" class="w-3 h-3 text-green-600 dark:text-green-400" />
+                  <CheckIcon v-if="copiedId === color.id" class="w-3 h-3 text-success-strong" />
                   <ClipboardIcon v-else class="w-3 h-3 text-gray-400 dark:text-gray-500" />
                 </button>
               </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p class="text-body-xs text-gray-500 dark:text-gray-400 mt-1">
                 {{ color.usage }}
               </p>
             </div>
           </div>
           <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
-              class="p-1.5 bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
+              class="p-1.5 bg-white dark:bg-gray-700 hover:bg-info-subtle rounded-md shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
               title="편집"
               @click="startEdit(color)"
             >
               <PencilIcon class="w-4 h-4 text-gray-600 dark:text-gray-300" />
             </button>
             <button
-              class="p-1.5 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
+              class="p-1.5 bg-white dark:bg-gray-700 hover:bg-error-subtle rounded-md shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
               title="삭제"
               @click="handleRemove(color.id)"
             >
@@ -212,7 +212,7 @@ onUnmounted(() => {
       <!-- Add New Color Card -->
       <div
         v-if="isAdding"
-        class="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-blue-400 dark:border-blue-600 p-4"
+        class="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-primary-400 dark:border-primary-600 p-4"
       >
         <div class="space-y-3">
           <div class="flex items-center gap-2">
@@ -230,17 +230,17 @@ onUnmounted(() => {
             v-model="newColor.name"
             type="text"
             placeholder="색상 이름"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
           <input
             v-model="newColor.hex"
             type="text"
             placeholder="#000000"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
           <select
             v-model="newColor.usage"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option v-for="option in usageOptions" :key="option" :value="option">
               {{ option }}
@@ -248,13 +248,13 @@ onUnmounted(() => {
           </select>
           <div class="flex gap-2">
             <button
-              class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+              class="flex-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-body font-medium rounded-md transition-colors"
               @click="confirmAdd"
             >
               추가
             </button>
             <button
-              class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm font-medium rounded-md transition-colors"
+              class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-body font-medium rounded-md transition-colors"
               @click="cancelAdd"
             >
               취소
@@ -266,11 +266,11 @@ onUnmounted(() => {
       <!-- Add Button -->
       <button
         v-if="!isAdding"
-        class="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors flex flex-col items-center justify-center gap-2 min-h-[180px]"
+        class="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors flex flex-col items-center justify-center gap-2 min-h-[180px]"
         @click="startAdd"
       >
         <PlusIcon class="w-8 h-8 text-gray-400 dark:text-gray-500" />
-        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">색상 추가</span>
+        <span class="text-body font-medium text-gray-600 dark:text-gray-400">색상 추가</span>
       </button>
     </div>
 

@@ -234,14 +234,14 @@ onUnmounted(() => {
       <!-- Header -->
       <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 class="text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ $t('automation.title') }}
           </h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
             {{ $t('automation.description') }}
           </p>
-          <div class="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">
-            <span class="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+          <div class="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-info-subtle text-info-strong rounded-full text-body font-medium">
+            <span class="w-2 h-2 bg-info rounded-full animate-pulse"></span>
             {{ $t('automation.activeRules', { count: activeRuleCount }) }}
           </div>
         </div>
@@ -288,7 +288,7 @@ onUnmounted(() => {
           class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
         >
           <BoltIcon class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h3 class="text-title font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {{ $t('automation.emptyRulesTitle') }}
           </h3>
           <p class="text-gray-600 dark:text-gray-400 mb-6">
@@ -309,7 +309,7 @@ onUnmounted(() => {
         <!-- Workflow Editor -->
         <div v-if="showWorkflowEditor" class="card mb-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">
               {{ editingWorkflow ? $t('automation.editWorkflow') : $t('automation.newWorkflow') }}
             </h2>
             <button
@@ -333,7 +333,7 @@ onUnmounted(() => {
         <!-- Workflow list -->
         <div v-else>
           <div class="flex items-center justify-between mb-4">
-            <p class="text-sm text-gray-600 dark:text-gray-400">
+            <p class="text-body text-gray-600 dark:text-gray-400">
               {{ $t('automation.workflowSubtitle') }}
             </p>
             <button
@@ -353,14 +353,14 @@ onUnmounted(() => {
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-lg flex items-center justify-center" :class="wf.enabled ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'">
-                    <svg class="w-5 h-5" :class="wf.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <div class="w-10 h-10 rounded-lg flex items-center justify-center" :class="wf.enabled ? 'bg-success-subtle' : 'bg-gray-100 dark:bg-gray-800'">
+                    <svg class="w-5 h-5" :class="wf.enabled ? 'text-success-strong' : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                     </svg>
                   </div>
                   <div>
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ wf.name }}</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">{{ wf.name }}</h3>
+                    <p class="text-body-xs text-gray-500 dark:text-gray-400">
                       {{ $t('automation.workflowStats', { conditions: wf.conditions.length, actions: wf.actions.length }) }}
                       <span v-if="wf.executionCount > 0" class="ml-2">{{ $t('automation.executionCount', { count: wf.executionCount }) }}</span>
                     </p>
@@ -368,26 +368,26 @@ onUnmounted(() => {
                 </div>
                 <div class="flex items-center gap-2">
                   <button
-                    class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    class="text-body-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                     @click="selectedWorkflowId = selectedWorkflowId === wf.id ? null : wf.id"
                   >
                     {{ $t('automation.history') }}
                   </button>
                   <button
-                    class="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                    class="text-body-xs text-primary-600 dark:text-primary-400 hover:underline"
                     @click="openWorkflowEditor(wf)"
                   >
                     {{ $t('automation.edit') }}
                   </button>
                   <button
-                    class="px-3 py-1 text-xs rounded-full font-medium transition-colors"
-                    :class="wf.enabled ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'"
+                    class="px-3 py-1 text-body-xs rounded-full font-medium transition-colors"
+                    :class="wf.enabled ? 'bg-success-subtle text-success-strong' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'"
                     @click="handleWorkflowToggle(wf.id)"
                   >
                     {{ wf.enabled ? $t('automation.enabled') : $t('automation.disabled') }}
                   </button>
                   <button
-                    class="text-xs text-red-500 hover:text-red-700"
+                    class="text-body-xs text-error-strong transition hover:opacity-80"
                     @click="handleWorkflowDelete(wf.id)"
                   >
                     {{ $t('automation.delete') }}
@@ -407,7 +407,7 @@ onUnmounted(() => {
             <svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{{ $t('automation.emptyWorkflowsTitle') }}</h3>
+            <h3 class="text-title font-semibold text-gray-900 dark:text-gray-100 mb-2">{{ $t('automation.emptyWorkflowsTitle') }}</h3>
             <p class="text-gray-600 dark:text-gray-400 mb-6">{{ $t('automation.emptyWorkflowsDesc') }}</p>
             <button
               class="btn-primary inline-flex items-center gap-2"

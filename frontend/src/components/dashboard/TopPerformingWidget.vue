@@ -4,7 +4,7 @@
     @click="$router.push('/analytics')"
   >
     <div class="flex items-center justify-between">
-      <p class="text-sm font-medium text-gray-500 dark:text-gray-400">이달의 인기 영상</p>
+      <p class="text-body font-medium text-gray-500 dark:text-gray-400">이달의 인기 영상</p>
       <FireIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
     </div>
 
@@ -15,13 +15,13 @@
         class="flex items-start gap-2"
       >
         <div
-class="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold"
+class="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-body-xs font-bold"
           :class="getRankClass(index)"
         >
           {{ index + 1 }}
         </div>
         <div class="min-w-0 flex-1">
-          <p class="line-clamp-1 text-xs font-medium text-gray-900 dark:text-gray-100">
+          <p class="line-clamp-1 text-body-xs font-medium text-gray-900 dark:text-gray-100">
             {{ video.title }}
           </p>
           <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
@@ -31,7 +31,7 @@ class="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-
       </div>
     </div>
 
-    <div v-else class="mt-3 py-4 text-center text-xs text-gray-400 dark:text-gray-500">
+    <div v-else class="mt-3 py-4 text-center text-body-xs text-gray-400 dark:text-gray-500">
       아직 데이터가 없습니다
     </div>
   </div>
@@ -49,11 +49,11 @@ defineProps<{
 function getRankClass(index: number): string {
   switch (index) {
     case 0:
-      return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+      return 'bg-warning-subtle text-warning-strong'
     case 1:
       return 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
     case 2:
-      return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+      return 'bg-warning-subtle text-warning-strong'
     default:
       return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
   }

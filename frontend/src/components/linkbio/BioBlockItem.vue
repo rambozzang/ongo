@@ -18,7 +18,7 @@
 
     <!-- Type Icon -->
     <div class="flex h-8 w-8 items-center justify-center rounded bg-gray-100 dark:bg-gray-700">
-      <span class="text-sm">{{ typeIcon }}</span>
+      <span class="text-body">{{ typeIcon }}</span>
     </div>
 
     <!-- Content -->
@@ -28,17 +28,17 @@
           v-model="localTitle"
           type="text"
           placeholder="링크 제목"
-          class="w-full border-0 bg-transparent p-0 text-sm font-medium text-gray-900 placeholder-gray-400 focus:ring-0 dark:text-gray-100"
+          class="w-full border-0 bg-transparent p-0 text-body font-medium text-gray-900 placeholder-gray-400 focus:ring-0 dark:text-gray-100"
           @blur="updateBlock"
         />
         <input
           v-model="localUrl"
           type="url"
           placeholder="https://"
-          class="w-full border-0 bg-transparent p-0 text-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-400"
+          class="w-full border-0 bg-transparent p-0 text-body-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-400"
           @blur="updateBlock"
         />
-        <div class="text-xs text-gray-400 dark:text-gray-500">클릭 {{ block.clickCount }}회</div>
+        <div class="text-body-xs text-gray-400 dark:text-gray-500">클릭 {{ block.clickCount }}회</div>
       </div>
 
       <div v-else-if="block.type === 'header'" class="space-y-1">
@@ -46,7 +46,7 @@
           v-model="localText"
           type="text"
           placeholder="헤더 텍스트"
-          class="w-full border-0 bg-transparent p-0 text-sm font-semibold text-gray-900 placeholder-gray-400 focus:ring-0 dark:text-gray-100"
+          class="w-full border-0 bg-transparent p-0 text-body font-semibold text-gray-900 placeholder-gray-400 focus:ring-0 dark:text-gray-100"
           @blur="updateBlock"
         />
       </div>
@@ -54,7 +54,7 @@
       <div v-else-if="block.type === 'social'" class="space-y-1">
         <select
           v-model="localPlatform"
-          class="w-full border-0 bg-transparent p-0 text-sm font-medium text-gray-900 focus:ring-0 dark:text-gray-100"
+          class="w-full border-0 bg-transparent p-0 text-body font-medium text-gray-900 focus:ring-0 dark:text-gray-100"
           @change="updateBlock"
         >
           <option value="instagram">Instagram</option>
@@ -67,7 +67,7 @@
           v-model="localUrl"
           type="url"
           placeholder="https://"
-          class="w-full border-0 bg-transparent p-0 text-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-400"
+          class="w-full border-0 bg-transparent p-0 text-body-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-400"
           @blur="updateBlock"
         />
       </div>
@@ -77,14 +77,14 @@
           v-model="localTitle"
           type="text"
           placeholder="영상 제목"
-          class="w-full border-0 bg-transparent p-0 text-sm font-medium text-gray-900 placeholder-gray-400 focus:ring-0 dark:text-gray-100"
+          class="w-full border-0 bg-transparent p-0 text-body font-medium text-gray-900 placeholder-gray-400 focus:ring-0 dark:text-gray-100"
           @blur="updateBlock"
         />
         <input
           v-model="localVideoUrl"
           type="url"
           placeholder="영상 URL"
-          class="w-full border-0 bg-transparent p-0 text-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-400"
+          class="w-full border-0 bg-transparent p-0 text-body-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-400"
           @blur="updateBlock"
         />
       </div>
@@ -94,12 +94,12 @@
           v-model="localContent"
           placeholder="텍스트 내용"
           rows="2"
-          class="w-full resize-none border-0 bg-transparent p-0 text-sm text-gray-700 placeholder-gray-400 focus:ring-0 dark:text-gray-300"
+          class="w-full resize-none border-0 bg-transparent p-0 text-body text-gray-700 placeholder-gray-400 focus:ring-0 dark:text-gray-300"
           @blur="updateBlock"
         />
       </div>
 
-      <div v-else-if="block.type === 'divider'" class="text-sm text-gray-500 dark:text-gray-400">
+      <div v-else-if="block.type === 'divider'" class="text-body text-gray-500 dark:text-gray-400">
         구분선
       </div>
     </div>
@@ -114,7 +114,7 @@
         <EyeSlashIcon v-else class="h-5 w-5" />
       </button>
       <button
-        class="text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+        class="text-gray-400 hover:text-error-strong dark:text-gray-500"
         @click="handleDelete"
       >
         <TrashIcon class="h-5 w-5" />

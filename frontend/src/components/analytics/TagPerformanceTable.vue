@@ -11,9 +11,9 @@
     </div>
 
     <div class="overflow-x-auto">
-      <table v-if="displayedTags.length > 0" class="w-full text-left text-sm">
+      <table v-if="displayedTags.length > 0" class="w-full text-left text-body">
         <thead>
-          <tr class="border-b border-gray-200 text-xs uppercase text-gray-500 dark:border-gray-700 dark:text-gray-400">
+          <tr class="border-b border-gray-200 text-body-xs uppercase text-gray-500 dark:border-gray-700 dark:text-gray-400">
             <th class="cursor-pointer whitespace-nowrap px-3 py-3 font-medium hover:text-gray-700 dark:hover:text-gray-300" @click="sortBy('tag')">
               <div class="flex items-center gap-1">
                 태그
@@ -74,8 +74,8 @@
               <span
                 class="inline-flex items-center justify-center"
                 :class="{
-                  'text-green-600 dark:text-green-400': tag.trend === 'up',
-                  'text-red-600 dark:text-red-400': tag.trend === 'down',
+                  'text-success-strong': tag.trend === 'up',
+                  'text-error-strong': tag.trend === 'down',
                   'text-gray-400 dark:text-gray-500': tag.trend === 'stable',
                 }"
               >
@@ -87,13 +87,13 @@
           </tr>
         </tbody>
       </table>
-      <div v-else class="flex h-32 items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+      <div v-else class="flex h-32 items-center justify-center text-body text-gray-400 dark:text-gray-500">
         {{ searchQuery ? '검색 결과가 없습니다' : '태그 데이터가 없습니다' }}
       </div>
     </div>
 
     <div v-if="filteredTags.length > limit && !showAll" class="flex justify-center">
-      <button class="btn-secondary text-xs" @click="showAll = true">
+      <button class="btn-secondary text-body-xs" @click="showAll = true">
         더 보기 ({{ filteredTags.length - limit }}개 더)
       </button>
     </div>

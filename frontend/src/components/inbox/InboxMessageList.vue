@@ -80,10 +80,10 @@ const handleToggleCheck = (id: number) => {
     <!-- Header -->
     <div class="border-b border-gray-200 dark:border-gray-700 p-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">메시지</h3>
+        <h3 class="text-title font-semibold text-gray-900 dark:text-white">메시지</h3>
         <button
           v-if="hasMessages"
-          class="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+          class="flex items-center gap-2 px-3 py-1.5 text-body text-info-strong hover:bg-info-subtle rounded-lg transition-colors"
           @click="emit('mark-all-read')"
         >
           <CheckCircleIcon class="w-4 h-4" />
@@ -97,7 +97,7 @@ const handleToggleCheck = (id: number) => {
       <div v-if="!hasMessages" class="h-full flex items-center justify-center">
         <div class="text-center text-gray-500 dark:text-gray-400">
           <InboxIcon class="w-16 h-16 mx-auto mb-4 opacity-50" />
-          <p class="text-lg">메시지가 없습니다</p>
+          <p class="text-title">메시지가 없습니다</p>
         </div>
       </div>
 
@@ -105,7 +105,7 @@ const handleToggleCheck = (id: number) => {
         <!-- Today -->
         <div v-if="groupedMessages.today.length > 0">
           <div
-            class="sticky top-0 bg-gray-50 dark:bg-gray-900 px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider z-10"
+            class="sticky top-0 bg-gray-50 dark:bg-gray-900 px-4 py-2 text-body-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider z-10"
           >
             오늘
           </div>
@@ -126,7 +126,7 @@ const handleToggleCheck = (id: number) => {
         <!-- Yesterday -->
         <div v-if="groupedMessages.yesterday.length > 0">
           <div
-            class="sticky top-0 bg-gray-50 dark:bg-gray-900 px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider z-10"
+            class="sticky top-0 bg-gray-50 dark:bg-gray-900 px-4 py-2 text-body-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider z-10"
           >
             어제
           </div>
@@ -147,7 +147,7 @@ const handleToggleCheck = (id: number) => {
         <!-- This Week -->
         <div v-if="groupedMessages.thisWeek.length > 0">
           <div
-            class="sticky top-0 bg-gray-50 dark:bg-gray-900 px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider z-10"
+            class="sticky top-0 bg-gray-50 dark:bg-gray-900 px-4 py-2 text-body-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider z-10"
           >
             이번 주
           </div>
@@ -168,7 +168,7 @@ const handleToggleCheck = (id: number) => {
         <!-- Older -->
         <div v-if="groupedMessages.older.length > 0">
           <div
-            class="sticky top-0 bg-gray-50 dark:bg-gray-900 px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider z-10"
+            class="sticky top-0 bg-gray-50 dark:bg-gray-900 px-4 py-2 text-body-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider z-10"
           >
             이전
           </div>

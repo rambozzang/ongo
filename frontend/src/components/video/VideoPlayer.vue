@@ -36,11 +36,11 @@
       v-if="hasError"
       class="absolute inset-0 flex flex-col items-center justify-center bg-black/90 p-6 text-center"
     >
-      <ExclamationCircleIcon class="mb-4 h-16 w-16 text-red-500" />
-      <p class="mb-2 text-lg font-semibold text-white">영상을 재생할 수 없습니다</p>
-      <p class="mb-4 text-sm text-gray-300">영상 파일이 손상되었거나 지원되지 않는 형식입니다</p>
+      <ExclamationCircleIcon class="mb-4 h-16 w-16 text-error-strong" />
+      <p class="mb-2 text-title font-semibold text-white">영상을 재생할 수 없습니다</p>
+      <p class="mb-4 text-body text-gray-300">영상 파일이 손상되었거나 지원되지 않는 형식입니다</p>
       <button
-        class="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
+        class="rounded-lg bg-white/10 px-4 py-2 text-body font-medium text-white transition-colors hover:bg-white/20"
         @click.stop="retryLoad"
       >
         다시 시도
@@ -90,7 +90,7 @@
               :style="{ left: `${playedPercent}%`, transform: 'translate(-50%, -50%)' }"
             />
           </div>
-          <span class="text-xs font-medium text-white">
+          <span class="text-caption text-white">
             {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
           </span>
         </div>
@@ -139,7 +139,7 @@
             <!-- Playback Speed -->
             <div ref="speedMenuRef" class="relative">
               <button
-                class="rounded px-2 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
+                class="rounded px-2 py-1.5 text-body-xs font-semibold text-white transition-colors hover:bg-white/20"
                 @click.stop="showSpeedMenu = !showSpeedMenu"
               >
                 {{ playbackRate }}x
@@ -152,7 +152,7 @@
                 <button
                   v-for="rate in [0.5, 0.75, 1, 1.25, 1.5, 2]"
                   :key="rate"
-                  class="w-full px-3 py-2 text-left text-sm text-white transition-colors hover:bg-white/20"
+                  class="w-full px-3 py-2 text-left text-body text-white transition-colors hover:bg-white/20"
                   :class="playbackRate === rate ? 'bg-primary-500/50 font-semibold' : ''"
                   @click.stop="setPlaybackRate(rate)"
                 >

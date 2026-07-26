@@ -1,9 +1,9 @@
 <template>
   <div class="bg-white rounded-lg border border-gray-200 p-6">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900">트렌드 알림</h3>
+      <h3 class="text-title font-semibold text-gray-900">트렌드 알림</h3>
       <button
-        class="text-sm px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+        class="text-body px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
         @click="showForm = !showForm"
       >
         + 알림 추가
@@ -17,16 +17,16 @@
           v-model="newKeyword"
           type="text"
           placeholder="키워드"
-          class="flex-1 px-3 py-2 border rounded-lg text-sm"
+          class="flex-1 px-3 py-2 border rounded-lg text-body"
         />
         <input
           v-model.number="newThreshold"
           type="number"
           placeholder="임계값"
-          class="w-24 px-3 py-2 border rounded-lg text-sm"
+          class="w-24 px-3 py-2 border rounded-lg text-body"
         />
         <button
-          class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+          class="px-4 py-2 bg-primary-600 text-white rounded-lg text-body hover:bg-primary-700"
           @click="createAlert"
         >
           추가
@@ -35,7 +35,7 @@
     </div>
 
     <!-- 알림 목록 -->
-    <div v-if="alerts.length === 0" class="text-center py-6 text-gray-400 text-sm">
+    <div v-if="alerts.length === 0" class="text-center py-6 text-gray-400 text-body">
       설정된 알림이 없습니다.
     </div>
     <div v-else class="space-y-2">
@@ -48,7 +48,7 @@
           <button
             :class="[
               'w-10 h-5 rounded-full relative transition-colors',
-              alert.enabled ? 'bg-indigo-600' : 'bg-gray-300',
+              alert.enabled ? 'bg-primary-600' : 'bg-gray-300',
             ]"
             @click="toggleAlert(alert)"
           >
@@ -59,12 +59,12 @@
               ]"
             />
           </button>
-          <span class="text-sm font-medium text-gray-900">{{ alert.keyword }}</span>
+          <span class="text-body font-medium text-gray-900">{{ alert.keyword }}</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">임계값: {{ alert.threshold }}</span>
+          <span class="text-body-xs text-gray-500">임계값: {{ alert.threshold }}</span>
           <button
-            class="text-xs text-red-500 hover:text-red-700"
+            class="text-body-xs text-error-strong transition-opacity hover:opacity-80"
             @click="removeAlert(alert.id)"
           >
             삭제

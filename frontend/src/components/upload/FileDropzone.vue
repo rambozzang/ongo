@@ -5,7 +5,7 @@
       :class="[
         dropState === 'idle' && 'border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 hover:border-gray-400 dark:hover:border-gray-500',
         dropState === 'hover' && 'border-solid border-primary-500 bg-primary-50 dark:bg-primary-900/20 scale-[1.01] border-pulse',
-        dropState === 'success' && 'border-solid border-green-500 bg-green-50 dark:bg-green-900/20',
+        dropState === 'success' && 'border-solid border-success bg-success-subtle',
         disabled ? 'pointer-events-none opacity-50' : 'cursor-pointer',
       ]"
       @dragover.prevent="onDragOver"
@@ -28,16 +28,16 @@
         <!-- Success Icon -->
         <CheckCircleIcon
           v-else
-          class="mb-4 h-12 w-12 text-green-500 check-draw"
+          class="mb-4 h-12 w-12 text-success-strong check-draw"
         />
 
         <!-- Text -->
         <p
-          class="mb-2 text-base font-medium transition-colors duration-300"
+          class="mb-2 text-body-lg font-medium transition-colors duration-300"
           :class="[
             dropState === 'idle' && 'text-gray-700 dark:text-gray-300',
             dropState === 'hover' && 'text-primary-600 dark:text-primary-400',
-            dropState === 'success' && 'text-green-600 dark:text-green-400',
+            dropState === 'success' && 'text-success-strong',
           ]"
         >
           {{
@@ -51,7 +51,7 @@
 
         <p
           v-if="dropState === 'idle'"
-          class="text-sm text-gray-500 dark:text-gray-400"
+          class="text-body text-gray-500 dark:text-gray-400"
         >
           {{ t('upload.dropzone.selectFile') }} • {{ t('upload.dropzone.formatHint') }}
         </p>
@@ -96,12 +96,12 @@
         <!-- File Info -->
         <div class="flex-1 min-w-0">
           <p
-            class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+            class="text-body font-medium text-gray-900 dark:text-gray-100 truncate"
             :title="selectedFile.name"
           >
             {{ selectedFile.name }}
           </p>
-          <div class="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div class="mt-1 flex items-center gap-3 text-body-xs text-gray-500 dark:text-gray-400">
             <span>{{ formatFileSize(selectedFile.size) }}</span>
             <span>&bull;</span>
             <span>{{ getFileExtension(selectedFile.name).toUpperCase() }}</span>
@@ -112,14 +112,14 @@
         <div class="flex-shrink-0 flex gap-2">
           <button
             type="button"
-            class="px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-md transition-colors"
+            class="px-3 py-1.5 text-body-xs font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-md transition-colors"
             @click.stop="openFilePicker"
           >
             {{ t('upload.dropzone.change') }}
           </button>
           <button
             type="button"
-            class="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+            class="px-3 py-1.5 text-body-xs font-medium text-error-strong hover:bg-error-subtle rounded-md transition-colors"
             @click.stop="clearFile"
           >
             {{ t('upload.dropzone.remove') }}
@@ -153,12 +153,12 @@
 
         <div class="flex-1 min-w-0">
           <p
-            class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+            class="text-body font-medium text-gray-900 dark:text-gray-100 truncate"
             :title="selectedFile.name"
           >
             {{ selectedFile.name }}
           </p>
-          <div class="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div class="mt-1 flex items-center gap-3 text-body-xs text-gray-500 dark:text-gray-400">
             <span>{{ formatFileSize(selectedFile.size) }}</span>
             <span>&bull;</span>
             <span>{{ getFileExtension(selectedFile.name).toUpperCase() }}</span>
@@ -168,14 +168,14 @@
         <div class="flex-shrink-0 flex gap-2">
           <button
             type="button"
-            class="px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-md transition-colors"
+            class="px-3 py-1.5 text-body-xs font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-md transition-colors"
             @click.stop="openFilePicker"
           >
             {{ t('upload.dropzone.change') }}
           </button>
           <button
             type="button"
-            class="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+            class="px-3 py-1.5 text-body-xs font-medium text-error-strong hover:bg-error-subtle rounded-md transition-colors"
             @click.stop="clearFile"
           >
             {{ t('upload.dropzone.remove') }}

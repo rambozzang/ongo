@@ -16,7 +16,7 @@
         <!-- Platform Tabs -->
         <div class="flex flex-wrap gap-2">
           <button
-            class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            class="rounded-lg px-3 py-1.5 text-body font-medium transition-colors"
             :class="
               !selectedPlatform
                 ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
@@ -29,7 +29,7 @@
           <button
             v-for="p in availablePlatforms"
             :key="p"
-            class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            class="rounded-lg px-3 py-1.5 text-body font-medium transition-colors"
             :class="
               selectedPlatform === p
                 ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
@@ -42,7 +42,7 @@
         </div>
 
         <!-- Sort -->
-        <select v-model="sortBy" class="input-field text-sm w-auto" @change="loadFeed">
+        <select v-model="sortBy" class="input-field text-body w-auto" @change="loadFeed">
           <option value="recent">{{ $t('videos.sortRecent') }}</option>
           <option value="views">{{ $t('videos.sortViews') }}</option>
           <option value="likes">{{ $t('videos.sortLikes') }}</option>
@@ -54,7 +54,7 @@
     <!-- Platform Errors -->
     <div
       v-if="feedErrors?.length"
-      class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
+      class="mb-4 rounded-lg border border-warning bg-warning-subtle p-3 text-body text-warning-strong"
     >
       <span v-for="(err, i) in feedErrors" :key="i">
         {{ $t('videos.platformError', { platform: err }) }}
@@ -88,7 +88,7 @@
     <!-- Feed Table (tablet+) -->
     <div v-else class="hidden tablet:block">
       <div class="card overflow-hidden">
-        <table class="w-full text-left text-sm">
+        <table class="w-full text-left text-body">
           <thead class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
             <tr>
               <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400">{{ $t('videos.title') }}</th>
@@ -130,7 +130,7 @@
                         class="inline-block h-2 w-2 rounded-full"
                         :style="{ backgroundColor: PLATFORM_CONFIG[item.platform]?.color || '#666' }"
                       ></span>
-                      <span class="text-xs text-gray-500 dark:text-gray-400">
+                      <span class="text-body-xs text-gray-500 dark:text-gray-400">
                         {{ PLATFORM_CONFIG[item.platform]?.label || item.platform }} · {{ item.channelName }}
                       </span>
                     </div>
@@ -141,12 +141,12 @@
               <td class="px-4 py-3 text-center tabular-nums text-gray-700 dark:text-gray-300">{{ formatCount(item.likeCount) }}</td>
               <td class="px-4 py-3 text-center tabular-nums text-gray-700 dark:text-gray-300">{{ formatCount(item.commentCount) }}</td>
               <td class="px-4 py-3 text-center tabular-nums text-gray-700 dark:text-gray-300">{{ formatCount(item.shareCount) }}</td>
-              <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ formatDate(item.publishedAt) }}</td>
+              <td class="px-4 py-3 text-body text-gray-500 dark:text-gray-400">{{ formatDate(item.publishedAt) }}</td>
               <td class="px-4 py-3 text-center" @click.stop>
                 <!-- AI 도구 드롭다운 -->
                 <div :ref="(el) => setDropdownRef(el, `${item.platform}-${item.platformVideoId}`)" class="relative inline-block">
                   <button
-                    class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                    class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-body-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
                     @click.stop="toggleDropdown(`${item.platform}-${item.platformVideoId}`)"
                   >
                     <SparklesIcon class="h-3.5 w-3.5" />
@@ -158,14 +158,14 @@
                     class="absolute right-0 z-50 mt-1 w-40 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
                   >
                     <button
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 rounded-t-lg"
+                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 rounded-t-lg"
                       @click.stop="openSeoModal(item)"
                     >
                       <MagnifyingGlassIcon class="h-3.5 w-3.5 text-primary-500" />
                       {{ $t('videosView.seoScore.button') }}
                     </button>
                     <button
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
                       @click.stop="openPredictModal(item)"
                     >
                       <ChartBarIcon class="h-3.5 w-3.5 text-primary-500" />
@@ -173,7 +173,7 @@
                     </button>
                     <button
                       v-if="isDraft(item)"
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
                       @click.stop="openChecklistModal(item)"
                     >
                       <ClipboardDocumentCheckIcon class="h-3.5 w-3.5 text-primary-500" />
@@ -181,14 +181,14 @@
                     </button>
                     <button
                       v-if="isHighPerforming(item)"
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
                       @click.stop="openRewriteModal(item)"
                     >
                       <SparklesIcon class="h-3.5 w-3.5 text-primary-500" />
                       {{ $t('videosView.aiRewrite.button') }}
                     </button>
                     <button
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 rounded-b-lg"
+                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 rounded-b-lg"
                       @click.stop="openRepurposeModal(item)"
                     >
                       <FilmIcon class="h-3.5 w-3.5 text-gray-400" />
@@ -227,16 +227,16 @@
           </div>
           <!-- Info -->
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ item.title }}</p>
+            <p class="truncate text-body font-medium text-gray-900 dark:text-white">{{ item.title }}</p>
             <div class="flex items-center gap-1.5 mt-0.5">
               <span
                 class="inline-block h-2 w-2 rounded-full"
                 :style="{ backgroundColor: PLATFORM_CONFIG[item.platform]?.color || '#666' }"
               ></span>
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{ PLATFORM_CONFIG[item.platform]?.label || item.platform }}</span>
+              <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ PLATFORM_CONFIG[item.platform]?.label || item.platform }}</span>
             </div>
             <!-- Metrics -->
-            <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+            <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-body-xs text-gray-500 dark:text-gray-400">
               <span>
                 <EyeIcon class="inline h-3.5 w-3.5 mr-0.5" />
                 {{ formatCount(item.viewCount) }}
@@ -253,14 +253,14 @@
             <!-- AI Tools (mobile) -->
             <div class="mt-2 flex gap-1.5 flex-wrap" @click.stop>
               <button
-                class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-body-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
                 @click.stop="openSeoModal(item)"
               >
                 <MagnifyingGlassIcon class="h-3.5 w-3.5" />
                 SEO
               </button>
               <button
-                class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-body-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
                 @click.stop="openPredictModal(item)"
               >
                 <ChartBarIcon class="h-3.5 w-3.5" />
@@ -268,7 +268,7 @@
               </button>
               <button
                 v-if="isDraft(item)"
-                class="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                class="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-body-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
                 @click.stop="openChecklistModal(item)"
               >
                 <ClipboardDocumentCheckIcon class="h-3.5 w-3.5" />
@@ -276,14 +276,14 @@
               </button>
               <button
                 v-if="isHighPerforming(item)"
-                class="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                class="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-body-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
                 @click.stop="openRewriteModal(item)"
               >
                 <SparklesIcon class="h-3.5 w-3.5" />
                 {{ $t('videosView.aiRewrite.button') }}
               </button>
               <button
-                class="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                class="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-body-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
                 @click.stop="openRepurposeModal(item)"
               >
                 <FilmIcon class="h-3.5 w-3.5" />
@@ -311,11 +311,11 @@
       <div class="space-y-4">
         <div v-if="seoModal.loading" class="flex flex-col items-center py-8 gap-3">
           <LoadingSpinner />
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('videosView.seoScore.analyzing') }}</p>
+          <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('videosView.seoScore.analyzing') }}</p>
         </div>
         <div
           v-else-if="seoModal.error"
-          class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+          class="rounded-lg border border-error bg-error-subtle p-4 text-body text-error-strong"
         >
           {{ seoModal.error }}
         </div>
@@ -334,22 +334,22 @@
                 />
               </svg>
               <div class="text-center">
-                <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ seoModal.result.overallScore }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">/ 100</p>
+                <p class="text-display font-bold text-gray-900 dark:text-white">{{ seoModal.result.overallScore }}</p>
+                <p class="text-body-xs text-gray-500 dark:text-gray-400">/ 100</p>
               </div>
             </div>
           </div>
           <!-- Category Bars -->
           <div class="space-y-3">
             <div v-for="cat in seoModal.result.categories" :key="cat.name">
-              <div class="mb-1 flex items-center justify-between text-xs">
+              <div class="mb-1 flex items-center justify-between text-body-xs">
                 <span class="text-gray-700 dark:text-gray-300">{{ cat.name }}</span>
                 <span class="font-medium text-gray-900 dark:text-white">{{ cat.score }}/{{ cat.maxScore }}</span>
               </div>
               <div class="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
                 <div
                   class="h-full rounded-full transition-all"
-                  :class="cat.score / cat.maxScore >= 0.7 ? 'bg-green-500' : cat.score / cat.maxScore >= 0.4 ? 'bg-amber-500' : 'bg-red-500'"
+                  :class="cat.score / cat.maxScore >= 0.7 ? 'bg-success' : cat.score / cat.maxScore >= 0.4 ? 'bg-warning' : 'bg-error'"
                   :style="{ width: `${(cat.score / cat.maxScore) * 100}%` }"
                 />
               </div>
@@ -357,29 +357,29 @@
           </div>
           <!-- Suggestions -->
           <div v-if="seoModal.result.suggestions.length" class="mt-4">
-            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <h4 class="mb-2 text-body-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               {{ $t('videosView.seoScore.suggestions') }}
             </h4>
             <ul class="space-y-1.5">
               <li
                 v-for="(s, i) in seoModal.result.suggestions"
                 :key="i"
-                class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400"
+                class="flex items-start gap-2 text-body text-gray-600 dark:text-gray-400"
               >
                 <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary-500"></span>
                 {{ s }}
               </li>
             </ul>
           </div>
-          <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">
+          <p class="mt-3 text-body-xs text-gray-400 dark:text-gray-500">
             {{ $t('videosView.seoScore.creditsUsed', { count: seoModal.result.creditsUsed }) }}
           </p>
         </div>
         <div v-else class="space-y-2">
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="text-body text-gray-600 dark:text-gray-400">
             {{ $t('videosView.seoScore.prompt', { title: seoModal.item?.title }) }}
           </p>
-          <p class="text-xs text-gray-400 dark:text-gray-500">{{ $t('videosView.seoScore.creditNotice') }}</p>
+          <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ $t('videosView.seoScore.creditNotice') }}</p>
         </div>
       </div>
       <template #footer>
@@ -406,11 +406,11 @@
       <div class="space-y-4">
         <div v-if="predictModal.loading" class="flex flex-col items-center py-8 gap-3">
           <LoadingSpinner />
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.analyzing') }}</p>
+          <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.analyzing') }}</p>
         </div>
         <div
           v-else-if="predictModal.error"
-          class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+          class="rounded-lg border border-error bg-error-subtle p-4 text-body text-error-strong"
         >
           {{ predictModal.error }}
         </div>
@@ -418,29 +418,29 @@
           <!-- Prediction Cards -->
           <div class="grid grid-cols-3 gap-3">
             <div class="rounded-lg bg-gray-50 p-3 text-center dark:bg-gray-800/50">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.24h') }}</p>
-              <p class="mt-1 text-xl font-bold text-gray-900 dark:text-white">{{ formatCount(predictModal.result.predicted24h) }}</p>
+              <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.24h') }}</p>
+              <p class="mt-1 text-h2 font-bold text-gray-900 dark:text-white">{{ formatCount(predictModal.result.predicted24h) }}</p>
             </div>
             <div class="rounded-lg bg-primary-50 p-3 text-center dark:bg-primary-900/20">
-              <p class="text-xs text-primary-600 dark:text-primary-400">{{ $t('videosView.viewsPrediction.7d') }}</p>
-              <p class="mt-1 text-xl font-bold text-primary-700 dark:text-primary-300">{{ formatCount(predictModal.result.predicted7d) }}</p>
+              <p class="text-body-xs text-primary-600 dark:text-primary-400">{{ $t('videosView.viewsPrediction.7d') }}</p>
+              <p class="mt-1 text-h2 font-bold text-primary-700 dark:text-primary-300">{{ formatCount(predictModal.result.predicted7d) }}</p>
             </div>
             <div class="rounded-lg bg-gray-50 p-3 text-center dark:bg-gray-800/50">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.30d') }}</p>
-              <p class="mt-1 text-xl font-bold text-gray-900 dark:text-white">{{ formatCount(predictModal.result.predicted30d) }}</p>
+              <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.30d') }}</p>
+              <p class="mt-1 text-h2 font-bold text-gray-900 dark:text-white">{{ formatCount(predictModal.result.predicted30d) }}</p>
             </div>
           </div>
           <!-- Confidence + Comparison -->
           <div class="mt-3 flex gap-3">
             <div class="flex-1 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.confidence') }}</p>
-              <p class="mt-0.5 text-lg font-semibold text-gray-900 dark:text-white">{{ predictModal.result.confidenceScore }}%</p>
+              <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.confidence') }}</p>
+              <p class="mt-0.5 text-title font-semibold text-gray-900 dark:text-white">{{ predictModal.result.confidenceScore }}%</p>
             </div>
             <div class="flex-1 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.vsAverage') }}</p>
+              <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.vsAverage') }}</p>
               <p
-                class="mt-0.5 text-lg font-semibold"
-                :class="predictModal.result.comparisonToAverage >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+                class="mt-0.5 text-title font-semibold"
+                :class="predictModal.result.comparisonToAverage >= 0 ? 'text-success-strong' : 'text-error-strong'"
               >
                 {{ predictModal.result.comparisonToAverage >= 0 ? '+' : '' }}{{ predictModal.result.comparisonToAverage }}%
               </p>
@@ -448,39 +448,39 @@
           </div>
           <!-- Influencing Factors -->
           <div v-if="predictModal.result.influencingFactors.length" class="mt-4">
-            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <h4 class="mb-2 text-body-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               {{ $t('videosView.viewsPrediction.factors') }}
             </h4>
             <div class="space-y-2">
               <div
                 v-for="(f, i) in predictModal.result.influencingFactors"
                 :key="i"
-                class="flex items-start gap-2 text-sm"
+                class="flex items-start gap-2 text-body"
               >
                 <span
                   class="mt-0.5 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-                  :class="f.impact === 'POSITIVE' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    : f.impact === 'NEGATIVE' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  :class="f.impact === 'POSITIVE' ? 'bg-success-subtle text-success-strong'
+                    : f.impact === 'NEGATIVE' ? 'bg-error-subtle text-error-strong'
                     : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'"
                 >
                   {{ f.impact === 'POSITIVE' ? '+' : f.impact === 'NEGATIVE' ? '-' : '=' }}
                 </span>
                 <div>
                   <p class="font-medium text-gray-900 dark:text-white">{{ f.factor }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ f.description }}</p>
+                  <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ f.description }}</p>
                 </div>
               </div>
             </div>
           </div>
-          <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">
+          <p class="mt-3 text-body-xs text-gray-400 dark:text-gray-500">
             {{ $t('videosView.viewsPrediction.creditsUsed', { count: predictModal.result.creditsUsed }) }}
           </p>
         </div>
         <div v-else class="space-y-2">
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="text-body text-gray-600 dark:text-gray-400">
             {{ $t('videosView.viewsPrediction.prompt', { title: predictModal.item?.title }) }}
           </p>
-          <p class="text-xs text-gray-400 dark:text-gray-500">{{ $t('videosView.viewsPrediction.creditNotice') }}</p>
+          <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ $t('videosView.viewsPrediction.creditNotice') }}</p>
         </div>
       </div>
       <template #footer>
@@ -507,11 +507,11 @@
       <div class="space-y-4">
         <div v-if="checklistModal.loading" class="flex flex-col items-center py-8 gap-3">
           <LoadingSpinner />
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('videosView.publishChecklist.checking') }}</p>
+          <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('videosView.publishChecklist.checking') }}</p>
         </div>
         <div
           v-else-if="checklistModal.error"
-          class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+          class="rounded-lg border border-error bg-error-subtle p-4 text-body text-error-strong"
         >
           {{ checklistModal.error }}
         </div>
@@ -519,14 +519,14 @@
           <!-- Ready Badge + Score -->
           <div class="flex items-center gap-4">
             <span
-              class="rounded-full px-3 py-1 text-sm font-semibold"
+              class="rounded-full px-3 py-1 text-body font-semibold"
               :class="checklistModal.result.ready
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'"
+                ? 'bg-success-subtle text-success-strong'
+                : 'bg-error-subtle text-error-strong'"
             >
               {{ checklistModal.result.ready ? $t('videosView.publishChecklist.ready') : $t('videosView.publishChecklist.notReady') }}
             </span>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
+            <span class="text-body text-gray-500 dark:text-gray-400">
               {{ $t('videosView.publishChecklist.score', { score: checklistModal.result.score }) }}
             </span>
           </div>
@@ -537,24 +537,24 @@
               :key="item.key"
               class="rounded-lg border p-3"
               :class="item.passed
-                ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/10'
-                : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10'"
+                ? 'border-success bg-success-subtle'
+                : 'border-warning bg-warning-subtle'"
             >
               <div class="flex items-start gap-2">
                 <span class="mt-0.5 shrink-0">
-                  <CheckCircleIcon v-if="item.passed" class="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <ExclamationCircleIcon v-else class="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <CheckCircleIcon v-if="item.passed" class="h-4 w-4 text-success-strong" />
+                  <ExclamationCircleIcon v-else class="h-4 w-4 text-warning-strong" />
                 </span>
                 <div>
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.key }}</p>
-                  <p v-if="item.suggestion" class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ item.suggestion }}</p>
+                  <p class="text-body font-medium text-gray-900 dark:text-white">{{ item.key }}</p>
+                  <p v-if="item.suggestion" class="mt-0.5 text-body-xs text-gray-600 dark:text-gray-400">{{ item.suggestion }}</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
         <div v-else class="space-y-2">
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="text-body text-gray-600 dark:text-gray-400">
             {{ $t('videosView.publishChecklist.prompt', { title: checklistModal.item?.title }) }}
           </p>
         </div>
@@ -583,16 +583,16 @@
       <div class="space-y-4">
         <div v-if="repurposeModal.loading" class="flex flex-col items-center py-8 gap-3">
           <LoadingSpinner />
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('videosView.repurpose.analyzing') }}</p>
+          <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('videosView.repurpose.analyzing') }}</p>
         </div>
         <div
           v-else-if="repurposeModal.error"
-          class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+          class="rounded-lg border border-error bg-error-subtle p-4 text-body text-error-strong"
         >
           {{ repurposeModal.error }}
         </div>
         <div v-else-if="repurposeModal.clips.length > 0" class="space-y-3">
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.repurpose.clipsFound', { count: repurposeModal.clips.length }) }}</p>
+          <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.repurpose.clipsFound', { count: repurposeModal.clips.length }) }}</p>
           <div
             v-for="(clip, i) in repurposeModal.clips"
             :key="i"
@@ -600,23 +600,23 @@
           >
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ clip.title }}</p>
-                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <p class="text-body font-medium text-gray-900 dark:text-white">{{ clip.title }}</p>
+                <p class="mt-0.5 text-body-xs text-gray-500 dark:text-gray-400">
                   {{ formatSeconds(clip.startSeconds) }} ~ {{ formatSeconds(clip.endSeconds) }}
                 </p>
-                <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">{{ clip.reason }}</p>
+                <p class="mt-1 text-body-xs text-gray-600 dark:text-gray-400">{{ clip.reason }}</p>
               </div>
-              <span class="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+              <span class="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-body-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                 {{ clip.viralScore }}
               </span>
             </div>
           </div>
         </div>
         <div v-else class="space-y-2">
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="text-body text-gray-600 dark:text-gray-400">
             {{ $t('videosView.repurpose.prompt', { title: repurposeModal.item?.title }) }}
           </p>
-          <p class="text-xs text-gray-400 dark:text-gray-500">{{ $t('videosView.repurpose.creditNotice') }}</p>
+          <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ $t('videosView.repurpose.creditNotice') }}</p>
         </div>
       </div>
       <template #footer>
@@ -642,23 +642,23 @@
       <div class="space-y-4">
         <div v-if="rewriteModal.loading" class="flex flex-col items-center py-8 gap-3">
           <LoadingSpinner />
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('videosView.aiRewrite.analyzing') }}</p>
+          <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('videosView.aiRewrite.analyzing') }}</p>
         </div>
-        <div v-else-if="rewriteModal.error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+        <div v-else-if="rewriteModal.error" class="rounded-lg border border-error bg-error-subtle p-4 text-body text-error-strong">
           {{ rewriteModal.error }}
         </div>
         <div v-else-if="rewriteModal.result">
           <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <h4 class="mb-2 text-body-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               {{ $t('videosView.aiRewrite.original') }}
             </h4>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ rewriteModal.result.originalTitle }}</p>
-            <p v-if="rewriteModal.result.originalDescription" class="mt-1 text-xs text-gray-600 dark:text-gray-400 line-clamp-3">
+            <p class="text-body font-medium text-gray-900 dark:text-white">{{ rewriteModal.result.originalTitle }}</p>
+            <p v-if="rewriteModal.result.originalDescription" class="mt-1 text-body-xs text-gray-600 dark:text-gray-400 line-clamp-3">
               {{ rewriteModal.result.originalDescription }}
             </p>
           </div>
           <div class="mt-4 space-y-3">
-            <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <h4 class="text-body-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               {{ $t('videosView.aiRewrite.suggestions') }}
             </h4>
             <div
@@ -672,8 +672,8 @@
             >
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0 flex-1">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">{{ suggestion.title }}</p>
-                  <p class="mt-1 text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{{ suggestion.description }}</p>
+                  <p class="text-body font-medium text-gray-900 dark:text-white">{{ suggestion.title }}</p>
+                  <p class="mt-1 text-body-xs text-gray-600 dark:text-gray-400 line-clamp-2">{{ suggestion.description }}</p>
                   <div v-if="suggestion.tags.length > 0" class="mt-2 flex flex-wrap gap-1">
                     <span
                       v-for="tag in suggestion.tags.slice(0, 5)"
@@ -691,15 +691,15 @@
               </div>
             </div>
           </div>
-          <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">
+          <p class="mt-3 text-body-xs text-gray-400 dark:text-gray-500">
             {{ $t('videosView.aiRewrite.creditsUsed', { count: rewriteModal.result.creditsUsed }) }}
           </p>
         </div>
         <div v-else class="space-y-3">
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="text-body text-gray-600 dark:text-gray-400">
             {{ $t('videosView.aiRewrite.prompt', { title: rewriteModal.item?.title }) }}
           </p>
-          <p class="text-xs text-gray-400 dark:text-gray-500">{{ $t('videosView.aiRewrite.creditNotice') }}</p>
+          <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ $t('videosView.aiRewrite.creditNotice') }}</p>
         </div>
       </div>
       <template #footer>

@@ -2,13 +2,13 @@
   <div class="space-y-6">
     <!-- 감정 요약 -->
     <div v-if="stats.total > 0" class="card">
-      <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+      <h3 class="mb-3 text-body font-semibold text-gray-700 dark:text-gray-300">
         {{ $t('commentsView.sentimentSummary') }}
       </h3>
       <div class="mb-2 flex h-4 overflow-hidden rounded-full">
         <div
           v-if="stats.positive > 0"
-          class="bg-green-500"
+          class="bg-success"
           :style="{ width: `${(stats.positive / stats.total) * 100}%` }"
         />
         <div
@@ -18,13 +18,13 @@
         />
         <div
           v-if="stats.negative > 0"
-          class="bg-red-500"
+          class="bg-error"
           :style="{ width: `${(stats.negative / stats.total) * 100}%` }"
         />
       </div>
-      <div class="flex flex-wrap gap-4 text-sm">
+      <div class="flex flex-wrap gap-4 text-body">
         <div class="flex items-center gap-2">
-          <span class="h-3 w-3 rounded-full bg-green-500" />
+          <span class="h-3 w-3 rounded-full bg-success" />
           <span class="text-gray-700 dark:text-gray-300">
             {{ $t('commentsView.sentimentPositive') }}: {{ stats.positive }}
             ({{ Math.round((stats.positive / stats.total) * 100) }}%)
@@ -38,7 +38,7 @@
           </span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="h-3 w-3 rounded-full bg-red-500" />
+          <span class="h-3 w-3 rounded-full bg-error" />
           <span class="text-gray-700 dark:text-gray-300">
             {{ $t('commentsView.sentimentNegative') }}: {{ stats.negative }}
             ({{ Math.round((stats.negative / stats.total) * 100) }}%)
@@ -50,14 +50,14 @@
     <!-- 감정 트렌드 차트 -->
     <div class="card">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <h3 class="text-body font-semibold text-gray-700 dark:text-gray-300">
           {{ $t('commentsView.sentimentTrend') }}
         </h3>
         <div class="flex gap-2">
           <button
             v-for="d in dayOptions"
             :key="d"
-            class="rounded-lg px-3 py-1 text-xs font-medium transition-colors"
+            class="rounded-lg px-3 py-1 text-caption transition-colors"
             :class="days === d
               ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
               : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'"
@@ -81,11 +81,11 @@
           <!-- 트렌드 요약 배지 -->
           <div class="flex items-center gap-2 mb-2">
             <span
-              class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+              class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-caption"
               :class="{
-                'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': trend.summary.trend === 'IMPROVING',
+                'bg-success-subtle text-success-strong': trend.summary.trend === 'IMPROVING',
                 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400': trend.summary.trend === 'STABLE',
-                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': trend.summary.trend === 'WORSENING',
+                'bg-error-subtle text-error-strong': trend.summary.trend === 'WORSENING',
               }"
             >
               <ArrowTrendingUpIcon v-if="trend.summary.trend === 'IMPROVING'" class="h-3 w-3" />
@@ -93,7 +93,7 @@
               <ArrowTrendingDownIcon v-else class="h-3 w-3" />
               {{ trendLabel }}
             </span>
-            <span class="text-xs text-gray-500 dark:text-gray-400">
+            <span class="text-body-xs text-gray-500 dark:text-gray-400">
               {{ $t('commentsView.sentimentPositive') }} {{ trend.summary.totalPositive }} ·
               {{ $t('commentsView.sentimentNeutral') }} {{ trend.summary.totalNeutral }} ·
               {{ $t('commentsView.sentimentNegative') }} {{ trend.summary.totalNegative }}
@@ -104,7 +104,7 @@
             <div
               v-for="point in trend.data"
               :key="point.date"
-              class="flex items-center gap-2 text-xs"
+              class="flex items-center gap-2 text-body-xs"
             >
               <span class="w-16 text-right text-gray-500 dark:text-gray-400 shrink-0">
                 {{ formatTrendDate(point.date) }}
@@ -112,7 +112,7 @@
               <div class="flex flex-1 h-3 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800">
                 <div
                   v-if="point.positive > 0"
-                  class="bg-green-500"
+                  class="bg-success"
                   :style="{ width: `${getPercent(point.positive, point)}%` }"
                 />
                 <div
@@ -122,7 +122,7 @@
                 />
                 <div
                   v-if="point.negative > 0"
-                  class="bg-red-500"
+                  class="bg-error"
                   :style="{ width: `${getPercent(point.negative, point)}%` }"
                 />
               </div>

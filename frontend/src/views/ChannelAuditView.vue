@@ -45,15 +45,15 @@
           <div class="flex items-center justify-between gap-4">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
+              <span class="text-h1 font-bold text-primary-600 dark:text-primary-400">
                 {{ report.overallScore }}
               </span>
-              <span class="text-sm text-gray-500 dark:text-gray-400">/ 100</span>
-              <span class="text-xs text-gray-400 dark:text-gray-500">
+              <span class="text-body text-gray-500 dark:text-gray-400">/ 100</span>
+              <span class="text-body-xs text-gray-400 dark:text-gray-500">
                 {{ formatDate(report.createdAt) }}
               </span>
             </div>
-            <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{{ report.growthForecast || 'AI 분석 결과가 저장되었습니다.' }}</p>
+            <p class="text-body text-gray-700 dark:text-gray-300 line-clamp-2">{{ report.growthForecast || 'AI 분석 결과가 저장되었습니다.' }}</p>
           </div>
           <ChevronRightIcon class="h-5 w-5 text-gray-400 shrink-0" />
         </div>
@@ -64,7 +64,7 @@
         <button :disabled="!store.hasPrevPage" class="btn-secondary disabled:opacity-40" @click="store.prevPage()">
           {{ $t('action.prev') }}
         </button>
-        <span class="text-sm text-gray-500 dark:text-gray-400">
+        <span class="text-body text-gray-500 dark:text-gray-400">
           {{ store.page + 1 }} / {{ store.totalPages }}
         </span>
         <button :disabled="!store.hasNextPage" class="btn-secondary disabled:opacity-40" @click="store.nextPage()">
@@ -83,47 +83,47 @@
         <!-- Score Summary -->
         <div class="grid grid-cols-2 gap-4">
           <div class="rounded-lg bg-primary-50 dark:bg-primary-900/20 p-4 text-center">
-            <p class="text-3xl font-bold text-primary-600 dark:text-primary-400">
+            <p class="text-display font-bold text-primary-600 dark:text-primary-400">
               {{ store.selectedReport.overallScore }}
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $t('channelAudit.overall') }}</p>
+            <p class="text-body-xs text-gray-500 dark:text-gray-400 mt-1">{{ $t('channelAudit.overall') }}</p>
           </div>
           <div class="rounded-lg bg-gray-50 p-4 text-center dark:bg-gray-800/50">
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ store.selectedReport.actionItems.length }}</p>
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $t('channelAudit.actionItems') }}</p>
+            <p class="text-h1 font-bold text-gray-900 dark:text-white">{{ store.selectedReport.actionItems.length }}</p>
+            <p class="mt-1 text-body-xs text-gray-500 dark:text-gray-400">{{ $t('channelAudit.actionItems') }}</p>
           </div>
         </div>
 
         <!-- Summary -->
         <div class="card">
-          <h3 class="mb-2 text-sm font-semibold text-gray-900 dark:text-white">{{ $t('channelAudit.summaryLabel') }}</h3>
-          <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ store.selectedReport.growthForecast || 'AI 진단 요약이 없습니다.' }}</p>
+          <h3 class="mb-2 text-body font-semibold text-gray-900 dark:text-white">{{ $t('channelAudit.summaryLabel') }}</h3>
+          <p class="text-body text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ store.selectedReport.growthForecast || 'AI 진단 요약이 없습니다.' }}</p>
         </div>
 
         <!-- Strengths & Weaknesses -->
         <div class="grid tablet:grid-cols-2 gap-4">
           <div class="card">
-            <h3 class="mb-3 text-sm font-semibold text-green-700 dark:text-green-400">{{ $t('channelAudit.strengths') }}</h3>
+            <h3 class="mb-3 text-body font-semibold text-success-strong">{{ $t('channelAudit.strengths') }}</h3>
             <ul class="space-y-1.5">
               <li
                 v-for="(s, i) in store.selectedReport.strengths"
                 :key="i"
-                class="flex gap-2 text-sm text-gray-700 dark:text-gray-300"
+                class="flex gap-2 text-body text-gray-700 dark:text-gray-300"
               >
-                <CheckCircleIcon class="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                <CheckCircleIcon class="h-4 w-4 text-success-strong shrink-0 mt-0.5" />
                 {{ s }}
               </li>
             </ul>
           </div>
           <div class="card">
-            <h3 class="mb-3 text-sm font-semibold text-red-700 dark:text-red-400">{{ $t('channelAudit.weaknesses') }}</h3>
+            <h3 class="mb-3 text-body font-semibold text-error-strong">{{ $t('channelAudit.weaknesses') }}</h3>
             <ul class="space-y-1.5">
               <li
                 v-for="(w, i) in store.selectedReport.weaknesses"
                 :key="i"
-                class="flex gap-2 text-sm text-gray-700 dark:text-gray-300"
+                class="flex gap-2 text-body text-gray-700 dark:text-gray-300"
               >
-                <ExclamationCircleIcon class="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                <ExclamationCircleIcon class="h-4 w-4 text-error-strong shrink-0 mt-0.5" />
                 {{ w }}
               </li>
             </ul>
@@ -132,31 +132,31 @@
 
         <!-- Action Items -->
         <div class="card">
-          <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">{{ $t('channelAudit.actionItems') }}</h3>
+          <h3 class="mb-3 text-body font-semibold text-gray-900 dark:text-white">{{ $t('channelAudit.actionItems') }}</h3>
           <div class="space-y-3">
             <div
               v-for="(item, i) in store.selectedReport.actionItems"
               :key="i"
               class="flex gap-3 rounded-lg border p-3"
               :class="{
-                'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/10': item.priority === 'HIGH',
-                'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10': item.priority === 'MEDIUM',
+                'border-error bg-error-subtle': item.priority === 'HIGH',
+                'border-warning bg-warning-subtle': item.priority === 'MEDIUM',
                 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50': item.priority === 'LOW',
               }"
             >
               <span
                 class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider h-fit mt-0.5"
                 :class="{
-                  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300': item.priority === 'HIGH',
-                  'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300': item.priority === 'MEDIUM',
+                  'bg-error-subtle text-error-strong': item.priority === 'HIGH',
+                  'bg-warning-subtle text-warning-strong': item.priority === 'MEDIUM',
                   'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400': item.priority === 'LOW',
                 }"
               >
                 {{ item.priority }}
               </span>
               <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.action }}</p>
-                <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ item.expectedImpact }}</p>
+                <p class="text-body font-medium text-gray-900 dark:text-white">{{ item.action }}</p>
+                <p class="mt-0.5 text-body-xs text-gray-600 dark:text-gray-400">{{ item.expectedImpact }}</p>
               </div>
             </div>
           </div>
@@ -164,7 +164,7 @@
 
         <!-- Outlier Videos -->
         <div v-if="store.selectedReport.outlierVideos.length > 0" class="card">
-          <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">{{ $t('channelAudit.outlierVideos') }}</h3>
+          <h3 class="mb-3 text-body font-semibold text-gray-900 dark:text-white">{{ $t('channelAudit.outlierVideos') }}</h3>
           <div class="space-y-3">
             <div
               v-for="video in store.selectedReport.outlierVideos"
@@ -172,9 +172,9 @@
               class="flex gap-3 items-start"
             >
               <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ video.videoTitle }}</p>
-                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ video.metric }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ video.reason }}</p>
+                <p class="truncate text-body font-medium text-gray-900 dark:text-white">{{ video.videoTitle }}</p>
+                <p class="mt-0.5 text-body-xs text-gray-500 dark:text-gray-400">{{ video.metric }}</p>
+                <p class="text-body-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ video.reason }}</p>
               </div>
             </div>
           </div>

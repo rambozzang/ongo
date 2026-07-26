@@ -1,17 +1,17 @@
 <template>
   <div class="card">
     <div class="mb-4 flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">조회수 트렌드</h3>
+      <h3 class="text-title font-semibold text-gray-900 dark:text-gray-100">조회수 트렌드</h3>
       <div class="flex rounded-lg border border-gray-200 dark:border-gray-700">
         <button
-          class="px-3 py-1 text-sm transition-colors"
+          class="px-3 py-1 text-body transition-colors"
           :class="period === '7d' ? 'bg-primary-500 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
           @click="$emit('update:period', '7d')"
         >
           7일
         </button>
         <button
-          class="px-3 py-1 text-sm transition-colors"
+          class="px-3 py-1 text-body transition-colors"
           :class="period === '30d' ? 'bg-primary-500 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
           @click="$emit('update:period', '30d')"
         >
@@ -112,7 +112,7 @@ const externalTooltipHandler = (context: { chart: Chart; tooltip: TooltipModel<'
       ' px-3 py-2">'
 
     titleLines.forEach((title) => {
-      innerHtml += '<div class="font-semibold text-sm mb-1 ' +
+      innerHtml += '<div class="font-semibold text-body mb-1 ' +
         (themeStore.isDark ? 'text-gray-100' : 'text-gray-900') +
         '">' + title + '</div>'
     })
@@ -122,7 +122,7 @@ const externalTooltipHandler = (context: { chart: Chart; tooltip: TooltipModel<'
       const style = 'background:' + colors.backgroundColor + ';border-color:' + colors.borderColor
       const span = '<span class="inline-block w-2 h-2 rounded-full mr-2" style="' + style + '"></span>'
       const value = (dataPoint.raw as number).toLocaleString('ko-KR')
-      innerHtml += '<div class="flex items-center justify-between gap-4 text-xs ' +
+      innerHtml += '<div class="flex items-center justify-between gap-4 text-body-xs ' +
         (themeStore.isDark ? 'text-gray-300' : 'text-gray-600') +
         '">'
       innerHtml += '<span>' + span + dataPoint.dataset.label + '</span>'

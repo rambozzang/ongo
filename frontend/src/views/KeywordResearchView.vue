@@ -18,7 +18,7 @@
       <div class="space-y-4">
         <!-- Keyword Input -->
         <div>
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
             {{ $t('keywordResearch.keywordLabel') }}
           </label>
           <input
@@ -32,7 +32,7 @@
 
         <!-- Platform Selection -->
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
             {{ $t('keywordResearch.platformLabel') }}
           </label>
           <div class="flex flex-wrap gap-3">
@@ -48,7 +48,7 @@
                 class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 @change="togglePlatform(p.value)"
               />
-              <span class="text-sm text-gray-700 dark:text-gray-300">{{ p.label }}</span>
+              <span class="text-body text-gray-700 dark:text-gray-300">{{ p.label }}</span>
             </label>
           </div>
         </div>
@@ -57,11 +57,11 @@
 
     <!-- Result -->
     <div v-if="store.currentResult" class="mb-6 space-y-4">
-      <h2 class="text-base font-semibold text-gray-900 dark:text-white">
+      <h2 class="text-body-lg font-semibold text-gray-900 dark:text-white">
         {{ $t('keywordResearch.resultTitle', { keyword: store.currentResult.keyword }) }}
       </h2>
       <div class="card overflow-x-auto">
-        <table class="w-full text-left text-sm">
+        <table class="w-full text-left text-body">
           <thead class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
             <tr>
               <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400">{{ $t('keywordResearch.platform') }}</th>
@@ -84,11 +84,11 @@
               </td>
               <td class="px-4 py-3 text-center">
                 <span
-                  class="rounded-full px-2 py-0.5 text-xs font-medium"
+                  class="rounded-full px-2 py-0.5 text-body-xs font-medium"
                   :class="{
-                    'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': row.competition === 'LOW',
-                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300': row.competition === 'MEDIUM',
-                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300': row.competition === 'HIGH',
+                    'bg-success-subtle text-success-strong': row.competition === 'LOW',
+                    'bg-warning-subtle text-warning-strong': row.competition === 'MEDIUM',
+                    'bg-error-subtle text-error-strong': row.competition === 'HIGH',
                   }"
                 >
                   {{ $t(`keywordResearch.competition_${row.competition}`) }}
@@ -96,18 +96,18 @@
               </td>
               <td class="px-4 py-3 text-center">
                 <span
-                  class="rounded-full px-2 py-0.5 text-xs font-medium"
+                  class="rounded-full px-2 py-0.5 text-body-xs font-medium"
                   :class="{
                     'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300': row.trend === 'RISING',
                     'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300': row.trend === 'STABLE',
-                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300': row.trend === 'DECLINING',
+                    'bg-error-subtle text-error-strong': row.trend === 'DECLINING',
                   }"
                 >
                   {{ $t(`keywordResearch.trend_${row.trend}`) }}
                 </span>
               </td>
               <td class="px-4 py-3 text-right tabular-nums">
-                <span class="text-sm font-semibold text-primary-600 dark:text-primary-400">
+                <span class="text-body font-semibold text-primary-600 dark:text-primary-400">
                   {{ row.opportunityScore }}
                 </span>
               </td>
@@ -130,7 +130,7 @@
 
     <!-- History -->
     <div>
-      <h2 class="mb-3 text-base font-semibold text-gray-900 dark:text-white">
+      <h2 class="mb-3 text-body-lg font-semibold text-gray-900 dark:text-white">
         {{ $t('keywordResearch.historyTitle') }}
       </h2>
 
@@ -150,8 +150,8 @@
           @click="loadHistoryItem(item)"
         >
           <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ item.keyword }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <p class="text-body font-medium text-gray-900 dark:text-white">{{ item.keyword }}</p>
+            <p class="text-body-xs text-gray-500 dark:text-gray-400 mt-0.5">
               {{ item.platforms.map(platformLabel).join(', ') }} · {{ formatDate(item.createdAt) }}
             </p>
           </div>
@@ -163,7 +163,7 @@
           <button :disabled="!store.hasPrevPage" class="btn-secondary disabled:opacity-40" @click="store.prevPage()">
             {{ $t('action.prev') }}
           </button>
-          <span class="text-sm text-gray-500 dark:text-gray-400">
+          <span class="text-body text-gray-500 dark:text-gray-400">
             {{ store.page }} / {{ store.totalPages }}
           </span>
           <button :disabled="!store.hasNextPage" class="btn-secondary disabled:opacity-40" @click="store.nextPage()">

@@ -12,41 +12,41 @@
         <div class="flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
           <div>
             <div class="mb-1 flex items-center gap-2">
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.currentPlan') }}</h2>
+              <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.currentPlan') }}</h2>
               <span
                 v-if="subscription"
-                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-body-xs font-medium"
                 :class="subscriptionStatusClass"
               >
                 {{ subscriptionStatusLabel }}
               </span>
             </div>
             <div v-if="subscription" class="space-y-1">
-              <p class="text-2xl font-bold text-primary-600">
+              <p class="text-h1 font-bold text-primary-600">
                 {{ currentPlanInfo?.name ?? subscription.planType }}
-                <span class="text-base font-normal text-gray-500 dark:text-gray-400">
+                <span class="text-body-lg font-normal text-gray-500 dark:text-gray-400">
                   {{ currentPlanInfo ? formatPrice(currentPlanInfo.price) : '' }}
                   <template v-if="currentPlanInfo && currentPlanInfo.price > 0">{{ $t('subscription.perMonth') }}</template>
                 </span>
               </p>
-              <p v-if="subscription.nextBillingDate" class="text-sm text-gray-500 dark:text-gray-400">
+              <p v-if="subscription.nextBillingDate" class="text-body text-gray-500 dark:text-gray-400">
                 <CalendarIcon class="mr-1 inline h-4 w-4" />
                 {{ $t('subscription.nextBillingDate') }}: {{ formatDate(subscription.nextBillingDate) }}
               </p>
-              <p v-if="subscription.status === 'TRIALING' && subscription.trialEnd" class="text-sm text-purple-600 dark:text-purple-400">
+              <p v-if="subscription.status === 'TRIALING' && subscription.trialEnd" class="text-body text-info-strong">
                 트라이얼 종료: {{ formatDate(subscription.trialEnd) }}
               </p>
-              <p v-if="subscription.status === 'PAUSED' && subscription.resumeAt" class="text-sm text-orange-600 dark:text-orange-400">
+              <p v-if="subscription.status === 'PAUSED' && subscription.resumeAt" class="text-body text-warning-strong">
                 재개 예정: {{ formatDate(subscription.resumeAt) }}
               </p>
-              <p v-if="currentPlanInfo" class="text-sm text-gray-500 dark:text-gray-400">
+              <p v-if="currentPlanInfo" class="text-body text-gray-500 dark:text-gray-400">
                 <ArrowUpTrayIcon class="mr-1 inline h-4 w-4" />
                 {{ $t('subscription.uploads') }}:
                 <template v-if="currentPlanInfo.maxUploadsPerMonth === -1">{{ $t('subscription.unlimited') }}</template>
                 <template v-else>{{ $t('subscription.uploadsPerMonth', { count: currentPlanInfo.maxUploadsPerMonth }) }}</template>
               </p>
             </div>
-            <p v-else class="text-sm text-gray-500 dark:text-gray-400">{{ $t('subscription.noSubscriptionInfo') }}</p>
+            <p v-else class="text-body text-gray-500 dark:text-gray-400">{{ $t('subscription.noSubscriptionInfo') }}</p>
           </div>
           <div v-if="subscription" class="flex flex-wrap gap-2">
             <button class="btn-primary" @click="showPlanComparison">
@@ -87,7 +87,7 @@
 
       <!-- Section 2: Usage Statistics -->
       <div v-if="currentPlanInfo" class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.usageStatus') }}</h2>
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.usageStatus') }}</h2>
 
         <div class="space-y-4">
           <!-- Monthly Uploads Usage -->
@@ -119,7 +119,7 @@
       <!-- Section 3: AI Credit Section -->
       <div class="card mb-6">
         <div class="mb-4 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">
             <SparklesIcon class="mr-1.5 inline h-5 w-5 text-primary-600" />
             {{ $t('subscription.aiCredits') }}
           </h2>
@@ -132,14 +132,14 @@
         <div v-if="creditBalance">
           <div class="mb-2 flex items-end justify-between">
             <div>
-              <span class="text-3xl font-bold" :class="creditStore.isLow ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'">
+              <span class="text-display font-bold" :class="creditStore.isLow ? 'text-error-strong' : 'text-gray-900 dark:text-gray-100'">
                 {{ creditStore.totalBalance.toLocaleString() }}
               </span>
-              <span class="ml-1 text-sm text-gray-500 dark:text-gray-400">
+              <span class="ml-1 text-body text-gray-500 dark:text-gray-400">
                 / {{ creditBalance.freeMonthly.toLocaleString() }} ({{ $t('subscription.monthlyFree') }})
               </span>
             </div>
-            <span class="text-xs text-gray-400 dark:text-gray-500">
+            <span class="text-body-xs text-gray-400 dark:text-gray-500">
               {{ $t('subscription.freeResetDate') }}: {{ formatDate(creditBalance.freeResetDate) }}
             </span>
           </div>
@@ -148,11 +148,11 @@
           <div class="h-3 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
             <div
               class="h-full rounded-full transition-all duration-500"
-              :class="creditStore.isLow ? 'bg-red-500' : 'bg-primary-600'"
+              :class="creditStore.isLow ? 'bg-error' : 'bg-primary-600'"
               :style="{ width: creditPercentage + '%' }"
             />
           </div>
-          <div class="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+          <div class="mt-2 flex justify-between text-body-xs text-gray-500 dark:text-gray-400">
             <span>{{ $t('subscription.freeRemaining') }}: {{ creditBalance.freeRemaining.toLocaleString() }}</span>
             <span>{{ $t('subscription.purchasedRemaining') }}: {{ creditBalance.purchasedBalance.toLocaleString() }}</span>
           </div>
@@ -160,25 +160,25 @@
           <!-- Low credit warning -->
           <div
             v-if="creditStore.isLow"
-            class="mt-3 flex items-center gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-400"
+            class="mt-3 flex items-center gap-2 rounded-lg bg-error-subtle px-3 py-2 text-body text-error-strong"
           >
             <ExclamationTriangleIcon class="h-4 w-4 flex-shrink-0" />
             {{ $t('subscription.lowCreditWarning') }}
           </div>
         </div>
-        <div v-else class="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div v-else class="py-4 text-center text-body text-gray-500 dark:text-gray-400">
           {{ $t('subscription.noCreditInfo') }}
         </div>
       </div>
 
       <!-- Section 4: Credit Usage History Table -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.creditHistory') }}</h2>
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.creditHistory') }}</h2>
 
         <div class="overflow-x-auto">
-          <table v-if="creditTransactions && creditTransactions.content.length > 0" class="w-full text-sm">
+          <table v-if="creditTransactions && creditTransactions.content.length > 0" class="w-full text-body">
             <thead>
-              <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 <th class="px-4 py-3">{{ $t('subscription.table.date') }}</th>
                 <th class="px-4 py-3">{{ $t('subscription.table.type') }}</th>
                 <th class="px-4 py-3">{{ $t('subscription.table.feature') }}</th>
@@ -197,7 +197,7 @@
                 </td>
                 <td class="px-4 py-3">
                   <span
-                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-body-xs font-medium"
                     :class="creditTransactionTypeClass(tx.type)"
                   >
                     {{ creditTransactionTypeLabel(tx.type) }}
@@ -206,7 +206,7 @@
                 <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
                   {{ tx.feature ?? '-' }}
                 </td>
-                <td class="whitespace-nowrap px-4 py-3 text-right font-medium" :class="tx.type === 'DEDUCT' ? 'text-red-600' : 'text-green-600'">
+                <td class="whitespace-nowrap px-4 py-3 text-right font-medium" :class="tx.type === 'DEDUCT' ? 'text-error-strong' : 'text-success-strong'">
                   {{ tx.type === 'DEDUCT' ? '-' : '+' }}{{ Math.abs(tx.amount).toLocaleString() }}
                 </td>
                 <td class="whitespace-nowrap px-4 py-3 text-right text-gray-600 dark:text-gray-300">
@@ -215,7 +215,7 @@
               </tr>
             </tbody>
           </table>
-          <div v-else class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          <div v-else class="py-8 text-center text-body text-gray-500 dark:text-gray-400">
             {{ $t('subscription.noCreditHistory') }}
           </div>
         </div>
@@ -225,22 +225,22 @@
           v-if="creditTransactions && creditTransactions.totalPages > 1"
           class="mt-4 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">
+          <p class="text-body-xs text-gray-500 dark:text-gray-400">
             {{ $t('subscription.totalCount', { count: creditTransactions.totalElements.toLocaleString() }) }}
           </p>
           <div class="flex gap-1">
             <button
-              class="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+              class="rounded-lg px-3 py-1.5 text-body-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
               :disabled="!creditTransactions.hasPrevious"
               @click="loadCreditTransactions(creditTransactions!.page - 1)"
             >
               {{ $t('action.previous') }}
             </button>
-            <span class="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <span class="px-3 py-1.5 text-body-xs text-gray-500 dark:text-gray-400">
               {{ creditTransactions.page + 1 }} / {{ creditTransactions.totalPages }}
             </span>
             <button
-              class="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+              class="rounded-lg px-3 py-1.5 text-body-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
               :disabled="!creditTransactions.hasNext"
               @click="loadCreditTransactions(creditTransactions!.page + 1)"
             >
@@ -252,13 +252,13 @@
 
       <!-- Section 5: Coupon -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">쿠폰</h2>
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">쿠폰</h2>
         <div class="flex gap-2">
           <input
             v-model="couponCode"
             type="text"
             placeholder="쿠폰 코드를 입력하세요"
-            class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-body text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             @keyup.enter="handleValidateCoupon"
           />
           <button class="btn-secondary" :disabled="!couponCode.trim()" @click="handleValidateCoupon">
@@ -268,7 +268,7 @@
             적용
           </button>
         </div>
-        <div v-if="couponValidation" class="mt-3 rounded-lg px-3 py-2 text-sm" :class="couponValidation.valid ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'">
+        <div v-if="couponValidation" class="mt-3 rounded-lg px-3 py-2 text-body" :class="couponValidation.valid ? 'bg-success-subtle text-success-strong' : 'bg-error-subtle text-error-strong'">
           <template v-if="couponValidation.valid">
             쿠폰 유효: {{ couponValidation.discountType === 'PERCENTAGE' ? couponValidation.discountValue + '% 할인' : couponValidation.discountType === 'FIXED_AMOUNT' ? '₩' + couponValidation.discountValue?.toLocaleString() + ' 할인' : couponValidation.discountValue + '일 무료' }}
           </template>
@@ -280,7 +280,7 @@
 
       <!-- Section: Usage Alert Settings -->
       <div class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">사용량 알림 설정</h2>
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">사용량 알림 설정</h2>
         <div class="space-y-4">
           <div v-for="alert in usageAlerts" :key="alert.type" class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3">
             <div class="flex items-center gap-3">
@@ -295,12 +295,12 @@
                 />
               </button>
               <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ alert.label }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ alert.description }}</p>
+                <p class="text-body font-medium text-gray-900 dark:text-gray-100">{{ alert.label }}</p>
+                <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ alert.description }}</p>
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{ alert.thresholdPercent }}%</span>
+              <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ alert.thresholdPercent }}%</span>
               <input
                 type="range"
                 :value="alert.thresholdPercent"
@@ -317,11 +317,11 @@
 
       <!-- Section 6: Plan Comparison Table -->
       <div id="plan-comparison" class="card mb-6">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.planComparison') }}</h2>
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.planComparison') }}</h2>
 
         <!-- Billing Cycle Toggle -->
         <div class="mb-4 flex items-center justify-center gap-3">
-          <span class="text-sm font-medium" :class="billingCycle === 'MONTHLY' ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'">
+          <span class="text-body font-medium" :class="billingCycle === 'MONTHLY' ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'">
             {{ $t('subscription.monthly') }}
           </span>
           <button
@@ -334,9 +334,9 @@
               :class="billingCycle === 'YEARLY' ? 'translate-x-6' : 'translate-x-1'"
             />
           </button>
-          <span class="text-sm font-medium" :class="billingCycle === 'YEARLY' ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'">
+          <span class="text-body font-medium" :class="billingCycle === 'YEARLY' ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'">
             {{ $t('subscription.yearly') }}
-            <span class="ml-1 rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+            <span class="ml-1 rounded-full bg-success-subtle px-2 py-0.5 text-body-xs font-medium text-success-strong">
               ~17% {{ $t('subscription.discount') }}
             </span>
           </span>
@@ -351,12 +351,12 @@
 
       <!-- Section 6: Payment History -->
       <div class="card">
-        <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.paymentHistory') }}</h2>
+        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.paymentHistory') }}</h2>
 
         <div class="overflow-x-auto">
-          <table v-if="paymentList && paymentList.content.length > 0" class="w-full text-sm">
+          <table v-if="paymentList && paymentList.content.length > 0" class="w-full text-body">
             <thead>
-              <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <tr class="border-b border-gray-200 dark:border-gray-700 text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 <th class="px-4 py-3">{{ $t('subscription.table.date') }}</th>
                 <th class="px-4 py-3">{{ $t('subscription.table.item') }}</th>
                 <th class="px-4 py-3">{{ $t('subscription.table.description') }}</th>
@@ -376,8 +376,8 @@
                 </td>
                 <td class="px-4 py-3">
                   <span
-                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                    :class="payment.type === 'SUBSCRIPTION' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'"
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-body-xs font-medium"
+                    :class="payment.type === 'SUBSCRIPTION' ? 'bg-info-subtle text-info-strong' : 'bg-info-subtle text-info-strong'"
                   >
                     {{ payment.type === 'SUBSCRIPTION' ? $t('subscription.typeSubscription') : $t('subscription.typeCredit') }}
                   </span>
@@ -390,7 +390,7 @@
                 </td>
                 <td class="px-4 py-3 text-center">
                   <span
-                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-body-xs font-medium"
                     :class="paymentStatusClass(payment.status)"
                   >
                     {{ paymentStatusLabel(payment.status) }}
@@ -411,7 +411,7 @@
               </tr>
             </tbody>
           </table>
-          <div v-else class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          <div v-else class="py-8 text-center text-body text-gray-500 dark:text-gray-400">
             {{ $t('subscription.noPaymentHistory') }}
           </div>
         </div>
@@ -421,22 +421,22 @@
           v-if="paymentList && paymentList.totalPages > 1"
           class="mt-4 flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">
+          <p class="text-body-xs text-gray-500 dark:text-gray-400">
             {{ $t('subscription.totalCount', { count: paymentList.totalElements.toLocaleString() }) }}
           </p>
           <div class="flex gap-1">
             <button
-              class="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+              class="rounded-lg px-3 py-1.5 text-body-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
               :disabled="!paymentList.hasPrevious"
               @click="loadPayments(paymentList!.page - 1)"
             >
               {{ $t('action.previous') }}
             </button>
-            <span class="px-3 py-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <span class="px-3 py-1.5 text-body-xs text-gray-500 dark:text-gray-400">
               {{ paymentList.page + 1 }} / {{ paymentList.totalPages }}
             </span>
             <button
-              class="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+              class="rounded-lg px-3 py-1.5 text-body-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
               :disabled="!paymentList.hasNext"
               @click="loadPayments(paymentList!.page + 1)"
             >
@@ -578,12 +578,12 @@ const creditPercentage = computed(() => {
 const subscriptionStatusClass = computed(() => {
   if (!subscription.value) return ''
   const classes: Record<string, string> = {
-    ACTIVE: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-    FREE: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+    ACTIVE: 'bg-success-subtle text-success-strong',
+    FREE: 'bg-info-subtle text-info-strong',
     CANCELLED: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
-    PAST_DUE: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
-    TRIALING: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
-    PAUSED: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+    PAST_DUE: 'bg-warning-subtle text-warning-strong',
+    TRIALING: 'bg-info-subtle text-info-strong',
+    PAUSED: 'bg-warning-subtle text-warning-strong',
   }
   return classes[subscription.value.status] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
 })
@@ -655,9 +655,9 @@ function formatStorageValue(valueMb: number, maxMb: number): number {
 
 function creditTransactionTypeClass(type: string): string {
   const classes: Record<string, string> = {
-    DEDUCT: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
-    CHARGE: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-    FREE_RESET: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+    DEDUCT: 'bg-error-subtle text-error-strong',
+    CHARGE: 'bg-success-subtle text-success-strong',
+    FREE_RESET: 'bg-info-subtle text-info-strong',
   }
   return classes[type] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
 }
@@ -674,9 +674,9 @@ function creditTransactionTypeLabel(type: string): string {
 
 function paymentStatusClass(status: string): string {
   const classes: Record<string, string> = {
-    COMPLETED: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-    FAILED: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
-    REFUNDED: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+    COMPLETED: 'bg-success-subtle text-success-strong',
+    FAILED: 'bg-error-subtle text-error-strong',
+    REFUNDED: 'bg-warning-subtle text-warning-strong',
   }
   return classes[status] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
 }

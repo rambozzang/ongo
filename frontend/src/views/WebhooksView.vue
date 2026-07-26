@@ -181,38 +181,38 @@ function handleCloseDeliveryLog() {
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.total') }}</p>
-              <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.total') }}</p>
+              <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
                 {{ summaryStats.total }}
               </p>
             </div>
-            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-              <CodeBracketSquareIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-info-subtle">
+              <CodeBracketSquareIcon class="h-5 w-5 text-info-strong" />
             </div>
           </div>
         </div>
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.active') }}</p>
-              <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
+              <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.active') }}</p>
+              <p class="mt-1 text-h1 font-bold text-success-strong">
                 {{ summaryStats.active }}
               </p>
             </div>
-            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <SignalIcon class="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-success-subtle">
+              <SignalIcon class="h-5 w-5 text-success-strong" />
             </div>
           </div>
         </div>
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.errors') }}</p>
+              <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.errors') }}</p>
               <p
-                class="mt-1 text-2xl font-bold"
+                class="mt-1 text-h1 font-bold"
                 :class="
                   summaryStats.failingCount > 0
-                    ? 'text-red-600 dark:text-red-400'
+                    ? 'text-error-strong'
                     : 'text-gray-900 dark:text-gray-100'
                 "
               >
@@ -223,7 +223,7 @@ function handleCloseDeliveryLog() {
               class="flex h-10 w-10 items-center justify-center rounded-full"
               :class="
                 summaryStats.failingCount > 0
-                  ? 'bg-red-100 dark:bg-red-900/30'
+                  ? 'bg-error-subtle'
                   : 'bg-gray-100 dark:bg-gray-700'
               "
             >
@@ -231,7 +231,7 @@ function handleCloseDeliveryLog() {
                 class="h-5 w-5"
                 :class="
                   summaryStats.failingCount > 0
-                    ? 'text-red-600 dark:text-red-400'
+                    ? 'text-error-strong'
                     : 'text-gray-400 dark:text-gray-500'
                 "
               />
@@ -270,8 +270,8 @@ function handleCloseDeliveryLog() {
         <div class="flex items-start gap-3">
           <BoltIcon class="mt-0.5 h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
           <div>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('webhooks.integrationGuide') }}</p>
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p class="text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('webhooks.integrationGuide') }}</p>
+            <p class="mt-1 text-body-xs text-gray-500 dark:text-gray-400">
               {{ $t('webhooks.integrationDescription') }}
               <a
                 href="/api/docs#webhooks"

@@ -4,22 +4,22 @@
     <div v-if="isLoading" class="flex items-center justify-center py-8">
       <div class="text-center">
         <div class="mb-3 inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-primary-600 dark:border-gray-700 dark:border-t-primary-400" />
-        <p class="text-sm text-gray-600 dark:text-gray-400">처리 중...</p>
+        <p class="text-body text-gray-600 dark:text-gray-400">처리 중...</p>
       </div>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="rounded-lg border border-red-200 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-900/20">
+    <div v-else-if="error" class="rounded-lg border border-error bg-error-subtle p-6">
       <div class="mb-4 flex items-start gap-3">
-        <ExclamationCircleIcon class="h-6 w-6 shrink-0 text-red-600 dark:text-red-500" />
+        <ExclamationCircleIcon class="h-6 w-6 shrink-0 text-error-strong" />
         <div class="flex-1">
-          <h3 class="mb-1 font-semibold text-red-900 dark:text-red-200">
+          <h3 class="mb-1 font-semibold text-error-strong">
             작업 실패
           </h3>
-          <p class="text-sm text-red-700 dark:text-red-300">
+          <p class="text-body text-error-strong">
             {{ errorMessage }}
           </p>
-          <p v-if="retryCount > 0" class="mt-1 text-xs text-red-600 dark:text-red-400">
+          <p v-if="retryCount > 0" class="mt-1 text-body-xs text-error-strong">
             재시도 횟수: {{ retryCount }} / {{ maxRetries }}
           </p>
         </div>
@@ -27,7 +27,7 @@
 
       <div class="flex gap-2">
         <button
-          class="btn-primary text-sm"
+          class="btn-primary text-body"
           :disabled="retryCount >= maxRetries"
           @click="handleRetry"
         >
@@ -37,7 +37,7 @@
         </button>
         <button
           v-if="retryCount >= maxRetries"
-          class="btn-secondary text-sm"
+          class="btn-secondary text-body"
           @click="handleReset"
         >
           초기화

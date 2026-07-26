@@ -10,14 +10,14 @@
 
     <!-- AI 답글 추천 -->
     <div v-if="showAiSuggestions && aiSuggestions.length > 0" class="space-y-2">
-      <p class="text-xs font-medium text-gray-600 dark:text-gray-400">{{ $t('comments.replyForm.aiSuggestions') }}</p>
+      <p class="text-caption text-gray-600 dark:text-gray-400">{{ $t('comments.replyForm.aiSuggestions') }}</p>
       <div
         v-for="(suggestion, idx) in aiSuggestions"
         :key="idx"
-        class="cursor-pointer rounded-lg border border-gray-200 p-2.5 text-sm transition-colors hover:border-primary-400 hover:bg-primary-50 dark:border-gray-700 dark:hover:border-primary-600 dark:hover:bg-primary-900/20"
+        class="cursor-pointer rounded-lg border border-gray-200 p-2.5 text-body transition-colors hover:border-primary-400 hover:bg-primary-50 dark:border-gray-700 dark:hover:border-primary-600 dark:hover:bg-primary-900/20"
         @click="selectAiSuggestion(suggestion.reply)"
       >
-        <span class="mb-1 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+        <span class="mb-1 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-caption text-gray-600 dark:bg-gray-700 dark:text-gray-300">
           {{ toneLabel(suggestion.tone) }}
         </span>
         <p class="mt-1 text-gray-700 dark:text-gray-300">{{ suggestion.reply }}</p>
@@ -26,11 +26,11 @@
 
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-500 dark:text-gray-400">{{ replyText.length }}/500</span>
+        <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ replyText.length }}/500</span>
         <button
           v-if="commentContent"
           type="button"
-          class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 px-2.5 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-50 disabled:opacity-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
+          class="inline-flex items-center gap-1 rounded-lg border border-primary-200 px-2.5 py-1 text-caption text-primary-600 transition-colors hover:bg-primary-50 disabled:opacity-50 dark:border-primary-800 dark:text-primary-400 dark:hover:bg-primary-900"
           :disabled="generatingAi || submitting"
           @click="generateAiReply"
         >
@@ -47,7 +47,7 @@
       <div class="flex gap-2">
         <button
           type="button"
-          class="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+          class="rounded-lg px-3 py-1.5 text-body font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
           :disabled="submitting"
           @click="emit('cancel')"
         >

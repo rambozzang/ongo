@@ -218,10 +218,10 @@ onUnmounted(() => {
     <!-- Header -->
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 class="text-h1 font-bold text-gray-900 dark:text-gray-100">
           에셋 라이브러리
         </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
           영상, 이미지, 오디오, 템플릿을 한곳에서 관리하세요
         </p>
       </div>
@@ -229,7 +229,7 @@ onUnmounted(() => {
         <!-- Storage Usage -->
         <div class="hidden items-center gap-2 sm:flex">
           <div class="w-32">
-            <div class="mb-0.5 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <div class="mb-0.5 flex items-center justify-between text-body-xs text-gray-500 dark:text-gray-400">
               <span>저장 공간</span>
               <span>{{ storagePercentage }}%</span>
             </div>
@@ -238,9 +238,9 @@ onUnmounted(() => {
                 class="h-full rounded-full transition-all"
                 :class="
                   storagePercentage > 90
-                    ? 'bg-red-500'
+                    ? 'bg-error'
                     : storagePercentage > 70
-                      ? 'bg-amber-500'
+                      ? 'bg-warning'
                       : 'bg-primary-600'
                 "
                 :style="{ width: storagePercentage + '%' }"
@@ -302,7 +302,7 @@ title="에셋 라이브러리" :items="[
             <button
               v-for="opt in typeOptions"
               :key="opt.value ?? 'all'"
-              class="px-3 py-1.5 text-xs font-medium first:rounded-l-lg last:rounded-r-lg transition-colors"
+              class="px-3 py-1.5 text-caption first:rounded-l-lg last:rounded-r-lg transition-colors"
               :class="
                 activeTypeFilter === opt.value
                   ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
@@ -317,7 +317,7 @@ title="에셋 라이브러리" :items="[
           <!-- Tag Filter (dropdown) -->
           <select
             :value="activeTagFilter ?? ''"
-            class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+            class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-body-xs text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
             @change="onTagFilter(($event.target as HTMLSelectElement).value || undefined)"
           >
             <option value="">태그 전체</option>
@@ -327,7 +327,7 @@ title="에셋 라이브러리" :items="[
           <!-- Clear Filters -->
           <button
             v-if="hasActiveFilters"
-            class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            class="inline-flex items-center gap-1 text-body-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             @click="clearFilters"
           >
             <XMarkIcon class="h-3.5 w-3.5" />
@@ -337,7 +337,7 @@ title="에셋 라이브러리" :items="[
           <!-- View Mode Toggle -->
           <div class="ml-auto flex rounded-lg border border-gray-300 dark:border-gray-600">
             <button
-              class="rounded-l-lg px-3 py-1.5 text-sm transition-colors"
+              class="rounded-l-lg px-3 py-1.5 text-body transition-colors"
               :class="
                 viewMode === 'grid'
                   ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
@@ -349,7 +349,7 @@ title="에셋 라이브러리" :items="[
               <Squares2X2Icon class="h-5 w-5" />
             </button>
             <button
-              class="rounded-r-lg px-3 py-1.5 text-sm transition-colors"
+              class="rounded-r-lg px-3 py-1.5 text-body transition-colors"
               :class="
                 viewMode === 'list'
                   ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
@@ -383,7 +383,7 @@ title="에셋 라이브러리" :items="[
             class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
             @change="toggleSelectAll"
           />
-          <span class="text-sm text-gray-500 dark:text-gray-400">
+          <span class="text-body text-gray-500 dark:text-gray-400">
             전체 선택 ({{ filteredAssets.length }}개)
           </span>
         </div>
@@ -394,10 +394,10 @@ title="에셋 라이브러리" :items="[
           class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-white px-6 py-16 dark:border-gray-700 dark:bg-gray-800"
         >
           <ArchiveBoxXMarkIcon class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
-          <h3 class="mb-1 text-base font-medium text-gray-900 dark:text-white">
+          <h3 class="mb-1 text-body-lg font-medium text-gray-900 dark:text-white">
             {{ hasActiveFilters ? '필터 조건에 맞는 에셋이 없습니다' : '아직 에셋이 없어요' }}
           </h3>
-          <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mb-4 text-body text-gray-500 dark:text-gray-400">
             {{ hasActiveFilters ? '필터를 변경하거나 초기화해 보세요.' : '영상, 이미지, 오디오 파일을 업로드하여 관리해보세요.' }}
           </p>
           <button
@@ -410,7 +410,7 @@ title="에셋 라이브러리" :items="[
           </button>
           <button
             v-else
-            class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            class="rounded-lg border border-gray-300 px-4 py-2 text-body font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             @click="clearFilters"
           >
             필터 초기화
@@ -443,7 +443,7 @@ title="에셋 라이브러리" :items="[
           <div class="overflow-x-auto">
             <table class="w-full min-w-[700px]">
               <thead>
-                <tr class="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+                <tr class="border-b border-gray-200 bg-gray-50 text-left text-caption uppercase tracking-wider text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
                   <th class="w-10 px-4 py-3">
                     <input
                       type="checkbox"
@@ -479,7 +479,7 @@ title="에셋 라이브러리" :items="[
         <!-- Result count -->
         <p
           v-if="filteredAssets.length > 0"
-          class="mt-3 text-center text-xs text-gray-400 dark:text-gray-500"
+          class="mt-3 text-center text-body-xs text-gray-400 dark:text-gray-500"
         >
           총 {{ filteredAssets.length }}개 에셋
         </p>
@@ -492,19 +492,19 @@ title="에셋 라이브러리" :items="[
         v-if="hasSelection"
         class="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-3 shadow-xl dark:border-gray-700 dark:bg-gray-800"
       >
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <span class="text-body font-medium text-gray-700 dark:text-gray-300">
           {{ selectedCount }}개 선택됨
         </span>
         <div class="h-5 w-px bg-gray-200 dark:bg-gray-700" />
         <button
-          class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+          class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
           @click="openBulkMoveModal"
         >
           <FolderArrowDownIcon class="h-4 w-4" />
           이동
         </button>
         <button
-          class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+          class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body font-medium text-error-strong hover:bg-error-subtle"
           @click="handleBulkDelete"
         >
           <TrashIcon class="h-4 w-4" />
@@ -552,7 +552,7 @@ title="에셋 라이브러리" :items="[
 
     <!-- Bulk Move Modal -->
     <BaseModal v-model="showBulkMoveModal" title="폴더 이동" max-width="sm">
-      <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+      <p class="mb-4 text-body text-gray-500 dark:text-gray-400">
         {{ selectedCount }}개의 에셋을 이동할 폴더를 선택하세요.
       </p>
       <select

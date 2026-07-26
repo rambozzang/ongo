@@ -13,9 +13,9 @@ const props = withDefaults(defineProps<Props>(), {
 const animatedPercentage = ref(0)
 
 const sizes = {
-  sm: { width: 60, strokeWidth: 4, fontSize: 'text-xs' },
-  md: { width: 80, strokeWidth: 5, fontSize: 'text-sm' },
-  lg: { width: 120, strokeWidth: 6, fontSize: 'text-lg' },
+  sm: { width: 60, strokeWidth: 4, fontSize: 'text-body-xs' },
+  md: { width: 80, strokeWidth: 5, fontSize: 'text-body' },
+  lg: { width: 120, strokeWidth: 6, fontSize: 'text-title' },
 }
 
 const config = computed(() => sizes[props.size])
@@ -26,17 +26,17 @@ const strokeDashoffset = computed(() => {
 })
 
 const progressColor = computed(() => {
-  if (props.percentage < 25) return 'stroke-red-500 dark:stroke-red-400'
-  if (props.percentage < 50) return 'stroke-orange-500 dark:stroke-orange-400'
-  if (props.percentage < 75) return 'stroke-yellow-500 dark:stroke-yellow-400'
-  return 'stroke-green-500 dark:stroke-green-400'
+  if (props.percentage < 25) return 'stroke-error'
+  if (props.percentage < 50) return 'stroke-warning'
+  if (props.percentage < 75) return 'stroke-warning'
+  return 'stroke-success'
 })
 
 const textColor = computed(() => {
-  if (props.percentage < 25) return 'text-red-600 dark:text-red-400'
-  if (props.percentage < 50) return 'text-orange-600 dark:text-orange-400'
-  if (props.percentage < 75) return 'text-yellow-600 dark:text-yellow-400'
-  return 'text-green-600 dark:text-green-400'
+  if (props.percentage < 25) return 'text-error-strong'
+  if (props.percentage < 50) return 'text-warning-strong'
+  if (props.percentage < 75) return 'text-warning-strong'
+  return 'text-success-strong'
 })
 
 let animationTimeout: ReturnType<typeof setTimeout> | null = null

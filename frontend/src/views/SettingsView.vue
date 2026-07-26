@@ -11,7 +11,7 @@
     <!-- Profile Tab -->
     <div v-if="activeTab === 'profile'" class="space-y-6">
       <div class="card">
-        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.profile.title') }}</h2>
+        <h2 class="mb-6 text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.profile.title') }}</h2>
 
         <!-- Profile Image -->
         <div class="mb-6 flex items-center gap-6">
@@ -42,13 +42,13 @@
               class="hidden"
               @change="handleImageUpload"
             />
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.profile.imageHint') }}</p>
+            <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.profile.imageHint') }}</p>
           </div>
         </div>
 
         <!-- Nickname -->
         <div class="mb-6">
-          <label for="nickname" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label for="nickname" class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
             {{ t('settings.profile.nickname') }}
           </label>
           <input
@@ -60,14 +60,14 @@
             class="input-field max-w-md"
           />
           <div class="mt-1 flex items-center justify-between max-w-md">
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{ t('settings.profile.nicknameLength') }}</span>
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{ profileForm.nickname.length }}/20</span>
+            <span class="text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.profile.nicknameLength') }}</span>
+            <span class="text-body-xs text-gray-400 dark:text-gray-500">{{ profileForm.nickname.length }}/20</span>
           </div>
         </div>
 
         <!-- Creator Category -->
         <div class="mb-6">
-          <label for="category" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label for="category" class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
             {{ t('settings.profile.category') }}
           </label>
           <select
@@ -88,7 +88,7 @@
 
         <!-- Email (read-only) -->
         <div class="mb-6">
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
             {{ t('settings.profile.email') }}
           </label>
           <input
@@ -97,12 +97,12 @@
             disabled
             class="input-field max-w-md cursor-not-allowed bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400"
           />
-          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.profile.emailHint') }}</p>
+          <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.profile.emailHint') }}</p>
         </div>
 
         <!-- Connected Social Account (read-only) -->
         <div class="mb-6">
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
             {{ t('settings.profile.connectedSocial') }}
           </label>
           <div class="flex max-w-md items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3">
@@ -118,10 +118,10 @@
               <path fill="#3C1E1E" d="M12 3C6.477 3 2 6.463 2 10.691c0 2.726 1.8 5.117 4.512 6.467-.197.735-1.273 4.716-1.31 5.015 0 0-.025.208.11.287.134.079.292.036.292.036.386-.054 4.472-2.926 5.178-3.424.39.056.793.085 1.218.085 5.523 0 10-3.463 10-7.691C22 6.463 17.523 3 12 3z"/>
             </svg>
             <div>
-              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <p class="text-body font-medium text-gray-700 dark:text-gray-300">
                 {{ socialProvider === 'GOOGLE' ? 'Google' : 'Kakao' }} {{ t('settings.profile.account') }}
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ authStore.user?.email }}</p>
+              <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ authStore.user?.email }}</p>
             </div>
             <span class="badge-success ml-auto">{{ t('settings.profile.connected') }}</span>
           </div>
@@ -143,16 +143,16 @@
     <!-- Notifications Tab -->
     <div v-if="activeTab === 'notifications'" class="space-y-6">
       <div class="card">
-        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.notifications.title') }}</h2>
+        <h2 class="mb-6 text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.notifications.title') }}</h2>
 
         <!-- Upload Notifications -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.uploadAlerts') }}</h3>
+          <h3 class="mb-4 text-body font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.uploadAlerts') }}</h3>
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.emailAlert') }}</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.emailAlertDesc') }}</p>
+                <p class="text-body text-gray-700 dark:text-gray-300">{{ t('settings.notifications.emailAlert') }}</p>
+                <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.emailAlertDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -170,8 +170,8 @@
             </div>
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.pushAlert') }}</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.pushAlertDesc') }}</p>
+                <p class="text-body text-gray-700 dark:text-gray-300">{{ t('settings.notifications.pushAlert') }}</p>
+                <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.pushAlertDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -192,7 +192,7 @@
 
         <!-- Comment Notifications -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.commentAlerts') }}</h3>
+          <h3 class="mb-4 text-body font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.commentAlerts') }}</h3>
           <div class="space-y-3">
             <label
               v-for="option in commentOptions"
@@ -212,8 +212,8 @@
                 class="h-4 w-4 border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
               />
               <div>
-                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">{{ option.description }}</p>
+                <p class="text-body font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</p>
+                <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ option.description }}</p>
               </div>
             </label>
           </div>
@@ -221,9 +221,9 @@
 
         <!-- Credit Remaining Alert -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.creditAlert') }}</h3>
+          <h3 class="mb-4 text-body font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.creditAlert') }}</h3>
           <div class="flex items-center gap-3">
-            <label for="creditThreshold" class="text-sm text-gray-700 dark:text-gray-300">
+            <label for="creditThreshold" class="text-body text-gray-700 dark:text-gray-300">
               {{ t('settings.notifications.creditThresholdPrefix') }}
             </label>
             <div class="relative w-24">
@@ -236,21 +236,21 @@
                 step="5"
                 class="input-field pr-7 text-center"
               />
-              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 dark:text-gray-500">%</span>
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-body text-gray-400 dark:text-gray-500">%</span>
             </div>
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.creditThresholdSuffix') }}</span>
+            <span class="text-body text-gray-700 dark:text-gray-300">{{ t('settings.notifications.creditThresholdSuffix') }}</span>
           </div>
-          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.creditThresholdHint') }}</p>
+          <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.creditThresholdHint') }}</p>
         </div>
 
         <!-- Schedule Reminder -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.scheduleReminder') }}</h3>
+          <h3 class="mb-4 text-body font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.notifications.scheduleReminder') }}</h3>
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.reminder1h') }}</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.reminder1hDesc') }}</p>
+                <p class="text-body text-gray-700 dark:text-gray-300">{{ t('settings.notifications.reminder1h') }}</p>
+                <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.reminder1hDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -268,8 +268,8 @@
             </div>
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-700 dark:text-gray-300">{{ t('settings.notifications.reminder30m') }}</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.reminder30mDesc') }}</p>
+                <p class="text-body text-gray-700 dark:text-gray-300">{{ t('settings.notifications.reminder30m') }}</p>
+                <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.notifications.reminder30mDesc') }}</p>
               </div>
               <button
                 type="button"
@@ -304,13 +304,13 @@
     <!-- Default Settings Tab -->
     <div v-if="activeTab === 'defaults'" class="space-y-6">
       <div class="card">
-        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.defaults.title') }}</h2>
+        <h2 class="mb-6 text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.defaults.title') }}</h2>
 
         <!-- Default Visibility -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.visibility') }}</h3>
-          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.visibilityDesc') }}</p>
-          <p class="mb-3 rounded-lg bg-primary-50 px-3 py-2 text-xs leading-5 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
+          <h3 class="mb-4 text-body font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.visibility') }}</h3>
+          <p class="mb-3 text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.visibilityDesc') }}</p>
+          <p class="mb-3 rounded-lg bg-primary-50 px-3 py-2 text-body-xs leading-5 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
             {{ t('settings.defaults.visibilityWhy') }}
           </p>
           <div class="flex flex-wrap gap-3">
@@ -331,15 +331,15 @@
                 :value="option.value"
                 class="h-4 w-4 border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
               />
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
+              <span class="text-body font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
             </label>
           </div>
         </div>
 
         <!-- Default Upload Platforms -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.platforms') }}</h3>
-          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.platformsDesc') }}</p>
+          <h3 class="mb-4 text-body font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.platforms') }}</h3>
+          <p class="mb-3 text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.platformsDesc') }}</p>
           <div class="space-y-3">
             <label
               v-for="platform in platformOptions"
@@ -361,17 +361,17 @@
                 class="flex h-8 w-8 items-center justify-center rounded-lg"
                 :style="{ backgroundColor: platform.color }"
               >
-                <span class="text-xs font-bold text-white">{{ platform.shortIcon }}</span>
+                <span class="text-body-xs font-bold text-white">{{ platform.shortIcon }}</span>
               </div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ platform.label }}</span>
+              <span class="text-body font-medium text-gray-700 dark:text-gray-300">{{ platform.label }}</span>
             </label>
           </div>
         </div>
 
         <!-- Default AI Tone -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.aiTone') }}</h3>
-          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.aiToneDesc') }}</p>
+          <h3 class="mb-4 text-body font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.aiTone') }}</h3>
+          <p class="mb-3 text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.aiToneDesc') }}</p>
           <div class="flex flex-wrap gap-3">
             <label
               v-for="option in toneOptions"
@@ -391,8 +391,8 @@
                 class="h-4 w-4 border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
               />
               <div>
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
-                <p class="text-xs text-gray-400 dark:text-gray-500">{{ option.description }}</p>
+                <span class="text-body font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
+                <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ option.description }}</p>
               </div>
             </label>
           </div>
@@ -400,8 +400,8 @@
 
         <!-- Default AI Provider -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ $t('settings.aiProvider.title') }}</h3>
-          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ $t('settings.aiProvider.description') }}</p>
+          <h3 class="mb-4 text-body font-semibold text-gray-800 dark:text-gray-200">{{ $t('settings.aiProvider.title') }}</h3>
+          <p class="mb-3 text-body-xs text-gray-400 dark:text-gray-500">{{ $t('settings.aiProvider.description') }}</p>
           <div class="space-y-3">
             <label
               v-for="option in aiProviderOptions"
@@ -421,18 +421,18 @@
                 class="h-4 w-4 border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
               />
               <div>
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
-                <p class="text-xs text-gray-400 dark:text-gray-500">{{ option.description }}</p>
+                <span class="text-body font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
+                <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ option.description }}</p>
               </div>
             </label>
           </div>
-          <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">{{ $t('settings.aiProvider.sttNote') }}</p>
+          <p class="mt-3 text-body-xs text-gray-400 dark:text-gray-500">{{ $t('settings.aiProvider.sttNote') }}</p>
         </div>
 
         <!-- Language Selection -->
         <div class="mb-8">
-          <h3 class="mb-4 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.language') }}</h3>
-          <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.languageDesc') }}</p>
+          <h3 class="mb-4 text-body font-semibold text-gray-800 dark:text-gray-200">{{ t('settings.defaults.language') }}</h3>
+          <p class="mb-3 text-body-xs text-gray-400 dark:text-gray-500">{{ t('settings.defaults.languageDesc') }}</p>
           <div class="flex flex-wrap gap-3">
             <label
               v-for="option in languageOptions"
@@ -452,7 +452,7 @@
                 class="h-4 w-4 border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
                 @change="switchLocale(option.value)"
               />
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
+              <span class="text-body font-medium text-gray-700 dark:text-gray-300">{{ option.label }}</span>
             </label>
           </div>
         </div>
@@ -473,7 +473,7 @@
     <!-- Activity Log Tab -->
     <div v-if="activeTab === 'activity'" class="space-y-6">
       <div class="card">
-        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.activity.title') }}</h2>
+        <h2 class="mb-6 text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.activity.title') }}</h2>
 
         <!-- Filter -->
         <div class="mb-6">
@@ -493,34 +493,34 @@
     <div v-if="activeTab === 'account'" class="space-y-6">
       <!-- Account Info -->
       <div class="card">
-        <h2 class="mb-6 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.account.title') }}</h2>
+        <h2 class="mb-6 text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('settings.account.title') }}</h2>
 
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('settings.account.email') }}</span>
-            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ authStore.user?.email }}</span>
+            <span class="text-body text-gray-500 dark:text-gray-400">{{ t('settings.account.email') }}</span>
+            <span class="text-body font-medium text-gray-900 dark:text-gray-100">{{ authStore.user?.email }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('settings.account.socialLogin') }}</span>
-            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <span class="text-body text-gray-500 dark:text-gray-400">{{ t('settings.account.socialLogin') }}</span>
+            <span class="text-body font-medium text-gray-900 dark:text-gray-100">
               {{ socialProvider === 'GOOGLE' ? 'Google' : 'Kakao' }}
             </span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('settings.account.currentPlan') }}</span>
+            <span class="text-body text-gray-500 dark:text-gray-400">{{ t('settings.account.currentPlan') }}</span>
             <span class="badge-blue">{{ authStore.user?.planType ?? 'FREE' }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('settings.account.joinDate') }}</span>
-            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ formattedCreatedAt }}</span>
+            <span class="text-body text-gray-500 dark:text-gray-400">{{ t('settings.account.joinDate') }}</span>
+            <span class="text-body font-medium text-gray-900 dark:text-gray-100">{{ formattedCreatedAt }}</span>
           </div>
         </div>
       </div>
 
       <!-- Danger Zone -->
-      <div class="card border-red-200 dark:border-red-800">
-        <h2 class="mb-2 text-lg font-semibold text-red-600">{{ t('settings.account.dangerZone') }}</h2>
-        <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">
+      <div class="card border-error">
+        <h2 class="mb-2 text-title font-semibold text-error-strong">{{ t('settings.account.dangerZone') }}</h2>
+        <p class="mb-6 text-body text-gray-500 dark:text-gray-400">
           {{ t('settings.account.dangerDesc') }}
         </p>
 

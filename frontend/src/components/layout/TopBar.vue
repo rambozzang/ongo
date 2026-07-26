@@ -11,13 +11,13 @@
 
     <!-- Logo (mobile only) -->
     <router-link to="/dashboard" class="mr-4 tablet:hidden">
-      <span class="text-xl font-bold tracking-[-0.06em] text-primary-600">onGo</span>
+      <span class="text-h2 font-bold tracking-[-0.06em] text-primary-600">onGo</span>
     </router-link>
 
     <!-- Search Trigger -->
     <button
       aria-label="검색 열기 (단축키: Command+K)"
-      class="relative mx-4 hidden min-h-10 flex-1 items-center gap-3 rounded-lg border bg-gray-50 px-3.5 text-left text-sm text-gray-500 transition-colors hover:border-gray-400 hover:bg-white dark:bg-gray-800 dark:text-gray-400 tablet:flex tablet:max-w-xl"
+      class="relative mx-4 hidden min-h-10 flex-1 items-center gap-3 rounded-lg border bg-gray-50 px-3.5 text-left text-body text-gray-500 transition-colors hover:border-gray-400 hover:bg-white dark:bg-gray-800 dark:text-gray-400 tablet:flex tablet:max-w-xl"
       @click="searchOpen = true"
     >
       <MagnifyingGlassIcon class="h-5 w-5 flex-shrink-0" aria-hidden="true" />
@@ -47,6 +47,7 @@
           @click="notificationOpen = !notificationOpen"
         >
           <BellIcon class="h-6 w-6" :class="{ 'notification-bell-pulse': notificationStore.hasUnread }" aria-hidden="true" />
+          <!-- 흰 글씨를 얹는 솔리드 채움 — `--color-error-solid` 토큰이 없어 raw 유지 (가이드 §6) -->
           <span
             v-if="notificationStore.unreadCount > 0"
             class="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
@@ -67,7 +68,7 @@
           class="flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
           @click="profileOpen = !profileOpen"
         >
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-sm font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300" aria-hidden="true">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-body font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300" aria-hidden="true">
             {{ userInitial }}
           </div>
           <ChevronDownIcon class="hidden h-4 w-4 text-gray-400 tablet:block" aria-hidden="true" />
@@ -82,14 +83,14 @@
             style="border-color: var(--border-default)"
         >
           <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-700">
-            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ user?.nickname || user?.name }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ user?.email }}</p>
+            <p class="text-body font-medium text-gray-900 dark:text-gray-100">{{ user?.nickname || user?.name }}</p>
+            <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ user?.email }}</p>
             <span class="badge-blue mt-1">{{ user?.planType }}</span>
           </div>
           <router-link
             to="/settings"
             role="menuitem"
-            class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
+            class="flex items-center px-4 py-2 text-body text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
             @click="profileOpen = false"
           >
             <Cog6ToothIcon class="mr-3 h-4 w-4" aria-hidden="true" />
@@ -97,7 +98,7 @@
           </router-link>
           <button
             role="menuitem"
-            class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
+            class="flex w-full items-center px-4 py-2 text-body text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
             @click="handleLogout"
           >
             <ArrowRightOnRectangleIcon class="mr-3 h-4 w-4" aria-hidden="true" />

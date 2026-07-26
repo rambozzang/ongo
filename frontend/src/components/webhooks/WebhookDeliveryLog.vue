@@ -43,12 +43,12 @@ function isSuccess(statusCode: number): boolean {
 
 function statusColorClass(statusCode: number): string {
   if (statusCode >= 200 && statusCode < 300) {
-    return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
+    return 'text-success-strong bg-success-subtle'
   }
   if (statusCode >= 400 && statusCode < 500) {
-    return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
+    return 'text-warning-strong bg-warning-subtle'
   }
-  return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+  return 'text-error-strong bg-error-subtle'
 }
 
 function formatDate(dateStr: string): string {
@@ -77,8 +77,8 @@ function getEventLabel(event: string): string {
     <!-- Header -->
     <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
       <div>
-        <h3 class="text-base font-semibold text-gray-900 dark:text-white">배달 기록</h3>
-        <p class="mt-0.5 font-mono text-xs text-gray-500 dark:text-gray-400">
+        <h3 class="text-body-lg font-semibold text-gray-900 dark:text-white">배달 기록</h3>
+        <p class="mt-0.5 font-mono text-body-xs text-gray-500 dark:text-gray-400">
           {{ webhook.url }}
         </p>
       </div>
@@ -96,30 +96,30 @@ function getEventLabel(event: string): string {
       class="flex flex-col items-center py-12 text-center"
     >
       <ClockIcon class="mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
-      <p class="text-sm font-medium text-gray-600 dark:text-gray-400">배달 기록이 없습니다</p>
-      <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+      <p class="text-body font-medium text-gray-600 dark:text-gray-400">배달 기록이 없습니다</p>
+      <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">
         웹훅이 호출되면 여기에 기록됩니다.
       </p>
     </div>
 
     <!-- Delivery table -->
     <div v-else class="overflow-x-auto">
-      <table class="w-full text-sm">
+      <table class="w-full text-body">
         <thead>
           <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
-            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+            <th class="px-4 py-2.5 text-left text-body-xs font-medium text-gray-500 dark:text-gray-400">
               이벤트
             </th>
-            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+            <th class="px-4 py-2.5 text-left text-body-xs font-medium text-gray-500 dark:text-gray-400">
               상태 코드
             </th>
-            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+            <th class="px-4 py-2.5 text-left text-body-xs font-medium text-gray-500 dark:text-gray-400">
               전송 시각
             </th>
-            <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+            <th class="px-4 py-2.5 text-left text-body-xs font-medium text-gray-500 dark:text-gray-400">
               응답 시간
             </th>
-            <th class="px-4 py-2.5 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
+            <th class="px-4 py-2.5 text-right text-body-xs font-medium text-gray-500 dark:text-gray-400">
               작업
             </th>
           </tr>
@@ -135,9 +135,9 @@ function getEventLabel(event: string): string {
                 <div class="flex items-center gap-2">
                   <CheckCircleIcon
                     v-if="isSuccess(delivery.statusCode)"
-                    class="h-4 w-4 shrink-0 text-green-500"
+                    class="h-4 w-4 shrink-0 text-success-strong"
                   />
-                  <XCircleIcon v-else class="h-4 w-4 shrink-0 text-red-500" />
+                  <XCircleIcon v-else class="h-4 w-4 shrink-0 text-error-strong" />
                   <span class="text-gray-900 dark:text-white">
                     {{ getEventLabel(delivery.event) }}
                   </span>
@@ -145,7 +145,7 @@ function getEventLabel(event: string): string {
               </td>
               <td class="px-4 py-3">
                 <span
-                  class="inline-block rounded px-2 py-0.5 text-xs font-mono font-medium"
+                  class="inline-block rounded px-2 py-0.5 text-body-xs font-mono font-medium"
                   :class="statusColorClass(delivery.statusCode)"
                 >
                   {{ delivery.statusCode }}
@@ -157,7 +157,7 @@ function getEventLabel(event: string): string {
               <td class="px-4 py-3">
                 <span
                   class="text-gray-600 dark:text-gray-400"
-                  :class="{ 'font-medium text-yellow-600 dark:text-yellow-400': delivery.duration > 5000 }"
+                  :class="{ 'font-medium text-warning-strong': delivery.duration > 5000 }"
                 >
                   {{ formatDuration(delivery.duration) }}
                 </span>
@@ -177,7 +177,7 @@ function getEventLabel(event: string): string {
                   <!-- Retry for failed -->
                   <button
                     v-if="!isSuccess(delivery.statusCode)"
-                    class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                    class="inline-flex items-center gap-1 rounded px-2 py-1 text-body-xs font-medium text-info-strong hover:bg-info-subtle"
                     @click="emit('retry', webhook.id, delivery.id)"
                   >
                     <ArrowPathIcon class="h-3.5 w-3.5" />
@@ -195,11 +195,11 @@ function getEventLabel(event: string): string {
                 <div class="flex items-start gap-2">
                   <CodeBracketIcon class="mt-0.5 h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" />
                   <div class="min-w-0 flex-1">
-                    <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <p class="mb-1 text-body-xs font-medium text-gray-500 dark:text-gray-400">
                       응답 본문
                     </p>
                     <pre
-                      class="overflow-x-auto rounded-lg border border-gray-200 bg-white p-3 font-mono text-xs text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                      class="overflow-x-auto rounded-lg border border-gray-200 bg-white p-3 font-mono text-body-xs text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                     >{{ delivery.responseBody }}</pre>
                   </div>
                 </div>

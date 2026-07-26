@@ -76,17 +76,17 @@ onUnmounted(() => {
         >
           <!-- Checkpoint -->
           <button
-            class="relative z-10 flex-shrink-0 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 rounded-full"
+            class="relative z-10 flex-shrink-0 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 rounded-full"
             :disabled="milestone.isCompleted"
             @click="handleComplete(milestone)"
           >
             <CheckCircleSolid
               v-if="milestone.isCompleted"
-              class="w-8 h-8 text-green-500 dark:text-green-400"
+              class="w-8 h-8 text-success-strong"
             />
             <CheckCircleIcon
               v-else-if="currentValue >= milestone.targetValue"
-              class="w-8 h-8 text-blue-500 dark:text-blue-400 animate-pulse"
+              class="w-8 h-8 text-info-strong animate-pulse"
             />
             <CircleStackIcon
               v-else
@@ -104,21 +104,21 @@ onUnmounted(() => {
             <div class="flex items-start justify-between gap-2">
               <div class="flex-1 min-w-0">
                 <p
-                  class="text-sm font-medium"
+                  class="text-body font-medium"
                   :class="{
-                    'text-green-600 dark:text-green-400 line-through': milestone.isCompleted,
+                    'text-success-strong line-through': milestone.isCompleted,
                     'text-gray-900 dark:text-gray-100': !milestone.isCompleted && currentValue >= milestone.targetValue,
                     'text-gray-600 dark:text-gray-400': !milestone.isCompleted && currentValue < milestone.targetValue,
                   }"
                 >
                   {{ milestone.title }}
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                <p class="text-body-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   목표: {{ formatNumber(milestone.targetValue) }}{{ unit }}
                 </p>
                 <p
                   v-if="milestone.isCompleted && milestone.completedAt"
-                  class="text-xs text-green-600 dark:text-green-400 mt-0.5"
+                  class="text-body-xs text-success-strong mt-0.5"
                 >
                   달성: {{ new Date(milestone.completedAt).toLocaleDateString('ko-KR') }}
                 </p>
@@ -127,13 +127,13 @@ onUnmounted(() => {
               <!-- Badge -->
               <span
                 v-if="milestone.isCompleted"
-                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                class="inline-flex items-center px-2 py-0.5 rounded text-caption bg-success-subtle text-success-strong"
               >
                 완료
               </span>
               <span
                 v-else-if="currentValue >= milestone.targetValue"
-                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 animate-pulse"
+                class="inline-flex items-center px-2 py-0.5 rounded text-caption bg-info-subtle text-info-strong animate-pulse"
               >
                 달성!
               </span>
@@ -157,7 +157,7 @@ onUnmounted(() => {
     <div class="pt-2">
       <button
         v-if="!showAddForm"
-        class="w-full px-4 py-2 text-sm text-gray-600 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+        class="w-full px-4 py-2 text-body text-gray-600 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-info hover:text-info-strong transition-colors"
         @click="showAddForm = true"
       >
         + 마일스톤 추가
@@ -169,19 +169,19 @@ onUnmounted(() => {
       >
         <div class="space-y-3">
           <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label class="block text-caption text-gray-700 dark:text-gray-300 mb-1">
               마일스톤 제목
             </label>
             <input
               v-model="newMilestoneTitle"
               type="text"
               placeholder="예: 첫 번째 목표 달성"
-              class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              class="w-full px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label class="block text-caption text-gray-700 dark:text-gray-300 mb-1">
               목표 값
             </label>
             <div class="flex items-center gap-2">
@@ -189,22 +189,22 @@ onUnmounted(() => {
                 v-model.number="newMilestoneTarget"
                 type="number"
                 placeholder="0"
-                class="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                class="flex-1 px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               />
-              <span class="text-sm text-gray-600 dark:text-gray-400">{{ unit }}</span>
+              <span class="text-body text-gray-600 dark:text-gray-400">{{ unit }}</span>
             </div>
           </div>
 
           <div class="flex gap-2">
             <button
               :disabled="!newMilestoneTitle.trim() || newMilestoneTarget === ''"
-              class="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="flex-1 px-3 py-1.5 text-body font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               @click="handleAddMilestone"
             >
               추가
             </button>
             <button
-              class="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
+              class="flex-1 px-3 py-1.5 text-body font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
               @click="showAddForm = false"
             >
               취소

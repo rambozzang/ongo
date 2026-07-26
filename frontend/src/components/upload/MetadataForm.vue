@@ -17,7 +17,7 @@
 
       <!-- Thumbnail selector -->
       <div class="mt-4">
-        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">썸네일 선택</label>
+        <label class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">썸네일 선택</label>
         <div class="grid grid-cols-3 gap-2">
           <button
             v-for="(thumb, i) in thumbnailCandidates"
@@ -30,7 +30,7 @@
           </button>
           <div
             v-if="thumbnailCandidates.length === 0"
-            class="col-span-3 flex aspect-video items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-400 dark:text-gray-500"
+            class="col-span-3 flex aspect-video items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-body text-gray-400 dark:text-gray-500"
           >
             업로드 완료 후 생성됩니다
           </div>
@@ -42,9 +42,9 @@
     <div class="space-y-5 lg:col-span-3">
       <!-- Header Actions -->
       <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">메타데이터</h3>
+        <h3 class="text-title font-semibold text-gray-900 dark:text-gray-100">메타데이터</h3>
         <button
-          class="inline-flex items-center gap-2 rounded-lg border border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20 px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-400 transition-colors hover:bg-primary-100 dark:hover:bg-primary-900/40"
+          class="inline-flex items-center gap-2 rounded-lg border border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20 px-4 py-2 text-body font-medium text-primary-700 dark:text-primary-400 transition-colors hover:bg-primary-100 dark:hover:bg-primary-900/40"
           @click="showTemplateManager = true"
         >
           <BookmarkIcon class="h-4 w-4" />
@@ -54,8 +54,8 @@
 
       <!-- Title -->
       <div>
-        <label for="metadata-title" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          제목 <span class="text-red-500">*</span>
+        <label for="metadata-title" class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
+          제목 <span class="text-error-strong">*</span>
         </label>
         <input
           id="metadata-title"
@@ -64,23 +64,23 @@
           maxlength="100"
           required
           aria-required="true"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-body transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           placeholder="영상 제목을 입력하세요"
           @input="updateField('title', ($event.target as HTMLInputElement).value)"
         />
-        <p class="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">
+        <p class="mt-1 text-right text-body-xs text-gray-400 dark:text-gray-500">
           {{ modelValue.title.length }}/100
         </p>
       </div>
 
       <!-- Description -->
       <div>
-        <label for="metadata-description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">설명</label>
+        <label for="metadata-description" class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">설명</label>
         <textarea
           id="metadata-description"
           :value="modelValue.description"
           rows="4"
-          class="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          class="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-body transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           placeholder="영상 설명을 입력하세요"
           @input="updateField('description', ($event.target as HTMLTextAreaElement).value)"
         />
@@ -88,8 +88,8 @@
 
       <!-- Tags -->
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-          태그 <span class="text-xs text-gray-400 dark:text-gray-500">(최대 30개, Enter로 추가)</span>
+        <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
+          태그 <span class="text-body-xs text-gray-400 dark:text-gray-500">(최대 30개, Enter로 추가)</span>
         </label>
         <div
           class="flex min-h-[42px] flex-wrap gap-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500"
@@ -97,7 +97,7 @@
           <span
             v-for="(tag, i) in modelValue.tags"
             :key="i"
-            class="inline-flex items-center gap-1 rounded-full bg-primary-100 dark:bg-primary-900/30 px-2.5 py-0.5 text-xs font-medium text-primary-700 dark:text-primary-400"
+            class="inline-flex items-center gap-1 rounded-full bg-primary-100 dark:bg-primary-900/30 px-2.5 py-0.5 text-body-xs font-medium text-primary-700 dark:text-primary-400"
           >
             {{ tag }}
             <button
@@ -112,24 +112,24 @@
             v-if="modelValue.tags.length < 30"
             v-model="tagInput"
             type="text"
-            class="min-w-[120px] flex-1 border-none bg-transparent text-gray-900 dark:text-gray-100 p-0 text-sm focus:outline-none focus:ring-0"
+            class="min-w-[120px] flex-1 border-none bg-transparent text-gray-900 dark:text-gray-100 p-0 text-body focus:outline-none focus:ring-0"
             placeholder="태그 입력 후 Enter"
             @keydown.enter.prevent="addTag"
             @keydown.,.prevent="addTag"
           />
         </div>
-        <p class="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">
+        <p class="mt-1 text-right text-body-xs text-gray-400 dark:text-gray-500">
           {{ modelValue.tags.length }}/30
         </p>
       </div>
 
       <!-- Category -->
       <div>
-        <label for="metadata-category" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">카테고리</label>
+        <label for="metadata-category" class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">카테고리</label>
         <select
           id="metadata-category"
           :value="modelValue.category"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-body transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           @change="updateField('category', ($event.target as HTMLSelectElement).value)"
         >
           <option value="">카테고리 선택</option>
@@ -139,7 +139,7 @@
 
       <!-- Visibility -->
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">공개 범위</label>
+        <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">공개 범위</label>
         <div class="flex gap-4">
           <label
             v-for="opt in VISIBILITY_OPTIONS"
@@ -154,7 +154,7 @@
               class="text-primary-600 focus:ring-primary-500"
               @change="updateField('visibility', opt.value)"
             />
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ opt.label }}</span>
+            <span class="text-body text-gray-700 dark:text-gray-300">{{ opt.label }}</span>
           </label>
         </div>
       </div>
@@ -163,8 +163,8 @@
       <div class="rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 p-4">
         <div class="flex items-center justify-between gap-4">
           <div>
-            <p class="text-sm font-medium text-primary-800 dark:text-primary-400">AI 자동 생성</p>
-            <p class="mt-0.5 text-xs text-primary-600">
+            <p class="text-body font-medium text-primary-800 dark:text-primary-400">AI 자동 생성</p>
+            <p class="mt-0.5 text-body-xs text-primary-600">
               영상 분석 후 제목, 설명, 태그를 자동 생성합니다
             </p>
           </div>
@@ -193,14 +193,14 @@
               class="rounded text-primary-600 focus:ring-primary-500"
               @change="emit('update:useStt', ($event.target as HTMLInputElement).checked)"
             />
-            <span class="text-sm text-primary-700 dark:text-primary-400">
+            <span class="text-body text-primary-700 dark:text-primary-400">
               음성 인식(STT) 활용 (+10 크레딧)
             </span>
-            <span class="text-xs text-primary-500 dark:text-primary-400">더 정확한 메타데이터 생성</span>
+            <span class="text-body-xs text-primary-500 dark:text-primary-400">더 정확한 메타데이터 생성</span>
           </label>
         </div>
 
-        <p v-if="!hasEnoughCredits" class="mt-2 text-xs text-red-600">
+        <p v-if="!hasEnoughCredits" class="mt-2 text-body-xs text-error-strong">
           크레딧이 부족합니다. 크레딧을 충전해주세요.
         </p>
       </div>

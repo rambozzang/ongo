@@ -4,10 +4,10 @@
     @click="$router.push('/schedule')"
   >
     <div class="flex items-center justify-between">
-      <p class="text-sm font-medium text-gray-500 dark:text-gray-400">이번 주 일정</p>
+      <p class="text-body font-medium text-gray-500 dark:text-gray-400">이번 주 일정</p>
       <CalendarDaysIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
     </div>
-    <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+    <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
       {{ scheduledCount }}건
     </p>
     <div class="mt-3">
@@ -21,7 +21,7 @@
             {{ day }}
           </div>
           <div
-            class="mt-1 flex aspect-square items-center justify-center rounded-md text-xs transition-colors"
+            class="mt-1 flex aspect-square items-center justify-center rounded-md text-body-xs transition-colors"
             :class="getDayClass(index)"
           >
             {{ getDayNumber(index) }}
@@ -96,7 +96,7 @@ function getDayClass(index: number): string {
     return 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 font-semibold'
   }
   if (hasSchedule) {
-    return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium'
+    return 'bg-success-subtle text-success-strong font-medium'
   }
 
   return 'text-gray-500 dark:text-gray-400'

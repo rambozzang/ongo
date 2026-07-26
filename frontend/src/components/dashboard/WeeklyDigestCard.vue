@@ -3,17 +3,17 @@
     <!-- Header -->
     <div class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
       <div class="flex items-center gap-2">
-        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
-          <SparklesIcon class="h-4 w-4 text-purple-600 dark:text-purple-400" />
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30">
+          <SparklesIcon class="h-4 w-4 text-primary-600 dark:text-primary-400" />
         </div>
         <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 주간 다이제스트</h3>
-          <p v-if="digest" class="text-xs text-gray-500 dark:text-gray-400">{{ digest.weekRange }}</p>
+          <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">AI 주간 다이제스트</h3>
+          <p v-if="digest" class="text-body-xs text-gray-500 dark:text-gray-400">{{ digest.weekRange }}</p>
         </div>
       </div>
       <button
         v-if="digest"
-        class="text-xs text-primary-600 hover:underline dark:text-primary-400"
+        class="text-body-xs text-primary-600 hover:underline dark:text-primary-400"
         @click="showDetail = true"
       >
         전체 보기
@@ -30,40 +30,40 @@
     <!-- No Data State -->
     <div v-else-if="!digest" class="py-8 text-center">
       <SparklesIcon class="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600" />
-      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">아직 다이제스트가 없습니다</p>
-      <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Pro/Business 플랜에서 매주 월요일 자동 생성됩니다</p>
+      <p class="mt-2 text-body text-gray-500 dark:text-gray-400">아직 다이제스트가 없습니다</p>
+      <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">Pro/Business 플랜에서 매주 월요일 자동 생성됩니다</p>
     </div>
 
     <!-- Digest Content -->
     <div v-else class="space-y-3 p-4">
       <!-- Summary -->
-      <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+      <p class="text-body leading-relaxed text-gray-700 dark:text-gray-300">
         {{ truncatedSummary }}
       </p>
 
       <!-- Top Video Highlight -->
-      <div v-if="digest.topVideos.length > 0" class="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
-        <p class="text-xs font-medium text-blue-700 dark:text-blue-300">
+      <div v-if="digest.topVideos.length > 0" class="rounded-lg bg-info-subtle p-3">
+        <p class="text-caption text-info-strong">
           Top 영상
         </p>
-        <p class="mt-1 text-xs text-blue-600 dark:text-blue-400">
+        <p class="mt-1 text-body-xs text-info-strong">
           {{ digest.topVideos[0] }}
         </p>
       </div>
 
       <!-- Anomalies -->
-      <div v-if="digest.anomalies.length > 0" class="rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20">
-        <p class="text-xs font-medium text-amber-700 dark:text-amber-300">
+      <div v-if="digest.anomalies.length > 0" class="rounded-lg bg-warning-subtle p-3">
+        <p class="text-caption text-warning-strong">
           주목할 변화
         </p>
-        <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">
+        <p class="mt-1 text-body-xs text-warning-strong">
           {{ digest.anomalies[0] }}
         </p>
       </div>
 
       <!-- Action Items (Checklist) -->
       <div v-if="digest.actionItems.length > 0">
-        <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">실행 항목</p>
+        <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">실행 항목</p>
         <div class="space-y-1.5">
           <label
             v-for="(item, idx) in digest.actionItems.slice(0, 3)"
@@ -77,7 +77,7 @@
               @change="toggleItem(idx)"
             />
             <span
-              class="text-xs text-gray-600 dark:text-gray-400 transition-all"
+              class="text-body-xs text-gray-600 dark:text-gray-400 transition-all"
               :class="{ 'line-through text-gray-400 dark:text-gray-500': checkedItems.has(idx) }"
             >
               {{ item }}
@@ -103,38 +103,38 @@
           </button>
 
           <div class="flex items-center gap-2">
-            <SparklesIcon class="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">주간 다이제스트</h2>
+            <SparklesIcon class="h-5 w-5 text-primary-600 dark:text-primary-400" />
+            <h2 class="text-title font-bold text-gray-900 dark:text-gray-100">주간 다이제스트</h2>
           </div>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ digest.weekRange }}</p>
+          <p class="mt-1 text-body text-gray-500 dark:text-gray-400">{{ digest.weekRange }}</p>
 
           <div class="mt-4 space-y-4">
             <div>
-              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">요약</h3>
-              <p class="mt-1 text-sm leading-relaxed text-gray-700 dark:text-gray-300">{{ digest.summary }}</p>
+              <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">요약</h3>
+              <p class="mt-1 text-body leading-relaxed text-gray-700 dark:text-gray-300">{{ digest.summary }}</p>
             </div>
 
             <div v-if="digest.topVideos.length > 0">
-              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">상위 영상</h3>
+              <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">상위 영상</h3>
               <ul class="mt-1 space-y-1">
                 <li
                   v-for="(video, idx) in digest.topVideos"
                   :key="idx"
-                  class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
+                  class="flex items-start gap-2 text-body text-gray-700 dark:text-gray-300"
                 >
-                  <span class="flex-shrink-0 text-blue-500">{{ idx + 1 }}.</span>
+                  <span class="flex-shrink-0 text-info-strong">{{ idx + 1 }}.</span>
                   {{ video }}
                 </li>
               </ul>
             </div>
 
             <div v-if="digest.anomalies.length > 0">
-              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">주목할 변화</h3>
+              <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">주목할 변화</h3>
               <ul class="mt-1 space-y-1">
                 <li
                   v-for="(anomaly, idx) in digest.anomalies"
                   :key="idx"
-                  class="text-sm text-gray-700 dark:text-gray-300"
+                  class="text-body text-gray-700 dark:text-gray-300"
                 >
                   {{ anomaly }}
                 </li>
@@ -142,7 +142,7 @@
             </div>
 
             <div v-if="digest.actionItems.length > 0">
-              <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">실행 항목</h3>
+              <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">실행 항목</h3>
               <div class="mt-1 space-y-2">
                 <label
                   v-for="(item, idx) in digest.actionItems"
@@ -156,7 +156,7 @@
                     @change="toggleItem(idx)"
                   />
                   <span
-                    class="text-sm text-gray-700 dark:text-gray-300 transition-all"
+                    class="text-body text-gray-700 dark:text-gray-300 transition-all"
                     :class="{ 'line-through text-gray-400 dark:text-gray-500': checkedItems.has(idx) }"
                   >
                     {{ item }}
@@ -166,7 +166,7 @@
             </div>
           </div>
 
-          <p class="mt-4 text-xs text-gray-400 dark:text-gray-500">
+          <p class="mt-4 text-body-xs text-gray-400 dark:text-gray-500">
             {{ dayjs(digest.generatedAt).format('YYYY.MM.DD HH:mm') }} 생성
           </p>
         </div>

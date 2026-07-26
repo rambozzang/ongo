@@ -123,11 +123,11 @@ function formatNumber(num: number): string {
           <div class="card">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
-                <UsersIcon class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{ $t('competitor.trackedChannels') }}</span>
+                <UsersIcon class="w-5 h-5 text-info-strong" />
+                <span class="text-body text-gray-600 dark:text-gray-400">{{ $t('competitor.trackedChannels') }}</span>
               </div>
             </div>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            <p class="text-h1 font-bold text-gray-900 dark:text-white">
               {{ competitorStore.trackedCompetitors.length }}
             </p>
           </div>
@@ -136,11 +136,11 @@ function formatNumber(num: number): string {
           <div class="card">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
-                <ChartBarIcon class="w-5 h-5 text-green-600 dark:text-green-400" />
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{ $t('competitor.avgSubscribers') }}</span>
+                <ChartBarIcon class="w-5 h-5 text-success-strong" />
+                <span class="text-body text-gray-600 dark:text-gray-400">{{ $t('competitor.avgSubscribers') }}</span>
               </div>
             </div>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            <p class="text-h1 font-bold text-gray-900 dark:text-white">
               {{ formatNumber(competitorStore.averageMetrics.avgSubscribers) }}
             </p>
           </div>
@@ -149,11 +149,11 @@ function formatNumber(num: number): string {
           <div class="card">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
-                <TrophyIcon class="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{ $t('competitor.myRanking') }}</span>
+                <TrophyIcon class="w-5 h-5 text-warning-strong" />
+                <span class="text-body text-gray-600 dark:text-gray-400">{{ $t('competitor.myRanking') }}</span>
               </div>
             </div>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            <p class="text-h1 font-bold text-gray-900 dark:text-white">
               #{{ competitorStore.myRanking }}
             </p>
           </div>
@@ -162,11 +162,11 @@ function formatNumber(num: number): string {
           <div class="card">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
-                <ArrowTrendingUpIcon class="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{ $t('competitor.avgGrowthRate') }}</span>
+                <ArrowTrendingUpIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                <span class="text-body text-gray-600 dark:text-gray-400">{{ $t('competitor.avgGrowthRate') }}</span>
               </div>
             </div>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            <p class="text-h1 font-bold text-gray-900 dark:text-white">
               {{ competitorStore.averageMetrics.avgGrowthRate }}%
             </p>
           </div>
@@ -224,7 +224,7 @@ function formatNumber(num: number): string {
           <div v-else>
             <!-- Competitor selector -->
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {{ $t('competitor.comparisonTarget') }}
               </label>
               <select
@@ -243,7 +243,7 @@ function formatNumber(num: number): string {
 
             <!-- Comparison chart -->
             <div class="card">
-              <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
+              <h2 class="text-h2 font-semibold text-gray-900 dark:text-gray-100 mb-6">
                 {{ $t('competitor.myChannelVs', { name: selectedCompetitor?.name }) }}
               </h2>
               <ComparisonChart
@@ -258,7 +258,7 @@ function formatNumber(num: number): string {
         <!-- Trending Tab -->
         <div v-if="activeTab === 'trending'">
           <div class="card">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            <h2 class="text-h2 font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {{ $t('competitor.trendingVideos') }}
             </h2>
             <TrendingVideoList
@@ -273,13 +273,13 @@ function formatNumber(num: number): string {
       <div v-if="competitorStore.competitors.length > 0" class="mt-8">
         <div class="card">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <SparklesIcon class="w-5 h-5 text-purple-600" />
+            <h2 class="text-h2 font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <SparklesIcon class="w-5 h-5 text-primary-600" />
               {{ $t('competitor.aiInsightTitle') }}
             </h2>
             <button
               :disabled="competitorStore.insightLoading"
-              class="btn-primary text-sm"
+              class="btn-primary text-body"
               @click="competitorStore.fetchInsight()"
             >
               {{ competitorStore.insightLoading ? $t('competitor.aiAnalyzing') : $t('competitor.aiAnalyzeButton') }}
@@ -290,27 +290,27 @@ function formatNumber(num: number): string {
             <p class="text-gray-700 dark:text-gray-300">{{ competitorStore.aiInsight.summary }}</p>
 
             <div class="page-grid page-grid--split">
-              <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                <h3 class="font-medium text-green-800 dark:text-green-300 mb-2">{{ $t('competitor.strengths') }}</h3>
-                <ul class="space-y-1 text-sm text-green-700 dark:text-green-400">
+              <div class="bg-success-subtle rounded-lg p-4">
+                <h3 class="font-medium text-success-strong mb-2">{{ $t('competitor.strengths') }}</h3>
+                <ul class="space-y-1 text-body text-success-strong">
                   <li v-for="(s, i) in competitorStore.aiInsight.strengths" :key="i">- {{ s }}</li>
                 </ul>
               </div>
-              <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-                <h3 class="font-medium text-red-800 dark:text-red-300 mb-2">{{ $t('competitor.weaknesses') }}</h3>
-                <ul class="space-y-1 text-sm text-red-700 dark:text-red-400">
+              <div class="bg-error-subtle rounded-lg p-4">
+                <h3 class="font-medium text-error-strong mb-2">{{ $t('competitor.weaknesses') }}</h3>
+                <ul class="space-y-1 text-body text-error-strong">
                   <li v-for="(w, i) in competitorStore.aiInsight.weaknesses" :key="i">- {{ w }}</li>
                 </ul>
               </div>
-              <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <h3 class="font-medium text-blue-800 dark:text-blue-300 mb-2">{{ $t('competitor.opportunities') }}</h3>
-                <ul class="space-y-1 text-sm text-blue-700 dark:text-blue-400">
+              <div class="bg-info-subtle rounded-lg p-4">
+                <h3 class="font-medium text-info-strong mb-2">{{ $t('competitor.opportunities') }}</h3>
+                <ul class="space-y-1 text-body text-info-strong">
                   <li v-for="(o, i) in competitorStore.aiInsight.opportunities" :key="i">- {{ o }}</li>
                 </ul>
               </div>
-              <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-                <h3 class="font-medium text-purple-800 dark:text-purple-300 mb-2">{{ $t('competitor.recommendations') }}</h3>
-                <ul class="space-y-1 text-sm text-purple-700 dark:text-purple-400">
+              <div class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4">
+                <h3 class="font-medium text-primary-700 dark:text-primary-300 mb-2">{{ $t('competitor.recommendations') }}</h3>
+                <ul class="space-y-1 text-body text-primary-700 dark:text-primary-400">
                   <li v-for="(r, i) in competitorStore.aiInsight.recommendations" :key="i">- {{ r }}</li>
                 </ul>
               </div>

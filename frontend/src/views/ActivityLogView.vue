@@ -35,12 +35,12 @@ interface SummaryCardData {
 }
 
 const summaryCards: SummaryCardData[] = [
-  { label: 'activityLog.summary.upload', key: 'upload', icon: ArrowUpTrayIcon, colorClass: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30' },
-  { label: 'activityLog.summary.publish', key: 'publish', icon: CheckCircleIcon, colorClass: 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30' },
-  { label: 'activityLog.summary.schedule', key: 'schedule', icon: ClockIcon, colorClass: 'text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30' },
+  { label: 'activityLog.summary.upload', key: 'upload', icon: ArrowUpTrayIcon, colorClass: 'text-info-strong bg-info-subtle' },
+  { label: 'activityLog.summary.publish', key: 'publish', icon: CheckCircleIcon, colorClass: 'text-success-strong bg-success-subtle' },
+  { label: 'activityLog.summary.schedule', key: 'schedule', icon: ClockIcon, colorClass: 'text-info-strong bg-info-subtle' },
   { label: 'activityLog.summary.aiGenerate', key: 'ai_generate', icon: SparklesIcon, colorClass: 'text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30' },
-  { label: 'activityLog.summary.delete', key: 'delete', icon: TrashIcon, colorClass: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30' },
-  { label: 'activityLog.summary.channelConnect', key: 'channel_connect', icon: LinkIcon, colorClass: 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/30' },
+  { label: 'activityLog.summary.delete', key: 'delete', icon: TrashIcon, colorClass: 'text-error-strong bg-error-subtle' },
+  { label: 'activityLog.summary.channelConnect', key: 'channel_connect', icon: LinkIcon, colorClass: 'text-success-strong bg-success-subtle' },
 ]
 
 const selectedAction = computed(() => filter.value.action ?? null)
@@ -101,7 +101,7 @@ onMounted(() => {
     <PageHeader :title="$t('activityLog.title')" :description="$t('activityLog.description')">
       <template #actions>
         <button
-          class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-body font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           @click="handleExport"
         >
           <ArrowDownTrayIcon class="h-4 w-4" />
@@ -127,10 +127,10 @@ onMounted(() => {
             <component :is="card.icon" class="h-5 w-5" />
           </div>
           <div>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">
+            <p class="text-h1 font-bold text-gray-900 dark:text-white">
               {{ actionCounts[card.key] ?? 0 }}
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
+            <p class="text-body-xs text-gray-500 dark:text-gray-400">
               {{ $t('activityLog.today') }} {{ $t(card.label) }}
             </p>
           </div>
@@ -169,19 +169,19 @@ onMounted(() => {
       v-if="totalPages > 1"
       class="mt-4 flex items-center justify-between"
     >
-      <p class="text-sm text-gray-600 dark:text-gray-400">
+      <p class="text-body text-gray-600 dark:text-gray-400">
         {{ page * pageSize + 1 }}–{{ Math.min((page + 1) * pageSize, totalCount) }} / {{ totalCount }}
       </p>
       <div class="flex gap-2">
         <button
-          class="btn-secondary text-sm"
+          class="btn-secondary text-body"
           :disabled="!hasPrevPage"
           @click="activityLogsStore.prevPage()"
         >
           {{ $t('activityLog.pagination.previous') }}
         </button>
         <button
-          class="btn-secondary text-sm"
+          class="btn-secondary text-body"
           :disabled="!hasNextPage"
           @click="activityLogsStore.nextPage()"
         >

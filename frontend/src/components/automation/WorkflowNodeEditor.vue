@@ -148,8 +148,8 @@ const triggerLabel = computed(() => {
             </svg>
           </div>
           <div>
-            <p class="text-xs font-medium text-green-600 dark:text-green-400 uppercase">트리거</p>
-            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ triggerLabel }}</p>
+            <p class="text-caption text-green-600 dark:text-green-400 uppercase">트리거</p>
+            <p class="text-body font-semibold text-gray-900 dark:text-gray-100">{{ triggerLabel }}</p>
           </div>
         </div>
       </div>
@@ -171,7 +171,7 @@ const triggerLabel = computed(() => {
           @click="selectNode('condition', i)"
         >
           <button
-            class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs hover:bg-red-600"
+            class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-body-xs hover:bg-red-600"
             @click.stop="removeCondition(i)"
           >
             &times;
@@ -183,14 +183,14 @@ const triggerLabel = computed(() => {
               </svg>
             </div>
             <div>
-              <p class="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase">조건 {{ i + 1 }}</p>
-              <p class="text-sm text-gray-700 dark:text-gray-300">
+              <p class="text-caption text-amber-600 dark:text-amber-400 uppercase">조건 {{ i + 1 }}</p>
+              <p class="text-body text-gray-700 dark:text-gray-300">
                 <span v-if="cond.expression">{{ cond.expression }}</span>
                 <span v-else-if="cond.field">{{ cond.field }} {{ cond.operator }} {{ cond.value }}</span>
                 <span v-else class="text-gray-400">클릭하여 설정</span>
               </p>
             </div>
-            <span class="ml-auto px-2 py-0.5 rounded text-xs font-medium" :class="cond.groupType === 'AND' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'">
+            <span class="ml-auto px-2 py-0.5 rounded text-caption" :class="cond.groupType === 'AND' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'">
               {{ cond.groupType }}
             </span>
           </div>
@@ -202,7 +202,7 @@ const triggerLabel = computed(() => {
 
       <!-- Add Condition Button -->
       <button
-        class="w-full py-2 border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-xl text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors"
+        class="w-full py-2 border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-xl text-body text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors"
         @click="addCondition"
       >
         + 조건 추가
@@ -224,7 +224,7 @@ const triggerLabel = computed(() => {
           @click="selectNode('action', i)"
         >
           <button
-            class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs hover:bg-red-600"
+            class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-body-xs hover:bg-red-600"
             @click.stop="removeAction(i)"
           >
             &times;
@@ -236,11 +236,11 @@ const triggerLabel = computed(() => {
               </svg>
             </div>
             <div>
-              <p class="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase">
+              <p class="text-caption text-blue-600 dark:text-blue-400 uppercase">
                 액션 {{ i + 1 }}
                 <span v-if="action.delayMinutes > 0" class="text-gray-500 normal-case">({{ action.delayMinutes }}분 지연)</span>
               </p>
-              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <p class="text-body font-semibold text-gray-900 dark:text-gray-100">
                 {{ WORKFLOW_ACTION_OPTIONS.find((o) => o.value === action.actionType)?.label ?? action.actionType }}
               </p>
             </div>
@@ -253,7 +253,7 @@ const triggerLabel = computed(() => {
 
       <!-- Add Action Button -->
       <button
-        class="w-full py-2 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-xl text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors mt-3"
+        class="w-full py-2 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-xl text-body text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors mt-3"
         @click="addAction"
       >
         + 액션 추가
@@ -261,7 +261,7 @@ const triggerLabel = computed(() => {
 
       <!-- Save Button -->
       <button
-        class="w-full mt-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        class="w-full mt-4 py-2.5 bg-primary-600 text-white rounded-lg text-body font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         :disabled="actions.length === 0"
         @click="handleSave"
       >
@@ -302,7 +302,7 @@ const triggerLabel = computed(() => {
           <svg class="w-12 h-12 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59" />
           </svg>
-          <p class="text-sm">노드를 클릭하여 설정하세요</p>
+          <p class="text-body">노드를 클릭하여 설정하세요</p>
         </div>
       </div>
     </div>

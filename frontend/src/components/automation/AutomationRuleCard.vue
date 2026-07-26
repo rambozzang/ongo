@@ -38,19 +38,19 @@ const actionLabels = computed(() => {
 const statusColor = computed(() => {
   const colors: Record<string, { bg: string; text: string; dot: string }> = {
     active: {
-      bg: 'bg-green-100 dark:bg-green-900/30',
-      text: 'text-green-800 dark:text-green-300',
-      dot: 'bg-green-500'
+      bg: 'bg-success-subtle',
+      text: 'text-success-strong',
+      dot: 'bg-success'
     },
     paused: {
-      bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-      text: 'text-yellow-800 dark:text-yellow-300',
-      dot: 'bg-yellow-500'
+      bg: 'bg-warning-subtle',
+      text: 'text-warning-strong',
+      dot: 'bg-warning'
     },
     error: {
-      bg: 'bg-red-100 dark:bg-red-900/30',
-      text: 'text-red-800 dark:text-red-300',
-      dot: 'bg-red-500'
+      bg: 'bg-error-subtle',
+      text: 'text-error-strong',
+      dot: 'bg-error'
     }
   }
   return colors[props.rule.status] || colors.active
@@ -93,15 +93,15 @@ const formatDate = (dateString: string | null) => {
     <div class="flex items-start justify-between mb-4">
       <div class="flex-1">
         <div class="flex items-center gap-3 mb-2">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 class="text-title font-semibold text-gray-900 dark:text-white">
             {{ rule.name }}
           </h3>
-          <div :class="[statusColor.bg, statusColor.text, 'px-2.5 py-0.5 rounded-full text-xs font-medium flex items-center gap-1.5']">
+          <div :class="[statusColor.bg, statusColor.text, 'px-2.5 py-0.5 rounded-full text-caption flex items-center gap-1.5']">
             <span :class="[statusColor.dot, 'w-1.5 h-1.5 rounded-full']"></span>
             {{ statusText }}
           </div>
         </div>
-        <p class="text-sm text-gray-600 dark:text-gray-400">
+        <p class="text-body text-gray-600 dark:text-gray-400">
           {{ rule.description }}
         </p>
       </div>
@@ -114,7 +114,7 @@ const formatDate = (dateString: string | null) => {
           <PencilIcon class="w-5 h-5" />
         </button>
         <button
-          class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          class="p-2 text-gray-400 hover:text-error-strong hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           title="삭제"
           @click="emit('delete', rule.id)"
         >
@@ -125,7 +125,7 @@ const formatDate = (dateString: string | null) => {
 
     <!-- Trigger → Actions Flow -->
     <div class="flex items-center gap-3 mb-4 py-4 px-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-      <div class="flex items-center gap-2 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium">
+      <div class="flex items-center gap-2 px-3 py-2 bg-info-subtle text-info-strong rounded-lg text-body font-medium">
         <span>트리거:</span>
         <span class="font-semibold">{{ triggerLabel }}</span>
       </div>
@@ -136,7 +136,7 @@ const formatDate = (dateString: string | null) => {
         <div
           v-for="(label, index) in actionLabels"
           :key="index"
-          class="px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium"
+          class="px-3 py-2 bg-success-subtle text-success-strong rounded-lg text-body font-medium"
         >
           <span>액션:</span>
           <span class="font-semibold">{{ label }}</span>
@@ -146,7 +146,7 @@ const formatDate = (dateString: string | null) => {
 
     <!-- Footer -->
     <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-      <div class="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+      <div class="flex items-center gap-6 text-body text-gray-600 dark:text-gray-400">
         <div>
           <span class="text-gray-500 dark:text-gray-500">실행 횟수:</span>
           <span class="ml-1 font-semibold text-gray-900 dark:text-white">{{ rule.executionCount }}회</span>
@@ -164,8 +164,8 @@ const formatDate = (dateString: string | null) => {
           class="sr-only peer"
           @change="emit('toggle', rule.id)"
         >
-        <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-        <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+        <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+        <span class="ms-3 text-body font-medium text-gray-900 dark:text-gray-300">
           {{ rule.isEnabled ? '활성' : '비활성' }}
         </span>
       </label>

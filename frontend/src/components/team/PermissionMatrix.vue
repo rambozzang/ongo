@@ -35,9 +35,9 @@ const categories = computed(() => {
 })
 
 const rolePresets = [
-  { key: 'OWNER', label: '소유자', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-  { key: 'ADMIN', label: '관리자', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  { key: 'EDITOR', label: '에디터', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  { key: 'OWNER', label: '소유자', color: 'bg-info-subtle text-info-strong' },
+  { key: 'ADMIN', label: '관리자', color: 'bg-info-subtle text-info-strong' },
+  { key: 'EDITOR', label: '에디터', color: 'bg-success-subtle text-success-strong' },
   { key: 'VIEWER', label: '뷰어', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400' },
 ]
 
@@ -71,11 +71,11 @@ function getCellColor(member: MemberPermissionsResponse, permission: string): st
   const status = getPermissionStatus(member, permission)
   switch (status) {
     case 'GRANTED':
-      return 'bg-green-100 dark:bg-green-900/30'
+      return 'bg-success-subtle'
     case 'INHERITED':
-      return 'bg-green-50 dark:bg-green-900/10'
+      return 'bg-success-subtle'
     case 'DENIED':
-      return 'bg-red-50 dark:bg-red-900/10'
+      return 'bg-error-subtle'
     default:
       return 'bg-gray-50 dark:bg-gray-800'
   }
@@ -146,8 +146,8 @@ onUnmounted(() => {
     <!-- Header -->
     <div class="mb-6 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <ShieldCheckIcon class="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">권한 매트릭스</h2>
+        <ShieldCheckIcon class="h-6 w-6 text-primary-600 dark:text-primary-400" />
+        <h2 class="text-title font-semibold text-gray-900 dark:text-white">권한 매트릭스</h2>
       </div>
       <div class="flex items-center gap-3">
         <!-- Role preset legend -->
@@ -155,7 +155,7 @@ onUnmounted(() => {
           <span
             v-for="preset in rolePresets"
             :key="preset.key"
-            :class="[preset.color, 'rounded-full px-2.5 py-0.5 text-xs font-medium']"
+            :class="[preset.color, 'rounded-full px-2.5 py-0.5 text-body-xs font-medium']"
           >
             {{ preset.label }}
           </span>
@@ -163,7 +163,7 @@ onUnmounted(() => {
         <button
           v-if="hasChanges"
           :disabled="saving"
-          class="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+          class="inline-flex items-center gap-2 rounded-md bg-primary-600 px-4 py-2 text-body font-medium text-white hover:bg-primary-700 disabled:opacity-50 dark:bg-primary-500 dark:hover:bg-primary-600"
           @click="saveChanges"
         >
           <ArrowPathIcon v-if="saving" class="h-4 w-4 animate-spin" />
@@ -184,18 +184,18 @@ onUnmounted(() => {
       empty-description="팀 멤버를 초대하면 권한을 관리할 수 있습니다."
     >
       <div v-if="teamPermissions" class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="w-full text-body">
           <thead>
             <tr class="border-b border-gray-200 dark:border-gray-700">
               <th
-                class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400"
+                class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-3 text-left text-body-xs font-medium uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400"
               >
                 권한
               </th>
               <th
                 v-for="member in teamPermissions.members"
                 :key="member.memberId"
-                class="whitespace-nowrap px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400"
+                class="whitespace-nowrap px-3 py-3 text-center text-body-xs font-medium text-gray-500 dark:text-gray-400"
               >
                 <div>{{ member.memberName || member.memberEmail.split('@')[0] }}</div>
                 <span
@@ -219,7 +219,7 @@ onUnmounted(() => {
               <tr class="bg-gray-50 dark:bg-gray-800/50">
                 <td
                   :colspan="(teamPermissions?.members.length ?? 0) + 1"
-                  class="sticky left-0 z-10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300"
+                  class="sticky left-0 z-10 px-4 py-2 text-body-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300"
                 >
                   {{ category.label }}
                 </td>
@@ -231,7 +231,7 @@ onUnmounted(() => {
                 class="border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/30"
               >
                 <td
-                  class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-2 text-xs text-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                  class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-2 text-body-xs text-gray-700 dark:bg-gray-900 dark:text-gray-300"
                 >
                   {{ perm.replace(/_/g, ' ') }}
                 </td>
@@ -246,7 +246,7 @@ onUnmounted(() => {
                       getCellColor(member, perm),
                       'inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all',
                       isPermissionEnabled(member, perm)
-                        ? 'border-green-300 dark:border-green-700'
+                        ? 'border-success'
                         : 'border-gray-200 dark:border-gray-700',
                       member.role.toUpperCase() === 'OWNER'
                         ? 'cursor-not-allowed opacity-60'
@@ -257,7 +257,7 @@ onUnmounted(() => {
                   >
                     <CheckIcon
                       v-if="isPermissionEnabled(member, perm)"
-                      class="h-4 w-4 text-green-600 dark:text-green-400"
+                      class="h-4 w-4 text-success-strong"
                     />
                     <span v-else class="h-1 w-3 rounded-full bg-gray-300 dark:bg-gray-600" />
                   </button>

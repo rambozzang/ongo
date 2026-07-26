@@ -64,7 +64,7 @@ const clearFilter = () => {
         <FunnelIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
         <select
           v-model="selectedMemberId"
-          class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+          class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-body text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
         >
           <option :value="null">모든 멤버</option>
           <option
@@ -77,14 +77,14 @@ const clearFilter = () => {
         </select>
         <button
           v-if="selectedMemberId !== null"
-          class="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+          class="text-body text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
           @click="clearFilter"
         >
           필터 지우기
         </button>
       </div>
 
-      <div class="text-sm text-gray-500 dark:text-gray-400">
+      <div class="text-body text-gray-500 dark:text-gray-400">
         {{ filteredActivities.length }}개 활동
       </div>
     </div>
@@ -102,28 +102,28 @@ const clearFilter = () => {
             <div class="relative flex space-x-3">
               <div>
                 <span
-                  class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 ring-8 ring-white dark:bg-indigo-900/30 dark:ring-gray-800"
+                  class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 ring-8 ring-white dark:bg-primary-900/30 dark:ring-gray-800"
                 >
-                  <ClockIcon class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <ClockIcon class="h-4 w-4 text-primary-600 dark:text-primary-400" />
                 </span>
               </div>
               <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1">
                 <div>
-                  <p class="text-sm text-gray-700 dark:text-gray-300">
+                  <p class="text-body text-gray-700 dark:text-gray-300">
                     <span class="font-medium text-gray-900 dark:text-white">
                       {{ activity.memberName }}
                     </span>
                     님이
-                    <span class="font-medium text-indigo-600 dark:text-indigo-400">
+                    <span class="font-medium text-primary-600 dark:text-primary-400">
                       {{ activity.action }}
                     </span>
                     했습니다
                   </p>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
                     {{ activity.target }}
                   </p>
                 </div>
-                <div class="whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-400">
+                <div class="whitespace-nowrap text-right text-body text-gray-500 dark:text-gray-400">
                   {{ relativeTime(activity.createdAt) }}
                 </div>
               </div>
@@ -136,7 +136,7 @@ const clearFilter = () => {
     <!-- Load More Button -->
     <div v-if="hasMore" class="flex justify-center">
       <button
-        class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+        class="rounded-md border border-gray-300 bg-white px-4 py-2 text-body font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
         @click="loadMore"
       >
         더 보기
@@ -149,10 +149,10 @@ const clearFilter = () => {
       class="text-center py-12"
     >
       <ClockIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
-      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+      <h3 class="mt-2 text-body font-medium text-gray-900 dark:text-white">
         활동 내역 없음
       </h3>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
         선택한 멤버의 활동 내역이 없습니다.
       </p>
     </div>

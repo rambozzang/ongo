@@ -73,10 +73,10 @@ const nextScheduleFormatted = computed(() => {
     <!-- Header -->
     <div class="flex items-start justify-between mb-4">
       <div class="flex-1 min-w-0">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
+        <h3 class="text-title font-semibold text-gray-900 dark:text-white truncate">
           {{ queue.name }}
         </h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <p class="text-body text-gray-500 dark:text-gray-400 mt-1">
           {{ filterSummary }}
         </p>
       </div>
@@ -84,8 +84,8 @@ const nextScheduleFormatted = computed(() => {
       <!-- Toggle Switch -->
       <button
         :class="[
-          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800',
-          queue.isActive ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600',
+          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800',
+          queue.isActive ? 'bg-info' : 'bg-gray-300 dark:bg-gray-600',
         ]"
         role="switch"
         :aria-checked="queue.isActive"
@@ -102,19 +102,19 @@ const nextScheduleFormatted = computed(() => {
 
     <!-- Info Grid -->
     <div class="grid grid-cols-2 gap-3 mb-4">
-      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+      <div class="flex items-center gap-2 text-body text-gray-600 dark:text-gray-400">
         <CalendarDaysIcon class="w-4 h-4 flex-shrink-0" />
         <span>{{ frequencyLabel }} ({{ scheduleDaysLabel }})</span>
       </div>
-      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+      <div class="flex items-center gap-2 text-body text-gray-600 dark:text-gray-400">
         <ClockIcon class="w-4 h-4 flex-shrink-0" />
         <span>{{ queue.scheduleTime }}</span>
       </div>
-      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+      <div class="flex items-center gap-2 text-body text-gray-600 dark:text-gray-400">
         <VideoCameraIcon class="w-4 h-4 flex-shrink-0" />
         <span>{{ queue.videoCount }}개 영상</span>
       </div>
-      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+      <div class="flex items-center gap-2 text-body text-gray-600 dark:text-gray-400">
         <CalendarDaysIcon class="w-4 h-4 flex-shrink-0" />
         <span>다음: {{ nextScheduleFormatted }}</span>
       </div>
@@ -126,7 +126,7 @@ const nextScheduleFormatted = computed(() => {
         v-for="platform in queue.platforms"
         :key="platform"
         :class="[
-          'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+          'inline-flex items-center px-2.5 py-0.5 rounded-full text-caption',
           PLATFORM_LABELS[platform]?.color || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
         ]"
       >
@@ -137,14 +137,14 @@ const nextScheduleFormatted = computed(() => {
     <!-- Actions -->
     <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
       <button
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-body text-gray-600 dark:text-gray-400 hover:text-info-strong hover:bg-info-subtle rounded-lg transition-colors"
         @click="emit('edit', queue.id)"
       >
         <PencilIcon class="w-4 h-4" />
         수정
       </button>
       <button
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-body text-gray-600 dark:text-gray-400 hover:text-error-strong hover:bg-error-subtle rounded-lg transition-colors"
         @click="emit('delete', queue.id)"
       >
         <TrashIcon class="w-4 h-4" />

@@ -29,27 +29,27 @@ const columnIcons: Record<string, any> = {
 
 const columnColors: Record<string, string> = {
   DRAFT: 'border-gray-300 dark:border-gray-600',
-  EDITING: 'border-blue-400 dark:border-blue-500',
-  PENDING: 'border-yellow-400 dark:border-yellow-500',
-  APPROVED: 'border-green-400 dark:border-green-500',
-  PUBLISHED: 'border-purple-400 dark:border-purple-500',
+  EDITING: 'border-info',
+  PENDING: 'border-warning',
+  APPROVED: 'border-success',
+  PUBLISHED: 'border-primary-400 dark:border-primary-500',
 }
 
 const columnHeaderBg: Record<string, string> = {
   DRAFT: 'bg-gray-100 dark:bg-gray-800',
-  EDITING: 'bg-blue-50 dark:bg-blue-900/20',
-  PENDING: 'bg-yellow-50 dark:bg-yellow-900/20',
-  APPROVED: 'bg-green-50 dark:bg-green-900/20',
-  PUBLISHED: 'bg-purple-50 dark:bg-purple-900/20',
+  EDITING: 'bg-info-subtle',
+  PENDING: 'bg-warning-subtle',
+  APPROVED: 'bg-success-subtle',
+  PUBLISHED: 'bg-primary-50 dark:bg-primary-900/20',
 }
 
 const statusBadgeClass: Record<string, string> = {
   DRAFT: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  EDITING: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-  APPROVED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  PUBLISHED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  EDITING: 'bg-info-subtle text-info-strong',
+  PENDING: 'bg-warning-subtle text-warning-strong',
+  APPROVED: 'bg-success-subtle text-success-strong',
+  PUBLISHED: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300',
+  REJECTED: 'bg-error-subtle text-error-strong',
 }
 
 const platformColors: Record<string, string> = {
@@ -82,26 +82,26 @@ onMounted(() => {
     <!-- Stats Summary -->
     <div v-if="stats" class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
       <div class="rounded-lg border border-gray-200 bg-white p-3 text-center dark:border-gray-700 dark:bg-gray-800">
-        <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ stats.totalPending }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">대기 중</p>
+        <p class="text-h1 font-bold text-warning-strong">{{ stats.totalPending }}</p>
+        <p class="text-body-xs text-gray-500 dark:text-gray-400">대기 중</p>
       </div>
       <div class="rounded-lg border border-gray-200 bg-white p-3 text-center dark:border-gray-700 dark:bg-gray-800">
-        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ stats.totalInReview }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">검수 중</p>
+        <p class="text-h1 font-bold text-info-strong">{{ stats.totalInReview }}</p>
+        <p class="text-body-xs text-gray-500 dark:text-gray-400">검수 중</p>
       </div>
       <div class="rounded-lg border border-gray-200 bg-white p-3 text-center dark:border-gray-700 dark:bg-gray-800">
-        <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ stats.totalApproved }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">승인됨</p>
+        <p class="text-h1 font-bold text-success-strong">{{ stats.totalApproved }}</p>
+        <p class="text-body-xs text-gray-500 dark:text-gray-400">승인됨</p>
       </div>
       <div class="rounded-lg border border-gray-200 bg-white p-3 text-center dark:border-gray-700 dark:bg-gray-800">
-        <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ stats.totalRejected }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">거절됨</p>
+        <p class="text-h1 font-bold text-error-strong">{{ stats.totalRejected }}</p>
+        <p class="text-body-xs text-gray-500 dark:text-gray-400">거절됨</p>
       </div>
       <div class="rounded-lg border border-gray-200 bg-white p-3 text-center dark:border-gray-700 dark:bg-gray-800">
-        <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+        <p class="text-h1 font-bold text-primary-600 dark:text-primary-400">
           {{ stats.avgApprovalTimeHours != null ? `${stats.avgApprovalTimeHours.toFixed(1)}h` : '-' }}
         </p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">평균 승인 시간</p>
+        <p class="text-body-xs text-gray-500 dark:text-gray-400">평균 승인 시간</p>
       </div>
     </div>
 
@@ -124,12 +124,12 @@ onMounted(() => {
                 :is="columnIcons[col.status]"
                 class="h-5 w-5 text-gray-600 dark:text-gray-400"
               />
-              <span class="text-sm font-semibold text-gray-900 dark:text-white">
+              <span class="text-body font-semibold text-gray-900 dark:text-white">
                 {{ col.statusLabel }}
               </span>
             </div>
             <span
-              class="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-2 text-xs font-medium"
+              class="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-2 text-caption"
               :class="statusBadgeClass[col.status] ?? 'bg-gray-100 text-gray-700'"
             >
               {{ col.count }}
@@ -144,7 +144,7 @@ onMounted(() => {
               class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
             >
               <!-- Video Title -->
-              <h4 class="truncate text-sm font-medium text-gray-900 dark:text-white">
+              <h4 class="truncate text-body font-medium text-gray-900 dark:text-white">
                 {{ item.videoTitle }}
               </h4>
 
@@ -162,7 +162,7 @@ onMounted(() => {
 
               <!-- Requester / Reviewer -->
               <div class="mt-2 space-y-1">
-                <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                <div class="flex items-center text-body-xs text-gray-500 dark:text-gray-400">
                   <UserIcon class="mr-1 h-3.5 w-3.5" />
                   <span>{{ item.requesterName }}</span>
                   <template v-if="item.reviewerName">
@@ -173,7 +173,7 @@ onMounted(() => {
               </div>
 
               <!-- Scheduled date -->
-              <div v-if="item.scheduledAt" class="mt-1.5 flex items-center text-xs text-gray-400 dark:text-gray-500">
+              <div v-if="item.scheduledAt" class="mt-1.5 flex items-center text-body-xs text-gray-400 dark:text-gray-500">
                 <ClockIcon class="mr-1 h-3.5 w-3.5" />
                 <span>{{ formatDate(item.scheduledAt) }}</span>
               </div>
@@ -197,7 +197,7 @@ onMounted(() => {
                 :is="columnIcons[col.status]"
                 class="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600"
               />
-              <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">항목 없음</p>
+              <p class="mt-2 text-body-xs text-gray-400 dark:text-gray-500">항목 없음</p>
             </div>
           </div>
         </div>

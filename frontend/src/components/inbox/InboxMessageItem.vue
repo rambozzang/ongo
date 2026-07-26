@@ -56,9 +56,9 @@ const typeLabels = {
 }
 
 const sentimentConfig = {
-  positive: 'bg-green-500',
+  positive: 'bg-success',
   neutral: 'bg-gray-400 dark:bg-gray-500',
-  negative: 'bg-red-500',
+  negative: 'bg-error',
 }
 
 const timeAgo = computed(() => {
@@ -102,7 +102,7 @@ const handleCheckClick = (e: Event) => {
   <div
     class="flex items-start gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
     :class="{
-      'bg-blue-50 dark:bg-blue-900/20': isActive,
+      'bg-info-subtle': isActive,
       'bg-white dark:bg-gray-800': !isActive,
     }"
     @click="handleClick"
@@ -112,7 +112,7 @@ const handleCheckClick = (e: Event) => {
       <input
         type="checkbox"
         :checked="isChecked"
-        class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:bg-gray-700"
+        class="w-4 h-4 text-info-strong border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:bg-gray-700"
         @click="handleCheckClick"
       />
     </div>
@@ -121,7 +121,7 @@ const handleCheckClick = (e: Event) => {
     <div class="flex items-center pt-1">
       <div
         v-if="message.status === 'unread'"
-        class="w-2 h-2 bg-blue-600 rounded-full"
+        class="w-2 h-2 bg-info rounded-full"
       ></div>
       <div v-else class="w-2 h-2"></div>
     </div>
@@ -138,14 +138,14 @@ const handleCheckClick = (e: Event) => {
       <!-- Header -->
       <div class="flex items-center gap-2 mb-1">
         <span
-          class="text-sm font-medium px-2 py-0.5 rounded"
+          class="text-body font-medium px-2 py-0.5 rounded"
           :class="platformConfig[message.platform].bgColor"
         >
           <span :class="platformConfig[message.platform].color">
             {{ platformConfig[message.platform].label }}
           </span>
         </span>
-        <span class="text-xs text-gray-500 dark:text-gray-400">
+        <span class="text-body-xs text-gray-500 dark:text-gray-400">
           {{ typeLabels[message.type] }}
         </span>
         <div
@@ -158,14 +158,14 @@ const handleCheckClick = (e: Event) => {
       <!-- Sender Name & Video Title -->
       <div class="mb-1">
         <span
-          class="text-sm font-semibold text-gray-900 dark:text-white"
+          class="text-body font-semibold text-gray-900 dark:text-white"
           :class="{ 'font-bold': message.status === 'unread' }"
         >
           {{ message.senderName }}
         </span>
         <span
           v-if="message.videoTitle"
-          class="text-xs text-gray-500 dark:text-gray-400 ml-2"
+          class="text-body-xs text-gray-500 dark:text-gray-400 ml-2"
         >
           · {{ message.videoTitle }}
         </span>
@@ -173,7 +173,7 @@ const handleCheckClick = (e: Event) => {
 
       <!-- Message Preview -->
       <p
-        class="text-sm text-gray-600 dark:text-gray-300"
+        class="text-body text-gray-600 dark:text-gray-300"
         :class="{ 'font-semibold': message.status === 'unread' }"
       >
         {{ truncatedContent }}
@@ -182,7 +182,7 @@ const handleCheckClick = (e: Event) => {
 
     <!-- Right Side: Time & Star -->
     <div class="flex flex-col items-end gap-2 flex-shrink-0">
-      <span class="text-xs text-gray-500 dark:text-gray-400">{{ timeAgo }}</span>
+      <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ timeAgo }}</span>
       <button class="text-gray-400 hover:text-yellow-500 transition-colors" @click="handleStarClick">
         <StarIcon v-if="message.isStarred" class="w-5 h-5 text-yellow-500" />
         <StarIconOutline v-else class="w-5 h-5" />

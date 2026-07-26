@@ -57,9 +57,9 @@ const typeLabels = {
 }
 
 const sentimentConfig = {
-  positive: { color: 'bg-green-500', label: '긍정' },
+  positive: { color: 'bg-success', label: '긍정' },
   neutral: { color: 'bg-gray-400 dark:bg-gray-500', label: '중립' },
-  negative: { color: 'bg-red-500', label: '부정' },
+  negative: { color: 'bg-error', label: '부정' },
 }
 
 const formattedDate = computed(() => {
@@ -95,7 +95,7 @@ const handleReply = (content: string) => {
   <div v-if="!message" class="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
     <div class="text-center text-gray-500 dark:text-gray-400">
       <EnvelopeIcon class="w-16 h-16 mx-auto mb-4 opacity-50" />
-      <p class="text-lg">메시지를 선택하세요</p>
+      <p class="text-title">메시지를 선택하세요</p>
     </div>
   </div>
 
@@ -133,7 +133,7 @@ const handleReply = (content: string) => {
 
         <button
           title="삭제"
-          class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400 transition-colors"
+          class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-error-strong transition-colors"
           @click="emit('delete')"
         >
           <TrashIcon class="w-5 h-5" />
@@ -141,14 +141,14 @@ const handleReply = (content: string) => {
 
         <div class="ml-auto flex items-center gap-2">
           <span
-            class="text-sm font-medium px-3 py-1 rounded"
+            class="text-body font-medium px-3 py-1 rounded"
             :class="platformConfig[message.platform].bgColor"
           >
             <span :class="platformConfig[message.platform].color">
               {{ platformConfig[message.platform].label }}
             </span>
           </span>
-          <span class="text-sm text-gray-500 dark:text-gray-400">
+          <span class="text-body text-gray-500 dark:text-gray-400">
             {{ typeLabels[message.type] }}
           </span>
         </div>
@@ -163,7 +163,7 @@ const handleReply = (content: string) => {
         />
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 class="text-title font-semibold text-gray-900 dark:text-white">
               {{ message.senderName }}
             </h3>
             <div
@@ -172,8 +172,8 @@ const handleReply = (content: string) => {
               :title="sentimentConfig[message.sentiment].label"
             ></div>
           </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ formattedDate }}</p>
-          <p v-if="message.videoTitle" class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+          <p class="text-body text-gray-500 dark:text-gray-400">{{ formattedDate }}</p>
+          <p v-if="message.videoTitle" class="text-body text-gray-600 dark:text-gray-300 mt-1">
             영상: <span class="font-medium">{{ message.videoTitle }}</span>
           </p>
         </div>
@@ -188,9 +188,9 @@ const handleReply = (content: string) => {
 
       <!-- Reply History -->
       <div v-if="message.status === 'replied' && message.replyContent" class="mt-6">
-        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">답장 기록</h4>
-        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-l-4 border-blue-500">
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+        <h4 class="text-body font-semibold text-gray-700 dark:text-gray-300 mb-3">답장 기록</h4>
+        <div class="bg-info-subtle rounded-lg p-4 border-l-4 border-info">
+          <p class="text-body text-gray-500 dark:text-gray-400 mb-2">
             {{ formattedReplyDate }}에 답장함
           </p>
           <p class="text-gray-900 dark:text-white whitespace-pre-wrap">

@@ -64,7 +64,7 @@ const typeConfig = computed(() => {
     custom: {
       icon: SparklesIcon,
       label: '사용자 정의',
-      color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30',
+      color: 'text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30',
     },
   }
   return configs[props.goal.type]
@@ -74,19 +74,19 @@ const statusConfig = computed(() => {
   const configs = {
     active: {
       label: '진행중',
-      color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+      color: 'bg-success-subtle text-success-strong',
     },
     completed: {
       label: '완료',
-      color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+      color: 'bg-warning-subtle text-warning-strong',
     },
     failed: {
       label: '실패',
-      color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+      color: 'bg-error-subtle text-error-strong',
     },
     paused: {
       label: '일시정지',
-      color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+      color: 'bg-muted-subtle text-muted-strong',
     },
   }
   return configs[props.goal.status]
@@ -142,17 +142,17 @@ const formatDate = (dateStr: string): string => {
           <component :is="typeConfig.icon" class="w-5 h-5" />
         </div>
         <div class="flex-1 min-w-0">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+          <h3 class="text-title font-semibold text-gray-900 dark:text-gray-100 truncate">
             {{ goal.title }}
           </h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-1">
+          <p class="text-body text-gray-600 dark:text-gray-400 line-clamp-2 mt-1">
             {{ goal.description }}
           </p>
         </div>
       </div>
 
       <div class="flex items-center gap-2 ml-2">
-        <span :class="['inline-flex items-center px-2 py-1 rounded text-xs font-medium', statusConfig.color]">
+        <span :class="['inline-flex items-center px-2 py-1 rounded text-caption', statusConfig.color]">
           {{ statusConfig.label }}
         </span>
       </div>
@@ -164,10 +164,10 @@ const formatDate = (dateStr: string): string => {
 
       <div class="flex-1">
         <div class="flex items-baseline justify-between mb-1">
-          <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <span class="text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ formatNumber(goal.currentValue) }}
           </span>
-          <span class="text-sm text-gray-500 dark:text-gray-400">
+          <span class="text-body text-gray-500 dark:text-gray-400">
             / {{ formatNumber(goal.targetValue) }} {{ goal.unit }}
           </span>
         </div>
@@ -188,14 +188,14 @@ const formatDate = (dateStr: string): string => {
             :class="[
               'w-2 h-2 rounded-full transition-colors',
               milestone.isCompleted
-                ? 'bg-green-500 dark:bg-green-400'
+                ? 'bg-success'
                 : goal.currentValue >= milestone.targetValue
-                ? 'bg-blue-500 dark:bg-blue-400 animate-pulse'
+                ? 'bg-info animate-pulse'
                 : 'bg-gray-300 dark:bg-gray-600'
             ]"
             :title="milestone.title"
           ></div>
-          <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">
+          <span class="text-body-xs text-gray-500 dark:text-gray-400 ml-1">
             {{ completedMilestones }}/{{ goal.milestones.length }} 마일스톤
           </span>
         </div>
@@ -203,7 +203,7 @@ const formatDate = (dateStr: string): string => {
     </div>
 
     <!-- Info Section -->
-    <div class="flex items-center justify-between text-sm border-t border-gray-200 dark:border-gray-700 pt-4">
+    <div class="flex items-center justify-between text-body border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex items-center gap-4">
         <span class="inline-flex items-center px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
           {{ periodLabel }}
@@ -215,8 +215,8 @@ const formatDate = (dateStr: string): string => {
           v-if="goal.status === 'active'"
           :class="[
             'font-medium',
-            daysLeft <= 3 ? 'text-red-600 dark:text-red-400' :
-            daysLeft <= 7 ? 'text-orange-600 dark:text-orange-400' :
+            daysLeft <= 3 ? 'text-error-strong' :
+            daysLeft <= 7 ? 'text-warning-strong' :
             'text-gray-600 dark:text-gray-400'
           ]"
         >
@@ -232,7 +232,7 @@ const formatDate = (dateStr: string): string => {
     >
       <button
         v-if="goal.status === 'paused'"
-        class="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+        class="p-2 text-success-strong hover:bg-success-subtle rounded-lg transition-colors"
         title="재개"
         @click="emit('resume', goal.id)"
       >
@@ -247,14 +247,14 @@ const formatDate = (dateStr: string): string => {
         <PauseIcon class="w-4 h-4" />
       </button>
       <button
-        class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+        class="p-2 text-info-strong hover:bg-info-subtle rounded-lg transition-colors"
         title="수정"
         @click="emit('edit', goal)"
       >
         <PencilIcon class="w-4 h-4" />
       </button>
       <button
-        class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+        class="p-2 text-error-strong hover:bg-error-subtle rounded-lg transition-colors"
         title="삭제"
         @click="emit('delete', goal.id)"
       >

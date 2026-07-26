@@ -8,7 +8,7 @@
     ]"
   >
     <!-- Pin indicator -->
-    <div v-if="comment.isPinned" class="mb-2 flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400">
+    <div v-if="comment.isPinned" class="mb-2 flex items-center gap-1 text-body-xs text-primary-600 dark:text-primary-400">
       <span>📌</span>
       <span class="font-medium">{{ $t('comments.card.pinned') }}</span>
     </div>
@@ -23,7 +23,7 @@
       </div>
       <div
         v-else
-        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-body font-semibold text-white"
         :style="{ backgroundColor: avatarColor }"
       >
         {{ comment.author.charAt(0).toUpperCase() }}
@@ -44,10 +44,10 @@
             {{ comment.author }}
           </component>
           <PlatformBadge :platform="comment.platform" />
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{ relativeTime }}</span>
+          <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ relativeTime }}</span>
           <span
             v-if="comment.syncedAt"
-            class="text-xs text-gray-400 dark:text-gray-500"
+            class="text-body-xs text-gray-400 dark:text-gray-500"
             :title="'동기화: ' + comment.syncedAt"
           >
             · 동기화됨
@@ -58,14 +58,14 @@
         <router-link
           v-if="comment.videoTitle"
           :to="`/videos/${comment.videoId}`"
-          class="mb-2 block text-xs text-primary-600 hover:underline dark:text-primary-400"
+          class="mb-2 block text-body-xs text-primary-600 hover:underline dark:text-primary-400"
         >
           {{ comment.videoTitle }}
         </router-link>
 
         <!-- Comment content -->
         <p
-          class="mb-2 text-sm text-gray-700 dark:text-gray-300"
+          class="mb-2 text-body text-gray-700 dark:text-gray-300"
           :class="comment.isHidden ? 'line-through' : ''"
         >
           <span v-if="!expanded && comment.content.length > 200">
@@ -86,14 +86,14 @@
         <!-- Reply content -->
         <div
           v-if="comment.isReplied && comment.replyContent"
-          class="mb-2 rounded-lg bg-gray-50 p-2 text-sm dark:bg-gray-800"
+          class="mb-2 rounded-lg bg-gray-50 p-2 text-body dark:bg-gray-800"
         >
-          <span class="text-xs font-medium text-primary-600 dark:text-primary-400">{{ $t('comments.card.myReply') }}</span>
+          <span class="text-caption text-primary-600 dark:text-primary-400">{{ $t('comments.card.myReply') }}</span>
           <p class="mt-1 text-gray-700 dark:text-gray-300">{{ comment.replyContent }}</p>
         </div>
 
         <!-- Metadata -->
-        <div class="mb-2 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+        <div class="mb-2 flex flex-wrap items-center gap-3 text-body-xs text-gray-500 dark:text-gray-400">
           <span class="flex items-center gap-1">
             <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
@@ -102,7 +102,7 @@
           </span>
           <span>{{ $t('comments.card.comment') }} {{ comment.replyCount }}</span>
           <span
-            class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+            class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption"
             :class="sentimentBadgeClass"
           >
             {{ sentimentLabel }}
@@ -118,21 +118,21 @@
           <button
             v-if="platformCaps?.canReply && !comment.isReplied"
             type="button"
-            class="text-xs font-medium text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
+            class="text-caption text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="isReplying = true"
           >
             {{ $t('comments.card.reply') }}
           </button>
           <button
             type="button"
-            class="text-xs font-medium text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
+            class="text-caption text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="emit('hide', comment.id)"
           >
             {{ comment.isHidden ? $t('comments.card.show') : $t('comments.card.hide') }}
           </button>
           <button
             type="button"
-            class="text-xs font-medium text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
+            class="text-caption text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="emit('pin', comment.id)"
           >
             {{ comment.isPinned ? $t('comments.card.unpin') : $t('comments.card.pin') }}
@@ -140,7 +140,7 @@
           <button
             v-if="platformCaps?.canDelete"
             type="button"
-            class="text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+            class="text-caption text-error-strong transition hover:opacity-80"
             @click="showDeleteConfirm = true"
           >
             {{ $t('comments.card.delete') }}
@@ -230,9 +230,9 @@ const avatarColor = computed(() => {
 const sentimentBorderClass = computed(() => {
   switch (props.comment.sentiment) {
     case 'positive':
-      return 'border-green-500 dark:border-green-600'
+      return 'border-success'
     case 'negative':
-      return 'border-red-500 dark:border-red-600'
+      return 'border-error'
     default:
       return 'border-gray-300 dark:border-gray-600'
   }
@@ -241,9 +241,9 @@ const sentimentBorderClass = computed(() => {
 const sentimentBadgeClass = computed(() => {
   switch (props.comment.sentiment) {
     case 'positive':
-      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      return 'bg-success-subtle text-success-strong'
     case 'negative':
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+      return 'bg-error-subtle text-error-strong'
     default:
       return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
   }

@@ -55,9 +55,9 @@ function formatLastSaved() {
 // Simple markdown-like parser for preview
 function parseMarkdown(text: string): string {
   return text
-    .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">$1</h1>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3 class="text-lg font-medium mb-2 text-gray-900 dark:text-gray-100">$1</h3>')
+    .replace(/^# (.+)$/gm, '<h1 class="text-h1 font-bold mb-4 text-gray-900 dark:text-gray-100">$1</h1>')
+    .replace(/^## (.+)$/gm, '<h2 class="text-h2 font-semibold mb-3 text-gray-900 dark:text-gray-100">$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3 class="text-title font-medium mb-2 text-gray-900 dark:text-gray-100">$1</h3>')
     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
     .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
     .replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>')
@@ -74,9 +74,9 @@ function parseMarkdown(text: string): string {
       <div class="flex items-center gap-2">
         <button
           :class="[
-            'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+            'px-3 py-1.5 text-body font-medium rounded-md transition-colors',
             !isPreview
-              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+              ? 'bg-info-subtle text-info-strong'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           ]"
           @click="isPreview = false"
@@ -85,9 +85,9 @@ function parseMarkdown(text: string): string {
         </button>
         <button
           :class="[
-            'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+            'px-3 py-1.5 text-body font-medium rounded-md transition-colors',
             isPreview
-              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+              ? 'bg-info-subtle text-info-strong'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           ]"
           @click="isPreview = true"
@@ -98,7 +98,7 @@ function parseMarkdown(text: string): string {
       <div class="flex items-center gap-2">
         <span
           v-if="isSaving"
-          class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1"
+          class="text-body text-gray-500 dark:text-gray-400 flex items-center gap-1"
         >
           <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -108,7 +108,7 @@ function parseMarkdown(text: string): string {
         </span>
         <span
           v-else-if="lastSaved"
-          class="text-sm text-green-600 dark:text-green-400 flex items-center gap-1"
+          class="text-body text-success-strong flex items-center gap-1"
         >
           <CheckIcon class="w-4 h-4" />
           <span>{{ formatLastSaved() }}</span>
@@ -121,7 +121,7 @@ function parseMarkdown(text: string): string {
       <template v-if="!isPreview">
         <textarea
           v-model="localValue"
-          class="w-full h-[500px] p-4 bg-transparent text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg font-mono text-sm"
+          class="w-full h-[500px] p-4 bg-transparent text-gray-900 dark:text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg font-mono text-body"
           placeholder="# 브랜드 가이드라인을 작성하세요
 
 ## 색상 사용 원칙
@@ -150,11 +150,11 @@ function parseMarkdown(text: string): string {
     </div>
 
     <!-- Footer Info -->
-    <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+    <div class="flex items-center justify-between text-body text-gray-600 dark:text-gray-400">
       <div class="flex items-center gap-4">
         <span>문자 수: {{ characterCount.toLocaleString() }}</span>
       </div>
-      <div class="text-xs">
+      <div class="text-body-xs">
         마크다운 문법 사용 가능: # 제목, **굵게**, *기울임*, - 목록
       </div>
     </div>

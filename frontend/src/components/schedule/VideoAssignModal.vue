@@ -82,7 +82,7 @@ function confirmSelection(): void {
       >
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-          <h2 id="video-assign-modal-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 id="video-assign-modal-title" class="text-title font-semibold text-gray-900 dark:text-gray-100">
             영상 배정
           </h2>
           <button
@@ -102,7 +102,7 @@ function confirmSelection(): void {
               v-model="searchQuery"
               type="text"
               placeholder="영상 제목 검색..."
-              class="block w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
+              class="block w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-body text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
             />
           </div>
         </div>
@@ -119,8 +119,8 @@ function confirmSelection(): void {
             v-else-if="loadError"
             class="flex flex-col items-center justify-center py-10"
           >
-            <p class="text-sm text-red-500">{{ loadError }}</p>
-            <button class="mt-2 text-sm text-primary-600 hover:underline" @click="loadVideos">다시 시도</button>
+            <p class="text-body text-error-strong">{{ loadError }}</p>
+            <button class="mt-2 text-body text-primary-600 hover:underline" @click="loadVideos">다시 시도</button>
           </div>
 
           <!-- Empty -->
@@ -129,7 +129,7 @@ function confirmSelection(): void {
             class="flex flex-col items-center justify-center py-10"
           >
             <FilmIcon class="h-8 w-8 text-gray-400 dark:text-gray-500" />
-            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-2 text-body text-gray-500 dark:text-gray-400">
               {{ searchQuery.trim() ? '검색 결과가 없습니다' : '등록된 영상이 없습니다' }}
             </p>
           </div>
@@ -159,10 +159,10 @@ function confirmSelection(): void {
 
             <!-- Info -->
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+              <p class="truncate text-body font-medium text-gray-900 dark:text-gray-100">
                 {{ video.title }}
               </p>
-              <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              <p class="mt-0.5 text-body-xs text-gray-500 dark:text-gray-400">
                 {{ formatDate(video.createdAt) }}
               </p>
             </div>
@@ -180,7 +180,7 @@ function confirmSelection(): void {
         <!-- Footer -->
         <div class="flex items-center justify-end gap-2 border-t border-gray-200 px-5 py-4 dark:border-gray-700">
           <button
-            class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            class="rounded-lg border border-gray-300 px-4 py-2 text-body font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             @click="emit('close')"
           >
             취소
@@ -188,7 +188,7 @@ function confirmSelection(): void {
           <button
             :disabled="selectedVideoId === null"
             :class="[
-              'rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors',
+              'rounded-lg px-4 py-2 text-body font-medium text-white transition-colors',
               selectedVideoId !== null
                 ? 'bg-primary-500 hover:bg-primary-600'
                 : 'cursor-not-allowed bg-gray-300 dark:bg-gray-600',

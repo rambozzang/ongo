@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <!-- Platform toggle cards -->
     <div>
-      <label class="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">게시할 플랫폼 선택</label>
+      <label class="mb-3 block text-body font-medium text-gray-700 dark:text-gray-300">게시할 플랫폼 선택</label>
       <div class="grid gap-3 tablet:grid-cols-2 desktop:grid-cols-4">
         <div
           v-for="platform in ALL_PLATFORMS"
@@ -15,9 +15,9 @@
           :class="
             isConnected(platform)
               ? getChannel(platform)?.tokenStatus === 'EXPIRED'
-                ? 'cursor-not-allowed border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/10 opacity-70'
+                ? 'cursor-not-allowed border-error bg-error-subtle opacity-70'
                 : !canUploadVideo(platform) && mediaType === 'VIDEO'
-                  ? 'cursor-not-allowed border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 opacity-70'
+                  ? 'cursor-not-allowed border-warning bg-warning-subtle opacity-70'
                   : isSelected(platform)
                     ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                     : 'cursor-pointer border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
@@ -32,29 +32,29 @@
               class="flex h-10 w-10 items-center justify-center rounded-lg"
               :style="{ backgroundColor: PLATFORM_CONFIG[platform].color + '1A' }"
             >
-              <span class="text-lg font-bold" :style="{ color: PLATFORM_CONFIG[platform].color }">
+              <span class="text-title font-bold" :style="{ color: PLATFORM_CONFIG[platform].color }">
                 {{ PLATFORM_CONFIG[platform].label[0] }}
               </span>
             </div>
             <div class="flex-1">
-              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ PLATFORM_CONFIG[platform].label }}</p>
-              <p v-if="getChannel(platform)?.tokenStatus === 'EXPIRED'" class="text-xs text-red-600">
+              <p class="text-body font-medium text-gray-900 dark:text-gray-100">{{ PLATFORM_CONFIG[platform].label }}</p>
+              <p v-if="getChannel(platform)?.tokenStatus === 'EXPIRED'" class="text-body-xs text-error-strong">
                 토큰 만료 — 재연결 필요
               </p>
-              <p v-else-if="getChannel(platform)?.tokenStatus === 'EXPIRING_SOON'" class="text-xs text-amber-600">
+              <p v-else-if="getChannel(platform)?.tokenStatus === 'EXPIRING_SOON'" class="text-body-xs text-warning-strong">
                 토큰 만료 임박
               </p>
-              <p v-else-if="isConnected(platform) && getCapability(platform)?.cloudVideoUpload && !getCapability(platform)?.directVideoUpload && mediaType === 'VIDEO'" class="text-xs text-blue-700 dark:text-blue-400">
+              <p v-else-if="isConnected(platform) && getCapability(platform)?.cloudVideoUpload && !getCapability(platform)?.directVideoUpload && mediaType === 'VIDEO'" class="text-body-xs text-info-strong">
                 클라우드 경유 업로드
               </p>
-              <p v-else-if="isConnected(platform) && !canUploadVideo(platform) && mediaType === 'VIDEO'" class="text-xs text-amber-700 dark:text-amber-400">
+              <p v-else-if="isConnected(platform) && !canUploadVideo(platform) && mediaType === 'VIDEO'" class="text-body-xs text-warning-strong">
                 {{ getCapability(platform)?.unavailableReason || '영상 업로드 미지원' }}
               </p>
-              <p v-else-if="isConnected(platform)" class="text-xs text-green-600">연동됨</p>
+              <p v-else-if="isConnected(platform)" class="text-body-xs text-success-strong">연동됨</p>
               <router-link
                 v-else
                 to="/channels"
-                class="text-xs text-primary-600 hover:text-primary-700"
+                class="text-body-xs text-primary-600 hover:text-primary-700"
                 @click.stop
               >
                 연동하기
@@ -78,13 +78,13 @@
     <div
       v-if="selectedPlatforms.length > 0"
       class="rounded-lg border p-4"
-      :class="validationIssues.length > 0 ? 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30' : 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30'"
+      :class="validationIssues.length > 0 ? 'border-error bg-error-subtle' : 'border-success bg-success-subtle'"
       :role="validationIssues.length > 0 ? 'alert' : 'status'"
     >
-      <p class="text-sm font-semibold" :class="validationIssues.length > 0 ? 'text-red-800 dark:text-red-300' : 'text-green-800 dark:text-green-300'">
+      <p class="text-body font-semibold" :class="validationIssues.length > 0 ? 'text-error-strong' : 'text-success-strong'">
         {{ validationIssues.length > 0 ? `게시 전 ${validationIssues.length}개 항목을 확인해주세요` : `${selectedPlatforms.length}개 플랫폼에 게시할 준비가 됐습니다` }}
       </p>
-      <ul v-if="validationIssues.length > 0" class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">
+      <ul v-if="validationIssues.length > 0" class="mt-2 list-disc space-y-1 pl-5 text-body text-error-strong">
         <li v-for="issue in validationIssues" :key="issue">{{ issue }}</li>
       </ul>
     </div>
@@ -96,7 +96,7 @@
           <button
             v-for="platform in selectedPlatforms"
             :key="platform"
-            class="border-b-2 px-4 py-2.5 text-sm font-medium transition-colors"
+            class="border-b-2 px-4 py-2.5 text-body font-medium transition-colors"
             :class="
               activeTab === platform
                 ? 'border-primary-500 text-primary-600'
@@ -107,7 +107,7 @@
             {{ PLATFORM_CONFIG[platform].label }}
             <span
               v-if="PLATFORM_LIMITS[platform] && isOverLimit(platform, 'title')"
-              class="ml-1 text-xs text-red-500"
+              class="ml-1 text-body-xs text-error-strong"
               title="제목이 플랫폼 제한을 초과합니다"
             >!</span>
           </button>
@@ -119,12 +119,12 @@
         <!-- Title -->
         <div>
           <div class="mb-1.5 flex items-center justify-between">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-body font-medium text-gray-700 dark:text-gray-300">
               {{ PLATFORM_CONFIG[activeTab].label }} 제목
             </label>
             <span
-              class="text-xs"
-              :class="isOverLimit(activeTab, 'title') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'"
+              class="text-body-xs"
+              :class="isOverLimit(activeTab, 'title') ? 'text-error-strong' : 'text-gray-400 dark:text-gray-500'"
             >
               {{ platformMeta[activeTab]?.title.length || 0 }}/{{ PLATFORM_LIMITS[activeTab]?.title || 0 }}
             </span>
@@ -132,12 +132,12 @@
           <input
             v-model="platformMeta[activeTab]!.title"
             type="text"
-            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-body focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             @input="emitUpdate"
           />
           <p
             v-if="PLATFORM_LIMITS[activeTab] && isOverLimit(activeTab, 'title')"
-            class="mt-1 text-xs text-red-500"
+            class="mt-1 text-body-xs text-error-strong"
           >
             {{ PLATFORM_CONFIG[activeTab].label }}은(는) 제목 {{ PLATFORM_LIMITS[activeTab]?.title }}자까지 허용합니다
           </p>
@@ -146,12 +146,12 @@
         <!-- Description -->
         <div>
           <div class="mb-1.5 flex items-center justify-between">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-body font-medium text-gray-700 dark:text-gray-300">
               {{ PLATFORM_CONFIG[activeTab].label }} 설명
             </label>
             <span
-              class="text-xs"
-              :class="isOverLimit(activeTab, 'description') ? 'text-red-500' : 'text-gray-400 dark:text-gray-500'"
+              class="text-body-xs"
+              :class="isOverLimit(activeTab, 'description') ? 'text-error-strong' : 'text-gray-400 dark:text-gray-500'"
             >
               {{ platformMeta[activeTab]?.description.length || 0 }}/{{ PLATFORM_LIMITS[activeTab]?.description || 0 }}
             </span>
@@ -160,10 +160,10 @@
             v-if="(PLATFORM_LIMITS[activeTab]?.description || 0) > 0"
             v-model="platformMeta[activeTab]!.description"
             rows="3"
-            class="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            class="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-body focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             @input="emitUpdate"
           />
-          <p v-else class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+          <p v-else class="rounded-lg bg-gray-50 px-3 py-2 text-body-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">
             이 플랫폼은 별도 설명 필드를 제공하지 않아 제목과 태그로 게시 문구를 구성합니다.
           </p>
         </div>
@@ -171,10 +171,10 @@
         <!-- Tags -->
         <div>
           <div class="mb-1.5 flex items-center justify-between">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="text-body font-medium text-gray-700 dark:text-gray-300">
               {{ PLATFORM_CONFIG[activeTab].label }} 태그
             </label>
-            <span class="text-xs text-gray-400 dark:text-gray-500">
+            <span class="text-body-xs text-gray-400 dark:text-gray-500">
               {{ platformMeta[activeTab]?.tags.length || 0 }}개
             </span>
           </div>
@@ -182,7 +182,7 @@
             <span
               v-for="(tag, i) in platformMeta[activeTab]?.tags || []"
               :key="i"
-              class="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-xs text-gray-700 dark:text-gray-300"
+              class="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-body-xs text-gray-700 dark:text-gray-300"
             >
               #{{ tag }}
               <button
@@ -196,7 +196,7 @@
             <input
               v-model="platformTagInput"
               type="text"
-              class="min-w-[100px] flex-1 border-none bg-transparent text-gray-900 dark:text-gray-100 p-0 text-xs focus:outline-none focus:ring-0"
+              class="min-w-[100px] flex-1 border-none bg-transparent text-gray-900 dark:text-gray-100 p-0 text-body-xs focus:outline-none focus:ring-0"
               placeholder="태그 추가 (Enter)"
               @keydown.enter.prevent="addPlatformTag(activeTab)"
             />
@@ -207,12 +207,12 @@
 
     <!-- Publish options -->
     <div v-if="selectedPlatforms.length > 0" class="rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-      <label class="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">게시 설정</label>
+      <label class="mb-3 block text-body font-medium text-gray-700 dark:text-gray-300">게시 설정</label>
 
       <div class="flex flex-col gap-4 tablet:flex-row tablet:items-end">
         <div class="flex gap-3">
           <button
-            class="rounded-lg px-5 py-2.5 text-sm font-medium transition-colors"
+            class="rounded-lg px-5 py-2.5 text-body font-medium transition-colors"
             :class="
               !scheduleMode
                 ? 'bg-primary-600 text-white'
@@ -223,7 +223,7 @@
             즉시 게시
           </button>
           <button
-            class="inline-flex items-center gap-1.5 rounded-lg px-5 py-2.5 text-sm font-medium transition-colors"
+            class="inline-flex items-center gap-1.5 rounded-lg px-5 py-2.5 text-body font-medium transition-colors"
             :class="
               scheduleMode
                 ? 'bg-primary-600 text-white'
@@ -242,19 +242,19 @@
           <input
             v-model="scheduleDate"
             type="date"
-            class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-body focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             :min="todayStr"
             @change="emitSchedule"
           />
           <input
             v-model="scheduleTime"
             type="time"
-            class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-body focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             @change="emitSchedule"
           />
           <button
             v-if="aiScheduleSuggestions.length > 0"
-            class="inline-flex items-center gap-1 rounded-lg border border-primary-300 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 px-3 py-2 text-xs font-medium text-primary-700 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/30"
+            class="inline-flex items-center gap-1 rounded-lg border border-primary-300 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 px-3 py-2 text-caption text-primary-700 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/30"
             @click="showSuggestions = !showSuggestions"
           >
             <SparklesIcon class="h-3.5 w-3.5" />
@@ -268,16 +268,16 @@
         v-if="scheduleMode && showSuggestions && aiScheduleSuggestions.length > 0"
         class="mt-3 rounded-lg bg-primary-50 dark:bg-primary-900/20 p-3"
       >
-        <p class="mb-2 text-xs font-medium text-primary-800 dark:text-primary-400">AI 추천 게시 시간</p>
+        <p class="mb-2 text-caption text-primary-800 dark:text-primary-400">AI 추천 게시 시간</p>
         <div class="space-y-1.5">
           <button
             v-for="(sug, i) in aiScheduleSuggestions"
             :key="i"
-            class="flex w-full items-center justify-between rounded-lg bg-white dark:bg-gray-800 px-3 py-2 text-left text-sm hover:bg-primary-100 dark:hover:bg-primary-900/30"
+            class="flex w-full items-center justify-between rounded-lg bg-white dark:bg-gray-800 px-3 py-2 text-left text-body hover:bg-primary-100 dark:hover:bg-primary-900/30"
             @click="applySuggestion(sug)"
           >
             <span class="font-medium text-gray-900 dark:text-gray-100">{{ sug.dayOfWeek }} {{ sug.time }}</span>
-            <span class="text-xs text-primary-600">{{ sug.reason }}</span>
+            <span class="text-body-xs text-primary-600">{{ sug.reason }}</span>
           </button>
         </div>
       </div>

@@ -48,19 +48,19 @@ const roleStats = computed(() => {
       role: 'owner',
       count: teamStore.membersByRole('owner').length,
       label: t('team.roles.owner'),
-      color: 'text-purple-600 dark:text-purple-400',
+      color: 'text-info-strong',
     },
     {
       role: 'admin',
       count: teamStore.membersByRole('admin').length,
       label: t('team.roles.admin'),
-      color: 'text-blue-600 dark:text-blue-400',
+      color: 'text-info-strong',
     },
     {
       role: 'editor',
       count: teamStore.membersByRole('editor').length,
       label: t('team.roles.editor'),
-      color: 'text-green-600 dark:text-green-400',
+      color: 'text-success-strong',
     },
     {
       role: 'viewer',
@@ -159,8 +159,8 @@ watch(activeTab, (tab) => {
         <div class="flex items-center">
           <UserGroupIcon class="h-8 w-8 text-primary-600 dark:text-primary-400" />
           <div class="ml-3">
-            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('team.stats.totalMembers') }}</p>
-            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('team.stats.totalMembers') }}</p>
+            <p class="text-h1 font-semibold text-gray-900 dark:text-gray-100">
               {{ teamStore.members.length }}
             </p>
           </div>
@@ -169,13 +169,13 @@ watch(activeTab, (tab) => {
       <div class="card">
         <div class="flex items-center">
           <div
-            class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30"
+            class="flex h-8 w-8 items-center justify-center rounded-full bg-success-subtle"
           >
-            <span class="h-3 w-3 rounded-full bg-green-500"></span>
+            <span class="h-3 w-3 rounded-full bg-success"></span>
           </div>
           <div class="ml-3">
-            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('team.stats.online') }}</p>
-            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('team.stats.online') }}</p>
+            <p class="text-h1 font-semibold text-gray-900 dark:text-gray-100">
               {{ teamStore.onlineMembers.length }}
             </p>
           </div>
@@ -183,10 +183,10 @@ watch(activeTab, (tab) => {
       </div>
       <div class="card">
         <div class="flex items-center">
-          <EnvelopeIcon class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          <EnvelopeIcon class="h-8 w-8 text-info-strong" />
           <div class="ml-3">
-            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('team.stats.pendingInvites') }}</p>
-            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('team.stats.pendingInvites') }}</p>
+            <p class="text-h1 font-semibold text-gray-900 dark:text-gray-100">
               {{ inviteStatus.pending }}
             </p>
           </div>
@@ -194,10 +194,10 @@ watch(activeTab, (tab) => {
       </div>
       <div class="card">
         <div class="flex items-center">
-          <ClockIcon class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+          <ClockIcon class="h-8 w-8 text-info-strong" />
           <div class="ml-3">
-            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('team.stats.recentActivity') }}</p>
-            <p class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('team.stats.recentActivity') }}</p>
+            <p class="text-h1 font-semibold text-gray-900 dark:text-gray-100">
               {{ teamStore.activities.length }}
             </p>
           </div>
@@ -214,7 +214,7 @@ watch(activeTab, (tab) => {
         <div v-if="activeTab === 'members'" class="space-y-6">
           <!-- Role Distribution -->
           <div class="card">
-            <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <h3 class="text-body font-medium text-gray-900 dark:text-gray-100">
               {{ $t('team.roleDistribution') }}
             </h3>
             <div class="mt-4 grid grid-cols-2 gap-4 mobile:grid-cols-4">
@@ -223,10 +223,10 @@ watch(activeTab, (tab) => {
                 :key="stat.role"
                 class="text-center"
               >
-                <p :class="[stat.color, 'text-2xl font-semibold']">
+                <p :class="[stat.color, 'text-h1 font-semibold']">
                   {{ stat.count }}
                 </p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
+                <p class="text-body text-gray-600 dark:text-gray-400">
                   {{ stat.label }}
                 </p>
               </div>
@@ -251,10 +251,10 @@ watch(activeTab, (tab) => {
             class="text-center py-12"
           >
             <EnvelopeIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
-            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+            <h3 class="mt-2 text-body font-medium text-gray-900 dark:text-gray-100">
               {{ $t('team.noInvites') }}
             </h3>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
               {{ $t('team.noInvitesDescription') }}
             </p>
             <button
@@ -275,33 +275,33 @@ watch(activeTab, (tab) => {
             <div class="flex items-start justify-between">
               <div class="flex-1">
                 <div class="flex items-center space-x-3">
-                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <p class="text-body font-medium text-gray-900 dark:text-gray-100">
                     {{ invite.email }}
                   </p>
                   <RoleBadge :role="invite.role" />
                   <span
                     v-if="invite.status === 'pending'"
-                    class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                    class="inline-flex items-center rounded-full bg-warning-subtle px-2.5 py-0.5 text-body-xs font-medium text-warning-strong"
                   >
                     <ClockIcon class="mr-1 h-3 w-3" />
                     {{ $t('team.inviteStatus.pending') }}
                   </span>
                   <span
                     v-else-if="invite.status === 'expired'"
-                    class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                    class="inline-flex items-center rounded-full bg-error-subtle px-2.5 py-0.5 text-body-xs font-medium text-error-strong"
                   >
                     <XCircleIcon class="mr-1 h-3 w-3" />
                     {{ $t('team.inviteStatus.expired') }}
                   </span>
                   <span
                     v-else
-                    class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                    class="inline-flex items-center rounded-full bg-success-subtle px-2.5 py-0.5 text-body-xs font-medium text-success-strong"
                   >
                     <CheckCircleIcon class="mr-1 h-3 w-3" />
                     {{ $t('team.inviteStatus.accepted') }}
                   </span>
                 </div>
-                <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                <div class="mt-2 flex items-center space-x-4 text-body text-gray-500 dark:text-gray-400">
                   <span>{{ $t('team.invitedAt') }}: {{ relativeTime(invite.invitedAt) }}</span>
                   <span>•</span>
                   <span>{{ expiresIn(invite.expiresAt) }}</span>
@@ -317,7 +317,7 @@ watch(activeTab, (tab) => {
                   <ArrowPathIcon class="h-5 w-5" />
                 </button>
                 <button
-                  class="rounded-md p-2 text-gray-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                  class="rounded-md p-2 text-gray-400 hover:bg-error-subtle hover:text-error-strong"
                   :title="$t('team.cancelInvite')"
                   @click="handleCancelInvite(invite.id)"
                 >
@@ -350,7 +350,7 @@ watch(activeTab, (tab) => {
         <div v-if="activeTab === 'workflow'" class="space-y-8">
           <!-- Kanban Board -->
           <div>
-            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <h3 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">
               {{ $t('team.workflowBoard') }}
             </h3>
             <WorkflowBoard />
@@ -360,12 +360,12 @@ watch(activeTab, (tab) => {
           <div class="page-grid page-grid--split">
             <!-- 내 작업 -->
             <div class="card">
-              <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
+              <h3 class="mb-4 text-body-lg font-semibold text-gray-900 dark:text-gray-100">
                 {{ $t('team.myTasks') }}
               </h3>
               <div v-if="approvalStore.myTasks">
                 <div v-if="approvalStore.myTasks.assignedToMe.length > 0" class="mb-4">
-                  <p class="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <p class="mb-2 text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     {{ $t('team.assignedToMe') }}
                   </p>
                   <div class="space-y-2">
@@ -375,15 +375,15 @@ watch(activeTab, (tab) => {
                       class="flex items-center justify-between rounded-md border border-gray-100 p-3 dark:border-gray-700"
                     >
                       <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ task.videoTitle }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.requesterName }}</p>
+                        <p class="truncate text-body font-medium text-gray-900 dark:text-gray-100">{{ task.videoTitle }}</p>
+                        <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ task.requesterName }}</p>
                       </div>
                       <span
                         class="ml-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium"
                         :class="{
-                          'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300': task.status === 'PENDING',
-                          'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': task.status === 'APPROVED',
-                          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300': task.status === 'REJECTED',
+                          'bg-warning-subtle text-warning-strong': task.status === 'PENDING',
+                          'bg-success-subtle text-success-strong': task.status === 'APPROVED',
+                          'bg-error-subtle text-error-strong': task.status === 'REJECTED',
                           'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': !['PENDING', 'APPROVED', 'REJECTED'].includes(task.status),
                         }"
                       >
@@ -393,7 +393,7 @@ watch(activeTab, (tab) => {
                   </div>
                 </div>
                 <div v-if="approvalStore.myTasks.requestedByMe.length > 0">
-                  <p class="mb-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <p class="mb-2 text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     {{ $t('team.requestedByMe') }}
                   </p>
                   <div class="space-y-2">
@@ -403,15 +403,15 @@ watch(activeTab, (tab) => {
                       class="flex items-center justify-between rounded-md border border-gray-100 p-3 dark:border-gray-700"
                     >
                       <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ task.videoTitle }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ task.reviewerName ?? $t('team.noReviewer') }}</p>
+                        <p class="truncate text-body font-medium text-gray-900 dark:text-gray-100">{{ task.videoTitle }}</p>
+                        <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ task.reviewerName ?? $t('team.noReviewer') }}</p>
                       </div>
                       <span
                         class="ml-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium"
                         :class="{
-                          'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300': task.status === 'PENDING',
-                          'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': task.status === 'APPROVED',
-                          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300': task.status === 'REJECTED',
+                          'bg-warning-subtle text-warning-strong': task.status === 'PENDING',
+                          'bg-success-subtle text-success-strong': task.status === 'APPROVED',
+                          'bg-error-subtle text-error-strong': task.status === 'REJECTED',
                           'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': !['PENDING', 'APPROVED', 'REJECTED'].includes(task.status),
                         }"
                       >
@@ -422,12 +422,12 @@ watch(activeTab, (tab) => {
                 </div>
                 <div
                   v-if="approvalStore.myTasks.assignedToMe.length === 0 && approvalStore.myTasks.requestedByMe.length === 0"
-                  class="py-8 text-center text-sm text-gray-400 dark:text-gray-500"
+                  class="py-8 text-center text-body text-gray-400 dark:text-gray-500"
                 >
                   {{ $t('team.noTasks') }}
                 </div>
               </div>
-              <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+              <div v-else class="py-8 text-center text-body text-gray-400 dark:text-gray-500">
                 {{ $t('team.loading') }}
               </div>
             </div>
@@ -435,12 +435,12 @@ watch(activeTab, (tab) => {
             <!-- 대기 중인 검토 -->
             <div class="card">
               <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+                <h3 class="text-body-lg font-semibold text-gray-900 dark:text-gray-100">
                   {{ $t('team.pendingReviews') }}
                 </h3>
                 <span
                   v-if="approvalStore.pendingReviews && approvalStore.pendingReviews.overdueCount > 0"
-                  class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                  class="inline-flex items-center rounded-full bg-error-subtle px-2.5 py-0.5 text-body-xs font-medium text-error-strong"
                 >
                   {{ $t('team.overdueCount', { count: approvalStore.pendingReviews.overdueCount }) }}
                 </span>
@@ -453,8 +453,8 @@ watch(activeTab, (tab) => {
                     class="flex items-center justify-between rounded-md border border-gray-100 p-3 dark:border-gray-700"
                   >
                     <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ review.videoTitle }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ review.requesterName }}</p>
+                      <p class="truncate text-body font-medium text-gray-900 dark:text-gray-100">{{ review.videoTitle }}</p>
+                      <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ review.requesterName }}</p>
                     </div>
                     <div class="ml-2 flex flex-wrap gap-1">
                       <span
@@ -467,11 +467,11 @@ watch(activeTab, (tab) => {
                     </div>
                   </div>
                 </div>
-                <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+                <div v-else class="py-8 text-center text-body text-gray-400 dark:text-gray-500">
                   {{ $t('team.noPendingReviews') }}
                 </div>
               </div>
-              <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+              <div v-else class="py-8 text-center text-body text-gray-400 dark:text-gray-500">
                 {{ $t('team.loading') }}
               </div>
             </div>

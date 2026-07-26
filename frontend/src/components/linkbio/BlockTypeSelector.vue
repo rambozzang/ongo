@@ -3,12 +3,12 @@
     <button
       v-for="blockType in blockTypes"
       :key="blockType.type"
-      class="flex flex-col items-center gap-2 rounded-lg border border-gray-200 p-4 transition-all hover:border-blue-500 hover:bg-blue-50 dark:border-gray-700 dark:hover:border-blue-500 dark:hover:bg-blue-950"
+      class="flex flex-col items-center gap-2 rounded-lg border border-gray-200 p-4 transition-all hover:border-primary-500 hover:bg-primary-50 dark:border-gray-700 dark:hover:bg-primary-900/20"
       @click="$emit('select', blockType.type)"
     >
-      <span class="text-2xl">{{ blockType.icon }}</span>
-      <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ blockType.label }}</span>
-      <span class="text-xs text-gray-500 dark:text-gray-400">{{ blockType.description }}</span>
+      <span class="text-h1">{{ blockType.icon }}</span>
+      <span class="text-body font-medium text-gray-900 dark:text-gray-100">{{ blockType.label }}</span>
+      <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ blockType.description }}</span>
     </button>
   </div>
 </template>

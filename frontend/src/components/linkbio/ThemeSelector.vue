@@ -6,7 +6,7 @@
       :class="[
         'flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all',
         selectedTheme === theme.name
-          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
+          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
           : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600',
       ]"
       @click="$emit('select', theme.name)"
@@ -15,7 +15,7 @@
         class="h-16 w-24 rounded-md border border-gray-300 dark:border-gray-600"
         :style="{ background: theme.preview }"
       />
-      <span class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ theme.label }}</span>
+      <span class="text-body-xs font-medium text-gray-900 dark:text-gray-100">{{ theme.label }}</span>
     </button>
   </div>
 </template>

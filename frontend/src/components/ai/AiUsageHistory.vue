@@ -3,12 +3,12 @@
     <!-- Header with Filter Tabs -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-4">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">사용 기록</h2>
+        <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">사용 기록</h2>
 
         <!-- Filter Tabs -->
         <div class="flex gap-2">
           <button
-            class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            class="rounded-lg px-3 py-1.5 text-body font-medium transition-colors"
             :class="activeFilter === 'all'
               ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
@@ -17,7 +17,7 @@
             전체
           </button>
           <button
-            class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            class="rounded-lg px-3 py-1.5 text-body font-medium transition-colors"
             :class="activeFilter === 'favorites'
               ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
@@ -30,7 +30,7 @@
 
       <button
         v-if="filteredHistory.length > 0"
-        class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+        class="text-body text-error-strong transition-opacity hover:opacity-80"
         @click="handleClearHistory"
       >
         기록 지우기
@@ -45,10 +45,10 @@
       <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
         <SparklesIcon class="h-8 w-8 text-gray-400 dark:text-gray-500" />
       </div>
-      <h3 class="mb-2 text-lg font-medium text-gray-900 dark:text-gray-100">
+      <h3 class="mb-2 text-title font-medium text-gray-900 dark:text-gray-100">
         {{ activeFilter === 'favorites' ? '즐겨찾기한 기록이 없습니다' : '아직 AI 사용 기록이 없습니다' }}
       </h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400">
+      <p class="text-body text-gray-500 dark:text-gray-400">
         {{ activeFilter === 'favorites' ? '별표를 눌러 중요한 기록을 즐겨찾기에 추가하세요' : 'AI 도구를 사용하면 여기에 기록이 표시됩니다' }}
       </p>
     </div>
@@ -74,19 +74,19 @@
           <!-- Content -->
           <div class="flex-1 min-w-0">
             <div class="mb-2 flex items-center gap-2">
-              <span class="badge-blue text-xs">{{ record.toolType }}</span>
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(record.createdAt) }}</span>
-              <span class="text-xs font-medium text-primary-600 dark:text-primary-400">{{ record.creditsUsed }} 크레딧</span>
+              <span class="badge-blue text-body-xs">{{ record.toolType }}</span>
+              <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ formatDate(record.createdAt) }}</span>
+              <span class="text-caption text-primary-600 dark:text-primary-400">{{ record.creditsUsed }} 크레딧</span>
             </div>
 
             <!-- Prompt -->
-            <p class="mb-1 text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p class="mb-1 text-body font-medium text-gray-900 dark:text-gray-100">
               {{ expandedIds.includes(record.id) ? record.prompt : truncate(record.prompt, 80) }}
             </p>
 
             <!-- Result Preview/Full -->
             <div
-              class="text-sm text-gray-600 dark:text-gray-300"
+              class="text-body text-gray-600 dark:text-gray-300"
               :class="expandedIds.includes(record.id) ? 'mt-3' : ''"
             >
               <AiResultCard
@@ -107,7 +107,7 @@
               <component :is="record.isFavorite ? StarIconSolid : StarIconOutline" class="h-5 w-5" />
             </button>
             <button
-              class="rounded-lg p-2 text-gray-400 dark:text-gray-500 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+              class="rounded-lg p-2 text-gray-400 dark:text-gray-500 transition-colors hover:bg-error-subtle hover:text-error-strong"
               @click.stop="handleDelete(record.id)"
             >
               <TrashIcon class="h-5 w-5" />
@@ -210,7 +210,7 @@ function getToolIconBg(toolType: string): string {
     '댓글 답변 생성': 'bg-green-100 dark:bg-green-900/30',
     '업로드 시간 추천': 'bg-cyan-100 dark:bg-cyan-900/30',
     '콘텐츠 아이디어': 'bg-yellow-100 dark:bg-yellow-900/30',
-    '성과 리포트': 'bg-indigo-100 dark:bg-indigo-900/30',
+    '성과 리포트': 'bg-primary-100 dark:bg-primary-900/30',
   }
   return backgrounds[toolType] || 'bg-gray-100 dark:bg-gray-800'
 }
@@ -224,7 +224,7 @@ function getToolIconColor(toolType: string): string {
     '댓글 답변 생성': 'text-green-600 dark:text-green-400',
     '업로드 시간 추천': 'text-cyan-600 dark:text-cyan-400',
     '콘텐츠 아이디어': 'text-yellow-600 dark:text-yellow-400',
-    '성과 리포트': 'text-indigo-600 dark:text-indigo-400',
+    '성과 리포트': 'text-primary-600 dark:text-primary-400',
   }
   return colors[toolType] || 'text-gray-600 dark:text-gray-400'
 }

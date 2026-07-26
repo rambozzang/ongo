@@ -43,13 +43,16 @@ const iconMap: Record<ActivityAction, any> = {
   credit_purchase: CreditCardIcon,
 }
 
+// Categorical palette, NOT status colors — each hue distinguishes one action type.
+// Deliberately left on the raw scale: the semantic tokens only carry 5 states, so
+// upload/schedule/ai_generate/team_invite would all collapse into `info`.
 const iconBgMap: Record<ActivityAction, string> = {
   upload: 'bg-blue-500',
   publish: 'bg-green-500',
   edit: 'bg-amber-500',
   delete: 'bg-red-500',
   schedule: 'bg-purple-500',
-  ai_generate: 'bg-indigo-500',
+  ai_generate: 'bg-primary-500',
   channel_connect: 'bg-teal-500',
   channel_disconnect: 'bg-orange-500',
   settings_change: 'bg-gray-500',
@@ -176,6 +179,8 @@ const platformBadgeClass = computed(() => {
   const platform = props.log.details?.platform
   if (!platform) return ''
 
+  // Platform brand colors (YouTube red / Instagram pink / Naver green) — kept raw
+  // on purpose; semantic tokens would strip the brand identity.
   const classes: Record<string, string> = {
     YOUTUBE: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     TIKTOK: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
@@ -214,7 +219,7 @@ function handleEntityClick() {
       </div>
       <div
         v-else
-        class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
+        class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-body font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
       >
         {{ userInitials }}
       </div>
@@ -230,23 +235,23 @@ function handleEntityClick() {
 
     <!-- Content -->
     <div class="min-w-0 flex-1">
-      <p class="text-sm text-gray-900 dark:text-gray-100">
+      <p class="text-body text-gray-900 dark:text-gray-100">
         {{ description }}
         <button
           v-if="hasEntityLink"
           class="ml-1 inline-flex text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
           @click.stop="handleEntityClick"
         >
-          <span class="text-xs underline">보기</span>
+          <span class="text-body-xs underline">보기</span>
         </button>
       </p>
 
       <div class="mt-1 flex flex-wrap items-center gap-2">
-        <span class="text-xs text-gray-500 dark:text-gray-400">{{ relativeTime }}</span>
+        <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ relativeTime }}</span>
 
         <span
           v-if="platformBadge"
-          class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+          class="inline-flex items-center rounded-full px-2 py-0.5 text-body-xs font-medium"
           :class="platformBadgeClass"
         >
           {{ platformBadge }}

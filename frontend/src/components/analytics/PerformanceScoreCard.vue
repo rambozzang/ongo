@@ -1,10 +1,10 @@
 <template>
   <div class="card">
     <div class="mb-4 flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">AI 성과 점수</h3>
+      <h3 class="text-title font-semibold text-gray-900 dark:text-gray-100">AI 성과 점수</h3>
       <span
         v-if="score"
-        class="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+        class="rounded-full px-2.5 py-0.5 text-body-xs font-semibold"
         :class="percentileBadgeClass"
       >
         Top {{ score.percentileRank.toFixed(0) }}%
@@ -49,23 +49,23 @@
                 <div class="flex items-center gap-1">
                   <svg
                     v-if="score.trend === 'up'"
-                    class="h-3.5 w-3.5 text-green-500" viewBox="0 0 20 20" fill="currentColor"
+                    class="h-3.5 w-3.5 text-success-strong" viewBox="0 0 20 20" fill="currentColor"
                   >
                     <path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clip-rule="evenodd" />
                   </svg>
                   <svg
                     v-else-if="score.trend === 'down'"
-                    class="h-3.5 w-3.5 text-red-500" viewBox="0 0 20 20" fill="currentColor"
+                    class="h-3.5 w-3.5 text-error-strong" viewBox="0 0 20 20" fill="currentColor"
                   >
                     <path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
                   </svg>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                  <span class="text-body-xs text-gray-500 dark:text-gray-400">
                     {{ trendLabel }}
                   </span>
                 </div>
               </div>
             </div>
-            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-2 text-body text-gray-500 dark:text-gray-400">
               7일 예상 조회수: {{ formatNumber(score.prediction7d) }}
             </p>
           </div>
@@ -74,8 +74,8 @@
           <div class="space-y-3">
             <div v-for="(item, key) in breakdownItems" :key="key">
               <div class="mb-1 flex items-center justify-between">
-                <span class="text-xs font-medium text-gray-600 dark:text-gray-400">{{ item.label }}</span>
-                <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                <span class="text-caption text-gray-600 dark:text-gray-400">{{ item.label }}</span>
+                <span class="text-body-xs font-semibold text-gray-900 dark:text-gray-100">
                   {{ Math.round(item.value) }}
                 </span>
               </div>
@@ -93,14 +93,14 @@
         <!-- Anomaly Alert -->
         <div
           v-if="score.isAnomaly"
-          class="mt-4 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-900/30 dark:bg-yellow-900/10"
+          class="mt-4 flex items-start gap-3 rounded-lg border border-warning bg-warning-subtle p-3"
         >
-          <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+          <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-warning-strong" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
           </svg>
           <div>
-            <p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">이상 감지됨</p>
-            <p class="mt-0.5 text-xs text-yellow-700 dark:text-yellow-300">
+            <p class="text-body font-medium text-warning-strong">이상 감지됨</p>
+            <p class="mt-0.5 text-body-xs text-warning-strong">
               {{ score.anomalyDescription }}
             </p>
           </div>
@@ -134,17 +134,17 @@ const scoreOffset = computed(() => {
 const scoreColorClass = computed(() => {
   if (!score.value) return 'text-gray-400'
   const s = score.value.overallScore
-  if (s <= 30) return 'text-red-500'
-  if (s <= 60) return 'text-yellow-500'
-  if (s <= 80) return 'text-green-500'
+  if (s <= 30) return 'text-error-strong'
+  if (s <= 60) return 'text-warning-strong'
+  if (s <= 80) return 'text-success-strong'
   return 'text-primary-500'
 })
 
 const percentileBadgeClass = computed(() => {
   if (!score.value) return ''
   const p = score.value.percentileRank
-  if (p >= 80) return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-  if (p >= 50) return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+  if (p >= 80) return 'bg-success-subtle text-success-strong'
+  if (p >= 50) return 'bg-info-subtle text-info-strong'
   return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
 })
 

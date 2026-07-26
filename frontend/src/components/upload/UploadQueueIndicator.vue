@@ -36,7 +36,7 @@
         </svg>
         <!-- Center icon/percentage -->
         <div class="absolute inset-0 flex items-center justify-center">
-          <span v-if="queueStore.uploadingCount > 0" class="text-xs font-bold text-primary-600 dark:text-primary-400">
+          <span v-if="queueStore.uploadingCount > 0" class="text-body-xs font-bold text-primary-600 dark:text-primary-400">
             {{ queueStore.overallProgress }}
           </span>
           <QueueListIcon v-else class="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -45,10 +45,10 @@
 
       <!-- Text info -->
       <div class="min-w-0 flex-1 text-left">
-        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <p class="text-body font-semibold text-gray-900 dark:text-gray-100">
           {{ statusText }}
         </p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">
+        <p class="text-body-xs text-gray-500 dark:text-gray-400">
           {{ queueStore.queue.length }}개 항목
         </p>
       </div>
@@ -84,11 +84,11 @@ const progressOffset = computed(() => {
 
 const progressColor = computed(() => {
   if (queueStore.failedCount > 0) {
-    return 'text-red-500'
+    return 'text-error-strong'
   } else if (queueStore.uploadingCount > 0) {
     return 'text-primary-500'
   } else if (queueStore.completedCount > 0 && queueStore.queuedCount === 0) {
-    return 'text-green-500'
+    return 'text-success-strong'
   }
   return 'text-gray-400 dark:text-gray-500'
 })

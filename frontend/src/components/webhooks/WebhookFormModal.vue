@@ -186,7 +186,7 @@ onUnmounted(() => {
       >
         <!-- Header -->
         <div class="mb-5 flex items-center justify-between">
-          <h3 id="webhook-form-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 id="webhook-form-modal-title" class="text-title font-semibold text-gray-900 dark:text-white">
             {{ modalTitle }}
           </h3>
           <button
@@ -200,23 +200,23 @@ onUnmounted(() => {
 
         <!-- URL Input -->
         <div class="mb-5">
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
             엔드포인트 URL
           </label>
           <input
             v-model="url"
             type="url"
             placeholder="https://example.com/webhooks"
-            class="w-full rounded-lg border px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500"
+            class="w-full rounded-lg border px-3 py-2 text-body text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-gray-900 dark:text-white dark:placeholder-gray-500"
             :class="
               urlError
-                ? 'border-red-300 dark:border-red-600'
+                ? 'border-error'
                 : 'border-gray-300 dark:border-gray-600'
             "
             @blur="validateUrl"
             @input="urlError = ''"
           />
-          <p v-if="urlError" class="mt-1 text-xs text-red-500 dark:text-red-400">
+          <p v-if="urlError" class="mt-1 text-body-xs text-error-strong">
             {{ urlError }}
           </p>
         </div>
@@ -224,19 +224,19 @@ onUnmounted(() => {
         <!-- Event Selection -->
         <div class="mb-5">
           <div class="mb-1.5 flex items-center justify-between">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="block text-body font-medium text-gray-700 dark:text-gray-300">
               이벤트 선택
             </label>
             <div class="flex gap-2">
               <button
-                class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                class="text-body-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
                 @click="selectAll"
               >
                 전체 선택
               </button>
-              <span class="text-xs text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-body-xs text-gray-300 dark:text-gray-600">|</span>
               <button
-                class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                class="text-body-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                 @click="deselectAll"
               >
                 전체 해제
@@ -262,33 +262,33 @@ onUnmounted(() => {
                 @change="toggleEvent(event)"
               />
               <div>
-                <span class="block text-sm font-medium text-gray-900 dark:text-white">
+                <span class="block text-body font-medium text-gray-900 dark:text-white">
                   {{ WEBHOOK_EVENT_LABELS[event].label }}
                 </span>
-                <span class="block text-xs text-gray-500 dark:text-gray-400">
+                <span class="block text-body-xs text-gray-500 dark:text-gray-400">
                   {{ WEBHOOK_EVENT_LABELS[event].description }}
                 </span>
               </div>
             </label>
           </div>
-          <p v-if="eventsError" class="mt-1 text-xs text-red-500 dark:text-red-400">
+          <p v-if="eventsError" class="mt-1 text-body-xs text-error-strong">
             {{ eventsError }}
           </p>
         </div>
 
         <!-- Secret Key -->
         <div class="mb-5">
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
             서명 시크릿 키
           </label>
-          <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+          <p class="mb-2 text-body-xs text-gray-500 dark:text-gray-400">
             웹훅 페이로드의 서명을 검증하는 데 사용됩니다.
           </p>
           <div v-if="isEditing && secret" class="flex items-center gap-2">
             <div
               class="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
             >
-              <code class="flex-1 truncate text-xs text-gray-700 dark:text-gray-300">
+              <code class="flex-1 truncate text-body-xs text-gray-700 dark:text-gray-300">
                 {{ secretVisible ? secret : '••••••••••••••••••••••••' }}
               </code>
               <button
@@ -304,19 +304,19 @@ onUnmounted(() => {
                 title="복사"
                 @click="copySecret"
               >
-                <CheckIcon v-if="copied" class="h-4 w-4 text-green-500" />
+                <CheckIcon v-if="copied" class="h-4 w-4 text-success-strong" />
                 <ClipboardDocumentIcon v-else class="h-4 w-4" />
               </button>
             </div>
             <button
-              class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-caption text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               @click="handleRegenerateSecret"
             >
               <ArrowPathIcon class="h-3.5 w-3.5" />
               재생성
             </button>
           </div>
-          <p v-else-if="!isEditing" class="text-xs text-gray-500 dark:text-gray-400">
+          <p v-else-if="!isEditing" class="text-body-xs text-gray-500 dark:text-gray-400">
             저장 시 자동으로 생성됩니다.
           </p>
         </div>
@@ -328,13 +328,13 @@ onUnmounted(() => {
         >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">웹훅 테스트</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
+              <p class="text-body font-medium text-gray-700 dark:text-gray-300">웹훅 테스트</p>
+              <p class="text-body-xs text-gray-500 dark:text-gray-400">
                 테스트 이벤트를 전송하여 연결을 확인합니다.
               </p>
             </div>
             <button
-              class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-caption text-white hover:bg-primary-700"
               @click="handleTest"
             >
               <PaperAirplaneIcon class="h-3.5 w-3.5" />
@@ -346,7 +346,7 @@ onUnmounted(() => {
         <!-- Footer Buttons -->
         <div class="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
           <button
-            class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            class="rounded-lg border border-gray-300 px-4 py-2 text-body font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             @click="close"
           >
             취소

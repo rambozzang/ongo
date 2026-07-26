@@ -23,9 +23,9 @@ function stepClass(status: string): string {
 function lineClass(status: string): string {
   switch (status) {
     case 'APPROVED':
-      return 'bg-green-400'
+      return 'bg-success'
     case 'REJECTED':
-      return 'bg-red-400'
+      return 'bg-error'
     default:
       return 'bg-gray-200 dark:bg-gray-700'
   }

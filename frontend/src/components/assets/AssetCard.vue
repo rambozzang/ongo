@@ -106,7 +106,7 @@ function formatDuration(seconds: number): string {
     <!-- Type Badge -->
     <div class="absolute right-3 top-3 z-10">
       <span
-        class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+        class="inline-flex items-center rounded-full px-2 py-0.5 text-caption"
         :class="[typeConfig.bgColor, typeConfig.color]"
       >
         {{ typeConfig.label }}
@@ -131,7 +131,7 @@ function formatDuration(seconds: number): string {
       <!-- Duration overlay for video/audio -->
       <span
         v-if="asset.duration"
-        class="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-xs font-medium text-white"
+        class="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-caption text-white"
       >
         {{ formatDuration(asset.duration) }}
       </span>
@@ -156,7 +156,7 @@ function formatDuration(seconds: number): string {
           <FolderArrowDownIcon class="h-5 w-5" />
         </button>
         <button
-          class="rounded-full bg-white/90 p-2 text-red-600 shadow-md transition-transform hover:scale-110 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800"
+          class="rounded-full bg-white/90 p-2 text-error-strong shadow-md transition-transform hover:scale-110 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800"
           title="삭제"
           @click="emit('delete', asset.id)"
         >
@@ -168,12 +168,12 @@ function formatDuration(seconds: number): string {
     <!-- Info -->
     <div class="p-3">
       <h3
-        class="mb-1 truncate text-sm font-medium text-gray-900 dark:text-gray-100"
+        class="mb-1 truncate text-body font-medium text-gray-900 dark:text-gray-100"
         :title="asset.name"
       >
         {{ asset.name }}
       </h3>
-      <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+      <p class="mb-2 text-body-xs text-gray-500 dark:text-gray-400">
         {{ formatFileSize(asset.fileSize) }}
         <template v-if="asset.width && asset.height">
           &middot; {{ asset.width }}x{{ asset.height }}
@@ -184,13 +184,13 @@ function formatDuration(seconds: number): string {
         <span
           v-for="tag in asset.tags.slice(0, 3)"
           :key="tag"
-          class="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+          class="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-body-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400"
         >
           {{ tag }}
         </span>
         <span
           v-if="asset.tags.length > 3"
-          class="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+          class="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-body-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400"
         >
           +{{ asset.tags.length - 3 }}
         </span>
@@ -227,7 +227,7 @@ function formatDuration(seconds: number): string {
           </div>
         </div>
         <div class="min-w-0">
-          <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100" :title="asset.name">
+          <p class="truncate text-body font-medium text-gray-900 dark:text-gray-100" :title="asset.name">
             {{ asset.name }}
           </p>
           <div class="flex flex-wrap gap-1 mt-0.5">
@@ -250,16 +250,16 @@ function formatDuration(seconds: number): string {
     </td>
     <td class="px-4 py-3">
       <span
-        class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+        class="inline-flex items-center rounded-full px-2 py-0.5 text-caption"
         :class="[typeConfig.bgColor, typeConfig.color]"
       >
         {{ typeConfig.label }}
       </span>
     </td>
-    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+    <td class="px-4 py-3 text-body text-gray-600 dark:text-gray-300">
       {{ formatFileSize(asset.fileSize) }}
     </td>
-    <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+    <td class="px-4 py-3 text-body text-gray-500 dark:text-gray-400">
       <template v-if="asset.duration">{{ formatDuration(asset.duration) }}</template>
       <template v-else-if="asset.width && asset.height">{{ asset.width }}x{{ asset.height }}</template>
       <template v-else>-</template>
@@ -274,7 +274,7 @@ function formatDuration(seconds: number): string {
           <FolderArrowDownIcon class="h-4 w-4" />
         </button>
         <button
-          class="rounded-full p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+          class="rounded-full p-1.5 text-gray-400 hover:bg-error-subtle hover:text-error-strong"
           title="삭제"
           @click="emit('delete', asset.id)"
         >

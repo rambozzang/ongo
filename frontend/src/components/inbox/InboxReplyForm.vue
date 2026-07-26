@@ -47,7 +47,7 @@ const handleSend = () => {
       <button
         v-for="template in quickReplies"
         :key="template"
-        class="px-3 py-1 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+        class="px-3 py-1 text-body rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
         @click="useQuickReply(template)"
       >
         {{ template }}
@@ -60,22 +60,22 @@ const handleSend = () => {
         v-model="replyText"
         placeholder="답장을 입력하세요..."
         rows="3"
-        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none"
-        :class="{ 'border-red-500 dark:border-red-500': isOverLimit }"
+        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none"
+        :class="{ 'border-error': isOverLimit }"
       ></textarea>
 
       <!-- Character Count & Send Button -->
       <div class="flex items-center justify-between">
         <span
-          class="text-sm"
-          :class="isOverLimit ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'"
+          class="text-body"
+          :class="isOverLimit ? 'text-error-strong' : 'text-gray-500 dark:text-gray-400'"
         >
           {{ characterCount }} / {{ characterLimit }}
         </span>
 
         <button
           :disabled="!replyText.trim() || isOverLimit"
-          class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
+          class="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
           @click="handleSend"
         >
           <PaperAirplaneIcon class="w-5 h-5" />

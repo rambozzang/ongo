@@ -59,7 +59,7 @@ function getEventLabel(event: WebhookEvent): string {
       <div class="flex min-w-0 items-center gap-2">
         <GlobeAltIcon class="h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
         <span
-          class="truncate font-mono text-sm text-gray-900 dark:text-white"
+          class="truncate font-mono text-body text-gray-900 dark:text-white"
           :title="webhook.url"
         >
           {{ truncatedUrl }}
@@ -83,23 +83,23 @@ function getEventLabel(event: WebhookEvent): string {
     <!-- Status indicator -->
     <div class="mb-3 flex items-center gap-2">
       <span
-        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption"
         :class="
           webhook.isActive
-            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+            ? 'bg-success-subtle text-success-strong'
             : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
         "
       >
         <span
           class="h-1.5 w-1.5 rounded-full"
-          :class="webhook.isActive ? 'bg-green-500' : 'bg-gray-400'"
+          :class="webhook.isActive ? 'bg-success' : 'bg-gray-400'"
         />
         {{ webhook.isActive ? '활성' : '비활성' }}
       </span>
 
       <span
         v-if="webhook.failureCount > 0"
-        class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400"
+        class="inline-flex items-center gap-1 rounded-full bg-error-subtle px-2 py-0.5 text-caption text-error-strong"
       >
         <ExclamationTriangleIcon class="h-3 w-3" />
         실패 {{ webhook.failureCount }}회
@@ -111,14 +111,14 @@ function getEventLabel(event: WebhookEvent): string {
       <span
         v-for="event in webhook.events"
         :key="event"
-        class="inline-block rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+        class="inline-block rounded-md bg-gray-100 px-2 py-0.5 text-body-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300"
       >
         {{ getEventLabel(event) }}
       </span>
     </div>
 
     <!-- Last triggered -->
-    <div class="mb-4 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+    <div class="mb-4 flex items-center gap-1.5 text-body-xs text-gray-500 dark:text-gray-400">
       <ClockIcon class="h-3.5 w-3.5" />
       <span>마지막 호출: {{ lastTriggeredLabel }}</span>
     </div>
@@ -126,21 +126,21 @@ function getEventLabel(event: WebhookEvent): string {
     <!-- Actions -->
     <div class="flex items-center gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
       <button
-        class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+        class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-caption text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
         @click.stop="emit('edit', webhook)"
       >
         <PencilIcon class="h-3.5 w-3.5" />
         수정
       </button>
       <button
-        class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+        class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-caption text-info-strong hover:bg-info-subtle"
         @click.stop="emit('test', webhook)"
       >
         <PaperAirplaneIcon class="h-3.5 w-3.5" />
         테스트
       </button>
       <button
-        class="ml-auto inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+        class="ml-auto inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-caption text-error-strong hover:bg-error-subtle"
         @click.stop="emit('delete', webhook)"
       >
         <TrashIcon class="h-3.5 w-3.5" />

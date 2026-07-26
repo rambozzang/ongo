@@ -9,12 +9,12 @@
 
       <!-- Error -->
       <div v-else-if="errorMessage" class="space-y-4">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-          <svg class="h-8 w-8 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-error-subtle">
+          <svg class="h-8 w-8 text-error-strong" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <p class="text-red-600 dark:text-red-400">{{ errorMessage }}</p>
+        <p class="text-error-strong">{{ errorMessage }}</p>
         <button class="btn-primary mt-4" @click="goBack">돌아가기</button>
       </div>
     </div>

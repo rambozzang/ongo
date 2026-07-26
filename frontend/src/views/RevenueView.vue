@@ -4,7 +4,7 @@
     <PageHeader :title="$t('revenue.title')" :description="$t('revenue.description')">
       <template #actions>
         <button
-          class="btn-secondary flex items-center gap-1.5 text-sm"
+          class="btn-secondary flex items-center gap-1.5 text-body"
           @click="showAlertModal = true"
         >
           <BellIcon class="h-4 w-4" />
@@ -13,7 +13,7 @@
         <button
           v-for="option in periodOptions"
           :key="option.value"
-          class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          class="rounded-lg px-4 py-2 text-body font-medium transition-colors"
           :class="
             selectedPeriod === option.value
               ? 'bg-primary-600 text-white'
@@ -46,22 +46,22 @@
         <div class="card">
           <div class="mb-4 flex items-center justify-between gap-4">
             <div>
-              <h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h2 class="flex items-center gap-2 text-title font-semibold text-gray-900 dark:text-gray-100">
                 <SparklesIcon class="h-5 w-5 text-primary-600" />
                 {{ $t('revenue.insights.title') }}
               </h2>
-              <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-0.5 text-body text-gray-500 dark:text-gray-400">
                 {{ $t('revenue.insights.description') }}
               </p>
             </div>
             <button
-              class="btn-primary flex shrink-0 items-center gap-2 text-sm"
+              class="btn-primary flex shrink-0 items-center gap-2 text-body"
               :disabled="revenueStore.generateInsightLoading"
               @click="handleGenerateInsight"
             >
               <SparklesIcon class="h-4 w-4" />
               <span>{{ revenueStore.generateInsightLoading ? $t('revenue.insights.generating') : $t('revenue.insights.generate') }}</span>
-              <span class="rounded-full bg-primary-500/30 px-1.5 py-0.5 text-xs">
+              <span class="rounded-full bg-primary-500/30 px-1.5 py-0.5 text-body-xs">
                 {{ $t('revenue.insights.generateHint') }}
               </span>
             </button>
@@ -69,7 +69,7 @@
 
           <!-- 로딩 -->
           <div v-if="revenueStore.insightsLoading" class="flex items-center justify-center py-8">
-            <div class="text-sm text-gray-500 dark:text-gray-400">{{ $t('revenue.loading') }}</div>
+            <div class="text-body text-gray-500 dark:text-gray-400">{{ $t('revenue.loading') }}</div>
           </div>
 
           <!-- 인사이트 목록 -->
@@ -84,8 +84,8 @@
           <!-- 빈 상태 -->
           <div v-else class="flex flex-col items-center justify-center py-10 text-center">
             <SparklesIcon class="mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
-            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $t('revenue.insights.empty') }}</p>
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ $t('revenue.insights.emptyHint') }}</p>
+            <p class="text-body font-medium text-gray-500 dark:text-gray-400">{{ $t('revenue.insights.empty') }}</p>
+            <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">{{ $t('revenue.insights.emptyHint') }}</p>
           </div>
         </div>
 
@@ -95,8 +95,8 @@
           <div class="card border-t-4 border-primary-600">
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('revenue.totalRevenue') }}</p>
-                <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('revenue.totalRevenue') }}</p>
+                <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
                   {{ formatCurrency(revenueStore.summary.totalRevenue) }}
                 </p>
               </div>
@@ -109,19 +109,19 @@
             class="card border-t-4"
             :class="
               revenueStore.summary.monthlyGrowth >= 0
-                ? 'border-green-600'
-                : 'border-red-600'
+                ? 'border-success'
+                : 'border-error'
             "
           >
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('revenue.monthlyGrowth') }}</p>
-                <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('revenue.monthlyGrowth') }}</p>
+                <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
                   <span
                     :class="
                       revenueStore.summary.monthlyGrowth >= 0
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-red-600 dark:text-red-400'
+                        ? 'text-success-strong'
+                        : 'text-error-strong'
                     "
                   >
                     {{ revenueStore.summary.monthlyGrowth >= 0 ? '+' : '' }}{{
@@ -132,33 +132,33 @@
               </div>
               <ArrowTrendingUpIcon
                 v-if="revenueStore.summary.monthlyGrowth >= 0"
-                class="h-8 w-8 text-green-600"
+                class="h-8 w-8 text-success-strong"
               />
-              <ArrowTrendingDownIcon v-else class="h-8 w-8 text-red-600" />
+              <ArrowTrendingDownIcon v-else class="h-8 w-8 text-error-strong" />
             </div>
           </div>
 
           <!-- Average RPM -->
-          <div class="card border-t-4 border-blue-600">
+          <div class="card border-t-4 border-info">
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('revenue.avgRpm') }}</p>
-                <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('revenue.avgRpm') }}</p>
+                <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
                   ₩{{ revenueStore.summary.averageRPM.toLocaleString('ko-KR') }}
                 </p>
               </div>
-              <ChartBarIcon class="h-8 w-8 text-blue-600" />
+              <ChartBarIcon class="h-8 w-8 text-info-strong" />
             </div>
           </div>
 
           <!-- Top Platform -->
-          <div class="card border-t-4 border-purple-600">
+          <div class="card border-t-4 border-primary-600">
             <div class="flex items-start justify-between">
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('revenue.topPlatform') }}</p>
+                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('revenue.topPlatform') }}</p>
                 <div class="mt-2 flex items-center gap-2">
                   <span
-                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-caption"
                     :style="{
                       backgroundColor: `${getPlatformColor(revenueStore.summary.topPlatform)}20`,
                       color: getPlatformColor(revenueStore.summary.topPlatform),
@@ -167,18 +167,18 @@
                     {{ PLATFORM_CONFIG[revenueStore.summary.topPlatform].label }}
                   </span>
                 </div>
-                <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <p class="mt-1 text-title font-semibold text-gray-900 dark:text-gray-100">
                   {{ formatCurrency(revenueStore.summary.topPlatformRevenue) }}
                 </p>
               </div>
-              <TrophyIcon class="h-8 w-8 text-purple-600" />
+              <TrophyIcon class="h-8 w-8 text-primary-600" />
             </div>
           </div>
         </div>
 
         <!-- Revenue Trend Chart -->
         <div class="card">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">
             {{ $t('revenue.revenueTrend') }}
           </h2>
           <div class="h-[400px]">
@@ -190,7 +190,7 @@
         <div class="page-grid page-grid--split">
           <!-- Platform Breakdown Doughnut -->
           <div class="card">
-            <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">
               {{ $t('revenue.platformBreakdown') }}
             </h2>
             <div class="max-w-md">
@@ -200,7 +200,7 @@
 
           <!-- Platform Comparison Bar Chart -->
           <div class="card">
-            <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">
               {{ $t('revenue.platformComparison') }}
             </h2>
             <div class="h-[300px]">
@@ -211,7 +211,7 @@
 
         <!-- Monthly Revenue Table -->
         <div class="card">
-          <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">
             {{ $t('revenue.monthlyRevenueTable') }}
           </h2>
           <RevenueTable :data="filteredData" />
@@ -225,14 +225,14 @@
         </div>
         <template v-else-if="revenueStore.cpmRpmData">
           <div class="card">
-            <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('revenue.cpmRpmTitle') }}</h2>
-            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+            <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('revenue.cpmRpmTitle') }}</h2>
+            <p class="mb-4 text-body text-gray-500 dark:text-gray-400">
               {{ $t('revenue.cpmRpmDesc') }}
             </p>
             <div v-if="revenueStore.cpmRpmData.platforms.length > 0" class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="w-full text-body">
                 <thead>
-                  <tr class="border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
+                  <tr class="border-b border-gray-200 dark:border-gray-700 text-body-xs uppercase text-gray-500 dark:text-gray-400">
                     <th class="px-4 py-3 text-left font-medium">{{ $t('revenue.thPlatform') }}</th>
                     <th class="px-4 py-3 text-right font-medium">{{ $t('revenue.thCpm') }}</th>
                     <th class="px-4 py-3 text-right font-medium">{{ $t('revenue.thRpm') }}</th>
@@ -275,7 +275,7 @@
                 </tbody>
               </table>
             </div>
-            <div v-else class="flex items-center justify-center py-12 text-sm text-gray-400 dark:text-gray-500">
+            <div v-else class="flex items-center justify-center py-12 text-body text-gray-400 dark:text-gray-500">
               {{ $t('revenue.cpmRpmEmpty') }}
             </div>
           </div>
@@ -290,15 +290,15 @@
         <template v-else-if="revenueStore.brandDealData">
           <!-- 브랜드딜 요약 -->
           <div class="grid grid-cols-1 gap-4 tablet:grid-cols-2">
-            <div class="card border-t-4 border-orange-500">
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('revenue.brandDealTotalRevenue') }}</p>
-              <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <div class="card border-t-4 border-warning">
+              <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('revenue.brandDealTotalRevenue') }}</p>
+              <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
                 {{ formatCurrency(revenueStore.brandDealData.totalRevenueKrw) }}
               </p>
             </div>
-            <div class="card border-t-4 border-orange-500">
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('revenue.brandDealCount') }}</p>
-              <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <div class="card border-t-4 border-warning">
+              <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('revenue.brandDealCount') }}</p>
+              <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
                 {{ revenueStore.brandDealData.deals.length }}건
               </p>
             </div>
@@ -306,11 +306,11 @@
 
           <!-- 브랜드딜 목록 -->
           <div class="card">
-            <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('revenue.brandDealList') }}</h2>
+            <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('revenue.brandDealList') }}</h2>
             <div v-if="revenueStore.brandDealData.deals.length > 0" class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="w-full text-body">
                 <thead>
-                  <tr class="border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
+                  <tr class="border-b border-gray-200 dark:border-gray-700 text-body-xs uppercase text-gray-500 dark:text-gray-400">
                     <th class="px-4 py-3 text-left font-medium">{{ $t('revenue.thBrand') }}</th>
                     <th class="px-4 py-3 text-right font-medium">{{ $t('revenue.thAmount') }}</th>
                     <th class="px-4 py-3 text-center font-medium">{{ $t('revenue.thStatus') }}</th>
@@ -331,7 +331,7 @@
                     </td>
                     <td class="px-4 py-3 text-center">
                       <span
-                        class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                        class="inline-flex items-center rounded-full px-2 py-0.5 text-caption"
                         :class="dealStatusClass(deal.status)"
                       >
                         {{ dealStatusLabel(deal.status) }}
@@ -344,7 +344,7 @@
                 </tbody>
               </table>
             </div>
-            <div v-else class="flex items-center justify-center py-12 text-sm text-gray-400 dark:text-gray-500">
+            <div v-else class="flex items-center justify-center py-12 text-body text-gray-400 dark:text-gray-500">
               {{ $t('revenue.brandDealEmpty') }}
             </div>
           </div>
@@ -356,9 +356,9 @@
         <div class="card">
           <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
             <SparklesIcon class="h-12 w-12 mb-3" />
-            <p class="text-sm font-medium">{{ $t('revenue.aiReportTitle') }}</p>
-            <p class="text-xs mt-1">{{ $t('revenue.aiReportDesc') }}</p>
-            <p class="text-xs mt-1 text-gray-400">{{ $t('revenue.comingSoon') }}</p>
+            <p class="text-body font-medium">{{ $t('revenue.aiReportTitle') }}</p>
+            <p class="text-body-xs mt-1">{{ $t('revenue.aiReportDesc') }}</p>
+            <p class="text-body-xs mt-1 text-gray-400">{{ $t('revenue.comingSoon') }}</p>
           </div>
         </div>
       </template>
@@ -538,11 +538,11 @@ function dealStatusLabel(status: string): string {
 
 function dealStatusClass(status: string): string {
   const classes: Record<string, string> = {
-    NEGOTIATING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    CONFIRMED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    NEGOTIATING: 'bg-warning-subtle text-warning-strong',
+    CONFIRMED: 'bg-info-subtle text-info-strong',
     IN_PROGRESS: 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400',
-    COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    COMPLETED: 'bg-success-subtle text-success-strong',
+    CANCELLED: 'bg-error-subtle text-error-strong',
   }
   return classes[status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
 }

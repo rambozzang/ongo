@@ -1,6 +1,6 @@
 <template>
   <div class="tiktok-preview">
-    <div class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+    <div class="mb-3 text-body font-medium text-gray-700 dark:text-gray-300">
       {{ t('preview.howItLooks') }}
     </div>
 
@@ -32,8 +32,8 @@
 
           <!-- Top Bar: 팔로잉 | 추천 -->
           <div class="absolute left-0 right-0 top-0 flex items-center justify-center gap-4 px-4 pb-2 pt-4">
-            <span class="text-sm text-white/60">팔로잉</span>
-            <span class="border-b-2 border-white pb-0.5 text-sm font-bold text-white">추천</span>
+            <span class="text-body text-white/60">팔로잉</span>
+            <span class="border-b-2 border-white pb-0.5 text-body font-bold text-white">추천</span>
           </div>
 
           <!-- Right Side Action Buttons -->
@@ -106,7 +106,7 @@
             </div>
 
             <!-- Channel Name -->
-            <div class="mb-1 text-sm font-bold text-white">
+            <div class="mb-1 text-body font-bold text-white">
               @{{ channelName || t('preview.username') }}
             </div>
 
@@ -133,7 +133,7 @@
                 <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
               </svg>
               <div class="overflow-hidden">
-                <span class="marquee-text text-xs text-white">원본 사운드 - {{ channelName || t('preview.username') }}</span>
+                <span class="marquee-text text-body-xs text-white">원본 사운드 - {{ channelName || t('preview.username') }}</span>
               </div>
             </div>
           </div>
@@ -173,6 +173,8 @@ const captionLength = computed(() => {
   return (captionText + hashtagText).length
 })
 
+// TikTok 목업은 앱 테마와 무관하게 항상 어두운 배경이라 다크 전용 톤(400)을 유지한다.
+// 시맨틱 토큰은 라이트/다크가 자동 반전되므로 여기서는 오히려 대비가 깨진다.
 const captionCountColor = computed(() => {
   if (captionLength.value > 150) return 'text-red-400 font-semibold'
   if (captionLength.value >= 120) return 'text-yellow-400'

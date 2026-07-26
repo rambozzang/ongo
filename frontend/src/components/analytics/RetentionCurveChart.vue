@@ -213,23 +213,23 @@ const chartOptions = computed(() => ({
         v-if="(retentionData?.dropOffPoints.length ?? 0) > 0"
         class="mt-4 space-y-2"
       >
-        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <h4 class="text-body font-medium text-gray-700 dark:text-gray-300">
           주요 이탈 구간
         </h4>
         <div
           v-for="drop in retentionData?.dropOffPoints ?? []"
           :key="drop.timestamp"
-          class="flex items-start gap-3 rounded-lg border border-red-100 bg-red-50/50 p-3 dark:border-red-900/30 dark:bg-red-900/10"
+          class="flex items-start gap-3 rounded-lg border border-error bg-error-subtle p-3"
         >
-          <ExclamationTriangleIcon class="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
-          <div class="text-sm">
-            <span class="font-medium text-red-700 dark:text-red-400">
+          <ExclamationTriangleIcon class="mt-0.5 h-4 w-4 flex-shrink-0 text-error-strong" />
+          <div class="text-body">
+            <span class="font-medium text-error-strong">
               {{ formatTimestamp(drop.timestamp) }}
             </span>
             <span class="text-gray-600 dark:text-gray-400">
               &mdash; {{ drop.dropRate.toFixed(1) }}% 이탈
             </span>
-            <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            <p class="mt-0.5 text-body-xs text-gray-500 dark:text-gray-400">
               {{ drop.possibleReason }}
             </p>
           </div>

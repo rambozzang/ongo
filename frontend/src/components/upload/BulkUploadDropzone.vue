@@ -135,7 +135,7 @@ onUnmounted(() => {
       :class="[
         dropState === 'idle' && 'border-dashed border-gray-300 bg-gray-50 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-800/50 dark:hover:border-gray-500',
         dropState === 'hover' && 'scale-[1.01] border-solid border-primary-500 bg-primary-50 border-pulse dark:bg-primary-900/20',
-        dropState === 'success' && 'border-solid border-green-500 bg-green-50 dark:bg-green-900/20',
+        dropState === 'success' && 'border-solid border-success bg-success-subtle',
       ]"
       @dragover.prevent="onDragOver"
       @dragenter.prevent="onDragEnter"
@@ -155,16 +155,16 @@ onUnmounted(() => {
         />
         <CheckCircleIcon
           v-else
-          class="mb-4 h-12 w-12 text-green-500"
+          class="mb-4 h-12 w-12 text-success-strong"
         />
 
         <!-- Text -->
         <p
-          class="mb-2 text-base font-medium transition-colors duration-300"
+          class="mb-2 text-body-lg font-medium transition-colors duration-300"
           :class="[
             dropState === 'idle' && 'text-gray-700 dark:text-gray-300',
             dropState === 'hover' && 'text-primary-600 dark:text-primary-400',
-            dropState === 'success' && 'text-green-600 dark:text-green-400',
+            dropState === 'success' && 'text-success-strong',
           ]"
         >
           {{
@@ -177,7 +177,7 @@ onUnmounted(() => {
         </p>
         <p
           v-if="dropState === 'idle'"
-          class="text-sm text-gray-500 dark:text-gray-400"
+          class="text-body text-gray-500 dark:text-gray-400"
         >
           동영상, 이미지, 오디오 파일 지원 (최대 {{ MAX_FILES }}개)
         </p>
@@ -201,15 +201,15 @@ onUnmounted(() => {
       <!-- File list header -->
       <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <span class="text-body font-medium text-gray-900 dark:text-gray-100">
             {{ fileCountText }}
           </span>
-          <span class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="text-body-xs text-gray-500 dark:text-gray-400">
             ({{ formatFileSize(totalSize) }})
           </span>
         </div>
         <button
-          class="text-xs font-medium text-red-600 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+          class="text-caption text-error-strong transition-opacity hover:opacity-80"
           @click.stop="clearFiles"
         >
           전체 해제
@@ -224,15 +224,15 @@ onUnmounted(() => {
           class="flex items-center justify-between border-b border-gray-100 px-4 py-2 last:border-0 dark:border-gray-700"
         >
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm text-gray-700 dark:text-gray-300" :title="file.name">
+            <p class="truncate text-body text-gray-700 dark:text-gray-300" :title="file.name">
               {{ file.name }}
             </p>
-            <p class="text-xs text-gray-400 dark:text-gray-500">
+            <p class="text-body-xs text-gray-400 dark:text-gray-500">
               {{ formatFileSize(file.size) }}
             </p>
           </div>
           <button
-            class="ml-2 flex-shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-500 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-red-400"
+            class="ml-2 flex-shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-error-strong dark:text-gray-500 dark:hover:bg-gray-700"
             @click.stop="removeFile(index)"
           >
             <XMarkIcon class="h-4 w-4" />
@@ -243,7 +243,7 @@ onUnmounted(() => {
 
     <!-- Platform selection -->
     <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-      <label class="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+      <label class="mb-3 block text-body font-medium text-gray-700 dark:text-gray-300">
         게시 플랫폼 선택
       </label>
       <div class="flex flex-wrap gap-3">
@@ -267,11 +267,11 @@ onUnmounted(() => {
             class="flex h-6 w-6 items-center justify-center rounded"
             :style="{ backgroundColor: PLATFORM_CONFIG[platform].color + '1A' }"
           >
-            <span class="text-xs font-bold" :style="{ color: PLATFORM_CONFIG[platform].color }">
+            <span class="text-body-xs font-bold" :style="{ color: PLATFORM_CONFIG[platform].color }">
               {{ PLATFORM_CONFIG[platform].label[0] }}
             </span>
           </div>
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+          <span class="text-body font-medium text-gray-900 dark:text-gray-100">
             {{ PLATFORM_CONFIG[platform].label }}
           </span>
         </label>
@@ -281,7 +281,7 @@ onUnmounted(() => {
     <!-- Add to queue button -->
     <button
       :disabled="!canAdd"
-      class="w-full rounded-xl px-6 py-3 text-base font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-900"
+      class="w-full rounded-xl px-6 py-3 text-h3 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-900"
       :class="
         canAdd
           ? 'bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-400'

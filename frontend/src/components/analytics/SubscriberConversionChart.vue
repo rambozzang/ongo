@@ -44,9 +44,9 @@ const chartOptions = {
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">구독 전환 분석</h3>
-      <span v-if="props.data" class="text-sm text-gray-500 dark:text-gray-400">
-        총 신규 구독: <strong class="text-green-600">+{{ props.data.totalGained.toLocaleString() }}</strong>
+      <h3 class="text-title font-semibold text-gray-900 dark:text-white">구독 전환 분석</h3>
+      <span v-if="props.data" class="text-body text-gray-500 dark:text-gray-400">
+        총 신규 구독: <strong class="text-success-strong">+{{ props.data.totalGained.toLocaleString() }}</strong>
       </span>
     </div>
     <Bar v-if="chartData" :data="chartData" :options="chartOptions" />

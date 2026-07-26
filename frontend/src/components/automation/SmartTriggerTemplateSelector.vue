@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-4">
     <div class="flex items-center gap-2 mb-3">
-      <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg class="w-5 h-5 text-warning-strong" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
       </svg>
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">스마트 트리거 템플릿</h3>
+      <h3 class="text-body font-semibold text-gray-900 dark:text-white">스마트 트리거 템플릿</h3>
     </div>
 
     <div class="grid gap-3 sm:grid-cols-3">
@@ -14,7 +14,7 @@
         class="relative cursor-pointer rounded-xl border-2 p-4 transition-all hover:shadow-md"
         :class="
           selectedType === template.triggerType
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:border-primary-400'
             : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
         "
         @click="selectTemplate(template)"
@@ -27,10 +27,10 @@
           <component :is="getIcon(template.triggerType)" class="w-5 h-5" :class="getIconClass(template.triggerType)" />
         </div>
 
-        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+        <h4 class="text-body font-semibold text-gray-900 dark:text-white mb-1">
           {{ template.name }}
         </h4>
-        <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+        <p class="text-body-xs text-gray-500 dark:text-gray-400 leading-relaxed">
           {{ template.description }}
         </p>
 
@@ -38,15 +38,15 @@
         <div v-if="selectedType === template.triggerType" class="mt-4 space-y-3">
           <!-- Views Milestone -->
           <template v-if="template.triggerType === 'VIEWS_MILESTONE'">
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">마일스톤 목표</label>
+            <label class="block text-body-xs font-medium text-gray-700 dark:text-gray-300 mb-1">마일스톤 목표</label>
             <div class="flex flex-wrap gap-1.5">
               <button
                 v-for="milestone in availableMilestones"
                 :key="milestone"
-                class="rounded-full px-2.5 py-1 text-xs font-medium transition-colors"
+                class="rounded-full px-2.5 py-1 text-body-xs font-medium transition-colors"
                 :class="
                   selectedMilestones.includes(milestone)
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 "
                 @click.stop="toggleMilestone(milestone)"
@@ -58,7 +58,7 @@
 
           <!-- Viral Detection -->
           <template v-if="template.triggerType === 'VIRAL_DETECTED'">
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label class="block text-body-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               감지 배수: <strong>{{ viralMultiplier }}x</strong>
             </label>
             <input
@@ -67,7 +67,7 @@
               min="2"
               max="10"
               step="0.5"
-              class="w-full accent-blue-600"
+              class="w-full accent-primary-600"
               @click.stop
             />
             <div class="flex justify-between text-[10px] text-gray-400">
@@ -78,7 +78,7 @@
 
           <!-- Engagement Drop -->
           <template v-if="template.triggerType === 'ENGAGEMENT_DROP'">
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label class="block text-body-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               하락 기준: <strong>{{ engagementDropPercent }}%</strong>
             </label>
             <input
@@ -87,7 +87,7 @@
               min="20"
               max="80"
               step="5"
-              class="w-full accent-blue-600"
+              class="w-full accent-primary-600"
               @click.stop
             />
             <div class="flex justify-between text-[10px] text-gray-400">
@@ -102,7 +102,7 @@
           v-if="selectedType === template.triggerType"
           class="absolute top-2 right-2"
         >
-          <div class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600">
+          <div class="flex h-5 w-5 items-center justify-center rounded-full bg-primary-600">
             <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
             </svg>
@@ -207,18 +207,18 @@ function getIcon(type: string) {
 
 function getIconBgClass(type: string): string {
   switch (type) {
-    case 'VIEWS_MILESTONE': return 'bg-blue-100 dark:bg-blue-900/30'
-    case 'VIRAL_DETECTED': return 'bg-red-100 dark:bg-red-900/30'
-    case 'ENGAGEMENT_DROP': return 'bg-amber-100 dark:bg-amber-900/30'
+    case 'VIEWS_MILESTONE': return 'bg-info-subtle'
+    case 'VIRAL_DETECTED': return 'bg-error-subtle'
+    case 'ENGAGEMENT_DROP': return 'bg-warning-subtle'
     default: return 'bg-gray-100 dark:bg-gray-800'
   }
 }
 
 function getIconClass(type: string): string {
   switch (type) {
-    case 'VIEWS_MILESTONE': return 'text-blue-600 dark:text-blue-400'
-    case 'VIRAL_DETECTED': return 'text-red-600 dark:text-red-400'
-    case 'ENGAGEMENT_DROP': return 'text-amber-600 dark:text-amber-400'
+    case 'VIEWS_MILESTONE': return 'text-info-strong'
+    case 'VIRAL_DETECTED': return 'text-error-strong'
+    case 'ENGAGEMENT_DROP': return 'text-warning-strong'
     default: return 'text-gray-600 dark:text-gray-400'
   }
 }

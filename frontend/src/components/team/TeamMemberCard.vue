@@ -58,7 +58,7 @@ const handleRemove = () => {
           </div>
           <span
             v-if="member.isOnline"
-            class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-400 ring-2 ring-white dark:ring-gray-800"
+            class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-success ring-2 ring-white dark:ring-gray-800"
           ></span>
           <span
             v-else
@@ -67,16 +67,16 @@ const handleRemove = () => {
         </div>
 
         <div class="flex-1 min-w-0">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+          <h3 class="text-body font-semibold text-gray-900 dark:text-white">
             {{ member.name }}
           </h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 truncate">
+          <p class="text-body text-gray-500 dark:text-gray-400 truncate">
             {{ member.email }}
           </p>
           <div class="mt-2 flex items-center space-x-2">
             <RoleBadge :role="member.role" />
           </div>
-          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <p class="mt-2 text-body-xs text-gray-500 dark:text-gray-400">
             {{ relativeTime }}
           </p>
         </div>
@@ -101,14 +101,14 @@ const handleRemove = () => {
             class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-700 dark:ring-gray-600"
           >
             <div class="py-1">
-              <div class="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
+              <div class="px-3 py-2 text-body-xs font-semibold text-gray-500 dark:text-gray-400">
                 역할 변경
               </div>
               <MenuItem v-slot="{ active }">
                 <button
                   :class="[
                     active ? 'bg-gray-100 dark:bg-gray-600' : '',
-                    'block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200',
+                    'block w-full px-4 py-2 text-left text-body text-gray-700 dark:text-gray-200',
                   ]"
                   @click="handleRoleChange('admin')"
                 >
@@ -119,7 +119,7 @@ const handleRemove = () => {
                 <button
                   :class="[
                     active ? 'bg-gray-100 dark:bg-gray-600' : '',
-                    'block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200',
+                    'block w-full px-4 py-2 text-left text-body text-gray-700 dark:text-gray-200',
                   ]"
                   @click="handleRoleChange('editor')"
                 >
@@ -130,7 +130,7 @@ const handleRemove = () => {
                 <button
                   :class="[
                     active ? 'bg-gray-100 dark:bg-gray-600' : '',
-                    'block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200',
+                    'block w-full px-4 py-2 text-left text-body text-gray-700 dark:text-gray-200',
                   ]"
                   @click="handleRoleChange('viewer')"
                 >
@@ -141,8 +141,8 @@ const handleRemove = () => {
               <MenuItem v-slot="{ active }">
                 <button
                   :class="[
-                    active ? 'bg-red-50 dark:bg-red-900/20' : '',
-                    'block w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400',
+                    active ? 'bg-error-subtle' : '',
+                    'block w-full px-4 py-2 text-left text-body text-error-strong',
                   ]"
                   @click="showDeleteConfirm = true"
                 >
@@ -168,22 +168,22 @@ const handleRemove = () => {
       <div
         class="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800"
       >
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 class="text-title font-semibold text-gray-900 dark:text-white">
           멤버 제거
         </h3>
-        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        <p class="mt-2 text-body text-gray-600 dark:text-gray-400">
           정말로 <strong>{{ member.name }}</strong>님을 팀에서 제거하시겠습니까? 이
           작업은 되돌릴 수 없습니다.
         </p>
         <div class="mt-6 flex justify-end space-x-3">
           <button
-            class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+            class="rounded-md border border-gray-300 bg-white px-4 py-2 text-body font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             @click="showDeleteConfirm = false"
           >
             취소
           </button>
           <button
-            class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+            class="btn-danger"
             @click="handleRemove"
           >
             제거

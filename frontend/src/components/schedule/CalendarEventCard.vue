@@ -13,13 +13,13 @@
 
       <div class="min-w-0 flex-1">
         <!-- Title -->
-        <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+        <p class="truncate text-body font-medium text-gray-900 dark:text-gray-100">
           {{ event.title }}
         </p>
 
         <!-- Time & Platform -->
         <div class="mt-1 flex items-center gap-2">
-          <span class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="text-body-xs text-gray-500 dark:text-gray-400">
             {{ formattedTime }}
           </span>
           <PlatformBadge v-if="event.platform" :platform="event.platform" />
@@ -40,16 +40,16 @@ const props = defineProps<{
 
 const statusConfig = {
   scheduled: {
-    borderColor: 'border-l-blue-500',
-    dotColor: 'bg-blue-500',
+    borderColor: 'border-l-info',
+    dotColor: 'bg-info',
   },
   published: {
-    borderColor: 'border-l-green-500',
-    dotColor: 'bg-green-500',
+    borderColor: 'border-l-success',
+    dotColor: 'bg-success',
   },
   failed: {
-    borderColor: 'border-l-red-500',
-    dotColor: 'bg-red-500',
+    borderColor: 'border-l-error',
+    dotColor: 'bg-error',
   },
 }
 

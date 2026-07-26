@@ -81,11 +81,11 @@ function stopPolling() {
 function stepStatusColor(status: string): string {
   switch (status) {
     case 'COMPLETED':
-      return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700'
+      return 'text-success-strong bg-success-subtle border-success'
     case 'FAILED':
-      return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700'
+      return 'text-error-strong bg-error-subtle border-error'
     case 'RUNNING':
-      return 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700'
+      return 'text-info-strong bg-info-subtle border-info'
     case 'SKIPPED':
       return 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700'
     default:
@@ -133,29 +133,29 @@ watch(
       <!-- Overall status -->
       <div v-if="pipeline" class="flex items-center justify-between">
         <div>
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <h3 class="text-body font-semibold text-gray-700 dark:text-gray-300">
             AI 파이프라인 진행 상태
           </h3>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p class="text-body-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {{ completedCount }}/{{ totalSteps }} 스텝 완료
-            <span v-if="pipeline.discountApplied" class="text-green-600 dark:text-green-400 ml-2">
+            <span v-if="pipeline.discountApplied" class="text-success-strong ml-2">
               (20% 할인 적용)
             </span>
           </p>
         </div>
         <div class="flex items-center gap-2">
           <span
-            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-body-xs font-medium"
             :class="{
-              'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300': pipeline.status === 'RUNNING' || pipeline.status === 'PENDING',
-              'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300': pipeline.status === 'COMPLETED',
-              'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300': pipeline.status === 'FAILED',
+              'bg-info-subtle text-info-strong': pipeline.status === 'RUNNING' || pipeline.status === 'PENDING',
+              'bg-success-subtle text-success-strong': pipeline.status === 'COMPLETED',
+              'bg-error-subtle text-error-strong': pipeline.status === 'FAILED',
               'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400': pipeline.status === 'CANCELLED',
             }"
           >
             {{ pipeline.status }}
           </span>
-          <span class="text-xs text-gray-500 dark:text-gray-400">
+          <span class="text-body-xs text-gray-500 dark:text-gray-400">
             {{ pipeline.totalCredits }} 크레딧
           </span>
         </div>
@@ -165,7 +165,7 @@ watch(
       <div v-if="pipeline" class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
         <div
           class="h-2 rounded-full transition-all duration-500"
-          :class="pipeline.status === 'FAILED' ? 'bg-red-500' : 'bg-primary-600'"
+          :class="pipeline.status === 'FAILED' ? 'bg-error' : 'bg-primary-600'"
           :style="{ width: progressPercentage + '%' }"
         />
       </div>
@@ -181,7 +181,7 @@ watch(
           <div
             v-if="index > 0"
             class="absolute -top-2 left-5 w-px h-2"
-            :class="step.status === 'COMPLETED' ? 'bg-green-400 dark:bg-green-600' : 'bg-gray-300 dark:bg-gray-600'"
+            :class="step.status === 'COMPLETED' ? 'bg-success' : 'bg-gray-300 dark:bg-gray-600'"
           />
 
           <div
@@ -212,12 +212,12 @@ watch(
             <!-- Step info -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-sm font-medium">{{ step.displayName }}</span>
-                <span class="text-xs opacity-70">{{ step.creditCost }} 크레딧</span>
+                <span class="text-body font-medium">{{ step.displayName }}</span>
+                <span class="text-body-xs opacity-70">{{ step.creditCost }} 크레딧</span>
               </div>
 
               <!-- Error message -->
-              <p v-if="step.error" class="text-xs text-red-600 dark:text-red-400 mt-1">
+              <p v-if="step.error" class="text-body-xs text-error-strong mt-1">
                 {{ step.error }}
               </p>
             </div>
@@ -236,7 +236,7 @@ watch(
           <!-- Expanded result -->
           <div
             v-if="expandedSteps.has(step.step) && step.result"
-            class="ml-8 mt-1 p-3 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-xs"
+            class="ml-8 mt-1 p-3 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-body-xs"
           >
             <pre class="whitespace-pre-wrap text-gray-700 dark:text-gray-300 overflow-auto max-h-48">{{ JSON.stringify(step.result, null, 2) }}</pre>
           </div>
@@ -244,7 +244,7 @@ watch(
       </div>
 
       <!-- Error — 폴링 중 일시적 실패는 진행 상태를 가리지 않고 배너로만 노출 -->
-      <div v-if="error" role="alert" class="rounded-lg bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">
+      <div v-if="error" role="alert" class="rounded-lg bg-error-subtle p-3 text-body text-error-strong">
         {{ error }}
       </div>
 
@@ -252,7 +252,7 @@ watch(
       <button
         v-if="isRunning"
         :disabled="cancelling"
-        class="w-full rounded-lg border border-red-300 dark:border-red-700 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
+        class="w-full rounded-lg border border-error px-4 py-2 text-body font-medium text-error-strong transition-colors hover:bg-error-subtle disabled:opacity-50"
         @click="handleCancel"
       >
         {{ cancelling ? '취소 중...' : '파이프라인 취소' }}

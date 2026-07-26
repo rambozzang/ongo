@@ -6,8 +6,8 @@
         <FilmIcon class="h-5 w-5 text-primary-600" />
       </div>
       <div class="min-w-0 flex-1">
-        <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ fileName }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">
+        <p class="truncate text-body font-medium text-gray-900 dark:text-gray-100">{{ fileName }}</p>
+        <p class="text-body-xs text-gray-500 dark:text-gray-400">
           {{ formatSize(progress.bytesTotal) }}
           <span v-if="variant === 'selected'" class="text-primary-600 dark:text-primary-400">
             · {{ t('upload.fileSelected') }}
@@ -35,7 +35,7 @@
         </button>
         <button
           v-if="cancellable"
-          class="rounded-lg p-2 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500"
+          class="rounded-lg p-2 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-error-strong"
           :title="t('action.cancel')"
           :aria-label="t('action.cancel')"
           @click="emit('cancel')"
@@ -58,15 +58,15 @@
         >
           <div
             class="h-full rounded-full transition-all duration-300"
-            :class="error ? 'bg-red-500' : completed ? 'bg-green-500' : 'bg-primary-600'"
+            :class="error ? 'bg-error' : completed ? 'bg-success' : 'bg-primary-600'"
             :style="{ width: `${progress.percentage}%` }"
           />
         </div>
       </div>
 
-      <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+      <div class="flex items-center justify-between text-body-xs text-gray-500 dark:text-gray-400">
         <div class="flex items-center gap-3">
-          <span class="font-medium" :class="error ? 'text-red-600' : completed ? 'text-green-600' : 'text-primary-600'">
+          <span class="font-medium" :class="error ? 'text-error-strong' : completed ? 'text-success-strong' : 'text-primary-600'">
             {{ progress.percentage }}%
           </span>
           <span v-if="uploading && progress.speed > 0">{{ formatSize(progress.speed) }}/s</span>
@@ -75,8 +75,8 @@
           </span>
         </div>
         <div>
-          <span v-if="error" class="text-red-600">{{ t('status.failed') }}</span>
-          <span v-else-if="completed" class="text-green-600">
+          <span v-if="error" class="text-error-strong">{{ t('status.failed') }}</span>
+          <span v-else-if="completed" class="text-success-strong">
             <CheckCircleIcon class="mr-1 inline h-4 w-4" />
             {{ t('status.completed') }}
           </span>
@@ -88,7 +88,7 @@
     </template>
 
     <!-- Error message -->
-    <div v-if="error" class="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
+    <div v-if="error" class="mt-3 rounded-lg bg-error-subtle p-3 text-body text-error-strong">
       {{ error }}
     </div>
   </div>

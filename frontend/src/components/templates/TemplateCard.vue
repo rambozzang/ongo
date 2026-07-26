@@ -41,11 +41,11 @@ const platformLabels: Record<string, string> = {
 }
 
 const categoryColors: Record<string, string> = {
-  title: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
-  description: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
-  tags: 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300',
-  thumbnail: 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300',
-  full: 'bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300',
+  title: 'bg-info-subtle text-info-strong',
+  description: 'bg-success-subtle text-success-strong',
+  tags: 'bg-info-subtle text-info-strong',
+  thumbnail: 'bg-warning-subtle text-warning-strong',
+  full: 'bg-info-subtle text-info-strong',
 }
 
 const getPreviewContent = () => {
@@ -96,10 +96,10 @@ const handleApply = () => {
     <!-- Hover Overlay -->
     <div
       v-if="showHover"
-      class="absolute inset-0 bg-blue-600 dark:bg-blue-500 bg-opacity-90 rounded-lg flex items-center justify-center z-10 transition-opacity"
+      class="absolute inset-0 bg-primary-600 dark:bg-primary-500 bg-opacity-90 rounded-lg flex items-center justify-center z-10 transition-opacity"
     >
       <button
-        class="px-6 py-3 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        class="px-6 py-3 bg-white dark:bg-gray-800 text-info-strong font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         @click="handleApply"
       >
         <CheckIcon class="w-5 h-5 inline-block mr-2" />
@@ -112,7 +112,7 @@ const handleApply = () => {
       <!-- Header -->
       <div class="flex items-start justify-between mb-3">
         <div class="flex-1 min-w-0">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
+          <h3 class="text-title font-semibold text-gray-900 dark:text-white truncate">
             {{ template.name }}
           </h3>
         </div>
@@ -122,7 +122,7 @@ const handleApply = () => {
         >
           <StarIconSolid
             v-if="template.isFavorite"
-            class="w-5 h-5 text-yellow-500"
+            class="w-5 h-5 text-warning-strong"
           />
           <StarIcon
             v-else
@@ -135,14 +135,14 @@ const handleApply = () => {
       <div class="flex flex-wrap gap-2 mb-3">
         <span
           :class="[
-            'px-2 py-1 text-xs font-medium rounded',
+            'px-2 py-1 text-body-xs font-medium rounded',
             categoryColors[template.category],
           ]"
         >
           {{ categoryLabels[template.category] }}
         </span>
         <span
-          class="px-2 py-1 text-xs font-medium rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+          class="px-2 py-1 text-body-xs font-medium rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
         >
           {{ platformLabels[template.platform] }}
         </span>
@@ -150,7 +150,7 @@ const handleApply = () => {
 
       <!-- Preview -->
       <div class="mb-3">
-        <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+        <p class="text-body text-gray-600 dark:text-gray-400 line-clamp-2">
           {{ getPreviewContent() }}
         </p>
       </div>
@@ -161,13 +161,13 @@ const handleApply = () => {
           <span
             v-for="(variable, index) in template.variables.slice(0, 4)"
             :key="index"
-            class="px-2 py-0.5 text-xs font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded"
+            class="px-2 py-0.5 text-body-xs font-mono bg-info-subtle text-info-strong rounded"
           >
             {{ variable }}
           </span>
           <span
             v-if="template.variables.length > 4"
-            class="px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400"
+            class="px-2 py-0.5 text-body-xs text-gray-500 dark:text-gray-400"
           >
             +{{ template.variables.length - 4 }}
           </span>
@@ -176,7 +176,7 @@ const handleApply = () => {
 
       <!-- Footer -->
       <div class="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-        <span class="text-sm text-gray-500 dark:text-gray-400">
+        <span class="text-body text-gray-500 dark:text-gray-400">
           사용 {{ template.usageCount }}회
         </span>
 
@@ -200,7 +200,7 @@ const handleApply = () => {
             :class="[
               'p-1.5 rounded transition-colors',
               showDeleteConfirm
-                ? 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400'
+                ? 'bg-error-subtle text-error-strong'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700',
             ]"
             :title="showDeleteConfirm ? '다시 클릭하여 확인' : '삭제'"

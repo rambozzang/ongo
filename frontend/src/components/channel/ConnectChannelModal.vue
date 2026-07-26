@@ -15,11 +15,11 @@
       <div class="relative flex max-h-[calc(100vh-2rem)] w-full max-w-lg flex-col rounded-xl bg-white p-4 shadow-xl dark:bg-gray-800 tablet:p-5">
         <!-- Header -->
         <div class="mb-4 shrink-0">
-          <h3 id="connect-channel-title" class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ $t('channels.connectModalTitle') }}</h3>
-          <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+          <h3 id="connect-channel-title" class="text-title font-bold text-gray-900 dark:text-gray-100">{{ $t('channels.connectModalTitle') }}</h3>
+          <p class="mt-1 text-body text-gray-600 dark:text-gray-300">
             {{ $t('channels.connectModalDescription') }}
           </p>
-          <p v-if="maxAllowed > 0" class="mt-1 text-xs" :class="isAtLimit ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'">
+          <p v-if="maxAllowed > 0" class="mt-1 text-body-xs" :class="isAtLimit ? 'text-error-strong font-medium' : 'text-gray-500 dark:text-gray-400'">
             {{ isAtLimit ? $t('channels.limitReached', { current: currentCount, max: maxAllowed }) : $t('channels.channelsConnected', { current: currentCount, max: maxAllowed }) }}
           </p>
         </div>
@@ -40,7 +40,7 @@
             <!-- Connected Checkmark -->
             <div
               v-if="isConnected(platform)"
-              class="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-green-500"
+              class="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-success"
             >
               <CheckIcon class="h-4 w-4 text-white" />
             </div>
@@ -48,7 +48,7 @@
             <!-- Platform Icon -->
               <div class="mb-2 flex items-center justify-center">
                 <div
-                class="flex h-10 w-10 items-center justify-center rounded-full text-lg font-bold text-white shadow-lg"
+                class="flex h-10 w-10 items-center justify-center rounded-full text-title font-bold text-white shadow-lg"
                 :style="{ backgroundColor: PLATFORM_CONFIG[platform].color }"
               >
                 {{ getPlatformInitial(platform) }}
@@ -57,7 +57,7 @@
 
             <!-- Platform Name -->
             <div class="text-center">
-              <h4 class="text-sm font-bold text-gray-900 dark:text-gray-100">
+              <h4 class="text-body font-bold text-gray-900 dark:text-gray-100">
                 {{ PLATFORM_CONFIG[platform].label }}
               </h4>
               <p class="mt-1 text-[11px] leading-4 text-gray-600 dark:text-gray-400">

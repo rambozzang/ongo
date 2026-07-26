@@ -20,7 +20,7 @@
         >
           <!-- Header -->
           <div class="flex items-center justify-between mb-6">
-            <h2 id="idea-form-modal-title" class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            <h2 id="idea-form-modal-title" class="text-h2 font-semibold text-gray-900 dark:text-gray-100">
               {{ isEditMode ? '아이디어 수정' : '새 아이디어' }}
             </h2>
             <button
@@ -37,27 +37,27 @@
           <form class="space-y-4" @submit.prevent="handleSubmit">
             <!-- Title -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                제목 <span class="text-red-500">*</span>
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
+                제목 <span class="text-error-strong">*</span>
               </label>
               <input
                 v-model="formData.title"
                 type="text"
                 required
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
                 placeholder="콘텐츠 제목을 입력하세요"
               />
             </div>
 
             <!-- Description -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
                 설명
               </label>
               <textarea
                 v-model="formData.description"
                 rows="3"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
                 placeholder="아이디어 설명을 입력하세요"
               ></textarea>
             </div>
@@ -65,12 +65,12 @@
             <!-- Status & Priority -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
                   상태
                 </label>
                 <select
                   v-model="formData.status"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
                 >
                   <option value="idea">아이디어</option>
                   <option value="planning">기획 중</option>
@@ -80,12 +80,12 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
                   우선순위
                 </label>
                 <select
                   v-model="formData.priority"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
                 >
                   <option value="low">낮음</option>
                   <option value="medium">보통</option>
@@ -96,7 +96,7 @@
 
             <!-- Platforms -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 플랫폼
               </label>
               <div class="grid grid-cols-2 gap-2">
@@ -105,74 +105,74 @@
                     v-model="formData.platform"
                     type="checkbox"
                     value="YOUTUBE"
-                    class="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                    class="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 dark:focus:ring-primary-400"
                   />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">YouTube</span>
+                  <span class="text-body text-gray-700 dark:text-gray-300">YouTube</span>
                 </label>
                 <label class="flex items-center space-x-2 cursor-pointer">
                   <input
                     v-model="formData.platform"
                     type="checkbox"
                     value="TIKTOK"
-                    class="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                    class="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 dark:focus:ring-primary-400"
                   />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">TikTok</span>
+                  <span class="text-body text-gray-700 dark:text-gray-300">TikTok</span>
                 </label>
                 <label class="flex items-center space-x-2 cursor-pointer">
                   <input
                     v-model="formData.platform"
                     type="checkbox"
                     value="INSTAGRAM"
-                    class="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                    class="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 dark:focus:ring-primary-400"
                   />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Instagram</span>
+                  <span class="text-body text-gray-700 dark:text-gray-300">Instagram</span>
                 </label>
                 <label class="flex items-center space-x-2 cursor-pointer">
                   <input
                     v-model="formData.platform"
                     type="checkbox"
                     value="NAVER_CLIP"
-                    class="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                    class="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 dark:focus:ring-primary-400"
                   />
-                  <span class="text-sm text-gray-700 dark:text-gray-300">Naver Clip</span>
+                  <span class="text-body text-gray-700 dark:text-gray-300">Naver Clip</span>
                 </label>
               </div>
             </div>
 
             <!-- Tags -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
                 태그
               </label>
               <input
                 v-model="tagsInput"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
                 placeholder="태그를 쉼표로 구분하여 입력 (예: 메이크업, 뷰티, 튜토리얼)"
               />
             </div>
 
             <!-- Due Date -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
                 마감일
               </label>
               <input
                 v-model="formData.dueDate"
                 type="date"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
               />
             </div>
 
             <!-- Notes -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
                 메모
               </label>
               <textarea
                 v-model="formData.notes"
                 rows="2"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
                 placeholder="추가 메모를 입력하세요"
               ></textarea>
             </div>
@@ -183,7 +183,7 @@
                 <button
                   v-if="isEditMode"
                   type="button"
-                  class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  class="px-4 py-2 text-body font-medium text-error-strong hover:bg-error-subtle rounded-lg transition-colors"
                   @click="handleDelete"
                 >
                   삭제
@@ -192,14 +192,14 @@
               <div class="flex gap-2">
                 <button
                   type="button"
-                  class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  class="px-4 py-2 text-body font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                   @click="closeModal"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors"
+                  class="px-4 py-2 text-body font-medium text-white bg-primary-600 dark:bg-primary-500 rounded-lg hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors"
                 >
                   {{ isEditMode ? '수정' : '생성' }}
                 </button>

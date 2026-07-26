@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-3">
-    <p class="text-xs text-gray-400 dark:text-gray-500">
+    <p class="text-body-xs text-gray-400 dark:text-gray-500">
       요일별/시간대별 평균 참여율 - 색이 진할수록 참여율이 높습니다
     </p>
     <div class="overflow-x-auto">
@@ -25,7 +25,7 @@
             :key="dayIndex"
             class="flex items-center"
           >
-            <div class="w-12 flex-shrink-0 pr-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">
+            <div class="w-12 flex-shrink-0 pr-2 text-right text-caption text-gray-500 dark:text-gray-400">
               {{ dayLabel }}
             </div>
             <div class="grid flex-1 grid-cols-24 gap-1">

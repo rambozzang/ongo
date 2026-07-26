@@ -200,7 +200,7 @@ const handleBackdropClick = (e: MouseEvent) => {
           >
             <!-- Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 id="goal-form-modal-title" class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              <h2 id="goal-form-modal-title" class="text-h2 font-semibold text-gray-900 dark:text-gray-100">
                 {{ isEditMode ? '목표 수정' : '새 목표 만들기' }}
               </h2>
               <button
@@ -216,7 +216,7 @@ const handleBackdropClick = (e: MouseEvent) => {
             <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               <!-- Goal Type -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                   목표 유형
                 </label>
                 <div class="grid grid-cols-3 gap-2">
@@ -225,9 +225,9 @@ const handleBackdropClick = (e: MouseEvent) => {
                     :key="preset.value"
                     type="button"
                     :class="[
-                      'px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all',
+                      'px-3 py-2 text-body font-medium rounded-lg border-2 transition-all',
                       formData.type === preset.value
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                         : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
                     ]"
                     @click="formData.type = preset.value as GoalType"
@@ -240,33 +240,33 @@ const handleBackdropClick = (e: MouseEvent) => {
 
               <!-- Title -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                   목표 제목
                 </label>
                 <input
                   v-model="formData.title"
                   type="text"
                   placeholder="예: 구독자 10만명 달성"
-                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
               <!-- Description -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                   설명
                 </label>
                 <textarea
                   v-model="formData.description"
                   rows="3"
                   placeholder="목표에 대한 설명을 입력하세요"
-                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none"
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                 ></textarea>
               </div>
 
               <!-- Period -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                   기간
                 </label>
                 <div class="grid grid-cols-5 gap-2">
@@ -275,9 +275,9 @@ const handleBackdropClick = (e: MouseEvent) => {
                     :key="period.value"
                     type="button"
                     :class="[
-                      'px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all',
+                      'px-3 py-2 text-body font-medium rounded-lg border-2 transition-all',
                       formData.period === period.value
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                         : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
                     ]"
                     @click="formData.period = period.value as GoalPeriod"
@@ -290,23 +290,23 @@ const handleBackdropClick = (e: MouseEvent) => {
               <!-- Date Range -->
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     시작일
                   </label>
                   <input
                     v-model="formData.startDate"
                     type="date"
-                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     종료일
                   </label>
                   <input
                     v-model="formData.endDate"
                     type="date"
-                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>
@@ -314,7 +314,7 @@ const handleBackdropClick = (e: MouseEvent) => {
               <!-- Target Values -->
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     현재 값
                   </label>
                   <div class="flex items-center gap-2">
@@ -323,13 +323,13 @@ const handleBackdropClick = (e: MouseEvent) => {
                       type="number"
                       min="0"
                       placeholder="0"
-                      class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                      class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
-                    <span class="text-sm text-gray-600 dark:text-gray-400">{{ formData.unit }}</span>
+                    <span class="text-body text-gray-600 dark:text-gray-400">{{ formData.unit }}</span>
                   </div>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     목표 값
                   </label>
                   <div class="flex items-center gap-2">
@@ -338,35 +338,35 @@ const handleBackdropClick = (e: MouseEvent) => {
                       type="number"
                       min="1"
                       placeholder="0"
-                      class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                      class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
-                    <span class="text-sm text-gray-600 dark:text-gray-400">{{ formData.unit }}</span>
+                    <span class="text-body text-gray-600 dark:text-gray-400">{{ formData.unit }}</span>
                   </div>
                 </div>
               </div>
 
               <!-- Unit (if custom type) -->
               <div v-if="formData.type === 'custom'">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                   단위
                 </label>
                 <input
                   v-model="formData.unit"
                   type="text"
                   placeholder="예: 개, 회, 명"
-                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
               <!-- Milestones -->
               <div>
                 <div class="flex items-center justify-between mb-2">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300">
                     마일스톤 (선택사항)
                   </label>
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                    class="inline-flex items-center gap-1 px-3 py-1 text-body font-medium text-info-strong hover:bg-info-subtle rounded-lg transition-colors"
                     @click="addMilestone"
                   >
                     <PlusIcon class="w-4 h-4" />
@@ -385,7 +385,7 @@ const handleBackdropClick = (e: MouseEvent) => {
                         v-model="milestone.title"
                         type="text"
                         placeholder="마일스톤 제목"
-                        class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                        class="px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                       <div class="flex items-center gap-2">
                         <input
@@ -393,14 +393,14 @@ const handleBackdropClick = (e: MouseEvent) => {
                           type="number"
                           min="0"
                           placeholder="목표 값"
-                          class="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                          class="flex-1 px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
-                        <span class="text-xs text-gray-600 dark:text-gray-400">{{ formData.unit }}</span>
+                        <span class="text-body-xs text-gray-600 dark:text-gray-400">{{ formData.unit }}</span>
                       </div>
                     </div>
                     <button
                       type="button"
-                      class="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      class="p-1.5 text-error-strong hover:bg-error-subtle rounded-lg transition-colors"
                       @click="removeMilestone(index)"
                     >
                       <TrashIcon class="w-4 h-4" />
@@ -408,7 +408,7 @@ const handleBackdropClick = (e: MouseEvent) => {
                   </div>
                 </div>
 
-                <p v-else class="text-sm text-gray-500 dark:text-gray-400 text-center py-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                <p v-else class="text-body text-gray-500 dark:text-gray-400 text-center py-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
                   마일스톤을 추가하여 목표를 단계별로 추적하세요
                 </p>
               </div>
@@ -417,13 +417,13 @@ const handleBackdropClick = (e: MouseEvent) => {
             <!-- Footer -->
             <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
               <button
-                class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                class="px-4 py-2 text-body font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                 @click="emit('close')"
               >
                 취소
               </button>
               <button
-                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors"
+                class="px-4 py-2 text-body font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 rounded-lg transition-colors"
                 @click="handleSubmit"
               >
                 {{ isEditMode ? '수정' : '생성' }}

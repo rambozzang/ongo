@@ -175,7 +175,7 @@ function formatDate(dateStr: string): string {
               </div>
               <div v-else class="flex flex-col items-center gap-2 p-16">
                 <VideoCameraIcon class="h-16 w-16 text-gray-300 dark:text-gray-600" />
-                <span class="text-sm text-gray-400 dark:text-gray-500">영상 미리보기</span>
+                <span class="text-body text-gray-400 dark:text-gray-500">영상 미리보기</span>
               </div>
             </div>
 
@@ -184,10 +184,10 @@ function formatDate(dateStr: string): string {
               v-else-if="asset.type === 'AUDIO'"
               class="flex flex-col items-center gap-4 p-16"
             >
-              <div class="rounded-full bg-purple-100 p-6 dark:bg-purple-900/30">
-                <MusicalNoteIcon class="h-12 w-12 text-purple-600 dark:text-purple-400" />
+              <div class="rounded-full bg-primary-100 p-6 dark:bg-primary-900/30">
+                <MusicalNoteIcon class="h-12 w-12 text-primary-600 dark:text-primary-400" />
               </div>
-              <span class="text-sm text-gray-500 dark:text-gray-400">
+              <span class="text-body text-gray-500 dark:text-gray-400">
                 {{ asset.duration ? formatDuration(asset.duration) : '오디오 파일' }}
               </span>
             </div>
@@ -202,10 +202,10 @@ function formatDate(dateStr: string): string {
                 />
               </div>
               <template v-else>
-                <div class="rounded-full bg-orange-100 p-6 dark:bg-orange-900/30">
-                  <DocumentIcon class="h-12 w-12 text-orange-600 dark:text-orange-400" />
+                <div class="rounded-full bg-warning-subtle p-6">
+                  <DocumentIcon class="h-12 w-12 text-warning-strong" />
                 </div>
-                <span class="text-sm text-gray-500 dark:text-gray-400">템플릿 파일</span>
+                <span class="text-body text-gray-500 dark:text-gray-400">템플릿 파일</span>
               </template>
             </div>
           </div>
@@ -215,10 +215,10 @@ function formatDate(dateStr: string): string {
             <!-- Header -->
             <div class="flex items-start justify-between border-b border-gray-200 p-5 dark:border-gray-700">
               <div class="min-w-0 pr-2">
-                <h2 id="asset-preview-modal-title" class="text-lg font-bold text-gray-900 dark:text-white" :title="asset.name">
+                <h2 id="asset-preview-modal-title" class="text-title font-bold text-gray-900 dark:text-white" :title="asset.name">
                   {{ asset.name }}
                 </h2>
-                <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{{ typeLabel }}</p>
+                <p class="mt-0.5 text-body text-gray-500 dark:text-gray-400">{{ typeLabel }}</p>
               </div>
               <button
                 class="flex-shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
@@ -233,12 +233,12 @@ function formatDate(dateStr: string): string {
             <div class="flex-1 overflow-y-auto p-5">
               <!-- File Info -->
               <div class="mb-5 space-y-3">
-                <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                <h3 class="text-body-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   파일 정보
                 </h3>
 
                 <div class="space-y-2">
-                  <div class="flex items-center gap-2 text-sm">
+                  <div class="flex items-center gap-2 text-body">
                     <CubeIcon class="h-4 w-4 flex-shrink-0 text-gray-400" />
                     <span class="text-gray-500 dark:text-gray-400">크기:</span>
                     <span class="font-medium text-gray-900 dark:text-gray-100">
@@ -246,7 +246,7 @@ function formatDate(dateStr: string): string {
                     </span>
                   </div>
 
-                  <div class="flex items-center gap-2 text-sm">
+                  <div class="flex items-center gap-2 text-body">
                     <component :is="typeIcon" class="h-4 w-4 flex-shrink-0 text-gray-400" />
                     <span class="text-gray-500 dark:text-gray-400">형식:</span>
                     <span class="font-medium text-gray-900 dark:text-gray-100">
@@ -254,7 +254,7 @@ function formatDate(dateStr: string): string {
                     </span>
                   </div>
 
-                  <div v-if="asset.width && asset.height" class="flex items-center gap-2 text-sm">
+                  <div v-if="asset.width && asset.height" class="flex items-center gap-2 text-body">
                     <PhotoIcon class="h-4 w-4 flex-shrink-0 text-gray-400" />
                     <span class="text-gray-500 dark:text-gray-400">해상도:</span>
                     <span class="font-medium text-gray-900 dark:text-gray-100">
@@ -262,7 +262,7 @@ function formatDate(dateStr: string): string {
                     </span>
                   </div>
 
-                  <div v-if="asset.duration" class="flex items-center gap-2 text-sm">
+                  <div v-if="asset.duration" class="flex items-center gap-2 text-body">
                     <ClockIcon class="h-4 w-4 flex-shrink-0 text-gray-400" />
                     <span class="text-gray-500 dark:text-gray-400">재생 시간:</span>
                     <span class="font-medium text-gray-900 dark:text-gray-100">
@@ -270,7 +270,7 @@ function formatDate(dateStr: string): string {
                     </span>
                   </div>
 
-                  <div class="flex items-center gap-2 text-sm">
+                  <div class="flex items-center gap-2 text-body">
                     <CalendarIcon class="h-4 w-4 flex-shrink-0 text-gray-400" />
                     <span class="text-gray-500 dark:text-gray-400">업로드:</span>
                     <span class="font-medium text-gray-900 dark:text-gray-100">
@@ -278,7 +278,7 @@ function formatDate(dateStr: string): string {
                     </span>
                   </div>
 
-                  <div class="flex items-center gap-2 text-sm">
+                  <div class="flex items-center gap-2 text-body">
                     <component :is="FolderIcon" class="h-4 w-4 flex-shrink-0 text-gray-400" />
                     <span class="text-gray-500 dark:text-gray-400">폴더:</span>
                     <span class="font-medium text-gray-900 dark:text-gray-100">
@@ -290,19 +290,19 @@ function formatDate(dateStr: string): string {
 
               <!-- Tags -->
               <div class="mb-5">
-                <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                <h3 class="mb-2 text-body-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   태그
                 </h3>
                 <div class="flex flex-wrap items-center gap-1.5">
                   <span
                     v-for="tag in asset.tags"
                     :key="tag"
-                    class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                    class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-caption text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                   >
                     <TagIcon class="h-3 w-3" />
                     {{ tag }}
                     <button
-                      class="ml-0.5 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+                      class="ml-0.5 text-gray-400 hover:text-error-strong dark:text-gray-500"
                       @click="removeTag(tag)"
                     >
                       <XMarkIcon class="h-3 w-3" />
@@ -312,7 +312,7 @@ function formatDate(dateStr: string): string {
                     v-model="tagInput"
                     type="text"
                     placeholder="+ 태그 추가"
-                    class="w-24 rounded-full border border-dashed border-gray-300 bg-transparent px-2.5 py-1 text-xs text-gray-600 placeholder-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-600 dark:text-gray-400 dark:placeholder-gray-500 dark:focus:border-primary-400"
+                    class="w-24 rounded-full border border-dashed border-gray-300 bg-transparent px-2.5 py-1 text-body-xs text-gray-600 placeholder-gray-400 focus:border-primary-500 focus:outline-none dark:border-gray-600 dark:text-gray-400 dark:placeholder-gray-500 dark:focus:border-primary-400"
                     @keydown="onTagKeydown"
                     @blur="addTag"
                   />
@@ -321,10 +321,10 @@ function formatDate(dateStr: string): string {
 
               <!-- Usage Info (mock) -->
               <div>
-                <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                <h3 class="mb-2 text-body-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   사용 정보
                 </h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
+                <p class="text-body text-gray-500 dark:text-gray-400">
                   이 에셋은 아직 영상에 사용되지 않았습니다.
                 </p>
               </div>
@@ -333,14 +333,14 @@ function formatDate(dateStr: string): string {
             <!-- Actions Footer -->
             <div class="flex items-center gap-2 border-t border-gray-200 p-4 dark:border-gray-700">
               <button
-                class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-body font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                 @click="handleDownload"
               >
                 <ArrowDownTrayIcon class="h-4 w-4" />
                 다운로드
               </button>
               <button
-                class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30"
+                class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-error-subtle px-4 py-2 text-body font-medium text-error-strong transition-opacity hover:opacity-80"
                 @click="handleDelete"
               >
                 <TrashIcon class="h-4 w-4" />

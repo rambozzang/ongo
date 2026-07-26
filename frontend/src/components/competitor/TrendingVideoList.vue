@@ -93,7 +93,7 @@ function formatDate(dateString: string): string {
       <!-- Competitor filter -->
       <select
         v-model="selectedCompetitorId"
-        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
       >
         <option :value="null">모든 채널</option>
         <option
@@ -108,7 +108,7 @@ function formatDate(dateString: string): string {
       <!-- Sort selector -->
       <select
         v-model="sortBy"
-        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
       >
         <option value="views">조회수 높은 순</option>
         <option value="recency">최신 순</option>
@@ -130,7 +130,7 @@ function formatDate(dateString: string): string {
             :alt="video.title"
             class="w-40 h-24 rounded-lg object-cover"
           />
-          <div class="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/80 text-white text-xs rounded">
+          <div class="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/80 text-white text-body-xs rounded">
             {{ video.duration }}
           </div>
           <div class="absolute inset-0 flex items-center justify-center">
@@ -152,13 +152,13 @@ function formatDate(dateString: string): string {
               :alt="getCompetitorName(video.competitorId)"
               class="w-6 h-6 rounded-full"
             />
-            <span class="text-sm text-gray-600 dark:text-gray-400">
+            <span class="text-body text-gray-600 dark:text-gray-400">
               {{ getCompetitorName(video.competitorId) }}
             </span>
           </div>
 
           <!-- Stats -->
-          <div class="flex items-center flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex items-center flex-wrap gap-3 text-body text-gray-600 dark:text-gray-400">
             <div class="flex items-center space-x-1">
               <PlayIcon class="w-4 h-4" />
               <span>{{ formatNumber(video.views) }}</span>

@@ -6,14 +6,14 @@
           :is="icon"
           class="h-5 w-5 text-gray-400"
         />
-        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ title }}</h3>
+        <h3 class="text-body font-medium text-gray-700 dark:text-gray-300">{{ title }}</h3>
       </div>
     </div>
 
     <div class="mt-3 space-y-2">
       <!-- Value A -->
       <div class="flex items-center justify-between">
-        <span class="text-xs text-gray-500 dark:text-gray-400">영상 A</span>
+        <span class="text-body-xs text-gray-500 dark:text-gray-400">영상 A</span>
         <span class="font-semibold text-primary-600 dark:text-primary-400">
           {{ formatValue(valueA) }}
         </span>
@@ -21,8 +21,8 @@
 
       <!-- Value B -->
       <div class="flex items-center justify-between">
-        <span class="text-xs text-gray-500 dark:text-gray-400">영상 B</span>
-        <span class="font-semibold text-amber-600 dark:text-amber-400">
+        <span class="text-body-xs text-gray-500 dark:text-gray-400">영상 B</span>
+        <span class="font-semibold text-warning-strong">
           {{ formatValue(valueB) }}
         </span>
       </div>
@@ -30,14 +30,14 @@
       <!-- Difference -->
       <div class="border-t border-gray-100 dark:border-gray-700 pt-2">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-gray-600 dark:text-gray-400">차이</span>
+          <span class="text-caption text-gray-600 dark:text-gray-400">차이</span>
           <div class="flex items-center gap-1">
             <component
               :is="differenceIcon"
               class="h-4 w-4"
               :class="differenceColorClass"
             />
-            <span class="text-sm font-bold" :class="differenceColorClass">
+            <span class="text-body font-bold" :class="differenceColorClass">
               {{ Math.abs(percentageDifference).toFixed(1) }}%
             </span>
           </div>
@@ -83,8 +83,8 @@ const differenceColorClass = computed(() => {
     return 'text-gray-400'
   }
   return percentageDifference.value > 0
-    ? 'text-green-600 dark:text-green-400'
-    : 'text-red-600 dark:text-red-400'
+    ? 'text-success-strong'
+    : 'text-error-strong'
 })
 
 // Format value

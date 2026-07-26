@@ -20,7 +20,7 @@
 
         <!-- Stage message -->
         <div class="text-center">
-          <p class="text-lg font-medium text-gray-900 dark:text-gray-100">
+          <p class="text-title font-medium text-gray-900 dark:text-gray-100">
             {{ stageMessage }}
           </p>
 
@@ -33,7 +33,7 @@
 
           <!-- Checkmark (show when complete) -->
           <div v-else class="mt-3 flex items-center justify-center">
-            <svg class="h-8 w-8 text-green-500" viewBox="0 0 24 24" fill="none">
+            <svg class="h-8 w-8 text-success-strong" viewBox="0 0 24 24" fill="none">
               <path
                 class="check-path"
                 d="M5 13l4 4L19 7"

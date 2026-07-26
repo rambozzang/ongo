@@ -44,7 +44,7 @@
                 {{ toast.title }}
               </p>
               <p
-                class="text-sm text-gray-700 dark:text-gray-300"
+                class="text-body text-gray-700 dark:text-gray-300"
                 :class="{ 'mt-0.5': toast.title }"
               >
                 {{ toast.message }}
@@ -147,19 +147,19 @@ function getStackClass(index: number) {
 
 function accentColor(type: ToastType) {
   return {
-    success: 'bg-emerald-500',
-    error: 'bg-red-500',
-    warning: 'bg-amber-500',
-    info: 'bg-blue-500',
+    success: 'bg-success',
+    error: 'bg-error',
+    warning: 'bg-warning',
+    info: 'bg-info',
   }[type]
 }
 
 function iconColor(type: ToastType) {
   return {
-    success: 'text-emerald-500 dark:text-emerald-400',
-    error: 'text-red-500 dark:text-red-400',
-    warning: 'text-amber-500 dark:text-amber-400',
-    info: 'text-blue-500 dark:text-blue-400',
+    success: 'text-success-strong',
+    error: 'text-error-strong',
+    warning: 'text-warning-strong',
+    info: 'text-info-strong',
   }[type]
 }
 
@@ -174,10 +174,10 @@ function iconAnimation(type: ToastType) {
 
 function timerBarColor(type: ToastType) {
   return {
-    success: 'bg-emerald-500',
-    error: 'bg-red-500',
-    warning: 'bg-amber-500',
-    info: 'bg-blue-500',
+    success: 'bg-success',
+    error: 'bg-error',
+    warning: 'bg-warning',
+    info: 'bg-info',
   }[type]
 }
 

@@ -136,10 +136,10 @@ function formatDate(dateString: string) {
   <div class="space-y-4">
     <!-- Filter -->
     <div class="flex items-center gap-2">
-      <label class="text-sm font-medium text-gray-700 dark:text-gray-300">유형:</label>
+      <label class="text-body font-medium text-gray-700 dark:text-gray-300">유형:</label>
       <select
         v-model="filterType"
-        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
       >
         <option v-for="type in assetTypes" :key="type.value" :value="type.value">
           {{ type.label }}
@@ -174,15 +174,15 @@ function formatDate(dateString: string) {
 
           <!-- Asset Info -->
           <div class="space-y-1">
-            <h4 class="font-medium text-gray-900 dark:text-gray-100 text-sm truncate" :title="asset.name">
+            <h4 class="font-medium text-gray-900 dark:text-gray-100 text-body truncate" :title="asset.name">
               {{ asset.name }}
             </h4>
             <div class="flex items-center gap-1">
-              <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
+              <span class="px-2 py-0.5 bg-info-subtle text-info-strong text-body-xs rounded-full">
                 {{ assetTypeLabels[asset.type] }}
               </span>
             </div>
-            <p class="text-xs text-gray-600 dark:text-gray-400">
+            <p class="text-body-xs text-gray-600 dark:text-gray-400">
               {{ asset.format }} · {{ asset.size }}
             </p>
           </div>
@@ -190,7 +190,7 @@ function formatDate(dateString: string) {
           <!-- Actions -->
           <div class="flex gap-1 pt-2 border-t border-gray-200 dark:border-gray-700">
             <button
-              class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors"
+              class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-body-xs font-medium text-gray-700 dark:text-gray-300 transition-colors"
               title="다운로드"
               @click="handleDownload(asset)"
             >
@@ -198,7 +198,7 @@ function formatDate(dateString: string) {
               <span>다운로드</span>
             </button>
             <button
-              class="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+              class="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-error-subtle rounded transition-colors"
               title="삭제"
               @click="handleRemove(asset.id)"
             >
@@ -210,11 +210,11 @@ function formatDate(dateString: string) {
 
       <!-- Upload Button -->
       <button
-        class="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors flex flex-col items-center justify-center gap-2 aspect-square"
+        class="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors flex flex-col items-center justify-center gap-2 aspect-square"
         @click="handleUpload"
       >
         <PlusIcon class="w-8 h-8 text-gray-400 dark:text-gray-500" />
-        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">에셋 업로드</span>
+        <span class="text-body font-medium text-gray-600 dark:text-gray-400">에셋 업로드</span>
       </button>
     </div>
 
@@ -235,14 +235,14 @@ function formatDate(dateString: string) {
         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-start justify-between">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h3 class="text-title font-semibold text-gray-900 dark:text-gray-100">
                 {{ selectedAsset.name }}
               </h3>
               <div class="flex items-center gap-2 mt-2">
-                <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
+                <span class="px-2 py-0.5 bg-info-subtle text-info-strong text-body-xs rounded-full">
                   {{ assetTypeLabels[selectedAsset.type] }}
                 </span>
-                <span class="text-sm text-gray-600 dark:text-gray-400">
+                <span class="text-body text-gray-600 dark:text-gray-400">
                   {{ selectedAsset.format }} · {{ selectedAsset.size }}
                 </span>
               </div>
@@ -266,17 +266,17 @@ function formatDate(dateString: string) {
             />
           </div>
           <div class="mt-4 space-y-2">
-            <p class="text-sm text-gray-600 dark:text-gray-400">
+            <p class="text-body text-gray-600 dark:text-gray-400">
               <span class="font-medium">업로드 일자:</span> {{ formatDate(selectedAsset.uploadedAt) }}
             </p>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
+            <p class="text-body text-gray-600 dark:text-gray-400">
               <span class="font-medium">파일 경로:</span> {{ selectedAsset.url }}
             </p>
           </div>
         </div>
         <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-2">
           <button
-            class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors flex items-center justify-center gap-2"
+            class="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-md transition-colors flex items-center justify-center gap-2"
             @click="handleDownload(selectedAsset)"
           >
             <ArrowDownTrayIcon class="w-5 h-5" />

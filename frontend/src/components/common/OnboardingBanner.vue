@@ -5,10 +5,10 @@
   >
     <div class="flex items-start justify-between gap-4 p-4">
       <div class="flex-1">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">
           onGo 시작하기
         </h3>
-        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
+        <p class="mt-1 text-body-xs text-gray-600 dark:text-gray-400">
           {{ completedCount }}/{{ steps.length }} 단계 완료
         </p>
 
@@ -31,14 +31,14 @@
               class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors"
               :class="
                 step.completed
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-success text-white'
                   : 'border-2 border-gray-300 dark:border-gray-600'
               "
             >
               <CheckIcon v-if="step.completed" class="h-3 w-3" />
             </div>
             <span
-              class="text-sm"
+              class="text-body"
               :class="
                 step.completed
                   ? 'text-gray-400 line-through dark:text-gray-500'
@@ -50,7 +50,7 @@
             <router-link
               v-if="!step.completed"
               :to="stepRoutes[step.id]"
-              class="ml-auto text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+              class="ml-auto text-caption text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
             >
               시작하기 &rarr;
             </router-link>

@@ -166,13 +166,13 @@ const formatNumber = (value: number): string => {
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.activeGoals') }}</p>
-              <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
+              <p class="text-body font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.activeGoals') }}</p>
+              <p class="text-display font-bold text-gray-900 dark:text-gray-100 mt-2">
                 {{ stats.active }}
               </p>
             </div>
-            <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <ChartBarIcon class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div class="p-3 bg-info-subtle rounded-lg">
+              <ChartBarIcon class="w-6 h-6 text-info-strong" />
             </div>
           </div>
         </div>
@@ -180,13 +180,13 @@ const formatNumber = (value: number): string => {
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.completed') }}</p>
-              <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
+              <p class="text-body font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.completed') }}</p>
+              <p class="text-display font-bold text-gray-900 dark:text-gray-100 mt-2">
                 {{ stats.completed }}
               </p>
             </div>
-            <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <CheckCircleIcon class="w-6 h-6 text-green-600 dark:text-green-400" />
+            <div class="p-3 bg-success-subtle rounded-lg">
+              <CheckCircleIcon class="w-6 h-6 text-success-strong" />
             </div>
           </div>
         </div>
@@ -194,13 +194,13 @@ const formatNumber = (value: number): string => {
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.overallProgress') }}</p>
-              <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
+              <p class="text-body font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.overallProgress') }}</p>
+              <p class="text-display font-bold text-gray-900 dark:text-gray-100 mt-2">
                 {{ stats.progress }}%
               </p>
             </div>
-            <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <ClockIcon class="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <div class="p-3 bg-info-subtle rounded-lg">
+              <ClockIcon class="w-6 h-6 text-info-strong" />
             </div>
           </div>
         </div>
@@ -208,13 +208,13 @@ const formatNumber = (value: number): string => {
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.nextDeadline') }}</p>
-              <p class="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
+              <p class="text-body font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.nextDeadline') }}</p>
+              <p class="text-display font-bold text-gray-900 dark:text-gray-100 mt-2">
                 {{ nextDeadline ? `D-${nextDeadline.daysLeft}` : '-' }}
               </p>
             </div>
-            <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <CalendarIcon class="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            <div class="p-3 bg-warning-subtle rounded-lg">
+              <CalendarIcon class="w-6 h-6 text-warning-strong" />
             </div>
           </div>
         </div>
@@ -223,15 +223,15 @@ const formatNumber = (value: number): string => {
       <!-- Upcoming Deadlines Alert -->
       <div
         v-if="stats.upcoming > 0"
-        class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-6"
+        class="bg-warning-subtle border border-warning rounded-lg p-4 mb-6"
       >
         <div class="flex items-start gap-3">
-          <CalendarIcon class="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
+          <CalendarIcon class="w-5 h-5 text-warning-strong mt-0.5" />
           <div class="flex-1">
-            <h3 class="text-sm font-medium text-orange-900 dark:text-orange-200">
+            <h3 class="text-body font-medium text-warning-strong">
               {{ $t('goals.upcomingDeadline') }}
             </h3>
-            <p class="text-sm text-orange-700 dark:text-orange-300 mt-1">
+            <p class="text-body text-warning-strong mt-1">
               {{ $t('goals.upcomingDeadlineDesc', { count: stats.upcoming }) }}
             </p>
           </div>
@@ -243,9 +243,9 @@ const formatNumber = (value: number): string => {
         <div class="flex items-center gap-2">
           <button
             :class="[
-              'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+              'px-4 py-2 text-body font-medium rounded-lg transition-colors',
               !showCompleted
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                ? 'bg-info-subtle text-info-strong'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
             ]"
             @click="showCompleted = false"
@@ -254,9 +254,9 @@ const formatNumber = (value: number): string => {
           </button>
           <button
             :class="[
-              'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+              'px-4 py-2 text-body font-medium rounded-lg transition-colors',
               showCompleted
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                ? 'bg-info-subtle text-info-strong'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
             ]"
             @click="showCompleted = true"
@@ -269,7 +269,7 @@ const formatNumber = (value: number): string => {
           <FunnelIcon class="w-5 h-5 text-gray-400" />
           <select
             v-model="sortBy"
-            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
+            class="px-3 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
           >
             <option value="deadline">{{ $t('goals.sortDeadline') }}</option>
             <option value="progress">{{ $t('goals.sortProgress') }}</option>
@@ -298,10 +298,10 @@ const formatNumber = (value: number): string => {
         class="card p-12 text-center"
       >
         <ChartBarIcon class="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+        <h3 class="text-title font-medium text-gray-900 dark:text-gray-100 mb-2">
           {{ showCompleted ? $t('goals.emptyCompletedTitle') : $t('goals.emptyActiveTitle') }}
         </h3>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        <p class="text-body text-gray-600 dark:text-gray-400 mb-6">
           {{ showCompleted ? $t('goals.emptyCompletedDesc') : $t('goals.emptyActiveDesc') }}
         </p>
         <button
@@ -355,10 +355,10 @@ const formatNumber = (value: number): string => {
               <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-start justify-between">
                   <div class="flex-1">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    <h2 class="text-h2 font-semibold text-gray-900 dark:text-gray-100">
                       {{ viewingGoal.title }}
                     </h2>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <p class="text-body text-gray-600 dark:text-gray-400 mt-1">
                       {{ viewingGoal.description }}
                     </p>
                   </div>
@@ -379,8 +379,8 @@ const formatNumber = (value: number): string => {
                   <!-- Progress Info -->
                   <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                     <div class="flex items-center justify-between mb-2">
-                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('goals.progressStatus') }}</span>
-                      <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      <span class="text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('goals.progressStatus') }}</span>
+                      <span class="text-h1 font-bold text-gray-900 dark:text-gray-100">
                         {{ Math.round((viewingGoal.currentValue / viewingGoal.targetValue) * 100) }}%
                       </span>
                     </div>
@@ -390,7 +390,7 @@ const formatNumber = (value: number): string => {
                         :style="{ width: `${Math.min((viewingGoal.currentValue / viewingGoal.targetValue) * 100, 100)}%` }"
                       ></div>
                     </div>
-                    <div class="flex items-center justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    <div class="flex items-center justify-between mt-2 text-body text-gray-600 dark:text-gray-400">
                       <span>{{ $t('goals.current') }}: {{ formatNumber(viewingGoal.currentValue) }} {{ viewingGoal.unit }}</span>
                       <span>{{ $t('goals.target') }}: {{ formatNumber(viewingGoal.targetValue) }} {{ viewingGoal.unit }}</span>
                     </div>
@@ -398,7 +398,7 @@ const formatNumber = (value: number): string => {
 
                   <!-- Milestones -->
                   <div>
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                    <h3 class="text-title font-semibold text-gray-900 dark:text-gray-100 mb-4">
                       {{ $t('goals.milestones') }}
                     </h3>
                     <MilestoneList

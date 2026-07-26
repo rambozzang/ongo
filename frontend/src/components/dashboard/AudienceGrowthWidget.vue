@@ -4,13 +4,13 @@
     @click="$router.push('/channels')"
   >
     <div class="flex items-center justify-between">
-      <p class="text-sm font-medium text-gray-500 dark:text-gray-400">구독자 증가</p>
+      <p class="text-body font-medium text-gray-500 dark:text-gray-400">구독자 증가</p>
       <UsersIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
     </div>
-    <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+    <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
       {{ totalSubscribers.toLocaleString() }}
     </p>
-    <div v-if="change !== undefined" class="mt-1 flex items-center gap-1 text-sm">
+    <div v-if="change !== undefined" class="mt-1 flex items-center gap-1 text-body">
       <span :class="changeColor">
         {{ changeIcon }}{{ Math.abs(change) }}
       </span>
@@ -54,7 +54,7 @@ const changeIcon = computed(() => {
 
 const changeColor = computed(() => {
   if (props.change === undefined) return ''
-  return props.change >= 0 ? 'text-green-600' : 'text-red-600'
+  return props.change >= 0 ? 'text-success-strong' : 'text-error-strong'
 })
 
 const chartData = computed(() => {

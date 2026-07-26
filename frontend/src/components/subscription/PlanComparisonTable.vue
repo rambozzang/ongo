@@ -1,9 +1,9 @@
 <template>
   <div class="-mx-6 overflow-x-auto px-6 scrollbar-dark">
-    <table class="w-full min-w-[600px] tablet:min-w-[800px] text-sm">
+    <table class="w-full min-w-[600px] tablet:min-w-[800px] text-body">
       <thead>
         <tr class="border-b-2 border-gray-200 dark:border-gray-700">
-          <th class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
+          <th class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-4 text-left text-body-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
             기능
           </th>
           <th
@@ -13,15 +13,15 @@
             :class="getPlanHeaderClass(plan.type)"
           >
             <div class="space-y-2">
-              <div class="text-sm font-bold uppercase tracking-wider" :class="getPlanNameClass(plan.type)">
+              <div class="text-body font-bold uppercase tracking-wider" :class="getPlanNameClass(plan.type)">
                 {{ plan.name }}
               </div>
-              <div class="text-xl font-bold" :class="getPlanPriceClass(plan.type)">
+              <div class="text-h2 font-bold" :class="getPlanPriceClass(plan.type)">
                 {{ getDisplayPrice(plan).amount === 0 ? '무료' : '₩' + getDisplayPrice(plan).amount.toLocaleString() }}
-                <span v-if="getDisplayPrice(plan).amount > 0" class="text-xs font-normal">{{ getDisplayPrice(plan).label }}</span>
+                <span v-if="getDisplayPrice(plan).amount > 0" class="text-body-xs font-normal">{{ getDisplayPrice(plan).label }}</span>
               </div>
               <div v-if="plan.type === currentPlan" class="flex justify-center">
-                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium" :class="getCurrentPlanBadgeClass(plan.type)">
+                <span class="inline-flex items-center rounded-full px-3 py-1 text-body-xs font-medium" :class="getCurrentPlanBadgeClass(plan.type)">
                   현재 플랜
                 </span>
               </div>
@@ -96,7 +96,7 @@
             예약 게시
           </td>
           <td v-for="plan in displayPlans" :key="`schedule-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
-            <CheckIcon v-if="plan.maxScheduleDays > 0" class="mx-auto h-6 w-6 text-green-500" />
+            <CheckIcon v-if="plan.maxScheduleDays > 0" class="mx-auto h-6 w-6 text-success-strong" />
             <XMarkIcon v-else class="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
           </td>
         </tr>
@@ -117,7 +117,7 @@
             우선 지원
           </td>
           <td v-for="plan in displayPlans" :key="`priority-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
-            <CheckIcon v-if="['PRO', 'BUSINESS'].includes(plan.type)" class="mx-auto h-6 w-6 text-green-500" />
+            <CheckIcon v-if="['PRO', 'BUSINESS'].includes(plan.type)" class="mx-auto h-6 w-6 text-success-strong" />
             <XMarkIcon v-else class="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
           </td>
         </tr>
@@ -128,7 +128,7 @@
             API 접근
           </td>
           <td v-for="plan in displayPlans" :key="`api-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
-            <CheckIcon v-if="plan.type === 'BUSINESS'" class="mx-auto h-6 w-6 text-green-500" />
+            <CheckIcon v-if="plan.type === 'BUSINESS'" class="mx-auto h-6 w-6 text-success-strong" />
             <XMarkIcon v-else class="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
           </td>
         </tr>
@@ -139,13 +139,13 @@
           <td v-for="plan in displayPlans" :key="`action-${plan.type}`" class="px-4 py-4 text-center" :class="getCellClass(plan.type)">
             <button
               v-if="plan.type !== currentPlan"
-              class="w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+              class="w-full rounded-lg px-4 py-2 text-body font-medium transition-colors"
               :class="getActionButtonClass(plan.type)"
               @click="$emit('select-plan', plan.type)"
             >
               {{ getActionButtonLabel(plan.type) }}
             </button>
-            <span v-else class="inline-block rounded-lg px-4 py-2 text-sm font-medium" :class="getCurrentBadgeTextClass(plan.type)">
+            <span v-else class="inline-block rounded-lg px-4 py-2 text-body font-medium" :class="getCurrentBadgeTextClass(plan.type)">
               사용 중
             </span>
           </td>
@@ -214,9 +214,9 @@ function getPlanHeaderClass(planType: PlanType): string {
   if (planType === props.currentPlan) {
     const colorMap: Record<PlanType, string> = {
       FREE: 'bg-gray-50 dark:bg-gray-700/30',
-      STARTER: 'bg-blue-50 dark:bg-blue-900/20',
-      PRO: 'bg-purple-50 dark:bg-purple-900/20',
-      BUSINESS: 'bg-amber-50 dark:bg-amber-900/20',
+      STARTER: 'bg-info-subtle',
+      PRO: 'bg-info-subtle',
+      BUSINESS: 'bg-warning-subtle',
     }
     return colorMap[planType]
   }
@@ -227,9 +227,9 @@ function getPlanNameClass(planType: PlanType): string {
   if (planType === props.currentPlan) {
     const colorMap: Record<PlanType, string> = {
       FREE: 'text-gray-700 dark:text-gray-300',
-      STARTER: 'text-blue-700 dark:text-blue-400',
-      PRO: 'text-purple-700 dark:text-purple-400',
-      BUSINESS: 'text-amber-700 dark:text-amber-400',
+      STARTER: 'text-info-strong',
+      PRO: 'text-info-strong',
+      BUSINESS: 'text-warning-strong',
     }
     return colorMap[planType]
   }
@@ -240,9 +240,9 @@ function getPlanPriceClass(planType: PlanType): string {
   if (planType === props.currentPlan) {
     const colorMap: Record<PlanType, string> = {
       FREE: 'text-gray-900 dark:text-gray-100',
-      STARTER: 'text-blue-700 dark:text-blue-400',
-      PRO: 'text-purple-700 dark:text-purple-400',
-      BUSINESS: 'text-amber-700 dark:text-amber-400',
+      STARTER: 'text-info-strong',
+      PRO: 'text-info-strong',
+      BUSINESS: 'text-warning-strong',
     }
     return colorMap[planType]
   }
@@ -252,9 +252,9 @@ function getPlanPriceClass(planType: PlanType): string {
 function getCurrentPlanBadgeClass(planType: PlanType): string {
   const colorMap: Record<PlanType, string> = {
     FREE: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
-    STARTER: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-    PRO: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
-    BUSINESS: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+    STARTER: 'bg-info-subtle text-info-strong',
+    PRO: 'bg-info-subtle text-info-strong',
+    BUSINESS: 'bg-warning-subtle text-warning-strong',
   }
   return colorMap[planType]
 }
@@ -263,9 +263,9 @@ function getCellClass(planType: PlanType): string {
   if (planType === props.currentPlan) {
     const colorMap: Record<PlanType, string> = {
       FREE: 'bg-gray-50/50 dark:bg-gray-700/20',
-      STARTER: 'bg-blue-50/50 dark:bg-blue-900/10',
-      PRO: 'bg-purple-50/50 dark:bg-purple-900/10',
-      BUSINESS: 'bg-amber-50/50 dark:bg-amber-900/10',
+      STARTER: 'bg-info-subtle',
+      PRO: 'bg-info-subtle',
+      BUSINESS: 'bg-warning-subtle',
     }
     return colorMap[planType]
   }
@@ -299,9 +299,9 @@ function getActionButtonClass(planType: PlanType): string {
 function getCurrentBadgeTextClass(planType: PlanType): string {
   const colorMap: Record<PlanType, string> = {
     FREE: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
-    STARTER: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-    PRO: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
-    BUSINESS: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+    STARTER: 'bg-info-subtle text-info-strong',
+    PRO: 'bg-info-subtle text-info-strong',
+    BUSINESS: 'bg-warning-subtle text-warning-strong',
   }
   return colorMap[planType]
 }

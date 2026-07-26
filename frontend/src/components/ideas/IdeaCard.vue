@@ -9,7 +9,7 @@
     <div class="flex items-center justify-between mb-2">
       <span
         :class="priorityClasses"
-        class="text-xs font-medium px-2 py-1 rounded"
+        class="text-caption px-2 py-1 rounded"
       >
         {{ priorityLabel }}
       </span>
@@ -22,7 +22,7 @@
         />
         <button
           type="button"
-          class="ml-1 rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+          class="ml-1 rounded p-1 text-gray-400 transition-colors hover:bg-error-subtle hover:text-error-strong"
           aria-label="아이디어 삭제"
           title="아이디어 삭제"
           @click.stop="$emit('delete')"
@@ -38,7 +38,7 @@
     </h3>
 
     <!-- Description -->
-    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+    <p class="text-body text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
       {{ idea.description }}
     </p>
 
@@ -47,14 +47,14 @@
       <span
         v-for="tag in idea.tags"
         :key="tag"
-        class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded"
+        class="text-body-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded"
       >
         #{{ tag }}
       </span>
     </div>
 
     <!-- Due Date -->
-    <div v-if="idea.dueDate" class="flex items-center text-xs text-gray-500 dark:text-gray-400">
+    <div v-if="idea.dueDate" class="flex items-center text-body-xs text-gray-500 dark:text-gray-400">
       <CalendarIcon class="w-4 h-4 mr-1" />
       {{ formatDate(idea.dueDate) }}
     </div>
@@ -79,11 +79,11 @@ const emit = defineEmits<{
 const priorityClasses = computed(() => {
   switch (props.idea.priority) {
     case 'high':
-      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+      return 'bg-error-subtle text-error-strong'
     case 'medium':
-      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+      return 'bg-warning-subtle text-warning-strong'
     case 'low':
-      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+      return 'bg-info-subtle text-info-strong'
     default:
       return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
   }

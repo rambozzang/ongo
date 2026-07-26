@@ -22,7 +22,7 @@
       >
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">
             위젯 커스터마이즈
           </h2>
           <button
@@ -36,7 +36,7 @@
 
         <!-- Widget List -->
         <div class="flex-1 overflow-y-auto px-6 py-4">
-          <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mb-4 text-body text-gray-500 dark:text-gray-400">
             위젯을 드래그하여 순서를 변경하거나, 토글을 눌러 표시/숨김을 설정하세요.
           </p>
 
@@ -70,7 +70,7 @@
                   :is="iconComponents[widget.icon]"
                   class="h-5 w-5 text-gray-500 dark:text-gray-400"
                 />
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span class="text-body font-medium text-gray-900 dark:text-gray-100">
                   {{ widget.label }}
                 </span>
               </div>

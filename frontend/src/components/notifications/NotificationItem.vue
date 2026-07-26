@@ -36,73 +36,73 @@ interface NotificationMeta {
 const typeConfig: Record<NotificationType, NotificationMeta> = {
   upload_success: {
     icon: CloudArrowUpIcon,
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
-    iconColor: 'text-green-600 dark:text-green-400',
+    bgColor: 'bg-success-subtle',
+    iconColor: 'text-success-strong',
   },
   upload_failed: {
     icon: ExclamationCircleIcon,
-    bgColor: 'bg-red-100 dark:bg-red-900/30',
-    iconColor: 'text-red-600 dark:text-red-400',
+    bgColor: 'bg-error-subtle',
+    iconColor: 'text-error-strong',
   },
   platform_published: {
     icon: CheckCircleIcon,
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    iconColor: 'text-blue-600 dark:text-blue-400',
+    bgColor: 'bg-info-subtle',
+    iconColor: 'text-info-strong',
   },
   platform_failed: {
     icon: XCircleIcon,
-    bgColor: 'bg-red-100 dark:bg-red-900/30',
-    iconColor: 'text-red-600 dark:text-red-400',
+    bgColor: 'bg-error-subtle',
+    iconColor: 'text-error-strong',
   },
   schedule_reminder: {
     icon: ClockIcon,
-    bgColor: 'bg-amber-100 dark:bg-amber-900/30',
-    iconColor: 'text-amber-600 dark:text-amber-400',
+    bgColor: 'bg-warning-subtle',
+    iconColor: 'text-warning-strong',
   },
   schedule_completed: {
     icon: CalendarIcon,
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
-    iconColor: 'text-green-600 dark:text-green-400',
+    bgColor: 'bg-success-subtle',
+    iconColor: 'text-success-strong',
   },
   token_expiring: {
     icon: LinkIcon,
-    bgColor: 'bg-amber-100 dark:bg-amber-900/30',
-    iconColor: 'text-amber-600 dark:text-amber-400',
+    bgColor: 'bg-warning-subtle',
+    iconColor: 'text-warning-strong',
   },
   token_expired: {
     icon: ExclamationTriangleIcon,
-    bgColor: 'bg-red-100 dark:bg-red-900/30',
-    iconColor: 'text-red-600 dark:text-red-400',
+    bgColor: 'bg-error-subtle',
+    iconColor: 'text-error-strong',
   },
   credit_low: {
     icon: SparklesIcon,
-    bgColor: 'bg-amber-100 dark:bg-amber-900/30',
-    iconColor: 'text-amber-600 dark:text-amber-400',
+    bgColor: 'bg-warning-subtle',
+    iconColor: 'text-warning-strong',
   },
   credit_depleted: {
     icon: SparklesIcon,
-    bgColor: 'bg-red-100 dark:bg-red-900/30',
-    iconColor: 'text-red-600 dark:text-red-400',
+    bgColor: 'bg-error-subtle',
+    iconColor: 'text-error-strong',
   },
   milestone: {
     icon: ChartBarIcon,
-    bgColor: 'bg-purple-100 dark:bg-purple-900/30',
-    iconColor: 'text-purple-600 dark:text-purple-400',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    iconColor: 'text-primary-600 dark:text-primary-400',
   },
   report_ready: {
     icon: DocumentChartBarIcon,
-    bgColor: 'bg-indigo-100 dark:bg-indigo-900/30',
-    iconColor: 'text-indigo-600 dark:text-indigo-400',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    iconColor: 'text-primary-600 dark:text-primary-400',
   },
   payment_reminder: {
     icon: CreditCardIcon,
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    iconColor: 'text-blue-600 dark:text-blue-400',
+    bgColor: 'bg-info-subtle',
+    iconColor: 'text-info-strong',
   },
   payment_failed: {
     icon: CreditCardIcon,
-    bgColor: 'bg-red-100 dark:bg-red-900/30',
-    iconColor: 'text-red-600 dark:text-red-400',
+    bgColor: 'bg-error-subtle',
+    iconColor: 'text-error-strong',
   },
 }
 
@@ -144,7 +144,7 @@ function handleDelete(event: Event) {
     :class="[
       notification.isRead
         ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-        : 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/40',
+        : 'bg-primary-50 dark:bg-primary-900/10 border-primary-200 dark:border-primary-800/40',
       'hover:bg-gray-50 dark:hover:bg-gray-700/50',
     ]"
     @click="handleClick"
@@ -152,7 +152,7 @@ function handleDelete(event: Event) {
     <!-- Unread indicator -->
     <div
       v-if="!notification.isRead"
-      class="absolute left-1.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-blue-500"
+      class="absolute left-1.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-primary-500"
     />
 
     <!-- Icon -->
@@ -171,16 +171,16 @@ function handleDelete(event: Event) {
     <div class="min-w-0 flex-1">
       <div class="flex items-start justify-between gap-2">
         <p
-          class="text-sm font-semibold"
+          class="text-body font-semibold"
           :class="notification.isRead ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'"
         >
           {{ notification.title }}
         </p>
-        <span class="flex-shrink-0 text-xs text-gray-500 dark:text-gray-400">
+        <span class="flex-shrink-0 text-body-xs text-gray-500 dark:text-gray-400">
           {{ timeAgo }}
         </span>
       </div>
-      <p class="mt-0.5 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+      <p class="mt-0.5 text-body text-gray-600 dark:text-gray-400 line-clamp-2">
         {{ notification.message }}
       </p>
     </div>

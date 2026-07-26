@@ -3,9 +3,9 @@
     class="card relative overflow-hidden"
     :class="{
       'border-l-4': true,
-      'border-l-green-500': healthStatus === 'healthy',
-      'border-l-yellow-500': healthStatus === 'warning',
-      'border-l-red-500': healthStatus === 'error',
+      'border-l-success': healthStatus === 'healthy',
+      'border-l-warning': healthStatus === 'warning',
+      'border-l-error': healthStatus === 'error',
     }"
   >
     <!-- Health Indicator Dot -->
@@ -13,9 +13,9 @@
       <div
         class="h-3 w-3 rounded-full"
         :class="{
-          'bg-green-500': healthStatus === 'healthy',
-          'bg-yellow-500': healthStatus === 'warning',
-          'bg-red-500': healthStatus === 'error',
+          'bg-success': healthStatus === 'healthy',
+          'bg-warning': healthStatus === 'warning',
+          'bg-error': healthStatus === 'error',
           'animate-pulse': healthStatus === 'error',
         }"
       />
@@ -24,23 +24,23 @@
     <!-- Platform Icon and Name -->
     <div class="mb-4 flex items-start gap-4">
       <div
-        class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full text-2xl font-bold text-white shadow-md"
+        class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full text-h1 font-bold text-white shadow-md"
         :style="{ backgroundColor: platformConfig.color }"
       >
         {{ platformInitial }}
       </div>
       <div class="flex-1 min-w-0">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
+        <h3 class="text-title font-bold text-gray-900 dark:text-gray-100 truncate">
           {{ channel.channelName }}
         </h3>
         <PlatformBadge :platform="channel.platform" class="mt-1" />
         <div class="mt-2">
           <span
-            class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
+            class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-caption"
             :class="{
-              'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400': statusConfig.type === 'success',
-              'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400': statusConfig.type === 'warning',
-              'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400': statusConfig.type === 'error',
+              'bg-success-subtle text-success-strong': statusConfig.type === 'success',
+              'bg-warning-subtle text-warning-strong': statusConfig.type === 'warning',
+              'bg-error-subtle text-error-strong': statusConfig.type === 'error',
             }"
           >
             {{ statusConfig.label }}
@@ -51,14 +51,14 @@
 
     <!-- Token Expiration Countdown -->
     <div v-if="tokenExpiresAt" class="mb-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 p-3">
-      <div class="mb-2 flex items-center justify-between text-sm">
+      <div class="mb-2 flex items-center justify-between text-body">
         <span class="text-gray-600 dark:text-gray-400">토큰 만료</span>
         <span
           class="font-medium"
           :class="{
-            'text-green-600 dark:text-green-400': daysUntilExpiry > 7,
-            'text-yellow-600 dark:text-yellow-400': daysUntilExpiry <= 7 && daysUntilExpiry > 0,
-            'text-red-600 dark:text-red-400': daysUntilExpiry <= 0,
+            'text-success-strong': daysUntilExpiry > 7,
+            'text-warning-strong': daysUntilExpiry <= 7 && daysUntilExpiry > 0,
+            'text-error-strong': daysUntilExpiry <= 0,
           }"
         >
           {{ expiryText }}
@@ -69,9 +69,9 @@
         <div
           class="h-full transition-all duration-300"
           :class="{
-            'bg-green-500': daysUntilExpiry > 7,
-            'bg-yellow-500': daysUntilExpiry <= 7 && daysUntilExpiry > 0,
-            'bg-red-500': daysUntilExpiry <= 0,
+            'bg-success': daysUntilExpiry > 7,
+            'bg-warning': daysUntilExpiry <= 7 && daysUntilExpiry > 0,
+            'bg-error': daysUntilExpiry <= 0,
           }"
           :style="{ width: `${Math.max(0, Math.min(100, expiryProgress))}%` }"
         />
@@ -81,14 +81,14 @@
     <!-- Channel Info Grid -->
     <div class="mb-4 grid grid-cols-2 gap-3">
       <div class="rounded-lg bg-gray-50 dark:bg-gray-700/50 p-3">
-        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">구독자/팔로워</div>
-        <div class="text-lg font-bold text-gray-900 dark:text-gray-100">
+        <div class="text-body-xs text-gray-500 dark:text-gray-400 mb-1">구독자/팔로워</div>
+        <div class="text-title font-bold text-gray-900 dark:text-gray-100">
           {{ formattedSubscriberCount }}
         </div>
       </div>
       <div class="rounded-lg bg-gray-50 dark:bg-gray-700/50 p-3">
-        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">마지막 동기화</div>
-        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+        <div class="text-body-xs text-gray-500 dark:text-gray-400 mb-1">마지막 동기화</div>
+        <div class="text-body font-medium text-gray-900 dark:text-gray-100">
           {{ lastSyncText }}
         </div>
       </div>
@@ -97,7 +97,7 @@
     <!-- Action Buttons -->
     <div class="flex items-center gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
       <button
-        class="btn-secondary inline-flex flex-1 items-center justify-center gap-1.5 text-sm"
+        class="btn-secondary inline-flex flex-1 items-center justify-center gap-1.5 text-body"
         @click="$emit('sync')"
       >
         <ArrowPathIcon class="h-4 w-4" />
@@ -105,14 +105,14 @@
       </button>
       <button
         v-if="channel.tokenStatus === 'EXPIRED' || channel.tokenStatus === 'EXPIRING_SOON'"
-        class="btn-primary inline-flex flex-1 items-center justify-center gap-1.5 text-sm"
+        class="btn-primary inline-flex flex-1 items-center justify-center gap-1.5 text-body"
         @click="$emit('reconnect')"
       >
         <LinkIcon class="h-4 w-4" />
         재연결
       </button>
       <button
-        class="btn-danger inline-flex flex-1 items-center justify-center gap-1.5 text-sm"
+        class="btn-danger inline-flex flex-1 items-center justify-center gap-1.5 text-body"
         @click="$emit('disconnect')"
       >
         <XMarkIcon class="h-4 w-4" />

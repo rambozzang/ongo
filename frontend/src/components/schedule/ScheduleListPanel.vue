@@ -3,7 +3,7 @@
     <!-- 필터 결과 없음 -->
     <div v-if="sortedSchedules.length === 0" class="px-6 py-12 text-center">
       <CalendarIcon class="mx-auto mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
-      <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('scheduleView.noFiltered') }}</p>
+      <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('scheduleView.noFiltered') }}</p>
     </div>
 
     <template v-else>
@@ -12,11 +12,11 @@
         <div v-for="schedule in sortedSchedules" :key="schedule.id" class="card p-4">
           <div class="flex items-start justify-between">
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+              <p class="truncate text-body font-medium text-gray-900 dark:text-gray-100">
                 {{ schedule.videoTitle }}
               </p>
               <div class="mt-1 flex items-center gap-2">
-                <span class="text-xs text-gray-500 dark:text-gray-400">
+                <span class="text-body-xs text-gray-500 dark:text-gray-400">
                   {{ formatScheduleDate(schedule.scheduledAt) }}
                   {{ formatScheduleTime(schedule.scheduledAt) }}
                 </span>
@@ -42,7 +42,7 @@
               </button>
               <button
                 :aria-label="$t('action.cancel')"
-                class="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                class="rounded p-1.5 text-gray-400 hover:bg-error-subtle hover:text-error-strong"
                 @click="$emit('cancel', schedule)"
               >
                 <XMarkIcon class="h-4 w-4" />
@@ -57,19 +57,19 @@
         <thead>
           <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
             <th v-if="sortMode === 'manual'" class="w-8" />
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <th class="px-4 py-3 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">
               {{ $t('scheduleView.table.datetime') }}
             </th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <th class="px-4 py-3 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">
               {{ $t('scheduleView.table.video') }}
             </th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <th class="px-4 py-3 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">
               {{ $t('scheduleView.table.platform') }}
             </th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <th class="px-4 py-3 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">
               {{ $t('scheduleView.table.status') }}
             </th>
-            <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <th class="px-4 py-3 text-right text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">
               {{ $t('scheduleView.table.actions') }}
             </th>
           </tr>
@@ -93,10 +93,10 @@
             <tr class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
               <!-- 일시 -->
               <td class="whitespace-nowrap px-4 py-3">
-                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div class="text-body font-medium text-gray-900 dark:text-gray-100">
                   {{ formatScheduleDate(schedule.scheduledAt) }}
                 </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
+                <div class="text-body-xs text-gray-500 dark:text-gray-400">
                   {{ formatScheduleTime(schedule.scheduledAt) }}
                 </div>
               </td>
@@ -116,7 +116,7 @@
                   >
                     <CalendarIcon class="h-4 w-4 text-gray-400" />
                   </div>
-                  <span class="max-w-[200px] truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <span class="max-w-[200px] truncate text-body font-medium text-gray-900 dark:text-gray-100">
                     {{ schedule.videoTitle }}
                   </span>
                 </div>
@@ -153,7 +153,7 @@
                   </button>
                   <button
                     v-if="schedule.status === 'SCHEDULED'"
-                    class="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:text-gray-500 dark:hover:bg-red-900/20"
+                    class="rounded p-1.5 text-gray-400 hover:bg-error-subtle hover:text-error-strong dark:text-gray-500"
                     :title="$t('action.cancel')"
                     @click="$emit('cancel', schedule)"
                   >

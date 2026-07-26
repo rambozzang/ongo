@@ -85,21 +85,21 @@ const isTitle = computed(() => props.testType === 'TITLE')
   <div class="space-y-4">
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+      <h3 class="text-body font-semibold text-gray-900 dark:text-white">
         {{ $t('abTest.variants') }}
-        <span class="ml-1 text-xs font-normal text-gray-500 dark:text-gray-400">
+        <span class="ml-1 text-body-xs font-normal text-gray-500 dark:text-gray-400">
           ({{ variants.length }}/4)
         </span>
       </h3>
       <button
         v-if="canAdd"
-        class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+        class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-caption text-info-strong transition-colors hover:bg-info-subtle"
         @click="addVariant"
       >
         <PlusIcon class="h-4 w-4" />
         {{ $t('abTest.addVariant') }}
       </button>
-      <span v-else class="text-xs text-gray-400 dark:text-gray-500">
+      <span v-else class="text-body-xs text-gray-400 dark:text-gray-500">
         {{ $t('abTest.maxVariants') }}
       </span>
     </div>
@@ -114,19 +114,19 @@ const isTitle = computed(() => props.testType === 'TITLE')
         <!-- Variant Header -->
         <div class="mb-3 flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span :class="['rounded-full px-2.5 py-0.5 text-xs font-bold', getColor(variant.label).badge]">
+            <span :class="['rounded-full px-2.5 py-0.5 text-body-xs font-bold', getColor(variant.label).badge]">
               {{ $t('abTest.variantLabel') }} {{ variant.label }}
             </span>
           </div>
           <button
             v-if="canRemove"
-            class="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+            class="rounded-lg p-1.5 text-error-strong transition-colors hover:bg-error-subtle"
             :title="$t('abTest.removeVariant')"
             @click="removeVariant(index)"
           >
             <TrashIcon class="h-4 w-4" />
           </button>
-          <span v-else class="text-xs text-gray-400 dark:text-gray-500">
+          <span v-else class="text-body-xs text-gray-400 dark:text-gray-500">
             {{ $t('abTest.minVariants') }}
           </span>
         </div>
@@ -135,11 +135,11 @@ const isTitle = computed(() => props.testType === 'TITLE')
         <div v-if="isThumbnail" class="space-y-2">
           <div
             v-if="!variant.value"
-            class="flex aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white transition-colors hover:border-blue-400 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-blue-500"
+            class="flex aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white transition-colors hover:border-info dark:border-gray-600 dark:bg-gray-800"
             @click="() => {}"
           >
             <PhotoIcon class="mb-2 h-8 w-8 text-gray-400 dark:text-gray-500" />
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{ $t('abTest.thumbnailDragDrop') }}</span>
+            <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('abTest.thumbnailDragDrop') }}</span>
           </div>
           <div v-else class="relative aspect-video overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
             <img :src="variant.value" :alt="`${$t('abTest.variantLabel')} ${variant.label}`" class="h-full w-full object-cover" />
@@ -148,7 +148,7 @@ const isTitle = computed(() => props.testType === 'TITLE')
             :value="variant.value"
             type="text"
             :placeholder="$t('abTest.thumbnailUpload')"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:ring-blue-400"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:ring-primary-400"
             @input="updateValue(index, ($event.target as HTMLInputElement).value)"
           />
         </div>
@@ -160,7 +160,7 @@ const isTitle = computed(() => props.testType === 'TITLE')
             :value="variant.value"
             :placeholder="$t('abTest.descriptionPlaceholder')"
             rows="3"
-            class="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:ring-blue-400"
+            class="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:ring-primary-400"
             @input="updateValue(index, ($event.target as HTMLTextAreaElement).value)"
           ></textarea>
           <input
@@ -168,10 +168,10 @@ const isTitle = computed(() => props.testType === 'TITLE')
             :value="variant.value"
             type="text"
             :placeholder="$t('abTest.titlePlaceholder')"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:ring-blue-400"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:ring-primary-400"
             @input="updateValue(index, ($event.target as HTMLInputElement).value)"
           />
-          <div class="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">
+          <div class="mt-1 text-right text-body-xs text-gray-400 dark:text-gray-500">
             {{ $t('abTest.charCount', { count: variant.value.length }) }}
           </div>
         </div>

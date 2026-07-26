@@ -26,18 +26,18 @@ function handleToggle(category: NotificationCategory, field: 'inApp' | 'email' |
 <template>
   <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
     <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">알림 설정</h3>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <h3 class="text-title font-semibold text-gray-900 dark:text-white">알림 설정</h3>
+      <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
         카테고리별로 알림 수신 방법을 설정합니다.
       </p>
     </div>
 
     <!-- Header row -->
     <div class="grid grid-cols-4 gap-4 border-b border-gray-100 px-6 py-3 dark:border-gray-700">
-      <div class="text-sm font-medium text-gray-500 dark:text-gray-400">카테고리</div>
-      <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400">앱 내 알림</div>
-      <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400">이메일</div>
-      <div class="text-center text-sm font-medium text-gray-500 dark:text-gray-400">카카오톡</div>
+      <div class="text-body font-medium text-gray-500 dark:text-gray-400">카테고리</div>
+      <div class="text-center text-body font-medium text-gray-500 dark:text-gray-400">앱 내 알림</div>
+      <div class="text-center text-body font-medium text-gray-500 dark:text-gray-400">이메일</div>
+      <div class="text-center text-body font-medium text-gray-500 dark:text-gray-400">카카오톡</div>
     </div>
 
     <!-- Setting rows -->
@@ -47,7 +47,7 @@ function handleToggle(category: NotificationCategory, field: 'inApp' | 'email' |
       class="grid grid-cols-4 items-center gap-4 border-b border-gray-50 px-6 py-4 last:border-b-0 dark:border-gray-700/50"
     >
       <!-- Category label -->
-      <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <div class="text-body font-medium text-gray-700 dark:text-gray-300">
         {{ categoryLabels[setting.category] }}
       </div>
 
@@ -55,8 +55,8 @@ function handleToggle(category: NotificationCategory, field: 'inApp' | 'email' |
       <div class="flex justify-center">
         <button
           type="button"
-          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-          :class="setting.inApp ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-600'"
+          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          :class="setting.inApp ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
           role="switch"
           :aria-checked="setting.inApp"
           @click="handleToggle(setting.category, 'inApp', setting.inApp)"
@@ -72,8 +72,8 @@ function handleToggle(category: NotificationCategory, field: 'inApp' | 'email' |
       <div class="flex justify-center">
         <button
           type="button"
-          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-          :class="setting.email ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-600'"
+          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          :class="setting.email ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
           role="switch"
           :aria-checked="setting.email"
           @click="handleToggle(setting.category, 'email', setting.email)"
@@ -89,8 +89,8 @@ function handleToggle(category: NotificationCategory, field: 'inApp' | 'email' |
       <div class="flex justify-center">
         <button
           type="button"
-          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-          :class="setting.kakao ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-600'"
+          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          :class="setting.kakao ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
           role="switch"
           :aria-checked="setting.kakao"
           @click="handleToggle(setting.category, 'kakao', setting.kakao)"

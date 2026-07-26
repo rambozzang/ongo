@@ -1,10 +1,10 @@
 <template>
   <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+      <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">
         {{ t('video.image.story') }}
       </h3>
-      <span class="text-xs text-gray-500 dark:text-gray-400">
+      <span class="text-body-xs text-gray-500 dark:text-gray-400">
         {{ t('video.image.countLabel', { count: images.length, max: MAX_IMAGES }) }}
       </span>
     </div>
@@ -86,7 +86,7 @@
         @click="openFilePicker"
       >
         <PlusIcon class="h-6 w-6 text-gray-400 dark:text-gray-500" />
-        <span class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('video.image.add') }}</span>
+        <span class="mt-1 text-body-xs text-gray-500 dark:text-gray-400">{{ t('video.image.add') }}</span>
       </button>
     </div>
 

@@ -1,6 +1,6 @@
 <template>
   <div v-if="recommendations.length > 0" class="space-y-2">
-    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+    <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
       {{ t('schedule.optimalTime.title') }}
     </label>
     <div class="grid gap-2" :class="recommendations.length === 1 ? 'grid-cols-1' : 'grid-cols-1 tablet:grid-cols-3'">
@@ -18,19 +18,19 @@
       >
         <!-- 시간 + 뱃지 -->
         <div class="mb-1.5 flex items-center justify-between">
-          <span class="text-base font-semibold text-gray-900 dark:text-gray-100">
+          <span class="text-h3 text-gray-900 dark:text-gray-100">
             {{ rec.timeLabel }}
           </span>
           <span
             v-if="index === 0"
-            class="rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-[10px] font-semibold text-green-700 dark:text-green-400"
+            class="rounded-full bg-success-subtle px-2 py-0.5 text-[10px] font-semibold text-success-strong"
           >
             {{ t('schedule.optimalTime.best') }}
           </span>
         </div>
 
         <!-- 추천 이유 -->
-        <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+        <p class="mb-2 text-body-xs text-gray-500 dark:text-gray-400">
           {{ getRecommendationReason(rec, index) }}
         </p>
 
@@ -109,8 +109,8 @@ function getRecommendationReason(rec: TimeRecommendation, index: number): string
 }
 
 function getConfidenceBarColor(score: number): string {
-  if (score >= 0.8) return 'bg-green-500'
-  if (score >= 0.5) return 'bg-yellow-500'
+  if (score >= 0.8) return 'bg-success'
+  if (score >= 0.5) return 'bg-warning'
   return 'bg-gray-400'
 }
 </script>

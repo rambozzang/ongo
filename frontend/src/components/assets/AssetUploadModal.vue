@@ -165,7 +165,7 @@ onUnmounted(() => {
         >
           <!-- Header -->
           <div class="mb-5 flex items-center justify-between">
-            <h2 id="asset-upload-modal-title" class="text-lg font-bold text-gray-900 dark:text-white">
+            <h2 id="asset-upload-modal-title" class="text-title font-bold text-gray-900 dark:text-white">
               에셋 업로드
             </h2>
             <button
@@ -194,11 +194,11 @@ onUnmounted(() => {
               class="mb-3 h-10 w-10"
               :class="isDragging ? 'text-primary-500' : 'text-gray-400 dark:text-gray-500'"
             />
-            <p class="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <p class="mb-1 text-body font-medium text-gray-700 dark:text-gray-300">
               파일을 여기에 드래그하거나
             </p>
             <label
-              class="cursor-pointer text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+              class="cursor-pointer text-body font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
             >
               파일 선택
               <input
@@ -209,7 +209,7 @@ onUnmounted(() => {
                 @change="onFileInput"
               />
             </label>
-            <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+            <p class="mt-2 text-body-xs text-gray-400 dark:text-gray-500">
               영상, 이미지, 오디오, 템플릿 파일 지원
             </p>
           </div>
@@ -226,15 +226,15 @@ onUnmounted(() => {
             >
               <div class="flex min-w-0 items-center gap-2">
                 <DocumentPlusIcon class="h-4 w-4 flex-shrink-0 text-gray-400" />
-                <span class="truncate text-sm text-gray-700 dark:text-gray-300">
+                <span class="truncate text-body text-gray-700 dark:text-gray-300">
                   {{ file.name }}
                 </span>
-                <span class="flex-shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                <span class="flex-shrink-0 text-body-xs text-gray-400 dark:text-gray-500">
                   {{ formatFileSize(file.size) }}
                 </span>
               </div>
               <button
-                class="ml-2 flex-shrink-0 rounded p-0.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                class="ml-2 flex-shrink-0 rounded p-0.5 text-gray-400 hover:text-error-strong"
                 @click="removeFile(i)"
               >
                 <XMarkIcon class="h-4 w-4" />
@@ -244,7 +244,7 @@ onUnmounted(() => {
 
           <!-- Folder Selection -->
           <div class="mb-4">
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">
               저장 폴더
             </label>
             <select
@@ -260,7 +260,7 @@ onUnmounted(() => {
 
           <!-- Tag Input -->
           <div class="mb-5">
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">
               태그
             </label>
             <div
@@ -269,7 +269,7 @@ onUnmounted(() => {
               <span
                 v-for="tag in tags"
                 :key="tag"
-                class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
+                class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-caption text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
               >
                 <TagIcon class="h-3 w-3" />
                 {{ tag }}
@@ -284,7 +284,7 @@ onUnmounted(() => {
                 v-model="tagInput"
                 type="text"
                 placeholder="태그 입력 후 Enter"
-                class="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-gray-100 dark:placeholder-gray-500"
+                class="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-body text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-gray-100 dark:placeholder-gray-500"
                 @keydown="onTagKeydown"
                 @blur="addTag"
               />
@@ -293,7 +293,7 @@ onUnmounted(() => {
 
           <!-- Upload Progress -->
           <div v-if="uploading" class="mb-4">
-            <div class="mb-1 flex items-center justify-between text-sm">
+            <div class="mb-1 flex items-center justify-between text-body">
               <span class="text-gray-600 dark:text-gray-400">업로드 중...</span>
               <span class="font-medium text-gray-900 dark:text-white">{{ uploadProgress }}%</span>
             </div>
@@ -308,7 +308,7 @@ onUnmounted(() => {
           <!-- Actions -->
           <div class="flex items-center justify-end gap-3">
             <button
-              class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              class="rounded-lg border border-gray-300 px-4 py-2 text-body font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               :disabled="uploading"
               @click="close"
             >

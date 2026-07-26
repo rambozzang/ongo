@@ -74,22 +74,22 @@ function getStatusIcon(status: CsvValidationStatus) {
 function getStatusColor(status: CsvValidationStatus): string {
   switch (status) {
     case 'valid':
-      return 'text-green-500'
+      return 'text-success-strong'
     case 'warning':
-      return 'text-yellow-500'
+      return 'text-warning-strong'
     case 'error':
-      return 'text-red-500'
+      return 'text-error-strong'
   }
 }
 
 function getRowBgClass(status: CsvValidationStatus): string {
   switch (status) {
     case 'valid':
-      return 'bg-green-50/50 dark:bg-green-900/10'
+      return 'bg-success-subtle'
     case 'warning':
-      return 'bg-yellow-50/50 dark:bg-yellow-900/10'
+      return 'bg-warning-subtle'
     case 'error':
-      return 'bg-red-50/50 dark:bg-red-900/10'
+      return 'bg-error-subtle'
   }
 }
 
@@ -177,12 +177,12 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
     <div
       class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2 dark:border-gray-700 dark:bg-gray-800"
     >
-      <span class="text-xs text-gray-500 dark:text-gray-400">
+      <span class="text-body-xs text-gray-500 dark:text-gray-400">
         총 {{ rows.length }}행
       </span>
       <button
         type="button"
-        class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+        class="text-body-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
         @click="cycleSortOrder"
       >
         정렬: {{ getSortLabel() }}
@@ -191,51 +191,51 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
 
     <!-- Table container -->
     <div class="max-h-[400px] overflow-auto">
-      <table class="w-full min-w-[900px] text-sm">
+      <table class="w-full min-w-[900px] text-body">
         <thead class="sticky top-0 z-10 bg-white dark:bg-gray-800">
           <tr class="border-b border-gray-200 dark:border-gray-700">
             <th
-              class="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="px-3 py-2.5 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400"
             >
               #
             </th>
             <th
-              class="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="px-3 py-2.5 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400"
             >
               상태
             </th>
             <th
-              class="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="px-3 py-2.5 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400"
             >
               제목
             </th>
             <th
-              class="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="px-3 py-2.5 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400"
             >
               설명
             </th>
             <th
-              class="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="px-3 py-2.5 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400"
             >
               태그
             </th>
             <th
-              class="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="px-3 py-2.5 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400"
             >
               플랫폼
             </th>
             <th
-              class="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="px-3 py-2.5 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400"
             >
               예약일시
             </th>
             <th
-              class="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="px-3 py-2.5 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400"
             >
               공개설정
             </th>
             <th
-              class="px-3 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+              class="px-3 py-2.5 text-right text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400"
             >
               작업
             </th>
@@ -269,24 +269,24 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
                   class="absolute left-6 top-0 z-20 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-600 dark:bg-gray-700"
                 >
                   <div v-if="row.errors.length > 0" class="mb-2">
-                    <p class="mb-1 text-xs font-semibold text-red-600 dark:text-red-400">오류:</p>
+                    <p class="mb-1 text-body-xs font-semibold text-error-strong">오류:</p>
                     <ul class="space-y-0.5">
                       <li
                         v-for="(error, idx) in row.errors"
                         :key="'e' + idx"
-                        class="text-xs text-red-600 dark:text-red-400"
+                        class="text-body-xs text-error-strong"
                       >
                         {{ error }}
                       </li>
                     </ul>
                   </div>
                   <div v-if="row.warnings.length > 0">
-                    <p class="mb-1 text-xs font-semibold text-yellow-600 dark:text-yellow-400">경고:</p>
+                    <p class="mb-1 text-body-xs font-semibold text-warning-strong">경고:</p>
                     <ul class="space-y-0.5">
                       <li
                         v-for="(warning, idx) in row.warnings"
                         :key="'w' + idx"
-                        class="text-xs text-yellow-600 dark:text-yellow-400"
+                        class="text-body-xs text-warning-strong"
                       >
                         {{ warning }}
                       </li>
@@ -302,7 +302,7 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
                 <input
                   v-model="editValue"
                   type="text"
-                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
+                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-body-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
                   @keyup.enter="saveEdit"
                   @keyup.escape="cancelEdit"
                   @blur="saveEdit"
@@ -323,7 +323,7 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
                 <input
                   v-model="editValue"
                   type="text"
-                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
+                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-body-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
                   @keyup.enter="saveEdit"
                   @keyup.escape="cancelEdit"
                   @blur="saveEdit"
@@ -344,7 +344,7 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
                 <input
                   v-model="editValue"
                   type="text"
-                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
+                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-body-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
                   placeholder="태그1;태그2"
                   @keyup.enter="saveEdit"
                   @keyup.escape="cancelEdit"
@@ -355,17 +355,17 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
                 <span
                   v-for="(tag, idx) in row.tags.slice(0, 3)"
                   :key="idx"
-                  class="inline-block rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                  class="inline-block rounded bg-gray-100 px-1.5 py-0.5 text-body-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400"
                 >
                   {{ tag }}
                 </span>
                 <span
                   v-if="row.tags.length > 3"
-                  class="text-xs text-gray-400 dark:text-gray-500"
+                  class="text-body-xs text-gray-400 dark:text-gray-500"
                 >
                   +{{ row.tags.length - 3 }}
                 </span>
-                <span v-if="row.tags.length === 0" class="text-xs text-gray-400 dark:text-gray-500">
+                <span v-if="row.tags.length === 0" class="text-body-xs text-gray-400 dark:text-gray-500">
                   -
                 </span>
               </div>
@@ -377,14 +377,14 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
                 <input
                   v-model="editValue"
                   type="text"
-                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
+                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-body-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
                   placeholder="YT;TT;IG;NV"
                   @keyup.enter="saveEdit"
                   @keyup.escape="cancelEdit"
                   @blur="saveEdit"
                 />
               </div>
-              <span v-else class="text-xs text-gray-700 dark:text-gray-300">
+              <span v-else class="text-body-xs text-gray-700 dark:text-gray-300">
                 {{ formatPlatforms(row.platforms) || '-' }}
               </span>
             </td>
@@ -395,14 +395,14 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
                 <input
                   v-model="editValue"
                   type="text"
-                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
+                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-body-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
                   placeholder="YYYY-MM-DD HH:mm"
                   @keyup.enter="saveEdit"
                   @keyup.escape="cancelEdit"
                   @blur="saveEdit"
                 />
               </div>
-              <span v-else class="text-xs text-gray-700 dark:text-gray-300">
+              <span v-else class="text-body-xs text-gray-700 dark:text-gray-300">
                 {{ row.scheduledAt || '-' }}
               </span>
             </td>
@@ -412,7 +412,7 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
               <div v-if="isEditing(row.rowNumber, 'visibility')">
                 <select
                   v-model="editValue"
-                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
+                  class="w-full rounded border border-primary-300 bg-white px-2 py-1 text-body-xs dark:border-primary-600 dark:bg-gray-700 dark:text-gray-100"
                   @change="saveEdit"
                   @blur="saveEdit"
                 >
@@ -421,7 +421,7 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
                   <option value="unlisted">일부공개</option>
                 </select>
               </div>
-              <span v-else class="text-xs text-gray-700 dark:text-gray-300">
+              <span v-else class="text-body-xs text-gray-700 dark:text-gray-300">
                 {{ formatVisibility(row.visibility) || '-' }}
               </span>
             </td>
@@ -440,7 +440,7 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
                 </button>
                 <button
                   type="button"
-                  class="rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                  class="rounded p-1 text-gray-400 transition-colors hover:bg-error-subtle hover:text-error-strong"
                   title="행 삭제"
                   @click="emit('removeRow', row.rowNumber)"
                 >
@@ -458,7 +458,7 @@ function getCellValue(row: CsvScheduleRow, field: string): string {
       v-if="rows.length === 0"
       class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400"
     >
-      <p class="text-sm">데이터가 없습니다.</p>
+      <p class="text-body">데이터가 없습니다.</p>
     </div>
   </div>
 </template>

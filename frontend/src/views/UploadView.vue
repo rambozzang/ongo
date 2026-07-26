@@ -10,7 +10,7 @@
         >
           <QueueListIcon class="h-5 w-5" />
           {{ t('upload.queue') }}
-          <span class="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+          <span class="rounded-full bg-primary-100 px-2 py-0.5 text-body-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
             {{ uploadQueueStore.queue.length }}
           </span>
         </button>
@@ -23,7 +23,7 @@
     <nav :aria-label="t('upload.stepsAriaLabel')" class="mb-8 flex items-center justify-center gap-4">
       <div v-for="(label, i) in stepLabels" :key="i" class="flex items-center gap-2">
         <div
-          class="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium"
+          class="flex h-8 w-8 items-center justify-center rounded-full text-body font-medium"
           :class="
             i + 1 < step
               ? 'bg-green-500 text-white'
@@ -39,12 +39,12 @@
           <span v-else>{{ i + 1 }}</span>
         </div>
         <span
-          class="hidden text-sm tablet:inline"
+          class="hidden text-body tablet:inline"
           :class="i + 1 <= step ? 'text-primary-600 font-medium' : 'text-gray-400 dark:text-gray-500'"
         >
           {{ label }}
         </span>
-        <span v-if="i < 2" class="hidden h-px w-8 tablet:block" :class="i + 1 < step ? 'bg-green-400' : 'bg-gray-300 dark:bg-gray-600'" />
+        <span v-if="i < 2" class="hidden h-px w-8 tablet:block" :class="i + 1 < step ? 'bg-success' : 'bg-gray-300 dark:bg-gray-600'" />
       </div>
     </nav>
 
@@ -97,7 +97,7 @@
       <div v-if="!uploadStore.isImage" class="flex items-center gap-3">
         <button
           :class="[
-            'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+            'px-4 py-2 rounded-lg text-body font-medium transition-colors',
             !pipelineMode
               ? 'bg-primary-600 text-white'
               : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -108,7 +108,7 @@
         </button>
         <button
           :class="[
-            'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+            'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-body font-medium transition-colors',
             pipelineMode
               ? 'bg-primary-600 text-white'
               : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'

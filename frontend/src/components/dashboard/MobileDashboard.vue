@@ -3,11 +3,11 @@
     <!-- Compact Greeting Header -->
     <div class="flex items-center justify-between pt-2">
       <div class="flex items-center gap-2">
-        <h1 class="text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
+        <h1 class="text-title font-bold tracking-tight text-gray-900 dark:text-gray-100">
           {{ greeting }}, {{ userName }}님 👋
         </h1>
       </div>
-      <div class="text-sm text-gray-500 dark:text-gray-400">
+      <div class="text-body text-gray-500 dark:text-gray-400">
         {{ currentDate }}
       </div>
     </div>
@@ -32,11 +32,11 @@
           @click="$router.push('/analytics')"
           @keydown.enter="$router.push('/analytics')"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalViews') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalViews') }}</p>
+          <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ formatCompact(kpi?.totalViews ?? 0) }}
           </p>
-          <div v-if="kpi?.viewsChangePercent !== undefined" class="mt-1 flex items-center gap-1 text-xs">
+          <div v-if="kpi?.viewsChangePercent !== undefined" class="mt-1 flex items-center gap-1 text-body-xs">
             <span :class="changeColor(kpi.viewsChangePercent)">
               {{ changeIcon(kpi.viewsChangePercent) }}{{ Math.abs(kpi.viewsChangePercent) }}%
             </span>
@@ -50,11 +50,11 @@
           @click="$router.push('/channels')"
           @keydown.enter="$router.push('/channels')"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalSubscribers') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalSubscribers') }}</p>
+          <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ formatCompact(kpi?.totalSubscribers ?? 0) }}
           </p>
-          <div v-if="kpi?.subscribersChange !== undefined" class="mt-1 flex items-center gap-1 text-xs">
+          <div v-if="kpi?.subscribersChange !== undefined" class="mt-1 flex items-center gap-1 text-body-xs">
             <span :class="changeColor(kpi.subscribersChange)">
               {{ changeIcon(kpi.subscribersChange) }}{{ Math.abs(kpi.subscribersChange) }}
             </span>
@@ -68,11 +68,11 @@
           @click="$router.push('/analytics')"
           @keydown.enter="$router.push('/analytics')"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalLikes') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalLikes') }}</p>
+          <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ formatCompact(kpi?.totalLikes ?? 0) }}
           </p>
-          <div v-if="kpi?.likesChangePercent !== undefined" class="mt-1 flex items-center gap-1 text-xs">
+          <div v-if="kpi?.likesChangePercent !== undefined" class="mt-1 flex items-center gap-1 text-body-xs">
             <span :class="changeColor(kpi.likesChangePercent)">
               {{ changeIcon(kpi.likesChangePercent) }}{{ Math.abs(kpi.likesChangePercent) }}%
             </span>
@@ -86,14 +86,14 @@
           @click="$router.push('/subscription')"
           @keydown.enter="$router.push('/subscription')"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.aiCredits') }}</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.aiCredits') }}</p>
+          <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ (kpi?.creditBalance ?? 0).toLocaleString() }}
           </p>
           <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
             <div
               class="h-full rounded-full transition-all"
-              :class="creditPercentage <= 20 ? 'bg-red-500' : 'bg-primary-500'"
+              :class="creditPercentage <= 20 ? 'bg-error' : 'bg-primary-500'"
               :style="{ width: `${creditPercentage}%` }"
             />
           </div>
@@ -104,7 +104,7 @@
       <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style="scroll-snap-type: x mandatory">
         <router-link
           to="/upload"
-          class="btn-primary btn-press inline-flex flex-shrink-0 items-center gap-1.5 text-sm"
+          class="btn-primary btn-press inline-flex flex-shrink-0 items-center gap-1.5 text-body"
           style="scroll-snap-align: start"
         >
           <PlusIcon class="h-4 w-4" />
@@ -112,7 +112,7 @@
         </router-link>
         <router-link
           to="/ai"
-          class="btn-secondary btn-press inline-flex flex-shrink-0 items-center gap-1.5 text-sm"
+          class="btn-secondary btn-press inline-flex flex-shrink-0 items-center gap-1.5 text-body"
           style="scroll-snap-align: start"
         >
           <SparklesIcon class="h-4 w-4" />
@@ -120,7 +120,7 @@
         </router-link>
         <router-link
           to="/schedule"
-          class="btn-secondary btn-press inline-flex flex-shrink-0 items-center gap-1.5 text-sm"
+          class="btn-secondary btn-press inline-flex flex-shrink-0 items-center gap-1.5 text-body"
           style="scroll-snap-align: start"
         >
           <CalendarDaysIcon class="h-4 w-4" />
@@ -131,8 +131,8 @@
       <!-- Recent Videos - Horizontal Scroll -->
       <div v-if="recentVideos.length > 0" class="card p-4">
         <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.recentUploads') }}</h3>
-          <router-link to="/videos" class="text-xs text-primary-600 hover:underline">
+          <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.recentUploads') }}</h3>
+          <router-link to="/videos" class="text-body-xs text-primary-600 hover:underline">
             {{ $t('dashboard.viewAll') }}
           </router-link>
         </div>
@@ -155,7 +155,7 @@
                 <FilmIcon class="h-6 w-6 text-gray-300 dark:text-gray-600" />
               </div>
             </div>
-            <p class="mt-2 line-clamp-1 text-xs font-medium text-gray-900 dark:text-gray-100">
+            <p class="mt-2 line-clamp-1 text-caption text-gray-900 dark:text-gray-100">
               {{ video.title }}
             </p>
             <div class="mt-1 flex flex-wrap items-center gap-1">
@@ -176,17 +176,17 @@
       <!-- Trend Chart - Simplified -->
       <div class="card" style="height: 280px">
         <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.viewsTrend') }}</h3>
+          <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.viewsTrend') }}</h3>
           <div class="flex rounded-lg border border-gray-200 dark:border-gray-700">
             <button
-              class="px-2 py-1 text-xs transition-colors"
+              class="px-2 py-1 text-body-xs transition-colors"
               :class="period === '7d' ? 'bg-primary-500 text-white' : 'text-gray-600 dark:text-gray-300'"
               @click="emit('setPeriod', '7d')"
             >
               {{ $t('dashboard.days7') }}
             </button>
             <button
-              class="px-2 py-1 text-xs transition-colors"
+              class="px-2 py-1 text-body-xs transition-colors"
               :class="period === '30d' ? 'bg-primary-500 text-white' : 'text-gray-600 dark:text-gray-300'"
               @click="emit('setPeriod', '30d')"
             >
@@ -206,25 +206,25 @@
       <!-- Upcoming Schedules - Today & Tomorrow only -->
       <div v-if="todayAndTomorrowSchedules.length > 0" class="card">
         <div class="mb-3 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.scheduledUploads') }}</h3>
-          <router-link to="/schedule" class="text-xs text-primary-600 hover:underline">
+          <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">{{ $t('dashboard.scheduledUploads') }}</h3>
+          <router-link to="/schedule" class="text-body-xs text-primary-600 hover:underline">
             {{ $t('dashboard.viewCalendar') }}
           </router-link>
         </div>
         <div class="divide-y divide-gray-100 dark:divide-gray-700">
           <div v-for="group in groupedSchedules" :key="group.label" class="py-3 first:pt-0 last:pb-0">
-            <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">{{ group.label }}</p>
+            <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">{{ group.label }}</p>
             <div class="space-y-2">
               <div
                 v-for="schedule in group.schedules"
                 :key="schedule.id"
                 class="flex items-start gap-2"
               >
-                <div class="flex-shrink-0 text-xs font-medium text-primary-600 dark:text-primary-400">
+                <div class="flex-shrink-0 text-caption text-primary-600 dark:text-primary-400">
                   {{ formatTime(schedule.scheduledAt) }}
                 </div>
                 <div class="min-w-0 flex-1">
-                  <p class="line-clamp-1 text-xs font-medium text-gray-900 dark:text-gray-100">
+                  <p class="line-clamp-1 text-caption text-gray-900 dark:text-gray-100">
                     {{ schedule.videoTitle }}
                   </p>
                   <div class="mt-1 flex flex-wrap gap-1">
@@ -306,7 +306,7 @@ function changeIcon(change: number): string {
 }
 
 function changeColor(change: number): string {
-  return change >= 0 ? 'text-green-600' : 'text-red-600'
+  return change >= 0 ? 'text-success-strong' : 'text-error-strong'
 }
 
 function timeAgo(date: string): string {

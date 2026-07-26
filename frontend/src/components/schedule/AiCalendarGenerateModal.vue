@@ -6,13 +6,13 @@
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <div class="space-y-4">
-      <p class="text-sm text-gray-600 dark:text-gray-400">
+      <p class="text-body text-gray-600 dark:text-gray-400">
         {{ $t('calendar.aiCalendarGenerateDesc') }}
       </p>
 
       <!-- 기간 -->
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
           {{ $t('calendar.selectDateRange') }}
         </label>
         <div class="flex gap-2">
@@ -23,14 +23,14 @@
 
       <!-- 플랫폼 -->
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
           {{ $t('calendar.selectPlatform') }}
         </label>
         <div class="flex flex-wrap gap-2">
           <label
             v-for="p in platformOptions"
             :key="p.value"
-            class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors"
+            class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-body transition-colors"
             :class="
               form.platforms.includes(p.value)
                 ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400'
@@ -45,7 +45,7 @@
 
       <!-- 빈도 -->
       <div>
-        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
           {{ $t('calendar.selectFrequency') }}
         </label>
         <select v-model="form.frequency" class="input-field">
@@ -66,7 +66,7 @@
 
       <!-- 결과 -->
       <div v-if="suggestions.length > 0" class="space-y-3">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">
           {{ $t('calendar.aiCalendarGenerateDesc') }}
         </h3>
         <div class="max-h-64 space-y-2 overflow-y-auto">
@@ -78,31 +78,31 @@
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
                 <span
-                  class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                  class="rounded bg-gray-100 px-1.5 py-0.5 text-caption text-gray-600 dark:bg-gray-700 dark:text-gray-400"
                 >
                   {{ suggestion.platform }}
                 </span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">
+                <span class="text-body-xs text-gray-500 dark:text-gray-400">
                   {{ suggestion.suggestedDate }}
                 </span>
               </div>
-              <p class="mt-1 truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+              <p class="mt-1 truncate text-body font-medium text-gray-900 dark:text-gray-100">
                 {{ suggestion.title }}
               </p>
-              <p v-if="suggestion.reason" class="text-xs text-gray-500 dark:text-gray-400">
+              <p v-if="suggestion.reason" class="text-body-xs text-gray-500 dark:text-gray-400">
                 {{ suggestion.reason }}
               </p>
             </div>
             <button
               v-if="suggestion.status !== 'ACCEPTED'"
-              class="btn-primary ml-3 shrink-0 px-3 py-1 text-xs"
+              class="btn-primary ml-3 shrink-0 px-3 py-1 text-body-xs"
               @click="accept(suggestion.id)"
             >
               {{ $t('calendar.accept') }}
             </button>
             <span
               v-else
-              class="ml-3 shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400"
+              class="ml-3 shrink-0 rounded-full bg-success-subtle px-2 py-0.5 text-caption text-success-strong"
             >
               {{ $t('calendar.accepted') }}
             </span>

@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4">
       <div class="flex max-w-3xl items-center justify-between">
-        <h1 class="text-xl font-bold text-primary-600">onGo</h1>
-        <span v-if="currentStep > 0 && currentStep <= 4" class="text-sm text-gray-400 dark:text-gray-500">{{ currentStep }} / 4</span>
+        <h1 class="text-h2 font-bold text-primary-600">onGo</h1>
+        <span v-if="currentStep > 0 && currentStep <= 4" class="text-body text-gray-400 dark:text-gray-500">{{ currentStep }} / 4</span>
       </div>
     </div>
 
@@ -36,32 +36,32 @@
                 </div>
                 <div>
                   <p class="font-semibold text-gray-900 dark:text-gray-100">영상 하나로, 모든 플랫폼에</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">YouTube, TikTok, Instagram 외 13개 플랫폼 동시 게시</p>
+                  <p class="text-body text-gray-500 dark:text-gray-400">YouTube, TikTok, Instagram 외 13개 플랫폼 동시 게시</p>
                 </div>
               </div>
 
               <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left dark:border-gray-700 dark:bg-gray-800">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-900/30">
-                  <SparklesIcon class="h-6 w-6 text-violet-600 dark:text-violet-400" />
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-info-subtle">
+                  <SparklesIcon class="h-6 w-6 text-info-strong" />
                 </div>
                 <div>
                   <p class="font-semibold text-gray-900 dark:text-gray-100">AI가 제목, 태그를 자동 생성</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">플랫폼별 알고리즘에 최적화된 메타데이터</p>
+                  <p class="text-body text-gray-500 dark:text-gray-400">플랫폼별 알고리즘에 최적화된 메타데이터</p>
                 </div>
               </div>
 
               <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left dark:border-gray-700 dark:bg-gray-800">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
-                  <ChartBarIcon class="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-success-subtle">
+                  <ChartBarIcon class="h-6 w-6 text-success-strong" />
                 </div>
                 <div>
                   <p class="font-semibold text-gray-900 dark:text-gray-100">통합 분석 대시보드</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">모든 플랫폼의 성과를 한눈에</p>
+                  <p class="text-body text-gray-500 dark:text-gray-400">모든 플랫폼의 성과를 한눈에</p>
                 </div>
               </div>
             </div>
 
-            <button class="btn-primary btn-press mt-8 w-full py-3 text-base" @click="startOnboarding">
+            <button class="btn-primary btn-press mt-8 w-full py-3 text-body-lg" @click="startOnboarding">
               시작하기
             </button>
             <p class="mt-3 text-caption text-gray-400">1분이면 끝나요</p>
@@ -70,15 +70,15 @@
           <!-- Step 1: Profile -->
           <div v-else-if="currentStep === 1">
             <div class="mb-6 text-center">
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">프로필을 설정해주세요</h2>
-              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">다른 크리에이터들에게 보여질 이름과 활동 분야를 선택하세요.</p>
+              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">프로필을 설정해주세요</h2>
+              <p class="mt-2 text-body text-gray-500 dark:text-gray-400">다른 크리에이터들에게 보여질 이름과 활동 분야를 선택하세요.</p>
             </div>
 
             <div class="rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-sm tablet:p-8">
               <!-- Nickname -->
               <div class="mb-6">
-                <label for="nickname" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  닉네임 <span class="text-red-500">*</span>
+                <label for="nickname" class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
+                  닉네임 <span class="text-error-strong">*</span>
                 </label>
                 <input
                   id="nickname"
@@ -87,28 +87,28 @@
                   maxlength="20"
                   placeholder="활동할 닉네임을 입력하세요"
                   class="input-field w-full"
-                  :class="{ 'border-red-400 focus:border-red-500 focus:ring-red-500/20': nicknameError }"
+                  :class="{ 'border-error focus:border-error focus:ring-error': nicknameError }"
                   @input="nicknameError = ''"
                 />
                 <div class="mt-1 flex items-center justify-between">
-                  <p v-if="nicknameError" class="text-xs text-red-500">{{ nicknameError }}</p>
-                  <span v-else class="text-xs text-gray-400 dark:text-gray-500">2~20자</span>
-                  <span class="text-xs text-gray-400 dark:text-gray-500">{{ profile.nickname.length }}/20</span>
+                  <p v-if="nicknameError" class="text-body-xs text-error-strong">{{ nicknameError }}</p>
+                  <span v-else class="text-body-xs text-gray-400 dark:text-gray-500">2~20자</span>
+                  <span class="text-body-xs text-gray-400 dark:text-gray-500">{{ profile.nickname.length }}/20</span>
                 </div>
               </div>
 
               <!-- Category -->
               <div>
-                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  크리에이터 카테고리 <span class="text-red-500">*</span>
+                <label class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
+                  크리에이터 카테고리 <span class="text-error-strong">*</span>
                 </label>
-                <p class="mb-3 text-xs text-gray-400">주로 제작하는 콘텐츠 분야를 선택하세요.</p>
+                <p class="mb-3 text-body-xs text-gray-400">주로 제작하는 콘텐츠 분야를 선택하세요.</p>
                 <div class="grid grid-cols-2 gap-2 tablet:grid-cols-4">
                   <button
                     v-for="cat in categories"
                     :key="cat.value"
                     type="button"
-                    class="rounded-xl border-2 px-3 py-3 text-sm font-medium transition-all"
+                    class="rounded-xl border-2 px-3 py-3 text-body font-medium transition-all"
                     :class="
                       profile.category === cat.value
                         ? 'border-primary-500 bg-primary-50 text-primary-700'
@@ -120,7 +120,7 @@
                     {{ cat.label }}
                   </button>
                 </div>
-                <p v-if="categoryError" class="mt-2 text-xs text-red-500">{{ categoryError }}</p>
+                <p v-if="categoryError" class="mt-2 text-body-xs text-error-strong">{{ categoryError }}</p>
               </div>
             </div>
           </div>
@@ -128,8 +128,8 @@
           <!-- Step 2: Channel Connect -->
           <div v-else-if="currentStep === 2">
             <div class="mb-6 text-center">
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">채널을 연동하세요</h2>
-              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">최소 1개 이상의 플랫폼을 연동해야 합니다.</p>
+              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">채널을 연동하세요</h2>
+              <p class="mt-2 text-body text-gray-500 dark:text-gray-400">최소 1개 이상의 플랫폼을 연동해야 합니다.</p>
             </div>
 
             <div class="space-y-3">
@@ -165,17 +165,17 @@
                     <svg v-else-if="platform.key === 'THREADS'" class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.187.408-2.26 1.33-3.017.88-.724 2.10-1.14 3.531-1.205 1.07-.049 2.07.058 2.986.318-.076-1.382-.603-2.417-1.58-3.084-.837-.573-1.947-.864-3.298-.864h-.038c-1.107.008-2.072.258-2.867.74l-1.02-1.775c1.07-.648 2.396-.999 3.895-1.012h.05c1.78 0 3.263.451 4.41 1.34 1.223.946 1.93 2.328 2.098 4.107.585.26 1.116.586 1.586.978 1.07.893 1.802 2.127 2.119 3.573.434 1.98.065 4.396-1.98 6.399-1.77 1.736-3.97 2.498-7.109 2.523zm-1.478-7.889c-.236 0-.47.014-.7.04-.96.097-2.255.444-2.201 1.735.034.77.497 1.292 1.379 1.583.344.115.73.17 1.148.17.617 0 1.282-.135 1.814-.557.623-.493.99-1.282 1.092-2.345-.692-.235-1.476-.532-2.242-.582-.1-.008-.194-.012-.29-.044z"/>
                     </svg>
-                    <span v-else class="text-xs font-bold text-white">{{ platform.label.charAt(0) }}</span>
+                    <span v-else class="text-body-xs font-bold text-white">{{ platform.label.charAt(0) }}</span>
                   </div>
                   <div>
                     <p class="font-semibold text-gray-900 dark:text-gray-100">{{ platform.label }}</p>
-                    <p v-if="connectedPlatforms.has(platform.key)" class="text-xs text-green-600">연동 완료</p>
-                    <p v-else class="text-xs text-gray-400 dark:text-gray-500">{{ platform.description }}</p>
+                    <p v-if="connectedPlatforms.has(platform.key)" class="text-body-xs text-success-strong">연동 완료</p>
+                    <p v-else class="text-body-xs text-gray-400 dark:text-gray-500">{{ platform.description }}</p>
                   </div>
                 </div>
                 <button
                   v-if="connectedPlatforms.has(platform.key)"
-                  class="rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+                  class="rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-caption text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
                   @click="disconnectPlatform(platform.key)"
                 >
                   연동 해제
@@ -183,7 +183,7 @@
                 <button
                   v-else
                   :disabled="isConnecting"
-                  class="btn-primary text-xs"
+                  class="btn-primary text-body-xs"
                   @click="connectPlatform(platform.key)"
                 >
                   연동하기
@@ -191,14 +191,14 @@
               </div>
             </div>
 
-            <p v-if="channelError" class="mt-4 text-center text-sm text-red-500">{{ channelError }}</p>
+            <p v-if="channelError" class="mt-4 text-center text-body text-error-strong">{{ channelError }}</p>
           </div>
 
           <!-- Step 3: Plan Selection -->
           <div v-else-if="currentStep === 3">
             <div class="mb-6 text-center">
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">플랜을 선택하세요</h2>
-              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">나중에 언제든지 변경할 수 있습니다.</p>
+              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">플랜을 선택하세요</h2>
+              <p class="mt-2 text-body text-gray-500 dark:text-gray-400">나중에 언제든지 변경할 수 있습니다.</p>
             </div>
 
             <div class="space-y-4">
@@ -216,8 +216,8 @@
           <!-- Step 4: AI Trial -->
           <div v-else-if="currentStep === 4">
             <div class="mb-6 text-center">
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">AI 기능을 체험해보세요</h2>
-              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <h2 class="text-h1 font-bold text-gray-900 dark:text-gray-100">AI 기능을 체험해보세요</h2>
+              <p class="mt-2 text-body text-gray-500 dark:text-gray-400">
                 무료 크레딧으로 AI가 만드는 콘텐츠 최적화를 경험하세요.
               </p>
             </div>
@@ -230,11 +230,11 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
                   </svg>
                 </div>
-                <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">AI 제목/태그 자동 생성</h3>
-                <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">
+                <h3 class="mb-2 text-title font-semibold text-gray-900 dark:text-gray-100">AI 제목/태그 자동 생성</h3>
+                <p class="mb-6 text-body text-gray-500 dark:text-gray-400">
                   샘플 영상을 기반으로 AI가 플랫폼별 최적화된<br />제목과 해시태그를 생성합니다.
                 </p>
-                <div class="mb-4 inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/20 px-3 py-1 text-xs text-amber-700 dark:text-amber-400">
+                <div class="mb-4 inline-flex items-center gap-1 rounded-full bg-warning-subtle px-3 py-1 text-body-xs text-warning-strong">
                   <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -243,7 +243,7 @@
                 <div>
                   <button
                     :disabled="isAiLoading"
-                    class="btn-primary rounded-xl px-8 py-3 text-sm disabled:opacity-50"
+                    class="btn-primary rounded-xl px-8 py-3 text-body disabled:opacity-50"
                     @click="tryAiGeneration"
                   >
                     <span v-if="isAiLoading" class="flex items-center gap-2">
@@ -253,13 +253,13 @@
                     <span v-else>AI 체험하기</span>
                   </button>
                 </div>
-                <p v-if="aiTrialError" class="mt-3 text-sm text-red-500">{{ aiTrialError }}</p>
+                <p v-if="aiTrialError" class="mt-3 text-body text-error-strong">{{ aiTrialError }}</p>
               </div>
 
               <!-- AI Result -->
               <div v-else>
                 <div class="mb-4 flex items-center gap-2">
-                  <svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <svg class="h-5 w-5 text-success-strong" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <h3 class="font-semibold text-gray-900 dark:text-gray-100">AI 생성 결과</h3>
@@ -267,20 +267,20 @@
 
                 <div class="space-y-4">
                   <div class="rounded-xl bg-gray-50 dark:bg-gray-900 p-4">
-                    <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">추천 제목</p>
+                    <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">추천 제목</p>
                     <ul class="space-y-1">
-                      <li v-for="(title, i) in aiTrialResult.titles" :key="i" class="text-sm text-gray-800 dark:text-gray-200">
+                      <li v-for="(title, i) in aiTrialResult.titles" :key="i" class="text-body text-gray-800 dark:text-gray-200">
                         {{ i + 1 }}. {{ title }}
                       </li>
                     </ul>
                   </div>
                   <div class="rounded-xl bg-gray-50 dark:bg-gray-900 p-4">
-                    <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">추천 해시태그</p>
+                    <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">추천 해시태그</p>
                     <div class="flex flex-wrap gap-1.5">
                       <span
                         v-for="tag in aiTrialResult.tags"
                         :key="tag"
-                        class="rounded-full bg-primary-100 dark:bg-primary-900/30 px-2.5 py-1 text-xs text-primary-700"
+                        class="rounded-full bg-primary-100 dark:bg-primary-900/30 px-2.5 py-1 text-body-xs text-primary-700"
                       >
                         #{{ tag }}
                       </span>
@@ -293,18 +293,18 @@
 
           <!-- Step 5: Completion -->
           <div v-else-if="currentStep === 5" class="text-center">
-            <div class="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <svg class="h-12 w-12 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <div class="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-success-subtle">
+              <svg class="h-12 w-12 text-success-strong" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 class="mb-3 text-3xl font-bold text-gray-900 dark:text-gray-100">
+            <h2 class="mb-3 text-display font-bold text-gray-900 dark:text-gray-100">
               환영합니다, {{ profile.nickname }}님!
             </h2>
             <p class="mb-2 text-gray-500 dark:text-gray-400">
               onGo 설정이 모두 완료되었습니다.
             </p>
-            <p class="mb-8 text-sm text-gray-400 dark:text-gray-500">
+            <p class="mb-8 text-body text-gray-400 dark:text-gray-500">
               이제 영상을 업로드하고 모든 플랫폼에 한 번에 게시해보세요.
             </p>
 
@@ -317,7 +317,7 @@
               </button>
               <div>
                 <button
-                  class="text-sm font-medium text-gray-500 dark:text-gray-400 transition-colors hover:text-gray-700 dark:hover:text-gray-300"
+                  class="text-body font-medium text-gray-500 dark:text-gray-400 transition-colors hover:text-gray-700 dark:hover:text-gray-300"
                   @click="goToDashboard"
                 >
                   대시보드로 이동
@@ -345,7 +345,7 @@
         <div class="flex items-center gap-3">
           <button
             v-if="currentStep === 4"
-            class="rounded-xl px-5 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            class="rounded-xl px-5 py-2.5 text-body font-medium text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
             @click="skipAiTrial"
           >
             건너뛰기

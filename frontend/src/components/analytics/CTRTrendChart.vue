@@ -45,8 +45,8 @@ const chartOptions = {
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">CTR 트렌드</h3>
-      <div v-if="props.data" class="flex items-center gap-4 text-sm">
+      <h3 class="text-title font-semibold text-gray-900 dark:text-white">CTR 트렌드</h3>
+      <div v-if="props.data" class="flex items-center gap-4 text-body">
         <span class="text-gray-500 dark:text-gray-400">평균 CTR: <strong class="text-purple-600">{{ props.data.avgCTR }}%</strong></span>
         <span class="text-gray-500 dark:text-gray-400">총 노출: <strong>{{ props.data.totalImpressions.toLocaleString() }}</strong></span>
       </div>

@@ -7,7 +7,7 @@
         :class="iconColorClass"
       />
     </div>
-    <p class="text-sm text-gray-700 dark:text-gray-300">
+    <p class="text-body text-gray-700 dark:text-gray-300">
       {{ text }}
     </p>
   </div>
@@ -36,7 +36,7 @@ const icon = computed(() => {
 const iconColorClass = computed(() => {
   if (props.isPositive === null) return 'text-gray-400'
   return props.isPositive
-    ? 'text-green-600 dark:text-green-400'
-    : 'text-red-600 dark:text-red-400'
+    ? 'text-success-strong'
+    : 'text-error-strong'
 })
 </script>

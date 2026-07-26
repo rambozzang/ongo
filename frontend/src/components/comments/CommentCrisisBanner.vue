@@ -2,27 +2,27 @@
   <!-- 위기 감지 배너 -->
   <div
     v-if="status?.isInCrisis && !dismissed"
-    class="rounded-xl border border-red-300 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20"
+    class="rounded-xl border border-error bg-error-subtle p-4"
   >
     <div class="flex items-start justify-between gap-3">
       <div class="flex items-start gap-3">
-        <ExclamationTriangleIcon class="h-5 w-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+        <ExclamationTriangleIcon class="h-5 w-5 shrink-0 text-error-strong mt-0.5" />
         <div>
-          <h4 class="text-sm font-semibold text-red-800 dark:text-red-300">
+          <h4 class="text-body font-semibold text-error-strong">
             {{ $t('commentsView.crisis.title') }}
           </h4>
-          <p class="mt-0.5 text-xs text-red-700 dark:text-red-400">
+          <p class="mt-0.5 text-body-xs text-error-strong">
             {{ $t('commentsView.crisis.description', { changePercent: status.changePercent, count: status.currentNegativeCount }) }}
           </p>
           <!-- 주요 키워드 태그 -->
           <div v-if="status.topKeywords.length > 0" class="mt-2 flex flex-wrap gap-1.5">
-            <span class="text-xs font-medium text-red-700 dark:text-red-400">
+            <span class="text-body-xs font-medium text-error-strong">
               {{ $t('commentsView.crisis.keywords') }}:
             </span>
             <span
               v-for="kw in status.topKeywords"
               :key="kw"
-              class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300"
+              class="rounded-full bg-error-subtle px-2 py-0.5 text-body-xs font-medium text-error-strong"
             >
               {{ kw }}
             </span>
@@ -30,7 +30,7 @@
         </div>
       </div>
       <button
-        class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 shrink-0"
+        class="text-body-xs text-error-strong hover:text-error-strong shrink-0"
         @click="dismissed = true"
       >
         {{ $t('commentsView.crisis.dismiss') }}

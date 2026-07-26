@@ -1,8 +1,8 @@
 <template>
   <div v-if="anomalies.length > 0" class="card">
     <div class="mb-4 flex items-center justify-between">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">이상 감지 알림</h3>
-      <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">
+      <h3 class="text-title font-semibold text-gray-900 dark:text-gray-100">이상 감지 알림</h3>
+      <span class="rounded-full bg-error-subtle px-2 py-0.5 text-body-xs font-semibold text-error-strong">
         {{ anomalies.length }}건
       </span>
     </div>
@@ -33,28 +33,28 @@
         <!-- Content -->
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
-            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p class="text-body font-medium text-gray-900 dark:text-gray-100">
               {{ anomaly.videoTitle ?? `영상 #${anomaly.videoId}` }}
             </p>
             <span
-              class="rounded px-1.5 py-0.5 text-xs font-medium"
+              class="rounded px-1.5 py-0.5 text-caption"
               :class="anomalyTypeBadgeClass(anomaly.anomalyType)"
             >
               {{ anomalyTypeLabel(anomaly.anomalyType) }}
             </span>
           </div>
-          <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
+          <p class="mt-0.5 text-body-xs text-gray-600 dark:text-gray-400">
             {{ anomaly.description }}
           </p>
           <div class="mt-2 flex gap-2">
             <button
-              class="rounded-md px-2 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20"
+              class="rounded-md px-2 py-1 text-caption text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20"
               @click="$emit('analyze', anomaly.videoId)"
             >
               분석하기
             </button>
             <button
-              class="rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+              class="rounded-md px-2 py-1 text-caption text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
               @click="dismiss(anomaly)"
             >
               닫기
@@ -79,9 +79,9 @@ const anomalies = ref<AnomalyItem[]>([])
 
 function severityBorderClass(severity: string): string {
   switch (severity) {
-    case 'critical': return 'border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-900/10'
-    case 'warning': return 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-900/30 dark:bg-yellow-900/10'
-    default: return 'border-blue-200 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-900/10'
+    case 'critical': return 'border-error bg-error-subtle'
+    case 'warning': return 'border-warning bg-warning-subtle'
+    default: return 'border-info bg-info-subtle'
   }
 }
 
@@ -95,10 +95,10 @@ function severityBgClass(severity: string): string {
 
 function anomalyTypeBadgeClass(type: AnomalyType): string {
   switch (type) {
-    case 'VIRAL_SPIKE': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-    case 'ENGAGEMENT_SURGE': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-    case 'UNUSUAL_DROP': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-    case 'SHARE_SPIKE': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+    case 'VIRAL_SPIKE': return 'bg-success-subtle text-success-strong'
+    case 'ENGAGEMENT_SURGE': return 'bg-info-subtle text-info-strong'
+    case 'UNUSUAL_DROP': return 'bg-error-subtle text-error-strong'
+    case 'SHARE_SPIKE': return 'bg-warning-subtle text-warning-strong'
   }
 }
 

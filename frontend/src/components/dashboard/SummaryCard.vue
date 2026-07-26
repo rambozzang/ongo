@@ -6,7 +6,7 @@
     @click="$emit('click')"
   >
     <div class="flex items-center justify-between">
-      <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ title }}</p>
+      <p class="text-body font-medium text-gray-500 dark:text-gray-400">{{ title }}</p>
       <div
         class="flex h-9 w-9 items-center justify-center rounded-lg"
         :class="iconBgClass"
@@ -15,7 +15,7 @@
       </div>
     </div>
     <p class="mt-3 text-[1.75rem] font-bold tracking-[-0.04em] text-gray-900 dark:text-gray-100">{{ formattedValue }}</p>
-    <div v-if="change !== undefined" class="mt-1 flex items-center gap-1 text-sm">
+    <div v-if="change !== undefined" class="mt-1 flex items-center gap-1 text-body">
       <span :class="changeColor">
         {{ changeIcon }}{{ Math.abs(change) }}{{ changeType === 'percent' ? '%' : '' }}
       </span>
@@ -24,7 +24,7 @@
     <div v-if="progressBar" class="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
       <div
         class="h-full rounded-full transition-all"
-        :class="(progressPercent ?? 0) <= 20 ? 'bg-red-500' : 'bg-primary-500'"
+        :class="(progressPercent ?? 0) <= 20 ? 'bg-error' : 'bg-primary-500'"
         :style="{ width: `${progressPercent ?? 0}%` }"
       />
     </div>
@@ -38,10 +38,10 @@ import { computed, type Component } from 'vue'
 type CardColor = 'blue' | 'green' | 'rose' | 'purple' | 'gray'
 
 const colorMap: Record<CardColor, { bg: string; text: string }> = {
-  blue: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400' },
-  green: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-600 dark:text-green-400' },
-  rose: { bg: 'bg-rose-100 dark:bg-rose-900/30', text: 'text-rose-600 dark:text-rose-400' },
-  purple: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-600 dark:text-purple-400' },
+  blue: { bg: 'bg-info-subtle', text: 'text-info-strong' },
+  green: { bg: 'bg-success-subtle', text: 'text-success-strong' },
+  rose: { bg: 'bg-error-subtle', text: 'text-error-strong' },
+  purple: { bg: 'bg-info-subtle', text: 'text-info-strong' },
   gray: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-400' },
 }
 
@@ -90,6 +90,6 @@ const changeIcon = computed(() => {
 
 const changeColor = computed(() => {
   if (props.change === undefined) return ''
-  return props.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+  return props.change >= 0 ? 'text-success-strong' : 'text-error-strong'
 })
 </script>

@@ -2,9 +2,9 @@
   <div>
     <PageHeader :title="$t('ugc.myCampaigns')" :description="$t('ugc.myCampaignsDescription')" />
 
-    <div v-if="loading" class="py-16 text-center text-sm text-gray-400">{{ $t('action.loading') }}</div>
+    <div v-if="loading" class="py-16 text-center text-body text-gray-400">{{ $t('action.loading') }}</div>
 
-    <div v-else-if="items.length === 0" class="card py-16 text-center text-sm text-gray-500 dark:text-gray-400">
+    <div v-else-if="items.length === 0" class="card py-16 text-center text-body text-gray-500 dark:text-gray-400">
       {{ $t('ugc.noMyApplications') }}
     </div>
 
@@ -13,11 +13,11 @@
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
             <span class="truncate font-semibold text-gray-900 dark:text-gray-100">{{ item.campaignName }}</span>
-            <span :class="['rounded-full px-2 py-0.5 text-xs font-medium', appStatusClass(item.application.status)]">
+            <span :class="['rounded-full px-2 py-0.5 text-caption', appStatusClass(item.application.status)]">
               {{ $t(`ugc.appStatus.${item.application.status}`) }}
             </span>
           </div>
-          <div class="mt-1 flex flex-wrap gap-x-4 text-xs text-gray-400">
+          <div class="mt-1 flex flex-wrap gap-x-4 text-body-xs text-gray-400">
             <span>{{ $t('ugc.campaignStatus') }}: {{ $t(`ugc.status.${item.campaignStatus}`) }}</span>
             <span>{{ $t('ugc.period') }}: {{ formatPeriod(item.startAt, item.endAt) }}</span>
             <span>{{ $t('ugc.appliedAt') }}: {{ item.application.createdAt?.slice(0, 10) }}</span>
@@ -25,7 +25,7 @@
         </div>
         <button
           v-if="item.application.status === 'ACCEPTED'"
-          class="btn-primary shrink-0 text-xs"
+          class="btn-primary shrink-0 text-body-xs"
           @click="router.push(`/creator/campaigns/${item.application.campaignId}/submit`)"
         >
           {{ $t('ugc.submitContent') }}
@@ -35,7 +35,7 @@
 
     <div v-if="!loading && totalPages > 1" class="mt-6 flex items-center justify-center gap-3">
       <button class="btn-secondary" :disabled="page === 0" @click="changePage(page - 1)">{{ $t('ugc.prev') }}</button>
-      <span class="text-sm text-gray-500 dark:text-gray-400">{{ page + 1 }} / {{ totalPages }}</span>
+      <span class="text-body text-gray-500 dark:text-gray-400">{{ page + 1 }} / {{ totalPages }}</span>
       <button class="btn-secondary" :disabled="page + 1 >= totalPages" @click="changePage(page + 1)">{{ $t('ugc.next') }}</button>
     </div>
   </div>
@@ -64,11 +64,11 @@ const totalPages = computed(() => Math.max(1, Math.ceil(totalElements.value / si
 function appStatusClass(status: ApplicationStatus): string {
   switch (status) {
     case 'ACCEPTED':
-      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+      return 'bg-success-subtle text-success-strong'
     case 'REJECTED':
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+      return 'bg-error-subtle text-error-strong'
     case 'APPLIED':
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+      return 'bg-info-subtle text-info-strong'
     default:
       return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
   }

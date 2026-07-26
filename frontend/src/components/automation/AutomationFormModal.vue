@@ -153,7 +153,7 @@ const close = () => {
         <!-- Header -->
         <div class="bg-white dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center justify-between">
-            <h3 id="automation-form-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 id="automation-form-modal-title" class="text-title font-semibold text-gray-900 dark:text-white">
               {{ rule ? '규칙 수정' : '새 자동화 규칙' }}
             </h3>
             <button
@@ -177,7 +177,7 @@ const close = () => {
                   :class="[
                     'flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors',
                     step <= currentStep
-                      ? 'border-blue-600 bg-blue-600 text-white'
+                      ? 'border-primary-600 bg-primary-600 text-white'
                       : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'
                   ]"
                 >
@@ -187,11 +187,11 @@ const close = () => {
                   v-if="step < totalSteps"
                   :class="[
                     'flex-1 h-1 mx-2',
-                    step < currentStep ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                    step < currentStep ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
                   ]"
                 ></div>
               </div>
-              <div class="mt-2 text-xs text-center text-gray-600 dark:text-gray-400">
+              <div class="mt-2 text-body-xs text-center text-gray-600 dark:text-gray-400">
                 <span v-if="step === 1">기본 정보</span>
                 <span v-if="step === 2">트리거</span>
                 <span v-if="step === 3">액션</span>
@@ -206,26 +206,26 @@ const close = () => {
           <!-- Step 1: Name & Description -->
           <div v-if="currentStep === 1" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 규칙 이름
               </label>
               <input
                 v-model="formData.name"
                 type="text"
                 placeholder="예: YouTube → TikTok 자동 게시"
-                class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 설명
               </label>
               <textarea
                 v-model="formData.description"
                 rows="3"
                 placeholder="규칙에 대한 간단한 설명을 입력하세요"
-                class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               ></textarea>
             </div>
           </div>
@@ -243,28 +243,28 @@ const close = () => {
                 :class="[
                   'p-4 rounded-lg border-2 text-left transition-all',
                   formData.triggerType === trigger.value
-                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                    ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 ]"
                 @click="formData.triggerType = trigger.value as TriggerType"
               >
                 <div class="font-medium text-gray-900 dark:text-white">{{ trigger.label }}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ trigger.description }}</div>
+                <div class="text-body text-gray-600 dark:text-gray-400 mt-1">{{ trigger.description }}</div>
               </button>
             </div>
 
             <!-- Trigger Configuration -->
             <div v-if="formData.triggerType" class="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg space-y-4">
-              <h5 class="text-sm font-semibold text-gray-900 dark:text-white">트리거 설정</h5>
+              <h5 class="text-body font-semibold text-gray-900 dark:text-white">트리거 설정</h5>
 
               <!-- video_published config -->
               <div v-if="formData.triggerType === 'video_published'">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                   플랫폼 선택
                 </label>
                 <select
                   v-model="formData.triggerConfig.platform"
-                  class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="">선택하세요</option>
                   <option v-for="platform in platforms" :key="platform.value" :value="platform.value">
@@ -276,23 +276,23 @@ const close = () => {
               <!-- views_threshold config -->
               <div v-if="formData.triggerType === 'views_threshold'" class="space-y-3">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     목표 조회수
                   </label>
                   <input
                     v-model.number="formData.triggerConfig.threshold"
                     type="number"
                     placeholder="10000"
-                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     플랫폼
                   </label>
                   <select
                     v-model="formData.triggerConfig.platform"
-                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     <option value="">선택하세요</option>
                     <option v-for="platform in platforms" :key="platform.value" :value="platform.value">
@@ -305,12 +305,12 @@ const close = () => {
               <!-- schedule_time config -->
               <div v-if="formData.triggerType === 'schedule_time'" class="space-y-3">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     반복 유형
                   </label>
                   <select
                     v-model="formData.triggerConfig.schedule"
-                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     <option value="daily">매일</option>
                     <option value="weekly">매주</option>
@@ -319,7 +319,7 @@ const close = () => {
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                       시간
                     </label>
                     <input
@@ -328,11 +328,11 @@ const close = () => {
                       min="0"
                       max="23"
                       placeholder="9"
-                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                       분
                     </label>
                     <input
@@ -341,7 +341,7 @@ const close = () => {
                       min="0"
                       max="59"
                       placeholder="0"
-                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                   </div>
                 </div>
@@ -350,23 +350,23 @@ const close = () => {
               <!-- comment_received config -->
               <div v-if="formData.triggerType === 'comment_received'" class="space-y-3">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     키워드 (쉼표로 구분)
                   </label>
                   <input
                     v-model="formData.triggerConfig.keywords"
                     type="text"
                     placeholder="협찬,광고,문의"
-                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     플랫폼
                   </label>
                   <select
                     v-model="formData.triggerConfig.platform"
-                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     <option value="">선택하세요</option>
                     <option v-for="platform in platforms" :key="platform.value" :value="platform.value">
@@ -379,23 +379,23 @@ const close = () => {
               <!-- subscriber_milestone config -->
               <div v-if="formData.triggerType === 'subscriber_milestone'" class="space-y-3">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     목표 구독자 수
                   </label>
                   <input
                     v-model.number="formData.triggerConfig.milestone"
                     type="number"
                     placeholder="10000"
-                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     플랫폼
                   </label>
                   <select
                     v-model="formData.triggerConfig.platform"
-                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     <option value="">선택하세요</option>
                     <option v-for="platform in platforms" :key="platform.value" :value="platform.value">
@@ -420,17 +420,17 @@ const close = () => {
               <button
                 v-for="action in actionTypes"
                 :key="action.value"
-                class="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 text-left transition-all"
+                class="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-500 text-left transition-all"
                 @click="addAction(action.value as ActionType)"
               >
                 <div class="font-medium text-gray-900 dark:text-white">{{ action.label }}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ action.description }}</div>
+                <div class="text-body text-gray-600 dark:text-gray-400 mt-1">{{ action.description }}</div>
               </button>
             </div>
 
             <!-- Added Actions -->
             <div v-if="formData.actions.length > 0" class="space-y-4">
-              <h5 class="text-sm font-semibold text-gray-900 dark:text-white">추가된 액션</h5>
+              <h5 class="text-body font-semibold text-gray-900 dark:text-white">추가된 액션</h5>
 
               <div
                 v-for="(action, index) in formData.actions"
@@ -442,7 +442,7 @@ const close = () => {
                     {{ actionTypes.find(a => a.value === action.type)?.label }}
                   </span>
                   <button
-                    class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm"
+                    class="text-error-strong hover:text-error-strong text-body"
                     @click="removeAction(index)"
                   >
                     삭제
@@ -452,12 +452,12 @@ const close = () => {
                 <!-- cross_post config -->
                 <div v-if="action.type === 'cross_post'" class="space-y-3">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                       대상 플랫폼
                     </label>
                     <select
                       v-model="action.config.targetPlatform"
-                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="">선택하세요</option>
                       <option v-for="platform in platforms" :key="platform.value" :value="platform.value">
@@ -469,32 +469,32 @@ const close = () => {
                     <input
                       v-model="action.config.copyMetadata"
                       type="checkbox"
-                      class="w-4 h-4 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                      class="w-4 h-4 text-info-strong bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
                     >
-                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">메타데이터 복사</span>
+                    <span class="ml-2 text-body text-gray-700 dark:text-gray-300">메타데이터 복사</span>
                   </label>
                 </div>
 
                 <!-- send_notification config -->
                 <div v-if="action.type === 'send_notification'" class="space-y-3">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                       알림 메시지
                     </label>
                     <input
                       v-model="action.config.message"
                       type="text"
                       placeholder="알림 메시지를 입력하세요"
-                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                       알림 채널
                     </label>
                     <select
                       v-model="action.config.channel"
-                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="">선택하세요</option>
                       <option v-for="channel in notificationChannels" :key="channel.value" :value="channel.value">
@@ -506,25 +506,25 @@ const close = () => {
 
                 <!-- add_tag config -->
                 <div v-if="action.type === 'add_tag'">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     태그
                   </label>
                   <input
                     v-model="action.config.tag"
                     type="text"
                     placeholder="태그를 입력하세요"
-                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                 </div>
 
                 <!-- move_to_status config -->
                 <div v-if="action.type === 'move_to_status'">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     상태
                   </label>
                   <select
                     v-model="action.config.status"
-                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     <option value="">선택하세요</option>
                     <option value="draft">임시저장</option>
@@ -537,12 +537,12 @@ const close = () => {
                 <!-- generate_ai_metadata config -->
                 <div v-if="action.type === 'generate_ai_metadata'" class="space-y-3">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                       언어
                     </label>
                     <select
                       v-model="action.config.language"
-                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="ko">한국어</option>
                       <option value="en">영어</option>
@@ -552,9 +552,9 @@ const close = () => {
                     <input
                       v-model="action.config.includeHashtags"
                       type="checkbox"
-                      class="w-4 h-4 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                      class="w-4 h-4 text-info-strong bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
                     >
-                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">해시태그 포함</span>
+                    <span class="ml-2 text-body text-gray-700 dark:text-gray-300">해시태그 포함</span>
                   </label>
                 </div>
               </div>
@@ -569,42 +569,42 @@ const close = () => {
 
             <div class="space-y-4">
               <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">규칙 이름</div>
-                <div class="text-base text-gray-900 dark:text-white">{{ formData.name }}</div>
+                <div class="text-body font-medium text-gray-500 dark:text-gray-400 mb-1">규칙 이름</div>
+                <div class="text-body-lg text-gray-900 dark:text-white">{{ formData.name }}</div>
               </div>
 
               <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">설명</div>
-                <div class="text-base text-gray-900 dark:text-white">{{ formData.description }}</div>
+                <div class="text-body font-medium text-gray-500 dark:text-gray-400 mb-1">설명</div>
+                <div class="text-body-lg text-gray-900 dark:text-white">{{ formData.description }}</div>
               </div>
 
               <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">트리거</div>
-                <div class="text-base text-gray-900 dark:text-white">
+                <div class="text-body font-medium text-gray-500 dark:text-gray-400 mb-1">트리거</div>
+                <div class="text-body-lg text-gray-900 dark:text-white">
                   {{ triggerTypes.find(t => t.value === formData.triggerType)?.label }}
                 </div>
               </div>
 
               <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">액션</div>
+                <div class="text-body font-medium text-gray-500 dark:text-gray-400 mb-2">액션</div>
                 <div class="space-y-2">
                   <div
                     v-for="(action, index) in formData.actions"
                     :key="index"
-                    class="text-base text-gray-900 dark:text-white"
+                    class="text-body-lg text-gray-900 dark:text-white"
                   >
                     {{ index + 1 }}. {{ actionTypes.find(a => a.value === action.type)?.label }}
                   </div>
                 </div>
               </div>
 
-              <div class="flex items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div class="flex items-center p-4 bg-info-subtle rounded-lg">
                 <input
                   v-model="formData.isEnabled"
                   type="checkbox"
-                  class="w-4 h-4 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                  class="w-4 h-4 text-info-strong bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
                 >
-                <span class="ml-3 text-sm font-medium text-gray-900 dark:text-white">생성 후 즉시 활성화</span>
+                <span class="ml-3 text-body font-medium text-gray-900 dark:text-white">생성 후 즉시 활성화</span>
               </div>
             </div>
           </div>
@@ -633,7 +633,7 @@ const close = () => {
             <button
               v-if="currentStep < totalSteps"
               :disabled="!canProceed"
-              class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               @click="nextStep"
             >
               다음
@@ -642,7 +642,7 @@ const close = () => {
 
             <button
               v-else
-              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               @click="handleSave"
             >
               저장

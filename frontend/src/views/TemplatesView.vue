@@ -79,7 +79,7 @@ const handleCloseModal = () => {
           v-for="cat in categories"
           :key="cat.value"
           :class="[
-            'px-3 py-1.5 rounded-lg font-medium text-xs transition-colors',
+            'px-3 py-1.5 rounded-lg font-medium text-body-xs transition-colors',
             categoryFilter === cat.value
               ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600',
@@ -110,7 +110,7 @@ const handleCloseModal = () => {
           <AdjustmentsHorizontalIcon class="h-5 w-5 text-gray-500 dark:text-gray-400" />
           <select
             v-model="sortBy"
-            class="input text-sm"
+            class="input text-body"
           >
             <option v-for="option in sortOptions" :key="option.value" :value="option.value">
               {{ option.label }}
@@ -121,9 +121,9 @@ const handleCloseModal = () => {
         <!-- Favorites Toggle -->
         <button
           :class="[
-            'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+            'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-caption transition-colors',
             showFavoritesOnly
-              ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'
+              ? 'border-warning bg-warning-subtle text-warning-strong'
               : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700',
           ]"
           @click="showFavoritesOnly = !showFavoritesOnly"
@@ -161,7 +161,7 @@ const handleCloseModal = () => {
         <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
           <AdjustmentsHorizontalIcon class="h-8 w-8 text-gray-400" />
         </div>
-        <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h3 class="mb-2 text-title font-semibold text-gray-900 dark:text-gray-100">
           {{ $t('templates.emptyTitle') }}
         </h3>
         <p class="mb-6 text-gray-600 dark:text-gray-400">

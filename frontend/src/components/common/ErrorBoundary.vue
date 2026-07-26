@@ -6,13 +6,13 @@
       <div class="card max-w-lg w-full text-center">
         <!-- Error Icon -->
         <div class="mb-6 flex justify-center">
-          <div class="rounded-full bg-red-100 p-4 dark:bg-red-900/30">
-            <ExclamationTriangleIcon class="h-12 w-12 text-red-600 dark:text-red-500" />
+          <div class="rounded-full bg-error-subtle p-4">
+            <ExclamationTriangleIcon class="h-12 w-12 text-error-strong" />
           </div>
         </div>
 
         <!-- Title -->
-        <h2 class="mb-3 text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h2 class="mb-3 text-h1 font-bold text-gray-900 dark:text-gray-100">
           문제가 발생했습니다
         </h2>
 
@@ -20,7 +20,7 @@
         <p class="mb-2 text-gray-600 dark:text-gray-400">
           {{ errorMessage }}
         </p>
-        <p class="mb-8 text-sm text-gray-500 dark:text-gray-500">
+        <p class="mb-8 text-body text-gray-500 dark:text-gray-500">
           문제가 지속되면 고객센터에 문의해주세요.
         </p>
 
@@ -30,7 +30,7 @@
           class="mb-6 rounded-lg bg-gray-100 p-4 text-left dark:bg-gray-800"
         >
           <button
-            class="mb-2 flex w-full items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300"
+            class="mb-2 flex w-full items-center justify-between text-body font-medium text-gray-700 dark:text-gray-300"
             @click="detailsExpanded = !detailsExpanded"
           >
             <span>오류 상세 정보</span>
@@ -40,7 +40,7 @@
             />
           </button>
           <div v-if="detailsExpanded" class="mt-2">
-            <pre class="overflow-x-auto text-xs text-gray-600 dark:text-gray-400">{{ errorDetails }}</pre>
+            <pre class="overflow-x-auto text-body-xs text-gray-600 dark:text-gray-400">{{ errorDetails }}</pre>
           </div>
         </div>
 
@@ -59,7 +59,7 @@
         <!-- Report Link -->
         <div class="mt-6">
           <button
-            class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+            class="text-body text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
             @click="handleReport"
           >
             문제 신고하기

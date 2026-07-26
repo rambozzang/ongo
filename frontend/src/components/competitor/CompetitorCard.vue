@@ -66,7 +66,7 @@ function formatNumber(num: number): string {
     :class="[
       'relative rounded-lg border p-4 transition-all cursor-pointer hover:shadow-lg',
       selected
-        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
         : 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700',
     ]"
     @click="emit('select', competitor.id)"
@@ -85,7 +85,7 @@ function formatNumber(num: number): string {
           </h3>
           <span
             :class="[
-              'inline-block px-2 py-0.5 text-xs font-medium rounded-full',
+              'inline-block px-2 py-0.5 text-caption rounded-full',
               platformBadgeColor,
             ]"
           >
@@ -109,10 +109,10 @@ function formatNumber(num: number): string {
         </button>
         <button
           title="삭제"
-          class="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+          class="p-1.5 rounded-lg hover:bg-error-subtle transition-colors"
           @click.stop="emit('remove', competitor.id)"
         >
-          <TrashIcon class="w-5 h-5 text-red-600 dark:text-red-400" />
+          <TrashIcon class="w-5 h-5 text-error-strong" />
         </button>
       </div>
     </div>
@@ -120,44 +120,44 @@ function formatNumber(num: number): string {
     <!-- Metrics -->
     <div class="space-y-2">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-gray-600 dark:text-gray-400">구독자</span>
+        <span class="text-body text-gray-600 dark:text-gray-400">구독자</span>
         <span class="font-semibold text-gray-900 dark:text-white">
           {{ formatNumber(competitor.subscriberCount) }}
         </span>
       </div>
 
       <div class="flex items-center justify-between">
-        <span class="text-sm text-gray-600 dark:text-gray-400">평균 조회수</span>
+        <span class="text-body text-gray-600 dark:text-gray-400">평균 조회수</span>
         <span class="font-semibold text-gray-900 dark:text-white">
           {{ formatNumber(competitor.avgViews) }}
         </span>
       </div>
 
       <div class="flex items-center justify-between">
-        <span class="text-sm text-gray-600 dark:text-gray-400">참여율</span>
+        <span class="text-body text-gray-600 dark:text-gray-400">참여율</span>
         <span class="font-semibold text-gray-900 dark:text-white">
           {{ competitor.avgEngagement }}%
         </span>
       </div>
 
       <div class="flex items-center justify-between">
-        <span class="text-sm text-gray-600 dark:text-gray-400">월간 성장률</span>
+        <span class="text-body text-gray-600 dark:text-gray-400">월간 성장률</span>
         <div class="flex items-center space-x-1">
           <component
             :is="isGrowing ? ArrowTrendingUpIcon : ArrowTrendingDownIcon"
             :class="[
               'w-4 h-4',
               isGrowing
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400',
+                ? 'text-success-strong'
+                : 'text-error-strong',
             ]"
           />
           <span
             :class="[
               'font-semibold',
               isGrowing
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400',
+                ? 'text-success-strong'
+                : 'text-error-strong',
             ]"
           >
             {{ Math.abs(competitor.growthRate) }}%
@@ -168,7 +168,7 @@ function formatNumber(num: number): string {
 
     <!-- Video count -->
     <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-      <span class="text-xs text-gray-500 dark:text-gray-400">
+      <span class="text-body-xs text-gray-500 dark:text-gray-400">
         총 {{ competitor.videoCount }}개 영상
       </span>
     </div>

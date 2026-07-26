@@ -35,13 +35,13 @@
           <div class="card">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.totalChannels') }}</p>
-                <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('channels.totalChannels') }}</p>
+                <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
                   {{ channelStats.total }}
                 </p>
               </div>
-              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-                <LinkIcon class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-info-subtle">
+                <LinkIcon class="h-6 w-6 text-info-strong" />
               </div>
             </div>
           </div>
@@ -49,13 +49,13 @@
           <div class="card">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.healthy') }}</p>
-                <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
+                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('channels.healthy') }}</p>
+                <p class="mt-1 text-h1 font-bold text-success-strong">
                   {{ channelStats.healthy }}
                 </p>
               </div>
-              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                <CheckCircleIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-success-subtle">
+                <CheckCircleIcon class="h-6 w-6 text-success-strong" />
               </div>
             </div>
           </div>
@@ -63,13 +63,13 @@
           <div class="card">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.warning') }}</p>
-                <p class="mt-1 text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('channels.warning') }}</p>
+                <p class="mt-1 text-h1 font-bold text-warning-strong">
                   {{ channelStats.warning }}
                 </p>
               </div>
-              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30">
-                <ExclamationTriangleIcon class="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-warning-subtle">
+                <ExclamationTriangleIcon class="h-6 w-6 text-warning-strong" />
               </div>
             </div>
           </div>
@@ -77,13 +77,13 @@
           <div class="card">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.error') }}</p>
-                <p class="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
+                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('channels.error') }}</p>
+                <p class="mt-1 text-h1 font-bold text-error-strong">
                   {{ channelStats.error }}
                 </p>
               </div>
-              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                <XCircleIcon class="h-6 w-6 text-red-600 dark:text-red-400" />
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-error-subtle">
+                <XCircleIcon class="h-6 w-6 text-error-strong" />
               </div>
             </div>
           </div>

@@ -8,13 +8,13 @@ const delayMinutes = defineModel<number>('delayMinutes', { required: true })
 
 <template>
   <div class="space-y-4">
-    <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-      <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+    <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-primary-500"></span>
       액션 설정
     </h3>
 
     <div>
-      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">액션 유형</label>
+      <label class="block text-caption text-gray-600 dark:text-gray-400 mb-1">액션 유형</label>
       <select
         :value="actionType"
         class="input"
@@ -29,11 +29,11 @@ const delayMinutes = defineModel<number>('delayMinutes', { required: true })
     <!-- Action-specific config -->
     <div v-if="actionType === 'SEND_NOTIFICATION'" class="space-y-3">
       <div>
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">알림 메시지</label>
+        <label class="block text-caption text-gray-600 dark:text-gray-400 mb-1">알림 메시지</label>
         <textarea
           :value="(config.message as string) ?? ''"
           rows="2"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-body"
           placeholder="알림 메시지 입력"
           @input="config = { ...config, message: ($event.target as HTMLTextAreaElement).value }"
         />
@@ -42,10 +42,10 @@ const delayMinutes = defineModel<number>('delayMinutes', { required: true })
 
     <div v-if="actionType === 'AUTO_PUBLISH'" class="space-y-3">
       <div>
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">플랫폼</label>
+        <label class="block text-caption text-gray-600 dark:text-gray-400 mb-1">플랫폼</label>
         <select
           :value="(config.platform as string) ?? 'YOUTUBE'"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-body"
           @change="config = { ...config, platform: ($event.target as HTMLSelectElement).value }"
         >
           <option value="YOUTUBE">YouTube</option>
@@ -58,11 +58,11 @@ const delayMinutes = defineModel<number>('delayMinutes', { required: true })
 
     <div v-if="actionType === 'ADD_TAG'" class="space-y-3">
       <div>
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">태그 (쉼표로 구분)</label>
+        <label class="block text-caption text-gray-600 dark:text-gray-400 mb-1">태그 (쉼표로 구분)</label>
         <input
           type="text"
           :value="(config.tags as string) ?? ''"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-body"
           placeholder="tag1, tag2, tag3"
           @input="config = { ...config, tags: ($event.target as HTMLInputElement).value }"
         />
@@ -71,7 +71,7 @@ const delayMinutes = defineModel<number>('delayMinutes', { required: true })
 
     <div v-if="actionType === 'CROSS_POST'" class="space-y-3">
       <div>
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">대상 플랫폼</label>
+        <label class="block text-caption text-gray-600 dark:text-gray-400 mb-1">대상 플랫폼</label>
         <div class="space-y-1">
           <label v-for="platform in ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP']" :key="platform" class="flex items-center gap-2">
             <input
@@ -84,7 +84,7 @@ const delayMinutes = defineModel<number>('delayMinutes', { required: true })
                   : (config = { ...config, platforms: ((config.platforms as string[]) ?? []).filter((p: string) => p !== platform) })
               "
             />
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ platform }}</span>
+            <span class="text-body text-gray-700 dark:text-gray-300">{{ platform }}</span>
           </label>
         </div>
       </div>
@@ -92,10 +92,10 @@ const delayMinutes = defineModel<number>('delayMinutes', { required: true })
 
     <div v-if="actionType === 'MOVE_STATUS'" class="space-y-3">
       <div>
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">대상 상태</label>
+        <label class="block text-caption text-gray-600 dark:text-gray-400 mb-1">대상 상태</label>
         <select
           :value="(config.status as string) ?? 'PUBLISHED'"
-          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-body"
           @change="config = { ...config, status: ($event.target as HTMLSelectElement).value }"
         >
           <option value="DRAFT">임시저장</option>
@@ -107,16 +107,16 @@ const delayMinutes = defineModel<number>('delayMinutes', { required: true })
 
     <!-- Delay -->
     <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
-      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">실행 지연 (분)</label>
+      <label class="block text-caption text-gray-600 dark:text-gray-400 mb-1">실행 지연 (분)</label>
       <div class="flex items-center gap-2">
         <input
           type="number"
           min="0"
           :value="delayMinutes"
-          class="w-24 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+          class="w-24 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-body"
           @input="delayMinutes = Number(($event.target as HTMLInputElement).value) || 0"
         />
-        <span class="text-xs text-gray-500 dark:text-gray-400">0 = 즉시 실행</span>
+        <span class="text-body-xs text-gray-500 dark:text-gray-400">0 = 즉시 실행</span>
       </div>
     </div>
   </div>

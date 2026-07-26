@@ -43,24 +43,24 @@
     <slot v-else-if="error" name="error" :error="error" :retry="handleRetry">
       <div
         role="alert"
-        class="rounded-lg border border-red-200 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-900/20"
+        class="rounded-lg border border-error bg-error-subtle p-6"
       >
         <div class="flex items-start gap-3">
           <ExclamationCircleIcon
-            class="h-6 w-6 shrink-0 text-red-600 dark:text-red-500"
+            class="h-6 w-6 shrink-0 text-error-strong"
             aria-hidden="true"
           />
           <div class="flex-1">
-            <h3 class="mb-1 font-semibold text-red-900 dark:text-red-200">
+            <h3 class="mb-1 font-semibold text-error-strong">
               {{ errorTitle || t('status.error') }}
             </h3>
-            <p class="text-sm leading-relaxed text-red-700 dark:text-red-300">{{ error }}</p>
+            <p class="text-body leading-relaxed text-error-strong">{{ error }}</p>
           </div>
         </div>
         <button
           v-if="retryable"
           type="button"
-          class="btn-primary mt-4 inline-flex items-center gap-1.5 text-sm"
+          class="btn-primary mt-4 inline-flex items-center gap-1.5 text-body"
           @click="handleRetry"
         >
           <ArrowPathIcon class="h-4 w-4" aria-hidden="true" />

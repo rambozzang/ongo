@@ -1,13 +1,13 @@
 <template>
   <div class="max-w-5xl">
-    <button class="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400" @click="router.push(`/ugc/campaigns/${campaignId}`)">
+    <button class="mb-4 inline-flex items-center gap-1 text-body text-gray-500 hover:text-gray-700 dark:text-gray-400" @click="router.push(`/ugc/campaigns/${campaignId}`)">
       <ChevronLeftIcon class="h-4 w-4" />{{ $t('ugc.backToCampaign') }}
     </button>
 
     <PageHeader :title="$t('ugc.reviewTitle')" :description="$t('ugc.reviewDescription')" />
 
-    <div v-if="loading" class="py-16 text-center text-sm text-gray-400">{{ $t('action.loading') }}</div>
-    <div v-else-if="submissions.length === 0" class="card py-16 text-center text-sm text-gray-500 dark:text-gray-400">
+    <div v-if="loading" class="py-16 text-center text-body text-gray-400">{{ $t('action.loading') }}</div>
+    <div v-else-if="submissions.length === 0" class="card py-16 text-center text-body text-gray-500 dark:text-gray-400">
       {{ $t('ugc.noSubmissions') }}
     </div>
 
@@ -22,11 +22,11 @@
         >
           <div class="flex items-center justify-between gap-2">
             <span class="font-semibold text-gray-900 dark:text-gray-100">{{ $t('ugc.creator') }} #{{ s.creatorId }}</span>
-            <span :class="['rounded-full px-2 py-0.5 text-xs font-medium', subStatusClass(s.status)]">
+            <span :class="['rounded-full px-2 py-0.5 text-body-xs font-medium', subStatusClass(s.status)]">
               {{ $t(`ugc.subStatus.${s.status}`) }} · v{{ s.revision }}
             </span>
           </div>
-          <p class="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">{{ s.caption || $t('ugc.noCaption') }}</p>
+          <p class="mt-1 truncate text-body text-gray-500 dark:text-gray-400">{{ s.caption || $t('ugc.noCaption') }}</p>
         </button>
       </div>
 
@@ -34,13 +34,13 @@
       <div v-if="selected" class="card space-y-4">
         <div>
           <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ $t('ugc.creator') }} #{{ selected.submission.creatorId }} · v{{ selected.submission.revision }}</h3>
-          <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">{{ selected.submission.caption || $t('ugc.noCaption') }}</p>
+          <p class="mt-1 text-body text-gray-700 dark:text-gray-300">{{ selected.submission.caption || $t('ugc.noCaption') }}</p>
         </div>
         <div>
-          <p class="mb-1 text-xs font-medium text-gray-400">{{ $t('ugc.attachments') }}</p>
+          <p class="mb-1 text-body-xs font-medium text-gray-400">{{ $t('ugc.attachments') }}</p>
           <ul class="space-y-1">
             <li v-for="(a, i) in selected.submission.assets" :key="i">
-              <a :href="a.externalUrl || '#'" target="_blank" rel="noopener noreferrer" class="truncate text-sm text-primary-600 hover:underline">{{ a.externalUrl || `${a.resourceType}#${a.resourceId}` }}</a>
+              <a :href="a.externalUrl || '#'" target="_blank" rel="noopener noreferrer" class="truncate text-body text-primary-600 hover:underline">{{ a.externalUrl || `${a.resourceType}#${a.resourceId}` }}</a>
             </li>
           </ul>
         </div>
@@ -56,38 +56,38 @@
 
         <!-- Review history -->
         <div v-if="selected.reviews.length" class="border-t border-gray-100 pt-3 dark:border-gray-700">
-          <p class="mb-2 text-xs font-medium text-gray-400">{{ $t('ugc.reviewHistory') }}</p>
+          <p class="mb-2 text-body-xs font-medium text-gray-400">{{ $t('ugc.reviewHistory') }}</p>
           <ul class="space-y-2">
-            <li v-for="r in selected.reviews" :key="r.id" class="text-sm">
-              <span :class="['rounded px-1.5 py-0.5 text-xs font-medium', r.decision === 'APPROVED' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300']">
+            <li v-for="r in selected.reviews" :key="r.id" class="text-body">
+              <span :class="['rounded px-1.5 py-0.5 text-body-xs font-medium', r.decision === 'APPROVED' ? 'bg-success-subtle text-success-strong' : 'bg-warning-subtle text-warning-strong']">
                 {{ $t(`ugc.decision.${r.decision}`) }}
               </span>
               <span class="ml-2 text-gray-600 dark:text-gray-300">{{ r.comment }}</span>
-              <span class="ml-2 text-xs text-gray-400">{{ r.createdAt?.slice(0, 10) }}</span>
+              <span class="ml-2 text-body-xs text-gray-400">{{ r.createdAt?.slice(0, 10) }}</span>
             </li>
           </ul>
         </div>
 
         <!-- Publish -->
         <div v-if="canPublish" class="border-t border-gray-100 pt-3 dark:border-gray-700">
-          <p class="mb-2 text-xs font-medium text-gray-400">{{ $t('ugc.publishSection') }}</p>
+          <p class="mb-2 text-body-xs font-medium text-gray-400">{{ $t('ugc.publishSection') }}</p>
           <div class="mb-2 flex flex-wrap gap-3">
-            <label v-for="p in publishablePlatforms" :key="p" class="inline-flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
+            <label v-for="p in publishablePlatforms" :key="p" class="inline-flex items-center gap-1 text-body text-gray-700 dark:text-gray-300">
               <input v-model="selectedPlatforms" type="checkbox" :value="p" class="rounded" /> {{ p }}
             </label>
           </div>
-          <button class="btn-primary text-xs" :disabled="publishing || selectedPlatforms.length === 0" @click="publish">
+          <button class="btn-primary text-body-xs" :disabled="publishing || selectedPlatforms.length === 0" @click="publish">
             {{ $t('ugc.publishNow') }}
           </button>
         </div>
 
         <!-- Posts -->
         <div v-if="selectedPosts.length" class="border-t border-gray-100 pt-3 dark:border-gray-700">
-          <p class="mb-2 text-xs font-medium text-gray-400">{{ $t('ugc.posts') }}</p>
+          <p class="mb-2 text-body-xs font-medium text-gray-400">{{ $t('ugc.posts') }}</p>
           <ul class="space-y-1">
-            <li v-for="post in selectedPosts" :key="post.id" class="flex items-center justify-between text-sm">
-              <span class="text-gray-700 dark:text-gray-300">{{ post.platform }} <span v-if="post.postType === 'EXTERNAL'" class="text-xs text-gray-400">({{ $t('ugc.external') }})</span></span>
-              <span :class="['rounded px-1.5 py-0.5 text-xs font-medium', postStatusClass(post.status)]">{{ $t(`ugc.postStatus.${post.status}`) }}</span>
+            <li v-for="post in selectedPosts" :key="post.id" class="flex items-center justify-between text-body">
+              <span class="text-gray-700 dark:text-gray-300">{{ post.platform }} <span v-if="post.postType === 'EXTERNAL'" class="text-body-xs text-gray-400">({{ $t('ugc.external') }})</span></span>
+              <span :class="['rounded px-1.5 py-0.5 text-body-xs font-medium', postStatusClass(post.status)]">{{ $t(`ugc.postStatus.${post.status}`) }}</span>
             </li>
           </ul>
         </div>
@@ -141,14 +141,14 @@ function subStatusClass(status: SubmissionStatus): string {
   switch (status) {
     case 'APPROVED':
     case 'PUBLISHED':
-      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+      return 'bg-success-subtle text-success-strong'
     case 'SUBMITTED':
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+      return 'bg-info-subtle text-info-strong'
     case 'CHANGES_REQUESTED':
-      return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+      return 'bg-warning-subtle text-warning-strong'
     case 'REJECTED':
     case 'PUBLISH_FAILED':
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+      return 'bg-error-subtle text-error-strong'
     default:
       return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
   }
@@ -158,12 +158,12 @@ function postStatusClass(status: PostStatus): string {
   switch (status) {
     case 'PUBLISHED':
     case 'EXTERNAL':
-      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+      return 'bg-success-subtle text-success-strong'
     case 'PUBLISHING':
     case 'PENDING':
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+      return 'bg-info-subtle text-info-strong'
     default:
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+      return 'bg-error-subtle text-error-strong'
   }
 }
 

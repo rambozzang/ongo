@@ -18,8 +18,8 @@
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div>
-          <h3 id="template-manager-modal-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">메타데이터 템플릿</h3>
-          <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">자주 사용하는 메타데이터를 저장하고 빠르게 적용하세요</p>
+          <h3 id="template-manager-modal-title" class="text-title font-semibold text-gray-900 dark:text-gray-100">메타데이터 템플릿</h3>
+          <p class="mt-0.5 text-body text-gray-500 dark:text-gray-400">자주 사용하는 메타데이터를 저장하고 빠르게 적용하세요</p>
         </div>
         <button
           class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
@@ -39,7 +39,7 @@
               v-model="searchQuery"
               type="text"
               placeholder="템플릿 검색..."
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 py-2 pl-10 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 py-2 pl-10 pr-4 text-body text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </div>
           <div class="flex gap-2">
@@ -67,10 +67,10 @@
 
         <div v-else-if="filteredTemplates.length === 0" class="flex h-64 flex-col items-center justify-center text-center">
           <DocumentTextIcon class="mb-3 h-12 w-12 text-gray-300 dark:text-gray-600" />
-          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <p class="text-body font-medium text-gray-500 dark:text-gray-400">
             {{ searchQuery ? '검색 결과가 없습니다' : '저장된 템플릿이 없습니다' }}
           </p>
-          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">
             {{ searchQuery ? '다른 검색어를 입력해보세요' : '새 템플릿을 만들어보세요' }}
           </p>
         </div>
@@ -84,7 +84,7 @@
             <!-- Template Info -->
             <div class="mb-3">
               <h4 class="font-semibold text-gray-900 dark:text-gray-100">{{ tmpl.name }}</h4>
-              <p v-if="tmpl.titleTemplate" class="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+              <p v-if="tmpl.titleTemplate" class="mt-1 text-body text-gray-500 dark:text-gray-400 line-clamp-1">
                 {{ tmpl.titleTemplate }}
               </p>
             </div>
@@ -94,20 +94,20 @@
               <span
                 v-for="(tag, i) in tmpl.tags.slice(0, 5)"
                 :key="i"
-                class="inline-flex items-center rounded-full bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 text-xs text-primary-700 dark:text-primary-400"
+                class="inline-flex items-center rounded-full bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 text-body-xs text-primary-700 dark:text-primary-400"
               >
                 {{ tag }}
               </span>
               <span
                 v-if="tmpl.tags.length > 5"
-                class="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400"
+                class="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-body-xs text-gray-500 dark:text-gray-400"
               >
                 +{{ tmpl.tags.length - 5 }}
               </span>
             </div>
 
             <!-- Metadata -->
-            <div class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+            <div class="flex items-center gap-3 text-body-xs text-gray-400 dark:text-gray-500">
               <span>{{ tmpl.category || '미지정' }}</span>
               <span>•</span>
               <span>사용 {{ tmpl.usageCount }}회</span>
@@ -130,7 +130,7 @@
                 <PencilIcon class="h-4 w-4" />
               </button>
               <button
-                class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 text-red-600 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+                class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 text-error-strong transition-colors hover:bg-error-subtle"
                 @click="handleDeleteTemplate(tmpl.id)"
               >
                 <TrashIcon class="h-4 w-4" />

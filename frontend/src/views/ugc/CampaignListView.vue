@@ -11,25 +11,25 @@
 
     <div class="mb-6 grid gap-3 mobile:grid-cols-[minmax(0,1fr)_auto]">
       <div v-if="hasWorkspace" class="flex min-w-0 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
-        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-sm font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">{{ workspaceInitial }}</div>
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-body font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">{{ workspaceInitial }}</div>
         <div class="min-w-0">
           <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ $t('ugc.campaignContext') }}</p>
-          <p class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ workspaceStore.activeWorkspace?.name }}</p>
+          <p class="truncate text-body font-semibold text-gray-900 dark:text-gray-100">{{ workspaceStore.activeWorkspace?.name }}</p>
         </div>
-        <span class="ml-auto inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500" />{{ $t('ugc.workspaceReady') }}</span>
+        <span class="ml-auto inline-flex items-center gap-1.5 text-caption text-success-strong"><span class="h-1.5 w-1.5 rounded-full bg-success" />{{ $t('ugc.workspaceReady') }}</span>
       </div>
-      <div v-else class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-900/20">
-        <ExclamationTriangleIcon class="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-        <div class="min-w-0 text-sm">
-          <p class="font-semibold text-amber-900 dark:text-amber-200">{{ $t('ugc.noWorkspace') }}</p>
-          <p class="mt-1 text-amber-800 dark:text-amber-300">{{ $t('ugc.noWorkspaceHint') }}</p>
-          <router-link to="/settings?tab=workspaces" class="mt-2 inline-flex font-medium text-amber-900 underline underline-offset-2 dark:text-amber-200">{{ $t('ugc.manageWorkspace') }}</router-link>
+      <div v-else class="flex items-start gap-3 rounded-xl border border-warning bg-warning-subtle px-4 py-3">
+        <ExclamationTriangleIcon class="mt-0.5 h-5 w-5 shrink-0 text-warning-strong" />
+        <div class="min-w-0 text-body">
+          <p class="font-semibold text-warning-strong">{{ $t('ugc.noWorkspace') }}</p>
+          <p class="mt-1 text-warning-strong">{{ $t('ugc.noWorkspaceHint') }}</p>
+          <router-link to="/settings?tab=workspaces" class="mt-2 inline-flex font-medium text-warning-strong underline underline-offset-2">{{ $t('ugc.manageWorkspace') }}</router-link>
         </div>
       </div>
       <div v-if="hasWorkspace" class="grid grid-cols-3 gap-2 rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
-        <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800"><p class="text-[11px] text-gray-400">{{ $t('ugc.totalCampaigns') }}</p><p class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ store.totalElements }}</p></div>
-        <div class="rounded-lg bg-blue-50 px-3 py-2 dark:bg-blue-900/20"><p class="text-[11px] text-blue-600 dark:text-blue-300">{{ $t('ugc.status.RECRUITING') }}</p><p class="mt-1 text-lg font-semibold text-blue-800 dark:text-blue-200">{{ recruitingCount }}</p></div>
-        <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800"><p class="text-[11px] text-gray-400">{{ $t('ugc.status.DRAFT') }}</p><p class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ draftCount }}</p></div>
+        <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800"><p class="text-[11px] text-gray-400">{{ $t('ugc.totalCampaigns') }}</p><p class="mt-1 text-title font-semibold text-gray-900 dark:text-gray-100">{{ store.totalElements }}</p></div>
+        <div class="rounded-lg bg-info-subtle px-3 py-2"><p class="text-[11px] text-info-strong">{{ $t('ugc.status.RECRUITING') }}</p><p class="mt-1 text-title font-semibold text-info-strong">{{ recruitingCount }}</p></div>
+        <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800"><p class="text-[11px] text-gray-400">{{ $t('ugc.status.DRAFT') }}</p><p class="mt-1 text-title font-semibold text-gray-900 dark:text-gray-100">{{ draftCount }}</p></div>
       </div>
     </div>
 
@@ -50,7 +50,7 @@
           v-for="opt in statusOptions"
           :key="opt.value ?? 'ALL'"
           :class="[
-            'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+            'rounded-lg px-3 py-2 text-body font-medium transition-colors',
             store.statusFilter === opt.value
               ? 'bg-primary-600 text-white dark:bg-primary-500'
               : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
@@ -63,7 +63,7 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="store.loading" class="py-16 text-center text-sm text-gray-400">
+    <div v-if="store.loading" class="py-16 text-center text-body text-gray-400">
       {{ $t('action.loading') }}
     </div>
 
@@ -73,7 +73,7 @@
       class="card flex flex-col items-center justify-center gap-3 py-16 text-center"
     >
       <MegaphoneIcon class="h-10 w-10 text-gray-300 dark:text-gray-600" />
-      <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('ugc.empty') }}</p>
+      <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('ugc.empty') }}</p>
       <router-link v-if="hasWorkspace" to="/ugc/campaigns/new" class="btn-primary mt-2 inline-flex items-center gap-2">
         <PlusIcon class="h-5 w-5" />
         {{ $t('ugc.newCampaign') }}
@@ -94,14 +94,14 @@
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
             <span class="truncate font-semibold text-gray-900 dark:text-gray-100">{{ c.name }}</span>
-            <span :class="['rounded-full px-2 py-0.5 text-xs font-medium', statusClass(c.status)]">
+            <span :class="['rounded-full px-2 py-0.5 text-caption', statusClass(c.status)]">
               {{ $t(`ugc.status.${c.status}`) }}
             </span>
           </div>
-          <p class="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">
+          <p class="mt-1 truncate text-body text-gray-500 dark:text-gray-400">
             {{ c.description || $t('ugc.noDescription') }}
           </p>
-          <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+          <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-body-xs text-gray-400">
             <span>{{ $t('ugc.budget') }}: {{ formatMoney(c.totalBudget, c.currency) }}</span>
             <span>{{ $t('ugc.reward') }}: {{ formatMoney(c.fixedRewardPerCreator, c.currency) }}</span>
             <span>{{ $t('ugc.period') }}: {{ formatPeriod(c.startAt, c.endAt) }}</span>
@@ -116,7 +116,7 @@
       <button class="btn-secondary" :disabled="!store.hasPrevPage" @click="store.prevPage()">
         {{ $t('ugc.prev') }}
       </button>
-      <span class="text-sm text-gray-500 dark:text-gray-400">
+      <span class="text-body text-gray-500 dark:text-gray-400">
         {{ store.page + 1 }} / {{ store.totalPages }}
       </span>
       <button class="btn-secondary" :disabled="!store.hasNextPage" @click="store.nextPage()">
@@ -166,13 +166,13 @@ const statusOptions = computed<{ label: string; value: string | null }[]>(() => 
 function statusClass(status: CampaignStatus): string {
   switch (status) {
     case 'RECRUITING':
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+      return 'bg-info-subtle text-info-strong'
     case 'ACTIVE':
-      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+      return 'bg-success-subtle text-success-strong'
     case 'PAUSED':
-      return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+      return 'bg-warning-subtle text-warning-strong'
     case 'CANCELLED':
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+      return 'bg-error-subtle text-error-strong'
     default:
       return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
   }

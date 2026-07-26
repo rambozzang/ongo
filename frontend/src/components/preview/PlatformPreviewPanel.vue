@@ -28,7 +28,7 @@
         <span class="font-semibold text-gray-900 dark:text-gray-100">{{ t('preview.platformPreview') }}</span>
         <span
           v-if="platforms.length > 0"
-          class="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+          class="rounded-full bg-primary-100 px-2 py-0.5 text-body-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
         >
           {{ platforms.length }}
         </span>
@@ -75,7 +75,7 @@
                 class="h-2.5 w-2.5 rounded-full"
                 :style="{ backgroundColor: PLATFORM_CONFIG[platform].color }"
               />
-              <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <span class="text-body font-semibold text-gray-900 dark:text-gray-100">
                 {{ PLATFORM_CONFIG[platform].label }}
               </span>
             </div>
@@ -102,7 +102,7 @@
           <button
             v-for="platform in platforms"
             :key="platform"
-            class="rounded-lg px-4 py-2 text-sm font-medium transition-all"
+            class="rounded-lg px-4 py-2 text-body font-medium transition-all"
             :class="
               selectedPlatform === platform
                 ? 'bg-white text-primary-600 shadow-sm dark:bg-gray-700 dark:text-primary-400'
@@ -136,9 +136,9 @@
       </template>
 
       <!-- Info text -->
-      <div class="mt-4 flex items-start gap-2 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+      <div class="mt-4 flex items-start gap-2 rounded-lg bg-info-subtle p-3">
         <svg
-          class="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400"
+          class="mt-0.5 h-5 w-5 flex-shrink-0 text-info-strong"
           fill="currentColor"
           viewBox="0 0 24 24"
         >
@@ -146,7 +146,7 @@
             d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
           />
         </svg>
-        <p class="text-sm text-blue-800 dark:text-blue-300">
+        <p class="text-body text-info-strong">
           {{ t('preview.platformInfo') }}
         </p>
       </div>
@@ -176,7 +176,7 @@
           d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
         />
       </svg>
-      <p class="text-sm text-gray-600 dark:text-gray-400">
+      <p class="text-body text-gray-600 dark:text-gray-400">
         {{ t('preview.selectPlatform') }}
       </p>
     </div>

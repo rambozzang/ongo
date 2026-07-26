@@ -6,7 +6,7 @@
           <th
             v-for="column in columns"
             :key="column.key"
-            class="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+            class="cursor-pointer px-4 py-3 text-left text-body-xs font-medium uppercase tracking-wider text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
             @click="sortBy(column.key)"
           >
             <div class="flex items-center gap-1">
@@ -25,28 +25,28 @@
           class="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
           :class="index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/50'"
         >
-          <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+          <td class="whitespace-nowrap px-4 py-3 text-body text-gray-900 dark:text-gray-100">
             {{ formatPeriod(row.period) }}
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+          <td class="whitespace-nowrap px-4 py-3 text-body text-gray-700 dark:text-gray-300">
             {{ formatCurrency(row.youtube) }}
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+          <td class="whitespace-nowrap px-4 py-3 text-body text-gray-700 dark:text-gray-300">
             {{ formatCurrency(row.tiktok) }}
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+          <td class="whitespace-nowrap px-4 py-3 text-body text-gray-700 dark:text-gray-300">
             {{ formatCurrency(row.instagram) }}
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+          <td class="whitespace-nowrap px-4 py-3 text-body text-gray-700 dark:text-gray-300">
             {{ formatCurrency(row.naverClip) }}
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <td class="whitespace-nowrap px-4 py-3 text-body font-semibold text-gray-900 dark:text-gray-100">
             {{ formatCurrency(row.total) }}
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-sm">
+          <td class="whitespace-nowrap px-4 py-3 text-body">
             <span
               v-if="row.change !== null"
-              :class="row.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'"
+              :class="row.change >= 0 ? 'text-success-strong' : 'text-error-strong'"
             >
               {{ row.change >= 0 ? '+' : '' }}{{ row.change.toFixed(1) }}%
             </span>

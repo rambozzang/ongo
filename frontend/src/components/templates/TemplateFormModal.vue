@@ -187,7 +187,7 @@ const handleClose = () => {
     >
       <!-- Header -->
       <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 id="template-form-modal-title" class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h2 id="template-form-modal-title" class="text-h1 font-bold text-gray-900 dark:text-white">
           {{ isEditMode ? '템플릿 수정' : '새 템플릿 만들기' }}
         </h2>
         <button
@@ -206,25 +206,25 @@ const handleClose = () => {
           <div class="space-y-4">
             <!-- Name -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                템플릿 이름 <span class="text-red-500">*</span>
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
+                템플릿 이름 <span class="text-error-strong">*</span>
               </label>
               <input
                 v-model="formData.name"
                 type="text"
                 placeholder="예: 유튜브 브이로그 제목"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               />
             </div>
 
             <!-- Category -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                카테고리 <span class="text-red-500">*</span>
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
+                카테고리 <span class="text-error-strong">*</span>
               </label>
               <select
                 v-model="formData.category"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               >
                 <option v-for="option in categoryOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
@@ -234,12 +234,12 @@ const handleClose = () => {
 
             <!-- Platform -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 플랫폼
               </label>
               <select
                 v-model="formData.platform"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               >
                 <option v-for="option in platformOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
@@ -249,14 +249,14 @@ const handleClose = () => {
 
             <!-- Variable Helper -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 변수 삽입
               </label>
               <div class="flex flex-wrap gap-2">
                 <button
                   v-for="variable in availableVariables"
                   :key="variable.value"
-                  class="px-2 py-1 text-xs font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                  class="px-2 py-1 text-body-xs font-mono bg-info-subtle text-info-strong rounded hover:bg-info-subtle transition-colors"
                   :title="variable.label"
                   @click="insertVariable(variable.value, formData.category === 'thumbnail' ? 'thumbnail' : formData.category === 'description' || formData.category === 'full' ? 'description' : 'title')"
                 >
@@ -267,54 +267,54 @@ const handleClose = () => {
 
             <!-- Title Template -->
             <div v-if="showFields.title">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 제목 템플릿
               </label>
               <input
                 v-model="formData.titleTemplate"
                 type="text"
                 placeholder="예: [{{date}}] {{video_title}} | {{channel_name}}"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-body focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               />
             </div>
 
             <!-- Description Template -->
             <div v-if="showFields.description">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 설명 템플릿
               </label>
               <textarea
                 v-model="formData.descriptionTemplate"
                 rows="6"
                 placeholder="영상 설명 템플릿을 입력하세요..."
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-body focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               />
             </div>
 
             <!-- Tags Template -->
             <div v-if="showFields.tags">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 태그 템플릿 (쉼표로 구분)
               </label>
               <input
                 v-model="tagsInput"
                 type="text"
                 placeholder="예: 뷰티, 메이크업, {{product_name}}"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-body focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
                 @blur="handleTagsInput"
               />
             </div>
 
             <!-- Thumbnail Style -->
             <div v-if="showFields.thumbnail">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 썸네일 스타일
               </label>
               <textarea
                 v-model="formData.thumbnailStyle"
                 rows="3"
                 placeholder="썸네일 디자인 가이드를 입력하세요..."
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-body focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               />
             </div>
 
@@ -324,9 +324,9 @@ const handleClose = () => {
                 <input
                   v-model="formData.isFavorite"
                   type="checkbox"
-                  class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  class="w-4 h-4 text-info-strong bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
-                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">즐겨찾기에 추가</span>
+                <span class="ml-2 text-body text-gray-700 dark:text-gray-300">즐겨찾기에 추가</span>
               </label>
             </div>
           </div>
@@ -334,7 +334,7 @@ const handleClose = () => {
           <!-- Preview -->
           <div class="space-y-4">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">미리보기</h3>
+              <h3 class="text-title font-semibold text-gray-900 dark:text-white mb-4">미리보기</h3>
               <TemplatePreview
                 :content="previewContent"
                 :category="formData.category"
@@ -344,12 +344,12 @@ const handleClose = () => {
 
             <!-- Extracted Variables -->
             <div v-if="extractedVariables.length > 0">
-              <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">사용된 변수</h4>
+              <h4 class="text-body font-semibold text-gray-700 dark:text-gray-300 mb-2">사용된 변수</h4>
               <div class="flex flex-wrap gap-2">
                 <span
                   v-for="variable in extractedVariables"
                   :key="variable"
-                  class="px-2 py-1 text-xs font-mono bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded"
+                  class="px-2 py-1 text-body-xs font-mono bg-success-subtle text-success-strong rounded"
                 >
                   {{ variable }}
                 </span>
@@ -368,7 +368,7 @@ const handleClose = () => {
           취소
         </button>
         <button
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+          class="px-4 py-2 bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
           @click="handleSave"
         >
           {{ isEditMode ? '수정' : '저장' }}

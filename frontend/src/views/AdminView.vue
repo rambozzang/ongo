@@ -30,12 +30,12 @@
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead class="bg-gray-50 dark:bg-gray-900">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.userName') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.email') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.plan') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.storage') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.joinDate') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.actions') }}</th>
+              <th class="px-4 py-3 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.userName') }}</th>
+              <th class="px-4 py-3 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.email') }}</th>
+              <th class="px-4 py-3 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.plan') }}</th>
+              <th class="px-4 py-3 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.storage') }}</th>
+              <th class="px-4 py-3 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.joinDate') }}</th>
+              <th class="px-4 py-3 text-left text-caption uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -48,17 +48,17 @@
               @click="openUserDetail(user)"
               @keydown.enter="openUserDetail(user)"
             >
-              <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+              <td class="whitespace-nowrap px-4 py-3 text-body font-medium text-gray-900 dark:text-gray-100">
                 {{ user.name }}
-                <span v-if="user.role === 'ADMIN'" class="ml-1 inline-flex items-center rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Admin</span>
+                <span v-if="user.role === 'ADMIN'" class="ml-1 inline-flex items-center rounded bg-primary-100 px-1.5 py-0.5 text-caption text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">Admin</span>
               </td>
-              <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</td>
-              <td class="whitespace-nowrap px-4 py-3 text-sm">
-                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="planBadgeClass(user.planType)">
+              <td class="whitespace-nowrap px-4 py-3 text-body text-gray-500 dark:text-gray-400">{{ user.email }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-body">
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-caption" :class="planBadgeClass(user.planType)">
                   {{ user.planType }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-sm">
+              <td class="px-4 py-3 text-body">
                 <div class="flex items-center gap-2">
                   <div class="h-2 w-24 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
                     <div
@@ -67,17 +67,17 @@
                       :style="{ width: storagePercent(user.storageUsedBytes, user.storageLimitBytes) + '%' }"
                     />
                   </div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                  <span class="text-body-xs text-gray-500 dark:text-gray-400">
                     {{ formatBytes(user.storageUsedBytes) }} / {{ formatBytes(user.storageLimitBytes) }}
                   </span>
                 </div>
               </td>
-              <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+              <td class="whitespace-nowrap px-4 py-3 text-body text-gray-500 dark:text-gray-400">
                 {{ user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-' }}
               </td>
-              <td class="whitespace-nowrap px-4 py-3 text-sm">
+              <td class="whitespace-nowrap px-4 py-3 text-body">
                 <button
-                  class="rounded px-2 py-1 text-sm text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/30"
+                  class="rounded px-2 py-1 text-body text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/30"
                   @click.stop="openQuotaModal(user)"
                 >
                   {{ t('admin.adjustQuota') }}
@@ -85,7 +85,7 @@
               </td>
             </tr>
             <tr v-if="users.length === 0">
-              <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+              <td colspan="6" class="px-4 py-8 text-center text-body text-gray-500 dark:text-gray-400">
                 {{ t('empty.noResults') }}
               </td>
             </tr>
@@ -95,14 +95,14 @@
 
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-gray-700">
-        <p class="text-sm text-gray-500 dark:text-gray-400">
+        <p class="text-body text-gray-500 dark:text-gray-400">
           {{ t('admin.totalUsers', { count: totalElements }) }}
         </p>
         <div class="flex gap-1">
           <button
             v-for="p in visiblePages"
             :key="p"
-            class="rounded px-3 py-1 text-sm"
+            class="rounded px-3 py-1 text-body"
             :class="p === currentPage ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'"
             @click="goToPage(p)"
           >
@@ -121,8 +121,8 @@
             <!-- Drawer Header -->
             <div class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
               <div>
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('admin.userDetail') }}</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ detailUser?.name }} ({{ detailUser?.email }})</p>
+                <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('admin.userDetail') }}</h2>
+                <p class="text-body text-gray-500 dark:text-gray-400">{{ detailUser?.name }} ({{ detailUser?.email }})</p>
               </div>
               <button class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300" @click="closeDetailDrawer">
                 <XMarkIcon class="h-5 w-5" />
@@ -138,18 +138,18 @@
               <div class="flex-1 space-y-6 p-6">
                 <!-- User Info Card -->
                 <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
-                  <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div class="grid grid-cols-2 gap-4 text-body">
                     <div>
                       <span class="text-gray-500 dark:text-gray-400">{{ t('admin.role') }}</span>
                       <div class="mt-1 flex items-center gap-2">
                         <span class="font-medium text-gray-900 dark:text-gray-100">{{ detailData?.role }}</span>
-                        <span v-if="detailData?.role === 'ADMIN'" class="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Admin</span>
+                        <span v-if="detailData?.role === 'ADMIN'" class="rounded bg-primary-100 px-1.5 py-0.5 text-caption text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">Admin</span>
                       </div>
                     </div>
                     <div>
                       <span class="text-gray-500 dark:text-gray-400">{{ t('admin.plan') }}</span>
                       <div class="mt-1">
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="planBadgeClass(detailData?.planType ?? '')">
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-caption" :class="planBadgeClass(detailData?.planType ?? '')">
                           {{ detailData?.planType }}
                         </span>
                       </div>
@@ -170,7 +170,7 @@
                     </div>
                     <div v-if="detailData?.storageQuotaOverride">
                       <span class="text-gray-500 dark:text-gray-400">{{ t('admin.quotaOverride') }}</span>
-                      <p class="mt-1 font-medium text-orange-600 dark:text-orange-400">{{ formatBytes(detailData.storageQuotaOverride) }}</p>
+                      <p class="mt-1 font-medium text-warning-strong">{{ formatBytes(detailData.storageQuotaOverride) }}</p>
                     </div>
                   </div>
                 </div>
@@ -187,17 +187,17 @@
                   </button>
                   <button
                     v-if="detailData && detailData.role !== 'ADMIN'"
-                    class="rounded-lg px-3 py-1.5 text-sm font-medium"
+                    class="rounded-lg px-3 py-1.5 text-body font-medium"
                     :class="subscriptionDetail?.status === 'SUSPENDED'
-                      ? 'border border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-400 dark:hover:bg-green-900/30'
-                      : 'border border-red-300 text-red-700 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/30'"
+                      ? 'border border-success text-success-strong hover:bg-success-subtle'
+                      : 'border border-error text-error-strong hover:bg-error-subtle'"
                     :disabled="actionLoading"
                     @click="toggleActivation"
                   >
                     {{ subscriptionDetail?.status === 'SUSPENDED' ? t('admin.activate') : t('admin.deactivate') }}
                   </button>
                   <button
-                    class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-primary-50 dark:border-gray-600 dark:text-primary-400 dark:hover:bg-primary-900/30"
+                    class="rounded-lg border border-gray-300 px-3 py-1.5 text-body font-medium text-primary-600 hover:bg-primary-50 dark:border-gray-600 dark:text-primary-400 dark:hover:bg-primary-900/30"
                     @click="openQuotaModalFromDetail"
                   >
                     {{ t('admin.adjustQuota') }}
@@ -227,7 +227,7 @@
                       <div class="flex items-start justify-between">
                         <div>
                           <p class="font-medium text-gray-900 dark:text-gray-100">{{ video.title }}</p>
-                          <div class="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                          <div class="mt-1 flex items-center gap-3 text-body-xs text-gray-500 dark:text-gray-400">
                             <span :class="statusBadgeClass(video.status)">{{ video.status }}</span>
                             <span>{{ video.mediaType }}</span>
                             <span v-if="video.fileSizeBytes">{{ formatBytes(video.fileSizeBytes) }}</span>
@@ -240,7 +240,7 @@
                         <div
                           v-for="(upload, idx) in video.platforms"
                           :key="idx"
-                          class="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                          class="flex items-center gap-1 rounded-full px-2 py-0.5 text-body-xs"
                           :class="platformUploadClass(upload.status)"
                         >
                           <span class="font-medium">{{ upload.platform }}</span>
@@ -251,12 +251,12 @@
 
                     <!-- Video Pagination -->
                     <div v-if="videosTotalPages > 1" class="flex items-center justify-between pt-2">
-                      <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.totalVideos', { count: videosTotalElements }) }}</span>
+                      <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ t('admin.totalVideos', { count: videosTotalElements }) }}</span>
                       <div class="flex gap-1">
                         <button
                           v-for="p in videosVisiblePages"
                           :key="p"
-                          class="rounded px-2 py-0.5 text-xs"
+                          class="rounded px-2 py-0.5 text-body-xs"
                           :class="p === videosPage ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'"
                           @click="loadUserVideos(p)"
                         >
@@ -286,12 +286,12 @@
                     >
                       <div>
                         <div class="flex items-center gap-2">
-                          <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ channel.platform }}</span>
+                          <span class="rounded bg-gray-100 px-1.5 py-0.5 text-caption text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ channel.platform }}</span>
                           <p class="font-medium text-gray-900 dark:text-gray-100">{{ channel.channelName }}</p>
                         </div>
-                        <div class="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                        <div class="mt-1 flex items-center gap-3 text-body-xs text-gray-500 dark:text-gray-400">
                           <span>{{ t('admin.subscribers') }}: {{ channel.subscriberCount.toLocaleString() }}</span>
-                          <span :class="channel.status === 'CONNECTED' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">
+                          <span :class="channel.status === 'CONNECTED' ? 'text-success-strong' : 'text-warning-strong'">
                             {{ channel.status }}
                           </span>
                           <span v-if="channel.connectedAt">{{ t('admin.connected') }}: {{ new Date(channel.connectedAt).toLocaleDateString() }}</span>
@@ -301,7 +301,7 @@
                         v-if="channel.channelUrl"
                         :href="channel.channelUrl"
                         target="_blank"
-                        class="text-sm text-primary-600 hover:underline dark:text-primary-400"
+                        class="text-body text-primary-600 hover:underline dark:text-primary-400"
                       >
                         {{ t('admin.openChannel') }}
                       </a>
@@ -321,11 +321,11 @@
                   empty-variant="compact"
                 >
                   <div v-if="subscriptionDetail" class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                    <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="grid grid-cols-2 gap-4 text-body">
                       <div>
                         <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPlan') }}</span>
                         <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">
-                          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="planBadgeClass(subscriptionDetail.planType)">
+                          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-caption" :class="planBadgeClass(subscriptionDetail.planType)">
                             {{ subscriptionDetail.planType }}
                           </span>
                         </p>
@@ -333,7 +333,7 @@
                       <div>
                         <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subStatus') }}</span>
                         <p class="mt-1">
-                          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="subStatusClass(subscriptionDetail.status)">
+                          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-caption" :class="subStatusClass(subscriptionDetail.status)">
                             {{ subscriptionDetail.status }}
                           </span>
                         </p>
@@ -356,15 +356,15 @@
                       </div>
                       <div v-if="subscriptionDetail.pendingPlanType">
                         <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPendingPlan') }}</span>
-                        <p class="mt-1 font-medium text-orange-600 dark:text-orange-400">{{ subscriptionDetail.pendingPlanType }}</p>
+                        <p class="mt-1 font-medium text-warning-strong">{{ subscriptionDetail.pendingPlanType }}</p>
                       </div>
                       <div v-if="subscriptionDetail.cancelledAt">
                         <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subCancelledAt') }}</span>
-                        <p class="mt-1 font-medium text-red-600 dark:text-red-400">{{ new Date(subscriptionDetail.cancelledAt).toLocaleDateString() }}</p>
+                        <p class="mt-1 font-medium text-error-strong">{{ new Date(subscriptionDetail.cancelledAt).toLocaleDateString() }}</p>
                       </div>
                       <div v-if="subscriptionDetail.storageQuotaOverride">
                         <span class="text-gray-500 dark:text-gray-400">{{ t('admin.quotaOverride') }}</span>
-                        <p class="mt-1 font-medium text-orange-600 dark:text-orange-400">{{ formatBytes(subscriptionDetail.storageQuotaOverride) }}</p>
+                        <p class="mt-1 font-medium text-warning-strong">{{ formatBytes(subscriptionDetail.storageQuotaOverride) }}</p>
                       </div>
                     </div>
                   </div>
@@ -378,22 +378,22 @@
 
     <!-- Storage Quota Modal -->
     <BaseModal v-model="showQuotaModal" :title="t('admin.quotaModalTitle')">
-      <p class="text-sm text-gray-500 dark:text-gray-400">
+      <p class="text-body text-gray-500 dark:text-gray-400">
         {{ selectedUser?.name }} ({{ selectedUser?.email }})
       </p>
 
       <div class="mt-4 space-y-4">
         <!-- Current usage -->
         <div>
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.currentUsage') }}</label>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
+          <label class="text-body font-medium text-gray-700 dark:text-gray-300">{{ t('admin.currentUsage') }}</label>
+          <p class="text-body text-gray-500 dark:text-gray-400">
             {{ formatBytes(selectedUser?.storageUsedBytes ?? 0) }} / {{ formatBytes(selectedUser?.storageLimitBytes ?? 0) }}
           </p>
         </div>
 
         <!-- Quota input -->
         <div>
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.newQuotaGB') }}</label>
+          <label class="text-body font-medium text-gray-700 dark:text-gray-300">{{ t('admin.newQuotaGB') }}</label>
           <div class="mt-1 flex items-center gap-2">
             <input
               v-model.number="quotaInputGB"
@@ -402,13 +402,13 @@
               step="1"
               class="input"
             />
-            <span class="text-sm text-gray-500 dark:text-gray-400">GB</span>
+            <span class="text-body text-gray-500 dark:text-gray-400">GB</span>
           </div>
         </div>
 
         <!-- Reset to plan default -->
         <button
-          class="text-sm text-primary-600 underline hover:text-primary-700 dark:text-primary-400"
+          class="text-body text-primary-600 underline hover:text-primary-700 dark:text-primary-400"
           @click="resetToDefault"
         >
           {{ t('admin.resetToDefault') }}
@@ -425,7 +425,7 @@
 
     <!-- Confirm Dialog -->
     <BaseModal v-model="showConfirm" :title="confirmTitle" max-width="sm">
-      <p class="text-sm text-gray-600 dark:text-gray-400">{{ confirmMessage }}</p>
+      <p class="text-body text-gray-600 dark:text-gray-400">{{ confirmMessage }}</p>
       <template #footer>
         <button class="btn-secondary" @click="cancelConfirm">{{ t('action.cancel') }}</button>
         <button
@@ -779,51 +779,51 @@ function storagePercent(used: number, limit: number): number {
 
 function storageBarClass(used: number, limit: number): string {
   const pct = storagePercent(used, limit)
-  if (pct >= 90) return 'bg-red-500'
-  if (pct >= 70) return 'bg-yellow-500'
+  if (pct >= 90) return 'bg-error'
+  if (pct >= 70) return 'bg-warning'
   return 'bg-primary-500'
 }
 
 function planBadgeClass(planType: string): string {
   switch (planType) {
-    case 'BUSINESS': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-    case 'PRO': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-    case 'STARTER': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-    default: return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+    case 'BUSINESS': return 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
+    case 'PRO': return 'bg-info-subtle text-info-strong'
+    case 'STARTER': return 'bg-success-subtle text-success-strong'
+    default: return 'bg-muted-subtle text-muted-strong'
   }
 }
 
 function statusBadgeClass(status: string): string {
   switch (status) {
-    case 'PUBLISHED': return 'rounded-full bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    case 'PUBLISHED': return 'rounded-full bg-success-subtle px-2 py-0.5 text-success-strong'
     case 'FAILED':
-    case 'REJECTED': return 'rounded-full bg-red-100 px-2 py-0.5 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    case 'REJECTED': return 'rounded-full bg-error-subtle px-2 py-0.5 text-error-strong'
     case 'PROCESSING':
-    case 'UPLOADING': return 'rounded-full bg-yellow-100 px-2 py-0.5 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-    default: return 'rounded-full bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+    case 'UPLOADING': return 'rounded-full bg-warning-subtle px-2 py-0.5 text-warning-strong'
+    default: return 'rounded-full bg-muted-subtle px-2 py-0.5 text-muted-strong'
   }
 }
 
 function platformUploadClass(status: string): string {
   switch (status) {
-    case 'PUBLISHED': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    case 'PUBLISHED': return 'bg-success-subtle text-success-strong'
     case 'FAILED':
-    case 'REJECTED': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    case 'REJECTED': return 'bg-error-subtle text-error-strong'
     case 'PROCESSING':
     case 'UPLOADING':
-    case 'REVIEW': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-    default: return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+    case 'REVIEW': return 'bg-warning-subtle text-warning-strong'
+    default: return 'bg-muted-subtle text-muted-strong'
   }
 }
 
 function subStatusClass(status: string): string {
   switch (status) {
-    case 'ACTIVE': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-    case 'SUSPENDED': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-    case 'CANCELLED': return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-    case 'PAST_DUE': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-    case 'FREE': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-    default: return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+    case 'ACTIVE': return 'bg-success-subtle text-success-strong'
+    case 'SUSPENDED': return 'bg-error-subtle text-error-strong'
+    case 'CANCELLED': return 'bg-muted-subtle text-muted-strong'
+    case 'PAST_DUE': return 'bg-warning-subtle text-warning-strong'
+    case 'FREE': return 'bg-info-subtle text-info-strong'
+    default: return 'bg-muted-subtle text-muted-strong'
   }
 }
 

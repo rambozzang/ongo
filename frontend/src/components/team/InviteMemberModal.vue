@@ -106,7 +106,7 @@ const handleClose = () => {
           class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800"
         >
           <div class="flex items-center justify-between border-b border-gray-200 pb-4 dark:border-gray-700">
-            <h3 id="invite-member-title" class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 id="invite-member-title" class="text-title font-semibold text-gray-900 dark:text-white">
               팀 멤버 초대
             </h3>
             <button
@@ -123,7 +123,7 @@ const handleClose = () => {
             <div>
               <label
                 for="email"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                class="block text-body font-medium text-gray-700 dark:text-gray-300"
               >
                 이메일 주소
               </label>
@@ -132,13 +132,13 @@ const handleClose = () => {
                 v-model="emailInput"
                 type="text"
                 placeholder="example@email.com (여러 개는 쉼표로 구분)"
-                class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+                class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-primary-400 dark:focus:ring-primary-400"
                 @input="handleEmailInput"
               />
-              <p v-if="emailError" class="mt-1 text-xs text-red-600 dark:text-red-400">
+              <p v-if="emailError" class="mt-1 text-body-xs text-error-strong">
                 {{ emailError }}
               </p>
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p class="mt-1 text-body-xs text-gray-500 dark:text-gray-400">
                 여러 이메일을 초대하려면 쉼표로 구분하세요
               </p>
             </div>
@@ -147,14 +147,14 @@ const handleClose = () => {
             <div>
               <label
                 for="role"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                class="block text-body font-medium text-gray-700 dark:text-gray-300"
               >
                 역할
               </label>
               <select
                 id="role"
                 v-model="selectedRole"
-                class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+                class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400"
               >
                 <option value="admin">관리자 - 모든 권한 및 멤버 관리</option>
                 <option value="editor">에디터 - 콘텐츠 업로드 및 수정</option>
@@ -166,7 +166,7 @@ const handleClose = () => {
             <div>
               <label
                 for="message"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                class="block text-body font-medium text-gray-700 dark:text-gray-300"
               >
                 초대 메시지 (선택사항)
               </label>
@@ -175,23 +175,23 @@ const handleClose = () => {
                 v-model="customMessage"
                 rows="3"
                 placeholder="초대 메시지를 입력하세요..."
-                class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+                class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-primary-400 dark:focus:ring-primary-400"
               ></textarea>
             </div>
 
             <!-- Preview -->
             <div
               v-if="emails.length > 0 && isValid"
-              class="rounded-md bg-indigo-50 p-3 dark:bg-indigo-900/20"
+              class="rounded-md bg-primary-50 p-3 dark:bg-primary-900"
             >
-              <p class="text-sm font-medium text-indigo-800 dark:text-indigo-300">
+              <p class="text-body font-medium text-primary-800 dark:text-primary-300">
                 초대할 멤버: {{ emails.length }}명
               </p>
               <div class="mt-2 flex flex-wrap gap-2">
                 <span
                   v-for="email in emails"
                   :key="email"
-                  class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+                  class="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-caption text-primary-700 dark:bg-primary-900 dark:text-primary-300"
                 >
                   {{ email }}
                 </span>
@@ -201,14 +201,14 @@ const handleClose = () => {
 
           <div class="mt-6 flex justify-end space-x-3">
             <button
-              class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              class="rounded-md border border-gray-300 bg-white px-4 py-2 text-body font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               @click="handleClose"
             >
               취소
             </button>
             <button
               :disabled="!isValid"
-              class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:disabled:bg-gray-600"
+              class="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-body font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:bg-primary-500 dark:hover:bg-primary-600 dark:disabled:bg-gray-600"
               @click="handleInvite"
             >
               <PaperAirplaneIcon class="mr-2 h-4 w-4" />

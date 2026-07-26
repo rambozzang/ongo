@@ -71,7 +71,7 @@ const pageNumbers = computed(() => {
         v-model="filterRuleName"
         type="text"
         placeholder="규칙명으로 검색..."
-        class="w-full md:w-64 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        class="w-full md:w-64 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
       >
     </div>
 
@@ -80,16 +80,16 @@ const pageNumbers = computed(() => {
       <table class="w-full">
         <thead class="bg-gray-50 dark:bg-gray-900/50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th class="px-6 py-3 text-left text-caption text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               규칙명
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th class="px-6 py-3 text-left text-caption text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               상태
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th class="px-6 py-3 text-left text-caption text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               메시지
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th class="px-6 py-3 text-left text-caption text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               실행시간
             </th>
           </tr>
@@ -101,33 +101,33 @@ const pageNumbers = computed(() => {
             class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           >
             <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm font-medium text-gray-900 dark:text-white">
+              <div class="text-body font-medium text-gray-900 dark:text-white">
                 {{ log.ruleName }}
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <span
                 v-if="log.status === 'success'"
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption bg-success-subtle text-success-strong"
               >
                 <CheckCircleIcon class="w-4 h-4" />
                 성공
               </span>
               <span
                 v-else
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption bg-error-subtle text-error-strong"
               >
                 <XCircleIcon class="w-4 h-4" />
                 실패
               </span>
             </td>
             <td class="px-6 py-4">
-              <div class="text-sm text-gray-900 dark:text-white">
+              <div class="text-body text-gray-900 dark:text-white">
                 {{ log.message }}
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-500 dark:text-gray-400">
+              <div class="text-body text-gray-500 dark:text-gray-400">
                 {{ formatDateTime(log.executedAt) }}
               </div>
             </td>
@@ -151,7 +151,7 @@ const pageNumbers = computed(() => {
       v-if="totalPages > 1"
       class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between"
     >
-      <div class="text-sm text-gray-700 dark:text-gray-300">
+      <div class="text-body text-gray-700 dark:text-gray-300">
         전체 <span class="font-medium">{{ filteredLogs.length }}</span>개 중
         <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>-<span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredLogs.length) }}</span>
       </div>
@@ -159,7 +159,7 @@ const pageNumbers = computed(() => {
       <div class="flex items-center gap-2">
         <button
           :disabled="currentPage === 1"
-          class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-body font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           @click="goToPage(currentPage - 1)"
         >
           이전
@@ -169,9 +169,9 @@ const pageNumbers = computed(() => {
           v-for="page in pageNumbers"
           :key="page"
           :class="[
-            'px-3 py-1 rounded-lg text-sm font-medium transition-colors',
+            'px-3 py-1 rounded-lg text-body font-medium transition-colors',
             page === currentPage
-              ? 'bg-blue-600 text-white'
+              ? 'bg-primary-600 text-white'
               : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]"
           @click="goToPage(page)"
@@ -181,7 +181,7 @@ const pageNumbers = computed(() => {
 
         <button
           :disabled="currentPage === totalPages"
-          class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 text-body font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           @click="goToPage(currentPage + 1)"
         >
           다음

@@ -148,36 +148,36 @@ onMounted(() => {
     <div class="page-grid page-grid--cards mb-6">
       <div class="card">
         <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
-            <QueueListIcon class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-info-subtle">
+            <QueueListIcon class="h-5 w-5 text-info-strong" />
           </div>
           <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('recycling.activeQueues') }}</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ activeQueueCount }}{{ $t('recycling.countUnit') }}</p>
+            <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('recycling.activeQueues') }}</p>
+            <p class="text-h1 font-bold text-gray-900 dark:text-gray-100">{{ activeQueueCount }}{{ $t('recycling.countUnit') }}</p>
           </div>
         </div>
       </div>
 
       <div class="card">
         <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
-            <CheckBadgeIcon class="h-5 w-5 text-green-600 dark:text-green-400" />
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-success-subtle">
+            <CheckBadgeIcon class="h-5 w-5 text-success-strong" />
           </div>
           <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('recycling.totalRecycled') }}</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ totalRecycled }}{{ $t('recycling.caseUnit') }}</p>
+            <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('recycling.totalRecycled') }}</p>
+            <p class="text-h1 font-bold text-gray-900 dark:text-gray-100">{{ totalRecycled }}{{ $t('recycling.caseUnit') }}</p>
           </div>
         </div>
       </div>
 
       <div class="card">
         <div class="flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
-            <CalendarDaysIcon class="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30">
+            <CalendarDaysIcon class="h-5 w-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $t('recycling.nextScheduled') }}</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ nextScheduledLabel }}</p>
+            <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('recycling.nextScheduled') }}</p>
+            <p class="text-h1 font-bold text-gray-900 dark:text-gray-100">{{ nextScheduledLabel }}</p>
           </div>
         </div>
       </div>
@@ -207,7 +207,7 @@ onMounted(() => {
         class="card py-16 text-center"
       >
         <ArrowPathIcon class="mx-auto mb-4 h-16 w-16 text-gray-400 dark:text-gray-600" />
-        <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h3 class="mb-2 text-title font-semibold text-gray-900 dark:text-gray-100">
           {{ $t('recycling.emptyQueuesTitle') }}
         </h3>
         <p class="mb-6 text-gray-600 dark:text-gray-400">
@@ -250,31 +250,31 @@ onMounted(() => {
           <div class="flex items-start justify-between">
             <div class="flex-1">
               <div class="mb-2 flex items-center gap-2">
-                <span class="rounded-full bg-purple-100 px-2 py-1 text-xs font-semibold text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+                <span class="rounded-full bg-primary-100 px-2 py-1 text-body-xs font-semibold text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
                   {{ suggestionTypeLabels[suggestion.suggestionType] || suggestion.suggestionType }}
                 </span>
                 <span
                   :class="[
-                    'rounded-full px-2 py-1 text-xs font-semibold',
+                    'rounded-full px-2 py-1 text-body-xs font-semibold',
                     suggestion.status === 'PENDING'
-                      ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
+                      ? 'bg-warning-subtle text-warning-strong'
                       : suggestion.status === 'ACCEPTED'
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                        ? 'bg-success-subtle text-success-strong'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
                   ]"
                 >
                   {{ suggestion.status === 'PENDING' ? $t('recycling.statusPending') : suggestion.status === 'ACCEPTED' ? $t('recycling.statusAccepted') : $t('recycling.statusDismissed') }}
                 </span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">
+                <span class="text-body-xs text-gray-500 dark:text-gray-400">
                   {{ $t('recycling.priority') }}: {{ suggestion.priorityScore }}
                 </span>
               </div>
-              <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">{{ suggestion.reason }}</p>
+              <p class="mb-2 text-body text-gray-700 dark:text-gray-300">{{ suggestion.reason }}</p>
               <div class="flex gap-1">
                 <span
                   v-for="platform in suggestion.suggestedPlatforms"
                   :key="platform"
-                  class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                  class="rounded bg-gray-100 px-2 py-0.5 text-body-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400"
                 >
                   {{ platform }}
                 </span>
@@ -282,13 +282,13 @@ onMounted(() => {
             </div>
             <div v-if="suggestion.status === 'PENDING'" class="ml-4 flex gap-2">
               <button
-                class="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                class="rounded-lg bg-green-600 px-3 py-1.5 text-body font-medium text-white transition-colors hover:bg-green-700"
                 @click="handleAcceptSuggestion(suggestion.id)"
               >
                 {{ $t('recycling.accept') }}
               </button>
               <button
-                class="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                class="rounded-lg bg-gray-100 px-3 py-1.5 text-body font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                 @click="handleDismissSuggestion(suggestion.id)"
               >
                 {{ $t('recycling.dismiss') }}
@@ -303,7 +303,7 @@ onMounted(() => {
         class="card py-16 text-center"
       >
         <LightBulbIcon class="mx-auto mb-4 h-16 w-16 text-gray-400 dark:text-gray-600" />
-        <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h3 class="mb-2 text-title font-semibold text-gray-900 dark:text-gray-100">
           {{ $t('recycling.emptySuggestionsTitle') }}
         </h3>
         <p class="mb-6 text-gray-600 dark:text-gray-400">

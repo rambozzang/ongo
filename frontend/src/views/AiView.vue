@@ -4,17 +4,17 @@
     <PageHeader :title="$t('aiView.title')" :description="$t('aiView.description')">
       <template #actions>
         <div
-          class="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm"
-          :class="isLow ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'"
+          class="flex items-center gap-2 rounded-lg border px-4 py-2 text-body"
+          :class="isLow ? 'border-error bg-error-subtle' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'"
         >
-          <SparklesIcon class="h-4 w-4" :class="isLow ? 'text-red-500' : 'text-primary-600'" />
+          <SparklesIcon class="h-4 w-4" :class="isLow ? 'text-error-strong' : 'text-primary-600'" />
           <span class="text-gray-600 dark:text-gray-300">{{ $t('aiView.usedToday') }}</span>
           <span class="font-bold text-primary-600 dark:text-primary-400">
             {{ creditsUsedToday.toLocaleString() }}
           </span>
           <span class="text-gray-400 dark:text-gray-500 mx-1">|</span>
           <span class="text-gray-600 dark:text-gray-300">{{ $t('aiView.remaining') }}</span>
-          <span class="font-bold" :class="isLow ? 'text-red-600' : 'text-primary-600'">
+          <span class="font-bold" :class="isLow ? 'text-error-strong' : 'text-primary-600'">
             {{ balance.toLocaleString() }}
           </span>
         </div>
@@ -53,7 +53,7 @@
         <h3 class="mb-1 font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 transition-colors">
           {{ tool.name }}
         </h3>
-        <p class="mb-4 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{{ tool.description }}</p>
+        <p class="mb-4 text-body leading-relaxed text-gray-500 dark:text-gray-400">{{ tool.description }}</p>
         <button
           class="btn-primary w-full"
           @click.stop="handleToolClick(tool)"
@@ -90,8 +90,8 @@
                 <component :is="selectedTool.icon" class="h-4 w-4" :class="selectedTool.iconColor" />
               </div>
               <div>
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ selectedTool.name }}</h2>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ selectedTool.credits }} {{ $t('aiView.creditsUsed') }}</p>
+                <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">{{ selectedTool.name }}</h2>
+                <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ selectedTool.credits }} {{ $t('aiView.creditsUsed') }}</p>
               </div>
             </div>
             <button
@@ -107,7 +107,7 @@
             <!-- Error message -->
             <div
               v-if="aiStore.error"
-              class="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400"
+              class="mb-4 rounded-lg border border-error bg-error-subtle px-4 py-3 text-body text-error-strong"
             >
               {{ aiStore.error }}
             </div>
@@ -124,7 +124,7 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.script') }}</label>
+                  <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.script') }}</label>
                   <textarea
                     v-model="metaForm.script"
                     class="input-field min-h-[120px] resize-y"
@@ -133,12 +133,12 @@
                   />
                 </div>
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.platform') }}</label>
+                  <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.platform') }}</label>
                   <div class="flex flex-wrap gap-2">
                     <label
                       v-for="p in platforms"
                       :key="p.value"
-                      class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors"
+                      class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-body transition-colors"
                       :class="[
                         metaForm.platforms.includes(p.value)
                           ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
@@ -159,7 +159,7 @@
                 </div>
                 <div class="grid gap-4 tablet:grid-cols-2">
                   <div>
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.tone') }}</label>
+                    <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.tone') }}</label>
                     <select v-model="metaForm.tone" class="input-field" :disabled="aiStore.loading">
                       <option value="FRIENDLY">{{ $t('aiView.tones.friendly') }}</option>
                       <option value="PROFESSIONAL">{{ $t('aiView.tones.professional') }}</option>
@@ -167,7 +167,7 @@
                     </select>
                   </div>
                   <div>
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.category') }}</label>
+                    <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.category') }}</label>
                     <select v-model="metaForm.category" class="input-field" :disabled="aiStore.loading">
                       <option value="">{{ $t('aiView.form.select') }}</option>
                       <option v-for="cat in categories" :key="cat" :value="cat">
@@ -202,27 +202,27 @@
                     {{ platformLabel(result.platform) }}
                   </h4>
                   <div class="mb-3">
-                    <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('aiView.results.titleCandidates') }}</p>
+                    <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">{{ $t('aiView.results.titleCandidates') }}</p>
                     <ul class="space-y-1">
                       <li
                         v-for="(title, ti) in result.titleCandidates"
                         :key="ti"
-                        class="flex items-start gap-2 rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm text-gray-800 dark:text-gray-200"
+                        class="flex items-start gap-2 rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2 text-body text-gray-800 dark:text-gray-200"
                       >
-                        <span class="mt-0.5 shrink-0 text-xs font-medium text-primary-600">{{ ti + 1 }}.</span>
+                        <span class="mt-0.5 shrink-0 text-caption text-primary-600">{{ ti + 1 }}.</span>
                         <AiTypingEffect v-if="idx === 0 && ti === 0" :text="title" :speed="20" />
                         <span v-else>{{ title }}</span>
                       </li>
                     </ul>
                   </div>
                   <div class="mb-3">
-                    <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('aiView.results.description') }}</p>
-                    <p class="whitespace-pre-wrap rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
+                    <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">{{ $t('aiView.results.description') }}</p>
+                    <p class="whitespace-pre-wrap rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2 text-body text-gray-700 dark:text-gray-300">
                       {{ result.description }}
                     </p>
                   </div>
                   <div>
-                    <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('aiView.results.tags') }}</p>
+                    <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">{{ $t('aiView.results.tags') }}</p>
                     <div class="flex flex-wrap gap-1">
                       <span
                         v-for="tag in result.hashtags"
@@ -236,7 +236,7 @@
                 </div>
 
                 <div v-if="commonHashtags.length > 0">
-                  <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{{ $t('aiView.results.commonHashtags') }}</p>
+                  <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">{{ $t('aiView.results.commonHashtags') }}</p>
                   <div class="flex flex-wrap gap-1">
                     <span
                       v-for="tag in commonHashtags"
@@ -249,7 +249,7 @@
                 </div>
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                  <p class="text-body-xs text-gray-500 dark:text-gray-400">
                     {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.metaResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.metaResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
@@ -270,7 +270,7 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.videoTitle') }}</label>
+                  <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.videoTitle') }}</label>
                   <input
                     v-model="hashtagForm.title"
                     type="text"
@@ -280,7 +280,7 @@
                   />
                 </div>
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.category') }}</label>
+                  <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.category') }}</label>
                   <select v-model="hashtagForm.category" class="input-field" :disabled="aiStore.loading">
                     <option value="">{{ $t('aiView.form.select') }}</option>
                     <option v-for="cat in categories" :key="cat" :value="cat">
@@ -289,12 +289,12 @@
                   </select>
                 </div>
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.platform') }}</label>
+                  <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.platform') }}</label>
                   <div class="flex flex-wrap gap-2">
                     <label
                       v-for="p in platforms"
                       :key="p.value"
-                      class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors"
+                      class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-body transition-colors"
                       :class="[
                         hashtagForm.platforms.includes(p.value)
                           ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
@@ -340,7 +340,7 @@
                     <span
                       v-for="tag in item.hashtags"
                       :key="tag"
-                      class="cursor-pointer rounded-full bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                      class="cursor-pointer rounded-full bg-info-subtle px-2.5 py-1 text-caption text-info-strong transition hover:opacity-80"
                       @click="copyToClipboard(tag)"
                     >
                       #{{ tag }}
@@ -349,7 +349,7 @@
                 </div>
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                  <p class="text-body-xs text-gray-500 dark:text-gray-400">
                     {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.hashtagResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.hashtagResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
@@ -370,7 +370,7 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.category') }}</label>
+                  <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.category') }}</label>
                   <select v-model="ideasForm.category" class="input-field" :disabled="aiStore.loading">
                     <option value="">{{ $t('aiView.form.select') }}</option>
                     <option v-for="cat in categories" :key="cat" :value="cat">
@@ -406,24 +406,24 @@
                       <span v-else>{{ idea.title }}</span>
                     </h4>
                     <span
-                      class="ml-2 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
+                      class="ml-2 shrink-0 rounded-full px-2 py-0.5 text-caption"
                       :class="idea.difficulty === 'EASY'
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                        ? 'bg-success-subtle text-success-strong'
                         : idea.difficulty === 'MEDIUM'
-                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'"
+                          ? 'bg-warning-subtle text-warning-strong'
+                          : 'bg-error-subtle text-error-strong'"
                     >
                       {{ idea.difficulty }}
                     </span>
                   </div>
-                  <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">{{ idea.description }}</p>
-                  <p class="text-xs text-gray-400 dark:text-gray-500">
+                  <p class="mb-2 text-body text-gray-600 dark:text-gray-300">{{ idea.description }}</p>
+                  <p class="text-body-xs text-gray-400 dark:text-gray-500">
                     {{ $t('aiView.expectedReaction') }}: {{ idea.expectedReaction }}
                   </p>
                 </div>
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                  <p class="text-body-xs text-gray-500 dark:text-gray-400">
                     {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.ideasResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.ideasResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
@@ -444,12 +444,12 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.analysisPeriod') }}</label>
+                  <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.analysisPeriod') }}</label>
                   <div class="flex gap-3">
                     <button
                       v-for="p in reportPeriods"
                       :key="p.value"
-                      class="flex-1 rounded-lg border px-4 py-3 text-center text-sm font-medium transition-colors"
+                      class="flex-1 rounded-lg border px-4 py-3 text-center text-body font-medium transition-colors"
                       :class="[
                         reportForm.period === p.value
                           ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
@@ -484,7 +484,7 @@
                 />
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                  <p class="text-body-xs text-gray-500 dark:text-gray-400">
                     {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.reportResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.reportResult.creditsRemaining }}
                   </p>
                   <div class="flex gap-3">
@@ -505,7 +505,7 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.strategyCoach.focusArea') }}</label>
+                  <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.strategyCoach.focusArea') }}</label>
                   <select v-model="strategyCoachForm.focusArea" class="input-field" :disabled="aiStore.loading">
                     <option value="">{{ $t('aiView.strategyCoach.focusOptions.all') }}</option>
                     <option value="콘텐츠">{{ $t('aiView.strategyCoach.focusOptions.content') }}</option>
@@ -515,7 +515,7 @@
                   </select>
                 </div>
                 <div>
-                  <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label class="flex items-center gap-2 text-body font-medium text-gray-700 dark:text-gray-300">
                     <input
                       v-model="strategyCoachForm.includeCompetitors"
                       type="checkbox"
@@ -543,7 +543,7 @@
                 <!-- 종합 전략 -->
                 <div class="rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 p-4">
                   <h4 class="mb-2 font-semibold text-primary-700 dark:text-primary-300">{{ $t('aiView.strategyCoach.overallStrategy') }}</h4>
-                  <p class="text-sm text-primary-800 dark:text-primary-200">{{ aiStore.strategyCoachResult.overallStrategy }}</p>
+                  <p class="text-body text-primary-800 dark:text-primary-200">{{ aiStore.strategyCoachResult.overallStrategy }}</p>
                 </div>
 
                 <!-- 콘텐츠 추천 -->
@@ -560,18 +560,18 @@
                       <div class="mb-1 flex items-center justify-between">
                         <span class="font-medium text-gray-900 dark:text-gray-100">{{ rec.topic }}</span>
                         <span
-                          class="rounded-full px-2 py-0.5 text-xs font-medium"
+                          class="rounded-full px-2 py-0.5 text-caption"
                           :class="rec.priority === 'HIGH'
-                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            ? 'bg-error-subtle text-error-strong'
                             : rec.priority === 'MEDIUM'
-                              ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                              : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'"
+                              ? 'bg-warning-subtle text-warning-strong'
+                              : 'bg-success-subtle text-success-strong'"
                         >
                           {{ rec.priority }}
                         </span>
                       </div>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ rec.targetPlatform }} | {{ rec.reason }}</p>
-                      <p class="mt-1 text-xs text-primary-600 dark:text-primary-400">{{ $t('aiView.expectedImpact') }}: {{ rec.expectedImpact }}</p>
+                      <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ rec.targetPlatform }} | {{ rec.reason }}</p>
+                      <p class="mt-1 text-body-xs text-primary-600 dark:text-primary-400">{{ $t('aiView.expectedImpact') }}: {{ rec.expectedImpact }}</p>
                     </div>
                   </div>
                 </div>
@@ -588,7 +588,7 @@
                       style="animation: ai-item-fade-in 500ms ease-out backwards"
                     >
                       <h5 class="mb-1 font-medium text-gray-900 dark:text-gray-100">{{ ps.platform }}</h5>
-                      <div class="grid gap-1 text-xs">
+                      <div class="grid gap-1 text-body-xs">
                         <p class="text-gray-600 dark:text-gray-300"><span class="font-medium">{{ $t('aiView.strategyCoach.strength') }}</span> {{ ps.strength }}</p>
                         <p class="text-gray-600 dark:text-gray-300"><span class="font-medium">{{ $t('aiView.strategyCoach.opportunity') }}</span> {{ ps.opportunity }}</p>
                         <p class="text-primary-600 dark:text-primary-400"><span class="font-medium">{{ $t('aiView.strategyCoach.action') }}</span> {{ ps.action }}</p>
@@ -606,9 +606,9 @@
                       :key="idx"
                       class="rounded-lg border border-gray-200 dark:border-gray-700 p-3"
                     >
-                      <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ ta.recommendation }}</p>
-                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ ta.reason }}</p>
-                      <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">{{ $t('aiView.expectedBoost') }}: {{ ta.expectedBoost }}</p>
+                      <p class="text-body font-medium text-gray-900 dark:text-gray-100">{{ ta.recommendation }}</p>
+                      <p class="mt-1 text-body-xs text-gray-500 dark:text-gray-400">{{ ta.reason }}</p>
+                      <p class="mt-1 text-body-xs text-success-strong">{{ $t('aiView.expectedBoost') }}: {{ ta.expectedBoost }}</p>
                     </div>
                   </div>
                 </div>
@@ -630,12 +630,12 @@
                 />
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.analysisPeriod') }}</label>
+                  <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.analysisPeriod') }}</label>
                   <div class="flex gap-3">
                     <button
                       v-for="p in reportPeriods"
                       :key="p.value"
-                      class="flex-1 rounded-lg border px-4 py-3 text-center text-sm font-medium transition-colors"
+                      class="flex-1 rounded-lg border px-4 py-3 text-center text-body font-medium transition-colors"
                       :class="[
                         revenueReportForm.period === p.value
                           ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
@@ -676,9 +676,9 @@
                     <li
                       v-for="(tip, idx) in aiStore.revenueReportResult.optimizationTips"
                       :key="idx"
-                      class="flex items-start gap-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200"
+                      class="flex items-start gap-2 rounded-md bg-success-subtle px-3 py-2 text-body text-success-strong"
                     >
-                      <CurrencyDollarIcon class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                      <CurrencyDollarIcon class="mt-0.5 h-4 w-4 shrink-0 text-success-strong" />
                       {{ tip }}
                     </li>
                   </ul>
@@ -694,7 +694,7 @@
                       class="rounded-lg border border-gray-200 dark:border-gray-700 p-3"
                     >
                       <h5 class="mb-1 font-medium text-gray-900 dark:text-gray-100">{{ pb.platform }}</h5>
-                      <div class="grid gap-1 text-xs">
+                      <div class="grid gap-1 text-body-xs">
                         <p class="text-gray-600 dark:text-gray-300"><span class="font-medium">{{ $t('aiView.revenueReport.contribution') }}</span> {{ pb.contribution }}</p>
                         <p class="text-gray-600 dark:text-gray-300"><span class="font-medium">{{ $t('aiView.revenueReport.trend') }}</span> {{ pb.trend }}</p>
                         <p class="text-primary-600 dark:text-primary-400"><span class="font-medium">{{ $t('aiView.revenueReport.suggestion') }}</span> {{ pb.suggestion }}</p>
@@ -718,8 +718,8 @@
                     :is="selectedTool.icon"
                     class="mx-auto mb-3 h-10 w-10 text-gray-400 dark:text-gray-500"
                   />
-                  <h3 class="mb-1 text-sm font-medium text-gray-900 dark:text-gray-100">{{ selectedTool.name }}</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                  <h3 class="mb-1 text-body font-medium text-gray-900 dark:text-gray-100">{{ selectedTool.name }}</h3>
+                  <p class="text-body text-gray-500 dark:text-gray-400">
                     {{ $t('aiView.placeholder.preparing') }}
                   </p>
                 </div>
@@ -740,8 +740,8 @@
         <div class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white dark:bg-gray-800 shadow-xl">
           <div class="flex items-center justify-between border-b dark:border-gray-700 px-6 py-4">
             <div>
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('aiView.creditModal.title') }}</h2>
-              <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+              <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('aiView.creditModal.title') }}</h2>
+              <p class="mt-0.5 text-body text-gray-500 dark:text-gray-400">
                 {{ $t('aiView.creditModal.needCredits', { credits: requiredCredits }) }}
                 ({{ $t('aiView.remainingLabel') }}: {{ balance.toLocaleString() }})
               </p>
@@ -767,12 +767,12 @@
               >
                 <h4 class="mb-1 font-semibold text-gray-900 dark:text-gray-100">{{ pkg.name }}</h4>
                 <div class="mb-2 flex items-baseline gap-1">
-                  <span class="text-2xl font-bold text-primary-600">
+                  <span class="text-h1 font-bold text-primary-600">
                     {{ pkg.price.toLocaleString() }}
                   </span>
-                  <span class="text-sm text-gray-500 dark:text-gray-400">{{ $t('aiView.creditModal.currencyUnit') }}</span>
+                  <span class="text-body text-gray-500 dark:text-gray-400">{{ $t('aiView.creditModal.currencyUnit') }}</span>
                 </div>
-                <ul class="space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                <ul class="space-y-1 text-body-xs text-gray-600 dark:text-gray-300">
                   <li class="flex items-center gap-1.5">
                     <SparklesIcon class="h-3.5 w-3.5 text-primary-500" />
                     {{ pkg.credits.toLocaleString() }} {{ $t('aiView.credits') }}
@@ -1058,9 +1058,9 @@ function platformLabel(platform: string): string {
 function renderMarkdown(md: string): string {
   // Basic markdown rendering: headings, bold, lists, line breaks
   return md
-    .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-2">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-2">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-gray-900 dark:text-gray-100 mt-4 mb-2">$1</h1>')
+    .replace(/^### (.+)$/gm, '<h3 class="text-h3 text-gray-900 dark:text-gray-100 mt-4 mb-2">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="text-title font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-2">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 class="text-h2 font-bold text-gray-900 dark:text-gray-100 mt-4 mb-2">$1</h1>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/^\- (.+)$/gm, '<li class="ml-4 list-disc text-gray-700 dark:text-gray-300">$1</li>')
     .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 list-decimal text-gray-700 dark:text-gray-300">$1</li>')

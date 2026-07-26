@@ -8,7 +8,7 @@
     <div class="space-y-4">
       <!-- 영상 ID -->
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">
           {{ $t('scheduleView.quickAdd.videoId') }}
         </label>
         <input
@@ -22,12 +22,12 @@
       <!-- 예약 일시 -->
       <div>
         <div class="mb-1 flex items-center justify-between">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label class="block text-body font-medium text-gray-700 dark:text-gray-300">
             {{ $t('scheduleView.quickAdd.scheduledAt') }}
           </label>
           <button
             v-if="bestSlot"
-            class="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
+            class="flex items-center gap-1 rounded-full bg-success-subtle px-2 py-0.5 text-caption text-success-strong transition hover:opacity-80"
             @click="applySlot(bestSlot)"
           >
             <ClockIcon class="h-3 w-3" />
@@ -39,7 +39,7 @@
 
       <!-- 플랫폼 -->
       <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
           {{ $t('scheduleView.quickAdd.selectPlatform') }}
         </label>
         <div class="flex flex-wrap gap-2">
@@ -55,7 +55,7 @@
           >
             <input v-model="form.platforms" type="checkbox" :value="p" class="sr-only" />
             <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: getPlatformColor(p) }" />
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <span class="text-body font-medium text-gray-700 dark:text-gray-300">
               {{ PLATFORM_CONFIG[p].label }}
             </span>
           </label>

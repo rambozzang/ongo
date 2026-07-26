@@ -13,11 +13,11 @@
 
     <!-- Content -->
     <div class="flex-1 min-w-0">
-      <p class="text-sm text-gray-900 dark:text-gray-100">
+      <p class="text-body text-gray-900 dark:text-gray-100">
         {{ event.description }}
       </p>
       <div class="mt-1 flex items-center gap-2">
-        <span class="text-xs text-gray-500 dark:text-gray-400">{{ relativeTime }}</span>
+        <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ relativeTime }}</span>
         <span v-if="platformBadge" class="badge-sm" :class="platformBadgeClass">
           {{ platformBadge }}
         </span>
@@ -71,7 +71,7 @@ const iconBgClassMap = {
   schedule: 'bg-purple-500',
   edit: 'bg-yellow-500',
   delete: 'bg-red-500',
-  ai_use: 'bg-indigo-500',
+  ai_use: 'bg-primary-500',
   login: 'bg-gray-500',
   channel_connect: 'bg-teal-500',
   recycle: 'bg-orange-500',

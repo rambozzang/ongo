@@ -122,11 +122,11 @@ function getFontStyle(family: string, weight: string) {
                 v-model="editFont.name"
                 type="text"
                 placeholder="서체 이름"
-                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
               <select
                 v-model="editFont.usage"
-                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option v-for="option in usageOptions" :key="option" :value="option">
                   {{ option }}
@@ -136,7 +136,7 @@ function getFontStyle(family: string, weight: string) {
             <div class="grid grid-cols-2 gap-3">
               <select
                 v-model="editFont.family"
-                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option v-for="family in fontFamilies" :key="family" :value="family">
                   {{ family }}
@@ -144,7 +144,7 @@ function getFontStyle(family: string, weight: string) {
               </select>
               <select
                 v-model="editFont.weight"
-                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option v-for="weight in fontWeights" :key="weight.value" :value="weight.value">
                   {{ weight.label }}
@@ -155,17 +155,17 @@ function getFontStyle(family: string, weight: string) {
               v-model="editFont.sampleText"
               type="text"
               placeholder="샘플 텍스트"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <div class="flex gap-2">
               <button
-                class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+                class="flex-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-body font-medium rounded-md transition-colors"
                 @click="confirmEdit(font.id)"
               >
                 저장
               </button>
               <button
-                class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm font-medium rounded-md transition-colors"
+                class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-body font-medium rounded-md transition-colors"
                 @click="cancelEdit"
               >
                 취소
@@ -180,32 +180,32 @@ function getFontStyle(family: string, weight: string) {
                 <h4 class="font-medium text-gray-900 dark:text-gray-100">
                   {{ font.name }}
                 </h4>
-                <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
+                <span class="px-2 py-0.5 bg-info-subtle text-info-strong text-body-xs rounded-full">
                   {{ font.usage }}
                 </span>
               </div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
+              <p class="text-body text-gray-600 dark:text-gray-400">
                 {{ font.family }} · {{ fontWeights.find(w => w.value === font.weight)?.label || font.weight }}
               </p>
               <div
                 class="mt-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded border border-gray-200 dark:border-gray-700"
                 :style="getFontStyle(font.family, font.weight)"
               >
-                <p class="text-gray-900 dark:text-gray-100 text-lg">
+                <p class="text-gray-900 dark:text-gray-100 text-title">
                   {{ font.sampleText }}
                 </p>
               </div>
             </div>
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
-                class="p-1.5 bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
+                class="p-1.5 bg-white dark:bg-gray-700 hover:bg-info-subtle rounded-md shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
                 title="편집"
                 @click="startEdit(font)"
               >
                 <PencilIcon class="w-4 h-4 text-gray-600 dark:text-gray-300" />
               </button>
               <button
-                class="p-1.5 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
+                class="p-1.5 bg-white dark:bg-gray-700 hover:bg-error-subtle rounded-md shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
                 title="삭제"
                 @click="handleRemove(font.id)"
               >
@@ -219,7 +219,7 @@ function getFontStyle(family: string, weight: string) {
       <!-- Add New Font Form -->
       <div
         v-if="isAdding"
-        class="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-blue-400 dark:border-blue-600 p-4"
+        class="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-primary-400 dark:border-primary-600 p-4"
       >
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-3">
@@ -227,11 +227,11 @@ function getFontStyle(family: string, weight: string) {
               v-model="newFont.name"
               type="text"
               placeholder="서체 이름"
-              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <select
               v-model="newFont.usage"
-              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option v-for="option in usageOptions" :key="option" :value="option">
                 {{ option }}
@@ -241,7 +241,7 @@ function getFontStyle(family: string, weight: string) {
           <div class="grid grid-cols-2 gap-3">
             <select
               v-model="newFont.family"
-              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option v-for="family in fontFamilies" :key="family" :value="family">
                 {{ family }}
@@ -249,7 +249,7 @@ function getFontStyle(family: string, weight: string) {
             </select>
             <select
               v-model="newFont.weight"
-              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option v-for="weight in fontWeights" :key="weight.value" :value="weight.value">
                 {{ weight.label }}
@@ -260,25 +260,25 @@ function getFontStyle(family: string, weight: string) {
             v-model="newFont.sampleText"
             type="text"
             placeholder="샘플 텍스트"
-            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 text-body focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
           <div
             class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded border border-gray-200 dark:border-gray-700"
             :style="getFontStyle(newFont.family, newFont.weight)"
           >
-            <p class="text-gray-900 dark:text-gray-100 text-lg">
+            <p class="text-gray-900 dark:text-gray-100 text-title">
               {{ newFont.sampleText }}
             </p>
           </div>
           <div class="flex gap-2">
             <button
-              class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
+              class="flex-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-body font-medium rounded-md transition-colors"
               @click="confirmAdd"
             >
               추가
             </button>
             <button
-              class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm font-medium rounded-md transition-colors"
+              class="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-body font-medium rounded-md transition-colors"
               @click="cancelAdd"
             >
               취소
@@ -290,11 +290,11 @@ function getFontStyle(family: string, weight: string) {
       <!-- Add Button -->
       <button
         v-if="!isAdding"
-        class="w-full bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors flex items-center justify-center gap-2"
+        class="w-full bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors flex items-center justify-center gap-2"
         @click="startAdd"
       >
         <PlusIcon class="w-5 h-5 text-gray-400 dark:text-gray-500" />
-        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">서체 추가</span>
+        <span class="text-body font-medium text-gray-600 dark:text-gray-400">서체 추가</span>
       </button>
     </div>
 

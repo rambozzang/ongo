@@ -28,10 +28,10 @@
                 <QueueListIcon class="h-5 w-5 text-white" />
               </div>
               <div>
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">
                   업로드 큐
                 </h2>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+                <p class="text-body-xs text-gray-500 dark:text-gray-400">
                   {{ queueStore.queuedCount }}개 대기 중
                 </p>
               </div>
@@ -47,7 +47,7 @@
 
           <!-- Overall progress bar -->
           <div class="mt-3">
-            <div class="mb-1.5 flex items-center justify-between text-xs">
+            <div class="mb-1.5 flex items-center justify-between text-body-xs">
               <span class="font-medium text-gray-700 dark:text-gray-300">전체 진행률</span>
               <span class="font-semibold text-primary-600 dark:text-primary-400">{{ queueStore.overallProgress }}%</span>
             </div>
@@ -65,7 +65,7 @@
           <div class="flex items-center gap-2">
             <button
               v-if="queueStore.uploadingCount > 0"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-warning-subtle px-3 py-1.5 text-body font-medium text-warning-strong transition-opacity hover:opacity-80"
               @click="queueStore.pauseAll()"
             >
               <PauseIcon class="h-4 w-4" />
@@ -73,7 +73,7 @@
             </button>
             <button
               v-else-if="queueStore.queue.some((item) => item.status === 'paused')"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-primary-100 px-3 py-1.5 text-sm font-medium text-primary-700 transition-colors hover:bg-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-primary-100 px-3 py-1.5 text-body font-medium text-primary-700 transition-colors hover:bg-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
               @click="queueStore.resumeAll()"
             >
               <PlayIcon class="h-4 w-4" />
@@ -82,7 +82,7 @@
 
             <button
               v-if="queueStore.completedCount > 0"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-white dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-body font-medium text-gray-700 transition-colors hover:bg-white dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
               @click="queueStore.clearCompleted()"
             >
               <TrashIcon class="h-4 w-4" />
@@ -110,10 +110,10 @@
                   <!-- File name & title -->
                   <div class="flex items-start justify-between gap-2">
                     <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100" :title="item.title">
+                      <p class="truncate text-body font-semibold text-gray-900 dark:text-gray-100" :title="item.title">
                         {{ item.title }}
                       </p>
-                      <p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                      <p class="mt-0.5 truncate text-body-xs text-gray-500 dark:text-gray-400">
                         {{ item.fileName }} · {{ formatFileSize(item.fileSize) }}
                       </p>
                     </div>
@@ -122,7 +122,7 @@
                     <div class="flex items-center gap-1">
                       <template v-if="item.status === 'queued'">
                         <button
-                          class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                          class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-error-strong dark:text-gray-500 dark:hover:bg-gray-700"
                           title="제거"
                           @click="queueStore.removeFromQueue(item.id)"
                         >
@@ -132,7 +132,7 @@
 
                       <template v-else-if="item.status === 'uploading' || item.status === 'processing'">
                         <button
-                          class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-amber-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-amber-400"
+                          class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-warning-strong dark:text-gray-500 dark:hover:bg-gray-700"
                           title="일시정지"
                           @click="queueStore.pauseItem(item.id)"
                         >
@@ -149,7 +149,7 @@
                           <PlayIcon class="h-4 w-4" />
                         </button>
                         <button
-                          class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                          class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-error-strong dark:text-gray-500 dark:hover:bg-gray-700"
                           title="제거"
                           @click="queueStore.removeFromQueue(item.id)"
                         >
@@ -158,9 +158,9 @@
                       </template>
 
                       <template v-else-if="item.status === 'completed'">
-                        <CheckCircleIcon class="h-5 w-5 text-green-500" />
+                        <CheckCircleIcon class="h-5 w-5 text-success" />
                         <button
-                          class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                          class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-error-strong dark:text-gray-500 dark:hover:bg-gray-700"
                           title="제거"
                           @click="queueStore.removeFromQueue(item.id)"
                         >
@@ -177,7 +177,7 @@
                           <ArrowPathIcon class="h-4 w-4" />
                         </button>
                         <button
-                          class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                          class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-error-strong dark:text-gray-500 dark:hover:bg-gray-700"
                           title="제거"
                           @click="queueStore.removeFromQueue(item.id)"
                         >
@@ -198,7 +198,7 @@
 
                   <!-- Progress bar -->
                   <div v-if="item.status === 'uploading' || item.status === 'processing'" class="mt-3">
-                    <div class="mb-1 flex items-center justify-between text-xs">
+                    <div class="mb-1 flex items-center justify-between text-body-xs">
                       <span :class="getStatusClass(item.status)">
                         {{ getStatusText(item.status) }}
                       </span>
@@ -215,14 +215,14 @@
 
                   <!-- Status text for other states -->
                   <div v-else class="mt-2">
-                    <span class="text-xs font-medium" :class="getStatusClass(item.status)">
+                    <span class="text-caption" :class="getStatusClass(item.status)">
                       {{ getStatusText(item.status) }}
                     </span>
                   </div>
 
                   <!-- Error message -->
-                  <div v-if="item.status === 'failed' && item.error" class="mt-2 rounded-lg bg-red-50 px-3 py-2 dark:bg-red-900/20">
-                    <p class="text-xs text-red-600 dark:text-red-400">
+                  <div v-if="item.status === 'failed' && item.error" class="mt-2 rounded-lg bg-error-subtle px-3 py-2">
+                    <p class="text-body-xs text-error-strong">
                       {{ item.error }}
                     </p>
                   </div>
@@ -236,10 +236,10 @@
             <div class="rounded-full bg-gray-100 p-6 dark:bg-gray-800">
               <QueueListIcon class="h-12 w-12 text-gray-400 dark:text-gray-500" />
             </div>
-            <h3 class="mt-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+            <h3 class="mt-4 text-body font-medium text-gray-900 dark:text-gray-100">
               업로드 큐가 비어있습니다
             </h3>
-            <p class="mt-1 text-center text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-1 text-center text-body text-gray-500 dark:text-gray-400">
               영상을 큐에 추가하여 순차적으로 업로드할 수 있습니다.
             </p>
           </div>
@@ -294,11 +294,11 @@ function getStatusText(status: QueueItemStatus): string {
 function getStatusClass(status: QueueItemStatus): string {
   const classMap: Record<QueueItemStatus, string> = {
     queued: 'text-gray-500 dark:text-gray-400',
-    uploading: 'text-blue-600 dark:text-blue-400',
-    processing: 'text-purple-600 dark:text-purple-400',
-    completed: 'text-green-600 dark:text-green-400',
-    failed: 'text-red-600 dark:text-red-400',
-    paused: 'text-amber-600 dark:text-amber-400',
+    uploading: 'text-info-strong',
+    processing: 'text-primary-600 dark:text-primary-400',
+    completed: 'text-success-strong',
+    failed: 'text-error-strong',
+    paused: 'text-warning-strong',
   }
   return classMap[status]
 }
@@ -306,11 +306,11 @@ function getStatusClass(status: QueueItemStatus): string {
 function getProgressBarClass(status: QueueItemStatus): string {
   const classMap: Record<QueueItemStatus, string> = {
     queued: 'bg-gray-500',
-    uploading: 'bg-blue-500',
-    processing: 'bg-purple-500',
-    completed: 'bg-green-500',
-    failed: 'bg-red-500',
-    paused: 'bg-amber-500',
+    uploading: 'bg-info',
+    processing: 'bg-primary-500',
+    completed: 'bg-success',
+    failed: 'bg-error',
+    paused: 'bg-warning',
   }
   return classMap[status]
 }

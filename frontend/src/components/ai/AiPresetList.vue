@@ -2,8 +2,8 @@
   <div class="space-y-4">
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">프리셋</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400">자주 사용하는 프롬프트를 저장하고 빠르게 재사용하세요</p>
+      <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">프리셋</h2>
+      <p class="text-body text-gray-500 dark:text-gray-400">자주 사용하는 프롬프트를 저장하고 빠르게 재사용하세요</p>
     </div>
 
     <!-- Preset Grid -->
@@ -27,7 +27,7 @@
             <PencilIcon class="h-4 w-4" />
           </button>
           <button
-            class="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+            class="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-error-subtle hover:text-error-strong"
             @click.stop="handleDelete(preset)"
           >
             <TrashIcon class="h-4 w-4" />
@@ -36,8 +36,8 @@
 
         <!-- Badge for tool type -->
         <div class="mb-3 flex items-center gap-2">
-          <span class="badge-blue text-xs">{{ getToolTypeLabel(preset.toolType) }}</span>
-          <span v-if="preset.isDefault" class="badge-gray text-xs">기본</span>
+          <span class="badge-blue text-body-xs">{{ getToolTypeLabel(preset.toolType) }}</span>
+          <span v-if="preset.isDefault" class="badge-gray text-body-xs">기본</span>
         </div>
 
         <!-- Preset Name -->
@@ -46,20 +46,20 @@
         </h3>
 
         <!-- Description -->
-        <p class="mb-3 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+        <p class="mb-3 text-body text-gray-500 dark:text-gray-400 line-clamp-2">
           {{ preset.description }}
         </p>
 
         <!-- Prompt Preview -->
         <div class="mb-4 rounded-lg bg-gray-50 dark:bg-gray-900 px-3 py-2">
-          <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">
+          <p class="text-body-xs text-gray-600 dark:text-gray-300 line-clamp-2">
             {{ preset.prompt }}
           </p>
         </div>
 
         <!-- Use Button -->
         <button
-          class="btn-primary w-full text-sm"
+          class="btn-primary w-full text-body"
           @click.stop="handlePresetClick(preset)"
         >
           사용하기
@@ -76,7 +76,7 @@
             <PlusIcon class="h-6 w-6 text-primary-600 dark:text-primary-400" />
           </div>
           <h3 class="mb-1 font-medium text-gray-900 dark:text-gray-100">새 프리셋 추가</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400">자주 사용하는 프롬프트를 저장하세요</p>
+          <p class="text-body text-gray-500 dark:text-gray-400">자주 사용하는 프롬프트를 저장하세요</p>
         </div>
       </div>
     </div>
@@ -97,7 +97,7 @@
         >
           <!-- Modal Header -->
           <div class="flex items-center justify-between border-b dark:border-gray-700 px-6 py-4">
-            <h2 id="ai-preset-modal-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <h2 id="ai-preset-modal-title" class="text-title font-semibold text-gray-900 dark:text-gray-100">
               {{ editingPreset ? '프리셋 수정' : '새 프리셋 추가' }}
             </h2>
             <button
@@ -112,7 +112,7 @@
           <!-- Modal Body -->
           <div class="p-6 space-y-4">
             <div>
-              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">프리셋 이름</label>
+              <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">프리셋 이름</label>
               <input
                 v-model="presetForm.name"
                 type="text"
@@ -122,7 +122,7 @@
             </div>
 
             <div>
-              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">도구 유형</label>
+              <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">도구 유형</label>
               <select v-model="presetForm.toolType" class="input-field">
                 <option value="">선택</option>
                 <option value="meta">제목/설명 생성</option>
@@ -137,7 +137,7 @@
             </div>
 
             <div>
-              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">설명</label>
+              <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">설명</label>
               <input
                 v-model="presetForm.description"
                 type="text"
@@ -147,7 +147,7 @@
             </div>
 
             <div>
-              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">프롬프트</label>
+              <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">프롬프트</label>
               <textarea
                 v-model="presetForm.prompt"
                 class="input-field min-h-[120px] resize-y"

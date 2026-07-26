@@ -179,7 +179,7 @@ function handleClose() {
         >
           <!-- Header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 id="recycling-create-modal-title" class="text-xl font-bold text-gray-900 dark:text-white">
+            <h2 id="recycling-create-modal-title" class="text-h2 font-bold text-gray-900 dark:text-white">
               {{ modalTitle }}
             </h2>
             <button
@@ -196,20 +196,20 @@ function handleClose() {
           <div class="px-6 py-5 space-y-6 max-h-[70vh] overflow-y-auto">
             <!-- Queue Name -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 큐 이름
               </label>
               <input
                 v-model="name"
                 type="text"
                 placeholder="예: 인기 영상 주간 재업로드"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
               />
             </div>
 
             <!-- Frequency -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 반복 주기
               </label>
               <div class="flex gap-3">
@@ -218,9 +218,9 @@ function handleClose() {
                   :key="option.value"
                   type="button"
                   :class="[
-                    'flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors',
+                    'flex-1 px-4 py-2.5 rounded-lg border text-body font-medium transition-colors',
                     frequency === option.value
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                       : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500',
                   ]"
                   @click="frequency = option.value"
@@ -232,7 +232,7 @@ function handleClose() {
 
             <!-- Schedule Days -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 요일 선택
               </label>
               <div class="flex gap-2">
@@ -241,9 +241,9 @@ function handleClose() {
                   :key="day.value"
                   type="button"
                   :class="[
-                    'w-10 h-10 rounded-lg text-sm font-medium transition-colors',
+                    'w-10 h-10 rounded-lg text-body font-medium transition-colors',
                     scheduleDays.includes(day.value)
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600',
                   ]"
                   @click="toggleDay(day.value)"
@@ -255,19 +255,19 @@ function handleClose() {
 
             <!-- Schedule Time -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 게시 시간
               </label>
               <input
                 v-model="scheduleTime"
                 type="time"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
               />
             </div>
 
             <!-- Platforms -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 게시 플랫폼
               </label>
               <div class="grid grid-cols-2 gap-3">
@@ -276,9 +276,9 @@ function handleClose() {
                   :key="platform.value"
                   type="button"
                   :class="[
-                    'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors',
+                    'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-body font-medium transition-colors',
                     platforms.includes(platform.value)
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                       : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500',
                   ]"
                   @click="togglePlatform(platform.value)"
@@ -287,7 +287,7 @@ function handleClose() {
                     :class="[
                       'w-4 h-4 rounded border-2 flex items-center justify-center transition-colors',
                       platforms.includes(platform.value)
-                        ? 'border-blue-500 bg-blue-500'
+                        ? 'border-primary-500 bg-primary-500'
                         : 'border-gray-400 dark:border-gray-500',
                     ]"
                   >
@@ -308,13 +308,13 @@ function handleClose() {
 
             <!-- Filter Criteria -->
             <div class="space-y-4">
-              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <h3 class="text-body font-medium text-gray-700 dark:text-gray-300">
                 필터 조건
               </h3>
 
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <label class="block text-body-xs text-gray-500 dark:text-gray-400 mb-1">
                     최소 조회수
                   </label>
                   <input
@@ -322,11 +322,11 @@ function handleClose() {
                     type="number"
                     placeholder="예: 10000"
                     min="0"
-                    class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-body focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   />
                 </div>
                 <div>
-                  <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <label class="block text-body-xs text-gray-500 dark:text-gray-400 mb-1">
                     최대 게시 기간 (개월)
                   </label>
                   <input
@@ -335,27 +335,27 @@ function handleClose() {
                     placeholder="예: 6"
                     min="1"
                     max="24"
-                    class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-body focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <label class="block text-body-xs text-gray-500 dark:text-gray-400 mb-1">
                   카테고리 (쉼표로 구분)
                 </label>
                 <input
                   v-model="categories"
                   type="text"
                   placeholder="예: 브이로그, 일상, 꿀팁"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-body focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                 />
               </div>
             </div>
 
             <!-- Title Variation -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                 제목 변형 옵션
               </label>
               <div class="space-y-2">
@@ -366,7 +366,7 @@ function handleClose() {
                   :class="[
                     'w-full flex items-start gap-3 px-4 py-3 rounded-lg border text-left transition-colors',
                     titleVariation === option.value
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                       : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500',
                   ]"
                   @click="titleVariation = option.value"
@@ -375,27 +375,27 @@ function handleClose() {
                     :class="[
                       'mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0',
                       titleVariation === option.value
-                        ? 'border-blue-500'
+                        ? 'border-primary-500'
                         : 'border-gray-400 dark:border-gray-500',
                     ]"
                   >
                     <span
                       v-if="titleVariation === option.value"
-                      class="w-2 h-2 rounded-full bg-blue-500"
+                      class="w-2 h-2 rounded-full bg-primary-500"
                     />
                   </span>
                   <div>
                     <p
                       :class="[
-                        'text-sm font-medium',
+                        'text-body font-medium',
                         titleVariation === option.value
-                          ? 'text-blue-700 dark:text-blue-300'
+                          ? 'text-info-strong'
                           : 'text-gray-700 dark:text-gray-300',
                       ]"
                     >
                       {{ option.label }}
                     </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <p class="text-body-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       {{ option.description }}
                     </p>
                   </div>
@@ -408,7 +408,7 @@ function handleClose() {
           <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
-              class="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              class="px-4 py-2.5 text-body font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
               @click="handleClose"
             >
               취소
@@ -417,9 +417,9 @@ function handleClose() {
               type="submit"
               :disabled="!isValid"
               :class="[
-                'px-6 py-2.5 text-sm font-medium text-white rounded-lg transition-colors',
+                'px-6 py-2.5 text-body font-medium text-white rounded-lg transition-colors',
                 isValid
-                  ? 'bg-blue-600 hover:bg-blue-700'
+                  ? 'bg-primary-600 hover:bg-primary-700'
                   : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed',
               ]"
               @click="handleSubmit"

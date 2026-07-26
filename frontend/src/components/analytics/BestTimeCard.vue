@@ -1,13 +1,13 @@
 <template>
   <div class="card space-y-4">
     <div class="flex flex-col gap-3 mobile:flex-row mobile:items-center mobile:justify-between">
-      <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">추천 게시 시간</h3>
+      <h3 class="text-h3 text-gray-900 dark:text-gray-100">추천 게시 시간</h3>
       <!-- Platform filter -->
       <div class="flex gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
         <button
           v-for="filter in platformFilters"
           :key="filter.value"
-          class="rounded-md px-2 py-1 text-xs font-medium transition-colors"
+          class="rounded-md px-2 py-1 text-caption transition-colors"
           :class="
             selectedPlatform === filter.value
               ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
@@ -35,14 +35,14 @@
         <!-- Countdown to next best time -->
         <div
           v-if="nextBestTimeCountdown"
-          class="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-900/20 p-3"
+          class="flex items-center gap-2 rounded-lg bg-success-subtle p-3"
         >
-          <svg class="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="h-5 w-5 text-success-strong" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div class="flex-1">
-            <p class="text-xs font-medium text-green-700 dark:text-green-400">다음 추천 시간까지</p>
-            <p class="text-sm font-bold text-green-800 dark:text-green-300">{{ nextBestTimeCountdown }}</p>
+            <p class="text-caption text-success-strong">다음 추천 시간까지</p>
+            <p class="text-body font-bold text-success-strong">{{ nextBestTimeCountdown }}</p>
           </div>
         </div>
 
@@ -54,32 +54,32 @@
             class="rounded-lg border p-3 transition-colors"
             :class="
               index < 2
-                ? 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10 hover:border-green-400 dark:hover:border-green-600'
-                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:border-yellow-300 dark:hover:border-yellow-700'
+                ? 'border-success bg-success-subtle hover:border-success'
+                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:border-warning'
             "
           >
             <div class="mb-2 flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <div
-                  class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
+                  class="flex h-7 w-7 items-center justify-center rounded-full text-body-xs font-bold"
                   :class="getRankClass(index)"
                 >
                   {{ index + 1 }}
                 </div>
                 <div>
-                  <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ rec.timeLabel }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ rec.dayLabel }}</p>
+                  <p class="text-body font-bold text-gray-900 dark:text-gray-100">{{ rec.timeLabel }}</p>
+                  <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ rec.dayLabel }}</p>
                 </div>
               </div>
               <div class="text-right">
-                <p class="text-lg font-bold" :class="index < 2 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">
+                <p class="text-title font-bold" :class="index < 2 ? 'text-success-strong' : 'text-warning-strong'">
                   {{ normalizedScore(rec) }}%
                 </p>
               </div>
             </div>
 
             <!-- Details -->
-            <div class="mb-2 flex gap-4 text-xs text-gray-600 dark:text-gray-400">
+            <div class="mb-2 flex gap-4 text-body-xs text-gray-600 dark:text-gray-400">
               <span>예상 조회수: <strong class="text-gray-900 dark:text-gray-100">{{ formatNumber(rec.expectedViews) }}</strong></span>
               <span>참여율: <strong class="text-gray-900 dark:text-gray-100">{{ rec.engagementRate }}%</strong></span>
               <span>신뢰도: <strong class="text-gray-900 dark:text-gray-100">{{ rec.confidenceScore }}%</strong></span>

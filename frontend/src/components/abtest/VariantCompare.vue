@@ -18,10 +18,10 @@ const maxCTR = computed(() => Math.max(...props.variants.map(v => v.ctr)))
     <div v-for="variant in variants" :key="variant.id" class="space-y-3">
       <!-- Header with label and winner badge -->
       <div class="flex items-center justify-between">
-        <h4 class="text-lg font-semibold text-gray-900 dark:text-white">{{ variant.label }}</h4>
-        <div v-if="variant.isWinner" class="flex items-center gap-1.5 px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
-          <TrophyIcon class="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-          <span class="text-sm font-medium text-yellow-600 dark:text-yellow-400">우승</span>
+        <h4 class="text-title font-semibold text-gray-900 dark:text-white">{{ variant.label }}</h4>
+        <div v-if="variant.isWinner" class="flex items-center gap-1.5 px-3 py-1 bg-warning-subtle rounded-full">
+          <TrophyIcon class="w-4 h-4 text-warning-strong" />
+          <span class="text-body font-medium text-warning-strong">우승</span>
         </div>
       </div>
 
@@ -34,7 +34,7 @@ const maxCTR = computed(() => Math.max(...props.variants.map(v => v.ctr)))
 
         <!-- Text preview -->
         <div v-else class="p-4 bg-gray-50 dark:bg-gray-700/50">
-          <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ variant.value }}</p>
+          <p class="text-body text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ variant.value }}</p>
         </div>
       </div>
 
@@ -42,7 +42,7 @@ const maxCTR = computed(() => Math.max(...props.variants.map(v => v.ctr)))
       <div class="space-y-3">
         <!-- Impressions -->
         <div>
-          <div class="flex justify-between text-sm mb-1">
+          <div class="flex justify-between text-body mb-1">
             <span class="text-gray-600 dark:text-gray-400">노출 수</span>
             <span class="font-semibold text-gray-900 dark:text-white">{{ variant.impressions.toLocaleString() }}</span>
           </div>
@@ -56,7 +56,7 @@ const maxCTR = computed(() => Math.max(...props.variants.map(v => v.ctr)))
 
         <!-- Clicks -->
         <div>
-          <div class="flex justify-between text-sm mb-1">
+          <div class="flex justify-between text-body mb-1">
             <span class="text-gray-600 dark:text-gray-400">클릭 수</span>
             <span class="font-semibold text-gray-900 dark:text-white">{{ variant.clicks.toLocaleString() }}</span>
           </div>
@@ -70,7 +70,7 @@ const maxCTR = computed(() => Math.max(...props.variants.map(v => v.ctr)))
 
         <!-- CTR -->
         <div>
-          <div class="flex justify-between text-sm mb-1">
+          <div class="flex justify-between text-body mb-1">
             <span class="text-gray-600 dark:text-gray-400">클릭률 (CTR)</span>
             <span class="font-semibold text-gray-900 dark:text-white">{{ variant.ctr.toFixed(2) }}%</span>
           </div>
@@ -84,7 +84,7 @@ const maxCTR = computed(() => Math.max(...props.variants.map(v => v.ctr)))
 
         <!-- Watch time -->
         <div>
-          <div class="flex justify-between text-sm mb-1">
+          <div class="flex justify-between text-body mb-1">
             <span class="text-gray-600 dark:text-gray-400">평균 시청 시간</span>
             <span class="font-semibold text-gray-900 dark:text-white">{{ variant.avgWatchTime }}초</span>
           </div>

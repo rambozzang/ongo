@@ -198,7 +198,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
       >
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-          <h2 id="recurring-rule-form-modal-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 id="recurring-rule-form-modal-title" class="text-title font-semibold text-gray-900 dark:text-gray-100">
             {{ isEditing ? '반복 규칙 수정' : '새 반복 규칙 추가' }}
           </h2>
           <button
@@ -216,7 +216,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
           <div>
             <label
               for="rule-name"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="block text-body font-medium text-gray-700 dark:text-gray-300"
             >
               규칙 이름
             </label>
@@ -225,7 +225,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
               v-model="form.name"
               type="text"
               placeholder="예: 주간 브이로그 업로드"
-              class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
+              class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 placeholder-gray-400 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500"
             />
           </div>
 
@@ -233,14 +233,14 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
           <div>
             <label
               for="rule-pattern"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="block text-body font-medium text-gray-700 dark:text-gray-300"
             >
               반복 패턴
             </label>
             <select
               id="rule-pattern"
               v-model="form.pattern"
-              class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option
                 v-for="opt in PATTERN_OPTIONS"
@@ -254,7 +254,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
 
           <!-- 요일 선택 (weekly / biweekly) -->
           <div v-if="form.pattern === 'weekly' || form.pattern === 'biweekly'">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="block text-body font-medium text-gray-700 dark:text-gray-300">
               요일 선택
             </label>
             <div class="mt-2 flex flex-wrap gap-2">
@@ -263,7 +263,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
                 :key="dayOpt.value"
                 type="button"
                 :class="[
-                  'flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium transition-colors',
+                  'flex h-9 w-9 items-center justify-center rounded-full text-body font-medium transition-colors',
                   isDaySelected(dayOpt.value)
                     ? 'bg-primary-500 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
@@ -275,7 +275,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
             </div>
             <p
               v-if="form.daysOfWeek.length === 0"
-              class="mt-1 text-xs text-red-500"
+              class="mt-1 text-body-xs text-error-strong"
             >
               최소 1개의 요일을 선택해 주세요
             </p>
@@ -283,13 +283,13 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
 
           <!-- 월간 설정 (monthly) -->
           <div v-if="form.pattern === 'monthly'" class="space-y-3">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="block text-body font-medium text-gray-700 dark:text-gray-300">
               월간 반복 기준
             </label>
 
             <!-- Monthly mode radio -->
             <div class="flex gap-4">
-              <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <label class="flex items-center gap-2 text-body text-gray-700 dark:text-gray-300">
                 <input
                   v-model="form.monthlyMode"
                   type="radio"
@@ -298,7 +298,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
                 />
                 특정 날짜
               </label>
-              <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <label class="flex items-center gap-2 text-body text-gray-700 dark:text-gray-300">
                 <input
                   v-model="form.monthlyMode"
                   type="radio"
@@ -313,7 +313,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
             <div v-if="form.monthlyMode === 'dayOfMonth'">
               <select
                 v-model.number="form.dayOfMonth"
-                class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option v-for="d in dayOfMonthOptions" :key="d" :value="d">
                   매월 {{ d }}일
@@ -325,7 +325,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
             <div v-if="form.monthlyMode === 'nthWeekday'" class="flex gap-2">
               <select
                 v-model.number="form.nthWeekday.week"
-                class="block w-1/2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                class="block w-1/2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option
                   v-for="w in WEEK_ORDINALS"
@@ -337,7 +337,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
               </select>
               <select
                 v-model.number="form.nthWeekday.day"
-                class="block w-1/2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                class="block w-1/2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option
                   v-for="dayOpt in DAY_LABELS_KO"
@@ -354,7 +354,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
           <div>
             <label
               for="rule-time"
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              class="block text-body font-medium text-gray-700 dark:text-gray-300"
             >
               시간
             </label>
@@ -362,13 +362,13 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
               id="rule-time"
               v-model="form.timeSlot"
               type="time"
-              class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-body text-gray-900 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             />
           </div>
 
           <!-- 플랫폼 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label class="block text-body font-medium text-gray-700 dark:text-gray-300">
               플랫폼
             </label>
             <div class="mt-2 flex flex-wrap gap-2">
@@ -377,7 +377,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
                 :key="pOpt.value"
                 type="button"
                 :class="[
-                  'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
+                  'rounded-lg border px-3 py-1.5 text-body font-medium transition-colors',
                   isPlatformSelected(pOpt.value)
                     ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
                     : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
@@ -389,7 +389,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
             </div>
             <p
               v-if="form.platforms.length === 0"
-              class="mt-1 text-xs text-red-500"
+              class="mt-1 text-body-xs text-error-strong"
             >
               최소 1개의 플랫폼을 선택해 주세요
             </p>
@@ -400,16 +400,16 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
             v-if="previewDates.length > 0"
             class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50"
           >
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <h4 class="text-body font-medium text-gray-700 dark:text-gray-300">
               다음 5회 예약 일정
             </h4>
             <ul class="mt-2 space-y-1">
               <li
                 v-for="(date, idx) in previewDates"
                 :key="idx"
-                class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+                class="flex items-center gap-2 text-body text-gray-600 dark:text-gray-400"
               >
-                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-medium text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
+                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-caption text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
                   {{ idx + 1 }}
                 </span>
                 {{ date }}
@@ -421,7 +421,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
         <!-- Footer -->
         <div class="flex items-center justify-end gap-2 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
           <button
-            class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            class="rounded-lg border border-gray-300 px-4 py-2 text-body font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             @click="emit('close')"
           >
             취소
@@ -429,7 +429,7 @@ const dayOfMonthOptions = Array.from({ length: 31 }, (_, i) => i + 1)
           <button
             :disabled="!isValid"
             :class="[
-              'rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors',
+              'rounded-lg px-4 py-2 text-body font-medium text-white transition-colors',
               isValid
                 ? 'bg-primary-500 hover:bg-primary-600'
                 : 'cursor-not-allowed bg-gray-300 dark:bg-gray-600',

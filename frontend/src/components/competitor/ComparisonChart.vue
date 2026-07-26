@@ -49,14 +49,14 @@ function getMaxValue(comparison: CompetitorComparison): number {
         <h4 class="font-medium text-gray-900 dark:text-white">
           {{ comparison.metric }}
         </h4>
-        <div class="flex items-center space-x-2 text-sm">
+        <div class="flex items-center space-x-2 text-body">
           <span
             :class="[
               'font-semibold',
               comparison.differencePercent > 0
-                ? 'text-green-600 dark:text-green-400'
+                ? 'text-success-strong'
                 : comparison.differencePercent < 0
-                ? 'text-red-600 dark:text-red-400'
+                ? 'text-error-strong'
                 : 'text-gray-600 dark:text-gray-400',
             ]"
           >
@@ -67,7 +67,7 @@ function getMaxValue(comparison: CompetitorComparison): number {
 
       <!-- My channel bar -->
       <div class="space-y-1">
-        <div class="flex items-center justify-between text-sm">
+        <div class="flex items-center justify-between text-body">
           <span class="text-gray-600 dark:text-gray-400">{{ myName }}</span>
           <span class="font-medium text-gray-900 dark:text-white">
             {{ formatValue(comparison.myValue, comparison.metric) }}
@@ -85,7 +85,7 @@ function getMaxValue(comparison: CompetitorComparison): number {
 
       <!-- Competitor bar -->
       <div class="space-y-1">
-        <div class="flex items-center justify-between text-sm">
+        <div class="flex items-center justify-between text-body">
           <span class="text-gray-600 dark:text-gray-400">{{ competitorName }}</span>
           <span class="font-medium text-gray-900 dark:text-white">
             {{ formatValue(comparison.competitorValue, comparison.metric) }}

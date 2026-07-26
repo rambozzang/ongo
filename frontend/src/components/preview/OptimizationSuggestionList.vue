@@ -6,13 +6,13 @@
       @click="collapsed = !collapsed"
     >
       <div class="flex items-center gap-2">
-        <svg class="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="h-5 w-5 text-warning-strong" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span class="font-semibold text-gray-900 dark:text-gray-100">플랫폼 최적화 검사</span>
         <span
           v-if="results.length > 0"
-          class="rounded-full px-2 py-0.5 text-xs font-semibold"
+          class="rounded-full px-2 py-0.5 text-body-xs font-semibold"
           :class="overallScoreClass"
         >
           평균 {{ averageScore }}점
@@ -54,7 +54,7 @@
                 class="h-2.5 w-2.5 rounded-full"
                 :style="{ backgroundColor: getPlatformColor(result.platform) }"
               />
-              <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <span class="text-body font-semibold text-gray-900 dark:text-gray-100">
                 {{ getPlatformLabel(result.platform) }}
               </span>
             </div>
@@ -67,7 +67,7 @@
                 />
               </div>
               <span
-                class="text-sm font-bold"
+                class="text-body font-bold"
                 :class="getScoreTextClass(result.score)"
               >
                 {{ result.score }}
@@ -99,8 +99,8 @@
               </span>
 
               <div class="flex-1 min-w-0">
-                <p class="text-sm text-gray-800 dark:text-gray-200">{{ suggestion.message }}</p>
-                <div v-if="suggestion.currentValue || suggestion.recommendedValue" class="mt-1 flex flex-wrap gap-2 text-xs">
+                <p class="text-body text-gray-800 dark:text-gray-200">{{ suggestion.message }}</p>
+                <div v-if="suggestion.currentValue || suggestion.recommendedValue" class="mt-1 flex flex-wrap gap-2 text-body-xs">
                   <span v-if="suggestion.currentValue" class="text-gray-500 dark:text-gray-400">
                     현재: <strong>{{ suggestion.currentValue }}</strong>
                   </span>
@@ -116,7 +116,7 @@
         <!-- Apply All button -->
         <button
           v-if="hasFixableSuggestions"
-          class="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary-300 dark:border-primary-700 py-2.5 text-sm font-medium text-primary-600 dark:text-primary-400 transition-colors hover:bg-primary-50 dark:hover:bg-primary-900/20"
+          class="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary-300 dark:border-primary-700 py-2.5 text-body font-medium text-primary-600 dark:text-primary-400 transition-colors hover:bg-primary-50 dark:hover:bg-primary-900/20"
           @click="$emit('applyAll')"
         >
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,9 +161,9 @@ const averageScore = computed(() => {
 
 const overallScoreClass = computed(() => {
   const score = averageScore.value
-  if (score >= 80) return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-  if (score >= 50) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-  return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+  if (score >= 80) return 'bg-success-subtle text-success-strong'
+  if (score >= 50) return 'bg-warning-subtle text-warning-strong'
+  return 'bg-error-subtle text-error-strong'
 })
 
 const hasFixableSuggestions = computed(() => {
@@ -181,22 +181,22 @@ function getPlatformLabel(platform: Platform): string {
 }
 
 function getScoreBarClass(score: number): string {
-  if (score >= 80) return 'bg-green-500'
-  if (score >= 50) return 'bg-yellow-500'
-  return 'bg-red-500'
+  if (score >= 80) return 'bg-success'
+  if (score >= 50) return 'bg-warning'
+  return 'bg-error'
 }
 
 function getScoreTextClass(score: number): string {
-  if (score >= 80) return 'text-green-600 dark:text-green-400'
-  if (score >= 50) return 'text-yellow-600 dark:text-yellow-400'
-  return 'text-red-600 dark:text-red-400'
+  if (score >= 80) return 'text-success-strong'
+  if (score >= 50) return 'text-warning-strong'
+  return 'text-error-strong'
 }
 
 function getSeverityBadgeClass(severity: OptimizationSeverity): string {
   switch (severity) {
-    case 'GOOD': return 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-    case 'WARNING': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
-    case 'ERROR': return 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+    case 'GOOD': return 'bg-success-subtle text-success-strong'
+    case 'WARNING': return 'bg-warning-subtle text-warning-strong'
+    case 'ERROR': return 'bg-error-subtle text-error-strong'
     default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
   }
 }

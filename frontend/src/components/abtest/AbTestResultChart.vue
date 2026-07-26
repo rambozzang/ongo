@@ -50,7 +50,7 @@ function getBarWidth(ctr: number): string {
       <!-- Label row -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span :class="['text-sm font-semibold', getTextColor(variant.label)]">
+          <span :class="['text-body font-semibold', getTextColor(variant.label)]">
             {{ variant.label }}
           </span>
           <StarIcon
@@ -58,7 +58,7 @@ function getBarWidth(ctr: number): string {
             class="h-4 w-4 text-yellow-500"
           />
         </div>
-        <span class="text-sm font-bold text-gray-900 dark:text-white">
+        <span class="text-body font-bold text-gray-900 dark:text-white">
           {{ variant.ctr.toFixed(1) }}%
         </span>
       </div>
@@ -77,7 +77,7 @@ function getBarWidth(ctr: number): string {
       </div>
 
       <!-- Metrics row -->
-      <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+      <div class="flex items-center gap-4 text-body-xs text-gray-500 dark:text-gray-400">
         <span>
           {{ $t('abTest.impressions') }}:
           <span class="font-medium text-gray-700 dark:text-gray-300">{{ variant.impressions.toLocaleString() }}</span>

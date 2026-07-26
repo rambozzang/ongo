@@ -16,10 +16,10 @@
     >
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
-        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">알림</h3>
+        <h3 class="text-body-lg font-semibold text-gray-900 dark:text-gray-100">알림</h3>
         <button
           v-if="unreadCount > 0"
-          class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+          class="text-body text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
           @click="handleMarkAllAsRead"
         >
           모두 읽음
@@ -31,7 +31,7 @@
         <button
           v-for="tab in filterTabs"
           :key="tab.value"
-          class="relative px-3 py-2 text-sm font-medium transition-colors"
+          class="relative px-3 py-2 text-body font-medium transition-colors"
           :class="
             currentFilter === tab.value
               ? 'text-primary-600 dark:text-primary-400'
@@ -72,15 +72,15 @@
             <!-- Content -->
             <div class="min-w-0 flex-1">
               <p
-                class="text-sm"
+                class="text-body"
                 :class="notification.isRead ? 'text-gray-700 dark:text-gray-300' : 'font-semibold text-gray-900 dark:text-gray-100'"
               >
                 {{ notification.title }}
               </p>
-              <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+              <p class="mt-0.5 text-body text-gray-500 dark:text-gray-400">
                 {{ notification.message }}
               </p>
-              <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">
                 {{ formatRelativeTime(notification.createdAt) }}
               </p>
             </div>
@@ -95,7 +95,7 @@
         <!-- Empty State -->
         <div v-else class="px-4 py-12 text-center">
           <BellSlashIcon class="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
-          <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">새로운 알림이 없습니다</p>
+          <p class="mt-3 text-body text-gray-500 dark:text-gray-400">새로운 알림이 없습니다</p>
         </div>
       </div>
 
@@ -105,7 +105,7 @@
         class="border-t border-gray-100 px-4 py-3 dark:border-gray-700"
       >
         <button
-          class="w-full text-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          class="w-full text-center text-body text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
           @click="handleClearAll"
         >
           모두 지우기
@@ -191,6 +191,9 @@ function getCategoryIcon(category: NotificationCategory) {
 }
 
 function getCategoryIconClass(category: NotificationCategory) {
+  // Categorical palette, NOT status colors — one hue per notification category.
+  // Kept on the raw scale because blue/purple/violet/cyan all map to `info`, which
+  // would make four of the six categories indistinguishable.
   const classMap = {
     upload: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
     schedule: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
