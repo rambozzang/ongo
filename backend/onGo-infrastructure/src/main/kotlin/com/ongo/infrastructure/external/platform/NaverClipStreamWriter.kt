@@ -119,6 +119,8 @@ class NaverClipStreamWriter(
                 success = true,
                 platformVideoId = clipId,
                 platformUrl = completeResponse.clipUrl ?: "",
+                // complete 응답이 clipId 를 주면 클립 등록이 끝난 상태다.
+                published = true,
             )
         } catch (e: Exception) {
             log.error("Naver Clip 스트리밍 업로드 실패", e)

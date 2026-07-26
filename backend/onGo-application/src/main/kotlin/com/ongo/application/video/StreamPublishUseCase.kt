@@ -307,9 +307,11 @@ class StreamPublishUseCase(
                         try {
                             val result = writer.complete()
                             if (result.success) {
+                                // 플랫폼이 게시를 확정했으면 PUBLISHED 로 끝낸다. 확정 신호가 없는
+                                // 플랫폼(예: TikTok 은 publish_id 만 주고 비동기 처리)만 PROCESSING 에 남는다.
                                 updateUploadStatus(
                                     ctx.videoUploadId,
-                                    UploadStatus.PROCESSING,
+                                    if (result.published) UploadStatus.PUBLISHED else UploadStatus.PROCESSING,
                                     platformVideoId = result.platformVideoId,
                                     platformUrl = result.platformUrl,
                                 )

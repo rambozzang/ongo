@@ -85,11 +85,14 @@ class ScheduleExecutor(
                     val newStatus = when {
                         uploads.all { it.status == UploadStatus.PUBLISHED } -> ScheduleStatus.PUBLISHED
                         uploads.all { it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED } -> ScheduleStatus.FAILED
-                        uploads.any { it.status == UploadStatus.PROCESSING || it.status == UploadStatus.REVIEW } -> ScheduleStatus.PROCESSING
+                        // 타임아웃 검사는 PROCESSING 분기보다 먼저 와야 한다. 뒤에 두면 진행 중인
+                        // 업로드가 하나라도 있는 한 PROCESSING 이 먼저 매치되어 영원히 도달하지 못하고,
+                        // 멈춘 예약이 매 주기 재조회되며 무한 누적된다.
                         isTimedOut -> {
                             log.error("예약 타임아웃 — {}시간 이상 완료되지 않음 [scheduleId={}]", timeoutHours, schedule.id)
                             ScheduleStatus.FAILED
                         }
+                        uploads.any { it.status == UploadStatus.PROCESSING || it.status == UploadStatus.REVIEW } -> ScheduleStatus.PROCESSING
                         else -> null // 아직 업로드 진행 중 — 다음 주기에 재확인
                     }
 

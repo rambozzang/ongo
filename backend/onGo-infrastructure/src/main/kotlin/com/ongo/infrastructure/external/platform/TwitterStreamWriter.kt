@@ -148,6 +148,8 @@ class TwitterStreamWriter(
                 success = true,
                 platformVideoId = tweetId,
                 platformUrl = "https://twitter.com/i/status/$tweetId",
+                // 트윗이 생성된 시점에 이미 타임라인에 노출된다.
+                published = true,
             )
         } catch (e: Exception) {
             log.error("Twitter 스트리밍 업로드 실패", e)

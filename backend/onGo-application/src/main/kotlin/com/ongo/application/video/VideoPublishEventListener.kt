@@ -80,9 +80,11 @@ class VideoPublishEventListener(
             val result = service.upload(config, fileUrl, event.userId)
 
             if (result.success) {
+                // 플랫폼이 게시를 확정했으면 PUBLISHED 로 끝낸다. 확정 신호가 없는
+                // 플랫폼만 PROCESSING 에 남아 후속 확인을 기다린다.
                 updateUploadStatus(
                     config.videoUploadId,
-                    UploadStatus.PROCESSING,
+                    if (result.published) UploadStatus.PUBLISHED else UploadStatus.PROCESSING,
                     platformVideoId = result.platformVideoId,
                     platformUrl = result.platformUrl,
                 )
