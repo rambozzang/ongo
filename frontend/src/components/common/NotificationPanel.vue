@@ -113,6 +113,20 @@
       </div>
     </div>
   </Transition>
+
+  <!--
+    알림 전체 삭제 확인.
+    TopBar의 onClickOutside가 패널을 닫으므로, 모달이 패널(v-if) 안에 있으면
+    모달 클릭 즉시 함께 언마운트된다. Transition 바깥 형제 노드로 두어 독립 유지.
+  -->
+  <ConfirmModal
+    v-model="showClearAllModal"
+    :title="$t('notifications.clearAllTitle')"
+    :message="$t('notifications.clearAllMessage')"
+    :confirm-text="$t('action.delete')"
+    danger
+    @confirm="confirmClearAll"
+  />
 </template>
 
 <script setup lang="ts">
@@ -127,6 +141,7 @@ import {
   CreditCardIcon,
   BellSlashIcon,
 } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useNotificationCenterStore } from '@/stores/notificationCenter'
 import { formatRelativeTime } from '@/utils/date'
 import type { Notification, NotificationCategory } from '@/types/notification'
@@ -149,6 +164,7 @@ const { notifications, unreadCount } = notificationStore
 type FilterValue = 'all' | 'unread'
 
 const currentFilter = ref<FilterValue>('all')
+const showClearAllModal = ref(false)
 
 const filterTabs = [
   { value: 'all' as FilterValue, label: '전체' },
@@ -214,8 +230,10 @@ function handleMarkAllAsRead() {
 }
 
 function handleClearAll() {
-  if (confirm('모든 알림을 삭제하시겠습니까?')) {
-    notificationStore.clearAll()
-  }
+  showClearAllModal.value = true
+}
+
+function confirmClearAll() {
+  notificationStore.clearAll()
 }
 </script>

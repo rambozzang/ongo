@@ -219,6 +219,17 @@
         </div>
       </form>
     </BaseModal>
+
+    <!-- 세그먼트 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('audience.segment.deleteTitle')"
+      :message="$t('audience.segment.confirmDelete')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmDeleteSegment"
+      @cancel="deleteTargetId = null"
+    />
   </div>
 </template>
 
@@ -228,6 +239,7 @@ import { useI18n } from 'vue-i18n'
 import { useAudienceStore } from '@/stores/audience'
 import OTabs from '@/components/ui/OTabs.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 
@@ -239,6 +251,8 @@ const sortBy = ref('engagement_score')
 const currentPage = ref(0)
 const showSegmentModal = ref(false)
 const creating = ref(false)
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 const segmentForm = reactive({
   name: '',
@@ -291,8 +305,15 @@ async function handleCreateSegment() {
   }
 }
 
-async function handleDeleteSegment(id: number) {
-  if (!confirm(t('audience.segment.confirmDelete'))) return
+function handleDeleteSegment(id: number) {
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+async function confirmDeleteSegment() {
+  const id = deleteTargetId.value
+  deleteTargetId.value = null
+  if (id === null) return
   try {
     await store.deleteSegment(id)
   } catch (e) {

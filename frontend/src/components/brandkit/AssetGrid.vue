@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { PlusIcon, TrashIcon, ArrowDownTrayIcon, EyeIcon, PhotoIcon, VideoCameraIcon, DocumentIcon } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import type { BrandAsset } from '@/types/brandkit'
 import { assetsApi } from '@/api/assets'
+import { useNotification } from '@/composables/useNotification'
+import { useLocale } from '@/composables/useLocale'
 
 const props = defineProps<{
   assets: BrandAsset[]
 }>()
+
+const notify = useNotification()
+const { t } = useLocale()
 
 const emit = defineEmits<{
   add: [asset: Omit<BrandAsset, 'id'>]
@@ -17,6 +23,8 @@ const selectedAsset = ref<BrandAsset | null>(null)
 const filterType = ref<string>('all')
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 const assetTypeLabels: Record<BrandAsset['type'], string> = {
   logo: '로고',
@@ -64,8 +72,8 @@ async function handleFileSelected(event: Event) {
       size: formatFileSize(file.size),
       uploadedAt: new Date().toISOString(),
     })
-  } catch (e) {
-    alert('에셋 업로드에 실패했습니다.')
+  } catch {
+    notify.error(t('brandKit.assets.uploadFailed'))
   } finally {
     uploading.value = false
     input.value = ''
@@ -78,9 +86,14 @@ function formatFileSize(bytes: number): string {
 }
 
 function handleRemove(id: number) {
-  if (confirm('이 에셋을 삭제하시겠습니까?')) {
-    emit('remove', id)
-  }
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+function confirmRemove() {
+  if (deleteTargetId.value === null) return
+  emit('remove', deleteTargetId.value)
+  deleteTargetId.value = null
 }
 
 function handlePreview(asset: BrandAsset) {
@@ -93,7 +106,7 @@ function closePreview() {
 
 function handleDownload(asset: BrandAsset) {
   // Mock download
-  alert(`${asset.name} 다운로드를 시작합니다.`)
+  notify.info(t('brandKit.assets.downloadStarted', { name: asset.name }))
 }
 
 function getAssetIcon(format: string) {
@@ -285,6 +298,17 @@ function formatDate(dateString: string) {
       class="hidden"
       accept="image/*,video/*"
       @change="handleFileSelected"
+    />
+
+    <!-- 에셋 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('brandKit.assets.deleteTitle')"
+      :message="$t('brandKit.assets.deleteMessage')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmRemove"
+      @cancel="deleteTargetId = null"
     />
   </div>
 </template>

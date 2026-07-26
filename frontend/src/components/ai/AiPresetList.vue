@@ -170,17 +170,31 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- 프리셋 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('aiView.preset.deleteTitle')"
+      :message="deleteMessage"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmDelete"
+      @cancel="deleteTarget = null"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useAiHistoryStore, type AiPreset } from '@/stores/aiHistory'
 import { useNotification } from '@/composables/useNotification'
+import { useLocale } from '@/composables/useLocale'
 
 const historyStore = useAiHistoryStore()
 const { success } = useNotification()
+const { t } = useLocale()
 
 const emit = defineEmits<{
   presetSelected: [preset: AiPreset]
@@ -190,12 +204,18 @@ const presets = computed(() => historyStore.presets)
 
 const showModal = ref(false)
 const editingPreset = ref<AiPreset | null>(null)
+const showDeleteModal = ref(false)
+const deleteTarget = ref<AiPreset | null>(null)
 const presetForm = ref({
   name: '',
   toolType: '',
   prompt: '',
   description: '',
 })
+
+const deleteMessage = computed(() =>
+  t('aiView.preset.deleteMessage', { name: deleteTarget.value?.name ?? '' }),
+)
 
 const isFormValid = computed(() => {
   return presetForm.value.name.trim() !== '' &&
@@ -247,10 +267,16 @@ function handleEdit(preset: AiPreset) {
 
 function handleDelete(preset: AiPreset) {
   if (preset.isDefault) return
-  if (confirm(`"${preset.name}" 프리셋을 삭제하시겠습니까?`)) {
-    historyStore.removePreset(preset.id)
-    success('프리셋이 삭제되었습니다')
-  }
+  deleteTarget.value = preset
+  showDeleteModal.value = true
+}
+
+function confirmDelete() {
+  const preset = deleteTarget.value
+  if (!preset) return
+  historyStore.removePreset(preset.id)
+  deleteTarget.value = null
+  success('프리셋이 삭제되었습니다')
 }
 
 function handleSave() {

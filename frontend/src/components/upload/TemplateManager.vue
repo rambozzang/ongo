@@ -151,6 +151,17 @@
     @save="handleSaveTemplate"
     @close="closeEditModal"
   />
+
+  <!-- 템플릿 삭제 확인 -->
+  <ConfirmModal
+    v-model="showDeleteModal"
+    :title="$t('templates.deleteTitle')"
+    :message="$t('templates.deleteMessage')"
+    :confirm-text="$t('action.delete')"
+    danger
+    @confirm="confirmDeleteTemplate"
+    @cancel="deleteTargetId = null"
+  />
 </template>
 
 <script setup lang="ts">
@@ -164,6 +175,7 @@ import {
   PencilIcon,
   TrashIcon,
 } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useNotificationStore } from '@/stores/notification'
 import { templatesApi } from '@/api/templates'
 import type { TemplateResponse, CreateTemplateRequest } from '@/types/template'
@@ -186,6 +198,8 @@ const loading = ref(false)
 const searchQuery = ref('')
 const showCreateModal = ref(false)
 const editingTemplate = ref<TemplateResponse | null>(null)
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 onMounted(() => {
   fetchTemplates()
@@ -277,15 +291,22 @@ function openCreateModal() {
   showCreateModal.value = true
 }
 
-async function handleDeleteTemplate(id: number) {
-  if (confirm('이 템플릿을 삭제하시겠습니까?')) {
-    try {
-      await templatesApi.delete(id)
-      templates.value = templates.value.filter((t) => t.id !== id)
-      notify.success('템플릿이 삭제되었습니다')
-    } catch {
-      notify.error('템플릿 삭제에 실패했습니다')
-    }
+function handleDeleteTemplate(id: number) {
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+async function confirmDeleteTemplate() {
+  const id = deleteTargetId.value
+  deleteTargetId.value = null
+  if (id === null) return
+
+  try {
+    await templatesApi.delete(id)
+    templates.value = templates.value.filter((t) => t.id !== id)
+    notify.success('템플릿이 삭제되었습니다')
+  } catch {
+    notify.error('템플릿 삭제에 실패했습니다')
   }
 }
 

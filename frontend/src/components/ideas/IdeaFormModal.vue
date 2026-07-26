@@ -210,11 +210,22 @@
       </div>
     </div>
   </Teleport>
+
+  <!-- 아이디어 삭제 확인 (폼 모달이 닫혀도 유지되도록 Teleport 바깥에 배치) -->
+  <ConfirmModal
+    v-model="showDeleteModal"
+    :title="$t('ideas.deleteTitle')"
+    :message="$t('ideas.deleteMessage')"
+    :confirm-text="$t('action.delete')"
+    danger
+    @confirm="confirmDelete"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { XMarkIcon } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import type { ContentIdea, IdeaStatus, IdeaPriority } from '@/types/idea'
 
 const props = defineProps<{
@@ -250,6 +261,7 @@ const formData = ref<{
 })
 
 const tagsInput = ref('')
+const showDeleteModal = ref(false)
 
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen && props.idea) {
@@ -302,9 +314,13 @@ const handleSubmit = () => {
 }
 
 const handleDelete = () => {
-  if (props.idea && confirm('정말 삭제하시겠습니까?')) {
-    emit('delete', props.idea.id)
-    closeModal()
-  }
+  if (!props.idea) return
+  showDeleteModal.value = true
+}
+
+const confirmDelete = () => {
+  if (!props.idea) return
+  emit('delete', props.idea.id)
+  closeModal()
 }
 </script>

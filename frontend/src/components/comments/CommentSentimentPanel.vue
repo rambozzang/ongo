@@ -67,67 +67,72 @@
           </button>
         </div>
       </div>
-      <div v-if="loading" class="flex items-center justify-center py-8">
-        <div class="h-6 w-6 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
-      </div>
-      <div v-else-if="trend" class="space-y-3">
-        <!-- 트렌드 요약 배지 -->
-        <div class="flex items-center gap-2 mb-2">
-          <span
-            class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
-            :class="{
-              'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': trend.summary.trend === 'IMPROVING',
-              'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400': trend.summary.trend === 'STABLE',
-              'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': trend.summary.trend === 'WORSENING',
-            }"
-          >
-            <ArrowTrendingUpIcon v-if="trend.summary.trend === 'IMPROVING'" class="h-3 w-3" />
-            <MinusIcon v-else-if="trend.summary.trend === 'STABLE'" class="h-3 w-3" />
-            <ArrowTrendingDownIcon v-else class="h-3 w-3" />
-            {{ trendLabel }}
-          </span>
-          <span class="text-xs text-gray-500 dark:text-gray-400">
-            {{ $t('commentsView.sentimentPositive') }} {{ trend.summary.totalPositive }} ·
-            {{ $t('commentsView.sentimentNeutral') }} {{ trend.summary.totalNeutral }} ·
-            {{ $t('commentsView.sentimentNegative') }} {{ trend.summary.totalNegative }}
-          </span>
-        </div>
-        <!-- 간이 바 차트 -->
-        <div class="space-y-1 max-h-48 overflow-y-auto">
-          <div
-            v-for="point in trend.data"
-            :key="point.date"
-            class="flex items-center gap-2 text-xs"
-          >
-            <span class="w-16 text-right text-gray-500 dark:text-gray-400 shrink-0">
-              {{ formatTrendDate(point.date) }}
+      <!-- 로딩 → 빈 상태 → 트렌드 차트 -->
+      <AsyncState
+        :loading="loading"
+        :empty="!trend"
+        skeleton="list"
+        :skeleton-count="3"
+        :empty-icon="ChartBarIcon"
+        :empty-title="$t('commentsView.noTrendData')"
+        empty-variant="compact"
+      >
+        <div v-if="trend" class="space-y-3">
+          <!-- 트렌드 요약 배지 -->
+          <div class="flex items-center gap-2 mb-2">
+            <span
+              class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+              :class="{
+                'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': trend.summary.trend === 'IMPROVING',
+                'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400': trend.summary.trend === 'STABLE',
+                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': trend.summary.trend === 'WORSENING',
+              }"
+            >
+              <ArrowTrendingUpIcon v-if="trend.summary.trend === 'IMPROVING'" class="h-3 w-3" />
+              <MinusIcon v-else-if="trend.summary.trend === 'STABLE'" class="h-3 w-3" />
+              <ArrowTrendingDownIcon v-else class="h-3 w-3" />
+              {{ trendLabel }}
             </span>
-            <div class="flex flex-1 h-3 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-              <div
-                v-if="point.positive > 0"
-                class="bg-green-500"
-                :style="{ width: `${getPercent(point.positive, point)}%` }"
-              />
-              <div
-                v-if="point.neutral > 0"
-                class="bg-gray-400"
-                :style="{ width: `${getPercent(point.neutral, point)}%` }"
-              />
-              <div
-                v-if="point.negative > 0"
-                class="bg-red-500"
-                :style="{ width: `${getPercent(point.negative, point)}%` }"
-              />
-            </div>
-            <span class="w-8 text-right text-gray-500 dark:text-gray-400 shrink-0">
-              {{ point.positive + point.neutral + point.negative }}
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              {{ $t('commentsView.sentimentPositive') }} {{ trend.summary.totalPositive }} ·
+              {{ $t('commentsView.sentimentNeutral') }} {{ trend.summary.totalNeutral }} ·
+              {{ $t('commentsView.sentimentNegative') }} {{ trend.summary.totalNegative }}
             </span>
           </div>
-        </div>
-      </div>
-      <div v-else class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-        {{ $t('commentsView.noTrendData') }}
-      </div>
+          <!-- 간이 바 차트 -->
+          <div class="space-y-1 max-h-48 overflow-y-auto">
+            <div
+              v-for="point in trend.data"
+              :key="point.date"
+              class="flex items-center gap-2 text-xs"
+            >
+              <span class="w-16 text-right text-gray-500 dark:text-gray-400 shrink-0">
+                {{ formatTrendDate(point.date) }}
+              </span>
+              <div class="flex flex-1 h-3 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+                <div
+                  v-if="point.positive > 0"
+                  class="bg-green-500"
+                  :style="{ width: `${getPercent(point.positive, point)}%` }"
+                />
+                <div
+                  v-if="point.neutral > 0"
+                  class="bg-gray-400"
+                  :style="{ width: `${getPercent(point.neutral, point)}%` }"
+                />
+                <div
+                  v-if="point.negative > 0"
+                  class="bg-red-500"
+                  :style="{ width: `${getPercent(point.negative, point)}%` }"
+                />
+              </div>
+              <span class="w-8 text-right text-gray-500 dark:text-gray-400 shrink-0">
+                {{ point.positive + point.neutral + point.negative }}
+              </span>
+            </div>
+          </div>
+          </div>
+      </AsyncState>
     </div>
   </div>
 </template>
@@ -139,8 +144,10 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   MinusIcon,
+  ChartBarIcon,
 } from '@heroicons/vue/24/outline'
 import type { CommentStats, SentimentTrendPoint, SentimentTrendResponse } from '@/types/comment'
+import AsyncState from '@/components/common/AsyncState.vue'
 
 const props = defineProps<{
   stats: CommentStats

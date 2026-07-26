@@ -235,6 +235,17 @@
             </button>
           </template>
     </BaseModal>
+
+    <!-- 딜 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('brandDeal.deleteTitle')"
+      :message="$t('brandDeal.confirmDelete')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmDeleteDeal"
+      @cancel="deleteTargetId = null"
+    />
   </div>
 </template>
 
@@ -245,6 +256,7 @@ import { PlusIcon } from '@heroicons/vue/24/outline'
 import { useBrandDealStore } from '@/stores/branddeal'
 import OTabs from '@/components/ui/OTabs.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 
@@ -254,6 +266,8 @@ const store = useBrandDealStore()
 const activeTab = ref('tracker')
 const statusFilter = ref('')
 const showCreateModal = ref(false)
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 const newDeal = reactive({
   brandName: '',
@@ -341,8 +355,15 @@ async function handleCreateDeal() {
   }
 }
 
-async function handleDeleteDeal(id: number) {
-  if (!confirm(t('brandDeal.confirmDelete'))) return
+function handleDeleteDeal(id: number) {
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+async function confirmDeleteDeal() {
+  const id = deleteTargetId.value
+  deleteTargetId.value = null
+  if (id === null) return
   try {
     await store.deleteDeal(id)
   } catch (e) {

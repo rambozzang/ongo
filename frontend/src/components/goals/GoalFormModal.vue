@@ -2,6 +2,8 @@
 import { ref, computed, watch } from 'vue'
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import type { Goal, GoalType, GoalPeriod } from '@/types/goal'
+import { useNotification } from '@/composables/useNotification'
+import { useLocale } from '@/composables/useLocale'
 
 interface Props {
   show: boolean
@@ -15,6 +17,9 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const notify = useNotification()
+const { t } = useLocale()
 
 const isEditMode = computed(() => !!props.goal)
 
@@ -136,19 +141,19 @@ const handleSubmit = () => {
 
 const validateForm = (): boolean => {
   if (!formData.value.title.trim()) {
-    alert('목표 제목을 입력해주세요.')
+    notify.error(t('goals.form.titleRequired'))
     return false
   }
   if (formData.value.targetValue <= 0) {
-    alert('목표 값을 입력해주세요.')
+    notify.error(t('goals.form.targetValueRequired'))
     return false
   }
   if (!formData.value.startDate || !formData.value.endDate) {
-    alert('시작일과 종료일을 입력해주세요.')
+    notify.error(t('goals.form.dateRangeRequired'))
     return false
   }
   if (new Date(formData.value.endDate) <= new Date(formData.value.startDate)) {
-    alert('종료일은 시작일보다 이후여야 합니다.')
+    notify.error(t('goals.form.endDateAfterStartDate'))
     return false
   }
   return true

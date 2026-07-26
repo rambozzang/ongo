@@ -4,6 +4,8 @@ import { useTemplatesStore } from '@/stores/templates'
 import type { TemplateCategory, TemplatePlatform } from '@/types/template'
 import TemplatePreview from './TemplatePreview.vue'
 import { XMarkIcon } from '@heroicons/vue/24/outline'
+import { useNotification } from '@/composables/useNotification'
+import { useLocale } from '@/composables/useLocale'
 
 interface Props {
   templateId?: number | null
@@ -15,6 +17,8 @@ const emit = defineEmits<{
 }>()
 
 const templatesStore = useTemplatesStore()
+const notify = useNotification()
+const { t } = useLocale()
 
 const formData = ref({
   name: '',
@@ -139,7 +143,7 @@ const handleSave = () => {
   handleTagsInput()
 
   if (!formData.value.name.trim()) {
-    alert('템플릿 이름을 입력해주세요')
+    notify.error(t('templates.form.nameRequired'))
     return
   }
 

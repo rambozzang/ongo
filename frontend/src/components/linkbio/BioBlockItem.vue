@@ -120,12 +120,23 @@
         <TrashIcon class="h-5 w-5" />
       </button>
     </div>
+
+    <!-- 블록 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('linkBioView.block.deleteTitle')"
+      :message="$t('linkBioView.block.deleteMessage')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Bars3Icon, EyeIcon, EyeSlashIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import type { BioBlock } from '@/types/linkbio'
 
 const props = defineProps<{
@@ -147,6 +158,7 @@ const localText = ref('')
 const localPlatform = ref('')
 const localVideoUrl = ref('')
 const localContent = ref('')
+const showDeleteModal = ref(false)
 
 watch(
   () => props.block,
@@ -203,8 +215,10 @@ const updateBlock = () => {
 }
 
 const handleDelete = () => {
-  if (confirm('이 블록을 삭제하시겠습니까?')) {
-    emit('delete')
-  }
+  showDeleteModal.value = true
+}
+
+const confirmDelete = () => {
+  emit('delete')
 }
 </script>

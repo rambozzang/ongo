@@ -21,6 +21,7 @@ import TeamActivityFeed from '@/components/team/TeamActivityFeed.vue'
 import RoleBadge from '@/components/team/RoleBadge.vue'
 import PermissionMatrix from '@/components/team/PermissionMatrix.vue'
 import WorkflowBoard from '@/components/team/WorkflowBoard.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 
@@ -32,6 +33,8 @@ const approvalStore = useApprovalStore()
 type TabType = 'members' | 'invites' | 'activity' | 'permissions' | 'workflow'
 const activeTab = ref<TabType>('members')
 const showInviteModal = ref(false)
+const showCancelInviteModal = ref(false)
+const cancelInviteTargetId = ref<number | null>(null)
 
 const currentUser = computed(() => teamStore.members[0])
 
@@ -88,9 +91,15 @@ const tabs = computed(() => {
 })
 
 const handleCancelInvite = (inviteId: number) => {
-  if (confirm(t('team.confirmCancelInvite'))) {
-    teamStore.cancelInvite(inviteId)
-  }
+  cancelInviteTargetId.value = inviteId
+  showCancelInviteModal.value = true
+}
+
+const confirmCancelInvite = () => {
+  const inviteId = cancelInviteTargetId.value
+  cancelInviteTargetId.value = null
+  if (inviteId === null) return
+  teamStore.cancelInvite(inviteId)
 }
 
 const handleResendInvite = (inviteId: number) => {
@@ -472,5 +481,16 @@ watch(activeTab, (tab) => {
 
     <!-- Invite Member Modal -->
     <InviteMemberModal :show="showInviteModal" @close="showInviteModal = false" />
+
+    <!-- 초대 취소 확인 -->
+    <ConfirmModal
+      v-model="showCancelInviteModal"
+      :title="$t('team.cancelInvite')"
+      :message="$t('team.confirmCancelInvite')"
+      :confirm-text="$t('team.cancelInvite')"
+      danger
+      @confirm="confirmCancelInvite"
+      @cancel="cancelInviteTargetId = null"
+    />
   </div>
 </template>

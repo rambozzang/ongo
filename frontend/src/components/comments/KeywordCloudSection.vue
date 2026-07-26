@@ -36,40 +36,38 @@
       </div>
     </div>
 
-    <!-- 로딩 상태 -->
-    <div v-if="loading" class="flex items-center justify-center py-8">
-      <div class="h-6 w-6 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
-    </div>
-
-    <!-- 키워드 클라우드 -->
-    <div
-      v-else-if="keywords.length > 0"
-      class="flex flex-wrap items-center justify-center gap-2 py-4"
+    <!-- 로딩 → 빈 상태 → 키워드 클라우드 -->
+    <AsyncState
+      :loading="loading"
+      :empty="keywords.length === 0"
+      skeleton="list"
+      :skeleton-count="2"
+      :empty-icon="HashtagIcon"
+      :empty-title="$t('commentsView.keywordCloud.empty')"
+      empty-variant="compact"
     >
-      <button
-        v-for="item in keywords"
-        :key="item.keyword"
-        class="rounded-full px-3 py-1 font-medium transition-all hover:scale-110 hover:shadow-md"
-        :style="getKeywordStyle(item)"
-        :title="$t('commentsView.keywordCloud.filterHint')"
-        @click="emit('filter', item.keyword)"
-      >
-        {{ item.keyword }}
-        <span class="ml-1 text-xs opacity-70">({{ item.count }})</span>
-      </button>
-    </div>
-
-    <!-- 빈 상태 -->
-    <div v-else class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-      {{ $t('commentsView.keywordCloud.empty') }}
-    </div>
+      <div class="flex flex-wrap items-center justify-center gap-2 py-4">
+        <button
+          v-for="item in keywords"
+          :key="item.keyword"
+          class="rounded-full px-3 py-1 font-medium transition-all hover:scale-110 hover:shadow-md"
+          :style="getKeywordStyle(item)"
+          :title="$t('commentsView.keywordCloud.filterHint')"
+          @click="emit('filter', item.keyword)"
+        >
+          {{ item.keyword }}
+          <span class="ml-1 text-xs opacity-70">({{ item.count }})</span>
+        </button>
+      </div>
+    </AsyncState>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ArrowPathIcon } from '@heroicons/vue/24/outline'
+import { ArrowPathIcon, HashtagIcon } from '@heroicons/vue/24/outline'
 import type { KeywordCloudItem } from '@/types/comment'
+import AsyncState from '@/components/common/AsyncState.vue'
 
 const props = defineProps<{
   keywords: KeywordCloudItem[]

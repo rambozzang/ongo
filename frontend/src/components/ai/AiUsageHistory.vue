@@ -116,11 +116,22 @@
         </div>
       </div>
     </div>
+
+    <!-- 기록 삭제 확인 (개별 / 전체 공용) -->
+    <ConfirmModal
+      v-model="showConfirmModal"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="runPendingAction"
+      @cancel="pendingAction = null"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, shallowRef, computed } from 'vue'
 import {
   SparklesIcon,
   DocumentTextIcon,
@@ -136,15 +147,37 @@ import {
 } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 import type { Component } from 'vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useAiHistoryStore } from '@/stores/aiHistory'
 import { useNotification } from '@/composables/useNotification'
+import { useLocale } from '@/composables/useLocale'
 import AiResultCard from './AiHistoryResultCard.vue'
 
 const historyStore = useAiHistoryStore()
 const { success } = useNotification()
+const { t } = useLocale()
 
 const activeFilter = ref<'all' | 'favorites'>('all')
 const expandedIds = ref<string[]>([])
+
+// 삭제 확인 모달 — 개별 삭제 / 전체 삭제가 하나의 모달을 공유
+const showConfirmModal = ref(false)
+const confirmTitle = ref('')
+const confirmMessage = ref('')
+const pendingAction = shallowRef<(() => void) | null>(null)
+
+function askConfirm(title: string, message: string, action: () => void) {
+  confirmTitle.value = title
+  confirmMessage.value = message
+  pendingAction.value = action
+  showConfirmModal.value = true
+}
+
+function runPendingAction() {
+  const action = pendingAction.value
+  pendingAction.value = null
+  action?.()
+}
 
 const filteredHistory = computed(() => {
   const records = historyStore.history
@@ -231,17 +264,17 @@ function toggleFavorite(id: string) {
 }
 
 function handleDelete(id: string) {
-  if (confirm('이 기록을 삭제하시겠습니까?')) {
+  askConfirm(t('aiView.history.deleteTitle'), t('aiView.history.deleteMessage'), () => {
     historyStore.removeRecord(id)
     success('기록이 삭제되었습니다')
-  }
+  })
 }
 
 function handleClearHistory() {
-  if (confirm('모든 사용 기록을 삭제하시겠습니까?')) {
+  askConfirm(t('aiView.history.clearTitle'), t('aiView.history.clearMessage'), () => {
     historyStore.clearHistory()
     success('모든 기록이 삭제되었습니다')
-  }
+  })
 }
 
 function handleCopy(_text: string) {

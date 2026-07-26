@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useAssetsStore } from '@/stores/assets'
 import {
   FolderIcon,
@@ -20,6 +21,8 @@ const showNewFolderInput = ref(false)
 const newFolderName = ref('')
 const editingFolderId = ref<number | null>(null)
 const editingFolderName = ref('')
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 const totalAssetCount = computed(() => assets.value.length)
 
@@ -72,9 +75,14 @@ function cancelRename() {
 }
 
 function handleDeleteFolder(id: number) {
-  if (confirm('폴더를 삭제하시겠습니까? 폴더 안의 에셋은 전체 보기로 이동됩니다.')) {
-    assetsStore.deleteFolder(id)
-  }
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+function confirmDeleteFolder() {
+  if (deleteTargetId.value === null) return
+  assetsStore.deleteFolder(deleteTargetId.value)
+  deleteTargetId.value = null
 }
 
 function onNewFolderKeydown(e: KeyboardEvent) {
@@ -262,5 +270,16 @@ function onRenameKeydown(e: KeyboardEvent) {
         </div>
       </nav>
     </div>
+
+    <!-- 폴더 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('assets.folder.deleteTitle')"
+      :message="$t('assets.folder.deleteMessage')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmDeleteFolder"
+      @cancel="deleteTargetId = null"
+    />
   </aside>
 </template>

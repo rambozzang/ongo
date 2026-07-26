@@ -20,73 +20,78 @@
 
     <!-- Users Table -->
     <div class="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <div class="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-      </div>
-      <table v-else class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead class="bg-gray-50 dark:bg-gray-900">
-          <tr>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.userName') }}</th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.email') }}</th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.plan') }}</th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.storage') }}</th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.joinDate') }}</th>
-            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-          <tr
-            v-for="user in users"
-            :key="user.id"
-            class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
-            role="button"
-            tabindex="0"
-            @click="openUserDetail(user)"
-            @keydown.enter="openUserDetail(user)"
-          >
-            <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
-              {{ user.name }}
-              <span v-if="user.role === 'ADMIN'" class="ml-1 inline-flex items-center rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Admin</span>
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</td>
-            <td class="whitespace-nowrap px-4 py-3 text-sm">
-              <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="planBadgeClass(user.planType)">
-                {{ user.planType }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-sm">
-              <div class="flex items-center gap-2">
-                <div class="h-2 w-24 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
-                  <div
-                    class="h-full rounded-full transition-all"
-                    :class="storageBarClass(user.storageUsedBytes, user.storageLimitBytes)"
-                    :style="{ width: storagePercent(user.storageUsedBytes, user.storageLimitBytes) + '%' }"
-                  />
-                </div>
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ formatBytes(user.storageUsedBytes) }} / {{ formatBytes(user.storageLimitBytes) }}
+      <!-- 스켈레톤일 때만 여백을 준다 (실제 테이블은 컨테이너에 붙어야 divide-y가 끝까지 이어짐) -->
+      <AsyncState
+        :loading="loading"
+        skeleton="table"
+        :skeleton-count="6"
+        :class="{ 'p-4': loading }"
+      >
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-900">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.userName') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.email') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.plan') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.storage') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.joinDate') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t('admin.actions') }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tr
+              v-for="user in users"
+              :key="user.id"
+              class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
+              role="button"
+              tabindex="0"
+              @click="openUserDetail(user)"
+              @keydown.enter="openUserDetail(user)"
+            >
+              <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                {{ user.name }}
+                <span v-if="user.role === 'ADMIN'" class="ml-1 inline-flex items-center rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Admin</span>
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-sm">
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="planBadgeClass(user.planType)">
+                  {{ user.planType }}
                 </span>
-              </div>
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-              {{ user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-' }}
-            </td>
-            <td class="whitespace-nowrap px-4 py-3 text-sm">
-              <button
-                class="rounded px-2 py-1 text-sm text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/30"
-                @click.stop="openQuotaModal(user)"
-              >
-                {{ t('admin.adjustQuota') }}
-              </button>
-            </td>
-          </tr>
-          <tr v-if="users.length === 0">
-            <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              {{ t('empty.noResults') }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+              <td class="px-4 py-3 text-sm">
+                <div class="flex items-center gap-2">
+                  <div class="h-2 w-24 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
+                    <div
+                      class="h-full rounded-full transition-all"
+                      :class="storageBarClass(user.storageUsedBytes, user.storageLimitBytes)"
+                      :style="{ width: storagePercent(user.storageUsedBytes, user.storageLimitBytes) + '%' }"
+                    />
+                  </div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ formatBytes(user.storageUsedBytes) }} / {{ formatBytes(user.storageLimitBytes) }}
+                  </span>
+                </div>
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                {{ user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-' }}
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-sm">
+                <button
+                  class="rounded px-2 py-1 text-sm text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/30"
+                  @click.stop="openQuotaModal(user)"
+                >
+                  {{ t('admin.adjustQuota') }}
+                </button>
+              </td>
+            </tr>
+            <tr v-if="users.length === 0">
+              <td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                {{ t('empty.noResults') }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </AsyncState>
 
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-gray-700">
@@ -124,236 +129,248 @@
               </button>
             </div>
 
-            <div v-if="detailLoading" class="flex flex-1 items-center justify-center">
-              <div class="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-            </div>
-
-            <div v-else class="flex-1 space-y-6 p-6">
-              <!-- User Info Card -->
-              <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span class="text-gray-500 dark:text-gray-400">{{ t('admin.role') }}</span>
-                    <div class="mt-1 flex items-center gap-2">
-                      <span class="font-medium text-gray-900 dark:text-gray-100">{{ detailData?.role }}</span>
-                      <span v-if="detailData?.role === 'ADMIN'" class="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Admin</span>
+            <AsyncState
+              :loading="detailLoading"
+              skeleton="none"
+              full-page
+              class="flex flex-1 flex-col justify-center"
+            >
+              <div class="flex-1 space-y-6 p-6">
+                <!-- User Info Card -->
+                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
+                  <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.role') }}</span>
+                      <div class="mt-1 flex items-center gap-2">
+                        <span class="font-medium text-gray-900 dark:text-gray-100">{{ detailData?.role }}</span>
+                        <span v-if="detailData?.role === 'ADMIN'" class="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Admin</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.plan') }}</span>
+                      <div class="mt-1">
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="planBadgeClass(detailData?.planType ?? '')">
+                          {{ detailData?.planType }}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.videoCount') }}</span>
+                      <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">{{ detailData?.videoCount ?? 0 }}</p>
+                    </div>
+                    <div>
+                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.storage') }}</span>
+                      <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">
+                        {{ formatBytes(detailData?.storageUsedBytes ?? 0) }} / {{ formatBytes(detailData?.storageLimitBytes ?? 0) }}
+                      </p>
+                    </div>
+                    <div>
+                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.joinDate') }}</span>
+                      <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">{{ detailData?.createdAt ? new Date(detailData.createdAt).toLocaleDateString() : '-' }}</p>
+                    </div>
+                    <div v-if="detailData?.storageQuotaOverride">
+                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.quotaOverride') }}</span>
+                      <p class="mt-1 font-medium text-orange-600 dark:text-orange-400">{{ formatBytes(detailData.storageQuotaOverride) }}</p>
                     </div>
                   </div>
-                  <div>
-                    <span class="text-gray-500 dark:text-gray-400">{{ t('admin.plan') }}</span>
-                    <div class="mt-1">
-                      <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="planBadgeClass(detailData?.planType ?? '')">
-                        {{ detailData?.planType }}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <span class="text-gray-500 dark:text-gray-400">{{ t('admin.videoCount') }}</span>
-                    <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">{{ detailData?.videoCount ?? 0 }}</p>
-                  </div>
-                  <div>
-                    <span class="text-gray-500 dark:text-gray-400">{{ t('admin.storage') }}</span>
-                    <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">
-                      {{ formatBytes(detailData?.storageUsedBytes ?? 0) }} / {{ formatBytes(detailData?.storageLimitBytes ?? 0) }}
-                    </p>
-                  </div>
-                  <div>
-                    <span class="text-gray-500 dark:text-gray-400">{{ t('admin.joinDate') }}</span>
-                    <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">{{ detailData?.createdAt ? new Date(detailData.createdAt).toLocaleDateString() : '-' }}</p>
-                  </div>
-                  <div v-if="detailData?.storageQuotaOverride">
-                    <span class="text-gray-500 dark:text-gray-400">{{ t('admin.quotaOverride') }}</span>
-                    <p class="mt-1 font-medium text-orange-600 dark:text-orange-400">{{ formatBytes(detailData.storageQuotaOverride) }}</p>
-                  </div>
                 </div>
-              </div>
 
-              <!-- Action Buttons -->
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-if="detailData && detailData.role !== 'ADMIN'"
-                  class="btn-secondary"
-                  :disabled="actionLoading"
-                  @click="toggleRole"
-                >
-                  {{ detailData.role === 'USER' ? t('admin.promoteAdmin') : t('admin.demoteUser') }}
-                </button>
-                <button
-                  v-if="detailData && detailData.role !== 'ADMIN'"
-                  class="rounded-lg px-3 py-1.5 text-sm font-medium"
-                  :class="subscriptionDetail?.status === 'SUSPENDED'
-                    ? 'border border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-400 dark:hover:bg-green-900/30'
-                    : 'border border-red-300 text-red-700 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/30'"
-                  :disabled="actionLoading"
-                  @click="toggleActivation"
-                >
-                  {{ subscriptionDetail?.status === 'SUSPENDED' ? t('admin.activate') : t('admin.deactivate') }}
-                </button>
-                <button
-                  class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-primary-50 dark:border-gray-600 dark:text-primary-400 dark:hover:bg-primary-900/30"
-                  @click="openQuotaModalFromDetail"
-                >
-                  {{ t('admin.adjustQuota') }}
-                </button>
-              </div>
-
-              <!-- Tabs -->
-              <OTabs v-model="activeTab" :tabs="detailTabs" />
-
-              <!-- Videos Tab -->
-              <div v-if="activeTab === 'videos'">
-                <div v-if="videosLoading" class="flex justify-center py-8">
-                  <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-                </div>
-                <div v-else-if="userVideos.length === 0" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('admin.noVideos') }}
-                </div>
-                <div v-else class="space-y-3">
-                  <div
-                    v-for="video in userVideos"
-                    :key="video.id"
-                    class="rounded-lg border border-gray-200 p-3 dark:border-gray-700"
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-if="detailData && detailData.role !== 'ADMIN'"
+                    class="btn-secondary"
+                    :disabled="actionLoading"
+                    @click="toggleRole"
                   >
-                    <div class="flex items-start justify-between">
-                      <div>
-                        <p class="font-medium text-gray-900 dark:text-gray-100">{{ video.title }}</p>
-                        <div class="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                          <span :class="statusBadgeClass(video.status)">{{ video.status }}</span>
-                          <span>{{ video.mediaType }}</span>
-                          <span v-if="video.fileSizeBytes">{{ formatBytes(video.fileSizeBytes) }}</span>
-                          <span>{{ video.createdAt ? new Date(video.createdAt).toLocaleDateString() : '' }}</span>
+                    {{ detailData.role === 'USER' ? t('admin.promoteAdmin') : t('admin.demoteUser') }}
+                  </button>
+                  <button
+                    v-if="detailData && detailData.role !== 'ADMIN'"
+                    class="rounded-lg px-3 py-1.5 text-sm font-medium"
+                    :class="subscriptionDetail?.status === 'SUSPENDED'
+                      ? 'border border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-400 dark:hover:bg-green-900/30'
+                      : 'border border-red-300 text-red-700 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/30'"
+                    :disabled="actionLoading"
+                    @click="toggleActivation"
+                  >
+                    {{ subscriptionDetail?.status === 'SUSPENDED' ? t('admin.activate') : t('admin.deactivate') }}
+                  </button>
+                  <button
+                    class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-primary-50 dark:border-gray-600 dark:text-primary-400 dark:hover:bg-primary-900/30"
+                    @click="openQuotaModalFromDetail"
+                  >
+                    {{ t('admin.adjustQuota') }}
+                  </button>
+                </div>
+
+                <!-- Tabs -->
+                <OTabs v-model="activeTab" :tabs="detailTabs" />
+
+                <!-- Videos Tab -->
+                <AsyncState
+                  v-if="activeTab === 'videos'"
+                  :loading="videosLoading"
+                  :empty="userVideos.length === 0"
+                  skeleton="list"
+                  :skeleton-count="3"
+                  :empty-icon="FilmIcon"
+                  :empty-title="t('admin.noVideos')"
+                  empty-variant="compact"
+                >
+                  <div class="space-y-3">
+                    <div
+                      v-for="video in userVideos"
+                      :key="video.id"
+                      class="rounded-lg border border-gray-200 p-3 dark:border-gray-700"
+                    >
+                      <div class="flex items-start justify-between">
+                        <div>
+                          <p class="font-medium text-gray-900 dark:text-gray-100">{{ video.title }}</p>
+                          <div class="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                            <span :class="statusBadgeClass(video.status)">{{ video.status }}</span>
+                            <span>{{ video.mediaType }}</span>
+                            <span v-if="video.fileSizeBytes">{{ formatBytes(video.fileSizeBytes) }}</span>
+                            <span>{{ video.createdAt ? new Date(video.createdAt).toLocaleDateString() : '' }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Platform uploads -->
+                      <div v-if="video.platforms.length > 0" class="mt-2 flex flex-wrap gap-2">
+                        <div
+                          v-for="(upload, idx) in video.platforms"
+                          :key="idx"
+                          class="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                          :class="platformUploadClass(upload.status)"
+                        >
+                          <span class="font-medium">{{ upload.platform }}</span>
+                          <span>{{ upload.status }}</span>
                         </div>
                       </div>
                     </div>
-                    <!-- Platform uploads -->
-                    <div v-if="video.platforms.length > 0" class="mt-2 flex flex-wrap gap-2">
-                      <div
-                        v-for="(upload, idx) in video.platforms"
-                        :key="idx"
-                        class="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
-                        :class="platformUploadClass(upload.status)"
-                      >
-                        <span class="font-medium">{{ upload.platform }}</span>
-                        <span>{{ upload.status }}</span>
+
+                    <!-- Video Pagination -->
+                    <div v-if="videosTotalPages > 1" class="flex items-center justify-between pt-2">
+                      <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.totalVideos', { count: videosTotalElements }) }}</span>
+                      <div class="flex gap-1">
+                        <button
+                          v-for="p in videosVisiblePages"
+                          :key="p"
+                          class="rounded px-2 py-0.5 text-xs"
+                          :class="p === videosPage ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'"
+                          @click="loadUserVideos(p)"
+                        >
+                          {{ p + 1 }}
+                        </button>
                       </div>
                     </div>
                   </div>
+                </AsyncState>
 
-                  <!-- Video Pagination -->
-                  <div v-if="videosTotalPages > 1" class="flex items-center justify-between pt-2">
-                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.totalVideos', { count: videosTotalElements }) }}</span>
-                    <div class="flex gap-1">
-                      <button
-                        v-for="p in videosVisiblePages"
-                        :key="p"
-                        class="rounded px-2 py-0.5 text-xs"
-                        :class="p === videosPage ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'"
-                        @click="loadUserVideos(p)"
-                      >
-                        {{ p + 1 }}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Channels Tab -->
-              <div v-if="activeTab === 'channels'">
-                <div v-if="channelsLoading" class="flex justify-center py-8">
-                  <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-                </div>
-                <div v-else-if="userChannels.length === 0" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('admin.noChannels') }}
-                </div>
-                <div v-else class="space-y-3">
-                  <div
-                    v-for="channel in userChannels"
-                    :key="channel.id"
-                    class="flex items-center justify-between rounded-lg border border-gray-200 p-3 dark:border-gray-700"
-                  >
-                    <div>
-                      <div class="flex items-center gap-2">
-                        <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ channel.platform }}</span>
-                        <p class="font-medium text-gray-900 dark:text-gray-100">{{ channel.channelName }}</p>
-                      </div>
-                      <div class="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                        <span>{{ t('admin.subscribers') }}: {{ channel.subscriberCount.toLocaleString() }}</span>
-                        <span :class="channel.status === 'CONNECTED' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">
-                          {{ channel.status }}
-                        </span>
-                        <span v-if="channel.connectedAt">{{ t('admin.connected') }}: {{ new Date(channel.connectedAt).toLocaleDateString() }}</span>
-                      </div>
-                    </div>
-                    <a
-                      v-if="channel.channelUrl"
-                      :href="channel.channelUrl"
-                      target="_blank"
-                      class="text-sm text-primary-600 hover:underline dark:text-primary-400"
+                <!-- Channels Tab -->
+                <AsyncState
+                  v-if="activeTab === 'channels'"
+                  :loading="channelsLoading"
+                  :empty="userChannels.length === 0"
+                  skeleton="list"
+                  :skeleton-count="3"
+                  :empty-icon="LinkIcon"
+                  :empty-title="t('admin.noChannels')"
+                  empty-variant="compact"
+                >
+                  <div class="space-y-3">
+                    <div
+                      v-for="channel in userChannels"
+                      :key="channel.id"
+                      class="flex items-center justify-between rounded-lg border border-gray-200 p-3 dark:border-gray-700"
                     >
-                      {{ t('admin.openChannel') }}
-                    </a>
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <span class="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{ channel.platform }}</span>
+                          <p class="font-medium text-gray-900 dark:text-gray-100">{{ channel.channelName }}</p>
+                        </div>
+                        <div class="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                          <span>{{ t('admin.subscribers') }}: {{ channel.subscriberCount.toLocaleString() }}</span>
+                          <span :class="channel.status === 'CONNECTED' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">
+                            {{ channel.status }}
+                          </span>
+                          <span v-if="channel.connectedAt">{{ t('admin.connected') }}: {{ new Date(channel.connectedAt).toLocaleDateString() }}</span>
+                        </div>
+                      </div>
+                      <a
+                        v-if="channel.channelUrl"
+                        :href="channel.channelUrl"
+                        target="_blank"
+                        class="text-sm text-primary-600 hover:underline dark:text-primary-400"
+                      >
+                        {{ t('admin.openChannel') }}
+                      </a>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </AsyncState>
 
-              <!-- Subscription Tab -->
-              <div v-if="activeTab === 'subscription'">
-                <div v-if="subscriptionLoading" class="flex justify-center py-8">
-                  <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-                </div>
-                <div v-else-if="!subscriptionDetail" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('admin.noSubscription') }}
-                </div>
-                <div v-else class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                  <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPlan') }}</span>
-                      <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="planBadgeClass(subscriptionDetail.planType)">
-                          {{ subscriptionDetail.planType }}
-                        </span>
-                      </p>
-                    </div>
-                    <div>
-                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subStatus') }}</span>
-                      <p class="mt-1">
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="subStatusClass(subscriptionDetail.status)">
-                          {{ subscriptionDetail.status }}
-                        </span>
-                      </p>
-                    </div>
-                    <div>
-                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPrice') }}</span>
-                      <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">{{ subscriptionDetail.price.toLocaleString() }}원 / {{ subscriptionDetail.billingCycle }}</p>
-                    </div>
-                    <div>
-                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPeriod') }}</span>
-                      <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">
-                        {{ subscriptionDetail.currentPeriodStart ? new Date(subscriptionDetail.currentPeriodStart).toLocaleDateString() : '-' }}
-                        ~
-                        {{ subscriptionDetail.currentPeriodEnd ? new Date(subscriptionDetail.currentPeriodEnd).toLocaleDateString() : '-' }}
-                      </p>
-                    </div>
-                    <div v-if="subscriptionDetail.nextBillingDate">
-                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subNextBilling') }}</span>
-                      <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">{{ new Date(subscriptionDetail.nextBillingDate).toLocaleDateString() }}</p>
-                    </div>
-                    <div v-if="subscriptionDetail.pendingPlanType">
-                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPendingPlan') }}</span>
-                      <p class="mt-1 font-medium text-orange-600 dark:text-orange-400">{{ subscriptionDetail.pendingPlanType }}</p>
-                    </div>
-                    <div v-if="subscriptionDetail.cancelledAt">
-                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subCancelledAt') }}</span>
-                      <p class="mt-1 font-medium text-red-600 dark:text-red-400">{{ new Date(subscriptionDetail.cancelledAt).toLocaleDateString() }}</p>
-                    </div>
-                    <div v-if="subscriptionDetail.storageQuotaOverride">
-                      <span class="text-gray-500 dark:text-gray-400">{{ t('admin.quotaOverride') }}</span>
-                      <p class="mt-1 font-medium text-orange-600 dark:text-orange-400">{{ formatBytes(subscriptionDetail.storageQuotaOverride) }}</p>
+                <!-- Subscription Tab -->
+                <AsyncState
+                  v-if="activeTab === 'subscription'"
+                  :loading="subscriptionLoading"
+                  :empty="!subscriptionDetail"
+                  skeleton="list"
+                  :skeleton-count="3"
+                  :empty-icon="CreditCardIcon"
+                  :empty-title="t('admin.noSubscription')"
+                  empty-variant="compact"
+                >
+                  <div v-if="subscriptionDetail" class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPlan') }}</span>
+                        <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">
+                          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="planBadgeClass(subscriptionDetail.planType)">
+                            {{ subscriptionDetail.planType }}
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subStatus') }}</span>
+                        <p class="mt-1">
+                          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" :class="subStatusClass(subscriptionDetail.status)">
+                            {{ subscriptionDetail.status }}
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPrice') }}</span>
+                        <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">{{ subscriptionDetail.price.toLocaleString() }}원 / {{ subscriptionDetail.billingCycle }}</p>
+                      </div>
+                      <div>
+                        <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPeriod') }}</span>
+                        <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">
+                          {{ subscriptionDetail.currentPeriodStart ? new Date(subscriptionDetail.currentPeriodStart).toLocaleDateString() : '-' }}
+                          ~
+                          {{ subscriptionDetail.currentPeriodEnd ? new Date(subscriptionDetail.currentPeriodEnd).toLocaleDateString() : '-' }}
+                        </p>
+                      </div>
+                      <div v-if="subscriptionDetail.nextBillingDate">
+                        <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subNextBilling') }}</span>
+                        <p class="mt-1 font-medium text-gray-900 dark:text-gray-100">{{ new Date(subscriptionDetail.nextBillingDate).toLocaleDateString() }}</p>
+                      </div>
+                      <div v-if="subscriptionDetail.pendingPlanType">
+                        <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPendingPlan') }}</span>
+                        <p class="mt-1 font-medium text-orange-600 dark:text-orange-400">{{ subscriptionDetail.pendingPlanType }}</p>
+                      </div>
+                      <div v-if="subscriptionDetail.cancelledAt">
+                        <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subCancelledAt') }}</span>
+                        <p class="mt-1 font-medium text-red-600 dark:text-red-400">{{ new Date(subscriptionDetail.cancelledAt).toLocaleDateString() }}</p>
+                      </div>
+                      <div v-if="subscriptionDetail.storageQuotaOverride">
+                        <span class="text-gray-500 dark:text-gray-400">{{ t('admin.quotaOverride') }}</span>
+                        <p class="mt-1 font-medium text-orange-600 dark:text-orange-400">{{ formatBytes(subscriptionDetail.storageQuotaOverride) }}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </AsyncState>
               </div>
-            </div>
+            </AsyncState>
           </div>
         </div>
       </Transition>
@@ -425,8 +442,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import {
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  FilmIcon,
+  LinkIcon,
+  CreditCardIcon,
+} from '@heroicons/vue/24/outline'
 import OTabs from '@/components/ui/OTabs.vue'
+import AsyncState from '@/components/common/AsyncState.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'

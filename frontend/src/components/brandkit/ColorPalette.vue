@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue'
 import { PlusIcon, PencilIcon, TrashIcon, ClipboardIcon, CheckIcon } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import type { BrandColor } from '@/types/brandkit'
 
 const props = defineProps<{
@@ -16,6 +17,8 @@ const emit = defineEmits<{
 const isAdding = ref(false)
 const editingId = ref<number | null>(null)
 const copiedId = ref<number | null>(null)
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 const newColor = ref({
   name: '',
@@ -70,9 +73,14 @@ function confirmEdit(id: number) {
 }
 
 function handleRemove(id: number) {
-  if (confirm('이 색상을 삭제하시겠습니까?')) {
-    emit('remove', id)
-  }
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+function confirmRemove() {
+  if (deleteTargetId.value === null) return
+  emit('remove', deleteTargetId.value)
+  deleteTargetId.value = null
 }
 
 let copyTimeout: ReturnType<typeof setTimeout> | null = null
@@ -265,5 +273,16 @@ onUnmounted(() => {
         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">색상 추가</span>
       </button>
     </div>
+
+    <!-- 색상 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('brandKit.colors.deleteTitle')"
+      :message="$t('brandKit.colors.deleteMessage')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmRemove"
+      @cancel="deleteTargetId = null"
+    />
   </div>
 </template>

@@ -42,41 +42,37 @@
       </span>
     </button>
 
-    <!-- AI 답변 후보 -->
-    <div v-if="candidates.length > 0" class="space-y-2">
-      <div
-        v-for="(_candidate, idx) in candidates"
-        :key="idx"
-        class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
-      >
-        <!-- 편집 가능한 textarea -->
-        <textarea
-          v-model="editedCandidates[idx]"
-          rows="2"
-          class="input-field w-full text-sm resize-none mb-2"
-          :placeholder="$t('commentsView.aiReply.editPlaceholder')"
-        />
-        <button
-          class="btn-primary text-xs"
-          @click="handleUse(editedCandidates[idx])"
+    <!-- 로딩 → 빈 상태 → AI 답변 후보 -->
+    <AsyncState :loading="loading" :empty="candidates.length === 0" skeleton="list" :skeleton-count="2">
+      <!-- 이미 primary 톤 패널 안이라 EmptyState 카드는 과하므로 문구만 유지 -->
+      <template #empty>
+        <p class="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+          {{ $t('commentsView.aiReply.noResults') }}
+        </p>
+      </template>
+
+      <div class="space-y-2">
+        <div
+          v-for="(_candidate, idx) in candidates"
+          :key="idx"
+          class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
         >
-          {{ $t('commentsView.aiReply.use') }}
-        </button>
+          <!-- 편집 가능한 textarea -->
+          <textarea
+            v-model="editedCandidates[idx]"
+            rows="2"
+            class="input-field w-full text-sm resize-none mb-2"
+            :placeholder="$t('commentsView.aiReply.editPlaceholder')"
+          />
+          <button
+            class="btn-primary text-xs"
+            @click="handleUse(editedCandidates[idx])"
+          >
+            {{ $t('commentsView.aiReply.use') }}
+          </button>
+        </div>
       </div>
-    </div>
-
-    <!-- 빈 상태 -->
-    <div
-      v-else-if="!loading"
-      class="py-4 text-center text-sm text-gray-500 dark:text-gray-400"
-    >
-      {{ $t('commentsView.aiReply.noResults') }}
-    </div>
-
-    <!-- 로딩 상태 -->
-    <div v-if="loading" class="flex items-center justify-center py-6">
-      <div class="h-6 w-6 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
-    </div>
+    </AsyncState>
   </div>
 </template>
 
@@ -86,6 +82,7 @@ import { SparklesIcon } from '@heroicons/vue/24/outline'
 import { storeToRefs } from 'pinia'
 import { useCommentsStore } from '@/stores/comments'
 import type { Comment } from '@/types/comment'
+import AsyncState from '@/components/common/AsyncState.vue'
 
 const props = defineProps<{
   comment: Comment

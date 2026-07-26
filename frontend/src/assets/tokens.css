@@ -22,10 +22,33 @@
   --accent-primary-hover: #4548bd;
   --accent-primary-subtle: #eef0ff;
 
+  /*
+   * Semantic status colors.
+   *  - base   : solid fills, icons, borders. NOT safe as text on white (3.5:1) — use *-strong.
+   *  - subtle : tinted background for badges / alerts / callouts.
+   *  - strong : text & icon color placed on *-subtle or on a plain surface (>= 4.5:1, WCAG AA).
+   * Always pair `-subtle` with `-strong`. See frontend/docs/design-tokens-migration.md
+   */
   --color-success: #159b74;
+  --color-success-subtle: #daefe9;
+  --color-success-strong: #0e654b;
+
   --color-warning: #bd7616;
+  --color-warning-subtle: #f4e9da;
+  --color-warning-strong: #7b4d0e;
+
   --color-error: #c94b58;
+  --color-error-subtle: #f6e2e4;
+  --color-error-strong: #833139;
+
   --color-info: #3d76c9;
+  --color-info-subtle: #e0e9f6;
+  --color-info-strong: #284d83;
+
+  /* Neutral status (replaces hardcoded gray badges) */
+  --color-muted: #707585;
+  --color-muted-subtle: #eceef5;
+  --color-muted-strong: #3f4453;
 
   --shadow-xs: 0 1px 2px rgba(24, 26, 39, 0.04);
   --shadow-sm: 0 2px 6px rgba(24, 26, 39, 0.06);
@@ -62,10 +85,28 @@
   --accent-primary: #8589f1;
   --accent-primary-hover: #9da1ff;
   --accent-primary-subtle: rgba(105, 109, 232, 0.16);
+  /* Semantic status colors — dark. `-subtle` is translucent so it composites
+     correctly over card / elevated / tertiary surfaces alike. */
   --color-success: #43c79b;
+  --color-success-subtle: rgba(67, 199, 155, 0.16);
+  --color-success-strong: #6cd3b1;
+
   --color-warning: #e3a048;
+  --color-warning-subtle: rgba(227, 160, 72, 0.16);
+  --color-warning-strong: #e9b570;
+
   --color-error: #ed7881;
+  --color-error-subtle: rgba(237, 120, 129, 0.16);
+  --color-error-strong: #f1969d;
+
   --color-info: #79a9ef;
+  --color-info-subtle: rgba(121, 169, 239, 0.16);
+  --color-info-strong: #96bcf3;
+
+  --color-muted: #979cab;
+  --color-muted-subtle: rgba(151, 156, 171, 0.16);
+  --color-muted-strong: #cdd0da;
+
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.24);
   --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.28);

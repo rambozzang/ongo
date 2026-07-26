@@ -221,6 +221,16 @@
     </div>
 
     <!-- Empty state (should not show as component is v-if) -->
+
+    <!-- 업로드 중 전체 취소 확인 -->
+    <ConfirmModal
+      v-model="showClearAllModal"
+      :title="$t('upload.clearAllTitle')"
+      :message="$t('upload.clearAllMessage')"
+      :confirm-text="$t('action.confirm')"
+      danger
+      @confirm="confirmClearAll"
+    />
   </div>
 </template>
 
@@ -234,11 +244,14 @@ import {
   CheckCircleIcon,
   ArrowPathIcon,
 } from '@heroicons/vue/24/outline'
+import { ref } from 'vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useUploadQueueStore } from '@/stores/uploadQueue'
 import type { QueueItemStatus } from '@/stores/uploadQueue'
 import { formatFileSize } from '@/utils/format'
 
 const queueStore = useUploadQueueStore()
+const showClearAllModal = ref(false)
 
 function getStatusText(status: QueueItemStatus): string {
   const statusMap: Record<QueueItemStatus, string> = {
@@ -265,11 +278,15 @@ function getStatusClass(status: QueueItemStatus): string {
 }
 
 function handleClearAll() {
+  // 업로드 중일 때만 확인을 거친다 (기존 동작 유지)
   if (queueStore.isUploading) {
-    if (!confirm('업로드 중인 파일이 있습니다. 정말 전체 취소하시겠습니까?')) {
-      return
-    }
+    showClearAllModal.value = true
+    return
   }
+  queueStore.clearAll()
+}
+
+function confirmClearAll() {
   queueStore.clearAll()
 }
 </script>

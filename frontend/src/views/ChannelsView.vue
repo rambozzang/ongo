@@ -12,114 +12,112 @@
 
     <PageGuide :title="$t('channels.pageGuideTitle')" :items="($tm('channels.pageGuide') as string[])" />
 
-    <!-- Loading State -->
-    <LoadingSpinner v-if="loading" full-page />
-
-    <!-- Empty State -->
-    <EmptyState
-      v-else-if="channels.length === 0"
-      :title="$t('channels.emptyTitle')"
-      :description="$t('channels.emptyDescription')"
-      :icon="LinkIcon"
-      @action="showConnectModal = true"
+    <!-- 로딩 → 빈 상태 → 채널 개요 -->
+    <AsyncState
+      :loading="loading"
+      :empty="channels.length === 0"
+      skeleton="card"
+      :skeleton-count="3"
+      :empty-title="$t('channels.emptyTitle')"
+      :empty-description="$t('channels.emptyDescription')"
+      :empty-icon="LinkIcon"
     >
-      <template #action>
+      <template #empty-action>
         <button class="btn-primary inline-flex items-center gap-2" @click="showConnectModal = true">
           <PlusIcon class="h-5 w-5" />
           {{ $t('channels.connectChannel') }}
         </button>
       </template>
-    </EmptyState>
 
-    <!-- Channels Overview -->
-    <div v-else>
-      <!-- Summary Section -->
-      <div class="page-grid page-grid--metrics mb-6">
-        <div class="card">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.totalChannels') }}</p>
-              <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {{ channelStats.total }}
-              </p>
+      <div>
+        <!-- Summary Section -->
+        <div class="page-grid page-grid--metrics mb-6">
+          <div class="card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.totalChannels') }}</p>
+                <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {{ channelStats.total }}
+                </p>
+              </div>
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+                <LinkIcon class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
             </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-              <LinkIcon class="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          </div>
+
+          <div class="card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.healthy') }}</p>
+                <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
+                  {{ channelStats.healthy }}
+                </p>
+              </div>
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                <CheckCircleIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.warning') }}</p>
+                <p class="mt-1 text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                  {{ channelStats.warning }}
+                </p>
+              </div>
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30">
+                <ExclamationTriangleIcon class="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.error') }}</p>
+                <p class="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
+                  {{ channelStats.error }}
+                </p>
+              </div>
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <XCircleIcon class="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.healthy') }}</p>
-              <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
-                {{ channelStats.healthy }}
-              </p>
-            </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <CheckCircleIcon class="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
+        <!-- Sync All Button -->
+        <div class="mb-6 flex justify-end">
+          <button
+            class="btn-secondary inline-flex items-center gap-2"
+            :disabled="syncingAll"
+            @click="handleSyncAll"
+          >
+            <ArrowPathIcon
+              class="h-5 w-5"
+              :class="{ 'animate-spin': syncingAll }"
+            />
+            {{ syncingAll ? $t('channels.syncingAll') : $t('channels.syncAll') }}
+          </button>
         </div>
 
-        <div class="card">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.warning') }}</p>
-              <p class="mt-1 text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                {{ channelStats.warning }}
-              </p>
-            </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/30">
-              <ExclamationTriangleIcon class="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('channels.error') }}</p>
-              <p class="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
-                {{ channelStats.error }}
-              </p>
-            </div>
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-              <XCircleIcon class="h-6 w-6 text-red-600 dark:text-red-400" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sync All Button -->
-      <div class="mb-6 flex justify-end">
-        <button
-          class="btn-secondary inline-flex items-center gap-2"
-          :disabled="syncingAll"
-          @click="handleSyncAll"
-        >
-          <ArrowPathIcon
-            class="h-5 w-5"
-            :class="{ 'animate-spin': syncingAll }"
+        <!-- Channel Health Cards Grid -->
+        <div class="page-grid page-grid--cards">
+          <ChannelHealthCard
+            v-for="channel in channels"
+            :key="channel.id"
+            :channel="channel"
+            :token-expires-at="getTokenExpiryDate(channel)"
+            @sync="handleSync(channel.id)"
+            @reconnect="handleReconnect(channel.platform)"
+            @disconnect="openDisconnectModal(channel)"
           />
-          {{ syncingAll ? $t('channels.syncingAll') : $t('channels.syncAll') }}
-        </button>
+        </div>
       </div>
-
-      <!-- Channel Health Cards Grid -->
-      <div class="page-grid page-grid--cards">
-        <ChannelHealthCard
-          v-for="channel in channels"
-          :key="channel.id"
-          :channel="channel"
-          :token-expires-at="getTokenExpiryDate(channel)"
-          @sync="handleSync(channel.id)"
-          @reconnect="handleReconnect(channel.platform)"
-          @disconnect="openDisconnectModal(channel)"
-        />
-      </div>
-    </div>
+    </AsyncState>
 
     <!-- Connect Channel Modal -->
     <ConnectChannelModal
@@ -154,8 +152,7 @@ import {
   ExclamationTriangleIcon,
   XCircleIcon,
 } from '@heroicons/vue/24/outline'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
+import AsyncState from '@/components/common/AsyncState.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import ChannelHealthCard from '@/components/channel/ChannelHealthCard.vue'
 import ConnectChannelModal from '@/components/channel/ConnectChannelModal.vue'

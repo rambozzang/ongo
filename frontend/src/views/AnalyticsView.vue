@@ -156,13 +156,12 @@
         </div>
 
         <!-- 데이터 없음 -->
-        <div v-if="analyticsStore.crossPlatformData.videos.length === 0" class="card">
-          <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
-            <ArrowsRightLeftIcon class="h-12 w-12 mb-3" />
-            <p class="text-sm">{{ $t('analyticsView.noCrossData') }}</p>
-            <p class="text-xs mt-1">{{ $t('analyticsView.noCrossDataHint') }}</p>
-          </div>
-        </div>
+        <EmptyState
+          v-if="analyticsStore.crossPlatformData.videos.length === 0"
+          :icon="ArrowsRightLeftIcon"
+          :title="$t('analyticsView.noCrossData')"
+          :description="$t('analyticsView.noCrossDataHint')"
+        />
       </template>
     </div>
 
@@ -227,21 +226,21 @@
 
     <!-- Overview Tab Content -->
     <template v-if="analyticsSubTab === 'overview'">
-    <LoadingSpinner v-if="loading" full-page />
-
-    <!-- Empty State (when no data available) -->
-    <EmptyState
-      v-else-if="!kpi || (kpi.totalViews === 0 && kpi.totalSubscribers === 0 && kpi.totalLikes === 0)"
-      :title="$t('analyticsView.emptyData')"
-      :description="$t('analyticsView.emptyDataDescription')"
-      :icon="ChartBarIcon"
-      :action-label="$t('analyticsView.uploadVideo')"
-      action-to="/upload"
-      :secondary-action-label="$t('analyticsView.connectChannel')"
-      secondary-action-to="/channels"
-    />
-
-    <template v-else>
+    <!-- 로딩 → 빈 상태 → 개요 콘텐츠 -->
+    <AsyncState
+      :loading="loading"
+      :empty="!kpi || (kpi.totalViews === 0 && kpi.totalSubscribers === 0 && kpi.totalLikes === 0)"
+      skeleton="none"
+      full-page
+      :empty-title="$t('analyticsView.emptyData')"
+      :empty-description="$t('analyticsView.emptyDataDescription')"
+      :empty-icon="ChartBarIcon"
+      :empty-action-label="$t('analyticsView.uploadVideo')"
+      empty-action-to="/upload"
+      :empty-secondary-action-label="$t('analyticsView.connectChannel')"
+      empty-secondary-action-to="/channels"
+    >
+    <template v-if="kpi">
       <!-- KPI Summary Cards -->
       <div class="page-grid page-grid--metrics mb-6">
         <SummaryCard
@@ -605,62 +604,53 @@
         </div>
 
         <div class="mt-4">
-          <!-- Generate button -->
-          <button
-            v-if="!aiReport && !aiLoading"
-            class="btn-primary inline-flex items-center gap-2"
-            :disabled="aiLoading"
-            @click="handleGenerateInsight"
+          <!-- 로딩 → 에러(재시도) → 생성 버튼/리포트 -->
+          <AsyncState
+            :loading="aiLoading"
+            :error="aiError"
+            skeleton="none"
+            @retry="handleGenerateInsight"
           >
-            <SparklesIcon class="h-4 w-4" />
-            {{ $t('analyticsView.generateAiInsight') }}
-          </button>
-
-          <!-- Loading state -->
-          <div v-if="aiLoading" class="flex items-center gap-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 p-4">
-            <div class="h-5 w-5 animate-spin rounded-full border-2 border-purple-300 border-t-purple-600" />
-            <span class="text-sm text-purple-700 dark:text-purple-400">{{ $t('analyticsView.aiAnalyzing') }}</span>
-          </div>
-
-          <!-- AI error -->
-          <div v-if="aiError" class="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 p-4">
-            <p class="text-sm text-red-700 dark:text-red-400">{{ aiError }}</p>
+            <!-- Generate button -->
             <button
-              class="mt-2 text-sm font-medium text-red-600 underline hover:text-red-800"
+              v-if="!aiReport"
+              class="btn-primary inline-flex items-center gap-2"
               @click="handleGenerateInsight"
             >
-              {{ $t('analyticsView.retryGenerate') }}
+              <SparklesIcon class="h-4 w-4" />
+              {{ $t('analyticsView.generateAiInsight') }}
             </button>
-          </div>
 
-          <!-- AI report result -->
-          <div v-if="aiReport" class="mt-3 space-y-3">
-            <div class="rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20 p-4">
-              <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300" v-html="sanitizedMarkdown" />
-            </div>
-            <div class="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-              <span>{{ $t('analyticsView.creditsUsed') }}: {{ aiReport.creditsUsed }} / {{ $t('analyticsView.remainingCredits') }}: {{ aiReport.creditsRemaining }}</span>
-              <div class="flex items-center gap-3">
-                <button
-                  class="inline-flex items-center gap-1 font-medium text-purple-600 hover:text-purple-800"
-                  :disabled="pdfExporting"
-                  @click="handleExportPDF"
-                >
-                  <ArrowDownTrayIcon class="h-3.5 w-3.5" />
-                  {{ pdfExporting ? $t('analyticsView.pdfExporting') : $t('analyticsView.pdfDownload') }}
-                </button>
-                <button
-                  class="font-medium text-purple-600 hover:text-purple-800"
-                  @click="handleGenerateInsight"
-                >
-                  {{ $t('analyticsView.regenerate') }}
-                </button>
+            <!-- AI report result -->
+            <div v-else class="space-y-3">
+              <div class="rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/20 p-4">
+                <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300" v-html="sanitizedMarkdown" />
+              </div>
+              <div class="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
+                <span>{{ $t('analyticsView.creditsUsed') }}: {{ aiReport.creditsUsed }} / {{ $t('analyticsView.remainingCredits') }}: {{ aiReport.creditsRemaining }}</span>
+                <div class="flex items-center gap-3">
+                  <button
+                    class="inline-flex items-center gap-1 font-medium text-purple-600 hover:text-purple-800"
+                    :disabled="pdfExporting"
+                    @click="handleExportPDF"
+                  >
+                    <ArrowDownTrayIcon class="h-3.5 w-3.5" />
+                    {{ pdfExporting ? $t('analyticsView.pdfExporting') : $t('analyticsView.pdfDownload') }}
+                  </button>
+                  <button
+                    class="font-medium text-purple-600 hover:text-purple-800"
+                    @click="handleGenerateInsight"
+                  >
+                    {{ $t('analyticsView.regenerate') }}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </AsyncState>
         </div>
       </div>
     </template>
+    </AsyncState>
     </template>
   </div>
 </template>
@@ -684,6 +674,7 @@ import {
 import OTabs from '@/components/ui/OTabs.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import AsyncState from '@/components/common/AsyncState.vue'
 import SummaryCard from '@/components/dashboard/SummaryCard.vue'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import ExportDropdown from '@/components/analytics/ExportDropdown.vue'

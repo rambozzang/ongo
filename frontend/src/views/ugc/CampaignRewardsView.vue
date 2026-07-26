@@ -62,7 +62,7 @@
             <div class="flex items-end justify-end gap-2">
               <template v-if="item.status === 'DRAFT'">
                 <button class="btn-secondary text-xs" :disabled="acting === item.participantId" @click="save(item)">{{ $t('ugc.saveDraft') }}</button>
-                <button class="btn-primary text-xs" :disabled="acting === item.participantId" @click="confirm(item)">{{ $t('ugc.confirmReward') }}</button>
+                <button class="btn-primary text-xs" :disabled="acting === item.participantId" @click="confirmReward(item)">{{ $t('ugc.confirmReward') }}</button>
               </template>
               <button v-else-if="item.status === 'CONFIRMED'" class="btn-primary text-xs" :disabled="acting === item.participantId" @click="markPaid(item)">{{ $t('ugc.markPaid') }}</button>
             </div>
@@ -154,7 +154,7 @@ async function save(item: ParticipantRewardResponse) {
   }
 }
 
-async function confirm(item: ParticipantRewardResponse) {
+async function confirmReward(item: ParticipantRewardResponse) {
   acting.value = item.participantId
   try {
     const ws = await workspaceId()

@@ -24,7 +24,8 @@
     "submit": "제출",
     "loading": "로딩 중...",
     "more": "더보기",
-    "seeAll": "전체 보기"
+    "seeAll": "전체 보기",
+    "prev": "이전"
   },
   "ugc": {
     "title": "UGC 캠페인",
@@ -240,7 +241,8 @@
       "AWARENESS": "인지도",
       "CONVERSION": "전환",
       "ENGAGEMENT": "참여"
-    }
+    },
+    "approve": "승인"
   },
   "status": {
     "success": "성공",
@@ -836,7 +838,8 @@
       "브랜드 딜의 상태(문의~완료)를 추적하고 관리합니다",
       "미디어키트를 작성하여 브랜드에 공유할 수 있습니다",
       "딜 금액과 마감일을 기록하여 수익을 관리하세요"
-    ]
+    ],
+    "deleteTitle": "브랜드 딜을 삭제할까요?"
   },
   "audience": {
     "title": "오디언스 CRM",
@@ -883,7 +886,8 @@
         "cancel": "취소",
         "creating": "생성 중...",
         "add": "추가"
-      }
+      },
+      "deleteTitle": "세그먼트를 삭제할까요?"
     },
     "description": "팬 프로필과 세그먼트를 관리하여 오디언스를 분석하세요",
     "pageGuideTitle": "오디언스 CRM",
@@ -1156,7 +1160,9 @@
       "조회수 트렌드 차트에서 YouTube·TikTok·Instagram·Naver Clip별 성과를 비교하세요",
       "재활용 추천 섹션에서 과거 인기 콘텐츠를 다시 게시할 수 있습니다",
       "예약 일정 위젯에서 다가오는 게시 스케줄을 한눈에 확인하세요"
-    ]
+    ],
+    "resetWidgetsTitle": "위젯 설정을 초기화할까요?",
+    "resetWidgetsMessage": "대시보드 위젯이 기본 구성으로 되돌아갑니다."
   },
   "scheduleView": {
     "title": "예약 관리",
@@ -1345,7 +1351,17 @@
     "expectedReaction": "예상 반응",
     "expectedImpact": "예상 영향",
     "expectedBoost": "예상 향상",
-    "analysisPeriod": "분석 기간"
+    "analysisPeriod": "분석 기간",
+    "history": {
+      "clearTitle": "기록을 모두 지울까요?",
+      "clearMessage": "저장된 AI 사용 기록이 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "deleteTitle": "이 기록을 삭제할까요?",
+      "deleteMessage": "삭제한 기록은 되돌릴 수 없습니다."
+    },
+    "preset": {
+      "deleteTitle": "프리셋을 삭제할까요?",
+      "deleteMessage": "삭제한 프리셋은 되돌릴 수 없습니다."
+    }
   },
   "analyticsView": {
     "title": "통합 분석",
@@ -1573,7 +1589,11 @@
       "상단 통계(총 조회수·총 클릭수·클릭률)에서 링크 페이지 성과를 모니터링하세요",
       "저장 버튼을 누르면 변경사항이 즉시 라이브 페이지에 반영됩니다"
     ],
-    "pageGuideTitle": "링크 인 바이오"
+    "pageGuideTitle": "링크 인 바이오",
+    "block": {
+      "deleteTitle": "블록을 삭제할까요?",
+      "deleteMessage": "삭제한 블록은 되돌릴 수 없습니다."
+    }
   },
   "upload": {
     "title": "콘텐츠 업로드",
@@ -1655,7 +1675,9 @@
     ],
     "stepsAriaLabel": "업로드 단계",
     "stepAriaLabel": "{step}단계: {label}{completed}",
-    "stepCompleted": "완료"
+    "stepCompleted": "완료",
+    "clearAllTitle": "업로드 큐를 비울까요?",
+    "clearAllMessage": "대기 중인 업로드가 모두 취소됩니다."
   },
   "channels": {
     "title": "채널 관리",
@@ -1807,6 +1829,44 @@
       "analyzing": "AI가 영상을 분석 중입니다...",
       "run": "AI 분석 실행",
       "clipsFound": "클립 후보 {count}개를 찾았습니다"
+    },
+    "aiTools": {
+      "button": "AI 도구"
+    },
+    "seoScore": {
+      "button": "SEO 점수",
+      "modalTitle": "AI SEO 점수 분석",
+      "prompt": "'{title}' 영상의 SEO 최적화 수준을 AI가 진단합니다",
+      "creditNotice": "AI 크레딧이 소모됩니다",
+      "run": "SEO 분석 실행",
+      "analyzing": "AI가 분석 중입니다...",
+      "suggestions": "개선 제안",
+      "creditsUsed": "{count} 크레딧 소모됨"
+    },
+    "publishChecklist": {
+      "button": "게시 점검",
+      "modalTitle": "AI 게시 전 점검",
+      "prompt": "'{title}' 영상이 게시 준비가 됐는지 AI가 점검합니다",
+      "run": "점검 실행",
+      "checking": "AI가 점검 중입니다...",
+      "score": "준비도 {score}점",
+      "ready": "게시 준비 완료",
+      "notReady": "보완이 필요합니다"
+    },
+    "viewsPrediction": {
+      "button": "조회수 예측",
+      "modalTitle": "AI 조회수 예측",
+      "prompt": "'{title}' 영상의 예상 조회수를 AI가 예측합니다",
+      "creditNotice": "AI 크레딧이 소모됩니다",
+      "run": "예측 실행",
+      "analyzing": "AI가 예측 중입니다...",
+      "creditsUsed": "{count} 크레딧 소모됨",
+      "24h": "24시간",
+      "7d": "7일",
+      "30d": "30일",
+      "confidence": "신뢰도",
+      "factors": "주요 요인",
+      "vsAverage": "채널 평균 대비"
     }
   },
   "calendar": {
@@ -1870,7 +1930,12 @@
     "favorites": "즐겨찾기",
     "emptyTitle": "템플릿이 없습니다",
     "emptyDescription": "검색 조건을 변경하거나 새 템플릿을 만들어보세요",
-    "createTemplate": "템플릿 만들기"
+    "createTemplate": "템플릿 만들기",
+    "deleteTitle": "템플릿을 삭제할까요?",
+    "deleteMessage": "삭제한 템플릿은 되돌릴 수 없습니다.",
+    "form": {
+      "nameRequired": "템플릿 이름을 입력해주세요"
+    }
   },
   "brandKit": {
     "title": "브랜드 키트",
@@ -1893,7 +1958,21 @@
     "brandAssets": "브랜드 에셋",
     "brandAssetsDesc": "로고, 워터마크, 템플릿 등을 관리하세요",
     "guidelines": "브랜드 가이드라인",
-    "guidelinesDesc": "브랜드 사용 규칙과 지침을 문서화하세요"
+    "guidelinesDesc": "브랜드 사용 규칙과 지침을 문서화하세요",
+    "assets": {
+      "deleteTitle": "에셋을 삭제할까요?",
+      "deleteMessage": "삭제한 에셋은 되돌릴 수 없습니다.",
+      "downloadStarted": "다운로드를 시작했습니다",
+      "uploadFailed": "에셋 업로드에 실패했습니다"
+    },
+    "colors": {
+      "deleteTitle": "색상을 삭제할까요?",
+      "deleteMessage": "삭제한 색상은 되돌릴 수 없습니다."
+    },
+    "fonts": {
+      "deleteTitle": "폰트를 삭제할까요?",
+      "deleteMessage": "삭제한 폰트는 되돌릴 수 없습니다."
+    }
   },
   "recycling": {
     "title": "콘텐츠 재활용",
@@ -1934,7 +2013,8 @@
     "accept": "수락",
     "dismiss": "거절",
     "emptySuggestionsTitle": "재활용 제안이 없습니다",
-    "emptySuggestionsDescription": "AI가 기존 영상을 분석하여 재활용 제안을 생성합니다"
+    "emptySuggestionsDescription": "AI가 기존 영상을 분석하여 재활용 제안을 생성합니다",
+    "deleteConfirmTitle": "재활용 항목을 삭제할까요?"
   },
   "trend": {
     "title": "트렌드 모니터링",
@@ -1990,7 +2070,14 @@
     "progressStatus": "진행 상황",
     "current": "현재",
     "target": "목표",
-    "milestones": "마일스톤"
+    "milestones": "마일스톤",
+    "deleteTitle": "목표를 삭제할까요?",
+    "form": {
+      "titleRequired": "목표 제목을 입력해주세요",
+      "targetValueRequired": "목표값을 입력해주세요",
+      "dateRangeRequired": "시작일과 종료일을 선택해주세요",
+      "endDateAfterStartDate": "종료일은 시작일보다 뒤여야 합니다"
+    }
   },
   "abTest": {
     "title": "A/B 테스트",
@@ -2111,7 +2198,8 @@
     "opportunities": "기회",
     "recommendations": "추천 행동",
     "aiInsightEmpty": "AI 분석 버튼을 눌러 경쟁자와의 비교 인사이트를 받아보세요",
-    "confirmDelete": "정말 이 경쟁 채널을 삭제하시겠습니까?"
+    "confirmDelete": "정말 이 경쟁 채널을 삭제하시겠습니까?",
+    "deleteTitle": "경쟁 채널을 삭제할까요?"
   },
   "automation": {
     "title": "자동화 규칙",
@@ -2146,7 +2234,9 @@
     "delete": "삭제",
     "emptyWorkflowsTitle": "워크플로우가 없습니다",
     "emptyWorkflowsDesc": "조건 분기와 다중 액션을 포함한 고급 자동화를 만들어보세요",
-    "createFirstWorkflow": "첫 워크플로우 만들기"
+    "createFirstWorkflow": "첫 워크플로우 만들기",
+    "deleteRuleTitle": "자동화 규칙을 삭제할까요?",
+    "deleteWorkflowTitle": "워크플로우를 삭제할까요?"
   },
   "revenue": {
     "title": "수익 분석",
@@ -2220,7 +2310,8 @@
         "ANOMALY": "이상 감지",
         "OPPORTUNITY": "성장 기회",
         "FORECAST": "수익 예측"
-      }
+      },
+      "generateFailed": "인사이트 생성에 실패했습니다"
     },
     "alerts": {
       "title": "수익 알림 설정",
@@ -2318,7 +2409,9 @@
     "pagination": {
       "previous": "이전",
       "next": "다음"
-    }
+    },
+    "clearAllTitle": "알림을 모두 지울까요?",
+    "clearAllMessage": "읽지 않은 알림도 함께 삭제됩니다."
   },
   "ideas": {
     "title": "콘텐츠 아이디어",
@@ -2351,7 +2444,9 @@
     "estimatedViews": "예상 조회수",
     "difficulty": "난이도",
     "aiGenerated": "AI 생성",
-    "credits": "5 크레딧"
+    "credits": "5 크레딧",
+    "deleteTitle": "아이디어를 삭제할까요?",
+    "deleteMessage": "삭제한 아이디어는 되돌릴 수 없습니다."
   },
   "team": {
     "description": "팀 멤버 관리 및 협업 활동 추적",
@@ -2481,7 +2576,9 @@
     "pagination": {
       "previous": "이전",
       "next": "다음"
-    }
+    },
+    "exportCsv": "CSV 내보내기",
+    "today": "오늘"
   },
   "subscription": {
     "title": "구독 & 결제",
@@ -2565,7 +2662,10 @@
     "cancelSuccess": "구독이 취소되었습니다. 현재 결제 기간까지 이용 가능합니다.",
     "cancelError": "구독 취소에 실패했습니다.",
     "creditChargeSuccess": "크레딧이 충전되었습니다.",
-    "creditChargeError": "크레딧 충전에 실패했습니다."
+    "creditChargeError": "크레딧 충전에 실패했습니다.",
+    "monthly": "월간",
+    "yearly": "연간",
+    "discount": "할인"
   },
   "videoCompare": {
     "title": "영상 비교 분석",
@@ -4678,5 +4778,19 @@
     "historyTitle": "검색 이력",
     "historyEmpty": "검색 이력이 없습니다",
     "historyEmptyDesc": "키워드를 분석하면 이력이 저장됩니다"
+  },
+  "common": {
+    "showMore": "더보기",
+    "collapse": "접기"
+  },
+  "assets": {
+    "deleteTitle": "에셋을 삭제할까요?",
+    "deleteMessage": "삭제한 에셋은 되돌릴 수 없습니다.",
+    "bulkDeleteTitle": "선택한 에셋을 삭제할까요?",
+    "bulkDeleteMessage": "선택한 {count}개 에셋이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+    "folder": {
+      "deleteTitle": "폴더를 삭제할까요?",
+      "deleteMessage": "폴더와 그 안의 에셋이 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+    }
   }
 }

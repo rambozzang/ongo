@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import type { BrandFont } from '@/types/brandkit'
 
 const props = defineProps<{
@@ -15,6 +16,8 @@ const emit = defineEmits<{
 
 const isAdding = ref(false)
 const editingId = ref<number | null>(null)
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 const newFont = ref({
   name: '',
@@ -86,9 +89,14 @@ function confirmEdit(id: number) {
 }
 
 function handleRemove(id: number) {
-  if (confirm('이 서체를 삭제하시겠습니까?')) {
-    emit('remove', id)
-  }
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+function confirmRemove() {
+  if (deleteTargetId.value === null) return
+  emit('remove', deleteTargetId.value)
+  deleteTargetId.value = null
 }
 
 function getFontStyle(family: string, weight: string) {
@@ -289,5 +297,16 @@ function getFontStyle(family: string, weight: string) {
         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">서체 추가</span>
       </button>
     </div>
+
+    <!-- 서체 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('brandKit.fonts.deleteTitle')"
+      :message="$t('brandKit.fonts.deleteMessage')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmRemove"
+      @cancel="deleteTargetId = null"
+    />
   </div>
 </template>

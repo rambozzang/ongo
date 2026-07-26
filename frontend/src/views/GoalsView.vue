@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   PlusIcon,
   FunnelIcon,
@@ -9,6 +8,7 @@ import {
   ChartBarIcon,
   CalendarIcon,
 } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import { useGoalsStore } from '@/stores/goals'
@@ -17,7 +17,6 @@ import GoalCard from '@/components/goals/GoalCard.vue'
 import GoalFormModal from '@/components/goals/GoalFormModal.vue'
 import MilestoneList from '@/components/goals/MilestoneList.vue'
 
-const { t } = useI18n()
 const goalsStore = useGoalsStore()
 
 const showFormModal = ref(false)
@@ -25,6 +24,8 @@ const editingGoal = ref<Goal | undefined>(undefined)
 const viewingGoal = ref<Goal | undefined>(undefined)
 const showCompleted = ref(false)
 const sortBy = ref<'deadline' | 'progress' | 'recent'>('deadline')
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 onMounted(() => {
   goalsStore.fetchGoals()
@@ -84,9 +85,15 @@ const handleEditGoal = (goal: Goal) => {
 }
 
 const handleDeleteGoal = (goalId: number) => {
-  if (confirm(t('goals.confirmDelete'))) {
-    goalsStore.deleteGoal(goalId)
-  }
+  deleteTargetId.value = goalId
+  showDeleteModal.value = true
+}
+
+const confirmDeleteGoal = () => {
+  const goalId = deleteTargetId.value
+  deleteTargetId.value = null
+  if (goalId === null) return
+  goalsStore.deleteGoal(goalId)
 }
 
 const handlePauseGoal = (goalId: number) => {
@@ -409,5 +416,16 @@ const formatNumber = (value: number): string => {
         </div>
       </Transition>
     </Teleport>
+
+    <!-- 목표 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('goals.deleteTitle')"
+      :message="$t('goals.confirmDelete')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmDeleteGoal"
+      @cancel="deleteTargetId = null"
+    />
   </div>
 </template>

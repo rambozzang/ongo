@@ -8,6 +8,7 @@ import CompetitorCard from '@/components/competitor/CompetitorCard.vue'
 import ComparisonChart from '@/components/competitor/ComparisonChart.vue'
 import AddCompetitorModal from '@/components/competitor/AddCompetitorModal.vue'
 import TrendingVideoList from '@/components/competitor/TrendingVideoList.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 
@@ -24,6 +25,8 @@ const competitorTabs = computed(() => [
 const isAddModalOpen = ref(false)
 const selectedCompetitorId = ref<number | null>(null)
 const isRefreshing = ref(false)
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 const selectedCompetitor = computed(() => {
   if (!selectedCompetitorId.value) return null
@@ -40,11 +43,17 @@ function handleToggleTracking(id: number) {
 }
 
 function handleRemoveCompetitor(id: number) {
-  if (confirm(t('competitor.confirmDelete'))) {
-    competitorStore.removeCompetitor(id)
-    if (selectedCompetitorId.value === id) {
-      selectedCompetitorId.value = null
-    }
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+function confirmRemoveCompetitor() {
+  const id = deleteTargetId.value
+  deleteTargetId.value = null
+  if (id === null) return
+  competitorStore.removeCompetitor(id)
+  if (selectedCompetitorId.value === id) {
+    selectedCompetitorId.value = null
   }
 }
 
@@ -320,6 +329,17 @@ function formatNumber(num: number): string {
       :is-open="isAddModalOpen"
       @close="isAddModalOpen = false"
       @add="handleAddCompetitor"
+    />
+
+    <!-- 경쟁 채널 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('competitor.deleteTitle')"
+      :message="$t('competitor.confirmDelete')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmRemoveCompetitor"
+      @cancel="deleteTargetId = null"
     />
   </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, shallowRef, computed, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAssetsStore } from '@/stores/assets'
 import type { Asset, AssetType } from '@/types/asset'
@@ -8,7 +8,9 @@ import AssetCard from '@/components/assets/AssetCard.vue'
 import AssetUploadModal from '@/components/assets/AssetUploadModal.vue'
 import AssetPreviewModal from '@/components/assets/AssetPreviewModal.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
+import { useLocale } from '@/composables/useLocale'
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -22,6 +24,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const assetsStore = useAssetsStore()
+const { t } = useLocale()
 const {
   filteredAssets,
   viewMode,
@@ -105,11 +108,30 @@ function confirmMove() {
   moveTargetAssetId.value = null
 }
 
+// 삭제 확인 모달 — 단건 삭제 / 일괄 삭제가 하나의 모달을 공유
+const showConfirmModal = ref(false)
+const confirmTitle = ref('')
+const confirmMessage = ref('')
+const pendingAction = shallowRef<(() => void) | null>(null)
+
+function askConfirm(title: string, message: string, action: () => void) {
+  confirmTitle.value = title
+  confirmMessage.value = message
+  pendingAction.value = action
+  showConfirmModal.value = true
+}
+
+function runPendingAction() {
+  const action = pendingAction.value
+  pendingAction.value = null
+  action?.()
+}
+
 // Single delete
 function handleDelete(id: number) {
-  if (confirm('이 에셋을 삭제하시겠습니까?')) {
+  askConfirm(t('assets.deleteTitle'), t('assets.deleteMessage'), () => {
     assetsStore.deleteAsset(id)
-  }
+  })
 }
 
 // Bulk operations
@@ -135,9 +157,10 @@ function toggleSelectAll() {
 
 function handleBulkDelete() {
   const count = selectedAssets.value.size
-  if (confirm(`선택한 ${count}개의 에셋을 삭제하시겠습니까?`)) {
-    assetsStore.bulkDelete([...selectedAssets.value])
-  }
+  const ids = [...selectedAssets.value]
+  askConfirm(t('assets.bulkDeleteTitle'), t('assets.bulkDeleteMessage', { count }), () => {
+    assetsStore.bulkDelete(ids)
+  })
 }
 
 const showBulkMoveModal = ref(false)
@@ -546,6 +569,17 @@ title="에셋 라이브러리" :items="[
         <button class="btn-primary" @click="confirmBulkMove">이동</button>
       </template>
     </BaseModal>
+
+    <!-- 에셋 삭제 확인 (단건 / 일괄 공용) -->
+    <ConfirmModal
+      v-model="showConfirmModal"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="runPendingAction"
+      @cancel="pendingAction = null"
+    />
   </div>
 </template>
 

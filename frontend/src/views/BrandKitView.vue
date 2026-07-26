@@ -10,8 +10,10 @@ import TypographySection from '@/components/brandkit/TypographySection.vue'
 import AssetGrid from '@/components/brandkit/AssetGrid.vue'
 import GuidelinesEditor from '@/components/brandkit/GuidelinesEditor.vue'
 import type { BrandColor, BrandFont, BrandAsset } from '@/types/brandkit'
+import { useNotification } from '@/composables/useNotification'
 
 const { t } = useI18n()
+const notify = useNotification()
 const brandKitStore = useBrandKitStore()
 
 const sections = ref({
@@ -27,7 +29,7 @@ function toggleSection(section: keyof typeof sections.value) {
 
 function handleSave() {
   brandKitStore.saveBrandKit()
-  alert(t('brandKit.saveSuccess'))
+  notify.success(t('brandKit.saveSuccess'))
 }
 
 // Color handlers

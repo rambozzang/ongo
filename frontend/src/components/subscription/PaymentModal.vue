@@ -79,7 +79,7 @@
 
         <!-- Processing -->
         <div v-else-if="processing && !paymentComplete" class="flex flex-col items-center justify-center py-12">
-          <div class="mb-6 h-16 w-16 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
+          <LoadingSpinner size="lg" class="mb-6" />
           <p class="text-lg font-medium text-gray-700 dark:text-gray-300">결제 처리 중...</p>
           <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">잠시만 기다려주세요</p>
         </div>
@@ -141,6 +141,7 @@
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { XMarkIcon, SparklesIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/vue/24/outline'
 import { PLANS, type PlanType } from '@/types/subscription'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { usePaddle } from '@/composables/usePaddle'
 
 interface Props {

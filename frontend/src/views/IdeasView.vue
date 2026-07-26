@@ -166,6 +166,17 @@
         </button>
       </div>
     </BaseModal>
+
+    <!-- 아이디어 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('ideas.deleteTitle')"
+      :message="$t('ideas.deleteMessage')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmDelete"
+      @cancel="deleteTargetId = null"
+    />
   </div>
 </template>
 
@@ -180,6 +191,7 @@ import IdeaCard from '@/components/ideas/IdeaCard.vue'
 import IdeaColumn from '@/components/ideas/IdeaColumn.vue'
 import IdeaFormModal from '@/components/ideas/IdeaFormModal.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import { PlusIcon, MagnifyingGlassIcon, SparklesIcon } from '@heroicons/vue/24/outline'
@@ -192,6 +204,8 @@ const isModalOpen = ref(false)
 const selectedIdea = ref<ContentIdea | null>(null)
 const searchQuery = ref('')
 const selectedPriority = ref<IdeaPriority | 'all'>('all')
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 // AI 아이디어 생성
 const showAiModal = ref(false)
@@ -288,9 +302,15 @@ const handleUpdate = (id: number, data: Partial<ContentIdea>) => {
 }
 
 const handleDelete = (id: number) => {
-  if (confirm('이 콘텐츠 아이디어를 삭제하시겠습니까?')) {
-    ideasStore.deleteIdea(id)
-  }
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+const confirmDelete = () => {
+  const id = deleteTargetId.value
+  deleteTargetId.value = null
+  if (id === null) return
+  ideasStore.deleteIdea(id)
 }
 
 const handleDrop = (ideaId: number, newStatus: IdeaStatus) => {

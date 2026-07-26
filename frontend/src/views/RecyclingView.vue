@@ -15,6 +15,7 @@ import RecyclingCreateModal from '@/components/recycling/RecyclingCreateModal.vu
 import RecyclingHistoryComponent from '@/components/recycling/RecyclingHistory.vue'
 import { LightBulbIcon } from '@heroicons/vue/24/outline'
 import type { RecyclingQueue, RecyclingQueueCreateRequest } from '@/types/recycling'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 
@@ -23,6 +24,8 @@ const recyclingStore = useRecyclingStore()
 
 const activeTab = ref<'queues' | 'history' | 'suggestions'>('queues')
 const isModalOpen = ref(false)
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<number | null>(null)
 
 const tabList = computed(() => [
   { key: 'queues', label: t('recycling.tabQueues'), count: recyclingStore.queues.length },
@@ -85,9 +88,15 @@ function handleSave(data: RecyclingQueueCreateRequest) {
 }
 
 function handleDelete(id: number) {
-  if (confirm(t('recycling.deleteConfirmMessage'))) {
-    recyclingStore.deleteQueue(id)
-  }
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+function confirmDelete() {
+  const id = deleteTargetId.value
+  deleteTargetId.value = null
+  if (id === null) return
+  recyclingStore.deleteQueue(id)
 }
 
 function handleToggle(id: number) {
@@ -316,6 +325,17 @@ onMounted(() => {
       :queue="editingQueue"
       @close="closeModal"
       @save="handleSave"
+    />
+
+    <!-- 큐 삭제 확인 -->
+    <ConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('recycling.deleteConfirmTitle')"
+      :message="$t('recycling.deleteConfirmMessage')"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="confirmDelete"
+      @cancel="deleteTargetId = null"
     />
   </div>
 </template>

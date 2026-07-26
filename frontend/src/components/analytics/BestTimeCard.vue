@@ -20,89 +20,93 @@
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loadingOptimal" class="flex items-center justify-center py-8">
-      <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary-600" />
-    </div>
-
-    <template v-else>
-      <!-- Countdown to next best time -->
-      <div
-        v-if="nextBestTimeCountdown"
-        class="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-900/20 p-3"
-      >
-        <svg class="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div class="flex-1">
-          <p class="text-xs font-medium text-green-700 dark:text-green-400">다음 추천 시간까지</p>
-          <p class="text-sm font-bold text-green-800 dark:text-green-300">{{ nextBestTimeCountdown }}</p>
-        </div>
-      </div>
-
-      <!-- Top 5 recommendations -->
-      <div class="space-y-3">
+    <!-- 로딩 → 빈 상태 → 추천 목록 -->
+    <AsyncState
+      :loading="loadingOptimal"
+      :empty="displaySlots.length === 0"
+      skeleton="list"
+      :skeleton-count="3"
+      :empty-icon="ClockIcon"
+      empty-title="분석 데이터가 부족합니다"
+      empty-description="영상을 업로드한 후 데이터가 쌓이면 추천이 표시됩니다."
+      empty-variant="compact"
+    >
+      <div class="space-y-4">
+        <!-- Countdown to next best time -->
         <div
-          v-for="(rec, index) in displaySlots"
-          :key="index"
-          class="rounded-lg border p-3 transition-colors"
-          :class="
-            index < 2
-              ? 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10 hover:border-green-400 dark:hover:border-green-600'
-              : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:border-yellow-300 dark:hover:border-yellow-700'
-          "
+          v-if="nextBestTimeCountdown"
+          class="flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-900/20 p-3"
         >
-          <div class="mb-2 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div
-                class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
-                :class="getRankClass(index)"
-              >
-                {{ index + 1 }}
-              </div>
-              <div>
-                <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ rec.timeLabel }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ rec.dayLabel }}</p>
-              </div>
-            </div>
-            <div class="text-right">
-              <p class="text-lg font-bold" :class="index < 2 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">
-                {{ normalizedScore(rec) }}%
-              </p>
-            </div>
-          </div>
-
-          <!-- Details -->
-          <div class="mb-2 flex gap-4 text-xs text-gray-600 dark:text-gray-400">
-            <span>예상 조회수: <strong class="text-gray-900 dark:text-gray-100">{{ formatNumber(rec.expectedViews) }}</strong></span>
-            <span>참여율: <strong class="text-gray-900 dark:text-gray-100">{{ rec.engagementRate }}%</strong></span>
-            <span>신뢰도: <strong class="text-gray-900 dark:text-gray-100">{{ rec.confidenceScore }}%</strong></span>
-          </div>
-
-          <!-- Engagement score bar -->
-          <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-            <div
-              class="h-full rounded-full transition-all duration-500"
-              :class="getBarClass(index)"
-              :style="{ width: `${normalizedScore(rec)}%` }"
-            />
+          <svg class="h-5 w-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="flex-1">
+            <p class="text-xs font-medium text-green-700 dark:text-green-400">다음 추천 시간까지</p>
+            <p class="text-sm font-bold text-green-800 dark:text-green-300">{{ nextBestTimeCountdown }}</p>
           </div>
         </div>
 
-        <!-- Empty state -->
-        <div v-if="displaySlots.length === 0" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          분석 데이터가 부족합니다. 영상을 업로드한 후 데이터가 쌓이면 추천이 표시됩니다.
+        <!-- Top 5 recommendations -->
+        <div class="space-y-3">
+          <div
+            v-for="(rec, index) in displaySlots"
+            :key="index"
+            class="rounded-lg border p-3 transition-colors"
+            :class="
+              index < 2
+                ? 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10 hover:border-green-400 dark:hover:border-green-600'
+                : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:border-yellow-300 dark:hover:border-yellow-700'
+            "
+          >
+            <div class="mb-2 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div
+                  class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
+                  :class="getRankClass(index)"
+                >
+                  {{ index + 1 }}
+                </div>
+                <div>
+                  <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ rec.timeLabel }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ rec.dayLabel }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-lg font-bold" :class="index < 2 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">
+                  {{ normalizedScore(rec) }}%
+                </p>
+              </div>
+            </div>
+
+            <!-- Details -->
+            <div class="mb-2 flex gap-4 text-xs text-gray-600 dark:text-gray-400">
+              <span>예상 조회수: <strong class="text-gray-900 dark:text-gray-100">{{ formatNumber(rec.expectedViews) }}</strong></span>
+              <span>참여율: <strong class="text-gray-900 dark:text-gray-100">{{ rec.engagementRate }}%</strong></span>
+              <span>신뢰도: <strong class="text-gray-900 dark:text-gray-100">{{ rec.confidenceScore }}%</strong></span>
+            </div>
+
+            <!-- Engagement score bar -->
+            <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+              <div
+                class="h-full rounded-full transition-all duration-500"
+                :class="getBarClass(index)"
+                :style="{ width: `${normalizedScore(rec)}%` }"
+              />
+            </div>
+          </div>
         </div>
       </div>
-    </template>
+    </AsyncState>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { ClockIcon } from '@heroicons/vue/24/outline'
 import type { Platform } from '@/types/channel'
 import type { HeatmapData, OptimalTimeSlot } from '@/types/analytics'
 import { analyticsApi } from '@/api/analytics'
+import AsyncState from '@/components/common/AsyncState.vue'
 
 interface Props {
   data: HeatmapData[]

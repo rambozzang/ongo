@@ -98,14 +98,21 @@
     @apply flex items-end justify-between gap-4;
   }
 
-  .section-heading h2,
+  /* Sizes come from the shared scale instead of hand-rolled weight/tracking.
+     Previously these set weight+tracking but no font-size, so headings fell back
+     to the UA default size. */
+  .section-heading h2 {
+    @apply text-h2;
+    color: var(--text-primary);
+  }
+
   .section-heading h3 {
-    @apply font-semibold tracking-[-0.02em];
+    @apply text-h3;
     color: var(--text-primary);
   }
 
   .section-heading p {
-    @apply mt-1 text-sm leading-5;
+    @apply mt-1 text-body-sm leading-5;
     color: var(--text-secondary);
   }
 
@@ -143,13 +150,15 @@
     @apply mb-7 flex flex-col gap-4 tablet:flex-row tablet:items-end tablet:justify-between;
   }
 
+  /* `display-sm` / `display` encode exactly the 1.75rem -> 2rem page-title ramp
+     that used to live here as arbitrary values. */
   .page-header h1 {
-    @apply text-[1.75rem] font-bold tracking-[-0.035em] tablet:text-[2rem];
+    @apply text-display-sm tablet:text-display;
     color: var(--text-primary);
   }
 
   .page-header p {
-    @apply mt-1.5 max-w-2xl text-sm leading-6;
+    @apply mt-1.5 max-w-2xl text-body leading-6;
     color: var(--text-secondary);
   }
 
@@ -200,27 +209,42 @@
   }
 
   .badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-caption;
   }
 
+  /*
+   * Badge variants are token-driven: light/dark values come from tokens.css, so
+   * these need no `dark:` overrides and every variant clears WCAG AA (>= 4.5:1).
+   * Class names are frozen — views depend on them.
+   */
   .badge-success {
-    @apply badge bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
+    @apply badge;
+    background: var(--color-success-subtle);
+    color: var(--color-success-strong);
   }
 
   .badge-warning {
-    @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400;
+    @apply badge;
+    background: var(--color-warning-subtle);
+    color: var(--color-warning-strong);
   }
 
   .badge-danger {
-    @apply badge bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
+    @apply badge;
+    background: var(--color-error-subtle);
+    color: var(--color-error-strong);
   }
 
   .badge-gray {
-    @apply badge bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400;
+    @apply badge;
+    background: var(--color-muted-subtle);
+    color: var(--color-muted-strong);
   }
 
   .badge-blue {
-    @apply badge bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400;
+    @apply badge;
+    background: var(--color-info-subtle);
+    color: var(--color-info-strong);
   }
 
   .surface-section {

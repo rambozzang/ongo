@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, shallowRef, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PlusIcon, BoltIcon } from '@heroicons/vue/24/outline'
 import { useAutomationStore } from '@/stores/automation'
@@ -11,6 +11,7 @@ import SmartTriggerTemplateSelector from '@/components/automation/SmartTriggerTe
 import WorkflowNodeEditor from '@/components/automation/WorkflowNodeEditor.vue'
 import WorkflowExecutionHistory from '@/components/automation/WorkflowExecutionHistory.vue'
 import OTabs from '@/components/ui/OTabs.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import type { AutomationRule, ConditionOperator, Workflow, WorkflowTriggerType, WorkflowActionType } from '@/types/automation'
 import type { SmartTriggerTemplate } from '@/components/automation/SmartTriggerTemplateSelector.vue'
@@ -30,6 +31,25 @@ const automationTabs = computed(() => [
 ])
 const isModalOpen = ref(false)
 const editingRule = ref<AutomationRule | undefined>(undefined)
+
+// 삭제 확인 모달 — 규칙 / 워크플로우 삭제가 하나의 모달을 공유
+const showConfirmModal = ref(false)
+const confirmTitle = ref('')
+const confirmMessage = ref('')
+const pendingAction = shallowRef<(() => void | Promise<void>) | null>(null)
+
+function askConfirm(title: string, message: string, action: () => void | Promise<void>) {
+  confirmTitle.value = title
+  confirmMessage.value = message
+  pendingAction.value = action
+  showConfirmModal.value = true
+}
+
+function runPendingAction() {
+  const action = pendingAction.value
+  pendingAction.value = null
+  void action?.()
+}
 
 const activeRuleCount = computed(() => {
   return automationStore.rules.filter(r => r.isEnabled && r.status === 'active').length
@@ -68,9 +88,9 @@ const handleSave = (rule: Omit<AutomationRule, 'id' | 'createdAt' | 'updatedAt' 
 }
 
 const handleDelete = (id: number) => {
-  if (confirm(t('automation.confirmDeleteRule'))) {
+  askConfirm(t('automation.deleteRuleTitle'), t('automation.confirmDeleteRule'), () => {
     automationStore.deleteRule(id)
-  }
+  })
 }
 
 const handleToggle = (id: number) => {
@@ -187,14 +207,15 @@ async function handleWorkflowToggle(id: number) {
   }
 }
 
-async function handleWorkflowDelete(id: number) {
-  if (!confirm(t('automation.confirmDeleteWorkflow'))) return
-  try {
-    await automationApi.deleteWorkflow(id)
-    await fetchWorkflows()
-  } catch {
-    notification.error('워크플로우 삭제에 실패했습니다')
-  }
+function handleWorkflowDelete(id: number) {
+  askConfirm(t('automation.deleteWorkflowTitle'), t('automation.confirmDeleteWorkflow'), async () => {
+    try {
+      await automationApi.deleteWorkflow(id)
+      await fetchWorkflows()
+    } catch {
+      notification.error('워크플로우 삭제에 실패했습니다')
+    }
+  })
 }
 
 onMounted(() => {
@@ -410,6 +431,17 @@ onUnmounted(() => {
       :rule="editingRule"
       @close="closeModal"
       @save="handleSave"
+    />
+
+    <!-- 삭제 확인 (규칙 / 워크플로우 공용) -->
+    <ConfirmModal
+      v-model="showConfirmModal"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      :confirm-text="$t('action.delete')"
+      danger
+      @confirm="runPendingAction"
+      @cancel="pendingAction = null"
     />
   </div>
 </template>

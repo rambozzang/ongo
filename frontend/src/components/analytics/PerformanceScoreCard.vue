@@ -11,111 +11,111 @@
       </span>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="flex h-48 items-center justify-center">
-      <div class="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-primary-500" />
-    </div>
-
-    <template v-else-if="score">
-      <div class="grid gap-6 desktop:grid-cols-2">
-        <!-- Overall Score Circle -->
-        <div class="flex flex-col items-center justify-center">
-          <div class="relative">
-            <svg class="h-40 w-40 -rotate-90 transform">
-              <circle
-                cx="80" cy="80" r="70"
-                stroke="currentColor" :stroke-width="10" fill="none"
-                class="text-gray-200 dark:text-gray-700"
-              />
-              <circle
-                cx="80" cy="80" r="70"
-                stroke="currentColor" :stroke-width="10" fill="none"
-                :stroke-dasharray="circumference"
-                :stroke-dashoffset="scoreOffset"
-                :class="scoreColorClass"
-                class="transition-all duration-1000 ease-out"
-                stroke-linecap="round"
-              />
-            </svg>
-            <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <span class="text-4xl font-bold text-gray-900 dark:text-gray-100">
-                {{ Math.round(score.overallScore) }}
-              </span>
-              <div class="flex items-center gap-1">
-                <svg
-                  v-if="score.trend === 'up'"
-                  class="h-3.5 w-3.5 text-green-500" viewBox="0 0 20 20" fill="currentColor"
-                >
-                  <path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clip-rule="evenodd" />
-                </svg>
-                <svg
-                  v-else-if="score.trend === 'down'"
-                  class="h-3.5 w-3.5 text-red-500" viewBox="0 0 20 20" fill="currentColor"
-                >
-                  <path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
-                </svg>
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ trendLabel }}
+    <!-- 로딩 → 빈 상태 → 성과 점수 -->
+    <AsyncState
+      :loading="loading"
+      :empty="!score"
+      skeleton="list"
+      :skeleton-count="3"
+      :empty-icon="ChartBarIcon"
+      empty-title="성과 데이터가 없습니다"
+      empty-variant="compact"
+    >
+      <template v-if="score">
+        <div class="grid gap-6 desktop:grid-cols-2">
+          <!-- Overall Score Circle -->
+          <div class="flex flex-col items-center justify-center">
+            <div class="relative">
+              <svg class="h-40 w-40 -rotate-90 transform">
+                <circle
+                  cx="80" cy="80" r="70"
+                  stroke="currentColor" :stroke-width="10" fill="none"
+                  class="text-gray-200 dark:text-gray-700"
+                />
+                <circle
+                  cx="80" cy="80" r="70"
+                  stroke="currentColor" :stroke-width="10" fill="none"
+                  :stroke-dasharray="circumference"
+                  :stroke-dashoffset="scoreOffset"
+                  :class="scoreColorClass"
+                  class="transition-all duration-1000 ease-out"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-4xl font-bold text-gray-900 dark:text-gray-100">
+                  {{ Math.round(score.overallScore) }}
                 </span>
+                <div class="flex items-center gap-1">
+                  <svg
+                    v-if="score.trend === 'up'"
+                    class="h-3.5 w-3.5 text-green-500" viewBox="0 0 20 20" fill="currentColor"
+                  >
+                    <path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clip-rule="evenodd" />
+                  </svg>
+                  <svg
+                    v-else-if="score.trend === 'down'"
+                    class="h-3.5 w-3.5 text-red-500" viewBox="0 0 20 20" fill="currentColor"
+                  >
+                    <path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ trendLabel }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              7일 예상 조회수: {{ formatNumber(score.prediction7d) }}
+            </p>
+          </div>
+
+          <!-- Breakdown Bars -->
+          <div class="space-y-3">
+            <div v-for="(item, key) in breakdownItems" :key="key">
+              <div class="mb-1 flex items-center justify-between">
+                <span class="text-xs font-medium text-gray-600 dark:text-gray-400">{{ item.label }}</span>
+                <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                  {{ Math.round(item.value) }}
+                </span>
+              </div>
+              <div class="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+                <div
+                  class="h-full rounded-full transition-all duration-700"
+                  :class="item.colorClass"
+                  :style="{ width: `${item.value}%` }"
+                />
               </div>
             </div>
           </div>
-          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            7일 예상 조회수: {{ formatNumber(score.prediction7d) }}
-          </p>
         </div>
 
-        <!-- Breakdown Bars -->
-        <div class="space-y-3">
-          <div v-for="(item, key) in breakdownItems" :key="key">
-            <div class="mb-1 flex items-center justify-between">
-              <span class="text-xs font-medium text-gray-600 dark:text-gray-400">{{ item.label }}</span>
-              <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                {{ Math.round(item.value) }}
-              </span>
-            </div>
-            <div class="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
-              <div
-                class="h-full rounded-full transition-all duration-700"
-                :class="item.colorClass"
-                :style="{ width: `${item.value}%` }"
-              />
-            </div>
+        <!-- Anomaly Alert -->
+        <div
+          v-if="score.isAnomaly"
+          class="mt-4 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-900/30 dark:bg-yellow-900/10"
+        >
+          <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+          </svg>
+          <div>
+            <p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">이상 감지됨</p>
+            <p class="mt-0.5 text-xs text-yellow-700 dark:text-yellow-300">
+              {{ score.anomalyDescription }}
+            </p>
           </div>
         </div>
-      </div>
-
-      <!-- Anomaly Alert -->
-      <div
-        v-if="score.isAnomaly"
-        class="mt-4 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-900/30 dark:bg-yellow-900/10"
-      >
-        <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-        </svg>
-        <div>
-          <p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">이상 감지됨</p>
-          <p class="mt-0.5 text-xs text-yellow-700 dark:text-yellow-300">
-            {{ score.anomalyDescription }}
-          </p>
-        </div>
-      </div>
-    </template>
-
-    <!-- Empty State -->
-    <div v-else class="flex h-48 flex-col items-center justify-center text-center">
-      <svg class="mb-2 h-10 w-10 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-      </svg>
-      <p class="text-sm text-gray-400 dark:text-gray-500">성과 데이터가 없습니다</p>
-    </div>
+      </template>
+    </AsyncState>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { ChartBarIcon } from '@heroicons/vue/24/outline'
 import { analyticsApi } from '@/api/analytics'
 import type { PerformanceScoreResponse } from '@/types/analytics'
+import AsyncState from '@/components/common/AsyncState.vue'
 
 const props = defineProps<{
   videoId: number

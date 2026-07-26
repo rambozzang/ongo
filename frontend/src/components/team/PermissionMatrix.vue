@@ -12,6 +12,7 @@ import type {
 } from '@/api/team'
 import type { PermissionStatus } from '@/composables/usePermission'
 import { PERMISSION_CATEGORIES } from '@/composables/usePermission'
+import AsyncState from '@/components/common/AsyncState.vue'
 
 const loading = ref(true)
 const saving = ref(false)
@@ -172,104 +173,100 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="flex items-center justify-center py-12">
-      <ArrowPathIcon class="h-6 w-6 animate-spin text-gray-400" />
-    </div>
-
-    <!-- Matrix Table -->
-    <div v-else-if="teamPermissions && teamPermissions.members.length > 0" class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-200 dark:border-gray-700">
-            <th
-              class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400"
-            >
-              권한
-            </th>
-            <th
-              v-for="member in teamPermissions.members"
-              :key="member.memberId"
-              class="whitespace-nowrap px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400"
-            >
-              <div>{{ member.memberName || member.memberEmail.split('@')[0] }}</div>
-              <span
-                :class="[
-                  rolePresets.find((r) => r.key === member.role.toUpperCase())?.color ??
-                    'bg-gray-100 text-gray-600',
-                  'mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium',
-                ]"
+    <!-- 로딩 → 빈 상태 → 권한 매트릭스 -->
+    <AsyncState
+      :loading="loading"
+      :empty="!teamPermissions || teamPermissions.members.length === 0"
+      skeleton="table"
+      :skeleton-count="5"
+      :empty-icon="ShieldCheckIcon"
+      empty-title="팀 멤버가 없습니다"
+      empty-description="팀 멤버를 초대하면 권한을 관리할 수 있습니다."
+    >
+      <div v-if="teamPermissions" class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-700">
+              <th
+                class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400"
               >
-                {{
-                  rolePresets.find((r) => r.key === member.role.toUpperCase())?.label ??
-                  member.role
-                }}
-              </span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-for="category in categories" :key="category.key">
-            <!-- Category header row -->
-            <tr class="bg-gray-50 dark:bg-gray-800/50">
-              <td
-                :colspan="(teamPermissions?.members.length ?? 0) + 1"
-                class="sticky left-0 z-10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300"
-              >
-                {{ category.label }}
-              </td>
-            </tr>
-            <!-- Permission rows -->
-            <tr
-              v-for="perm in category.permissions"
-              :key="perm"
-              class="border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/30"
-            >
-              <td
-                class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-2 text-xs text-gray-700 dark:bg-gray-900 dark:text-gray-300"
-              >
-                {{ perm.replace(/_/g, ' ') }}
-              </td>
-              <td
+                권한
+              </th>
+              <th
                 v-for="member in teamPermissions.members"
-                :key="`${member.memberId}-${perm}`"
-                class="px-3 py-2 text-center"
+                :key="member.memberId"
+                class="whitespace-nowrap px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400"
               >
-                <button
-                  :disabled="member.role.toUpperCase() === 'OWNER'"
+                <div>{{ member.memberName || member.memberEmail.split('@')[0] }}</div>
+                <span
                   :class="[
-                    getCellColor(member, perm),
-                    'inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all',
-                    isPermissionEnabled(member, perm)
-                      ? 'border-green-300 dark:border-green-700'
-                      : 'border-gray-200 dark:border-gray-700',
-                    member.role.toUpperCase() === 'OWNER'
-                      ? 'cursor-not-allowed opacity-60'
-                      : 'cursor-pointer hover:shadow-sm',
+                    rolePresets.find((r) => r.key === member.role.toUpperCase())?.color ??
+                      'bg-gray-100 text-gray-600',
+                    'mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium',
                   ]"
-                  :title="getStatusLabel(member, perm)"
-                  @click="togglePermission(member, perm)"
                 >
-                  <CheckIcon
-                    v-if="isPermissionEnabled(member, perm)"
-                    class="h-4 w-4 text-green-600 dark:text-green-400"
-                  />
-                  <span v-else class="h-1 w-3 rounded-full bg-gray-300 dark:bg-gray-600" />
-                </button>
-              </td>
+                  {{
+                    rolePresets.find((r) => r.key === member.role.toUpperCase())?.label ??
+                    member.role
+                  }}
+                </span>
+              </th>
             </tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else class="py-12 text-center">
-      <ShieldCheckIcon class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600" />
-      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">팀 멤버가 없습니다</h3>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        팀 멤버를 초대하면 권한을 관리할 수 있습니다.
-      </p>
-    </div>
+          </thead>
+          <tbody>
+            <template v-for="category in categories" :key="category.key">
+              <!-- Category header row -->
+              <tr class="bg-gray-50 dark:bg-gray-800/50">
+                <td
+                  :colspan="(teamPermissions?.members.length ?? 0) + 1"
+                  class="sticky left-0 z-10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300"
+                >
+                  {{ category.label }}
+                </td>
+              </tr>
+              <!-- Permission rows -->
+              <tr
+                v-for="perm in category.permissions"
+                :key="perm"
+                class="border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/30"
+              >
+                <td
+                  class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-2 text-xs text-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                >
+                  {{ perm.replace(/_/g, ' ') }}
+                </td>
+                <td
+                  v-for="member in teamPermissions.members"
+                  :key="`${member.memberId}-${perm}`"
+                  class="px-3 py-2 text-center"
+                >
+                  <button
+                    :disabled="member.role.toUpperCase() === 'OWNER'"
+                    :class="[
+                      getCellColor(member, perm),
+                      'inline-flex h-7 w-7 items-center justify-center rounded-md border transition-all',
+                      isPermissionEnabled(member, perm)
+                        ? 'border-green-300 dark:border-green-700'
+                        : 'border-gray-200 dark:border-gray-700',
+                      member.role.toUpperCase() === 'OWNER'
+                        ? 'cursor-not-allowed opacity-60'
+                        : 'cursor-pointer hover:shadow-sm',
+                    ]"
+                    :title="getStatusLabel(member, perm)"
+                    @click="togglePermission(member, perm)"
+                  >
+                    <CheckIcon
+                      v-if="isPermissionEnabled(member, perm)"
+                      class="h-4 w-4 text-green-600 dark:text-green-400"
+                    />
+                    <span v-else class="h-1 w-3 rounded-full bg-gray-300 dark:bg-gray-600" />
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </AsyncState>
   </div>
 </template>

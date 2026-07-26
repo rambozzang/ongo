@@ -103,6 +103,15 @@
       </div>
     </Transition>
   </Teleport>
+
+  <!-- 위젯 설정 초기화 확인 -->
+  <ConfirmModal
+    v-model="showResetModal"
+    :title="$t('dashboard.resetWidgetsTitle')"
+    :message="$t('dashboard.resetWidgetsMessage')"
+    :confirm-text="$t('action.confirm')"
+    @confirm="confirmReset"
+  />
 </template>
 
 <script setup lang="ts">
@@ -119,6 +128,7 @@ import {
   Squares2X2Icon,
 } from '@heroicons/vue/24/outline'
 import { PresentationChartLineIcon } from '@heroicons/vue/24/solid'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useWidgetSettingsStore } from '@/stores/widgetSettings'
 import type { WidgetConfig } from '@/stores/widgetSettings'
 
@@ -139,6 +149,9 @@ const localWidgets = ref<WidgetConfig[]>([])
 // Drag & Drop state
 const draggedIndex = ref<number | null>(null)
 const dropTargetIndex = ref<number | null>(null)
+
+// 초기화 확인 모달
+const showResetModal = ref(false)
 
 // Icon component mapping
 const iconComponents: Record<string, any> = {
@@ -200,9 +213,11 @@ function onDragEnd() {
 }
 
 function resetToDefault() {
-  if (confirm('위젯 설정을 기본값으로 되돌리시겠습니까?')) {
-    widgetStore.resetToDefault()
-  }
+  showResetModal.value = true
+}
+
+function confirmReset() {
+  widgetStore.resetToDefault()
 }
 </script>
 

@@ -12,9 +12,10 @@ import {
   Legend,
   Filler,
 } from 'chart.js'
-import { ArrowPathIcon } from '@heroicons/vue/24/outline'
+import { ChartBarSquareIcon } from '@heroicons/vue/24/outline'
 import { analyticsApi } from '@/api/analytics'
 import type { CohortAnalysisResponse, CohortGroupData } from '@/types/analytics'
+import AsyncState from '@/components/common/AsyncState.vue'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -195,13 +196,16 @@ function formatNumber(n: number): string {
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="flex items-center justify-center py-16">
-      <ArrowPathIcon class="h-6 w-6 animate-spin text-gray-400" />
-    </div>
-
-    <!-- Chart -->
-    <template v-else-if="cohortData && cohortData.cohorts.length > 0">
+    <!-- 로딩 → 빈 상태 → 차트 + 요약 테이블 -->
+    <AsyncState
+      :loading="loading"
+      :empty="!cohortData || cohortData.cohorts.length === 0"
+      skeleton="none"
+      full-page
+      :empty-icon="ChartBarSquareIcon"
+      empty-title="코호트 분석을 위한 데이터가 충분하지 않습니다"
+      empty-description="영상이 여러 카테고리·플랫폼에 쌓이면 코호트별 조회수 곡선을 비교할 수 있습니다."
+    >
       <div class="relative h-80 w-full">
         <Line :data="chartData" :options="chartOptions" />
       </div>
@@ -261,13 +265,6 @@ function formatNumber(n: number): string {
           </tbody>
         </table>
       </div>
-    </template>
-
-    <!-- Empty State -->
-    <div v-else class="py-16 text-center">
-      <p class="text-sm text-gray-400 dark:text-gray-500">
-        코호트 분석을 위한 데이터가 충분하지 않습니다.
-      </p>
-    </div>
+    </AsyncState>
   </div>
 </template>

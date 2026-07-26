@@ -15,11 +15,13 @@ import {
   type ChartData
 } from 'chart.js'
 import {
-  ArrowPathIcon,
   ExclamationTriangleIcon,
+  ChartBarIcon,
+  FilmIcon,
 } from '@heroicons/vue/24/outline'
 import { analyticsApi } from '@/api/analytics'
 import type { RetentionCurveResponse } from '@/types/analytics'
+import AsyncState from '@/components/common/AsyncState.vue'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -55,6 +57,17 @@ onMounted(() => {
     fetchRetention(selectedVideoId.value)
   }
 })
+
+const isEmpty = computed(
+  () =>
+    !selectedVideoId.value ||
+    !retentionData.value ||
+    retentionData.value.retentionPoints.length === 0,
+)
+
+const emptyTitle = computed(() =>
+  selectedVideoId.value ? '리텐션 데이터가 없습니다' : '리텐션 분석할 영상을 선택해주세요',
+)
 
 function formatTimestamp(seconds: number): string {
   const mins = Math.floor(seconds / 60)
@@ -182,34 +195,29 @@ const chartOptions = computed(() => ({
 
 <template>
   <div>
-    <!-- Loading -->
-    <div v-if="loading" class="flex items-center justify-center py-16">
-      <ArrowPathIcon class="h-6 w-6 animate-spin text-gray-400" />
-    </div>
-
-    <!-- No video selected -->
-    <div v-else-if="!selectedVideoId" class="py-16 text-center">
-      <p class="text-sm text-gray-400 dark:text-gray-500">
-        리텐션 분석할 영상을 선택해주세요.
-      </p>
-    </div>
-
-    <!-- Chart + Drop-off Analysis -->
-    <template v-else-if="retentionData && retentionData.retentionPoints.length > 0">
+    <!-- 로딩 → 빈 상태(영상 미선택 / 데이터 없음) → 차트 + 이탈 분석 -->
+    <AsyncState
+      :loading="loading"
+      :empty="isEmpty"
+      skeleton="none"
+      full-page
+      :empty-icon="selectedVideoId ? ChartBarIcon : FilmIcon"
+      :empty-title="emptyTitle"
+    >
       <div class="relative h-72 w-full">
         <Line :data="chartData" :options="chartOptions" />
       </div>
 
       <!-- Drop-off Points -->
       <div
-        v-if="retentionData.dropOffPoints.length > 0"
+        v-if="(retentionData?.dropOffPoints.length ?? 0) > 0"
         class="mt-4 space-y-2"
       >
         <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">
           주요 이탈 구간
         </h4>
         <div
-          v-for="drop in retentionData.dropOffPoints"
+          v-for="drop in retentionData?.dropOffPoints ?? []"
           :key="drop.timestamp"
           class="flex items-start gap-3 rounded-lg border border-red-100 bg-red-50/50 p-3 dark:border-red-900/30 dark:bg-red-900/10"
         >
@@ -227,13 +235,6 @@ const chartOptions = computed(() => ({
           </div>
         </div>
       </div>
-    </template>
-
-    <!-- Empty State -->
-    <div v-else class="py-16 text-center">
-      <p class="text-sm text-gray-400 dark:text-gray-500">
-        리텐션 데이터가 없습니다.
-      </p>
-    </div>
+    </AsyncState>
   </div>
 </template>
