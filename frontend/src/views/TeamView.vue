@@ -53,11 +53,18 @@ const showBulkRemoveModal = ref(false)
 const showBulkCancelModal = ref(false)
 const bulkWorking = ref(false)
 
-const currentUser = computed(() => teamStore.members[0])
-
-const canManage = computed(() => {
-  return currentUser.value?.role === 'owner' || currentUser.value?.role === 'admin'
-})
+/**
+ * 이 화면에 도달한 사용자는 언제나 팀 소유자다.
+ *
+ * 백엔드 `TeamUseCase.listMembers(userId)`는 "로그인 사용자가 소유한 팀"의 멤버를
+ * 반환하고, 멤버는 `inviteMember`로만 생성되어 소유자 본인은 목록에 들어가지 않는다.
+ * `updateRole`/`removeMember`도 역할이 아니라 소유권(`member.userId == userId`)만
+ * 검사하므로, 프론트에서 역할로 관리 권한을 재판정할 이유가 없다.
+ *
+ * 이전 구현은 `members[0].role`을 본인 역할로 오인했다. 목록 첫 멤버가 viewer이면
+ * 소유자가 자기 팀을 관리하지 못했고, admin이면 우연히 통과했다.
+ */
+const canManage = true
 
 /**
  * 선택 가능한 항목만 담은 새 선택 집합.
@@ -284,7 +291,7 @@ const tabs = computed(() => {
     { key: 'invites', label: t('team.tabs.invites'), icon: EnvelopeIcon, count: inviteStatus.value.pending > 0 ? inviteStatus.value.pending : undefined },
     { key: 'activity', label: t('team.tabs.activity'), icon: ClockIcon },
   ]
-  if (canManage.value) {
+  if (canManage) {
     base.push({ key: 'permissions', label: t('team.tabs.permissions'), icon: ShieldCheckIcon })
   }
   base.push({ key: 'workflow', label: t('team.tabs.workflow'), icon: ViewColumnsIcon })
