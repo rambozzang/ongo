@@ -18,7 +18,7 @@ data class GoogleDriveProperties(
     val clientSecret: String = "",
     val redirectUri: String = "",
     val scopes: List<String> = listOf("https://www.googleapis.com/auth/drive.readonly"),
-    val oauthStateSecret: String = "change-me-32chars-minimum-local-dev-only",
+    val oauthStateSecret: String = DEV_ONLY_STATE_SECRET,
     val import: Import = Import(),
 ) {
     data class Import(
@@ -27,4 +27,13 @@ data class GoogleDriveProperties(
         val maxConcurrentPerUser: Int = 2,
         val timeoutMinutes: Long = 60,
     )
+
+    companion object {
+        /**
+         * 로컬 개발용 기본 secret. 저장소에 공개되어 있으므로 이 값으로 서명한 state 는
+         * 누구나 위조할 수 있다. prod 프로파일에서는 기동을 막는다
+         * ([GoogleDriveAutoConfiguration.oauthStateManager] 참고).
+         */
+        const val DEV_ONLY_STATE_SECRET = "change-me-32chars-minimum-local-dev-only"
+    }
 }
