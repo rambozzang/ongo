@@ -1,12 +1,14 @@
 package com.ongo.application.credit
 
 import com.ongo.common.enums.AiFeature
+import com.ongo.common.enums.CreditPackage
 import com.ongo.common.enums.CreditTransactionType
 import com.ongo.common.enums.PlanType
 import com.ongo.common.exception.CreditNotFoundException
 import com.ongo.common.exception.InsufficientCreditException
 import com.ongo.domain.credit.AiCredit
 import com.ongo.domain.credit.AiCreditTransaction
+import com.ongo.domain.credit.AiPurchasedCredit
 import com.ongo.domain.credit.CreditRepository
 import com.ongo.domain.event.CreditDeductedEvent
 import org.springframework.context.ApplicationEventPublisher
@@ -193,12 +195,35 @@ class CreditService(
         )
     }
 
+    /**
+     * 결제 완료된 크레딧 패키지를 지급한다.
+     *
+     * 반드시 `ai_purchased_credits` 에 행을 만들어야 한다. 잔액 조회(CreditQueryUseCase)와
+     * 차감(validateAndDeduct) 모두 `ai_credits.balance` 가 아니라 이 테이블의 remaining 합계를
+     * 사용하기 때문이다. 예전에는 balance 만 올리고 이 행을 만들지 않아, 결제해도 조회·차감
+     * 어느 쪽에도 반영되지 않았다(결제 후 잔액이 그대로 0).
+     *
+     * 지급량은 결제 금액이 아니라 패키지에 정의된 크레딧 수다. 호출부가 금액을 그대로
+     * 넘기던 문제가 있어 파라미터를 패키지 자체로 바꿨다.
+     */
     @Transactional
-    fun addPurchasedCredits(userId: Long, credits: Int, referenceId: Long) {
+    fun addPurchasedCredits(userId: Long, creditPackage: CreditPackage, referenceId: Long) {
         val credit = creditRepository.findByUserIdForUpdate(userId)
             ?: throw CreditNotFoundException(userId)
 
-        val newBalance = credit.balance + credits
+        creditRepository.savePurchasedCredit(
+            AiPurchasedCredit(
+                userId = userId,
+                packageName = creditPackage.name,
+                totalCredits = creditPackage.credits,
+                remaining = creditPackage.credits,
+                price = creditPackage.price,
+                expiresAt = LocalDateTime.now().plusDays(creditPackage.validDays.toLong()),
+            )
+        )
+
+        // balance 는 표시용 누적 집계로만 유지한다(차감 판정에는 쓰이지 않는다).
+        val newBalance = credit.balance + creditPackage.credits
         creditRepository.update(
             credit.copy(balance = newBalance, updatedAt = LocalDateTime.now())
         )
@@ -207,7 +232,7 @@ class CreditService(
             AiCreditTransaction(
                 userId = userId,
                 type = CreditTransactionType.CHARGE,
-                amount = credits,
+                amount = creditPackage.credits,
                 balanceAfter = newBalance,
                 referenceId = referenceId,
             )

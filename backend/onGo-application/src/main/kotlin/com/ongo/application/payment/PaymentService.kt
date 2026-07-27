@@ -2,6 +2,7 @@ package com.ongo.application.payment
 
 import com.ongo.application.credit.CreditService
 import com.ongo.application.payment.dto.*
+import com.ongo.common.enums.CreditPackage
 import com.ongo.common.enums.PaymentStatus
 import com.ongo.common.enums.PaymentType
 import com.ongo.common.exception.UnauthorizedException
@@ -81,9 +82,19 @@ class PaymentService(
 
         if (newStatus == PaymentStatus.COMPLETED) {
             log.info("결제 완료 처리: paymentId=$paymentId, amount=${payload.totalAmount}")
-            // 크레딧 구매 결제인 경우 크레딧 지급
+            // 크레딧 구매 결제인 경우 크레딧 지급.
+            // 결제 금액을 크레딧 수로 넘기던 버그가 있었다(₩49,900 결제 -> 49,900 크레딧 시도).
+            // payments 에 패키지 식별자를 저장하지 않으므로 결제 금액으로 패키지를 역산한다
+            // (CreditPackage 의 price 는 서로 겹치지 않는다).
             if (payment.type == PaymentType.CREDIT) {
-                creditService.addPurchasedCredits(payment.userId, payload.totalAmount, paymentId)
+                val creditPackage = CreditPackage.entries.find { it.price == payment.amount }
+                if (creditPackage == null) {
+                    log.error(
+                        "크레딧 패키지를 식별할 수 없어 지급을 건너뜁니다 [paymentId=$paymentId, amount=${payment.amount}]"
+                    )
+                } else {
+                    creditService.addPurchasedCredits(payment.userId, creditPackage, paymentId)
+                }
             }
         }
     }

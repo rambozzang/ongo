@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AuthProvider
+import com.ongo.common.enums.CreditPackage
 import com.ongo.common.enums.PaymentStatus
 import com.ongo.common.enums.PaymentType
 import com.ongo.common.enums.PlanType
@@ -394,7 +395,9 @@ class PaddleWebhookServiceTest {
             transactionId = "txn_credit_123",
             userId = 50L,
             subscriptionId = null, // subscription_id 없음 → CREDIT 유형
-            totalAmount = "5000",
+            // 실제 크레딧 패키지 가격이어야 한다. 결제 금액으로 패키지를 역산하기 때문에
+            // 아무 금액이나 넣으면 지급 대상을 찾지 못한다.
+            totalAmount = "4900", // CreditPackage.STARTER (500 크레딧)
             currencyCode = "KRW",
         )
         val signature = createSignature()
@@ -410,7 +413,7 @@ class PaddleWebhookServiceTest {
         every { paymentRepository.save(any()) } answers {
             firstArg<Payment>().copy(id = 200L)
         }
-        every { creditService.addPurchasedCredits(50L, 5000, 200L) } returns Unit
+        every { creditService.addPurchasedCredits(50L, CreditPackage.STARTER, 200L) } returns Unit
 
         // when
         paddleWebhookService.handleWebhook(rawBody, signature)
@@ -421,7 +424,7 @@ class PaddleWebhookServiceTest {
         assertEquals(PaymentType.CREDIT, paymentSlot.captured.type)
         assertEquals("AI 크레딧 구매", paymentSlot.captured.description)
 
-        verify { creditService.addPurchasedCredits(50L, 5000, 200L) }
+        verify { creditService.addPurchasedCredits(50L, CreditPackage.STARTER, 200L) }
     }
 
     @Test
