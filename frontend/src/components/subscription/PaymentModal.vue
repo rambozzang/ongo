@@ -148,9 +148,13 @@ interface Props {
   modelValue: boolean
   targetPlan: PlanType
   price: number
+  /** 화면에서 고른 결제 주기. 넘기지 않으면 월간으로 결제된다. */
+  billingCycle?: 'MONTHLY' | 'YEARLY'
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  billingCycle: 'MONTHLY',
+})
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
@@ -198,7 +202,7 @@ async function startPayment() {
       onClose: () => {
         processing.value = false
       },
-    })
+    }, props.billingCycle)
   } catch (e: unknown) {
     paymentError.value = e instanceof Error ? e.message : '결제 준비에 실패했습니다. 다시 시도해주세요.'
   }

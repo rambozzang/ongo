@@ -238,9 +238,11 @@ class PaddleWebhookServiceTest {
         every { subscriptionRepository.save(any()) } answers { firstArg() }
         every { userRepository.findById(10L) } returns user
         every { userRepository.update(any()) } answers { firstArg() }
-        every { paddleGateway.getPriceIdForPlan("STARTER") } returns "pri_starter"
-        every { paddleGateway.getPriceIdForPlan("PRO") } returns "pri_pro"
-        every { paddleGateway.getPriceIdForPlan("BUSINESS") } returns "pri_business"
+        // resolvePlanType 이 월간·연간 가격 ID 를 모두 대조하므로 결제 주기를 가리지 않고 stub 한다.
+        every { paddleGateway.getPriceIdForPlan("FREE", any()) } returns null
+        every { paddleGateway.getPriceIdForPlan("STARTER", any()) } returns "pri_starter"
+        every { paddleGateway.getPriceIdForPlan("PRO", any()) } returns "pri_pro"
+        every { paddleGateway.getPriceIdForPlan("BUSINESS", any()) } returns "pri_business"
 
         // when
         paddleWebhookService.handleWebhook(rawBody, signature)
@@ -290,9 +292,11 @@ class PaddleWebhookServiceTest {
         every { subscriptionRepository.update(any()) } answers { firstArg() }
         every { userRepository.findById(20L) } returns user
         every { userRepository.update(any()) } answers { firstArg() }
-        every { paddleGateway.getPriceIdForPlan("STARTER") } returns "pri_starter"
-        every { paddleGateway.getPriceIdForPlan("PRO") } returns "pri_pro"
-        every { paddleGateway.getPriceIdForPlan("BUSINESS") } returns "pri_business"
+        // resolvePlanType 이 월간·연간 가격 ID 를 모두 대조하므로 결제 주기를 가리지 않고 stub 한다.
+        every { paddleGateway.getPriceIdForPlan("FREE", any()) } returns null
+        every { paddleGateway.getPriceIdForPlan("STARTER", any()) } returns "pri_starter"
+        every { paddleGateway.getPriceIdForPlan("PRO", any()) } returns "pri_pro"
+        every { paddleGateway.getPriceIdForPlan("BUSINESS", any()) } returns "pri_business"
 
         // when
         paddleWebhookService.handleWebhook(rawBody, signature)
@@ -540,9 +544,11 @@ class PaddleWebhookServiceTest {
         every { subscriptionRepository.save(any()) } answers { firstArg() }
         every { userRepository.findById(80L) } returns user
         every { userRepository.update(any()) } answers { firstArg() }
-        every { paddleGateway.getPriceIdForPlan("STARTER") } returns "pri_starter"
-        every { paddleGateway.getPriceIdForPlan("PRO") } returns "pri_pro"
-        every { paddleGateway.getPriceIdForPlan("BUSINESS") } returns "pri_business"
+        // resolvePlanType 이 월간·연간 가격 ID 를 모두 대조하므로 결제 주기를 가리지 않고 stub 한다.
+        every { paddleGateway.getPriceIdForPlan("FREE", any()) } returns null
+        every { paddleGateway.getPriceIdForPlan("STARTER", any()) } returns "pri_starter"
+        every { paddleGateway.getPriceIdForPlan("PRO", any()) } returns "pri_pro"
+        every { paddleGateway.getPriceIdForPlan("BUSINESS", any()) } returns "pri_business"
 
         // when - 예외 없이 정상 처리
         paddleWebhookService.handleWebhook(rawBody, signature)

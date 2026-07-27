@@ -203,7 +203,9 @@ async function startPayment() {
   paymentError.value = ''
 
   try {
-    await openCreditCheckout(selectedPackage.value.name, {
+    // 표시명이 아니라 enum 키를 보낸다. 서버는 STARTER/BASIC/PRO/BUSINESS 만 인식하며,
+    // 한글 표시명을 보내면 가격 ID 조회가 실패해 결제창 자체가 열리지 않는다.
+    await openCreditCheckout(selectedPackage.value.key, {
       onSuccess: () => {
         processing.value = true
         setTimeout(() => {

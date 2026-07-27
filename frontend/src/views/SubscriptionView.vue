@@ -477,6 +477,7 @@
       v-model="showPaymentModal"
       :target-plan="targetPlan ?? 'FREE'"
       :price="targetPlanInfo?.price ?? 0"
+      :billing-cycle="billingCycle"
       @confirm="handlePaymentConfirm"
     />
   </div>

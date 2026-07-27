@@ -20,11 +20,17 @@ class PaddleCheckoutService(
         )
     }
 
-    fun createSubscriptionCheckout(userId: Long, planType: String): PaddleCheckoutData {
+    fun createSubscriptionCheckout(
+        userId: Long,
+        planType: String,
+        billingCycle: String = "MONTHLY",
+    ): PaddleCheckoutData {
         val user = userRepository.findById(userId)
             ?: throw NotFoundException("사용자", userId)
-        val priceId = paddleGateway.getPriceIdForPlan(planType)
-            ?: throw IllegalArgumentException("해당 플랜의 Paddle 가격 ID를 찾을 수 없습니다: $planType")
+        val priceId = paddleGateway.getPriceIdForPlan(planType, billingCycle)
+            ?: throw IllegalArgumentException(
+                "해당 플랜의 Paddle 가격 ID를 찾을 수 없습니다: $planType ($billingCycle)"
+            )
         return PaddleCheckoutData(
             priceId = priceId,
             customData = mapOf("user_id" to userId),

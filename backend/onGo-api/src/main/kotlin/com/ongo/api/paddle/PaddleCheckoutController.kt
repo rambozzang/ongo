@@ -27,7 +27,7 @@ class PaddleCheckoutController(
         @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
         @RequestBody request: SubscriptionCheckoutRequest,
     ): ResData<PaddleCheckoutData> {
-        val data = checkoutService.createSubscriptionCheckout(userId, request.planType)
+        val data = checkoutService.createSubscriptionCheckout(userId, request.planType, request.billingCycle)
         return ResData(data = data)
     }
 
@@ -41,5 +41,12 @@ class PaddleCheckoutController(
     }
 }
 
-data class SubscriptionCheckoutRequest(val planType: String)
+/**
+ * 연/월 구분이 없으면 항상 월간 가격으로 결제된다. 화면에는 연간 토글과 연간 가격이
+ * 표시되므로 이 값을 받지 않으면 사용자가 본 금액과 실제 청구가 어긋난다.
+ */
+data class SubscriptionCheckoutRequest(
+    val planType: String,
+    val billingCycle: String = "MONTHLY",
+)
 data class CreditCheckoutRequest(val packageName: String)

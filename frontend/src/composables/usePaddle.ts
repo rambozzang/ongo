@@ -45,13 +45,14 @@ export function usePaddle() {
       onSuccess?: () => void
       onClose?: () => void
     },
+    billingCycle: 'MONTHLY' | 'YEARLY' = 'MONTHLY',
   ) {
     if (!window.Paddle) throw new Error('Paddle.js가 로드되지 않았습니다')
 
     loading.value = true
     try {
       await ensureInitialized()
-      const data = await paddleApi.createSubscriptionCheckout(planType)
+      const data = await paddleApi.createSubscriptionCheckout(planType, billingCycle)
 
       // Re-initialize with event callback for this checkout
       window.Paddle.Initialize({

@@ -21,9 +21,9 @@ export const paddleApi = {
       .then(unwrapResponse)
   },
 
-  createSubscriptionCheckout(planType: string) {
+  createSubscriptionCheckout(planType: string, billingCycle: 'MONTHLY' | 'YEARLY' = 'MONTHLY') {
     return apiClient
-      .post<ResData<PaddleCheckoutData>>('/paddle/checkout/subscription', { planType })
+      .post<ResData<PaddleCheckoutData>>('/paddle/checkout/subscription', { planType, billingCycle })
       .then(unwrapResponse)
   },
 

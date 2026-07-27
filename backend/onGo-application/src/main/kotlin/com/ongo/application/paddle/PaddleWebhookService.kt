@@ -346,12 +346,18 @@ class PaddleWebhookService(
         val price = firstItem["price"] as? Map<*, *>
         val priceId = price?.get("id") as? String ?: return PlanType.FREE
 
-        return when (priceId) {
-            paddleGateway.getPriceIdForPlan("STARTER") -> PlanType.STARTER
-            paddleGateway.getPriceIdForPlan("PRO") -> PlanType.PRO
-            paddleGateway.getPriceIdForPlan("BUSINESS") -> PlanType.BUSINESS
-            else -> PlanType.FREE
+        // 월간·연간 가격 ID 를 모두 대조해야 한다. 예전에는 기본값(MONTHLY)만 비교해서
+        // 연간 구독으로 결제한 사용자의 price id 가 어디에도 걸리지 않고 else 로 떨어졌고,
+        // 결제가 성공했는데도 플랜이 FREE 로 강등됐다.
+        val planType = PlanType.entries.firstOrNull { plan ->
+            priceId == paddleGateway.getPriceIdForPlan(plan.name, "MONTHLY") ||
+                priceId == paddleGateway.getPriceIdForPlan(plan.name, "YEARLY")
         }
+        if (planType == null) {
+            log.warn("알 수 없는 Paddle price id 라 플랜을 판별하지 못했습니다 [priceId={}]", priceId)
+            return PlanType.FREE
+        }
+        return planType
     }
 
     private fun resolvePaymentMethod(data: Map<*, *>): String? {
