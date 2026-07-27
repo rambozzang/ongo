@@ -383,7 +383,7 @@ import { authApi } from '@/api/auth'
 import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
 import { subscriptionApi } from '@/api/subscription'
-import { buildOAuthUrl } from '@/utils/oauth'
+import { buildOAuthUrl, generatePKCE } from '@/utils/oauth'
 import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import OnboardingStepIndicator from '@/components/onboarding/OnboardingStepIndicator.vue'
 import PlanSelectionCard from '@/components/onboarding/PlanSelectionCard.vue'
@@ -526,10 +526,21 @@ function prevStep() {
   }
 }
 
-function connectPlatform(platform: Platform) {
+async function connectPlatform(platform: Platform) {
   isConnecting.value = true
   channelError.value = ''
-  window.location.href = buildOAuthUrl(platform, '/onboarding')
+  try {
+    // Twitter 는 PKCE 가 필수라 code_challenge 없이 URL 을 만들면 예외가 난다.
+    // 예전에는 이 함수가 동기였고 try/catch 도 없어서, X 연동을 누르면 isConnecting 이
+    // true 로 굳어 나머지 플랫폼 버튼까지 전부 비활성화됐다(온보딩 이탈 불가).
+    const challenge = platform === 'TWITTER'
+      ? (await generatePKCE('twitter_code_verifier')).challenge
+      : undefined
+    window.location.href = buildOAuthUrl(platform, '/onboarding', challenge)
+  } catch (e) {
+    isConnecting.value = false
+    channelError.value = e instanceof Error ? e.message : t('onboarding.channels.connectFailed')
+  }
 }
 
 function disconnectPlatform(platform: Platform) {

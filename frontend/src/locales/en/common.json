@@ -1024,7 +1024,8 @@
         "twitter": "Social video posts",
         "facebook": "Page videos",
         "threads": "Threads video posts"
-      }
+      },
+      "connectFailed": "Couldn't start channel connection. Please try again."
     },
     "plan": {
       "title": "Choose your plan",

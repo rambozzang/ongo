@@ -56,17 +56,23 @@ class ChannelUseCase(
         val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
         val platform = safeValueOfOrThrow<Platform>(platformStr)
 
-        // 플랜 제한 확인
-        val currentCount = channelRepository.countByUserId(userId)
-        if (currentCount >= user.planType.maxPlatforms) {
-            throw PlanLimitExceededException("연동 플랫폼", user.planType.maxPlatforms)
-        }
-
-        // 이미 연동된 플랫폼 확인 (ACTIVE 상태일 때만 중복 처리)
+        // 기존 연동 여부를 먼저 확인한다. 재연동은 채널 수를 늘리지 않으므로 플랜 한도와 무관하다.
         val existing = channelRepository.findByUserIdAndPlatform(userId, platform)
-        if (existing != null && existing.status == ChannelStatus.ACTIVE) {
-            throw com.ongo.common.exception.DuplicateResourceException("채널", platform.name)
+
+        // 플랜 제한은 '새로' 채널이 늘어날 때만 확인한다.
+        //
+        // 예전에는 이 검사가 existing 조회보다 앞에 있었고 countByUserId 가 status 를 가리지
+        // 않아, 토큰이 만료된 채널을 되살리려 할 때도 한도에 걸렸다. FREE(한도 1) 사용자는
+        // 채널이 한 번 끊기면 "플랜 한도 초과"라는 엉뚱한 메시지만 보고 복구할 방법이 없었다.
+        if (existing == null) {
+            val currentCount = channelRepository.countByUserId(userId)
+            if (currentCount >= user.planType.maxPlatforms) {
+                throw PlanLimitExceededException("연동 플랫폼", user.planType.maxPlatforms)
+            }
         }
+        // 같은 플랫폼을 다시 연동하는 것은 '갱신' 의도로 본다(아래에서 기존 레코드를 업데이트).
+        // 화면의 재연결 버튼은 status 가 ACTIVE 여도 토큰이 만료·임박하면 노출되므로,
+        // ACTIVE 라는 이유로 중복 예외를 던지면 그 버튼이 항상 실패한다.
 
         // OAuth 토큰 교환 (Twitter는 PKCE code_verifier 필요)
         val tokenResult = platformOAuth2Port.exchangeCodeForTokens(platform, request.authorizationCode, request.redirectUri, request.codeVerifier)
