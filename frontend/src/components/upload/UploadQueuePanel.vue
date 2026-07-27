@@ -285,6 +285,7 @@ function getStatusText(status: QueueItemStatus): string {
     uploading: '업로드 중',
     processing: '처리 중',
     completed: '완료',
+    'needs-config': '게시 설정 필요',
     failed: '실패',
     paused: '일시정지',
   }
@@ -297,6 +298,7 @@ function getStatusClass(status: QueueItemStatus): string {
     uploading: 'text-info-strong',
     processing: 'text-primary-600 dark:text-primary-400',
     completed: 'text-success-strong',
+    'needs-config': 'text-warning-strong',
     failed: 'text-error-strong',
     paused: 'text-warning-strong',
   }
@@ -309,6 +311,7 @@ function getProgressBarClass(status: QueueItemStatus): string {
     uploading: 'bg-info',
     processing: 'bg-primary-500',
     completed: 'bg-success',
+    'needs-config': 'bg-warning',
     failed: 'bg-error',
     paused: 'bg-warning',
   }

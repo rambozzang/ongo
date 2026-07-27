@@ -175,6 +175,25 @@
                     </button>
                   </template>
 
+                  <!-- 전송은 끝났지만 게시 설정이 없어 아직 어디에도 올라가지 않은 상태 -->
+                  <template v-else-if="item.status === 'needs-config'">
+                    <button
+                      v-if="item.videoId"
+                      class="btn-secondary px-2.5 py-1 text-caption"
+                      title="게시할 플랫폼을 선택해야 합니다"
+                      @click="router.push(`/videos/${item.videoId}`)"
+                    >
+                      게시 설정
+                    </button>
+                    <button
+                      class="rounded-lg p-1.5 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-error-strong"
+                      title="제거"
+                      @click="queueStore.removeItem(item.id)"
+                    >
+                      <XMarkIcon class="h-4 w-4" />
+                    </button>
+                  </template>
+
                   <!-- Failed: retry, remove -->
                   <template v-else-if="item.status === 'failed'">
                     <button
@@ -245,11 +264,13 @@ import {
   ArrowPathIcon,
 } from '@heroicons/vue/24/outline'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useUploadQueueStore } from '@/stores/uploadQueue'
 import type { QueueItemStatus } from '@/stores/uploadQueue'
 import { formatFileSize } from '@/utils/format'
 
+const router = useRouter()
 const queueStore = useUploadQueueStore()
 const showClearAllModal = ref(false)
 
@@ -259,6 +280,7 @@ function getStatusText(status: QueueItemStatus): string {
     uploading: '업로드 중',
     processing: '처리 중',
     completed: '완료',
+    'needs-config': '게시 설정 필요',
     failed: '실패',
     paused: '일시정지',
   }
@@ -269,8 +291,9 @@ function getStatusClass(status: QueueItemStatus): string {
   const classMap: Record<QueueItemStatus, string> = {
     queued: 'text-gray-500 dark:text-gray-400',
     uploading: 'text-info-strong',
-    processing: 'text-purple-600 dark:text-purple-400',
+    processing: 'text-primary-600 dark:text-primary-400',
     completed: 'text-success-strong',
+    'needs-config': 'text-warning-strong',
     failed: 'text-error-strong',
     paused: 'text-warning-strong',
   }

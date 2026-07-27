@@ -5,7 +5,20 @@ import type { MediaType, PlatformPublishConfig } from '@/types/video'
 import { usePresignedUpload } from '@/composables/usePresignedUpload'
 import { useNotificationStore } from '@/stores/notification'
 
-export type QueueItemStatus = 'queued' | 'uploading' | 'processing' | 'completed' | 'failed' | 'paused'
+/**
+ * `needs-config` — 파일 전송은 끝났지만 게시할 플랫폼 설정이 없어 어디에도 게시되지
+ * 않은 상태. 다중 파일을 한 번에 넣는 경로는 플랫폼을 고를 기회가 없어 이 상태로 끝난다.
+ * 예전에는 이 경우도 `completed` 로 칠해서, 실제로는 아무 데도 안 올라갔는데 사용자는
+ * 게시된 줄 알았다.
+ */
+export type QueueItemStatus =
+  | 'queued'
+  | 'uploading'
+  | 'processing'
+  | 'completed'
+  | 'needs-config'
+  | 'failed'
+  | 'paused'
 
 export interface PlatformProgress {
   status: 'pending' | 'uploading' | 'processing' | 'completed' | 'failed'
@@ -35,6 +48,8 @@ export interface QueueItem {
     category?: string
   }
   platformConfigs?: PlatformPublishConfig[]
+  /** 업로드로 생성된 영상 id. `needs-config` 상태에서 상세 화면으로 안내할 때 쓴다. */
+  videoId?: number
 }
 
 const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
@@ -69,6 +84,11 @@ function detectMediaType(file: File): MediaType {
 export const useUploadQueueStore = defineStore('uploadQueue', () => {
   const queue = ref<QueueItem[]>([])
   const uploadIntervals = new Map<string, number>()
+  /**
+   * 진행 중인 업로드의 중단 핸들러. 큐에서 항목을 빼는 것만으로는 XHR 이 멈추지 않아
+   * 취소한 영상이 그대로 플랫폼에 게시되던 문제가 있었다.
+   */
+  const abortHandlers = new Map<string, () => void>()
   const isProcessing = ref(false)
 
   const totalProgress = computed(() => {
@@ -256,6 +276,11 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
   function removeFromQueue(id: string) {
     const index = queue.value.findIndex((item) => item.id === id)
     if (index !== -1) {
+      // 진행 중이면 실제로 중단한다. 목록에서 빼기만 하면 업로드가 끝까지 진행돼
+      // 사용자가 취소한 영상이 플랫폼에 게시된다.
+      abortHandlers.get(id)?.()
+      abortHandlers.delete(id)
+
       // Clear interval if exists
       const intervalId = uploadIntervals.get(id)
       if (intervalId) {
@@ -296,6 +321,11 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
    * Clear entire queue
    */
   function clearAll() {
+    // 진행 중인 업로드를 실제로 중단한다. 큐만 비우면 백그라운드 XHR 이 계속 돌아
+    // 화면에서 사라진 영상이 그대로 게시된다.
+    abortHandlers.forEach((abortUpload) => abortUpload())
+    abortHandlers.clear()
+
     // Clear all intervals
     uploadIntervals.forEach((intervalId) => clearInterval(intervalId))
     uploadIntervals.clear()
@@ -385,10 +415,13 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
       item.platformProgress[platform as Platform].progress = 0
     })
 
-    const { upload } = usePresignedUpload({
+    const { upload, abort } = usePresignedUpload({
       shouldContinue: (itemId) => {
         const current = queue.value.find((i) => i.id === itemId)
-        return current?.status !== 'paused'
+        // 큐에서 사라진 항목(취소됨)은 중단한다. 예전에는 undefined !== 'paused' 가 참이라
+        // 취소한 업로드가 끝까지 진행되어 그대로 게시됐다.
+        if (!current) return false
+        return current.status !== 'paused'
       },
       onProgress: (itemId, progress) => {
         const current = queue.value.find((i) => i.id === itemId)
@@ -407,18 +440,24 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
       },
     })
 
+    abortHandlers.set(id, abort)
+
     try {
       const uploadedVideoId = await upload(item)
       if (uploadedVideoId === null) return
 
-      // Upload complete
-      item.status = 'completed'
       item.progress = 100
       item.completedAt = new Date().toISOString()
+      item.videoId = uploadedVideoId ?? undefined
+
+      // 게시 설정이 없으면 파일만 올라갔을 뿐 어떤 플랫폼에도 게시되지 않았다.
+      // 이를 완료로 표시하면 사용자가 게시된 줄 오해한다.
+      const published = (item.platformConfigs?.length ?? 0) > 0
+      item.status = published ? 'completed' : 'needs-config'
 
       Object.keys(item.platformProgress).forEach((platform) => {
-        item.platformProgress[platform as Platform].status = 'completed'
-        item.platformProgress[platform as Platform].progress = 100
+        item.platformProgress[platform as Platform].status = published ? 'completed' : 'pending'
+        item.platformProgress[platform as Platform].progress = published ? 100 : 0
       })
 
       startNextPending()
@@ -426,6 +465,8 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
       item.status = 'failed'
       item.error = error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다.'
       startNextPending()
+    } finally {
+      abortHandlers.delete(id)
     }
   }
 
