@@ -1,7 +1,6 @@
 package com.ongo.application.video
 
 import com.ongo.application.config.ExecutorConfig
-import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.PlanType
@@ -11,6 +10,7 @@ import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.channel.ChannelRepository
+import org.springframework.context.ApplicationEventPublisher
 import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
@@ -39,9 +39,9 @@ class StreamPublishUseCase(
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val subscriptionRepository: SubscriptionRepository,
     private val channelRepository: ChannelRepository,
-    private val storageQuotaUseCase: StorageQuotaUseCase,
     private val streamWriterFactories: List<PlatformStreamWriterFactory>,
     private val scheduleRepository: ScheduleRepository,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -63,7 +63,8 @@ class StreamPublishUseCase(
         if (monthlyCount >= planType.monthlyUploads) {
             throw PlanLimitExceededException("월간 업로드", planType.monthlyUploads)
         }
-        storageQuotaUseCase.checkQuota(userId, fileSize)
+        // 스토리지 쿼터는 검사하지 않는다. 이 경로는 파일을 임시로 흘려보내고 즉시 지우므로
+        // 보관량이 늘지 않는다(아래 fileUrl = null). 남용 방지는 위의 월간 업로드 한도가 맡는다.
 
         // 2. Video 레코드 생성 (fileUrl = null, status = UPLOADING)
         val video = videoRepository.save(
@@ -160,7 +161,7 @@ class StreamPublishUseCase(
                 Thread.ofVirtual().name("stream-publish-$videoId").start {
                     ExecutorConfig.uploadSemaphore.acquire()
                     try {
-                        runStreamingUpload(videoId, tempFile.toFile(), fileSize, platformConfigs)
+                        runStreamingUpload(videoId, userId, tempFile.toFile(), fileSize, platformConfigs)
                     } finally {
                         ExecutorConfig.uploadSemaphore.release()
                     }
@@ -229,6 +230,7 @@ class StreamPublishUseCase(
 
     private fun runStreamingUpload(
         videoId: Long,
+        userId: Long,
         tempFile: java.io.File,
         fileSize: Long,
         platformContexts: List<StreamPlatformContext>,
@@ -316,13 +318,16 @@ class StreamPublishUseCase(
                                     platformUrl = result.platformUrl,
                                 )
                                 log.info("플랫폼 {} 업로드 완료: videoId={}, platformUrl={}", ctx.platform, videoId, result.platformUrl)
+                                fireCompletedEvent(videoId, userId, ctx.platform, true, platformUrl = result.platformUrl)
                             } else {
                                 updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, result.errorMessage)
                                 log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", ctx.platform, videoId, result.errorMessage)
+                                fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = result.errorMessage)
                             }
                         } catch (e: Exception) {
                             log.error("플랫폼 {} 업로드 완료 처리 중 예외: videoId={}", ctx.platform, videoId, e)
                             updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, e.message)
+                            fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = e.message)
                         }
                     }
                 }
@@ -345,6 +350,39 @@ class StreamPublishUseCase(
 
             // Video 전체 상태 업데이트
             updateOverallVideoStatus(videoId)
+        }
+    }
+
+    /**
+     * 플랫폼별 게시 결과를 알린다(알림 저장 + WebSocket 푸시).
+     *
+     * 이 경로는 사용자가 게시 버튼을 누른 직후 화면을 떠나기 때문에, 이벤트를 쏘지 않으면
+     * 4개 중 1개가 실패해도 사용자가 알 방법이 없다. 실제로 이벤트를 발행하는 곳이
+     * VideoPublishEventListener 한 곳뿐이라 스트리밍 경로는 결과 알림이 전혀 없었다.
+     *
+     * 알림 실패가 게시 자체를 되돌리게 두지 않는다.
+     */
+    private fun fireCompletedEvent(
+        videoId: Long,
+        userId: Long,
+        platform: Platform,
+        success: Boolean,
+        platformUrl: String? = null,
+        errorMessage: String? = null,
+    ) {
+        try {
+            eventPublisher.publishEvent(
+                UploadCompletedEvent(
+                    videoId = videoId,
+                    userId = userId,
+                    platform = platform,
+                    success = success,
+                    platformUrl = platformUrl,
+                    errorMessage = errorMessage,
+                )
+            )
+        } catch (e: Exception) {
+            log.error("게시 결과 알림 발행 실패 [videoId={}, platform={}]", videoId, platform, e)
         }
     }
 
@@ -472,7 +510,7 @@ class StreamPublishUseCase(
                 Thread.ofVirtual().name("scheduled-publish-${schedule.id}").start {
                     ExecutorConfig.uploadSemaphore.acquire()
                     try {
-                        downloadAndStreamUpload(schedule.videoId, fileUrl, fileSize, platformContexts)
+                        downloadAndStreamUpload(schedule.videoId, video.userId, fileUrl, fileSize, platformContexts)
                     } finally {
                         ExecutorConfig.uploadSemaphore.release()
                     }
@@ -483,6 +521,7 @@ class StreamPublishUseCase(
 
     private fun downloadAndStreamUpload(
         videoId: Long,
+        userId: Long,
         fileUrl: String,
         fileSize: Long,
         platformContexts: List<StreamPlatformContext>,
@@ -496,7 +535,7 @@ class StreamPublishUseCase(
                 }
             }
             log.info("예약 업로드 파일 다운로드 완료 [videoId={}, size={}]", videoId, fileSize)
-            runStreamingUpload(videoId, tempFile, fileSize, platformContexts)
+            runStreamingUpload(videoId, userId, tempFile, fileSize, platformContexts)
         } catch (e: Exception) {
             log.error("예약 업로드 실패 [videoId={}]: {}", videoId, e.message, e)
             platformContexts.forEach { ctx ->

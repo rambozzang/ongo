@@ -1,8 +1,8 @@
 package com.ongo.application.video
 
-import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.PlanType
+import org.springframework.context.ApplicationEventPublisher
 import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
@@ -47,7 +47,7 @@ class StreamPublishUseCaseTest {
     private val videoPlatformMetaRepository = mockk<VideoPlatformMetaRepository>()
     private val subscriptionRepository = mockk<SubscriptionRepository>()
     private val channelRepository = mockk<ChannelRepository>()
-    private val storageQuotaUseCase = mockk<StorageQuotaUseCase>(relaxed = true)
+    private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
     private val streamWriterFactories = listOf(
         stubFactory(Platform.YOUTUBE),
         stubFactory(Platform.TIKTOK),
@@ -73,7 +73,7 @@ class StreamPublishUseCaseTest {
             videoPlatformMetaRepository = videoPlatformMetaRepository,
             subscriptionRepository = subscriptionRepository,
             channelRepository = channelRepository,
-            storageQuotaUseCase = storageQuotaUseCase,
+            eventPublisher = eventPublisher,
             streamWriterFactories = streamWriterFactories,
             scheduleRepository = scheduleRepository,
         )
