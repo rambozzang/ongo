@@ -54,15 +54,31 @@ class CreditServiceTest {
     // ──────────────────────────────────────────────
     // 1. revokeCredits 정상 차감
     // ──────────────────────────────────────────────
+    private fun purchased(remaining: Int, id: Long = 1L) = AiPurchasedCredit(
+        id = id,
+        userId = userId,
+        packageName = "STARTER",
+        totalCredits = remaining,
+        remaining = remaining,
+        price = 4_900,
+        purchasedAt = now,
+        expiresAt = now.plusDays(30),
+    )
+
     @Test
-    fun `revokeCredits should decrease balance by amount and create REVOKE transaction`() {
+    fun `revokeCredits should revoke from purchased credits and leave free credits untouched`() {
         val credit = createCredit(balance = 100, freeRemaining = 20)
         every { creditRepository.findByUserIdForUpdate(userId) } returns credit
+        every { creditRepository.findActivePurchasedCreditsForUpdate(userId) } returns listOf(purchased(100))
+        every { creditRepository.updatePurchasedCredit(any()) } answers { firstArg() }
         every { creditRepository.update(any()) } answers { firstArg() }
         every { creditRepository.saveTransaction(any()) } answers { firstArg() }
 
         creditService.revokeCredits(userId, 30, "ADMIN_REVOKE")
 
+        verify {
+            creditRepository.updatePurchasedCredit(match<AiPurchasedCredit> { it.remaining == 70 })
+        }
         verify {
             creditRepository.update(match<AiCredit> {
                 it.balance == 70 && it.freeRemaining == 20
@@ -79,25 +95,28 @@ class CreditServiceTest {
     }
 
     // ──────────────────────────────────────────────
-    // 2. revokeCredits 잔액 0 이하 방지
+    // 2. 구매 잔여분보다 많이 회수 요청해도 무료 크레딧은 건드리지 않는다
     // ──────────────────────────────────────────────
     @Test
-    fun `revokeCredits should floor balance at 0 when amount exceeds balance`() {
+    fun `revokeCredits should cap at purchased remaining and never touch free credits`() {
         val credit = createCredit(balance = 10, freeRemaining = 5)
         every { creditRepository.findByUserIdForUpdate(userId) } returns credit
+        every { creditRepository.findActivePurchasedCreditsForUpdate(userId) } returns listOf(purchased(10))
+        every { creditRepository.updatePurchasedCredit(any()) } answers { firstArg() }
         every { creditRepository.update(any()) } answers { firstArg() }
         every { creditRepository.saveTransaction(any()) } answers { firstArg() }
 
         creditService.revokeCredits(userId, 50, "ADMIN_REVOKE")
 
+        // 있는 만큼(10)만 회수되고, 무료 크레딧 5 는 그대로 남아야 한다.
         verify {
             creditRepository.update(match<AiCredit> {
-                it.balance == 0 && it.freeRemaining == 0
+                it.balance == 0 && it.freeRemaining == 5
             })
         }
         verify {
             creditRepository.saveTransaction(match<AiCreditTransaction> {
-                it.balanceAfter == 0 && it.amount == -50
+                it.balanceAfter == 0 && it.amount == -10
             })
         }
     }

@@ -335,8 +335,15 @@ class PaddleWebhookService(
 
         paymentRepository.update(payment.copy(status = PaymentStatus.REFUNDED))
 
+        // 회수량은 결제 금액이 아니라 크레딧 수다. 금액을 그대로 넘기면
+        // (₩4,900 -> 4900 크레딧) 실제 지급량보다 훨씬 많이 회수된다.
         if (payment.type == PaymentType.CREDIT) {
-            creditService.revokeCredits(payment.userId, payment.amount, "REFUND_$transactionId")
+            val creditPackage = CreditPackage.entries.find { it.price == payment.amount }
+            if (creditPackage == null) {
+                log.error("크레딧 패키지를 식별할 수 없어 회수를 건너뜁니다 [paymentId=${payment.id}, amount=${payment.amount}]")
+            } else {
+                creditService.revokeCredits(payment.userId, creditPackage.credits, "REFUND_$transactionId")
+            }
         }
     }
 

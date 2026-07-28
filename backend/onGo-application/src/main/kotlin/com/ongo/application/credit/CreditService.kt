@@ -168,18 +168,42 @@ class CreditService(
         )
     }
 
+    /**
+     * 구매 크레딧을 회수한다(환불·관리자 회수).
+     *
+     * @param credits 회수할 **크레딧 수**. 결제 금액이 아니다.
+     *
+     * 무료 월 크레딧은 결제와 무관하므로 절대 건드리지 않는다. 예전에는 balance 에서 뺀 뒤
+     * freeRemaining 을 그 값으로 clamp 해서, 환불 한 번에 그 달 무료 크레딧까지 전부
+     * 사라졌다(₩4,900 환불 -> 4900 을 빼면 balance 가 0 이 되고 freeRemaining 도 0).
+     *
+     * 회수는 최근 구매분부터 되돌린다. 남은 잔여분보다 많이 요청되면 있는 만큼만 회수한다.
+     */
     @Transactional
-    fun revokeCredits(userId: Long, amount: Int, reason: String) {
+    fun revokeCredits(userId: Long, credits: Int, reason: String) {
         val credit = creditRepository.findByUserIdForUpdate(userId)
             ?: throw CreditNotFoundException(userId)
 
-        val newBalance = (credit.balance - amount).coerceAtLeast(0)
-        val newFreeRemaining = minOf(credit.freeRemaining, newBalance)
+        var unrevoked = credits
+        creditRepository.findActivePurchasedCreditsForUpdate(userId)
+            .sortedByDescending { it.purchasedAt ?: LocalDateTime.MIN }
+            .forEach { purchased ->
+                if (unrevoked <= 0) return@forEach
+                val deduct = minOf(purchased.remaining, unrevoked)
+                if (deduct > 0) {
+                    creditRepository.updatePurchasedCredit(
+                        purchased.copy(remaining = purchased.remaining - deduct)
+                    )
+                    unrevoked -= deduct
+                }
+            }
+
+        val revoked = credits - unrevoked
+        val newBalance = (credit.balance - revoked).coerceAtLeast(0)
 
         creditRepository.update(
             credit.copy(
                 balance = newBalance,
-                freeRemaining = newFreeRemaining,
                 updatedAt = LocalDateTime.now(),
             )
         )
@@ -188,7 +212,7 @@ class CreditService(
             AiCreditTransaction(
                 userId = userId,
                 type = CreditTransactionType.REVOKE,
-                amount = -amount,
+                amount = -revoked,
                 balanceAfter = newBalance,
                 feature = reason,
             )

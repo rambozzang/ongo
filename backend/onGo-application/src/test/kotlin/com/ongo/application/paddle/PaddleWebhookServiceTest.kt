@@ -444,7 +444,8 @@ class PaddleWebhookServiceTest {
             id = 300L,
             userId = 60L,
             type = PaymentType.CREDIT,
-            amount = 3000,
+            // 회수량은 금액이 아니라 패키지의 크레딧 수로 결정되므로 실제 패키지 가격이어야 한다.
+            amount = 4_900, // CreditPackage.STARTER (500 크레딧)
             status = PaymentStatus.COMPLETED,
             paddleTransactionId = "txn_refund_123",
         )
@@ -457,7 +458,7 @@ class PaddleWebhookServiceTest {
         every { webhookEventRepository.update(any()) } returns Unit
         every { paymentRepository.findByPaddleTransactionId("txn_refund_123") } returns existingPayment
         every { paymentRepository.update(any()) } answers { firstArg() }
-        every { creditService.revokeCredits(60L, 3000, "REFUND_txn_refund_123") } returns Unit
+        every { creditService.revokeCredits(60L, 500, "REFUND_txn_refund_123") } returns Unit
 
         // when
         paddleWebhookService.handleWebhook(rawBody, signature)
@@ -467,7 +468,7 @@ class PaddleWebhookServiceTest {
         verify { paymentRepository.update(capture(paymentSlot)) }
         assertEquals(PaymentStatus.REFUNDED, paymentSlot.captured.status)
 
-        verify { creditService.revokeCredits(60L, 3000, "REFUND_txn_refund_123") }
+        verify { creditService.revokeCredits(60L, 500, "REFUND_txn_refund_123") }
     }
 
     @Test
