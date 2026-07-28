@@ -148,6 +148,22 @@ class SubscriptionJooqRepository(
             .map { it.toSubscription() }
 
     /**
+     * 취소되었고 결제 기간까지 끝난 구독.
+     *
+     * 예전에는 스케줄러가 findDueForBilling(status='ACTIVE' 고정)의 결과를 다시
+     * status == CANCELLED 로 걸러서 항상 빈 리스트였고, Free 전환 코드가 도달 불가능한
+     * 죽은 코드였다. 그래서 구독을 취소해도 planType 이 그대로 남아 유료 기능을
+     * 무기한 사용할 수 있었다.
+     */
+    override fun findCancelledExpired(now: LocalDateTime): List<Subscription> =
+        dsl.select()
+            .from(SUBSCRIPTIONS)
+            .where(STATUS_TEXT.eq(SubscriptionStatus.CANCELLED.name))
+            .and(CURRENT_PERIOD_END.lessThan(now))
+            .fetch()
+            .map { it.toSubscription() }
+
+    /**
      * 만료 처리 대상 트라이얼.
      *
      * status 가 TRIALING 인 것만 보면, 어떤 이유로든 status 가 덮여 쓰인 트라이얼은

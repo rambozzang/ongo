@@ -104,6 +104,7 @@ class BillingSchedulerTest {
         every { subscriptionRepository.findPastDue(3) } returns emptyList()
         every { subscriptionRepository.findPastDue(7) } returns emptyList()
         every { subscriptionRepository.findDueForBilling(any()) } returns emptyList()
+        every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
         every { subscriptionRepository.findWithPendingPlanType() } returns emptyList()
     }
 
@@ -265,7 +266,10 @@ class BillingSchedulerTest {
         val user = createUser(5L, PlanType.PRO)
 
         stubEmptyDefaults()
-        every { subscriptionRepository.findDueForBilling(any()) } returns listOf(sub)
+        // 취소 만료 대상은 전용 쿼리로 조회한다. 예전에는 findDueForBilling(status='ACTIVE')
+        // 이 CANCELLED 구독을 반환하도록 mock 해서, 현실에서 일어날 수 없는 상황으로
+        // 죽은 코드를 통과시키고 있었다.
+        every { subscriptionRepository.findCancelledExpired(any()) } returns listOf(sub)
         every { subscriptionRepository.update(any()) } answers { firstArg() }
         every { userRepository.findById(5L) } returns user
         every { userRepository.update(any()) } answers { firstArg() }
@@ -296,14 +300,17 @@ class BillingSchedulerTest {
             status = SubscriptionStatus.CANCELLED,
             currentPeriodEnd = now.plusDays(10), // 아직 기간 남음
         )
+        check(sub.currentPeriodEnd!!.isAfter(now)) { "기간이 남아 있어야 하는 시나리오" }
 
         stubEmptyDefaults()
-        every { subscriptionRepository.findDueForBilling(any()) } returns listOf(sub)
+        // 기간이 남은 취소 구독은 findCancelledExpired(current_period_end < now)의
+        // 조회 결과에 애초에 포함되지 않는다.
+        every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
 
         // when
         billingScheduler.processBilling()
 
-        // then - update가 호출되지 않아야 함 (filter에서 제외)
+        // then - Free 전환이 일어나지 않아야 함
         verify(exactly = 0) { subscriptionRepository.update(any()) }
     }
 

@@ -114,8 +114,9 @@ class BillingScheduler(
             }
 
             // 취소된 구독 중 기간 종료된 것 → Free 전환
-            val cancelledExpired = subscriptionRepository.findDueForBilling(now)
-                .filter { it.status == SubscriptionStatus.CANCELLED && it.currentPeriodEnd?.isBefore(now) == true }
+            // findDueForBilling 은 status='ACTIVE' 만 반환하므로 그 결과를 CANCELLED 로
+            // 거르면 항상 비어 있었다(이 블록 전체가 실행되지 않았다). 전용 쿼리를 쓴다.
+            val cancelledExpired = subscriptionRepository.findCancelledExpired(now)
             cancelledExpired.forEach { sub ->
                 subscriptionRepository.update(sub.copy(
                     planType = PlanType.FREE,
