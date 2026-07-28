@@ -56,6 +56,16 @@ class SubscriptionUseCase(
             return ChangePlanResponse(subscription.toResponse(), null, effectiveDate)
         }
 
+        // 트라이얼 중에는 결제 없이 플랜을 올릴 수 없다. 반드시 체크아웃을 거쳐야 한다.
+        //
+        // 트라이얼은 planType 이 유료인데 paddleSubscriptionId 는 null 이라, 위의 두 가드를
+        // 모두 통과해 아래 업그레이드 분기로 그대로 흘렀다. 그 결과 트라이얼 시작 직후
+        // 플랜 변경을 호출하면 결제 한 푼 없이 상위 플랜을 얻었고, 그 과정에서 status 가
+        // ACTIVE 로 덮여 findTrialExpired(TRIALING 조회)에도 걸리지 않아 만료조차 되지 않았다.
+        if (subscription.status == SubscriptionStatus.TRIALING && targetPlan != PlanType.FREE) {
+            return ChangePlanResponse(subscription.toResponse(), null, now)
+        }
+
         // FREE → 유료 전환 (Paddle 체크아웃 필요 → 프론트엔드에서 체크아웃 오버레이를 열어야 함)
         if (subscription.planType == PlanType.FREE && targetPlan != PlanType.FREE) {
             return ChangePlanResponse(subscription.toResponse(), null, now)

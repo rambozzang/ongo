@@ -147,11 +147,22 @@ class SubscriptionJooqRepository(
             .fetch()
             .map { it.toSubscription() }
 
+    /**
+     * 만료 처리 대상 트라이얼.
+     *
+     * status 가 TRIALING 인 것만 보면, 어떤 이유로든 status 가 덮여 쓰인 트라이얼은
+     * 영원히 만료되지 않고 유료 플랜이 무기한 유지된다. 그래서 "결제 수단이 없는데
+     * (paddleSubscriptionId IS NULL) 트라이얼 종료일이 지난" 건까지 함께 회수한다.
+     * 정상적으로 유료 전환된 구독은 paddleSubscriptionId 가 있으므로 제외된다.
+     */
     override fun findTrialExpired(now: LocalDateTime): List<Subscription> =
         dsl.select()
             .from(SUBSCRIPTIONS)
-            .where(STATUS_TEXT.eq(SubscriptionStatus.TRIALING.name))
-            .and(TRIAL_END.lessOrEqual(now))
+            .where(TRIAL_END.lessOrEqual(now))
+            .and(
+                STATUS_TEXT.eq(SubscriptionStatus.TRIALING.name)
+                    .or(PADDLE_SUBSCRIPTION_ID.isNull.and(TRIAL_START.isNotNull)),
+            )
             .fetch()
             .map { it.toSubscription() }
 
