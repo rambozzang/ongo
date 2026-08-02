@@ -21,6 +21,7 @@ object RolePermissions {
         SETTINGS_READ,
         AUTOMATION_CREATE, AUTOMATION_UPDATE,
         CAMPAIGN_VIEW, CAMPAIGN_MANAGE, CAMPAIGN_REVIEW,
+        SHORTS_PIPELINE_VIEW, SHORTS_PIPELINE_MANAGE,
     )
 
     val VIEWER: Set<Permission> = setOf(
@@ -29,6 +30,7 @@ object RolePermissions {
         ANALYTICS_READ,
         SETTINGS_READ,
         CAMPAIGN_VIEW,
+        SHORTS_PIPELINE_VIEW,
     )
 
     fun defaultPermissions(role: String): Set<Permission> = when (role.uppercase()) {

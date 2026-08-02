@@ -199,6 +199,11 @@ object Tables {
 
     // UGC 감사 로그 (V52)
     val UGC_AUDIT_EVENTS = DSL.table("ugc_audit_events")
+
+    // UGC 쇼츠 파이프라인 프롬프트/템플릿 (V55)
+    val UGC_SHORTS_PROMPTS = DSL.table("ugc_shorts_prompts")
+    val UGC_SHORTS_PROMPT_REVISIONS = DSL.table("ugc_shorts_prompt_revisions")
+    val UGC_SHORTS_TEMPLATES = DSL.table("ugc_shorts_templates")
 }
 
 object Fields {
@@ -983,4 +988,34 @@ object Fields {
     // UGC 감사 로그 (V52) — 재사용: WORKSPACE_ID, CAMPAIGN_ID, ACTION, RESOURCE_TYPE, RESOURCE_ID, CREATED_AT
     val ACTOR_ID = DSL.field("actor_id", Long::class.java)
     val DETAIL = DSL.field("detail", String::class.java)
+
+    // UGC 쇼츠 프롬프트 (V55) — 재사용: ID, WORKSPACE_ID, NAME, DESCRIPTION, REVISION,
+    //                                   CREATED_BY, CREATED_AT, UPDATED_AT, VERSION
+    val STAGE = DSL.field("stage", String::class.java)
+    val SYSTEM_PROMPT = DSL.field("system_prompt", String::class.java)
+    val USER_PROMPT = DSL.field("user_prompt", String::class.java)
+    val EXECUTABLE = DSL.field("executable", Boolean::class.java)
+
+    // UGC 쇼츠 프롬프트 개정 이력 (V55)
+    val PROMPT_ID = DSL.field("prompt_id", Long::class.java)
+    val CHANGE_NOTE = DSL.field("change_note", String::class.java)
+    val CHANGED_BY = DSL.field("changed_by", Long::class.java)
+
+    // UGC 쇼츠 템플릿 (V55) — 재사용: WIDTH, HEIGHT, IS_DEFAULT
+    val ASPECT_RATIO = DSL.field("aspect_ratio", String::class.java)
+    val BACKGROUND_STYLE = DSL.field("background_style", String::class.java)
+    val HOOK_FONT_FAMILY = DSL.field("hook_font_family", String::class.java)
+    val HOOK_FONT_SIZE = DSL.field("hook_font_size", Int::class.java)
+    val HOOK_FONT_COLOR = DSL.field("hook_font_color", String::class.java)
+    val HOOK_STROKE_COLOR = DSL.field("hook_stroke_color", String::class.java)
+    val HOOK_POSITION = DSL.field("hook_position", String::class.java)
+    val CAPTION_FONT_FAMILY = DSL.field("caption_font_family", String::class.java)
+    val CAPTION_FONT_SIZE = DSL.field("caption_font_size", Int::class.java)
+    val CAPTION_FONT_COLOR = DSL.field("caption_font_color", String::class.java)
+    val CAPTION_STROKE_COLOR = DSL.field("caption_stroke_color", String::class.java)
+    val CAPTION_POSITION = DSL.field("caption_position", String::class.java)
+    val SAFE_AREA_TOP = DSL.field("safe_area_top", Int::class.java)
+    val SAFE_AREA_BOTTOM = DSL.field("safe_area_bottom", Int::class.java)
+    val REFERENCE_IMAGE_URL = DSL.field("reference_image_url", String::class.java)
+    val EXTRA_SPEC = DSL.field("extra_spec", String::class.java)
 }

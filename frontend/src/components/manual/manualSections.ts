@@ -161,6 +161,33 @@ export const sectionsKo: ManualSection[] = [
     ],
   },
   {
+    id: 'ugc-shorts',
+    title: 'UGC 쇼츠 파이프라인',
+    icon: VideoCameraIcon,
+    content: [
+      {
+        subtitle: '쇼츠 프롬프트',
+        text: '롱폼 영상을 쇼츠로 만드는 9단계(전사 → 세로 변환 → 맥락 컷 → 자막 → 후킹 → 템플릿 → 렌더 스펙 → 검증 → 예약)에서 사용하는 프롬프트를 워크스페이스에 맞게 관리합니다.',
+        items: [
+          '각 단계 카드를 클릭하면 시스템 프롬프트와 사용자 프롬프트를 수정할 수 있습니다.',
+          '수정하면 워크스페이스 오버라이드가 생기고 개정 번호가 1씩 올라갑니다.',
+          '"기본값으로 복원"을 누르면 오버라이드가 삭제되어 시스템 기본 프롬프트로 돌아갑니다.',
+          '"개정 이력" 탭에서 과거 개정을 확인하고 원하는 개정으로 롤백할 수 있습니다.',
+          '기본값과 현재 값이 다른 단계는 카드에 "수정됨" 배지가 표시됩니다.',
+        ],
+      },
+      {
+        subtitle: '쇼츠 템플릿',
+        text: '쇼츠에 적용할 크기, 배경 스타일, 후킹·자막 폰트와 색, 세이프에어리어를 템플릿으로 저장합니다.',
+        items: [
+          '"새 템플릿"에서 크기(기본 1080×1920, 9:16), 배경 스타일(위아래 검은 바/블러/단색), 후킹·자막의 폰트·크기·색·위치, 상하단 세이프에어리어를 지정합니다.',
+          '레퍼런스 이미지를 올려 두면 템플릿 단계에서 같은 형태로 맞추는 데 사용됩니다.',
+          '"기본 템플릿으로 지정"을 켜면 워크스페이스의 기본 템플릿이 됩니다(워크스페이스당 1개).',
+        ],
+      },
+    ],
+  },
+  {
     id: 'getting-started',
     title: '시작하기',
     icon: RocketLaunchIcon,
@@ -3045,6 +3072,33 @@ export const sectionsEn: ManualSection[] = [
           'Rewards flow: Draft → Confirmed → Paid.',
           'The CSV uses a UTF-8 BOM so it opens correctly in Excel and prevents formula injection.',
           'Key changes such as reward confirmation and payout are recorded in an audit log for operators.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'ugc-shorts',
+    title: 'UGC Shorts Pipeline',
+    icon: VideoCameraIcon,
+    content: [
+      {
+        subtitle: 'Shorts prompts',
+        text: 'Manage the prompts used across the 9 stages (transcribe → reframe → segment → subtitle → hook → template → render spec → validate → schedule) that turn a long-form video into shorts, customized per workspace.',
+        items: [
+          'Click a stage card to edit its system prompt and user prompt.',
+          'Saving creates a workspace override and increments the revision number.',
+          '"Reset to default" deletes the override and reverts to the system default prompt.',
+          'The "Revision history" tab lists past revisions and lets you roll back to any of them.',
+          'Stages whose current value differs from the default show a "Modified" badge on the card.',
+        ],
+      },
+      {
+        subtitle: 'Shorts templates',
+        text: 'Save the size, background style, hook/caption fonts and colors, and safe areas for shorts as templates.',
+        items: [
+          'In "New template", set the size (default 1080×1920, 9:16), background style (black bars/blurred/solid), hook and caption font/size/color/position, and top/bottom safe areas.',
+          'Upload a reference image so the template stage can match the same look.',
+          'Turn on "Set as default template" to make it the workspace default (one per workspace).',
         ],
       },
     ],

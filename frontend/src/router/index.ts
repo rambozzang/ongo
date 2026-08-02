@@ -166,6 +166,18 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: 'UGC 성과·정산' },
       },
       {
+        path: 'ugc/shorts/prompts',
+        name: 'ugc-shorts-prompts',
+        component: () => import('@/views/ugc/ShortsPromptsView.vue'),
+        meta: { breadcrumb: '쇼츠 프롬프트' },
+      },
+      {
+        path: 'ugc/shorts/templates',
+        name: 'ugc-shorts-templates',
+        component: () => import('@/views/ugc/ShortsTemplatesView.vue'),
+        meta: { breadcrumb: '쇼츠 템플릿' },
+      },
+      {
         path: 'creator/campaigns/:id/submit',
         name: 'creator-submit',
         component: () => import('@/views/ugc/CreatorSubmitView.vue'),

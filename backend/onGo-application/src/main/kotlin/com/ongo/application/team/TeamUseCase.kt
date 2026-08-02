@@ -160,6 +160,8 @@ class TeamUseCase(
         Permission.CAMPAIGN_MANAGE -> "UGC 캠페인 생성 및 관리"
         Permission.CAMPAIGN_REVIEW -> "UGC 제출물 검수"
         Permission.CAMPAIGN_REWARD_MANAGE -> "UGC 보상 확정 및 지급 관리"
+        Permission.SHORTS_PIPELINE_VIEW -> "쇼츠 파이프라인 프롬프트·템플릿 조회"
+        Permission.SHORTS_PIPELINE_MANAGE -> "쇼츠 파이프라인 프롬프트·템플릿 편집"
     }
 
     private fun TeamMember.toResponse(): TeamMemberResponse = TeamMemberResponse(
