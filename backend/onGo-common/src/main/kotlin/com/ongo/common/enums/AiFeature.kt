@@ -31,4 +31,10 @@ enum class AiFeature(
     VIEWS_PREDICTION("조회수 예측", 3),
     PUBLISH_CHECKLIST("게시 전 체크리스트", 2),
     ENGAGEMENT_BENCHMARK("참여율 벤치마크", 3),
+    SHORTS_REFRAME("쇼츠 세로 변환", 3),
+    SHORTS_SEGMENT("쇼츠 맥락 컷", 8),
+    SHORTS_SUBTITLE("쇼츠 자막 생성", 5),
+    SHORTS_HOOK("쇼츠 후킹 문구", 5),
+    SHORTS_TEMPLATE("쇼츠 템플릿 적용", 3),
+    SHORTS_VALIDATE("쇼츠 검증", 3),
 }

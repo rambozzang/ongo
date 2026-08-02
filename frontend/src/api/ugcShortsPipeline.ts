@@ -1,0 +1,159 @@
+import apiClient, { unwrapResponse } from './client'
+import type { ResData, PageResponse } from '@/types/api'
+import type { PipelineStage } from '@/api/ugcShortsPrompt'
+
+// Phase 1 에서 정의한 9단계 타입을 그대로 재사용한다
+export type { PipelineStage } from '@/api/ugcShortsPrompt'
+
+export type PipelineRunStatus =
+  | 'PENDING'
+  | 'RUNNING'
+  | 'AWAITING_HOOK_SELECTION'
+  | 'AWAITING_SCHEDULE'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+
+export type RunStageStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'SKIPPED'
+
+export type HookVariant = 'A' | 'B' | 'CUSTOM'
+
+// 설계 5장의 TypeScript 인터페이스와 필드명이 정확히 일치해야 한다
+export interface PipelineRunResponse {
+  id: number
+  sourceVideoId: number
+  sourceVideoTitle: string | null
+  templateId: number | null
+  status: PipelineRunStatus
+  currentStage: PipelineStage | null
+  clipCount: number
+  errorMessage: string | null
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export interface RunStageResponse {
+  stage: PipelineStage
+  status: RunStageStatus
+  promptId: number | null
+  promptRevision: number | null
+  aiProvider: string | null
+  creditCost: number
+  errorMessage: string | null
+  startedAt: string | null
+  completedAt: string | null
+}
+
+export interface ClipHookResponse {
+  id: number
+  variant: HookVariant
+  text: string
+  selected: boolean
+}
+
+export interface ShortsClipResponse {
+  id: number
+  seq: number
+  startMs: number
+  endMs: number
+  durationMs: number
+  title: string | null
+  caption: string | null
+  status: string
+  scheduledAt: string | null
+  hooks: ClipHookResponse[]
+  subtitleCount: number
+  hasRenderSpec: boolean
+}
+
+export interface PipelineRunDetailResponse {
+  run: PipelineRunResponse
+  stages: RunStageResponse[]
+  clips: ShortsClipResponse[]
+}
+
+export interface CreatePipelineRunRequest {
+  sourceVideoId: number
+  templateId?: number | null
+}
+
+export interface HookSelectionItem {
+  clipId: number
+  variant: HookVariant
+  customText?: string
+}
+
+export interface SelectHooksRequest {
+  selections: HookSelectionItem[]
+  discardClipIds: number[]
+}
+
+export interface ScheduleRunRequest {
+  startAt: string
+  intervalHours: number
+  platforms: string[]
+}
+
+const base = (workspaceId: number) => `/workspaces/${workspaceId}/ugc/shorts/runs`
+
+export const ugcShortsPipelineApi = {
+  create(workspaceId: number, request: CreatePipelineRunRequest) {
+    return apiClient
+      .post<ResData<PipelineRunResponse>>(base(workspaceId), request)
+      .then(unwrapResponse)
+  },
+
+  list(workspaceId: number, page: number, size: number) {
+    return apiClient
+      .get<ResData<PageResponse<PipelineRunResponse>>>(base(workspaceId), {
+        params: { page, size },
+      })
+      .then(unwrapResponse)
+  },
+
+  get(workspaceId: number, runId: number) {
+    return apiClient
+      .get<ResData<PipelineRunDetailResponse>>(`${base(workspaceId)}/${runId}`)
+      .then(unwrapResponse)
+  },
+
+  /** 해당 단계부터 재실행 — 이후 단계 결과는 서버에서 무효화된다 */
+  rerunStage(workspaceId: number, runId: number, stage: PipelineStage) {
+    return apiClient
+      .post<ResData<PipelineRunResponse>>(`${base(workspaceId)}/${runId}/stages/${stage}/rerun`)
+      .then(unwrapResponse)
+  },
+
+  /** 후킹 일괄 선택 — 선택하지 않은 클립은 discardClipIds 로 제외 */
+  selectHooks(workspaceId: number, runId: number, request: SelectHooksRequest) {
+    return apiClient
+      .post<ResData<PipelineRunResponse>>(`${base(workspaceId)}/${runId}/hooks`, request)
+      .then(unwrapResponse)
+  },
+
+  confirmSchedule(workspaceId: number, runId: number, request: ScheduleRunRequest) {
+    return apiClient
+      .post<ResData<PipelineRunResponse>>(`${base(workspaceId)}/${runId}/schedule`, request)
+      .then(unwrapResponse)
+  },
+
+  /** 클립별 render-spec.json 다운로드 */
+  downloadRenderSpec(workspaceId: number, runId: number, clipId: number): Promise<Blob> {
+    return apiClient
+      .get(`${base(workspaceId)}/${runId}/clips/${clipId}/render-spec`, { responseType: 'blob' })
+      .then((r) => r.data as Blob)
+  },
+
+  /** render-spec + ass + render.sh 3종 zip 다운로드 */
+  downloadRenderBundle(workspaceId: number, runId: number): Promise<Blob> {
+    return apiClient
+      .get(`${base(workspaceId)}/${runId}/render-bundle`, { responseType: 'blob' })
+      .then((r) => r.data as Blob)
+  },
+
+  remove(workspaceId: number, runId: number) {
+    return apiClient
+      .delete<ResData<void>>(`${base(workspaceId)}/${runId}`)
+      .then(unwrapResponse)
+  },
+}

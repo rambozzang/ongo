@@ -185,6 +185,18 @@ export const sectionsKo: ManualSection[] = [
           '"기본 템플릿으로 지정"을 켜면 워크스페이스의 기본 템플릿이 됩니다(워크스페이스당 1개).',
         ],
       },
+      {
+        subtitle: '쇼츠 실행',
+        text: '"쇼츠 실행"에서 원본 영상과 템플릿을 골라 파이프라인을 시작합니다. 실행은 9단계를 자동으로 진행하다가 후킹 선택과 예약 확정 두 곳에서 멈춰 사람의 입력을 기다립니다.',
+        items: [
+          '실행 상세에서 9단계 각각의 상태, 소요 시간, 사용 크레딧, 사용한 프롬프트 개정 번호를 확인할 수 있습니다.',
+          '각 단계의 "이 단계부터 다시 실행" 버튼으로 재실행합니다. 그 단계와 이후 단계의 결과가 무효화되고 다시 계산되므로, 프롬프트를 고친 뒤 해당 단계만 다시 돌릴 때 사용합니다.',
+          '후킹 선택 단계에서 멈추면 클립별로 A안/B안 카드가 나란히 표시됩니다. 하나를 고르거나 직접 입력하고, 필요 없는 클립은 "이 클립 제외"로 뺄 수 있습니다.',
+          '예약 단계에서 멈추면 시작 일시, 게시 간격(시간), 플랫폼을 정해 확정합니다.',
+          '렌더 스펙이 만들어진 클립은 클립별 render-spec.json 또는 전체 산출물 zip으로 다운로드합니다.',
+          '실행 중인 화면은 3초 간격으로 상태를 자동 갱신하며, 대기·종료 상태가 되면 갱신이 멈춥니다.',
+        ],
+      },
     ],
   },
   {
@@ -3099,6 +3111,18 @@ export const sectionsEn: ManualSection[] = [
           'In "New template", set the size (default 1080×1920, 9:16), background style (black bars/blurred/solid), hook and caption font/size/color/position, and top/bottom safe areas.',
           'Upload a reference image so the template stage can match the same look.',
           'Turn on "Set as default template" to make it the workspace default (one per workspace).',
+        ],
+      },
+      {
+        subtitle: 'Shorts runs',
+        text: 'In "Shorts Runs", pick a source video and a template to start the pipeline. A run walks through the 9 stages automatically and pauses at two gates — hook selection and schedule confirmation — to wait for your input.',
+        items: [
+          'The run detail shows each of the 9 stages with its status, elapsed time, credits spent, and the prompt revision used.',
+          '"Rerun from this stage" invalidates that stage and everything after it, then recomputes — use it after editing a prompt to redo only that part.',
+          'When the run pauses at hook selection, each clip shows option A and option B side by side. Pick one or write your own, and toggle "Discard this clip" to leave a clip out.',
+          'When the run pauses at scheduling, set the start date/time, publish interval (hours), and platforms, then confirm.',
+          'Clips with a render spec can be downloaded as a per-clip render-spec.json or as a single zip with all artifacts.',
+          'While a run is active the page refreshes every 3 seconds; refreshing stops once the run is waiting or finished.',
         ],
       },
     ],

@@ -178,6 +178,18 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '쇼츠 템플릿' },
       },
       {
+        path: 'ugc/shorts/runs',
+        name: 'ugc-shorts-runs',
+        component: () => import('@/views/ugc/ShortsPipelineView.vue'),
+        meta: { breadcrumb: '쇼츠 실행' },
+      },
+      {
+        path: 'ugc/shorts/runs/:id',
+        name: 'ugc-shorts-run-detail',
+        component: () => import('@/views/ugc/ShortsPipelineDetailView.vue'),
+        meta: { breadcrumb: '쇼츠 실행 상세' },
+      },
+      {
         path: 'creator/campaigns/:id/submit',
         name: 'creator-submit',
         component: () => import('@/views/ugc/CreatorSubmitView.vue'),

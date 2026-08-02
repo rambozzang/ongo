@@ -204,6 +204,12 @@ object Tables {
     val UGC_SHORTS_PROMPTS = DSL.table("ugc_shorts_prompts")
     val UGC_SHORTS_PROMPT_REVISIONS = DSL.table("ugc_shorts_prompt_revisions")
     val UGC_SHORTS_TEMPLATES = DSL.table("ugc_shorts_templates")
+
+    // UGC 쇼츠 파이프라인 실행 (V56)
+    val UGC_SHORTS_PIPELINE_RUNS = DSL.table("ugc_shorts_pipeline_runs")
+    val UGC_SHORTS_RUN_STAGES = DSL.table("ugc_shorts_run_stages")
+    val UGC_SHORTS_CLIPS = DSL.table("ugc_shorts_clips")
+    val UGC_SHORTS_CLIP_HOOKS = DSL.table("ugc_shorts_clip_hooks")
 }
 
 object Fields {
@@ -1018,4 +1024,27 @@ object Fields {
     val SAFE_AREA_BOTTOM = DSL.field("safe_area_bottom", Int::class.java)
     val REFERENCE_IMAGE_URL = DSL.field("reference_image_url", String::class.java)
     val EXTRA_SPEC = DSL.field("extra_spec", String::class.java)
+
+    // UGC 쇼츠 파이프라인 실행 (V56)
+    val TEMPLATE_ID = DSL.field("template_id", Long::class.java)
+    val CURRENT_STAGE = DSL.field("current_stage", String::class.java)
+    val TRANSCRIPT_TEXT = DSL.field("transcript_text", String::class.java)
+    val RUN_ID = DSL.field("run_id", Long::class.java)
+    val PROMPT_REVISION = DSL.field("prompt_revision", Int::class.java)
+    val AI_PROVIDER = DSL.field("ai_provider", String::class.java)
+    val CREDIT_COST = DSL.field("credit_cost", Int::class.java)
+    val INPUT_SNAPSHOT = DSL.field("input_snapshot", String::class.java)
+    val OUTPUT_SNAPSHOT = DSL.field("output_snapshot", String::class.java)
+    val SEQ = DSL.field("seq", Int::class.java)
+    val START_MS = DSL.field("start_ms", Long::class.java)
+    val END_MS = DSL.field("end_ms", Long::class.java)
+    val SUBTITLE_JSON = DSL.field("subtitle_json", String::class.java)
+    val CROP_JSON = DSL.field("crop_json", String::class.java)
+    val RENDER_SPEC = DSL.field("render_spec", String::class.java)
+    val DEDUP_KEY = DSL.field("dedup_key", String::class.java)
+    val RENDERED_VIDEO_ID = DSL.field("rendered_video_id", Long::class.java)
+    val CLIP_ID = DSL.field("clip_id", Long::class.java)
+    val VARIANT = DSL.field("variant", String::class.java)
+    val TEXT = DSL.field("text", String::class.java)
+    val SELECTED = DSL.field("selected", Boolean::class.java)
 }
