@@ -11,6 +11,7 @@ import BaseModal from '@/components/common/BaseModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { useLocale } from '@/composables/useLocale'
+import SectionCard from '@/components/redesign/SectionCard.vue'
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -214,7 +215,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <div class="mb-6 flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
       <div>
@@ -273,7 +274,7 @@ title="에셋 라이브러리" :items="[
     ]" />
 
     <!-- Toolbar -->
-    <div class="card mb-6">
+    <SectionCard :title="t('assets.title')" class="mb-6">
       <div class="flex flex-col gap-3 desktop:flex-row desktop:items-center desktop:justify-between">
         <!-- Search -->
         <div class="relative flex-1 desktop:max-w-sm">
@@ -298,15 +299,15 @@ title="에셋 라이브러리" :items="[
 
         <div class="flex flex-wrap items-center gap-3">
           <!-- Type Filter -->
-          <div class="flex rounded-lg border border-gray-200 dark:border-gray-700">
+          <div class="flex rounded-lg border border-line-control bg-surface-input">
             <button
               v-for="opt in typeOptions"
               :key="opt.value ?? 'all'"
               class="px-3 py-1.5 text-caption first:rounded-l-lg last:rounded-r-lg transition-colors"
               :class="
                 activeTypeFilter === opt.value
-                  ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-                  : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'
+                  ? 'bg-accent-dim text-accent'
+                  : 'text-content-tertiary hover:bg-surface-raised hover:text-content'
               "
               @click="onTypeFilter(opt.value)"
             >
@@ -317,7 +318,7 @@ title="에셋 라이브러리" :items="[
           <!-- Tag Filter (dropdown) -->
           <select
             :value="activeTagFilter ?? ''"
-            class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-body-xs text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+            class="input-field w-auto text-body-xs"
             @change="onTagFilter(($event.target as HTMLSelectElement).value || undefined)"
           >
             <option value="">태그 전체</option>
@@ -335,13 +336,13 @@ title="에셋 라이브러리" :items="[
           </button>
 
           <!-- View Mode Toggle -->
-          <div class="ml-auto flex rounded-lg border border-gray-300 dark:border-gray-600">
+          <div class="ml-auto flex rounded-lg border border-line-control bg-surface-input">
             <button
               class="rounded-l-lg px-3 py-1.5 text-body transition-colors"
               :class="
                 viewMode === 'grid'
-                  ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-                  : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'
+                  ? 'bg-accent-dim text-accent'
+                  : 'text-content-tertiary hover:bg-surface-raised hover:text-content'
               "
               title="그리드 보기"
               @click="assetsStore.viewMode = 'grid'"
@@ -352,8 +353,8 @@ title="에셋 라이브러리" :items="[
               class="rounded-r-lg px-3 py-1.5 text-body transition-colors"
               :class="
                 viewMode === 'list'
-                  ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-                  : 'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'
+                  ? 'bg-accent-dim text-accent'
+                  : 'text-content-tertiary hover:bg-surface-raised hover:text-content'
               "
               title="리스트 보기"
               @click="assetsStore.viewMode = 'list'"
@@ -363,7 +364,7 @@ title="에셋 라이브러리" :items="[
           </div>
         </div>
       </div>
-    </div>
+    </SectionCard>
 
     <!-- Main Content -->
     <div class="flex flex-col gap-6 desktop:flex-row">
