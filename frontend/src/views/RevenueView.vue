@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <PageHeader :title="$t('revenue.title')" :description="$t('revenue.description')">
       <template #actions>
@@ -13,11 +13,11 @@
         <button
           v-for="option in periodOptions"
           :key="option.value"
-          class="rounded-lg px-4 py-2 text-body font-medium transition-colors"
+          class="rounded-lg border border-line-control px-3 py-1.5 text-body font-semibold transition-colors"
           :class="
             selectedPeriod === option.value
-              ? 'bg-primary-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+              ? 'bg-accent-dim text-accent'
+              : 'bg-surface-input text-content-secondary hover:bg-surface-raised hover:text-content'
           "
           @click="selectedPeriod = option.value"
         >
@@ -43,14 +43,14 @@
       <!-- 개요 탭 -->
       <template v-if="activeTab === 'overview'">
         <!-- AI 인사이트 섹션 -->
-        <div class="card">
+        <SectionCard :title="$t('revenue.insights.title')" :meta="$t('revenue.insights.description')">
           <div class="mb-4 flex items-center justify-between gap-4">
             <div>
-              <h2 class="flex items-center gap-2 text-title font-semibold text-gray-900 dark:text-gray-100">
-                <SparklesIcon class="h-5 w-5 text-primary-600" />
+              <h2 class="flex items-center gap-2 text-title font-semibold text-content">
+                <SparklesIcon class="h-5 w-5 text-accent" />
                 {{ $t('revenue.insights.title') }}
               </h2>
-              <p class="mt-0.5 text-body text-gray-500 dark:text-gray-400">
+              <p class="mt-0.5 text-body text-content-tertiary">
                 {{ $t('revenue.insights.description') }}
               </p>
             </div>
@@ -83,108 +83,44 @@
 
           <!-- 빈 상태 -->
           <div v-else class="flex flex-col items-center justify-center py-10 text-center">
-            <SparklesIcon class="mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
-            <p class="text-body font-medium text-gray-500 dark:text-gray-400">{{ $t('revenue.insights.empty') }}</p>
-            <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">{{ $t('revenue.insights.emptyHint') }}</p>
+            <SparklesIcon class="mb-3 h-10 w-10 text-content-quaternary" />
+            <p class="text-body font-medium text-content-secondary">{{ $t('revenue.insights.empty') }}</p>
+            <p class="mt-1 text-body-xs text-content-tertiary">{{ $t('revenue.insights.emptyHint') }}</p>
           </div>
-        </div>
+        </SectionCard>
 
         <!-- Summary Cards -->
-        <div class="page-grid page-grid--metrics">
+        <div class="grid gap-2.5 tablet:grid-cols-2 desktop:grid-cols-4">
           <!-- Total Revenue -->
-          <div class="card border-t-4 border-primary-600">
-            <div class="flex items-start justify-between">
-              <div>
-                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('revenue.totalRevenue') }}</p>
-                <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
-                  {{ formatCurrency(revenueStore.summary.totalRevenue) }}
-                </p>
-              </div>
-              <BanknotesIcon class="h-8 w-8 text-primary-600" />
-            </div>
-          </div>
-
+          <KpiCard
+            :label="$t('revenue.totalRevenue')"
+            :value="formatCurrency(revenueStore.summary.totalRevenue)"
+            :note="periodOptions.find((option) => option.value === selectedPeriod)?.label"
+          />
           <!-- Monthly Growth -->
-          <div
-            class="card border-t-4"
-            :class="
-              revenueStore.summary.monthlyGrowth >= 0
-                ? 'border-success'
-                : 'border-error'
-            "
-          >
-            <div class="flex items-start justify-between">
-              <div>
-                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('revenue.monthlyGrowth') }}</p>
-                <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
-                  <span
-                    :class="
-                      revenueStore.summary.monthlyGrowth >= 0
-                        ? 'text-success-strong'
-                        : 'text-error-strong'
-                    "
-                  >
-                    {{ revenueStore.summary.monthlyGrowth >= 0 ? '+' : '' }}{{
-                      revenueStore.summary.monthlyGrowth.toFixed(1)
-                    }}%
-                  </span>
-                </p>
-              </div>
-              <ArrowTrendingUpIcon
-                v-if="revenueStore.summary.monthlyGrowth >= 0"
-                class="h-8 w-8 text-success-strong"
-              />
-              <ArrowTrendingDownIcon v-else class="h-8 w-8 text-error-strong" />
-            </div>
-          </div>
-
-          <!-- Average RPM -->
-          <div class="card border-t-4 border-info">
-            <div class="flex items-start justify-between">
-              <div>
-                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('revenue.avgRpm') }}</p>
-                <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
-                  ₩{{ revenueStore.summary.averageRPM.toLocaleString('ko-KR') }}
-                </p>
-              </div>
-              <ChartBarIcon class="h-8 w-8 text-info-strong" />
-            </div>
-          </div>
-
-          <!-- Top Platform -->
-          <div class="card border-t-4 border-primary-600">
-            <div class="flex items-start justify-between">
-              <div>
-                <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('revenue.topPlatform') }}</p>
-                <div class="mt-2 flex items-center gap-2">
-                  <span
-                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-caption"
-                    :style="{
-                      backgroundColor: `${getPlatformColor(revenueStore.summary.topPlatform)}20`,
-                      color: getPlatformColor(revenueStore.summary.topPlatform),
-                    }"
-                  >
-                    {{ PLATFORM_CONFIG[revenueStore.summary.topPlatform].label }}
-                  </span>
-                </div>
-                <p class="mt-1 text-title font-semibold text-gray-900 dark:text-gray-100">
-                  {{ formatCurrency(revenueStore.summary.topPlatformRevenue) }}
-                </p>
-              </div>
-              <TrophyIcon class="h-8 w-8 text-primary-600" />
-            </div>
-          </div>
+          <KpiCard
+            :label="$t('revenue.monthlyGrowth')"
+            :value="`${revenueStore.summary.monthlyGrowth >= 0 ? '+' : ''}${revenueStore.summary.monthlyGrowth.toFixed(1)}%`"
+            :delta-variant="revenueStore.summary.monthlyGrowth >= 0 ? 'success' : 'error'"
+            :note="periodOptions.find((option) => option.value === selectedPeriod)?.label"
+          />
+          <KpiCard
+            :label="$t('revenue.avgRpm')"
+            :value="`₩${revenueStore.summary.averageRPM.toLocaleString('ko-KR')}`"
+          />
+          <KpiCard
+            :label="$t('revenue.topPlatform')"
+            :value="PLATFORM_CONFIG[revenueStore.summary.topPlatform]?.label ?? revenueStore.summary.topPlatform"
+            :note="formatCurrency(revenueStore.summary.topPlatformRevenue)"
+          />
         </div>
 
         <!-- Revenue Trend Chart -->
-        <div class="card">
-          <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">
-            {{ $t('revenue.revenueTrend') }}
-          </h2>
+        <SectionCard :title="$t('revenue.revenueTrend')" :meta="periodOptions.find((option) => option.value === selectedPeriod)?.label">
           <div class="h-[400px]">
             <RevenueChart :data="filteredData" :period="selectedPeriod" />
           </div>
-        </div>
+        </SectionCard>
 
         <!-- Platform Breakdown & Bar Chart -->
         <div class="page-grid page-grid--split">
@@ -371,11 +307,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRevenueStore } from '@/stores/revenue'
 import {
-  BanknotesIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  ChartBarIcon,
-  TrophyIcon,
   SparklesIcon,
   BellIcon,
 } from '@heroicons/vue/24/outline'
@@ -388,6 +319,8 @@ import RevenuePlatformBreakdown from '@/components/revenue/RevenuePlatformBreakd
 import RevenueTable from '@/components/revenue/RevenueTable.vue'
 import RevenueInsightCard from '@/components/revenue/RevenueInsightCard.vue'
 import RevenueAlertModal from '@/components/revenue/RevenueAlertModal.vue'
+import KpiCard from '@/components/redesign/KpiCard.vue'
+import SectionCard from '@/components/redesign/SectionCard.vue'
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
