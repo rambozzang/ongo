@@ -1,12 +1,12 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex min-h-0 h-full flex-col">
     <!-- Column Header -->
     <div class="mb-4">
       <div class="flex items-center justify-between mb-2">
-        <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">
+        <h2 class="text-h3 text-content">
           {{ title }}
         </h2>
-        <span class="text-body text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+        <span class="rounded-md bg-surface-raised px-2 py-1 font-mono text-body-xs text-content-secondary">
           {{ ideas.length }}
         </span>
       </div>
@@ -16,10 +16,10 @@
     <!-- Drop Zone -->
     <div
       :class="[
-        'flex-1 rounded-lg border-2 border-dashed transition-colors overflow-y-auto',
+        'min-h-0 flex-1 overflow-y-auto rounded-[11px] border border-dashed transition-colors',
         isDragOver
-          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-          : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50'
+          ? 'border-accent bg-accent-dim'
+          : 'border-line-control bg-surface-input'
       ]"
       @dragover.prevent="handleDragOver"
       @dragleave="handleDragLeave"

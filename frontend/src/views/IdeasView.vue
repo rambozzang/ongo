@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="min-h-full py-5 text-content tablet:py-6">
     <!-- Header -->
     <PageHeader :title="$t('ideas.title')" :description="$t('ideas.description')">
       <template #actions>
@@ -43,8 +43,8 @@
           :class="[
             'min-h-10 rounded-lg px-3 py-2 text-body font-medium transition-colors',
             selectedPriority === priority.value
-              ? 'bg-primary-600 text-white dark:bg-primary-500'
-              : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+              ? 'border border-accent bg-accent text-accent-on'
+              : 'border border-line-control bg-surface-card text-content-secondary hover:border-line-hover hover:bg-surface-raised hover:text-content'
           ]"
           @click="setPriorityFilter(priority.value)"
         >
@@ -75,7 +75,7 @@
         :indeterminate="someSelected"
         @change="toggleAll"
       />
-      <label for="ideas-select-all" class="cursor-pointer text-body text-gray-500 dark:text-gray-400">
+      <label for="ideas-select-all" class="cursor-pointer text-body-sm text-content-secondary">
         {{ $t('list.selectAll', { count: visibleCount }) }}
       </label>
     </div>
