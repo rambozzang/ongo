@@ -16,6 +16,8 @@ import ActivityLogTimeline from '@/components/activitylog/ActivityLogTimeline.vu
 import { useActivityLogsStore } from '@/stores/activityLogs'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import KpiCard from '@/components/redesign/KpiCard.vue'
+import SectionCard from '@/components/redesign/SectionCard.vue'
 import type { ActivityLog, ActivityAction, ActivityDateRange, ActivityDateCustomRange } from '@/types/activitylog'
 
 const router = useRouter()
@@ -96,7 +98,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <PageHeader :title="$t('activityLog.title')" :description="$t('activityLog.description')">
       <template #actions>
@@ -113,33 +115,17 @@ onMounted(() => {
     <PageGuide :title="$t('activityLog.pageGuideTitle')" :items="($tm('activityLog.pageGuide') as string[])" />
 
     <!-- Today's activity summary cards -->
-    <div class="page-grid page-grid--dense mb-6">
-      <div
+    <div class="grid gap-2.5 tablet:grid-cols-3 desktop:grid-cols-6">
+      <KpiCard
         v-for="card in summaryCards"
         :key="card.key"
-        class="rounded-xl border border-gray-200 bg-white p-4 transition-colors dark:border-gray-700 dark:bg-gray-800"
-      >
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-9 w-9 items-center justify-center rounded-lg"
-            :class="card.colorClass"
-          >
-            <component :is="card.icon" class="h-5 w-5" />
-          </div>
-          <div>
-            <p class="text-h1 font-bold text-gray-900 dark:text-white">
-              {{ actionCounts[card.key] ?? 0 }}
-            </p>
-            <p class="text-body-xs text-gray-500 dark:text-gray-400">
-              {{ $t('activityLog.today') }} {{ $t(card.label) }}
-            </p>
-          </div>
-        </div>
-      </div>
+        :label="`${$t('activityLog.today')} ${$t(card.label)}`"
+        :value="String(actionCounts[card.key] ?? 0)"
+      />
     </div>
 
     <!-- Filters -->
-    <div class="mb-6 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <SectionCard :title="$t('activityLog.title')">
       <ActivityLogFilter
         :selected-action="selectedAction"
         :selected-date-range="selectedDateRange"
@@ -153,16 +139,16 @@ onMounted(() => {
         @update:search-query="handleSearchUpdate"
         @reset="handleResetFilters"
       />
-    </div>
+    </SectionCard>
 
     <!-- Timeline -->
-    <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <SectionCard :title="$t('activityLog.today')">
       <ActivityLogTimeline
         :grouped-logs="groupedByDate"
         :is-loading="isLoading"
         @click-entity="handleEntityClick"
       />
-    </div>
+    </SectionCard>
 
     <!-- Pagination -->
     <div

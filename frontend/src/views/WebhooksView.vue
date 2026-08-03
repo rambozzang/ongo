@@ -5,9 +5,6 @@ import {
   PlusIcon,
   LinkIcon,
   BoltIcon,
-  SignalIcon,
-  ExclamationTriangleIcon,
-  CodeBracketSquareIcon,
   MagnifyingGlassIcon,
   TrashIcon,
 } from '@heroicons/vue/24/outline'
@@ -23,6 +20,7 @@ import WebhookFormModal from '@/components/webhooks/WebhookFormModal.vue'
 import WebhookDeliveryLog from '@/components/webhooks/WebhookDeliveryLog.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import KpiCard from '@/components/redesign/KpiCard.vue'
 import type { Webhook, WebhookEvent } from '@/types/webhook'
 import { WEBHOOK_EVENT_LABELS } from '@/types/webhook'
 
@@ -247,7 +245,7 @@ function handleCloseDeliveryLog() {
 </script>
 
 <template>
-  <div>
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <PageHeader :title="$t('webhooks.title')" :description="$t('webhooks.description')">
       <template #actions>
@@ -264,67 +262,10 @@ function handleCloseDeliveryLog() {
     <PageGuide :title="$t('webhooks.pageGuideTitle')" :items="($tm('webhooks.pageGuide') as string[])" />
 
     <!-- Summary cards -->
-    <div v-if="!isSourceEmpty" class="page-grid page-grid--cards mb-6">
-      <div class="card">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.total') }}</p>
-            <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
-              {{ summaryStats.total }}
-            </p>
-          </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-info-subtle">
-            <CodeBracketSquareIcon class="h-5 w-5 text-info-strong" />
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.active') }}</p>
-            <p class="mt-1 text-h1 font-bold text-success-strong">
-              {{ summaryStats.active }}
-            </p>
-          </div>
-          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-success-subtle">
-            <SignalIcon class="h-5 w-5 text-success-strong" />
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('webhooks.stats.errors') }}</p>
-            <p
-              class="mt-1 text-h1 font-bold"
-              :class="
-                summaryStats.failingCount > 0
-                  ? 'text-error-strong'
-                  : 'text-gray-900 dark:text-gray-100'
-              "
-            >
-              {{ summaryStats.failingCount }}
-            </p>
-          </div>
-          <div
-            class="flex h-10 w-10 items-center justify-center rounded-full"
-            :class="
-              summaryStats.failingCount > 0
-                ? 'bg-error-subtle'
-                : 'bg-gray-100 dark:bg-gray-700'
-            "
-          >
-            <ExclamationTriangleIcon
-              class="h-5 w-5"
-              :class="
-                summaryStats.failingCount > 0
-                  ? 'text-error-strong'
-                  : 'text-gray-400 dark:text-gray-500'
-              "
-            />
-          </div>
-        </div>
-      </div>
+    <div v-if="!isSourceEmpty" class="grid gap-2.5 tablet:grid-cols-3">
+      <KpiCard :label="$t('webhooks.stats.total')" :value="String(summaryStats.total)" />
+      <KpiCard :label="$t('webhooks.stats.active')" :value="String(summaryStats.active)" :delta-variant="summaryStats.active > 0 ? 'success' : 'muted'" />
+      <KpiCard :label="$t('webhooks.stats.errors')" :value="String(summaryStats.failingCount)" :delta-variant="summaryStats.failingCount > 0 ? 'error' : 'success'" />
     </div>
 
     <!-- 검색 · 정렬 · 일괄 작업 -->
@@ -346,10 +287,10 @@ function handleCloseDeliveryLog() {
           :key="option.value"
           type="button"
           :class="[
-            'min-h-10 rounded-lg px-3 py-2 text-body font-medium transition-colors',
+            'min-h-9 rounded-lg border px-3 py-2 text-body font-medium transition-colors',
             statusFilter === option.value
-              ? 'bg-primary-600 text-white dark:bg-primary-500'
-              : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+              ? 'border-accent bg-accent-dim text-accent'
+              : 'border-line-control bg-surface-input text-content-secondary hover:bg-surface-raised hover:text-content'
           ]"
           @click="setStatusFilter(option.value)"
         >
