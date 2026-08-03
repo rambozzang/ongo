@@ -143,16 +143,16 @@ function handleDelete(event: Event) {
     class="group relative flex gap-3 rounded-lg border p-4 transition-colors cursor-pointer"
     :class="[
       notification.isRead
-        ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-        : 'bg-primary-50 dark:bg-primary-900/10 border-primary-200 dark:border-primary-800/40',
-      'hover:bg-gray-50 dark:hover:bg-gray-700/50',
+      ? 'bg-surface-card border-line'
+        : 'bg-accent-dim border-accent',
+      'hover:bg-surface-raised',
     ]"
     @click="handleClick"
   >
     <!-- Unread indicator -->
     <div
       v-if="!notification.isRead"
-      class="absolute left-1.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-primary-500"
+      class="absolute left-1.5 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-accent"
     />
 
     <!-- Icon -->
@@ -172,22 +172,22 @@ function handleDelete(event: Event) {
       <div class="flex items-start justify-between gap-2">
         <p
           class="text-body font-semibold"
-          :class="notification.isRead ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'"
+          :class="notification.isRead ? 'text-content-secondary' : 'text-content'"
         >
           {{ notification.title }}
         </p>
-        <span class="flex-shrink-0 text-body-xs text-gray-500 dark:text-gray-400">
+        <span class="flex-shrink-0 text-body-xs text-content-tertiary">
           {{ timeAgo }}
         </span>
       </div>
-      <p class="mt-0.5 text-body text-gray-600 dark:text-gray-400 line-clamp-2">
+      <p class="mt-0.5 line-clamp-2 text-body-sm text-content-secondary">
         {{ notification.message }}
       </p>
     </div>
 
     <!-- Delete button (visible on hover) -->
     <button
-      class="absolute right-2 top-2 hidden rounded-md p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600 group-hover:block dark:hover:bg-gray-600 dark:hover:text-gray-300"
+      class="absolute right-2 top-2 hidden rounded-md p-1 text-content-tertiary hover:bg-surface-raised hover:text-content group-hover:block"
       title="삭제"
       @click="handleDelete"
     >
