@@ -5335,5 +5335,188 @@
       "AI 성과 점수 카드와 이상 탐지 알림으로 영상 성과를 분석하고 개선점을 파악하세요",
       "수정·재활용·재업로드·삭제 버튼으로 영상을 관리하세요. 재활용 시 인기 콘텐츠를 다른 플랫폼에 재게시할 수 있습니다"
     ]
+  },
+  "redesign": {
+    "nav": {
+      "today": "오늘",
+      "compose": "새 업로드",
+      "inbox": "인박스",
+      "calendar": "캘린더",
+      "performance": "성과",
+      "channels": "채널",
+      "settings": "설정"
+    },
+    "rail": {
+      "monthlyUploads": "이번 달 업로드"
+    },
+    "topbar": {
+      "searchPlaceholder": "검색",
+      "bulkImport": "일괄 가져오기",
+      "newUpload": "새 업로드"
+    },
+    "screen": {
+      "redesign-today": {
+        "title": "오늘",
+        "subtitle": "발행 큐 {queue}건 · 미답변 {unanswered}"
+      },
+      "redesign-compose": {
+        "title": "새 업로드",
+        "subtitle": "초안"
+      },
+      "redesign-inbox": {
+        "title": "인박스",
+        "subtitle": "댓글 · DM 통합"
+      },
+      "redesign-calendar": {
+        "title": "캘린더",
+        "subtitle": "예약 {scheduled}건"
+      },
+      "redesign-performance": {
+        "title": "성과",
+        "subtitle": "지난 30일"
+      },
+      "redesign-channels": {
+        "title": "채널",
+        "subtitle": "연결 상태"
+      },
+      "redesign-settings": {
+        "title": "설정",
+        "subtitle": "계정 · 자동화 · 결제"
+      }
+    },
+    "today": {
+      "kpiScheduled": "오늘 예약",
+      "kpiUnanswered": "미답변 댓글·DM",
+      "kpiViews": "어제 조회",
+      "kpiWeekly": "이번 주 발행",
+      "queueTitle": "오늘의 발행 큐",
+      "viewCalendar": "캘린더로 보기 →",
+      "addAtSlot": "+ 이 시간대에 영상 추가",
+      "needsAttention": "확인 필요",
+      "channelStatus": "채널 상태",
+      "manage": "관리 →",
+      "emptyQueue": "오늘 예약된 발행이 없습니다",
+      "emptyAttention": "확인이 필요한 항목이 없습니다",
+      "emptyChannels": "연결된 채널이 없습니다"
+    },
+    "compose": {
+      "noFile": "파일을 선택하세요",
+      "noFileMeta": "업로드된 파일 없음",
+      "replace": "교체",
+      "autoCaption": "자동 자막",
+      "targetsTitle": "발행 대상",
+      "targetsHint": "끌 채널을 눌러 제외하세요",
+      "noChannels": "연결된 채널이 없습니다",
+      "tabCommon": "공통",
+      "title": "제목",
+      "description": "설명",
+      "hashtags": "해시태그",
+      "preview": "미리보기",
+      "previewTitleEmpty": "제목을 입력하면 여기에 표시됩니다",
+      "scheduleTitle": "발행 예약",
+      "schedNow": "지금 발행 (즉시)",
+      "schedBest": "채널별 최적 시간",
+      "schedFixed": "직접 지정",
+      "saveDraft": "임시 저장",
+      "schedule": "{count}개 채널 예약",
+      "shortcutHint": "⌘↵ 로 바로 예약",
+      "warnTitleLength": "제목이 {limit}자를 넘었습니다. 초과분은 잘릴 수 있습니다.",
+      "warnTiktokHashtags": "TikTok은 해시태그 {limit}개까지만 반영됩니다. 초과분은 설명 하단으로 이동합니다.",
+      "blockNoTarget": "발행할 채널을 하나 이상 선택하세요",
+      "blockExpired": "{name} 연결이 만료되어 예약할 수 없습니다"
+    },
+    "inbox": {
+      "loading": "불러오는 중...",
+      "loadFailed": "인박스를 불러오지 못했습니다.",
+      "loadPartial": "일부 소스만 불러왔습니다. 잠시 후 다시 시도하세요.",
+      "filterLabel": "FILTER",
+      "savedReplyLabel": "SAVED REPLY",
+      "filters": {
+        "all": "전체",
+        "question": "멘션·질문",
+        "negative": "부정 감지",
+        "dm": "DM",
+        "collab": "협업 문의",
+        "done": "처리 완료"
+      },
+      "categories": {
+        "question": "질문",
+        "collab": "협업",
+        "negative": "부정",
+        "normal": "일반"
+      },
+      "unanswered": "미답변 {count}",
+      "selectAll": "전체 선택",
+      "batchProcess": "일괄 처리",
+      "batchDone": "{count}건을 처리했습니다.",
+      "empty": "표시할 스레드가 없습니다.",
+      "back": "목록",
+      "pin": "고정",
+      "unpin": "고정 해제",
+      "hide": "숨기기",
+      "block": "차단",
+      "blockUnsupported": "차단은 아직 지원하지 않습니다.",
+      "targetPost": "대상 게시물",
+      "likes": "좋아요 {count}",
+      "myReply": "나의 답변",
+      "composerPlaceholder": "답변을 입력하세요…",
+      "dmUnsupported": "DM 답장은 아직 지원하지 않습니다.",
+      "aiSuggest": "AI 답변 제안",
+      "aiSuggesting": "생성 중...",
+      "aiSuggestEmpty": "제안을 만들지 못했습니다.",
+      "aiSuggestFailed": "AI 답변 제안에 실패했습니다.",
+      "savedReply": "저장된 답변",
+      "sendHint": "⌘↵ 전송 후 다음",
+      "send": "전송",
+      "sending": "전송 중...",
+      "sent": "답변을 보냈습니다.",
+      "sendFailed": "답변 전송에 실패했습니다.",
+      "actionFailed": "작업에 실패했습니다.",
+      "minutesAgo": "{n}분 전",
+      "hoursAgo": "{n}시간 전",
+      "daysAgo": "{n}일 전",
+      "savedReplies": {
+        "thanks": {
+          "label": "감사 인사",
+          "body": "좋게 봐 주셔서 감사합니다! 앞으로도 꾸준히 올리겠습니다."
+        },
+        "routine": {
+          "label": "루틴 리스트 안내",
+          "body": "루틴 리스트는 이번 주 영상에서 자세히 정리해 드릴게요. 조금만 기다려 주세요!"
+        },
+        "collab": {
+          "label": "협업 문의 회신",
+          "body": "제안 감사합니다. 자세한 내용은 프로필의 이메일로 보내 주시면 검토 후 답변드리겠습니다."
+        },
+        "reupload": {
+          "label": "재업로드 공지",
+          "body": "영상에 문제가 있어 다시 올렸습니다. 불편을 드려 죄송합니다."
+        }
+      }
+    },
+    "calendar": {
+      "loading": "불러오는 중...",
+      "loadFailed": "예약을 불러오지 못했습니다.",
+      "prevWeek": "이전 주",
+      "nextWeek": "다음 주",
+      "today": "오늘",
+      "weekTitle": "{year}년 {month}월 {day}일 주",
+      "hint": "드래그로 시간 이동 · 빈 칸 클릭으로 예약 추가",
+      "autoArrange": "최적 시간 자동 배치",
+      "autoArrangeResult": "추천 시간 {count}건을 찾았습니다.",
+      "autoArrangeEmpty": "추천할 최적 시간이 없습니다.",
+      "autoArrangeFailed": "추천 시간을 불러오지 못했습니다.",
+      "moveFailed": "예약 이동에 실패했습니다.",
+      "failed": "실패",
+      "weekdays": {
+        "mon": "월",
+        "tue": "화",
+        "wed": "수",
+        "thu": "목",
+        "fri": "금",
+        "sat": "토",
+        "sun": "일"
+      }
+    }
   }
 }

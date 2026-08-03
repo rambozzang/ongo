@@ -29,6 +29,59 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ChannelCallbackView.vue'),
     meta: { requiresAuth: true },
   },
+  /*
+   * 2026-08 리디자인 셸. 하루 작업 순서(오늘 → 만들기 → 응답 → 확인)로 재편한 7개 화면.
+   * 기존 AppLayout 라우트는 그대로 살아 있어 레거시 화면은 URL 로 계속 접근 가능하다.
+   */
+  {
+    path: '/',
+    component: () => import('@/components/layout/RedesignLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'today',
+        name: 'redesign-today',
+        component: () => import('@/views/redesign/TodayView.vue'),
+        meta: { breadcrumb: '오늘' },
+      },
+      {
+        path: 'compose',
+        name: 'redesign-compose',
+        component: () => import('@/views/redesign/ComposeView.vue'),
+        meta: { breadcrumb: '새 업로드' },
+      },
+      {
+        path: 'inbox-v2',
+        name: 'redesign-inbox',
+        component: () => import('@/views/redesign/InboxView.vue'),
+        meta: { breadcrumb: '인박스' },
+      },
+      {
+        path: 'calendar-v2',
+        name: 'redesign-calendar',
+        component: () => import('@/views/redesign/CalendarView.vue'),
+        meta: { breadcrumb: '캘린더' },
+      },
+      {
+        path: 'performance',
+        name: 'redesign-performance',
+        component: () => import('@/views/redesign/PerformanceView.vue'),
+        meta: { breadcrumb: '성과' },
+      },
+      {
+        path: 'channels-v2',
+        name: 'redesign-channels',
+        component: () => import('@/views/redesign/ChannelsView.vue'),
+        meta: { breadcrumb: '채널' },
+      },
+      {
+        path: 'settings-v2',
+        name: 'redesign-settings',
+        component: () => import('@/views/redesign/SettingsView.vue'),
+        meta: { breadcrumb: '설정' },
+      },
+    ],
+  },
   {
     path: '/',
     component: () => import('@/components/layout/AppLayout.vue'),

@@ -170,23 +170,60 @@
     transform: scale(0.97);
   }
 
+  /*
+   * 컨트롤 프리미티브 — 2026-08 리디자인.
+   * 컨트롤 높이 36px, radius 8px, 카드 radius 11px. 그림자 없음(깊이는 보더로).
+   * 색은 전부 토큰 참조라 라이트/다크가 자동으로 뒤집힌다.
+   */
   .btn-primary {
-    @apply btn-press inline-flex min-h-10 items-center justify-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-primary-500 dark:hover:bg-primary-400 dark:focus:ring-offset-gray-900;
+    @apply btn-press inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-body-sm font-bold transition-[filter,background-color] focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    background: var(--accent-primary);
+    color: var(--accent-on-accent);
+    --tw-ring-color: var(--accent-primary);
+    --tw-ring-offset-color: var(--surface-primary);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.1);
   }
 
   .btn-secondary {
-    @apply btn-press inline-flex min-h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:border-gray-400 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus:ring-offset-gray-900;
+    @apply btn-press inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border bg-transparent px-3.5 py-2 text-body-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    border-color: var(--border-control-soft);
+    color: var(--text-secondary);
+    --tw-ring-color: var(--accent-primary);
+    --tw-ring-offset-color: var(--surface-primary);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--border-hover);
+    color: var(--text-primary);
   }
 
   .btn-danger {
-    @apply btn-press inline-flex min-h-10 items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-400 dark:focus:ring-offset-gray-900;
+    @apply btn-press inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border bg-transparent px-3.5 py-2 text-body-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    border-color: var(--color-bad-accent);
+    color: var(--color-error-strong);
+    --tw-ring-color: var(--color-bad-accent);
+    --tw-ring-offset-color: var(--surface-primary);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: var(--color-error-subtle);
   }
 
   .input,
   .input-field {
-    @apply block min-h-10 w-full rounded-lg border bg-white px-3 py-2 text-sm shadow-none placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500;
-    border-color: var(--border-default);
+    @apply block min-h-9 w-full rounded-lg border px-3 py-2 text-body-sm shadow-none transition-colors focus:outline-none focus:ring-2;
+    background: var(--surface-input);
+    border-color: var(--border-control);
     color: var(--text-primary);
+    --tw-ring-color: var(--accent-primary-subtle);
+  }
+
+  .input::placeholder,
+  .input-field::placeholder {
+    color: var(--text-tertiary);
   }
 
   .input:hover,
@@ -194,14 +231,19 @@
     border-color: var(--border-hover);
   }
 
+  .input:focus,
+  .input-field:focus {
+    border-color: var(--accent-primary);
+  }
+
   .card {
-    @apply relative rounded-xl border bg-white p-5 shadow-none transition-[border-color,box-shadow] duration-200 dark:bg-gray-900;
+    @apply relative rounded-[11px] border p-4 shadow-none transition-colors duration-150;
+    background: var(--surface-elevated);
     border-color: var(--border-default);
   }
 
   .card:hover {
     border-color: var(--border-hover);
-    box-shadow: var(--shadow-xs);
   }
 
   .card-compact {

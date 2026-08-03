@@ -7,20 +7,44 @@
   --surface-overlay: rgba(17, 19, 31, 0.56);
   --surface-sidebar: #181a27;
   --surface-sidebar-raised: #232638;
+  --surface-input: #ffffff;
 
   --text-primary: #181a27;
   --text-secondary: #646979;
   --text-tertiary: #9499a8;
+  --text-quaternary: #b0b5c2;
   --text-inverse: #ffffff;
   --text-link: #5659d6;
 
   --border-default: #e1e3eb;
+  --border-row: #edeff4;
+  --border-control: #d6d9e3;
+  --border-control-soft: #e1e3eb;
   --border-hover: #c9cdd9;
   --border-focus: #696de8;
 
   --accent-primary: #5659d6;
   --accent-primary-hover: #4548bd;
   --accent-primary-subtle: #eef0ff;
+  --accent-on-accent: #ffffff;
+
+  /* 강조 상태색 — 배지가 아닌 점·보더·아이콘용 */
+  --color-warn-accent: #bd7616;
+  --color-bad-accent: #c94b58;
+
+  /* 플랫폼 칩 색쌍 [배경 / 글자] — 라이트 대응 */
+  --platform-yt-bg: #fdeaea;
+  --platform-yt-fg: #b3312f;
+  --platform-ig-bg: #fbeaf6;
+  --platform-ig-fg: #a12c81;
+  --platform-tt-bg: #e2f5f4;
+  --platform-tt-fg: #10666a;
+  --platform-fb-bg: #e7edfb;
+  --platform-fb-fg: #2f4f9e;
+  --platform-nv-bg: #e3f3e8;
+  --platform-nv-fg: #1c6b3a;
+  --platform-th-bg: #eef0f5;
+  --platform-th-fg: #40465c;
 
   /*
    * Semantic status colors.
@@ -67,49 +91,87 @@
   --transition-slow: 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/*
+ * 다크 팔레트 — 2026-08 리디자인 (design_handoff_ongo_redesign)
+ *
+ * 고밀도·파워유저 워크스페이스. 깊이는 그림자가 아니라 보더와 표면 명도로 표현한다.
+ * 값 출처는 핸드오프 README 의 Design Tokens 표다.
+ */
 .dark {
-  --surface-primary: #202330;
-  --surface-secondary: #151722;
-  --surface-tertiary: #2b2f40;
-  --surface-elevated: #282c3c;
-  --surface-overlay: rgba(0, 0, 0, 0.72);
-  --surface-sidebar: #11131d;
-  --surface-sidebar-raised: #1c1f2d;
-  --text-primary: #f4f5fa;
-  --text-secondary: #a8adbd;
-  --text-tertiary: #747a8e;
-  --text-link: #9da1ff;
-  --border-default: #373b4c;
-  --border-hover: #4a5064;
-  --border-focus: #9da1ff;
-  --accent-primary: #8589f1;
-  --accent-primary-hover: #9da1ff;
-  --accent-primary-subtle: rgba(105, 109, 232, 0.16);
-  /* Semantic status colors — dark. `-subtle` is translucent so it composites
-     correctly over card / elevated / tertiary surfaces alike. */
-  --color-success: #43c79b;
-  --color-success-subtle: rgba(67, 199, 155, 0.16);
-  --color-success-strong: #6cd3b1;
+  --surface-primary: #181a27; /* 앱 컨테이너 */
+  --surface-secondary: #101120; /* 앱 바깥 배경 */
+  --surface-tertiary: #1f2233; /* hover · 선택 행 */
+  --surface-elevated: #1b1e2c; /* 카드 */
+  --surface-input: #171927; /* 입력 · 서브 패널 */
+  --surface-overlay: rgba(16, 17, 32, 0.72);
+  --surface-sidebar: #14161f; /* 좌측 레일 */
+  --surface-sidebar-raised: #1d2030; /* 레일 hover */
 
-  --color-warning: #e3a048;
-  --color-warning-subtle: rgba(227, 160, 72, 0.16);
-  --color-warning-strong: #e9b570;
+  --text-primary: #e8e9f2;
+  --text-secondary: #8f93b3;
+  --text-tertiary: #6c7093;
+  --text-quaternary: #575b7c; /* 축 라벨 등 최약 */
+  --text-link: oklch(0.78 0.15 320);
 
-  --color-error: #ed7881;
-  --color-error-subtle: rgba(237, 120, 129, 0.16);
-  --color-error-strong: #f1969d;
+  --border-default: #23263c; /* 보더 (강) */
+  --border-row: #202335; /* 행 구분선 */
+  --border-control: #2e3250; /* 컨트롤 보더 */
+  --border-control-soft: #262940; /* 보조 버튼 · 검색 */
+  --border-hover: #3a3f61;
+  --border-focus: oklch(0.78 0.15 320);
 
-  --color-info: #79a9ef;
-  --color-info-subtle: rgba(121, 169, 239, 0.16);
-  --color-info-strong: #96bcf3;
+  /* accent — 핸드오프에서 사용자가 선택한 마젠타.
+     대체 옵션: 158(민트) / 240(블루) / 62(앰버). hue 값만 바꾸면 전체가 따라온다. */
+  --accent-primary: oklch(0.78 0.15 320);
+  --accent-primary-hover: oklch(0.84 0.15 320);
+  --accent-primary-subtle: oklch(0.78 0.15 320 / 0.14);
+  --accent-on-accent: #101120; /* accent 배경 위 글자색 */
 
-  --color-muted: #979cab;
-  --color-muted-subtle: rgba(151, 156, 171, 0.16);
-  --color-muted-strong: #cdd0da;
+  /* 상태 배지 — 핸드오프의 pill(bg, fg) 규칙.
+     불투명 값이다. 시안이 표면 위 대비를 그 값으로 확정했다. */
+  --color-success: #8fdca8;
+  --color-success-subtle: #16261c;
+  --color-success-strong: #8fdca8;
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.24);
+  --color-warning: #e8cf8c;
+  --color-warning-subtle: #2a2416;
+  --color-warning-strong: #e8cf8c;
+
+  --color-error: #ff9c9c;
+  --color-error-subtle: #2c1a20;
+  --color-error-strong: #ff9c9c;
+
+  --color-info: #8fb2ff;
+  --color-info-subtle: #1a2138;
+  --color-info-strong: #8fb2ff;
+
+  --color-muted: #9598bb;
+  --color-muted-subtle: #1e2233;
+  --color-muted-strong: #9598bb;
+
+  /* 강조 상태색 — 배지가 아닌 점·보더·아이콘용 */
+  --color-warn-accent: oklch(0.78 0.15 62);
+  --color-bad-accent: oklch(0.68 0.17 22);
+
+  /* 플랫폼 칩 색쌍 [배경 / 글자] */
+  --platform-yt-bg: #2c1a20;
+  --platform-yt-fg: #ff8a8a;
+  --platform-ig-bg: #2a1c2c;
+  --platform-ig-fg: #e79ad4;
+  --platform-tt-bg: #12262b;
+  --platform-tt-fg: #7de3e0;
+  --platform-fb-bg: #1a2138;
+  --platform-fb-fg: #8fb2ff;
+  --platform-nv-bg: #16261c;
+  --platform-nv-fg: #8fdca8;
+  --platform-th-bg: #22242f;
+  --platform-th-fg: #c9cbe0;
+
+  /* 리디자인 규칙: 깊이는 보더와 표면 명도로 표현한다. 카드·컨트롤에는 그림자를 쓰지 않는다.
+     떠 있는 표면(모달·팝오버·앱 프레임)에만 남긴다. */
+  --shadow-xs: none;
+  --shadow-sm: none;
   --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.28);
   --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.34);
-  --shadow-float: 0 24px 56px rgba(0, 0, 0, 0.42);
+  --shadow-float: 0 30px 80px -30px #000;
 }

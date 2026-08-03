@@ -5345,5 +5345,188 @@
       "Use the AI performance score card and anomaly alerts to analyze results and spot what to improve.",
       "Manage the video with Edit, Recycle, Re-upload, and Delete. Recycling republishes popular content to other platforms."
     ]
+  },
+  "redesign": {
+    "nav": {
+      "today": "Today",
+      "compose": "New upload",
+      "inbox": "Inbox",
+      "calendar": "Calendar",
+      "performance": "Performance",
+      "channels": "Channels",
+      "settings": "Settings"
+    },
+    "rail": {
+      "monthlyUploads": "Uploads this month"
+    },
+    "topbar": {
+      "searchPlaceholder": "Search",
+      "bulkImport": "Bulk import",
+      "newUpload": "New upload"
+    },
+    "screen": {
+      "redesign-today": {
+        "title": "Today",
+        "subtitle": "{queue} in queue · {unanswered} unanswered"
+      },
+      "redesign-compose": {
+        "title": "New upload",
+        "subtitle": "Draft"
+      },
+      "redesign-inbox": {
+        "title": "Inbox",
+        "subtitle": "Comments · DMs"
+      },
+      "redesign-calendar": {
+        "title": "Calendar",
+        "subtitle": "{scheduled} scheduled"
+      },
+      "redesign-performance": {
+        "title": "Performance",
+        "subtitle": "Last 30 days"
+      },
+      "redesign-channels": {
+        "title": "Channels",
+        "subtitle": "Connection status"
+      },
+      "redesign-settings": {
+        "title": "Settings",
+        "subtitle": "Account · Automation · Billing"
+      }
+    },
+    "today": {
+      "kpiScheduled": "Scheduled today",
+      "kpiUnanswered": "Unanswered",
+      "kpiViews": "Views yesterday",
+      "kpiWeekly": "Published this week",
+      "queueTitle": "Today's publish queue",
+      "viewCalendar": "View calendar →",
+      "addAtSlot": "+ Add a video to this slot",
+      "needsAttention": "Needs attention",
+      "channelStatus": "Channel status",
+      "manage": "Manage →",
+      "emptyQueue": "Nothing scheduled today",
+      "emptyAttention": "Nothing needs your attention",
+      "emptyChannels": "No channels connected"
+    },
+    "compose": {
+      "noFile": "Choose a file",
+      "noFileMeta": "No file uploaded",
+      "replace": "Replace",
+      "autoCaption": "Auto captions",
+      "targetsTitle": "Publish to",
+      "targetsHint": "Click a channel to exclude it",
+      "noChannels": "No channels connected",
+      "tabCommon": "Common",
+      "title": "Title",
+      "description": "Description",
+      "hashtags": "Hashtags",
+      "preview": "Preview",
+      "previewTitleEmpty": "Your title will appear here",
+      "scheduleTitle": "Schedule",
+      "schedNow": "Publish now",
+      "schedBest": "Best time per channel",
+      "schedFixed": "Pick a time",
+      "saveDraft": "Save draft",
+      "schedule": "Schedule {count} channels",
+      "shortcutHint": "⌘↵ to schedule",
+      "warnTitleLength": "Title exceeds {limit} characters and may be truncated.",
+      "warnTiktokHashtags": "TikTok keeps only {limit} hashtags. The rest move to the description.",
+      "blockNoTarget": "Select at least one channel",
+      "blockExpired": "{name} is disconnected — reconnect to schedule"
+    },
+    "inbox": {
+      "loading": "Loading...",
+      "loadFailed": "Failed to load the inbox.",
+      "loadPartial": "Only some sources were loaded. Try again shortly.",
+      "filterLabel": "FILTER",
+      "savedReplyLabel": "SAVED REPLY",
+      "filters": {
+        "all": "All",
+        "question": "Mentions & questions",
+        "negative": "Negative",
+        "dm": "DM",
+        "collab": "Collab inquiries",
+        "done": "Done"
+      },
+      "categories": {
+        "question": "Question",
+        "collab": "Collab",
+        "negative": "Negative",
+        "normal": "General"
+      },
+      "unanswered": "{count} unanswered",
+      "selectAll": "Select all",
+      "batchProcess": "Batch process",
+      "batchDone": "Processed {count} item(s).",
+      "empty": "No threads to show.",
+      "back": "Back",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "hide": "Hide",
+      "block": "Block",
+      "blockUnsupported": "Blocking is not supported yet.",
+      "targetPost": "Target post",
+      "likes": "{count} likes",
+      "myReply": "My reply",
+      "composerPlaceholder": "Write a reply…",
+      "dmUnsupported": "Replying to DMs is not supported yet.",
+      "aiSuggest": "AI reply suggestion",
+      "aiSuggesting": "Generating...",
+      "aiSuggestEmpty": "No suggestion was generated.",
+      "aiSuggestFailed": "Failed to generate an AI suggestion.",
+      "savedReply": "Saved replies",
+      "sendHint": "⌘↵ Send & next",
+      "send": "Send",
+      "sending": "Sending...",
+      "sent": "Reply sent.",
+      "sendFailed": "Failed to send the reply.",
+      "actionFailed": "Action failed.",
+      "minutesAgo": "{n}m ago",
+      "hoursAgo": "{n}h ago",
+      "daysAgo": "{n}d ago",
+      "savedReplies": {
+        "thanks": {
+          "label": "Thank you",
+          "body": "Thanks for watching! More videos are on the way."
+        },
+        "routine": {
+          "label": "Routine list info",
+          "body": "I'll cover the full routine list in this week's video. Stay tuned!"
+        },
+        "collab": {
+          "label": "Collab inquiry reply",
+          "body": "Thanks for the offer. Please send the details to the email in my profile and I'll get back to you after review."
+        },
+        "reupload": {
+          "label": "Re-upload notice",
+          "body": "The video had an issue and has been re-uploaded. Sorry for the inconvenience."
+        }
+      }
+    },
+    "calendar": {
+      "loading": "Loading...",
+      "loadFailed": "Failed to load schedules.",
+      "prevWeek": "Previous week",
+      "nextWeek": "Next week",
+      "today": "Today",
+      "weekTitle": "Week of {month}/{day}/{year}",
+      "hint": "Drag to move time · Click an empty slot to add",
+      "autoArrange": "Auto-arrange best times",
+      "autoArrangeResult": "Found {count} recommended time(s).",
+      "autoArrangeEmpty": "No recommended times available.",
+      "autoArrangeFailed": "Failed to load recommendations.",
+      "moveFailed": "Failed to move the schedule.",
+      "failed": "Failed",
+      "weekdays": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      }
+    }
   }
 }

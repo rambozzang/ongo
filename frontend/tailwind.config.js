@@ -59,6 +59,52 @@ export default {
           subtle: 'var(--color-muted-subtle)',
           strong: 'var(--color-muted-strong)',
         },
+        // 리디자인(2026-08) 토큰. tokens.css 의 CSS 변수를 그대로 노출해
+        // 라이트/다크가 자동으로 뒤집힌다. 의미 이름으로만 쓰고 hex 를 직접 박지 말 것.
+        surface: {
+          DEFAULT: 'var(--surface-primary)',
+          base: 'var(--surface-secondary)', // 앱 바깥 배경
+          raised: 'var(--surface-tertiary)', // hover · 선택 행
+          card: 'var(--surface-elevated)',
+          input: 'var(--surface-input)',
+          rail: 'var(--surface-sidebar)',
+          'rail-raised': 'var(--surface-sidebar-raised)',
+        },
+        line: {
+          DEFAULT: 'var(--border-default)',
+          row: 'var(--border-row)',
+          control: 'var(--border-control)',
+          soft: 'var(--border-control-soft)',
+          hover: 'var(--border-hover)',
+        },
+        content: {
+          DEFAULT: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          tertiary: 'var(--text-tertiary)',
+          quaternary: 'var(--text-quaternary)',
+        },
+        accent: {
+          DEFAULT: 'var(--accent-primary)',
+          hover: 'var(--accent-primary-hover)',
+          dim: 'var(--accent-primary-subtle)',
+          on: 'var(--accent-on-accent)',
+        },
+        warn: 'var(--color-warn-accent)',
+        bad: 'var(--color-bad-accent)',
+        platform: {
+          'yt-bg': 'var(--platform-yt-bg)',
+          'yt-fg': 'var(--platform-yt-fg)',
+          'ig-bg': 'var(--platform-ig-bg)',
+          'ig-fg': 'var(--platform-ig-fg)',
+          'tt-bg': 'var(--platform-tt-bg)',
+          'tt-fg': 'var(--platform-tt-fg)',
+          'fb-bg': 'var(--platform-fb-bg)',
+          'fb-fg': 'var(--platform-fb-fg)',
+          'nv-bg': 'var(--platform-nv-bg)',
+          'nv-fg': 'var(--platform-nv-fg)',
+          'th-bg': 'var(--platform-th-bg)',
+          'th-fg': 'var(--platform-th-fg)',
+        },
         youtube: '#FF0000',
         tiktok: '#000000',
         instagram: '#E1306C',
