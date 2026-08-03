@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <PageHeader :title="t('admin.title')" :description="t('admin.description')" />
 
     <PageGuide :title="t('admin.pageGuideTitle')" :items="(tm('admin.pageGuide') as string[])" />

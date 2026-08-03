@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <PageHeader :title="$t('videoCompare.title')" :description="$t('videoCompare.description')" />
 
     <PageGuide :title="$t('videoCompare.pageGuideTitle')" :items="($tm('videoCompare.pageGuide') as string[])" />

@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <template v-if="!bioPage">
       <div class="flex min-h-[400px] items-center justify-center">
         <div class="text-center">
@@ -37,20 +37,20 @@
     <PageGuide :title="$t('linkBioView.pageGuideTitle')" :items="($tm('linkBioView.pageGuide') as string[])" />
 
     <!-- Stats Bar -->
-    <div class="page-grid page-grid--cards mb-6">
-      <div class="card p-3">
+    <div class="grid gap-2.5 tablet:grid-cols-3 mb-6">
+      <div class="rounded-[11px] border border-line bg-surface-card p-4">
         <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.totalViews') }}</div>
         <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
           {{ bioPage.totalViews.toLocaleString() }}
         </div>
       </div>
-      <div class="card p-3">
+      <div class="rounded-[11px] border border-line bg-surface-card p-4">
         <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.totalClicks') }}</div>
         <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
           {{ totalClicks.toLocaleString() }}
         </div>
       </div>
-      <div class="card p-3">
+      <div class="rounded-[11px] border border-line bg-surface-card p-4">
         <div class="text-xs text-gray-500 dark:text-gray-400">{{ $t('linkBioView.clickRate') }}</div>
         <div class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
           {{ clickRate }}%

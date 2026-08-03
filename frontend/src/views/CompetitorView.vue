@@ -203,7 +203,7 @@ function formatNumber(num: number): string {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
       <!-- Header -->
       <PageHeader :title="$t('competitor.title')" :description="$t('competitor.description')">
         <template #actions>
@@ -232,7 +232,7 @@ function formatNumber(num: number): string {
         <!-- Overview Cards -->
         <div class="page-grid page-grid--metrics">
           <!-- Tracked channels -->
-          <div class="card">
+          <div class="rounded-[11px] border border-line bg-surface-card p-4">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
                 <UsersIcon class="w-5 h-5 text-info-strong" />
@@ -245,7 +245,7 @@ function formatNumber(num: number): string {
           </div>
 
           <!-- Average subscribers -->
-          <div class="card">
+          <div class="rounded-[11px] border border-line bg-surface-card p-4">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
                 <ChartBarIcon class="w-5 h-5 text-success-strong" />
@@ -258,7 +258,7 @@ function formatNumber(num: number): string {
           </div>
 
           <!-- My ranking -->
-          <div class="card">
+          <div class="rounded-[11px] border border-line bg-surface-card p-4">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
                 <TrophyIcon class="w-5 h-5 text-warning-strong" />
@@ -271,7 +271,7 @@ function formatNumber(num: number): string {
           </div>
 
           <!-- Growth rate comparison -->
-          <div class="card">
+          <div class="rounded-[11px] border border-line bg-surface-card p-4">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
                 <ArrowTrendingUpIcon class="w-5 h-5 text-primary-600 dark:text-primary-400" />
