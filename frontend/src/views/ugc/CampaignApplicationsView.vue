@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-4xl">
+  <div class="min-h-full max-w-4xl space-y-5 py-5 text-content">
     <button class="mb-4 inline-flex items-center gap-1 text-body text-gray-500 hover:text-gray-700 dark:text-gray-400" @click="router.push(`/ugc/campaigns/${campaignId}`)">
       <ChevronLeftIcon class="h-4 w-4" />{{ $t('ugc.backToCampaign') }}
     </button>

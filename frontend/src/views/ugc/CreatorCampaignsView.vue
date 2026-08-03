@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="min-h-full space-y-5 py-5 text-content">
     <PageHeader :title="$t('ugc.myCampaigns')" :description="$t('ugc.myCampaignsDescription')" />
 
     <div v-if="loading" class="py-16 text-center text-body text-gray-400">{{ $t('action.loading') }}</div>
