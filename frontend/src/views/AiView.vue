@@ -1,20 +1,20 @@
 <template>
-  <div>
+  <div class="min-h-full py-5 text-content tablet:py-6">
     <!-- Header -->
     <PageHeader :title="$t('aiView.title')" :description="$t('aiView.description')">
       <template #actions>
         <div
-          class="flex items-center gap-2 rounded-lg border px-4 py-2 text-body"
-          :class="isLow ? 'border-error bg-error-subtle' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'"
+          class="flex items-center gap-2 rounded-lg border px-3 py-2 text-body-sm"
+          :class="isLow ? 'border-error bg-error-subtle' : 'border-line-control bg-surface-card'"
         >
-          <SparklesIcon class="h-4 w-4" :class="isLow ? 'text-error-strong' : 'text-primary-600'" />
-          <span class="text-gray-600 dark:text-gray-300">{{ $t('aiView.usedToday') }}</span>
-          <span class="font-bold text-primary-600 dark:text-primary-400">
+          <SparklesIcon class="h-4 w-4" :class="isLow ? 'text-error-strong' : 'text-accent'" />
+          <span class="text-content-secondary">{{ $t('aiView.usedToday') }}</span>
+          <span class="font-mono font-bold text-accent">
             {{ creditsUsedToday.toLocaleString() }}
           </span>
-          <span class="text-gray-400 dark:text-gray-500 mx-1">|</span>
-          <span class="text-gray-600 dark:text-gray-300">{{ $t('aiView.remaining') }}</span>
-          <span class="font-bold" :class="isLow ? 'text-error-strong' : 'text-primary-600'">
+          <span class="mx-1 text-content-quaternary">|</span>
+          <span class="text-content-secondary">{{ $t('aiView.remaining') }}</span>
+          <span class="font-mono font-bold" :class="isLow ? 'text-error-strong' : 'text-accent'">
             {{ balance.toLocaleString() }}
           </span>
         </div>
@@ -30,38 +30,33 @@
     <div class="mt-6">
       <!-- AI Tools Tab -->
       <div v-show="activeTab === 'tools'">
-        <!-- AI Tool Cards Grid -->
-    <div class="page-grid page-grid--cards">
-      <div
-        v-for="tool in aiTools"
-        :key="tool.id"
-        class="card group cursor-pointer transition-all hover:shadow-md hover:border-primary-200"
-        role="button"
-        tabindex="0"
-        @click="handleToolClick(tool)"
-        @keydown.enter="handleToolClick(tool)"
-      >
-        <div class="mb-3 flex items-start justify-between">
-          <div
-            class="flex h-10 w-10 items-center justify-center rounded-lg"
-            :class="tool.iconBg"
-          >
-            <component :is="tool.icon" class="h-5 w-5" :class="tool.iconColor" />
-          </div>
-          <span class="badge-blue">{{ tool.credits }} {{ $t('aiView.credits') }}</span>
-        </div>
-        <h3 class="mb-1 font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 transition-colors">
-          {{ tool.name }}
-        </h3>
-        <p class="mb-4 text-body leading-relaxed text-gray-500 dark:text-gray-400">{{ tool.description }}</p>
-        <button
-          class="btn-primary w-full"
-          @click.stop="handleToolClick(tool)"
+    <SectionCard :title="$t('aiView.tabs.tools')" :meta="`${aiTools.length}`" body-class="p-4">
+      <div class="page-grid page-grid--cards">
+        <article
+          v-for="tool in aiTools"
+          :key="tool.id"
+          class="card-interactive group cursor-pointer"
+          role="button"
+          tabindex="0"
+          @click="handleToolClick(tool)"
+          @keydown.enter="handleToolClick(tool)"
         >
-          {{ $t('aiView.useButton') }}
-        </button>
+          <div class="mb-3 flex items-start justify-between">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-dim">
+              <component :is="tool.icon" class="h-5 w-5 text-accent" />
+            </div>
+            <span class="badge-blue">{{ tool.credits }} {{ $t('aiView.credits') }}</span>
+          </div>
+          <h3 class="mb-1 text-h3 text-content transition-colors group-hover:text-accent">
+            {{ tool.name }}
+          </h3>
+          <p class="mb-4 text-body-sm leading-relaxed text-content-secondary">{{ tool.description }}</p>
+          <button class="btn-primary w-full" @click.stop="handleToolClick(tool)">
+            {{ $t('aiView.useButton') }}
+          </button>
+        </article>
       </div>
-    </div>
+    </SectionCard>
       </div>
 
       <!-- Presets Tab -->
@@ -831,6 +826,7 @@ import AiUsageHistory from '@/components/ai/AiUsageHistory.vue'
 import OTabs from '@/components/ui/OTabs.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import SectionCard from '@/components/redesign/SectionCard.vue'
 import { useAiStore } from '@/stores/ai'
 import { useAiHistoryStore, type AiPreset } from '@/stores/aiHistory'
 import { useCredit } from '@/composables/useCredit'
