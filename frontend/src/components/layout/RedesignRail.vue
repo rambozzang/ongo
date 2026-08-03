@@ -11,30 +11,38 @@
     </router-link>
 
     <!-- 내비 -->
-    <nav class="flex-1 space-y-0.5 overflow-y-auto">
-      <router-link
-        v-for="item in items"
-        :key="item.to"
-        :to="item.to"
-        class="flex items-center gap-2.5 rounded-lg px-[9px] py-2 text-[12.5px] transition-colors duration-150"
-        :class="
-          isActive(item.to)
-            ? 'border border-line-control bg-accent-dim font-bold text-content'
-            : 'font-medium text-content-secondary hover:bg-surface-rail-raised hover:text-content'
-        "
-        :aria-current="isActive(item.to) ? 'page' : undefined"
-        @click="emit('navigate')"
-      >
-        <component :is="item.icon" class="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span class="truncate">{{ item.label }}</span>
-        <span
-          v-if="item.badge"
-          class="ml-auto shrink-0 font-mono text-[10px]"
-          :class="item.badgeTone === 'bad' ? 'text-bad' : 'text-content-tertiary'"
+    <nav class="min-h-0 flex-1 space-y-3 overflow-y-auto scrollbar-dark">
+      <section v-for="section in sections" :key="section.key" class="space-y-0.5">
+        <p
+          v-if="section.label"
+          class="px-[9px] pb-1 text-[9.5px] font-bold uppercase tracking-[0.12em] text-content-quaternary"
         >
-          {{ item.badge }}
-        </span>
-      </router-link>
+          {{ section.label }}
+        </p>
+        <router-link
+          v-for="item in section.items"
+          :key="item.to"
+          :to="item.to"
+          class="flex items-center gap-2.5 rounded-lg px-[9px] py-2 text-[12.5px] transition-colors duration-150"
+          :class="
+            isActive(item.to)
+              ? 'border border-line-control bg-accent-dim font-bold text-content'
+              : 'font-medium text-content-secondary hover:bg-surface-rail-raised hover:text-content'
+          "
+          :aria-current="isActive(item.to) ? 'page' : undefined"
+          @click="emit('navigate')"
+        >
+          <component :is="item.icon" class="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span class="truncate">{{ item.label }}</span>
+          <span
+            v-if="badgeFor(item.to)"
+            class="ml-auto shrink-0 font-mono text-[10px]"
+            :class="item.to === '/channels-v2' && shell.badges.channels ? 'text-bad' : 'text-content-tertiary'"
+          >
+            {{ badgeFor(item.to) }}
+          </span>
+        </router-link>
+      </section>
     </nav>
 
     <!-- 이번 달 업로드 진행 -->
@@ -87,13 +95,23 @@ const route = useRoute()
 const { t } = useLocale()
 const authStore = useAuthStore()
 const shell = useRedesignShellStore()
-const { allNavItems } = useNavigation()
+const { navGroups, bottomNavItems } = useNavigation()
 
-const items = computed(() => allNavItems.value.map((item) => ({
-  ...item,
-  badge: badgeFor(item.to),
-  badgeTone: item.to === '/channels-v2' && shell.badges.channels ? ('bad' as const) : undefined,
-})))
+const sections = computed(() => {
+  const grouped = navGroups.value.flatMap((group, groupIndex) => {
+    const primary = group.items.length > 0
+      ? [{ key: `group-${groupIndex}`, label: group.label, items: group.items }]
+      : []
+    const subGroups = (group.subGroups ?? []).map((sub) => ({
+      key: `group-${groupIndex}-${sub.key}`,
+      label: sub.label,
+      items: sub.items,
+    }))
+    return [...primary, ...subGroups]
+  })
+
+  return [...grouped, { key: 'utility', label: undefined, items: bottomNavItems.value }]
+})
 
 function badgeFor(path: string): string {
   if (path === '/today') return shell.badges.today
