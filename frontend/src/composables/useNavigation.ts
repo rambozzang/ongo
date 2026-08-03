@@ -97,14 +97,14 @@ export function useNavigation() {
     // ── 1. 대시보드 ──
     {
       items: [
-        { to: '/dashboard', label: t('nav.dashboard'), icon: HomeIcon },
+        { to: '/today', label: t('redesign.nav.today'), icon: HomeIcon },
       ],
     },
     // ── 2. 콘텐츠 제작 ──
     {
       label: t('nav.groupCreate'),
       items: [
-        { to: '/upload', label: t('nav.upload'), icon: ArrowUpTrayIcon },
+        { to: '/compose', label: t('redesign.nav.compose'), icon: ArrowUpTrayIcon },
         { to: '/videos', label: t('nav.videos'), icon: FilmIcon },
         { to: '/ai', label: t('nav.ai'), icon: SparklesIcon },
         { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
@@ -127,7 +127,7 @@ export function useNavigation() {
     {
       label: t('nav.groupPublish'),
       items: [
-        { to: '/calendar', label: t('nav.calendar'), icon: CalendarDaysIcon },
+        { to: '/calendar-v2', label: t('redesign.nav.calendar'), icon: CalendarDaysIcon },
         { to: '/automation', label: t('nav.automation'), icon: BoltIcon },
       ],
     },
@@ -135,7 +135,7 @@ export function useNavigation() {
     {
       label: t('nav.groupAnalytics'),
       items: [
-        { to: '/analytics', label: t('nav.analytics'), icon: ChartBarIcon },
+        { to: '/performance', label: t('redesign.nav.performance'), icon: ChartBarIcon },
         { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
       ],
       subGroups: [
@@ -161,7 +161,7 @@ export function useNavigation() {
     {
       label: t('nav.groupAudience'),
       items: [
-        { to: '/inbox', label: t('nav.inbox'), icon: InboxIcon },
+        { to: '/inbox-v2', label: t('redesign.nav.inbox'), icon: InboxIcon },
         { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
         { to: '/audience', label: t('nav.audience'), icon: IdentificationIcon },
       ],
@@ -170,7 +170,7 @@ export function useNavigation() {
     {
       label: t('nav.groupOperations'),
       items: [
-        { to: '/channels', label: t('nav.channels'), icon: LinkIcon },
+        { to: '/channels-v2', label: t('redesign.nav.channels'), icon: LinkIcon },
         { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
         { to: '/webhooks', label: t('nav.webhooks'), icon: SignalIcon },
         { to: '/activity-log', label: t('nav.activityLog'), icon: ClockIcon },
@@ -201,7 +201,7 @@ export function useNavigation() {
     const items: NavItem[] = [
       { to: '/manual', label: t('nav.manual'), icon: BookOpenIcon },
       { to: '/subscription', label: t('nav.subscription'), icon: CreditCardIcon },
-      { to: '/settings', label: t('nav.settings'), icon: Cog6ToothIcon },
+      { to: '/settings-v2', label: t('redesign.nav.settings'), icon: Cog6ToothIcon },
     ]
     if (isAdmin.value) {
       items.push({ to: '/admin', label: t('nav.admin'), icon: ShieldCheckIcon })

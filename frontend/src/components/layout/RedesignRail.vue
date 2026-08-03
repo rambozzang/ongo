@@ -19,7 +19,7 @@
         class="flex items-center gap-2.5 rounded-lg px-[9px] py-2 text-[12.5px] transition-colors duration-150"
         :class="
           isActive(item.to)
-            ? 'bg-accent-dim font-bold text-content shadow-[inset_0_0_0_1px_#2e3250]'
+            ? 'border border-line-control bg-accent-dim font-bold text-content'
             : 'font-medium text-content-secondary hover:bg-surface-rail-raised hover:text-content'
         "
         :aria-current="isActive(item.to) ? 'page' : undefined"
@@ -55,8 +55,7 @@
       @click="emit('navigate')"
     >
       <span
-        class="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-content"
-        style="background: #2b2f47"
+        class="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-surface-raised text-[11px] font-semibold text-content"
       >
         {{ initial }}
       </span>
@@ -71,24 +70,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import {
-  CalendarDaysIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
-  InboxIcon,
-  PlusIcon,
-  SignalIcon,
-  SunIcon,
-} from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
 import { useRedesignShellStore } from '@/stores/redesignShell'
+import { useNavigation } from '@/composables/useNavigation'
 
 /**
  * 좌측 고정 레일 (216px) — 2026-08 리디자인.
  *
- * 기능별 메뉴가 아니라 하루 작업 순서(오늘 → 만들기 → 응답 → 확인)로 배열한다.
- * 설정성 화면은 하단으로 분리한다.
+ * 기존 내비게이션 단일 소스를 재사용해 모든 메뉴를 리디자인 레일에서 접근한다.
+ * 핵심 작업은 상단에, 나머지 기능은 같은 밀도와 토큰으로 이어진다.
  */
 const emit = defineEmits<{ navigate: [] }>()
 
@@ -96,22 +87,21 @@ const route = useRoute()
 const { t } = useLocale()
 const authStore = useAuthStore()
 const shell = useRedesignShellStore()
+const { allNavItems } = useNavigation()
 
-const items = computed(() => [
-  { to: '/today', label: t('redesign.nav.today'), icon: SunIcon, badge: shell.badges.today },
-  { to: '/compose', label: t('redesign.nav.compose'), icon: PlusIcon, badge: '' },
-  { to: '/inbox-v2', label: t('redesign.nav.inbox'), icon: InboxIcon, badge: shell.badges.inbox },
-  { to: '/calendar-v2', label: t('redesign.nav.calendar'), icon: CalendarDaysIcon, badge: shell.badges.calendar },
-  { to: '/performance', label: t('redesign.nav.performance'), icon: ChartBarIcon, badge: '' },
-  {
-    to: '/channels-v2',
-    label: t('redesign.nav.channels'),
-    icon: SignalIcon,
-    badge: shell.badges.channels,
-    badgeTone: shell.badges.channels ? ('bad' as const) : undefined,
-  },
-  { to: '/settings-v2', label: t('redesign.nav.settings'), icon: Cog6ToothIcon, badge: '' },
-])
+const items = computed(() => allNavItems.value.map((item) => ({
+  ...item,
+  badge: badgeFor(item.to),
+  badgeTone: item.to === '/channels-v2' && shell.badges.channels ? ('bad' as const) : undefined,
+})))
+
+function badgeFor(path: string): string {
+  if (path === '/today') return shell.badges.today
+  if (path === '/inbox-v2') return shell.badges.inbox
+  if (path === '/calendar-v2') return shell.badges.calendar
+  if (path === '/channels-v2') return shell.badges.channels
+  return ''
+}
 
 // 하위 경로까지 활성으로 본다 (/compose/123 도 '새 업로드' 로 표시)
 const isActive = (to: string) => route.path === to || route.path.startsWith(`${to}/`)

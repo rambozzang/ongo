@@ -1,26 +1,26 @@
 <template>
   <div
-    class="flex animate-fade-in flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 px-6 py-14 text-center dark:border-gray-700"
+    class="flex animate-fade-in flex-col items-center justify-center rounded-[11px] border border-dashed border-line-control bg-surface-card px-6 py-14 text-center"
     :class="variant === 'compact' ? 'py-8' : 'py-12'"
   >
     <div
-      class="mb-4 flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800"
+      class="mb-4 flex items-center justify-center rounded-lg border border-line-control bg-surface-raised"
       :class="variant === 'compact' ? 'h-12 w-12' : 'h-16 w-16'"
     >
       <component
         :is="icon"
         v-if="icon"
-        class="text-gray-400 dark:text-gray-500"
+        class="text-content-quaternary"
         :class="variant === 'compact' ? 'h-6 w-6' : 'h-8 w-8'"
       />
     </div>
     <h3
-      class="mb-2 font-semibold text-gray-900 dark:text-gray-100"
+      class="mb-2 text-h3 text-content"
       :class="variant === 'compact' ? 'text-base' : 'text-lg'"
     >
       {{ title }}
     </h3>
-    <p class="mb-6 max-w-md text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+    <p class="mb-6 max-w-md text-body-sm leading-relaxed text-content-secondary">
       {{ description }}
     </p>
     <div v-if="actionLabel || actionTo" class="flex flex-col gap-3">
@@ -34,7 +34,7 @@
       <router-link
         v-if="secondaryActionLabel && secondaryActionTo"
         :to="secondaryActionTo"
-        class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+        class="text-body-sm text-accent transition-colors hover:text-accent-hover"
       >
         {{ secondaryActionLabel }}
       </router-link>

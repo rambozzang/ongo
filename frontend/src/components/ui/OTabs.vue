@@ -5,7 +5,7 @@
       role="tablist"
       :aria-label="ariaLabel"
       class="flex gap-1 overflow-x-auto"
-      :class="variant === 'line' ? 'border-b border-gray-200 dark:border-gray-700' : ''"
+      :class="variant === 'line' ? 'border-b border-line-row' : ''"
       @keydown="handleKeydown"
     >
       <button
@@ -17,7 +17,7 @@
         :aria-selected="modelValue === tab.key"
         :aria-controls="`${tabsId}-panel-${tab.key}`"
         :tabindex="modelValue === tab.key ? 0 : -1"
-        class="relative inline-flex min-h-11 shrink-0 items-center gap-2 px-1.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-inset tablet:px-2"
+        class="relative inline-flex min-h-11 shrink-0 items-center gap-2 px-1.5 text-body-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset tablet:px-2"
         :class="getTabClass(tab.key)"
         @click="selectTab(tab.key)"
       >
@@ -38,7 +38,7 @@
         </span>
         <div
           v-if="variant === 'line' && modelValue === tab.key"
-          class="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-primary-600 dark:bg-primary-400"
+          class="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-accent"
           style="animation: slideIn 0.2s ease-out"
           aria-hidden="true"
         />
@@ -118,14 +118,14 @@ function getTabClass(key: string) {
 
   if (props.variant === 'pill') {
     return isActive
-      ? 'rounded-lg bg-primary-600 text-white dark:bg-primary-500'
-      : 'rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+      ? 'rounded-lg bg-accent text-accent-on'
+      : 'rounded-lg text-content-secondary hover:bg-surface-raised hover:text-content'
   }
 
   // line variant
-  return isActive
-    ? 'text-primary-600 dark:text-primary-400'
-    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+    return isActive
+    ? 'text-accent'
+    : 'text-content-secondary hover:text-content'
 }
 
 function getCountClass(key: string) {
@@ -133,14 +133,14 @@ function getCountClass(key: string) {
 
   if (props.variant === 'pill') {
     return isActive
-      ? 'bg-primary-700 text-white dark:bg-primary-600'
-      : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+      ? 'bg-accent-hover text-accent-on'
+      : 'bg-surface-raised text-content-secondary'
   }
 
   // line variant
-  return isActive
-    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-    : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+    return isActive
+    ? 'bg-accent-dim text-accent'
+    : 'bg-surface-raised text-content-secondary'
 }
 </script>
 

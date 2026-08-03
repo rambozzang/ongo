@@ -84,7 +84,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    component: () => import('@/components/layout/AppLayout.vue'),
+    component: () => import('@/components/layout/RedesignLayout.vue'),
     meta: { requiresAuth: true },
     children: [
       {
@@ -95,26 +95,23 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'dashboard',
         name: 'dashboard',
-        component: () => import('@/views/DashboardView.vue'),
-        meta: { breadcrumb: '대시보드' },
+        redirect: { name: 'redesign-today' },
       },
       {
         path: 'upload',
         name: 'upload',
-        component: () => import('@/views/UploadView.vue'),
-        meta: { breadcrumb: '영상 업로드' },
+        redirect: { name: 'redesign-compose' },
       },
       {
         // 예약 관리는 캘린더의 '리스트' 탭으로 통합됨 — 기존 북마크 URL 유지
         path: 'schedule',
         name: 'schedule',
-        redirect: { name: 'calendar', query: { view: 'list' } },
+        redirect: { name: 'redesign-calendar', query: { view: 'list' } },
       },
       {
         path: 'calendar',
         name: 'calendar',
-        component: () => import('@/views/CalendarView.vue'),
-        meta: { requiresAuth: true, breadcrumb: '캘린더' },
+        redirect: { name: 'redesign-calendar' },
       },
       {
         path: 'revenue',
@@ -138,8 +135,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'analytics',
         name: 'analytics',
-        component: () => import('@/views/AnalyticsView.vue'),
-        meta: { breadcrumb: '통합 분석' },
+        redirect: { name: 'redesign-performance' },
       },
       {
         path: 'analytics/compare',
@@ -151,7 +147,7 @@ const routes: RouteRecordRaw[] = [
         // 댓글 관리는 소통 허브(인박스)의 '댓글' 탭으로 통합됨 — 기존 북마크 URL 유지
         path: 'comments',
         name: 'comments',
-        redirect: { name: 'inbox', query: { tab: 'comments' } },
+        redirect: { name: 'redesign-inbox', query: { tab: 'comments' } },
       },
       {
         path: 'ai',
@@ -162,8 +158,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'channels',
         name: 'channels',
-        component: () => import('@/views/ChannelsView.vue'),
-        meta: { breadcrumb: '채널 관리' },
+        redirect: { name: 'redesign-channels' },
       },
       {
         path: 'ugc/campaigns',
@@ -276,8 +271,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'inbox',
         name: 'inbox',
-        component: () => import('@/views/InboxView.vue'),
-        meta: { breadcrumb: '소셜 인박스' },
+        redirect: { name: 'redesign-inbox' },
       },
       {
         path: 'linkbio',
@@ -384,8 +378,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'settings',
         name: 'settings',
-        component: () => import('@/views/SettingsView.vue'),
-        meta: { breadcrumb: '설정' },
+        redirect: { name: 'redesign-settings' },
       },
       {
         path: 'admin',
