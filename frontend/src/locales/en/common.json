@@ -424,7 +424,17 @@
           "deleted": "Run deleted.",
           "deleteFailed": "Failed to delete the run.",
           "subtitleCount": "{count} subtitles",
-          "scheduledAt": "Scheduled"
+          "scheduledAt": "Scheduled",
+          "attachVideo": "Attach rendered video",
+          "attachTitle": "Attach rendered video",
+          "attachEmpty": "No uploaded videos. Upload the finished video made with render.sh first.",
+          "attachSubmit": "Attach",
+          "attaching": "Attaching...",
+          "attachCancel": "Cancel",
+          "attachSuccess": "Rendered video attached to the clip.",
+          "attachFailed": "Failed to attach the rendered video.",
+          "renderedAttached": "Attached",
+          "reattachVideo": "Re-link video"
         },
         "hooks": {
           "title": "Select hook text",

@@ -151,6 +151,16 @@ export const ugcShortsPipelineApi = {
       .then((r) => r.data as Blob)
   },
 
+  /** 사용자가 render.sh 로 만든 완성 영상을 클립에 연결한다 — 연결돼야 게시 대상이 된다 */
+  attachRenderedVideo(workspaceId: number, runId: number, clipId: number, videoId: number) {
+    return apiClient
+      .post<ResData<ShortsClipResponse>>(
+        `${base(workspaceId)}/${runId}/clips/${clipId}/rendered-video`,
+        { videoId },
+      )
+      .then(unwrapResponse)
+  },
+
   remove(workspaceId: number, runId: number) {
     return apiClient
       .delete<ResData<void>>(`${base(workspaceId)}/${runId}`)

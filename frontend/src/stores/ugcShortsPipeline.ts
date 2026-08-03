@@ -81,6 +81,12 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
     await fetchDetail(runId)
   }
 
+  /** 완성 영상 연결 후 상세를 다시 읽어 클립 상태를 갱신한다 */
+  async function attachRenderedVideo(runId: number, clipId: number, videoId: number) {
+    await ugcShortsPipelineApi.attachRenderedVideo(await requireWorkspaceId(), runId, clipId, videoId)
+    await fetchDetail(runId)
+  }
+
   async function deleteRun(runId: number) {
     await ugcShortsPipelineApi.remove(await requireWorkspaceId(), runId)
     runs.value = runs.value.filter((r) => r.id !== runId)
@@ -101,6 +107,7 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
     rerunStage,
     selectHooks,
     confirmSchedule,
+    attachRenderedVideo,
     deleteRun,
   }
 })

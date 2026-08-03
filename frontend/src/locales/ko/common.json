@@ -424,7 +424,17 @@
           "deleted": "실행이 삭제되었습니다.",
           "deleteFailed": "실행 삭제에 실패했습니다.",
           "subtitleCount": "자막 {count}개",
-          "scheduledAt": "예약"
+          "scheduledAt": "예약",
+          "attachVideo": "완성 영상 연결",
+          "attachTitle": "완성 영상 연결",
+          "attachEmpty": "업로드된 영상이 없습니다. render.sh로 만든 완성 영상을 먼저 업로드하세요.",
+          "attachSubmit": "연결",
+          "attaching": "연결 중...",
+          "attachCancel": "취소",
+          "attachSuccess": "완성 영상을 클립에 연결했습니다.",
+          "attachFailed": "완성 영상 연결에 실패했습니다.",
+          "renderedAttached": "연결됨",
+          "reattachVideo": "다시 연결"
         },
         "hooks": {
           "title": "후킹 문구 선택",

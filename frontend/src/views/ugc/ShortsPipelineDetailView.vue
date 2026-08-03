@@ -308,15 +308,35 @@
             <span v-if="clip.scheduledAt" class="text-body-xs text-gray-400">
               {{ $t('ugc.shorts.runs.detail.scheduledAt') }}: {{ formatDate(clip.scheduledAt) }}
             </span>
-            <button
-              v-if="clip.hasRenderSpec"
-              class="btn-secondary ml-auto inline-flex items-center gap-1"
-              :disabled="specDownloadingId === clip.id"
-              @click="downloadSpec(clip)"
-            >
-              <ArrowDownTrayIcon class="h-4 w-4" />
-              {{ $t('ugc.shorts.runs.detail.downloadSpec') }}
-            </button>
+            <div class="ml-auto flex items-center gap-1">
+              <span
+                v-if="isRenderedClip(clip.status)"
+                class="rounded-full bg-success-subtle px-2 py-0.5 text-caption text-success-strong"
+              >
+                {{ $t('ugc.shorts.runs.detail.renderedAttached') }}
+              </span>
+              <button
+                v-if="canAttachClip(clip.status)"
+                class="btn-secondary inline-flex items-center gap-1"
+                @click="openAttachModal(clip)"
+              >
+                <LinkIcon class="h-4 w-4" />
+                {{
+                  isRenderedClip(clip.status)
+                    ? $t('ugc.shorts.runs.detail.reattachVideo')
+                    : $t('ugc.shorts.runs.detail.attachVideo')
+                }}
+              </button>
+              <button
+                v-if="clip.hasRenderSpec"
+                class="btn-secondary inline-flex items-center gap-1"
+                :disabled="specDownloadingId === clip.id"
+                @click="downloadSpec(clip)"
+              >
+                <ArrowDownTrayIcon class="h-4 w-4" />
+                {{ $t('ugc.shorts.runs.detail.downloadSpec') }}
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -391,6 +411,44 @@
         </button>
       </template>
     </BaseModal>
+
+    <!-- 완성 영상 연결: render.sh 산출물을 업로드한 뒤 클립에 붙인다 -->
+    <BaseModal
+      v-model="attachModalOpen"
+      :title="$t('ugc.shorts.runs.detail.attachTitle')"
+      max-width="lg"
+    >
+      <LoadingSpinner v-if="attachVideosLoading" />
+      <p v-else-if="attachVideos.length === 0" class="text-body text-gray-500 dark:text-gray-400">
+        {{ $t('ugc.shorts.runs.detail.attachEmpty') }}
+      </p>
+      <ul v-else class="space-y-2">
+        <li v-for="v in attachVideos" :key="v.id">
+          <button
+            type="button"
+            class="w-full rounded-xl border p-3 text-left transition-colors"
+            :class="attachVideoId === v.id
+              ? 'border-primary-500 ring-2 ring-primary-500/30'
+              : 'border-gray-200 hover:border-primary-300 dark:border-gray-700 dark:hover:border-primary-700'"
+            @click="attachVideoId = v.id"
+          >
+            <span class="text-body text-gray-900 dark:text-gray-100">{{ v.title }}</span>
+          </button>
+        </li>
+      </ul>
+      <template #footer>
+        <button class="btn-secondary" :disabled="attaching" @click="attachModalOpen = false">
+          {{ $t('ugc.shorts.runs.detail.attachCancel') }}
+        </button>
+        <button
+          class="btn-primary"
+          :disabled="attachVideoId == null || attaching"
+          @click="submitAttach"
+        >
+          {{ attaching ? $t('ugc.shorts.runs.detail.attaching') : $t('ugc.shorts.runs.detail.attachSubmit') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -412,6 +470,8 @@ import {
   type HookSelectionItem,
 } from '@/api/ugcShortsPipeline'
 import { ugcShortsSheetApi, type SheetPreviewResponse } from '@/api/ugcShortsSheet'
+import { videoApi } from '@/api/video'
+import type { Video } from '@/types/video'
 import PageHeader from '@/components/common/PageHeader.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -421,6 +481,7 @@ import {
   ArrowLeftIcon,
   ArrowPathIcon,
   ArrowUpTrayIcon,
+  LinkIcon,
   TrashIcon,
 } from '@heroicons/vue/24/outline'
 
@@ -472,6 +533,17 @@ const sheetPreviewOpen = ref(false)
 const sheetPreview = ref<SheetPreviewResponse | null>(null)
 const sheetFile = ref<File | null>(null)
 const sheetFileInput = ref<HTMLInputElement | null>(null)
+
+// 완성 영상 연결 — 모달을 열 때 영상 목록을 새로 읽는다
+const attachModalOpen = ref(false)
+const attachClip = ref<ShortsClipResponse | null>(null)
+const attachVideos = ref<Video[]>([])
+const attachVideosLoading = ref(false)
+const attachVideoId = ref<number | null>(null)
+const attaching = ref(false)
+
+// RENDERED 이상이면 완성 영상이 연결된 클립이다
+const RENDERED_CLIP_STATUSES = ['RENDERED', 'SCHEDULED', 'PUBLISHED']
 
 // 클립별 후킹 선택 상태 — variant 는 A/B/CUSTOM, discarded 면 제외 대상
 interface HookChoice {
@@ -818,6 +890,50 @@ async function applySheet() {
     notify.error(e instanceof Error ? e.message : t('ugc.shorts.runs.sheet.applyFailed'))
   } finally {
     sheetApplying.value = false
+  }
+}
+
+// ---- 완성 영상 연결 ----
+function isRenderedClip(status: string): boolean {
+  return RENDERED_CLIP_STATUSES.includes(status)
+}
+
+/**
+ * 연결 버튼을 보일지 판단한다.
+ * 잘못 렌더한 영상을 붙였을 수 있으므로 RENDERED 상태에서는 다시 연결할 수 있어야 한다.
+ * 다만 이미 예약·게시된 클립은 바꾸면 안 되므로 막는다.
+ */
+function canAttachClip(status: string): boolean {
+  return !['DISCARDED', 'SCHEDULED', 'PUBLISHED'].includes(status)
+}
+
+/** 모달을 열 때마다 최신 영상 목록을 읽는다. 동영상만 연결 대상이다 */
+async function openAttachModal(clip: ShortsClipResponse) {
+  attachClip.value = clip
+  attachVideoId.value = null
+  attachModalOpen.value = true
+  attachVideosLoading.value = true
+  try {
+    const res = await videoApi.list({ page: 0, size: 50 })
+    attachVideos.value = res.content.filter((v) => v.mediaType === 'VIDEO')
+  } catch {
+    attachVideos.value = []
+  } finally {
+    attachVideosLoading.value = false
+  }
+}
+
+async function submitAttach() {
+  if (!attachClip.value || attachVideoId.value == null) return
+  attaching.value = true
+  try {
+    await store.attachRenderedVideo(runId, attachClip.value.id, attachVideoId.value)
+    notify.success(t('ugc.shorts.runs.detail.attachSuccess'))
+    attachModalOpen.value = false
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : t('ugc.shorts.runs.detail.attachFailed'))
+  } finally {
+    attaching.value = false
   }
 }
 
