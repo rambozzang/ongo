@@ -23,6 +23,7 @@ import type { Goal } from '@/types/goal'
 import GoalCard from '@/components/goals/GoalCard.vue'
 import GoalFormModal from '@/components/goals/GoalFormModal.vue'
 import MilestoneList from '@/components/goals/MilestoneList.vue'
+import KpiCard from '@/components/redesign/KpiCard.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const goalsStore = useGoalsStore()
@@ -196,7 +197,7 @@ const formatNumber = (value: number): string => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <PageHeader :title="$t('goals.title')" :description="$t('goals.description')">
       <template #actions>
@@ -215,7 +216,21 @@ const formatNumber = (value: number): string => {
     <div class="mt-6">
 
       <!-- Stats Overview -->
-      <div class="page-grid page-grid--metrics mb-8">
+      <div class="grid gap-2.5 tablet:grid-cols-2 desktop:grid-cols-4 mb-8">
+        <KpiCard
+          :label="$t('goals.activeGoals')"
+          :value="String(stats.active)"
+          :delta-variant="stats.active > 0 ? 'success' : 'muted'"
+        />
+        <KpiCard
+          :label="$t('goals.completed')"
+          :value="String(stats.completed)"
+          :delta-variant="stats.completed > 0 ? 'success' : 'muted'"
+        />
+        <KpiCard :label="$t('goals.overallProgress')" :value="`${stats.progress}%`" />
+        <KpiCard :label="$t('goals.nextDeadline')" :value="nextDeadline ? `D-${nextDeadline.daysLeft}` : '-'" />
+        <!-- Legacy metric markup intentionally replaced by shared KPI cards. -->
+        <template v-if="false">
         <div class="card">
           <div class="flex items-center justify-between">
             <div>
@@ -263,7 +278,7 @@ const formatNumber = (value: number): string => {
             <div>
               <p class="text-body font-medium text-gray-600 dark:text-gray-400">{{ $t('goals.nextDeadline') }}</p>
               <p class="text-display font-bold text-gray-900 dark:text-gray-100 mt-2">
-                {{ nextDeadline ? `D-${nextDeadline.daysLeft}` : '-' }}
+                {{ nextDeadline?.daysLeft != null ? `D-${nextDeadline?.daysLeft}` : '-' }}
               </p>
             </div>
             <div class="p-3 bg-warning-subtle rounded-lg">
@@ -271,6 +286,7 @@ const formatNumber = (value: number): string => {
             </div>
           </div>
         </div>
+        </template>
       </div>
 
       <!-- Upcoming Deadlines Alert -->
