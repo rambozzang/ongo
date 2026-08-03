@@ -24,6 +24,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import ListToolbar from '@/components/common/ListToolbar.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import SectionCard from '@/components/redesign/SectionCard.vue'
 import type { AutomationRule, ConditionOperator, Workflow, WorkflowTriggerType, WorkflowActionType } from '@/types/automation'
 import type { SmartTriggerTemplate } from '@/components/automation/SmartTriggerTemplateSelector.vue'
 import { automationApi } from '@/api/automation'
@@ -437,7 +438,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
       <!-- Header -->
       <PageHeader :title="$t('automation.title')" :description="$t('automation.description')">
         <template #title-suffix>
@@ -463,12 +464,12 @@ onUnmounted(() => {
       <OTabs v-model="activeTab" :tabs="automationTabs" class="mb-6" />
 
       <!-- Smart Trigger Templates -->
-      <div v-if="activeTab === 'rules' && smartTemplates.length > 0" class="card mb-6">
+      <SectionCard v-if="activeTab === 'rules' && smartTemplates.length > 0" :title="$t('automation.tabRules')" class="mb-4">
         <SmartTriggerTemplateSelector
           :templates="smartTemplates"
           @select="handleSmartTriggerSelect"
         />
-      </div>
+      </SectionCard>
 
       <!-- Rules Tab -->
       <div v-if="activeTab === 'rules'">
@@ -491,10 +492,10 @@ onUnmounted(() => {
               :key="option.value"
               type="button"
               :class="[
-                'min-h-10 rounded-lg px-3 py-2 text-body font-medium transition-colors',
+                'min-h-9 rounded-lg border px-3 py-2 text-body font-medium transition-colors',
                 ruleFilter === option.value
-                  ? 'bg-primary-600 text-white dark:bg-primary-500'
-                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                  ? 'border-accent bg-accent-dim text-accent'
+                  : 'border-line-control bg-surface-input text-content-secondary hover:bg-surface-raised hover:text-content'
               ]"
               @click="ruleFilter = option.value"
             >
@@ -580,7 +581,7 @@ onUnmounted(() => {
       <!-- Workflows Tab -->
       <div v-if="activeTab === 'workflows'">
         <!-- Workflow Editor -->
-        <div v-if="showWorkflowEditor" class="card mb-6">
+        <SectionCard v-if="showWorkflowEditor" class="mb-6" :title="editingWorkflow ? $t('automation.editWorkflow') : $t('automation.newWorkflow')">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">
               {{ editingWorkflow ? $t('automation.editWorkflow') : $t('automation.newWorkflow') }}
@@ -601,7 +602,7 @@ onUnmounted(() => {
             :initial-actions="editingWorkflow?.actions"
             @save="handleWorkflowSave"
           />
-        </div>
+        </SectionCard>
 
         <!-- Workflow list -->
         <div v-else>
@@ -637,10 +638,10 @@ onUnmounted(() => {
                 :key="option.value"
                 type="button"
                 :class="[
-                  'min-h-10 rounded-lg px-3 py-2 text-body font-medium transition-colors',
+                  'min-h-9 rounded-lg border px-3 py-2 text-body font-medium transition-colors',
                   workflowFilter === option.value
-                    ? 'bg-primary-600 text-white dark:bg-primary-500'
-                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                    ? 'border-accent bg-accent-dim text-accent'
+                    : 'border-line-control bg-surface-input text-content-secondary hover:bg-surface-raised hover:text-content'
                 ]"
                 @click="workflowFilter = option.value"
               >
@@ -702,7 +703,7 @@ onUnmounted(() => {
               <div
                 v-for="wf in filteredWorkflows"
                 :key="wf.id"
-                class="card"
+                class="rounded-[11px] border border-line bg-surface-card p-4 transition-colors hover:bg-surface-raised"
               >
                 <div class="flex items-center justify-between gap-3">
                   <div class="flex min-w-0 items-center gap-3">
