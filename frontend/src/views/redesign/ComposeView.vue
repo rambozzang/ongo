@@ -15,10 +15,32 @@
           <button type="button" class="btn-secondary !text-[11px]" @click="pickFile">
             {{ t('redesign.compose.replace') }}
           </button>
-          <button type="button" class="btn-secondary !text-[11px]" @click="requestCaptions">
-            {{ t('redesign.compose.autoCaption') }}
+          <button
+            type="button"
+            class="btn-secondary !text-[11px]"
+            :disabled="captioning"
+            @click="requestCaptions"
+          >
+            {{ captioning ? t('redesign.compose.captioning') : t('redesign.compose.autoCaption') }}
           </button>
         </div>
+        <input
+          ref="fileInput"
+          type="file"
+          accept="video/*"
+          class="hidden"
+          @change="onFileChosen"
+        />
+      </div>
+
+      <!-- 업로드 진행 — 파일 카드 안에 텍스트를 병기한다 -->
+      <div v-if="uploadStore.isUploading" class="mt-2">
+        <div class="h-1 overflow-hidden rounded-full bg-line">
+          <div class="h-full bg-accent transition-[width]" :style="{ width: `${uploadStore.progress.percentage}%` }" />
+        </div>
+        <p class="mt-1 font-mono text-[10.5px] text-content-tertiary">
+          {{ t('redesign.compose.uploading', { percent: uploadStore.progress.percentage }) }}
+        </p>
       </div>
 
       <!-- 발행 대상 -->
@@ -164,18 +186,28 @@
       <!-- 액션 -->
       <div class="mt-auto pt-[18px]">
         <p v-if="blockedReason" class="mb-2 text-[11px] text-error-strong">{{ blockedReason }}</p>
+        <p v-else-if="notice" class="mb-2 text-[11px] text-content-secondary">{{ notice }}</p>
         <div class="flex gap-2">
-          <button type="button" class="btn-secondary flex-1 !text-[12px]" @click="saveDraft">
-            {{ t('redesign.compose.saveDraft') }}
+          <button
+            type="button"
+            class="btn-secondary flex-1 !text-[12px]"
+            :disabled="saving"
+            @click="saveDraft"
+          >
+            {{ saving ? t('redesign.compose.saving') : t('redesign.compose.saveDraft') }}
           </button>
           <button
             type="button"
             class="btn-primary !text-[12px]"
             style="flex: 1.4"
-            :disabled="!!blockedReason"
+            :disabled="!!blockedReason || submitting"
             @click="submit"
           >
-            {{ t('redesign.compose.schedule', { count: selectedCount }) }}
+            {{
+              submitting
+                ? t('redesign.compose.scheduling')
+                : t('redesign.compose.schedule', { count: selectedCount })
+            }}
           </button>
         </div>
         <p class="mt-2 text-center font-mono text-[10.5px] text-content-tertiary">
@@ -188,11 +220,15 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useLocale } from '@/composables/useLocale'
 import ThumbPlaceholder from '@/components/redesign/ThumbPlaceholder.vue'
+import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
+import { videoApi } from '@/api/video'
+import { useUploadStore } from '@/stores/upload'
 import type { Channel, Platform } from '@/types/channel'
+import type { PlatformPublishConfig } from '@/types/video'
 
 /**
  * 새 업로드 — 파일 → 대상 → 문구 → 예약을 화면 이동 없이 한 번에.
@@ -230,6 +266,16 @@ const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
 const TITLE_LIMIT: Record<string, number> = { common: 100, YT: 100, IG: 2200, TT: 150, NV: 100 }
 /** TikTok 은 해시태그 5개까지만 반영된다. */
 const TIKTOK_HASHTAG_LIMIT = 5
+
+const router = useRouter()
+const uploadStore = useUploadStore()
+
+const fileInput = ref<HTMLInputElement | null>(null)
+const submitting = ref(false)
+const saving = ref(false)
+const captioning = ref(false)
+/** 사용자에게 보여줄 한 줄 안내(성공·실패 공용). */
+const notice = ref('')
 
 const channels = ref<Channel[]>([])
 const disabled = reactive<Record<string, boolean>>({})
@@ -310,18 +356,142 @@ const blockedReason = computed(() => {
   return ''
 })
 
+/** 파일 선택 — 숨은 input 을 열고, 고른 파일을 업로드 스토어에 등록한다. */
 function pickFile() {
-  /* 업로드 흐름은 기존 Tus 업로더로 연결한다 */
+  fileInput.value?.click()
 }
-function requestCaptions() {
-  /* 자동 자막 요청 */
+
+async function onFileChosen(e: Event) {
+  const picked = (e.target as HTMLInputElement).files?.[0]
+  if (!picked) return
+  notice.value = ''
+  await uploadStore.startUpload(picked)
+  file.name = picked.name
+  file.meta = `${formatBytes(picked.size)} · ${picked.type || 'video'}`
+  if (!form.title) form.title = picked.name.replace(/\.[^.]+$/, '')
 }
-function saveDraft() {
-  /* 임시 저장 */
+
+/**
+ * 자동 자막 — 업로드가 끝나 videoId 가 생긴 뒤에만 가능하다.
+ * 아직 게시 전이라 videoId 가 없으면 사용자에게 순서를 알려준다.
+ */
+async function requestCaptions() {
+  const id = uploadStore.videoId
+  if (!id) {
+    notice.value = t('redesign.compose.captionsNeedUpload')
+    return
+  }
+  captioning.value = true
+  notice.value = ''
+  try {
+    const res = await aiApi.stt({ videoId: id })
+    if (res?.text && !form.description) form.description = res.text
+    notice.value = t('redesign.compose.captionsDone')
+  } catch {
+    notice.value = t('redesign.compose.captionsFailed')
+  } finally {
+    captioning.value = false
+  }
 }
-function submit() {
-  if (blockedReason.value) return
-  /* 예약 생성 */
+
+/** 임시 저장 — 파일 업로드 없이 메타데이터만 영상 레코드로 남긴다. */
+async function saveDraft() {
+  if (!form.title.trim()) {
+    notice.value = t('redesign.compose.draftNeedTitle')
+    return
+  }
+  saving.value = true
+  notice.value = ''
+  try {
+    await videoApi.create({
+      title: form.title,
+      description: form.description || undefined,
+      tags: parseHashtags(form.hashtags),
+      visibility: 'PUBLIC',
+      mediaType: 'VIDEO',
+    })
+    notice.value = t('redesign.compose.draftSaved')
+  } catch {
+    notice.value = t('redesign.compose.draftFailed')
+  } finally {
+    saving.value = false
+  }
+}
+
+/**
+ * 예약 — 파일 업로드와 플랫폼별 예약 게시를 한 번에 수행한다.
+ * 예약 시각은 선택한 방식(now / best / fix)에 따라 플랫폼마다 계산한다.
+ */
+async function submit() {
+  if (blockedReason.value || submitting.value) return
+  const selected = uploadStore.file
+  if (!selected) {
+    notice.value = t('redesign.compose.needFile')
+    return
+  }
+
+  submitting.value = true
+  notice.value = ''
+  try {
+    const configs: PlatformPublishConfig[] = selectedChannels.value.map((ch, index) => ({
+      platform: ch.platform,
+      title: form.title,
+      description: [form.description, form.hashtags].filter(Boolean).join('\n\n'),
+      tags: parseHashtags(form.hashtags),
+      visibility: 'PUBLIC' as const,
+      scheduledAt: scheduledAtFor(index),
+    }))
+
+    await uploadStore.streamPublish(
+      selected,
+      {
+        title: form.title,
+        description: form.description,
+        tags: parseHashtags(form.hashtags),
+        category: '',
+        visibility: 'PUBLIC',
+        thumbnailUrl: '',
+      },
+      configs,
+    )
+    notice.value = t('redesign.compose.scheduled')
+    router.push('/today')
+  } catch (e) {
+    notice.value = uploadStore.uploadError || t('redesign.compose.scheduleFailed')
+  } finally {
+    submitting.value = false
+  }
+}
+
+/** 채널별 예약 시각. 최적 시간은 09:00·12:30·19:00 슬롯을 순서대로 돌려 쓴다. */
+function scheduledAtFor(index: number): string | undefined {
+  if (schedMode.value === 'now') return undefined
+  if (schedMode.value === 'fix') return fixedAt.value ? new Date(fixedAt.value).toISOString() : undefined
+
+  const slots = [
+    [9, 0],
+    [12, 30],
+    [19, 0],
+  ]
+  const [h, m] = slots[index % slots.length]
+  const at = new Date()
+  at.setHours(h, m, 0, 0)
+  if (at.getTime() <= Date.now()) at.setDate(at.getDate() + 1)
+  return at.toISOString()
+}
+
+function parseHashtags(raw: string): string[] {
+  return raw
+    .split(/[\s,]+/)
+    .map((s) => s.replace(/^#/, '').trim())
+    .filter(Boolean)
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n}B`
+  if (n < 1024 ** 2) return `${(n / 1024).toFixed(1)}KB`
+  if (n < 1024 ** 3) return `${(n / 1024 ** 2).toFixed(1)}MB`
+  return `${(n / 1024 ** 3).toFixed(1)}GB`
 }
 
 function onKeydown(e: KeyboardEvent) {

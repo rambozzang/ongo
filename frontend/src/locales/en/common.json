@@ -5433,7 +5433,20 @@
       "warnTitleLength": "Title exceeds {limit} characters and may be truncated.",
       "warnTiktokHashtags": "TikTok keeps only {limit} hashtags. The rest move to the description.",
       "blockNoTarget": "Select at least one channel",
-      "blockExpired": "{name} is disconnected — reconnect to schedule"
+      "blockExpired": "{name} is disconnected — reconnect to schedule",
+      "captioning": "Generating…",
+      "captionsNeedUpload": "Upload a video first to generate captions",
+      "captionsDone": "Captions added to the description",
+      "captionsFailed": "Caption generation failed",
+      "draftNeedTitle": "Enter a title",
+      "draftSaved": "Draft saved",
+      "draftFailed": "Could not save the draft",
+      "saving": "Saving…",
+      "needFile": "Choose a video to upload",
+      "scheduling": "Scheduling…",
+      "scheduled": "Scheduled",
+      "scheduleFailed": "Scheduling failed",
+      "uploading": "Uploading {percent}%"
     },
     "inbox": {
       "loading": "Loading...",
