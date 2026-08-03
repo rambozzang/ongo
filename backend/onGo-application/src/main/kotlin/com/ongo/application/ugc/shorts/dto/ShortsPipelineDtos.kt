@@ -109,3 +109,8 @@ data class ScheduleConfirmRequest(
     val intervalHours: Int,
     val platforms: List<String> = emptyList(),
 )
+
+/** 렌더 완성 영상 연결 요청. 업로드가 끝난 영상의 id 를 넘긴다. */
+data class AttachRenderedVideoRequest(
+    val videoId: Long,
+)

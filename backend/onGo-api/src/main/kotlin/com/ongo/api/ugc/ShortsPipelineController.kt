@@ -1,11 +1,13 @@
 package com.ongo.api.ugc
 
 import com.ongo.application.ugc.shorts.ShortsPipelineUseCase
+import com.ongo.application.ugc.shorts.dto.AttachRenderedVideoRequest
 import com.ongo.application.ugc.shorts.dto.CreatePipelineRunRequest
 import com.ongo.application.ugc.shorts.dto.HookSelectionRequest
 import com.ongo.application.ugc.shorts.dto.PipelineRunDetailResponse
 import com.ongo.application.ugc.shorts.dto.PipelineRunResponse
 import com.ongo.application.ugc.shorts.dto.ScheduleConfirmRequest
+import com.ongo.application.ugc.shorts.dto.ShortsClipResponse
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
 import com.ongo.common.config.PageResponse
@@ -100,6 +102,22 @@ class ShortsPipelineController(
         @RequestBody request: ScheduleConfirmRequest,
     ): ResponseEntity<ResData<PipelineRunResponse>> =
         ResData.success(pipelineUseCase.confirmSchedule(userId, workspaceId, runId, request))
+
+    @Operation(
+        summary = "렌더 완성 영상 연결",
+        description = "render.sh 로 만든 완성 영상을 업로드한 뒤 그 videoId 를 연결한다. 연결해야 게시 대상이 된다",
+    )
+    @PostMapping("/{runId}/clips/{clipId}/rendered-video")
+    fun attachRenderedVideo(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable workspaceId: Long,
+        @PathVariable runId: Long,
+        @PathVariable clipId: Long,
+        @RequestBody request: AttachRenderedVideoRequest,
+    ): ResponseEntity<ResData<ShortsClipResponse>> =
+        ResData.success(
+            pipelineUseCase.attachRenderedVideo(userId, workspaceId, runId, clipId, request.videoId),
+        )
 
     @Operation(summary = "클립 렌더 지시서 다운로드", description = "render-spec.json 단일 파일")
     @GetMapping("/{runId}/clips/{clipId}/render-spec")

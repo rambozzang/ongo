@@ -401,6 +401,64 @@ class ShortsPipelineUseCaseTest {
         assertEquals(listOf("YOUTUBE"), event.captured.platforms)
     }
 
+    // ---- 렌더 완성 영상 연결 ----
+
+    @Test
+    fun `렌더 영상을 연결하면 클립이 RENDERED 가 된다`() {
+        grantAccess(workspaceId)
+        every { pipelineRunRepository.findById(runId) } returns run(PipelineRunStatus.AWAITING_SCHEDULE)
+        every { shortsClipRepository.findById(1L) } returns clip(1L, 1)
+        every { videoRepository.findById(900L) } returns
+            Video(id = 900L, userId = userId, title = "clip-1.mp4")
+        val updated = slot<ShortsClip>()
+        every { shortsClipRepository.update(capture(updated)) } answers { firstArg() }
+        every { clipHookRepository.findByClipIds(listOf(1L)) } returns emptyList()
+
+        val response = useCase.attachRenderedVideo(userId, workspaceId, runId, 1L, 900L)
+
+        assertEquals(900L, updated.captured.renderedVideoId)
+        assertEquals(ClipStatus.RENDERED, updated.captured.status)
+        assertEquals("RENDERED", response.status)
+    }
+
+    @Test
+    fun `남의 영상은 클립에 연결할 수 없다`() {
+        grantAccess(workspaceId)
+        every { pipelineRunRepository.findById(runId) } returns run(PipelineRunStatus.AWAITING_SCHEDULE)
+        every { shortsClipRepository.findById(1L) } returns clip(1L, 1)
+        every { videoRepository.findById(900L) } returns
+            Video(id = 900L, userId = 999L, title = "남의 영상")
+
+        val ex = assertFailsWith<BusinessException> {
+            useCase.attachRenderedVideo(userId, workspaceId, runId, 1L, 900L)
+        }
+        assertEquals("ACCESS_DENIED", ex.code)
+    }
+
+    @Test
+    fun `다른 실행의 클립에는 영상을 연결할 수 없다`() {
+        grantAccess(workspaceId)
+        every { pipelineRunRepository.findById(runId) } returns run(PipelineRunStatus.AWAITING_SCHEDULE)
+        every { shortsClipRepository.findById(1L) } returns clip(1L, 1).copy(runId = 999L)
+
+        val ex = assertFailsWith<BusinessException> {
+            useCase.attachRenderedVideo(userId, workspaceId, runId, 1L, 900L)
+        }
+        assertEquals("SHORTS_CLIP_NOT_FOUND", ex.code)
+    }
+
+    @Test
+    fun `제외된 클립에는 영상을 연결할 수 없다`() {
+        grantAccess(workspaceId)
+        every { pipelineRunRepository.findById(runId) } returns run(PipelineRunStatus.AWAITING_SCHEDULE)
+        every { shortsClipRepository.findById(1L) } returns clip(1L, 1, ClipStatus.DISCARDED)
+
+        val ex = assertFailsWith<BusinessException> {
+            useCase.attachRenderedVideo(userId, workspaceId, runId, 1L, 900L)
+        }
+        assertEquals("SHORTS_RUN_INVALID_STATE", ex.code)
+    }
+
     // ---- 렌더 산출물 ----
 
     @Test

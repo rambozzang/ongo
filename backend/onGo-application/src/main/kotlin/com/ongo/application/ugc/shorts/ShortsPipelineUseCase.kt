@@ -218,6 +218,46 @@ class ShortsPipelineUseCase(
         return updated.toResponse(video?.title)
     }
 
+    /**
+     * 렌더가 끝난 완성 영상을 클립에 연결한다.
+     *
+     * 우리 시스템은 인코딩을 하지 않으므로, 사용자가 render.sh 로 만든 영상을 업로드한 뒤
+     * 그 videoId 를 여기로 넘겨야 비로소 게시 대상이 된다. 이 연결이 없으면 SCHEDULE 단계가
+     * 해당 클립을 계속 SKIPPED 로 넘긴다.
+     */
+    @Transactional
+    fun attachRenderedVideo(
+        userId: Long,
+        workspaceId: Long,
+        runId: Long,
+        clipId: Long,
+        videoId: Long,
+    ): ShortsClipResponse {
+        assertWorkspaceAccess(userId, workspaceId)
+        loadRunInWorkspace(workspaceId, runId)
+
+        val clip = shortsClipRepository.findById(clipId)
+            ?: throw BusinessException("SHORTS_CLIP_NOT_FOUND", "클립을 찾을 수 없습니다: $clipId")
+        if (clip.runId != runId) {
+            throw BusinessException("SHORTS_CLIP_NOT_FOUND", "이 실행의 클립이 아닙니다: $clipId")
+        }
+        if (clip.status == ClipStatus.DISCARDED) {
+            throw BusinessException("SHORTS_RUN_INVALID_STATE", "제외된 클립에는 영상을 연결할 수 없습니다")
+        }
+
+        val video = videoRepository.findById(videoId)
+            ?: throw BusinessException("SHORTS_SOURCE_VIDEO_NOT_FOUND", "영상을 찾을 수 없습니다: $videoId")
+        if (video.userId != userId) {
+            throw BusinessException("ACCESS_DENIED", "해당 영상에 접근 권한이 없습니다")
+        }
+
+        val updated = shortsClipRepository.update(
+            clip.copy(renderedVideoId = videoId, status = ClipStatus.RENDERED),
+        )
+        val hooks = clipHookRepository.findByClipIds(listOf(clipId))
+        return updated.toResponse(hooks)
+    }
+
     /** 클립의 render-spec.json 문자열을 반환한다. */
     fun getRenderSpec(userId: Long, workspaceId: Long, runId: Long, clipId: Long): String {
         assertWorkspaceAccess(userId, workspaceId)
