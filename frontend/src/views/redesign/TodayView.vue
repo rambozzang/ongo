@@ -31,8 +31,8 @@
       />
     </div>
 
-    <!-- 좌: 발행 큐 / 우: 확인 필요 + 채널 상태 -->
-    <div class="grid items-start gap-3.5" style="grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr)">
+    <!-- 좌: 발행 큐 / 우: 확인 필요 + 채널 상태. <1024 는 단일 열로 쌓는다 -->
+    <div class="grid items-start gap-3.5 desktop:[grid-template-columns:minmax(0,1.55fr)_minmax(0,1fr)]">
       <SectionCard :title="t('redesign.today.queueTitle')" :meta="todayLabel" body-class="">
         <template #action>
           <router-link to="/calendar-v2" class="text-[11px] text-accent hover:text-content">
@@ -50,13 +50,27 @@
           <div
             v-for="row in queue"
             :key="row.id"
-            class="grid cursor-pointer items-center gap-3 border-b border-line-row px-[15px] py-[11px] transition-colors hover:bg-surface-raised"
-            style="grid-template-columns: 62px 84px minmax(0, 1fr) auto"
+            class="flex cursor-pointer items-center gap-3 border-b border-line-row px-[15px] py-[11px] transition-colors hover:bg-surface-raised tablet:grid tablet:[grid-template-columns:62px_84px_minmax(0,1fr)_auto]"
             @click="openItem(row)"
           >
-            <span class="font-mono text-[13px] text-content">{{ row.time }}</span>
-            <ThumbPlaceholder :src="row.thumbnailUrl" :duration="row.duration" :width="84" :height="46" />
-            <div class="min-w-0">
+            <!-- 모바일에서는 시간이 제목 위로 올라가고 썸네일이 작아진다 -->
+            <span class="hidden font-mono text-[13px] text-content tablet:inline">{{ row.time }}</span>
+            <ThumbPlaceholder
+              :src="row.thumbnailUrl"
+              :duration="row.duration"
+              :width="44"
+              :height="52"
+              class="tablet:hidden"
+            />
+            <ThumbPlaceholder
+              :src="row.thumbnailUrl"
+              :duration="row.duration"
+              :width="84"
+              :height="46"
+              class="hidden tablet:block"
+            />
+            <div class="min-w-0 flex-1">
+              <span class="font-mono text-[11px] text-content-tertiary tablet:hidden">{{ row.time }}</span>
               <p class="truncate text-[13px] font-semibold text-content">{{ row.title }}</p>
               <div class="mt-1 flex items-center gap-1.5">
                 <PlatformChip v-for="p in row.platforms" :key="p" :platform="p" size="sm" />
