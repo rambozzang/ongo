@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <PageHeader :title="$t('subscription.title')" :description="$t('subscription.description')" />
 
     <PageGuide :title="$t('subscription.pageGuideTitle')" :items="($tm('subscription.pageGuide') as string[])" />
@@ -8,7 +8,7 @@
 
     <template v-else>
       <!-- Section 1: Current Plan Card -->
-      <div class="card mb-6">
+      <div class="rounded-[11px] border border-line bg-surface-card p-4 mb-6">
         <div class="flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
           <div>
             <div class="mb-1 flex items-center gap-2">
@@ -86,7 +86,7 @@
       </div>
 
       <!-- Section 2: Usage Statistics -->
-      <div v-if="currentPlanInfo" class="card mb-6">
+      <div v-if="currentPlanInfo" class="rounded-[11px] border border-line bg-surface-card p-4 mb-6">
         <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.usageStatus') }}</h2>
 
         <div class="space-y-4">
@@ -117,7 +117,7 @@
       </div>
 
       <!-- Section 3: AI Credit Section -->
-      <div class="card mb-6">
+      <div class="rounded-[11px] border border-line bg-surface-card p-4 mb-6">
         <div class="mb-4 flex items-center justify-between">
           <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">
             <SparklesIcon class="mr-1.5 inline h-5 w-5 text-primary-600" />
@@ -172,7 +172,7 @@
       </div>
 
       <!-- Section 4: Credit Usage History Table -->
-      <div class="card mb-6">
+      <div class="rounded-[11px] border border-line bg-surface-card p-4 mb-6">
         <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.creditHistory') }}</h2>
 
         <div class="overflow-x-auto">
@@ -251,7 +251,7 @@
       </div>
 
       <!-- Section 5: Coupon -->
-      <div class="card mb-6">
+      <div class="rounded-[11px] border border-line bg-surface-card p-4 mb-6">
         <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">쿠폰</h2>
         <div class="flex gap-2">
           <input
@@ -279,7 +279,7 @@
       </div>
 
       <!-- Section: Usage Alert Settings -->
-      <div class="card mb-6">
+      <div class="rounded-[11px] border border-line bg-surface-card p-4 mb-6">
         <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">사용량 알림 설정</h2>
         <div class="space-y-4">
           <div v-for="alert in usageAlerts" :key="alert.type" class="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3">

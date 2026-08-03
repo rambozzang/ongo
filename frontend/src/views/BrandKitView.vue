@@ -74,7 +74,7 @@ function handleUpdateGuidelines(text: string) {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <PageHeader :title="$t('brandKit.title')" :description="$t('brandKit.description')">
       <template #actions>
@@ -99,7 +99,7 @@ function handleUpdateGuidelines(text: string) {
     <!-- Sections -->
     <div class="space-y-6">
       <!-- Color Palette Section -->
-      <section class="card overflow-hidden p-0">
+      <section class="overflow-hidden rounded-[11px] border border-line bg-surface-card">
         <button
           class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           @click="toggleSection('colors')"
@@ -128,7 +128,7 @@ function handleUpdateGuidelines(text: string) {
       </section>
 
       <!-- Typography Section -->
-      <section class="card overflow-hidden p-0">
+      <section class="overflow-hidden rounded-[11px] border border-line bg-surface-card">
         <button
           class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           @click="toggleSection('typography')"
@@ -157,7 +157,7 @@ function handleUpdateGuidelines(text: string) {
       </section>
 
       <!-- Brand Assets Section -->
-      <section class="card overflow-hidden p-0">
+      <section class="overflow-hidden rounded-[11px] border border-line bg-surface-card">
         <button
           class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           @click="toggleSection('assets')"
@@ -185,7 +185,7 @@ function handleUpdateGuidelines(text: string) {
       </section>
 
       <!-- Brand Guidelines Section -->
-      <section class="card overflow-hidden p-0">
+      <section class="overflow-hidden rounded-[11px] border border-line bg-surface-card">
         <button
           class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           @click="toggleSection('guidelines')"
