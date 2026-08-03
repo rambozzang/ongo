@@ -1,9 +1,9 @@
 <template>
-  <div>
+  <div class="min-h-full py-5 text-content tablet:py-6">
     <!-- Header -->
     <PageHeader :title="$t('videos.title')" :description="$t('videos.description')">
       <template #actions>
-        <router-link to="/upload" class="btn-primary inline-flex items-center gap-2">
+        <router-link to="/compose" class="btn-primary inline-flex items-center gap-2">
           <PlusIcon class="h-5 w-5" />
           {{ $t('videos.uploadNew') }}
         </router-link>
@@ -11,7 +11,7 @@
     </PageHeader>
 
     <!-- Platform Filter Tabs + Sort -->
-    <div class="card mb-6">
+    <SectionCard class="mb-4" body-class="p-3">
       <div class="flex flex-col gap-3 tablet:flex-row tablet:items-center tablet:justify-between">
         <!-- Platform Tabs -->
         <div class="flex flex-wrap gap-2">
@@ -19,8 +19,8 @@
             class="rounded-lg px-3 py-1.5 text-body font-medium transition-colors"
             :class="
               !selectedPlatform
-                ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                ? 'bg-accent-dim text-accent'
+                : 'text-content-secondary hover:bg-surface-raised hover:text-content'
             "
             @click="selectPlatform(undefined)"
           >
@@ -32,8 +32,8 @@
             class="rounded-lg px-3 py-1.5 text-body font-medium transition-colors"
             :class="
               selectedPlatform === p
-                ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                ? 'bg-accent-dim text-accent'
+                : 'text-content-secondary hover:bg-surface-raised hover:text-content'
             "
             @click="selectPlatform(p)"
           >
@@ -49,7 +49,7 @@
           <option value="comments">{{ $t('videos.sortComments') }}</option>
         </select>
       </div>
-    </div>
+    </SectionCard>
 
     <!-- Platform Errors -->
     <div
@@ -72,7 +72,7 @@
       :description="$t('videos.noChannelsDesc')"
     >
       <template #action>
-        <router-link to="/channels" class="btn-primary">
+        <router-link to="/channels-v2" class="btn-primary">
           {{ $t('videos.connectChannel') }}
         </router-link>
       </template>
@@ -87,66 +87,52 @@
 
     <!-- Feed Table (tablet+) -->
     <div v-else class="hidden tablet:block">
-      <div class="card overflow-hidden">
+      <SectionCard body-class="p-0">
         <table class="w-full text-left text-body">
-          <thead class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
+          <thead class="border-b border-line-row bg-surface-input">
             <tr>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400">{{ $t('videos.title') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400 w-28 text-center">{{ $t('videos.views') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400 w-24 text-center">{{ $t('videos.likes') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400 w-24 text-center">{{ $t('videos.comments') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400 w-24 text-center">{{ $t('videos.shares') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400 w-28">{{ $t('videos.publishedAt') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400 w-36 text-center">AI</th>
+              <th class="px-4 py-3 text-overline text-content-tertiary">{{ $t('videos.title') }}</th>
+              <th class="w-28 px-4 py-3 text-center text-overline text-content-tertiary">{{ $t('videos.views') }}</th>
+              <th class="w-24 px-4 py-3 text-center text-overline text-content-tertiary">{{ $t('videos.likes') }}</th>
+              <th class="w-24 px-4 py-3 text-center text-overline text-content-tertiary">{{ $t('videos.comments') }}</th>
+              <th class="w-24 px-4 py-3 text-center text-overline text-content-tertiary">{{ $t('videos.shares') }}</th>
+              <th class="w-28 px-4 py-3 text-overline text-content-tertiary">{{ $t('videos.publishedAt') }}</th>
+              <th class="w-36 px-4 py-3 text-center text-overline text-content-tertiary">AI</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          <tbody class="divide-y divide-line-row">
             <tr
               v-for="item in feedItems"
               :key="`${item.platform}-${item.platformVideoId}`"
-              class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+              class="cursor-pointer transition-colors hover:bg-surface-raised"
               @click="openDetail(item)"
             >
               <td class="px-4 py-3">
                 <div class="flex items-center gap-3">
                   <!-- Thumbnail -->
-                  <div class="h-12 w-20 flex-shrink-0 overflow-hidden rounded-md bg-gray-200 dark:bg-gray-700">
-                    <img
-                      v-if="item.thumbnailUrl"
-                      :src="item.thumbnailUrl"
-                      :alt="item.title"
-                      class="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                    <div v-else class="flex h-full w-full items-center justify-center">
-                      <FilmIcon class="h-5 w-5 text-gray-400" />
-                    </div>
-                  </div>
+                  <ThumbPlaceholder :src="item.thumbnailUrl" :width="84" :height="46" />
                   <!-- Title + Platform -->
                   <div class="min-w-0">
-                    <p class="truncate font-medium text-gray-900 dark:text-white">{{ item.title }}</p>
+                    <p class="truncate text-body-sm font-semibold text-content">{{ item.title }}</p>
                     <div class="flex items-center gap-1.5 mt-0.5">
-                      <span
-                        class="inline-block h-2 w-2 rounded-full"
-                        :style="{ backgroundColor: PLATFORM_CONFIG[item.platform]?.color || '#666' }"
-                      ></span>
-                      <span class="text-body-xs text-gray-500 dark:text-gray-400">
+                      <PlatformChip v-if="platformCode(item.platform)" :platform="platformCode(item.platform)!" size="sm" />
+                      <span class="text-body-xs text-content-tertiary">
                         {{ PLATFORM_CONFIG[item.platform]?.label || item.platform }} · {{ item.channelName }}
                       </span>
                     </div>
                   </div>
                 </div>
               </td>
-              <td class="px-4 py-3 text-center tabular-nums text-gray-700 dark:text-gray-300">{{ formatCount(item.viewCount) }}</td>
-              <td class="px-4 py-3 text-center tabular-nums text-gray-700 dark:text-gray-300">{{ formatCount(item.likeCount) }}</td>
-              <td class="px-4 py-3 text-center tabular-nums text-gray-700 dark:text-gray-300">{{ formatCount(item.commentCount) }}</td>
-              <td class="px-4 py-3 text-center tabular-nums text-gray-700 dark:text-gray-300">{{ formatCount(item.shareCount) }}</td>
-              <td class="px-4 py-3 text-body text-gray-500 dark:text-gray-400">{{ formatDate(item.publishedAt) }}</td>
+              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ formatCount(item.viewCount) }}</td>
+              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ formatCount(item.likeCount) }}</td>
+              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ formatCount(item.commentCount) }}</td>
+              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ formatCount(item.shareCount) }}</td>
+              <td class="px-4 py-3 text-body-sm text-content-tertiary">{{ formatDate(item.publishedAt) }}</td>
               <td class="px-4 py-3 text-center" @click.stop>
                 <!-- AI 도구 드롭다운 -->
                 <div :ref="(el) => setDropdownRef(el, `${item.platform}-${item.platformVideoId}`)" class="relative inline-block">
                   <button
-                    class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-body-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                    class="inline-flex items-center gap-1 rounded-md border border-line-control bg-accent-dim px-2 py-1 text-body-xs font-semibold text-accent hover:border-accent"
                     @click.stop="toggleDropdown(`${item.platform}-${item.platformVideoId}`)"
                   >
                     <SparklesIcon class="h-3.5 w-3.5" />
@@ -155,43 +141,43 @@
                   </button>
                   <div
                     v-if="openDropdownKey === `${item.platform}-${item.platformVideoId}`"
-                    class="absolute right-0 z-50 mt-1 w-40 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                    class="absolute right-0 z-50 mt-1 w-40 rounded-lg border border-line-control bg-surface-card shadow-lg"
                   >
                     <button
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 rounded-t-lg"
+                      class="flex w-full items-center gap-2 rounded-t-lg px-3 py-2 text-left text-body-xs text-content-secondary hover:bg-surface-raised hover:text-content"
                       @click.stop="openSeoModal(item)"
                     >
-                      <MagnifyingGlassIcon class="h-3.5 w-3.5 text-primary-500" />
+                      <MagnifyingGlassIcon class="h-3.5 w-3.5 text-accent" />
                       {{ $t('videosView.seoScore.button') }}
                     </button>
                     <button
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-content-secondary hover:bg-surface-raised hover:text-content"
                       @click.stop="openPredictModal(item)"
                     >
-                      <ChartBarIcon class="h-3.5 w-3.5 text-primary-500" />
+                      <ChartBarIcon class="h-3.5 w-3.5 text-accent" />
                       {{ $t('videosView.viewsPrediction.button') }}
                     </button>
                     <button
                       v-if="isDraft(item)"
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-content-secondary hover:bg-surface-raised hover:text-content"
                       @click.stop="openChecklistModal(item)"
                     >
-                      <ClipboardDocumentCheckIcon class="h-3.5 w-3.5 text-primary-500" />
+                      <ClipboardDocumentCheckIcon class="h-3.5 w-3.5 text-accent" />
                       {{ $t('videosView.publishChecklist.button') }}
                     </button>
                     <button
                       v-if="isHighPerforming(item)"
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-content-secondary hover:bg-surface-raised hover:text-content"
                       @click.stop="openRewriteModal(item)"
                     >
-                      <SparklesIcon class="h-3.5 w-3.5 text-primary-500" />
+                      <SparklesIcon class="h-3.5 w-3.5 text-accent" />
                       {{ $t('videosView.aiRewrite.button') }}
                     </button>
                     <button
-                      class="flex w-full items-center gap-2 px-3 py-2 text-left text-body-xs text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 rounded-b-lg"
+                      class="flex w-full items-center gap-2 rounded-b-lg px-3 py-2 text-left text-body-xs text-content-secondary hover:bg-surface-raised hover:text-content"
                       @click.stop="openRepurposeModal(item)"
                     >
-                      <FilmIcon class="h-3.5 w-3.5 text-gray-400" />
+                      <FilmIcon class="h-3.5 w-3.5 text-content-tertiary" />
                       {{ $t('videosView.repurpose.button') }}
                     </button>
                   </div>
@@ -200,7 +186,7 @@
             </tr>
           </tbody>
         </table>
-      </div>
+      </SectionCard>
     </div>
 
     <!-- Feed Cards (mobile) -->
@@ -213,30 +199,16 @@
       >
         <div class="flex gap-3">
           <!-- Thumbnail -->
-          <div class="h-16 w-24 flex-shrink-0 overflow-hidden rounded-md bg-gray-200 dark:bg-gray-700">
-            <img
-              v-if="item.thumbnailUrl"
-              :src="item.thumbnailUrl"
-              :alt="item.title"
-              class="h-full w-full object-cover"
-              loading="lazy"
-            />
-            <div v-else class="flex h-full w-full items-center justify-center">
-              <FilmIcon class="h-5 w-5 text-gray-400" />
-            </div>
-          </div>
+          <ThumbPlaceholder :src="item.thumbnailUrl" :width="96" :height="64" />
           <!-- Info -->
           <div class="min-w-0 flex-1">
-            <p class="truncate text-body font-medium text-gray-900 dark:text-white">{{ item.title }}</p>
+            <p class="truncate text-body-sm font-semibold text-content">{{ item.title }}</p>
             <div class="flex items-center gap-1.5 mt-0.5">
-              <span
-                class="inline-block h-2 w-2 rounded-full"
-                :style="{ backgroundColor: PLATFORM_CONFIG[item.platform]?.color || '#666' }"
-              ></span>
-              <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ PLATFORM_CONFIG[item.platform]?.label || item.platform }}</span>
+              <PlatformChip v-if="platformCode(item.platform)" :platform="platformCode(item.platform)!" size="sm" />
+              <span class="text-body-xs text-content-tertiary">{{ PLATFORM_CONFIG[item.platform]?.label || item.platform }}</span>
             </div>
             <!-- Metrics -->
-            <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-body-xs text-gray-500 dark:text-gray-400">
+            <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-body-xs text-content-tertiary">
               <span>
                 <EyeIcon class="inline h-3.5 w-3.5 mr-0.5" />
                 {{ formatCount(item.viewCount) }}
@@ -253,14 +225,14 @@
             <!-- AI Tools (mobile) -->
             <div class="mt-2 flex gap-1.5 flex-wrap" @click.stop>
               <button
-                class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-body-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                class="inline-flex items-center gap-1 rounded-md border border-line-control bg-accent-dim px-2 py-1 text-body-xs font-semibold text-accent hover:border-accent"
                 @click.stop="openSeoModal(item)"
               >
                 <MagnifyingGlassIcon class="h-3.5 w-3.5" />
                 SEO
               </button>
               <button
-                class="inline-flex items-center gap-1 rounded-md bg-primary-50 px-2 py-1 text-body-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                class="inline-flex items-center gap-1 rounded-md border border-line-control bg-accent-dim px-2 py-1 text-body-xs font-semibold text-accent hover:border-accent"
                 @click.stop="openPredictModal(item)"
               >
                 <ChartBarIcon class="h-3.5 w-3.5" />
@@ -268,7 +240,7 @@
               </button>
               <button
                 v-if="isDraft(item)"
-                class="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-body-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                class="inline-flex items-center gap-1 rounded-md border border-line-control bg-surface-raised px-2 py-1 text-body-xs font-semibold text-content-secondary hover:border-line-hover hover:text-content"
                 @click.stop="openChecklistModal(item)"
               >
                 <ClipboardDocumentCheckIcon class="h-3.5 w-3.5" />
@@ -276,14 +248,14 @@
               </button>
               <button
                 v-if="isHighPerforming(item)"
-                class="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-body-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                class="inline-flex items-center gap-1 rounded-md border border-line-control bg-surface-raised px-2 py-1 text-body-xs font-semibold text-content-secondary hover:border-line-hover hover:text-content"
                 @click.stop="openRewriteModal(item)"
               >
                 <SparklesIcon class="h-3.5 w-3.5" />
                 {{ $t('videosView.aiRewrite.button') }}
               </button>
               <button
-                class="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-body-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                class="inline-flex items-center gap-1 rounded-md border border-line-control bg-surface-raised px-2 py-1 text-body-xs font-semibold text-content-secondary hover:border-line-hover hover:text-content"
                 @click.stop="openRepurposeModal(item)"
               >
                 <FilmIcon class="h-3.5 w-3.5" />
@@ -750,6 +722,9 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import VideoDetailPanel from '@/components/video/VideoDetailPanel.vue'
+import SectionCard from '@/components/redesign/SectionCard.vue'
+import ThumbPlaceholder from '@/components/redesign/ThumbPlaceholder.vue'
+import PlatformChip from '@/components/redesign/PlatformChip.vue'
 import { useVideoStore } from '@/stores/video'
 import { storeToRefs } from 'pinia'
 import { formatCount, formatDate } from '@/utils/format'
@@ -781,6 +756,20 @@ function isHighPerforming(item: VideoFeedItem) {
 
 function isDraft(item: VideoFeedItem) {
   return (item as unknown as { status?: string }).status === 'DRAFT'
+}
+
+type RedesignPlatform = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'
+
+function platformCode(platform: Platform): RedesignPlatform | undefined {
+  const codes: Partial<Record<Platform, RedesignPlatform>> = {
+    YOUTUBE: 'YT',
+    INSTAGRAM: 'IG',
+    TIKTOK: 'TT',
+    FACEBOOK: 'FB',
+    NAVER_CLIP: 'NV',
+    THREADS: 'TH',
+  }
+  return codes[platform]
 }
 
 // ── AI 도구 드롭다운 ──────────────────────────────────────────────────
@@ -850,9 +839,9 @@ async function runSeoAnalysis() {
 }
 
 function seoScoreColor(score: number): string {
-  if (score >= 70) return '#22c55e'
-  if (score >= 40) return '#f59e0b'
-  return '#ef4444'
+  if (score >= 70) return 'var(--color-success)'
+  if (score >= 40) return 'var(--color-warning)'
+  return 'var(--color-error)'
 }
 
 // ── Views Prediction Modal ────────────────────────────────────────────
