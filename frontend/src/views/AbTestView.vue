@@ -1,5 +1,5 @@
 <template>
-  <div :class="isTablet ? '' : 'space-y-4'">
+  <div :class="[isTablet ? '' : 'space-y-4', 'relative min-h-full py-5 text-content']">
     <!-- Mobile Header -->
     <template v-if="!isTablet">
       <div>

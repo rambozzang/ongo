@@ -1,6 +1,6 @@
 <template>
   <!-- 영상 상세 - Dev Guide Section 10.2 -->
-  <div>
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header with back navigation -->
     <div class="mb-6 flex items-center gap-3">
       <button

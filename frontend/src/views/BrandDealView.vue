@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <PageHeader :title="t('brandDeal.title')" :description="t('brandDeal.description')">
       <template #actions>
@@ -109,7 +109,7 @@
               :aria-label="t('list.selectItem', { name: deal.brandName })"
               @change="toggle(deal.id)"
             />
-            <div class="card min-w-0 flex-1 space-y-3 transition-shadow hover:shadow-md">
+            <div class="min-w-0 flex-1 space-y-3 rounded-[11px] border border-line bg-surface-card p-4 transition-colors hover:bg-surface-raised">
               <div class="flex items-start justify-between">
                 <h3 class="truncate text-h3 text-gray-900 dark:text-gray-100">{{ deal.brandName }}</h3>
                 <span
@@ -151,7 +151,7 @@
 
     <!-- 미디어키트 탭 -->
     <div v-if="activeTab === 'mediakit'">
-      <div class="card space-y-5">
+      <div class="rounded-[11px] border border-line bg-surface-card p-4 space-y-5">
         <div>
           <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">{{ t('brandDeal.mediaKit.displayName') }}</label>
           <input
