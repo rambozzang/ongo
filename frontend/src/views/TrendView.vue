@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <PageHeader :title="$t('trend.title')" :description="$t('trend.description')">
       <template #actions>
@@ -19,49 +19,51 @@
     <OTabs v-model="activeTab" :tabs="tabs" />
 
     <!-- 트렌드 차트 탭 -->
-    <div v-if="activeTab === 'trends'" class="mt-6">
-      <div class="mb-4 flex gap-3">
+    <div v-if="activeTab === 'trends'" class="space-y-4">
+      <SectionCard :title="$t('trend.tabTrends')" :meta="store.trends.length ? String(store.trends.length) : undefined">
+        <div class="flex flex-wrap gap-3">
         <input
           v-model="searchKeyword"
           type="text"
           :placeholder="$t('trend.searchPlaceholder')"
-          class="input-field w-64"
+          class="input-field w-full sm:w-64"
           @keyup.enter="searchTrends"
         />
-        <select v-model="sourceFilter" class="input-field" @change="loadTrends">
+        <select v-model="sourceFilter" class="input-field w-full sm:w-auto" @change="loadTrends">
           <option value="">{{ $t('trend.allSources') }}</option>
           <option value="GOOGLE_TRENDS">Google Trends</option>
           <option value="YOUTUBE">YouTube</option>
           <option value="INTERNAL">{{ $t('trend.internal') }}</option>
         </select>
-      </div>
+        </div>
+      </SectionCard>
       <TrendChart :trends="store.trends" />
     </div>
 
     <!-- AI 분석 탭 -->
-    <div v-if="activeTab === 'analysis'" class="mt-6">
-      <div v-if="!store.analysis" class="text-center py-12 text-gray-400 dark:text-gray-500">
+    <div v-if="activeTab === 'analysis'" class="space-y-4">
+      <SectionCard v-if="!store.analysis">
+        <div class="py-12 text-center text-content-tertiary">
         {{ $t('trend.analysisEmpty') }}
-      </div>
-      <div v-else class="space-y-4">
-        <div class="card">
-          <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('trend.analysisSummary') }}</h3>
-          <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ store.analysis.summary }}</p>
         </div>
-        <div class="card">
-          <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('trend.contentRecommendations') }}</h3>
+      </SectionCard>
+      <div v-else class="space-y-4">
+        <SectionCard :title="$t('trend.analysisSummary')">
+          <p class="whitespace-pre-line text-body text-content-secondary">{{ store.analysis.summary }}</p>
+        </SectionCard>
+        <SectionCard :title="$t('trend.contentRecommendations')">
           <ul class="space-y-2">
-            <li v-for="(rec, i) in store.analysis.recommendations" :key="i" class="flex gap-2 text-sm text-gray-700 dark:text-gray-300">
-              <span class="text-primary-600 dark:text-primary-400 font-bold">{{ i + 1 }}.</span>
+            <li v-for="(rec, i) in store.analysis.recommendations" :key="i" class="flex gap-2 text-body text-content-secondary">
+              <span class="font-mono font-bold text-accent">{{ String(i + 1).padStart(2, '0') }}</span>
               {{ rec }}
             </li>
           </ul>
-        </div>
+        </SectionCard>
       </div>
     </div>
 
     <!-- 알림 관리 탭 -->
-    <div v-if="activeTab === 'alerts'" class="mt-6">
+    <div v-if="activeTab === 'alerts'">
       <TrendAlertManager :alerts="store.alerts" @refresh="store.loadAlerts()" />
     </div>
   </div>
@@ -77,6 +79,7 @@ import TrendChart from '@/components/trend/TrendChart.vue'
 import TrendAlertManager from '@/components/trend/TrendAlertManager.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import SectionCard from '@/components/redesign/SectionCard.vue'
 
 const { t } = useI18n()
 const store = useTrendStore()

@@ -1,18 +1,18 @@
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <PageHeader :title="$t('audience.title')" :description="$t('audience.description')" />
 
     <PageGuide :title="$t('audience.pageGuideTitle')" :items="($tm('audience.pageGuide') as string[])" />
 
     <!-- 탭 -->
-    <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
+    <OTabs v-model="activeTab" :tabs="tabs" class="mb-1" />
 
     <!-- 팬 프로필 탭 -->
     <!-- NOTE: 프로필은 서버 정렬 + 서버 페이지네이션(20건씩)이라 클라이언트 검색·선택 패턴을
          적용하지 않는다. 현재 페이지만 훑는 검색은 "없음"을 잘못 알려주기 때문이다. -->
     <div v-if="activeTab === 'profiles'">
-      <div class="mb-4 flex gap-3">
-        <select v-model="sortBy" class="input-field w-auto min-w-[8.5rem]" :aria-label="$t('list.sortLabel')" @change="loadProfiles">
+      <div class="flex flex-wrap items-center gap-3">
+        <select v-model="sortBy" class="input-field w-full min-w-[8.5rem] sm:w-auto" :aria-label="$t('list.sortLabel')" @change="loadProfiles">
           <option value="engagement_score">{{ $t('audience.sort.engagementScore') }}</option>
           <option value="total_interactions">{{ $t('audience.sort.totalInteractions') }}</option>
           <option value="last_seen_at">{{ $t('audience.sort.lastSeenAt') }}</option>
@@ -29,20 +29,20 @@
         :empty-description="$t('audience.emptyProfilesDescription')"
         :retryable="false"
       >
-        <div class="card overflow-hidden !p-0">
+        <SectionCard :title="$t('audience.tabs.profiles')" :meta="String(store.totalProfiles)" body-class="overflow-x-auto !p-0">
           <table class="w-full text-body">
-            <thead class="bg-gray-50 dark:bg-gray-900">
+            <thead class="bg-surface-muted">
               <tr>
-                <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.profile') }}</th>
-                <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.platform') }}</th>
-                <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.engagement') }}</th>
-                <th class="text-left text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.tags') }}</th>
-                <th class="text-right text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.interactions') }}</th>
-                <th class="text-right text-body-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 px-4 py-3">{{ $t('audience.table.lastActivity') }}</th>
+                <th class="whitespace-nowrap px-4 py-3 text-left text-body-xs font-semibold uppercase tracking-wider text-content-tertiary">{{ $t('audience.table.profile') }}</th>
+                <th class="whitespace-nowrap px-4 py-3 text-left text-body-xs font-semibold uppercase tracking-wider text-content-tertiary">{{ $t('audience.table.platform') }}</th>
+                <th class="whitespace-nowrap px-4 py-3 text-left text-body-xs font-semibold uppercase tracking-wider text-content-tertiary">{{ $t('audience.table.engagement') }}</th>
+                <th class="whitespace-nowrap px-4 py-3 text-left text-body-xs font-semibold uppercase tracking-wider text-content-tertiary">{{ $t('audience.table.tags') }}</th>
+                <th class="whitespace-nowrap px-4 py-3 text-right text-body-xs font-semibold uppercase tracking-wider text-content-tertiary">{{ $t('audience.table.interactions') }}</th>
+                <th class="whitespace-nowrap px-4 py-3 text-right text-body-xs font-semibold uppercase tracking-wider text-content-tertiary">{{ $t('audience.table.lastActivity') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="profile in store.profiles" :key="profile.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <tr v-for="profile in store.profiles" :key="profile.id" class="border-line-row transition-colors hover:bg-surface-muted">
                 <td class="px-4 py-3">
                   <div class="flex items-center gap-3">
                     <img
@@ -53,24 +53,27 @@
                     />
                     <div
                       v-else
-                      class="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-body-xs font-bold"
+                      class="flex h-8 w-8 items-center justify-center rounded-full bg-accent-subtle text-body-xs font-bold text-accent"
                     >
                       {{ profile.authorName.charAt(0) }}
                     </div>
-                    <span class="font-medium text-gray-900 dark:text-gray-100">{{ profile.authorName }}</span>
+                    <span class="font-medium text-content">{{ profile.authorName }}</span>
                   </div>
                 </td>
-                <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ profile.platform }}</td>
+                <td class="px-4 py-3">
+                  <PlatformChip v-if="platformCode(profile.platform)" :platform="platformCode(profile.platform)!" size="sm" />
+                  <span v-else class="text-body-xs text-content-tertiary">{{ profile.platform }}</span>
+                </td>
                 <td class="px-4 py-3">
                   <div class="flex items-center gap-2">
-                    <div class="w-16 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                    <div class="h-2 w-16 overflow-hidden rounded-full bg-surface-muted">
                       <div
                         class="h-full rounded-full"
                         :class="scoreColor(profile.engagementScore)"
                         :style="{ width: `${Math.min(profile.engagementScore, 100)}%` }"
                       />
                     </div>
-                    <span class="text-gray-700 dark:text-gray-300 text-body-xs">{{ profile.engagementScore }}</span>
+                    <span class="font-mono text-body-xs text-content-secondary">{{ profile.engagementScore }}</span>
                   </div>
                 </td>
                 <td class="px-4 py-3">
@@ -78,18 +81,18 @@
                     <span
                       v-for="tag in profile.tags"
                       :key="tag"
-                      class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-body-xs"
+                      class="rounded bg-muted-subtle px-2 py-0.5 text-body-xs text-muted-strong"
                     >
                       {{ tag }}
                     </span>
                   </div>
                 </td>
-                <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{{ profile.totalInteractions.toLocaleString() }}</td>
-                <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 text-body-xs">{{ formatDate(profile.lastSeenAt) }}</td>
+                <td class="px-4 py-3 text-right font-mono text-content-secondary">{{ profile.totalInteractions.toLocaleString() }}</td>
+                <td class="px-4 py-3 text-right text-body-xs text-content-tertiary">{{ formatDate(profile.lastSeenAt) }}</td>
               </tr>
             </tbody>
           </table>
-        </div>
+        </SectionCard>
 
         <div v-if="store.totalProfiles > 20" class="flex justify-center mt-4">
           <div class="flex gap-2">
@@ -100,7 +103,7 @@
             >
               {{ $t('audience.pagination.previous') }}
             </button>
-            <span class="px-3 py-1.5 text-body text-gray-600 dark:text-gray-400">
+              <span class="px-3 py-1.5 text-body text-content-tertiary">
               {{ currentPage + 1 }} / {{ Math.ceil(store.totalProfiles / 20) }}
             </span>
             <button
@@ -203,9 +206,9 @@
               :aria-label="$t('list.selectItem', { name: segment.name })"
               @change="toggle(segment.id)"
             />
-            <div class="card min-w-0 flex-1">
+            <div class="min-w-0 flex-1 rounded-[11px] border border-line bg-surface-card p-4">
               <div class="flex items-start justify-between mb-2">
-                <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ segment.name }}</h3>
+                <h3 class="font-semibold text-content">{{ segment.name }}</h3>
                 <button
                   class="text-gray-400 hover:text-error-strong transition-colors"
                   :aria-label="$t('action.delete')"
@@ -216,10 +219,10 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="segment.description" class="text-body text-gray-500 dark:text-gray-400 mb-3">{{ segment.description }}</p>
+              <p v-if="segment.description" class="mb-3 text-body text-content-tertiary">{{ segment.description }}</p>
               <div class="flex items-center justify-between text-body">
-                <span class="text-gray-600 dark:text-gray-400">
-                  <span class="font-medium text-primary-600 dark:text-primary-400">{{ segment.memberCount.toLocaleString() }}</span>{{ $t('audience.members') }}
+                <span class="text-content-secondary">
+                  <span class="font-mono font-medium text-accent">{{ segment.memberCount.toLocaleString() }}</span>{{ $t('audience.members') }}
                 </span>
                 <span v-if="segment.autoUpdate" class="px-2 py-0.5 bg-success-subtle text-success-strong rounded text-body-xs">
                   {{ $t('audience.autoUpdate') }}
@@ -336,6 +339,8 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import ListToolbar from '@/components/common/ListToolbar.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import PlatformChip from '@/components/redesign/PlatformChip.vue'
+import SectionCard from '@/components/redesign/SectionCard.vue'
 import type { AudienceSegment } from '@/types/audience'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -414,6 +419,19 @@ function scoreColor(score: number): string {
   if (score >= 80) return 'bg-success'
   if (score >= 50) return 'bg-warning'
   return 'bg-gray-400'
+}
+
+type AudiencePlatform = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'
+
+function platformCode(platform: string): AudiencePlatform | undefined {
+  const normalized = platform.toUpperCase()
+  if (normalized.includes('YOUTUBE') || normalized === 'YT') return 'YT'
+  if (normalized.includes('INSTAGRAM') || normalized === 'IG') return 'IG'
+  if (normalized.includes('TIKTOK') || normalized === 'TT') return 'TT'
+  if (normalized.includes('FACEBOOK') || normalized === 'FB') return 'FB'
+  if (normalized.includes('NAVER') || normalized === 'NV') return 'NV'
+  if (normalized.includes('THREAD') || normalized === 'TH') return 'TH'
+  return undefined
 }
 
 function formatDate(dateStr?: string): string {

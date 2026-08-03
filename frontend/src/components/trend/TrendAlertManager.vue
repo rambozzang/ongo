@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white rounded-lg border border-gray-200 p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-title font-semibold text-gray-900">트렌드 알림</h3>
+  <div class="overflow-hidden rounded-[11px] border border-line bg-surface-card">
+    <div class="flex items-center justify-between border-b border-line-row px-[15px] py-3">
+      <h3 class="text-[13px] font-bold text-content">트렌드 알림</h3>
       <button
-        class="text-body px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+        class="btn-primary text-body"
         @click="showForm = !showForm"
       >
         + 알림 추가
@@ -11,22 +11,22 @@
     </div>
 
     <!-- 알림 추가 폼 -->
-    <div v-if="showForm" class="mb-4 p-4 bg-gray-50 rounded-lg">
+    <div v-if="showForm" class="m-4 rounded-lg bg-surface-muted p-4">
       <div class="flex gap-3">
         <input
           v-model="newKeyword"
           type="text"
           placeholder="키워드"
-          class="flex-1 px-3 py-2 border rounded-lg text-body"
+          class="input-field min-w-0 flex-1"
         />
         <input
           v-model.number="newThreshold"
           type="number"
           placeholder="임계값"
-          class="w-24 px-3 py-2 border rounded-lg text-body"
+          class="input-field w-24"
         />
         <button
-          class="px-4 py-2 bg-primary-600 text-white rounded-lg text-body hover:bg-primary-700"
+          class="btn-primary text-body"
           @click="createAlert"
         >
           추가
@@ -35,20 +35,20 @@
     </div>
 
     <!-- 알림 목록 -->
-    <div v-if="alerts.length === 0" class="text-center py-6 text-gray-400 text-body">
+    <div v-if="alerts.length === 0" class="px-4 py-10 text-center text-body text-content-tertiary">
       설정된 알림이 없습니다.
     </div>
-    <div v-else class="space-y-2">
+    <div v-else class="space-y-2 p-4">
       <div
         v-for="alert in alerts"
         :key="alert.id"
-        class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+        class="flex items-center justify-between rounded-lg border border-line-row bg-surface-muted p-3"
       >
         <div class="flex items-center gap-3">
           <button
             :class="[
               'w-10 h-5 rounded-full relative transition-colors',
-              alert.enabled ? 'bg-primary-600' : 'bg-gray-300',
+              alert.enabled ? 'bg-accent' : 'bg-muted-strong',
             ]"
             @click="toggleAlert(alert)"
           >
@@ -59,10 +59,10 @@
               ]"
             />
           </button>
-          <span class="text-body font-medium text-gray-900">{{ alert.keyword }}</span>
+          <span class="text-body font-medium text-content">{{ alert.keyword }}</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-body-xs text-gray-500">임계값: {{ alert.threshold }}</span>
+          <span class="font-mono text-body-xs text-content-tertiary">임계값: {{ alert.threshold }}</span>
           <button
             class="text-body-xs text-error-strong transition-opacity hover:opacity-80"
             @click="removeAlert(alert.id)"
