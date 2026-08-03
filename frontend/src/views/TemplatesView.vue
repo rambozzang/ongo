@@ -121,7 +121,7 @@ const handleBulkDelete = async () => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <PageHeader :title="$t('templates.title')" :description="$t('templates.description')">
       <template #actions>
@@ -144,10 +144,10 @@ const handleBulkDelete = async () => {
         :key="cat.value"
         type="button"
         :class="[
-          'min-h-10 rounded-lg px-3 py-2 text-body font-medium transition-colors',
+          'min-h-9 rounded-lg border px-3 py-2 text-body font-medium transition-colors',
           categoryFilter === cat.value
-            ? 'bg-primary-600 text-white dark:bg-primary-500'
-            : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+            ? 'border-accent bg-accent-dim text-accent'
+            : 'border-line-control bg-surface-input text-content-secondary hover:bg-surface-raised hover:text-content',
         ]"
         @click="categoryFilter = cat.value"
       >
@@ -175,7 +175,7 @@ const handleBulkDelete = async () => {
             'inline-flex min-h-10 items-center gap-1.5 rounded-lg border px-3 py-2 text-body font-medium transition-colors',
             showFavoritesOnly
               ? 'border-warning bg-warning-subtle text-warning-strong'
-              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+              : 'border-line-control bg-surface-input text-content-secondary hover:bg-surface-raised hover:text-content',
           ]"
           :aria-pressed="showFavoritesOnly"
           @click="showFavoritesOnly = !showFavoritesOnly"
