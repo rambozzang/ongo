@@ -31,6 +31,8 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import ListToolbar from '@/components/common/ListToolbar.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import KpiCard from '@/components/redesign/KpiCard.vue'
+import SectionCard from '@/components/redesign/SectionCard.vue'
 import type { TeamMember, TeamInvite, TeamRole, InviteStatus } from '@/types/team'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -344,7 +346,7 @@ watch(activeTab, (tab) => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <PageHeader :title="teamStore.teamName" :description="$t('team.description')">
       <template #actions>
@@ -362,55 +364,11 @@ watch(activeTab, (tab) => {
     <PageGuide :title="$t('team.pageGuideTitle')" :items="($tm('team.pageGuide') as string[])" />
 
     <!-- Stats -->
-    <div class="page-grid page-grid--metrics mb-6">
-      <div class="card">
-        <div class="flex items-center">
-          <UserGroupIcon class="h-8 w-8 text-primary-600 dark:text-primary-400" />
-          <div class="ml-3">
-            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('team.stats.totalMembers') }}</p>
-            <p class="text-h1 font-semibold text-gray-900 dark:text-gray-100">
-              {{ teamStore.members.length }}
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="flex items-center">
-          <div
-            class="flex h-8 w-8 items-center justify-center rounded-full bg-success-subtle"
-          >
-            <span class="h-3 w-3 rounded-full bg-success"></span>
-          </div>
-          <div class="ml-3">
-            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('team.stats.online') }}</p>
-            <p class="text-h1 font-semibold text-gray-900 dark:text-gray-100">
-              {{ teamStore.onlineMembers.length }}
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="flex items-center">
-          <EnvelopeIcon class="h-8 w-8 text-info-strong" />
-          <div class="ml-3">
-            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('team.stats.pendingInvites') }}</p>
-            <p class="text-h1 font-semibold text-gray-900 dark:text-gray-100">
-              {{ inviteStatus.pending }}
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="flex items-center">
-          <ClockIcon class="h-8 w-8 text-info-strong" />
-          <div class="ml-3">
-            <p class="text-body text-gray-600 dark:text-gray-400">{{ $t('team.stats.recentActivity') }}</p>
-            <p class="text-h1 font-semibold text-gray-900 dark:text-gray-100">
-              {{ teamStore.activities.length }}
-            </p>
-          </div>
-        </div>
-      </div>
+    <div class="grid gap-2.5 tablet:grid-cols-2 desktop:grid-cols-4">
+      <KpiCard :label="$t('team.stats.totalMembers')" :value="String(teamStore.members.length)" />
+      <KpiCard :label="$t('team.stats.online')" :value="String(teamStore.onlineMembers.length)" :delta-variant="teamStore.onlineMembers.length > 0 ? 'success' : 'muted'" />
+      <KpiCard :label="$t('team.stats.pendingInvites')" :value="String(inviteStatus.pending)" :delta-variant="inviteStatus.pending > 0 ? 'warning' : 'muted'" />
+      <KpiCard :label="$t('team.stats.recentActivity')" :value="String(teamStore.activities.length)" />
     </div>
 
       <!-- Tabs -->
@@ -421,10 +379,7 @@ watch(activeTab, (tab) => {
         <!-- Members Tab -->
         <div v-if="activeTab === 'members'" class="space-y-6">
           <!-- Role Distribution -->
-          <div class="card">
-            <h3 class="text-body font-medium text-gray-900 dark:text-gray-100">
-              {{ $t('team.roleDistribution') }}
-            </h3>
+          <SectionCard :title="$t('team.roleDistribution')">
             <div class="mt-4 grid grid-cols-2 gap-4 mobile:grid-cols-4">
               <div
                 v-for="stat in roleStats"
@@ -439,7 +394,7 @@ watch(activeTab, (tab) => {
                 </p>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
           <!-- 검색 · 정렬 · 일괄 작업 -->
           <div>
@@ -608,7 +563,7 @@ watch(activeTab, (tab) => {
             <div
               v-for="invite in filteredInvites"
               :key="invite.id"
-              class="card"
+                class="rounded-[11px] border border-line bg-surface-card p-4 transition-colors hover:bg-surface-raised"
             >
               <div class="flex items-start justify-between gap-3">
                 <input
@@ -680,7 +635,7 @@ watch(activeTab, (tab) => {
         <!-- Activity Tab -->
         <div v-if="activeTab === 'activity'">
           <div
-            class="card"
+            class="rounded-[11px] border border-line bg-surface-card p-4"
           >
             <TeamActivityFeed />
           </div>
@@ -689,7 +644,7 @@ watch(activeTab, (tab) => {
         <!-- Permissions Tab -->
         <div v-if="activeTab === 'permissions'">
           <div
-            class="card"
+            class="rounded-[11px] border border-line bg-surface-card p-4"
           >
             <PermissionMatrix />
           </div>
@@ -708,7 +663,7 @@ watch(activeTab, (tab) => {
           <!-- My Tasks & Pending Reviews -->
           <div class="page-grid page-grid--split">
             <!-- 내 작업 -->
-            <div class="card">
+            <div class="rounded-[11px] border border-line bg-surface-card p-4">
               <h3 class="mb-4 text-body-lg font-semibold text-gray-900 dark:text-gray-100">
                 {{ $t('team.myTasks') }}
               </h3>
@@ -782,7 +737,7 @@ watch(activeTab, (tab) => {
             </div>
 
             <!-- 대기 중인 검토 -->
-            <div class="card">
+            <div class="rounded-[11px] border border-line bg-surface-card p-4">
               <div class="mb-4 flex items-center justify-between">
                 <h3 class="text-body-lg font-semibold text-gray-900 dark:text-gray-100">
                   {{ $t('team.pendingReviews') }}
