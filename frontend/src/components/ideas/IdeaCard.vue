@@ -1,25 +1,21 @@
 <template>
   <div
-    class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:shadow-md transition-shadow"
+    class="cursor-pointer rounded-[11px] border border-line bg-surface-card p-[13px] shadow-none transition-colors hover:border-line-hover"
     draggable="true"
     @dragstart="handleDragStart"
     @click="$emit('click')"
   >
     <!-- Priority Badge -->
     <div class="flex items-center justify-between mb-2">
-      <span
-        :class="priorityClasses"
-        class="text-caption px-2 py-1 rounded"
-      >
-        {{ priorityLabel }}
-      </span>
+      <StatusPill :variant="priorityVariant">{{ priorityLabel }}</StatusPill>
       <div class="flex items-center gap-1">
-        <component
-          :is="platformIcon(platform)"
-          v-for="platform in idea.platform"
-          :key="platform"
-          class="w-4 h-4 text-gray-500 dark:text-gray-400"
-        />
+        <template v-for="platform in idea.platform" :key="platform">
+          <PlatformChip
+            v-if="platformCode(platform)"
+            :platform="platformCode(platform)!"
+            size="sm"
+          />
+        </template>
         <button
           type="button"
           class="ml-1 rounded p-1 text-gray-400 transition-colors hover:bg-error-subtle hover:text-error-strong"
@@ -33,12 +29,12 @@
     </div>
 
     <!-- Title -->
-    <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-2 line-clamp-2">
+    <h3 class="mb-2 line-clamp-2 text-h3 text-content">
       {{ idea.title }}
     </h3>
 
     <!-- Description -->
-    <p class="text-body text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+    <p class="mb-3 line-clamp-2 text-body-sm text-content-secondary">
       {{ idea.description }}
     </p>
 
@@ -47,14 +43,14 @@
       <span
         v-for="tag in idea.tags"
         :key="tag"
-        class="text-body-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded"
+        class="rounded-md bg-surface-raised px-2 py-1 text-body-xs text-content-secondary"
       >
         #{{ tag }}
       </span>
     </div>
 
     <!-- Due Date -->
-    <div v-if="idea.dueDate" class="flex items-center text-body-xs text-gray-500 dark:text-gray-400">
+    <div v-if="idea.dueDate" class="flex items-center text-body-xs text-content-tertiary">
       <CalendarIcon class="w-4 h-4 mr-1" />
       {{ formatDate(idea.dueDate) }}
     </div>
@@ -63,12 +59,17 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { ContentIdea } from '@/types/idea'
 import { CalendarIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import PlatformChip from '@/components/redesign/PlatformChip.vue'
+import StatusPill from '@/components/redesign/StatusPill.vue'
 
 const props = defineProps<{
   idea: ContentIdea
 }>()
+
+const { t } = useI18n({ useScope: 'global' })
 
 const emit = defineEmits<{
   (e: 'click'): void
@@ -76,43 +77,42 @@ const emit = defineEmits<{
   (e: 'delete'): void
 }>()
 
-const priorityClasses = computed(() => {
+const priorityVariant = computed<'success' | 'warning' | 'error' | 'muted'>(() => {
   switch (props.idea.priority) {
     case 'high':
-      return 'bg-error-subtle text-error-strong'
+      return 'error'
     case 'medium':
-      return 'bg-warning-subtle text-warning-strong'
+      return 'warning'
     case 'low':
-      return 'bg-info-subtle text-info-strong'
+      return 'success'
     default:
-      return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+      return 'muted'
   }
 })
 
 const priorityLabel = computed(() => {
   switch (props.idea.priority) {
     case 'high':
-      return '높음'
+      return t('ideas.priority.high')
     case 'medium':
-      return '보통'
+      return t('ideas.priority.medium')
     case 'low':
-      return '낮음'
+      return t('ideas.priority.low')
     default:
       return ''
   }
 })
 
-const platformIcon = (platform: string) => {
-  // Using simple shapes as placeholders for platform icons
-  // In a real app, you'd use actual platform logos
-  const icons: Record<string, string> = {
-    YOUTUBE: 'div',
-    TIKTOK: 'div',
-    INSTAGRAM: 'div',
-    NAVER_CLIP: 'div'
-  }
-  return icons[platform] || 'div'
-}
+type RedesignPlatform = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'
+
+const platformCode = (platform: string): RedesignPlatform | undefined => ({
+  YOUTUBE: 'YT',
+  INSTAGRAM: 'IG',
+  TIKTOK: 'TT',
+  FACEBOOK: 'FB',
+  NAVER_CLIP: 'NV',
+  THREADS: 'TH',
+}[platform] as RedesignPlatform | undefined)
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
