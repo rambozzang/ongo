@@ -24,6 +24,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import ListToolbar from '@/components/common/ListToolbar.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
+import KpiCard from '@/components/redesign/KpiCard.vue'
 
 const { t } = useI18n()
 const recyclingStore = useRecyclingStore()
@@ -222,7 +223,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="relative">
+  <div class="relative min-h-full space-y-5 py-5 text-content">
     <!-- Header -->
     <PageHeader :title="$t('recycling.title')" :description="$t('recycling.description')">
       <template #actions>
@@ -239,7 +240,11 @@ onMounted(() => {
     <PageGuide :title="$t('recycling.pageGuideTitle')" :items="($tm('recycling.pageGuide') as string[])" />
 
     <!-- Stats Cards -->
-    <div class="page-grid page-grid--cards mb-6">
+    <div class="grid gap-2.5 tablet:grid-cols-3 mb-6">
+      <KpiCard :label="$t('recycling.activeQueues')" :value="`${activeQueueCount}${$t('recycling.countUnit')}`" :delta-variant="activeQueueCount > 0 ? 'success' : 'muted'" />
+      <KpiCard :label="$t('recycling.totalRecycled')" :value="`${totalRecycled}${$t('recycling.caseUnit')}`" />
+      <KpiCard :label="$t('recycling.nextScheduled')" :value="nextScheduledLabel" />
+      <template v-if="false">
       <div class="card">
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-info-subtle">
@@ -275,6 +280,7 @@ onMounted(() => {
           </div>
         </div>
       </div>
+      </template>
     </div>
 
     <!-- Tabs -->
