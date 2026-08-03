@@ -45,11 +45,11 @@ function getBadgeCount(
     <button
       v-for="tab in tabs"
       :key="tab.key ?? 'all'"
-      class="relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-body font-medium transition-colors"
+      class="relative inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-body-sm font-semibold transition-colors"
       :class="[
         activeCategory === tab.key
-          ? 'bg-primary-600 text-white dark:bg-primary-500'
-          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
+          ? 'border-accent bg-accent text-accent-on'
+          : 'border-line-control bg-surface-raised text-content-secondary hover:border-line-hover hover:text-content',
       ]"
       @click="emit('select', tab.key)"
     >
@@ -60,7 +60,7 @@ function getBadgeCount(
         :class="[
           activeCategory === tab.key
             ? 'bg-white/25 text-white'
-            : 'bg-red-500 text-white',
+            : 'bg-bad text-accent-on',
         ]"
       >
         {{ getBadgeCount(tab.key, unreadCountByCategory) }}

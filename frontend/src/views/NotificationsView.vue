@@ -71,7 +71,7 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
 </script>
 
 <template>
-  <div class="relative">
+  <div class="min-h-full py-5 text-content tablet:py-6">
     <!-- Header -->
     <PageHeader
       :title="$t('notifications.title')"
@@ -88,7 +88,7 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
         </button>
         <button
           class="btn-secondary inline-flex items-center gap-1.5"
-          :class="showSettings ? 'text-primary-600 dark:text-primary-400 border-primary-300 dark:border-primary-600' : ''"
+          :class="showSettings ? 'border-accent text-accent' : ''"
           @click="showSettings = !showSettings"
         >
           <Cog6ToothIcon class="h-4 w-4" />
@@ -126,7 +126,7 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
     <!-- Notification list grouped by date -->
     <div v-if="store.filteredNotifications.length > 0" class="space-y-6">
       <div v-for="group in store.groupedByDate" :key="group.label">
-        <h3 class="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400">
+        <h3 class="mb-3 text-overline uppercase text-content-tertiary">
           {{ group.label }}
         </h3>
         <div class="space-y-2">
@@ -147,11 +147,11 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
       v-else
       class="card py-16 text-center"
     >
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-        <BellSlashIcon class="h-8 w-8 text-gray-400 dark:text-gray-500" />
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface-raised">
+        <BellSlashIcon class="h-8 w-8 text-content-quaternary" />
       </div>
-      <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('notifications.empty') }}</h3>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <h3 class="mt-4 text-h3 text-content">{{ $t('notifications.empty') }}</h3>
+      <p class="mt-1 text-body-sm text-content-secondary">
         {{ store.activeCategory ? $t('notifications.emptyCategory') : $t('notifications.emptyDescription') }}
       </p>
     </div>
@@ -161,7 +161,7 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
       v-if="store.totalPages > 1"
       class="mt-4 flex items-center justify-between"
     >
-      <p class="text-sm text-gray-600 dark:text-gray-400">
+      <p class="text-body-sm text-content-secondary">
         {{ store.page * store.pageSize + 1 }}–{{ Math.min((store.page + 1) * store.pageSize, store.totalCount) }} / {{ store.totalCount }}
       </p>
       <div class="flex gap-2">
