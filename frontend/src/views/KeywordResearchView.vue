@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="min-h-full py-5 text-content tablet:py-6">
     <PageHeader :title="$t('keywordResearch.title')" :description="$t('keywordResearch.description')">
       <template #actions>
         <button
@@ -14,11 +14,11 @@
     </PageHeader>
 
     <!-- Search Form -->
-    <div class="card mb-6">
+    <SectionCard class="mb-4" :title="$t('keywordResearch.keywordLabel')" body-class="space-y-4 p-4">
       <div class="space-y-4">
         <!-- Keyword Input -->
         <div>
-          <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-1.5 block text-body-sm font-semibold text-content-secondary">
             {{ $t('keywordResearch.keywordLabel') }}
           </label>
           <input
@@ -32,7 +32,7 @@
 
         <!-- Platform Selection -->
         <div>
-          <label class="mb-2 block text-body font-medium text-gray-700 dark:text-gray-300">
+          <label class="mb-2 block text-body-sm font-semibold text-content-secondary">
             {{ $t('keywordResearch.platformLabel') }}
           </label>
           <div class="flex flex-wrap gap-3">
@@ -45,41 +45,41 @@
                 type="checkbox"
                 :value="p.value"
                 :checked="selectedPlatforms.includes(p.value)"
-                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                class="h-4 w-4 rounded border-line-control text-accent focus:ring-accent"
                 @change="togglePlatform(p.value)"
               />
-              <span class="text-body text-gray-700 dark:text-gray-300">{{ p.label }}</span>
+              <span class="text-body-sm text-content-secondary">{{ p.label }}</span>
             </label>
           </div>
         </div>
       </div>
-    </div>
+    </SectionCard>
 
     <!-- Result -->
     <div v-if="store.currentResult" class="mb-6 space-y-4">
-      <h2 class="text-body-lg font-semibold text-gray-900 dark:text-white">
+      <h2 class="mb-3 text-h3 text-content">
         {{ $t('keywordResearch.resultTitle', { keyword: store.currentResult.keyword }) }}
       </h2>
-      <div class="card overflow-x-auto">
+      <SectionCard body-class="overflow-x-auto p-0">
         <table class="w-full text-left text-body">
-          <thead class="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
+          <thead class="border-b border-line-row bg-surface-input">
             <tr>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400">{{ $t('keywordResearch.platform') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400 text-right">{{ $t('keywordResearch.searchVolume') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400 text-center">{{ $t('keywordResearch.competition') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400 text-center">{{ $t('keywordResearch.trend') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400 text-right">{{ $t('keywordResearch.opportunityScore') }}</th>
-              <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-400">{{ $t('keywordResearch.relatedKeywords') }}</th>
+              <th class="px-4 py-3 text-overline text-content-tertiary">{{ $t('keywordResearch.platform') }}</th>
+              <th class="px-4 py-3 text-right text-overline text-content-tertiary">{{ $t('keywordResearch.searchVolume') }}</th>
+              <th class="px-4 py-3 text-center text-overline text-content-tertiary">{{ $t('keywordResearch.competition') }}</th>
+              <th class="px-4 py-3 text-center text-overline text-content-tertiary">{{ $t('keywordResearch.trend') }}</th>
+              <th class="px-4 py-3 text-right text-overline text-content-tertiary">{{ $t('keywordResearch.opportunityScore') }}</th>
+              <th class="px-4 py-3 text-overline text-content-tertiary">{{ $t('keywordResearch.relatedKeywords') }}</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          <tbody class="divide-y divide-line-row">
             <tr
               v-for="row in store.currentResult.platforms"
               :key="row.platform"
-              class="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              class="transition-colors hover:bg-surface-raised"
             >
-              <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ platformLabel(row.platform) }}</td>
-              <td class="px-4 py-3 text-right tabular-nums text-gray-700 dark:text-gray-300">
+              <td class="px-4 py-3 text-body-sm font-semibold text-content">{{ platformLabel(row.platform) }}</td>
+              <td class="px-4 py-3 text-right font-mono text-[11px] text-content-secondary">
                 {{ searchVolumeLabel(row.searchVolume) }}
               </td>
               <td class="px-4 py-3 text-center">
@@ -98,8 +98,8 @@
                 <span
                   class="rounded-full px-2 py-0.5 text-body-xs font-medium"
                   :class="{
-                    'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300': row.trend === 'RISING',
-                    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300': row.trend === 'STABLE',
+                    'bg-accent-dim text-accent': row.trend === 'RISING',
+                    'bg-muted-subtle text-muted-strong': row.trend === 'STABLE',
                     'bg-error-subtle text-error-strong': row.trend === 'DECLINING',
                   }"
                 >
@@ -107,7 +107,7 @@
                 </span>
               </td>
               <td class="px-4 py-3 text-right tabular-nums">
-                <span class="text-body font-semibold text-primary-600 dark:text-primary-400">
+                <span class="font-mono text-body-sm font-semibold text-accent">
                   {{ row.opportunityScore }}
                 </span>
               </td>
@@ -116,7 +116,7 @@
                   <span
                     v-for="kw in row.relatedKeywords.slice(0, 3)"
                     :key="kw"
-                    class="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                    class="rounded bg-surface-raised px-1.5 py-0.5 text-[11px] text-content-secondary"
                   >
                     {{ kw }}
                   </span>
@@ -125,12 +125,12 @@
             </tr>
           </tbody>
         </table>
-      </div>
+      </SectionCard>
     </div>
 
     <!-- History -->
     <div>
-      <h2 class="mb-3 text-body-lg font-semibold text-gray-900 dark:text-white">
+      <h2 class="mb-3 text-h3 text-content">
         {{ $t('keywordResearch.historyTitle') }}
       </h2>
 
@@ -146,12 +146,12 @@
         <div
           v-for="item in store.history"
           :key="item.id"
-          class="card flex items-center justify-between gap-3 cursor-pointer hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+          class="card flex cursor-pointer items-center justify-between gap-3 transition-colors hover:border-line-hover"
           @click="loadHistoryItem(item)"
         >
           <div>
-            <p class="text-body font-medium text-gray-900 dark:text-white">{{ item.keyword }}</p>
-            <p class="text-body-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <p class="text-body-sm font-semibold text-content">{{ item.keyword }}</p>
+            <p class="mt-0.5 text-body-xs text-content-tertiary">
               {{ item.platforms.map(platformLabel).join(', ') }} · {{ formatDate(item.createdAt) }}
             </p>
           </div>
@@ -183,6 +183,7 @@ import type { KeywordPlatform, KeywordHistoryItem } from '@/types/keywordResearc
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import SectionCard from '@/components/redesign/SectionCard.vue'
 
 const store = useKeywordResearchStore()
 
