@@ -453,6 +453,34 @@
           "submitting": "확정 중...",
           "submitted": "예약이 확정되었습니다.",
           "submitFailed": "예약 확정에 실패했습니다."
+        },
+        "sheet": {
+          "title": "예약표 (엑셀)",
+          "description": "클립의 제목·후킹문구·캡션·예약시각을 엑셀로 내려받아 수정한 뒤 다시 올릴 수 있습니다. 올리면 변경 내역을 먼저 보여 주고, 확인한 뒤에만 반영합니다.",
+          "download": "엑셀 내려받기",
+          "downloading": "내려받는 중...",
+          "downloadFailed": "예약표 다운로드에 실패했습니다.",
+          "upload": "엑셀 올리기",
+          "uploading": "확인 중...",
+          "uploadFailed": "예약표 파일을 읽지 못했습니다.",
+          "previewTitle": "예약표 변경 내역",
+          "noChanges": "변경된 내용이 없습니다.",
+          "colClip": "클립",
+          "colField": "항목",
+          "colBefore": "변경 전",
+          "colAfter": "변경 후",
+          "fields": {
+            "title": "제목",
+            "hookText": "후킹문구",
+            "caption": "캡션",
+            "scheduledAt": "예약시각"
+          },
+          "unknownClips": "이 실행에 없는 클립ID는 무시됩니다: {ids}",
+          "cancel": "취소",
+          "apply": "반영하기",
+          "applying": "반영 중...",
+          "applied": "{count}건의 변경을 반영했습니다.",
+          "applyFailed": "예약표 반영에 실패했습니다."
         }
       }
     }

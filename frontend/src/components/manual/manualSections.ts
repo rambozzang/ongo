@@ -197,6 +197,16 @@ export const sectionsKo: ManualSection[] = [
           '실행 중인 화면은 3초 간격으로 상태를 자동 갱신하며, 대기·종료 상태가 되면 갱신이 멈춥니다.',
         ],
       },
+      {
+        subtitle: '예약표 엑셀',
+        text: '실행 상세의 "예약표 (엑셀)"에서 클립의 제목·후킹문구·캡션·예약시각을 엑셀 파일로 내려받아 수정한 뒤 다시 올려 반영합니다.',
+        items: [
+          '"엑셀 내려받기"는 순번·클립ID·파일명·제목·후킹문구·캡션·플랫폼·예약시각·상태 순서의 .xlsx를 내려받습니다. 클립ID 열은 다시 올릴 때 행을 식별하는 키이니 지우지 마세요.',
+          '수정한 파일을 올리면 제목·후킹문구·캡션·예약시각 4개 열의 변경 내역(diff)만 먼저 보여 줍니다. 이 단계에서는 아무것도 저장되지 않습니다.',
+          '변경 내역을 확인하고 "반영하기"를 눌러야 실제로 저장됩니다. 순번·클립ID·상태 열은 읽기 전용이라 무시됩니다.',
+          '예약시각은 yyyy-MM-dd HH:mm 형식이어야 합니다. 형식이 맞지 않는 행은 제외되고 나머지는 정상 반영되며, 이 실행에 없는 클립ID는 무시됩니다.',
+        ],
+      },
     ],
   },
   {
@@ -3123,6 +3133,16 @@ export const sectionsEn: ManualSection[] = [
           'When the run pauses at scheduling, set the start date/time, publish interval (hours), and platforms, then confirm.',
           'Clips with a render spec can be downloaded as a per-clip render-spec.json or as a single zip with all artifacts.',
           'While a run is active the page refreshes every 3 seconds; refreshing stops once the run is waiting or finished.',
+        ],
+      },
+      {
+        subtitle: 'Schedule sheet (Excel)',
+        text: 'In "Schedule sheet (Excel)" on the run detail, download the clips\' titles, hooks, captions, and scheduled times as an Excel file, edit it, and upload it back to apply the changes.',
+        items: [
+          '"Download Excel" exports an .xlsx with columns in this order: no., clip ID, file name, title, hook, caption, platforms, scheduled at, status. The clip ID column is the key used to match rows on upload — do not delete it.',
+          'When you upload an edited file, only the changes (diff) in the four editable columns — title, hook, caption, scheduled at — are shown first. Nothing is saved at this step.',
+          'Changes are stored only after you review the diff and click "Apply changes". The no., clip ID, and status columns are read-only and ignored.',
+          'Scheduled times must be in yyyy-MM-dd HH:mm format. Rows with an invalid format are skipped while the rest are applied, and clip IDs that do not belong to this run are ignored.',
         ],
       },
     ],

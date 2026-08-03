@@ -5,12 +5,16 @@ import com.ongo.application.ai.ChatClientResolver
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.ugc.shorts.ClipHook
 import com.ongo.domain.ugc.shorts.ClipStatus
+import com.ongo.domain.ugc.shorts.ClipValidation
+import com.ongo.domain.ugc.shorts.ClipValidationRepository
+import com.ongo.domain.ugc.shorts.ClipValidationSeverity
 import com.ongo.domain.ugc.shorts.HookVariant
 import com.ongo.domain.ugc.shorts.ShortsClip
 import com.ongo.domain.ugc.shorts.ShortsPromptRepository
 import io.mockk.every
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
+import io.mockk.slot
 import io.mockk.junit5.MockKExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,6 +34,9 @@ class ValidateStageExecutorTest {
 
     @MockK
     lateinit var shortsPromptRepository: ShortsPromptRepository
+
+    @MockK(relaxed = true)
+    lateinit var clipValidationRepository: ClipValidationRepository
 
     @InjectMockKs
     lateinit var executor: ValidateStageExecutor
@@ -125,5 +132,69 @@ class ValidateStageExecutorTest {
         val report = mapper.readTree(output.outputSnapshot).path("clips")
         assertEquals(1, report.size())
         assertEquals(11, report[0].path("clipId").asLong())
+    }
+
+    // ---- 검증 규칙 4종 저장 ----
+
+    @Test
+    fun `클립마다 검증 규칙 4종을 저장한다`() {
+        stubChatClientEntity(chatClientResolver, ValidateVerdictResult::class.java, ValidateVerdictResult(true, "ok"))
+        val hooks = mapOf(11L to listOf(ClipHook(id = 21, clipId = 11, variant = HookVariant.A, text = "A안", selected = true)))
+        val saved = slot<List<ClipValidation>>()
+        every { clipValidationRepository.saveAll(capture(saved)) } answers { firstArg() }
+
+        executor.execute(stageContext(clips = listOf(clip(11, 1)), hooks = hooks))
+
+        assertEquals(
+            listOf("HOOK_MISSING", "SUBTITLE_LINE_LENGTH", "CLIP_DURATION", "META_MISSING"),
+            saved.captured.map { it.ruleCode },
+        )
+    }
+
+    @Test
+    fun `후킹 미선택과 메타 누락은 ERROR 로 실패 처리한다`() {
+        stubChatClientEntity(chatClientResolver, ValidateVerdictResult::class.java, ValidateVerdictResult(false, "미흡"))
+        val saved = slot<List<ClipValidation>>()
+        every { clipValidationRepository.saveAll(capture(saved)) } answers { firstArg() }
+
+        // 후킹 없음 + 제목·캡션 비어 있음
+        executor.execute(stageContext(clips = listOf(clip(11, 1)), hooks = emptyMap()))
+
+        val byRule = saved.captured.associateBy { it.ruleCode }
+        assertEquals(false, byRule.getValue("HOOK_MISSING").passed)
+        assertEquals(ClipValidationSeverity.ERROR, byRule.getValue("HOOK_MISSING").severity)
+        assertEquals(false, byRule.getValue("META_MISSING").passed)
+        assertEquals(ClipValidationSeverity.ERROR, byRule.getValue("META_MISSING").severity)
+    }
+
+    @Test
+    fun `자막 한 줄이 5~9자를 벗어나면 규칙에 걸린다`() {
+        stubChatClientEntity(chatClientResolver, ValidateVerdictResult::class.java, ValidateVerdictResult(true, "ok"))
+        val saved = slot<List<ClipValidation>>()
+        every { clipValidationRepository.saveAll(capture(saved)) } answers { firstArg() }
+        // "자막" 은 2자라 5~9자 규칙을 벗어난다
+        val hooks = mapOf(11L to listOf(ClipHook(id = 21, clipId = 11, variant = HookVariant.A, text = "A안", selected = true)))
+
+        executor.execute(stageContext(clips = listOf(clip(11, 1)), hooks = hooks))
+
+        val rule = saved.captured.first { it.ruleCode == "SUBTITLE_LINE_LENGTH" }
+        assertEquals(false, rule.passed)
+        assertEquals(ClipValidationSeverity.WARNING, rule.severity)
+        assertTrue(rule.message!!.contains("5~9자"))
+    }
+
+    @Test
+    fun `클립 길이가 20초 미만이면 규칙에 걸린다`() {
+        stubChatClientEntity(chatClientResolver, ValidateVerdictResult::class.java, ValidateVerdictResult(true, "ok"))
+        val saved = slot<List<ClipValidation>>()
+        every { clipValidationRepository.saveAll(capture(saved)) } answers { firstArg() }
+        val hooks = mapOf(11L to listOf(ClipHook(id = 21, clipId = 11, variant = HookVariant.A, text = "A안", selected = true)))
+
+        // clip(11, 1) 은 0~15000ms = 15초라 20초 미만이다
+        executor.execute(stageContext(clips = listOf(clip(11, 1)), hooks = hooks))
+
+        val rule = saved.captured.first { it.ruleCode == "CLIP_DURATION" }
+        assertEquals(false, rule.passed)
+        assertEquals(ClipValidationSeverity.WARNING, rule.severity)
     }
 }

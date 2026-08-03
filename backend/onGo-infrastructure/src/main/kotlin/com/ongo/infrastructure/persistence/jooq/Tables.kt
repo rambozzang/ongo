@@ -210,6 +210,8 @@ object Tables {
     val UGC_SHORTS_RUN_STAGES = DSL.table("ugc_shorts_run_stages")
     val UGC_SHORTS_CLIPS = DSL.table("ugc_shorts_clips")
     val UGC_SHORTS_CLIP_HOOKS = DSL.table("ugc_shorts_clip_hooks")
+    val UGC_SHORTS_CLIP_PUBLICATIONS = DSL.table("ugc_shorts_clip_publications")
+    val UGC_SHORTS_VALIDATIONS = DSL.table("ugc_shorts_validations")
 }
 
 object Fields {
@@ -1047,4 +1049,6 @@ object Fields {
     val VARIANT = DSL.field("variant", String::class.java)
     val TEXT = DSL.field("text", String::class.java)
     val SELECTED = DSL.field("selected", Boolean::class.java)
+    val RULE_CODE = DSL.field("rule_code", String::class.java)
+    val PASSED = DSL.field("passed", Boolean::class.java)
 }

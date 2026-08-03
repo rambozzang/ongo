@@ -453,6 +453,34 @@
           "submitting": "Confirming...",
           "submitted": "Schedule confirmed.",
           "submitFailed": "Failed to confirm the schedule."
+        },
+        "sheet": {
+          "title": "Schedule sheet (Excel)",
+          "description": "Download the clips' titles, hooks, captions, and scheduled times as an Excel file, edit it, and upload it back. Uploads show a preview of the changes first and are applied only after you confirm.",
+          "download": "Download Excel",
+          "downloading": "Downloading...",
+          "downloadFailed": "Failed to download the schedule sheet.",
+          "upload": "Upload Excel",
+          "uploading": "Checking...",
+          "uploadFailed": "Failed to read the schedule sheet file.",
+          "previewTitle": "Schedule sheet changes",
+          "noChanges": "No changes detected.",
+          "colClip": "Clip",
+          "colField": "Field",
+          "colBefore": "Before",
+          "colAfter": "After",
+          "fields": {
+            "title": "Title",
+            "hookText": "Hook",
+            "caption": "Caption",
+            "scheduledAt": "Scheduled at"
+          },
+          "unknownClips": "Clip IDs not in this run are ignored: {ids}",
+          "cancel": "Cancel",
+          "apply": "Apply changes",
+          "applying": "Applying...",
+          "applied": "Applied {count} change(s).",
+          "applyFailed": "Failed to apply the schedule sheet."
         }
       }
     }

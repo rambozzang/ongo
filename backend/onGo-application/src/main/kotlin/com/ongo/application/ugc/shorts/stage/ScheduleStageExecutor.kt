@@ -3,16 +3,28 @@ package com.ongo.application.ugc.shorts.stage
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.ugc.shorts.ClipStatus
+import com.ongo.domain.ugc.shorts.ClipPublication
+import com.ongo.domain.ugc.shorts.ClipPublicationRepository
+import com.ongo.domain.ugc.shorts.ClipPublicationStatus
 import com.ongo.domain.ugc.shorts.PipelineStage
+import com.ongo.application.ugc.shorts.ShortsPublishAdapter
+import com.ongo.application.ugc.shorts.ShortsPublishRequest
 import org.springframework.stereotype.Component
+import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 /**
- * SCHEDULE 단계 (AI 없음). 예약 파라미터로 클립별 scheduledAt을 계산한다.
- * scheduledAt = startAt + (순번) * intervalHours. clip 반영과 SCHEDULED 전이는 오케스트레이터가 한다.
+ * SCHEDULE 단계 (AI 없음). 예약 시각을 계산하고 렌더 영상을 기존 게시 흐름에 위임한다.
+ *
+ * 의존성은 필수다. 예전에는 nullable 이었는데, 주입이 빠지면 예약을 걸어도 아무것도 게시되지
+ * 않으면서 오류도 나지 않는 경로가 생겨 필수로 바꿨다.
+ * 게시 없이 예약 시각만 확정하고 싶으면 [ScheduleParams.platforms] 를 비워 보낸다.
  */
 @Component
-class ScheduleStageExecutor : ShortsStageExecutor {
+class ScheduleStageExecutor(
+    private val shortsPublishAdapter: ShortsPublishAdapter,
+    private val publicationRepository: ClipPublicationRepository,
+) : ShortsStageExecutor {
 
     override val stage: PipelineStage = PipelineStage.SCHEDULE
 
@@ -30,9 +42,82 @@ class ScheduleStageExecutor : ShortsStageExecutor {
             throw BusinessException("SHORTS_RUN_INVALID_STATE", "예약할 클립이 없습니다")
         }
 
-        val scheduledAts = targets.mapIndexed { index, clip ->
+        val plannedAts = targets.mapIndexed { index, clip ->
             clip.id to schedule.startAt.plus(schedule.intervalHours.toLong() * index, ChronoUnit.HOURS)
         }.toMap()
+
+        val skipped = mutableMapOf<Long, String>()
+        val publications = mutableListOf<Map<String, Any?>>()
+        val scheduledAts = mutableMapOf<Long, Instant>()
+
+        targets.forEach { clip ->
+            val scheduledAt = plannedAts.getValue(clip.id)
+            val renderedVideoId = clip.renderedVideoId
+            if (schedule.platforms.isEmpty()) {
+                // 플랫폼 미지정 = 게시 없이 예약 시각만 확정한다.
+                scheduledAts[clip.id] = scheduledAt
+                return@forEach
+            }
+            if (renderedVideoId == null) {
+                val reason = "렌더 영상 미연결"
+                skipped[clip.id] = reason
+                schedule.platforms.forEach { platform ->
+                    savePublication(
+                        ClipPublication(
+                            clipId = clip.id,
+                            platform = platform,
+                            status = ClipPublicationStatus.SKIPPED,
+                            scheduledAt = scheduledAt,
+                            errorMessage = reason,
+                        ),
+                    )
+                    publications += mapOf("clipId" to clip.id, "platform" to platform, "status" to "SKIPPED", "reason" to reason)
+                }
+                return@forEach
+            }
+
+            var clipScheduled = false
+            val pendingPlatforms = schedule.platforms.filter { platform ->
+                val previous = publicationRepository.findByClipIdAndPlatform(clip.id, platform)
+                if (previous?.status == ClipPublicationStatus.PUBLISHED || previous?.status == ClipPublicationStatus.SCHEDULED) {
+                    clipScheduled = true
+                    publications += mapOf("clipId" to clip.id, "platform" to platform, "status" to previous.status.name, "duplicate" to true)
+                    false
+                } else {
+                    true
+                }
+            }
+
+            if (pendingPlatforms.isNotEmpty()) {
+                val requests = pendingPlatforms.map {
+                    ShortsPublishRequest(it, clip.title, clip.caption, scheduledAt)
+                }
+                val outcomes = runCatching {
+                    shortsPublishAdapter.publishAll(
+                        userId = context.userId,
+                        videoId = renderedVideoId,
+                        requests = requests,
+                    )
+                }
+                pendingPlatforms.forEach { platform ->
+                    val result = outcomes.getOrNull()?.firstOrNull { it.platform == platform }
+                    val status = if (outcomes.isSuccess && result != null) ClipPublicationStatus.SCHEDULED else ClipPublicationStatus.FAILED
+                    val error = outcomes.exceptionOrNull()?.message ?: result?.errorMessage
+                    if (status == ClipPublicationStatus.SCHEDULED) clipScheduled = true
+                    val previous = publicationRepository.findByClipIdAndPlatform(clip.id, platform)
+                    savePublication(
+                        (previous ?: ClipPublication(clipId = clip.id, platform = platform)).copy(
+                            videoUploadId = result?.videoUploadId,
+                            status = status,
+                            scheduledAt = scheduledAt,
+                            errorMessage = error,
+                        ),
+                    )
+                    publications += mapOf("clipId" to clip.id, "platform" to platform, "status" to status.name, "error" to error)
+                }
+            }
+            if (clipScheduled) scheduledAts[clip.id] = scheduledAt
+        }
 
         return ShortsStageOutput(
             outputSnapshot = mapper.writeValueAsString(
@@ -41,12 +126,32 @@ class ScheduleStageExecutor : ShortsStageExecutor {
                     "intervalHours" to schedule.intervalHours,
                     "platforms" to schedule.platforms,
                     "clips" to targets.map {
-                        mapOf("clipId" to it.id, "clipSeq" to it.seq, "scheduledAt" to scheduledAts.getValue(it.id).toString())
+                        mapOf(
+                            "clipId" to it.id,
+                            "clipSeq" to it.seq,
+                            "scheduledAt" to plannedAts.getValue(it.id).toString(),
+                            "skipped" to skipped.containsKey(it.id),
+                            "skipReason" to skipped[it.id],
+                        )
                     },
+                    "publications" to publications,
                 ),
             ),
-            inputSnapshot = """{"clipCount":${targets.size},"intervalHours":${schedule.intervalHours}}""",
+            inputSnapshot = """{"clipCount":${targets.size},"intervalHours":${schedule.intervalHours},"platformCount":${schedule.platforms.size}}""",
             scheduledAts = scheduledAts,
         )
+    }
+
+    private fun savePublication(publication: ClipPublication) {
+        runCatching {
+            if (publication.id > 0) {
+                publicationRepository.update(publication)
+            } else {
+                publicationRepository.save(publication)
+            }
+        }.recoverCatching {
+            // 동시 실행으로 유니크 제약에 걸린 경우에도 게시 중복은 상태 가드로 차단한다.
+            publicationRepository.findByClipIdAndPlatform(publication.clipId, publication.platform)
+        }
     }
 }

@@ -5,6 +5,9 @@ import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.InputSanitizer
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.ugc.shorts.ClipStatus
+import com.ongo.domain.ugc.shorts.ClipValidation
+import com.ongo.domain.ugc.shorts.ClipValidationRepository
+import com.ongo.domain.ugc.shorts.ClipValidationSeverity
 import com.ongo.domain.ugc.shorts.PipelineStage
 import com.ongo.domain.ugc.shorts.ShortsPromptRepository
 import org.springframework.stereotype.Component
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Component
 class ValidateStageExecutor(
     private val chatClientResolver: ChatClientResolver,
     private val shortsPromptRepository: ShortsPromptRepository,
+    private val clipValidationRepository: ClipValidationRepository,
 ) : ShortsStageExecutor {
 
     override val stage: PipelineStage = PipelineStage.VALIDATE
@@ -51,6 +55,51 @@ class ValidateStageExecutor(
             )
         }
 
+        val validations = targets.flatMap { clip ->
+            val selectedHook = context.hooks[clip.id]
+                ?.firstOrNull { it.selected }
+                ?.text
+                ?.takeIf { it.isNotBlank() }
+            val subtitleTexts = subtitleTexts(clip.subtitleJson)
+            val durationSeconds = (clip.endMs - clip.startMs) / 1000.0
+            listOf(
+                ClipValidation(
+                    clipId = clip.id,
+                    ruleCode = "HOOK_MISSING",
+                    severity = ClipValidationSeverity.ERROR,
+                    passed = selectedHook != null,
+                    message = if (selectedHook == null) "선택된 후킹 문구가 없습니다" else null,
+                ),
+                ClipValidation(
+                    clipId = clip.id,
+                    ruleCode = "SUBTITLE_LINE_LENGTH",
+                    severity = ClipValidationSeverity.WARNING,
+                    passed = subtitleTexts.all { it.length in 5..9 },
+                    message = subtitleTexts.firstOrNull { it.length !in 5..9 }
+                        ?.let { "자막 한 줄 길이가 5~9자를 벗어났습니다: ${it.length}자" },
+                ),
+                ClipValidation(
+                    clipId = clip.id,
+                    ruleCode = "CLIP_DURATION",
+                    severity = ClipValidationSeverity.WARNING,
+                    passed = durationSeconds in 20.0..90.0,
+                    message = if (durationSeconds !in 20.0..90.0) "클립 길이는 20~90초를 권장합니다" else null,
+                ),
+                ClipValidation(
+                    clipId = clip.id,
+                    ruleCode = "META_MISSING",
+                    severity = ClipValidationSeverity.ERROR,
+                    passed = !clip.title.isNullOrBlank() && !clip.caption.isNullOrBlank(),
+                    message = if (clip.title.isNullOrBlank() || clip.caption.isNullOrBlank()) {
+                        "제목 또는 캡션이 비어 있습니다"
+                    } else {
+                        null
+                    },
+                ),
+            )
+        }
+        clipValidationRepository.saveAll(validations)
+
         val prompt = loadStagePrompt(shortsPromptRepository, context.workspaceId, stage)
 
         val userPrompt = buildString {
@@ -67,7 +116,20 @@ class ValidateStageExecutor(
             ?: throw BusinessException("AI_PARSE_ERROR", "검증 응답을 파싱할 수 없습니다")
 
         val snapshot = mapper.writeValueAsString(
-            mapOf("clips" to report, "passed" to verdict.passed, "summary" to verdict.summary),
+            mapOf(
+                "clips" to report,
+                "validations" to validations.map {
+                    mapOf(
+                        "clipId" to it.clipId,
+                        "ruleCode" to it.ruleCode,
+                        "severity" to it.severity.name,
+                        "passed" to it.passed,
+                        "message" to it.message,
+                    )
+                },
+                "passed" to verdict.passed,
+                "summary" to verdict.summary,
+            ),
         )
 
         return ShortsStageOutput(
@@ -81,6 +143,15 @@ class ValidateStageExecutor(
     private fun countSubtitles(subtitleJson: String?): Int {
         if (subtitleJson.isNullOrBlank()) return 0
         return runCatching { mapper.readTree(subtitleJson).size() }.getOrDefault(0)
+    }
+
+    private fun subtitleTexts(subtitleJson: String?): List<String> {
+        if (subtitleJson.isNullOrBlank()) return emptyList()
+        return runCatching {
+            mapper.readTree(subtitleJson).mapNotNull { node ->
+                node.path("text").asText(null)?.takeIf { it.isNotBlank() }
+            }
+        }.getOrDefault(emptyList())
     }
 
     companion object {

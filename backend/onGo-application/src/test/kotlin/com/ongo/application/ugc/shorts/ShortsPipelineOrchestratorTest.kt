@@ -368,8 +368,11 @@ class ShortsPipelineOrchestratorTest {
         val hookRepo = InMemoryClipHookRepository()
 
         val startAt = Instant.parse("2026-03-01T09:00:00Z")
-        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, listOf(ScheduleStageExecutor()))
-            .run(1L, PipelineStage.SCHEDULE, ScheduleParams(startAt, 6, listOf("YOUTUBE")))
+        // 여기서는 상태 전이와 예약 시각 계산만 본다. 플랫폼을 비우면 게시 위임은 일어나지 않는다.
+        // 게시 위임 자체는 ScheduleStageExecutorTest 가 검증한다.
+        val scheduleExecutor = ScheduleStageExecutor(mockk(), mockk(relaxed = true))
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, listOf(scheduleExecutor))
+            .run(1L, PipelineStage.SCHEDULE, ScheduleParams(startAt, 6, emptyList()))
 
         assertEquals(PipelineRunStatus.COMPLETED, runRepo.findById(1L)!!.status)
         // DISCARDED는 빼고 seq 순으로 6시간 간격

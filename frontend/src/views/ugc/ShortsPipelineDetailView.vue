@@ -246,6 +246,41 @@
         </div>
       </section>
 
+      <!-- 예약표 (엑셀 양방향) -->
+      <section v-if="clips.length > 0" class="card mb-4">
+        <h2 class="font-semibold text-gray-900 dark:text-gray-100">
+          {{ $t('ugc.shorts.runs.sheet.title') }}
+        </h2>
+        <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
+          {{ $t('ugc.shorts.runs.sheet.description') }}
+        </p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button
+            class="btn-secondary inline-flex items-center gap-2"
+            :disabled="sheetDownloading"
+            @click="downloadSheet"
+          >
+            <ArrowDownTrayIcon class="h-5 w-5" />
+            {{ sheetDownloading ? $t('ugc.shorts.runs.sheet.downloading') : $t('ugc.shorts.runs.sheet.download') }}
+          </button>
+          <button
+            class="btn-primary inline-flex items-center gap-2"
+            :disabled="sheetUploading"
+            @click="sheetFileInput?.click()"
+          >
+            <ArrowUpTrayIcon class="h-5 w-5" />
+            {{ sheetUploading ? $t('ugc.shorts.runs.sheet.uploading') : $t('ugc.shorts.runs.sheet.upload') }}
+          </button>
+          <input
+            ref="sheetFileInput"
+            type="file"
+            accept=".xlsx"
+            class="hidden"
+            @change="onSheetFileChange"
+          />
+        </div>
+      </section>
+
       <!-- 클립 목록 (후킹 게이트가 아닐 때) -->
       <section v-if="clips.length > 0 && run.status !== 'AWAITING_HOOK_SELECTION'" class="card">
         <h2 class="mb-3 font-semibold text-gray-900 dark:text-gray-100">
@@ -303,6 +338,59 @@
       :message="$t('ugc.shorts.runs.detail.deleteConfirmMessage')"
       @confirm="confirmDelete"
     />
+
+    <!-- 예약표 가져오기 미리보기: diff를 확인한 뒤에만 반영한다 -->
+    <BaseModal
+      v-model="sheetPreviewOpen"
+      :title="$t('ugc.shorts.runs.sheet.previewTitle')"
+      max-width="xl"
+    >
+      <div v-if="sheetPreview">
+        <p v-if="sheetPreview.rows.length === 0" class="text-body text-gray-500 dark:text-gray-400">
+          {{ $t('ugc.shorts.runs.sheet.noChanges') }}
+        </p>
+        <table v-else class="w-full text-left text-body-xs">
+          <thead>
+            <tr class="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              <th class="py-2 pr-3 font-medium">{{ $t('ugc.shorts.runs.sheet.colClip') }}</th>
+              <th class="py-2 pr-3 font-medium">{{ $t('ugc.shorts.runs.sheet.colField') }}</th>
+              <th class="py-2 pr-3 font-medium">{{ $t('ugc.shorts.runs.sheet.colBefore') }}</th>
+              <th class="py-2 font-medium">{{ $t('ugc.shorts.runs.sheet.colAfter') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(row, i) in sheetPreview.rows"
+              :key="i"
+              class="border-b border-gray-100 text-gray-700 dark:border-gray-800 dark:text-gray-300"
+            >
+              <td class="py-2 pr-3">{{ $t('ugc.shorts.runs.detail.clipSeq', { seq: row.seq }) }}</td>
+              <td class="py-2 pr-3">{{ $t(`ugc.shorts.runs.sheet.fields.${row.field}`) }}</td>
+              <td class="max-w-40 truncate py-2 pr-3">{{ row.before ?? '-' }}</td>
+              <td class="max-w-40 truncate py-2">{{ row.after ?? '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-if="sheetPreview.unknownClipIds.length > 0" class="mt-3 text-body-xs text-warning-strong">
+          {{ $t('ugc.shorts.runs.sheet.unknownClips', { ids: sheetPreview.unknownClipIds.join(', ') }) }}
+        </p>
+        <ul v-if="sheetPreview.invalidRows.length > 0" class="mt-2 list-disc pl-4 text-body-xs text-warning-strong">
+          <li v-for="(msg, i) in sheetPreview.invalidRows" :key="i">{{ msg }}</li>
+        </ul>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" :disabled="sheetApplying" @click="sheetPreviewOpen = false">
+          {{ $t('ugc.shorts.runs.sheet.cancel') }}
+        </button>
+        <button
+          class="btn-primary"
+          :disabled="!sheetPreview || sheetPreview.rows.length === 0 || sheetApplying"
+          @click="applySheet"
+        >
+          {{ sheetApplying ? $t('ugc.shorts.runs.sheet.applying') : $t('ugc.shorts.runs.sheet.apply') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -323,13 +411,16 @@ import {
   type HookVariant,
   type HookSelectionItem,
 } from '@/api/ugcShortsPipeline'
+import { ugcShortsSheetApi, type SheetPreviewResponse } from '@/api/ugcShortsSheet'
 import PageHeader from '@/components/common/PageHeader.vue'
+import BaseModal from '@/components/common/BaseModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import {
   ArrowDownTrayIcon,
   ArrowLeftIcon,
   ArrowPathIcon,
+  ArrowUpTrayIcon,
   TrashIcon,
 } from '@heroicons/vue/24/outline'
 
@@ -372,6 +463,15 @@ const pendingRerunStage = ref<PipelineStage | null>(null)
 const deleteConfirmOpen = ref(false)
 const bundleDownloading = ref(false)
 const specDownloadingId = ref<number | null>(null)
+
+// 예약표 엑셀 — 올린 파일은 apply 때 다시 쓰므로 들고 있는다
+const sheetDownloading = ref(false)
+const sheetUploading = ref(false)
+const sheetApplying = ref(false)
+const sheetPreviewOpen = ref(false)
+const sheetPreview = ref<SheetPreviewResponse | null>(null)
+const sheetFile = ref<File | null>(null)
+const sheetFileInput = ref<HTMLInputElement | null>(null)
 
 // 클립별 후킹 선택 상태 — variant 는 A/B/CUSTOM, discarded 면 제외 대상
 interface HookChoice {
@@ -670,6 +770,54 @@ async function downloadBundle() {
     notify.error(e instanceof Error ? e.message : t('ugc.shorts.runs.detail.downloadFailed'))
   } finally {
     bundleDownloading.value = false
+  }
+}
+
+// ---- 예약표 엑셀 ----
+async function downloadSheet() {
+  sheetDownloading.value = true
+  try {
+    const blob = await ugcShortsSheetApi.downloadSheet(await requireWorkspaceId(), runId)
+    saveBlob(blob, `shorts-run-${runId}-schedule.xlsx`)
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : t('ugc.shorts.runs.sheet.downloadFailed'))
+  } finally {
+    sheetDownloading.value = false
+  }
+}
+
+/** 파일을 고륾면 바로 preview만 요청한다. 실제 반영은 모달에서 확인 뒤 apply */
+async function onSheetFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = '' // 같은 파일을 다시 골라도 change가 뜨도록 초기화
+  if (!file) return
+  sheetUploading.value = true
+  try {
+    sheetPreview.value = await ugcShortsSheetApi.previewSheet(await requireWorkspaceId(), runId, file)
+    sheetFile.value = file
+    sheetPreviewOpen.value = true
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : t('ugc.shorts.runs.sheet.uploadFailed'))
+  } finally {
+    sheetUploading.value = false
+  }
+}
+
+async function applySheet() {
+  if (!sheetFile.value) return
+  sheetApplying.value = true
+  try {
+    const result = await ugcShortsSheetApi.applySheet(await requireWorkspaceId(), runId, sheetFile.value)
+    sheetPreviewOpen.value = false
+    sheetPreview.value = null
+    sheetFile.value = null
+    notify.success(t('ugc.shorts.runs.sheet.applied', { count: result.rows.length }))
+    await store.fetchDetail(runId)
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : t('ugc.shorts.runs.sheet.applyFailed'))
+  } finally {
+    sheetApplying.value = false
   }
 }
 
