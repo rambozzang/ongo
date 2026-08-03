@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="min-h-full space-y-5 py-5 text-content">
     <router-link
       to="/ugc/shorts/runs"
       class="mb-4 inline-flex items-center gap-1 text-body text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="min-h-full space-y-5 py-5 text-content">
     <PageHeader :title="$t('ugc.title')" :description="$t('ugc.description')">
       <template #actions>
         <button class="btn-primary inline-flex items-center gap-2" :disabled="!hasWorkspace" @click="goCreate">

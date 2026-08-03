@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="min-h-full space-y-5 py-5 text-content">
     <PageHeader :title="$t('ugc.shorts.templates.title')" :description="$t('ugc.shorts.templates.description')">
       <template #actions>
         <router-link to="/ugc/shorts/prompts" class="btn-secondary inline-flex items-center gap-2">

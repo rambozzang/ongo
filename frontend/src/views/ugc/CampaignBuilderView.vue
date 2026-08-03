@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-5xl">
+  <div class="mx-auto min-h-full max-w-5xl space-y-5 py-5 text-content">
     <PageHeader :title="isEdit ? $t('ugc.editTitle') : $t('ugc.createTitle')" :description="$t('ugc.builderDescription')" />
 
     <div v-if="!hasWorkspace" class="mb-5 flex items-start gap-3 rounded-xl border border-warning bg-warning-subtle px-4 py-3">

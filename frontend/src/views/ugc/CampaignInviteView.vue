@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-xl py-8">
+  <div class="min-h-full max-w-xl space-y-5 py-8 text-content">
     <div v-if="loading" class="py-16 text-center text-body text-gray-400">{{ $t('action.loading') }}</div>
 
     <div v-else-if="error" class="card py-12 text-center">
