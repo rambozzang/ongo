@@ -11,7 +11,9 @@ dependencies {
     implementation("org.springframework:spring-web")
 
     // Spring AI (ChatClient, Structured Output, Audio Transcription)
-    implementation("org.springframework.ai:spring-ai-client-chat")
+    // spring-ai-bom 1.0.0-M5 기준 아티팩트다. client-chat 으로 분리된 것은 이후 버전이라
+    // BOM 을 올리기 전에는 core 를 써야 버전이 해석된다.
+    implementation("org.springframework.ai:spring-ai-core")
     implementation("org.springframework.ai:spring-ai-openai")
 
     // Rate Limiting (Bucket4j)
