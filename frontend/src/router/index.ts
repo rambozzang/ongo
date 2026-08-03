@@ -88,8 +88,9 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
     children: [
       {
+        // 루트 착지점은 리디자인의 '오늘' 이다. /dashboard 는 URL 로 계속 접근 가능하다.
         path: '',
-        redirect: '/dashboard',
+        redirect: '/today',
       },
       {
         path: 'dashboard',
@@ -396,7 +397,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/dashboard',
+    redirect: '/today',
   },
 ]
 
@@ -439,7 +440,7 @@ router.beforeEach(async (to, _from, next) => {
 
   if (to.meta.requiresAuth === false) {
     if (authStore.isAuthenticated) {
-      return next('/dashboard')
+      return next('/today')
     }
     return next()
   }
@@ -458,7 +459,7 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   if (to.meta.requiresAdmin && authStore.user?.role !== 'ADMIN') {
-    return next('/dashboard')
+    return next('/today')
   }
 
   next()

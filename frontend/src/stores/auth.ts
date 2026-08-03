@@ -20,7 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (response.isNewUser) {
       await router.push('/onboarding')
     } else {
-      await router.push('/dashboard')
+      await router.push('/today')
     }
   }
 
@@ -43,7 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('accessToken', response.accessToken)
     localStorage.setItem('refreshToken', response.refreshToken)
     user.value = response.user
-    await router.push('/dashboard')
+    await router.push('/today')
   }
 
   async function logout() {
