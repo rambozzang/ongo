@@ -94,24 +94,16 @@ export function useNavigation() {
         { to: '/today', label: t('redesign.nav.today'), icon: HomeIcon },
       ],
     },
-    // ── 2. 기획 ──
+    // ── 2. 기획: 유입부터 제작 결정을 돕는 기능 ──
     {
       label: t('nav.groupPlan'),
       items: [
         { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
         { to: '/keyword-research', label: t('nav.keywordResearch'), icon: MagnifyingGlassIcon },
-      ],
-      subGroups: [
-        {
-          key: 'plan-trends',
-          label: t('nav.subGrowth'),
-          items: [
-            { to: '/trends', label: t('nav.trends'), icon: ArrowTrendingUpIcon },
-          ],
-        },
+        { to: '/trends', label: t('nav.trends'), icon: ArrowTrendingUpIcon },
       ],
     },
-    // ── 3. 콘텐츠 제작 ──
+    // ── 3. 콘텐츠 제작: 가장 빈번하고 유료 전환에 직접 연결되는 흐름 ──
     {
       label: t('nav.groupCreate'),
       items: [
@@ -131,7 +123,7 @@ export function useNavigation() {
         },
       ],
     },
-    // ── 4. 게시 & 스케줄 ──
+    // ── 4. 게시 & 스케줄: 멀티채널 운영의 핵심 가치 ──
     {
       label: t('nav.groupPublish'),
       items: [
@@ -140,25 +132,15 @@ export function useNavigation() {
         { to: '/channels-v2', label: t('redesign.nav.channels'), icon: LinkIcon },
       ],
     },
-    // ── 5. 성과 & 개선 ──
+    // ── 5. 성과 & 개선: 결과를 확인하고 다음 콘텐츠에 반영 ──
     {
       label: t('nav.groupAnalytics'),
       items: [
         { to: '/performance', label: t('redesign.nav.performance'), icon: ChartBarIcon },
         { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
       ],
-      subGroups: [
-        {
-          key: 'analytics-competitor',
-          label: t('nav.subCompetitor'),
-          items: [
-            { to: '/competitor', label: t('nav.competitor'), icon: UsersIcon },
-            { to: '/channel-audit', label: t('nav.channelAudit'), icon: ClipboardDocumentCheckIcon },
-          ],
-        },
-      ],
     },
-    // ── 6. 소통 ──
+    // ── 6. 소통: 게시 후 관계를 유지하는 핵심 기능 ──
     {
       label: t('nav.groupAudience'),
       items: [
@@ -166,29 +148,24 @@ export function useNavigation() {
         { to: '/audience', label: t('nav.audience'), icon: IdentificationIcon },
       ],
     },
-    // ── 7. 비즈니스 ──
+    // ── 7. 추가 기능 · 정리 검토: 사용 빈도와 유료 전환을 확인한 뒤 유지 여부 결정 ──
     {
-      label: t('nav.groupBusiness'),
-      items: [
-        { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
-        { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
-      ],
+      label: t('nav.groupReview'),
+      items: [],
       subGroups: [
         {
-          key: 'business-ugc',
-          label: t('nav.groupUgc'),
+          key: 'review-advanced',
+          label: t('nav.subReviewAdvanced'),
           items: [
+            { to: '/competitor', label: t('nav.competitor'), icon: UsersIcon },
+            { to: '/channel-audit', label: t('nav.channelAudit'), icon: ClipboardDocumentCheckIcon },
+            { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
+            { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
             { to: '/ugc/campaigns', label: t('nav.ugcCampaigns'), icon: MegaphoneIcon },
             { to: '/creator/campaigns', label: t('nav.creatorCampaigns'), icon: HandRaisedIcon },
+            { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
           ],
         },
-      ],
-    },
-    // ── 8. 협업 ──
-    {
-      label: t('nav.groupWorkspace'),
-      items: [
-        { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
       ],
     },
   ])

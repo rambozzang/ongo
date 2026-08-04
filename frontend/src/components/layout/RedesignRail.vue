@@ -102,9 +102,14 @@ const sections = computed(() => {
     const primary = group.items.length > 0
       ? [{ key: `group-${groupIndex}`, label: group.label, items: group.items }]
       : []
-    const subGroups = (group.subGroups ?? []).map((sub) => ({
+    const subGroups = (group.subGroups ?? []).map((sub, subIndex) => ({
       key: `group-${groupIndex}-${sub.key}`,
-      label: sub.label,
+      // Empty groups (such as the review bucket) still need their parent
+      // label in the compact rail; otherwise the group name disappears when
+      // the shared navigation is flattened into sections.
+      label: group.items.length === 0 && subIndex === 0 && group.label
+        ? group.label
+        : sub.label,
       items: sub.items,
     }))
     return [...primary, ...subGroups]
