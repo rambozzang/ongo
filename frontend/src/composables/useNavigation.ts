@@ -15,11 +15,8 @@ import {
   InboxIcon,
   DocumentDuplicateIcon,
   SwatchIcon,
-  BellIcon,
-  ClockIcon,
   BookOpenIcon,
   ShieldCheckIcon,
-  BeakerIcon,
   UsersIcon,
   ClipboardDocumentCheckIcon,
   MagnifyingGlassIcon,
@@ -27,14 +24,11 @@ import {
   HandRaisedIcon,
   BoltIcon,
   PhotoIcon,
-  ArrowPathIcon,
   ArrowTrendingUpIcon,
-  FlagIcon,
   IdentificationIcon,
   BriefcaseIcon,
   GlobeAltIcon,
   UserGroupIcon,
-  SignalIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -100,15 +94,30 @@ export function useNavigation() {
         { to: '/today', label: t('redesign.nav.today'), icon: HomeIcon },
       ],
     },
-    // ── 2. 콘텐츠 제작 ──
+    // ── 2. 기획 ──
+    {
+      label: t('nav.groupPlan'),
+      items: [
+        { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
+        { to: '/keyword-research', label: t('nav.keywordResearch'), icon: MagnifyingGlassIcon },
+      ],
+      subGroups: [
+        {
+          key: 'plan-trends',
+          label: t('nav.subGrowth'),
+          items: [
+            { to: '/trends', label: t('nav.trends'), icon: ArrowTrendingUpIcon },
+          ],
+        },
+      ],
+    },
+    // ── 3. 콘텐츠 제작 ──
     {
       label: t('nav.groupCreate'),
       items: [
         { to: '/compose', label: t('redesign.nav.compose'), icon: ArrowUpTrayIcon },
         { to: '/videos', label: t('nav.videos'), icon: FilmIcon },
         { to: '/ai', label: t('nav.ai'), icon: SparklesIcon },
-        { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
-        { to: '/abtest', label: t('nav.abtest'), icon: BeakerIcon },
       ],
       subGroups: [
         {
@@ -118,20 +127,20 @@ export function useNavigation() {
             { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
             { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
             { to: '/assets', label: t('nav.assets'), icon: PhotoIcon },
-            { to: '/recycling', label: t('nav.recycling'), icon: ArrowPathIcon },
           ],
         },
       ],
     },
-    // ── 3. 게시 & 스케줄 ──
+    // ── 4. 게시 & 스케줄 ──
     {
       label: t('nav.groupPublish'),
       items: [
         { to: '/calendar-v2', label: t('redesign.nav.calendar'), icon: CalendarDaysIcon },
         { to: '/automation', label: t('nav.automation'), icon: BoltIcon },
+        { to: '/channels-v2', label: t('redesign.nav.channels'), icon: LinkIcon },
       ],
     },
-    // ── 4. 분석 ──
+    // ── 5. 성과 & 개선 ──
     {
       label: t('nav.groupAnalytics'),
       items: [
@@ -147,40 +156,20 @@ export function useNavigation() {
             { to: '/channel-audit', label: t('nav.channelAudit'), icon: ClipboardDocumentCheckIcon },
           ],
         },
-        {
-          key: 'analytics-growth',
-          label: t('nav.subGrowth'),
-          items: [
-            { to: '/keyword-research', label: t('nav.keywordResearch'), icon: MagnifyingGlassIcon },
-            { to: '/trends', label: t('nav.trends'), icon: ArrowTrendingUpIcon },
-          ],
-        },
       ],
     },
-    // ── 5. 소통 ──
+    // ── 6. 소통 ──
     {
       label: t('nav.groupAudience'),
       items: [
         { to: '/inbox-v2', label: t('redesign.nav.inbox'), icon: InboxIcon },
-        { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
         { to: '/audience', label: t('nav.audience'), icon: IdentificationIcon },
       ],
     },
-    // ── 6. 채널 운영 ──
-    {
-      label: t('nav.groupOperations'),
-      items: [
-        { to: '/channels-v2', label: t('redesign.nav.channels'), icon: LinkIcon },
-        { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
-        { to: '/webhooks', label: t('nav.webhooks'), icon: SignalIcon },
-        { to: '/activity-log', label: t('nav.activityLog'), icon: ClockIcon },
-      ],
-    },
-    // ── 7. 비즈니스 (UGC 캠페인 포함) ──
+    // ── 7. 비즈니스 ──
     {
       label: t('nav.groupBusiness'),
       items: [
-        { to: '/goals', label: t('nav.goals'), icon: FlagIcon },
         { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
         { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
       ],
@@ -193,6 +182,13 @@ export function useNavigation() {
             { to: '/creator/campaigns', label: t('nav.creatorCampaigns'), icon: HandRaisedIcon },
           ],
         },
+      ],
+    },
+    // ── 8. 협업 ──
+    {
+      label: t('nav.groupWorkspace'),
+      items: [
+        { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
       ],
     },
   ])
