@@ -66,7 +66,7 @@
               <InformationCircleIcon class="h-5 w-5 flex-shrink-0 text-info-strong" />
               <div class="text-body text-info-strong">
                 <p class="font-medium mb-1">결제 안내</p>
-                <p>• Paddle 결제 창이 열리며 안전하게 결제됩니다.</p>
+                <p>• 포트원 결제 창이 열리며 안전하게 결제됩니다.</p>
                 <p>• 업그레이드 시 차액은 일할 계산됩니다.</p>
               </div>
             </div>
@@ -119,10 +119,10 @@
           <button
             v-if="!processing && !paymentComplete"
             class="btn-primary"
-            :disabled="paddleLoading"
+            :disabled="portoneLoading"
             @click="startPayment"
           >
-            {{ paddleLoading ? '준비 중...' : '결제하기' }}
+            {{ portoneLoading ? '준비 중...' : '결제하기' }}
           </button>
           <button
             v-if="paymentComplete"
@@ -142,7 +142,7 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import { XMarkIcon, SparklesIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/vue/24/outline'
 import { PLANS, type PlanType } from '@/types/subscription'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import { usePaddle } from '@/composables/usePaddle'
+import { usePortOne } from '@/composables/usePortOne'
 
 interface Props {
   modelValue: boolean
@@ -165,7 +165,7 @@ const processing = ref(false)
 const paymentComplete = ref(false)
 const paymentError = ref('')
 
-const { loading: paddleLoading, openSubscriptionCheckout } = usePaddle()
+const { loading: portoneLoading, openSubscriptionCheckout } = usePortOne()
 
 const targetPlanInfo = computed(() => {
   return PLANS.find((p) => p.type === props.targetPlan) ?? null

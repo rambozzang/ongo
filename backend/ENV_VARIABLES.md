@@ -84,11 +84,14 @@ onGo 백엔드 애플리케이션에서 사용하는 환경변수 목록입니�
 
 ---
 
-## 6. 결제 (Toss Payments)
+## 6. 결제 (PortOne V2)
 
 | 환경변수 | 설명 | 기본값 | 필수 여부 |
 |---|---|---|---|
-| `TOSS_WEBHOOK_SECRET` | Toss Payments 웹훅 시크릿 | 빈 문자열 | **필수 (prod)** |
+| `PORTONE_STORE_ID` | PortOne 상점 ID | 없음 | **필수 (prod)** |
+| `PORTONE_CHANNEL_KEY` | 결제 채널 키 | 없음 | **필수 (prod)** |
+| `PORTONE_API_SECRET` | 서버 결제 조회용 API Secret | 없음 | **필수 (prod)** |
+| `PORTONE_WEBHOOK_SECRET` | 웹훅 식별용 시크릿(선택) | 빈 문자열 | 선택 |
 
 ---
 
@@ -160,8 +163,11 @@ export R2_ACCESS_KEY=<r2-access-key>
 export R2_SECRET_KEY=<r2-secret-key>
 export R2_BUCKET=ongo-videos
 
-# 결제
-export TOSS_WEBHOOK_SECRET=<toss-webhook-secret>
+# 결제 (PortOne V2)
+export PORTONE_STORE_ID=<portone-store-id>
+export PORTONE_CHANNEL_KEY=<portone-channel-key>
+export PORTONE_API_SECRET=<portone-api-secret>
+export PORTONE_WEBHOOK_SECRET=<portone-webhook-secret>
 
 # 플랫폼 API
 export GOOGLE_API_KEY=<google-api-key>

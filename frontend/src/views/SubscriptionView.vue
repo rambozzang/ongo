@@ -511,14 +511,14 @@ import { PLANS, type PlanType } from '@/types/subscription'
 import type { CreditPackage } from '@/types/credit'
 import { subscriptionApi } from '@/api/subscription'
 import { useLocale } from '@/composables/useLocale'
-import { usePaddle } from '@/composables/usePaddle'
+import { usePortOne } from '@/composables/usePortOne'
 
 const subscriptionStore = useSubscriptionStore()
 const creditStore = useCreditStore()
 const channelStore = useChannelStore()
 const notification = useNotificationStore()
 const { t } = useLocale()
-const { ensureInitialized: initPaddle } = usePaddle()
+const { ensureInitialized: initPortOne } = usePortOne()
 
 const { subscription } = storeToRefs(subscriptionStore)
 const { balance: creditBalance, transactions: creditTransactions } = storeToRefs(creditStore)
@@ -729,11 +729,11 @@ async function confirmChangePlan() {
 }
 
 async function handlePaymentConfirm() {
-  // Paddle 웹훅이 DB를 업데이트할 시간을 줌
+  // 포트원 결제 완료를 서버에서 검증한 뒤 화면을 갱신한다.
   showPaymentModal.value = false
   targetPlan.value = null
   notification.success(t('subscription.upgradeSuccess'))
-  // 1.5초 후 데이터 리페치
+  // 결제 완료 직후 데이터 리페치
   setTimeout(async () => {
     await Promise.all([
       subscriptionStore.fetchSubscription(),
@@ -754,7 +754,7 @@ async function confirmCancel() {
 
 async function handleCreditPurchase(_pkg: CreditPackage) {
   notification.success(t('subscription.creditChargeSuccess'))
-  // 1.5초 후 데이터 리페치 (Paddle 웹훅 동기화 대기)
+  // 결제 완료 직후 데이터 리페치
   setTimeout(async () => {
     await Promise.all([
       creditStore.fetchBalance(),
@@ -889,7 +889,7 @@ onMounted(() => {
     channelStore.fetchChannels(),
     fetchUsage(),
     fetchUsageAlerts(),
-    initPaddle(),
+    initPortOne(),
   ])
 })
 </script>

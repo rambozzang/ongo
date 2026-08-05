@@ -53,8 +53,7 @@ class SecurityConfig(
                     "/actuator/health",
                     "/ws/**",
                     "/api/v1/ai/demo/**",
-                    "/api/v1/paddle/webhooks",
-                    "/api/v1/payments/webhook",
+                    "/api/v1/portone/webhook",
                 )
                 if (environment.acceptsProfiles(org.springframework.core.env.Profiles.of("dev", "local"))) {
                     publicPaths += "/api/v1/auth/dev-login"

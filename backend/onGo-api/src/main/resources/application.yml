@@ -116,16 +116,22 @@ storage:
     access-key: ${S3_ACCESS_KEY:dummy-s3-access}
     secret-key: ${S3_SECRET_KEY:dummy-s3-secret}
 
-# Payment (Toss)
+# Payment (PortOne V2)
 payment:
+  portone:
+    store-id: ${PORTONE_STORE_ID:}
+    channel-key: ${PORTONE_CHANNEL_KEY:}
+    api-secret: ${PORTONE_API_SECRET:}
+    webhook-secret: ${PORTONE_WEBHOOK_SECRET:}
+  # Legacy adapters remain available for existing records, but are not used by the checkout UI.
   toss:
-    secret-key: ${TOSS_SECRET_KEY}
-    webhook-secret: ${TOSS_WEBHOOK_SECRET}
+    secret-key: ${TOSS_SECRET_KEY:}
+    webhook-secret: ${TOSS_WEBHOOK_SECRET:}
   paddle:
-    api-key: ${PADDLE_API_KEY}
-    webhook-secret: ${PADDLE_WEBHOOK_SECRET}
-    client-token: ${PADDLE_CLIENT_TOKEN}
-    environment: ${PADDLE_ENVIRONMENT:live}
+    api-key: ${PADDLE_API_KEY:}
+    webhook-secret: ${PADDLE_WEBHOOK_SECRET:}
+    client-token: ${PADDLE_CLIENT_TOKEN:}
+    environment: ${PADDLE_ENVIRONMENT:sandbox}
     price:
       starter: ${PADDLE_PRICE_STARTER:pri_starter_placeholder}
       pro: ${PADDLE_PRICE_PRO:pri_pro_placeholder}

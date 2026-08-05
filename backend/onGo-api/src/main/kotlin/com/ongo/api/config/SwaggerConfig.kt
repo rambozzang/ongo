@@ -48,7 +48,7 @@ class SwaggerConfig {
                 Tag().name("AI 도구").description("AI 기반 메타데이터 생성, 해시태그, STT, 대본 분석, 댓글 답변, 일정 추천, 아이디어 생성, 리포트"),
                 Tag().name("크레딧").description("AI 크레딧 잔액 조회, 사용 내역, 충전, 패키지 목록"),
                 Tag().name("구독").description("구독 현황 조회, 플랜 변경, 구독 취소, 플랜 비교"),
-                Tag().name("결제").description("결제 내역 조회, PG사 웹훅 처리 (Toss Payments)"),
+                Tag().name("결제").description("결제 내역 조회 및 PortOne 결제 처리"),
                 Tag().name("파일 업로드").description("Tus 프로토콜 기반 대용량 파일 이어받기 업로드"),
             )
         )

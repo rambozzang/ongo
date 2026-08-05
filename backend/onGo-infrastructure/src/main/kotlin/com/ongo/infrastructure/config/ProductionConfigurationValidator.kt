@@ -24,18 +24,9 @@ class ProductionConfigurationValidator(
     @Value("\${storage.s3.endpoint:}") private val storageEndpoint: String,
     @Value("\${storage.s3.access-key:}") private val storageAccessKey: String,
     @Value("\${storage.s3.secret-key:}") private val storageSecretKey: String,
-    @Value("\${payment.toss.webhook-secret:}") private val tossWebhookSecret: String,
-    @Value("\${payment.toss.secret-key:}") private val tossSecretKey: String,
-    @Value("\${payment.paddle.api-key:}") private val paddleApiKey: String,
-    @Value("\${payment.paddle.webhook-secret:}") private val paddleWebhookSecret: String,
-    @Value("\${payment.paddle.client-token:}") private val paddleClientToken: String,
-    @Value("\${payment.paddle.environment:}") private val paddleEnvironment: String,
-    @Value("\${payment.paddle.price.starter:}") private val starterPrice: String,
-    @Value("\${payment.paddle.price.pro:}") private val proPrice: String,
-    @Value("\${payment.paddle.price.business:}") private val businessPrice: String,
-    @Value("\${payment.paddle.price.starter-yearly:}") private val starterYearlyPrice: String,
-    @Value("\${payment.paddle.price.pro-yearly:}") private val proYearlyPrice: String,
-    @Value("\${payment.paddle.price.business-yearly:}") private val businessYearlyPrice: String,
+    @Value("\${payment.portone.store-id:}") private val portoneStoreId: String,
+    @Value("\${payment.portone.channel-key:}") private val portoneChannelKey: String,
+    @Value("\${payment.portone.api-secret:}") private val portoneApiSecret: String,
     @Value("\${spring.security.oauth2.client.registration.google.client-id:}") private val googleClientId: String,
     @Value("\${spring.security.oauth2.client.registration.google.client-secret:}") private val googleClientSecret: String,
     @Value("\${spring.security.oauth2.client.registration.kakao.client-id:}") private val kakaoClientId: String,
@@ -76,22 +67,9 @@ class ProductionConfigurationValidator(
         requireReal("storage.s3.access-key", storageAccessKey)
         requireReal("storage.s3.secret-key", storageSecretKey)
 
-        requireReal("payment.toss.secret-key", tossSecretKey)
-        requireReal("payment.toss.webhook-secret", tossWebhookSecret)
-        requireReal("payment.paddle.api-key", paddleApiKey)
-        requireReal("payment.paddle.webhook-secret", paddleWebhookSecret)
-        requireReal("payment.paddle.client-token", paddleClientToken)
-        require(paddleEnvironment.equals("production", ignoreCase = true)) {
-            "payment.paddle.environment must be production"
-        }
-        listOf(
-            "starter" to starterPrice,
-            "pro" to proPrice,
-            "business" to businessPrice,
-            "starter-yearly" to starterYearlyPrice,
-            "pro-yearly" to proYearlyPrice,
-            "business-yearly" to businessYearlyPrice,
-        ).forEach { (name, value) -> requireReal("payment.paddle.price.$name", value) }
+        requireReal("payment.portone.store-id", portoneStoreId)
+        requireReal("payment.portone.channel-key", portoneChannelKey)
+        requireReal("payment.portone.api-secret", portoneApiSecret)
 
         requireReal("google OAuth client-id", googleClientId)
         requireReal("google OAuth client-secret", googleClientSecret)

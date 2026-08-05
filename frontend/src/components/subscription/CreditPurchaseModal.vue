@@ -131,10 +131,10 @@
           <button
             v-if="!processing && !paymentComplete"
             class="btn-primary"
-            :disabled="!selectedPackage || paddleLoading"
+            :disabled="!selectedPackage || portoneLoading"
             @click="startPayment"
           >
-            {{ paddleLoading ? '준비 중...' : '결제하기' }}
+            {{ portoneLoading ? '준비 중...' : '결제하기' }}
           </button>
           <button
             v-if="paymentComplete"
@@ -154,7 +154,7 @@ import { ref, watch, onUnmounted } from 'vue'
 import { XMarkIcon, SparklesIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { CREDIT_PACKAGES, type CreditPackage } from '@/types/credit'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import { usePaddle } from '@/composables/usePaddle'
+import { usePortOne } from '@/composables/usePortOne'
 
 interface Props {
   modelValue: boolean
@@ -172,7 +172,7 @@ const processing = ref(false)
 const paymentComplete = ref(false)
 const paymentError = ref('')
 
-const { loading: paddleLoading, openCreditCheckout } = usePaddle()
+const { loading: portoneLoading, openCreditCheckout } = usePortOne()
 
 function selectPackage(pkg: CreditPackage) {
   selectedPackage.value = pkg

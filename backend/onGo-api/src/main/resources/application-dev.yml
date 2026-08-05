@@ -17,8 +17,10 @@ platform:
     encryption-key: ${PLATFORM_TOKEN_ENCRYPTION_KEY:b25nby1kZXYtYWVzMjU2LWVuY3J5cHRpb24ta2V5MDA=}
 
 payment:
-  toss:
-    secret-key: ${TOSS_SECRET_KEY:test_sk_placeholder}
+  portone:
+    store-id: ${PORTONE_STORE_ID:store-dev}
+    channel-key: ${PORTONE_CHANNEL_KEY:channel-dev}
+    api-secret: ${PORTONE_API_SECRET:api-secret-dev}
 
 logging:
   level:

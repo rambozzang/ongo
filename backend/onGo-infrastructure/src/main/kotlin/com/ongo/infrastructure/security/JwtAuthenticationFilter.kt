@@ -20,7 +20,7 @@ class JwtAuthenticationFilter(
         private val PUBLIC_PATHS = listOf(
             "/api/v1/auth/login/",
             "/api/v1/auth/refresh",
-            "/api/v1/payments/webhook",
+            "/api/v1/portone/webhook",
             "/swagger-ui/",
             "/swagger-ui.html",
             "/v3/api-docs",
