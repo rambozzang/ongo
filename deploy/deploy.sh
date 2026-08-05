@@ -131,9 +131,11 @@ deploy_backend() {
         fi
     fi
 
-    # .env 파일 내의 잘못된 Base64 암호화 키가 이미 복사되어 있다면 수정
-    if [ -f "$ENV_FILE" ]; then
-        sed -i 's/PLATFORM_TOKEN_ENCRYPTION_KEY=change-me-to-a-secure-secret-key-for-platform-tokens-32-bytes/PLATFORM_TOKEN_ENCRYPTION_KEY=Y2hhbmdlLW1lLXRvLWEtc2VjdXJlLXNlY3JldC1rZXk=/g' "$ENV_FILE"
+    # 배포 스크립트가 비밀값을 생성하거나 덮어쓰지 않도록 한다.
+    # 개발용 키가 남아 있으면 애플리케이션 기동 전에 명확히 실패시킨다.
+    if [ -f "$ENV_FILE" ] && grep -Eq '^PLATFORM_TOKEN_ENCRYPTION_KEY=(change-me|Y2hhbmdlLW1l)' "$ENV_FILE"; then
+        error "PLATFORM_TOKEN_ENCRYPTION_KEY가 개발용 기본값입니다. $ENV_FILE 에 고유한 32바이트 Base64 키를 설정하세요."
+        exit 1
     fi
 
     # 서비스 재시작

@@ -3,7 +3,7 @@
 ## 기획 / 설계 / 개발 종합 가이드 v2.0
 
 > **Version 2.0** | 2026.02  
-> **Tech Stack**: Spring Boot 4.0.2 + Spring AI 2.x + jOOQ + PostgreSQL  
+> **Tech Stack**: Spring Boot 4.0.7 + Spring AI 2.x + jOOQ + PostgreSQL  
 > **CONFIDENTIAL**
 
 ---
@@ -76,7 +76,7 @@
 
 | 계층 | 기술 | 비고 |
 |------|------|------|
-| Backend | Spring Boot 4.0.2 + JDK 25 | Spring Framework 7, Virtual Thread, 모듈화 |
+| Backend | Spring Boot 4.0.7 + JDK 25 | Spring Framework 7, Virtual Thread, 모듈화 |
 | AI | Spring AI 2.x (Anthropic/OpenAI) | ChatClient, STT, Structured Output |
 | DB Access | jOOQ 3.19+ (단일 스택) | 타입세이프 SQL, Code Generation |
 | Frontend | Vue.js 3 + Vite + Tailwind CSS | SPA, 반응형 |
@@ -813,7 +813,7 @@ DRAFT → UPLOADING → [플랫폼별 상태]
 │              Nginx (SSL / Rate Limit / LB)               │
 └──────────────────────┬──────────────────────────────────┘
 ┌──────────────────────┴──────────────────────────────────┐
-│         Application Server (Spring Boot 4.0.2)           │
+│         Application Server (Spring Boot 4.0.7)           │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐  │
 │  │ Upload   │ │ Schedule │ │ Analytics│ │ Spring AI │  │
 │  │ Module   │ │ Module   │ │ Module   │ │ Module    │  │
@@ -1383,7 +1383,7 @@ public class VideoUploadEventListener {
 1. Code Push (GitHub)
    │
 2. Build & Test
-   ├── Gradle 9 Build (Spring Boot 4.0.2)
+   ├── Gradle 9 Build (Spring Boot 4.0.7)
    ├── jOOQ Code Generation (DB Schema → Java)
    ├── npm build (Vue.js)
    └── Unit Test + Integration Test + AI Mock Test

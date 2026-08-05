@@ -7,7 +7,7 @@ springdoc:
 
 storage:
   type: s3
-  bucket: ${R2_BUCKET:ongo-videos}
+  bucket: ${R2_BUCKET}
   s3:
     region: auto
     endpoint: https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com
@@ -16,7 +16,7 @@ storage:
 
 # CORS — 프로덕션에서는 실제 도메인만 허용 (localhost 차단)
 cors:
-  allowed-origins: https://ongo.codelabtiger.com
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
 logging:
   file:

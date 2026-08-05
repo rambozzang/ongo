@@ -16,7 +16,7 @@ class WebSocketNotificationService(
      */
     fun sendToUser(userId: Long, type: String, payload: Any) {
         val message = mapOf("type" to type, "payload" to payload, "timestamp" to System.currentTimeMillis())
-        messagingTemplate.convertAndSend("/queue/user/$userId", message)
+        messagingTemplate.convertAndSend("/queue/user/$userId", message as Any)
         log.debug("Sent WebSocket message to user {}: type={}", userId, type)
     }
 
@@ -25,7 +25,7 @@ class WebSocketNotificationService(
      */
     fun broadcastToTeam(teamId: Long, type: String, payload: Any) {
         val message = mapOf("type" to type, "payload" to payload, "timestamp" to System.currentTimeMillis())
-        messagingTemplate.convertAndSend("/topic/team/$teamId", message)
+        messagingTemplate.convertAndSend("/topic/team/$teamId", message as Any)
         log.debug("Broadcast WebSocket message to team {}: type={}", teamId, type)
     }
 
@@ -38,7 +38,7 @@ class WebSocketNotificationService(
             "payload" to activity,
             "timestamp" to System.currentTimeMillis(),
         )
-        messagingTemplate.convertAndSend("/queue/user/$userId", message)
+        messagingTemplate.convertAndSend("/queue/user/$userId", message as Any)
     }
 }
 

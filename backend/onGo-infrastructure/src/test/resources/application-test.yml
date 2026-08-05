@@ -12,6 +12,15 @@ spring:
     locations: classpath:db/migration
   jooq:
     sql-dialect: POSTGRES
+  ai:
+    # Integration tests exercise persistence only; select a non-Google model
+    # so Spring AI does not construct a Vertex/Gemini client without credentials.
+    model:
+      chat: anthropic
+    anthropic:
+      api-key: test-anthropic-key
+    openai:
+      api-key: test-openai-key
   main:
     allow-bean-definition-overriding: true
   # 불필요한 자동설정 제외 — infrastructure 모듈은 web/security/ai 계층 없이
@@ -23,7 +32,7 @@ spring:
       - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
       - org.springframework.ai.autoconfigure.anthropic.AnthropicAutoConfiguration
       - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
-      - org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration
+      - org.springframework.ai.model.google.genai.autoconfigure.chat.GoogleGenAiChatAutoConfiguration
 
 logging:
   level:

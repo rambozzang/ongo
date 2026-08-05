@@ -2,6 +2,7 @@ package com.ongo.application.ai
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.openai.models.audio.AudioResponseFormat
 import com.ongo.application.ai.result.SttResult
 import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AiFeature
@@ -14,7 +15,6 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions
-import org.springframework.ai.openai.api.OpenAiAudioApi
 import org.springframework.core.io.UrlResource
 import org.springframework.stereotype.Service
 
@@ -45,7 +45,7 @@ class SttUseCase(
             ?: throw BusinessException("VIDEO_FILE_NOT_FOUND", "영상 파일 URL이 없습니다. videoId: $videoId")
 
         val options = OpenAiAudioTranscriptionOptions.builder()
-            .responseFormat(OpenAiAudioApi.TranscriptResponseFormat.VERBOSE_JSON)
+            .responseFormat(AudioResponseFormat.VERBOSE_JSON)
             .language("ko")
             .build()
 
@@ -74,7 +74,7 @@ class SttUseCase(
         creditService.validateAndDeduct(userId, AiFeature.STT)
 
         val options = OpenAiAudioTranscriptionOptions.builder()
-            .responseFormat(OpenAiAudioApi.TranscriptResponseFormat.VERBOSE_JSON)
+            .responseFormat(AudioResponseFormat.VERBOSE_JSON)
             .language("ko")
             .build()
 

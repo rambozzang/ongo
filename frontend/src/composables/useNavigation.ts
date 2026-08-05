@@ -17,7 +17,6 @@ import {
   SwatchIcon,
   BookOpenIcon,
   ShieldCheckIcon,
-  UsersIcon,
   ClipboardDocumentCheckIcon,
   MagnifyingGlassIcon,
   MegaphoneIcon,
@@ -157,7 +156,6 @@ export function useNavigation() {
           key: 'review-advanced',
           label: t('nav.subReviewAdvanced'),
           items: [
-            { to: '/competitor', label: t('nav.competitor'), icon: UsersIcon },
             { to: '/channel-audit', label: t('nav.channelAudit'), icon: ClipboardDocumentCheckIcon },
             { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
             { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },

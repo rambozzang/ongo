@@ -46,7 +46,6 @@ class SecurityConfig(
                     // 소셜 로그인 CSRF용 state 발급 — 로그인 '전'에 호출되므로 인증을 요구하면 안 된다
                     "/api/v1/auth/*/state",
                     "/api/v1/auth/refresh",
-                    "/api/v1/auth/dev-login", // 관리자 초기 계정 생성용 (모든 프로필 허용)
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**",
@@ -55,7 +54,11 @@ class SecurityConfig(
                     "/ws/**",
                     "/api/v1/ai/demo/**",
                     "/api/v1/paddle/webhooks",
+                    "/api/v1/payments/webhook",
                 )
+                if (environment.acceptsProfiles(org.springframework.core.env.Profiles.of("dev", "local"))) {
+                    publicPaths += "/api/v1/auth/dev-login"
+                }
                 auth
                     .requestMatchers(*publicPaths.toTypedArray()).permitAll()
                     .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")

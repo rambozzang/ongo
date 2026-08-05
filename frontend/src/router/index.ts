@@ -286,18 +286,6 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '템플릿 라이브러리' },
       },
       {
-        path: 'abtest',
-        name: 'abtest',
-        component: () => import('@/views/AbTestView.vue'),
-        meta: { breadcrumb: 'A/B 테스트' },
-      },
-      {
-        path: 'competitor',
-        name: 'competitor',
-        component: () => import('@/views/CompetitorView.vue'),
-        meta: { breadcrumb: '경쟁사 분석' },
-      },
-      {
         path: 'brandkit',
         name: 'brandkit',
         component: () => import('@/views/BrandKitView.vue'),

@@ -6,6 +6,7 @@ import com.ongo.application.asset.dto.AssetListResponse
 import com.ongo.application.asset.dto.AssetResponse
 import com.ongo.application.asset.dto.UpdateAssetRequest
 import com.ongo.common.ResData
+import com.ongo.common.exception.FileValidationException
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -51,23 +52,41 @@ class AssetController(
         @RequestParam(defaultValue = "default") folder: String,
         @RequestParam(required = false) tags: List<String>?,
     ): ResponseEntity<ResData<AssetResponse>> {
-        val filename = "${UUID.randomUUID()}_${file.originalFilename}"
+        val originalFilename = file.originalFilename?.trim().orEmpty()
+        val contentType = file.contentType?.trim().orEmpty()
+        if (originalFilename.isBlank() || originalFilename.contains("..") ||
+            originalFilename.contains('/') || originalFilename.contains('\\')) {
+            throw FileValidationException("파일 이름이 유효하지 않습니다")
+        }
+        if (file.size <= 0 || file.size > 2L * 1024 * 1024 * 1024) {
+            throw FileValidationException("에셋 파일 크기는 2GB 이하여야 합니다")
+        }
+        val allowedContentType = contentType.startsWith("image/") ||
+            contentType.startsWith("audio/") ||
+            contentType.startsWith("video/") ||
+            contentType in setOf("application/json", "application/pdf", "application/zip")
+        if (!allowedContentType) {
+            throw FileValidationException("지원하지 않는 에셋 MIME 타입입니다: $contentType")
+        }
+
+        val filename = "${UUID.randomUUID()}_$originalFilename"
         val fileType = resolveFileType(file.contentType)
-        val fileUrl = "/storage/assets/$filename"
+        val storageKey = "assets/$userId/$filename"
 
         val result = assetUseCase.createAsset(
             userId = userId,
             filename = filename,
-            originalFilename = file.originalFilename,
-            fileUrl = fileUrl,
+            originalFilename = originalFilename,
             fileType = fileType,
             fileSizeBytes = file.size,
-            mimeType = file.contentType,
+            mimeType = contentType,
             tags = tags ?: emptyList(),
             folder = folder,
             width = null,
             height = null,
             durationSeconds = null,
+            inputStream = file.inputStream,
+            storageKey = storageKey,
         )
         return ResData.success(result, "에셋이 업로드되었습니다")
     }

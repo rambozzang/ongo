@@ -12,7 +12,9 @@ spring:
 
   # DataSource
   datasource:
-    url: jdbc:postgresql://localhost:54332/ongo?stringtype=unspecified
+    # Override this in containers/managed environments; the local Oracle setup
+    # uses localhost:54332 by default.
+    url: ${DB_URL:jdbc:postgresql://localhost:54332/ongo?stringtype=unspecified}
     username: ${DB_USERNAME:ongo}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -49,16 +51,17 @@ spring:
           temperature: 0.7
     openai:
       api-key: ${OPENAI_API_KEY:dummy-openai-key}
-    vertex:
-      ai:
-        gemini:
+    google:
+      genai:
+        enabled: ${GEMINI_ENABLED:false}
+        api-key: ${GEMINI_API_KEY:dummy-gemini-key}
+        project-id: ${GEMINI_PROJECT_ID:dummy-gemini-project-id}
+        location: ${GEMINI_LOCATION:us-central1}
+        vertex-ai: ${GEMINI_VERTEX_AI:false}
+        chat:
           enabled: ${GEMINI_ENABLED:false}
-          project-id: ${GEMINI_PROJECT_ID:dummy-gemini-project-id}
-          location: ${GEMINI_LOCATION:us-central1}
-          chat:
-            options:
-              model: gemini-2.5-pro
-              temperature: 0.7
+          model: gemini-2.5-pro
+          temperature: 0.7
 
   # Security
   security:
@@ -116,6 +119,7 @@ storage:
 # Payment (Toss)
 payment:
   toss:
+    secret-key: ${TOSS_SECRET_KEY}
     webhook-secret: ${TOSS_WEBHOOK_SECRET}
   paddle:
     api-key: ${PADDLE_API_KEY}

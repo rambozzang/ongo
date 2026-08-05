@@ -2,10 +2,9 @@ package com.ongo.infrastructure.ai
 
 import org.springframework.ai.anthropic.AnthropicChatModel
 import org.springframework.ai.chat.client.ChatClient
+import org.springframework.ai.google.genai.GoogleGenAiChatModel
 import org.springframework.ai.openai.OpenAiChatModel
 import org.springframework.ai.openai.OpenAiChatOptions
-import org.springframework.ai.openai.api.OpenAiApi
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -29,8 +28,8 @@ class AiConfig {
 
     @Bean
     @Qualifier("geminiChatClient")
-    @ConditionalOnProperty(prefix = "spring.ai.vertex.ai.gemini", name = ["enabled"], havingValue = "true")
-    fun geminiChatClient(geminiChatModel: VertexAiGeminiChatModel): ChatClient =
+    @ConditionalOnProperty(prefix = "spring.ai.google.genai", name = ["enabled"], havingValue = "true")
+    fun geminiChatClient(geminiChatModel: GoogleGenAiChatModel): ChatClient =
         ChatClient.builder(geminiChatModel).build()
 
     // --- DashScope (Alibaba Cloud Model Studio) ---
@@ -40,13 +39,16 @@ class AiConfig {
         baseUrl: String,
         modelName: String,
     ): ChatClient {
-        val api = OpenAiApi(baseUrl, apiKey)
         val options = OpenAiChatOptions.builder()
+            .baseUrl(baseUrl)
+            .apiKey(apiKey)
             .model(modelName)
             .temperature(0.7)
             .maxTokens(4096)
             .build()
-        val chatModel = OpenAiChatModel(api, options)
+        val chatModel = OpenAiChatModel.builder()
+            .options(options)
+            .build()
         return ChatClient.builder(chatModel).build()
     }
 

@@ -23,10 +23,24 @@ pipeline {
     }
 
     stages {
+        stage('Repository Security Check') {
+            steps {
+                script {
+                    def sensitiveFiles = sh(
+                        script: "git ls-files | grep -E '(^|/)(ongo_backup_[^/]*\\.sql|.*backup[^/]*\\.sql)$' || true",
+                        returnStdout: true,
+                    ).trim()
+                    if (sensitiveFiles) {
+                        error "Tracked database export detected:\n${sensitiveFiles}"
+                    }
+                }
+            }
+        }
+
         stage('Build Backend') {
             steps {
                 dir('backend') {
-                    sh './gradlew :onGo-api:bootJar -x test --no-daemon'
+                    sh './gradlew :onGo-domain:test :onGo-application:test :onGo-infrastructure:test :onGo-api:bootJar --no-daemon'
                 }
             }
         }

@@ -19,6 +19,8 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.core.env.Environment
+import org.springframework.core.env.Profiles
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
@@ -33,6 +35,7 @@ class AuthController(
     private val authTokenPort: AuthTokenPort,
     private val authRateLimiter: AuthRateLimiter,
     private val oAuthStateManager: OAuthStateManager,
+    private val environment: Environment,
 ) {
 
     @Operation(summary = "SSE 토큰 발급", description = "SSE(Server-Sent Events) 연결용 단기 토큰을 발급합니다 (5분 만료).")
@@ -186,6 +189,12 @@ class AuthController(
     )
     @PostMapping("/dev-login")
     fun devLogin(): ResponseEntity<ResData<AuthResponse>> {
+        // This route is kept for local smoke tests only. Guard the controller
+        // as well as the security rules so an authenticated production user
+        // cannot mint an administrator token by calling the endpoint directly.
+        if (!environment.acceptsProfiles(Profiles.of("dev", "local"))) {
+            return ResponseEntity.notFound().build()
+        }
         val result = authUseCase.devLogin()
         return ResData.success(
             toAuthResponse(result),

@@ -72,6 +72,16 @@ class PaymentService(
             else -> PaymentStatus.FAILED
         }
 
+        require(payload.totalAmount == payment.amount) {
+            "결제 금액이 주문 금액과 일치하지 않습니다"
+        }
+
+        // PG retries are expected. A completed payment must never issue credits
+        // a second time, even when the same webhook is delivered repeatedly.
+        if (payment.status == newStatus) {
+            return
+        }
+
         paymentRepository.update(payment.copy(
             status = newStatus,
             pgProvider = "toss",
@@ -95,6 +105,11 @@ class PaymentService(
                 } else {
                     creditService.addPurchasedCredits(payment.userId, creditPackage, paymentId)
                 }
+            }
+        } else if (newStatus == PaymentStatus.REFUNDED && payment.type == PaymentType.CREDIT) {
+            val creditPackage = CreditPackage.entries.find { it.price == payment.amount }
+            if (creditPackage != null) {
+                creditService.revokeCredits(payment.userId, creditPackage.credits, "PAYMENT_REFUND:$paymentId")
             }
         }
     }

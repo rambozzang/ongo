@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.StructuredTaskScope
+import java.util.concurrent.Executors
 
 @Service
 class VideoFeedUseCase(
@@ -38,9 +38,9 @@ class VideoFeedUseCase(
         val allItems = ConcurrentLinkedQueue<VideoFeedItem>()
         val platformErrors = ConcurrentLinkedQueue<String>()
 
-        StructuredTaskScope.ShutdownOnFailure().use { scope ->
-            channels.forEach { channel ->
-                scope.fork {
+        Executors.newVirtualThreadPerTaskExecutor().use { executor ->
+            val tasks = channels.map { channel ->
+                executor.submit {
                     try {
                         val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
                         val result = platformClientPort.listVideos(
@@ -74,10 +74,13 @@ class VideoFeedUseCase(
                     }
                 }
             }
-            try {
-                scope.join()
-            } catch (_: InterruptedException) {
-                Thread.currentThread().interrupt()
+            tasks.forEach { task ->
+                try {
+                    task.get()
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    return@forEach
+                }
             }
         }
 

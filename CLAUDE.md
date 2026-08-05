@@ -22,7 +22,7 @@ Reference: `CreFlow_Development_Guide_v2.0_1.md` contains the full specification
 
 ## Tech Stack
 
-- **Backend**: Spring Boot 4.0.2 + JDK 25 + Kotlin, Gradle 9
+- **Backend**: Spring Boot 4.0.7 + JDK 25 + Kotlin, Gradle 9
 - **DB Access**: jOOQ 3.19+ (sole DB access layer — no JPA/Hibernate)
 - **AI**: Spring AI 2.x + Alibaba Cloud Model Studio (Qwen, Kimi, GLM, MiniMax 4종을 DashScope API 하나로 통합, 기본값 QWEN, STT는 Whisper)
 - **Frontend**: Vue.js 3 + Vite + Tailwind CSS

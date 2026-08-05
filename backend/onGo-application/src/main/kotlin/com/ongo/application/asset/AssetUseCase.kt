@@ -12,6 +12,7 @@ import com.ongo.domain.asset.AssetRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.io.InputStream
 
 @Service
 class AssetUseCase(
@@ -36,28 +37,44 @@ class AssetUseCase(
     }
 
     @Transactional
-    fun createAsset(userId: Long, filename: String, originalFilename: String?, fileUrl: String,
+    fun createAsset(userId: Long, filename: String, originalFilename: String?,
                     fileType: String, fileSizeBytes: Long?, mimeType: String?,
                     tags: List<String>, folder: String, width: Int?, height: Int?,
-                    durationSeconds: Int?): AssetResponse {
+                    durationSeconds: Int?, inputStream: InputStream,
+                    storageKey: String): AssetResponse {
         if (fileSizeBytes != null && fileSizeBytes > 0) {
             storageQuotaUseCase.checkQuota(userId, fileSizeBytes)
         }
-        val asset = Asset(
-            userId = userId,
-            filename = filename,
-            originalFilename = originalFilename,
-            fileUrl = fileUrl,
-            fileType = fileType,
-            fileSizeBytes = fileSizeBytes,
-            mimeType = mimeType,
-            tags = tags,
-            folder = folder,
-            width = width,
-            height = height,
-            durationSeconds = durationSeconds,
+
+        require(fileSizeBytes != null && fileSizeBytes > 0) { "업로드 파일 크기를 확인할 수 없습니다" }
+        val uploadedUrl = fileStoragePort.uploadByKey(
+            key = storageKey,
+            inputStream = inputStream,
+            contentType = mimeType ?: "application/octet-stream",
+            size = fileSizeBytes,
         )
-        return assetRepository.save(asset).toResponse()
+
+        try {
+            val asset = Asset(
+                userId = userId,
+                filename = filename,
+                originalFilename = originalFilename,
+                fileUrl = uploadedUrl,
+                fileType = fileType,
+                fileSizeBytes = fileSizeBytes,
+                mimeType = mimeType,
+                tags = tags,
+                folder = folder,
+                width = width,
+                height = height,
+                durationSeconds = durationSeconds,
+            )
+            return assetRepository.save(asset).toResponse()
+        } catch (e: Exception) {
+            runCatching { fileStoragePort.deleteByKey(storageKey) }
+                .onFailure { cleanupError -> log.warn("에셋 업로드 보상 삭제 실패: key={}, error={}", storageKey, cleanupError.message) }
+            throw e
+        }
     }
 
     @Transactional
@@ -79,7 +96,7 @@ class AssetUseCase(
 
         // 스토리지에서 파일 삭제
         try {
-            fileStoragePort.deleteByKey("assets/$assetId/${asset.filename}")
+            fileStoragePort.deleteByKey("assets/$userId/${asset.filename}")
         } catch (e: Exception) {
             log.warn("에셋 파일 삭제 실패 (계속 진행): assetId={}, error={}", assetId, e.message)
         }

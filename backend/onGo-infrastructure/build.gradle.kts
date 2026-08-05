@@ -18,13 +18,13 @@ dependencies {
     implementation("com.zaxxer:HikariCP")
 
     // Flyway
-    implementation("org.flywaydb:flyway-core")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
 
     // Spring AI
-    implementation("org.springframework.ai:spring-ai-anthropic-spring-boot-starter")
-    implementation("org.springframework.ai:spring-ai-openai-spring-boot-starter")
-    implementation("org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter")
+    implementation("org.springframework.ai:spring-ai-starter-model-anthropic")
+    implementation("org.springframework.ai:spring-ai-starter-model-openai")
+    implementation("org.springframework.ai:spring-ai-starter-model-google-genai")
 
     // Cache
     implementation("org.springframework.boot:spring-boot-starter-cache")
@@ -42,7 +42,10 @@ dependencies {
 
     // Security + OAuth2
     implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
+    // Repository adapters serialize JSONB through the Jackson 2 ObjectMapper.
+    // Boot 4's web starter defaults to Jackson 3, so this must be explicit.
+    implementation("org.springframework.boot:spring-boot-jackson2")
 
     // Reactive WebClient (Google Drive OAuth + streaming download — Task 10/17)
     implementation("org.springframework.boot:spring-boot-starter-webflux")
@@ -57,11 +60,14 @@ dependencies {
     implementation(libs.resilience4j.retry)
 
     // AOP (Resilience4j 어노테이션 지원)
-    implementation("org.springframework.boot:spring-boot-starter-aop")
+    implementation("org.springframework.boot:spring-boot-starter-aspectj")
 
     // Testcontainers (for @SpringBootTest integration tests with real PostgreSQL)
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
+    // Spring Boot's dependency management does not provide Testcontainers
+    // versions. Keep both modules on the same explicit version so integration
+    // tests remain resolvable after the Boot 4 upgrade.
+    testImplementation("org.testcontainers:junit-jupiter:1.20.4")
+    testImplementation("org.testcontainers:postgresql:1.20.4")
 
     // MockWebServer (Google Drive OAuth 클라이언트 단위 테스트용)
     // — okhttp 4.12.0이 minio를 통해 이미 classpath에 있으므로 동일 버전 사용

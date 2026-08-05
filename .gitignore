@@ -33,6 +33,10 @@ deploy/**/.env*
 !deploy/**/.env.example
 !deploy/**/.env.production.example
 
+# Database exports must never enter source control.
+ongo_backup_*.sql
+deploy/*backup*.sql
+
 # Test results
 frontend/test-results/
 frontend/tsconfig.app.tsbuildinfo

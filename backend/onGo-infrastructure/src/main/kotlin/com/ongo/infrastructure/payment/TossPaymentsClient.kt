@@ -12,7 +12,7 @@ import java.util.Base64
 
 @Component
 class TossPaymentsClient(
-    @Value("\${ongo.payment.toss.secret-key:test_sk_placeholder}") private val secretKey: String
+    @Value("\${payment.toss.secret-key}") private val secretKey: String
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val baseUrl = "https://api.tosspayments.com/v1"

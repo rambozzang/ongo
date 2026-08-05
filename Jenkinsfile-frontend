@@ -27,6 +27,20 @@ pipeline {
     }
 
     stages {
+        stage('Repository Security Check') {
+            steps {
+                script {
+                    def sensitiveFiles = sh(
+                        script: "git ls-files | grep -E '(^|/)(ongo_backup_[^/]*\\.sql|.*backup[^/]*\\.sql)$' || true",
+                        returnStdout: true,
+                    ).trim()
+                    if (sensitiveFiles) {
+                        error "Tracked database export detected:\n${sensitiveFiles}"
+                    }
+                }
+            }
+        }
+
         stage('Build Frontend') {
             steps {
                 dir('frontend') {
