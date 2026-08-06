@@ -138,6 +138,49 @@ deploy_backend() {
         exit 1
     fi
 
+    # 필수 환경변수 선행 검증 — 반드시 stop.sh 앞이어야 한다.
+    #
+    # start.sh 도 같은 검증을 하지만 그건 서비스를 멈춘 뒤에 돈다. 값이 비어 있으면
+    # 앱이 내려간 채 다시 뜨지 않는다. 여기서 먼저 걸러야 기존 프로세스를 살린 채
+    # 배포만 실패시킬 수 있다(무중단 실패).
+    #
+    # 서브셸에서 돌려 .env 값이 deploy.sh 환경으로 새지 않게 하고, set -e 영향도 가둔다.
+    #
+    # .env 로드 실패는 fail-closed 로 처리한다. 무시하면 부모 환경(Jenkins)에 같은 이름의
+    # 값이 있을 때 .env 가 깨졌는데도 누락 목록이 비어 그대로 통과한다.
+    ENV_PREFLIGHT_RC=0
+    MISSING_VARS="$(
+        set +e
+        # shellcheck source=deploy/required-env.sh
+        source "$SRC_DIR/deploy/required-env.sh" || exit 10
+        ongo_load_env_file "$ENV_FILE" >/dev/null 2>&1 || exit $((20 + $?))
+        ongo_missing_env_vars
+    )" || ENV_PREFLIGHT_RC=$?
+
+    case "$ENV_PREFLIGHT_RC" in
+        0) ;;
+        10) error "required-env.sh 를 읽을 수 없습니다: $SRC_DIR/deploy/required-env.sh"
+            error "기존 서비스는 그대로 실행 중입니다."
+            exit 1 ;;
+        21) error "$ENV_FILE 파일이 없어 배포를 중단합니다. 기존 서비스는 그대로 실행 중입니다."
+            exit 1 ;;
+        22) error "$ENV_FILE 을 읽을 수 없습니다(문법 오류). 배포를 중단합니다."
+            error "기존 서비스는 그대로 실행 중입니다."
+            exit 1 ;;
+        *)  error "환경변수 선행 검증이 예상치 못하게 실패했습니다(rc=$ENV_PREFLIGHT_RC)."
+            error "기존 서비스는 그대로 실행 중입니다."
+            exit 1 ;;
+    esac
+
+    if [ -n "$MISSING_VARS" ]; then
+        error "필수 환경변수가 없어 배포를 중단합니다. 기존 서비스는 그대로 실행 중입니다."
+        (
+            source "$SRC_DIR/deploy/required-env.sh"
+            ongo_report_missing_env_vars "$MISSING_VARS" "$ENV_FILE"
+        )
+        exit 1
+    fi
+
     # 서비스 재시작
     info "Backend 재시작..."
     bash "$SRC_DIR/deploy/stop.sh" || true

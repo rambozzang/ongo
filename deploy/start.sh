@@ -9,31 +9,32 @@ ENV_FILE="/data/ongo/.env"
 
 mkdir -p "$LOG_DIR"
 
-# 환경변수 로드
-if [ -f "$ENV_FILE" ]; then
-    # Remove Windows line endings (\r) which can break source
-    sed -i 's/\r$//' "$ENV_FILE"
-    set -a
-    source "$ENV_FILE"
-    set +a
-else
-    echo "[WARN] $ENV_FILE 파일이 존재하지 않습니다."
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 필수 환경변수 확인
-if [ -z "$JWT_SECRET" ]; then
-    echo "[ERROR] JWT_SECRET 환경변수가 설정되지 않았습니다. $ENV_FILE 파일을 확인해주세요."
+# 필수 변수 목록과 검사 함수는 deploy.sh 와 공유한다. 목록이 갈라지면
+# 선행 검증을 통과하고 여기서 죽어 서비스가 멈춘 채 다시 뜨지 않는다.
+# shellcheck source=deploy/required-env.sh
+source "$SCRIPT_DIR/required-env.sh"
+
+# 환경변수 로드.
+# 파일이 없는 것은 기존 동작대로 경고만 한다(어차피 아래 필수 변수 검증에서 걸린다).
+# 다만 파일이 있는데 읽지 못하는 경우는 조용히 넘기지 않는다.
+ongo_load_env_file "$ENV_FILE"
+case $? in
+    0) ;;
+    1) echo "[WARN] $ENV_FILE 파일이 존재하지 않습니다." ;;
+    *) echo "[ERROR] $ENV_FILE 을 읽을 수 없습니다(문법 오류). 파일을 확인해주세요."
+       exit 1 ;;
+esac
+
+# 필수 환경변수 검증.
+# 정상 배포 경로에서는 deploy.sh 가 서비스를 멈추기 전에 이미 같은 검사를 통과했다.
+# 여기 검증은 수동 기동 등 다른 경로를 위한 방어선이다.
+MISSING_VARS="$(ongo_missing_env_vars)"
+if [ -n "$MISSING_VARS" ]; then
+    ongo_report_missing_env_vars "$MISSING_VARS" "$ENV_FILE"
     exit 1
 fi
-
-# 필수 환경변수 검증
-REQUIRED_VARS="DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET"
-for var in $REQUIRED_VARS; do
-    if [ -z "${!var}" ]; then
-        echo "[ERROR] $var 환경변수가 설정되지 않았습니다. $ENV_FILE 파일을 확인해주세요."
-        exit 1
-    fi
-done
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] $APP_NAME 시작..."
 
