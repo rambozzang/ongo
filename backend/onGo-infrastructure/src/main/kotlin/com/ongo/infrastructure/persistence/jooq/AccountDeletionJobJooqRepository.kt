@@ -77,6 +77,39 @@ class AccountDeletionJobJooqRepository(
         return findById(id)!!
     }
 
+    /**
+     * 막힌 시도를 종료 상태로 남긴다. **게이트를 건드리지 않는다.**
+     *
+     * 여기서 `deletion_state` 를 켜면 정책 판단이 끝날 때까지 계정이 잠긴다. 그건
+     * 삭제를 못 하게 하는 것을 넘어 계정을 못 쓰게 만드는 것이라 훨씬 나쁘다.
+     *
+     * 종료 상태라 부분 유일 인덱스에 걸리지 않는다. 같은 사용자가 여러 번 막혀도
+     * 기록이 쌓이고, 나중에 정책이 정해지면 그대로 재요청할 수 있다.
+     */
+    @Transactional
+    override fun recordBlocked(
+        userId: Long,
+        idempotencyKey: String,
+        errorCode: String,
+        supportReference: String?,
+    ): AccountDeletionJob {
+        findByIdempotencyKey(idempotencyKey)?.let { return it }
+
+        val now = LocalDateTime.now()
+        val id = dsl.insertInto(ACCOUNT_DELETION_JOBS)
+            .set(USER_ID, userId)
+            .set(STATUS, AccountDeletionStatus.BLOCKED_POLICY.name)
+            .set(IDEMPOTENCY_KEY, idempotencyKey)
+            .set(LAST_ERROR_CODE, errorCode)
+            .set(SUPPORT_REFERENCE, supportReference)
+            .set(REQUESTED_AT, now)
+            .set(UPDATED_AT, now)
+            .returningResult(ID)
+            .fetchOne()!!.get(ID)
+
+        return findById(id)!!
+    }
+
     override fun findActiveByUserId(userId: Long): AccountDeletionJob? =
         dsl.select()
             .from(ACCOUNT_DELETION_JOBS)

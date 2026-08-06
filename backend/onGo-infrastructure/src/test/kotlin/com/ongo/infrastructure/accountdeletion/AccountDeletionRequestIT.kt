@@ -149,6 +149,71 @@ class AccountDeletionRequestIT {
     }
 
     @Test
+    @DisplayName("정책으로 막힌 기록은 계정을 얼리지 않는다 — 게이트가 ACTIVE 로 남는다")
+    fun blockedRecordNeverFreezesTheAccount() {
+        val uid = userId()
+
+        val job = repo.recordBlocked(
+            userId = uid,
+            idempotencyKey = "key-blocked-1",
+            errorCode = "ACCOUNT_DELETION_BLOCKED_POLICY_REVIEW",
+            supportReference = "review-block:competitors_user_id_fkey",
+        )
+
+        assertEquals(AccountDeletionStatus.BLOCKED_POLICY, job.status)
+
+        // 여기서 게이트가 켜지면 정책 판단이 끝날 때까지 계정이 잠긴다.
+        // 삭제를 못 하게 하는 것을 넘어 계정을 못 쓰게 만드는 것이라 훨씬 나쁘다.
+        assertEquals(AccountDeletionState.ACTIVE, repo.findDeletionState(uid)) {
+            "막힌 기록이 계정을 영구 동결시켰다"
+        }
+        assertEquals(null, repo.findActiveByUserId(uid)) { "종료 상태는 진행 중이 아니다" }
+    }
+
+    @Test
+    @DisplayName("막힌 기록이 있어도 나중에 정상 요청할 수 있다")
+    fun blockedRecordDoesNotPreventLaterRequest() {
+        val uid = userId()
+        repo.recordBlocked(uid, "key-blocked-2", "ACCOUNT_DELETION_BLOCKED_POLICY_REVIEW", null)
+
+        // 정책이 정해지면 그대로 재요청할 수 있어야 한다.
+        val job = repo.requestDeletion(uid, "key-after-block")
+
+        assertEquals(AccountDeletionStatus.REQUESTED, job.status)
+        assertEquals(AccountDeletionState.DELETION_REQUESTED, repo.findDeletionState(uid))
+        assertEquals(2, jobCount(uid)) { "막힌 기록과 새 요청이 모두 남아야 한다" }
+    }
+
+    @Test
+    @DisplayName("같은 키로 다시 기록해도 행이 늘지 않는다")
+    fun blockedRecordIsIdempotentOnKey() {
+        val uid = userId()
+        val first = repo.recordBlocked(uid, "key-blocked-3", "CODE", null)
+        val second = repo.recordBlocked(uid, "key-blocked-3", "CODE", null)
+
+        assertEquals(first.id, second.id)
+        assertEquals(1, jobCount(uid))
+        assertEquals(AccountDeletionState.ACTIVE, repo.findDeletionState(uid))
+    }
+
+    @Test
+    @DisplayName("게이트가 켜져 있으면 반드시 진행 중 job 이 있다")
+    fun frozenGateAlwaysHasAnActiveJob() {
+        val uid = userId()
+
+        // 요청 전: 게이트 꺼짐 + 진행 중 job 없음
+        assertEquals(AccountDeletionState.ACTIVE, repo.findDeletionState(uid))
+        assertEquals(null, repo.findActiveByUserId(uid))
+
+        repo.requestDeletion(uid, "key-invariant-1")
+
+        // 요청 후: 게이트 켜짐 + 진행 중 job 있음. 둘은 항상 같이 움직여야 한다.
+        // 한쪽만 켜진 상태가 생기면 사용자가 영원히 못 쓰거나 삭제 중 데이터가 유입된다.
+        assertEquals(AccountDeletionState.DELETION_REQUESTED, repo.findDeletionState(uid))
+        assertNotNull(repo.findActiveByUserId(uid))
+    }
+
+    @Test
     @DisplayName("진행 중 job 을 조회할 수 있고 종료되면 조회되지 않는다")
     fun activeJobLookupReflectsTerminalStatus() {
         val uid = userId()

@@ -20,6 +20,24 @@ interface AccountDeletionJobRepository {
      */
     fun requestDeletion(userId: Long, idempotencyKey: String): AccountDeletionJob
 
+    /**
+     * 정책으로 막힌 시도를 **종료 상태로** 기록한다. **게이트를 건드리지 않는다.**
+     *
+     * preflight 가 막았다는 것은 "지금은 지울 수 없다"는 뜻이지 "이 계정을 얼려라"가 아니다.
+     * 여기서 게이트를 켜면 판단이 끝날 때까지 사용자가 아무것도 못 쓰는 **영구 동결**이 된다.
+     * 정책 결정은 몇 주가 걸릴 수도 있는 일이라 그 사이 계정이 잠기면 안 된다.
+     *
+     * 그래서 재시도 가능한 진행 상태([requestDeletion])와 종료 상태를 구분한다.
+     * - 진행 중 job = 게이트 켜짐. DB·외부 실패는 여기서 재시도한다
+     * - 종료된 job(`BLOCKED_POLICY`) = 게이트 그대로 `ACTIVE`. 기록만 남는다
+     */
+    fun recordBlocked(
+        userId: Long,
+        idempotencyKey: String,
+        errorCode: String,
+        supportReference: String?,
+    ): AccountDeletionJob
+
     /** 진행 중인 job. 없으면 null. */
     fun findActiveByUserId(userId: Long): AccountDeletionJob?
 
