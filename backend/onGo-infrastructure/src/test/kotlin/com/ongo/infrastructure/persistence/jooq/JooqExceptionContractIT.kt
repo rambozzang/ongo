@@ -10,7 +10,6 @@ import com.ongo.infrastructure.persistence.jooq.Tables.PAYMENTS
 import com.ongo.infrastructure.persistence.jooq.Tables.WEBHOOK_EVENTS
 import org.jooq.DSLContext
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -96,12 +95,10 @@ class JooqExceptionContractIT {
         )
         webhookRepo.save(event)
 
+        // DuplicateKeyException 은 DataIntegrityViolationException 의 하위다.
+        // 상위 타입 여부는 컴파일 타임 사실이라 단언하지 않는다.
         val thrown = assertThrows<DuplicateKeyException> { webhookRepo.save(event) }
 
-        assertTrue(
-            thrown is DataIntegrityViolationException,
-            "DuplicateKeyException은 DataIntegrityViolationException의 하위여야 한다",
-        )
         assertEquals(
             SQLSTATE_UNIQUE_VIOLATION, sqlStateOf(thrown),
             "SQLState까지 계약으로 둔다. 벤더 예외 클래스에는 의존하지 않는다",
@@ -129,8 +126,8 @@ class JooqExceptionContractIT {
     }
 
     @Test
-    @DisplayName("번역된 예외는 jOOQ 원본 예외가 아니다 — 자동설정이 대체되면 이 단언이 깨진다")
-    fun translatedExceptionIsNotRawJooqException() {
+    @DisplayName("번역 리스너가 빠지면 이 테스트가 깨진다 — 자동설정 대체 감지")
+    fun translatorIsWired() {
         val event = WebhookEvent(
             eventId = "portone:contract-not-jooq",
             eventType = "Transaction.Paid",
@@ -138,12 +135,12 @@ class JooqExceptionContractIT {
         )
         webhookRepo.save(event)
 
+        // 번역 리스너가 빠지면 jOOQ 원본 예외가 올라와 이 assertThrows 자체가 실패한다.
+        // 그게 곧 감지 수단이다. 별도의 `!is jOOQ 예외` 단언은 컴파일 타임에 참이라 두지 않는다.
+        // 이 테스트가 깨지면 TransactionAwareDataSourceProxy도 함께 빠졌을 가능성이 크므로
+        // SpringTransactionParticipationIT 를 반드시 함께 확인한다.
         val thrown = assertThrows<DataIntegrityViolationException> { webhookRepo.save(event) }
 
-        assertTrue(
-            thrown !is org.jooq.exception.DataAccessException,
-            "jOOQ 원본 예외가 올라오면 ExceptionTranslatorExecuteListener가 빠진 것이다. " +
-                "그 경우 TransactionAwareDataSourceProxy도 함께 빠졌을 가능성이 크다",
-        )
+        assertEquals(SQLSTATE_UNIQUE_VIOLATION, sqlStateOf(thrown))
     }
 }

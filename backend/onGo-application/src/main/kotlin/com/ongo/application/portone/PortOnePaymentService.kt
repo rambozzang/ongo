@@ -76,7 +76,10 @@ class PortOnePaymentService(
             WebhookEvent(eventId = eventKey, eventType = type, payload = rawBody, status = "PENDING")
         )
         if (!firstReceipt) {
-            log.info("이미 수신한 포트원 웹훅이라 건너뛴다 [eventId={}]", eventKey)
+            log.info(
+                "이미 수신한 포트원 웹훅이라 건너뛴다. eventId={} eventType={} paymentId={} outcome={}",
+                eventKey, type, paymentId, WEBHOOK_OUTCOME_DUPLICATE,
+            )
             return
         }
 
@@ -94,7 +97,14 @@ class PortOnePaymentService(
         // 이력 한 줄이 PENDING으로 남는 쪽이 결제를 잃는 것보다 낫다.
         // 키 불일치는 markProcessed 호출 키를 단언하는 테스트가 이미 막고 있다.
         if (!webhookEventRepository.markProcessed(eventKey, LocalDateTime.now())) {
-            log.error("웹훅 이력을 PROCESSED로 갱신하지 못했다 — 이력이 PENDING으로 남는다 [eventId={}]", eventKey)
+            // 반복되면 즉시 드러나야 하는 이상 신호다. 알림/집계가 붙을 수 있도록 필드를 고정한다.
+            // 로그에 원문 본문·서명 헤더·시크릿은 절대 넣지 않는다. 식별자와 결과만 남긴다.
+            // 메트릭을 붙일 때는 eventId 처럼 카디널리티가 무한한 값을 태그로 쓰지 말 것
+            // (태그 후보는 eventType, outcome 정도다). 현재 코드베이스에 메트릭 파사드는 없다.
+            log.error(
+                "포트원 웹훅 이력 갱신 실패. eventId={} eventType={} paymentId={} outcome={}",
+                eventKey, type, paymentId, WEBHOOK_OUTCOME_HISTORY_UPDATE_FAILED,
+            )
         }
     }
 
@@ -365,6 +375,13 @@ class PortOnePaymentService(
 
         /** `webhook_events`를 Paddle과 공유하므로 네임스페이스를 나눈다. */
         private const val WEBHOOK_EVENT_ID_PREFIX = "portone:"
+
+        /**
+         * 웹훅 로그의 `outcome` 값. 알림·집계가 문자열로 걸 수 있게 고정한다.
+         * 메트릭 태그로 쓸 수 있는 저카디널리티 값이다(`eventId`는 태그로 쓰지 말 것).
+         */
+        private const val WEBHOOK_OUTCOME_DUPLICATE = "DUPLICATE_SKIPPED"
+        private const val WEBHOOK_OUTCOME_HISTORY_UPDATE_FAILED = "HISTORY_UPDATE_FAILED"
 
         /** `webhook_events.event_id`는 VARCHAR(200)이다. */
         private const val WEBHOOK_EVENT_ID_MAX_LENGTH = 200
