@@ -6,8 +6,7 @@
     <!-- Logo -->
     <div class="flex h-[72px] items-center border-b px-4" style="border-color: rgba(255,255,255,0.08)">
       <router-link to="/dashboard" class="flex items-center gap-2" @click="emit('navigate')">
-        <span class="text-[1.65rem] font-bold tracking-[-0.08em] text-primary-300">on</span>
-        <span v-if="!collapsed" class="text-[1.65rem] font-bold tracking-[-0.08em] text-white">Go</span>
+        <OnGoLogo size="lg" inverse :mark-only="collapsed" />
       </router-link>
       <button
         v-if="!collapsed"
@@ -186,6 +185,7 @@ import { useNavigation, type NavItem } from '@/composables/useNavigation'
 import { useNavFavoritesStore } from '@/stores/navFavorites'
 import NavPinButton from '@/components/layout/NavPinButton.vue'
 import WorkspaceSwitcher from '@/components/layout/WorkspaceSwitcher.vue'
+import OnGoLogo from '@/components/brand/OnGoLogo.vue'
 
 defineProps<{
   collapsed: boolean

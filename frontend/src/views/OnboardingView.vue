@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4">
       <div class="flex max-w-3xl items-center justify-between">
-        <h1 class="text-h2 font-bold text-primary-600">onGo</h1>
+        <OnGoLogo size="md" />
         <span v-if="currentStep > 0 && currentStep <= 4" class="text-body text-gray-400 dark:text-gray-500">
           {{ t('onboarding.stepProgress', { current: currentStep, total: steps.length }) }}
         </span>
@@ -25,7 +25,7 @@
           <!-- Step 0: Welcome Screen -->
           <div v-if="currentStep === 0" class="max-w-lg text-center">
             <div class="mb-8">
-              <h1 class="text-display text-primary-600">onGo</h1>
+              <OnGoLogo size="lg" />
               <p class="mt-4 whitespace-pre-line text-h2 text-gray-900 dark:text-gray-100">
                 {{ t('onboarding.welcome.tagline') }}
               </p>
@@ -388,6 +388,7 @@ import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon } from '@heroicons/vue/24/o
 import OnboardingStepIndicator from '@/components/onboarding/OnboardingStepIndicator.vue'
 import PlanSelectionCard from '@/components/onboarding/PlanSelectionCard.vue'
 import { PLANS } from '@/types/subscription'
+import OnGoLogo from '@/components/brand/OnGoLogo.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

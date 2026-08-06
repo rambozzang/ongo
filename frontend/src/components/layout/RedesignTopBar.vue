@@ -2,6 +2,10 @@
   <header
     class="flex h-14 flex-none items-center gap-3.5 border-b border-line bg-surface px-[18px]"
   >
+    <router-link to="/today" class="tablet:hidden" aria-label="ongo 홈">
+      <OnGoLogo size="sm" />
+    </router-link>
+
     <!-- 화면 제목 -->
     <div class="flex min-w-0 items-baseline gap-2.5">
       <h1 class="whitespace-nowrap text-[14px] font-semibold text-content">{{ title }}</h1>
@@ -40,6 +44,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useLocale } from '@/composables/useLocale'
+import OnGoLogo from '@/components/brand/OnGoLogo.vue'
 
 /**
  * 상단바 (56px) — 화면 제목/부제 + 검색 + 보조/주요 액션.

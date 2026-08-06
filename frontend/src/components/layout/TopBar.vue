@@ -11,7 +11,7 @@
 
     <!-- Logo (mobile only) -->
     <router-link to="/dashboard" class="mr-4 tablet:hidden">
-      <span class="text-h2 font-bold tracking-[-0.06em] text-primary-600">onGo</span>
+      <OnGoLogo size="sm" />
     </router-link>
 
     <!-- Search Trigger -->
@@ -131,6 +131,7 @@ import NotificationPanel from '@/components/common/NotificationPanel.vue'
 import SearchOverlay from '@/components/common/SearchOverlay.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationCenterStore } from '@/stores/notificationCenter'
+import OnGoLogo from '@/components/brand/OnGoLogo.vue'
 
 const emit = defineEmits<{
   toggleMenu: []

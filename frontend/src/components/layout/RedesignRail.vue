@@ -5,9 +5,8 @@
     :aria-label="t('nav.mainNavigation')"
   >
     <!-- 워드마크 -->
-    <router-link to="/today" class="mb-4 flex items-center gap-2 px-1" @click="emit('navigate')">
-      <span class="h-[22px] w-[22px] rounded-md bg-accent" aria-hidden="true" />
-      <span class="text-[16px] font-bold text-content">onGo</span>
+    <router-link to="/today" class="mb-4 flex items-center px-1" @click="emit('navigate')">
+      <OnGoLogo size="md" />
     </router-link>
 
     <!-- 내비 -->
@@ -82,6 +81,7 @@ import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
 import { useRedesignShellStore } from '@/stores/redesignShell'
 import { useNavigation } from '@/composables/useNavigation'
+import OnGoLogo from '@/components/brand/OnGoLogo.vue'
 
 /**
  * 좌측 고정 레일 (216px) — 2026-08 리디자인.

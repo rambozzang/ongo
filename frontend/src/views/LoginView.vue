@@ -3,7 +3,7 @@
     <!-- Left: Branding -->
     <div class="hidden flex-1 items-center justify-center bg-gradient-to-br from-primary-600 to-primary-800 tablet:flex">
       <div class="max-w-lg px-8 text-center text-white">
-        <h1 class="mb-6 text-5xl font-bold tracking-tight">onGo</h1>
+        <OnGoLogo size="lg" inverse class="mb-6" />
         <div class="mx-auto mb-8 flex h-48 w-48 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
           <svg class="h-24 w-24 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
@@ -41,12 +41,12 @@
       <div class="w-full max-w-sm">
         <!-- Mobile logo -->
         <div class="mb-10 text-center tablet:hidden">
-          <h1 class="text-4xl font-bold text-primary-600">onGo</h1>
+          <OnGoLogo size="lg" />
           <p class="mt-2 text-body text-gray-500 dark:text-gray-400">{{ $t('app.description') }}</p>
         </div>
 
         <div class="mb-2 hidden tablet:block">
-          <p class="text-body font-medium text-primary-600">onGo</p>
+          <OnGoLogo size="sm" />
         </div>
         <h2 class="mb-2 text-h1 font-bold text-gray-900 dark:text-gray-100">{{ $t('loginView.title') }}</h2>
         <p class="mb-8 text-body text-gray-500 dark:text-gray-400">{{ $t('loginView.subtitle') }}</p>
@@ -133,6 +133,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/api/auth'
+import OnGoLogo from '@/components/brand/OnGoLogo.vue'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
