@@ -31,140 +31,139 @@ class BillingScheduler(
     @Scheduled(cron = "0 0 2 * * *") // 매일 새벽 2시
     @Transactional
     fun processBilling() {
-        if (!distributedLockPort.tryLock(lockId)) {
-            log.debug("다른 인스턴스에서 빌링 처리 실행 중, 스킵")
-            return
+        // tryLock/releaseLock 은 획득과 해제가 다른 커넥션에서 일어나 락이 누수된다.
+        // PostgreSQL 자문 락은 세션 범위라 다른 커넥션에서 해제해도 풀리지 않는다.
+        val ran = distributedLockPort.withLock(lockId) { processDueSubscriptions() }
+        if (!ran) log.debug("다른 인스턴스에서 빌링 처리 실행 중, 스킵")
+    }
+
+    private fun processDueSubscriptions() {
+        log.info("빌링 처리 시작")
+        val now = LocalDateTime.now()
+
+        // 트라이얼 만료 처리
+        val expiredTrials = subscriptionRepository.findTrialExpired(now)
+        expiredTrials.forEach { sub ->
+            subscriptionRepository.update(sub.copy(
+                planType = PlanType.FREE,
+                status = SubscriptionStatus.FREE,
+                price = 0,
+                updatedAt = now,
+            ))
+            val user = userRepository.findById(sub.userId)
+            if (user != null) {
+                userRepository.update(user.copy(planType = PlanType.FREE))
+            }
+            notificationRepository.save(Notification(
+                userId = sub.userId,
+                type = NotificationType.SYSTEM,
+                title = "트라이얼 만료",
+                message = "7일 무료 체험이 종료되어 Free 플랜으로 전환되었습니다.",
+            ))
+            log.info("트라이얼 만료 → Free 전환: userId={}", sub.userId)
         }
-        try {
-            log.info("빌링 처리 시작")
-            val now = LocalDateTime.now()
 
-            // 트라이얼 만료 처리
-            val expiredTrials = subscriptionRepository.findTrialExpired(now)
-            expiredTrials.forEach { sub ->
-                subscriptionRepository.update(sub.copy(
-                    planType = PlanType.FREE,
-                    status = SubscriptionStatus.FREE,
-                    price = 0,
-                    updatedAt = now,
-                ))
-                val user = userRepository.findById(sub.userId)
-                if (user != null) {
-                    userRepository.update(user.copy(planType = PlanType.FREE))
-                }
-                notificationRepository.save(Notification(
-                    userId = sub.userId,
-                    type = NotificationType.SYSTEM,
-                    title = "트라이얼 만료",
-                    message = "7일 무료 체험이 종료되어 Free 플랜으로 전환되었습니다.",
-                ))
-                log.info("트라이얼 만료 → Free 전환: userId={}", sub.userId)
-            }
-
-            // 일시정지 자동 재개 (30일 초과)
-            val pausedToResume = subscriptionRepository.findPausedToResume(now)
-            pausedToResume.forEach { sub ->
-                subscriptionRepository.update(sub.copy(
-                    status = SubscriptionStatus.ACTIVE,
-                    pausedAt = null,
-                    resumeAt = null,
-                    updatedAt = now,
-                ))
-                notificationRepository.save(Notification(
-                    userId = sub.userId,
-                    type = NotificationType.SYSTEM,
-                    title = "구독 자동 재개",
-                    message = "일시정지 기간(30일)이 만료되어 구독이 자동으로 재개되었습니다.",
-                ))
-                log.info("일시정지 자동 재개: userId={}", sub.userId)
-            }
-
-            // 미결제 3일 유예 → 알림
-            val pastDue3 = subscriptionRepository.findPastDue(3)
-            pastDue3.forEach { sub ->
-                notificationRepository.save(Notification(
-                    userId = sub.userId,
-                    type = NotificationType.SYSTEM,
-                    title = "결제 실패 알림",
-                    message = "결제가 실패했습니다. 3일 이내에 결제 수단을 확인해주세요."
-                ))
-                subscriptionRepository.update(sub.copy(status = SubscriptionStatus.PAST_DUE))
-            }
-
-            // 미결제 7일 → Free 전환
-            val pastDue7 = subscriptionRepository.findPastDue(7)
-            pastDue7.forEach { sub ->
-                subscriptionRepository.update(sub.copy(
-                    planType = PlanType.FREE,
-                    status = SubscriptionStatus.FREE,
-                    price = 0,
-                    updatedAt = now
-                ))
-                val user = userRepository.findById(sub.userId)
-                if (user != null) {
-                    userRepository.update(user.copy(planType = PlanType.FREE))
-                }
-                notificationRepository.save(Notification(
-                    userId = sub.userId,
-                    type = NotificationType.SYSTEM,
-                    title = "구독 만료",
-                    message = "결제 미처리로 Free 플랜으로 전환되었습니다."
-                ))
-                log.info("Free 전환: userId=${sub.userId}")
-            }
-
-            // 취소된 구독 중 기간 종료된 것 → Free 전환
-            // findDueForBilling 은 status='ACTIVE' 만 반환하므로 그 결과를 CANCELLED 로
-            // 거르면 항상 비어 있었다(이 블록 전체가 실행되지 않았다). 전용 쿼리를 쓴다.
-            val cancelledExpired = subscriptionRepository.findCancelledExpired(now)
-            cancelledExpired.forEach { sub ->
-                subscriptionRepository.update(sub.copy(
-                    planType = PlanType.FREE,
-                    status = SubscriptionStatus.FREE,
-                    price = 0
-                ))
-                val user = userRepository.findById(sub.userId)
-                if (user != null) {
-                    userRepository.update(user.copy(planType = PlanType.FREE))
-                }
-            }
-
-            // 다운그레이드 예약 적용: pendingPlanType 설정 + 기간 만료된 구독
-            val pendingDowngrades = subscriptionRepository.findWithPendingPlanType()
-                .filter { it.currentPeriodEnd?.isBefore(now) == true }
-            pendingDowngrades.forEach { sub ->
-                val newPlan = sub.pendingPlanType ?: return@forEach
-                subscriptionRepository.update(sub.copy(
-                    planType = newPlan,
-                    price = if (sub.billingCycle == BillingCycle.YEARLY) newPlan.yearlyPrice else newPlan.price,
-                    pendingPlanType = null,
-                    status = if (newPlan == PlanType.FREE) SubscriptionStatus.FREE else SubscriptionStatus.ACTIVE,
-                    updatedAt = now
-                ))
-                val user = userRepository.findById(sub.userId)
-                if (user != null) {
-                    userRepository.update(user.copy(planType = newPlan))
-                }
-                // 크레딧 월간 한도 조정
-                val credit = creditRepository.findByUserId(sub.userId)
-                if (credit != null) {
-                    creditRepository.update(credit.copy(
-                        freeMonthly = newPlan.freeCredits,
-                        updatedAt = java.time.LocalDateTime.now()
-                    ))
-                }
-                notificationRepository.save(Notification(
-                    userId = sub.userId,
-                    type = NotificationType.SYSTEM,
-                    title = "플랜 변경 완료",
-                    message = "${sub.planType.displayName}에서 ${newPlan.displayName}으로 플랜이 변경되었습니다."
-                ))
-                log.info("다운그레이드 적용: userId=${sub.userId}, ${sub.planType} → $newPlan")
-            }
-
-            log.info("빌링 처리 완료")
-        } finally {
-            distributedLockPort.releaseLock(lockId)
+        // 일시정지 자동 재개 (30일 초과)
+        val pausedToResume = subscriptionRepository.findPausedToResume(now)
+        pausedToResume.forEach { sub ->
+            subscriptionRepository.update(sub.copy(
+                status = SubscriptionStatus.ACTIVE,
+                pausedAt = null,
+                resumeAt = null,
+                updatedAt = now,
+            ))
+            notificationRepository.save(Notification(
+                userId = sub.userId,
+                type = NotificationType.SYSTEM,
+                title = "구독 자동 재개",
+                message = "일시정지 기간(30일)이 만료되어 구독이 자동으로 재개되었습니다.",
+            ))
+            log.info("일시정지 자동 재개: userId={}", sub.userId)
         }
+
+        // 미결제 3일 유예 → 알림
+        val pastDue3 = subscriptionRepository.findPastDue(3)
+        pastDue3.forEach { sub ->
+            notificationRepository.save(Notification(
+                userId = sub.userId,
+                type = NotificationType.SYSTEM,
+                title = "결제 실패 알림",
+                message = "결제가 실패했습니다. 3일 이내에 결제 수단을 확인해주세요."
+            ))
+            subscriptionRepository.update(sub.copy(status = SubscriptionStatus.PAST_DUE))
+        }
+
+        // 미결제 7일 → Free 전환
+        val pastDue7 = subscriptionRepository.findPastDue(7)
+        pastDue7.forEach { sub ->
+            subscriptionRepository.update(sub.copy(
+                planType = PlanType.FREE,
+                status = SubscriptionStatus.FREE,
+                price = 0,
+                updatedAt = now
+            ))
+            val user = userRepository.findById(sub.userId)
+            if (user != null) {
+                userRepository.update(user.copy(planType = PlanType.FREE))
+            }
+            notificationRepository.save(Notification(
+                userId = sub.userId,
+                type = NotificationType.SYSTEM,
+                title = "구독 만료",
+                message = "결제 미처리로 Free 플랜으로 전환되었습니다."
+            ))
+            log.info("Free 전환: userId=${sub.userId}")
+        }
+
+        // 취소된 구독 중 기간 종료된 것 → Free 전환
+        // findDueForBilling 은 status='ACTIVE' 만 반환하므로 그 결과를 CANCELLED 로
+        // 거르면 항상 비어 있었다(이 블록 전체가 실행되지 않았다). 전용 쿼리를 쓴다.
+        val cancelledExpired = subscriptionRepository.findCancelledExpired(now)
+        cancelledExpired.forEach { sub ->
+            subscriptionRepository.update(sub.copy(
+                planType = PlanType.FREE,
+                status = SubscriptionStatus.FREE,
+                price = 0
+            ))
+            val user = userRepository.findById(sub.userId)
+            if (user != null) {
+                userRepository.update(user.copy(planType = PlanType.FREE))
+            }
+        }
+
+        // 다운그레이드 예약 적용: pendingPlanType 설정 + 기간 만료된 구독
+        val pendingDowngrades = subscriptionRepository.findWithPendingPlanType()
+            .filter { it.currentPeriodEnd?.isBefore(now) == true }
+        pendingDowngrades.forEach { sub ->
+            val newPlan = sub.pendingPlanType ?: return@forEach
+            subscriptionRepository.update(sub.copy(
+                planType = newPlan,
+                price = if (sub.billingCycle == BillingCycle.YEARLY) newPlan.yearlyPrice else newPlan.price,
+                pendingPlanType = null,
+                status = if (newPlan == PlanType.FREE) SubscriptionStatus.FREE else SubscriptionStatus.ACTIVE,
+                updatedAt = now
+            ))
+            val user = userRepository.findById(sub.userId)
+            if (user != null) {
+                userRepository.update(user.copy(planType = newPlan))
+            }
+            // 크레딧 월간 한도 조정
+            val credit = creditRepository.findByUserId(sub.userId)
+            if (credit != null) {
+                creditRepository.update(credit.copy(
+                    freeMonthly = newPlan.freeCredits,
+                    updatedAt = java.time.LocalDateTime.now()
+                ))
+            }
+            notificationRepository.save(Notification(
+                userId = sub.userId,
+                type = NotificationType.SYSTEM,
+                title = "플랜 변경 완료",
+                message = "${sub.planType.displayName}에서 ${newPlan.displayName}으로 플랜이 변경되었습니다."
+            ))
+            log.info("다운그레이드 적용: userId=${sub.userId}, ${sub.planType} → $newPlan")
+        }
+
+        log.info("빌링 처리 완료")
     }
 }

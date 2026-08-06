@@ -54,8 +54,11 @@ class BillingSchedulerTest {
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        every { distributedLockPort.tryLock(any()) } returns true
-        every { distributedLockPort.releaseLock(any()) } returns Unit
+        // withLock 은 블록을 그대로 실행하고 true 를 돌려준다(락 획득 성공).
+        every { distributedLockPort.withLock(any(), any<() -> Unit>()) } answers {
+            secondArg<() -> Unit>().invoke()
+            true
+        }
         billingScheduler = BillingScheduler(
             subscriptionRepository,
             userRepository,
@@ -120,7 +123,10 @@ class BillingSchedulerTest {
         )
         val user = createUser(1L, PlanType.PRO)
 
-        every { distributedLockPort.tryLock(any()) } returns true
+        every { distributedLockPort.withLock(any(), any<() -> Unit>()) } answers {
+            secondArg<() -> Unit>().invoke()
+            true
+        }
         stubEmptyDefaults()
         every { subscriptionRepository.findTrialExpired(any()) } returns listOf(sub)
         every { subscriptionRepository.update(any()) } answers { firstArg() }
