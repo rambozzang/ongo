@@ -156,6 +156,12 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: 'AI 도구' },
       },
       {
+        path: 'subtitle-editor',
+        name: 'subtitle-editor',
+        component: () => import('@/views/SubtitleEditorView.vue'),
+        meta: { breadcrumb: '자막 에디터' },
+      },
+      {
         path: 'channels',
         name: 'channels',
         redirect: { name: 'redesign-channels' },
