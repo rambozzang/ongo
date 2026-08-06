@@ -1,0 +1,11 @@
+-- URL 임포트로 들어온 영상을 구분하기 위해 video_source 에 값을 추가한다.
+--
+-- YouTube/TikTok/Instagram URL 을 받아 소스 영상을 가져오는 경로가 생긴다.
+-- 기존 값은 V42:5 에서 정의한 ('UPLOAD_PC', 'GOOGLE_DRIVE') 두 개뿐이라
+-- URL 로 들어온 영상을 표현할 방법이 없었다.
+--
+-- PostgreSQL 12+ 는 트랜잭션 안에서 ALTER TYPE ... ADD VALUE 를 허용한다.
+-- 다만 추가한 값은 **같은 트랜잭션 안에서 사용할 수 없다.** 이 마이그레이션은
+-- 값만 추가하고 사용하지 않으므로 문제되지 않는다.
+-- 이후 마이그레이션에서 'URL_IMPORT' 를 값으로 쓰려면 별도 파일로 분리해야 한다.
+ALTER TYPE video_source ADD VALUE IF NOT EXISTS 'URL_IMPORT';
