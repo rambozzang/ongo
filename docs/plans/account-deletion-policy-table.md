@@ -28,11 +28,55 @@ FK 메타데이터만 보고 자동 삭제하는 방식도 기각됐다(codex).
 | `PRESERVE_ANONYMIZE` | 보존하되 개인 식별자를 끊는다. **보존 정책이 이미 결정된 것만** |
 | `REVIEW_BLOCK` | 판단 미완. 하나라도 있으면 삭제 job 은 `BLOCKED_POLICY` 로 끝난다 |
 
-미분류 FK 는 `REVIEW_BLOCK` 과 같게 취급한다. 기본값이 "막는다"이다(fail-closed).
-
 **중요**: 정책이 미정인 것을 `PRESERVE_ANONYMIZE` 로 가장하지 않는다. 그건 결정된 척하는
-것이다. 미정이면 `REVIEW_BLOCK` 이고, 그러면 탈퇴 작업 전체가 막힌다 — 그게 정직한 상태다.
+것이다. 미정이면 `REVIEW_BLOCK` 이다.
 따라서 **현재 `PRESERVE_ANONYMIZE` 는 0건이다.**
+
+### 1.1 차단 범위 — 전역과 사용자별을 구분한다 (codex 보완)
+
+"`REVIEW_BLOCK` 이 레지스트리에 있으니 모든 탈퇴를 막는다"로 두면, 정책이 확정된
+`DELETE` 대상만 가진 사용자까지 **영구히 탈퇴 불가**가 된다. 둘을 나눈다.
+
+| 상황 | 차단 범위 | 이유 |
+|---|---|---|
+| **미분류 FK 가 존재** | **전역** `BLOCKED_POLICY`. 모든 job 이 시작 전에 멈춘다 | 새 기능이 정책 검토를 우회하지 못하게 한다. 사람이 분류할 때까지 멈추는 게 맞다 |
+| **분류된 `REVIEW_BLOCK` FK** | **해당 사용자에게 그 FK 로 엮인 행이 있을 때만** `BLOCKED_POLICY` | 정책 판단이 필요한 데이터를 실제로 가진 사용자만 막으면 된다 |
+
+즉 검사 순서는 (1) 레지스트리 완전성 → 전역 판정, (2) 대상 사용자 행 존재 여부 →
+사용자별 판정이다. 둘 다 **삭제를 한 건이라도 실행하기 전**에 끝낸다.
+
+이렇게 하면 `DELETE` 대상만 가진 사용자는 정책이 다 정해지기 전에도 탈퇴할 수 있다.
+
+### 1.2 행 단위 연산 정책 — 다중 `users` 참조 행 (codex 보완)
+
+FK 정책이 constraint 단위여도, **한 행이 여러 사용자를 참조하면 "이 행을 어떻게 할지"를
+따로 정해야 한다.** 정책 3상태는 "이 FK 로 엮인 것"을 말할 뿐 행 전체의 운명을 말하지 않는다.
+
+**실측으로 확인한 문제 — 이미 일어나고 있다.**
+
+`approvals` 에 `user_id`=탈퇴자, `requester_id`=다른 사용자, `reviewer_id`=제3자인
+행을 만들고 탈퇴자를 삭제했다.
+
+```
+삽입 후 approvals 행 수: 1
+탈퇴자(user_id, CASCADE) 삭제 → DELETE 성공, 남은 행: 0
+→ 다른 사용자(requester)와 리뷰어의 승인 데이터가 함께 사라졌다
+```
+
+`approvals.user_id` 가 `ON DELETE CASCADE` 라서 **우리 코드가 무엇을 하든 DB 가 행을 지운다.**
+이건 이번 설계가 만드는 문제가 아니라 **현재 스키마에 이미 있는 데이터 유실 경로**다.
+
+따라서 행 단위 연산을 별도로 정의한다.
+
+| 연산 | 의미 |
+|---|---|
+| `ROW_DELETE` | 행 전체 삭제. 그 행이 탈퇴자 단독 소유일 때만 |
+| `ROW_DETACH` | 해당 FK 컬럼만 끊고(`SET NULL`/익명 주체) 행은 남긴다. 다른 사용자가 걸려 있을 때 |
+| `ROW_BLOCK` | 판단 미완. 사용자별 `BLOCKED_POLICY` |
+
+`approvals` 는 현재 `ROW_BLOCK` 이다. 그리고 `user_id` 의 `CASCADE` 자체를 재검토해야 한다 —
+`ROW_DETACH` 로 가려면 `CASCADE` 를 풀고 `reviewer_id` 처럼 nullable 로 바꾸는 마이그레이션이
+필요하다. **정책 승인 전까지는 손대지 않는다.**
 
 ## 2. 측정 방법과 결과
 
@@ -383,14 +427,36 @@ FK 위반이나 잔존 데이터가 남는다.
 | 제3자 정보 | `comments.author_channel_url`, `competitors.channel_url`, `inbox_messages.platform_message_id` | **외부 삭제 대상이 아니다.** 남의 데이터다 |
 | 사용자가 입력한 외부 링크 | `ideas.reference_url` | 외부 삭제 대상이 아니다 |
 
-DB 삭제 후 외부 정리가 실패하면 `EXTERNAL_CLEANUP_PENDING` 으로 두고 재시도한다.
-**수집 목록 자체는 안전하게 보관**해야 재시도가 가능하다. 목록에는 리소스 식별자만 담고
-개인정보 본문은 담지 않는다.
+#### durable 상태 — 중단돼도 재개 가능해야 한다 (codex 보완)
+
+DB 삭제까지 마쳤는데 외부 정리 중 프로세스가 죽으면, 상태가 없으면 어디까지 됐는지 모른다.
+상태를 **영속화**한다.
+
+```
+REQUESTED → IN_PROGRESS → DB_COMMITTED → EXTERNAL_CLEANUP_PENDING → COMPLETED
+                ↘ BLOCKED_POLICY        ↘ FAILED
+```
+
+- `DB_COMMITTED` 는 DB 트랜잭션이 커밋된 시점에 기록한다. 이 이후로는 **DB 단계를 다시 하지 않는다**
+- `EXTERNAL_CLEANUP_PENDING` 은 재시도 대상이다. 재시도는 수집 목록을 근거로 하므로
+  목록이 살아 있어야 한다
+- 재시작 시 상태를 읽어 해당 단계부터 재개한다
+
+#### 수집 목록의 민감값 처리 (codex 보완)
+
+목록에는 리소스 식별자만 담고 개인정보 본문은 담지 않는다. 더해서:
+
+- **URL 의 query string·서명(presigned signature)·토큰을 제거하거나 암호화해 보관**한다.
+  presigned URL 을 그대로 저장하면 그 자체가 접근 권한이 된다
+- **로그에 남기지 않는다.** 실패 로그에도 리소스 식별자와 결과 코드만 남긴다
 
 ### 6.5 부분 실패 감사 기록
 
 job 단위로 사용자 식별자, job 식별자, 각 단계 결과를 남긴다.
 **개인정보 본문은 남기지 않는다.** 무엇을 지웠는지가 아니라 어디까지 진행됐는지를 남긴다.
+
+감사 로그에 남는 **내부 `user_id` 도 접근통제된 참조값으로 취급한다**(codex 보완).
+탈퇴한 사용자의 식별자가 평문으로 조회 가능하면 감사 목적을 넘어선다.
 
 ## 7. 판단 결과 (codex 검토 완료)
 
@@ -418,17 +484,29 @@ Testcontainers 로 실제 PostgreSQL 에 고정한다.
 
 | # | fixture | 고정할 것 |
 |---|---|---|
-| (a) | 상태별 | `DELETE` 대상만 있는 사용자 → 성공. `REVIEW_BLOCK` 이 하나라도 있으면 → `BLOCKED_POLICY`, **DB 무변화** |
-| (b) | 다중 users-FK 컬럼별 | `approvals` 에 `user_id` / `requester_id` / `reviewer_id` 각각으로 엮인 사용자를 따로 만들어 결과가 갈리는 것을 고정 |
+| (a) | 상태별 | **`DELETE` 대상만 있는 사용자 → 성공**(§1.1 대로 다른 사용자의 `REVIEW_BLOCK` 이 이 사용자를 막지 않는다). 해당 사용자에게 `REVIEW_BLOCK` FK 행이 있으면 → `BLOCKED_POLICY`, **DB 무변화**. 미분류 FK 가 있으면 → **전역** `BLOCKED_POLICY` |
+| (b) | 다중 users-FK | 컬럼별 개별 사례에 더해 **혼합 행**을 반드시 넣는다 — 같은 `approvals` 행에 `user_id`=탈퇴자, `requester_id`/`reviewer_id`=다른 사용자. 한 FK 가 `CASCADE` 라고 행 전체를 지우면 남의 승인 데이터가 사라진다(§1.2 실측). `ROW_BLOCK` 으로 막히는지 고정 |
 | (c) | 하위 FK 폐쇄 그래프 | `automation_workflows` + `workflow_actions`/`conditions`/`executions`, `goals` + `goal_milestones`, `ab_tests` + `ab_test_variants` 를 채운 뒤 삭제해 자식까지 정리되는지 |
 | (d) | 재시도·동시 요청·쓰기 동결 | 같은 job 재실행이 멱등(0행 삭제)인지. 동결 후 쓰기 시도가 거부되는지. 동시 요청이 중복 job 을 만들지 않는지 |
 | (e) | 외부 목록 수집 실패 | 수집 단계에서 실패하면 **DB 삭제를 시작하지 않는지**. DB 삭제 후 외부 정리 실패 시 `EXTERNAL_CLEANUP_PENDING` 과 목록 보존 |
 
 추가로 FK 실패 시 **전체 롤백**을 단언한다. 부분 반영이 남으면 안 된다.
 
-## 8. 이번 범위 밖 (P1 후속으로 추적)
+## 9. 이번 범위 밖 (P1 후속으로 추적)
 
 - 외부 스토리지(S3/MinIO) 파일 삭제
 - 플랫폼 OAuth 토큰·연동 해제
 - 결제 데이터 보존/익명화
 - 법적 보존 의무 — 여기서 단정하지 않는다. 제품·법무 확인 항목이다
+
+### 9.1 별건이지만 지금도 일어나는 데이터 유실 — `approvals.user_id` CASCADE
+
+§1.2 에서 실측한 건이다. **이번 설계와 무관하게 현재 스키마에서 이미 발생한다.**
+탈퇴자가 `approvals.user_id` 인 행은 `ON DELETE CASCADE` 로 지워지고, 그 행의
+`requester_id`·`reviewer_id` 로 걸린 **다른 사용자의 승인 데이터가 함께 사라진다.**
+
+지금은 탈퇴가 다른 FK 에 막혀 실행되지 않아 드러나지 않았을 뿐이다.
+탈퇴 경로가 열리는 순간 표면화된다.
+
+`ROW_DETACH` 로 가려면 `user_id` 의 `CASCADE` 를 풀고 nullable 로 바꾸는 마이그레이션이
+필요하다. 정책 승인 전까지 손대지 않지만, **탈퇴 기능을 열기 전에 반드시 결론이 나야 한다.**
