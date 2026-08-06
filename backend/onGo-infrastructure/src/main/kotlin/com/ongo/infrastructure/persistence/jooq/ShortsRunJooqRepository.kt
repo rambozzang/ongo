@@ -12,6 +12,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE_VIDEO_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.TEMPLATE_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.CROP_JSON
 import com.ongo.infrastructure.persistence.jooq.Fields.TRANSCRIPT_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
@@ -38,6 +39,7 @@ class ShortsRunJooqRepository(
             .set(STATUS, run.status.name)
             .set(CURRENT_STAGE, run.currentStage?.name)
             .set(TRANSCRIPT_TEXT, run.transcriptText)
+            .set(CROP_JSON, run.cropJson)
             .set(CLIP_COUNT, run.clipCount)
             .set(ERROR_MESSAGE, run.errorMessage)
             .returningResult(ID)
@@ -54,6 +56,7 @@ class ShortsRunJooqRepository(
             .set(STATUS, run.status.name)
             .set(CURRENT_STAGE, run.currentStage?.name)
             .set(TRANSCRIPT_TEXT, run.transcriptText)
+            .set(CROP_JSON, run.cropJson)
             .set(CLIP_COUNT, run.clipCount)
             .set(ERROR_MESSAGE, run.errorMessage)
             .set(VERSION, run.version + 1)
@@ -102,6 +105,7 @@ class ShortsRunJooqRepository(
         status = PipelineRunStatus.valueOf(get(STATUS)),
         currentStage = get(CURRENT_STAGE)?.let { PipelineStage.valueOf(it) },
         transcriptText = get(TRANSCRIPT_TEXT),
+        cropJson = get(CROP_JSON),
         clipCount = get(CLIP_COUNT),
         errorMessage = get(ERROR_MESSAGE),
         createdAt = localDateTime(CREATED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),

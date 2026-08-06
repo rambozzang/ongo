@@ -186,6 +186,75 @@ class ShortsPipelineOrchestratorTest {
         executors = executors,
     )
 
+    // ---- 0. REFRAME crop 영속성 (D1) ----
+
+    @Test
+    fun `REFRAME 크롭은 HOOK 게이트 재개 후에도 살아남아 클립에 기록된다`() {
+        // REFRAME 결과가 메모리 컨텍스트에만 있으면 게이트에서 멈춘 뒤 재개할 때 소실된다.
+        // 그러면 TEMPLATE 이 조기 반환해 클립에 crop 이 안 들어가고 세로 변환이 빠진 채 렌더된다.
+        stubCommon()
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+
+        val cropJson = """{"x":420,"y":0,"width":1080,"height":1920}"""
+
+        val transcribe = FakeStageExecutor(PipelineStage.TRANSCRIBE) {
+            ShortsStageOutput(outputSnapshot = "{}", transcriptText = "전사", transcriptSegments = emptyList())
+        }
+        val reframe = FakeStageExecutor(PipelineStage.REFRAME) {
+            ShortsStageOutput(outputSnapshot = "{}", cropJson = cropJson)
+        }
+        val segment = FakeStageExecutor(PipelineStage.SEGMENT) {
+            ShortsStageOutput(
+                outputSnapshot = "{}",
+                clipCandidates = listOf(ClipCandidate("제목1", "캡션1", 0, 15000)),
+            )
+        }
+        val subtitle = FakeStageExecutor(PipelineStage.SUBTITLE) { ctx ->
+            ShortsStageOutput(
+                outputSnapshot = "{}",
+                subtitles = ctx.clips.associate { it.id to """[{"startMs":0,"endMs":1000,"text":"자막"}]""" },
+            )
+        }
+        val hook = FakeStageExecutor(PipelineStage.HOOK) { ctx ->
+            ShortsStageOutput(
+                outputSnapshot = "{}",
+                hooks = ctx.clips.flatMap {
+                    listOf(
+                        GeneratedHook(it.id, HookVariant.A, "A안 ${it.seq}"),
+                        GeneratedHook(it.id, HookVariant.B, "B안 ${it.seq}"),
+                    )
+                },
+            )
+        }
+        val template = FakeStageExecutor(PipelineStage.TEMPLATE) { ShortsStageOutput(outputSnapshot = "{}") }
+        // 재개 시 TEMPLATE 다음 단계들도 필요하다. VALIDATE 이후 2차 게이트에서 멈춘다.
+        val renderSpec = FakeStageExecutor(PipelineStage.RENDER_SPEC) { ctx ->
+            ShortsStageOutput(
+                outputSnapshot = "{}",
+                renderSpecs = ctx.clips.associate { it.id to "{}" },
+            )
+        }
+        val validate = FakeStageExecutor(PipelineStage.VALIDATE) { ShortsStageOutput(outputSnapshot = "{}") }
+        val executors = listOf(transcribe, reframe, segment, subtitle, hook, template, renderSpec, validate)
+
+        // 1차 실행: HOOK 게이트에서 멈춘다
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, executors).run(1L, PipelineStage.TRANSCRIBE)
+        assertEquals(PipelineRunStatus.AWAITING_HOOK_SELECTION, runRepo.findById(1L)!!.status)
+
+        // 재개: 새 인스턴스로 TEMPLATE 부터. 메모리 컨텍스트는 남아 있지 않다
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, executors).run(1L, PipelineStage.TEMPLATE)
+
+        val clips = clipRepo.findByRunId(1L)
+        assertTrue(clips.isNotEmpty(), "클립이 있어야 검증이 의미 있다")
+        assertEquals(
+            cropJson, clips.first().cropJson,
+            "REFRAME 크롭이 재개 후 소실되면 세로 변환 없이 렌더된다",
+        )
+    }
+
     // ---- 1. 상태 전이: 1차 게이트 (HOOK → AWAITING_HOOK_SELECTION) ----
 
     @Test

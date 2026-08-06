@@ -178,6 +178,9 @@ class ShortsPipelineOrchestrator(
             }
             PipelineStage.REFRAME -> {
                 context.cropJson = output.cropJson
+                // 메모리에만 두면 HOOK 게이트에서 멈췄다 재개할 때 소실된다.
+                // TEMPLATE 이 크롭 없으면 조기 반환하므로 세로 변환이 통째로 빠진다.
+                persistRun(run.id) { it.copy(cropJson = output.cropJson) }
             }
             PipelineStage.SEGMENT -> {
                 val candidates: List<ClipCandidate> = output.clipCandidates.orEmpty()
@@ -260,6 +263,7 @@ class ShortsPipelineOrchestrator(
             sourceVideoTitle = video?.title,
             sourceFileUrl = video?.fileUrl,
             transcriptText = run.transcriptText,
+            cropJson = run.cropJson,
             transcriptSegments = loadTranscriptSegments(runId),
             clips = clips,
             hooks = hooks,
