@@ -79,8 +79,8 @@ class CompetitorSyncSchedulerFreezeTest {
     }
 
     @Test
-    @DisplayName("같은 사용자의 경쟁 채널이 여러 개여도 게이트는 한 번만 본다")
-    fun gateIsCheckedOncePerUser() {
+    @DisplayName("사전 검사는 사용자당 한 번이고, 쓰기 직전 재확인은 항목마다 한다")
+    fun precheckIsCachedButRecheckIsNot() {
         every { repository.findAll() } returns
             listOf(competitor(1, 100L), competitor(2, 100L), competitor(3, 100L))
         every { guard.requireWritable(100L, any(), any()) } returns Unit
@@ -88,9 +88,52 @@ class CompetitorSyncSchedulerFreezeTest {
 
         scheduler.syncCompetitorData()
 
-        // 항목마다 물으면 같은 답을 반복해서 받는다. DB 왕복을 아낀다.
-        verify(exactly = 1) { guard.requireWritable(100L, any(), any()) }
+        // 사전 검사 1회(캐시) + 쓰기 직전 재확인 3회 = 4회.
+        // 사전 검사를 캐시하는 것은 외부 호출을 아끼기 위해서지, 쓰기를 안전하게
+        // 만들기 위해서가 아니다. 안전은 재확인이 담당한다.
+        verify(exactly = 4) { guard.requireWritable(100L, any(), any()) }
         verify(exactly = 3) { repository.update(any()) }
+    }
+
+    @Test
+    @DisplayName("외부 조회 중 삭제 요청이 들어오면 쓰지 않는다")
+    fun deletionRequestedDuringExternalLookupPreventsWrites() {
+        every { repository.findAll() } returns listOf(competitor(1, 100L))
+
+        // 사전 검사는 통과했는데 외부 조회 동안 사용자가 탈퇴를 요청한 상황이다.
+        // 네트워크 호출이라 수백 ms~수 초가 걸릴 수 있어 실제로 벌어질 수 있는 창이다.
+        var calls = 0
+        every { guard.requireWritable(100L, any(), any()) } answers {
+            calls++
+            if (calls > 1) throw AccountFrozenException()
+        }
+        every { lookup.lookupChannel(any(), any()) } returns found()
+
+        scheduler.syncCompetitorData()
+
+        // 사전 검사만 믿었다면 여기서 동결된 계정에 데이터가 들어갔을 것이다.
+        verify(exactly = 1) { lookup.lookupChannel(any(), any()) }
+        verify(exactly = 0) { repository.update(any()) }
+        verify(exactly = 0) { repository.upsertAnalytics(any()) }
+    }
+
+    @Test
+    @DisplayName("재확인이 실패해도 쓰지 않는다 — 여기서도 fail-closed")
+    fun recheckFailureAlsoPreventsWrites() {
+        every { repository.findAll() } returns listOf(competitor(1, 100L))
+
+        var calls = 0
+        every { guard.requireWritable(100L, any(), any()) } answers {
+            calls++
+            // 재확인 시점에 상태 조회가 실패한 경우. 가드가 AccountFrozenException 으로 바꿔 던진다.
+            if (calls > 1) throw AccountFrozenException("계정 상태를 확인할 수 없어 요청을 처리하지 못했습니다.")
+        }
+        every { lookup.lookupChannel(any(), any()) } returns found()
+
+        scheduler.syncCompetitorData()
+
+        verify(exactly = 0) { repository.update(any()) }
+        verify(exactly = 0) { repository.upsertAnalytics(any()) }
     }
 
     @Test
