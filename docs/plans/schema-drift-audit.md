@@ -97,19 +97,35 @@ display_name  categories  social_links  stats_snapshot  rate_card  is_public  sl
 
 감사 중 발견했으나 고치지 않았다. 마이그레이션 범위를 넘어서는 설계 결정이다.
 
-### 5.1 계정 삭제가 이미 전면 실패로 보인다
+### 5.1 계정 삭제가 일부 사용자에게 실패한다
 
 `AuthController:178` → `AuthUseCase.deleteAccount:218` → `UserJooqRepository.delete` 는
 refresh token 만 정리하고 `DELETE FROM users` 를 그대로 실행한다.
+`users(id)` 참조 FK 의 삭제 규칙은 **`NO ACTION` 105건 / `CASCADE` 17건**이다.
 
-그런데 `users(id)` 참조 **106건에 `ON DELETE CASCADE` 가 없다**(있는 것은 17건뿐).
-게다가 `initializeNewUser` 가 가입 시 모든 사용자에게 `ai_credits`, `user_settings`,
-`subscriptions` 를 만든다. 즉 어떤 사용자든 FK 위반으로 삭제가 막힐 가능성이 높다.
+처음에는 이걸 보고 "모든 사용자의 탈퇴가 막힌다"고 판단했는데 **틀렸다.**
+실제 DB 로 사용자 상태를 만들어 `DELETE` 를 재현해 확인한 결과는 다음과 같다.
 
-실제 DB 로 `DELETE FROM users` 를 시도해 FK 위반을 재현했다(`media_kits_user_id_fkey`).
+| 사용자 상태 | 결과 |
+|---|---|
+| 가입 직후 (`ai_credits`, `user_settings`, `subscriptions`) | **성공** — 셋 다 CASCADE 다 |
+| 영상·채널·결제·알림·스케줄 보유 | **성공** — 전부 CASCADE 다 |
+| `activity_logs` 보유 | 실패하지만 **해당 없음** (아래) |
+| **댓글 보유** (`comments_user_id_fkey`) | **실패** |
+| **경쟁 채널 등록** (`competitors_user_id_fkey`) | **실패** |
+
+`activity_logs` 는 `NO ACTION` 이라 있으면 막지만, `ActivityLogUseCase` 의 저장 메서드를
+호출하는 곳이 0건이라(컨트롤러도 `@GetMapping` 조회 하나뿐) 실제로 행이 쌓이지 않는다.
+현재로선 문제를 일으키지 않는다.
+
+`comments` 와 `competitors` 는 다르다. 둘 다 `@Profile("wip")` 없는 컨트롤러의
+살아 있는 쓰기 경로다(`FanCommunityUseCase:65`, `CompetitorUseCase:81`).
+**즉 경쟁 채널을 한 번이라도 등록했거나 댓글이 동기화된 사용자는 탈퇴가 FK 위반으로 실패한다.**
 
 선택지는 (a) 삭제 전 수동 정리, (b) FK 를 CASCADE 로 전환, (c) soft delete 다.
-어느 쪽이든 되돌리기 어렵고 개인정보 정책과도 얽힌다. **별도 판단이 필요하다.**
+어느 쪽이든 되돌리기 어렵고 개인정보 삭제 요구와도 얽힌다. **별도 판단이 필요하다.**
+정리 대상을 고를 때 위 표처럼 "`NO ACTION` 이면서 살아 있는 쓰기 경로가 있는 테이블"만
+추리면 범위가 크게 줄어든다.
 
 ### 5.2 `media_kits` FK 에 CASCADE 가 없다
 
