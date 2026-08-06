@@ -22,6 +22,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @EnableMethodSecurity
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    private val accountFreezeFilter: AccountFreezeFilter,
     private val objectMapper: ObjectMapper,
     private val environment: Environment,
     @org.springframework.beans.factory.annotation.Value("\${cors.allowed-origins:*}")
@@ -80,6 +81,8 @@ class SecurityConfig(
                 }
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            // 인증이 끝나야 대상 사용자를 알 수 있으므로 JWT 필터 뒤에 둔다.
+            .addFilterAfter(accountFreezeFilter, JwtAuthenticationFilter::class.java)
 
         return http.build()
     }
