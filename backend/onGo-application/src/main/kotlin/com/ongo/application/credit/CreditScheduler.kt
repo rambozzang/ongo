@@ -3,6 +3,7 @@ package com.ongo.application.credit
 import com.ongo.common.enums.CreditTransactionType
 import com.ongo.domain.credit.AiCreditTransaction
 import com.ongo.domain.credit.CreditRepository
+import com.ongo.domain.lock.DistributedLockPort
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
@@ -11,16 +12,14 @@ import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
-import java.sql.Connection
 import java.time.LocalDate
 import java.time.LocalDateTime
-import javax.sql.DataSource
 
 @Component
 class CreditScheduler(
     private val creditRepository: CreditRepository,
     private val eventPublisher: ApplicationEventPublisher,
-    private val dataSource: DataSource,
+    private val distributedLock: DistributedLockPort,
     transactionManager: PlatformTransactionManager,
 ) {
 
@@ -174,65 +173,14 @@ class CreditScheduler(
         }
     }
 
-    /**
-     * advisory lock 을 잡고 [block] 을 실행한 뒤 **같은 커넥션에서** 해제한다.
-     *
-     * `pg_try_advisory_lock` 은 세션 락이라 락을 잡은 커넥션이 그대로 보유한다.
-     * 예전 구현은 획득과 해제를 각각 `dataSource.connection.use { }` 로 감쌌다.
-     * `use` 가 끝나면 커넥션이 풀로 반납될 뿐 세션은 살아 있으므로 락이 풀리지 않고,
-     * 해제 시에는 풀에서 다른 커넥션을 꺼낼 수 있어 `pg_advisory_unlock` 이 false 를
-     * 반환하고 조용히 무시됐다. 그 뒤 다음 실행은 락을 못 잡아 배치가 통째로 스킵된다.
-     * (실측: 락 보유 세션이 살아 있으면 다른 세션의 획득도 해제도 모두 false)
-     *
-     * 락 커넥션 하나를 배치가 끝날 때까지 붙잡고, 실제 작업은 별도 커넥션에서 돌린다.
-     */
+    /** 공유 락 구현에 위임한다. 잡지 못하면 건너뛴 사실을 남긴다. */
     private fun withAdvisoryLock(lockId: Long, jobName: String, block: () -> Unit) {
-        val conn = try {
-            dataSource.connection
-        } catch (e: Exception) {
-            log.error("advisory lock 커넥션 확보 실패. job={} lockId={}", jobName, lockId, e)
-            return
-        }
-
-        conn.use { held ->
-            if (!tryAdvisoryLock(held, lockId)) {
-                log.info(
-                    "다른 인스턴스에서 실행 중이라 건너뛴다. job={} lockId={} outcome={}",
-                    jobName, lockId, OUTCOME_SKIPPED_LOCKED,
-                )
-                return
-            }
-            try {
-                block()
-            } finally {
-                releaseAdvisoryLock(held, lockId)
-            }
-        }
-    }
-
-    private fun tryAdvisoryLock(conn: Connection, lockId: Long): Boolean = try {
-        conn.prepareStatement("SELECT pg_try_advisory_lock(?)").use { stmt ->
-            stmt.setLong(1, lockId)
-            stmt.executeQuery().use { rs -> rs.next() && rs.getBoolean(1) }
-        }
-    } catch (e: Exception) {
-        log.warn("Advisory lock 획득 실패. lockId={}", lockId, e)
-        false
-    }
-
-    private fun releaseAdvisoryLock(conn: Connection, lockId: Long) {
-        try {
-            conn.prepareStatement("SELECT pg_advisory_unlock(?)").use { stmt ->
-                stmt.setLong(1, lockId)
-                stmt.executeQuery().use { rs ->
-                    // false 면 이 세션이 락을 쥐고 있지 않다는 뜻이다. 조용히 넘기지 않는다.
-                    if (rs.next() && !rs.getBoolean(1)) {
-                        log.error("Advisory lock 해제가 무시됐다. lockId={}", lockId)
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            log.warn("Advisory lock 해제 실패. lockId={}", lockId, e)
+        val ran = distributedLock.withLock(lockId, block)
+        if (!ran) {
+            log.info(
+                "다른 인스턴스에서 실행 중이라 건너뛴다. job={} lockId={} outcome={}",
+                jobName, lockId, OUTCOME_SKIPPED_LOCKED,
+            )
         }
     }
 

@@ -19,6 +19,11 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
+      # 최소 2 이상이어야 한다. 스케줄러가 advisory lock 용 커넥션 1개를 배치가 끝날 때까지
+      # 점유하고, 실제 작업은 별도 커넥션에서 돌기 때문이다. 1로 낮추면 배치가 커넥션을
+      # 못 얻어 connection-timeout 뒤 항목마다 실패한다. 실사용 기준으로는 여유 있게 둔다.
+      # leak-detection-threshold 를 넘는 장시간 배치는 락 커넥션에 대해 leak 경고를 남기는데,
+      # 실제 누수가 아니라 의도된 lease 다. 예상 최대 배치 시간에 맞춰 조정한다.
       maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:50}
       minimum-idle: ${HIKARI_MIN_IDLE:10}
       idle-timeout: 30000
