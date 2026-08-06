@@ -121,6 +121,15 @@ storage:
     access-key: ${S3_ACCESS_KEY:dummy-s3-access}
     secret-key: ${S3_SECRET_KEY:dummy-s3-secret}
 
+# URL 임포트 (YouTube/TikTok/Instagram)
+#
+# 운영 전제: yt-dlp 바이너리와 ffmpeg 가 호스트에 설치돼 있어야 한다.
+# deploy/start.sh 는 JAR 을 호스트에서 직접 실행하므로 도커 이미지에 넣는 방식이 통하지 않는다.
+# 없으면 임포트 요청이 실패한다. 서버 준비는 배포 담당자가 한다.
+videodownload:
+  # PATH 에서 찾는다. 다른 경로에 설치했으면 절대 경로로 재정의한다.
+  yt-dlp-path: ${YT_DLP_PATH:yt-dlp}
+
 # Payment (PortOne V2)
 payment:
   portone:

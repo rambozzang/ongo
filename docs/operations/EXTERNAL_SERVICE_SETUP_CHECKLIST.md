@@ -395,7 +395,34 @@ TOSS_WEBHOOK_SECRET=
 
 Toss를 실제 주 결제로 사용하려면 결제창 client key, server secret key, 승인 API와 실패/취소 흐름을 별도 구현해야 한다.
 
-### 4.5 Alibaba Cloud Model Studio — 현재 기본 AI 제공자
+### 4.5 호스트 바이너리 — yt-dlp (URL 임포트에 필요)
+
+외부 서비스 가입이 아니라 **서버에 직접 설치**해야 하는 의존성이다.
+
+YouTube/TikTok/Instagram URL 임포트 기능이 `yt-dlp` 와 `ffmpeg` 를 호출한다.
+`deploy/start.sh` 가 JAR 을 호스트에서 직접 실행하므로(`setsid java -jar`)
+도커 이미지에 넣는 방식이 통하지 않는다. Oracle 호스트에 설치해야 한다.
+
+```bash
+# Ubuntu/Debian 기준
+sudo apt-get update && sudo apt-get install -y ffmpeg
+sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+sudo chmod a+rx /usr/local/bin/yt-dlp
+yt-dlp --version && ffmpeg -version | head -1
+```
+
+설치하지 않으면 임포트 요청이 실패한다. 서버 기동 자체는 막지 않는다.
+다른 경로에 설치했다면 환경변수로 재정의한다.
+
+```dotenv
+# 선택. 기본값은 PATH 의 yt-dlp
+YT_DLP_PATH=
+```
+
+> `yt-dlp` 는 대상 사이트 변경에 맞춰 자주 갱신된다. 임포트가 갑자기 실패하면
+> 먼저 바이너리를 최신으로 올려본다.
+
+### 4.6 Alibaba Cloud Model Studio — 현재 기본 AI 제공자
 
 공식 포털: [Alibaba Cloud Model Studio](https://www.alibabacloud.com/help/en/model-studio/)
 
@@ -410,7 +437,7 @@ DASHSCOPE_API_KEY=
 
 현재 소스의 기본 endpoint는 국제 coding endpoint이므로 발급 리전과 호환되는 키인지 확인한다.
 
-### 4.6 선택 AI 제공자
+### 4.7 선택 AI 제공자
 
 AI provider fallback 또는 비교 기능을 사용할 때만 발급한다.
 
