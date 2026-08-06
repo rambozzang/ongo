@@ -1,6 +1,8 @@
 package com.ongo.application.ai
 
 import com.ongo.common.enums.PlanType
+import com.ongo.common.exception.AccountFrozenException
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.subscription.SubscriptionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -11,8 +13,8 @@ import java.time.LocalDate
 class WeeklyDigestScheduler(
     private val subscriptionRepository: SubscriptionRepository,
     private val weeklyDigestUseCase: WeeklyDigestUseCase,
+    private val userWriteGuard: UserWriteGuard,
 ) {
-
     private val log = LoggerFactory.getLogger(WeeklyDigestScheduler::class.java)
 
     /**
@@ -42,7 +44,20 @@ class WeeklyDigestScheduler(
         var successCount = 0
         var failCount = 0
 
+        var frozenCount = 0
+
         for (subscription in allSubscriptions) {
+            // 사전 검사. 동결된 계정은 AI 호출까지 가지 않고 거른다.
+            // 실제 안전은 유스케이스가 저장 직전에 다시 확인한다 — AI 호출이 길어서
+            // 여기서 통과했더라도 그 사이 탈퇴 요청이 들어올 수 있다.
+            try {
+                userWriteGuard.requireWritable(subscription.userId)
+            } catch (e: AccountFrozenException) {
+                frozenCount++
+                log.info("동결된 계정이라 주간 다이제스트를 건너뛴다. userId={}", subscription.userId)
+                continue
+            }
+
             try {
                 weeklyDigestUseCase.generateDigest(subscription.userId, weekStart, weekEnd)
                 successCount++
@@ -53,6 +68,6 @@ class WeeklyDigestScheduler(
             }
         }
 
-        log.info("주간 다이제스트 자동 생성 완료: 성공={}, 실패={}", successCount, failCount)
+        log.info("주간 다이제스트 자동 생성 완료: 성공={}, 실패={}, 동결로 건너뜀={}", successCount, failCount, frozenCount)
     }
 }

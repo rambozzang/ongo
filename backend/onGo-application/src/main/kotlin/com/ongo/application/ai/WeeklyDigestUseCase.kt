@@ -6,6 +6,8 @@ import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AiFeature
 import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.common.exception.AccountFrozenException
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.ai.WeeklyDigest
 import com.ongo.domain.ai.WeeklyDigestRepository
 import com.ongo.domain.analytics.AnalyticsRepository
@@ -20,6 +22,7 @@ class WeeklyDigestUseCase(
     private val creditService: CreditService,
     private val analyticsRepository: AnalyticsRepository,
     private val weeklyDigestRepository: WeeklyDigestRepository,
+    private val userWriteGuard: UserWriteGuard,
 ) {
 
     private val log = LoggerFactory.getLogger(WeeklyDigestUseCase::class.java)
@@ -70,6 +73,11 @@ class WeeklyDigestUseCase(
                 actionItems = result.actionItems.joinToString("\n"),
                 generatedAt = LocalDateTime.now(),
             )
+
+            // AI 호출이 끝났다. 저장 직전에 게이트를 다시 본다.
+            // 위 chatClientResolver 호출은 수 초가 걸릴 수 있고 그 사이 탈퇴 요청이
+            // 들어올 수 있다. 호출 전 검사만 믿으면 동결된 계정에 쓴다.
+            userWriteGuard.requireWritable(userId)
 
             return weeklyDigestRepository.save(digest)
         } catch (e: BusinessException) {

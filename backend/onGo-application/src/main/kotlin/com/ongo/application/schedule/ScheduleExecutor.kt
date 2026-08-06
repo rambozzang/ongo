@@ -1,5 +1,7 @@
 package com.ongo.application.schedule
 
+import com.ongo.common.exception.AccountFrozenException
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.application.video.StreamPublishUseCase
 import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.enums.UploadStatus
@@ -31,6 +33,7 @@ class ScheduleExecutor(
     private val distributedLockPort: DistributedLockPort,
     private val streamPublishUseCase: StreamPublishUseCase,
     transactionManager: PlatformTransactionManager,
+    private val userWriteGuard: UserWriteGuard,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -94,6 +97,22 @@ class ScheduleExecutor(
 
                     // 아직 업로드가 시작되지 않은 예약 — 업로드 트리거
                     if (uploads.isEmpty() && schedule.status == ScheduleStatus.SCHEDULED) {
+                        // 여기서만 게이트를 본다. 이 분기는 **외부 플랫폼에 실제로 게시**한다.
+                        // 삭제를 요청한 계정으로 새 콘텐츠를 외부에 올리는 것은 되돌릴 수 없다.
+                        //
+                        // 아래 상태 갱신 분기는 게이트를 보지 않는다. 이미 시작된 업로드의
+                        // 결과를 반영하는 정합화라 새 콘텐츠를 만들지 않고, 막으면 예약이
+                        // 잘못된 상태로 영원히 남는다. 금융 정합성과 같은 논리다 —
+                        // 멈추는 쪽이 더 나쁘다.
+                        try {
+                            userWriteGuard.requireWritable(schedule.userId)
+                        } catch (e: AccountFrozenException) {
+                            log.info(
+                                "동결된 계정이라 예약 게시를 건너뛴다. scheduleId={} userId={}",
+                                schedule.id, schedule.userId,
+                            )
+                            return@executeWithoutResult
+                        }
                         log.info("예약 업로드 트리거 [scheduleId={}, videoId={}]", schedule.id, schedule.videoId)
                         streamPublishUseCase.executeScheduledUpload(schedule)
                         return@executeWithoutResult

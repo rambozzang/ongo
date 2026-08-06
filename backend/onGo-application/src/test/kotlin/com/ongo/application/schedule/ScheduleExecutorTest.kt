@@ -1,5 +1,6 @@
 package com.ongo.application.schedule
 
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.application.video.StreamPublishUseCase
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.ScheduleStatus
@@ -51,6 +52,9 @@ class ScheduleExecutorTest {
     @MockK(relaxed = true)
     private lateinit var streamPublishUseCase: StreamPublishUseCase
 
+    // 기존 테스트는 동결을 다루지 않는다. 통과시키는 가드로 둔다.
+    private val userWriteGuard = mockk<UserWriteGuard>(relaxed = true)
+
     private lateinit var executor: ScheduleExecutor
 
     private val kst = ZoneId.of("Asia/Seoul")
@@ -75,6 +79,7 @@ class ScheduleExecutorTest {
             distributedLockPort = distributedLockPort,
             streamPublishUseCase = streamPublishUseCase,
             transactionManager = txManager,
+            userWriteGuard = userWriteGuard,
         )
     }
 
