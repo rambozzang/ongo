@@ -18,7 +18,9 @@ Reference: `CreFlow_Development_Guide_v2.0_1.md` contains the full specification
 4. **통합 분석 대시보드** — 전체 플랫폼의 조회수, 구독자, 수익 등을 하나의 화면에서 크로스 플랫폼 비교
 5. **스케줄링 & 캘린더** — 예약 게시, 최적 업로드 시간 추천
 6. **채널 관리** — OAuth로 연동된 채널의 토큰 상태, 동기화 관리
-7. **구독 & 결제** — Free / Starter / Pro / Business 4단계 요금제 (Paddle 결제)
+7. **구독 & 결제** — Free / Starter / Pro / Business 4단계 요금제 (PortOne V2 결제)
+   - 신규 결제는 전부 PortOne. Paddle/Toss 코드는 기존 결제 레코드 처리용 레거시이며 체크아웃 UI에서는 사용하지 않음
+   - 웹훅은 Standard Webhooks 서명 검증(`webhook-id`/`webhook-signature`/`webhook-timestamp`) 후 paymentId로 PortOne API 재조회해 금액·상태를 확인
 
 ## Tech Stack
 

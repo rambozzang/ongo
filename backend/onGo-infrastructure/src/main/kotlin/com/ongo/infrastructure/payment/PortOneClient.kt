@@ -15,6 +15,7 @@ import java.time.Duration
 @Component
 class PortOneClient(
     private val objectMapper: ObjectMapper,
+    private val webhookVerifier: PortOneWebhookVerifier,
     @Value("\${payment.portone.api-secret:}") apiSecret: String,
 ) : PortOnePaymentGateway {
     private val restClient = RestClient.builder()
@@ -47,6 +48,13 @@ class PortOneClient(
                 ?: json.path("receipt").text("url"),
         )
     }
+
+    override fun verifyWebhookSignature(
+        rawBody: String,
+        webhookId: String?,
+        webhookSignature: String?,
+        webhookTimestamp: String?,
+    ): Boolean = webhookVerifier.verify(rawBody, webhookId, webhookSignature, webhookTimestamp)
 
     private fun JsonNode.text(name: String): String? = path(name).takeUnless { it.isMissingNode || it.isNull }?.asText()
 }

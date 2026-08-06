@@ -6,11 +6,14 @@ import com.ongo.common.enums.PaymentStatus
 import com.ongo.common.enums.PaymentType
 import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.SubscriptionStatus
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.ongo.common.exception.NotFoundException
+import com.ongo.common.exception.UnauthorizedException
 import com.ongo.domain.payment.Payment
 import com.ongo.domain.payment.PaymentRepository
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -23,9 +26,39 @@ class PortOnePaymentService(
     private val userRepository: UserRepository,
     private val creditService: com.ongo.application.credit.CreditService,
     private val gateway: PortOnePaymentGateway,
+    private val objectMapper: ObjectMapper,
     @Value("\${payment.portone.store-id:}") private val storeId: String,
     @Value("\${payment.portone.channel-key:}") private val channelKey: String,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * 포트원 웹훅을 처리한다.
+     *
+     * 웹훅 본문은 신뢰하지 않는다. 서명을 먼저 검증한 뒤, paymentId로 포트원 API를 재조회해
+     * 결제 상태와 금액을 확인한다.
+     *
+     * 포트원은 결제 실패/취소/빌링키 등 모든 이벤트를 같은 엔드포인트로 보내고 2xx가 아니면
+     * 최대 5회 재전송하므로, `Transaction.Paid` 외의 이벤트는 예외 없이 무시한다.
+     */
+    fun handleWebhook(rawBody: String, webhookId: String?, webhookSignature: String?, webhookTimestamp: String?) {
+        if (!gateway.verifyWebhookSignature(rawBody, webhookId, webhookSignature, webhookTimestamp)) {
+            throw UnauthorizedException("포트원 웹훅 서명 검증 실패")
+        }
+
+        val json = runCatching { objectMapper.readTree(rawBody) }.getOrElse {
+            throw IllegalArgumentException("포트원 웹훅 본문을 해석할 수 없습니다")
+        }
+        val type = json.path("type").asText(null)
+        if (type != WEBHOOK_TYPE_PAID) {
+            log.debug("처리 대상이 아닌 포트원 웹훅 이벤트 무시: type={}", type)
+            return
+        }
+
+        val paymentId = json.path("data").path("paymentId").asText(null)
+            ?: throw IllegalArgumentException("포트원 웹훅에 paymentId가 없습니다")
+        complete(null, paymentId)
+    }
 
     @Transactional
     fun createSubscriptionCheckout(
@@ -169,6 +202,11 @@ class PortOnePaymentService(
 
     private fun BillingCycle.displayName() = if (this == BillingCycle.YEARLY) "연간" else "월간"
     private fun Payment.toResult() = PortOnePaymentResult(id = id!!, status = status.name)
+
+    companion object {
+        /** 결제 승인 완료 이벤트. 이 타입만 결제 완료 처리를 수행한다. */
+        private const val WEBHOOK_TYPE_PAID = "Transaction.Paid"
+    }
 }
 
 data class PortOneCheckoutIntent(
