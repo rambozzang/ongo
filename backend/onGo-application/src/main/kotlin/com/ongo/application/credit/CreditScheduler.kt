@@ -7,7 +7,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
+import java.sql.Connection
 import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.sql.DataSource
@@ -17,66 +21,90 @@ class CreditScheduler(
     private val creditRepository: CreditRepository,
     private val eventPublisher: ApplicationEventPublisher,
     private val dataSource: DataSource,
+    transactionManager: PlatformTransactionManager,
 ) {
 
     private val log = LoggerFactory.getLogger(CreditScheduler::class.java)
+
+    /**
+     * 사용자 1건을 독립 트랜잭션으로 묶는다.
+     *
+     * 같은 클래스 안에서 `@Transactional` 메서드를 자기호출하면 프록시를 타지 않아
+     * 전파 설정이 무시된다. 그래서 애노테이션 대신 [TransactionTemplate]을 쓴다.
+     */
+    private val perItemTx = TransactionTemplate(transactionManager).apply {
+        propagationBehavior = TransactionDefinition.PROPAGATION_REQUIRES_NEW
+    }
 
     companion object {
         private const val LOCK_FREE_CREDIT_RESET = 100001L
         private const val LOCK_EXPIRE_PURCHASED = 100002L
         private const val LOCK_LOW_CREDIT_CHECK = 100003L
+
+        /** 배치 로그의 outcome 값. 알림·집계가 문자열로 걸 수 있는 저카디널리티 값이다. */
+        private const val OUTCOME_OK = "OK"
+        private const val OUTCOME_PARTIAL_FAILURE = "PARTIAL_FAILURE"
+        private const val OUTCOME_SKIPPED_LOCKED = "SKIPPED_LOCKED"
+
+        /** 실패 사용자 목록을 로그에 남길 때의 상한. 전체는 건수로만 표시한다. */
+        private const val FAILED_ID_LOG_LIMIT = 50
     }
 
     /**
      * 매월 1일 00:00 무료 크레딧 리셋
      */
+    // 바깥 루프에는 트랜잭션을 두지 않는다. 사용자 1건씩 REQUIRES_NEW 로 묶고 루프 바깥에서 잡는다.
+    //
+    // 예전에는 이 메서드에 @Transactional 이 붙어 전체 사용자가 한 트랜잭션이었다.
+    // jOOQ 가 스프링 트랜잭션에 참여하지 않던 동안에는 각 쿼리가 개별 auto-commit 이라
+    // 사용자별 catch 가 실제로 "이 사용자만 건너뛰기"로 동작했다. 트랜잭션이 정상화되면서
+    // 한 사용자의 DB 오류가 트랜잭션 전체를 abort 시키고, 이후 사용자가 전부 실패하며,
+    // 이미 성공한 것까지 롤백되는 구조가 됐다. 사용자별 격리를 명시적으로 되돌린다.
     @Scheduled(cron = "0 0 0 1 * *")
-    @Transactional
-    fun resetFreeCredits() {
-        if (!tryAdvisoryLock(LOCK_FREE_CREDIT_RESET)) {
-            log.info("다른 인스턴스에서 무료 크레딧 리셋 실행 중, 스킵")
-            return
-        }
-        try {
-            val today = LocalDate.now()
-            val userIds = creditRepository.findUsersForFreeReset(today)
-            log.info("무료 크레딧 리셋 시작. 대상 사용자 수: {}", userIds.size)
+    fun resetFreeCredits() = withAdvisoryLock(LOCK_FREE_CREDIT_RESET, "무료 크레딧 리셋") {
+        val today = LocalDate.now()
+        val userIds = creditRepository.findUsersForFreeReset(today)
+        log.info("무료 크레딧 리셋 시작. job=freeCreditReset targets={}", userIds.size)
 
-            var successCount = 0
-            for (userId in userIds) {
-                try {
-                    val credit = creditRepository.findByUserIdForUpdate(userId) ?: continue
-                    val resetAmount = credit.freeMonthly
-                    val purchasedTotal = creditRepository.findActivePurchasedCredits(userId).sumOf { it.remaining }
-                    val newBalance = resetAmount + purchasedTotal
-
-                    creditRepository.update(
-                        credit.copy(
-                            freeRemaining = resetAmount,
-                            balance = newBalance,
-                            freeResetDate = today.plusMonths(1).withDayOfMonth(1),
-                            updatedAt = LocalDateTime.now(),
-                        )
-                    )
-
-                    creditRepository.saveTransaction(
-                        AiCreditTransaction(
-                            userId = userId,
-                            type = CreditTransactionType.FREE_RESET,
-                            amount = resetAmount,
-                            balanceAfter = newBalance,
-                            feature = "MONTHLY_RESET",
-                        )
-                    )
-                    successCount++
-                } catch (e: Exception) {
-                    log.error("무료 크레딧 리셋 실패. userId: {}", userId, e)
-                }
+        val failed = mutableListOf<Long>()
+        var successCount = 0
+        for (userId in userIds) {
+            try {
+                perItemTx.executeWithoutResult { resetFreeCreditsFor(userId, today) }
+                successCount++
+            } catch (e: Exception) {
+                failed += userId
+                log.error("무료 크레딧 리셋 실패. job=freeCreditReset userId={}", userId, e)
             }
-            log.info("무료 크레딧 리셋 완료. 성공: {}/{}", successCount, userIds.size)
-        } finally {
-            releaseAdvisoryLock(LOCK_FREE_CREDIT_RESET)
         }
+        reportBatchResult("freeCreditReset", successCount, userIds.size, failed)
+    }
+
+    /** 사용자 1건의 DB 작업 전체. [perItemTx] 안에서만 호출한다. */
+    private fun resetFreeCreditsFor(userId: Long, today: LocalDate) {
+        val credit = creditRepository.findByUserIdForUpdate(userId) ?: return
+        val resetAmount = credit.freeMonthly
+        val purchasedTotal = creditRepository.findActivePurchasedCredits(userId).sumOf { it.remaining }
+        val newBalance = resetAmount + purchasedTotal
+
+        creditRepository.update(
+            credit.copy(
+                freeRemaining = resetAmount,
+                balance = newBalance,
+                freeResetDate = today.plusMonths(1).withDayOfMonth(1),
+                updatedAt = LocalDateTime.now(),
+            )
+        )
+
+        creditRepository.saveTransaction(
+            AiCreditTransaction(
+                userId = userId,
+                type = CreditTransactionType.FREE_RESET,
+                amount = resetAmount,
+                balanceAfter = newBalance,
+                feature = "MONTHLY_RESET",
+            )
+        )
     }
 
     /**
@@ -84,99 +112,141 @@ class CreditScheduler(
      * Batch processes expired credits by grouping per user to minimize DB round-trips.
      */
     @Scheduled(cron = "0 0 1 * * *")
-    @Transactional
-    fun expirePurchasedCredits() {
-        if (!tryAdvisoryLock(LOCK_EXPIRE_PURCHASED)) {
-            log.info("다른 인스턴스에서 만료 크레딧 처리 실행 중, 스킵")
-            return
-        }
-        try {
-            // Step 1: Bulk expire all expired purchased credits in a single UPDATE
-            val expiredCount = creditRepository.bulkExpirePurchasedCredits()
-            log.info("만료 크레딧 일괄 상태 변경 완료: {}건", expiredCount)
+    fun expirePurchasedCredits() = withAdvisoryLock(LOCK_EXPIRE_PURCHASED, "만료 크레딧 처리") {
+        // 1단계: 일괄 만료 처리. 단일 UPDATE 라 자체 트랜잭션으로 묶는다.
+        val expiredCount = perItemTx.execute { creditRepository.bulkExpirePurchasedCredits() } ?: 0
+        log.info("만료 크레딧 일괄 상태 변경 완료. job=expirePurchasedCredits expired={}", expiredCount)
 
-            if (expiredCount == 0) return
-
-            // Step 2: Recalculate balances for affected users
+        if (expiredCount > 0) {
+            // 2단계: 영향받은 사용자 잔액 재계산. 사용자별 독립 트랜잭션이다.
             val affectedUserIds = creditRepository.findUsersWithExpiredCredits()
-            log.info("잔액 재계산 대상 사용자 수: {}", affectedUserIds.size)
+            log.info("잔액 재계산 시작. job=expirePurchasedCredits targets={}", affectedUserIds.size)
 
+            val failed = mutableListOf<Long>()
+            var successCount = 0
             for (userId in affectedUserIds) {
                 try {
-                    val credit = creditRepository.findByUserIdForUpdate(userId) ?: continue
-                    val purchasedTotal = creditRepository.findActivePurchasedCredits(userId).sumOf { it.remaining }
-                    val newBalance = credit.freeRemaining + purchasedTotal
-
-                    creditRepository.update(
-                        credit.copy(balance = newBalance, updatedAt = LocalDateTime.now())
-                    )
+                    perItemTx.executeWithoutResult { recalculateBalanceFor(userId) }
+                    successCount++
                 } catch (e: Exception) {
-                    log.error("만료 크레딧 잔액 재계산 실패. userId: {}", userId, e)
+                    failed += userId
+                    log.error("만료 크레딧 잔액 재계산 실패. job=expirePurchasedCredits userId={}", userId, e)
                 }
             }
-            log.info("만료 크레딧 처리 완료")
-        } finally {
-            releaseAdvisoryLock(LOCK_EXPIRE_PURCHASED)
+            reportBatchResult("expirePurchasedCredits", successCount, affectedUserIds.size, failed)
         }
+    }
+
+    /** 사용자 1건의 잔액 재계산. [perItemTx] 안에서만 호출한다. */
+    private fun recalculateBalanceFor(userId: Long) {
+        val credit = creditRepository.findByUserIdForUpdate(userId) ?: return
+        val purchasedTotal = creditRepository.findActivePurchasedCredits(userId).sumOf { it.remaining }
+        val newBalance = credit.freeRemaining + purchasedTotal
+
+        creditRepository.update(credit.copy(balance = newBalance, updatedAt = LocalDateTime.now()))
     }
 
     /**
      * 매시간 잔여 크레딧 20% 이하 알림 체크
      */
+    // readOnly 경로라 트랜잭션 구조는 그대로 둔다. 잠금 처리만 고친 helper 를 태운다.
     @Scheduled(cron = "0 0 * * * *")
     @Transactional(readOnly = true)
-    fun checkLowCreditNotifications() {
-        if (!tryAdvisoryLock(LOCK_LOW_CREDIT_CHECK)) {
-            log.info("다른 인스턴스에서 크레딧 부족 알림 체크 실행 중, 스킵")
-            return
-        }
-        try {
-            val lowCreditUsers = creditRepository.findLowCreditUsers()
-            var notifiedCount = 0
+    fun checkLowCreditNotifications() = withAdvisoryLock(LOCK_LOW_CREDIT_CHECK, "크레딧 부족 알림 체크") {
+        val lowCreditUsers = creditRepository.findLowCreditUsers()
+        var notifiedCount = 0
 
-            for (credit in lowCreditUsers) {
-                log.info("크레딧 잔여 20% 이하 알림. userId: {}, balance: {}, freeMonthly: {}",
-                    credit.userId, credit.balance, credit.freeMonthly)
-                eventPublisher.publishEvent(
-                    LowCreditAlertEvent(
-                        userId = credit.userId,
-                        balance = credit.balance,
-                        freeMonthly = credit.freeMonthly,
-                    )
+        for (credit in lowCreditUsers) {
+            log.info("크레딧 잔여 20% 이하 알림. userId: {}, balance: {}, freeMonthly: {}",
+                credit.userId, credit.balance, credit.freeMonthly)
+            eventPublisher.publishEvent(
+                LowCreditAlertEvent(
+                    userId = credit.userId,
+                    balance = credit.balance,
+                    freeMonthly = credit.freeMonthly,
                 )
-                notifiedCount++
-            }
+            )
+            notifiedCount++
+        }
 
-            if (notifiedCount > 0) {
-                log.info("크레딧 부족 알림 발송: {}명", notifiedCount)
-            }
-        } finally {
-            releaseAdvisoryLock(LOCK_LOW_CREDIT_CHECK)
+        if (notifiedCount > 0) {
+            log.info("크레딧 부족 알림 발송: {}명", notifiedCount)
         }
     }
 
-    private fun tryAdvisoryLock(lockId: Long): Boolean = try {
-        dataSource.connection.use { conn ->
-            conn.prepareStatement("SELECT pg_try_advisory_lock(?)").use { stmt ->
-                stmt.setLong(1, lockId)
-                stmt.executeQuery().use { rs -> rs.next() && rs.getBoolean(1) }
+    /**
+     * advisory lock 을 잡고 [block] 을 실행한 뒤 **같은 커넥션에서** 해제한다.
+     *
+     * `pg_try_advisory_lock` 은 세션 락이라 락을 잡은 커넥션이 그대로 보유한다.
+     * 예전 구현은 획득과 해제를 각각 `dataSource.connection.use { }` 로 감쌌다.
+     * `use` 가 끝나면 커넥션이 풀로 반납될 뿐 세션은 살아 있으므로 락이 풀리지 않고,
+     * 해제 시에는 풀에서 다른 커넥션을 꺼낼 수 있어 `pg_advisory_unlock` 이 false 를
+     * 반환하고 조용히 무시됐다. 그 뒤 다음 실행은 락을 못 잡아 배치가 통째로 스킵된다.
+     * (실측: 락 보유 세션이 살아 있으면 다른 세션의 획득도 해제도 모두 false)
+     *
+     * 락 커넥션 하나를 배치가 끝날 때까지 붙잡고, 실제 작업은 별도 커넥션에서 돌린다.
+     */
+    private fun withAdvisoryLock(lockId: Long, jobName: String, block: () -> Unit) {
+        val conn = try {
+            dataSource.connection
+        } catch (e: Exception) {
+            log.error("advisory lock 커넥션 확보 실패. job={} lockId={}", jobName, lockId, e)
+            return
+        }
+
+        conn.use { held ->
+            if (!tryAdvisoryLock(held, lockId)) {
+                log.info(
+                    "다른 인스턴스에서 실행 중이라 건너뛴다. job={} lockId={} outcome={}",
+                    jobName, lockId, OUTCOME_SKIPPED_LOCKED,
+                )
+                return
+            }
+            try {
+                block()
+            } finally {
+                releaseAdvisoryLock(held, lockId)
             }
         }
+    }
+
+    private fun tryAdvisoryLock(conn: Connection, lockId: Long): Boolean = try {
+        conn.prepareStatement("SELECT pg_try_advisory_lock(?)").use { stmt ->
+            stmt.setLong(1, lockId)
+            stmt.executeQuery().use { rs -> rs.next() && rs.getBoolean(1) }
+        }
     } catch (e: Exception) {
-        log.warn("Advisory lock 획득 실패: lockId=$lockId", e)
+        log.warn("Advisory lock 획득 실패. lockId={}", lockId, e)
         false
     }
 
-    private fun releaseAdvisoryLock(lockId: Long) {
+    private fun releaseAdvisoryLock(conn: Connection, lockId: Long) {
         try {
-            dataSource.connection.use { conn ->
-                conn.prepareStatement("SELECT pg_advisory_unlock(?)").use { stmt ->
-                    stmt.setLong(1, lockId)
-                    stmt.execute()
+            conn.prepareStatement("SELECT pg_advisory_unlock(?)").use { stmt ->
+                stmt.setLong(1, lockId)
+                stmt.executeQuery().use { rs ->
+                    // false 면 이 세션이 락을 쥐고 있지 않다는 뜻이다. 조용히 넘기지 않는다.
+                    if (rs.next() && !rs.getBoolean(1)) {
+                        log.error("Advisory lock 해제가 무시됐다. lockId={}", lockId)
+                    }
                 }
             }
         } catch (e: Exception) {
-            log.warn("Advisory lock 해제 실패: lockId=$lockId", e)
+            log.warn("Advisory lock 해제 실패. lockId={}", lockId, e)
         }
+    }
+
+    /** 배치 결과를 알림 가능한 형태로 표면화한다. 조용한 전체 실패보다 낫다. */
+    private fun reportBatchResult(job: String, success: Int, total: Int, failed: List<Long>) {
+        if (failed.isEmpty()) {
+            log.info("배치 완료. job={} success={} total={} outcome={}", job, success, total, OUTCOME_OK)
+            return
+        }
+        val shown = failed.take(FAILED_ID_LOG_LIMIT)
+        val suffix = if (failed.size > shown.size) " 외 ${failed.size - shown.size}건" else ""
+        log.error(
+            "배치 일부 실패. job={} success={} failed={} total={} outcome={} failedUserIds={}{}",
+            job, success, failed.size, total, OUTCOME_PARTIAL_FAILURE, shown, suffix,
+        )
     }
 }

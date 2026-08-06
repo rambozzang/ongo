@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.TransactionTemplate
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
@@ -134,6 +135,48 @@ class SpringTransactionParticipationIT {
 
         assertTrue(saved, "비DB 예외 이후에도 삽입이 정상 동작해야 한다")
         assertEquals(1, dsl.fetchCount(WEBHOOK_EVENTS, EVENT_ID.eq("portone:non-db-ok")))
+    }
+
+    @Test
+    @DisplayName("항목별 REQUIRES_NEW면 한 건이 실패해도 앞선 성공은 커밋되고 다음 건도 성공한다")
+    fun perItemRequiresNewIsolatesFailures() {
+        // CreditScheduler 가 사용자별로 쓰는 구조다. 바깥 루프에는 트랜잭션이 없고,
+        // 항목 1건이 독립 트랜잭션이며, 실패는 루프 바깥에서 잡아 다음 항목으로 넘어간다.
+        val perItem = TransactionTemplate(txManager).apply {
+            propagationBehavior = TransactionDefinition.PROPAGATION_REQUIRES_NEW
+        }
+        val duplicate = event("portone:item-2")
+        repo.save(duplicate) // 2번 항목이 반드시 실패하도록 미리 심는다
+
+        val processed = mutableListOf<String>()
+        val failed = mutableListOf<String>()
+
+        for (n in 1..3) {
+            val id = "portone:item-$n"
+            try {
+                perItem.executeWithoutResult {
+                    // 항목마다 두 번 쓴다. 실패 시 앞의 쓰기까지 롤백되는지 보기 위함이다.
+                    repo.saveIfAbsent(event("$id-marker"))
+                    if (n == 2) repo.save(duplicate) // UNIQUE 위반
+                }
+                processed += id
+            } catch (e: Exception) {
+                failed += id
+            }
+        }
+
+        assertEquals(listOf("portone:item-1", "portone:item-3"), processed, "1번과 3번은 성공해야 한다")
+        assertEquals(listOf("portone:item-2"), failed, "2번만 실패해야 한다")
+
+        // 앞선 성공은 커밋됐다
+        assertEquals(1, dsl.fetchCount(WEBHOOK_EVENTS, EVENT_ID.eq("portone:item-1-marker")))
+        // 실패 건은 통째로 롤백됐다 — 실패 전에 쓴 marker 도 남지 않는다
+        assertEquals(
+            0, dsl.fetchCount(WEBHOOK_EVENTS, EVENT_ID.eq("portone:item-2-marker")),
+            "실패한 항목의 부분 쓰기가 남으면 안 된다",
+        )
+        // 실패 이후에도 다음 항목이 정상 처리됐다 — 트랜잭션 오염이 전파되지 않는다
+        assertEquals(1, dsl.fetchCount(WEBHOOK_EVENTS, EVENT_ID.eq("portone:item-3-marker")))
     }
 
     @Test
