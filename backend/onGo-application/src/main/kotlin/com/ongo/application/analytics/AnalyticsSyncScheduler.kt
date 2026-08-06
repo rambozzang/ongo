@@ -35,80 +35,80 @@ class AnalyticsSyncScheduler(
 
     @Scheduled(fixedRate = 21600000) // 6시간마다
     fun syncAnalytics() {
-        if (!distributedLockPort.tryLock(lockId)) {
-            log.debug("다른 인스턴스에서 분석 데이터 동기화 실행 중, 스킵")
-            return
-        }
-        try {
-            log.info("분석 데이터 동기화 시작")
-            val channels = channelRepository.findAllActive()
+        // tryLock/releaseLock 은 획득과 해제가 다른 커넥션에서 일어나 락이 누수된다.
+        // PostgreSQL 자문 락은 세션 범위라 다른 커넥션에서 해제해도 풀리지 않는다.
+        // withLock 은 한 커넥션 안에서 획득·해제를 끝낸다.
+        val ran = distributedLockPort.withLock(lockId) { syncAllChannels() }
+        if (!ran) log.debug("다른 인스턴스에서 분석 데이터 동기화 실행 중, 스킵")
+    }
 
-            ExecutorConfig.newVirtualExecutor().use { executor ->
-                val futures = channels.map { channel ->
-                    executor.submit<Unit> {
-                        try {
-                            // 사전 검사. 동결 계정이면 토큰 복호화도 플랫폼 API 호출도 하지 않는다.
-                            // 실제 안전은 upsert 직전 재확인이 담보한다 — 아래 syncVideoAnalytics 참조.
-                            val writable = userWriteGuard.canWrite(channel.userId) {
-                                log.info("동결된 계정이라 채널 분석 동기화를 건너뛴다. channelId={} userId={}", channel.id, channel.userId)
-                            }
-                            if (!writable) return@submit
+    private fun syncAllChannels() {
+        log.info("분석 데이터 동기화 시작")
+        val channels = channelRepository.findAllActive()
 
-                            val token = tokenEncryptionPort.decrypt(channel.accessToken)
-                            val uploads = videoUploadRepository.findByPlatformAndUserId(channel.platform, channel.userId)
+        ExecutorConfig.newVirtualExecutor().use { executor ->
+            val futures = channels.map { channel ->
+                executor.submit<Unit> {
+                    try {
+                        // 사전 검사. 동결 계정이면 토큰 복호화도 플랫폼 API 호출도 하지 않는다.
+                        // 실제 안전은 upsert 직전 재확인이 담보한다 — 아래 syncVideoAnalytics 참조.
+                        val writable = userWriteGuard.canWrite(channel.userId) {
+                            log.info("동결된 계정이라 채널 분석 동기화를 건너뛴다. channelId={} userId={}", channel.id, channel.userId)
+                        }
+                        if (!writable) return@submit
 
-                            uploads.forEach { upload ->
-                                val videoId = upload.platformVideoId
-                                val uploadId = upload.id
-                                if (videoId != null && uploadId != null) {
-                                    val today = LocalDate.now()
-                                    val latestDate = analyticsRepository.findLatestDateByVideoUploadId(uploadId)
-                                    val backfillStart = latestDate?.plusDays(1) ?: today.minusDays(1)
-                                    val backfillEnd = today.minusDays(1)
+                        val token = tokenEncryptionPort.decrypt(channel.accessToken)
+                        val uploads = videoUploadRepository.findByPlatformAndUserId(channel.platform, channel.userId)
 
-                                    // 누락된 날짜 백필 (최대 7일씩 — API 과부하 방지)
-                                    val missingDates = generateSequence(backfillStart) { it.plusDays(1) }
-                                        .takeWhile { !it.isAfter(backfillEnd) }
-                                        .take(7)
-                                        .toList()
+                        uploads.forEach { upload ->
+                            val videoId = upload.platformVideoId
+                            val uploadId = upload.id
+                            if (videoId != null && uploadId != null) {
+                                val today = LocalDate.now()
+                                val latestDate = analyticsRepository.findLatestDateByVideoUploadId(uploadId)
+                                val backfillStart = latestDate?.plusDays(1) ?: today.minusDays(1)
+                                val backfillEnd = today.minusDays(1)
 
-                                    missingDates.forEach { date ->
-                                        analyticsSemaphore.acquire()
-                                        try {
-                                            syncVideoAnalytics(channel.platform, videoId, token, uploadId, date, channel.userId)
-                                        } finally {
-                                            analyticsSemaphore.release()
-                                        }
-                                    }
+                                // 누락된 날짜 백필 (최대 7일씩 — API 과부하 방지)
+                                val missingDates = generateSequence(backfillStart) { it.plusDays(1) }
+                                    .takeWhile { !it.isAfter(backfillEnd) }
+                                    .take(7)
+                                    .toList()
 
-                                    // 오늘 데이터 동기화
+                                missingDates.forEach { date ->
                                     analyticsSemaphore.acquire()
                                     try {
-                                        syncVideoAnalytics(channel.platform, videoId, token, uploadId, today, channel.userId)
+                                        syncVideoAnalytics(channel.platform, videoId, token, uploadId, date, channel.userId)
                                     } finally {
                                         analyticsSemaphore.release()
                                     }
                                 }
-                            }
-                        } catch (e: Exception) {
-                            log.error("채널 분석 동기화 실패 [channelId=${channel.id}]: ${e.message}")
-                        }
-                    }
-                }
 
-                futures.forEach { future ->
-                    try {
-                        future.get()
+                                // 오늘 데이터 동기화
+                                analyticsSemaphore.acquire()
+                                try {
+                                    syncVideoAnalytics(channel.platform, videoId, token, uploadId, today, channel.userId)
+                                } finally {
+                                    analyticsSemaphore.release()
+                                }
+                            }
+                        }
                     } catch (e: Exception) {
-                        log.error("분석 동기화 Future 처리 실패", e)
+                        log.error("채널 분석 동기화 실패 [channelId=${channel.id}]: ${e.message}")
                     }
                 }
             }
 
-            log.info("분석 데이터 동기화 완료")
-        } finally {
-            distributedLockPort.releaseLock(lockId)
+            futures.forEach { future ->
+                try {
+                    future.get()
+                } catch (e: Exception) {
+                    log.error("분석 동기화 Future 처리 실패", e)
+                }
+            }
         }
+
+        log.info("분석 데이터 동기화 완료")
     }
 
     private fun syncVideoAnalytics(platform: com.ongo.common.enums.Platform, videoId: String, token: String, uploadId: Long, date: LocalDate, userId: Long) {

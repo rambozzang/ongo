@@ -46,8 +46,10 @@ class AnalyticsSyncSchedulerFreezeTest {
         distributedLockPort = lockPort,
         userWriteGuard = guard,
     ).also {
-        every { lockPort.tryLock(any()) } returns true
-        every { lockPort.releaseLock(any()) } returns Unit
+        every { lockPort.withLock(any(), any<() -> Unit>()) } answers {
+            secondArg<() -> Unit>().invoke()
+            true
+        }
     }
 
     private fun channel(id: Long, userId: Long) = Channel(
@@ -112,5 +114,46 @@ class AnalyticsSyncSchedulerFreezeTest {
 
         verify(exactly = 0) { tokenEncryptionPort.decrypt("enc-token-1") }
         verify(exactly = 1) { tokenEncryptionPort.decrypt("enc-token-2") }
+    }
+
+    @Test
+    @DisplayName("가상 스레드 안에서 예외가 나도 배치 전체가 죽지 않는다")
+    fun exceptionInVirtualThreadDoesNotKillTheBatch() {
+        every { channelRepository.findAllActive() } returns
+            listOf(channel(1, 100L), channel(2, 200L))
+        every { guard.requireWritable(any(), any(), any()) } returns Unit
+        // 1번 채널의 토큰 복호화가 터진다. 스레드 안에서 나는 예외다.
+        every { tokenEncryptionPort.decrypt("enc-token-1") } throws IllegalStateException("복호화 실패")
+        every { tokenEncryptionPort.decrypt("enc-token-2") } returns "token"
+        every { videoUploadRepository.findByPlatformAndUserId(any(), any()) } returns emptyList()
+
+        // 예외가 밖으로 새면 여기서 터진다. 채널 하나 때문에 배치 전체가 죽으면 안 된다.
+        scheduler().syncAnalytics()
+
+        // 2번 채널은 정상 처리된다.
+        verify(exactly = 1) { tokenEncryptionPort.decrypt("enc-token-2") }
+    }
+
+    @Test
+    @DisplayName("락을 못 잡으면 아무것도 하지 않는다")
+    fun skipsWhenLockIsHeldElsewhere() {
+        every { channelRepository.findAllActive() } returns listOf(channel(1, 100L))
+
+        val s = AnalyticsSyncScheduler(
+            channelRepository = channelRepository,
+            videoUploadRepository = videoUploadRepository,
+            analyticsRepository = analyticsRepository,
+            platformClientPort = platformClientPort,
+            tokenEncryptionPort = tokenEncryptionPort,
+            distributedLockPort = lockPort,
+            userWriteGuard = guard,
+        )
+        // 다른 인스턴스가 이미 돌고 있다.
+        every { lockPort.withLock(any(), any<() -> Unit>()) } returns false
+
+        s.syncAnalytics()
+
+        verify(exactly = 0) { channelRepository.findAllActive() }
+        verify(exactly = 0) { guard.requireWritable(any(), any(), any()) }
     }
 }
