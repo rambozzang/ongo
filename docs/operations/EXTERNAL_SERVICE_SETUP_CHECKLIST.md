@@ -24,8 +24,9 @@
 | Kakao 로그인 callback | `https://ongo.codelabtiger.com/auth/callback/kakao` |
 | SNS 채널 연결 공통 callback | `https://ongo.codelabtiger.com/auth/channel-callback` |
 | Google Drive callback | `https://ongo.codelabtiger.com/api/v1/content-sources/google-drive/callback` |
-| Paddle webhook | `https://ongo.codelabtiger.com/api/v1/paddle/webhooks` |
-| Toss webhook | `https://ongo.codelabtiger.com/api/v1/payments/webhook` |
+| **PortOne webhook (현재 결제)** | `https://ongo.codelabtiger.com/api/v1/portone/webhook` |
+| Paddle webhook (레거시) | `https://ongo.codelabtiger.com/api/v1/paddle/webhooks` |
+| Toss webhook (레거시) | `https://ongo.codelabtiger.com/api/v1/payments/webhook` |
 | 개인정보처리방침 | `https://ongo.codelabtiger.com/privacy` 또는 실제 공개 URL |
 | 이용약관 | `https://ongo.codelabtiger.com/terms` 또는 실제 공개 URL |
 | 계정/데이터 삭제 안내 | 실제 공개 URL을 새로 준비해야 함 |
@@ -305,9 +306,53 @@ R2_SECRET_KEY=
 
 Secret Access Key는 생성 시 다시 볼 수 없으므로 반드시 secret manager에 저장한다.
 
-### 4.2 Paddle — SaaS 구독과 AI 크레딧 결제
+### 4.2 PortOne V2 — SaaS 구독과 AI 크레딧 결제 (**현재 사용 중, 릴리스 블로커**)
+
+공식 포털: [포트원 개발자센터](https://developers.portone.io/opi/ko/integration/start/v2/readme?v=v2)
+
+체크아웃은 전부 PortOne V2로 동작한다. 아래 4개를 모두 채우지 않으면 결제가 성립하지 않는다.
+
+1. 포트원 관리자 콘솔에서 상점 생성 → **Store ID** 확보
+2. 결제대행사(PG) 연동 후 채널 추가 → **채널 키** 확보
+3. 결제 연동 → API Keys 에서 **API 시크릿** 발급
+4. 결제 연동 → 연동 관리 → **결제알림(Webhook) 관리**
+   - 웹훅 URL 등록: `https://ongo.codelabtiger.com/api/v1/portone/webhook`
+   - **"웹훅 시크릿 발급"** 버튼으로 시크릿 발급 (`whsec_` 접두사가 붙어 있어도 그대로 넣으면 된다)
+   - 이 시크릿은 **API 시크릿과 다른 값**이다. 혼동하면 모든 웹훅이 거부된다
+5. 샌드박스 E2E(결제 → 취소 → 부분취소) 확인 후 라이브 전환
+
+받아야 할 값:
+
+```dotenv
+PORTONE_STORE_ID=
+PORTONE_CHANNEL_KEY=
+PORTONE_API_SECRET=
+PORTONE_WEBHOOK_SECRET=
+```
+
+**`PORTONE_WEBHOOK_SECRET`이 비어 있으면 어떻게 되는가**
+
+서버는 정상 기동하고 프론트에서 시작한 결제도 성립한다(프론트가 `/portone/payments/{id}/complete`를
+직접 호출하기 때문). 그러나 **웹훅은 전량 400으로 거부**되고 `PortOneWebhookVerifier`가
+`"포트원 웹훅 시크릿이 설정되지 않아 서명을 검증할 수 없습니다"` error 로그만 남긴다.
+그 결과 다음이 반영되지 않는다.
+
+- 결제창을 닫았지만 실제로는 승인된 건의 뒤늦은 정산
+- **결제 취소·환불** — `payments`가 `COMPLETED`로 남고 크레딧 회수·구독 해제가 일어나지 않는다
+
+즉 조용히 절반만 동작하는 상태가 된다. 배포 전 반드시 채운다.
+
+> 이 값은 `ProductionConfigurationValidator`의 필수 항목에 **의도적으로 넣지 않았다.**
+> 넣으면 값이 없을 때 서버가 기동조차 못 하는데, 과거 `PLATFORM_TOKEN_ENCRYPTION_KEY`와
+> `GOOGLE_CLIENT_ID`로 배포가 막힌 이력이 있다. 대신 이 문서와 `deploy/start.sh`에서 관리한다.
+
+### 4.3 Paddle — 레거시, 신규 결제에는 사용하지 않음
 
 공식 포털: [Paddle Developer](https://developer.paddle.com/)
+
+현재 체크아웃 UI는 Paddle을 호출하지 않는다(`usePaddle.ts`·`api/paddle.ts`는 참조하는 곳이 없다).
+백엔드 Paddle 코드는 **기존 결제 레코드와 웹훅 처리용으로만** 남아 있다.
+신규 구축이라면 이 절을 건너뛰어도 된다. 아래는 기존 Paddle 결제 이력이 있을 때만 필요하다.
 
 1. Sandbox 계정에서 Business 정보와 Default payment link 설정
 2. 월간/연간 Starter, Pro, Business product/price 생성
@@ -338,11 +383,11 @@ PADDLE_PRICE_CREDIT_BUSINESS=
 
 현재 코드의 환경값 기본은 `live`이고 배포 예제는 `production`이다. Paddle 설정 클래스가 실제로 허용하는 값과 SDK 분기를 확인해 `sandbox`/`live` 중 하나로 통일한 뒤 키를 넣는다.
 
-### 4.3 Toss Payments — 후순위
+### 4.4 Toss Payments — 레거시, 후순위
 
 공식 포털: [Toss Payments 개발자센터](https://developers.tosspayments.com/)
 
-현재 소스는 Toss 결제 승인 client key/secret key가 아니라 webhook secret만 설정한다. 즉, 완전한 Toss 결제 플로우가 아니다. Paddle을 주 결제로 사용할 경우 지금은 Toss 계약을 미뤄도 된다.
+현재 소스는 Toss 결제 승인 client key/secret key가 아니라 webhook secret만 설정한다. 즉, 완전한 Toss 결제 플로우가 아니다. PortOne V2를 주 결제로 사용하므로 Toss 계약은 미뤄도 된다.
 
 ```dotenv
 TOSS_WEBHOOK_SECRET=
@@ -350,7 +395,7 @@ TOSS_WEBHOOK_SECRET=
 
 Toss를 실제 주 결제로 사용하려면 결제창 client key, server secret key, 승인 API와 실패/취소 흐름을 별도 구현해야 한다.
 
-### 4.4 Alibaba Cloud Model Studio — 현재 기본 AI 제공자
+### 4.5 Alibaba Cloud Model Studio — 현재 기본 AI 제공자
 
 공식 포털: [Alibaba Cloud Model Studio](https://www.alibabacloud.com/help/en/model-studio/)
 
@@ -365,7 +410,7 @@ DASHSCOPE_API_KEY=
 
 현재 소스의 기본 endpoint는 국제 coding endpoint이므로 발급 리전과 호환되는 키인지 확인한다.
 
-### 4.5 선택 AI 제공자
+### 4.6 선택 AI 제공자
 
 AI provider fallback 또는 비교 기능을 사용할 때만 발급한다.
 
@@ -466,7 +511,14 @@ GEMINI_ENABLED=false
 GEMINI_PROJECT_ID=
 GEMINI_LOCATION=us-central1
 
-# Paddle
+# PortOne V2 — 현재 결제. 4개 모두 필수
+PORTONE_STORE_ID=
+PORTONE_CHANNEL_KEY=
+PORTONE_API_SECRET=
+# 아래는 API 시크릿과 다른 값이다. 비우면 취소/환불 웹훅이 전량 거부된다
+PORTONE_WEBHOOK_SECRET=
+
+# Paddle — 레거시. 기존 결제 이력이 없으면 비워도 된다
 PADDLE_API_KEY=
 PADDLE_WEBHOOK_SECRET=
 PADDLE_CLIENT_TOKEN=
