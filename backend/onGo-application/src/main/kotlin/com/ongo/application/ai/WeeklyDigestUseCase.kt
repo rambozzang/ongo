@@ -80,6 +80,11 @@ class WeeklyDigestUseCase(
             userWriteGuard.requireWritable(userId)
 
             return weeklyDigestRepository.save(digest)
+        } catch (e: AccountFrozenException) {
+            // 동결은 AI 실패가 아니다. 아래 catch 에 잡혀 AI_CALL_FAILED 로 래핑되면
+            // 로그·지표에서 동결 건너뜀과 AI 장애를 구분할 수 없고, 재시도 분류도 틀어진다.
+            // AI 장애는 재시도할 만하지만 동결은 재시도해도 계속 막힌다.
+            throw e
         } catch (e: BusinessException) {
             throw e
         } catch (e: Exception) {

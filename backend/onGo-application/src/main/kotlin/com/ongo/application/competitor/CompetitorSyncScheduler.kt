@@ -1,7 +1,7 @@
 package com.ongo.application.competitor
 
-import com.ongo.common.exception.AccountFrozenException
 import com.ongo.domain.accountdeletion.UserWriteGuard
+import com.ongo.domain.accountdeletion.canWrite
 import com.ongo.domain.competitor.ChannelLookupPort
 import com.ongo.domain.competitor.CompetitorAnalyticsDaily
 import com.ongo.domain.competitor.CompetitorRepository
@@ -38,12 +38,8 @@ class CompetitorSyncScheduler(
         // 실제 쓰기 직전에는 캐시를 쓰지 않고 다시 확인한다(아래 참조).
         val writable = HashMap<Long, Boolean>()
         fun canWritePrecheck(userId: Long): Boolean = writable.getOrPut(userId) {
-            try {
-                userWriteGuard.requireWritable(userId)
-                true
-            } catch (e: AccountFrozenException) {
+            userWriteGuard.canWrite(userId) { e ->
                 log.info("동결된 계정이라 경쟁자 동기화를 건너뛴다. userId={} 사유={}", userId, e.message)
-                false
             }
         }
 
@@ -58,15 +54,8 @@ class CompetitorSyncScheduler(
         // 훨씬 짧다. 완전한 원자성이 필요해지면 쓰기 자체를
         // `WHERE deletion_state = 'ACTIVE'` 조건부로 바꿔야 한다.
         fun canWriteNow(userId: Long): Boolean =
-            try {
-                userWriteGuard.requireWritable(userId)
-                true
-            } catch (e: AccountFrozenException) {
-                log.info(
-                    "외부 조회 중 계정이 동결돼 쓰기를 건너뛴다. userId={} 사유={}",
-                    userId, e.message,
-                )
-                false
+            userWriteGuard.canWrite(userId) { e ->
+                log.info("외부 조회 중 계정이 동결돼 쓰기를 건너뛴다. userId={} 사유={}", userId, e.message)
             }
 
         var skipped = 0

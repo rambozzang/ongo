@@ -1,8 +1,8 @@
 package com.ongo.application.ai
 
 import com.ongo.common.enums.PlanType
-import com.ongo.common.exception.AccountFrozenException
 import com.ongo.domain.accountdeletion.UserWriteGuard
+import com.ongo.domain.accountdeletion.canWrite
 import com.ongo.domain.subscription.SubscriptionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -50,11 +50,11 @@ class WeeklyDigestScheduler(
             // 사전 검사. 동결된 계정은 AI 호출까지 가지 않고 거른다.
             // 실제 안전은 유스케이스가 저장 직전에 다시 확인한다 — AI 호출이 길어서
             // 여기서 통과했더라도 그 사이 탈퇴 요청이 들어올 수 있다.
-            try {
-                userWriteGuard.requireWritable(subscription.userId)
-            } catch (e: AccountFrozenException) {
-                frozenCount++
+            val writable = userWriteGuard.canWrite(subscription.userId) {
                 log.info("동결된 계정이라 주간 다이제스트를 건너뛴다. userId={}", subscription.userId)
+            }
+            if (!writable) {
+                frozenCount++
                 continue
             }
 

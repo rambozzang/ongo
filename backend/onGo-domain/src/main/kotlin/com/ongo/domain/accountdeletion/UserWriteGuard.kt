@@ -41,3 +41,26 @@ interface UserWriteGuard {
         systemPath: String? = null,
     )
 }
+
+/**
+ * 쓰기 가능 여부를 boolean 으로 돌려준다. 배치가 항목을 건너뛸 때 쓴다.
+ *
+ * **어떤 예외가 나든 `false` 다.** `AccountFrozenException` 만 잡으면, 가드 구현이 바뀌어
+ * 다른 예외를 던지는 순간 그게 위로 전파되고 호출자가 어떻게 다루느냐에 따라 쓰기가
+ * 허용될 수 있다. 예상치 못한 예외를 "쓰기 허용"으로 해석하는 경로를 아예 없앤다.
+ *
+ * 배치에서만 쓴다. HTTP 경로는 예외를 그대로 올려 409 로 번역해야 한다.
+ *
+ * @param onBlocked 막힌 이유를 로그로 남기고 싶을 때. 기본은 아무것도 하지 않는다
+ */
+inline fun UserWriteGuard.canWrite(
+    userId: Long,
+    onBlocked: (Exception) -> Unit = {},
+): Boolean =
+    try {
+        requireWritable(userId)
+        true
+    } catch (e: Exception) {
+        onBlocked(e)
+        false
+    }
