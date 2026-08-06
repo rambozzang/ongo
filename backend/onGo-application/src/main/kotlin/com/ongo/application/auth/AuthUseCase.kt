@@ -3,9 +3,12 @@ package com.ongo.application.auth
 import com.ongo.application.auth.dto.AuthResult
 import com.ongo.application.auth.dto.UserResult
 import com.ongo.common.enums.PlanType
+import com.ongo.common.exception.AccountDeletionBlockedException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.exception.TokenExpiredException
 import com.ongo.common.exception.UnauthorizedException
+import com.ongo.domain.accountdeletion.AccountDeletionPreflight
+import com.ongo.domain.accountdeletion.UserFkScanner
 import com.ongo.domain.auth.AuthTokenPort
 import com.ongo.domain.auth.OAuth2Port
 import com.ongo.domain.auth.RefreshTokenPort
@@ -38,6 +41,7 @@ class AuthUseCase(
     private val oAuth2Port: OAuth2Port,
     private val refreshTokenPort: RefreshTokenPort,
     private val tokenBlacklistPort: TokenBlacklistPort,
+    private val userFkScanner: UserFkScanner,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -214,12 +218,83 @@ class AuthUseCase(
         log.info("온보딩 완료: userId={}", userId)
     }
 
-    @Transactional
+    /**
+     * 계정 삭제 요청. **현재는 어떤 데이터도 지우지 않는다.**
+     *
+     * 예전 구현은 refresh token 을 지우고 `userRepository.delete` 를 바로 불렀다.
+     * `users` 를 `ON DELETE CASCADE` 로 참조하는 17개 테이블이 함께 사라지는데
+     * 거기에 `payments`, `subscriptions`, `ai_credit_transactions` 가 들어 있었다.
+     * 실제 PostgreSQL 로 재현해 결제 레코드가 함께 사라지는 것을 확인했다.
+     *
+     * 반대 방향으로도 깨져 있었다. S3/MinIO 파일과 플랫폼 OAuth 연동은 남아서,
+     * 사용자가 삭제를 요청했는데 데이터가 남았다.
+     *
+     * 그래서 정책 엔진이 완성될 때까지 이 경로를 닫는다. 사전 점검만 하고
+     * **항상 [AccountDeletionBlockedException] 을 던진다.** 삭제·토큰 정리·상태 변경을
+     * 하나도 실행하지 않으므로 부분 반영이 남지 않는다.
+     *
+     * 근거와 설계: `docs/plans/account-deletion-policy-table.md`
+     */
     fun deleteAccount(userId: Long) {
-        val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
-        refreshTokenPort.deleteByUserId(userId)
-        userRepository.delete(userId)
-        log.info("계정 삭제: userId={}", userId)
+        userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+
+        // 사전 점검이 실패하면 fail-closed 다. 판정을 못 했으면 지우지 않는다.
+        val result = try {
+            AccountDeletionPreflight.evaluate(
+                actualFks = userFkScanner.actualUserFks(),
+                userRowCounter = { key -> userFkScanner.countRowsFor(key, userId) },
+            )
+        } catch (e: Exception) {
+            log.error("계정 삭제 사전 점검 실패. 삭제를 진행하지 않는다. userId={}", userId, e)
+            throw AccountDeletionBlockedException(
+                code = AccountDeletionBlockedException.CODE_PREFLIGHT_FAILED,
+                message = "계정 삭제 요청을 처리하지 못했습니다. 잠시 후 다시 시도하거나 고객지원에 문의해 주세요.",
+                supportReference = "preflight-error:${e.javaClass.simpleName}",
+            )
+        }
+
+        // 사용자 응답에는 테이블·컬럼 이름을 넣지 않는다. 스키마 구조 노출이고,
+        // 이름이 바뀌면 클라이언트가 깨진다. 진단 정보는 로그와 supportReference 로만 남긴다.
+        when (result) {
+            is AccountDeletionPreflight.Result.BlockedGlobally -> {
+                log.error(
+                    "계정 삭제 전역 차단. 분류되지 않은 외래키 {}건: {}. userId={}",
+                    result.unclassified.size,
+                    result.unclassified.joinToString { it.constraintName },
+                    userId,
+                )
+                throw AccountDeletionBlockedException(
+                    code = AccountDeletionBlockedException.CODE_UNCLASSIFIED,
+                    message = "계정 삭제를 준비 중입니다. 고객지원에 문의해 주세요.",
+                    supportReference = "unclassified:${result.unclassified.size}",
+                )
+            }
+
+            is AccountDeletionPreflight.Result.BlockedForUser -> {
+                log.warn(
+                    "계정 삭제 사용자별 차단. 판단 미완 데이터 {}건: {}. userId={}",
+                    result.blocking.size,
+                    result.blocking.joinToString { it.key.constraintName },
+                    userId,
+                )
+                throw AccountDeletionBlockedException(
+                    code = AccountDeletionBlockedException.CODE_POLICY_REVIEW,
+                    message = "보관 정책 확인이 필요한 데이터가 있어 계정 삭제를 바로 진행할 수 없습니다. 고객지원에 문의해 주세요.",
+                    supportReference = "review-block:${result.blocking.joinToString { it.key.constraintName }}",
+                )
+            }
+
+            is AccountDeletionPreflight.Result.Proceed -> {
+                // 정책상 지울 수 있지만 실제로 지우는 절차가 아직 없다.
+                // 여기서 202 REQUESTED 를 돌려주지 않는다. 처리할 job 이 없는데 접수됐다고 하면 거짓말이다.
+                log.info("계정 삭제 가능하나 처리 절차 미구현. userId={} 대상={}건", userId, result.deletable.size)
+                throw AccountDeletionBlockedException(
+                    code = AccountDeletionBlockedException.CODE_NOT_READY,
+                    message = "계정 삭제 처리를 준비 중입니다. 고객지원에 문의해 주세요.",
+                    supportReference = "not-ready:deletable=${result.deletable.size}",
+                )
+            }
+        }
     }
 
     private fun initializeNewUser(user: User) {

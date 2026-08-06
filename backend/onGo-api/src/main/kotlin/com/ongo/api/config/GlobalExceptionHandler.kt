@@ -1,6 +1,7 @@
 package com.ongo.api.config
 
 import com.ongo.common.ResData
+import com.ongo.common.exception.AccountDeletionBlockedException
 import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -82,6 +83,20 @@ class GlobalExceptionHandler {
         log.warn("Illegal state: {}", e.message)
         return ResponseEntity.badRequest()
             .body(ResData(success = false, error = e.message ?: "잘못된 상태입니다"))
+    }
+
+    /**
+     * 계정 삭제가 정책으로 막혔을 때. 아무것도 지우지 않은 상태다.
+     *
+     * `error` 에는 클라이언트가 분기할 **안정적인 코드**를, `message` 에는 사람이 읽을
+     * 문구를 담는다. 어떤 테이블이 막았는지는 로그에만 남긴다 — 응답에 넣으면
+     * 스키마 구조가 노출되고, 이름이 바뀔 때 클라이언트가 깨진다.
+     */
+    @ExceptionHandler(AccountDeletionBlockedException::class)
+    fun handleAccountDeletionBlocked(e: AccountDeletionBlockedException): ResponseEntity<ResData<Nothing>> {
+        log.warn("계정 삭제 차단: code={} ref={}", e.code, e.supportReference)
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(ResData(success = false, message = e.message, error = e.code))
     }
 
     @ExceptionHandler(Exception::class)
