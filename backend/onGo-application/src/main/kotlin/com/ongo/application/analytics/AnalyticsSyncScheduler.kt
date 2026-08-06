@@ -1,5 +1,7 @@
 package com.ongo.application.analytics
 
+import com.ongo.domain.accountdeletion.UserWriteGuard
+import com.ongo.domain.accountdeletion.canWrite
 import com.ongo.application.config.ExecutorConfig
 import com.ongo.domain.analytics.AnalyticsDaily
 import com.ongo.domain.analytics.AnalyticsRepository
@@ -22,6 +24,7 @@ class AnalyticsSyncScheduler(
     private val platformClientPort: PlatformClientPort,
     private val tokenEncryptionPort: TokenEncryptionPort,
     private val distributedLockPort: DistributedLockPort,
+    private val userWriteGuard: UserWriteGuard,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -44,6 +47,13 @@ class AnalyticsSyncScheduler(
                 val futures = channels.map { channel ->
                     executor.submit<Unit> {
                         try {
+                            // 사전 검사. 동결 계정이면 토큰 복호화도 플랫폼 API 호출도 하지 않는다.
+                            // 실제 안전은 upsert 직전 재확인이 담보한다 — 아래 syncVideoAnalytics 참조.
+                            val writable = userWriteGuard.canWrite(channel.userId) {
+                                log.info("동결된 계정이라 채널 분석 동기화를 건너뛴다. channelId={} userId={}", channel.id, channel.userId)
+                            }
+                            if (!writable) return@submit
+
                             val token = tokenEncryptionPort.decrypt(channel.accessToken)
                             val uploads = videoUploadRepository.findByPlatformAndUserId(channel.platform, channel.userId)
 
@@ -65,7 +75,7 @@ class AnalyticsSyncScheduler(
                                     missingDates.forEach { date ->
                                         analyticsSemaphore.acquire()
                                         try {
-                                            syncVideoAnalytics(channel.platform, videoId, token, uploadId, date)
+                                            syncVideoAnalytics(channel.platform, videoId, token, uploadId, date, channel.userId)
                                         } finally {
                                             analyticsSemaphore.release()
                                         }
@@ -74,7 +84,7 @@ class AnalyticsSyncScheduler(
                                     // 오늘 데이터 동기화
                                     analyticsSemaphore.acquire()
                                     try {
-                                        syncVideoAnalytics(channel.platform, videoId, token, uploadId, today)
+                                        syncVideoAnalytics(channel.platform, videoId, token, uploadId, today, channel.userId)
                                     } finally {
                                         analyticsSemaphore.release()
                                     }
@@ -101,11 +111,22 @@ class AnalyticsSyncScheduler(
         }
     }
 
-    private fun syncVideoAnalytics(platform: com.ongo.common.enums.Platform, videoId: String, token: String, uploadId: Long, date: LocalDate) {
+    private fun syncVideoAnalytics(platform: com.ongo.common.enums.Platform, videoId: String, token: String, uploadId: Long, date: LocalDate, userId: Long) {
         try {
             val analytics = platformClientPort.getVideoAnalytics(
                 platform, videoId, token, date, date
             )
+            // 플랫폼 API 호출이 끝났다. 쓰기 직전에 게이트를 다시 본다.
+            // 위 호출은 네트워크라 그 사이 탈퇴 요청이 들어올 수 있다. 채널 단위
+            // 사전 검사만 믿으면 동결된 계정에 쓴다.
+            //
+            // 예외를 던지지 않고 조기 반환한다. 아래 catch(Exception) 이 삼켜서
+            // "영상 분석 동기화 실패" 로 기록하면 동결 건너뜀이 장애로 보인다.
+            val stillWritable = userWriteGuard.canWrite(userId) {
+                log.info("플랫폼 조회 중 계정이 동결돼 분석 저장을 건너뛴다. uploadId={} userId={}", uploadId, userId)
+            }
+            if (!stillWritable) return
+
             analyticsRepository.upsert(AnalyticsDaily(
                 videoUploadId = uploadId,
                 date = date,
