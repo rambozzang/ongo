@@ -140,16 +140,22 @@ class AccountFreezeFilterTest {
     }
 
     @Test
-    @DisplayName("토큰 갱신은 이 필터를 지나도 동결을 풀지 않는다")
-    fun refreshDoesNotUnfreeze() {
+    @DisplayName("갱신 이후의 쓰기는 여전히 막힌다")
+    fun writesStayBlockedAfterRefresh() {
         frozen()
 
-        // refresh 는 JwtAuthenticationFilter 의 public path 라 보통 인증 컨텍스트가 없다.
-        // 설령 인증된 상태로 들어와도 허용 목록에 없으므로 막힌다.
-        assertEquals(409, run("POST", "/api/v1/auth/refresh").status)
-
-        // 그리고 갱신 이후의 쓰기도 여전히 막혀야 한다. 갱신은 세션을 잇는 것이지
-        // 게이트를 푸는 것이 아니다.
+        // 갱신은 세션을 잇는 것이지 게이트를 푸는 것이 아니다.
+        // 게이트는 토큰이 아니라 users.deletion_state 를 본다.
         assertEquals(409, run("POST", "/api/v1/videos").status)
     }
+
+    // refresh 요청 자체가 이 필터에서 어떻게 다뤄지는지는 여기서 검증하지 않는다.
+    //
+    // 이 테스트는 필터를 단독 호출하면서 principal 을 손으로 넣는다. 그런데 실제
+    // refresh 요청에는 principal 이 만들어지지 않는다 — JwtAuthenticationFilter 의
+    // shouldNotFilter 가 public path 로 건너뛰기 때문이다. 여기서 refresh 를 흉내 내면
+    // **일어날 수 없는 상황**을 검증하게 되고, 실제로 그런 테스트를 썼다가 계약을
+    // 잘못 적어뒀다.
+    //
+    // 실제 체인 기준 동작은 RefreshDoesNotUnfreezeChainTest 가 두 필터를 함께 태워 고정한다.
 }

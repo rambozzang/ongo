@@ -28,8 +28,19 @@ import org.springframework.web.filter.OncePerRequestFilter
  * 접두사로 두면 하위 경로가 딸려 들어와 우회가 생긴다. `POST /api/v1/auth/logout` 을
  * 허용하려다 `/api/v1/auth/logout/everything` 까지 허용되면 안 된다.
  *
- * `refresh` 와 웹훅은 여기 없다. 둘 다 `JwtAuthenticationFilter` 의 public path 라
- * 인증 컨텍스트가 없고, 이 필터는 인증된 요청만 본다. 웹훅은 사용자 게이트가 아니라
+ * ## `refresh` 는 허용 목록에 넣을 필요가 없다 — 애초에 여기 걸리지 않는다
+ *
+ * `JwtAuthenticationFilter.shouldNotFilter` 가 `/api/v1/auth/refresh` 를 public path 로
+ * 건너뛴다. 그래서 **실제 체인에서 refresh 요청에는 principal 이 만들어지지 않고**,
+ * 이 필터는 판정 대상이 없어 그대로 통과시킨다. 허용 목록에 없다고 막히는 것이 아니다.
+ *
+ * 이게 의도된 계약이다. 갱신 자체를 막으면 동결된 사용자가 로그아웃되기만 할 뿐
+ * 삭제 진행 상황조차 확인하지 못한다. 요구사항은 "갱신이 동결을 풀지 않는다"이지
+ * "갱신을 막는다"가 아니다. **갱신한 토큰으로 하는 쓰기는 여전히 막힌다** — 게이트는
+ * 토큰이 아니라 `users.deletion_state` 를 보기 때문이다.
+ * (`RefreshDoesNotUnfreezeChainTest` 가 실제 체인으로 이 둘을 고정한다)
+ *
+ * 웹훅도 여기 없다. public path 라 인증 컨텍스트가 없고, 사용자 게이트가 아니라
  * `SystemWritePathRegistry` 쪽 문제다.
  */
 @Component
