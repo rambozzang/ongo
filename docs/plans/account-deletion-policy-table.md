@@ -227,6 +227,48 @@ DB 안에서 완결되고, 사용자 단독 소유이며, 외부 식별자·스�
 `keyword_research_history` 는 자동 검사에서 `keyword` 가 걸렸으나 외부 식별자가 아니다.
 수동 확인 후 `DELETE` 로 뒀다.
 
+#### 하위 FK 폐쇄 그래프 실측 (codex 보완 2)
+
+`users` 직접 FK 만으로는 삭제 가능성을 보장할 수 없다. 부모를 지워도 **자식 행이
+`NO ACTION` 으로 남아 있으면 실패**한다. 16개 후보를 뿌리로 깊이 4까지 재귀 조회했다.
+
+```
+ab_tests             -> ab_test_variants            [CASCADE]
+audience_segments    -> audience_profile_segments   [CASCADE]
+automation_rules     -> automation_logs             [CASCADE]
+automation_workflows -> workflow_actions            [CASCADE]
+automation_workflows -> workflow_conditions         [CASCADE]
+automation_workflows -> workflow_executions         [CASCADE]
+channel_health_metrics -> health_trends             [CASCADE]
+goals                -> goal_milestones             [CASCADE]
+```
+
+**자식이 있는 8건은 전부 `CASCADE` 다. `NO ACTION` 자식은 0건이다.**
+codex 가 든 예(`ab_tests` → variants/results)도 `CASCADE` 라 막지 않는다.
+나머지 8건(`templates`, `recurring_schedules`, `recycling_suggestions`,
+`live_alert_configs`, `live_dashboard_alerts`, `usage_alert_configs`,
+`keyword_research_history`, `channel_audit_reports`)은 자식 FK 자체가 없다.
+
+`workflow_executions` 는 후보이면서 동시에 `automation_workflows` 의 자식이다.
+부모를 먼저 지우면 `CASCADE` 로 함께 사라진다. 엔진이 순서를 그래프에서 계산하면 되고
+목록에 중복으로 있어도 멱등하게 0행 삭제가 된다.
+
+**단, 이건 스키마 근거이지 실행 근거가 아니다.** 실제 `DELETE` 재현은 §8 의
+Testcontainers fixture 로 고정한다. 그 전까지 이 16건도 확정이 아니다.
+
+#### wip 상태와 정책을 분리해 기록한다 (codex 보완 3)
+
+`ai_content_calendars` 와 `channel_health_metrics` 는 컨트롤러가 `@Profile("wip")` 이라
+**현재 행이 생기지 않는다.** 이건 "지금 안전하다"는 사실이지 "`DELETE` 정책이 옳다"는
+근거가 아니다. 두 가지를 분리해 적는다.
+
+| 테이블 | 현재 사실 | 정책 제안 |
+|---|---|---|
+| `ai_content_calendars` | wip 차단, 행 없음 | `DELETE` (개인 캘린더) |
+| `channel_health_metrics` | wip 차단, 행 없음. 자식 `health_trends` CASCADE | `DELETE` (개인 지표) |
+
+기능이 wip 을 벗을 때 정책을 재확인한다.
+
 ### 4.2 `PRESERVE_ANONYMIZE` — **0건**
 
 §1 의 원칙대로 결정된 보존 정책이 아직 없다. 후보는 §4.3(c) 로 내렸다.
@@ -278,16 +320,33 @@ DB 안에서 완결되고, 사용자 단독 소유이며, 외부 식별자·스�
 **제안: 일괄 `REVIEW_BLOCK`. 각 기능이 wip 을 벗을 때 정책을 함께 정한다.**
 §5 가드가 "정책 없는 살아 있는 FK"를 자동으로 잡는다.
 
-## 5. 가드 설계
+## 5. 정책 키와 가드 설계
+
+### 5.1 정책 키 — 제약 identity 로 한다 (codex 보완 1)
+
+처음에 "테이블 + 컬럼"을 키로 제안했는데 **부족하다.** 같은 컬럼에 FK 가 여러 개 걸리거나
+복합 FK 가 생기면 누락되거나 충돌한다.
+
+**키 = `(schema, constraint_name, ordered local columns, ordered referenced columns)`**
+
+- `constraint_name` 은 사람이 읽을 수 있고 마이그레이션에서 지정 가능하다
+- `oid` 는 DB 재생성마다 바뀌므로 저장 키로 쓰지 않고 조회 시에만 쓴다
+- 컬럼은 **순서 있는 목록**으로 둔다. 복합 FK 에서 순서가 의미를 가진다
+- 제약 이름이 바뀌면 레지스트리에 없는 키가 되어 가드가 실패한다. 의도된 동작이다
+
+### 5.2 가드
 
 `SchemaDriftGuardIT` 와 같은 방식이되, allowlist 하나가 아니라 **3상태 분류를 강제**한다.
 
 1. `pg_constraint` 로 `users` 를 참조하는 FK 전체를 읽는다
-2. 각 FK(**테이블 + 컬럼**)가 정책 레지스트리에 있는지 확인한다
+2. 각 FK 의 §5.1 키가 정책 레지스트리에 있는지 확인한다
 3. 하나라도 없으면 **실패**한다
 
 FK 단위인 이유는 §2.2 다. `approvals` 처럼 같은 테이블에서 컬럼마다 답이 다르다.
-런타임 job 도 같은 검사를 하고, 미분류가 있으면 **부분 삭제 없이** `BLOCKED_POLICY` 로 끝낸다.
+
+런타임 job 도 같은 검사를 한다. 중요한 건 **검사 시점**이다 — 미분류 발견은
+**삭제를 한 건이라도 실행하기 전**이어야 한다. 일부 지운 뒤 발견하면 되돌릴 수 없다
+(codex 보완 8). 따라서 job 의 첫 단계가 레지스트리 검증이고, 실패 시 `BLOCKED_POLICY` 로 끝난다.
 
 ## 6. 삭제 엔진 설계 (C + A')
 
@@ -309,27 +368,63 @@ FK 위반이나 잔존 데이터가 남는다.
 - DB 핵심 삭제는 **한 트랜잭션**으로 묶어 부분 반영을 만들지 않는다
 - 실패 시 전체 롤백 후 재시도한다. 재시도 횟수와 종료 조건을 명시한다
 
-### 6.4 외부 정리 분리
+### 6.4 외부 리소스 — 이번 설계에 포함한다 (codex 보완 7)
 
-DB 삭제와 외부 리소스 정리를 **다른 단계**로 둔다.
-단, 순서에 함정이 있다 — `assets` 행을 먼저 지우면 `file_url` 을 잃어 파일을 못 지운다.
-**"삭제 대상 외부 리소스 목록을 먼저 수집 → DB 삭제 → 외부 정리"** 순서여야 한다(§7 Q5).
+순서는 **"수집 → DB 트랜잭션 → 외부 정리"** 다. `assets` 행을 먼저 지우면 `file_url` 을
+잃어 파일을 못 지우기 때문이다.
+
+**URL·플랫폼 ID 가 있다고 항상 외부 삭제 대상인 것은 아니다.** 필드별로 나눈다.
+
+| 분류 | 예 | 처리 |
+|---|---|---|
+| 우리 소유 스토리지 | `assets.file_url`, `brand_kits.*_url`, `watermarks.image_url`, `repurpose_jobs.output_url` | 실제 삭제 대상 |
+| 우리가 발행한 공개 URL | `media_kits.published_url`/`slug`, `link_bio_pages.slug` | 비공개 전환 또는 회수 |
+| 외부 연동 엔드포인트 | `webhooks.url` | **삭제 전에 먼저 비활성화**한다. 안 그러면 정리 중에도 호출된다 |
+| 제3자 정보 | `comments.author_channel_url`, `competitors.channel_url`, `inbox_messages.platform_message_id` | **외부 삭제 대상이 아니다.** 남의 데이터다 |
+| 사용자가 입력한 외부 링크 | `ideas.reference_url` | 외부 삭제 대상이 아니다 |
+
+DB 삭제 후 외부 정리가 실패하면 `EXTERNAL_CLEANUP_PENDING` 으로 두고 재시도한다.
+**수집 목록 자체는 안전하게 보관**해야 재시도가 가능하다. 목록에는 리소스 식별자만 담고
+개인정보 본문은 담지 않는다.
 
 ### 6.5 부분 실패 감사 기록
 
 job 단위로 사용자 식별자, job 식별자, 각 단계 결과를 남긴다.
 **개인정보 본문은 남기지 않는다.** 무엇을 지웠는지가 아니라 어디까지 진행됐는지를 남긴다.
 
-## 7. codex 판단 요청
+## 7. 판단 결과 (codex 검토 완료)
 
-1. **`workspaces.owner_id`** — 소유자 탈퇴 시 워크스페이스를 지우나, 소유권을 넘기나, 막나?
-   여기가 제일 크다. 다른 멤버 데이터가 통째로 걸린다.
-2. **`approvals` 3중 FK** — 리뷰어/요청자로 엮인 행은 익명화인가 보존인가?
-3. **`activity_logs` / `coupon_usages`** — `PRESERVE_ANONYMIZE` 로 갈지. 가면 NOT NULL 해제
-   마이그레이션이 필요하다.
-4. **`ideas.reference_url`** — 사용자가 입력한 외부 링크지 우리 스토리지가 아니다.
-   `DELETE` 로 내려도 되나?
-5. **외부 리소스 수집 순서**(§6.4) — 이번 설계에 포함할지 별건으로 뺄지.
+| # | 쟁점 | 결정 |
+|---|---|---|
+| 1 | `workspaces.owner_id` | **`REVIEW_BLOCK` 유지.** 관계 행 삭제/익명화 정책과 공유 데이터 생명주기를 먼저 정해야 한다 |
+| 2 | `approvals` 3중 FK, `team_members`, `approval_comments`, `approval_chains` | **`REVIEW_BLOCK` 유지.** 같은 이유 |
+| 3 | `activity_logs`, `coupon_usages` | **`REVIEW_BLOCK` 유지.** NOT NULL 해제로 `PRESERVE` 전환은 제품·감사·쿠폰 재사용 정책 승인 뒤 **별도 마이그레이션**으로 |
+| 4 | `ideas.reference_url` | **`DELETE` 확정.** 아래 근거로 단독 소유를 확인했다 |
+| 5 | 외부 리소스 수집 순서 | **이번 설계에 포함.** §6.4 |
+
+### Q4 근거 — `ideas` 단독 소유 확인
+
+codex 조건("공개 공유·다른 사용자 참조가 없는지 확인하고 근거를 명시")에 따라 실측했다.
+
+- 컬럼: `id, user_id, title, description, category, status, priority, source, reference_url, tags, due_date, created_at, updated_at` — **공개/공유 컬럼 없음**(`is_public`, `slug`, `shared_*` 부재)
+- `REFERENCES ideas` 인 FK **0건** — 다른 테이블이 참조하지 않는다
+- `IdeaController` 엔드포인트: `GET`, `POST`, `PUT /{id}`, `DELETE /{id}`, `POST /ai-generate`,
+  `PUT /{id}/status` — **공개·공유 엔드포인트 없음.** 전부 본인 CRUD
+- `reference_url` 은 사용자가 입력한 외부 링크지 우리 스토리지가 아니다 → 외부 삭제 대상 아님(§6.4)
+
+## 8. 검증 fixture (codex 요구, 구현과 함께 작성)
+
+Testcontainers 로 실제 PostgreSQL 에 고정한다.
+
+| # | fixture | 고정할 것 |
+|---|---|---|
+| (a) | 상태별 | `DELETE` 대상만 있는 사용자 → 성공. `REVIEW_BLOCK` 이 하나라도 있으면 → `BLOCKED_POLICY`, **DB 무변화** |
+| (b) | 다중 users-FK 컬럼별 | `approvals` 에 `user_id` / `requester_id` / `reviewer_id` 각각으로 엮인 사용자를 따로 만들어 결과가 갈리는 것을 고정 |
+| (c) | 하위 FK 폐쇄 그래프 | `automation_workflows` + `workflow_actions`/`conditions`/`executions`, `goals` + `goal_milestones`, `ab_tests` + `ab_test_variants` 를 채운 뒤 삭제해 자식까지 정리되는지 |
+| (d) | 재시도·동시 요청·쓰기 동결 | 같은 job 재실행이 멱등(0행 삭제)인지. 동결 후 쓰기 시도가 거부되는지. 동시 요청이 중복 job 을 만들지 않는지 |
+| (e) | 외부 목록 수집 실패 | 수집 단계에서 실패하면 **DB 삭제를 시작하지 않는지**. DB 삭제 후 외부 정리 실패 시 `EXTERNAL_CLEANUP_PENDING` 과 목록 보존 |
+
+추가로 FK 실패 시 **전체 롤백**을 단언한다. 부분 반영이 남으면 안 된다.
 
 ## 8. 이번 범위 밖 (P1 후속으로 추적)
 
