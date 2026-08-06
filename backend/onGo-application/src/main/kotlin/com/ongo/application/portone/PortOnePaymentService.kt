@@ -13,10 +13,13 @@ import com.ongo.domain.payment.Payment
 import com.ongo.domain.payment.PaymentRepository
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
+import com.ongo.domain.webhook.WebhookEvent
+import com.ongo.domain.webhook.WebhookEventRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.security.MessageDigest
 import java.time.LocalDateTime
 
 @Service
@@ -26,6 +29,7 @@ class PortOnePaymentService(
     private val userRepository: UserRepository,
     private val creditService: com.ongo.application.credit.CreditService,
     private val gateway: PortOnePaymentGateway,
+    private val webhookEventRepository: WebhookEventRepository,
     private val objectMapper: ObjectMapper,
     @Value("\${payment.portone.store-id:}") private val storeId: String,
     @Value("\${payment.portone.channel-key:}") private val channelKey: String,
@@ -63,7 +67,51 @@ class PortOnePaymentService(
         val paymentId = json.path("data").path("paymentId").asText(null)
             ?: throw PortOneWebhookFormatException("포트원 웹훅에 paymentId가 없습니다")
 
+        // 멱등 게이트. 처리 대상 이벤트에만 적용해 무시할 이벤트로 행을 남기지 않는다.
+        // 서명 검증을 통과했으므로 webhookId는 null이 아니다.
+        val eventKey = webhookEventKey(
+            webhookId ?: throw PortOneWebhookFormatException("포트원 웹훅에 webhook-id가 없습니다")
+        )
+        val firstReceipt = webhookEventRepository.saveIfAbsent(
+            WebhookEvent(eventId = eventKey, eventType = type, payload = rawBody, status = "PENDING")
+        )
+        if (!firstReceipt) {
+            log.info("이미 수신한 포트원 웹훅이라 건너뛴다 [eventId={}]", eventKey)
+            return
+        }
+
         if (type == WEBHOOK_TYPE_PAID) complete(null, paymentId) else handleCancellation(paymentId)
+
+        // 처리 성공을 이력에 기록한다. PENDING으로 방치하면 성공한 이력이 영구 미처리로 남고
+        // idx_webhook_events_status(WHERE status != 'PROCESSED') 부분 인덱스에 계속 쌓인다.
+        // 여기까지 왔다는 건 처리가 끝났다는 뜻이다. 중간에 실패하면 예외가 올라가
+        // 같은 트랜잭션의 이벤트 삽입까지 함께 롤백되므로 재전송으로 복구된다.
+        //
+        // 갱신 행수가 0이면 **예외를 던지지 않고 error 로그만 남긴다.** 방금 같은 트랜잭션에서
+        // 삽입한 행이라 정상 DB에서는 1이 보장된다. 0은 운영 조건이 아니라 키 불일치 같은
+        // 프로그래밍 오류를 뜻하고, 그 경우 모든 웹훅이 같은 지점에서 죽는다. 여기서 예외를
+        // 던지면 결제·취소 반영 자체가 영구 실패한다(포트원 재전송도 같은 곳에서 실패).
+        // 이력 한 줄이 PENDING으로 남는 쪽이 결제를 잃는 것보다 낫다.
+        // 키 불일치는 markProcessed 호출 키를 단언하는 테스트가 이미 막고 있다.
+        if (!webhookEventRepository.markProcessed(eventKey, LocalDateTime.now())) {
+            log.error("웹훅 이력을 PROCESSED로 갱신하지 못했다 — 이력이 PENDING으로 남는다 [eventId={}]", eventKey)
+        }
+    }
+
+    /**
+     * 멱등 키를 만든다. `webhook_events.event_id`는 Paddle과 공유하므로 접두사로 네임스페이스를 나눈다.
+     *
+     * 컬럼이 `VARCHAR(200)`이라 넘칠 수 있다. 이때 **자르지 않는다.** 자르면 서로 다른 웹훅이
+     * 같은 키가 되어 멱등 게이트가 정상 웹훅을 삼킨다. 결정적 해시로 대체해 길이를 보장하면서
+     * 같은 webhook-id는 항상 같은 키가 되도록 한다.
+     * 폴백 키는 `portone:sha256:` 15자 + SHA-256 hex 64자 = 79자다.
+     */
+    private fun webhookEventKey(webhookId: String): String {
+        val key = WEBHOOK_EVENT_ID_PREFIX + webhookId
+        if (key.length <= WEBHOOK_EVENT_ID_MAX_LENGTH) return key
+
+        val digest = MessageDigest.getInstance("SHA-256").digest(webhookId.toByteArray())
+        return WEBHOOK_EVENT_ID_PREFIX + "sha256:" + digest.joinToString("") { "%02x".format(it) }
     }
 
     /**
@@ -314,6 +362,12 @@ class PortOnePaymentService(
 
         private const val PORTONE_STATUS_CANCELLED = "CANCELLED"
         private const val PORTONE_STATUS_PARTIAL_CANCELLED = "PARTIAL_CANCELLED"
+
+        /** `webhook_events`를 Paddle과 공유하므로 네임스페이스를 나눈다. */
+        private const val WEBHOOK_EVENT_ID_PREFIX = "portone:"
+
+        /** `webhook_events.event_id`는 VARCHAR(200)이다. */
+        private const val WEBHOOK_EVENT_ID_MAX_LENGTH = 200
     }
 }
 

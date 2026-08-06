@@ -13,6 +13,7 @@ import com.ongo.domain.payment.PaymentRepository
 import com.ongo.domain.subscription.Subscription
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
+import com.ongo.domain.webhook.WebhookEventRepository
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -64,16 +65,22 @@ class PortOnePaymentServiceCancelTest {
     private val timestamp = "1700000000"
     private val portonePaymentId = "ongo-42"
 
+    @MockK
+    private lateinit var webhookEventRepository: WebhookEventRepository
+
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
         every { gateway.verifyWebhookSignature(any(), any(), any(), any()) } returns true
+        every { webhookEventRepository.saveIfAbsent(any()) } returns true
+        every { webhookEventRepository.markProcessed(any(), any()) } returns true
         service = PortOnePaymentService(
             paymentRepository = paymentRepository,
             subscriptionRepository = subscriptionRepository,
             userRepository = userRepository,
             creditService = creditService,
             gateway = gateway,
+            webhookEventRepository = webhookEventRepository,
             objectMapper = ObjectMapper(),
             storeId = "store-test",
             channelKey = "channel-test",
@@ -187,6 +194,21 @@ class PortOnePaymentServiceCancelTest {
         verify(exactly = 0) { creditService.revokeCredits(any(), any(), any()) }
         verify(exactly = 0) { paymentRepository.update(any()) }
         verify(exactly = 0) { subscriptionRepository.update(any()) }
+        // 크레딧을 건드리지 않았을 뿐 웹훅 처리는 성공했다. 이력은 PROCESSED 여야 한다
+        verify(exactly = 1) { webhookEventRepository.markProcessed("portone:$webhookId", any()) }
+    }
+
+    @Test
+    @DisplayName("전액 취소 처리 성공도 이력을 PROCESSED로 남긴다")
+    fun fullCancellationMarksProcessed() {
+        every { paymentRepository.findByIdForUpdate(42) } returns creditPayment()
+        every { gateway.getPayment(portonePaymentId) } returns portoneStatus("CANCELLED")
+        every { paymentRepository.update(any()) } answers { firstArg() }
+        every { creditService.revokeCredits(any(), any(), any()) } just runs
+
+        service.handleWebhook(body("Transaction.Cancelled"), webhookId, signature, timestamp)
+
+        verify(exactly = 1) { webhookEventRepository.markProcessed("portone:$webhookId", any()) }
     }
 
     @Test
