@@ -212,6 +212,9 @@ object Tables {
     val UGC_SHORTS_CLIP_HOOKS = DSL.table("ugc_shorts_clip_hooks")
     val UGC_SHORTS_CLIP_PUBLICATIONS = DSL.table("ugc_shorts_clip_publications")
     val UGC_SHORTS_VALIDATIONS = DSL.table("ugc_shorts_validations")
+
+    // 계정 삭제 — users 를 외래키로 참조하지 않는다(삭제 후에도 남는 감사 기록).
+    val ACCOUNT_DELETION_JOBS = DSL.table("account_deletion_jobs")
 }
 
 object Fields {
@@ -1051,4 +1054,12 @@ object Fields {
     val SELECTED = DSL.field("selected", Boolean::class.java)
     val RULE_CODE = DSL.field("rule_code", String::class.java)
     val PASSED = DSL.field("passed", Boolean::class.java)
+
+    // 계정 삭제
+    val SUPPORT_REFERENCE = DSL.field("support_reference", String::class.java)
+    val ATTEMPT_COUNT = DSL.field("attempt_count", Int::class.java)
+    val LAST_ERROR_CODE = DSL.field("last_error_code", String::class.java)
+    val DB_COMMITTED_AT = DSL.field("db_committed_at", java.time.LocalDateTime::class.java)
+    val DELETION_STATE = DSL.field("deletion_state", String::class.java)
+    val DELETION_REQUESTED_AT = DSL.field("deletion_requested_at", java.time.LocalDateTime::class.java)
 }
