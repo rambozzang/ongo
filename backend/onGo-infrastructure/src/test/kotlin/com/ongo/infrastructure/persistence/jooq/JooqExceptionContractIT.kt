@@ -8,6 +8,7 @@ import com.ongo.domain.webhook.WebhookEvent
 import com.ongo.domain.webhook.WebhookEventRepository
 import com.ongo.infrastructure.persistence.jooq.Tables.PAYMENTS
 import com.ongo.infrastructure.persistence.jooq.Tables.WEBHOOK_EVENTS
+import com.ongo.infrastructure.testsupport.SqlStates
 import org.jooq.DSLContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -24,7 +25,6 @@ import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import java.sql.SQLException
 
 /**
  * 제약 위반 시 올라오는 **예외 타입 계약**을 고정한다.
@@ -63,9 +63,6 @@ class JooqExceptionContractIT {
             r.add("spring.datasource.password") { pg.password }
         }
 
-        /** PostgreSQL SQLState — 23505 unique_violation, 23503 foreign_key_violation */
-        private const val SQLSTATE_UNIQUE_VIOLATION = "23505"
-        private const val SQLSTATE_FOREIGN_KEY_VIOLATION = "23503"
     }
 
     @BeforeEach
@@ -74,16 +71,6 @@ class JooqExceptionContractIT {
         dsl.deleteFrom(PAYMENTS).execute()
     }
 
-    /** 원인 체인을 훑어 첫 SQLState를 찾는다. 벤더 예외 클래스에 직접 의존하지 않기 위함이다. */
-    private fun sqlStateOf(throwable: Throwable): String? {
-        var cause: Throwable? = throwable
-        while (cause != null) {
-            (cause as? SQLException)?.sqlState?.let { return it }
-            if (cause.cause === cause) return null
-            cause = cause.cause
-        }
-        return null
-    }
 
     @Test
     @DisplayName("UNIQUE 위반은 스프링 DuplicateKeyException으로 번역된다")
@@ -100,7 +87,7 @@ class JooqExceptionContractIT {
         val thrown = assertThrows<DuplicateKeyException> { webhookRepo.save(event) }
 
         assertEquals(
-            SQLSTATE_UNIQUE_VIOLATION, sqlStateOf(thrown),
+            SqlStates.UNIQUE_VIOLATION, SqlStates.of(thrown),
             "SQLState까지 계약으로 둔다. 벤더 예외 클래스에는 의존하지 않는다",
         )
     }
@@ -122,7 +109,7 @@ class JooqExceptionContractIT {
             )
         }
 
-        assertEquals(SQLSTATE_FOREIGN_KEY_VIOLATION, sqlStateOf(thrown))
+        assertEquals(SqlStates.FOREIGN_KEY_VIOLATION, SqlStates.of(thrown))
     }
 
     @Test
@@ -141,6 +128,6 @@ class JooqExceptionContractIT {
         // SpringTransactionParticipationIT 를 반드시 함께 확인한다.
         val thrown = assertThrows<DataIntegrityViolationException> { webhookRepo.save(event) }
 
-        assertEquals(SQLSTATE_UNIQUE_VIOLATION, sqlStateOf(thrown))
+        assertEquals(SqlStates.UNIQUE_VIOLATION, SqlStates.of(thrown))
     }
 }
