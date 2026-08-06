@@ -23,15 +23,30 @@ pipeline {
     }
 
     stages {
+        // 1단계: 매 빌드마다 도는 빠른 트리 검사.
+        //
+        // 이건 "현재 트리에 덤프가 들어왔는가"만 본다. git ls-files 는 HEAD 만 보므로
+        // **이미 커밋된 이력은 잡지 못한다.** 실제로 ongo_backup_*.sql 이 히스토리에
+        // 남아 있는데도 이 검사는 계속 통과해왔다.
+        // 히스토리 전체 스캔은 Jenkinsfile-secret-scan 의 정기 작업이 담당한다.
         stage('Repository Security Check') {
             steps {
                 script {
                     def sensitiveFiles = sh(
-                        script: "git ls-files | grep -E '(^|/)(ongo_backup_[^/]*\\.sql|.*backup[^/]*\\.sql)$' || true",
+                        script: "git ls-files | grep -E '(^|/)([^/]*(backup|dump)[^/]*\\.(sql|dump|bak))\$' || true",
                         returnStdout: true,
                     ).trim()
                     if (sensitiveFiles) {
                         error "Tracked database export detected:\n${sensitiveFiles}"
+                    }
+
+                    // 재발 방지 규칙이 제거되면 즉시 알아채도록 .gitignore 가드를 확인한다.
+                    def ignoreGuard = sh(
+                        script: "grep -qE '^\\*\\.sql\$' .gitignore && echo ok || true",
+                        returnStdout: true,
+                    ).trim()
+                    if (ignoreGuard != 'ok') {
+                        error '.gitignore 의 *.sql 차단 규칙이 사라졌습니다. DB 덤프 재유입을 막는 가드입니다.'
                     }
                 }
             }

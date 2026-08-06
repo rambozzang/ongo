@@ -49,3 +49,22 @@ frontend/tsconfig.node.tsbuildinfo
 .omc/
 **/.omc/
 .impeccable.md
+
+# ---------------------------------------------------------------------------
+# DB 덤프/백업 차단
+#
+# 과거 ongo_backup_20260218.sql / ongo_backup_20260223.sql 이 커밋된 이력이 있다.
+# HEAD 에서는 17e45d7a 가 제거했지만 git 히스토리에는 남아 있다.
+# *.sql 을 전면 차단하고 실제 Flyway 마이그레이션 경로만 예외로 되살린다.
+#
+# backend/sql/ 은 의도적으로 예외에 넣지 않았다. canonical 마이그레이션 경로는
+# backend/onGo-api/src/main/resources/db/migration 이고 backend/sql 은 중복/구버전이다.
+# 이미 추적 중인 파일은 .gitignore 영향을 받지 않아 그대로 남는다. 새 파일 추가만 막히고,
+# 그때 git 이 "ignored by one of your .gitignore files" 로 명시적으로 거부한다(조용히 누락되지 않음).
+# 정말 필요하면 git add -f 로 의도를 드러낸다.
+# ---------------------------------------------------------------------------
+*.sql
+!backend/onGo-api/src/main/resources/db/migration/**/*.sql
+
+# 시크릿 스캐너 리포트 — Jenkins 아티팩트로만 보관한다
+.gitleaks-report.json
