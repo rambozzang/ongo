@@ -6,6 +6,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.EVENT_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.WEBHOOK_EVENTS
 import org.jooq.DSLContext
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -94,6 +95,45 @@ class SpringTransactionParticipationIT {
         tx.execute { repo.saveIfAbsent(event(eventId)) }
 
         assertEquals(1, dsl.fetchCount(WEBHOOK_EVENTS, EVENT_ID.eq(eventId)))
+    }
+
+    @Test
+    @DisplayName("트랜잭션 안에서 DB 예외를 삼키면 이후 쿼리가 전부 실패한다 — catch 후 계속 진행 패턴의 함정")
+    fun swallowingDbExceptionPoisonsRestOfTransaction() {
+        val existing = event("portone:poison-seed")
+        repo.save(existing)
+
+        val secondInsertFailed = tx.execute {
+            // 1) 제약 위반을 일으키고 예외를 삼킨다. 배치 루프에서 흔한 "이 건만 건너뛰고 계속" 패턴이다.
+            runCatching { repo.save(existing) }
+
+            // 2) 같은 트랜잭션에서 다음 작업을 이어간다.
+            runCatching { repo.saveIfAbsent(event("portone:poison-next")) }.isFailure
+        }!!
+
+        assertTrue(
+            secondInsertFailed,
+            "PostgreSQL은 문에서 오류가 나면 트랜잭션 전체를 abort 시킨다. " +
+                "DB 예외를 삼키고 진행하면 이후 쿼리가 전부 실패한다",
+        )
+        assertEquals(
+            0, dsl.fetchCount(WEBHOOK_EVENTS, EVENT_ID.eq("portone:poison-next")),
+            "삼킨 뒤의 작업은 저장되지 않는다",
+        )
+    }
+
+    @Test
+    @DisplayName("비DB 예외를 삼키는 것은 트랜잭션에 영향이 없다 — 위 함정과 구분되는 지점")
+    fun swallowingNonDbExceptionIsHarmless() {
+        val saved = tx.execute {
+            // AI 호출 실패, 파싱 오류 같은 비DB 예외는 트랜잭션을 오염시키지 않는다
+            runCatching { throw IllegalStateException("외부 API 실패") }
+
+            repo.saveIfAbsent(event("portone:non-db-ok"))
+        }!!
+
+        assertTrue(saved, "비DB 예외 이후에도 삽입이 정상 동작해야 한다")
+        assertEquals(1, dsl.fetchCount(WEBHOOK_EVENTS, EVENT_ID.eq("portone:non-db-ok")))
     }
 
     @Test
