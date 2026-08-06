@@ -5,6 +5,13 @@ import { portoneApi } from '@/api/portone'
 const initialized = ref(false)
 const loading = ref(false)
 
+/** PortOne은 실패 응답에만 optional `code`를 넣는다. 빈 문자열도 오류 코드로 취급한다. */
+export function isPortOnePaymentError(
+  result: Awaited<ReturnType<typeof PortOne.requestPayment>>,
+): boolean {
+  return result != null && result.code !== undefined
+}
+
 export function usePortOne() {
   async function ensureInitialized() {
     initialized.value = true
@@ -65,7 +72,9 @@ export function usePortOne() {
       callbacks?.onClose?.()
       return
     }
-    if (result.code) throw new Error(result.message ?? '포트원 결제가 취소되거나 실패했습니다.')
+    if (isPortOnePaymentError(result)) {
+      throw new Error(result.message ?? '포트원 결제가 취소되거나 실패했습니다.')
+    }
     await portoneApi.complete(result.paymentId)
     callbacks?.onSuccess?.()
   }
