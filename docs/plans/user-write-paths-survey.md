@@ -83,6 +83,44 @@ WebhookRetryScheduler
 등록되지 않은 경로가 `SYSTEM_RECONCILIATION` 을 쓰면 예외로 막고, 사용할 때마다 로그를 남긴다.
 기본값은 `USER_AUTHORED` 라 실수로 우회되지 않는다.
 
+### 2.2.1 시스템 경로를 둘로 나눈다 (codex 결정, 실측 완료)
+
+등록만 해두고 아무도 호출하지 않으면 **dead configuration 을 성공으로 오인**한다.
+그래서 실제 호출을 넣되, **사용자 ID 를 아는 경로와 모르는 경로를 구분**한다.
+`requireWritable(0)` 같은 가짜 호출을 만들지 않는다.
+
+| 경로 | `userId` 가용성 (실측) | 분류 |
+|---|---|---|
+| `BillingScheduler` | `sub.userId` — 구독 항목마다 있다 | **(1) 사용자 범위** |
+| `CreditScheduler` | `userId` — `findUsersForFreeReset` 결과를 순회한다 | **(1) 사용자 범위** |
+| `WebhookRetryScheduler` | **루프에는 없다.** `WebhookEvent` 에 `userId` 필드가 없고, `PaddleWebhookService:147` 에서 payload 의 `custom_data` 를 파싱해야 나온다 | **(1) 이되 지점이 더 깊다** |
+| `PartitionMaintenanceScheduler` | 없음. 스키마 유지보수 | **(2) 전역** |
+| `RefreshTokenCleanupScheduler` | 없음. `deleteExpired()` 가 `WHERE expires_at < now()` 전역 삭제 | **(2) 전역** |
+
+**(1) 처리**: 실제 쓰기 직전에 `requireWritable(userId, SYSTEM_RECONCILIATION, 등록된 경로명)`.
+구조화 로그와 경로별 IT 를 함께 둔다. 동결 사용자도 계속 처리해야 하는 이유와
+멱등·행 잠금 전제를 테스트로 고정한다.
+
+**(2) 처리**: 가짜 사용자 ID 를 만들지 않는다. 별도 감사 기록
+(`recordSystemPath(경로, 근거, 결과)`)이나 정적 검사의 명시적 예외로 다룬다.
+user-scoped 경로와 **구분된** IT 를 둔다.
+
+**`WebhookRetryScheduler` 주의**: 스케줄러 루프 층에서는 게이트를 걸 수 없다.
+`userId` 가 payload 파싱 이후에야 나오므로 게이트 호출은 결제 서비스 안,
+사용자와 결제가 연결되는 지점에 놓여야 한다. 스케줄러에 억지로 넣으면 `userId` 를
+모르는 채 호출하게 되고 그건 (2) 를 (1) 로 위장하는 것이다.
+
+### 2.2.2 정적 검사는 양방향이어야 한다 (codex 요구)
+
+한쪽만 보면 반쪽짜리다.
+
+- **등록됐는데 호출되지 않는 경로** → 실패. dead configuration 이다
+- **호출하는데 등록되지 않은 경로** → 실패. 근거 없는 우회다
+- **소스 루트를 못 찾으면** → 실패. fail-open 금지
+
+휴리스틱으로 뽑은 §1 목록은 **보조 자료**다. 누락 탐지의 근거로 쓰지 않는다.
+명시적 예외는 근거와 소유자를 함께 요구한다.
+
 ### 2.3 workspace/team 경유 — 지금 적용한다
 
 40개 파일이 `workspaceId` 를 다룬다.
