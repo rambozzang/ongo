@@ -14,7 +14,7 @@ import com.ongo.domain.ugc.participation.InviteRepository
 import com.ongo.domain.ugc.participation.ParticipantRepository
 import com.ongo.infrastructure.persistence.jooq.Tables.UGC_CAMPAIGNS
 import org.jooq.DSLContext
-import org.jooq.exception.IntegrityConstraintViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -126,7 +126,7 @@ class UgcCampaignJooqRepositoryIT {
     fun `application unique blocks duplicate application`() {
         val cid = campaignRepo.save(newCampaign(CampaignStatus.RECRUITING)).id!!
         applicationRepo.save(CampaignApplication(campaignId = cid, creatorId = 100))
-        assertThrows(IntegrityConstraintViolationException::class.java) {
+        assertThrows(DuplicateKeyException::class.java) {
             applicationRepo.save(CampaignApplication(campaignId = cid, creatorId = 100))
         }
     }
@@ -135,7 +135,7 @@ class UgcCampaignJooqRepositoryIT {
     fun `participant unique blocks duplicate participant (concurrent accept guard)`() {
         val cid = campaignRepo.save(newCampaign(CampaignStatus.RECRUITING)).id!!
         participantRepo.save(CampaignParticipant(campaignId = cid, creatorId = 100, agreedReward = 100_000))
-        assertThrows(IntegrityConstraintViolationException::class.java) {
+        assertThrows(DuplicateKeyException::class.java) {
             participantRepo.save(CampaignParticipant(campaignId = cid, creatorId = 100, agreedReward = 100_000))
         }
     }
@@ -146,7 +146,7 @@ class UgcCampaignJooqRepositoryIT {
         val invite = inviteRepo.save(
             CampaignInvite(campaignId = cid, tokenHash = "hash-1", maxUses = 5, createdBy = createdBy),
         )
-        assertThrows(IntegrityConstraintViolationException::class.java) {
+        assertThrows(DuplicateKeyException::class.java) {
             inviteRepo.save(CampaignInvite(campaignId = cid, tokenHash = "hash-1", createdBy = createdBy))
         }
 

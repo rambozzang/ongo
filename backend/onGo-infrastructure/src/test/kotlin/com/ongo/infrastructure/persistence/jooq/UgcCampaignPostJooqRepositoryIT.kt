@@ -12,7 +12,7 @@ import com.ongo.domain.ugc.submission.SubmissionAsset
 import com.ongo.domain.ugc.submission.SubmissionRepository
 import com.ongo.infrastructure.persistence.jooq.Tables.UGC_CAMPAIGNS
 import org.jooq.DSLContext
-import org.jooq.exception.IntegrityConstraintViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -84,7 +84,7 @@ class UgcCampaignPostJooqRepositoryIT {
     @Test
     fun `idempotency key is unique`() {
         postRepo.save(directPost("dup-key"))
-        assertThrows(IntegrityConstraintViolationException::class.java) {
+        assertThrows(DuplicateKeyException::class.java) {
             postRepo.save(directPost("dup-key"))
         }
     }

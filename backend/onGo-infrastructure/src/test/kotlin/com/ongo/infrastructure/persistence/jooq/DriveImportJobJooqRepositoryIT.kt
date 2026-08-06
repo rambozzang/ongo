@@ -12,7 +12,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Tables.DRIVE_IMPORT_JOBS
 import com.ongo.infrastructure.persistence.jooq.Tables.USER_CONTENT_SOURCES
 import org.jooq.DSLContext
-import org.jooq.exception.IntegrityConstraintViolationException
+import org.springframework.dao.DataIntegrityViolationException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -119,7 +119,7 @@ class DriveImportJobJooqRepositoryIT {
     @Test
     fun `CHECK constraint rejects bytesTransferred greater than fileSizeBytes`() {
         val v = insertTestVideo()
-        assertThrows(IntegrityConstraintViolationException::class.java) {
+        assertThrows(DataIntegrityViolationException::class.java) {
             repo.save(
                 newJob(
                     100L, v, "f", size = 100L, transferred = 200L,

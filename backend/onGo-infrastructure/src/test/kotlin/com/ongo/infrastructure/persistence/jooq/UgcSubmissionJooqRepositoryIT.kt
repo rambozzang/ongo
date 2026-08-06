@@ -11,7 +11,7 @@ import com.ongo.domain.ugc.submission.SubmissionReviewRepository
 import com.ongo.domain.ugc.submission.SubmissionStatus
 import com.ongo.infrastructure.persistence.jooq.Tables.UGC_CAMPAIGNS
 import org.jooq.DSLContext
-import org.jooq.exception.IntegrityConstraintViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -80,7 +80,7 @@ class UgcSubmissionJooqRepositoryIT {
     @Test
     fun `unique blocks a second submission by the same creator`() {
         submissionRepo.save(submission(creatorId = 100))
-        assertThrows(IntegrityConstraintViolationException::class.java) {
+        assertThrows(DuplicateKeyException::class.java) {
             submissionRepo.save(submission(creatorId = 100))
         }
     }

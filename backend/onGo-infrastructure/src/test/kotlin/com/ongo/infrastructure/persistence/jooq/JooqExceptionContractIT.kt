@@ -9,7 +9,7 @@ import com.ongo.domain.webhook.WebhookEventRepository
 import com.ongo.infrastructure.persistence.jooq.Tables.PAYMENTS
 import com.ongo.infrastructure.persistence.jooq.Tables.WEBHOOK_EVENTS
 import org.jooq.DSLContext
-import org.jooq.exception.IntegrityConstraintViolationException
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -17,32 +17,29 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.dao.DataAccessException
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.sql.SQLException
 
 /**
- * 제약 위반 시 **어떤 예외 타입이 올라오는지** 현재 계약을 고정한다.
+ * 제약 위반 시 올라오는 **예외 타입 계약**을 고정한다.
  *
- * `JooqConfig`가 커스텀 `DefaultConfiguration` 빈이라, 스프링 부트의
- * `JooqAutoConfiguration`이 함께 구성하는 `ExceptionTranslatorExecuteListener`가 빠져 있다.
- * 그래서 지금은 jOOQ 원본 예외([IntegrityConstraintViolationException])가 그대로 올라온다.
+ * `JooqConfig`가 스프링 부트 `JooqAutoConfiguration`에 위임하므로
+ * `ExceptionTranslatorExecuteListener`가 붙어 jOOQ 예외가 스프링 `DataAccessException`
+ * 계층으로 번역된다. 이 계약이 깨지면 자동설정이 다시 대체됐다는 뜻이고,
+ * 그때는 트랜잭션 참여도 함께 깨졌을 가능성이 크다([SpringTransactionParticipationIT] 참조).
  *
- * 자동설정으로 전환하면 이 예외가 스프링 `DataAccessException` 계층으로 **번역된다.**
- * 그 전환이 무엇을 바꾸는지 눈에 보이게 하려고 이 테스트를 먼저 남긴다.
+ * 벤더 예외 클래스(`org.postgresql.util.PSQLException`)를 직접 단언하지 않는다.
+ * 스프링 계층 + SQLState로 계약을 두어 Boot/JDBC 드라이버 패치에 덜 흔들리게 한다.
  *
- * 조사 결과(2026-08-06):
- * - **프로덕션 코드에서 jOOQ 예외 타입에 의존하는 곳은 0건이다.**
- * - 테스트에서 직접 단언하는 곳은 9군데(6파일)다:
- *   `ContentSourceJooqRepositoryIT:78`, `UgcSubmissionJooqRepositoryIT:83`,
- *   `UgcRewardJooqRepositoryIT:87,117`, `DriveImportJobJooqRepositoryIT:122`,
- *   `UgcCampaignJooqRepositoryIT:129,138,149`, `UgcCampaignPostJooqRepositoryIT:87`
- *
- * 전환 시 이 파일의 단언을 뒤집고 위 9곳을 함께 조정하면 된다.
+ * 참고: 프로덕션 코드에서 예외 타입에 의존하는 곳은 없다(2026-08-06 전수 조사).
+ * 이 계약의 소비자는 테스트뿐이다.
  */
 @SpringBootTest
 @Testcontainers
@@ -66,6 +63,10 @@ class JooqExceptionContractIT {
             r.add("spring.datasource.username") { pg.username }
             r.add("spring.datasource.password") { pg.password }
         }
+
+        /** PostgreSQL SQLState — 23505 unique_violation, 23503 foreign_key_violation */
+        private const val SQLSTATE_UNIQUE_VIOLATION = "23505"
+        private const val SQLSTATE_FOREIGN_KEY_VIOLATION = "23503"
     }
 
     @BeforeEach
@@ -74,9 +75,20 @@ class JooqExceptionContractIT {
         dsl.deleteFrom(PAYMENTS).execute()
     }
 
+    /** 원인 체인을 훑어 첫 SQLState를 찾는다. 벤더 예외 클래스에 직접 의존하지 않기 위함이다. */
+    private fun sqlStateOf(throwable: Throwable): String? {
+        var cause: Throwable? = throwable
+        while (cause != null) {
+            (cause as? SQLException)?.sqlState?.let { return it }
+            if (cause.cause === cause) return null
+            cause = cause.cause
+        }
+        return null
+    }
+
     @Test
-    @DisplayName("UNIQUE 위반은 jOOQ 원본 예외로 올라온다 — 자동설정 전환 시 이 단언이 바뀐다")
-    fun uniqueViolationSurfacesAsJooqException() {
+    @DisplayName("UNIQUE 위반은 스프링 DuplicateKeyException으로 번역된다")
+    fun uniqueViolationTranslatesToDuplicateKeyException() {
         val event = WebhookEvent(
             eventId = "portone:contract-dup",
             eventType = "Transaction.Paid",
@@ -84,21 +96,22 @@ class JooqExceptionContractIT {
         )
         webhookRepo.save(event)
 
-        val thrown = assertThrows<IntegrityConstraintViolationException> {
-            webhookRepo.save(event)
-        }
+        val thrown = assertThrows<DuplicateKeyException> { webhookRepo.save(event) }
 
-        // 스프링 예외 계층으로 번역되지 **않는다**는 것이 현재 계약이다
         assertTrue(
-            thrown !is DataAccessException,
-            "스프링 DataAccessException으로 번역되면 자동설정이 켜진 것이다. 9곳의 단언을 함께 갱신해야 한다",
+            thrown is DataIntegrityViolationException,
+            "DuplicateKeyException은 DataIntegrityViolationException의 하위여야 한다",
+        )
+        assertEquals(
+            SQLSTATE_UNIQUE_VIOLATION, sqlStateOf(thrown),
+            "SQLState까지 계약으로 둔다. 벤더 예외 클래스에는 의존하지 않는다",
         )
     }
 
     @Test
-    @DisplayName("FK 위반도 jOOQ 원본 예외로 올라온다")
-    fun foreignKeyViolationSurfacesAsJooqException() {
-        assertThrows<IntegrityConstraintViolationException> {
+    @DisplayName("FK 위반은 스프링 DataIntegrityViolationException으로 번역된다")
+    fun foreignKeyViolationTranslatesToDataIntegrityViolationException() {
+        val thrown = assertThrows<DataIntegrityViolationException> {
             paymentRepo.save(
                 Payment(
                     userId = 99_999_999L, // users에 없는 id
@@ -111,5 +124,26 @@ class JooqExceptionContractIT {
                 )
             )
         }
+
+        assertEquals(SQLSTATE_FOREIGN_KEY_VIOLATION, sqlStateOf(thrown))
+    }
+
+    @Test
+    @DisplayName("번역된 예외는 jOOQ 원본 예외가 아니다 — 자동설정이 대체되면 이 단언이 깨진다")
+    fun translatedExceptionIsNotRawJooqException() {
+        val event = WebhookEvent(
+            eventId = "portone:contract-not-jooq",
+            eventType = "Transaction.Paid",
+            payload = """{"t":1}""",
+        )
+        webhookRepo.save(event)
+
+        val thrown = assertThrows<DataIntegrityViolationException> { webhookRepo.save(event) }
+
+        assertTrue(
+            thrown !is org.jooq.exception.DataAccessException,
+            "jOOQ 원본 예외가 올라오면 ExceptionTranslatorExecuteListener가 빠진 것이다. " +
+                "그 경우 TransactionAwareDataSourceProxy도 함께 빠졌을 가능성이 크다",
+        )
     }
 }

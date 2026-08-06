@@ -19,7 +19,7 @@ import com.ongo.domain.ugc.submission.SubmissionAsset
 import com.ongo.domain.ugc.submission.SubmissionRepository
 import com.ongo.infrastructure.persistence.jooq.Tables.UGC_CAMPAIGNS
 import org.jooq.DSLContext
-import org.jooq.exception.IntegrityConstraintViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -84,7 +84,7 @@ class UgcRewardJooqRepositoryIT {
         assertEquals(RewardStatus.DRAFT, found.status)
         assertEquals(saved.id, found.id)
 
-        assertThrows(IntegrityConstraintViolationException::class.java) {
+        assertThrows(DuplicateKeyException::class.java) {
             rewardRepo.save(RewardConfirmation(participantId = pid, campaignId = campaignId, creatorId = 100))
         }
     }
@@ -114,7 +114,7 @@ class UgcRewardJooqRepositoryIT {
         val latest = metricRepo.findLatestByCampaignPostId(postId)!!
         assertEquals(250, latest.views)
 
-        assertThrows(IntegrityConstraintViolationException::class.java) {
+        assertThrows(DuplicateKeyException::class.java) {
             metricRepo.save(MetricSnapshot(campaignPostId = postId, capturedAt = LocalDateTime.of(2026, 8, 11, 0, 0), views = 999))
         }
     }

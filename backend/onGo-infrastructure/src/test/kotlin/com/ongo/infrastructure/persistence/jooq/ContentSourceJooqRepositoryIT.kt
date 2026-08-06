@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.jooq.exception.IntegrityConstraintViolationException
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -75,7 +75,7 @@ class ContentSourceJooqRepositoryIT {
     @Test
     fun `unique constraint on user and source type`() {
         repo.save(newActiveSource(userId = 100L))
-        assertThrows(IntegrityConstraintViolationException::class.java) {
+        assertThrows(DuplicateKeyException::class.java) {
             repo.save(newActiveSource(userId = 100L))
         }
     }
