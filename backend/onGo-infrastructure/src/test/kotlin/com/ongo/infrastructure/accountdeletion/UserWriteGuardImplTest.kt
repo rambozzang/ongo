@@ -3,6 +3,7 @@ package com.ongo.infrastructure.accountdeletion
 import com.ongo.common.exception.AccountFrozenException
 import com.ongo.domain.accountdeletion.AccountDeletionJobRepository
 import com.ongo.domain.accountdeletion.AccountDeletionState
+import com.ongo.domain.accountdeletion.WriteOrigin
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.DisplayName
@@ -70,5 +71,37 @@ class UserWriteGuardImplTest {
                 }
             }
         }
+    }
+
+    @Test
+    @DisplayName("등록된 시스템 경로는 동결 중에도 통과한다")
+    fun registeredSystemPathBypassesFreeze() {
+        // 결제 웹훅 재처리를 동결로 멈추면 결제 상태·환불·크레딧 원장이 어긋난다.
+        // 동결은 사용자 쓰기를 막는 장치이지 결제 정합성을 멈추는 장치가 아니다.
+        every { repository.findDeletionState(any()) } returns AccountDeletionState.DELETION_REQUESTED
+
+        assertDoesNotThrow {
+            guard.requireWritable(1L, WriteOrigin.SYSTEM_RECONCILIATION, "WebhookRetryScheduler")
+        }
+    }
+
+    @Test
+    @DisplayName("등록되지 않은 경로는 우회할 수 없다")
+    fun unregisteredSystemPathCannotBypass() {
+        // 우회가 암묵적으로 새면 동결이 무의미해진다. 근거 없는 우회는 거부한다.
+        assertThrows<IllegalArgumentException> {
+            guard.requireWritable(1L, WriteOrigin.SYSTEM_RECONCILIATION, "SomeRandomService")
+        }
+        assertThrows<IllegalArgumentException> {
+            guard.requireWritable(1L, WriteOrigin.SYSTEM_RECONCILIATION, null)
+        }
+    }
+
+    @Test
+    @DisplayName("기본 origin 은 사용자 쓰기다 — 우회가 기본값이면 안 된다")
+    fun defaultOriginIsUserAuthored() {
+        every { repository.findDeletionState(1L) } returns AccountDeletionState.DELETION_REQUESTED
+        // origin 을 생략하면 막혀야 한다. 실수로 우회되지 않게 하는 안전장치다.
+        assertThrows<AccountFrozenException> { guard.requireWritable(1L) }
     }
 }

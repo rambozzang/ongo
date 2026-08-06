@@ -2,7 +2,9 @@ package com.ongo.infrastructure.accountdeletion
 
 import com.ongo.common.exception.AccountFrozenException
 import com.ongo.domain.accountdeletion.AccountDeletionJobRepository
+import com.ongo.domain.accountdeletion.SystemWritePathRegistry
 import com.ongo.domain.accountdeletion.UserWriteGuard
+import com.ongo.domain.accountdeletion.WriteOrigin
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -20,7 +22,22 @@ class UserWriteGuardImpl(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun requireWritable(userId: Long) {
+    override fun requireWritable(userId: Long, origin: WriteOrigin, systemPath: String?) {
+        if (origin == WriteOrigin.SYSTEM_RECONCILIATION) {
+            // 우회는 등록된 경로만 할 수 있다. 미등록 우회를 통과시키면 동결이 무의미해진다.
+            // 여기서도 fail-closed 다 — 근거 없는 우회는 예외로 막는다.
+            require(systemPath != null && SystemWritePathRegistry.isRegistered(systemPath)) {
+                "등록되지 않은 시스템 경로가 동결 우회를 시도했다: $systemPath. " +
+                    "SystemWritePathRegistry 에 근거와 함께 등록해라"
+            }
+            // 우회는 흔한 일이 아니어야 한다. 남겨서 추적 가능하게 한다.
+            log.info(
+                "동결 우회(시스템 정합성): path={} userId={} 근거={}",
+                systemPath, userId, SystemWritePathRegistry.rationaleFor(systemPath),
+            )
+            return
+        }
+
         val state = try {
             repository.findDeletionState(userId)
         } catch (e: Exception) {

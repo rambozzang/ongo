@@ -62,19 +62,44 @@ WebhookRetryScheduler
 | 갈래 | 예 | 처리 |
 |---|---|---|
 | 사용자 데이터를 쓴다 | `AnalyticsSyncScheduler`, `CompetitorSyncScheduler`, `ScheduleExecutor`, `WeeklyDigestScheduler` | **항목별로 게이트 검사.** 동결된 사용자는 건너뛴다 |
-| 사용자 무관 유지보수 | `PartitionMaintenanceScheduler`, `RefreshTokenCleanupScheduler` | 검사 불필요 |
-| 판단 필요 | `BillingScheduler`, `CreditScheduler`, `WebhookRetryScheduler` | 결제·크레딧은 동결 중에도 정산이 필요할 수 있다. 별도 결정 |
+| 사용자 무관 유지보수 | `PartitionMaintenanceScheduler`, `RefreshTokenCleanupScheduler` | 시스템 경로로 등록해 우회 |
+| **금융·정산** | `WebhookRetryScheduler`, `BillingScheduler`, `CreditScheduler`, 결제 웹훅 서비스 | **동결 중에도 처리한다.** 시스템 경로로 등록 |
 
-세 번째 갈래가 까다롭다. 동결됐다고 결제 웹훅 재처리를 멈추면 정합성이 깨질 수 있다.
+### 금융 경로는 동결로 막지 않는다 (codex 결정)
 
-### 2.3 workspace/team 경유 — 소유자가 애매하다
+처음에 "판단 필요"로 미뤄뒀는데 방향이 정해졌다. **멈추는 쪽이 더 위험하다.**
 
-40개 파일이 `workspaceId` 를 다룬다. 여기서 쓰기의 주체는 **워크스페이스**이고 요청자는
-멤버다. 동결된 멤버가 공유 워크스페이스에 쓰는 것을 막아야 하는지, 막으면 다른 멤버 작업이
-영향받는지 판단이 필요하다.
+- `WebhookRetryScheduler` 와 결제 웹훅: 멈추면 결제 상태·환불·크레딧 원장이 깨진다.
+  외부 PG 가 보내는 사실을 기록하는 것이라 동결 여부와 무관하다
+- `BillingScheduler`: 외부 게이트웨이 호출이 없는 DB 정합화라 계속 처리한다.
+  단 **새 청구를 만들지 않는지** 확인이 필요하다
+- `CreditScheduler` 무료 크레딧 리셋: 일괄로 건너뛰면 동결이 길어졌다 풀렸을 때
+  **권리가 누락된다.** 제품 정책 확정 전 기본값으로 계속 처리한다
 
-정책 표에서 `workspaces.owner_id` 와 `team_members` 를 `REVIEW_BLOCK` 으로 둔 것과 같은
-쟁점이다. **이 결정 없이는 게이트 적용 범위를 확정할 수 없다.**
+대신 삭제 트랜잭션이 금융 쪽 `REVIEW_BLOCK` 을 만나면 **삭제를 막는다.**
+정합성을 지키는 방향은 "쓰기를 멈추는 것"이 아니라 "삭제를 미루는 것"이다.
+
+우회는 [`SystemWritePathRegistry`] 에 근거와 함께 등록된 경로만 할 수 있다.
+등록되지 않은 경로가 `SYSTEM_RECONCILIATION` 을 쓰면 예외로 막고, 사용할 때마다 로그를 남긴다.
+기본값은 `USER_AUTHORED` 라 실수로 우회되지 않는다.
+
+### 2.3 workspace/team 경유 — 지금 적용한다
+
+40개 파일이 `workspaceId` 를 다룬다.
+
+처음에 "정책 표의 `workspaces.owner_id` 가 `REVIEW_BLOCK` 이니 게이트 적용도 보류하자"고
+제안했는데 **틀렸다**(codex 지적). 두 질문을 섞은 것이다.
+
+| 질문 | 상태 |
+|---|---|
+| 삭제할 때 이 공유 행을 어떻게 할 것인가 | `REVIEW_BLOCK` 유지. 미정 |
+| **동결된 사용자가 계속 써도 되는가** | **아니다.** 지금 막는다 |
+
+전자가 미정이라고 후자를 허용할 근거가 되지 않는다. 기본은 fail-closed 다.
+
+**적용 방식**: HTTP·내부 구분 없이 workspace 쓰기도 **호출자 `userId`** 의 게이트를 통과시킨다.
+동결된 멤버는 공유 워크스페이스에도 쓰지 못하고, 다른 활성 멤버는 자기 게이트로 평소처럼 일한다.
+소유자 탈퇴와 공유 행 삭제 정책은 계속 `REVIEW_BLOCK` 이다.
 
 ### 2.4 이벤트·비동기
 
