@@ -38,26 +38,116 @@ class PortOnePaymentService(
      * 웹훅 본문은 신뢰하지 않는다. 서명을 먼저 검증한 뒤, paymentId로 포트원 API를 재조회해
      * 결제 상태와 금액을 확인한다.
      *
-     * 포트원은 결제 실패/취소/빌링키 등 모든 이벤트를 같은 엔드포인트로 보내고 2xx가 아니면
-     * 최대 5회 재전송하므로, `Transaction.Paid` 외의 이벤트는 예외 없이 무시한다.
+     * 포트원은 결제 실패/빌링키 등 모든 이벤트를 같은 엔드포인트로 보내고 2xx가 아니면
+     * 최대 5회 재전송하므로, 처리 대상이 아닌 이벤트는 예외 없이 무시한다.
+     *
+     * **`@Transactional`이 반드시 이 메서드에 있어야 한다.** 내부에서 호출하는 `complete()`는
+     * 자기호출(self-invocation)이라 프록시를 타지 않아 자체 트랜잭션이 열리지 않는다.
+     * 트랜잭션이 없으면 `findByIdForUpdate`의 행 잠금이 SELECT 직후 풀려 중복 지급을 막지 못한다.
      */
+    @Transactional
     fun handleWebhook(rawBody: String, webhookId: String?, webhookSignature: String?, webhookTimestamp: String?) {
         if (!gateway.verifyWebhookSignature(rawBody, webhookId, webhookSignature, webhookTimestamp)) {
             throw UnauthorizedException("포트원 웹훅 서명 검증 실패")
         }
 
         val json = runCatching { objectMapper.readTree(rawBody) }.getOrElse {
-            throw IllegalArgumentException("포트원 웹훅 본문을 해석할 수 없습니다")
+            throw PortOneWebhookFormatException("포트원 웹훅 본문을 해석할 수 없습니다")
         }
         val type = json.path("type").asText(null)
-        if (type != WEBHOOK_TYPE_PAID) {
+        if (type !in HANDLED_WEBHOOK_TYPES) {
             log.debug("처리 대상이 아닌 포트원 웹훅 이벤트 무시: type={}", type)
             return
         }
 
         val paymentId = json.path("data").path("paymentId").asText(null)
-            ?: throw IllegalArgumentException("포트원 웹훅에 paymentId가 없습니다")
-        complete(null, paymentId)
+            ?: throw PortOneWebhookFormatException("포트원 웹훅에 paymentId가 없습니다")
+
+        if (type == WEBHOOK_TYPE_PAID) complete(null, paymentId) else handleCancellation(paymentId)
+    }
+
+    /**
+     * 결제 취소·부분취소 웹훅을 처리한다.
+     *
+     * 웹훅 본문의 이벤트 타입을 믿지 않고 포트원 API를 재조회한 **실제 상태**로 판단한다.
+     * - `CANCELLED`(전액) → 결제를 `REFUNDED`로 바꾸고 크레딧 회수 / 구독 해제
+     * - `PARTIAL_CANCELLED`(부분) → 이력만 남긴다. 크레딧·구독·결제 상태를 건드리지 않는다.
+     *   부분 금액을 크레딧 수로 환산하면 패키지 단위·반올림·이미 사용한 크레딧 때문에
+     *   과다/과소 회수가 발생한다. 정확한 회수량이 원장으로 확정될 때까지 보수적으로 둔다.
+     */
+    private fun handleCancellation(portonePaymentId: String) {
+        val internalId = parseInternalPaymentId(portonePaymentId)
+        val payment = paymentRepository.findByIdForUpdate(internalId)
+            ?: throw NotFoundException("결제", internalId)
+
+        val verified = gateway.getPayment(portonePaymentId)
+        when {
+            verified.status.equals(PORTONE_STATUS_CANCELLED, ignoreCase = true) ->
+                applyFullCancellation(payment, portonePaymentId)
+
+            verified.status.equals(PORTONE_STATUS_PARTIAL_CANCELLED, ignoreCase = true) ->
+                log.warn(
+                    "포트원 부분취소 수신 — 이력만 기록하고 크레딧·구독은 유지한다 [paymentId={}, 내부 결제={}]",
+                    portonePaymentId, payment.id,
+                )
+
+            else -> log.info(
+                "취소 웹훅이지만 포트원 상태가 취소가 아니라 반영하지 않는다 [paymentId={}, status={}]",
+                portonePaymentId, verified.status,
+            )
+        }
+    }
+
+    private fun applyFullCancellation(payment: Payment, portonePaymentId: String) {
+        if (payment.status == PaymentStatus.REFUNDED) {
+            log.info("이미 환불 처리된 결제라 건너뛴다 [내부 결제={}]", payment.id)
+            return
+        }
+
+        paymentRepository.update(payment.copy(status = PaymentStatus.REFUNDED))
+
+        when (payment.type) {
+            PaymentType.CREDIT -> revokeCreditsFor(payment, portonePaymentId)
+            PaymentType.SUBSCRIPTION -> cancelSubscriptionFor(payment)
+        }
+    }
+
+    /**
+     * 회수량은 결제 **금액이 아니라 크레딧 수**다.
+     * 금액을 그대로 넘기면 (₩9,900 → 9,900 크레딧) 실제 지급량보다 훨씬 많이 회수된다.
+     */
+    private fun revokeCreditsFor(payment: Payment, portonePaymentId: String) {
+        val packageName = payment.description?.split('|')?.getOrNull(1)
+        val creditPackage = runCatching { enumValue<CreditPackage>(packageName) }.getOrNull()
+        if (creditPackage == null) {
+            log.error(
+                "크레딧 패키지를 식별할 수 없어 회수를 건너뛴다 [내부 결제={}, description={}]",
+                payment.id, payment.description,
+            )
+            return
+        }
+        creditService.revokeCredits(payment.userId, creditPackage.credits, "PORTONE_CANCEL_$portonePaymentId")
+    }
+
+    /**
+     * 구독은 `CANCELLED`로만 표시하고 `planType`과 결제 기간은 유지한다.
+     * 이미 낸 기간까지는 권한을 보장해야 하며, 기간이 끝난 뒤 FREE 전환은
+     * `BillingScheduler`의 `findCancelledExpired`가 담당한다.
+     */
+    private fun cancelSubscriptionFor(payment: Payment) {
+        val subscription = subscriptionRepository.findByUserId(payment.userId)
+        if (subscription == null) {
+            log.warn("취소할 구독을 찾을 수 없다 [userId={}]", payment.userId)
+            return
+        }
+        val now = LocalDateTime.now()
+        subscriptionRepository.update(
+            subscription.copy(
+                status = SubscriptionStatus.CANCELLED,
+                cancelledAt = now,
+                updatedAt = now,
+            )
+        )
     }
 
     @Transactional
@@ -106,7 +196,8 @@ class PortOnePaymentService(
     @Transactional
     fun complete(userId: Long?, portonePaymentId: String): PortOnePaymentResult {
         val internalId = parseInternalPaymentId(portonePaymentId)
-        val payment = paymentRepository.findById(internalId)
+        // 잠금 조회여야 한다. 잠그지 않으면 동시에 들어온 두 웹훅이 모두 PENDING을 보고 크레딧을 두 번 지급한다.
+        val payment = paymentRepository.findByIdForUpdate(internalId)
             ?: throw NotFoundException("결제", internalId)
         if (userId != null && payment.userId != userId) {
             throw IllegalStateException("본인의 결제만 완료할 수 있습니다")
@@ -190,10 +281,11 @@ class PortOnePaymentService(
             customerName = name,
         )
 
+    /** 형식이 틀린 결제 ID는 재전송해도 그대로이므로 영구 오류로 분류한다. */
     private fun parseInternalPaymentId(paymentId: String): Long {
-        require(paymentId.startsWith("ongo-")) { "유효하지 않은 결제 ID입니다" }
+        if (!paymentId.startsWith("ongo-")) throw PortOneWebhookFormatException("유효하지 않은 결제 ID입니다")
         return paymentId.removePrefix("ongo-").toLongOrNull()
-            ?: throw IllegalArgumentException("유효하지 않은 결제 ID입니다")
+            ?: throw PortOneWebhookFormatException("유효하지 않은 결제 ID입니다")
     }
 
     private inline fun <reified T : Enum<T>> enumValue(value: String?): T =
@@ -206,6 +298,22 @@ class PortOnePaymentService(
     companion object {
         /** 결제 승인 완료 이벤트. 이 타입만 결제 완료 처리를 수행한다. */
         private const val WEBHOOK_TYPE_PAID = "Transaction.Paid"
+
+        /** 전액 취소. */
+        private const val WEBHOOK_TYPE_CANCELLED = "Transaction.Cancelled"
+
+        /** 부분 취소. 이력만 남긴다. */
+        private const val WEBHOOK_TYPE_PARTIAL_CANCELLED = "Transaction.PartialCancelled"
+
+        /** 이 목록에 없는 이벤트는 2xx로 조용히 무시한다 (재전송 폭풍 방지). */
+        private val HANDLED_WEBHOOK_TYPES = setOf(
+            WEBHOOK_TYPE_PAID,
+            WEBHOOK_TYPE_CANCELLED,
+            WEBHOOK_TYPE_PARTIAL_CANCELLED,
+        )
+
+        private const val PORTONE_STATUS_CANCELLED = "CANCELLED"
+        private const val PORTONE_STATUS_PARTIAL_CANCELLED = "PARTIAL_CANCELLED"
     }
 }
 

@@ -36,6 +36,14 @@ class PaymentJooqRepository(
             .fetchOne()
             ?.toPayment()
 
+    override fun findByIdForUpdate(id: Long): Payment? =
+        dsl.select()
+            .from(PAYMENTS)
+            .where(ID.eq(id))
+            .forUpdate()
+            .fetchOne()
+            ?.toPayment()
+
     override fun findByPaddleTransactionId(paddleTransactionId: String): Payment? =
         dsl.select()
             .from(PAYMENTS)

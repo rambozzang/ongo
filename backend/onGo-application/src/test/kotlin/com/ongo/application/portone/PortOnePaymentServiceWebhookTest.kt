@@ -17,6 +17,7 @@ import io.mockk.junit5.MockKExtension
 import io.mockk.just
 import io.mockk.runs
 import io.mockk.verify
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -86,7 +87,7 @@ class PortOnePaymentServiceWebhookTest {
         }
 
         verify(exactly = 0) { gateway.getPayment(any()) }
-        verify(exactly = 0) { paymentRepository.findById(any()) }
+        verify(exactly = 0) { paymentRepository.findByIdForUpdate(any()) }
     }
 
     @Test
@@ -103,7 +104,7 @@ class PortOnePaymentServiceWebhookTest {
             pgProvider = "portone",
             description = "CREDIT|BASIC",
         )
-        every { paymentRepository.findById(42) } returns payment
+        every { paymentRepository.findByIdForUpdate(42) } returns payment
         every { paymentRepository.update(any()) } returns payment
         every { gateway.getPayment("ongo-42") } returns PortOnePayment(
             paymentId = "ongo-42",
@@ -122,6 +123,63 @@ class PortOnePaymentServiceWebhookTest {
     }
 
     @Test
+    @DisplayName("Paid 웹훅은 잠금 조회로 결제를 읽는다 — 중복 크레딧 지급 방지의 근거")
+    fun paidWebhookUsesLockingRead() {
+        allowSignature()
+        val payment = Payment(
+            id = 42,
+            userId = 7,
+            type = PaymentType.CREDIT,
+            amount = CreditPackage.BASIC.price,
+            currency = "KRW",
+            status = PaymentStatus.PENDING,
+            pgProvider = "portone",
+            description = "CREDIT|BASIC",
+        )
+        every { paymentRepository.findByIdForUpdate(42) } returns payment
+        every { paymentRepository.update(any()) } returns payment
+        every { gateway.getPayment("ongo-42") } returns PortOnePayment(
+            paymentId = "ongo-42",
+            status = "PAID",
+            amount = CreditPackage.BASIC.price,
+            currency = "KRW",
+            transactionId = "tx-1",
+            paymentMethod = "CARD",
+            receiptUrl = null,
+        )
+        every { creditService.addPurchasedCredits(any(), any(), any()) } just runs
+
+        service.handleWebhook(body("Transaction.Paid"), webhookId, signature, timestamp)
+
+        verify(exactly = 1) { paymentRepository.findByIdForUpdate(42) }
+        verify(exactly = 0) { paymentRepository.findById(any()) }
+    }
+
+    @Test
+    @DisplayName("이미 COMPLETED인 결제에 Paid 웹훅이 다시 오면 크레딧을 재지급하지 않는다")
+    fun duplicatePaidWebhookDoesNotGrantTwice() {
+        allowSignature()
+        val completed = Payment(
+            id = 42,
+            userId = 7,
+            type = PaymentType.CREDIT,
+            amount = CreditPackage.BASIC.price,
+            currency = "KRW",
+            status = PaymentStatus.COMPLETED,
+            pgProvider = "portone",
+            description = "CREDIT|BASIC",
+        )
+        every { paymentRepository.findByIdForUpdate(42) } returns completed
+
+        service.handleWebhook(body("Transaction.Paid"), webhookId, signature, timestamp)
+
+        verify(exactly = 0) { creditService.addPurchasedCredits(any(), any(), any()) }
+        verify(exactly = 0) { paymentRepository.update(any()) }
+        // 잠금 조회로 이미 COMPLETED를 확인했으므로 포트원 재조회조차 필요 없다
+        verify(exactly = 0) { gateway.getPayment(any()) }
+    }
+
+    @Test
     @DisplayName("Transaction.Failed 웹훅은 예외 없이 무시한다 — 재전송 폭풍 방지")
     fun failedWebhookIgnored() {
         allowSignature()
@@ -129,17 +187,18 @@ class PortOnePaymentServiceWebhookTest {
         service.handleWebhook(body("Transaction.Failed"), webhookId, signature, timestamp)
 
         verify(exactly = 0) { gateway.getPayment(any()) }
-        verify(exactly = 0) { paymentRepository.findById(any()) }
+        verify(exactly = 0) { paymentRepository.findByIdForUpdate(any()) }
     }
 
     @Test
-    @DisplayName("Transaction.Cancelled 웹훅은 예외 없이 무시한다")
-    fun cancelledWebhookIgnored() {
+    @DisplayName("가상계좌 발급 등 처리 대상이 아닌 결제 이벤트도 예외 없이 무시한다")
+    fun virtualAccountIssuedIgnored() {
         allowSignature()
 
-        service.handleWebhook(body("Transaction.Cancelled"), webhookId, signature, timestamp)
+        service.handleWebhook(body("Transaction.VirtualAccountIssued"), webhookId, signature, timestamp)
 
         verify(exactly = 0) { gateway.getPayment(any()) }
+        verify(exactly = 0) { paymentRepository.findByIdForUpdate(any()) }
     }
 
     @Test
@@ -153,24 +212,60 @@ class PortOnePaymentServiceWebhookTest {
     }
 
     @Test
-    @DisplayName("Transaction.Paid인데 paymentId가 없으면 예외를 던진다")
+    @DisplayName("Transaction.Paid인데 paymentId가 없으면 영구 오류 예외를 던진다 — 400으로 분류돼야 한다")
     fun paidWithoutPaymentIdThrows() {
         allowSignature()
         val noPaymentId = """{"type":"Transaction.Paid","data":{"storeId":"store-test"}}"""
 
-        assertThrows(IllegalArgumentException::class.java) {
+        assertThrows(PortOneWebhookFormatException::class.java) {
             service.handleWebhook(noPaymentId, webhookId, signature, timestamp)
         }
     }
 
     @Test
-    @DisplayName("본문이 JSON이 아니면 서명 검증 이후 예외를 던진다")
+    @DisplayName("본문이 JSON이 아니면 영구 오류 예외를 던진다 — 400으로 분류돼야 한다")
     fun malformedBodyThrows() {
         allowSignature()
 
-        assertThrows(IllegalArgumentException::class.java) {
+        assertThrows(PortOneWebhookFormatException::class.java) {
             service.handleWebhook("not json", webhookId, signature, timestamp)
         }
+    }
+
+    @Test
+    @DisplayName("결제 상태가 아직 PAID가 아니면 영구 오류가 아닌 일반 예외를 던진다 — 500으로 분류돼 재전송돼야 한다")
+    fun notYetPaidThrowsRetryableError() {
+        allowSignature()
+        val payment = Payment(
+            id = 42,
+            userId = 7,
+            type = PaymentType.CREDIT,
+            amount = CreditPackage.BASIC.price,
+            currency = "KRW",
+            status = PaymentStatus.PENDING,
+            pgProvider = "portone",
+            description = "CREDIT|BASIC",
+        )
+        every { paymentRepository.findByIdForUpdate(42) } returns payment
+        every { gateway.getPayment("ongo-42") } returns PortOnePayment(
+            paymentId = "ongo-42",
+            status = "READY",
+            amount = CreditPackage.BASIC.price,
+            currency = "KRW",
+            transactionId = null,
+            paymentMethod = null,
+            receiptUrl = null,
+        )
+
+        val thrown = assertThrows(IllegalArgumentException::class.java) {
+            service.handleWebhook(body("Transaction.Paid"), webhookId, signature, timestamp)
+        }
+        // PortOneWebhookFormatException이면 컨트롤러가 400으로 끊어 재전송이 막힌다
+        assertFalse(
+            thrown is PortOneWebhookFormatException,
+            "PG 미정산은 재전송으로 복구 가능해야 하므로 영구 오류로 분류하면 안 된다",
+        )
+        verify(exactly = 0) { creditService.addPurchasedCredits(any(), any(), any()) }
     }
 
     @Test
