@@ -9,7 +9,9 @@ import com.ongo.domain.video.VideoUploadRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -28,11 +30,24 @@ class ScheduleExecutor(
     private val videoUploadRepository: VideoUploadRepository,
     private val distributedLockPort: DistributedLockPort,
     private val streamPublishUseCase: StreamPublishUseCase,
+    transactionManager: PlatformTransactionManager,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    /**
+     * 예약 1건을 독립 트랜잭션으로 묶는다.
+     *
+     * 같은 클래스 안에서 `@Transactional` 메서드를 자기호출하면 프록시를 타지 않아
+     * 전파 설정이 무시된다. 그래서 애노테이션 대신 [TransactionTemplate]을 쓴다.
+     */
+    private val perItemTx = TransactionTemplate(transactionManager).apply {
+        propagationBehavior = TransactionDefinition.PROPAGATION_REQUIRES_NEW
+    }
+
     companion object {
         private val KST = ZoneId.of("Asia/Seoul")
+        private const val OUTCOME_OK = "OK"
+        private const val OUTCOME_PARTIAL_FAILURE = "PARTIAL_FAILURE"
     }
 
     private val lockId = javaClass.name.hashCode().toLong()
@@ -43,22 +58,34 @@ class ScheduleExecutor(
      * - 플랫폼 업로드가 FAILED → Schedule도 FAILED
      * - 아직 PROCESSING 중 → 다음 주기에 재확인
      */
+    // 바깥 루프에는 트랜잭션을 두지 않는다. 예약 1건씩 REQUIRES_NEW 로 묶고 루프 바깥에서 잡는다.
+    //
+    // 예전에는 이 메서드에 @Transactional 이 붙어 전체 예약이 한 트랜잭션이었고 항목별로
+    // 예외를 삼켰다. jOOQ 가 스프링 트랜잭션에 참여하게 되면서 한 건의 DB 오류가 트랜잭션을
+    // abort 시키고, 이후 예약이 전부 실패하며 이미 갱신한 상태까지 롤백되는 구조가 됐다.
+    // CreditScheduler / ABTestEvaluator 와 같은 결함이며 같은 방식으로 고친다.
+    //
+    // 배치 전체를 한 트랜잭션에 묶으면 안 되는 이유가 하나 더 있다. 이 루프는
+    // streamPublishUseCase.executeScheduledUpload 로 실제 플랫폼 업로드를 트리거한다.
+    // 외부 호출을 긴 트랜잭션 안에 두면 커넥션을 오래 점유하고, 롤백해도 외부 호출은
+    // 되돌릴 수 없다.
     @Scheduled(fixedRate = 60000)
-    @Transactional
     fun syncScheduleStatuses() {
-        if (!distributedLockPort.tryLock(lockId)) {
-            log.debug("다른 인스턴스에서 예약 상태 동기화 실행 중, 스킵")
-            return
-        }
-        try {
-            val now = LocalDateTime.now(KST)
-            val dueSchedules = scheduleRepository.findDueSchedules(now)
+        val ran = distributedLockPort.withLock(lockId) { syncDueSchedules() }
+        if (!ran) log.debug("다른 인스턴스에서 예약 상태 동기화 실행 중, 스킵")
+    }
 
-            if (dueSchedules.isEmpty()) return
-            log.debug("상태 확인할 예약 {}건", dueSchedules.size)
+    private fun syncDueSchedules() {
+        val now = LocalDateTime.now(KST)
+        val dueSchedules = scheduleRepository.findDueSchedules(now)
 
-            dueSchedules.forEach { schedule ->
-                try {
+        if (dueSchedules.isEmpty()) return
+        log.debug("상태 확인할 예약 {}건", dueSchedules.size)
+
+        val failed = mutableListOf<Long?>()
+        dueSchedules.forEach { schedule ->
+            try {
+                perItemTx.executeWithoutResult {
                     // 24시간 이상 상태 변화 없으면 타임아웃 처리
                     val timeoutHours = 24L
                     val isTimedOut = schedule.scheduledAt.plusHours(timeoutHours).isBefore(now)
@@ -69,7 +96,7 @@ class ScheduleExecutor(
                     if (uploads.isEmpty() && schedule.status == ScheduleStatus.SCHEDULED) {
                         log.info("예약 업로드 트리거 [scheduleId={}, videoId={}]", schedule.id, schedule.videoId)
                         streamPublishUseCase.executeScheduledUpload(schedule)
-                        return@forEach
+                        return@executeWithoutResult
                     }
 
                     if (uploads.isEmpty()) {
@@ -79,7 +106,7 @@ class ScheduleExecutor(
                         } else {
                             log.debug("예약 {}에 대한 업로드 레코드가 아직 없습니다 [videoId={}]", schedule.id, schedule.videoId)
                         }
-                        return@forEach
+                        return@executeWithoutResult
                     }
 
                     val newStatus = when {
@@ -100,12 +127,20 @@ class ScheduleExecutor(
                         scheduleRepository.update(schedule.copy(status = newStatus))
                         log.info("예약 상태 갱신 [scheduleId={}, {} → {}]", schedule.id, schedule.status, newStatus)
                     }
-                } catch (e: Exception) {
-                    log.error("예약 상태 동기화 실패 [scheduleId={}]: {}", schedule.id, e.message, e)
                 }
+            } catch (e: Exception) {
+                failed += schedule.id
+                log.error("예약 상태 동기화 실패. job=scheduleSync scheduleId={}", schedule.id, e)
             }
-        } finally {
-            distributedLockPort.releaseLock(lockId)
+        }
+
+        if (failed.isEmpty()) {
+            log.debug("예약 상태 동기화 완료. job=scheduleSync total={} outcome={}", dueSchedules.size, OUTCOME_OK)
+        } else {
+            log.error(
+                "예약 상태 동기화 일부 실패. job=scheduleSync failed={} total={} outcome={} failedScheduleIds={}",
+                failed.size, dueSchedules.size, OUTCOME_PARTIAL_FAILURE, failed,
+            )
         }
     }
 }
