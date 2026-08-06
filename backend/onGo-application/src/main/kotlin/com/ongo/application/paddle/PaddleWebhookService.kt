@@ -112,6 +112,19 @@ class PaddleWebhookService(
         }
     }
 
+    /**
+     * 실패한 웹훅을 재처리한다. [WebhookRetryScheduler] 가 호출한다.
+     *
+     * **`@Transactional` 이 반드시 있어야 한다.** 없으면 각 쓰기가 개별 auto-commit 되어
+     * 부분 반영이 남는다. 예를 들어 `handleTransactionRefunded` 는 결제를 REFUNDED 로 바꾼 뒤
+     * 크레딧을 회수하는데, 회수가 실패하면 결제만 환불 처리된 채 커밋되고 크레딧은 남는다.
+     * 그 상태로 재시도하면 회수가 다시 실행되어 **과다 회수**가 된다.
+     *
+     * 호출자인 스케줄러에는 `@Transactional` 이 없다. 그래서 여기서 예외가 나면 이 트랜잭션만
+     * 롤백되고, 스케줄러의 catch 가 재시도 상태를 기록하는 것은 정상 동작한다.
+     * 스케줄러에 트랜잭션을 붙이면 이 구조가 깨지므로 붙이지 말 것.
+     */
+    @Transactional
     fun reprocessWebhookEvent(webhookEvent: WebhookEvent) {
         val event = objectMapper.readValue<Map<String, Any>>(webhookEvent.payload)
         val eventType = event["event_type"] as? String ?: return
