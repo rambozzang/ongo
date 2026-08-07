@@ -2,6 +2,20 @@
   <div class="grid h-full" style="grid-template-columns: minmax(0, 1fr) 372px">
     <!-- 좌: 입력 -->
     <div class="overflow-y-auto border-r border-line px-5 pb-[120px] pt-[18px] scrollbar-dark">
+      <!-- 입력 소스 -->
+      <div class="mb-2.5 flex items-center gap-1 rounded-lg border border-line bg-surface-input p-1">
+        <button
+          v-for="mode in sourceModes"
+          :key="mode.key"
+          type="button"
+          class="flex-1 rounded-md px-3 py-1.5 text-[11px] font-semibold transition-colors"
+          :class="sourceMode === mode.key ? 'bg-surface-card text-content shadow-sm' : 'text-content-tertiary hover:text-content'"
+          @click="selectSourceMode(mode.key)"
+        >
+          {{ mode.label }}
+        </button>
+      </div>
+
       <!-- 파일 -->
       <div class="flex items-center gap-3.5 rounded-[11px] border border-line bg-surface-card p-3.5">
         <ThumbPlaceholder :src="file.thumbnailUrl" :width="104" :height="62" />
@@ -11,7 +25,7 @@
           </p>
           <p class="mt-1 font-mono text-[10.5px] text-content-tertiary">{{ fileMeta }}</p>
         </div>
-        <div class="flex shrink-0 items-center gap-2">
+        <div v-if="sourceMode === 'file'" class="flex shrink-0 items-center gap-2">
           <button type="button" class="btn-secondary !text-[11px]" @click="pickFile">
             {{ t('redesign.compose.replace') }}
           </button>
@@ -31,6 +45,38 @@
           class="hidden"
           @change="onFileChosen"
         />
+      </div>
+
+      <div v-if="sourceMode === 'url'" class="mt-2 rounded-[11px] border border-line bg-surface-card p-3.5">
+        <label class="block text-[11.5px] font-semibold text-content-secondary" for="source-video-url">
+          {{ t('redesign.compose.importUrlLabel') }}
+        </label>
+        <div class="mt-2 flex gap-2">
+          <input
+            id="source-video-url"
+            v-model.trim="importUrl"
+            type="url"
+            maxlength="2000"
+            :disabled="!importAvailable || importing"
+            :placeholder="t('redesign.compose.importUrlPlaceholder')"
+            class="input-field min-w-0 flex-1 !text-[12px]"
+            @keydown.enter.prevent="importFromUrl"
+          />
+          <button
+            type="button"
+            class="btn-primary shrink-0 !text-[11px]"
+            :disabled="!importAvailable || !importUrl || importing"
+            @click="importFromUrl"
+          >
+            {{ importing ? t('redesign.compose.importing') : t('redesign.compose.importUrlAction') }}
+          </button>
+        </div>
+        <p v-if="importAvailability?.available === false" class="mt-2 text-[11px] text-warn">
+          {{ importAvailability.reason || t('redesign.compose.importUnavailable') }}
+        </p>
+        <p v-else class="mt-2 text-[10.5px] text-content-tertiary">
+          {{ t('redesign.compose.importUrlHint') }}
+        </p>
       </div>
 
       <!-- 업로드 진행 — 파일 카드 안에 텍스트를 병기한다 -->
@@ -271,6 +317,11 @@ const router = useRouter()
 const uploadStore = useUploadStore()
 
 const fileInput = ref<HTMLInputElement | null>(null)
+const sourceMode = ref<'file' | 'url'>('file')
+const importUrl = ref('')
+const importing = ref(false)
+const importedVideoId = ref<number | null>(null)
+const importAvailability = ref<{ available: boolean; reason?: string | null } | null>(null)
 const submitting = ref(false)
 const saving = ref(false)
 const captioning = ref(false)
@@ -286,6 +337,17 @@ const fixedAt = ref('')
 
 const form = reactive({ title: '', description: '', hashtags: '' })
 const file = reactive({ name: '', thumbnailUrl: null as string | null, meta: '' })
+
+const sourceModes = computed(() => [
+  { key: 'file' as const, label: t('redesign.compose.fileSourceUpload') },
+  { key: 'url' as const, label: t('redesign.compose.fileSourceUrl') },
+])
+const importAvailable = computed(() => importAvailability.value?.available !== false)
+
+function selectSourceMode(mode: 'file' | 'url') {
+  sourceMode.value = mode
+  if (mode === 'file') importedVideoId.value = null
+}
 
 const tabs = [
   { key: 'common' as const, label: t('redesign.compose.tabCommon') },
@@ -364,6 +426,8 @@ function pickFile() {
 async function onFileChosen(e: Event) {
   const picked = (e.target as HTMLInputElement).files?.[0]
   if (!picked) return
+  importedVideoId.value = null
+  sourceMode.value = 'file'
   notice.value = ''
   await uploadStore.startUpload(picked)
   file.name = picked.name
@@ -377,14 +441,15 @@ async function onFileChosen(e: Event) {
  */
 async function requestCaptions() {
   const id = uploadStore.videoId
-  if (!id) {
+  const sourceId = importedVideoId.value ?? id
+  if (!sourceId) {
     notice.value = t('redesign.compose.captionsNeedUpload')
     return
   }
   captioning.value = true
   notice.value = ''
   try {
-    const res = await aiApi.stt({ videoId: id })
+    const res = await aiApi.stt({ videoId: sourceId })
     if (res?.text && !form.description) form.description = res.text
     notice.value = t('redesign.compose.captionsDone')
   } catch {
@@ -403,13 +468,15 @@ async function saveDraft() {
   saving.value = true
   notice.value = ''
   try {
-    await videoApi.create({
+    const metadata = {
       title: form.title,
       description: form.description || undefined,
       tags: parseHashtags(form.hashtags),
-      visibility: 'PUBLIC',
-      mediaType: 'VIDEO',
-    })
+      visibility: 'PUBLIC' as const,
+      mediaType: 'VIDEO' as const,
+    }
+    if (importedVideoId.value) await videoApi.update(importedVideoId.value, metadata)
+    else await videoApi.create(metadata)
     notice.value = t('redesign.compose.draftSaved')
   } catch {
     notice.value = t('redesign.compose.draftFailed')
@@ -425,7 +492,7 @@ async function saveDraft() {
 async function submit() {
   if (blockedReason.value || submitting.value) return
   const selected = uploadStore.file
-  if (!selected) {
+  if (!selected && !importedVideoId.value) {
     notice.value = t('redesign.compose.needFile')
     return
   }
@@ -442,18 +509,22 @@ async function submit() {
       scheduledAt: scheduledAtFor(index),
     }))
 
-    await uploadStore.streamPublish(
-      selected,
-      {
-        title: form.title,
-        description: form.description,
-        tags: parseHashtags(form.hashtags),
-        category: '',
-        visibility: 'PUBLIC',
-        thumbnailUrl: '',
-      },
-      configs,
-    )
+    if (importedVideoId.value) {
+      await videoApi.publish(importedVideoId.value, { platforms: configs })
+    } else if (selected) {
+      await uploadStore.streamPublish(
+        selected,
+        {
+          title: form.title,
+          description: form.description,
+          tags: parseHashtags(form.hashtags),
+          category: '',
+          visibility: 'PUBLIC',
+          thumbnailUrl: '',
+        },
+        configs,
+      )
+    }
     notice.value = t('redesign.compose.scheduled')
     router.push('/today')
   } catch (e) {
@@ -494,6 +565,25 @@ function formatBytes(n: number): string {
   return `${(n / 1024 ** 3).toFixed(1)}GB`
 }
 
+async function importFromUrl() {
+  if (!importUrl.value || !importAvailable.value || importing.value) return
+  importing.value = true
+  notice.value = ''
+  try {
+    const result = await videoApi.importUrl({ url: importUrl.value, title: form.title || undefined })
+    importedVideoId.value = result.videoId
+    uploadStore.resetUpload()
+    file.name = result.title
+    file.meta = `${result.provider} · ${t('redesign.compose.imported')}`
+    if (!form.title) form.title = result.title
+    notice.value = t('redesign.compose.importedSuccess')
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : t('redesign.compose.importFailed')
+  } finally {
+    importing.value = false
+  }
+}
+
 function onKeydown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
     e.preventDefault()
@@ -514,6 +604,11 @@ onMounted(async () => {
     channels.value = (await channelApi.list())?.channels ?? []
   } catch {
     channels.value = []
+  }
+  try {
+    importAvailability.value = await videoApi.getImportAvailability()
+  } catch {
+    importAvailability.value = null
   }
 })
 

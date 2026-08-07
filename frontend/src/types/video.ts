@@ -79,6 +79,11 @@ export interface VideoPublishRequest {
   scheduledAt?: string
 }
 
+export interface VideoDownloadAvailability {
+  available: boolean
+  reason?: string | null
+}
+
 export interface PlatformPublishConfig {
   platform: Platform
   title: string

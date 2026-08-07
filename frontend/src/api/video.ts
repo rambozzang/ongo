@@ -11,9 +11,26 @@ import type {
   VideoTranslation,
   VideoFeedResponse,
   PlatformUploadCapability,
+  VideoDownloadAvailability,
 } from '@/types/video'
 
 export const videoApi = {
+  getImportAvailability() {
+    return apiClient
+      .get<ResData<VideoDownloadAvailability>>('/videos/import-url/availability')
+      .then(unwrapResponse)
+  },
+
+  importUrl(request: { url: string; title?: string }) {
+    return apiClient
+      .post<ResData<{ videoId: number; title: string; provider: string; fileUrl?: string | null }>>(
+        '/videos/import-url',
+        request,
+        { timeout: 1_500_000 },
+      )
+      .then(unwrapResponse)
+  },
+
   getUploadCapabilities() {
     return apiClient
       .get<ResData<PlatformUploadCapability[]>>('/videos/stream-publish/capabilities')
