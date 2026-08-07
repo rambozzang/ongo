@@ -3,7 +3,7 @@ import type { ResData } from '@/types/api'
 
 /**
  * 자막 에디터 API — 백엔드 SubtitleEditorController(`/api/v1/subtitle-editor`) 대응.
- * 주의: 백엔드가 `@Profile("wip")` 이라 wip 프로필에서만 활성화된다.
+ * 기본 프로필에서 제공되는 자막 트랙 편집 API다.
  *
  * cues 는 백엔드가 JSONB 문자열 그대로 저장·반환하므로 직렬화 형식은 여기가 기준이다.
  * (백엔드 SubtitleEditorDtos.kt 의 cues: String 주석 참고)

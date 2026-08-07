@@ -211,6 +211,26 @@ export const sectionsKo: ManualSection[] = [
     ],
   },
   {
+    id: 'subtitle-editor',
+    title: '자막 편집기',
+    icon: LanguageIcon,
+    content: [
+      {
+        subtitle: '자막 트랙 만들기',
+        text: '업로드한 영상의 자막 트랙을 만들고 시간 구간별 문구를 편집합니다. 자막은 영상 소유자만 조회·수정할 수 있습니다.',
+        steps: [
+          '자막 편집기에서 영상을 선택합니다.',
+          '언어를 선택하고 자막 트랙을 만듭니다.',
+          '시작·종료 시각과 문구를 편집한 뒤 저장합니다.',
+        ],
+      },
+      {
+        subtitle: '내보내기',
+        text: '완성한 자막을 SRT, VTT, ASS 또는 TXT 형식으로 내려받아 영상 편집 도구에서 사용할 수 있습니다.',
+      },
+    ],
+  },
+  {
     id: 'getting-started',
     title: '시작하기',
     icon: RocketLaunchIcon,
@@ -3146,6 +3166,26 @@ export const sectionsEn: ManualSection[] = [
           'Changes are stored only after you review the diff and click "Apply changes". The no., clip ID, and status columns are read-only and ignored.',
           'Scheduled times must be in yyyy-MM-dd HH:mm format. Rows with an invalid format are skipped while the rest are applied, and clip IDs that do not belong to this run are ignored.',
         ],
+      },
+    ],
+  },
+  {
+    id: 'subtitle-editor',
+    title: 'Subtitle editor',
+    icon: LanguageIcon,
+    content: [
+      {
+        subtitle: 'Create a subtitle track',
+        text: 'Create a subtitle track for an uploaded video and edit cue text by time range. Only the video owner can view or edit its tracks.',
+        steps: [
+          'Open Subtitle editor and select a video.',
+          'Choose a language and create a track.',
+          'Edit cue start/end times and text, then save.',
+        ],
+      },
+      {
+        subtitle: 'Export',
+        text: 'Download the finished subtitles as SRT, VTT, ASS, or TXT for use in your video editor.',
       },
     ],
   },

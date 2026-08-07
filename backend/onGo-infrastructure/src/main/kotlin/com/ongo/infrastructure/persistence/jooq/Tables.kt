@@ -17,6 +17,7 @@ fun Record.localDateTime(field: Field<LocalDateTime>): LocalDateTime? {
     return when (value) {
         is LocalDateTime -> value
         is java.sql.Timestamp -> value.toLocalDateTime()
+        is java.time.OffsetDateTime -> value.toLocalDateTime()
         else -> throw IllegalStateException("Cannot convert ${value::class.java} to LocalDateTime")
     }
 }
@@ -36,6 +37,7 @@ object Tables {
     val VIDEOS = DSL.table("videos")
     val VIDEO_UPLOADS = DSL.table("video_uploads")
     val VIDEO_PLATFORM_META = DSL.table("video_platform_meta")
+    val SUBTITLE_TRACKS = DSL.table("subtitle_tracks")
     val SCHEDULES = DSL.table("schedules")
     val ANALYTICS_DAILY = DSL.table("analytics_daily")
     val CHANNEL_INSIGHTS_DAILY = DSL.table("channel_insights_daily")
@@ -571,6 +573,9 @@ object Fields {
 
     // approvals
     val VIDEO_TITLE = DSL.field("video_title", String::class.java)
+    val CUES = DSL.field("cues", org.jooq.JSONB::class.java)
+    val TOTAL_DURATION = DSL.field("total_duration", java.math.BigDecimal::class.java)
+    val WORD_COUNT = DSL.field("word_count", Int::class.java)
     val REQUESTER_ID = DSL.field("requester_id", Long::class.java)
     val REQUESTER_NAME = DSL.field("requester_name", String::class.java)
     val REVIEWER_ID = DSL.field("reviewer_id", Long::class.java)
