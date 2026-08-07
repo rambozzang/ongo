@@ -46,7 +46,16 @@ import org.testcontainers.junit.jupiter.Testcontainers
  * | `@Scheduled` 등록 차단 | `ScheduleExecutor`(fixedRate 60s), `WebhookRetryScheduler`(fixedDelay 60s)는 **기동 즉시 발화**한다. 막지 않으면 이 테스트가 실제 배치를 돌린다 |
  * | 더미 시크릿 | 실제 자격증명을 쓰지 않는다 |
  *
- * 검증하는 것은 **컨텍스트 refresh 성공** 하나다. 동작 검증은 각 기능의 테스트가 한다.
+ * ## 이 테스트의 계약 범위
+ *
+ * **컨텍스트 refresh 성공과 MVC 배선까지**다. 그 이상을 주장하지 않는다.
+ *
+ * 특히 `@Scheduled` 를 no-op 으로 막는 것은 **부작용 차단 장치**이지 검증 대상이 아니다.
+ * 스케줄러가 실제로 등록되는지, 크론이 맞는지, 배치가 제대로 도는지는 여기서 보지 않는다.
+ * 그건 각 스케줄러의 테스트가 할 일이다.
+ *
+ * 즉 이 테스트가 통과했다고 "스케줄러가 정상 동작한다"고 말할 수 없다.
+ * 오히려 여기서는 스케줄러를 **일부러 꺼둔** 상태다.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @Testcontainers
