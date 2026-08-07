@@ -1,6 +1,5 @@
 package com.ongo.application.abtest
 
-import org.springframework.context.annotation.Profile
 import com.ongo.application.abtest.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
-@Profile("wip")
 @Service
 class ABTestUseCase(
     private val abTestRepository: ABTestRepository,
@@ -39,6 +37,19 @@ class ABTestUseCase(
 
     @Transactional
     fun createTest(userId: Long, request: CreateABTestRequest): ABTestResponse {
+        require(request.testName.trim().length in 1..120) { "A/B 테스트 이름은 1~120자여야 합니다" }
+        require(request.variants.size in 2..4) { "A/B 테스트 변형은 2~4개여야 합니다" }
+        require(request.variants.map { it.variantName.trim().uppercase() }.distinct().size == request.variants.size) {
+            "A/B 테스트 변형 이름은 중복될 수 없습니다"
+        }
+        require(request.metricType in ALLOWED_METRICS) { "지원하지 않는 A/B 테스트 지표입니다" }
+        request.variants.forEach {
+            require(it.variantName.trim().length in 1..20) { "변형 이름은 1~20자여야 합니다" }
+        }
+        request.videoId?.let { videoId ->
+            val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
+            if (video.userId != userId) throw ForbiddenException()
+        }
         val test = ABTest(
             userId = userId,
             videoId = request.videoId,
@@ -223,4 +234,11 @@ class ABTestUseCase(
         clicks = clicks,
         engagementRate = engagementRate,
     )
+
+    private companion object {
+        val ALLOWED_METRICS = setOf(
+            "CTR", "VIEWS", "ENGAGEMENT",
+            "THUMBNAIL", "TITLE", "DESCRIPTION", "TAGS",
+        )
+    }
 }

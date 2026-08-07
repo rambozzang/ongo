@@ -34,9 +34,13 @@ data class ABTestListResponse(
 
 data class CreateABTestRequest(
     val videoId: Long? = null,
-    val testName: String,
+    val testName: String = "A/B 테스트",
     val metricType: String = "CTR",
     val variants: List<CreateVariantRequest> = emptyList(),
+    /** 프론트의 표현형. 저장 시 metricType 으로 정규화한다. */
+    val type: String? = null,
+    /** 현재 스키마에는 기간 컬럼이 없어 API 호환용으로만 받는다. */
+    val durationHours: Int? = null,
 )
 
 data class CreateVariantRequest(

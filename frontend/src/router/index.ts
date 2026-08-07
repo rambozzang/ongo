@@ -162,6 +162,12 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '자막 에디터' },
       },
       {
+        path: 'ab-tests',
+        name: 'ab-tests',
+        component: () => import('@/views/AbTestView.vue'),
+        meta: { breadcrumb: 'A/B 테스트' },
+      },
+      {
         path: 'channels',
         name: 'channels',
         redirect: { name: 'redesign-channels' },

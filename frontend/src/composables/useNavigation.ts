@@ -28,6 +28,7 @@ import {
   BriefcaseIcon,
   GlobeAltIcon,
   UserGroupIcon,
+  BeakerIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
@@ -137,6 +138,7 @@ export function useNavigation() {
       items: [
         { to: '/performance', label: t('redesign.nav.performance'), icon: ChartBarIcon },
         { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
+        { to: '/ab-tests', label: t('nav.abtest'), icon: BeakerIcon },
       ],
     },
     // ── 6. 소통: 게시 후 관계를 유지하는 핵심 기능 ──
