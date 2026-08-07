@@ -51,6 +51,50 @@
   (`SchemaDriftGuardIT` 는 선언→실존 한 방향만 보므로 상수가 남아도 실패하지 않는다)
 - 프론트: 지운 것 없음. 애초에 이 셋은 프론트 흔적이 0이었다(F6)
 
+## 2차 — A 그룹 21개 (외부 소비자 0)
+
+`wip` 52개를 전수 스캔해 각 패키지가 정의한 **모든 타입**의 패키지 밖 참조를 셌다.
+
+| 배치 | 커밋 | 모듈 | 파일 |
+|---|---|---|---:|
+| 1/3 | `dc28773` | brandvoice, collaborationboard, commentsummary, competitoranalysis, contentlibrary, contentrewriter, contentrights | 43 |
+| 2/3 | `86238e6` | contentseries, contentversioning, copyrightcheck, creatorbenchmark, fancommunity, faninsights, hashtaganalytics | 49 |
+| 3/3 | `17f208c` | livestream, moodboard, platformhealth, sociallistening, sponsorship, subtitletranslation, trendpredictor | 51 |
+
+**공통 근거 (실측)**: 타입 외부 참조 0 / 컨트롤러·유스케이스·서비스 전부 `@Profile("wip")` /
+`@Scheduled` 0개.
+
+**배치마다 검사 4종**: 컴파일+전체 543 테스트 / 기본 프로필 smoke(context refresh + MVC
+wiring) / 잔여 참조 0 / `Tables.kt`·Flyway 미변경.
+
+### 스캔이 걸러낸 것 — 지웠으면 깨졌을 것들
+
+27개가 "소비자 있음"으로 제외됐다. 그중에는 **비-WIP 상시 경로**가 쓰는 것이 있었다.
+
+| 패키지 | 소비자 |
+|---|---|
+| `sentimentanalyzer` | `CommentUseCase` (비-WIP) |
+| `scriptwriter` | `ShortsRenderSpecBuilder` (UGC 파이프라인, 비-WIP) |
+| `mediakit` | `BrandDealController` / `BrandDealRepository` |
+| `audiencesegment` | `AudienceController` / `AudienceRepository` |
+| `calendarinsights` | `AnalyticsUseCase` |
+
+"wip 이니까 안 쓰인다"로 판단했으면 전부 깨졌다.
+
+### 남은 관찰 — 짝을 이루는 중복 구현
+
+서로를 참조해 둘 다 "소비자 있음"으로 잡히는 쌍이 여럿이다.
+`portfolio` ↔ `portfoliobuilder`, `influencermatch` ↔ `creatornetwork`,
+`scriptwriter` ↔ `videoscriptassistant`, `contentcalendarai` ↔ `aicalendar`.
+
+같은 기능을 두 번 만든 것으로 보인다. 정리하려면 **어느 쪽이 정본인지** 판단이 필요해
+이번 범위 밖으로 뒀다.
+
+## 누계
+
+F6 3개 + A 21개 = **24개 모듈, 165파일**. `wip` 컨트롤러 **55 → 31**.
+테이블·마이그레이션은 전부 보존했다.
+
 ## 되살리는 방법
 
 `git log --all --oneline -- backend/**/<패키지명>/` 으로 삭제 커밋을 찾아
