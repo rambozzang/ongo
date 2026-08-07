@@ -55,17 +55,7 @@ class ShortsRenderJobStateService(
     fun markRunning(jobId: String): ShortsRenderJob {
         val current = find(jobId)
         return when (current.status) {
-            ShortsRenderJobStatus.QUEUED -> repository.update(
-                current.copy(
-                    status = ShortsRenderJobStatus.RUNNING,
-                    progress = 0,
-                    attemptCount = current.attemptCount + 1,
-                    startedAt = Instant.now(),
-                    completedAt = null,
-                    failureReason = null,
-                    updatedAt = Instant.now(),
-                ),
-            )
+            ShortsRenderJobStatus.QUEUED -> repository.claimQueued(jobId, Instant.now()) ?: find(jobId)
             ShortsRenderJobStatus.RUNNING,
             ShortsRenderJobStatus.COMPLETED,
             -> current

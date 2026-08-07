@@ -37,5 +37,7 @@ interface ShortsRenderJobRepository {
     fun findByRunAndClip(runId: Long, clipId: Long): ShortsRenderJob?
     /** 동시 요청에서도 (runId, clipId)당 하나만 생성하고 기존 job을 반환한다. */
     fun saveIfAbsent(job: ShortsRenderJob): ShortsRenderJob
+    /** QUEUED 상태를 원자적으로 RUNNING으로 선점한다. 이미 선점됐으면 null을 반환한다. */
+    fun claimQueued(id: String, startedAt: Instant): ShortsRenderJob?
     fun update(job: ShortsRenderJob): ShortsRenderJob
 }

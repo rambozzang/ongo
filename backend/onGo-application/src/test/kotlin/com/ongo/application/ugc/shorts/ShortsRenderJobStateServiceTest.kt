@@ -46,13 +46,16 @@ class ShortsRenderJobStateServiceTest {
     fun `queued 를 running으로 옮길 때 시도 횟수가 증가한다`() {
         val queued = job(ShortsRenderJobStatus.QUEUED)
         every { repository.findById(queued.id) } returns queued
-        every { repository.update(any()) } answers { firstArg() }
+        every { repository.claimQueued(eq(queued.id), any()) } answers {
+            queued.copy(status = ShortsRenderJobStatus.RUNNING, attemptCount = queued.attemptCount + 1, progress = 0)
+        }
 
         val running = service.markRunning(queued.id)
 
         assertEquals(ShortsRenderJobStatus.RUNNING, running.status)
         assertEquals(1, running.attemptCount)
         assertEquals(0, running.progress)
+        verify(exactly = 1) { repository.claimQueued(eq(queued.id), any()) }
     }
 
     @Test

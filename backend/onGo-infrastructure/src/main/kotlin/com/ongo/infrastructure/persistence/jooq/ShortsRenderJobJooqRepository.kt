@@ -53,6 +53,21 @@ class ShortsRenderJobJooqRepository(
             ?: error("렌더 job 저장 후 조회할 수 없습니다: runId=${job.runId}, clipId=${job.clipId}")
     }
 
+    override fun claimQueued(id: String, startedAt: Instant): ShortsRenderJob? {
+        dsl.update(TABLE)
+            .set(STATUS, ShortsRenderJobStatus.RUNNING.name)
+            .set(PROGRESS, 0)
+            .set(ATTEMPT_COUNT, ATTEMPT_COUNT.plus(1))
+            .set(STARTED_AT, localDateTime(startedAt))
+            .set(COMPLETED_AT, null as LocalDateTime?)
+            .set(FAILURE_REASON, null as String?)
+            .set(UPDATED_AT, localDateTime(startedAt))
+            .where(ID.eq(id))
+            .and(STATUS.eq(ShortsRenderJobStatus.QUEUED.name))
+            .execute()
+        return findById(id)
+    }
+
     override fun update(job: ShortsRenderJob): ShortsRenderJob {
         dsl.update(TABLE)
             .set(STATUS, job.status.name)
