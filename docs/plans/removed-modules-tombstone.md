@@ -36,15 +36,20 @@
 
 ### 대상
 
-| 모듈 | 파일 | 남겨두는 테이블 |
-|---|---:|---|
-| `musicrecommender` | 7 | `music_recommendations` (V26) |
-| `creatoracademy` | 8 | `academy_courses`, `academy_lessons`, `academy_enrollments` (V33) |
-| `fanpoll` | 7 | `fan_polls`, `poll_options` (V29) |
+| 모듈 | 삭제 커밋 | 파일 | 남겨두는 테이블 (마이그레이션) |
+|---|---|---:|---|
+| `musicrecommender` | `12b3361` | 8 | `music_recommendations` (V26) |
+| `creatoracademy` | `a272278` | 8 | `academy_courses`, `academy_lessons`, `academy_enrollments` (V33) |
+| `fanpoll` | `fa4b635` | 7 | `fan_polls`, `poll_options` (V29) |
 
-테이블은 **남긴다.** 비어 있어 해가 없고, 나중에 되살릴 때 스키마 근거가 된다.
-`Tables.kt` 의 상수도 남긴다 — 지우면 `SchemaDriftGuardIT` 가 "실존하는데 선언이 없다"로
-잡지는 않지만(가드는 선언→실존 한 방향), 되살릴 때 다시 써야 한다.
+합계 22파일 678줄. 각 커밋마다 컴파일 + 전체 541 테스트를 돌렸다.
+`wip` 컨트롤러 55 → 52.
+
+**보존한 것**
+- 위 테이블과 해당 Flyway 마이그레이션 — 변경하지 않았다. `DROP TABLE` 은 별도 승인 사항이다
+- `Tables.kt` 의 테이블 상수 — 되살릴 때 다시 써야 하므로 남긴다.
+  (`SchemaDriftGuardIT` 는 선언→실존 한 방향만 보므로 상수가 남아도 실패하지 않는다)
+- 프론트: 지운 것 없음. 애초에 이 셋은 프론트 흔적이 0이었다(F6)
 
 ## 되살리는 방법
 

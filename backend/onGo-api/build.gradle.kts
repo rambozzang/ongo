@@ -35,6 +35,11 @@ dependencies {
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")
+
+    // ApplicationContextSmokeIT — 기본 프로필 컨텍스트 기동을 전용 DB 로 확인한다.
+    // 버전은 onGo-infrastructure 와 맞춘다.
+    testImplementation("org.testcontainers:junit-jupiter:1.20.4")
+    testImplementation("org.testcontainers:postgresql:1.20.4")
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
