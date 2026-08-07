@@ -25,6 +25,7 @@ interface BackendTest {
   testName: string
   status: AbTest['status']
   metricType: string
+  durationHours?: number | null
   winnerVariantId?: number | null
   startedAt?: string | null
   endedAt?: string | null
@@ -42,6 +43,10 @@ interface BackendVideo {
   title: string
   thumbnailUrl?: string | null
   duration?: number | null
+  currentCtr?: number | null
+  views?: number | null
+  publishedAt?: string | null
+  hasActiveTest?: boolean
 }
 
 interface BackendSummary {
@@ -76,14 +81,14 @@ function mapTest(test: BackendTest): AbTest {
       clicks: variant.clicks,
       ctr: variant.views > 0 ? (variant.clicks / variant.views) * 100 : 0,
       views: variant.views,
-      avgWatchTime: 0,
+      avgWatchTime: undefined,
       isWinner: test.winnerVariantId === variant.id,
     })),
     startedAt: test.startedAt ?? undefined,
     endedAt: test.endedAt ?? undefined,
-    durationHours: 24,
+    durationHours: test.durationHours ?? undefined,
     totalImpressions: test.variants.reduce((sum, variant) => sum + variant.views, 0),
-    confidenceLevel: 0,
+    confidenceLevel: undefined,
     winnerId: test.winnerVariantId == null ? undefined : String(test.winnerVariantId),
     createdAt: test.createdAt ?? new Date().toISOString(),
   }
@@ -98,10 +103,10 @@ export const abTestApi = {
         id: video.id,
         title: video.title,
         thumbnailUrl: video.thumbnailUrl ?? '',
-        currentCtr: 0,
-        views: 0,
-        publishedAt: '',
-        hasActiveTest: false,
+        currentCtr: video.currentCtr ?? undefined,
+        views: video.views ?? undefined,
+        publishedAt: video.publishedAt ?? undefined,
+        hasActiveTest: video.hasActiveTest ?? false,
       })))
   },
 
@@ -133,7 +138,7 @@ export const abTestApi = {
         })),
       })
       .then(unwrapResponse)
-      .then(test => ({ test: mapTest(test), creditsUsed: 0, creditsRemaining: 0 } satisfies CreateAbTestResponse))
+      .then(test => ({ test: mapTest(test) } satisfies CreateAbTestResponse))
   },
 
   startTest(testId: number) {
@@ -178,7 +183,7 @@ export const abTestApi = {
         activeTests: summary.activeTests,
         completedTests: summary.completedTests,
         avgCtrImprovement: summary.averageImprovement,
-        bestPerformingType: 'THUMBNAIL',
+        bestPerformingType: undefined,
       }))
   },
 }

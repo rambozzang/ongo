@@ -43,6 +43,9 @@ class ABTestUseCase(
             "A/B 테스트 변형 이름은 중복될 수 없습니다"
         }
         require(request.metricType in ALLOWED_METRICS) { "지원하지 않는 A/B 테스트 지표입니다" }
+        require(request.durationHours == null || request.durationHours in 1..168) {
+            "A/B 테스트 기간은 1~168시간이어야 합니다"
+        }
         request.variants.forEach {
             require(it.variantName.trim().length in 1..20) { "변형 이름은 1~20자여야 합니다" }
         }
@@ -55,6 +58,7 @@ class ABTestUseCase(
             videoId = request.videoId,
             testName = request.testName,
             metricType = request.metricType,
+            durationHours = request.durationHours,
             status = "DRAFT",
         )
         val saved = abTestRepository.save(test)
@@ -126,12 +130,17 @@ class ABTestUseCase(
 
     fun getVideosForTest(userId: Long): List<ABTestVideoResponse> {
         val videos = videoRepository.findByUserId(userId, page = 0, size = 100)
+        val activeVideoIds = abTestRepository.findByUserId(userId)
+            .filter { it.status == "RUNNING" || it.status == "PAUSED" }
+            .mapNotNull { it.videoId }
+            .toSet()
         return videos.map {
             ABTestVideoResponse(
                 id = it.id!!,
                 title = it.title,
                 thumbnailUrl = it.thumbnailUrls.firstOrNull(),
                 duration = null,
+                hasActiveTest = it.id in activeVideoIds,
             )
         }
     }
@@ -217,6 +226,7 @@ class ABTestUseCase(
         testName = testName,
         status = status,
         metricType = metricType,
+        durationHours = durationHours,
         winnerVariantId = winnerVariantId,
         startedAt = startedAt,
         endedAt = endedAt,

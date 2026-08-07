@@ -9,6 +9,7 @@ data class ABTest(
     val testName: String,
     val status: String = "DRAFT",
     val metricType: String = "CTR",
+    val durationHours: Int? = null,
     val winnerVariantId: Long? = null,
     val startedAt: LocalDateTime? = null,
     val endedAt: LocalDateTime? = null,

@@ -59,13 +59,14 @@ const statusClasses = computed(() => {
 const winner = computed(() => props.test.variants.find(v => v.isWinner))
 
 const confidenceColor = computed(() => {
-  const level = props.test.confidenceLevel
+  const level = props.test.confidenceLevel ?? 0
+  if (props.test.confidenceLevel == null) return 'text-gray-500 dark:text-gray-400'
   if (level >= 95) return 'text-success-strong'
   if (level >= 80) return 'text-warning-strong'
   return 'text-error-strong'
 })
 
-const confidenceBarWidth = computed(() => `${Math.min(props.test.confidenceLevel, 100)}%`)
+const confidenceBarWidth = computed(() => `${Math.min(props.test.confidenceLevel ?? 0, 100)}%`)
 </script>
 
 <template>
@@ -81,7 +82,7 @@ const confidenceBarWidth = computed(() => `${Math.min(props.test.confidenceLevel
           <TrophyIcon v-if="winner" class="h-5 w-5 text-warning-strong" />
         </div>
         <p class="text-body-xs text-gray-500 dark:text-gray-400">
-          ID: {{ test.id }} | {{ test.durationHours }}{{ $t('abTest.durationHours') }}
+          ID: {{ test.id }}<template v-if="test.durationHours != null"> · {{ test.durationHours }}{{ $t('abTest.durationHours') }}</template>
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -101,10 +102,11 @@ const confidenceBarWidth = computed(() => `${Math.min(props.test.confidenceLevel
     <div class="mt-4 rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50">
       <div class="mb-1 flex items-center justify-between text-body">
         <span class="text-gray-600 dark:text-gray-400">{{ $t('abTest.confidence') }}</span>
-        <span :class="['font-semibold', confidenceColor]">{{ test.confidenceLevel }}%</span>
+        <span :class="['font-semibold', confidenceColor]">{{ test.confidenceLevel != null ? `${test.confidenceLevel}%` : '—' }}</span>
       </div>
       <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
         <div
+          v-if="test.confidenceLevel != null"
           class="h-full rounded-full transition-all duration-500"
           :class="test.confidenceLevel >= 95
             ? 'bg-success'

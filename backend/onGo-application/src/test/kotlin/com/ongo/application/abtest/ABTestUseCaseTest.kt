@@ -76,4 +76,52 @@ class ABTestUseCaseTest {
         verify { tests.save(match { it.metricType == "THUMBNAIL" && it.videoId == 10L }) }
         verify(exactly = 2) { variants.save(any()) }
     }
+
+    @Test
+    fun `create persists a bounded duration`() {
+        every { tests.save(any()) } answers { firstArg<com.ongo.domain.abtest.ABTest>().copy(id = 5L) }
+        every { variants.findByTestId(5L) } returns emptyList()
+        every { variants.save(any()) } answers { firstArg<com.ongo.domain.abtest.ABTestVariant>().copy(id = 6L) }
+
+        useCase.createTest(
+            1L,
+            CreateABTestRequest(
+                durationHours = 48,
+                variants = listOf(CreateVariantRequest("A"), CreateVariantRequest("B")),
+            ),
+        )
+
+        verify { tests.save(match { it.durationHours == 48 }) }
+    }
+
+    @Test
+    fun `create rejects duration outside the supported window`() {
+        assertThrows<IllegalArgumentException> {
+            useCase.createTest(
+                1L,
+                CreateABTestRequest(
+                    durationHours = 169,
+                    variants = listOf(CreateVariantRequest("A"), CreateVariantRequest("B")),
+                ),
+            )
+        }
+        verify(exactly = 0) { tests.save(any()) }
+    }
+
+    @Test
+    fun `video list marks only videos with active tests`() {
+        every { videos.findByUserId(1L, page = 0, size = 100) } returns listOf(
+            video.copy(id = 10L),
+            video.copy(id = 11L, title = "다른 영상"),
+        )
+        every { tests.findByUserId(1L) } returns listOf(
+            com.ongo.domain.abtest.ABTest(id = 20L, userId = 1L, videoId = 10L, testName = "실험", status = "RUNNING"),
+            com.ongo.domain.abtest.ABTest(id = 21L, userId = 1L, videoId = 11L, testName = "완료", status = "COMPLETED"),
+        )
+
+        val result = useCase.getVideosForTest(1L)
+
+        assertEquals(true, result.single { it.id == 10L }.hasActiveTest)
+        assertEquals(false, result.single { it.id == 11L }.hasActiveTest)
+    }
 }

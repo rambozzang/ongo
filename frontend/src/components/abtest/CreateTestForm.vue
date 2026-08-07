@@ -103,8 +103,10 @@ function resetForm() {
           />
           <div class="min-w-0 flex-1">
             <p class="truncate text-body font-medium text-gray-900 dark:text-white">{{ video.title }}</p>
-            <p class="text-body-xs text-gray-500 dark:text-gray-400">
-              CTR: {{ video.currentCtr.toFixed(1) }}% | {{ video.views.toLocaleString() }} views
+            <p v-if="video.currentCtr != null || video.views != null" class="text-body-xs text-gray-500 dark:text-gray-400">
+              <template v-if="video.currentCtr != null">CTR: {{ video.currentCtr.toFixed(1) }}%</template>
+              <template v-if="video.currentCtr != null && video.views != null"> · </template>
+              <template v-if="video.views != null">{{ video.views.toLocaleString() }} views</template>
             </p>
           </div>
         </div>

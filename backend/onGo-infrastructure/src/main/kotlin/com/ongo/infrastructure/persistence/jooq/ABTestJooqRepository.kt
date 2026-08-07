@@ -7,6 +7,7 @@ import com.ongo.domain.abtest.ABTestVariantRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.CLICKS
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.DESCRIPTION
+import com.ongo.infrastructure.persistence.jooq.Fields.DURATION_HOURS
 import com.ongo.infrastructure.persistence.jooq.Fields.ENDED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.ENGAGEMENT_RATE
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
@@ -64,6 +65,7 @@ class ABTestJooqRepository(
             .set(TEST_NAME, abTest.testName)
             .set(STATUS, abTest.status)
             .set(METRIC_TYPE, abTest.metricType)
+            .set(DURATION_HOURS, abTest.durationHours)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -76,6 +78,7 @@ class ABTestJooqRepository(
             .set(TEST_NAME, abTest.testName)
             .set(STATUS, abTest.status)
             .set(METRIC_TYPE, abTest.metricType)
+            .set(DURATION_HOURS, abTest.durationHours)
             .set(WINNER_VARIANT_ID, abTest.winnerVariantId)
             .set(STARTED_AT, abTest.startedAt)
             .set(ENDED_AT, abTest.endedAt)
@@ -98,6 +101,7 @@ class ABTestJooqRepository(
         testName = get(TEST_NAME),
         status = get(STATUS),
         metricType = get(METRIC_TYPE),
+        durationHours = get(DURATION_HOURS),
         winnerVariantId = get(WINNER_VARIANT_ID),
         startedAt = localDateTime(STARTED_AT),
         endedAt = localDateTime(ENDED_AT),

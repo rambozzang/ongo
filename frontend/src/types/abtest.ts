@@ -11,7 +11,7 @@ export interface AbTestVariant {
   clicks: number
   ctr: number
   views: number
-  avgWatchTime: number
+  avgWatchTime?: number
   isWinner: boolean
 }
 
@@ -24,9 +24,9 @@ export interface AbTest {
   variants: AbTestVariant[]
   startedAt?: string
   endedAt?: string
-  durationHours: number
+  durationHours?: number
   totalImpressions: number
-  confidenceLevel: number
+  confidenceLevel?: number
   winnerId?: string
   createdAt: string
 }
@@ -44,8 +44,8 @@ export interface CreateAbTestRequest {
 
 export interface CreateAbTestResponse {
   test: AbTest
-  creditsUsed: number
-  creditsRemaining: number
+  creditsUsed?: number
+  creditsRemaining?: number
 }
 
 export interface AbTestSummary {
@@ -53,15 +53,15 @@ export interface AbTestSummary {
   activeTests: number
   completedTests: number
   avgCtrImprovement: number
-  bestPerformingType: AbTestType
+  bestPerformingType?: AbTestType
 }
 
 export interface VideoForAbTest {
   id: number
   title: string
   thumbnailUrl: string
-  currentCtr: number
-  views: number
-  publishedAt: string
+  currentCtr?: number
+  views?: number
+  publishedAt?: string
   hasActiveTest: boolean
 }

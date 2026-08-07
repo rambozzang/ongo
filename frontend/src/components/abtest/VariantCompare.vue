@@ -11,6 +11,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const maxCTR = computed(() => Math.max(...props.variants.map(v => v.ctr)))
+const maxWatchTime = computed(() => Math.max(...props.variants.map(v => v.avgWatchTime ?? 0), 0))
 </script>
 
 <template>
@@ -86,12 +87,13 @@ const maxCTR = computed(() => Math.max(...props.variants.map(v => v.ctr)))
         <div>
           <div class="flex justify-between text-body mb-1">
             <span class="text-gray-600 dark:text-gray-400">평균 시청 시간</span>
-            <span class="font-semibold text-gray-900 dark:text-white">{{ variant.avgWatchTime }}초</span>
+            <span class="font-semibold text-gray-900 dark:text-white">{{ variant.avgWatchTime != null ? `${variant.avgWatchTime}초` : '—' }}</span>
           </div>
           <div class="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
+              v-if="variant.avgWatchTime != null"
               :class="['h-full transition-all', variant.isWinner ? 'bg-yellow-500' : 'bg-blue-500']"
-              :style="{ width: `${(variant.avgWatchTime / Math.max(...variants.map(v => v.avgWatchTime))) * 100}%` }"
+              :style="{ width: `${maxWatchTime > 0 ? ((variant.avgWatchTime ?? 0) / maxWatchTime) * 100 : 0}%` }"
             ></div>
           </div>
         </div>

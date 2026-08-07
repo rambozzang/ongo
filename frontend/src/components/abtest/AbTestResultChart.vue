@@ -92,7 +92,7 @@ function getBarWidth(ctr: number): string {
         </span>
         <span>
           {{ $t('abTest.avgWatchTime') }}:
-          <span class="font-medium text-gray-700 dark:text-gray-300">{{ variant.avgWatchTime }}{{ $t('abTest.sec') }}</span>
+          <span class="font-medium text-gray-700 dark:text-gray-300">{{ variant.avgWatchTime != null ? `${variant.avgWatchTime}${$t('abTest.sec')}` : '—' }}</span>
         </span>
       </div>
     </div>

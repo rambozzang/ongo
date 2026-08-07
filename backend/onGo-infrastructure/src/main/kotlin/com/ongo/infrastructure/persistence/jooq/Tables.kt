@@ -261,6 +261,7 @@ object Fields {
     val FILE_URL = DSL.field("file_url", String::class.java)
     val FILE_SIZE_BYTES = DSL.field("file_size_bytes", Long::class.java)
     val DURATION_SECONDS = DSL.field("duration_seconds", Int::class.java)
+    val DURATION_HOURS = DSL.field("duration_hours", Int::class.java)
     val RESOLUTION = DSL.field("resolution", String::class.java)
     val ORIGINAL_FILENAME = DSL.field("original_filename", String::class.java)
     val CONTENT_HASH = DSL.field("content_hash", String::class.java)
