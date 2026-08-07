@@ -166,6 +166,13 @@ export function useNavigation() {
         },
       ],
     },
+    // ── 8. 협업 ──
+    {
+      label: t('nav.groupWorkspace'),
+      items: [
+        { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
+      ],
+    },
   ])
 
   const bottomNavItems = computed<NavItem[]>(() => {
