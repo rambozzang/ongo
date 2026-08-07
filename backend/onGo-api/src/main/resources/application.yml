@@ -130,6 +130,14 @@ videodownload:
   # PATH 에서 찾는다. 다른 경로에 설치했으면 절대 경로로 재정의한다.
   yt-dlp-path: ${YT_DLP_PATH:yt-dlp}
 
+# 쇼츠 서버 렌더링
+#
+# CPU/디스크를 장시간 점유하는 ffmpeg 작업의 동시 실행 수다. QUEUED 작업은
+# 영속 작업 상태를 먼저 기록한 뒤 이 한도를 기다리며, 일반 API 요청과 자원을 경쟁하지 않는다.
+shorts:
+  render:
+    max-concurrent: ${SHORTS_RENDER_MAX_CONCURRENT:1}
+
 # Payment (PortOne V2)
 payment:
   portone:
