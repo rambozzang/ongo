@@ -8,6 +8,8 @@ import {
   type CreatePipelineRunRequest,
   type SelectHooksRequest,
   type ScheduleRunRequest,
+  type RenderAvailabilityResponse,
+  type RenderJobStatusResponse,
 } from '@/api/ugcShortsPipeline'
 import { useWorkspaceStore } from '@/stores/workspace'
 
@@ -23,6 +25,12 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
 
   const detail = ref<PipelineRunDetailResponse | null>(null)
   const detailLoading = ref(false)
+
+  const renderAvailability = ref<RenderAvailabilityResponse | null>(null)
+  const renderAvailabilityLoading = ref(false)
+
+  // 키: `${runId}:${seq}`
+  const renderJobs = ref<Record<string, RenderJobStatusResponse>>({})
 
   async function requireWorkspaceId(): Promise<number> {
     const id = await workspaceStore.ensureActiveWorkspace()
@@ -92,6 +100,47 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
     runs.value = runs.value.filter((r) => r.id !== runId)
   }
 
+  // ---- 서버 렌더 ----
+  async function fetchRenderAvailability() {
+    renderAvailabilityLoading.value = true
+    try {
+      renderAvailability.value = await ugcShortsPipelineApi.getRenderAvailability()
+    } finally {
+      renderAvailabilityLoading.value = false
+    }
+  }
+
+  // 백엔드 경로가 clipId 기반이다(/clips/{clipId}/render). 기존 render-spec·
+  // rendered-video 엔드포인트와 같은 규약이라 여기에 맞춘다.
+  function renderJobKey(runId: number, clipId: number): string {
+    return `${runId}:${clipId}`
+  }
+
+  async function startRender(runId: number, clipId: number): Promise<string> {
+    const { renderJobId } = await ugcShortsPipelineApi.startRender(
+      await requireWorkspaceId(),
+      runId,
+      clipId,
+    )
+    renderJobs.value[renderJobKey(runId, clipId)] = {
+      status: 'QUEUED',
+      progress: null,
+      videoId: null,
+      failureReason: null,
+    }
+    return renderJobId
+  }
+
+  async function fetchRenderStatus(runId: number, clipId: number) {
+    const status = await ugcShortsPipelineApi.getRenderStatus(
+      await requireWorkspaceId(),
+      runId,
+      clipId,
+    )
+    renderJobs.value[renderJobKey(runId, clipId)] = status
+    return status
+  }
+
   return {
     runs,
     runsLoading,
@@ -101,6 +150,9 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
     runsHasPrevious,
     detail,
     detailLoading,
+    renderAvailability,
+    renderAvailabilityLoading,
+    renderJobs,
     fetchRuns,
     fetchDetail,
     createRun,
@@ -109,5 +161,8 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
     confirmSchedule,
     attachRenderedVideo,
     deleteRun,
+    fetchRenderAvailability,
+    startRender,
+    fetchRenderStatus,
   }
 })

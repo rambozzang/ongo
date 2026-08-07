@@ -24,6 +24,14 @@ class VideoDownloadUseCase(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    /**
+     * 영상 URL 임포트를 지금 쓸 수 있는지 알려준다.
+     *
+     * 추출기 바이너리는 배포 전제라 JVM 밖에 있다. 화면이 진입점을 감추거나 비활성화할 수
+     * 있게 미리 알려주려는 것이다. 그래야 "버튼은 있는데 누르면 실패"가 안 생긴다.
+     */
+    fun checkAvailability(): DownloaderAvailability = sourceDownloader.checkAvailability()
+
     fun importVideo(userId: Long, request: VideoDownloadRequest): VideoDownloadResult {
         val source = VideoDownloadUrl.parse(request.url)
         val downloaded = try {

@@ -18,3 +18,13 @@ data class VideoDownloadResponse(
     val provider: VideoDownloadProvider,
     val fileUrl: String?,
 )
+
+/**
+ * 프론트가 진입점 노출 여부를 정하는 데 쓴다.
+ *
+ * [reason] 은 사용자에게 그대로 보여줄 수 있어야 한다. 경로나 예외 메시지를 담지 않는다.
+ */
+data class VideoDownloadAvailabilityResponse(
+    val available: Boolean,
+    val reason: String? = null,
+)

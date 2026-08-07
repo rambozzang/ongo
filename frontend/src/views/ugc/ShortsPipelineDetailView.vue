@@ -308,13 +308,76 @@
             <span v-if="clip.scheduledAt" class="text-body-xs text-gray-400">
               {{ $t('ugc.shorts.runs.detail.scheduledAt') }}: {{ formatDate(clip.scheduledAt) }}
             </span>
-            <div class="ml-auto flex items-center gap-1">
+            <div class="ml-auto flex flex-wrap items-center justify-end gap-1">
               <span
                 v-if="isRenderedClip(clip.status)"
                 class="rounded-full bg-success-subtle px-2 py-0.5 text-caption text-success-strong"
               >
                 {{ $t('ugc.shorts.runs.detail.renderedAttached') }}
               </span>
+
+              <!-- 서버 렌더 UI -->
+              <template v-if="renderEnabled && clip.hasRenderSpec && canStartRender(clip.status)">
+                <button
+                  v-if="!renderJobFor(clip)"
+                  class="btn-primary inline-flex items-center gap-1"
+                  :disabled="renderActingIds.has(clip.id)"
+                  @click="startRenderFor(clip)"
+                >
+                  <VideoCameraIcon class="h-4 w-4" />
+                  {{ renderActingIds.has(clip.id) ? $t('ugc.shorts.runs.render.starting') : $t('ugc.shorts.runs.render.start') }}
+                </button>
+                <div
+                  v-else-if="renderJobFor(clip)?.status === 'QUEUED'"
+                  class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-caption text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                >
+                  <LoadingSpinner inline size="sm" />
+                  {{ $t('ugc.shorts.runs.render.queued') }}
+                </div>
+                <div
+                  v-else-if="renderJobFor(clip)?.status === 'RUNNING'"
+                  class="inline-flex items-center gap-2 rounded-full bg-primary-50 px-2 py-0.5 text-caption text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
+                >
+                  <LoadingSpinner inline size="sm" />
+                  <span>{{ $t('ugc.shorts.runs.render.running') }}</span>
+                  <span v-if="renderJobFor(clip)?.progress != null">{{ renderJobFor(clip)?.progress }}%</span>
+                </div>
+                <button
+                  v-else-if="renderJobFor(clip)?.status === 'FAILED'"
+                  class="btn-danger inline-flex items-center gap-1"
+                  :disabled="renderActingIds.has(clip.id)"
+                  @click="startRenderFor(clip)"
+                >
+                  <ArrowPathIcon class="h-4 w-4" />
+                  {{ $t('ugc.shorts.runs.render.retry') }}
+                </button>
+              </template>
+
+              <template v-if="renderJobFor(clip)?.status === 'FAILED'">
+                <span class="text-body-xs text-error-strong">
+                  {{ renderJobFor(clip)?.failureReason || $t('ugc.shorts.runs.render.failed') }}
+                </span>
+              </template>
+
+              <template v-if="renderJobFor(clip)?.status === 'COMPLETED' && renderJobFor(clip)?.videoId">
+                <button
+                  class="btn-secondary inline-flex items-center gap-1"
+                  @click="openRenderPreview(renderJobFor(clip)!.videoId!)"
+                >
+                  <PlayIcon class="h-4 w-4" />
+                  {{ $t('ugc.shorts.runs.render.preview') }}
+                </button>
+                <a
+                  v-if="renderVideoUrl(renderJobFor(clip)!.videoId!)"
+                  class="btn-secondary inline-flex items-center gap-1"
+                  :href="renderVideoUrl(renderJobFor(clip)!.videoId!)"
+                  download
+                >
+                  <ArrowDownTrayIcon class="h-4 w-4" />
+                  {{ $t('ugc.shorts.runs.render.download') }}
+                </a>
+              </template>
+
               <button
                 v-if="canAttachClip(clip.status)"
                 class="btn-secondary inline-flex items-center gap-1"
@@ -412,6 +475,36 @@
       </template>
     </BaseModal>
 
+    <!-- 서버 렌더 완성 영상 미리보기 -->
+    <BaseModal
+      v-model="renderPreviewOpen"
+      :title="$t('ugc.shorts.runs.render.previewTitle')"
+      max-width="lg"
+    >
+      <LoadingSpinner v-if="!renderPreviewVideo" />
+      <div v-else class="space-y-3">
+        <video
+          v-if="renderPreviewVideo.fileUrl"
+          controls
+          class="w-full rounded-xl"
+          :src="renderPreviewVideo.fileUrl"
+          :poster="renderPreviewVideo.thumbnailUrl ?? undefined"
+        />
+        <p v-else class="text-body text-gray-500 dark:text-gray-400">
+          {{ $t('ugc.shorts.runs.render.previewNoUrl') }}
+        </p>
+        <a
+          v-if="renderPreviewVideo.fileUrl"
+          class="btn-secondary inline-flex w-full items-center justify-center gap-2"
+          :href="renderPreviewVideo.fileUrl"
+          download
+        >
+          <ArrowDownTrayIcon class="h-5 w-5" />
+          {{ $t('ugc.shorts.runs.render.download') }}
+        </a>
+      </div>
+    </BaseModal>
+
     <!-- 완성 영상 연결: render.sh 산출물을 업로드한 뒤 클립에 붙인다 -->
     <BaseModal
       v-model="attachModalOpen"
@@ -472,6 +565,7 @@ import {
 import { ugcShortsSheetApi, type SheetPreviewResponse } from '@/api/ugcShortsSheet'
 import { videoApi } from '@/api/video'
 import type { Video } from '@/types/video'
+import type { RenderJobStatusResponse } from '@/api/ugcShortsPipeline'
 import PageHeader from '@/components/common/PageHeader.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -482,7 +576,9 @@ import {
   ArrowPathIcon,
   ArrowUpTrayIcon,
   LinkIcon,
+  PlayIcon,
   TrashIcon,
+  VideoCameraIcon,
 } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -542,6 +638,22 @@ const attachVideosLoading = ref(false)
 const attachVideoId = ref<number | null>(null)
 const attaching = ref(false)
 
+// 서버 렌더 — ffmpeg 가용성, 클립별 job 상태, 완료 비디오 캐시
+const renderActingIds = ref<Set<number>>(new Set())
+const activeRenderClipIds = ref<Set<number>>(new Set())
+const renderVideoCache = ref<Record<number, Video>>({})
+const renderPreviewOpen = ref(false)
+const renderPreviewVideoId = ref<number | null>(null)
+let renderPollTimer: number | undefined
+
+const renderPreviewVideo = computed(() =>
+  renderPreviewVideoId.value != null ? renderVideoCache.value[renderPreviewVideoId.value] : null,
+)
+
+watch(renderPreviewOpen, (open) => {
+  if (!open) renderPreviewVideoId.value = null
+})
+
 // RENDERED 이상이면 완성 영상이 연결된 클립이다
 const RENDERED_CLIP_STATUSES = ['RENDERED', 'SCHEDULED', 'PUBLISHED']
 
@@ -578,6 +690,10 @@ const isActive = computed(
 )
 
 const hasAnyRenderSpec = computed(() => clips.value.some((c) => c.hasRenderSpec))
+
+const renderEnabled = computed(
+  () => store.renderAvailability?.available === true,
+)
 
 const stages = computed<RunStageResponse[]>(() =>
   STAGE_ORDER.map((stage) => {
@@ -907,6 +1023,85 @@ function canAttachClip(status: string): boolean {
   return !['DISCARDED', 'SCHEDULED', 'PUBLISHED'].includes(status)
 }
 
+function canStartRender(status: string): boolean {
+  return !['DISCARDED', 'RENDERED', 'SCHEDULED', 'PUBLISHED'].includes(status)
+}
+
+function renderJobKey(runId: number, clipId: number): string {
+  return `${runId}:${clipId}`
+}
+
+function renderJobFor(clip: ShortsClipResponse): RenderJobStatusResponse | undefined {
+  return store.renderJobs[renderJobKey(runId, clip.id)]
+}
+
+function renderVideoUrl(videoId: number): string | undefined {
+  return renderVideoCache.value[videoId]?.fileUrl
+}
+
+async function loadRenderVideo(videoId: number) {
+  if (renderVideoCache.value[videoId]) return
+  try {
+    const v = await videoApi.get(videoId)
+    renderVideoCache.value[videoId] = v
+  } catch {
+    // 캐시 실패는 무시, UI에서 URL이 없을 때 대체 메시지를 보여준다
+  }
+}
+
+async function startRenderFor(clip: ShortsClipResponse) {
+  renderActingIds.value.add(clip.id)
+  try {
+    await store.startRender(runId, clip.id)
+    notify.success(t('ugc.shorts.runs.render.started', { seq: clip.seq }))
+    startRenderPolling(clip.id)
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : t('ugc.shorts.runs.render.startFailed'))
+  } finally {
+    renderActingIds.value.delete(clip.id)
+  }
+}
+
+function startRenderPolling(clipId: number) {
+  activeRenderClipIds.value.add(clipId)
+  if (renderPollTimer === undefined) {
+    renderPollTimer = window.setInterval(pollRenderStatuses, POLL_INTERVAL_MS)
+  }
+}
+
+function stopRenderPolling(clipId?: number) {
+  if (clipId !== undefined) activeRenderClipIds.value.delete(clipId)
+  if (activeRenderClipIds.value.size === 0 && renderPollTimer !== undefined) {
+    window.clearInterval(renderPollTimer)
+    renderPollTimer = undefined
+  }
+}
+
+async function pollRenderStatuses() {
+  for (const clipId of Array.from(activeRenderClipIds.value)) {
+    try {
+      const status = await store.fetchRenderStatus(runId, clipId)
+      if (status.status === 'COMPLETED') {
+        if (status.videoId != null) {
+          await loadRenderVideo(status.videoId)
+        }
+        stopRenderPolling(clipId)
+        await refreshDetail()
+      } else if (status.status === 'FAILED') {
+        stopRenderPolling(clipId)
+      }
+    } catch {
+      // 개별 폴 실패는 무시, 다음 주기에 재시도
+    }
+  }
+}
+
+async function openRenderPreview(videoId: number) {
+  renderPreviewVideoId.value = videoId
+  await loadRenderVideo(videoId)
+  renderPreviewOpen.value = true
+}
+
 /** 모달을 열 때마다 최신 영상 목록을 읽는다. 동영상만 연결 대상이다 */
 async function openAttachModal(clip: ShortsClipResponse) {
   attachClip.value = clip
@@ -958,12 +1153,15 @@ watch(
 
 onMounted(async () => {
   try {
-    await store.fetchDetail(runId)
+    await Promise.all([store.fetchDetail(runId), store.fetchRenderAvailability()])
     if (isActive.value) startPolling()
   } catch (e) {
     notify.error(e instanceof Error ? e.message : t('ugc.shorts.runs.detail.loadFailed'))
   }
 })
 
-onBeforeUnmount(stopPolling)
+onBeforeUnmount(() => {
+  stopPolling()
+  stopRenderPolling()
+})
 </script>

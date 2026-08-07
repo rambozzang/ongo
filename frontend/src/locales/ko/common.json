@@ -491,6 +491,20 @@
           "applying": "반영 중...",
           "applied": "{count}건의 변경을 반영했습니다.",
           "applyFailed": "예약표 반영에 실패했습니다."
+        },
+        "render": {
+          "start": "서버에서 렌더",
+          "starting": "시작 중...",
+          "started": "클립 {seq} 렌더를 시작했습니다.",
+          "startFailed": "렌더 시작에 실패했습니다.",
+          "queued": "대기 중",
+          "running": "렌더 중",
+          "failed": "렌더 실패",
+          "retry": "다시 렌더",
+          "preview": "미리보기",
+          "previewTitle": "완성 영상 미리보기",
+          "previewNoUrl": "영상 URL을 불러오지 못했습니다.",
+          "download": "완성 영상 남겨받기"
         }
       }
     }

@@ -16,6 +16,24 @@ export type PipelineRunStatus =
 
 export type RunStageStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'SKIPPED'
 
+export type RenderJobStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED'
+
+export interface RenderAvailabilityResponse {
+  available: boolean
+  reason: string | null
+}
+
+export interface StartRenderResponse {
+  renderJobId: string
+}
+
+export interface RenderJobStatusResponse {
+  status: RenderJobStatus
+  progress: number | null
+  videoId: number | null
+  failureReason: string | null
+}
+
 export type HookVariant = 'A' | 'B' | 'CUSTOM'
 
 // 설계 5장의 TypeScript 인터페이스와 필드명이 정확히 일치해야 한다
@@ -164,6 +182,32 @@ export const ugcShortsPipelineApi = {
   remove(workspaceId: number, runId: number) {
     return apiClient
       .delete<ResData<void>>(`${base(workspaceId)}/${runId}`)
+      .then(unwrapResponse)
+  },
+
+  /** ffmpeg 렌더 가용성 조회 — 미가용이면 진입점을 감춘다 */
+  getRenderAvailability() {
+    return apiClient
+      .get<ResData<RenderAvailabilityResponse>>('/ugc/shorts/render/availability')
+      .then(unwrapResponse)
+  },
+
+  /** 클립 서버 렌더 시작 — 202 Accepted */
+  startRender(workspaceId: number, runId: number, clipId: number) {
+    return apiClient
+      .post<ResData<StartRenderResponse>>(
+        `${base(workspaceId)}/${runId}/clips/${clipId}/render`,
+        {},
+      )
+      .then(unwrapResponse)
+  },
+
+  /** 클립 렌더 상태 조회 — 폴링용 */
+  getRenderStatus(workspaceId: number, runId: number, clipId: number) {
+    return apiClient
+      .get<ResData<RenderJobStatusResponse>>(
+        `${base(workspaceId)}/${runId}/clips/${clipId}/render`,
+      )
       .then(unwrapResponse)
   },
 }

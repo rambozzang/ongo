@@ -491,6 +491,20 @@
           "applying": "Applying...",
           "applied": "Applied {count} change(s).",
           "applyFailed": "Failed to apply the schedule sheet."
+        },
+        "render": {
+          "start": "Render on server",
+          "starting": "Starting...",
+          "started": "Started rendering clip {seq}.",
+          "startFailed": "Failed to start rendering.",
+          "queued": "Queued",
+          "running": "Rendering",
+          "failed": "Render failed",
+          "retry": "Render again",
+          "preview": "Preview",
+          "previewTitle": "Rendered video preview",
+          "previewNoUrl": "Could not load the video URL.",
+          "download": "Download rendered video"
         }
       }
     }

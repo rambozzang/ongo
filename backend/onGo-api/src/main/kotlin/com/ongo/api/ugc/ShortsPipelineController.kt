@@ -1,5 +1,8 @@
 package com.ongo.api.ugc
 
+import com.ongo.api.ugc.dto.ShortsRenderJobResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
 import com.ongo.application.ugc.shorts.ShortsPipelineUseCase
 import com.ongo.application.ugc.shorts.dto.AttachRenderedVideoRequest
 import com.ongo.application.ugc.shorts.dto.CreatePipelineRunRequest
@@ -30,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/workspaces/{workspaceId}/ugc/shorts/runs")
 class ShortsPipelineController(
+    private val renderUseCase: com.ongo.application.ugc.shorts.ShortsRenderUseCase,
     private val pipelineUseCase: ShortsPipelineUseCase,
 ) {
 
@@ -161,4 +165,34 @@ class ShortsPipelineController(
         pipelineUseCase.deleteRun(userId, workspaceId, runId)
         return ResData.success(Unit)
     }
+
+    @Operation(
+        summary = "클립 서버 렌더 요청",
+        description = "서버에서 ffmpeg 로 클립을 인코딩한다. 인코딩은 분 단위라 즉시 끝나지 않으므로 " +
+            "작업만 접수하고 202 를 돌려준다. 진행 상황은 같은 경로의 GET 으로 묻는다.",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "202", description = "렌더 접수. 이미 진행 중이면 그 작업을 그대로 돌려준다"),
+        ApiResponse(responseCode = "404", description = "실행 또는 클립 없음"),
+    )
+    @PostMapping("/{runId}/clips/{clipId}/render")
+    fun requestRender(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable workspaceId: Long,
+        @PathVariable runId: Long,
+        @PathVariable clipId: Long,
+    ): ResponseEntity<ResData<ShortsRenderJobResponse>> {
+        val job = renderUseCase.requestRender(workspaceId, runId, clipId)
+        return ResponseEntity.accepted().body(ResData(data = ShortsRenderJobResponse.from(job)))
+    }
+
+    @Operation(summary = "클립 렌더 상태 조회", description = "QUEUED / RUNNING / COMPLETED / FAILED")
+    @GetMapping("/{runId}/clips/{clipId}/render")
+    fun renderStatus(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable workspaceId: Long,
+        @PathVariable runId: Long,
+        @PathVariable clipId: Long,
+    ): ResponseEntity<ResData<ShortsRenderJobResponse>> =
+        ResData.success(ShortsRenderJobResponse.from(renderUseCase.status(workspaceId, runId, clipId)))
 }
