@@ -213,7 +213,7 @@ const handleBulkDelete = async () => {
 
     <!-- 템플릿이 하나도 없을 때 -->
     <EmptyState
-      v-if="isSourceEmpty"
+      v-if="!templatesStore.loading && !templatesStore.loadError && isSourceEmpty"
       :icon="DocumentDuplicateIcon"
       :title="$t('templates.emptyTitle')"
       :description="$t('templates.emptyNoneDescription')"
@@ -223,7 +223,7 @@ const handleBulkDelete = async () => {
 
     <!-- 검색·필터 결과만 비었을 때 -->
     <EmptyState
-      v-else-if="isResultEmpty"
+      v-else-if="!templatesStore.loading && !templatesStore.loadError && isResultEmpty"
       :icon="MagnifyingGlassIcon"
       :title="$t('list.noResultsTitle')"
       :description="$t('list.noResultsDescription')"
@@ -232,7 +232,7 @@ const handleBulkDelete = async () => {
     />
 
     <!-- Templates Grid -->
-    <div v-else class="page-grid page-grid--cards">
+    <div v-else-if="!templatesStore.loading && !templatesStore.loadError" class="page-grid page-grid--cards">
       <div
         v-for="template in filtered"
         :key="template.id"
