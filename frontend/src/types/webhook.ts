@@ -11,7 +11,7 @@ export interface WebhookDelivery {
   id: number
   webhookId: number
   event: WebhookEvent
-  statusCode: number
+  statusCode: number | null
   responseBody?: string
   sentAt: string
   duration: number

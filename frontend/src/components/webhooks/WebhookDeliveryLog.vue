@@ -37,15 +37,15 @@ function toggleRow(id: number) {
   }
 }
 
-function isSuccess(statusCode: number): boolean {
-  return statusCode >= 200 && statusCode < 300
+function isSuccess(statusCode: number | null): boolean {
+  return statusCode !== null && statusCode >= 200 && statusCode < 300
 }
 
-function statusColorClass(statusCode: number): string {
-  if (statusCode >= 200 && statusCode < 300) {
+function statusColorClass(statusCode: number | null): string {
+  if (statusCode !== null && statusCode >= 200 && statusCode < 300) {
     return 'text-success-strong bg-success-subtle'
   }
-  if (statusCode >= 400 && statusCode < 500) {
+  if (statusCode !== null && statusCode >= 400 && statusCode < 500) {
     return 'text-warning-strong bg-warning-subtle'
   }
   return 'text-error-strong bg-error-subtle'

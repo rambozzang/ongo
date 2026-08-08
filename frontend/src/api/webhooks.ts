@@ -13,6 +13,21 @@ export interface WebhookResponse {
   failureCount: number
   createdAt: string | null
   updatedAt: string | null
+  recentDeliveries: WebhookDeliveryResponse[]
+}
+
+export interface WebhookDeliveryResponse {
+  id: number
+  webhookId: number
+  eventKey: string
+  event: string
+  status: string
+  statusCode: number | null
+  responseBody: string | null
+  sentAt: string | null
+  attemptCount: number
+  nextAttemptAt: string | null
+  lastError: string | null
 }
 
 export interface CreateWebhookRequest {
@@ -68,6 +83,12 @@ export const webhookApi = {
   rotateSecret(id: number) {
     return apiClient
       .post<ResData<WebhookResponse>>(`/webhooks/${id}/rotate-secret`)
+      .then(unwrapResponse)
+  },
+
+  retryDelivery(webhookId: number, deliveryId: number) {
+    return apiClient
+      .post<ResData<WebhookDeliveryResponse>>(`/webhooks/${webhookId}/deliveries/${deliveryId}/retry`)
       .then(unwrapResponse)
   },
 }

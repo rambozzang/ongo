@@ -18,12 +18,14 @@ import com.ongo.infrastructure.persistence.jooq.Fields.TIMEZONE
 import com.ongo.infrastructure.persistence.jooq.Fields.TITLE_TEMPLATE
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.RECURRING_VIDEO_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.RECURRING_SCHEDULES
 import org.jooq.DSLContext
 import org.jooq.Record
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.time.LocalTime
+import java.time.LocalDateTime
 
 @Repository
 class RecurringScheduleJooqRepository(
@@ -50,9 +52,28 @@ class RecurringScheduleJooqRepository(
             .fetch()
             .map { it.toRecurringSchedule() }
 
+    override fun findDue(now: LocalDateTime): List<RecurringSchedule> =
+        dsl.select().from(RECURRING_SCHEDULES)
+            .where(IS_ACTIVE.isTrue)
+            .and(NEXT_RUN_AT.isNotNull)
+            .and(NEXT_RUN_AT.le(now))
+            .orderBy(NEXT_RUN_AT.asc())
+            .limit(100)
+            .fetch().map { it.toRecurringSchedule() }
+
+    override fun markRun(id: Long, expectedNextRunAt: LocalDateTime, lastRunAt: LocalDateTime, nextRunAt: LocalDateTime): Boolean =
+        dsl.update(RECURRING_SCHEDULES)
+            .set(LAST_RUN_AT, lastRunAt)
+            .set(NEXT_RUN_AT, nextRunAt)
+            .where(ID.eq(id))
+            .and(NEXT_RUN_AT.eq(expectedNextRunAt))
+            .and(IS_ACTIVE.isTrue)
+            .execute() == 1
+
     override fun save(schedule: RecurringSchedule): RecurringSchedule {
         val id = dsl.insertInto(RECURRING_SCHEDULES)
             .set(USER_ID, schedule.userId)
+            .set(RECURRING_VIDEO_ID, schedule.videoId)
             .set(NAME, schedule.name)
             .set(FREQUENCY, schedule.frequency)
             .set(DAY_OF_WEEK, schedule.dayOfWeek)
@@ -74,6 +95,7 @@ class RecurringScheduleJooqRepository(
 
     override fun update(schedule: RecurringSchedule): RecurringSchedule {
         dsl.update(RECURRING_SCHEDULES)
+            .set(RECURRING_VIDEO_ID, schedule.videoId)
             .set(NAME, schedule.name)
             .set(FREQUENCY, schedule.frequency)
             .set(DAY_OF_WEEK, schedule.dayOfWeek)
@@ -125,6 +147,7 @@ class RecurringScheduleJooqRepository(
         return RecurringSchedule(
             id = get(ID),
             userId = get(USER_ID),
+            videoId = get(RECURRING_VIDEO_ID),
             name = get(NAME),
             frequency = get(FREQUENCY),
             dayOfWeek = get(DAY_OF_WEEK),

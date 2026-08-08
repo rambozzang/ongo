@@ -33,6 +33,7 @@ class RecurringScheduleUseCase(
         val timeOfDay = LocalTime.parse(request.timeOfDay)
         val schedule = RecurringSchedule(
             userId = userId,
+            videoId = request.videoId,
             name = request.name,
             frequency = request.frequency,
             dayOfWeek = request.dayOfWeek,
@@ -63,6 +64,7 @@ class RecurringScheduleUseCase(
         val newTimezone = request.timezone ?: schedule.timezone
 
         val updated = schedule.copy(
+            videoId = request.videoId ?: schedule.videoId,
             name = request.name ?: schedule.name,
             frequency = newFrequency,
             dayOfWeek = newDayOfWeek,
@@ -100,9 +102,10 @@ class RecurringScheduleUseCase(
         dayOfMonth: Int?,
         timeOfDay: LocalTime,
         timezone: String,
+        reference: LocalDateTime = LocalDateTime.now(ZoneId.of(timezone)),
     ): LocalDateTime {
         val zone = ZoneId.of(timezone)
-        val now = LocalDateTime.now(zone)
+        val now = reference
         val todayAtTime = now.toLocalDate().atTime(timeOfDay)
 
         return when (frequency) {
@@ -130,6 +133,17 @@ class RecurringScheduleUseCase(
         }
     }
 
+    /** Calculates the next occurrence strictly after a consumed occurrence. */
+    fun nextRunAtAfter(schedule: RecurringSchedule, occurrence: LocalDateTime): LocalDateTime =
+        calculateNextRunAt(
+            schedule.frequency,
+            schedule.dayOfWeek,
+            schedule.dayOfMonth,
+            schedule.timeOfDay,
+            schedule.timezone,
+            occurrence,
+        )
+
     private fun RecurringSchedule.toResponse() = RecurringScheduleResponse(
         id = id!!,
         name = name,
@@ -142,6 +156,7 @@ class RecurringScheduleUseCase(
         titleTemplate = titleTemplate,
         descriptionTemplate = descriptionTemplate,
         tags = tags,
+        videoId = videoId,
         isActive = isActive,
         nextRunAt = nextRunAt,
         lastRunAt = lastRunAt,

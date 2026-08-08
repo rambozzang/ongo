@@ -411,7 +411,8 @@ class StreamPublishUseCase(
                                         leaseOwner = owner,
                                     )
                                     log.info("플랫폼 {} 업로드 수락: videoId={}, pollToken={}", ctx.platform, videoId, outcome.pollToken)
-                                    fireCompletedEvent(videoId, userId, ctx.platform, true, platformUrl = result.platformUrl)
+                                    // Accepted is not a published event. The poller emits the
+                                    // terminal event only after a public URL is confirmed.
                                 }
                                 is PublishOutcome.Failed -> {
                                     updateUploadStatus(

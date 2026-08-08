@@ -188,11 +188,11 @@ async function handleToggle(webhook: Webhook) {
 
 async function handleTest(webhook: Webhook) {
   try {
-    const delivery = await webhookStore.testWebhook(webhook.id)
-    if (delivery.statusCode >= 200 && delivery.statusCode < 300) {
-      notification.success(t('webhooks.notify.testSuccess', { code: delivery.statusCode, duration: delivery.duration }))
+    const result = await webhookStore.testWebhook(webhook.id)
+    if (result.statusCode !== null && result.statusCode >= 200 && result.statusCode < 300) {
+      notification.success(t('webhooks.notify.testSuccess', { code: result.statusCode, duration: 0 }))
     } else {
-      notification.error(t('webhooks.notify.testFailed', { code: delivery.statusCode }))
+      notification.error(t('webhooks.notify.testFailed', { code: result.statusCode }))
     }
   } catch {
     notification.error(t('webhooks.notify.testError'))
@@ -241,7 +241,7 @@ function handleSelectWebhook(webhook: Webhook) {
 async function handleRetry(webhookId: number, deliveryId: number) {
   try {
     const delivery = await webhookStore.retryDelivery(webhookId, deliveryId)
-    if (delivery.statusCode >= 200 && delivery.statusCode < 300) {
+    if (delivery.statusCode !== null && delivery.statusCode >= 200 && delivery.statusCode < 300) {
       notification.success(t('webhooks.notify.retrySuccess', { code: delivery.statusCode }))
     } else {
       notification.error(t('webhooks.notify.retryFailed', { code: delivery.statusCode }))

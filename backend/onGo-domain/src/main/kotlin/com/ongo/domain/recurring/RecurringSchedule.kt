@@ -6,6 +6,7 @@ import java.time.LocalTime
 data class RecurringSchedule(
     val id: Long? = null,
     val userId: Long,
+    val videoId: Long? = null,
     val name: String,
     val frequency: String,
     val dayOfWeek: Int? = null,

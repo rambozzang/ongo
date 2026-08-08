@@ -5,16 +5,22 @@ import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.webhook.Webhook
 import com.ongo.domain.webhook.WebhookRepository
+import com.ongo.domain.webhook.WebhookDeliveryRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.http.MediaType
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.web.client.RestClient
 import java.util.UUID
 import java.time.LocalDateTime
+import java.time.Duration
+import java.net.InetAddress
+import java.net.URI
 
 @Service
 class WebhookUseCase(
     private val webhookRepository: WebhookRepository,
+    private val deliveryRepository: WebhookDeliveryRepository,
 ) {
 
     fun listWebhooks(userId: Long): List<WebhookResponse> {
@@ -23,6 +29,7 @@ class WebhookUseCase(
 
     @Transactional
     fun createWebhook(userId: Long, request: CreateWebhookRequest): WebhookResponse {
+        validateWebhookUrl(request.url)
         val secret = "whsec_${UUID.randomUUID().toString().replace("-", "").take(24)}"
 
         val webhook = Webhook(
@@ -40,6 +47,7 @@ class WebhookUseCase(
     fun updateWebhook(userId: Long, webhookId: Long, request: UpdateWebhookRequest): WebhookResponse {
         val webhook = webhookRepository.findById(webhookId) ?: throw NotFoundException("웹훅", webhookId)
         if (webhook.userId != userId) throw ForbiddenException("해당 웹훅에 대한 권한이 없습니다")
+        request.url?.let(::validateWebhookUrl)
 
         val updated = webhook.copy(
             name = request.name ?: webhook.name,
@@ -60,10 +68,16 @@ class WebhookUseCase(
     fun testWebhook(userId: Long, webhookId: Long): WebhookTestResponse {
         val webhook = webhookRepository.findById(webhookId) ?: throw NotFoundException("웹훅", webhookId)
         if (webhook.userId != userId) throw ForbiddenException("해당 웹훅에 대한 권한이 없습니다")
+        validateWebhookUrl(webhook.url)
 
         val now = LocalDateTime.now()
         return try {
-            val response = RestClient.create()
+            val response = RestClient.builder()
+                .requestFactory(SimpleClientHttpRequestFactory().apply {
+                    setConnectTimeout(Duration.ofSeconds(5))
+                    setReadTimeout(Duration.ofSeconds(15))
+                })
+                .build()
                 .post()
                 .uri(webhook.url)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -98,6 +112,19 @@ class WebhookUseCase(
     }
 
     @Transactional
+    fun retryDelivery(userId: Long, webhookId: Long, deliveryId: Long): WebhookDeliveryResponse {
+        val webhook = webhookRepository.findById(webhookId) ?: throw NotFoundException("웹훅", webhookId)
+        if (webhook.userId != userId) throw ForbiddenException("해당 웹훅에 대한 권한이 없습니다")
+        val delivery = deliveryRepository.findById(deliveryId)
+            ?: throw NotFoundException("웹훅 배달", deliveryId)
+        if (delivery.webhookId != webhookId) throw ForbiddenException("해당 웹훅 배달에 대한 권한이 없습니다")
+        if (!deliveryRepository.requeue(deliveryId, LocalDateTime.now())) {
+            throw IllegalStateException("웹훅 배달을 재시도 대기열에 넣지 못했습니다")
+        }
+        return deliveryRepository.findById(deliveryId)!!.toResponse()
+    }
+
+    @Transactional
     fun rotateSecret(userId: Long, webhookId: Long): WebhookResponse {
         val webhook = webhookRepository.findById(webhookId) ?: throw NotFoundException("웹훅", webhookId)
         if (webhook.userId != userId) throw ForbiddenException("해당 웹훅에 대한 권한이 없습니다")
@@ -118,5 +145,33 @@ class WebhookUseCase(
         failureCount = failureCount,
         createdAt = createdAt,
         updatedAt = updatedAt,
+        recentDeliveries = id?.let { deliveryRepository.findByWebhookId(it).map { delivery -> delivery.toResponse() } } ?: emptyList(),
     )
+
+    fun com.ongo.domain.webhook.WebhookDelivery.toResponse() = WebhookDeliveryResponse(
+        id = id!!,
+        webhookId = webhookId,
+        eventKey = eventKey,
+        event = eventType,
+        status = status,
+        statusCode = statusCode,
+        responseBody = responseBody ?: lastError,
+        sentAt = sentAt ?: createdAt,
+        attemptCount = attemptCount,
+        nextAttemptAt = nextAttemptAt,
+        lastError = lastError,
+    )
+
+    /** Webhook URLs are server-side request targets; reject obvious SSRF targets. */
+    private fun validateWebhookUrl(value: String) {
+        val uri = runCatching { URI(value) }
+            .getOrElse { throw IllegalArgumentException("웹훅 URL 형식이 올바르지 않습니다") }
+        require(uri.scheme.equals("https", ignoreCase = true)) { "웹훅 URL은 HTTPS여야 합니다" }
+        require(uri.userInfo == null && !uri.host.isNullOrBlank()) { "웹훅 URL에 사용자 정보 또는 호스트가 없습니다" }
+        val addresses = runCatching { InetAddress.getAllByName(uri.host) }
+            .getOrElse { throw IllegalArgumentException("웹훅 호스트를 확인할 수 없습니다") }
+        require(addresses.isNotEmpty() && addresses.none { address ->
+            address.isAnyLocalAddress || address.isLoopbackAddress || address.isLinkLocalAddress || address.isSiteLocalAddress
+        }) { "웹훅 URL은 내부 네트워크 주소를 사용할 수 없습니다" }
+    }
 }

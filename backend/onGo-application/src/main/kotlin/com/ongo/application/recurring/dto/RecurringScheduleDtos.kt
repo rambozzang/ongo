@@ -5,6 +5,7 @@ import java.time.LocalTime
 
 data class RecurringScheduleResponse(
     val id: Long,
+    val videoId: Long?,
     val name: String,
     val frequency: String,
     val dayOfWeek: Int?,
@@ -23,6 +24,7 @@ data class RecurringScheduleResponse(
 )
 
 data class CreateRecurringScheduleRequest(
+    val videoId: Long,
     val name: String,
     val frequency: String,
     val dayOfWeek: Int? = null,
@@ -37,6 +39,7 @@ data class CreateRecurringScheduleRequest(
 )
 
 data class UpdateRecurringScheduleRequest(
+    val videoId: Long? = null,
     val name: String? = null,
     val frequency: String? = null,
     val dayOfWeek: Int? = null,

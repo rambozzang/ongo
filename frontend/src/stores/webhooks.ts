@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import type { Webhook, WebhookEvent, WebhookDelivery } from '@/types/webhook'
 import { webhookApi } from '@/api/webhooks'
 import { useNotificationStore } from '@/stores/notification'
-import type { WebhookResponse } from '@/api/webhooks'
+import type { WebhookResponse, WebhookTestResponse } from '@/api/webhooks'
 
 function mapApiWebhook(w: WebhookResponse): Webhook {
   return {
@@ -15,7 +15,15 @@ function mapApiWebhook(w: WebhookResponse): Webhook {
     lastTriggeredAt: w.lastTriggeredAt ?? undefined,
     failureCount: w.failureCount,
     createdAt: w.createdAt ?? new Date().toISOString(),
-    recentDeliveries: [],
+    recentDeliveries: (w.recentDeliveries ?? []).map((delivery) => ({
+      id: delivery.id,
+      webhookId: delivery.webhookId,
+      event: delivery.event as WebhookEvent,
+      statusCode: delivery.statusCode,
+      responseBody: delivery.responseBody ?? undefined,
+      sentAt: delivery.sentAt ?? new Date(0).toISOString(),
+      duration: 0,
+    })),
   }
 }
 
@@ -106,25 +114,14 @@ export const useWebhookStore = defineStore('webhooks', () => {
     }
   }
 
-  async function testWebhook(id: number): Promise<WebhookDelivery> {
+  async function testWebhook(id: number): Promise<WebhookTestResponse> {
     const webhook = webhooks.value.find((w) => w.id === id)
     if (!webhook) throw new Error('웹훅을 찾을 수 없습니다')
 
     try {
       const result = await webhookApi.test(id)
-      const delivery: WebhookDelivery = {
-        id: Date.now(),
-        webhookId: id,
-        event: webhook.events[0] || 'video.uploaded',
-        statusCode: result.statusCode ?? 200,
-        responseBody: result.message,
-        sentAt: new Date().toISOString(),
-        duration: 0,
-      }
-      if (!webhook.recentDeliveries) webhook.recentDeliveries = []
-      webhook.recentDeliveries.unshift(delivery)
-      webhook.lastTriggeredAt = delivery.sentAt
-      return delivery
+      await fetchWebhooks()
+      return result
     } catch (e) {
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
       throw e
@@ -149,14 +146,14 @@ export const useWebhookStore = defineStore('webhooks', () => {
     if (!originalDelivery) throw new Error('배달 기록을 찾을 수 없습니다')
 
     try {
-      const result = await webhookApi.test(webhookId)
+      const result = await webhookApi.retryDelivery(webhookId, deliveryId)
       const retried: WebhookDelivery = {
-        id: Date.now(),
-        webhookId,
-        event: originalDelivery.event,
-        statusCode: result.statusCode ?? 200,
-        responseBody: result.message ?? '{"ok":true}',
-        sentAt: new Date().toISOString(),
+        id: result.id,
+        webhookId: result.webhookId,
+        event: result.event as WebhookEvent,
+        statusCode: result.statusCode,
+        responseBody: result.responseBody ?? undefined,
+        sentAt: result.sentAt ?? new Date(0).toISOString(),
         duration: 0,
       }
 
@@ -165,10 +162,6 @@ export const useWebhookStore = defineStore('webhooks', () => {
       }
       webhook.recentDeliveries.unshift(retried)
       webhook.lastTriggeredAt = retried.sentAt
-
-      if ((result.statusCode ?? 200) < 400 && webhook.failureCount > 0) {
-        webhook.failureCount--
-      }
 
       return retried
     } catch (e) {

@@ -66,6 +66,7 @@ object Tables {
     val LINK_BIO_LINKS = DSL.table("link_bio_links")
     val AUTOMATION_RULES = DSL.table("automation_rules")
     val WEBHOOKS = DSL.table("webhooks")
+    val WEBHOOK_DELIVERIES = DSL.table("webhook_deliveries")
     val RECURRING_SCHEDULES = DSL.table("recurring_schedules")
     val AI_CONTENT_CALENDARS = DSL.table("ai_content_calendars")
     val CALENDAR_SUGGESTIONS = DSL.table("calendar_suggestions")
@@ -501,6 +502,19 @@ object Fields {
     val LAST_STATUS_CODE = DSL.field("last_status_code", Int::class.java)
     val FAILURE_COUNT = DSL.field("failure_count", Int::class.java)
 
+    // webhook_deliveries
+    val WEBHOOK_ID = DSL.field("webhook_id", Long::class.java)
+    val EVENT_KEY = DSL.field("event_key", String::class.java)
+    val DELIVERY_STATUS = DSL.field("status", String::class.java)
+    val DELIVERY_ATTEMPT_COUNT = DSL.field("attempt_count", Int::class.java)
+    val DELIVERY_NEXT_ATTEMPT_AT = DSL.field("next_attempt_at", java.time.LocalDateTime::class.java)
+    val DELIVERY_LEASE_OWNER = DSL.field("lease_owner", String::class.java)
+    val DELIVERY_LEASE_UNTIL = DSL.field("lease_until", java.time.LocalDateTime::class.java)
+    val DELIVERY_STATUS_CODE = DSL.field("status_code", Int::class.java)
+    val RESPONSE_BODY = DSL.field("response_body", String::class.java)
+    val SENT_AT = DSL.field("sent_at", java.time.LocalDateTime::class.java)
+    val DELIVERY_LAST_ERROR = DSL.field("last_error", String::class.java)
+
     // recurring_schedules
     val FREQUENCY = DSL.field("frequency", String::class.java)
     val DAY_OF_WEEK = DSL.field("day_of_week", Int::class.java)
@@ -509,6 +523,7 @@ object Fields {
     val TIMEZONE = DSL.field("timezone", String::class.java)
     val NEXT_RUN_AT = DSL.field("next_run_at", java.time.LocalDateTime::class.java)
     val LAST_RUN_AT = DSL.field("last_run_at", java.time.LocalDateTime::class.java)
+    val RECURRING_VIDEO_ID = DSL.field("video_id", Long::class.java)
 
     // workspaces
     val OWNER_ID = DSL.field("owner_id", Long::class.java)

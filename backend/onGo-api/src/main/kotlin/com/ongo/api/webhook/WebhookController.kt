@@ -74,4 +74,13 @@ class WebhookController(
         val result = webhookUseCase.testWebhook(userId, id)
         return ResData.success(result)
     }
+
+    @Operation(summary = "웹훅 배달 재시도")
+    @PostMapping("/{webhookId}/deliveries/{deliveryId}/retry")
+    fun retryDelivery(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable webhookId: Long,
+        @PathVariable deliveryId: Long,
+    ): ResponseEntity<ResData<WebhookDeliveryResponse>> =
+        ResData.success(webhookUseCase.retryDelivery(userId, webhookId, deliveryId))
 }

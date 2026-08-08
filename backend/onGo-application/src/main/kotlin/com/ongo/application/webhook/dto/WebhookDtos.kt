@@ -14,6 +14,21 @@ data class WebhookResponse(
     val failureCount: Int,
     val createdAt: LocalDateTime?,
     val updatedAt: LocalDateTime?,
+    val recentDeliveries: List<WebhookDeliveryResponse> = emptyList(),
+)
+
+data class WebhookDeliveryResponse(
+    val id: Long,
+    val webhookId: Long,
+    val eventKey: String,
+    val event: String,
+    val status: String,
+    val statusCode: Int?,
+    val responseBody: String?,
+    val sentAt: LocalDateTime?,
+    val attemptCount: Int,
+    val nextAttemptAt: LocalDateTime?,
+    val lastError: String?,
 )
 
 data class CreateWebhookRequest(
