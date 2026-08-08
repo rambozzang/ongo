@@ -13,10 +13,27 @@
       </template>
     </PageHeader>
 
+    <div v-if="store.loadError || store.generationError" class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong" role="alert">
+      <span class="min-w-0 flex-1">{{ store.generationError || store.loadError }}</span>
+      <button v-if="store.loadError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="store.loading" @click="store.fetchReports()">
+        다시 시도
+      </button>
+    </div>
+
     <!-- Loading -->
     <LoadingSpinner v-if="store.loading" />
 
     <!-- Empty -->
+    <EmptyState
+      v-else-if="store.loadError && store.reports.length === 0"
+      :title="store.loadError"
+      description="연결 상태를 확인한 뒤 다시 시도해 주세요."
+    >
+      <template #action>
+        <button class="btn-primary" @click="store.fetchReports()">다시 시도</button>
+      </template>
+    </EmptyState>
+
     <EmptyState
       v-else-if="store.reports.length === 0"
       :title="$t('channelAudit.emptyTitle')"
@@ -219,8 +236,8 @@ function openDetail(report: ChannelAuditReport) {
 }
 
 async function handleGenerate() {
-  await store.generateAudit()
-  if (store.selectedReport) {
+  const report = await store.generateAudit()
+  if (report) {
     detailModalOpen.value = true
   }
 }

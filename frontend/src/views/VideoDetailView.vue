@@ -20,6 +20,14 @@
 
     <LoadingSpinner v-if="loading" full-page />
 
+    <div v-else-if="videoStore.detailLoadError" class="card py-16 text-center" role="alert">
+      <ExclamationTriangleIcon class="mx-auto mb-4 h-12 w-12 text-error-strong" />
+      <p class="text-title font-medium text-content">{{ videoStore.detailLoadError }}</p>
+      <button class="btn-primary mt-4" @click="videoStore.fetchVideo(Number(props.id))">
+        {{ $t('action.retry') }}
+      </button>
+    </div>
+
     <!-- Not Found -->
     <div v-else-if="!video" class="card py-16 text-center">
       <ExclamationTriangleIcon class="mx-auto mb-4 h-12 w-12 text-gray-400 dark:text-gray-500" />

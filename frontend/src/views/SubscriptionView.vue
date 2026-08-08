@@ -4,6 +4,12 @@
 
     <PageGuide :title="$t('subscription.pageGuideTitle')" :items="($tm('subscription.pageGuide') as string[])" />
 
+    <div v-if="creditStore.balanceError || creditStore.transactionsError" class="flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong" role="alert">
+      <span class="min-w-0 flex-1">{{ creditStore.balanceError || creditStore.transactionsError }}</span>
+      <button v-if="creditStore.balanceError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="creditStore.isLoadingBalance" @click="creditStore.fetchBalance()">잔액 다시 시도</button>
+      <button v-if="creditStore.transactionsError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="creditStore.isLoadingTransactions" @click="creditStore.fetchTransactions(0, 20)">내역 다시 시도</button>
+    </div>
+
     <LoadingSpinner v-if="subscriptionStore.loading && !subscription" full-page />
 
     <template v-else>
@@ -166,6 +172,9 @@
             {{ $t('subscription.lowCreditWarning') }}
           </div>
         </div>
+        <div v-else-if="creditStore.balanceError" class="py-4 text-center text-body text-error-strong">
+          크레딧 잔액을 확인하지 못했습니다. 위의 다시 시도를 눌러 주세요.
+        </div>
         <div v-else class="py-4 text-center text-body text-gray-500 dark:text-gray-400">
           {{ $t('subscription.noCreditInfo') }}
         </div>
@@ -215,6 +224,9 @@
               </tr>
             </tbody>
           </table>
+          <div v-else-if="creditStore.transactionsError" class="py-8 text-center text-body text-error-strong">
+            크레딧 사용 내역을 확인하지 못했습니다. 위의 다시 시도를 눌러 주세요.
+          </div>
           <div v-else class="py-8 text-center text-body text-gray-500 dark:text-gray-400">
             {{ $t('subscription.noCreditHistory') }}
           </div>

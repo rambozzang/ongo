@@ -30,6 +30,7 @@ const {
   filter: _filter,
   storageUsed,
   storageLimit,
+  loadError,
 } = storeToRefs(assetsStore)
 
 // Search
@@ -332,6 +333,13 @@ title="에셋 라이브러리" :items="[
     </SectionCard>
 
     <!-- Main Content -->
+    <div v-if="loadError" class="flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong" role="alert">
+      <span class="min-w-0 flex-1">{{ loadError }}</span>
+      <button type="button" class="shrink-0 rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="assetsStore.loading" @click="assetsStore.fetchAssets()">
+        다시 시도
+      </button>
+    </div>
+
     <div class="flex flex-col gap-6 desktop:flex-row">
       <!-- Assets Area -->
       <div class="min-w-0 flex-1">
@@ -353,7 +361,7 @@ title="에셋 라이브러리" :items="[
 
         <!-- Empty State -->
         <div
-          v-if="filteredAssets.length === 0"
+          v-if="filteredAssets.length === 0 && !loadError"
           class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-white px-6 py-16 dark:border-gray-700 dark:bg-gray-800"
         >
           <ArchiveBoxXMarkIcon class="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />

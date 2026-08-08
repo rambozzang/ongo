@@ -39,10 +39,13 @@ export const useRevenueStore = defineStore('revenue', () => {
   const brandDealData = ref<BrandDealRevenueResponse | null>(null)
   const cpmRpmLoading = ref(false)
   const brandDealLoading = ref(false)
+  const cpmRpmError = ref<string | null>(null)
+  const brandDealError = ref<string | null>(null)
 
   // AI 인사이트
   const revenueInsights = shallowRef<RevenueInsight[]>([])
   const insightsLoading = ref(false)
+  const insightsError = ref<string | null>(null)
   const generateInsightLoading = ref(false)
 
   // 알림 설정
@@ -179,10 +182,11 @@ export const useRevenueStore = defineStore('revenue', () => {
 
   async function fetchCpmRpm(period = '30d') {
     cpmRpmLoading.value = true
+    cpmRpmError.value = null
     try {
       cpmRpmData.value = await revenueApi.cpmRpm(period)
-    } catch {
-      // silently ignore
+    } catch (error) {
+      cpmRpmError.value = error instanceof Error ? error.message : 'CPM·RPM 데이터를 불러오지 못했습니다.'
     } finally {
       cpmRpmLoading.value = false
     }
@@ -190,10 +194,11 @@ export const useRevenueStore = defineStore('revenue', () => {
 
   async function fetchBrandDealRevenue(period = '90d') {
     brandDealLoading.value = true
+    brandDealError.value = null
     try {
       brandDealData.value = await revenueApi.brandDealRevenue(period)
-    } catch {
-      // silently ignore
+    } catch (error) {
+      brandDealError.value = error instanceof Error ? error.message : '브랜드딜 수익을 불러오지 못했습니다.'
     } finally {
       brandDealLoading.value = false
     }
@@ -201,12 +206,13 @@ export const useRevenueStore = defineStore('revenue', () => {
 
   async function fetchInsights() {
     insightsLoading.value = true
+    insightsError.value = null
     try {
       // 백엔드가 { insights, totalElements, page, size } 래퍼 반환
       const response = await revenueApi.insights()
       revenueInsights.value = response.insights
-    } catch {
-      // silently ignore
+    } catch (error) {
+      insightsError.value = error instanceof Error ? error.message : '수익 인사이트를 불러오지 못했습니다.'
     } finally {
       insightsLoading.value = false
     }
@@ -269,10 +275,13 @@ export const useRevenueStore = defineStore('revenue', () => {
     brandDealData,
     cpmRpmLoading,
     brandDealLoading,
+    cpmRpmError,
+    brandDealError,
     fetchCpmRpm,
     fetchBrandDealRevenue,
     revenueInsights,
     insightsLoading,
+    insightsError,
     generateInsightLoading,
     alertConfigs,
     alertConfigLoading,

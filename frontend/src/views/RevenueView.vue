@@ -88,6 +88,11 @@
             <div class="text-body text-gray-500 dark:text-gray-400">{{ $t('revenue.loading') }}</div>
           </div>
 
+          <div v-else-if="revenueStore.insightsError" class="rounded-lg border border-error-subtle bg-error-subtle p-4 text-body text-error-strong" role="alert">
+            <p>{{ revenueStore.insightsError }}</p>
+            <button type="button" class="mt-3 rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" @click="revenueStore.fetchInsights()">다시 시도</button>
+          </div>
+
           <!-- 인사이트 목록 -->
           <div v-else-if="revenueStore.revenueInsights.length > 0" class="space-y-3">
             <RevenueInsightCard
@@ -175,6 +180,10 @@
         <div v-if="revenueStore.cpmRpmLoading" class="flex items-center justify-center py-12">
           <div class="text-gray-500 dark:text-gray-400">{{ $t('revenue.loading') }}</div>
         </div>
+        <div v-else-if="revenueStore.cpmRpmError" class="rounded-lg border border-error-subtle bg-error-subtle p-4 text-body text-error-strong" role="alert">
+          <p>{{ revenueStore.cpmRpmError }}</p>
+          <button type="button" class="mt-3 rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" @click="revenueStore.fetchCpmRpm()">다시 시도</button>
+        </div>
         <template v-else-if="revenueStore.cpmRpmData">
           <div class="card">
             <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('revenue.cpmRpmTitle') }}</h2>
@@ -238,6 +247,10 @@
       <template v-if="activeTab === 'brandDeals'">
         <div v-if="revenueStore.brandDealLoading" class="flex items-center justify-center py-12">
           <div class="text-gray-500 dark:text-gray-400">{{ $t('revenue.loading') }}</div>
+        </div>
+        <div v-else-if="revenueStore.brandDealError" class="rounded-lg border border-error-subtle bg-error-subtle p-4 text-body text-error-strong" role="alert">
+          <p>{{ revenueStore.brandDealError }}</p>
+          <button type="button" class="mt-3 rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" @click="revenueStore.fetchBrandDealRevenue()">다시 시도</button>
         </div>
         <template v-else-if="revenueStore.brandDealData">
           <!-- 브랜드딜 요약 -->

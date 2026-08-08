@@ -9,6 +9,8 @@ export const useCreditStore = defineStore('credit', () => {
   const transactions = ref<PageResponse<CreditTransaction> | null>(null)
   const isLoadingBalance = ref(false)
   const isLoadingTransactions = ref(false)
+  const balanceError = ref<string | null>(null)
+  const transactionsError = ref<string | null>(null)
 
   // Backwards-compatible loading ref
   const loading = isLoadingTransactions
@@ -34,10 +36,11 @@ export const useCreditStore = defineStore('credit', () => {
 
   async function fetchBalance() {
     isLoadingBalance.value = true
+    balanceError.value = null
     try {
       balance.value = await creditApi.getBalance()
-    } catch {
-      // silently fail for credit display
+    } catch (error) {
+      balanceError.value = error instanceof Error ? error.message : '크레딧 잔액을 불러오지 못했습니다.'
     } finally {
       isLoadingBalance.value = false
     }
@@ -45,10 +48,11 @@ export const useCreditStore = defineStore('credit', () => {
 
   async function fetchTransactions(page = 0, size = 20) {
     isLoadingTransactions.value = true
+    transactionsError.value = null
     try {
       transactions.value = await creditApi.getTransactions({ page, size })
-    } catch {
-      // silently fail for transaction display
+    } catch (error) {
+      transactionsError.value = error instanceof Error ? error.message : '크레딧 사용 내역을 불러오지 못했습니다.'
     } finally {
       isLoadingTransactions.value = false
     }
@@ -64,6 +68,8 @@ export const useCreditStore = defineStore('credit', () => {
     loading,
     isLoadingBalance,
     isLoadingTransactions,
+    balanceError,
+    transactionsError,
     totalBalance,
     isLow,
     usedToday,

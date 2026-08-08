@@ -10,10 +10,12 @@ export const useAssetsStore = defineStore('assets', () => {
   const filter = ref<AssetFilter>({})
   const selectedAssets = ref<Set<number>>(new Set())
   const loading = ref(false)
+  const loadError = ref<string | null>(null)
 
   // ---- Load from API ----
   async function fetchAssets() {
     loading.value = true
+    loadError.value = null
     try {
       const params: Record<string, string | number> = { page: 0, size: 100 }
       if (filter.value.type) params.fileType = filter.value.type
@@ -33,7 +35,9 @@ export const useAssetsStore = defineStore('assets', () => {
         createdAt: a.createdAt ?? new Date().toISOString(),
       }))
     } catch (error) {
-      throw error
+      // A failed request is not an empty asset library. Preserve the last
+      // confirmed list so users can retry without losing their context.
+      loadError.value = error instanceof Error ? error.message : '에셋을 불러오지 못했습니다.'
     } finally {
       loading.value = false
     }
@@ -197,6 +201,7 @@ export const useAssetsStore = defineStore('assets', () => {
     viewMode,
     filter,
     selectedAssets,
+    loadError,
     loading,
     // Getters
     filteredAssets,

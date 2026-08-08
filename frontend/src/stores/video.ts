@@ -10,6 +10,8 @@ export const useVideoStore = defineStore('video', () => {
   const currentVideo = ref<Video | null>(null)
   const isLoadingList = ref(false)
   const isLoadingDetail = ref(false)
+  const listLoadError = ref<string | null>(null)
+  const detailLoadError = ref<string | null>(null)
   const filter = ref<VideoListFilter>({})
   const sortField = ref<string>('createdAt')
   const sortDirection = ref<'ASC' | 'DESC'>('DESC')
@@ -27,6 +29,7 @@ export const useVideoStore = defineStore('video', () => {
 
   async function fetchVideos(page = 0, size = 20) {
     isLoadingList.value = true
+    listLoadError.value = null
     try {
       videos.value = await videoApi.list({
         ...filter.value,
@@ -35,9 +38,10 @@ export const useVideoStore = defineStore('video', () => {
         sort: sortField.value,
         direction: sortDirection.value,
       })
-    } catch {
-      // Guest mode or API error - continue with empty videos
-      videos.value = { content: [], totalElements: 0, totalPages: 0, page: 0, size, hasNext: false, hasPrevious: false }
+    } catch (error) {
+      // A transport failure is not an empty library. Keep the last confirmed
+      // page so a retry cannot make existing videos appear deleted.
+      listLoadError.value = error instanceof Error ? error.message : '영상을 불러오지 못했습니다.'
     } finally {
       isLoadingList.value = false
     }
@@ -45,11 +49,12 @@ export const useVideoStore = defineStore('video', () => {
 
   async function fetchVideo(id: number) {
     isLoadingDetail.value = true
+    detailLoadError.value = null
+    currentVideo.value = null
     try {
       currentVideo.value = await videoApi.get(id)
-    } catch {
-      // Guest mode or API error
-      currentVideo.value = null
+    } catch (error) {
+      detailLoadError.value = error instanceof Error ? error.message : '영상 정보를 불러오지 못했습니다.'
     } finally {
       isLoadingDetail.value = false
     }
@@ -109,6 +114,8 @@ export const useVideoStore = defineStore('video', () => {
     loading,
     isLoadingList,
     isLoadingDetail,
+    listLoadError,
+    detailLoadError,
     filter,
     sortField,
     sortDirection,

@@ -20,6 +20,7 @@ export const useBrandKitStore = defineStore('brandkit', () => {
   const brandKit = ref<BrandKit>(emptyBrandKit())
   const isDirty = ref(false)
   const loading = ref(false)
+  const loadError = ref<string | null>(null)
 
   function assetsFromResponse(kit: BrandKitResponse): BrandAsset[] {
     if (kit.assets.length > 0) {
@@ -47,6 +48,7 @@ export const useBrandKitStore = defineStore('brandkit', () => {
 
   async function fetchBrandKits() {
     loading.value = true
+    loadError.value = null
     try {
       const data = await brandKitApi.list()
       if (data.length > 0) {
@@ -70,7 +72,8 @@ export const useBrandKitStore = defineStore('brandkit', () => {
         }
       }
     } catch (e) {
-      useNotificationStore().error('브랜드킷 저장 중 오류가 발생했습니다')
+      loadError.value = e instanceof Error ? e.message : '브랜드킷을 불러오지 못했습니다.'
+      useNotificationStore().error('브랜드킷을 불러오는 중 오류가 발생했습니다')
       throw e
     } finally {
       loading.value = false
@@ -178,6 +181,7 @@ export const useBrandKitStore = defineStore('brandkit', () => {
     brandKit,
     isDirty,
     loading,
+    loadError,
     fetchBrandKits,
     updateColor,
     addColor,

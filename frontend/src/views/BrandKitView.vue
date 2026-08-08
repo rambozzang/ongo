@@ -104,6 +104,13 @@ onMounted(() => {
 
     <PageGuide :title="$t('brandKit.pageGuideTitle')" :items="($tm('brandKit.pageGuide') as string[])" />
 
+    <div v-if="brandKitStore.loadError" class="flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong" role="alert">
+      <span class="min-w-0 flex-1">{{ brandKitStore.loadError }}</span>
+      <button type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="brandKitStore.loading" @click="brandKitStore.fetchBrandKits()">
+        다시 시도
+      </button>
+    </div>
+
     <!-- Sections -->
     <div class="space-y-6">
       <!-- Color Palette Section -->
