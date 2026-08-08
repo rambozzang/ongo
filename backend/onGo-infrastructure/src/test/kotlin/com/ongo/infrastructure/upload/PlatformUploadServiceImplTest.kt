@@ -7,6 +7,8 @@ import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.channel.EncryptedToken
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.platform.PlatformClient
 import com.ongo.infrastructure.external.platform.PlatformClientFactory
 import com.ongo.infrastructure.external.platform.PlatformUploadResult as ClientUploadResult
@@ -33,10 +35,10 @@ class PlatformUploadServiceImplTest {
             platform = Platform.INSTAGRAM,
             platformChannelId = "ig-user",
             channelName = "creator",
-            accessToken = "encrypted-token",
+            accessToken = EncryptedToken("encrypted-token"),
             status = ChannelStatus.ACTIVE,
         )
-        every { tokenEncryptionPort.decrypt("encrypted-token") } returns "plain-token"
+        every { tokenEncryptionPort.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("plain-token")
         every { client.uploadVideo(capture(requestSlot)) } returns ClientUploadResult(
             platformVideoId = "media-1",
             platformUrl = "https://instagram.com/reel/media-1",

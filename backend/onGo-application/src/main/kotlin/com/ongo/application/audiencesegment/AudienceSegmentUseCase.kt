@@ -9,7 +9,7 @@ import com.ongo.domain.audiencesegment.AudienceSegmentRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class AudienceSegmentUseCase(
     private val audienceSegmentRepository: AudienceSegmentRepository,

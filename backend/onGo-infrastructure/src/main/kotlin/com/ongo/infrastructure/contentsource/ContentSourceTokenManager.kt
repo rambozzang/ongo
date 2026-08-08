@@ -3,6 +3,8 @@ package com.ongo.infrastructure.contentsource
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.LoadingCache
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.channel.EncryptedToken
+import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.contentsource.ContentSource
 import com.ongo.domain.contentsource.ContentSourceRepository
 import com.ongo.domain.contentsource.ContentSourceStatus
@@ -44,7 +46,7 @@ class ContentSourceTokenManager(
                 throw ContentSourceExpiredException(source.lastError ?: source.status.name)
             }
             if (!source.needsRefresh(Instant.now())) {
-                return encryptor.decrypt(source.accessTokenEncrypted)
+                return encryptor.decrypt(EncryptedToken(source.accessTokenEncrypted)).value
             }
             return refreshLocked(source)
         } finally {
@@ -53,15 +55,15 @@ class ContentSourceTokenManager(
     }
 
     private fun refreshLocked(source: ContentSource): String {
-        val refreshToken = source.refreshTokenEncrypted?.let(encryptor::decrypt)
+        val refreshToken = source.refreshTokenEncrypted?.let { encryptor.decrypt(EncryptedToken(it)).value }
             ?: run {
                 repo.updateStatus(source.id, ContentSourceStatus.EXPIRED, "missing refresh_token")
                 throw ContentSourceExpiredException("missing refresh_token")
             }
         try {
             val resp = oauth.refresh(refreshToken)
-            val newAccessEnc = encryptor.encrypt(resp.accessToken)
-            val newRefreshEnc = resp.refreshToken?.let(encryptor::encrypt)
+            val newAccessEnc = encryptor.encrypt(PlainToken(resp.accessToken)).value
+            val newRefreshEnc = resp.refreshToken?.let { encryptor.encrypt(PlainToken(it)).value }
             val newExpiresAt = Instant.now().plusSeconds(resp.expiresIn.toLong())
             repo.updateTokens(source.id, newAccessEnc, newRefreshEnc, newExpiresAt)
             return resp.accessToken

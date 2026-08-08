@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "팬 펀딩", description = "팬 펀딩 수익 추적 및 목표 관리")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/fan-funding")
 class FanFundingController(

@@ -1,6 +1,8 @@
 package com.ongo.infrastructure.security
 
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.channel.EncryptedToken
+import com.ongo.domain.channel.PlainToken
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.util.Base64
@@ -24,23 +26,23 @@ class TokenEncryptionService(
         keySpec = SecretKeySpec(keyBytes, "AES")
     }
 
-    override fun encrypt(plainText: String): String {
+    override fun encrypt(plainText: PlainToken): EncryptedToken {
         val cipher = Cipher.getInstance(algorithm)
         val iv = ByteArray(ivLength)
         SecureRandom().nextBytes(iv)
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, GCMParameterSpec(gcmTagLength, iv))
-        val encrypted = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
+        val encrypted = cipher.doFinal(plainText.value.toByteArray(Charsets.UTF_8))
         val combined = iv + encrypted
-        return Base64.getEncoder().encodeToString(combined)
+        return EncryptedToken(Base64.getEncoder().encodeToString(combined))
     }
 
-    override fun decrypt(cipherText: String): String {
-        val combined = Base64.getDecoder().decode(cipherText)
+    override fun decrypt(cipherText: EncryptedToken): PlainToken {
+        val combined = Base64.getDecoder().decode(cipherText.value)
         val iv = combined.copyOfRange(0, ivLength)
         val encrypted = combined.copyOfRange(ivLength, combined.size)
         val cipher = Cipher.getInstance(algorithm)
         cipher.init(Cipher.DECRYPT_MODE, keySpec, GCMParameterSpec(gcmTagLength, iv))
         val decrypted = cipher.doFinal(encrypted)
-        return String(decrypted, Charsets.UTF_8)
+        return PlainToken(String(decrypted, Charsets.UTF_8))
     }
 }

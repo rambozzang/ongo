@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class CreatorMilestoneUseCase(
     private val milestoneRepository: CreatorMilestoneRepository,

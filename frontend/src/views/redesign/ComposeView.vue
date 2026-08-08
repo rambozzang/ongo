@@ -100,13 +100,13 @@
             type="button"
             class="flex items-center gap-2 rounded-md border px-2.5 py-2 transition-colors"
             :class="
-              isOn(opt.code)
+              isOn(opt.channel.id)
                 ? 'border-line-hover'
                 : 'border-line bg-transparent text-content-tertiary hover:border-line-hover'
             "
-            :style="isOn(opt.code) ? onChipStyle(opt.code) : undefined"
-            :aria-pressed="isOn(opt.code)"
-            @click="toggle(opt.code)"
+            :style="isOn(opt.channel.id) ? onChipStyle(opt.code) : undefined"
+            :aria-pressed="isOn(opt.channel.id)"
+            @click="toggle(opt.channel.id)"
           >
             <span class="h-[7px] w-[7px] shrink-0" :style="{ background: 'currentColor' }" />
             <span class="text-[12px] font-semibold">{{ opt.label }}</span>
@@ -162,7 +162,17 @@
         <div class="p-[15px]">
           <div class="flex items-center justify-between gap-2">
             <label class="block text-[11.5px] text-content-secondary">{{ t('redesign.compose.title') }}</label>
-            <span v-if="metadataGenerating" class="text-[10px] text-accent">{{ t('redesign.compose.metadataGenerating') }}</span>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="activeTab !== 'common'"
+                type="button"
+                class="text-[10px] font-semibold text-accent hover:underline"
+                @click="applyCommonToPlatforms"
+              >
+                {{ t('redesign.compose.applyCommon') }}
+              </button>
+              <span v-if="metadataGenerating" class="text-[10px] text-accent">{{ t('redesign.compose.metadataGenerating') }}</span>
+            </div>
           </div>
           <div class="mt-1.5 flex items-center gap-2">
             <input v-model="activeDraft.title" type="text" class="input-field !text-[12.5px]" />
@@ -175,11 +185,17 @@
             {{ t('redesign.compose.description') }}
           </label>
           <textarea v-model="activeDraft.description" class="input-field mt-1.5 min-h-[92px] !text-[12.5px]" />
+          <div class="mt-1 text-right font-mono text-[10px]" :class="descriptionOver ? 'text-bad' : 'text-content-tertiary'">
+            {{ activeDraft.description.length }} / {{ descriptionLimit || '∞' }}
+          </div>
 
           <label class="mt-3.5 block text-[11.5px] text-content-secondary">
             {{ t('redesign.compose.hashtags') }}
           </label>
           <textarea v-model="activeDraft.hashtags" class="input-field mt-1.5 min-h-[62px] !text-[12.5px] !text-accent" />
+          <div class="mt-1 text-right font-mono text-[10px]" :class="tagsOver ? 'text-bad' : 'text-content-tertiary'">
+            {{ hashtagCount }} / {{ tagLimit || '∞' }}
+          </div>
 
           <!-- 규칙 경고는 발행 시점이 아니라 입력 시점에 뜬다 -->
           <div
@@ -302,7 +318,7 @@ import { ugcShortsPipelineApi, type PipelineRunDetailResponse } from '@/api/ugcS
 import { useUploadStore } from '@/stores/upload'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Channel, Platform } from '@/types/channel'
-import type { PlatformPublishConfig } from '@/types/video'
+import type { PlatformPublishConfig, PlatformUploadCapability } from '@/types/video'
 
 /**
  * 새 업로드 — 파일 → 대상 → 문구 → 예약을 화면 이동 없이 한 번에.
@@ -337,7 +353,7 @@ const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
 }
 
 /** 플랫폼별 제목 상한. 핸드오프 검증 규칙. */
-const TITLE_LIMIT: Record<string, number> = { common: 100, YT: 100, IG: 2200, TT: 150, NV: 100 }
+const TITLE_LIMIT: Record<string, number> = { common: 100, YT: 100, IG: 2200, TT: 2200, FB: 255, NV: 100, TH: 500 }
 /** TikTok 은 해시태그 5개까지만 반영된다. */
 const TIKTOK_HASHTAG_LIMIT = 5
 
@@ -363,9 +379,10 @@ const shortsStatus = ref('')
 const notice = ref('')
 
 const channels = ref<Channel[]>([])
-const disabled = reactive<Record<string, boolean>>({})
-const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'NV'>('common')
-const previewPlatform = ref<'Instagram' | 'TikTok' | 'YouTube'>('Instagram')
+const capabilities = ref<PlatformUploadCapability[]>([])
+const disabled = reactive<Record<number, boolean>>({})
+const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'>('common')
+const previewPlatform = ref<'Instagram' | 'TikTok' | 'YouTube' | 'Facebook' | 'Naver Clip' | 'Threads'>('Instagram')
 const schedMode = ref<'now' | 'best' | 'fix'>('best')
 const fixedAt = ref('')
 
@@ -390,9 +407,11 @@ const tabs = [
   { key: 'YT' as const, label: 'YouTube' },
   { key: 'IG' as const, label: 'Instagram' },
   { key: 'TT' as const, label: 'TikTok' },
+  { key: 'FB' as const, label: 'Facebook' },
   { key: 'NV' as const, label: 'Naver' },
+  { key: 'TH' as const, label: 'Threads' },
 ]
-const previewTabs = ['Instagram', 'TikTok', 'YouTube'] as const
+const previewTabs = ['Instagram', 'TikTok', 'YouTube', 'Facebook', 'Naver Clip', 'Threads'] as const
 
 const scheduleOptions = computed(() => [
   { key: 'now' as const, label: t('redesign.compose.schedNow'), hint: '' },
@@ -409,9 +428,9 @@ const platformOptions = computed(() =>
   })),
 )
 
-const isOn = (code: string) => !disabled[code]
-const toggle = (code: string) => {
-  disabled[code] = !disabled[code]
+const isOn = (channelId: number) => !disabled[channelId]
+const toggle = (channelId: number) => {
+  disabled[channelId] = !disabled[channelId]
 }
 const onChipStyle = (code: string) => {
   const v = CHIP_VARS[code as ChipCode] ?? CHIP_VARS.TH
@@ -419,7 +438,7 @@ const onChipStyle = (code: string) => {
 }
 
 const selectedChannels = computed(() =>
-  platformOptions.value.filter((o) => isOn(o.code)).map((o) => o.channel),
+  platformOptions.value.filter((o) => isOn(o.channel.id)).map((o) => o.channel),
 )
 const selectedCount = computed(() => selectedChannels.value.length)
 const shortsPlatforms = computed(() =>
@@ -429,7 +448,7 @@ const shortsPlatforms = computed(() =>
 )
 
 function platformForTab(tab: typeof activeTab.value): Platform | null {
-  return ({ YT: 'YOUTUBE', IG: 'INSTAGRAM', TT: 'TIKTOK', NV: 'NAVER_CLIP' } as Record<string, Platform>)[tab] ?? null
+  return ({ YT: 'YOUTUBE', IG: 'INSTAGRAM', TT: 'TIKTOK', FB: 'FACEBOOK', NV: 'NAVER_CLIP', TH: 'THREADS' } as Record<string, Platform>)[tab] ?? null
 }
 
 function draftFor(platform: Platform | null): FormDraft {
@@ -442,14 +461,27 @@ function draftFor(platform: Platform | null): FormDraft {
 
 const activeDraft = computed(() => draftFor(platformForTab(activeTab.value)))
 const previewDraft = computed(() => {
-  const platform = previewPlatform.value === 'Instagram'
-    ? 'INSTAGRAM'
-    : previewPlatform.value === 'TikTok' ? 'TIKTOK' : 'YOUTUBE'
+  const platform = ({
+    Instagram: 'INSTAGRAM',
+    TikTok: 'TIKTOK',
+    YouTube: 'YOUTUBE',
+    Facebook: 'FACEBOOK',
+    'Naver Clip': 'NAVER_CLIP',
+    Threads: 'THREADS',
+  } as Record<string, Platform>)[previewPlatform.value]
   return draftFor(platform)
 })
 
-const titleLimit = computed(() => TITLE_LIMIT[activeTab.value] ?? 100)
+const activeCapability = computed(() => {
+  const platform = platformForTab(activeTab.value)
+  return platform ? capabilities.value.find((item) => item.platform === platform) : null
+})
+const titleLimit = computed(() => activeCapability.value?.maxTitleLength ?? TITLE_LIMIT[activeTab.value] ?? 100)
+const descriptionLimit = computed(() => activeCapability.value?.maxDescriptionLength ?? 0)
+const tagLimit = computed(() => activeCapability.value?.maxTagCount ?? 0)
 const titleOver = computed(() => activeDraft.value.title.length > titleLimit.value)
+const descriptionOver = computed(() => descriptionLimit.value > 0 && activeDraft.value.description.length > descriptionLimit.value)
+const tagsOver = computed(() => tagLimit.value > 0 && hashtagCount.value > tagLimit.value)
 
 const fileMeta = computed(() => file.meta || t('redesign.compose.noFileMeta'))
 
@@ -460,12 +492,47 @@ const warnings = computed(() => {
   if (titleOver.value) {
     out.push(t('redesign.compose.warnTitleLength', { limit: titleLimit.value }))
   }
+  if (descriptionOver.value) {
+    out.push(t('redesign.compose.warnDescriptionLength', { limit: descriptionLimit.value }))
+  }
+  if (tagsOver.value) {
+    out.push(t('redesign.compose.warnTagCount', { limit: tagLimit.value }))
+  }
   const hasTikTok = selectedChannels.value.some((c) => c.platform === 'TIKTOK')
-  if (hasTikTok && hashtagCount.value > TIKTOK_HASHTAG_LIMIT) {
+  if (hasTikTok && hashtagCount.value > TIKTOK_HASHTAG_LIMIT && activeTab.value === 'common') {
     out.push(t('redesign.compose.warnTiktokHashtags', { limit: TIKTOK_HASHTAG_LIMIT }))
   }
   return out
 })
+
+const validationIssues = computed(() => {
+  const issues: string[] = []
+  for (const channel of selectedChannels.value) {
+    const capability = capabilities.value.find((item) => item.platform === channel.platform)
+    const draft = draftFor(channel.platform)
+    if (!capability) continue
+    if (draft.title.length > capability.maxTitleLength) {
+      issues.push(`${channel.channelName}: ${t('redesign.compose.warnTitleLength', { limit: capability.maxTitleLength })}`)
+    }
+    if (capability.maxDescriptionLength > 0 && draft.description.length > capability.maxDescriptionLength) {
+      issues.push(`${channel.channelName}: ${t('redesign.compose.warnDescriptionLength', { limit: capability.maxDescriptionLength })}`)
+    }
+    if (parseHashtags(draft.hashtags).length > capability.maxTagCount) {
+      issues.push(`${channel.channelName}: ${t('redesign.compose.warnTagCount', { limit: capability.maxTagCount })}`)
+    }
+  }
+  return issues
+})
+
+function applyCommonToPlatforms() {
+  for (const channel of selectedChannels.value) {
+    const draft = draftFor(channel.platform)
+    draft.title = form.title
+    draft.description = form.description
+    draft.hashtags = form.hashtags
+  }
+  notice.value = t('redesign.compose.commonApplied')
+}
 
 /** 만료 채널이 대상에 포함되면 예약을 막는다. */
 const blockedReason = computed(() => {
@@ -479,6 +546,7 @@ const blockedReason = computed(() => {
   if (shortsEnabled.value && shortsPlatforms.value.length === 0) {
     return t('redesign.compose.blockShortsTargets')
   }
+  if (validationIssues.value.length > 0) return validationIssues.value[0]
   return ''
 })
 
@@ -693,7 +761,7 @@ async function submit() {
       return {
         platform: ch.platform,
         title: draft.title,
-        description: [draft.description, draft.hashtags].filter(Boolean).join('\n\n'),
+        description: draft.description,
         tags: parseHashtags(draft.hashtags),
         visibility: 'PUBLIC' as const,
         scheduledAt: scheduledAtFor(index),
@@ -860,6 +928,11 @@ onMounted(async () => {
     channels.value = (await channelApi.list())?.channels ?? []
   } catch {
     channels.value = []
+  }
+  try {
+    capabilities.value = await videoApi.getUploadCapabilities()
+  } catch {
+    capabilities.value = []
   }
   try {
     importAvailability.value = await videoApi.getImportAvailability()

@@ -10,6 +10,8 @@ import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.channel.EncryptedToken
+import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.subscription.Subscription
@@ -85,7 +87,7 @@ class StreamPublishUseCaseTest {
         mockkStatic(TransactionSynchronizationManager::class)
         every { TransactionSynchronizationManager.isActualTransactionActive() } returns true
         every { TransactionSynchronizationManager.registerSynchronization(any()) } just Runs
-        every { tokenEncryptionPort.decrypt(any()) } answers { invocation.args[0] as String }
+        every { tokenEncryptionPort.decrypt(any()) } answers { PlainToken(firstArg<EncryptedToken>().value) }
     }
 
     @AfterEach
@@ -136,7 +138,7 @@ class StreamPublishUseCaseTest {
         platform = platform,
         platformChannelId = "UC_test_channel",
         channelName = "테스트 채널",
-        accessToken = "access-token-value",
+        accessToken = EncryptedToken("access-token-value"),
         status = ChannelStatus.ACTIVE,
     )
 

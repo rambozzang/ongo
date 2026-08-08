@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "성과 예측", description = "AI 기반 콘텐츠 성과 예측")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/predictions")
 class PredictionController(

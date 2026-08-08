@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { useNotificationStore } from '@/stores/notification'
 
 export interface AiUsageRecord {
   id: string
@@ -20,9 +19,6 @@ export interface AiPreset {
   description: string
   isDefault: boolean
 }
-
-const STORAGE_KEY_HISTORY = 'ongo_ai_history'
-const STORAGE_KEY_PRESETS = 'ongo_ai_presets'
 
 export const useAiHistoryStore = defineStore('aiHistory', () => {
   const history = ref<AiUsageRecord[]>([])
@@ -56,22 +52,6 @@ export const useAiHistoryStore = defineStore('aiHistory', () => {
         isDefault: true,
       },
       {
-        id: 'preset-4',
-        name: '썸네일 아이디어',
-        toolType: 'ideas',
-        prompt: '썸네일 디자인 아이디어를 제안해주세요. 클릭률을 높일 수 있는 구도와 텍스트 배치를 포함해주세요.',
-        description: '클릭률 높은 썸네일 디자인 아이디어',
-        isDefault: true,
-      },
-      {
-        id: 'preset-5',
-        name: '영상 스크립트 아웃라인',
-        toolType: 'ideas',
-        prompt: '10분 분량의 영상 스크립트 아웃라인을 작성해주세요. 도입-전개-결말 구조로 시청자 몰입도를 고려해주세요.',
-        description: '영상 스크립트 구조 아웃라인',
-        isDefault: true,
-      },
-      {
         id: 'preset-6',
         name: '주간 성과 분석',
         toolType: 'report',
@@ -82,45 +62,6 @@ export const useAiHistoryStore = defineStore('aiHistory', () => {
     ]
 
     presets.value = defaultPresets
-    savePresetsToStorage()
-  }
-
-  // Load from localStorage
-  function loadFromStorage() {
-    try {
-      const storedHistory = localStorage.getItem(STORAGE_KEY_HISTORY)
-      const storedPresets = localStorage.getItem(STORAGE_KEY_PRESETS)
-
-      if (storedHistory) {
-        history.value = JSON.parse(storedHistory)
-      }
-
-      if (storedPresets) {
-        presets.value = JSON.parse(storedPresets)
-      } else {
-        initializeDefaultPresets()
-      }
-    } catch (e) {
-      useNotificationStore().error('AI 히스토리 처리 중 오류가 발생했습니다')
-      initializeDefaultPresets()
-    }
-  }
-
-  // Save to localStorage
-  function saveHistoryToStorage() {
-    try {
-      localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history.value))
-    } catch (e) {
-      useNotificationStore().error('AI 히스토리 처리 중 오류가 발생했습니다')
-    }
-  }
-
-  function savePresetsToStorage() {
-    try {
-      localStorage.setItem(STORAGE_KEY_PRESETS, JSON.stringify(presets.value))
-    } catch (e) {
-      useNotificationStore().error('AI 히스토리 처리 중 오류가 발생했습니다')
-    }
   }
 
   // History actions
@@ -132,25 +73,21 @@ export const useAiHistoryStore = defineStore('aiHistory', () => {
       isFavorite: false,
     }
     history.value.unshift(newRecord) // Add to the beginning
-    saveHistoryToStorage()
   }
 
   function removeRecord(id: string) {
     history.value = history.value.filter(r => r.id !== id)
-    saveHistoryToStorage()
   }
 
   function toggleFavorite(id: string) {
     const record = history.value.find(r => r.id === id)
     if (record) {
       record.isFavorite = !record.isFavorite
-      saveHistoryToStorage()
     }
   }
 
   function clearHistory() {
     history.value = []
-    saveHistoryToStorage()
   }
 
   // Preset actions
@@ -161,14 +98,12 @@ export const useAiHistoryStore = defineStore('aiHistory', () => {
       isDefault: false,
     }
     presets.value.push(newPreset)
-    savePresetsToStorage()
   }
 
   function updatePreset(id: string, updates: Partial<Omit<AiPreset, 'id' | 'isDefault'>>) {
     const preset = presets.value.find(p => p.id === id)
     if (preset && !preset.isDefault) {
       Object.assign(preset, updates)
-      savePresetsToStorage()
     }
   }
 
@@ -176,12 +111,12 @@ export const useAiHistoryStore = defineStore('aiHistory', () => {
     const preset = presets.value.find(p => p.id === id)
     if (preset && !preset.isDefault) {
       presets.value = presets.value.filter(p => p.id !== id)
-      savePresetsToStorage()
     }
   }
 
-  // Initialize on store creation
-  loadFromStorage()
+  // History and presets are server-owned features. Keep only the current session
+  // until the corresponding API endpoints are connected; never fake persistence.
+  initializeDefaultPresets()
 
   return {
     history,

@@ -51,7 +51,7 @@ class CommentSyncUseCase(
             if (!capabilities.canListComments) continue
 
             val accessToken = try {
-                tokenEncryptionPort.decrypt(channel.accessToken)
+                tokenEncryptionPort.decrypt(channel.accessToken).value
             } catch (e: Exception) {
                 errors.add("${platform.name}: 토큰 복호화 실패")
                 continue

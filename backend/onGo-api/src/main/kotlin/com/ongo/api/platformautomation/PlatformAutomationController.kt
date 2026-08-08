@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "플랫폼 자동화", description = "플랫폼별 자동 게시 규칙 관리")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/platform-automation")
 class PlatformAutomationController(

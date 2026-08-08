@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "비주얼 워크플로우", description = "비주얼 워크플로우 빌더")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/workflows")
 class VisualWorkflowController(

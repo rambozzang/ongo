@@ -13,8 +13,6 @@ import type {
   GenerateReplyResponse,
   SuggestScheduleRequest,
   SuggestScheduleResponse,
-  GenerateIdeasRequest,
-  GenerateIdeasResponse,
   GenerateReportRequest,
   GenerateReportResponse,
   AiPipelineRequest,
@@ -62,12 +60,6 @@ export const aiApi = {
   suggestSchedule(request: SuggestScheduleRequest) {
     return apiClient
       .post<ResData<SuggestScheduleResponse>>('/ai/suggest-schedule', request)
-      .then(unwrapResponse)
-  },
-
-  generateIdeas(request: GenerateIdeasRequest) {
-    return apiClient
-      .post<ResData<GenerateIdeasResponse>>('/ai/generate-ideas', request)
       .then(unwrapResponse)
   },
 

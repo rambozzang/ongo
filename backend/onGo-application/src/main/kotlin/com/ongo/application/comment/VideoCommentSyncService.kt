@@ -47,7 +47,7 @@ class VideoCommentSyncService(
         val token = accessToken ?: run {
             val channel = channelRepository.findByUserIdAndPlatform(userId, platform)
                 ?: throw IllegalStateException("채널을 찾을 수 없습니다: $platform")
-            tokenEncryptionPort.decrypt(channel.accessToken)
+            tokenEncryptionPort.decrypt(channel.accessToken).value
         }
 
         // Incremental sync: 마지막 동기화 시간 이후의 댓글만 조회

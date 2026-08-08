@@ -10,7 +10,7 @@ import com.ongo.domain.platformautomation.AutomationRuleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class PlatformAutomationUseCase(
     private val ruleRepository: AutomationRuleRepository,

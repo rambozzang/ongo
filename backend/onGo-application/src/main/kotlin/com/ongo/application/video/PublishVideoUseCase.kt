@@ -44,9 +44,8 @@ class PublishVideoUseCase(
                 require(capability.directVideoUpload || capability.cloudVideoUpload) {
                     capability.unavailableReason ?: "${config.platform} 영상 게시를 지원하지 않습니다."
                 }
-                require(config.scheduledAt == null || capability.scheduling) {
-                    "${config.platform}은(는) API 예약 게시를 지원하지 않습니다."
-                }
+                // 예약은 플랫폼 native scheduler가 아니라 onGo durable queue가 처리한다.
+                // native scheduling=false인 채널도 같은 시각에 게시할 수 있다.
                 require(config.title.length <= capability.maxTitleLength) {
                     "${config.platform} 제목은 ${capability.maxTitleLength}자까지 입력할 수 있습니다."
                 }
@@ -85,6 +84,7 @@ class PublishVideoUseCase(
                     videoId = videoId,
                     platform = config.platform,
                     status = UploadStatus.UPLOADING,
+                    scheduledAt = config.scheduledAt,
                 )
             )
             val uploadId = upload.id!!

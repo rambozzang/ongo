@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "에이전시", description = "에이전시 워크스페이스 및 크리에이터 관리")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/agency")
 class AgencyController(

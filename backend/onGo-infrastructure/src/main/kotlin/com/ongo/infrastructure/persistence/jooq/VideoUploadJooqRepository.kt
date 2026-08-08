@@ -6,11 +6,18 @@ import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.ERROR_MESSAGE
+import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_ATTEMPT_COUNT
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
+import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_LAST_ERROR
+import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_LEASE_OWNER
+import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_LEASE_UNTIL
+import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_NEXT_RETRY_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.PLATFORM
 import com.ongo.infrastructure.persistence.jooq.Fields.PLATFORM_URL
 import com.ongo.infrastructure.persistence.jooq.Fields.PLATFORM_VIDEO_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.PUBLISHED_AT
+import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_POLL_TOKEN
+import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_SCHEDULED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.PLATFORM_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
@@ -20,6 +27,7 @@ import org.jooq.DSLContext
 import org.jooq.Record
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class VideoUploadJooqRepository(
@@ -71,7 +79,14 @@ class VideoUploadJooqRepository(
             DSL.field("video_uploads.platform_url", String::class.java).`as`("platform_url"),
             DSL.field("video_uploads.published_at", java.time.LocalDateTime::class.java).`as`("published_at"),
             DSL.field("video_uploads.created_at", java.time.LocalDateTime::class.java).`as`("created_at"),
-            DSL.field("video_uploads.updated_at", java.time.LocalDateTime::class.java).`as`("updated_at")
+            DSL.field("video_uploads.updated_at", java.time.LocalDateTime::class.java).`as`("updated_at"),
+            DSL.field("video_uploads.attempt_count", Int::class.java).`as`("attempt_count"),
+            DSL.field("video_uploads.next_retry_at", java.time.LocalDateTime::class.java).`as`("next_retry_at"),
+            DSL.field("video_uploads.lease_owner", String::class.java).`as`("lease_owner"),
+            DSL.field("video_uploads.lease_until", java.time.LocalDateTime::class.java).`as`("lease_until"),
+            DSL.field("video_uploads.poll_token", String::class.java).`as`("poll_token"),
+            DSL.field("video_uploads.last_error", String::class.java).`as`("last_error"),
+            DSL.field("video_uploads.scheduled_at", java.time.LocalDateTime::class.java).`as`("scheduled_at")
         )
             .from(VIDEO_UPLOADS)
             .join(Tables.VIDEOS).on(
@@ -92,6 +107,13 @@ class VideoUploadJooqRepository(
             .set(STATUS, upload.status.name)
             .set(ERROR_MESSAGE, upload.errorMessage)
             .set(PLATFORM_URL, upload.platformUrl)
+            .set(VIDEO_ATTEMPT_COUNT, upload.attemptCount)
+            .set(VIDEO_NEXT_RETRY_AT, upload.nextRetryAt)
+            .set(VIDEO_LEASE_OWNER, upload.leaseOwner)
+            .set(VIDEO_LEASE_UNTIL, upload.leaseUntil)
+            .set(VIDEO_POLL_TOKEN, upload.pollToken)
+            .set(VIDEO_LAST_ERROR, upload.lastError)
+            .set(VIDEO_SCHEDULED_AT, upload.scheduledAt)
             .set(PUBLISHED_AT, upload.publishedAt)
             .returningResult(ID)
             .fetchOne()!!
@@ -106,11 +128,38 @@ class VideoUploadJooqRepository(
             .set(STATUS, upload.status.name)
             .set(ERROR_MESSAGE, upload.errorMessage)
             .set(PLATFORM_URL, upload.platformUrl)
+            .set(VIDEO_ATTEMPT_COUNT, upload.attemptCount)
+            .set(VIDEO_NEXT_RETRY_AT, upload.nextRetryAt)
+            .set(VIDEO_LEASE_OWNER, upload.leaseOwner)
+            .set(VIDEO_LEASE_UNTIL, upload.leaseUntil)
+            .set(VIDEO_POLL_TOKEN, upload.pollToken)
+            .set(VIDEO_LAST_ERROR, upload.lastError)
+            .set(VIDEO_SCHEDULED_AT, upload.scheduledAt)
             .set(PUBLISHED_AT, upload.publishedAt)
             .where(ID.eq(upload.id))
             .execute()
 
         return findById(upload.id!!)!!
+    }
+
+    override fun updateOwned(upload: VideoUpload, owner: String): Boolean {
+        val changed = dsl.update(VIDEO_UPLOADS)
+            .set(PLATFORM_VIDEO_ID, upload.platformVideoId)
+            .set(STATUS, upload.status.name)
+            .set(ERROR_MESSAGE, upload.errorMessage)
+            .set(PLATFORM_URL, upload.platformUrl)
+            .set(VIDEO_ATTEMPT_COUNT, upload.attemptCount)
+            .set(VIDEO_NEXT_RETRY_AT, upload.nextRetryAt)
+            .set(VIDEO_LEASE_OWNER, upload.leaseOwner)
+            .set(VIDEO_LEASE_UNTIL, upload.leaseUntil)
+            .set(VIDEO_POLL_TOKEN, upload.pollToken)
+            .set(VIDEO_LAST_ERROR, upload.lastError)
+            .set(VIDEO_SCHEDULED_AT, upload.scheduledAt)
+            .set(PUBLISHED_AT, upload.publishedAt)
+            .where(ID.eq(upload.id))
+            .and(VIDEO_LEASE_OWNER.eq(owner))
+            .execute()
+        return changed == 1
     }
 
     override fun findByUserId(userId: Long): List<VideoUpload> =
@@ -124,7 +173,14 @@ class VideoUploadJooqRepository(
             DSL.field("video_uploads.platform_url", String::class.java).`as`("platform_url"),
             DSL.field("video_uploads.published_at", java.time.LocalDateTime::class.java).`as`("published_at"),
             DSL.field("video_uploads.created_at", java.time.LocalDateTime::class.java).`as`("created_at"),
-            DSL.field("video_uploads.updated_at", java.time.LocalDateTime::class.java).`as`("updated_at")
+            DSL.field("video_uploads.updated_at", java.time.LocalDateTime::class.java).`as`("updated_at"),
+            DSL.field("video_uploads.attempt_count", Int::class.java).`as`("attempt_count"),
+            DSL.field("video_uploads.next_retry_at", java.time.LocalDateTime::class.java).`as`("next_retry_at"),
+            DSL.field("video_uploads.lease_owner", String::class.java).`as`("lease_owner"),
+            DSL.field("video_uploads.lease_until", java.time.LocalDateTime::class.java).`as`("lease_until"),
+            DSL.field("video_uploads.poll_token", String::class.java).`as`("poll_token"),
+            DSL.field("video_uploads.last_error", String::class.java).`as`("last_error"),
+            DSL.field("video_uploads.scheduled_at", java.time.LocalDateTime::class.java).`as`("scheduled_at")
         )
             .from(VIDEO_UPLOADS)
             .join(Tables.VIDEOS).on(
@@ -148,6 +204,53 @@ class VideoUploadJooqRepository(
             .fetch()
             .map { it.toVideoUpload() }
 
+    override fun findDueScheduledUploads(now: LocalDateTime): List<VideoUpload> =
+        dsl.select()
+            .from(VIDEO_UPLOADS)
+            .where(VIDEO_SCHEDULED_AT.isNotNull.and(VIDEO_SCHEDULED_AT.le(now)))
+            .and(STATUS.eq(UploadStatus.UPLOADING.name))
+            .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
+            .orderBy(VIDEO_SCHEDULED_AT.asc())
+            .fetch()
+            .map { it.toVideoUpload() }
+
+    override fun claim(id: Long, owner: String, now: LocalDateTime, leaseUntil: LocalDateTime): VideoUpload? {
+        val changed = dsl.update(VIDEO_UPLOADS)
+            .set(VIDEO_LEASE_OWNER, owner)
+            .set(VIDEO_LEASE_UNTIL, leaseUntil)
+            .set(VIDEO_ATTEMPT_COUNT, VIDEO_ATTEMPT_COUNT.plus(1))
+            .where(ID.eq(id))
+            .and(STATUS.`in`(
+                UploadStatus.UPLOADING.name,
+                UploadStatus.PROCESSING.name,
+                UploadStatus.UNCONFIRMED.name,
+            ))
+            .and(VIDEO_NEXT_RETRY_AT.isNull.or(VIDEO_NEXT_RETRY_AT.le(now)))
+            .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
+            .execute()
+        return if (changed == 1) findById(id) else null
+    }
+
+    override fun recoverExpiredLeases(now: LocalDateTime): List<VideoUpload> {
+        val expired = dsl.select(ID)
+            .from(VIDEO_UPLOADS)
+            .where(VIDEO_LEASE_UNTIL.isNotNull.and(VIDEO_LEASE_UNTIL.lt(now)))
+            .and(STATUS.`in`(UploadStatus.UPLOADING.name, UploadStatus.PROCESSING.name))
+            .fetch(ID)
+        if (expired.isEmpty()) return emptyList()
+
+        dsl.update(VIDEO_UPLOADS)
+            .set(STATUS, UploadStatus.UNCONFIRMED.name)
+            .set(ERROR_MESSAGE, "작업 lease가 만료되어 게시 결과 확인이 필요합니다.")
+            .set(VIDEO_LAST_ERROR, "작업자 lease 만료: $now")
+            .set(VIDEO_LEASE_OWNER, null as String?)
+            .set(VIDEO_LEASE_UNTIL, null as LocalDateTime?)
+            .where(ID.`in`(expired))
+            .and(VIDEO_LEASE_UNTIL.isNotNull.and(VIDEO_LEASE_UNTIL.lt(now)))
+            .execute()
+        return expired.mapNotNull { findById(it) }
+    }
+
     private fun Record.toVideoUpload(): VideoUpload {
         val platformStr = get(PLATFORM) ?: "YOUTUBE"
         val statusStr = get(STATUS) ?: "DRAFT"
@@ -159,6 +262,13 @@ class VideoUploadJooqRepository(
             status = try { UploadStatus.valueOf(statusStr) } catch (_: Exception) { UploadStatus.DRAFT },
             errorMessage = get(ERROR_MESSAGE),
             platformUrl = get(PLATFORM_URL),
+            attemptCount = get(VIDEO_ATTEMPT_COUNT) ?: 0,
+            nextRetryAt = localDateTime(VIDEO_NEXT_RETRY_AT),
+            leaseOwner = get(VIDEO_LEASE_OWNER),
+            leaseUntil = localDateTime(VIDEO_LEASE_UNTIL),
+            pollToken = get(VIDEO_POLL_TOKEN),
+            lastError = get(VIDEO_LAST_ERROR),
+            scheduledAt = localDateTime(VIDEO_SCHEDULED_AT),
             publishedAt = localDateTime(PUBLISHED_AT),
             createdAt = localDateTime(CREATED_AT),
             updatedAt = localDateTime(UPDATED_AT),

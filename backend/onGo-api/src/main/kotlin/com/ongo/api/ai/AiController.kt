@@ -28,7 +28,6 @@ class AiController(
     private val analyzeScriptUseCase: AnalyzeScriptUseCase,
     private val generateReplyUseCase: GenerateReplyUseCase,
     private val suggestScheduleUseCase: SuggestScheduleUseCase,
-    private val generateIdeasUseCase: GenerateIdeasUseCase,
     private val generateReportUseCase: GenerateReportUseCase,
     private val aiPipelineUseCase: AiPipelineUseCase,
     private val weeklyDigestUseCase: WeeklyDigestUseCase,
@@ -232,41 +231,6 @@ class AiController(
                     time = it.time,
                     reason = it.reason,
                     expectedBoost = it.expectedBoost,
-                )
-            }
-        )
-        return ResData.success(response)
-    }
-
-    @Operation(
-        summary = "AI 콘텐츠 아이디어 생성 (5크레딧)",
-        description = "카테고리와 최근 업로드 영상 제목을 기반으로 새로운 콘텐츠 아이디어를 추천합니다. 예상 반응도와 난이도가 포함됩니다."
-    )
-    @ApiResponses(
-        ApiResponse(responseCode = "200", description = "아이디어 생성 성공"),
-        ApiResponse(responseCode = "400", description = "잘못된 요청"),
-        ApiResponse(responseCode = "401", description = "인증 실패"),
-        ApiResponse(responseCode = "500", description = "서버 오류")
-    )
-    @RequiresPermission(Permission.AI_USE)
-    @PostMapping("/generate-ideas")
-    fun generateIdeas(
-        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
-        @Valid @RequestBody request: GenerateIdeasRequest,
-    ): ResponseEntity<ResData<GenerateIdeasResponse>> {
-        val result = generateIdeasUseCase.execute(
-            userId = userId,
-            category = request.category,
-            recentTitles = request.recentTitles,
-        )
-
-        val response = GenerateIdeasResponse(
-            ideas = result.ideas.map {
-                GenerateIdeasResponse.ContentIdea(
-                    title = it.title,
-                    description = it.description,
-                    expectedReaction = it.expectedReaction,
-                    difficulty = it.difficulty,
                 )
             }
         )

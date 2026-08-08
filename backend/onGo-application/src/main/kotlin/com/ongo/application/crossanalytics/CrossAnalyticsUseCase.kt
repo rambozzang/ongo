@@ -16,7 +16,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class CrossAnalyticsUseCase(
     private val crossAnalyticsRepository: CrossAnalyticsRepository,

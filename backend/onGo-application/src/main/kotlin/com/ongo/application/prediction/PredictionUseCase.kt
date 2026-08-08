@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.math.RoundingMode
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class PredictionUseCase(
     private val predictionRepository: PredictionRepository,

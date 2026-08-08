@@ -1,6 +1,5 @@
 package com.ongo.application.scheduleoptimizer
 
-import org.springframework.context.annotation.Profile
 import com.ongo.application.ai.AiRateLimiter
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.PromptTemplates
@@ -18,7 +17,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-@Profile("wip")
 @Service
 class ScheduleOptimizerUseCase(
     private val slotRepository: OptimalSlotRepository,

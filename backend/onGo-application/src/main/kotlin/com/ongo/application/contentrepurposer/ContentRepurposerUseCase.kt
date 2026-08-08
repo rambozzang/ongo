@@ -5,7 +5,7 @@ import com.ongo.application.contentrepurposer.dto.*
 import com.ongo.domain.contentrepurposer.*
 import org.springframework.stereotype.Service
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class ContentRepurposerUseCase(
     private val jobRepository: RepurposeJobRepository,

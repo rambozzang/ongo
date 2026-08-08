@@ -9,7 +9,7 @@ import com.ongo.domain.contenttranslator.TranslationJobRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class ContentTranslatorUseCase(
     private val jobRepository: TranslationJobRepository,

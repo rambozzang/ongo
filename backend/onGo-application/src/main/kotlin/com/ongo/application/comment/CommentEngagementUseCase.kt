@@ -53,7 +53,7 @@ class CommentEngagementUseCase(
                         platform = platform,
                         platformCommentId = commentPlatformCommentId,
                         content = content,
-                        accessToken = accessToken,
+                        accessToken = accessToken.value,
                         platformVideoId = comment.platformVideoId,
                     )
                     if (result.success) {
@@ -99,7 +99,7 @@ class CommentEngagementUseCase(
                     val result = platformCommentPort.deleteComment(
                         platform = platform,
                         platformCommentId = delPlatformCommentId,
-                        accessToken = accessToken,
+                        accessToken = accessToken.value,
                     )
                     if (!result.success) {
                         throw com.ongo.common.exception.PlatformApiException(

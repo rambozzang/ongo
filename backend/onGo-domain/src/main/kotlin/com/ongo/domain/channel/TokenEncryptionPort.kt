@@ -5,6 +5,6 @@ package com.ongo.domain.channel
  * Implemented by infrastructure layer (TokenEncryptionService).
  */
 interface TokenEncryptionPort {
-    fun encrypt(plainText: String): String
-    fun decrypt(cipherText: String): String
+    fun encrypt(plainText: PlainToken): EncryptedToken
+    fun decrypt(cipherText: EncryptedToken): PlainToken
 }

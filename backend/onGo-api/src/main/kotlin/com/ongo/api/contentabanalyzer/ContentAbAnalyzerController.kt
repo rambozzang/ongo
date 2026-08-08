@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "콘텐츠 A/B 분석기", description = "콘텐츠 스타일 비교 분석")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/content-ab-analyzer")
 class ContentAbAnalyzerController(

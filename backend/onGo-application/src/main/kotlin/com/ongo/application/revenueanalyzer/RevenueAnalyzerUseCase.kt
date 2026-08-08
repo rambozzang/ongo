@@ -9,7 +9,7 @@ import com.ongo.domain.revenueanalyzer.RevenueStreamRepository
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class RevenueAnalyzerUseCase(
     private val streamRepository: RevenueStreamRepository,

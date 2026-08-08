@@ -1,6 +1,5 @@
 package com.ongo.api.scriptwriter
 
-import org.springframework.context.annotation.Profile
 import com.ongo.application.scriptwriter.ScriptWriterUseCase
 import com.ongo.application.scriptwriter.dto.*
 import com.ongo.common.ResData
@@ -12,7 +11,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "AI 스크립트 작성기", description = "AI 기반 영상 대본 생성 및 관리")
-@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/scripts")
 class ScriptWriterController(

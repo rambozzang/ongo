@@ -24,16 +24,6 @@ export const useRecycleStore = defineStore('recycle', () => {
   const recentRecycles = ref<RecycleRecord[]>([])
   const loading = ref(false)
 
-  // Load from localStorage on init
-  const storedRecycles = localStorage.getItem('recentRecycles')
-  if (storedRecycles) {
-    try {
-      recentRecycles.value = JSON.parse(storedRecycles)
-    } catch {
-      recentRecycles.value = []
-    }
-  }
-
   async function recycleVideo(videoId: number, metadata: RecycleMetadata): Promise<void> {
     loading.value = true
 
@@ -61,8 +51,6 @@ export const useRecycleStore = defineStore('recycle', () => {
         recentRecycles.value = recentRecycles.value.slice(0, 10)
       }
 
-      // Persist to localStorage
-      localStorage.setItem('recentRecycles', JSON.stringify(recentRecycles.value))
     } catch (error) {
       useNotificationStore().error('리사이클 처리 중 오류가 발생했습니다')
       throw error
@@ -73,7 +61,6 @@ export const useRecycleStore = defineStore('recycle', () => {
 
   function clearRecycleHistory() {
     recentRecycles.value = []
-    localStorage.removeItem('recentRecycles')
   }
 
   return {

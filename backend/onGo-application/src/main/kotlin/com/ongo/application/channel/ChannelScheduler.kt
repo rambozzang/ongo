@@ -5,6 +5,7 @@ import com.ongo.common.enums.Platform
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.notification.Notification
 import com.ongo.domain.notification.NotificationRepository
 import org.slf4j.LoggerFactory
@@ -34,7 +35,7 @@ class ChannelScheduler(
         val channels = channelRepository.findAllActive()
         channels.forEach { channel ->
             try {
-                val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
+                val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken).value
                 val info = platformClientPort.getChannelInfo(channel.platform, decryptedToken)
                 channelRepository.update(channel.copy(
                     channelName = info.channelName,
@@ -65,21 +66,21 @@ class ChannelScheduler(
         expiringSoon.forEach { channel ->
             try {
                 if (channel.platform == Platform.INSTAGRAM) {
-                    val decryptedAccessToken = tokenEncryptionPort.decrypt(channel.accessToken)
+                    val decryptedAccessToken = tokenEncryptionPort.decrypt(channel.accessToken).value
                     val newTokens = platformClientPort.refreshToken(channel.platform, decryptedAccessToken)
                     channelRepository.update(channel.copy(
-                        accessToken = tokenEncryptionPort.encrypt(newTokens.accessToken),
+                        accessToken = tokenEncryptionPort.encrypt(PlainToken(newTokens.accessToken)),
                         tokenExpiresAt = LocalDateTime.now().plusSeconds(newTokens.expiresIn),
                         updatedAt = LocalDateTime.now()
                     ))
                     log.info("토큰 갱신 성공 [${channel.platform}:${channel.id}]")
                 } else {
-                    val decryptedRefreshToken = channel.refreshToken?.let { tokenEncryptionPort.decrypt(it) }
+                    val decryptedRefreshToken = channel.refreshToken?.let { tokenEncryptionPort.decrypt(it).value }
                     if (decryptedRefreshToken != null) {
                         val newTokens = platformClientPort.refreshToken(channel.platform, decryptedRefreshToken)
                         channelRepository.update(channel.copy(
-                            accessToken = tokenEncryptionPort.encrypt(newTokens.accessToken),
-                            refreshToken = newTokens.refreshToken?.let { tokenEncryptionPort.encrypt(it) }
+                            accessToken = tokenEncryptionPort.encrypt(PlainToken(newTokens.accessToken)),
+                            refreshToken = newTokens.refreshToken?.let { tokenEncryptionPort.encrypt(PlainToken(it)) }
                                 ?: channel.refreshToken,
                             tokenExpiresAt = LocalDateTime.now().plusSeconds(newTokens.expiresIn),
                             updatedAt = LocalDateTime.now()

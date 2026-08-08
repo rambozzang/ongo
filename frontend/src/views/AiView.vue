@@ -355,80 +355,6 @@
               </div>
             </template>
 
-            <!-- 7. 콘텐츠 아이디어 -->
-            <template v-else-if="selectedTool.id === 'ideas'">
-              <div v-if="!aiStore.ideasResult" class="relative space-y-4">
-                <AiLoadingOverlay
-                  :visible="aiStore.loading"
-                  stage="generating"
-                  type="insight"
-                />
-
-                <div>
-                  <label class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">{{ $t('aiView.form.category') }}</label>
-                  <select v-model="ideasForm.category" class="input-field" :disabled="aiStore.loading">
-                    <option value="">{{ $t('aiView.form.select') }}</option>
-                    <option v-for="cat in categories" :key="cat" :value="cat">
-                      {{ cat }}
-                    </option>
-                  </select>
-                </div>
-                <div class="flex justify-end gap-3 pt-2">
-                  <button class="btn-secondary" :disabled="aiStore.loading" @click="closeTool">{{ $t('aiView.form.cancel') }}</button>
-                  <button
-                    class="btn-primary inline-flex items-center gap-2"
-                    :disabled="!ideasForm.category || aiStore.loading"
-                    @click="submitIdeas"
-                  >
-                    <LightBulbIcon class="h-4 w-4" />
-                    {{ $t('aiView.form.generateIdea') }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Ideas Results -->
-              <div v-else class="space-y-3">
-                <div
-                  v-for="(idea, idx) in aiStore.ideasResult.ideas"
-                  :key="idx"
-                  class="rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-                  :style="{ animationDelay: `${idx * 150}ms` }"
-                  style="animation: ai-item-fade-in 500ms ease-out backwards"
-                >
-                  <div class="mb-2 flex items-start justify-between">
-                    <h4 class="font-medium text-gray-900 dark:text-gray-100">
-                      <AiTypingEffect v-if="idx === 0" :text="idea.title" :speed="25" />
-                      <span v-else>{{ idea.title }}</span>
-                    </h4>
-                    <span
-                      class="ml-2 shrink-0 rounded-full px-2 py-0.5 text-caption"
-                      :class="idea.difficulty === 'EASY'
-                        ? 'bg-success-subtle text-success-strong'
-                        : idea.difficulty === 'MEDIUM'
-                          ? 'bg-warning-subtle text-warning-strong'
-                          : 'bg-error-subtle text-error-strong'"
-                    >
-                      {{ idea.difficulty }}
-                    </span>
-                  </div>
-                  <p class="mb-2 text-body text-gray-600 dark:text-gray-300">{{ idea.description }}</p>
-                  <p class="text-body-xs text-gray-400 dark:text-gray-500">
-                    {{ $t('aiView.expectedReaction') }}: {{ idea.expectedReaction }}
-                  </p>
-                </div>
-
-                <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
-                  <p class="text-body-xs text-gray-500 dark:text-gray-400">
-                    {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.ideasResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.ideasResult.creditsRemaining }}
-                  </p>
-                  <div class="flex gap-3">
-                    <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
-                    <button class="btn-primary" @click="resetTool">{{ $t('aiView.results.regenerate') }}</button>
-                  </div>
-                </div>
-              </div>
-            </template>
-
             <!-- 8. 성과 리포트 -->
             <template v-else-if="selectedTool.id === 'report'">
               <div v-if="!aiStore.reportResult" class="relative space-y-4">
@@ -813,7 +739,6 @@ import {
   DocumentMagnifyingGlassIcon,
   ChatBubbleLeftRightIcon,
   ClockIcon,
-  LightBulbIcon,
   ChartBarIcon,
   XMarkIcon,
   RocketLaunchIcon,
@@ -917,15 +842,6 @@ const aiTools: AiTool[] = [
     iconColor: 'text-cyan-600 dark:text-cyan-400',
   },
   {
-    id: 'ideas',
-    name: '콘텐츠 아이디어',
-    credits: 5,
-    description: '트렌드 기반 다음 영상 주제 5개 + 예상 반응',
-    icon: LightBulbIcon,
-    iconBg: 'bg-yellow-100 dark:bg-yellow-900/30',
-    iconColor: 'text-yellow-600 dark:text-yellow-400',
-  },
-  {
     id: 'report',
     name: '성과 리포트',
     credits: 8,
@@ -1023,10 +939,6 @@ const hashtagForm = ref({
   platforms: [] as Platform[],
 })
 
-const ideasForm = ref({
-  category: '',
-})
-
 const reportForm = ref({
   period: '7d' as '7d' | '30d',
 })
@@ -1109,7 +1021,6 @@ function resetTool() {
 function resetForms() {
   metaForm.value = { script: '', platforms: [], tone: 'FRIENDLY', category: '' }
   hashtagForm.value = { title: '', category: '', platforms: [] }
-  ideasForm.value = { category: '' }
   reportForm.value = { period: '7d' }
   strategyCoachForm.value = { includeCompetitors: true, focusArea: '' }
   revenueReportForm.value = { period: '30d' }
@@ -1130,8 +1041,6 @@ function handlePresetSelected(preset: AiPreset) {
       metaForm.value.script = preset.prompt
     } else if (preset.toolType === 'hashtags') {
       hashtagForm.value.title = preset.prompt
-    } else if (preset.toolType === 'ideas') {
-      ideasForm.value.category = preset.prompt
     }
   }
 }
@@ -1198,35 +1107,6 @@ async function submitHashtags() {
         prompt: hashtagForm.value.title,
         result: `#${sampleTags} 외 다수`,
         creditsUsed: 3,
-      })
-    }
-  } catch {
-    // Error is handled by the store
-  }
-}
-
-async function submitIdeas() {
-  const canUse = await checkAndUse(5, '콘텐츠 아이디어')
-  if (!canUse) {
-    selectedTool.value = null
-    requiredCredits.value = 5
-    selectedPackage.value = null
-    showCreditModal.value = true
-    return
-  }
-
-  try {
-    const result = await aiStore.generateIdeas(ideasForm.value.category)
-    await fetchBalance()
-
-    // Add to history
-    if (result) {
-      const ideaTitles = result.ideas.map(idea => idea.title).join(' / ')
-      aiHistoryStore.addRecord({
-        toolType: '콘텐츠 아이디어',
-        prompt: ideasForm.value.category,
-        result: ideaTitles,
-        creditsUsed: 5,
       })
     }
   } catch {

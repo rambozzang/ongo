@@ -13,6 +13,7 @@ import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.channel.PlatformOAuth2Port
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.user.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -81,8 +82,8 @@ class ChannelUseCase(
         val channelInfo = platformClientPort.getChannelInfo(platform, tokenResult.accessToken)
 
         // 토큰 암호화
-        val encryptedToken = tokenEncryptionPort.encrypt(tokenResult.accessToken)
-        val encryptedRefresh = tokenResult.refreshToken?.let { rt: String -> tokenEncryptionPort.encrypt(rt) }
+        val encryptedToken = tokenEncryptionPort.encrypt(PlainToken(tokenResult.accessToken))
+        val encryptedRefresh = tokenResult.refreshToken?.let { rt: String -> tokenEncryptionPort.encrypt(PlainToken(rt)) }
         val expiresAt = LocalDateTime.now().plusSeconds(tokenResult.expiresIn)
 
         // 기존 EXPIRED/REVOKED 채널이 있으면 재연동 (업데이트)
@@ -134,7 +135,7 @@ class ChannelUseCase(
         // 플랫폼 OAuth 토큰 폐기
         try {
             val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
-            platformClientPort.revokeToken(channel.platform, decryptedToken)
+            platformClientPort.revokeToken(channel.platform, decryptedToken.value)
             log.info("플랫폼 토큰 폐기 완료: platform={}, channelId={}", channel.platform, channelId)
         } catch (e: Exception) {
             log.warn("플랫폼 토큰 폐기 실패 (계속 진행): platform={}, error={}", channel.platform, e.message)
@@ -152,7 +153,7 @@ class ChannelUseCase(
         if (channel.userId != userId) throw ForbiddenException("해당 채널에 대한 권한이 없습니다")
 
         val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
-        val info = platformClientPort.getChannelInfo(channel.platform, decryptedToken)
+        val info = platformClientPort.getChannelInfo(channel.platform, decryptedToken.value)
 
         val updated = channel.copy(
             channelName = info.channelName,

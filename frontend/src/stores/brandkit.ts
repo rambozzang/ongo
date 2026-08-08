@@ -4,8 +4,6 @@ import { brandKitApi } from '@/api/brandkit'
 import { useNotificationStore } from '@/stores/notification'
 import type { BrandKit, BrandColor, BrandFont, BrandAsset } from '@/types/brandkit'
 
-const STORAGE_KEY = 'ongo_brandkit'
-
 const emptyBrandKit = (): BrandKit => ({
   id: '',
   name: '',
@@ -22,10 +20,6 @@ export const useBrandKitStore = defineStore('brandkit', () => {
   const brandKit = ref<BrandKit>(emptyBrandKit())
   const isDirty = ref(false)
   const loading = ref(false)
-
-  function saveToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(brandKit.value))
-  }
 
   async function fetchBrandKits() {
     loading.value = true
@@ -53,6 +47,7 @@ export const useBrandKitStore = defineStore('brandkit', () => {
       }
     } catch (e) {
       useNotificationStore().error('브랜드킷 저장 중 오류가 발생했습니다')
+      throw e
     } finally {
       loading.value = false
     }
@@ -142,8 +137,8 @@ export const useBrandKitStore = defineStore('brandkit', () => {
       }
     } catch (e) {
       useNotificationStore().error('브랜드킷 저장 중 오류가 발생했습니다')
+      throw e
     }
-    saveToStorage()
     isDirty.value = false
   }
 

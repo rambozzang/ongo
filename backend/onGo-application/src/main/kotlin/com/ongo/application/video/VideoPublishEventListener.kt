@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
 import java.time.LocalDateTime
+import java.util.UUID
 
 @Component
 class VideoPublishEventListener(
@@ -29,13 +30,17 @@ class VideoPublishEventListener(
             event.platformConfigs.map { it.platform })
 
         // Virtual Thread 기반 병렬 업로드 (Semaphore로 동시 실행 제한)
+        val leaseOwner = "publish:${event.videoId}:${UUID.randomUUID()}"
         ExecutorConfig.newVirtualExecutor().use { executor ->
             val futures = event.platformConfigs.map { config ->
                 executor.submit<Unit> {
                     ExecutorConfig.uploadSemaphore.acquire()
+                    val platformSemaphore = ExecutorConfig.platformUploadSemaphore(config.platform)
+                    platformSemaphore.acquire()
                     try {
-                        uploadToPlatform(event, config)
+                        uploadToPlatform(event, config, leaseOwner)
                     } finally {
+                        platformSemaphore.release()
                         ExecutorConfig.uploadSemaphore.release()
                     }
                 }
@@ -55,7 +60,11 @@ class VideoPublishEventListener(
         updateOverallVideoStatus(event.videoId)
     }
 
-    private fun uploadToPlatform(event: VideoPublishEvent, config: PlatformUploadConfig) {
+    private fun uploadToPlatform(event: VideoPublishEvent, config: PlatformUploadConfig, leaseOwner: String) {
+        if (config.scheduledAt?.isAfter(LocalDateTime.now()) == true) {
+            log.debug("예약 시각 전이라 외부 게시를 보류합니다: videoId={}, platform={}, scheduledAt={}", event.videoId, config.platform, config.scheduledAt)
+            return
+        }
         val service = platformUploadServices.find { it.supports(config.platform) }
         if (service == null) {
             log.error("플랫폼 {} 에 대한 업로드 서비스를 찾을 수 없습니다", config.platform)
@@ -68,10 +77,21 @@ class VideoPublishEventListener(
             return
         }
 
+        val claimed = videoUploadRepository.claim(
+            id = config.videoUploadId,
+            owner = leaseOwner,
+            now = LocalDateTime.now(),
+            leaseUntil = LocalDateTime.now().plusMinutes(30),
+        )
+        if (claimed == null) {
+            log.warn("플랫폼 {} 업로드 lease 획득 실패, 중복 작업을 건너뜁니다: videoUploadId={}", config.platform, config.videoUploadId)
+            return
+        }
+
         val fileUrl = event.fileUrl
         if (fileUrl == null) {
             log.warn("영상 {} 에 fileUrl이 없어 플랫폼 업로드를 건너뜁니다 (스트리밍 업로드)", event.videoId)
-            updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, "파일 URL이 없습니다. 스트리밍 방식으로 업로드된 영상입니다.")
+            updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, "파일 URL이 없습니다. 스트리밍 방식으로 업로드된 영상입니다.", leaseOwner = leaseOwner)
             return
         }
 
@@ -79,28 +99,42 @@ class VideoPublishEventListener(
             log.info("플랫폼 {} 업로드 시작: videoId={}", config.platform, event.videoId)
             val result = service.upload(config, fileUrl, event.userId)
 
-            if (result.success) {
-                // 플랫폼이 게시를 확정했으면 PUBLISHED 로 끝낸다. 확정 신호가 없는
-                // 플랫폼만 PROCESSING 에 남아 후속 확인을 기다린다.
-                updateUploadStatus(
-                    config.videoUploadId,
-                    if (result.published) UploadStatus.PUBLISHED else UploadStatus.PROCESSING,
-                    platformVideoId = result.platformVideoId,
-                    platformUrl = result.platformUrl,
-                )
-                fireCompletedEvent(event, config.platform, true, platformUrl = result.platformUrl)
-                log.info("플랫폼 {} 업로드 성공: videoId={}, platformUrl={}", config.platform, event.videoId, result.platformUrl)
-            } else {
-                updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, result.errorMessage)
-                fireCompletedEvent(event, config.platform, false, errorMessage = result.errorMessage)
-                log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", config.platform, event.videoId, result.errorMessage)
+            when (val outcome = result.toPublishOutcome()) {
+                is PublishOutcome.Published -> {
+                    updateUploadStatus(
+                        config.videoUploadId,
+                        UploadStatus.PUBLISHED,
+                        platformVideoId = outcome.platformVideoId,
+                        platformUrl = outcome.platformUrl,
+                        leaseOwner = leaseOwner,
+                    )
+                    fireCompletedEvent(event, config.platform, true, platformUrl = outcome.platformUrl)
+                    log.info("플랫폼 {} 업로드 성공: videoId={}, platformUrl={}", config.platform, event.videoId, outcome.platformUrl)
+                }
+                is PublishOutcome.Accepted -> {
+                    updateUploadStatus(
+                        config.videoUploadId,
+                        UploadStatus.PROCESSING,
+                        platformVideoId = outcome.platformVideoId,
+                        platformUrl = result.platformUrl,
+                        pollToken = outcome.pollToken,
+                        leaseOwner = leaseOwner,
+                    )
+                    fireCompletedEvent(event, config.platform, true, platformUrl = result.platformUrl)
+                    log.info("플랫폼 {} 업로드 수락: videoId={}, 후속 상태 확인 예약", config.platform, event.videoId)
+                }
+                is PublishOutcome.Failed -> {
+                    updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, outcome.message, leaseOwner = leaseOwner)
+                    fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
+                    log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", config.platform, event.videoId, outcome.message)
+                }
             }
         } catch (e: Exception) {
             log.error("플랫폼 {} 업로드 중 예외 발생: videoId={}", config.platform, event.videoId, e)
             // 외부 플랫폼 호출은 타임아웃 시 이미 게시가 완료됐을 가능성이 있다.
             // 무조건 FAILED로 기록하면 사용자가 재시도하여 중복 게시를 만들 수 있으므로
             // 확인 불가 상태로 남기고, 후속 조회/운영 재검증 대상으로 보낸다.
-            updateUploadStatus(config.videoUploadId, UploadStatus.UNCONFIRMED, e.message)
+            updateUploadStatus(config.videoUploadId, UploadStatus.UNCONFIRMED, e.message, leaseOwner = leaseOwner)
             fireCompletedEvent(event, config.platform, false, errorMessage = "게시 결과 확인 필요: ${e.message}")
         }
     }
@@ -111,17 +145,27 @@ class VideoPublishEventListener(
         errorMessage: String? = null,
         platformVideoId: String? = null,
         platformUrl: String? = null,
+        pollToken: String? = null,
+        leaseOwner: String? = null,
     ) {
         val upload = videoUploadRepository.findById(uploadId) ?: return
-        videoUploadRepository.update(
-            upload.copy(
+        val updated = upload.copy(
                 status = status,
                 errorMessage = errorMessage,
                 platformVideoId = platformVideoId ?: upload.platformVideoId,
                 platformUrl = platformUrl ?: upload.platformUrl,
+                pollToken = pollToken ?: upload.pollToken,
+                leaseOwner = null,
+                leaseUntil = null,
+                nextRetryAt = null,
+                lastError = errorMessage,
                 publishedAt = if (status == UploadStatus.PUBLISHED) LocalDateTime.now() else upload.publishedAt,
             )
-        )
+        if (leaseOwner == null) {
+            videoUploadRepository.update(updated)
+        } else if (!videoUploadRepository.updateOwned(updated, leaseOwner)) {
+            log.warn("lease를 잃은 작업자의 결과 반영을 차단했습니다: uploadId={}, owner={}", uploadId, leaseOwner)
+        }
     }
 
     private fun updateOverallVideoStatus(videoId: Long) {

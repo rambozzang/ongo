@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "팬 세그먼트 캠페인", description = "팬 세그먼트별 맞춤 캠페인 관리")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/fan-segment-campaigns")
 class FanSegmentCampaignController(

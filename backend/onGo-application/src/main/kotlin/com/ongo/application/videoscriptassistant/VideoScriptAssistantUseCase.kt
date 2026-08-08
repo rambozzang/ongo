@@ -9,7 +9,7 @@ import com.ongo.domain.videoscriptassistant.VideoScriptRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class VideoScriptAssistantUseCase(
     private val scriptRepository: VideoScriptRepository,

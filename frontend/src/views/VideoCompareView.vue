@@ -168,9 +168,16 @@
       :description="$t('videoCompare.emptyDescription')"
       :icon="ArrowsRightLeftIcon"
     />
+    <div v-else-if="comparisonLoading" class="card py-16 text-center text-sm text-gray-500">
+      {{ $t('videoCompare.loading') }}
+    </div>
+    <div v-else-if="comparisonError" class="card py-16 text-center text-sm text-red-500">
+      {{ $t('videoCompare.error') }}
+      <button type="button" class="ml-2 underline" @click="loadComparison">{{ $t('action.retry') }}</button>
+    </div>
 
     <!-- Comparison Results -->
-    <template v-else>
+    <template v-else-if="comparisonA && comparisonB">
       <!-- Visual Comparison Chart -->
       <div class="card mb-6">
         <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $t('videoCompare.keyMetrics') }}</h2>
@@ -195,14 +202,14 @@
         />
         <MetricDifferenceCard
           :title="$t('videoCompare.comments')"
-          :value-a="mockCommentsA"
-          :value-b="mockCommentsB"
+          :value-a="comparisonA?.totalComments ?? 0"
+          :value-b="comparisonB?.totalComments ?? 0"
           :icon="ChatBubbleLeftIcon"
         />
         <MetricDifferenceCard
           :title="$t('videoCompare.engagementRate')"
-          :value-a="engagementRateA"
-          :value-b="engagementRateB"
+          :value-a="comparisonA?.engagementRate ?? 0"
+          :value-b="comparisonB?.engagementRate ?? 0"
           :icon="ChartBarIcon"
           is-percentage
         />
@@ -225,7 +232,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Bar } from 'vue-chartjs'
 import {
@@ -248,9 +255,10 @@ import {
   ArrowsRightLeftIcon,
 } from '@heroicons/vue/24/outline'
 import { useAnalyticsStore } from '@/stores/analytics'
+import { analyticsApi } from '@/api/analytics'
 import { useThemeStore } from '@/stores/theme'
 import { storeToRefs } from 'pinia'
-import type { TopVideo } from '@/types/analytics'
+import type { TopVideo, VideoCompareItem } from '@/types/analytics'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import VideoComparisonCard from '@/components/analytics/VideoComparisonCard.vue'
@@ -276,6 +284,11 @@ const showVideoADropdown = ref(false)
 const showVideoBDropdown = ref(false)
 const searchVideoA = ref('')
 const searchVideoB = ref('')
+const comparison = ref<VideoCompareItem[]>([])
+const comparisonLoading = ref(false)
+const comparisonError = ref(false)
+const comparisonA = computed(() => comparison.value.find((item) => item.videoId === selectedVideoA.value?.videoId) ?? null)
+const comparisonB = computed(() => comparison.value.find((item) => item.videoId === selectedVideoB.value?.videoId) ?? null)
 
 // Click outside directive
 interface ClickOutsideElement extends HTMLElement {
@@ -326,31 +339,27 @@ function selectVideoB(video: TopVideo) {
   searchVideoB.value = ''
 }
 
-// Mock data for comments (since not in TopVideo type)
-const mockCommentsA = computed(() => {
-  if (!selectedVideoA.value) return 0
-  return Math.floor(selectedVideoA.value.totalViews * 0.02)
-})
-
-const mockCommentsB = computed(() => {
-  if (!selectedVideoB.value) return 0
-  return Math.floor(selectedVideoB.value.totalViews * 0.02)
-})
-
-// Engagement rate calculation
-const engagementRateA = computed(() => {
-  if (!selectedVideoA.value || selectedVideoA.value.totalViews === 0) return 0
-  return Number(((selectedVideoA.value.totalLikes / selectedVideoA.value.totalViews) * 100).toFixed(2))
-})
-
-const engagementRateB = computed(() => {
-  if (!selectedVideoB.value || selectedVideoB.value.totalViews === 0) return 0
-  return Number(((selectedVideoB.value.totalLikes / selectedVideoB.value.totalViews) * 100).toFixed(2))
-})
+async function loadComparison() {
+  if (!selectedVideoA.value || !selectedVideoB.value) {
+    comparison.value = []
+    return
+  }
+  comparisonLoading.value = true
+  comparisonError.value = false
+  try {
+    const result = await analyticsApi.videoCompare([selectedVideoA.value.videoId, selectedVideoB.value.videoId])
+    comparison.value = result.videos
+  } catch {
+    comparison.value = []
+    comparisonError.value = true
+  } finally {
+    comparisonLoading.value = false
+  }
+}
 
 // Chart data
 const chartData = computed(() => {
-  if (!selectedVideoA.value || !selectedVideoB.value) {
+  if (!selectedVideoA.value || !selectedVideoB.value || !comparisonA.value || !comparisonB.value) {
     return { labels: [], datasets: [] }
   }
 
@@ -360,10 +369,10 @@ const chartData = computed(() => {
       {
         label: selectedVideoA.value.title.substring(0, 30) + '...',
         data: [
-          selectedVideoA.value.totalViews,
-          selectedVideoA.value.totalLikes,
-          mockCommentsA.value,
-          Math.floor(selectedVideoA.value.totalViews * 0.01),
+          comparisonA.value.totalViews,
+          comparisonA.value.totalLikes,
+          comparisonA.value.totalComments,
+          comparisonA.value.totalShares,
         ],
         backgroundColor: 'rgba(99, 102, 241, 0.8)',
         borderColor: 'rgb(99, 102, 241)',
@@ -372,10 +381,10 @@ const chartData = computed(() => {
       {
         label: selectedVideoB.value.title.substring(0, 30) + '...',
         data: [
-          selectedVideoB.value.totalViews,
-          selectedVideoB.value.totalLikes,
-          mockCommentsB.value,
-          Math.floor(selectedVideoB.value.totalViews * 0.01),
+          comparisonB.value.totalViews,
+          comparisonB.value.totalLikes,
+          comparisonB.value.totalComments,
+          comparisonB.value.totalShares,
         ],
         backgroundColor: 'rgba(245, 158, 11, 0.8)',
         borderColor: 'rgb(245, 158, 11)',
@@ -447,12 +456,16 @@ const chartOptions = computed(() => {
 
 // Comparison insights
 const comparisonInsights = computed(() => {
-  if (!selectedVideoA.value || !selectedVideoB.value) return []
+  if (!selectedVideoA.value || !selectedVideoB.value || !comparisonA.value || !comparisonB.value) return []
 
   const insights = []
-  const viewsDiff = ((selectedVideoA.value.totalViews - selectedVideoB.value.totalViews) / selectedVideoB.value.totalViews) * 100
-  const likesDiff = ((selectedVideoA.value.totalLikes - selectedVideoB.value.totalLikes) / selectedVideoB.value.totalLikes) * 100
-  const engagementDiff = engagementRateA.value - engagementRateB.value
+  const viewsDiff = comparisonB.value.totalViews === 0
+    ? (comparisonA.value.totalViews > 0 ? 100 : 0)
+    : ((comparisonA.value.totalViews - comparisonB.value.totalViews) / comparisonB.value.totalViews) * 100
+  const likesDiff = comparisonB.value.totalLikes === 0
+    ? (comparisonA.value.totalLikes > 0 ? 100 : 0)
+    : ((comparisonA.value.totalLikes - comparisonB.value.totalLikes) / comparisonB.value.totalLikes) * 100
+  const engagementDiff = comparisonA.value.engagementRate - comparisonB.value.engagementRate
 
   // Views comparison
   if (Math.abs(viewsDiff) > 5) {
@@ -478,7 +491,7 @@ const comparisonInsights = computed(() => {
   // Engagement rate comparison
   if (Math.abs(engagementDiff) > 0.1) {
     insights.push({
-      text: `영상 A의 참여율(${engagementRateA.value}%)이 영상 B(${engagementRateB.value}%)보다 ${engagementDiff > 0 ? '높습니다' : '낮습니다'}`,
+      text: `영상 A의 참여율(${comparisonA.value.engagementRate}%)이 영상 B(${comparisonB.value.engagementRate}%)보다 ${engagementDiff > 0 ? '높습니다' : '낮습니다'}`,
       isPositive: engagementDiff > 0,
     })
   }
@@ -517,4 +530,6 @@ onMounted(() => {
     analyticsStore.fetchAnalytics()
   }
 })
+
+watch([selectedVideoA, selectedVideoB], loadComparison)
 </script>

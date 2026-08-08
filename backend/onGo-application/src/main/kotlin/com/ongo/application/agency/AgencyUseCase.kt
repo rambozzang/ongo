@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class AgencyUseCase(
     private val agencyRepository: AgencyRepository,

@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "AI 비디오 스크립트 어시스턴트", description = "AI 기반 비디오 스크립트 작성 및 개선")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/video-script-assistant")
 class VideoScriptAssistantController(

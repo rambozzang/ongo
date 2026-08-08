@@ -1,6 +1,5 @@
 package com.ongo.api.calendarinsights
 
-import org.springframework.context.annotation.Profile
 import com.ongo.application.calendarinsights.CalendarInsightsUseCase
 import com.ongo.application.calendarinsights.dto.*
 import com.ongo.common.ResData
@@ -12,7 +11,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "캘린더 인사이트", description = "콘텐츠 업로드 패턴 분석 및 최적 시간 추천")
-@Profile("wip")
 @RestController
 @RequestMapping("/api/v1/calendar-insights")
 class CalendarInsightsController(

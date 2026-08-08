@@ -19,6 +19,8 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
+import java.time.LocalDateTime
+import org.springframework.web.client.HttpStatusCodeException
 
 @Service
 class PlatformUploadServiceImpl(
@@ -45,11 +47,12 @@ class PlatformUploadServiceImpl(
     }
 
     override fun upload(config: PlatformUploadConfig, fileUrl: String, userId: Long): PlatformUploadResult {
-        val channel = channelRepository.findByUserIdAndPlatform(userId, config.platform)
+        var channel = channelRepository.findByUserIdAndPlatform(userId, config.platform)
             ?: throw NotFoundException("채널", "${config.platform} (userId=$userId)")
         // Channel.accessToken은 저장 시 AES-GCM으로 암호화된다. 외부 플랫폼 경계에서만
         // 평문으로 만들고, DB/애플리케이션 객체에는 복호화된 값을 다시 저장하지 않는다.
-        val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
+        var accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value
+        var refreshedAfterUnauthorized = false
 
         var lastException: Exception? = null
         for (attempt in 0 until MAX_RETRIES) {
@@ -85,10 +88,32 @@ class PlatformUploadServiceImpl(
                 return result
             } catch (e: Exception) {
                 lastException = e
+                if (!refreshedAfterUnauthorized && isUnauthorized(e) && channel.refreshToken != null) {
+                    try {
+                        val refreshed = platformClientFactory.getClient(config.platform)
+                            .refreshToken(tokenEncryptionPort.decrypt(channel.refreshToken!!).value)
+                        channel = channelRepository.update(
+                            channel.copy(
+                                accessToken = tokenEncryptionPort.encrypt(com.ongo.domain.channel.PlainToken(refreshed.accessToken)),
+                                refreshToken = refreshed.refreshToken?.let {
+                                    tokenEncryptionPort.encrypt(com.ongo.domain.channel.PlainToken(it))
+                                } ?: channel.refreshToken,
+                                tokenExpiresAt = LocalDateTime.now().plusSeconds(refreshed.expiresIn),
+                            )
+                        )
+                        accessToken = refreshed.accessToken
+                        refreshedAfterUnauthorized = true
+                        log.info("플랫폼 {} access token을 갱신하고 업로드를 한 번 재시도합니다", config.platform)
+                        continue
+                    } catch (refreshException: Exception) {
+                        lastException = refreshException
+                        log.warn("플랫폼 {} access token 갱신 실패", config.platform, refreshException)
+                    }
+                }
                 if (!isTransient(e) || attempt == MAX_RETRIES - 1) {
                     break
                 }
-                val delay = INITIAL_DELAY_MS * (1L shl attempt)
+                val delay = retryDelayMillis(e, attempt)
                 log.warn(
                     "플랫폼 {} 업로드 일시 오류 (시도 {}/{}), {}ms 후 재시도: {}",
                     config.platform, attempt + 1, MAX_RETRIES, delay, e.message
@@ -146,6 +171,8 @@ class PlatformUploadServiceImpl(
     }
 
     private fun isTransient(e: Exception): Boolean {
+        val status = httpStatus(e)
+        if (status == 429 || status in 500..599) return true
         var cause: Throwable? = e
         while (cause != null) {
             if (cause is FileNotFoundException) return false
@@ -153,5 +180,24 @@ class PlatformUploadServiceImpl(
             cause = cause.cause
         }
         return false
+    }
+
+    private fun isUnauthorized(e: Exception): Boolean = httpStatus(e) == 401 ||
+        generateSequence(e as Throwable?) { it.cause }
+            .any { it.message?.contains("401") == true || it.message?.contains("Unauthorized", ignoreCase = true) == true }
+
+    private fun httpStatus(e: Exception): Int? =
+        generateSequence(e as Throwable?) { it.cause }
+            .filterIsInstance<HttpStatusCodeException>()
+            .map { it.statusCode.value() }
+            .firstOrNull()
+
+    private fun retryDelayMillis(e: Exception, attempt: Int): Long {
+        val retryAfterSeconds = generateSequence(e as Throwable?) { it.cause }
+            .filterIsInstance<HttpStatusCodeException>()
+            .mapNotNull { it.responseHeaders?.getFirst("Retry-After")?.toLongOrNull() }
+            .firstOrNull()
+        return ((retryAfterSeconds?.times(1000L)) ?: (INITIAL_DELAY_MS * (1L shl attempt)))
+            .coerceIn(INITIAL_DELAY_MS, 60_000L)
     }
 }

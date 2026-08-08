@@ -4,6 +4,7 @@ import com.ongo.common.enums.Platform
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
+import com.ongo.domain.channel.EncryptedToken
 import com.ongo.infrastructure.persistence.jooq.Fields.ACCESS_TOKEN
 import com.ongo.infrastructure.persistence.jooq.Fields.CHANNEL_NAME
 import com.ongo.infrastructure.persistence.jooq.Fields.CHANNEL_URL
@@ -71,8 +72,8 @@ class ChannelJooqRepository(
             .set(CHANNEL_URL, channel.channelUrl)
             .set(SUBSCRIBER_COUNT, channel.subscriberCount)
             .set(PROFILE_IMAGE_URL, channel.profileImageUrl)
-            .set(ACCESS_TOKEN, channel.accessToken)
-            .set(REFRESH_TOKEN, channel.refreshToken)
+            .set(ACCESS_TOKEN, channel.accessToken.value)
+            .set(REFRESH_TOKEN, channel.refreshToken?.value)
             .set(TOKEN_EXPIRES_AT, channel.tokenExpiresAt)
             .set(STATUS, channel.status.name)
             .returningResult(ID)
@@ -88,8 +89,8 @@ class ChannelJooqRepository(
             .set(CHANNEL_URL, channel.channelUrl)
             .set(SUBSCRIBER_COUNT, channel.subscriberCount)
             .set(PROFILE_IMAGE_URL, channel.profileImageUrl)
-            .set(ACCESS_TOKEN, channel.accessToken)
-            .set(REFRESH_TOKEN, channel.refreshToken)
+            .set(ACCESS_TOKEN, channel.accessToken.value)
+            .set(REFRESH_TOKEN, channel.refreshToken?.value)
             .set(TOKEN_EXPIRES_AT, channel.tokenExpiresAt)
             .set(STATUS, channel.status.name)
             .set(UPDATED_AT, channel.updatedAt)
@@ -122,8 +123,8 @@ class ChannelJooqRepository(
             channelUrl = get(CHANNEL_URL),
             subscriberCount = get(SUBSCRIBER_COUNT) ?: 0,
             profileImageUrl = get(PROFILE_IMAGE_URL),
-            accessToken = get(ACCESS_TOKEN),
-            refreshToken = get(REFRESH_TOKEN),
+            accessToken = EncryptedToken(get(ACCESS_TOKEN)),
+            refreshToken = get(REFRESH_TOKEN)?.let(::EncryptedToken),
             tokenExpiresAt = localDateTime(TOKEN_EXPIRES_AT),
             status = get(STATUS)?.let {
                 when (it) {

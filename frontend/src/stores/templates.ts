@@ -3,8 +3,6 @@ import { ref, computed } from 'vue'
 import type { ContentTemplate, TemplateCategory, TemplatePlatform } from '@/types/template'
 import { templatesApi } from '@/api/templates'
 
-const STORAGE_KEY = 'ongo_content_templates'
-
 export const useTemplatesStore = defineStore('templates', () => {
   const templates = ref<ContentTemplate[]>([])
   const searchText = ref('')
@@ -13,11 +11,10 @@ export const useTemplatesStore = defineStore('templates', () => {
   const sortBy = ref<'latest' | 'usage' | 'name'>('latest')
   const showFavoritesOnly = ref(false)
 
-  // Load templates - try API first, fallback to localStorage/mock
+  // Templates are server-owned. An API failure must remain visible to the caller.
   const loadTemplates = async () => {
-    try {
-      const response = await templatesApi.list({ page: 0, size: 100 })
-      templates.value = response.templates.map((t) => ({
+    const response = await templatesApi.list({ page: 0, size: 100 })
+    templates.value = response.templates.map((t) => ({
         id: t.id,
         name: t.name,
         category: (t.category ?? 'full') as TemplateCategory,
@@ -30,25 +27,7 @@ export const useTemplatesStore = defineStore('templates', () => {
         isFavorite: false,
         createdAt: t.createdAt ?? new Date().toISOString(),
         updatedAt: t.updatedAt ?? new Date().toISOString(),
-      }))
-    } catch {
-      // Fallback to localStorage
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        try {
-          templates.value = JSON.parse(stored)
-        } catch {
-          templates.value = []
-        }
-      } else {
-        templates.value = []
-      }
-    }
-  }
-
-  // Save to localStorage
-  const saveTemplates = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates.value))
+    }))
   }
 
   // Getters
@@ -132,18 +111,8 @@ export const useTemplatesStore = defineStore('templates', () => {
       }
       templates.value.push(newTemplate)
       return newTemplate
-    } catch {
-      // Fallback to local creation
-      const newTemplate: ContentTemplate = {
-        ...template,
-        id: Math.max(0, ...templates.value.map((t) => t.id)) + 1,
-        usageCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      templates.value.push(newTemplate)
-      saveTemplates()
-      return newTemplate
+    } catch (error) {
+      throw error
     }
   }
 
@@ -161,8 +130,8 @@ export const useTemplatesStore = defineStore('templates', () => {
         category: updates.category ?? current.category,
         platform: updates.platform ?? current.platform,
       })
-    } catch {
-      // Continue with local update
+    } catch (error) {
+      throw error
     }
 
     templates.value[index] = {
@@ -170,19 +139,17 @@ export const useTemplatesStore = defineStore('templates', () => {
       ...updates,
       updatedAt: new Date().toISOString(),
     }
-    saveTemplates()
   }
 
   const deleteTemplate = async (id: number) => {
     try {
       await templatesApi.delete(id)
-    } catch {
-      // Continue with local delete
+    } catch (error) {
+      throw error
     }
     const index = templates.value.findIndex((t) => t.id === id)
     if (index !== -1) {
       templates.value.splice(index, 1)
-      saveTemplates()
     }
   }
 
@@ -203,21 +170,19 @@ export const useTemplatesStore = defineStore('templates', () => {
     if (template) {
       template.isFavorite = !template.isFavorite
       template.updatedAt = new Date().toISOString()
-      saveTemplates()
     }
   }
 
   const applyTemplate = async (id: number) => {
     try {
       await templatesApi.use(id)
-    } catch {
-      // Continue locally
+    } catch (error) {
+      throw error
     }
     const template = templates.value.find((t) => t.id === id)
     if (template) {
       template.usageCount++
       template.updatedAt = new Date().toISOString()
-      saveTemplates()
       return template
     }
   }

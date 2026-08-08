@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "인플루언서 매칭", description = "AI 기반 인플루언서 매칭 및 협업 요청 관리")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/influencer-match")
 class InfluencerMatchController(

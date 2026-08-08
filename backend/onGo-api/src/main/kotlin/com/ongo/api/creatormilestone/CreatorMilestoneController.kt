@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "크리에이터 마일스톤", description = "크리에이터 성장 목표 및 달성 추적")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/creator-milestones")
 class CreatorMilestoneController(

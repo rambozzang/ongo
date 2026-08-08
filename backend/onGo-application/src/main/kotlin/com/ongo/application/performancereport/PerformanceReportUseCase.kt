@@ -10,7 +10,7 @@ import com.ongo.domain.performancereport.ReportSectionRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class PerformanceReportUseCase(
     private val reportRepository: PerformanceReportRepository,

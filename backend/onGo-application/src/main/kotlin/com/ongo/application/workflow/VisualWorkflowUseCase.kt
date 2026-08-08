@@ -9,7 +9,7 @@ import com.ongo.domain.workflow.WorkflowRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class VisualWorkflowUseCase(
     private val workflowRepository: WorkflowRepository,

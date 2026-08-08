@@ -3,9 +3,6 @@ import { ref, computed } from 'vue'
 import type { Notification, NotificationCategory, NotificationSetting } from '@/types/notification'
 import { notificationApi } from '@/api/notification'
 
-const STORAGE_KEY = 'ongo_notifications'
-const SETTINGS_STORAGE_KEY = 'ongo_notification_settings'
-
 export const useNotificationCenterStore = defineStore('notificationCenter', () => {
   const notifications = ref<Notification[]>([])
   const activeCategory = ref<NotificationCategory | null>(null)
@@ -72,72 +69,40 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     return groups.filter((g) => g.notifications.length > 0)
   })
 
-  // --- Storage ---
-
-  function loadFromStorage() {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        notifications.value = JSON.parse(stored)
-      }
-      const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY)
-      if (storedSettings) {
-        settings.value = JSON.parse(storedSettings)
-      }
-    } catch {
-      // silently ignore localStorage errors
-    }
-  }
-
-  function saveToStorage() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications.value))
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings.value))
-    } catch {
-      // silently ignore localStorage errors
-    }
-  }
-
   // --- Actions ---
 
   async function markAsRead(id: number) {
     const notification = notifications.value.find((n) => n.id === id)
     if (notification) {
-      notification.isRead = true
-      saveToStorage()
       try {
         await notificationApi.markAsRead(id)
       } catch {
-        // Local state already updated
+        throw new Error('알림 읽음 처리에 실패했습니다')
       }
+      notification.isRead = true
     }
   }
 
   async function markAllAsRead() {
-    notifications.value.forEach((n) => {
-      n.isRead = true
-    })
-    saveToStorage()
     try {
       await notificationApi.markAllAsRead()
     } catch {
-      // Local state already updated
+      throw new Error('알림 읽음 처리에 실패했습니다')
     }
+    notifications.value.forEach((n) => { n.isRead = true })
   }
 
   async function deleteNotification(id: number) {
-    notifications.value = notifications.value.filter((n) => n.id !== id)
-    saveToStorage()
     try {
       await notificationApi.delete(id)
     } catch {
-      // Local state already updated
+      throw new Error('알림 삭제에 실패했습니다')
     }
+    notifications.value = notifications.value.filter((n) => n.id !== id)
   }
 
   function clearAll() {
     notifications.value = []
-    saveToStorage()
   }
 
   function addNotification(notification: Omit<Notification, 'id' | 'createdAt'>) {
@@ -147,7 +112,6 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
       createdAt: new Date().toISOString(),
     }
     notifications.value.unshift(newNotification)
-    saveToStorage()
   }
 
   function filterByCategory(category: NotificationCategory | null) {
@@ -158,7 +122,6 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     const setting = settings.value.find((s) => s.category === category)
     if (setting) {
       setting[field] = value
-      saveToStorage()
     }
   }
 
@@ -182,11 +145,9 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
           referenceId: n.referenceId ?? undefined,
           createdAt: n.createdAt ?? new Date().toISOString(),
         }))
-        saveToStorage()
       }
     } catch {
-      // On API failure, try loading cached data from localStorage
-      loadFromStorage()
+      throw new Error('알림을 불러오지 못했습니다')
     }
   }
 

@@ -194,6 +194,11 @@ async function moveTo(scheduleId: number, next: Date) {
   if (!current) return
   // 같은 시각이면 호출하지 않는다
   if (new Date(current.scheduledAt).getTime() === next.getTime()) return
+  const confirmed = window.confirm(t('redesign.calendar.confirmMove', {
+    title: current.videoTitle,
+    time: timeOf(next.toISOString()),
+  }))
+  if (!confirmed) return
   try {
     await store.moveSchedule(scheduleId, next)
   } catch (e) {

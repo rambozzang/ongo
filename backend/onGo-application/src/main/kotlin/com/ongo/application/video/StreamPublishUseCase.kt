@@ -123,7 +123,7 @@ class StreamPublishUseCase(
                 platform = platformReq.platform,
                 videoUploadId = uploadId,
                 meta = meta,
-                accessToken = tokenEncryptionPort.decrypt(channel.accessToken),
+                accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value,
                 platformChannelId = channel.platformChannelId,
                 scheduledAt = platformReq.scheduledAt,
             )
@@ -498,7 +498,7 @@ class StreamPublishUseCase(
                 platform = platform,
                 videoUploadId = uploadId,
                 meta = meta,
-                accessToken = tokenEncryptionPort.decrypt(channel.accessToken),
+                accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value,
                 platformChannelId = channel.platformChannelId,
                 scheduledAt = null,
             )

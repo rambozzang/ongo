@@ -8,7 +8,7 @@ import com.ongo.domain.creatornetwork.CreatorProfileRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 @Transactional(readOnly = true)
 class CreatorNetworkUseCase(

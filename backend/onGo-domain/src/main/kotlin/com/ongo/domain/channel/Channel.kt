@@ -28,11 +28,10 @@ data class Channel(
     val channelUrl: String? = null,
     val subscriberCount: Long = 0,
     val profileImageUrl: String? = null,
-    val accessToken: String,
-    val refreshToken: String? = null,
+    val accessToken: EncryptedToken,
+    val refreshToken: EncryptedToken? = null,
     val tokenExpiresAt: LocalDateTime? = null,
     val status: ChannelStatus = ChannelStatus.ACTIVE,
     val connectedAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
 )
-

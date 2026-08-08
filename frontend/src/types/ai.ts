@@ -100,24 +100,6 @@ export interface ScheduleSuggestion {
   expectedBoost: number
 }
 
-export interface GenerateIdeasRequest {
-  category: string
-  recentTitles?: string[]
-}
-
-export interface GenerateIdeasResponse {
-  ideas: ContentIdea[]
-  creditsUsed?: number
-  creditsRemaining?: number
-}
-
-export interface ContentIdea {
-  title: string
-  description: string
-  expectedReaction: string
-  difficulty: string
-}
-
 export interface GenerateReportRequest {
   days: number
 }

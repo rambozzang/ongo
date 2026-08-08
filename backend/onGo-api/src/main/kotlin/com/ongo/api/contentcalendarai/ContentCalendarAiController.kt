@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "AI 콘텐츠 캘린더", description = "AI 기반 최적 콘텐츠 일정 생성 및 추천")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/content-calendar-ai")
 class ContentCalendarAiController(

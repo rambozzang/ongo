@@ -52,17 +52,6 @@ data class ScheduleSuggestionResult(
     )
 }
 
-data class ContentIdeaResult(
-    val ideas: List<IdeaResult>,
-) {
-    data class IdeaResult(
-        val title: String,
-        val description: String,
-        val expectedReaction: String,
-        val difficulty: String,
-    )
-}
-
 data class PerformanceReportResult(
     val reportMarkdown: String,
     val highlights: List<String>,

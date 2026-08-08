@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "크리에이터 네트워크", description = "크리에이터 간 협업 네트워크")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/creator-network")
 class CreatorNetworkController(

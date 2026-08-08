@@ -6,21 +6,10 @@ export interface FavoriteItem {
   addedAt: string
 }
 
-const STORAGE_KEY = 'ongo-favorites'
 const MAX_FAVORITES = 50
 
 export const useFavoritesStore = defineStore('favorites', () => {
   const favoriteItems = ref<FavoriteItem[]>([])
-
-  // Load from localStorage on init
-  const storedFavorites = localStorage.getItem(STORAGE_KEY)
-  if (storedFavorites) {
-    try {
-      favoriteItems.value = JSON.parse(storedFavorites)
-    } catch {
-      favoriteItems.value = []
-    }
-  }
 
   // Computed: just the IDs for easy lookup
   const favorites = computed(() => favoriteItems.value.map((item) => item.videoId))
@@ -40,7 +29,6 @@ export const useFavoritesStore = defineStore('favorites', () => {
     if (index !== -1) {
       // Remove from favorites
       favoriteItems.value.splice(index, 1)
-      persist()
       return false
     } else {
       // Add to favorites (check limit)
@@ -52,7 +40,6 @@ export const useFavoritesStore = defineStore('favorites', () => {
         videoId,
         addedAt: new Date().toISOString(),
       })
-      persist()
       return true
     }
   }
@@ -62,19 +49,12 @@ export const useFavoritesStore = defineStore('favorites', () => {
     const index = favoriteItems.value.findIndex((item) => item.videoId === videoId)
     if (index !== -1) {
       favoriteItems.value.splice(index, 1)
-      persist()
     }
   }
 
   // Clear all favorites
   function clearFavorites(): void {
     favoriteItems.value = []
-    localStorage.removeItem(STORAGE_KEY)
-  }
-
-  // Persist to localStorage
-  function persist(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(favoriteItems.value))
   }
 
   return {

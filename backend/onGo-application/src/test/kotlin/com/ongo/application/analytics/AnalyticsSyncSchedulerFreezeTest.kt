@@ -9,6 +9,8 @@ import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.lock.DistributedLockPort
 import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.channel.EncryptedToken
+import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.video.VideoUploadRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -58,7 +60,7 @@ class AnalyticsSyncSchedulerFreezeTest {
         platform = Platform.YOUTUBE,
         platformChannelId = "ch-$id",
         channelName = "채널$id",
-        accessToken = "enc-token-$id",
+        accessToken = EncryptedToken("enc-token-$id"),
     )
 
     @Test
@@ -79,12 +81,12 @@ class AnalyticsSyncSchedulerFreezeTest {
     fun activeAccountChannelIsProcessed() {
         every { channelRepository.findAllActive() } returns listOf(channel(1, 100L))
         every { guard.requireWritable(100L, any(), any()) } returns Unit
-        every { tokenEncryptionPort.decrypt("enc-token-1") } returns "token"
+        every { tokenEncryptionPort.decrypt(EncryptedToken("enc-token-1")) } returns PlainToken("token")
         every { videoUploadRepository.findByPlatformAndUserId(any(), any()) } returns emptyList()
 
         scheduler().syncAnalytics()
 
-        verify(exactly = 1) { tokenEncryptionPort.decrypt("enc-token-1") }
+        verify(exactly = 1) { tokenEncryptionPort.decrypt(EncryptedToken("enc-token-1")) }
     }
 
     @Test
@@ -107,13 +109,13 @@ class AnalyticsSyncSchedulerFreezeTest {
             listOf(channel(1, 100L), channel(2, 200L))
         every { guard.requireWritable(100L, any(), any()) } throws AccountFrozenException()
         every { guard.requireWritable(200L, any(), any()) } returns Unit
-        every { tokenEncryptionPort.decrypt("enc-token-2") } returns "token"
+        every { tokenEncryptionPort.decrypt(EncryptedToken("enc-token-2")) } returns PlainToken("token")
         every { videoUploadRepository.findByPlatformAndUserId(any(), any()) } returns emptyList()
 
         scheduler().syncAnalytics()
 
-        verify(exactly = 0) { tokenEncryptionPort.decrypt("enc-token-1") }
-        verify(exactly = 1) { tokenEncryptionPort.decrypt("enc-token-2") }
+        verify(exactly = 0) { tokenEncryptionPort.decrypt(EncryptedToken("enc-token-1")) }
+        verify(exactly = 1) { tokenEncryptionPort.decrypt(EncryptedToken("enc-token-2")) }
     }
 
     @Test
@@ -123,15 +125,15 @@ class AnalyticsSyncSchedulerFreezeTest {
             listOf(channel(1, 100L), channel(2, 200L))
         every { guard.requireWritable(any(), any(), any()) } returns Unit
         // 1번 채널의 토큰 복호화가 터진다. 스레드 안에서 나는 예외다.
-        every { tokenEncryptionPort.decrypt("enc-token-1") } throws IllegalStateException("복호화 실패")
-        every { tokenEncryptionPort.decrypt("enc-token-2") } returns "token"
+        every { tokenEncryptionPort.decrypt(EncryptedToken("enc-token-1")) } throws IllegalStateException("복호화 실패")
+        every { tokenEncryptionPort.decrypt(EncryptedToken("enc-token-2")) } returns PlainToken("token")
         every { videoUploadRepository.findByPlatformAndUserId(any(), any()) } returns emptyList()
 
         // 예외가 밖으로 새면 여기서 터진다. 채널 하나 때문에 배치 전체가 죽으면 안 된다.
         scheduler().syncAnalytics()
 
         // 2번 채널은 정상 처리된다.
-        verify(exactly = 1) { tokenEncryptionPort.decrypt("enc-token-2") }
+        verify(exactly = 1) { tokenEncryptionPort.decrypt(EncryptedToken("enc-token-2")) }
     }
 
     @Test

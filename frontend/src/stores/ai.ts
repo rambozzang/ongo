@@ -5,7 +5,6 @@ import type {
   GenerateMetaResponse,
   GenerateHashtagsRequest,
   GenerateHashtagsResponse,
-  GenerateIdeasResponse,
   GenerateReportResponse,
   StrategyCoachRequest,
   StrategyCoachResponse,
@@ -16,13 +15,11 @@ import { aiApi } from '@/api/ai'
 export const useAiStore = defineStore('ai', () => {
   const metaResult = ref<GenerateMetaResponse | null>(null)
   const hashtagResult = ref<GenerateHashtagsResponse | null>(null)
-  const ideasResult = ref<GenerateIdeasResponse | null>(null)
   const reportResult = ref<GenerateReportResponse | null>(null)
   const strategyCoachResult = ref<StrategyCoachResponse | null>(null)
   const revenueReportResult = ref<RevenueReportResponse | null>(null)
   const isGeneratingMeta = ref(false)
   const isGeneratingHashtags = ref(false)
-  const isGeneratingIdeas = ref(false)
   const isGeneratingReport = ref(false)
   const isGeneratingStrategyCoach = ref(false)
   const isGeneratingRevenueReport = ref(false)
@@ -32,7 +29,6 @@ export const useAiStore = defineStore('ai', () => {
   const loading = computed(() =>
     isGeneratingMeta.value ||
     isGeneratingHashtags.value ||
-    isGeneratingIdeas.value ||
     isGeneratingReport.value ||
     isGeneratingStrategyCoach.value ||
     isGeneratingRevenueReport.value,
@@ -65,21 +61,6 @@ export const useAiStore = defineStore('ai', () => {
       throw e
     } finally {
       isGeneratingHashtags.value = false
-    }
-  }
-
-  async function generateIdeas(category: string) {
-    if (isGeneratingIdeas.value) return ideasResult.value
-    isGeneratingIdeas.value = true
-    error.value = null
-    try {
-      ideasResult.value = await aiApi.generateIdeas({ category })
-      return ideasResult.value
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'AI 요청 실패'
-      throw e
-    } finally {
-      isGeneratingIdeas.value = false
     }
   }
 
@@ -132,7 +113,6 @@ export const useAiStore = defineStore('ai', () => {
   function clearResults() {
     metaResult.value = null
     hashtagResult.value = null
-    ideasResult.value = null
     reportResult.value = null
     strategyCoachResult.value = null
     revenueReportResult.value = null
@@ -142,21 +122,18 @@ export const useAiStore = defineStore('ai', () => {
   return {
     metaResult,
     hashtagResult,
-    ideasResult,
     reportResult,
     strategyCoachResult,
     revenueReportResult,
     loading,
     isGeneratingMeta,
     isGeneratingHashtags,
-    isGeneratingIdeas,
     isGeneratingReport,
     isGeneratingStrategyCoach,
     isGeneratingRevenueReport,
     error,
     generateMeta,
     generateHashtags,
-    generateIdeas,
     generateReport,
     generateStrategyCoach,
     generateRevenueReport,

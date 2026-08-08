@@ -127,7 +127,6 @@
                 <option value="">선택</option>
                 <option value="meta">제목/설명 생성</option>
                 <option value="hashtags">해시태그 추천</option>
-                <option value="ideas">콘텐츠 아이디어</option>
                 <option value="report">성과 리포트</option>
                 <option value="stt">영상 STT 변환</option>
                 <option value="analyze">스크립트 분석</option>
@@ -228,7 +227,6 @@ function getToolTypeLabel(toolType: string): string {
   const labels: Record<string, string> = {
     meta: '제목/설명',
     hashtags: '해시태그',
-    ideas: '아이디어',
     report: '리포트',
     stt: 'STT',
     analyze: '분석',

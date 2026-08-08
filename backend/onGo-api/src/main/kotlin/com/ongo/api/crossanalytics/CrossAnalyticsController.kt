@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @Tag(name = "크로스 분석", description = "크로스 플랫폼 분석 리포트 생성 및 조회")
-@Profile("wip")
+@Profile("disabled")
 @RestController
 @RequestMapping("/api/v1/cross-analytics")
 class CrossAnalyticsController(

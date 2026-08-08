@@ -1,6 +1,8 @@
 package com.ongo.infrastructure.contentsource
 
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.channel.EncryptedToken
+import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.contentsource.ContentSource
 import com.ongo.domain.contentsource.ContentSourceRepository
 import com.ongo.domain.contentsource.ContentSourceStatus
@@ -33,8 +35,8 @@ class ContentSourceTokenManagerTest {
     fun setUp() {
         clearAllMocks()
         manager = ContentSourceTokenManager(repo, oauth, encryptor)
-        every { encryptor.decrypt(any()) } answers { firstArg<String>().removePrefix("enc:") }
-        every { encryptor.encrypt(any()) } answers { "enc:${firstArg<String>()}" }
+        every { encryptor.decrypt(any()) } answers { PlainToken(firstArg<EncryptedToken>().value.removePrefix("enc:")) }
+        every { encryptor.encrypt(any()) } answers { EncryptedToken("enc:${firstArg<PlainToken>().value}") }
     }
 
     @Test

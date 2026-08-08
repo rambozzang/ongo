@@ -9,7 +9,7 @@ import com.ongo.domain.mediakit.MediaKitRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class MediaKitUseCase(
     private val mediaKitRepository: MediaKitRepository,

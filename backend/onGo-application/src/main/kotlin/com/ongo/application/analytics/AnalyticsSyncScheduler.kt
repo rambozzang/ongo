@@ -57,7 +57,7 @@ class AnalyticsSyncScheduler(
                         }
                         if (!writable) return@submit
 
-                        val token = tokenEncryptionPort.decrypt(channel.accessToken)
+                        val token = tokenEncryptionPort.decrypt(channel.accessToken).value
                         val uploads = videoUploadRepository.findByPlatformAndUserId(channel.platform, channel.userId)
 
                         uploads.forEach { upload ->

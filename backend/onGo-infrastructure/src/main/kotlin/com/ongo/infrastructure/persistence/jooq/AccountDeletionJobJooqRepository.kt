@@ -4,7 +4,7 @@ import com.ongo.domain.accountdeletion.AccountDeletionJob
 import com.ongo.domain.accountdeletion.AccountDeletionJobRepository
 import com.ongo.domain.accountdeletion.AccountDeletionState
 import com.ongo.domain.accountdeletion.AccountDeletionStatus
-import com.ongo.infrastructure.persistence.jooq.Fields.ATTEMPT_COUNT
+import com.ongo.infrastructure.persistence.jooq.Fields.ACCOUNT_ATTEMPT_COUNT
 import com.ongo.infrastructure.persistence.jooq.Fields.COMPLETED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.DB_COMMITTED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.DELETION_REQUESTED_AT
@@ -146,7 +146,7 @@ class AccountDeletionJobJooqRepository(
         status = AccountDeletionStatus.valueOf(get(STATUS)),
         idempotencyKey = get(IDEMPOTENCY_KEY),
         supportReference = get(SUPPORT_REFERENCE),
-        attemptCount = get(ATTEMPT_COUNT) ?: 0,
+        attemptCount = get(ACCOUNT_ATTEMPT_COUNT) ?: 0,
         lastErrorCode = get(LAST_ERROR_CODE),
         requestedAt = localDateTime(REQUESTED_AT),
         updatedAt = localDateTime(UPDATED_AT),

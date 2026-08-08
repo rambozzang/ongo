@@ -273,6 +273,13 @@ object Fields {
     val ERROR_MESSAGE = DSL.field("error_message", String::class.java)
     val PLATFORM_URL = DSL.field("platform_url", String::class.java)
     val PUBLISHED_AT = DSL.field("published_at", java.time.LocalDateTime::class.java)
+    val VIDEO_ATTEMPT_COUNT = DSL.field("attempt_count", Int::class.java)
+    val VIDEO_NEXT_RETRY_AT = DSL.field("next_retry_at", java.time.LocalDateTime::class.java)
+    val VIDEO_LEASE_OWNER = DSL.field("lease_owner", String::class.java)
+    val VIDEO_LEASE_UNTIL = DSL.field("lease_until", java.time.LocalDateTime::class.java)
+    val VIDEO_POLL_TOKEN = DSL.field("poll_token", String::class.java)
+    val VIDEO_LAST_ERROR = DSL.field("last_error", String::class.java)
+    val VIDEO_SCHEDULED_AT = DSL.field("scheduled_at", java.time.LocalDateTime::class.java)
 
     // video_platform_meta
     val VIDEO_UPLOAD_ID = DSL.field("video_upload_id", Long::class.java)
@@ -1063,7 +1070,7 @@ object Fields {
 
     // 계정 삭제
     val SUPPORT_REFERENCE = DSL.field("support_reference", String::class.java)
-    val ATTEMPT_COUNT = DSL.field("attempt_count", Int::class.java)
+    val ACCOUNT_ATTEMPT_COUNT = DSL.field("attempt_count", Int::class.java)
     val LAST_ERROR_CODE = DSL.field("last_error_code", String::class.java)
     val DB_COMMITTED_AT = DSL.field("db_committed_at", java.time.LocalDateTime::class.java)
     val DELETION_STATE = DSL.field("deletion_state", String::class.java)

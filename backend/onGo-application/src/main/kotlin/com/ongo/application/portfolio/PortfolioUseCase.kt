@@ -10,7 +10,7 @@ import com.ongo.domain.portfolio.PortfolioRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-@Profile("wip")
+@Profile("disabled")
 @Service
 class PortfolioUseCase(
     private val portfolioRepository: PortfolioRepository,
