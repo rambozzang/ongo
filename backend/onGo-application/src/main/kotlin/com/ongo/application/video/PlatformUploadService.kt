@@ -12,7 +12,7 @@ interface PlatformUploadService {
     fun upload(config: PlatformUploadConfig, fileUrl: String, userId: Long): PlatformUploadResult
     /** 비동기 게시가 수락된 뒤 외부 플랫폼의 최종 상태를 확인한다. */
     fun poll(platform: Platform, pollToken: String, userId: Long): PlatformUploadResult =
-        PlatformUploadResult(success = false, errorMessage = "${platform.name} 상태 조회를 지원하지 않습니다.")
+        PlatformUploadResult(success = false, published = false, errorMessage = "${platform.name} 상태 조회를 지원하지 않습니다.")
 }
 
 enum class PublishConfirmation {
@@ -35,7 +35,7 @@ data class PlatformUploadResult(
      * "게시 안 됐는데 완료로 표시"되는 쪽이 아니라 "완료됐는데 처리중으로 표시"되는
      * 쪽으로 틀리게 해서, 사용자를 속이지 않게 한다.
      */
-    val published: Boolean = false,
+    val published: Boolean,
     /** 비동기 플랫폼의 상태 조회 토큰. 없으면 platformVideoId를 토큰으로 사용한다. */
     val pollToken: String? = null,
     /** 외부 호출이 끝났지만 응답을 잃었을 때 중복 재전송을 막기 위한 구분. */
@@ -105,6 +105,7 @@ fun PlatformUploadResult.toPublishOutcome(): PublishOutcome = when {
 fun indeterminateUploadFailure(message: String?): PlatformUploadResult =
     PlatformUploadResult(
         success = false,
+        published = false,
         errorMessage = message ?: "게시 결과를 확인하지 못했습니다.",
         confirmation = PublishConfirmation.UNKNOWN,
     )

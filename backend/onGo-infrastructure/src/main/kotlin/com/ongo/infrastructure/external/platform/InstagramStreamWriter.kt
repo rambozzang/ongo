@@ -84,7 +84,7 @@ class InstagramStreamWriter(
             val platformVideoId = result.platformVideoId?.takeIf { it.isNotBlank() }
             val platformUrl = result.platformUrl.takeIf { it.isNotBlank() }
             if (platformVideoId == null) {
-                PlatformUploadResult(success = false, errorMessage = "Instagram 게시 ID를 받지 못했습니다.")
+                PlatformUploadResult(success = false, published = false, errorMessage = "Instagram 게시 ID를 받지 못했습니다.")
             } else {
                 PlatformUploadResult(
                     success = true,

@@ -9,5 +9,5 @@ internal fun uploadFailureResult(error: Exception): PlatformUploadResult =
     if (error.isIndeterminateUploadFailure()) {
         indeterminateUploadFailure(error.message)
     } else {
-        PlatformUploadResult(success = false, errorMessage = error.message)
+        PlatformUploadResult(success = false, published = false, errorMessage = error.message)
     }

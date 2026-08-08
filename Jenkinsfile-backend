@@ -87,6 +87,8 @@ pipeline {
                     // Docker가 제공되는 별도 통합 테스트 잡에서 실행하고, 여기서는 단위 테스트와
                     // 패키징만 검증한다.
                     sh './gradlew :onGo-common:test :onGo-domain:test :onGo-application:test :onGo-infrastructure:test :onGo-api:test :onGo-api:bootJar --no-daemon -PskipIntegrationTests=true'
+                    sh './gradlew jacocoRootReport --no-daemon -PskipIntegrationTests=true'
+                    sh './gradlew jacocoRootCoverageVerification --no-daemon -PskipIntegrationTests=true'
                 }
             }
         }

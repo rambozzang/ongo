@@ -73,6 +73,7 @@ class VideoPublishEventListenerTest {
             success = true,
             platformVideoId = "yt_123",
             platformUrl = "https://youtube.com/watch?v=abc",
+            published = false,
         )
         every { videoUploadRepository.findById(10L) } returns VideoUpload(
             id = 10L, videoId = 1L, platform = Platform.YOUTUBE,
@@ -100,8 +101,8 @@ class VideoPublishEventListenerTest {
             configs = listOf(ytConfig, ttConfig),
         )
 
-        every { ytService.upload(any(), any(), any()) } returns PlatformUploadResult(success = true)
-        every { ttService.upload(any(), any(), any()) } returns PlatformUploadResult(success = true)
+        every { ytService.upload(any(), any(), any()) } returns PlatformUploadResult(success = true, published = false)
+        every { ttService.upload(any(), any(), any()) } returns PlatformUploadResult(success = true, published = false)
         every { videoUploadRepository.findById(any()) } returns VideoUpload(
             id = 10L, videoId = 1L, platform = Platform.YOUTUBE,
         )

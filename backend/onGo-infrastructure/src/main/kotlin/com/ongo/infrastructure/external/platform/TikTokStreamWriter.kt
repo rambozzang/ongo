@@ -160,6 +160,7 @@ class TikTokStreamWriter(
                 }
                 "FAILED" -> return PlatformUploadResult(
                     success = false,
+                    published = false,
                     platformVideoId = pid,
                     platformUrl = buildPlatformUrl(pid),
                     errorMessage = lastFailureReason ?: "TikTok 게시에 실패했습니다",

@@ -1,9 +1,18 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+  test: {
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,vue}'],
+      reporter: ['text', 'json-summary', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      exclude: ['src/**/*.d.ts', 'src/**/index.ts', 'src/**/types/**'],
+    },
+  },
   define: {
     // Vue 3.5 프로덕션 최적화 플래그
     __VUE_PROD_DEVTOOLS__: false,               // 프로덕션 DevTools 제거

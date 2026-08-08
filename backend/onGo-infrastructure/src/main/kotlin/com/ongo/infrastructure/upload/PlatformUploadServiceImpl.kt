@@ -141,6 +141,7 @@ class PlatformUploadServiceImpl(
         }
         return PlatformUploadResult(
             success = false,
+            published = false,
             errorMessage = lastException?.message ?: "알 수 없는 오류가 발생했습니다",
             confirmation = confirmation,
         )
@@ -189,6 +190,7 @@ class PlatformUploadServiceImpl(
             }
             normalized in FAILED_STATUSES -> PlatformUploadResult(
                 success = false,
+                published = false,
                 platformVideoId = status.platformVideoId.ifBlank { pollToken },
                 errorMessage = status.errorMessage ?: "플랫폼 게시 처리가 거부되었습니다."
             )

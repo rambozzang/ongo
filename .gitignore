@@ -39,6 +39,7 @@ deploy/*backup*.sql
 
 # Test results
 frontend/test-results/
+frontend/coverage/
 frontend/tsconfig.app.tsbuildinfo
 frontend/tsconfig.node.tsbuildinfo
 
