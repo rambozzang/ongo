@@ -5,6 +5,7 @@ import com.ongo.application.video.PlatformStreamWriterFactory
 import com.ongo.application.video.PlatformUploadResult
 import com.ongo.common.enums.Platform
 import com.ongo.domain.video.VideoPlatformMeta
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.naverclip.NaverClipApi
 import com.ongo.infrastructure.external.naverclip.dto.NaverClipUploadCompleteRequest
 import com.ongo.infrastructure.external.naverclip.dto.NaverClipUploadInitRequest
@@ -40,7 +41,7 @@ class NaverClipStreamWriter(
 
     override fun initSession(
         meta: VideoPlatformMeta,
-        accessToken: String,
+        accessToken: PlainToken,
         platformChannelId: String?,
         fileSize: Long,
         scheduledAt: LocalDateTime?,
@@ -51,7 +52,7 @@ class NaverClipStreamWriter(
             )
         }
 
-        accessTokenRef = accessToken
+        accessTokenRef = accessToken.value
         val visibility = mapVisibility(meta.visibility.name)
 
         // Naver Clip 예약 게시: publish_at (ISO 8601)
@@ -65,7 +66,7 @@ class NaverClipStreamWriter(
         }
 
         val initResponse = naverClipApi.initUpload(
-            authorization = "Bearer $accessToken",
+            authorization = "Bearer ${accessToken.value}",
             request = NaverClipUploadInitRequest(
                 title = (meta.title ?: "Untitled").take(100),
                 description = (meta.description ?: "").take(1000),

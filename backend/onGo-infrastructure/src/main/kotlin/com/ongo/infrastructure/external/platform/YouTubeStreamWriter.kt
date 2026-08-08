@@ -5,6 +5,7 @@ import com.ongo.application.video.PlatformStreamWriterFactory
 import com.ongo.application.video.PlatformUploadResult
 import com.ongo.common.enums.Platform
 import com.ongo.domain.video.VideoPlatformMeta
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.youtube.YouTubeConfig
 import com.ongo.infrastructure.external.youtube.dto.YouTubeUploadRequest
 import org.slf4j.LoggerFactory
@@ -38,7 +39,7 @@ class YouTubeStreamWriter(
 
     override fun initSession(
         meta: VideoPlatformMeta,
-        accessToken: String,
+        accessToken: PlainToken,
         platformChannelId: String?,
         fileSize: Long,
         scheduledAt: LocalDateTime?,
@@ -85,7 +86,7 @@ class YouTubeStreamWriter(
         val uri = fileTransferHelper.initiateYouTubeResumableUpload(
             uploadBaseUrl = youTubeConfig.getUploadBaseUrl(),
             metadata = uploadRequest,
-            accessToken = accessToken,
+            accessToken = accessToken.value,
             fileSize = fileSize,
         )
         sessionUri = uri

@@ -2,6 +2,7 @@ package com.ongo.infrastructure.external.platform
 
 import com.ongo.common.enums.Visibility
 import com.ongo.domain.video.VideoPlatformMeta
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.twitter.TwitterApi
 import com.ongo.infrastructure.external.twitter.TwitterConfig
 import com.ongo.infrastructure.external.twitter.TwitterMediaApi
@@ -31,6 +32,7 @@ class TwitterStreamWriterTest {
     private lateinit var writer: TwitterStreamWriter
 
     private val accessToken = "test-access-token"
+    private val plainToken = PlainToken(accessToken)
     private val mediaId = "1234567890"
     private val tweetId = "9876543210"
     private val uploadBaseUrl = "https://upload.twitter.com"
@@ -125,7 +127,7 @@ class TwitterStreamWriterTest {
         // When
         val result = writer.initSession(
             meta = meta,
-            accessToken = accessToken,
+            accessToken = plainToken,
             platformChannelId = null,
             fileSize = 1024L,
             scheduledAt = null,
@@ -145,7 +147,7 @@ class TwitterStreamWriterTest {
         // When
         val result = writer.initSession(
             meta = meta,
-            accessToken = accessToken,
+            accessToken = plainToken,
             platformChannelId = null,
             fileSize = 1024L,
             scheduledAt = scheduledAt,
@@ -169,7 +171,7 @@ class TwitterStreamWriterTest {
 
         writer.initSession(
             meta = defaultMeta(),
-            accessToken = accessToken,
+            accessToken = plainToken,
             platformChannelId = null,
             fileSize = 1024L,
             scheduledAt = null,
@@ -222,7 +224,7 @@ class TwitterStreamWriterTest {
 
         writer.initSession(
             meta = defaultMeta(),
-            accessToken = accessToken,
+            accessToken = plainToken,
             platformChannelId = null,
             fileSize = 512L,
             scheduledAt = null,
@@ -267,7 +269,7 @@ class TwitterStreamWriterTest {
 
         writer.initSession(
             meta = defaultMeta(),
-            accessToken = accessToken,
+            accessToken = plainToken,
             platformChannelId = null,
             fileSize = 256L,
             scheduledAt = null,
@@ -317,7 +319,7 @@ class TwitterStreamWriterTest {
 
         writer.initSession(
             meta = meta,
-            accessToken = accessToken,
+            accessToken = plainToken,
             platformChannelId = null,
             fileSize = 100L,
             scheduledAt = null,
@@ -357,7 +359,7 @@ class TwitterStreamWriterTest {
 
         writer.initSession(
             meta = defaultMeta(),
-            accessToken = accessToken,
+            accessToken = plainToken,
             platformChannelId = null,
             fileSize = largeData.size.toLong(),
             scheduledAt = null,

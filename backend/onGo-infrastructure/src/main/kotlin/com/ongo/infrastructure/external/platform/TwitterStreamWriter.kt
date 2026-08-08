@@ -5,6 +5,7 @@ import com.ongo.application.video.PlatformStreamWriterFactory
 import com.ongo.application.video.PlatformUploadResult
 import com.ongo.common.enums.Platform
 import com.ongo.domain.video.VideoPlatformMeta
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.twitter.TwitterApi
 import com.ongo.infrastructure.external.twitter.TwitterConfig
 import com.ongo.infrastructure.external.twitter.TwitterMediaApi
@@ -51,7 +52,7 @@ class TwitterStreamWriter(
 
     override fun initSession(
         meta: VideoPlatformMeta,
-        accessToken: String,
+        accessToken: PlainToken,
         platformChannelId: String?,
         fileSize: Long,
         scheduledAt: LocalDateTime?,
@@ -66,11 +67,11 @@ class TwitterStreamWriter(
             log.warn("Twitter는 API를 통한 예약 게시를 지원하지 않습니다. scheduledAt={} 무시됨", scheduledAt)
         }
 
-        accessTokenRef = accessToken
+        accessTokenRef = accessToken.value
         tweetText = buildTweetText(meta)
 
         val initResponse = twitterMediaApi.initUpload(
-            authorization = "Bearer $accessToken",
+            authorization = "Bearer ${accessToken.value}",
             command = "INIT",
             totalBytes = fileSize,
             mediaType = "video/mp4",

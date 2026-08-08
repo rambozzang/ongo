@@ -16,6 +16,7 @@ class ScheduledVideoUploadDispatcher(
     private val videoRepository: VideoRepository,
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    private val storageService: StorageService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -23,7 +24,11 @@ class ScheduledVideoUploadDispatcher(
     fun dispatchDueUploads() {
         videoUploadRepository.findDueScheduledUploads(LocalDateTime.now()).forEach { upload ->
             val video = videoRepository.findById(upload.videoId)
-            val fileUrl = video?.fileUrl
+            // DB에 저장된 URL이 presigned URL인 경우 예약 기간 중 만료될 수 있다.
+            // due 시점에 새 URL을 발급해 외부 Graph/API가 실제 파일을 읽게 한다.
+            val fileUrl = video?.let { current ->
+                runCatching { storageService.getFileUrl(current.id!!) }.getOrNull() ?: current.fileUrl
+            }
             val uploadId = upload.id
             if (video == null || fileUrl.isNullOrBlank() || uploadId == null) {
                 log.warn("예약 게시 작업을 깨울 수 없습니다: videoId={}, uploadId={}", upload.videoId, uploadId)
@@ -44,7 +49,9 @@ class ScheduledVideoUploadDispatcher(
                             tags = meta?.tags ?: emptyList(),
                             visibility = meta?.visibility ?: com.ongo.common.enums.Visibility.PUBLIC,
                             thumbnailUrl = meta?.customThumbnailUrl,
-                            scheduledAt = upload.scheduledAt,
+                            // durable queue가 due 작업을 깨웠으므로 플랫폼에는 과거 시각을
+                            // 다시 전달하지 않는다. 여기부터는 즉시 게시 호출이다.
+                            scheduledAt = null,
                         )
                     ),
                 )

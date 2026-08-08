@@ -59,7 +59,6 @@ object Tables {
     val WATERMARKS = DSL.table("watermarks")
 
     // Tools
-    val IDEAS = DSL.table("ideas")
     val GOALS = DSL.table("goals")
     val GOAL_MILESTONES = DSL.table("goal_milestones")
     val BRAND_KITS = DSL.table("brand_kits")
@@ -443,11 +442,8 @@ object Fields {
     val SIZE = DSL.field("size", Int::class.java)
     val IS_DEFAULT = DSL.field("is_default", Boolean::class.java)
 
-    // ideas
-    val PRIORITY = DSL.field("priority", String::class.java)
+    // source is also used by trends/videos; keep it in the shared field registry.
     val SOURCE = DSL.field("source", String::class.java)
-    val REFERENCE_URL = DSL.field("reference_url", String::class.java)
-    val DUE_DATE = DSL.field("due_date", java.time.LocalDate::class.java)
 
     // goals
     val TARGET_VALUE = DSL.field("target_value", Long::class.java)

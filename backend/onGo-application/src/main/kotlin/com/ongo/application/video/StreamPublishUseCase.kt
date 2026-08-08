@@ -28,10 +28,11 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile
-import java.net.URI
 import java.nio.file.Files
 import java.time.LocalDateTime
 import java.time.YearMonth
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class StreamPublishUseCase(
@@ -44,6 +45,7 @@ class StreamPublishUseCase(
     private val streamWriterFactories: List<PlatformStreamWriterFactory>,
     private val scheduleRepository: ScheduleRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    private val storageService: StorageService,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -65,8 +67,8 @@ class StreamPublishUseCase(
         if (monthlyCount >= planType.monthlyUploads) {
             throw PlanLimitExceededException("월간 업로드", planType.monthlyUploads)
         }
-        // 스토리지 쿼터는 검사하지 않는다. 이 경로는 파일을 임시로 흘려보내고 즉시 지우므로
-        // 보관량이 늘지 않는다(아래 fileUrl = null). 남용 방지는 위의 월간 업로드 한도가 맡는다.
+        // 즉시 게시만 로컬 임시 파일로 흘려보낸다. 예약 게시도 프로세스가 재시작되어도
+        // 살아 있어야 하므로 영구 오브젝트 URL을 먼저 확보한다.
 
         // 2. Video 레코드 생성 (fileUrl = null, status = UPLOADING)
         val video = videoRepository.save(
@@ -104,6 +106,7 @@ class StreamPublishUseCase(
                     videoId = videoId,
                     platform = platformReq.platform,
                     status = UploadStatus.UPLOADING,
+                    scheduledAt = platformReq.scheduledAt,
                 )
             )
             val uploadId = upload.id!!
@@ -123,7 +126,7 @@ class StreamPublishUseCase(
                 platform = platformReq.platform,
                 videoUploadId = uploadId,
                 meta = meta,
-                accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value,
+                accessToken = tokenEncryptionPort.decrypt(channel.accessToken),
                 platformChannelId = channel.platformChannelId,
                 scheduledAt = platformReq.scheduledAt,
             )
@@ -140,32 +143,92 @@ class StreamPublishUseCase(
                     videoId = videoId,
                     userId = userId,
                     scheduledAt = earliestScheduledAt,
-                    status = ScheduleStatus.PROCESSING,
+                    status = ScheduleStatus.SCHEDULED,
                     platforms = platformMap,
                 )
             )
             log.info("예약 게시 스케줄 생성: videoId={}, scheduledAt={}", videoId, earliestScheduledAt)
         }
 
-        // 5. 파일을 임시 파일로 저장
-        val tempFile = Files.createTempFile("ongo-stream-", "-${file.originalFilename ?: "upload"}")
-        try {
-            file.transferTo(tempFile.toFile())
-        } catch (e: Exception) {
-            Files.deleteIfExists(tempFile)
-            throw e
+        // 5. 예약 게시가 하나라도 있으면 durable object URL을 저장한다. 이 URL은
+        // 프로세스 재시작/다중 인스턴스에서도 dispatcher가 다시 읽을 수 있는 유일한
+        // 입력이다. 즉시 게시에는 저장 비용을 만들지 않는다.
+        val durableFileUrl = if (hasSchedule) {
+            val safeFilename = file.originalFilename.orEmpty()
+                .substringAfterLast('/')
+                .substringAfterLast('\\')
+                .replace(Regex("[^a-zA-Z0-9._-]"), "_")
+                .takeLast(180)
+                .ifBlank { "upload.mp4" }
+            try {
+                file.inputStream.use { input ->
+                    storageService.uploadFile(
+                        key = "videos/$videoId/$safeFilename",
+                        inputStream = input,
+                        contentType = file.contentType ?: "video/mp4",
+                        size = fileSize,
+                    ).also { url ->
+                        videoRepository.update(video.copy(fileUrl = url))
+                    }
+                }
+            } catch (e: Exception) {
+                runCatching { storageService.deleteFile(videoId) }
+                throw e
+            }
+        } else {
+            null
         }
 
-        // 6. 트랜잭션 커밋 후 Virtual Thread에서 비동기 스트리밍 시작
+        // 6. 트랜잭션 커밋 후 게시를 시작한다. 예약은 durable event/dispatcher가
+        // 담당하고, 즉시는 기존의 메모리 효율적인 streaming writer를 사용한다.
         // (afterCommit: DB 레코드가 확실히 커밋된 후 읽기 가능)
         TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
             override fun afterCommit() {
-                Thread.ofVirtual().name("stream-publish-$videoId").start {
-                    ExecutorConfig.uploadSemaphore.acquire()
-                    try {
-                        runStreamingUpload(videoId, userId, tempFile.toFile(), fileSize, platformConfigs)
-                    } finally {
-                        ExecutorConfig.uploadSemaphore.release()
+                if (hasSchedule) {
+                    eventPublisher.publishEvent(
+                        VideoPublishEvent(
+                            videoId = videoId,
+                            userId = userId,
+                            fileUrl = durableFileUrl,
+                            platformConfigs = platformConfigs.map { ctx ->
+                                PlatformUploadConfig(
+                                    platform = ctx.platform,
+                                    videoUploadId = ctx.videoUploadId,
+                                    title = ctx.meta.title ?: "",
+                                    description = ctx.meta.description,
+                                    tags = ctx.meta.tags,
+                                    visibility = ctx.meta.visibility,
+                                    thumbnailUrl = ctx.meta.customThumbnailUrl,
+                                    fileSize = fileSize,
+                                    scheduledAt = ctx.scheduledAt,
+                                )
+                            },
+                        )
+                    )
+                } else {
+                    val tempFile = runCatching {
+                        Files.createTempFile("ongo-stream-", "-${file.originalFilename ?: "upload"}").also { path ->
+                            try {
+                                file.transferTo(path.toFile())
+                            } catch (error: Exception) {
+                                Files.deleteIfExists(path)
+                                throw error
+                            }
+                        }
+                    }.getOrElse { error ->
+                        platformConfigs.forEach { ctx ->
+                            updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, "임시 파일 저장 실패: ${error.message}")
+                        }
+                        updateOverallVideoStatus(videoId)
+                        return
+                    }
+                    Thread.ofVirtual().name("stream-publish-$videoId").start {
+                        ExecutorConfig.uploadSemaphore.acquire()
+                        try {
+                            runStreamingUpload(videoId, userId, tempFile.toFile(), fileSize, platformConfigs)
+                        } finally {
+                            ExecutorConfig.uploadSemaphore.release()
+                        }
                     }
                 }
             }
@@ -203,8 +266,8 @@ class StreamPublishUseCase(
             require(extension in capability.acceptedExtensions) {
                 "${platformRequest.platform}은(는) .$extension 파일을 지원하지 않습니다. 지원 형식: ${capability.acceptedExtensions.joinToString { ".$it" }}"
             }
-            require(platformRequest.scheduledAt == null || capability.scheduling) {
-                "${platformRequest.platform}은(는) API 예약 게시를 지원하지 않습니다. 즉시 게시를 선택해주세요."
+            require(platformRequest.scheduledAt == null || capability.cloudVideoUpload) {
+                "${platformRequest.platform}은(는) durable 예약 게시에 필요한 클라우드 업로드를 지원하지 않습니다."
             }
             require(platformRequest.scheduledAt == null || platformRequest.scheduledAt.isAfter(LocalDateTime.now().plusMinutes(5))) {
                 "예약 시간은 현재보다 최소 5분 이후여야 합니다."
@@ -238,6 +301,7 @@ class StreamPublishUseCase(
         platformContexts: List<StreamPlatformContext>,
     ) {
         val openedWriters = mutableListOf<PlatformStreamWriter>()
+        val leaseOwners = ConcurrentHashMap<Long, String>()
         try {
             // 각 플랫폼별 writer 생성
             val writerMap: Map<StreamPlatformContext, PlatformStreamWriter> = platformContexts.mapNotNull { ctx ->
@@ -262,8 +326,16 @@ class StreamPublishUseCase(
             // 병렬로 initSession() 호출 — 실패한 플랫폼은 FAILED 처리 후 제외, 나머지는 계속
             val activeWriterMap: MutableMap<StreamPlatformContext, PlatformStreamWriter> = mutableMapOf()
             ExecutorConfig.newVirtualExecutor().use { executor ->
-                val initFutures = writerMap.map { (ctx, writer) ->
+                    val initFutures = writerMap.map { (ctx, writer) ->
                     ctx to executor.submit<Unit> {
+                        val owner = "stream:$videoId:${ctx.platform}:${UUID.randomUUID()}"
+                        val claimed = videoUploadRepository.claim(
+                            id = ctx.videoUploadId,
+                            owner = owner,
+                            now = LocalDateTime.now(),
+                            leaseUntil = LocalDateTime.now().plusMinutes(30),
+                        ) ?: throw IllegalStateException("업로드 lease를 획득하지 못했습니다.")
+                        leaseOwners[ctx.videoUploadId] = owner
                         val sessionId = writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize, ctx.scheduledAt)
                         val scheduleInfo = if (ctx.scheduledAt != null) ", scheduledAt=${ctx.scheduledAt}" else ""
                         log.info("플랫폼 {} 업로드 세션 초기화: videoId={}, sessionId={}{}",
@@ -276,7 +348,12 @@ class StreamPublishUseCase(
                         activeWriterMap[ctx] = writerMap[ctx]!!
                     } catch (e: Exception) {
                         log.error("플랫폼 {} 세션 초기화 실패: videoId={}", ctx.platform, videoId, e)
-                        updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, "세션 초기화 실패: ${e.cause?.message ?: e.message}")
+                        updateUploadStatus(
+                            ctx.videoUploadId,
+                            UploadStatus.FAILED,
+                            "세션 초기화 실패: ${e.cause?.message ?: e.message}",
+                            leaseOwner = leaseOwners[ctx.videoUploadId],
+                        )
                     }
                 }
             }
@@ -310,25 +387,51 @@ class StreamPublishUseCase(
                     executor.submit<Unit> {
                         try {
                             val result = writer.complete()
-                            if (result.success) {
-                                // 플랫폼이 게시를 확정했으면 PUBLISHED 로 끝낸다. 확정 신호가 없는
-                                // 플랫폼(예: TikTok 은 publish_id 만 주고 비동기 처리)만 PROCESSING 에 남는다.
-                                updateUploadStatus(
-                                    ctx.videoUploadId,
-                                    if (result.published) UploadStatus.PUBLISHED else UploadStatus.PROCESSING,
-                                    platformVideoId = result.platformVideoId,
-                                    platformUrl = result.platformUrl,
-                                )
-                                log.info("플랫폼 {} 업로드 완료: videoId={}, platformUrl={}", ctx.platform, videoId, result.platformUrl)
-                                fireCompletedEvent(videoId, userId, ctx.platform, true, platformUrl = result.platformUrl)
-                            } else {
-                                updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, result.errorMessage)
-                                log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", ctx.platform, videoId, result.errorMessage)
-                                fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = result.errorMessage)
+                            val owner = leaseOwners[ctx.videoUploadId]
+                            when (val outcome = result.toPublishOutcome()) {
+                                is PublishOutcome.Published -> {
+                                    updateUploadStatus(
+                                        ctx.videoUploadId,
+                                        UploadStatus.PUBLISHED,
+                                        platformVideoId = outcome.platformVideoId,
+                                        platformUrl = outcome.platformUrl,
+                                        leaseOwner = owner,
+                                    )
+                                    log.info("플랫폼 {} 업로드 완료: videoId={}, platformUrl={}", ctx.platform, videoId, outcome.platformUrl)
+                                    fireCompletedEvent(videoId, userId, ctx.platform, true, platformUrl = outcome.platformUrl)
+                                }
+                                is PublishOutcome.Accepted -> {
+                                    updateUploadStatus(
+                                        ctx.videoUploadId,
+                                        UploadStatus.PROCESSING,
+                                        platformVideoId = outcome.platformVideoId,
+                                        platformUrl = result.platformUrl,
+                                        pollToken = outcome.pollToken,
+                                        nextRetryAt = LocalDateTime.now().plus(outcome.retryAfter),
+                                        leaseOwner = owner,
+                                    )
+                                    log.info("플랫폼 {} 업로드 수락: videoId={}, pollToken={}", ctx.platform, videoId, outcome.pollToken)
+                                    fireCompletedEvent(videoId, userId, ctx.platform, true, platformUrl = result.platformUrl)
+                                }
+                                is PublishOutcome.Failed -> {
+                                    updateUploadStatus(
+                                        ctx.videoUploadId,
+                                        UploadStatus.FAILED,
+                                        outcome.message,
+                                        leaseOwner = owner,
+                                    )
+                                    log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", ctx.platform, videoId, outcome.message)
+                                    fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = outcome.message)
+                                }
                             }
                         } catch (e: Exception) {
                             log.error("플랫폼 {} 업로드 완료 처리 중 예외: videoId={}", ctx.platform, videoId, e)
-                            updateUploadStatus(ctx.videoUploadId, UploadStatus.UNCONFIRMED, e.message)
+                            updateUploadStatus(
+                                ctx.videoUploadId,
+                                UploadStatus.UNCONFIRMED,
+                                e.message,
+                                leaseOwner = leaseOwners[ctx.videoUploadId],
+                            )
                             fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = e.message)
                         }
                     }
@@ -338,7 +441,12 @@ class StreamPublishUseCase(
         } catch (e: Exception) {
             log.error("스트리밍 업로드 전체 실패: videoId={}", videoId, e)
             platformContexts.forEach { ctx ->
-                updateUploadStatus(ctx.videoUploadId, UploadStatus.UNCONFIRMED, "게시 결과 확인 필요: ${e.message}")
+                updateUploadStatus(
+                    ctx.videoUploadId,
+                    UploadStatus.UNCONFIRMED,
+                    "게시 결과 확인 필요: ${e.message}",
+                    leaseOwner = leaseOwners[ctx.videoUploadId],
+                )
             }
         } finally {
             openedWriters.forEach { writer -> runCatching { writer.abort() } }
@@ -394,17 +502,32 @@ class StreamPublishUseCase(
         errorMessage: String? = null,
         platformVideoId: String? = null,
         platformUrl: String? = null,
+        pollToken: String? = null,
+        nextRetryAt: LocalDateTime? = null,
+        leaseOwner: String? = null,
     ) {
         val upload = videoUploadRepository.findById(uploadId) ?: return
-        videoUploadRepository.update(
-            upload.copy(
-                status = status,
-                errorMessage = errorMessage,
-                platformVideoId = platformVideoId ?: upload.platformVideoId,
-                platformUrl = platformUrl ?: upload.platformUrl,
-                publishedAt = if (status == UploadStatus.PUBLISHED) LocalDateTime.now() else upload.publishedAt,
-            )
+        val updated = upload.copy(
+            status = status,
+            errorMessage = errorMessage,
+            platformVideoId = platformVideoId ?: upload.platformVideoId,
+            platformUrl = platformUrl ?: upload.platformUrl,
+            pollToken = pollToken ?: upload.pollToken,
+            nextRetryAt = when {
+                nextRetryAt != null -> nextRetryAt
+                status in setOf(UploadStatus.PUBLISHED, UploadStatus.FAILED, UploadStatus.REJECTED) -> null
+                else -> upload.nextRetryAt
+            },
+            lastError = errorMessage,
+            leaseOwner = null,
+            leaseUntil = null,
+            publishedAt = if (status == UploadStatus.PUBLISHED) LocalDateTime.now() else upload.publishedAt,
         )
+        if (leaseOwner == null) {
+            videoUploadRepository.update(updated)
+        } else if (!videoUploadRepository.updateOwned(updated, leaseOwner)) {
+            log.warn("lease를 잃은 스트리밍 작업자의 결과 반영을 차단했습니다: uploadId={}, owner={}", uploadId, leaseOwner)
+        }
     }
 
     private fun updateOverallVideoStatus(videoId: Long) {
@@ -429,8 +552,10 @@ class StreamPublishUseCase(
     }
 
     /**
-     * 예약된 영상을 플랫폼에 업로드합니다.
-     * ScheduleUseCase.createSchedule()으로 생성된 SCHEDULED 상태의 예약을 처리합니다.
+     * 레거시 Schedule 레코드(업로드 row가 없는 예약)를 durable queue로 복구한다.
+     *
+     * 실제 외부 호출은 여기서 하지 않는다. 이 메서드는 VideoUpload row와
+     * VideoPublishEvent만 만들고, lease/재시도/확인 불가 처리는 공통 listener가 맡는다.
      */
     @Transactional
     fun executeScheduledUpload(schedule: Schedule) {
@@ -447,11 +572,7 @@ class StreamPublishUseCase(
             return
         }
 
-        val fileSize = video.fileSizeBytes ?: run {
-            log.error("예약 업로드 실패 — fileSize 없음 [scheduleId={}, videoId={}]", schedule.id, schedule.videoId)
-            scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
-            return
-        }
+        val fileSize = video.fileSizeBytes ?: 0L
 
         val platforms = schedule.platforms.keys.mapNotNull { platformStr ->
             try { Platform.valueOf(platformStr) } catch (_: Exception) { null }
@@ -463,17 +584,11 @@ class StreamPublishUseCase(
             return
         }
 
-        val platformContexts = platforms.mapNotNull { platform ->
-            val channel = channelRepository.findByUserIdAndPlatform(schedule.userId, platform)
-            if (channel == null) {
-                log.warn("예약 업로드 — 채널 없음 [platform={}, scheduleId={}]", platform, schedule.id)
+        val platformConfigs = platforms.mapNotNull { platform ->
+            val existing = videoUploadRepository.findByVideoIdAndPlatform(schedule.videoId, platform)
+            if (existing != null && existing.status !in setOf(UploadStatus.FAILED, UploadStatus.REJECTED, UploadStatus.UNCONFIRMED)) {
                 return@mapNotNull null
             }
-            if (channel.status != ChannelStatus.ACTIVE) {
-                log.warn("예약 업로드 — 채널 비활성 [platform={}, scheduleId={}]", platform, schedule.id)
-                return@mapNotNull null
-            }
-
             val upload = videoUploadRepository.save(
                 VideoUpload(
                     videoId = schedule.videoId,
@@ -494,19 +609,21 @@ class StreamPublishUseCase(
                 )
             )
 
-            StreamPlatformContext(
+            PlatformUploadConfig(
                 platform = platform,
                 videoUploadId = uploadId,
-                meta = meta,
-                accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value,
-                platformChannelId = channel.platformChannelId,
+                title = meta.title ?: "",
+                description = meta.description,
+                tags = meta.tags,
+                visibility = meta.visibility,
+                thumbnailUrl = meta.customThumbnailUrl,
+                fileSize = fileSize,
                 scheduledAt = null,
             )
         }
 
-        if (platformContexts.isEmpty()) {
-            log.error("예약 업로드 실패 — 유효한 플랫폼 컨텍스트 없음 [scheduleId={}]", schedule.id)
-            scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
+        if (platformConfigs.isEmpty()) {
+            log.info("예약 업로드가 이미 큐에 있거나 완료됨 [scheduleId={}]", schedule.id)
             return
         }
 
@@ -514,48 +631,16 @@ class StreamPublishUseCase(
 
         TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
             override fun afterCommit() {
-                Thread.ofVirtual().name("scheduled-publish-${schedule.id}").start {
-                    ExecutorConfig.uploadSemaphore.acquire()
-                    try {
-                        downloadAndStreamUpload(schedule.videoId, video.userId, fileUrl, fileSize, platformContexts)
-                    } finally {
-                        ExecutorConfig.uploadSemaphore.release()
-                    }
-                }
+                eventPublisher.publishEvent(
+                    VideoPublishEvent(
+                        videoId = schedule.videoId,
+                        userId = video.userId,
+                        fileUrl = fileUrl,
+                        platformConfigs = platformConfigs,
+                    )
+                )
             }
         })
-    }
-
-    private fun downloadAndStreamUpload(
-        videoId: Long,
-        userId: Long,
-        fileUrl: String,
-        fileSize: Long,
-        platformContexts: List<StreamPlatformContext>,
-    ) {
-        val tempFile = Files.createTempFile("ongo-scheduled-", "-upload").toFile()
-        try {
-            val url = URI.create(fileUrl).toURL()
-            url.openStream().use { input ->
-                tempFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-            log.info("예약 업로드 파일 다운로드 완료 [videoId={}, size={}]", videoId, fileSize)
-            runStreamingUpload(videoId, userId, tempFile, fileSize, platformContexts)
-        } catch (e: Exception) {
-            log.error("예약 업로드 실패 [videoId={}]: {}", videoId, e.message, e)
-            platformContexts.forEach { ctx ->
-                updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, "예약 업로드 실패: ${e.message}")
-            }
-            updateOverallVideoStatus(videoId)
-        } finally {
-            try {
-                Files.deleteIfExists(tempFile.toPath())
-            } catch (e: Exception) {
-                log.warn("임시 파일 삭제 실패: {}", tempFile.absolutePath, e)
-            }
-        }
     }
 }
 
@@ -564,7 +649,7 @@ private data class StreamPlatformContext(
     val platform: Platform,
     val videoUploadId: Long,
     val meta: VideoPlatformMeta,
-    val accessToken: String,
+    val accessToken: com.ongo.domain.channel.PlainToken,
     val platformChannelId: String?,
     val scheduledAt: LocalDateTime?,
 )

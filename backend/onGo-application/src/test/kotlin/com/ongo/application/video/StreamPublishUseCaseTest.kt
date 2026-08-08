@@ -52,6 +52,7 @@ class StreamPublishUseCaseTest {
     private val channelRepository = mockk<ChannelRepository>()
     private val tokenEncryptionPort = mockk<TokenEncryptionPort>()
     private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
+    private val storageService = mockk<StorageService>()
     private val streamWriterFactories = listOf(
         stubFactory(Platform.YOUTUBE),
         stubFactory(Platform.TIKTOK),
@@ -81,6 +82,7 @@ class StreamPublishUseCaseTest {
             eventPublisher = eventPublisher,
             streamWriterFactories = streamWriterFactories,
             scheduleRepository = scheduleRepository,
+            storageService = storageService,
         )
 
         // TransactionSynchronizationManager 정적 메서드 mock — Spring 컨텍스트 없이 실행
@@ -88,6 +90,9 @@ class StreamPublishUseCaseTest {
         every { TransactionSynchronizationManager.isActualTransactionActive() } returns true
         every { TransactionSynchronizationManager.registerSynchronization(any()) } just Runs
         every { tokenEncryptionPort.decrypt(any()) } answers { PlainToken(firstArg<EncryptedToken>().value) }
+        every { storageService.uploadFile(any(), any(), any(), any()) } returns "https://storage.test/video.mp4"
+        every { storageService.deleteFile(any()) } just Runs
+        every { videoRepository.update(any()) } answers { firstArg() }
     }
 
     @AfterEach
@@ -328,12 +333,12 @@ class StreamPublishUseCaseTest {
         // When
         useCase.initiate(userId, file, request)
 
-        // Then: Schedule 저장 1회 — PROCESSING 상태로
+        // Then: Schedule 저장 1회 — durable queue 대기 상태로
         verify(exactly = 1) {
             scheduleRepository.save(match { schedule ->
                 schedule.videoId == 100L &&
                     schedule.userId == userId &&
-                    schedule.status == ScheduleStatus.PROCESSING &&
+                    schedule.status == ScheduleStatus.SCHEDULED &&
                     schedule.platforms.containsKey("YOUTUBE")
             })
         }

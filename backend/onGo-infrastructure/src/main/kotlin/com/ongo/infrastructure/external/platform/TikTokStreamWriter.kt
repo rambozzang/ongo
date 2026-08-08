@@ -5,6 +5,7 @@ import com.ongo.application.video.PlatformStreamWriterFactory
 import com.ongo.application.video.PlatformUploadResult
 import com.ongo.common.enums.Platform
 import com.ongo.domain.video.VideoPlatformMeta
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.tiktok.TikTokApi
 import com.ongo.infrastructure.external.tiktok.dto.TikTokInitUploadRequest
 import org.slf4j.LoggerFactory
@@ -42,12 +43,12 @@ class TikTokStreamWriter(
 
     override fun initSession(
         meta: VideoPlatformMeta,
-        accessToken: String,
+        accessToken: PlainToken,
         platformChannelId: String?,
         fileSize: Long,
         scheduledAt: LocalDateTime?,
     ): String {
-        this.accessToken = accessToken
+        this.accessToken = accessToken.value
         this.platformChannelId = platformChannelId
         if (fileSize > MAX_MEMORY_FILE_SIZE) {
             throw IllegalArgumentException(
@@ -56,7 +57,7 @@ class TikTokStreamWriter(
         }
 
         val privacyLevel = mapVisibility(meta.visibility.name)
-        val creatorInfo = tikTokApi.queryCreatorPublishInfo("Bearer $accessToken")
+        val creatorInfo = tikTokApi.queryCreatorPublishInfo("Bearer ${accessToken.value}")
         if (creatorInfo.error != null) {
             throw IllegalStateException("TikTok 게시 권한 조회 실패: ${creatorInfo.error.message}")
         }
@@ -82,7 +83,7 @@ class TikTokStreamWriter(
         )
 
         val response = tikTokApi.initVideoUpload(
-            authorization = "Bearer $accessToken",
+            authorization = "Bearer ${accessToken.value}",
             request = initRequest,
         )
 

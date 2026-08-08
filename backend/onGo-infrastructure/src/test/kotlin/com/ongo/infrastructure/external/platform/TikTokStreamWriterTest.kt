@@ -2,6 +2,7 @@ package com.ongo.infrastructure.external.platform
 
 import com.ongo.common.enums.Visibility
 import com.ongo.domain.video.VideoPlatformMeta
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.tiktok.TikTokApi
 import com.ongo.infrastructure.external.tiktok.dto.TikTokCreatorPublishInfoResponse
 import com.ongo.infrastructure.external.tiktok.dto.TikTokInitUploadResponse
@@ -67,7 +68,7 @@ class TikTokStreamWriterTest {
 
         writer.initSession(
             meta = VideoPlatformMeta(videoUploadId = 1L, title = "테스트", visibility = Visibility.PUBLIC),
-            accessToken = accessToken,
+            accessToken = PlainToken(accessToken),
             platformChannelId = "creator_name",
             fileSize = 4,
             scheduledAt = null,

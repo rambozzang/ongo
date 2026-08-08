@@ -8,6 +8,7 @@ import com.ongo.application.video.PlatformUploadCapabilities
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.infrastructure.external.platform.PlatformClientFactory
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
@@ -60,7 +61,7 @@ class PlatformUploadServiceImpl(
                 val directFactory = streamWriterFactories.find { it.platform == config.platform }
                     ?.takeIf { PlatformUploadCapabilities.get(config.platform)?.directVideoUpload == true }
                 val result = if (directFactory != null) {
-                    uploadFromCloudUrl(directFactory, config, fileUrl, accessToken, channel.platformChannelId)
+                    uploadFromCloudUrl(directFactory, config, fileUrl, PlainToken(accessToken), channel.platformChannelId)
                 } else {
                     val client = platformClientFactory.getClient(config.platform)
                     val clientResult = client.uploadVideo(
@@ -133,7 +134,7 @@ class PlatformUploadServiceImpl(
         factory: PlatformStreamWriterFactory,
         config: PlatformUploadConfig,
         fileUrl: String,
-        accessToken: String,
+        accessToken: PlainToken,
         platformChannelId: String?,
     ): PlatformUploadResult {
         val sourceFile = downloadFileToTemp(fileUrl)

@@ -34,12 +34,12 @@ object PlatformUploadCapabilities {
             Platform.TWITTER, true, true, false, 512 * MB, 280, 0, 30, setOf("mp4", "mov"),
         ),
         Platform.INSTAGRAM to PlatformUploadCapability(
-            Platform.INSTAGRAM, false, true, false, 500 * MB, 2_200, 0, 30, setOf("mp4", "mov"),
-            "Instagram은 클라우드 임시 URL을 통해 업로드합니다.",
+            Platform.INSTAGRAM, true, true, false, 500 * MB, 2_200, 0, 30, setOf("mp4", "mov"),
+            "Instagram은 임시 오브젝트 URL을 통해 Graph API로 업로드합니다.",
         ),
         Platform.THREADS to PlatformUploadCapability(
-            Platform.THREADS, false, true, false, 500 * MB, 500, 0, 30, setOf("mp4", "mov"),
-            "Threads는 클라우드 임시 URL을 통해 업로드합니다.",
+            Platform.THREADS, true, true, false, 500 * MB, 500, 0, 30, setOf("mp4", "mov"),
+            "Threads는 임시 오브젝트 URL을 통해 Graph API로 업로드합니다.",
         ),
         Platform.FACEBOOK to PlatformUploadCapability(
             Platform.FACEBOOK, false, true, false, 2 * GB, 255, 5_000, 30, setOf("mp4", "mov"),

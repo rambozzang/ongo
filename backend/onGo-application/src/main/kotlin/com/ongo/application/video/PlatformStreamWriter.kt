@@ -1,6 +1,7 @@
 package com.ongo.application.video
 
 import com.ongo.domain.video.VideoPlatformMeta
+import com.ongo.domain.channel.PlainToken
 import java.time.LocalDateTime
 
 /**
@@ -14,7 +15,7 @@ interface PlatformStreamWriter {
      */
     fun initSession(
         meta: VideoPlatformMeta,
-        accessToken: String,
+        accessToken: PlainToken,
         platformChannelId: String?,
         fileSize: Long,
         scheduledAt: LocalDateTime? = null,

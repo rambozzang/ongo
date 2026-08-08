@@ -31,11 +31,13 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
+import { capabilitiesApi } from '@/api/capabilities'
 
 export interface NavItem {
   to: string
   label: string
   icon: Component
+  capabilityKey?: string
 }
 
 export interface NavSubGroup {
@@ -67,6 +69,25 @@ function loadExpandedSubGroups(): Set<string> {
 
 // 사이드바(데스크톱/모바일 드로어)와 모바일 전체 메뉴 시트가 공유하는 단일 상태
 const expandedSubGroups = ref<Set<string>>(loadExpandedSubGroups())
+const enabledCapabilityKeys = ref<Set<string> | null>(null)
+let capabilityRequest: Promise<void> | null = null
+
+async function loadCapabilities() {
+  if (capabilityRequest) return capabilityRequest
+  capabilityRequest = capabilitiesApi.list()
+    .then((items) => {
+      enabledCapabilityKeys.value = new Set(items.filter((item) => item.enabled).map((item) => item.key))
+    })
+    .catch(() => {
+      // 기능 capability를 일시적으로 읽지 못한 동안 기존 메뉴를 숨겨 사용자를
+      // 막지 않는다. 서버가 응답하면 비활성 기능은 즉시 제거된다.
+      enabledCapabilityKeys.value = null
+    })
+    .finally(() => {
+      capabilityRequest = null
+    })
+  return capabilityRequest
+}
 
 function persistExpandedSubGroups() {
   try {
@@ -86,7 +107,26 @@ export function useNavigation() {
   const authStore = useAuthStore()
   const isAdmin = computed(() => authStore.user?.role === 'ADMIN')
 
-  const navGroups = computed<NavGroup[]>(() => [
+  watch(
+    () => authStore.isAuthenticated,
+    (authenticated) => {
+      if (authenticated) void loadCapabilities()
+      else enabledCapabilityKeys.value = null
+    },
+    { immediate: true },
+  )
+
+  const withCapability = (item: NavItem): NavItem => ({
+    ...item,
+    capabilityKey: item.capabilityKey ?? item.to.replace(/^\//, ''),
+  })
+  const visibleItems = (items: NavItem[]) => items.map(withCapability).filter((item) => {
+    const enabled = enabledCapabilityKeys.value
+    return enabled === null || enabled.has(item.capabilityKey!)
+  })
+
+  const navGroups = computed<NavGroup[]>(() => {
+    const groups: NavGroup[] = [
     // ── 1. 대시보드 ──
     {
       items: [
@@ -172,7 +212,16 @@ export function useNavigation() {
         { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
       ],
     },
-  ])
+    ]
+    return groups.map((group) => ({
+      ...group,
+      items: visibleItems(group.items),
+      subGroups: group.subGroups?.map((subGroup) => ({
+        ...subGroup,
+        items: visibleItems(subGroup.items),
+      })).filter((subGroup) => subGroup.items.length > 0),
+    }))
+  })
 
   const bottomNavItems = computed<NavItem[]>(() => {
     const items: NavItem[] = [
