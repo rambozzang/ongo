@@ -63,5 +63,11 @@ subprojects {
 
     tasks.withType<Test> {
         useJUnitPlatform()
+        // Testcontainers 기반 통합 테스트는 Docker가 있는 로컬/전용 CI에서 실행한다.
+        // 배포 Jenkins처럼 Docker를 제공하지 않는 환경에서는 단위 테스트만 돌릴 수 있게
+        // 명시적인 스위치를 둔다. 기본값은 false라 로컬 전체 테스트 동작은 유지된다.
+        if (project.findProperty("skipIntegrationTests") == "true") {
+            exclude("**/*IT.class")
+        }
     }
 }
