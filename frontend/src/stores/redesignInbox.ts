@@ -131,13 +131,15 @@ export const useRedesignInboxStore = defineStore('redesignInbox', () => {
       commentsApi.list({ size: 100 }),
       inboxApi.listMessages({ size: 100 }),
     ])
+    const previousComments = threads.value.filter((thread) => thread.source === 'comment')
+    const previousMessages = threads.value.filter((thread) => thread.source === 'dm')
     const list: InboxThread[] = []
     if (comments.status === 'fulfilled') {
       list.push(...comments.value.comments.map(commentToThread))
-    }
+    } else list.push(...previousComments)
     if (messages.status === 'fulfilled') {
       list.push(...messages.value.messages.map(messageToThread))
-    }
+    } else list.push(...previousMessages)
     if (comments.status === 'rejected' && messages.status === 'rejected') {
       loadError.value = 'loadFailed'
     } else if (comments.status === 'rejected' || messages.status === 'rejected') {

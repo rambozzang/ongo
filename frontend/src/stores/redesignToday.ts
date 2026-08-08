@@ -5,9 +5,10 @@ import { scheduleApi } from '@/api/schedule'
 import type { Channel, Platform, TokenStatus } from '@/types/channel'
 import type { Schedule, ScheduleStatus } from '@/types/schedule'
 import { useRedesignShellStore } from './redesignShell'
+import { kstDateString, kstTimeString } from '@/utils/kst'
 
 type PillVariant = 'success' | 'warning' | 'error' | 'muted'
-type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'
+type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW'
 
 /** Platform → 플랫폼 칩 코드. 칩이 없는 플랫폼은 가장 가까운 중립 칩(TH)으로 떨어뜨린다. */
 const CHIP: Partial<Record<Platform, ChipCode>> = {
@@ -17,6 +18,7 @@ const CHIP: Partial<Record<Platform, ChipCode>> = {
   FACEBOOK: 'FB',
   NAVER_CLIP: 'NV',
   THREADS: 'TH',
+  TWITTER: 'TW',
 }
 const toChip = (p: Platform): ChipCode => CHIP[p] ?? 'TH'
 
@@ -89,12 +91,11 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
   })
 
   function toQueueRow(s: Schedule): QueueRow {
-    const at = new Date(s.scheduledAt)
     const status = SCHEDULE_STATUS[s.status] ?? SCHEDULE_STATUS.SCHEDULED
     return {
       id: s.id,
       videoId: s.videoId ?? null,
-      time: at.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      time: kstTimeString(s.scheduledAt),
       title: s.videoTitle,
       thumbnailUrl: s.thumbnailUrl,
       duration: null,
@@ -150,8 +151,7 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
     loading.value = true
     loadError.value = null
     try {
-      const today = new Date()
-      const day = today.toISOString().slice(0, 10)
+      const day = kstDateString()
 
       const [scheduleRes, channelRes, unreadRes] = await Promise.allSettled([
         scheduleApi.list({ startDate: day, endDate: day }),
@@ -178,7 +178,7 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
         kpi.value = {
           ...kpi.value,
           scheduled: scheduleList.filter((s) => s.status === 'SCHEDULED').length,
-          pending: scheduleList.filter((s) => s.status === 'SCHEDULED').length,
+          pending: scheduleList.filter((s) => s.status === 'PROCESSING').length,
           failed: scheduleList.filter((s) => s.status === 'FAILED').length,
         }
       }
