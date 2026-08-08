@@ -12,7 +12,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.core.env.Environment
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
@@ -53,7 +52,6 @@ class DeleteAccountRouteTest {
             authTokenPort = mockk<AuthTokenPort>(relaxed = true),
             authRateLimiter = mockk(relaxed = true),
             oAuthStateManager = mockk(relaxed = true),
-            environment = mockk<Environment>(relaxed = true),
         )
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setCustomArgumentResolvers(CurrentUserArgumentResolver())

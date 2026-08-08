@@ -163,7 +163,6 @@ export function useNavigation() {
             { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
             { to: '/ugc/campaigns', label: t('nav.ugcCampaigns'), icon: MegaphoneIcon },
             { to: '/creator/campaigns', label: t('nav.creatorCampaigns'), icon: HandRaisedIcon },
-            { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
           ],
         },
       ],

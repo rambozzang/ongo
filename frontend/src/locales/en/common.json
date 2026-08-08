@@ -2051,6 +2051,8 @@
     "disconnectConfirm": "Disconnect",
     "disconnectMessage": "Are you sure you want to disconnect {platform} channel \"{name}\"?\n\nUploads and analytics for this platform will be stopped.",
     "syncSuccess": "Channel info synced successfully.",
+    "syncFailed": "Failed to sync the channel.",
+    "loadFailed": "Failed to load channel information.",
     "syncError": "Sync failed. Please try again.",
     "syncAllSuccess": "All channels synced successfully.",
     "syncAllError": "Some channels failed to sync.",
@@ -4212,7 +4214,9 @@
       "manage": "Manage →",
       "emptyQueue": "Nothing scheduled today",
       "emptyAttention": "Nothing needs your attention",
-      "emptyChannels": "No channels connected"
+      "emptyChannels": "No channels connected",
+      "loadFailed": "Today's data could not be loaded.",
+      "loadPartial": "Only some of today's data loaded. Check again for the latest status."
     },
     "compose": {
       "noFile": "Choose a file",

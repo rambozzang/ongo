@@ -64,6 +64,7 @@ export interface AttentionItem {
  */
 export const useRedesignTodayStore = defineStore('redesignToday', () => {
   const loading = ref(false)
+  const loadError = ref<'loadFailed' | 'loadPartial' | null>(null)
   const queue = ref<QueueRow[]>([])
   const attention = ref<AttentionItem[]>([])
   const channels = ref<
@@ -144,50 +145,66 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
 
   async function load() {
     loading.value = true
+    loadError.value = null
     try {
       const today = new Date()
       const day = today.toISOString().slice(0, 10)
 
-      const [scheduleRes, channelRes] = await Promise.allSettled([
+      const [scheduleRes, channelRes, unreadRes] = await Promise.allSettled([
         scheduleApi.list({ startDate: day, endDate: day }),
         channelApi.list(),
+        // KPI와 레일 배지를 같은 서버 값으로 맞춘다. 댓글 목록을 다시 내려받지 않는다.
+        import('@/api/inbox').then(({ inboxApi }) => inboxApi.getUnreadCount()),
       ])
 
-      const scheduleList: Schedule[] = scheduleRes.status === 'fulfilled' ? (scheduleRes.value ?? []) : []
+      const scheduleList: Schedule[] | null = scheduleRes.status === 'fulfilled' ? (scheduleRes.value ?? []) : null
       // channelApi.list() 는 배열이 아니라 { channels, maxAllowed, currentCount } 를 돌려준다
-      const channelList: Channel[] =
-        channelRes.status === 'fulfilled' ? (channelRes.value?.channels ?? []) : []
+      const channelList: Channel[] | null =
+        channelRes.status === 'fulfilled' ? (channelRes.value?.channels ?? []) : null
+      const unreadCount = unreadRes.status === 'fulfilled' ? unreadRes.value.count : kpi.value.unanswered
+      const rejectedCount = [scheduleRes, channelRes, unreadRes].filter((result) => result.status === 'rejected').length
+      loadError.value = rejectedCount === 3 ? 'loadFailed' : rejectedCount > 0 ? 'loadPartial' : null
 
-      queue.value = [...scheduleList]
-        .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))
-        .map(toQueueRow)
-
-      attention.value = buildAttention(scheduleList, channelList)
-
-      channels.value = channelList.map((ch) => {
-        const status = TOKEN_STATUS[ch.tokenStatus] ?? TOKEN_STATUS.ACTIVE
-        return {
-          id: ch.id,
-          platform: toChip(ch.platform),
-          name: ch.channelName,
-          sub: ch.subscriberCount ? `구독자 ${new Intl.NumberFormat('ko-KR').format(ch.subscriberCount)}` : '',
-          statusLabel: status.label,
-          statusVariant: status.variant,
+      // 부분 실패 시 마지막 정상 데이터를 유지한다. 실패를 빈 상태로 바꾸면
+      // 예약/채널이 사라진 것으로 오인해 중복 예약이나 잘못된 재연결을 유발할 수 있다.
+      if (scheduleList) {
+        queue.value = [...scheduleList]
+          .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))
+          .map(toQueueRow)
+        if (channelList) attention.value = buildAttention(scheduleList, channelList)
+        kpi.value = {
+          ...kpi.value,
+          scheduled: scheduleList.filter((s) => s.status === 'SCHEDULED').length,
+          pending: scheduleList.filter((s) => s.status === 'SCHEDULED').length,
+          failed: scheduleList.filter((s) => s.status === 'FAILED').length,
         }
-      })
+      }
 
-      kpi.value = {
-        ...kpi.value,
-        scheduled: scheduleList.filter((s) => s.status === 'SCHEDULED').length,
-        pending: scheduleList.filter((s) => s.status === 'SCHEDULED').length,
-        failed: scheduleList.filter((s) => s.status === 'FAILED').length,
+      if (channelList) {
+        channels.value = channelList.map((ch) => {
+          const status = TOKEN_STATUS[ch.tokenStatus] ?? TOKEN_STATUS.ACTIVE
+          return {
+            id: ch.id,
+            platform: toChip(ch.platform),
+            name: ch.channelName,
+            sub: ch.subscriberCount ? `구독자 ${new Intl.NumberFormat('ko-KR').format(ch.subscriberCount)}` : '',
+            statusLabel: status.label,
+            statusVariant: status.variant,
+          }
+        })
+      }
+
+      if (unreadRes.status === 'fulfilled') {
+        kpi.value = { ...kpi.value, unanswered: unreadCount }
       }
 
       // 레일 배지에 반영 — 막힌 것이 어디에 있는지 항상 보이게 한다
       const shell = useRedesignShellStore()
       shell.setCounts({
         todayQueue: queue.value.length,
-        channelErrors: channelList.filter(
+        unanswered: kpi.value.unanswered,
+        scheduled: kpi.value.scheduled,
+        channelErrors: (channelList ?? []).filter(
           (c) => c.tokenStatus === 'EXPIRED' || c.tokenStatus === 'DISCONNECTED',
         ).length,
       })
@@ -196,5 +213,5 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
     }
   }
 
-  return { loading, queue, attention, channels, kpi, load }
+  return { loading, loadError, queue, attention, channels, kpi, load }
 })

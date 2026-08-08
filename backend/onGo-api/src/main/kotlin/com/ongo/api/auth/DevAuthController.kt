@@ -3,6 +3,8 @@ package com.ongo.api.auth
 import com.ongo.api.auth.dto.AuthResponse
 import com.ongo.api.auth.dto.UserResponse
 import com.ongo.common.ResData
+import com.ongo.application.auth.AuthUseCase
+import com.ongo.application.auth.dto.AuthResult
 import com.ongo.domain.auth.AuthTokenPort
 import com.ongo.domain.user.UserRepository
 import io.swagger.v3.oas.annotations.Operation
@@ -19,9 +21,22 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/v1/auth")
 class DevAuthController(
+    private val authUseCase: AuthUseCase,
     private val authTokenPort: AuthTokenPort,
     private val userRepository: UserRepository,
 ) {
+
+    @Operation(
+        summary = "[DEV] Admin 로그인",
+        description = "개발/로컬 프로필에서만 활성화되는 테스트용 Admin 로그인입니다. 운영 프로필에는 이 컨트롤러가 등록되지 않습니다."
+    )
+    @PostMapping("/dev-login")
+    fun devLogin(): ResponseEntity<ResData<AuthResponse>> {
+        return ResData.success(
+            toAuthResponse(authUseCase.devLogin()),
+            "Admin 계정으로 로그인되었습니다",
+        )
+    }
 
     @Operation(
         summary = "[DEV] 테스트 토큰 발급",
@@ -61,6 +76,24 @@ class DevAuthController(
                 isNewUser = false,
             ),
             "테스트 토큰이 발급되었습니다"
+        )
+    }
+
+    private fun toAuthResponse(result: AuthResult): AuthResponse {
+        return AuthResponse(
+            accessToken = result.accessToken,
+            refreshToken = result.refreshToken,
+            user = UserResponse(
+                id = result.user.id,
+                email = result.user.email,
+                name = result.user.name,
+                nickname = result.user.nickname,
+                profileImageUrl = result.user.profileImageUrl,
+                planType = result.user.planType,
+                role = result.user.role,
+                onboardingCompleted = result.user.onboardingCompleted,
+            ),
+            isNewUser = result.isNewUser,
         )
     }
 }

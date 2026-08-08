@@ -136,11 +136,21 @@
           </SectionCard>
           <SectionCard :title="t('settings.account.dangerZone')" body-class="border border-error-subtle bg-error-subtle p-[15px]">
             <p class="text-[11.5px] leading-5 text-error-strong">{{ t('settings.account.dangerDesc') }}</p>
-            <button type="button" class="mt-3 rounded-lg border border-error-strong px-3 py-2 text-[11px] font-semibold text-error-strong transition-colors duration-150 hover:bg-error-strong hover:text-surface-base" @click="deleteAccount">{{ t('settings.account.deleteBtn') }}</button>
+            <button type="button" class="mt-3 rounded-lg border border-error-strong px-3 py-2 text-[11px] font-semibold text-error-strong transition-colors duration-150 hover:bg-error-strong hover:text-surface-base" @click="deleteConfirmOpen = true">{{ t('settings.account.deleteBtn') }}</button>
           </SectionCard>
         </div>
       </main>
     </div>
+
+    <ConfirmModal
+      v-model="deleteConfirmOpen"
+      :title="t('settings.account.deleteBtn')"
+      :message="t('settings.account.deleteConfirm')"
+      :confirm-text="t('settings.account.deleteBtn')"
+      :cancel-text="t('action.cancel')"
+      danger
+      @confirm="deleteAccount"
+    />
   </div>
 </template>
 
@@ -148,6 +158,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AdjustmentsHorizontalIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
 import { settingsApi, type UserSettingsResponse } from '@/api/settings'
@@ -163,6 +174,7 @@ const subscriptionStore = useSubscriptionStore()
 const activeSection = ref('automation')
 const settingsData = ref<UserSettingsResponse | null>(null)
 const savingDefaults = ref(false)
+const deleteConfirmOpen = ref(false)
 const defaults = reactive({ visibility: '', defaultPlatforms: [] as string[], aiTone: '', aiProvider: '' })
 const navigation = computed(() => [
   { key: 'account', label: t('settings.tabs.account') },
@@ -202,7 +214,6 @@ async function saveDefaults() {
   }
 }
 async function deleteAccount() {
-  if (!window.confirm(t('settings.account.deleteConfirm'))) return
   try {
     await authApi.deleteAccount()
     await authStore.logout()

@@ -2051,6 +2051,8 @@
     "disconnectConfirm": "연동 해제",
     "disconnectMessage": "{platform} 채널 \"{name}\"의 연동을 해제하시겠습니까?\n\n연동 해제 시 해당 플랫폼 업로드/분석이 중단됩니다.",
     "syncSuccess": "채널 정보가 동기화되었습니다.",
+    "syncFailed": "채널 동기화에 실패했습니다.",
+    "loadFailed": "채널 정보를 불러오지 못했습니다.",
     "syncError": "동기화에 실패했습니다. 다시 시도해주세요.",
     "syncAllSuccess": "모든 채널이 동기화되었습니다.",
     "syncAllError": "일부 채널 동기화에 실패했습니다.",
@@ -4202,7 +4204,9 @@
       "manage": "관리 →",
       "emptyQueue": "오늘 예약된 발행이 없습니다",
       "emptyAttention": "확인이 필요한 항목이 없습니다",
-      "emptyChannels": "연결된 채널이 없습니다"
+      "emptyChannels": "연결된 채널이 없습니다",
+      "loadFailed": "오늘 데이터를 불러오지 못했습니다.",
+      "loadPartial": "일부 오늘 데이터만 불러왔습니다. 최신 상태를 다시 확인해 주세요."
     },
     "compose": {
       "noFile": "파일을 선택하세요",

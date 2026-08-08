@@ -96,8 +96,8 @@
           {{ errorMessage }}
         </div>
 
-        <!-- Dev Login -->
-        <div class="mt-6 text-center">
+        <!-- 개발 빌드에서만 노출. 운영 번들에서는 DOM 자체가 제거된다. -->
+        <div v-if="isDevBuild" class="mt-6 text-center">
           <button
             :disabled="isLoading"
             class="text-body font-medium text-primary-600 transition-colors hover:text-primary-700 hover:underline disabled:opacity-50"
@@ -140,6 +140,7 @@ const authStore = useAuthStore()
 const isLoading = ref(false)
 const errorMessage = ref('')
 const sessionExpired = ref(false)
+const isDevBuild = import.meta.env.DEV
 
 // 세션 만료로 리다이렉트된 경우 안내 메시지 표시
 if (sessionStorage.getItem('sessionExpired')) {

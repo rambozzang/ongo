@@ -30,21 +30,22 @@
       >
         {{ $t('redesign.calendar.today') }}
       </button>
-      <button
-        type="button"
-        class="whitespace-nowrap rounded-[8px] border border-line-control px-[11px] py-[7px] text-[11.5px] text-content-secondary transition-colors duration-[120ms] ease-out hover:border-accent hover:text-accent disabled:opacity-40"
-        :disabled="autoArranging"
-        @click="runAutoArrange"
-      >
-        {{ $t('redesign.calendar.autoArrange') }}
-      </button>
     </div>
 
     <div
       v-if="store.loadError"
-      class="rounded-[8px] border border-line px-4 py-3 text-[12px] text-bad"
+      class="flex flex-wrap items-center gap-2 rounded-[8px] border border-error-subtle bg-error-subtle px-4 py-3 text-[12px] text-error-strong"
+      role="alert"
     >
-      {{ $t('redesign.calendar.loadFailed') }}
+      <span class="min-w-0 flex-1">{{ $t('redesign.calendar.loadFailed') }}</span>
+      <button
+        type="button"
+        class="shrink-0 rounded-md border border-error-strong px-2 py-1 text-[11px] font-semibold transition-colors hover:bg-error-strong hover:text-surface-base disabled:opacity-50"
+        :disabled="store.loading"
+        @click="store.fetchWeek"
+      >
+        {{ $t('action.retry') }}
+      </button>
     </div>
 
     <!-- 주간 그리드 -->
@@ -116,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
@@ -146,7 +147,6 @@ const CHIP_MAP: Record<string, ChipPlatform> = {
   THREADS: 'TH',
 }
 
-const autoArranging = ref(false)
 
 const weekTitle = computed(() => {
   const d = store.weekStart
@@ -225,20 +225,6 @@ function goCompose(day: Date) {
   const at = new Date(day)
   at.setHours(9, 0, 0, 0)
   router.push({ path: '/compose', query: { at: toDateTimeLocal(at) } })
-}
-
-// 자동 배치 API는 아직 없어 추천 조회 결과만 알린다
-async function runAutoArrange() {
-  autoArranging.value = true
-  try {
-    const count = await store.fetchOptimalRecommendations()
-    if (count > 0) notify.success(t('redesign.calendar.autoArrangeResult', { count }))
-    else notify.info(t('redesign.calendar.autoArrangeEmpty'))
-  } catch (e) {
-    notify.error(e instanceof Error ? e.message : t('redesign.calendar.autoArrangeFailed'))
-  } finally {
-    autoArranging.value = false
-  }
 }
 
 onMounted(() => {

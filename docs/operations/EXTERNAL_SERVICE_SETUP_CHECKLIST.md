@@ -417,10 +417,56 @@ yt-dlp --version && ffmpeg -version | head -1
 ```dotenv
 # 선택. 기본값은 PATH 의 yt-dlp
 YT_DLP_PATH=
+
+# 쇼츠 서버 렌더용 ffmpeg. 운영 호스트는 PATH 에 없으므로 절대 경로가 필수다 (4.5.1 참조)
+FFMPEG_PATH=/data/ffmpeg/bin/ffmpeg
 ```
 
 > `yt-dlp` 는 대상 사이트 변경에 맞춰 자주 갱신된다. 임포트가 갑자기 실패하면
 > 먼저 바이너리를 최신으로 올려본다.
+
+### 4.5.1 호스트 바이너리 — ffmpeg (쇼츠 서버 렌더에 필요)
+
+쇼츠 클립을 **서버에서** 인코딩한다. 예전에는 `render.sh` 를 zip 으로 내려주고 사용자가
+자기 PC 에서 돌렸지만 이제 서버가 직접 만든다.
+
+**운영 호스트 설치 위치 (2026-08-08 확인)**
+
+```
+/data/ffmpeg/bin/ffmpeg
+/data/ffmpeg/bin/ffprobe
+```
+
+**PATH 에 없다.** 절대 경로를 환경변수로 주입해야 한다.
+
+```bash
+FFMPEG_PATH=/data/ffmpeg/bin/ffmpeg
+```
+
+빠뜨리면 렌더가 전부 실패한다. 다만 **서비스가 죽지는 않는다** — 가용성 조회가
+`available=false` 를 돌려주고 화면이 렌더 버튼을 감춘다. 그래서 필수 환경변수 목록
+(`deploy/required-env.sh`)에는 넣지 않았다. 넣으면 값이 없을 때 배포 자체가 막힌다.
+
+**설정이 맞는지 확인하는 법**
+
+```
+GET /api/v1/ugc/shorts/render/availability
+```
+
+`{ "available": true }` 면 정상이고, `false` 면 경로가 틀렸거나 실행 권한이 없다.
+배포 직후 한 번 호출해 보면 된다. **서버에 직접 들어가지 않고 확인할 수 있는 수단이다.**
+
+**선택 설정**
+
+| 환경변수 | 기본값 | 용도 |
+|---|---|---|
+| `SHORTS_RENDER_MAX_CONCURRENT` | 1 | 동시 인코딩 수. 올리면 CPU 경합으로 일반 API 가 느려진다 |
+| `SHORTS_RENDER_TIMEOUT_SECONDS` | 1800 | 인코딩 상한 |
+| `SHORTS_RENDER_CRF` | 20 | 낮을수록 고화질·큰 용량 |
+| `SHORTS_RENDER_PRESET` | medium | 느릴수록 압축률이 좋다 |
+
+`ffprobe` 는 지금 쓰지 않는다. 설치돼 있으므로 나중에 산출물 길이·해상도 검증에 쓸 수 있다.
+
 
 ### 4.6 Alibaba Cloud Model Studio — 현재 기본 AI 제공자
 

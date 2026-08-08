@@ -137,6 +137,19 @@ videodownload:
 shorts:
   render:
     max-concurrent: ${SHORTS_RENDER_MAX_CONCURRENT:1}
+    # ffmpeg 바이너리 위치. 기본값은 PATH 에서 찾는다(로컬 개발용).
+    #
+    # 운영 호스트는 /data/ffmpeg/bin/ffmpeg 에 설치돼 있고 PATH 에 없다.
+    # 따라서 FFMPEG_PATH 를 반드시 주입해야 한다. 빠뜨리면 렌더가 전부 실패한다.
+    #
+    # 설정이 맞는지는 GET /api/v1/ugc/shorts/render/availability 로 확인할 수 있다.
+    # 화면은 그 값으로 렌더 버튼을 감추므로, 잘못 설정하면 사용자에게 버튼이 안 보인다.
+    ffmpeg-path: ${FFMPEG_PATH:ffmpeg}
+    # 인코딩 상한. 긴 원본에서 무한정 물고 있지 않게 한다.
+    timeout-seconds: ${SHORTS_RENDER_TIMEOUT_SECONDS:1800}
+    # 화질/속도. crf 는 낮을수록 고화질·큰 용량이다.
+    crf: ${SHORTS_RENDER_CRF:20}
+    preset: ${SHORTS_RENDER_PRESET:medium}
 
 # Payment (PortOne V2)
 payment:

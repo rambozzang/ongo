@@ -1,5 +1,22 @@
 <template>
   <div class="flex flex-col gap-[18px] px-[22px] pb-10 pt-5">
+    <div
+      v-if="store.loadError"
+      class="flex flex-wrap items-center gap-2 rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2.5 text-[12px] text-warning-strong"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="min-w-0 flex-1">{{ $t(`redesign.today.${store.loadError}`) }}</span>
+      <button
+        type="button"
+        class="shrink-0 rounded-md border border-warning-strong px-2 py-1 text-[11px] font-semibold transition-colors hover:bg-warning-strong hover:text-surface-base disabled:opacity-50"
+        :disabled="loading"
+        @click="store.load"
+      >
+        {{ $t('action.retry') }}
+      </button>
+    </div>
+
     <!-- KPI 4장 -->
     <div class="grid gap-2.5" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr))">
       <KpiCard

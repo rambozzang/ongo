@@ -22,6 +22,22 @@
       </button>
     </div>
 
+    <div
+      v-if="channelStore.loadError"
+      class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2.5 text-[12px] text-warning-strong"
+      role="alert"
+    >
+      <span class="min-w-0 flex-1">{{ t('channels.loadFailed') }}</span>
+      <button
+        type="button"
+        class="shrink-0 rounded-md border border-warning-strong px-2 py-1 text-[11px] font-semibold transition-colors hover:bg-warning-strong hover:text-surface-base disabled:opacity-50"
+        :disabled="channelStore.loading"
+        @click="channelStore.fetchChannels"
+      >
+        {{ t('action.retry') }}
+      </button>
+    </div>
+
     <section class="mb-3 flex flex-col gap-3 tablet:flex-row tablet:items-center">
       <div>
         <h2 class="text-[13px] font-bold text-content">{{ t('channels.totalChannels') }} {{ channels.length }}</h2>
@@ -73,8 +89,8 @@
 
           <div class="mt-3 flex items-center gap-2 text-[11px] text-content-tertiary">
             <span class="flex-1 truncate">{{ syncNote(channel) }}</span>
-            <button type="button" class="shrink-0 text-content-secondary transition-colors duration-150 hover:text-accent" :disabled="channelStore.isSyncingChannel" @click="channelStore.syncChannel(channel.id)">
-              {{ t('channels.syncAll') }}
+            <button type="button" class="shrink-0 text-content-secondary transition-colors duration-150 hover:text-accent disabled:opacity-50" :disabled="channelStore.isSyncingChannel" @click="syncChannel(channel.id)">
+              {{ channelStore.isSyncingChannel ? t('action.loading') : t('channels.syncAll') }}
             </button>
           </div>
         </article>
@@ -102,6 +118,7 @@ import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { useNotificationStore } from '@/stores/notification'
 import { AdjustmentsHorizontalIcon, ExclamationTriangleIcon, LinkIcon, PlusIcon } from '@heroicons/vue/24/outline'
 import type { Channel, Platform } from '@/types/channel'
 import PlatformChip from '@/components/redesign/PlatformChip.vue'
@@ -113,6 +130,7 @@ const { t, locale } = useI18n()
 const router = useRouter()
 const channelStore = useChannelStore()
 const { channels } = storeToRefs(channelStore)
+const notify = useNotificationStore()
 const PLATFORM_CODES: Partial<Record<Platform, 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'>> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
@@ -151,6 +169,15 @@ function syncNote(channel: Channel): string {
 }
 function openChannelManager() {
   router.push('/channels')
+}
+
+async function syncChannel(id: number) {
+  try {
+    await channelStore.syncChannel(id)
+    notify.success(t('channels.syncSuccess'))
+  } catch (error) {
+    notify.error(error instanceof Error ? error.message : t('channels.syncFailed'))
+  }
 }
 
 onMounted(() => channelStore.fetchChannels())

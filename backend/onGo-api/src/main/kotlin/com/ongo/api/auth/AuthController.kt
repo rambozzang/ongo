@@ -19,8 +19,6 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
-import org.springframework.core.env.Environment
-import org.springframework.core.env.Profiles
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
@@ -35,7 +33,6 @@ class AuthController(
     private val authTokenPort: AuthTokenPort,
     private val authRateLimiter: AuthRateLimiter,
     private val oAuthStateManager: OAuthStateManager,
-    private val environment: Environment,
 ) {
 
     @Operation(summary = "SSE 토큰 발급", description = "SSE(Server-Sent Events) 연결용 단기 토큰을 발급합니다 (5분 만료).")
@@ -178,28 +175,6 @@ class AuthController(
     fun deleteAccount(@Parameter(hidden = true) @CurrentUser userId: Long): ResponseEntity<ResData<Nothing>> {
         authUseCase.deleteAccount(userId)
         return ResponseEntity.ok(ResData(success = true, message = "계정이 삭제되었습니다"))
-    }
-
-    @Operation(
-        summary = "개발용 로그인",
-        description = "개발/테스트 환경에서 admin 계정으로 로그인합니다. DB에 admin 사용자가 없으면 자동 생성됩니다."
-    )
-    @ApiResponses(
-        ApiResponse(responseCode = "200", description = "Admin 로그인 성공")
-    )
-    @PostMapping("/dev-login")
-    fun devLogin(): ResponseEntity<ResData<AuthResponse>> {
-        // This route is kept for local smoke tests only. Guard the controller
-        // as well as the security rules so an authenticated production user
-        // cannot mint an administrator token by calling the endpoint directly.
-        if (!environment.acceptsProfiles(Profiles.of("dev", "local"))) {
-            return ResponseEntity.notFound().build()
-        }
-        val result = authUseCase.devLogin()
-        return ResData.success(
-            toAuthResponse(result),
-            "Admin 계정으로 로그인되었습니다"
-        )
     }
 
     private fun toAuthResponse(result: AuthResult): AuthResponse {

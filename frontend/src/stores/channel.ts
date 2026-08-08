@@ -10,6 +10,7 @@ export const useChannelStore = defineStore('channel', () => {
   const maxAllowed = ref(0)
   const isLoadingChannels = ref(false)
   const isSyncingChannel = ref(false)
+  const loadError = ref(false)
 
   // Backwards-compatible loading ref
   const loading = isLoadingChannels
@@ -20,13 +21,14 @@ export const useChannelStore = defineStore('channel', () => {
 
   async function fetchChannels() {
     isLoadingChannels.value = true
+    loadError.value = false
     try {
       const data = await channelApi.list()
       channels.value = data.channels
       maxAllowed.value = data.maxAllowed
     } catch {
-      // Guest mode or API error - continue with empty channels
-      channels.value = []
+      // 기존 데이터는 유지한다. 실패를 빈 상태로 바꾸면 사용자가 연결 해제를 오인한다.
+      loadError.value = true
     } finally {
       isLoadingChannels.value = false
     }
@@ -58,6 +60,7 @@ export const useChannelStore = defineStore('channel', () => {
     channels,
     maxAllowed,
     loading,
+    loadError,
     isLoadingChannels,
     isSyncingChannel,
     connectedPlatforms,
