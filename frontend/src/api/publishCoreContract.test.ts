@@ -5,6 +5,11 @@ import { scheduleApi } from './schedule'
 import { scheduleOptimizerApi } from './scheduleOptimizer'
 import { capabilitiesApi } from './capabilities'
 import { analyticsApi } from './analytics'
+import { aiApi } from './ai'
+import { channelApi } from './channel'
+import { ugcCampaignApi } from './ugcCampaign'
+import { ugcPublishingApi } from './ugcPublishing'
+import { ugcShortsPipelineApi } from './ugcShortsPipeline'
 
 const response = (data: unknown = {}) => ({ data: { success: true, data } })
 
@@ -12,6 +17,7 @@ describe('publish core API contracts', () => {
   const get = vi.spyOn(apiClient, 'get')
   const post = vi.spyOn(apiClient, 'post')
   const put = vi.spyOn(apiClient, 'put')
+  const patch = vi.spyOn(apiClient, 'patch')
   const del = vi.spyOn(apiClient, 'delete')
 
   beforeEach(() => {
@@ -19,6 +25,7 @@ describe('publish core API contracts', () => {
     get.mockResolvedValue(response() as never)
     post.mockResolvedValue(response() as never)
     put.mockResolvedValue(response() as never)
+    patch.mockResolvedValue(response() as never)
     del.mockResolvedValue(response() as never)
   })
 
@@ -97,5 +104,51 @@ describe('publish core API contracts', () => {
   it('loads server analytics used by the Compose best-time mode', async () => {
     await analyticsApi.getOptimalTimes('YOUTUBE')
     expect(get).toHaveBeenCalledWith('/analytics/optimal-times', { params: { platform: 'YOUTUBE' } })
+  })
+
+  it('keeps channel, AI, UGC campaign, and Shorts pipeline flows on the server', async () => {
+    await channelApi.list()
+    await channelApi.connect('YOUTUBE', { code: 'code', redirectUri: 'http://localhost/callback' } as never)
+    await channelApi.sync(7)
+    await channelApi.disconnect(7)
+    expect(get).toHaveBeenCalledWith('/channels')
+    expect(post).toHaveBeenCalledWith('/channels/connect/youtube', { code: 'code', redirectUri: 'http://localhost/callback' })
+    expect(post).toHaveBeenCalledWith('/channels/7/sync')
+    expect(del).toHaveBeenCalledWith('/channels/7')
+
+    await aiApi.generateMeta({ script: 'script', platforms: ['YOUTUBE'] } as never)
+    await aiApi.getPipelineStatus('pipeline-1')
+    await aiApi.cancelPipeline('pipeline-1')
+    expect(post).toHaveBeenCalledWith('/ai/generate-meta', { script: 'script', platforms: ['YOUTUBE'] })
+    expect(get).toHaveBeenCalledWith('/ai/pipeline/pipeline-1')
+    expect(del).toHaveBeenCalledWith('/ai/pipeline/pipeline-1')
+
+    await ugcCampaignApi.create(3, { name: '캠페인' })
+    await ugcCampaignApi.update(3, 4, { description: '수정' })
+    await ugcCampaignApi.publish(3, 4)
+    expect(post).toHaveBeenCalledWith('/workspaces/3/ugc/campaigns', { name: '캠페인' })
+    expect(patch).toHaveBeenCalledWith('/workspaces/3/ugc/campaigns/4', { description: '수정' })
+    expect(post).toHaveBeenCalledWith('/workspaces/3/ugc/campaigns/4/publish')
+
+    await ugcPublishingApi.publish(3, 8, { platforms: ['YOUTUBE'] })
+    await ugcPublishingApi.registerExternal(8, { platform: 'YOUTUBE', externalPostUrl: 'https://example.com/post' })
+    expect(post).toHaveBeenCalledWith('/workspaces/3/ugc/submissions/8/publish', { platforms: ['YOUTUBE'] })
+    expect(post).toHaveBeenCalledWith('/ugc/me/submissions/8/external-posts', {
+      platform: 'YOUTUBE',
+      externalPostUrl: 'https://example.com/post',
+    })
+
+    await ugcShortsPipelineApi.create(3, { sourceVideoId: 12 })
+    await ugcShortsPipelineApi.selectHooks(3, 9, { selections: [], discardClipIds: [] })
+    await ugcShortsPipelineApi.confirmSchedule(3, 9, { startAt: '2026-08-10T09:00', intervalHours: 24, platforms: ['YOUTUBE'] })
+    await ugcShortsPipelineApi.startRender(3, 9, 1)
+    expect(post).toHaveBeenCalledWith('/workspaces/3/ugc/shorts/runs', { sourceVideoId: 12 })
+    expect(post).toHaveBeenCalledWith('/workspaces/3/ugc/shorts/runs/9/hooks', { selections: [], discardClipIds: [] })
+    expect(post).toHaveBeenCalledWith('/workspaces/3/ugc/shorts/runs/9/schedule', {
+      startAt: '2026-08-10T09:00',
+      intervalHours: 24,
+      platforms: ['YOUTUBE'],
+    })
+    expect(post).toHaveBeenCalledWith('/workspaces/3/ugc/shorts/runs/9/clips/1/render', {})
   })
 })
