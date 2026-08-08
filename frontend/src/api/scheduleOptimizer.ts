@@ -7,29 +7,37 @@ export interface OptimalSlot {
   dayOfWeek: string
   hour: number
   score: number
-  estimatedAudience: number
-  competition: string
+  audienceOnline: number
+  competitionLevel: string
   reason: string
+  createdAt: string | null
 }
 
 export interface ScheduleRecommendation {
   id: number
+  videoId: number
+  videoTitle: string
+  currentSchedule: string | null
+  recommendedSchedule: string
   platform: string
-  recommendedAt: string
-  score: number
-  reason: string
+  expectedImprovement: number
+  confidence: number
+  status: string
+  createdAt: string | null
 }
 
 export interface ScheduleOptimizerSummary {
-  totalSlots: number
-  platforms: string[]
-  lastGeneratedAt: string | null
+  totalRecommendations: number
+  appliedCount: number
+  avgImprovement: number
+  bestDay: string
+  bestHour: number
 }
 
 export const scheduleOptimizerApi = {
   generateSlots: (platform: string) =>
     apiClient
-      .post<ResData<OptimalSlot[]>>(`/schedule-optimizer/generate?platform=${platform}`)
+      .post<ResData<OptimalSlot[]>>('/schedule-optimizer/generate', null, { params: { platform } })
       .then(unwrapResponse),
 
   getSlots: (platform: string) =>
@@ -40,6 +48,11 @@ export const scheduleOptimizerApi = {
   getRecommendations: () =>
     apiClient
       .get<ResData<ScheduleRecommendation[]>>('/schedule-optimizer/recommendations')
+      .then(unwrapResponse),
+
+  applyRecommendation: (id: number) =>
+    apiClient
+      .post<ResData<ScheduleRecommendation>>(`/schedule-optimizer/recommendations/${id}/apply`)
       .then(unwrapResponse),
 
   getSummary: () =>

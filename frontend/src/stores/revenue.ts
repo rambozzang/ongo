@@ -1,7 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef, computed } from 'vue'
 import type { Platform } from '@/types/channel'
-import type { RevenueSummary, PlatformRevenueData, RevenueTrendPoint, CpmRpmResponse, BrandDealRevenueResponse, RevenueInsight, RevenueAlertConfig } from '@/types/revenue'
+import type {
+  RevenueSummary,
+  PlatformRevenueData,
+  RevenueTrendPoint,
+  CpmRpmResponse,
+  BrandDealRevenueResponse,
+  RevenueInsight,
+  RevenueAlertConfig,
+} from '@/types/revenue'
 import { revenueApi } from '@/api/revenue'
 
 export interface RevenueData {
@@ -51,6 +59,7 @@ export const useRevenueStore = defineStore('revenue', () => {
   // 알림 설정
   const alertConfigs = shallowRef<RevenueAlertConfig[]>([])
   const alertConfigLoading = ref(false)
+  const alertConfigError = ref<string | null>(null)
 
   function calculateSummary(data: RevenueData[]): RevenueSummaryLocal {
     if (data.length === 0) {
@@ -79,9 +88,10 @@ export const useRevenueStore = defineStore('revenue', () => {
       naverClip: data.reduce((sum, item) => sum + item.naverClip, 0),
     }
 
-    const topPlatformEntry = Object.entries(platformTotals).reduce((max, [platform, revenue]) =>
-      revenue > max.revenue ? { platform, revenue } : max
-    , { platform: 'youtube', revenue: platformTotals.youtube })
+    const topPlatformEntry = Object.entries(platformTotals).reduce(
+      (max, [platform, revenue]) => (revenue > max.revenue ? { platform, revenue } : max),
+      { platform: 'youtube', revenue: platformTotals.youtube },
+    )
 
     const platformMap: Record<string, Platform> = {
       youtube: 'YOUTUBE',
@@ -100,7 +110,7 @@ export const useRevenueStore = defineStore('revenue', () => {
   }
 
   const totalAnnualRevenue = computed(() =>
-    monthlyRevenue.value.reduce((sum, item) => sum + item.total, 0)
+    monthlyRevenue.value.reduce((sum, item) => sum + item.total, 0),
   )
 
   const platformBreakdown = computed(() => {
@@ -154,15 +164,30 @@ export const useRevenueStore = defineStore('revenue', () => {
         for (const point of results[1].value.data) {
           const period = point.date
           if (!trendsByDate.has(period)) {
-            trendsByDate.set(period, { period, youtube: 0, tiktok: 0, instagram: 0, naverClip: 0, total: 0 })
+            trendsByDate.set(period, {
+              period,
+              youtube: 0,
+              tiktok: 0,
+              instagram: 0,
+              naverClip: 0,
+              total: 0,
+            })
           }
           const entry = trendsByDate.get(period)!
           const amount = point.revenueKrw ?? 0
           switch (point.platform?.toUpperCase()) {
-            case 'YOUTUBE': entry.youtube += amount; break
-            case 'TIKTOK': entry.tiktok += amount; break
-            case 'INSTAGRAM': entry.instagram += amount; break
-            case 'NAVER_CLIP': entry.naverClip += amount; break
+            case 'YOUTUBE':
+              entry.youtube += amount
+              break
+            case 'TIKTOK':
+              entry.tiktok += amount
+              break
+            case 'INSTAGRAM':
+              entry.instagram += amount
+              break
+            case 'NAVER_CLIP':
+              entry.naverClip += amount
+              break
           }
           entry.total += amount
         }
@@ -186,7 +211,8 @@ export const useRevenueStore = defineStore('revenue', () => {
     try {
       cpmRpmData.value = await revenueApi.cpmRpm(period)
     } catch (error) {
-      cpmRpmError.value = error instanceof Error ? error.message : 'CPM·RPM 데이터를 불러오지 못했습니다.'
+      cpmRpmError.value =
+        error instanceof Error ? error.message : 'CPM·RPM 데이터를 불러오지 못했습니다.'
     } finally {
       cpmRpmLoading.value = false
     }
@@ -198,7 +224,8 @@ export const useRevenueStore = defineStore('revenue', () => {
     try {
       brandDealData.value = await revenueApi.brandDealRevenue(period)
     } catch (error) {
-      brandDealError.value = error instanceof Error ? error.message : '브랜드딜 수익을 불러오지 못했습니다.'
+      brandDealError.value =
+        error instanceof Error ? error.message : '브랜드딜 수익을 불러오지 못했습니다.'
     } finally {
       brandDealLoading.value = false
     }
@@ -212,7 +239,8 @@ export const useRevenueStore = defineStore('revenue', () => {
       const response = await revenueApi.insights()
       revenueInsights.value = response.insights
     } catch (error) {
-      insightsError.value = error instanceof Error ? error.message : '수익 인사이트를 불러오지 못했습니다.'
+      insightsError.value =
+        error instanceof Error ? error.message : '수익 인사이트를 불러오지 못했습니다.'
     } finally {
       insightsLoading.value = false
     }
@@ -231,12 +259,14 @@ export const useRevenueStore = defineStore('revenue', () => {
 
   async function fetchAlertConfigs() {
     alertConfigLoading.value = true
+    alertConfigError.value = null
     try {
       // 백엔드가 { configs: [...] } 래퍼 반환
       const response = await revenueApi.alertConfigs()
       alertConfigs.value = response.configs
-    } catch {
-      // silently ignore
+    } catch (error) {
+      alertConfigError.value =
+        error instanceof Error ? error.message : '수익 알림 설정을 불러오지 못했습니다.'
     } finally {
       alertConfigLoading.value = false
     }
@@ -250,13 +280,13 @@ export const useRevenueStore = defineStore('revenue', () => {
 
   async function updateAlertConfig(id: number, config: Partial<RevenueAlertConfig>) {
     const updated = await revenueApi.updateAlertConfig(id, config)
-    alertConfigs.value = alertConfigs.value.map(c => c.id === id ? updated : c)
+    alertConfigs.value = alertConfigs.value.map((c) => (c.id === id ? updated : c))
     return updated
   }
 
   async function deleteAlertConfig(id: number) {
     await revenueApi.deleteAlertConfig(id)
-    alertConfigs.value = alertConfigs.value.filter(c => c.id !== id)
+    alertConfigs.value = alertConfigs.value.filter((c) => c.id !== id)
   }
 
   return {
@@ -285,6 +315,7 @@ export const useRevenueStore = defineStore('revenue', () => {
     generateInsightLoading,
     alertConfigs,
     alertConfigLoading,
+    alertConfigError,
     fetchInsights,
     generateInsight,
     fetchAlertConfigs,

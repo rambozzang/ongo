@@ -47,6 +47,7 @@ pipeline {
                     sh 'npm ci'
                     sh 'npm run test -- --run'
                     sh 'npm run test:coverage -- --run'
+                    sh 'npm run lint -- --quiet'
                     sh 'VITE_API_BASE_URL=/api/v1 npm run build'
                 }
             }

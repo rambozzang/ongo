@@ -84,9 +84,11 @@ class ScheduleOptimizerUseCase(
 
     @Transactional
     fun applyRecommendation(userId: Long, id: Long): ScheduleRecommendationResponse {
-        val rec = recRepository.findById(id)
+        val rec = recRepository.findByIdAndUserId(id, userId)
             ?: throw NotFoundException("일정 추천", id)
-        recRepository.updateStatus(id, "APPLIED")
+        if (!recRepository.updateStatus(id, userId, "APPLIED")) {
+            throw NotFoundException("일정 추천", id)
+        }
         return rec.copy(status = "APPLIED").toRecResponse()
     }
 

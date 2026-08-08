@@ -3,13 +3,19 @@
     <!-- 좌: 입력 -->
     <div class="overflow-y-auto border-r border-line px-5 pb-[120px] pt-[18px] scrollbar-dark">
       <!-- 입력 소스 -->
-      <div class="mb-2.5 flex items-center gap-1 rounded-lg border border-line bg-surface-input p-1">
+      <div
+        class="mb-2.5 flex items-center gap-1 rounded-lg border border-line bg-surface-input p-1"
+      >
         <button
           v-for="mode in sourceModes"
           :key="mode.key"
           type="button"
           class="flex-1 rounded-md px-3 py-1.5 text-[11px] font-semibold transition-colors"
-          :class="sourceMode === mode.key ? 'bg-surface-card text-content shadow-sm' : 'text-content-tertiary hover:text-content'"
+          :class="
+            sourceMode === mode.key
+              ? 'bg-surface-card text-content shadow-sm'
+              : 'text-content-tertiary hover:text-content'
+          "
           @click="selectSourceMode(mode.key)"
         >
           {{ mode.label }}
@@ -17,7 +23,9 @@
       </div>
 
       <!-- 파일 -->
-      <div class="flex items-center gap-3.5 rounded-[11px] border border-line bg-surface-card p-3.5">
+      <div
+        class="flex items-center gap-3.5 rounded-[11px] border border-line bg-surface-card p-3.5"
+      >
         <ThumbPlaceholder :src="file.thumbnailUrl" :width="104" :height="62" />
         <div class="min-w-0 flex-1">
           <p class="truncate text-[13px] font-semibold text-content">
@@ -38,17 +46,17 @@
             {{ captioning ? t('redesign.compose.captioning') : t('redesign.compose.autoCaption') }}
           </button>
         </div>
-        <input
-          ref="fileInput"
-          type="file"
-          accept="video/*"
-          class="hidden"
-          @change="onFileChosen"
-        />
+        <input ref="fileInput" type="file" accept="video/*" class="hidden" @change="onFileChosen" />
       </div>
 
-      <div v-if="sourceMode === 'url'" class="mt-2 rounded-[11px] border border-line bg-surface-card p-3.5">
-        <label class="block text-[11.5px] font-semibold text-content-secondary" for="source-video-url">
+      <div
+        v-if="sourceMode === 'url'"
+        class="mt-2 rounded-[11px] border border-line bg-surface-card p-3.5"
+      >
+        <label
+          class="block text-[11.5px] font-semibold text-content-secondary"
+          for="source-video-url"
+        >
           {{ t('redesign.compose.importUrlLabel') }}
         </label>
         <div class="mt-2 flex gap-2">
@@ -68,7 +76,9 @@
             :disabled="!importAvailable || !importUrl || importing"
             @click="importFromUrl"
           >
-            {{ importing ? t('redesign.compose.importing') : t('redesign.compose.importUrlAction') }}
+            {{
+              importing ? t('redesign.compose.importing') : t('redesign.compose.importUrlAction')
+            }}
           </button>
         </div>
         <p v-if="importAvailability?.available !== true" class="mt-2 text-[11px] text-warn">
@@ -82,7 +92,10 @@
       <!-- 업로드 진행 — 파일 카드 안에 텍스트를 병기한다 -->
       <div v-if="uploadStore.isUploading" class="mt-2">
         <div class="h-1 overflow-hidden rounded-full bg-line">
-          <div class="h-full bg-accent transition-[width]" :style="{ width: `${uploadStore.progress.percentage}%` }" />
+          <div
+            class="h-full bg-accent transition-[width]"
+            :style="{ width: `${uploadStore.progress.percentage}%` }"
+          />
         </div>
         <p class="mt-1 font-mono text-[10.5px] text-content-tertiary">
           {{ t('redesign.compose.uploading', { percent: uploadStore.progress.percentage }) }}
@@ -92,7 +105,9 @@
       <!-- 발행 대상 -->
       <section class="mt-[18px]">
         <h2 class="text-[12px] font-bold text-content">{{ t('redesign.compose.targetsTitle') }}</h2>
-        <p class="mt-1 text-[11px] text-content-tertiary">{{ t('redesign.compose.targetsHint') }}</p>
+        <p class="mt-1 text-[11px] text-content-tertiary">
+          {{ t('redesign.compose.targetsHint') }}
+        </p>
         <div class="mt-2.5 flex flex-wrap gap-2">
           <button
             v-for="opt in platformOptions"
@@ -103,8 +118,8 @@
               !opt.supported
                 ? 'cursor-not-allowed border-line bg-transparent text-content-tertiary opacity-50'
                 : isOn(opt.channel.id)
-                ? 'border-line-hover'
-                : 'border-line bg-transparent text-content-tertiary hover:border-line-hover'
+                  ? 'border-line-hover'
+                  : 'border-line bg-transparent text-content-tertiary hover:border-line-hover'
             "
             :style="isOn(opt.channel.id) && opt.supported ? onChipStyle(opt.code) : undefined"
             :aria-pressed="isOn(opt.channel.id)"
@@ -126,9 +141,15 @@
       <!-- 원본 게시와 쇼츠 제작을 같은 작업으로 묶는다 -->
       <section class="mt-3 rounded-[11px] border border-line bg-surface-card p-3.5">
         <label class="flex cursor-pointer items-start gap-2.5">
-          <input v-model="shortsEnabled" type="checkbox" class="mt-0.5 h-4 w-4 accent-[var(--accent-primary)]" />
+          <input
+            v-model="shortsEnabled"
+            type="checkbox"
+            class="mt-0.5 h-4 w-4 accent-[var(--accent-primary)]"
+          />
           <span>
-            <span class="block text-[12px] font-bold text-content">{{ t('redesign.compose.autoShorts') }}</span>
+            <span class="block text-[12px] font-bold text-content">{{
+              t('redesign.compose.autoShorts')
+            }}</span>
             <span class="mt-1 block text-[10.5px] leading-4 text-content-tertiary">
               {{ t('redesign.compose.autoShortsHint') }}
             </span>
@@ -136,7 +157,9 @@
         </label>
         <div v-if="shortsProcessing" class="mt-2.5 rounded-lg bg-surface-input px-3 py-2">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-[11px] font-semibold text-content">{{ t('redesign.compose.shortsProcessing') }}</span>
+            <span class="text-[11px] font-semibold text-content">{{
+              t('redesign.compose.shortsProcessing')
+            }}</span>
             <span class="font-mono text-[10px] text-content-tertiary">{{ shortsStatus }}</span>
           </div>
           <div class="mt-2 h-1 overflow-hidden rounded-full bg-line">
@@ -166,7 +189,9 @@
 
         <div class="p-[15px]">
           <div class="flex items-center justify-between gap-2">
-            <label class="block text-[11.5px] text-content-secondary">{{ t('redesign.compose.title') }}</label>
+            <label class="block text-[11.5px] text-content-secondary">{{
+              t('redesign.compose.title')
+            }}</label>
             <div class="flex items-center gap-2">
               <button
                 v-if="activeTab !== 'common'"
@@ -176,12 +201,24 @@
               >
                 {{ t('redesign.compose.applyCommon') }}
               </button>
-              <span v-if="metadataGenerating" class="text-[10px] text-accent">{{ t('redesign.compose.metadataGenerating') }}</span>
+              <span v-if="metadataGenerating" class="text-[10px] text-accent">{{
+                t('redesign.compose.metadataGenerating')
+              }}</span>
             </div>
           </div>
           <div class="mt-1.5 flex items-center gap-2">
-            <input v-model="activeDraft.title" type="text" class="input-field !text-[12.5px]" @input="markActivePlatformDraftDirty" />
-            <span class="shrink-0 font-mono text-[10px]" :class="titleOver ? 'text-bad' : 'text-content-tertiary'">
+            <input
+              v-model="activeDraft.title"
+              type="text"
+              class="input-field !text-[12.5px]"
+              :maxlength="titleLimit > 0 ? titleLimit : undefined"
+              :aria-invalid="titleOver"
+              @input="markActivePlatformDraftDirty"
+            />
+            <span
+              class="shrink-0 font-mono text-[10px]"
+              :class="titleOver ? 'text-bad' : 'text-content-tertiary'"
+            >
               {{ activeDraft.title.length }} / {{ titleLimit }}
             </span>
           </div>
@@ -189,16 +226,33 @@
           <label class="mt-3.5 block text-[11.5px] text-content-secondary">
             {{ t('redesign.compose.description') }}
           </label>
-          <textarea v-model="activeDraft.description" class="input-field mt-1.5 min-h-[92px] !text-[12.5px]" @input="markActivePlatformDraftDirty" />
-          <div class="mt-1 text-right font-mono text-[10px]" :class="descriptionOver ? 'text-bad' : 'text-content-tertiary'">
+          <textarea
+            v-model="activeDraft.description"
+            class="input-field mt-1.5 min-h-[92px] !text-[12.5px]"
+            :maxlength="descriptionLimit > 0 ? descriptionLimit : undefined"
+            :aria-invalid="descriptionOver"
+            @input="markActivePlatformDraftDirty"
+          />
+          <div
+            class="mt-1 text-right font-mono text-[10px]"
+            :class="descriptionOver ? 'text-bad' : 'text-content-tertiary'"
+          >
             {{ activeDraft.description.length }} / {{ descriptionLimit || '∞' }}
           </div>
 
           <label class="mt-3.5 block text-[11.5px] text-content-secondary">
             {{ t('redesign.compose.hashtags') }}
           </label>
-          <textarea v-model="activeDraft.hashtags" class="input-field mt-1.5 min-h-[62px] !text-[12.5px] !text-accent" @input="markActivePlatformDraftDirty" />
-          <div class="mt-1 text-right font-mono text-[10px]" :class="tagsOver ? 'text-bad' : 'text-content-tertiary'">
+          <textarea
+            v-model="activeDraft.hashtags"
+            class="input-field mt-1.5 min-h-[62px] !text-[12.5px] !text-accent"
+            :aria-invalid="tagsOver"
+            @input="markActivePlatformDraftDirty"
+          />
+          <div
+            class="mt-1 text-right font-mono text-[10px]"
+            :class="tagsOver ? 'text-bad' : 'text-content-tertiary'"
+          >
             {{ hashtagCount }} / {{ tagLimit || '∞' }}
           </div>
 
@@ -231,14 +285,20 @@
       </div>
 
       <!-- 발행 예약 -->
-      <h2 class="mt-[18px] text-[12px] font-bold text-content">{{ t('redesign.compose.scheduleTitle') }}</h2>
+      <h2 class="mt-[18px] text-[12px] font-bold text-content">
+        {{ t('redesign.compose.scheduleTitle') }}
+      </h2>
       <div class="mt-2.5 space-y-2">
         <button
           v-for="opt in scheduleOptions"
           :key="opt.key"
           type="button"
           class="flex w-full items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors"
-          :class="schedMode === opt.key ? 'border-accent bg-accent-dim' : 'border-line-control hover:border-line-hover'"
+          :class="
+            schedMode === opt.key
+              ? 'border-accent bg-accent-dim'
+              : 'border-line-control hover:border-line-hover'
+          "
           @click="schedMode = opt.key"
         >
           <span
@@ -249,17 +309,27 @@
           </span>
           <span class="min-w-0">
             <span class="block text-[12px] font-semibold text-content">{{ opt.label }}</span>
-            <span v-if="opt.hint" class="mt-0.5 block font-mono text-[10.5px] text-content-tertiary">
+            <span
+              v-if="opt.hint"
+              class="mt-0.5 block font-mono text-[10.5px] text-content-tertiary"
+            >
               {{ opt.hint }}
             </span>
           </span>
         </button>
       </div>
 
-      <input v-if="schedMode === 'fix'" v-model="fixedAt" type="datetime-local" class="input-field mt-2 !text-[12px]" />
+      <input
+        v-if="schedMode === 'fix'"
+        v-model="fixedAt"
+        type="datetime-local"
+        class="input-field mt-2 !text-[12px]"
+      />
 
       <div class="mt-3 rounded-lg border border-line-control bg-surface-raised p-3">
-        <label class="flex cursor-pointer items-center gap-2 text-[11.5px] font-semibold text-content">
+        <label
+          class="flex cursor-pointer items-center gap-2 text-[11.5px] font-semibold text-content"
+        >
           <input v-model="recurringEnabled" type="checkbox" class="h-4 w-4 accent-primary-600" />
           {{ t('redesign.compose.recurringToggle') }}
         </label>
@@ -273,7 +343,11 @@
             </select>
             <input v-model="recurringTime" type="time" class="input-field !text-[11.5px]" />
           </div>
-          <select v-if="recurringFrequency === 'WEEKLY' || recurringFrequency === 'BIWEEKLY'" v-model.number="recurringDayOfWeek" class="input-field !text-[11.5px]">
+          <select
+            v-if="recurringFrequency === 'WEEKLY' || recurringFrequency === 'BIWEEKLY'"
+            v-model.number="recurringDayOfWeek"
+            class="input-field !text-[11.5px]"
+          >
             <option :value="1">월요일</option>
             <option :value="2">화요일</option>
             <option :value="3">수요일</option>
@@ -282,14 +356,28 @@
             <option :value="6">토요일</option>
             <option :value="7">일요일</option>
           </select>
-          <input v-if="recurringFrequency === 'MONTHLY'" v-model.number="recurringDayOfMonth" type="number" min="1" max="31" class="input-field !text-[11.5px]" placeholder="매월 일자 (1~31)" />
-          <p class="text-[10.5px] leading-4 text-content-tertiary">{{ t('redesign.compose.recurringHint') }}</p>
+          <input
+            v-if="recurringFrequency === 'MONTHLY'"
+            v-model.number="recurringDayOfMonth"
+            type="number"
+            min="1"
+            max="31"
+            class="input-field !text-[11.5px]"
+            placeholder="매월 일자 (1~31)"
+          />
+          <p class="text-[10.5px] leading-4 text-content-tertiary">
+            {{ t('redesign.compose.recurringHint') }}
+          </p>
         </div>
       </div>
 
       <!-- 액션 -->
       <div class="mt-auto pt-[18px]">
-        <p v-if="dataLoadError" class="mb-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-[11px] text-error-strong" role="alert">
+        <p
+          v-if="dataLoadError"
+          class="mb-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-[11px] text-error-strong"
+          role="alert"
+        >
           {{ dataLoadError }}
         </p>
         <p v-if="blockedReason" class="mb-2 text-[11px] text-error-strong">{{ blockedReason }}</p>
@@ -307,7 +395,9 @@
             type="button"
             class="btn-primary !text-[12px]"
             style="flex: 1.4"
-            :disabled="!!blockedReason || submitting || uploadStore.isUploading || metadataGenerating"
+            :disabled="
+              !!blockedReason || submitting || uploadStore.isUploading || metadataGenerating
+            "
             @click="submit"
           >
             {{
@@ -332,7 +422,13 @@ import { useLocale } from '@/composables/useLocale'
 import ThumbPlaceholder from '@/components/redesign/ThumbPlaceholder.vue'
 import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
-import { parseCues, serializeCues, countWords, totalDurationOf, subtitleEditorApi } from '@/api/subtitleEditor'
+import {
+  parseCues,
+  serializeCues,
+  countWords,
+  totalDurationOf,
+  subtitleEditorApi,
+} from '@/api/subtitleEditor'
 import { videoApi } from '@/api/video'
 import { templatesApi } from '@/api/templates'
 import { ugcShortsPipelineApi, type PipelineRunDetailResponse } from '@/api/ugcShortsPipeline'
@@ -342,6 +438,8 @@ import { useUploadStore } from '@/stores/upload'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Channel, Platform } from '@/types/channel'
 import type { PlatformPublishConfig, PlatformUploadCapability } from '@/types/video'
+import { parsePublishHashtags, validatePublishDrafts } from '@/utils/publishValidation'
+import { toDateTimeLocal } from '@/utils/schedule'
 
 /**
  * 새 업로드 — 파일 → 대상 → 문구 → 예약을 화면 이동 없이 한 번에.
@@ -374,7 +472,15 @@ const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
 }
 
 /** 플랫폼별 제목 상한. 핸드오프 검증 규칙. */
-const TITLE_LIMIT: Record<string, number> = { common: 100, YT: 100, IG: 2200, TT: 2200, FB: 255, NV: 100, TH: 500 }
+const TITLE_LIMIT: Record<string, number> = {
+  common: 100,
+  YT: 100,
+  IG: 2200,
+  TT: 2200,
+  FB: 255,
+  NV: 100,
+  TH: 500,
+}
 /** TikTok 은 해시태그 5개까지만 반영된다. */
 const TIKTOK_HASHTAG_LIMIT = 5
 
@@ -473,19 +579,25 @@ const selectedCount = computed(() => selectedChannels.value.length)
 const shortsPlatforms = computed(() =>
   selectedChannels.value
     .map((channel) => channel.platform)
-    .filter((platform): platform is Platform => ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'].includes(platform)),
+    .filter((platform): platform is Platform =>
+      ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'].includes(platform),
+    ),
 )
 
 function platformForTab(tab: typeof activeTab.value): Platform | null {
-  return ({
-    YT: 'YOUTUBE',
-    IG: 'INSTAGRAM',
-    TT: 'TIKTOK',
-    FB: 'FACEBOOK',
-    NV: 'NAVER_CLIP',
-    TH: 'THREADS',
-    TW: 'TWITTER',
-  } as Record<string, Platform>)[tab] ?? null
+  return (
+    (
+      {
+        YT: 'YOUTUBE',
+        IG: 'INSTAGRAM',
+        TT: 'TIKTOK',
+        FB: 'FACEBOOK',
+        NV: 'NAVER_CLIP',
+        TH: 'THREADS',
+        TW: 'TWITTER',
+      } as Record<string, Platform>
+    )[tab] ?? null
+  )
 }
 
 function draftFor(platform: Platform | null): FormDraft {
@@ -518,41 +630,57 @@ function markActivePlatformDraftDirty() {
 }
 
 const activeDraft = computed(() => draftFor(platformForTab(activeTab.value)))
-const selectedPreviewPlatforms = computed(() => [...new Set(selectedChannels.value.map((channel) => channel.platform))])
-const previewMetadata = computed(() => Object.fromEntries(
-  selectedPreviewPlatforms.value.map((platform) => {
-    const draft = draftFor(platform)
-    return [platform, {
-      title: draft.title,
-      description: draft.description,
-      tags: parseHashtags(draft.hashtags),
-    }]
-  }),
-))
-const previewLimits = computed(() => Object.fromEntries(
-  capabilities.value.map((capability) => [capability.platform, {
-    title: capability.maxTitleLength,
-    description: capability.maxDescriptionLength,
-    tags: capability.maxTagCount,
-  }]),
-))
+const selectedPreviewPlatforms = computed(() => [
+  ...new Set(selectedChannels.value.map((channel) => channel.platform)),
+])
+const previewMetadata = computed(() =>
+  Object.fromEntries(
+    selectedPreviewPlatforms.value.map((platform) => {
+      const draft = draftFor(platform)
+      return [
+        platform,
+        {
+          title: draft.title,
+          description: draft.description,
+          tags: parseHashtags(draft.hashtags),
+        },
+      ]
+    }),
+  ),
+)
+const previewLimits = computed(() =>
+  Object.fromEntries(
+    capabilities.value.map((capability) => [
+      capability.platform,
+      {
+        title: capability.maxTitleLength,
+        description: capability.maxDescriptionLength,
+        tags: capability.maxTagCount,
+      },
+    ]),
+  ),
+)
 
 const activeCapability = computed(() => {
   const platform = platformForTab(activeTab.value)
   return platform ? capabilities.value.find((item) => item.platform === platform) : null
 })
-const titleLimit = computed(() => activeCapability.value?.maxTitleLength ?? TITLE_LIMIT[activeTab.value] ?? 100)
+const titleLimit = computed(
+  () => activeCapability.value?.maxTitleLength ?? TITLE_LIMIT[activeTab.value] ?? 100,
+)
 const descriptionLimit = computed(() => activeCapability.value?.maxDescriptionLength ?? 0)
 const tagLimit = computed(() => activeCapability.value?.maxTagCount ?? 0)
 const titleOver = computed(() => activeDraft.value.title.length > titleLimit.value)
-const descriptionOver = computed(() => descriptionLimit.value > 0 && activeDraft.value.description.length > descriptionLimit.value)
+const descriptionOver = computed(
+  () => descriptionLimit.value > 0 && activeDraft.value.description.length > descriptionLimit.value,
+)
 const tagsOver = computed(() => tagLimit.value > 0 && hashtagCount.value > tagLimit.value)
 
 const fileMeta = computed(() => file.meta || t('redesign.compose.noFileMeta'))
 
 // Count the same normalized tokens that are sent to the API. Splitting only
 // on '#' made comma/space-separated tags display an incorrect quota.
-const hashtagCount = computed(() => parseHashtags(activeDraft.value.hashtags).length)
+const hashtagCount = computed(() => parsePublishHashtags(activeDraft.value.hashtags).length)
 
 const warnings = computed(() => {
   const out: string[] = []
@@ -573,22 +701,21 @@ const warnings = computed(() => {
 })
 
 const validationIssues = computed(() => {
-  const issues: string[] = []
-  for (const channel of selectedChannels.value) {
-    const capability = capabilities.value.find((item) => item.platform === channel.platform)
-    const draft = draftFor(channel.platform)
-    if (!capability) continue
-    if (draft.title.length > capability.maxTitleLength) {
-      issues.push(`${channel.channelName}: ${t('redesign.compose.warnTitleLength', { limit: capability.maxTitleLength })}`)
-    }
-    if (capability.maxDescriptionLength > 0 && draft.description.length > capability.maxDescriptionLength) {
-      issues.push(`${channel.channelName}: ${t('redesign.compose.warnDescriptionLength', { limit: capability.maxDescriptionLength })}`)
-    }
-    if (parseHashtags(draft.hashtags).length > capability.maxTagCount) {
-      issues.push(`${channel.channelName}: ${t('redesign.compose.warnTagCount', { limit: capability.maxTagCount })}`)
-    }
-  }
-  return issues
+  return validatePublishDrafts(
+    selectedChannels.value,
+    capabilities.value,
+    Object.fromEntries(
+      selectedChannels.value.map((channel) => [channel.platform, draftFor(channel.platform)]),
+    ),
+  ).map((issue) => {
+    const message =
+      issue.field === 'title'
+        ? t('redesign.compose.warnTitleLength', { limit: issue.limit })
+        : issue.field === 'description'
+          ? t('redesign.compose.warnDescriptionLength', { limit: issue.limit })
+          : t('redesign.compose.warnTagCount', { limit: issue.limit })
+    return `${issue.channelName}: ${message}`
+  })
 })
 
 function applyCommonToPlatforms() {
@@ -694,7 +821,11 @@ async function transcriptFor(videoId: number): Promise<string> {
   return stt.text
 }
 
-async function saveSubtitleTrack(videoId: number, text: string, segments: { startTime: number; endTime: number; text: string }[]) {
+async function saveSubtitleTrack(
+  videoId: number,
+  text: string,
+  segments: { startTime: number; endTime: number; text: string }[],
+) {
   if (!text || segments.length === 0) return
   const cues = segments.map((segment) => ({
     start: segment.startTime,
@@ -719,7 +850,8 @@ async function generateMetadataFor(videoId: number) {
   if (
     metadataGeneratedForVideoId.value === videoId &&
     targetPlatforms.every((platform) => metadataGeneratedPlatforms.value.includes(platform))
-  ) return
+  )
+    return
   if (metadataGenerating.value) return
   metadataGenerating.value = true
   try {
@@ -749,7 +881,9 @@ async function generateMetadataFor(videoId: number) {
       form.hashtags = first.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
     }
     metadataGeneratedForVideoId.value = videoId
-    metadataGeneratedPlatforms.value = [...new Set([...metadataGeneratedPlatforms.value, ...targetPlatforms])]
+    metadataGeneratedPlatforms.value = [
+      ...new Set([...metadataGeneratedPlatforms.value, ...targetPlatforms]),
+    ]
     notice.value = t('redesign.compose.metadataGenerated')
   } finally {
     metadataGenerating.value = false
@@ -854,8 +988,12 @@ async function submit() {
           videoId: sourceVideoId,
           name: form.title || '반복 게시',
           frequency: recurringFrequency.value,
-          dayOfWeek: recurringFrequency.value === 'WEEKLY' || recurringFrequency.value === 'BIWEEKLY' ? recurringDayOfWeek.value : undefined,
-          dayOfMonth: recurringFrequency.value === 'MONTHLY' ? recurringDayOfMonth.value : undefined,
+          dayOfWeek:
+            recurringFrequency.value === 'WEEKLY' || recurringFrequency.value === 'BIWEEKLY'
+              ? recurringDayOfWeek.value
+              : undefined,
+          dayOfMonth:
+            recurringFrequency.value === 'MONTHLY' ? recurringDayOfMonth.value : undefined,
           timeOfDay: recurringTime.value,
           timezone: 'Asia/Seoul',
           platforms: [...new Set(selectedChannels.value.map((channel) => channel.platform))],
@@ -866,7 +1004,8 @@ async function submit() {
         })
       } catch (error) {
         // 원본 게시 성공을 실패로 오인하게 만들거나 재전송을 유도하지 않는다.
-        recurringFailure = error instanceof Error ? error.message : t('redesign.compose.recurringFailed')
+        recurringFailure =
+          error instanceof Error ? error.message : t('redesign.compose.recurringFailed')
       }
     }
     if (shortsEnabled.value) await publishAutomaticShorts(sourceVideoId)
@@ -877,7 +1016,10 @@ async function submit() {
     notice.value = t('redesign.compose.scheduled')
     router.push('/today')
   } catch (e) {
-    const detail = e instanceof Error ? e.message : uploadStore.uploadError || t('redesign.compose.scheduleFailed')
+    const detail =
+      e instanceof Error
+        ? e.message
+        : uploadStore.uploadError || t('redesign.compose.scheduleFailed')
     notice.value = publishCompleted
       ? t('redesign.compose.partialActionFailed', { error: detail })
       : detail
@@ -913,7 +1055,8 @@ async function waitForRender(workspaceId: number, runId: number, clipId: number)
     const status = await ugcShortsPipelineApi.getRenderStatus(workspaceId, runId, clipId)
     shortsStatus.value = `${t('redesign.compose.shortsRendering')} ${status.progress ?? 0}%`
     if (status.status === 'COMPLETED' && status.videoId != null) return status.videoId
-    if (status.status === 'FAILED') throw new Error(status.failureReason || t('redesign.compose.shortsRenderFailed'))
+    if (status.status === 'FAILED')
+      throw new Error(status.failureReason || t('redesign.compose.shortsRenderFailed'))
     await wait(2000)
   }
   throw new Error(t('redesign.compose.shortsTimedOut'))
@@ -921,14 +1064,16 @@ async function waitForRender(workspaceId: number, runId: number, clipId: number)
 
 /** 쇼츠 생성 → 기본 후킹 선택 → 서버 렌더 → 선택 채널 예약 게시까지 한 번에 처리한다. */
 async function publishAutomaticShorts(sourceVideoId: number) {
-  if (shortsPlatforms.value.length === 0) throw new Error(t('redesign.compose.shortsNoCompatibleTargets'))
+  if (shortsPlatforms.value.length === 0)
+    throw new Error(t('redesign.compose.shortsNoCompatibleTargets'))
   const workspaceId = await workspaceStore.ensureActiveWorkspace()
   if (workspaceId == null) throw new Error(t('redesign.compose.shortsWorkspaceRequired'))
 
   shortsProcessing.value = true
   shortsStatus.value = t('redesign.compose.shortsStarting')
   const availability = await ugcShortsPipelineApi.getRenderAvailability()
-  if (!availability.available) throw new Error(availability.reason || t('redesign.compose.shortsUnavailable'))
+  if (!availability.available)
+    throw new Error(availability.reason || t('redesign.compose.shortsUnavailable'))
 
   const run = await ugcShortsPipelineApi.create(workspaceId, { sourceVideoId, templateId: null })
   let detail = await waitForShortsState(workspaceId, run.id, 'AWAITING_HOOK_SELECTION')
@@ -938,7 +1083,10 @@ async function publishAutomaticShorts(sourceVideoId: number) {
       const hook = clip.hooks.find((candidate) => candidate.variant === 'A') || clip.hooks[0]
       return hook ? { clipId: clip.id, variant: hook.variant } : null
     })
-    .filter((selection): selection is { clipId: number; variant: 'A' | 'B' | 'CUSTOM' } => selection !== null)
+    .filter(
+      (selection): selection is { clipId: number; variant: 'A' | 'B' | 'CUSTOM' } =>
+        selection !== null,
+    )
   if (selections.length === 0) throw new Error(t('redesign.compose.shortsNoClips'))
 
   await ugcShortsPipelineApi.selectHooks(workspaceId, run.id, { selections, discardClipIds: [] })
@@ -946,12 +1094,16 @@ async function publishAutomaticShorts(sourceVideoId: number) {
 
   const renderableClips = detail.clips.filter((clip) => clip.status !== 'DISCARDED')
   shortsStatus.value = t('redesign.compose.shortsRendering')
-  await Promise.all(renderableClips.map(async (clip) => {
-    await ugcShortsPipelineApi.startRender(workspaceId, run.id, clip.id)
-    return waitForRender(workspaceId, run.id, clip.id)
-  }))
+  await Promise.all(
+    renderableClips.map(async (clip) => {
+      await ugcShortsPipelineApi.startRender(workspaceId, run.id, clip.id)
+      return waitForRender(workspaceId, run.id, clip.id)
+    }),
+  )
 
-  const startAt = new Date(Math.max(Date.now() + 5 * 60 * 1000, new Date(scheduledAtFor(0) || Date.now()).getTime()))
+  const startAt = new Date(
+    Math.max(Date.now() + 5 * 60 * 1000, new Date(scheduledAtFor(0) || Date.now()).getTime()),
+  )
   await ugcShortsPipelineApi.confirmSchedule(workspaceId, run.id, {
     startAt: startAt.toISOString(),
     intervalHours: 2,
@@ -964,7 +1116,8 @@ async function publishAutomaticShorts(sourceVideoId: number) {
 /** 채널별 예약 시각. 최적 시간은 09:00·12:30·19:00 슬롯을 순서대로 돌려 쓴다. */
 function scheduledAtFor(index: number): string | undefined {
   if (schedMode.value === 'now') return undefined
-  if (schedMode.value === 'fix') return fixedAt.value ? new Date(fixedAt.value).toISOString() : undefined
+  if (schedMode.value === 'fix')
+    return fixedAt.value ? toDateTimeLocal(new Date(fixedAt.value)) : undefined
 
   const slots = [
     [9, 0],
@@ -975,15 +1128,12 @@ function scheduledAtFor(index: number): string | undefined {
   const at = new Date()
   at.setHours(h, m, 0, 0)
   if (at.getTime() <= Date.now()) at.setDate(at.getDate() + 1)
-  return at.toISOString()
+  // The publish endpoint binds `scheduledAt` to LocalDateTime (KST wall-clock).
+  // Sending ISO with `Z` would shift the time and can be rejected by Jackson.
+  return toDateTimeLocal(at)
 }
 
-function parseHashtags(raw: string): string[] {
-  return raw
-    .split(/[\s,]+/)
-    .map((s) => s.replace(/^#/, '').trim())
-    .filter(Boolean)
-}
+const parseHashtags = parsePublishHashtags
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n}B`
@@ -997,7 +1147,10 @@ async function importFromUrl() {
   importing.value = true
   notice.value = ''
   try {
-    const result = await videoApi.importUrl({ url: importUrl.value, title: form.title || undefined })
+    const result = await videoApi.importUrl({
+      url: importUrl.value,
+      title: form.title || undefined,
+    })
     importedVideoId.value = result.videoId
     uploadStore.resetUpload()
     file.name = result.title
@@ -1047,13 +1200,15 @@ onMounted(async () => {
     channels.value = (await channelApi.list())?.channels ?? []
   } catch (error) {
     channels.value = []
-    dataLoadError.value = error instanceof Error ? error.message : t('redesign.compose.dataLoadFailed')
+    dataLoadError.value =
+      error instanceof Error ? error.message : t('redesign.compose.dataLoadFailed')
   }
   try {
     capabilities.value = await videoApi.getUploadCapabilities()
   } catch (error) {
     capabilities.value = []
-    dataLoadError.value ||= error instanceof Error ? error.message : t('redesign.compose.dataLoadFailed')
+    dataLoadError.value ||=
+      error instanceof Error ? error.message : t('redesign.compose.dataLoadFailed')
   }
   try {
     importAvailability.value = await videoApi.getImportAvailability()

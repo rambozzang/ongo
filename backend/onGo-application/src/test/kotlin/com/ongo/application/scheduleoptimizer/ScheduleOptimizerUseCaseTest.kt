@@ -1,0 +1,75 @@
+package com.ongo.application.scheduleoptimizer
+
+import com.ongo.application.ai.AiRateLimiter
+import com.ongo.application.ai.ChatClientResolver
+import com.ongo.application.credit.CreditService
+import com.ongo.domain.scheduleoptimizer.OptimalSlotRepository
+import com.ongo.domain.scheduleoptimizer.ScheduleRecommendation
+import com.ongo.domain.scheduleoptimizer.ScheduleRecommendationRepository
+import io.mockk.mockk
+import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+
+class ScheduleOptimizerUseCaseTest {
+
+    private val recommendations = InMemoryRecommendationRepository()
+    private val useCase = ScheduleOptimizerUseCase(
+        slotRepository = mockk<OptimalSlotRepository>(),
+        recRepository = recommendations,
+        chatClientResolver = mockk<ChatClientResolver>(),
+        creditService = mockk<CreditService>(),
+        rateLimiter = mockk<AiRateLimiter>(),
+    )
+
+    @Test
+    fun `apply recommendation only changes a recommendation owned by the current user`() {
+        val recommendation = recommendations.save(recommendation(userId = 7L))
+        val recommendationId = recommendation.id!!
+
+        val applied = useCase.applyRecommendation(userId = 7L, id = recommendationId)
+
+        assertEquals("APPLIED", applied.status)
+        assertEquals("APPLIED", recommendations.findByIdAndUserId(recommendationId, 7L)?.status)
+    }
+
+    @Test
+    fun `apply recommendation hides another user's recommendation`() {
+        val recommendation = recommendations.save(recommendation(userId = 7L))
+        val recommendationId = recommendation.id!!
+
+        assertFailsWith<RuntimeException> {
+            useCase.applyRecommendation(userId = 8L, id = recommendationId)
+        }
+        assertEquals("PENDING", recommendations.findByIdAndUserId(recommendationId, 7L)?.status)
+    }
+
+    private fun recommendation(userId: Long) = ScheduleRecommendation(
+        userId = userId,
+        videoId = 42L,
+        videoTitle = "테스트 영상",
+        recommendedSchedule = LocalDateTime.of(2026, 8, 10, 9, 0),
+        platform = "YOUTUBE",
+    )
+
+    private class InMemoryRecommendationRepository : ScheduleRecommendationRepository {
+        private var nextId = 1L
+        private val records = linkedMapOf<Long, ScheduleRecommendation>()
+
+        override fun findByIdAndUserId(id: Long, userId: Long) =
+            records[id]?.takeIf { it.userId == userId }
+
+        override fun findByUserId(userId: Long) = records.values.filter { it.userId == userId }
+
+        override fun save(rec: ScheduleRecommendation) = rec.copy(id = nextId++).also {
+            records[it.id!!] = it
+        }
+
+        override fun updateStatus(id: Long, userId: Long, status: String): Boolean {
+            val current = findByIdAndUserId(id, userId) ?: return false
+            records[id] = current.copy(status = status)
+            return true
+        }
+    }
+}

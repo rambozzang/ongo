@@ -276,6 +276,9 @@ object Fields {
     val VIDEO_POLL_TOKEN = DSL.field("poll_token", String::class.java)
     val VIDEO_LAST_ERROR = DSL.field("last_error", String::class.java)
     val VIDEO_SCHEDULED_AT = DSL.field("scheduled_at", java.time.LocalDateTime::class.java)
+    val CURRENT_SCHEDULE = DSL.field("current_schedule", java.time.LocalDateTime::class.java)
+    val RECOMMENDED_SCHEDULE = DSL.field("recommended_schedule", java.time.LocalDateTime::class.java)
+    val EXPECTED_IMPROVEMENT = DSL.field("expected_improvement", Int::class.java)
 
     // video_platform_meta
     val VIDEO_UPLOAD_ID = DSL.field("video_upload_id", Long::class.java)

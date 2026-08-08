@@ -33,7 +33,14 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
 
   const unreadCountByCategory = computed(() => {
     const counts: Record<string, number> = {}
-    const categories: NotificationCategory[] = ['upload', 'schedule', 'channel', 'ai', 'analytics', 'subscription']
+    const categories: NotificationCategory[] = [
+      'upload',
+      'schedule',
+      'channel',
+      'ai',
+      'analytics',
+      'subscription',
+    ]
     categories.forEach((cat) => {
       counts[cat] = notifications.value.filter((n) => n.category === cat && !n.isRead).length
     })
@@ -90,7 +97,9 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     } catch {
       throw new Error('알림 읽음 처리에 실패했습니다')
     }
-    notifications.value.forEach((n) => { n.isRead = true })
+    notifications.value.forEach((n) => {
+      n.isRead = true
+    })
   }
 
   async function deleteNotification(id: number) {
@@ -119,7 +128,11 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     activeCategory.value = category
   }
 
-  function updateSetting(category: NotificationCategory, field: 'inApp' | 'email' | 'kakao', value: boolean) {
+  function updateSetting(
+    category: NotificationCategory,
+    field: 'inApp' | 'email' | 'kakao',
+    value: boolean,
+  ) {
     const setting = settings.value.find((s) => s.category === category)
     if (setting) {
       setting[field] = value
@@ -169,11 +182,9 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
   }
 
   async function syncUnreadCount() {
-    try {
-      await fetchNotifications()
-    } catch {
-      // 무시
-    }
+    // fetchNotifications stores loadError; do not turn a failed refresh into
+    // an apparently successful empty notification state.
+    return fetchNotifications()
   }
 
   return {
@@ -208,13 +219,13 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
 })
 
 const TYPE_CATEGORY_MAP: Record<string, NotificationCategory> = {
-  'UPLOAD_COMPLETE': 'upload',
-  'UPLOAD_FAILED': 'upload',
-  'CREDIT_LOW': 'ai',
-  'SCHEDULE_REMINDER': 'schedule',
-  'COMMENT': 'upload',
-  'SYSTEM': 'upload',
-  'CHANNEL_TOKEN_EXPIRED': 'channel',
+  UPLOAD_COMPLETE: 'upload',
+  UPLOAD_FAILED: 'upload',
+  CREDIT_LOW: 'ai',
+  SCHEDULE_REMINDER: 'schedule',
+  COMMENT: 'upload',
+  SYSTEM: 'upload',
+  CHANNEL_TOKEN_EXPIRED: 'channel',
 }
 
 function mapTypeToCategory(type: string): NotificationCategory {

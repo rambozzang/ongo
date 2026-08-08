@@ -14,14 +14,30 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object ExecutorConfig {
 
-    /** 플랫폼 업로드용 — 동시 업로드 최대 20건 (4플랫폼 × 5건) */
+    /** 플랫폼 업로드용 — 한 JVM에서 동시에 실행할 수 있는 외부 업로드 상한 */
     val uploadSemaphore = Semaphore(20)
 
-    /** 한 플랫폼의 rate limit이 전체 플랫폼 게시를 막지 않도록 플랫폼별로도 제한한다. */
+    /**
+     * 플랫폼별 API rate limit에 맞춘 상한이다.
+     * 알 수 없는/아직 명시되지 않은 플랫폼은 보수적으로 5건만 허용한다.
+     */
+    private val platformUploadLimits = mapOf(
+        Platform.YOUTUBE to 20,
+        Platform.TIKTOK to 20,
+        Platform.INSTAGRAM to 10,
+        Platform.NAVER_CLIP to 5,
+        Platform.THREADS to 10,
+        Platform.TWITTER to 5,
+        Platform.FACEBOOK to 5,
+    )
     private val platformUploadSemaphores = ConcurrentHashMap<Platform, Semaphore>()
 
     fun platformUploadSemaphore(platform: Platform): Semaphore =
-        platformUploadSemaphores.computeIfAbsent(platform) { Semaphore(5) }
+        platformUploadSemaphores.computeIfAbsent(platform) {
+            Semaphore(platformUploadLimits[platform] ?: 5, true)
+        }
+
+    internal fun platformUploadLimit(platform: Platform): Int = platformUploadLimits[platform] ?: 5
 
     /** AI 배치 처리용 — 동시 AI 호출 최대 5건 */
     val aiBatchSemaphore = Semaphore(5)

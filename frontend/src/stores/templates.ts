@@ -86,53 +86,47 @@ export const useTemplatesStore = defineStore('templates', () => {
   })
 
   // Actions
-  const createTemplate = async (template: Omit<ContentTemplate, 'id' | 'usageCount' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      const response = await templatesApi.create({
-        name: template.name,
-        titleTemplate: template.titleTemplate,
-        descriptionTemplate: template.descriptionTemplate,
-        tags: template.tagsTemplate ?? [],
-        category: template.category,
-        platform: template.platform === 'ALL' ? undefined : template.platform,
-      })
-      const newTemplate: ContentTemplate = {
-        id: response.id,
-        name: response.name,
-        category: (response.category ?? template.category) as TemplateCategory,
-        platform: (response.platform ?? 'ALL') as TemplatePlatform,
-        titleTemplate: response.titleTemplate ?? undefined,
-        descriptionTemplate: response.descriptionTemplate ?? undefined,
-        tagsTemplate: response.tags.length > 0 ? response.tags : undefined,
-        variables: template.variables,
-        usageCount: 0,
-        createdAt: response.createdAt ?? new Date().toISOString(),
-        updatedAt: response.updatedAt ?? new Date().toISOString(),
-      }
-      templates.value.push(newTemplate)
-      return newTemplate
-    } catch (error) {
-      throw error
+  const createTemplate = async (
+    template: Omit<ContentTemplate, 'id' | 'usageCount' | 'createdAt' | 'updatedAt'>,
+  ) => {
+    const response = await templatesApi.create({
+      name: template.name,
+      titleTemplate: template.titleTemplate,
+      descriptionTemplate: template.descriptionTemplate,
+      tags: template.tagsTemplate ?? [],
+      category: template.category,
+      platform: template.platform === 'ALL' ? undefined : template.platform,
+    })
+    const newTemplate: ContentTemplate = {
+      id: response.id,
+      name: response.name,
+      category: (response.category ?? template.category) as TemplateCategory,
+      platform: (response.platform ?? 'ALL') as TemplatePlatform,
+      titleTemplate: response.titleTemplate ?? undefined,
+      descriptionTemplate: response.descriptionTemplate ?? undefined,
+      tagsTemplate: response.tags.length > 0 ? response.tags : undefined,
+      variables: template.variables,
+      usageCount: 0,
+      createdAt: response.createdAt ?? new Date().toISOString(),
+      updatedAt: response.updatedAt ?? new Date().toISOString(),
     }
+    templates.value.push(newTemplate)
+    return newTemplate
   }
 
   const updateTemplate = async (id: number, updates: Partial<ContentTemplate>) => {
     const index = templates.value.findIndex((t) => t.id === id)
     if (index === -1) return
 
-    try {
-      const current = templates.value[index]
-      await templatesApi.update(id, {
-        name: updates.name ?? current.name,
-        titleTemplate: updates.titleTemplate ?? current.titleTemplate,
-        descriptionTemplate: updates.descriptionTemplate ?? current.descriptionTemplate,
-        tags: updates.tagsTemplate ?? current.tagsTemplate ?? [],
-        category: updates.category ?? current.category,
-        platform: updates.platform ?? current.platform,
-      })
-    } catch (error) {
-      throw error
-    }
+    const current = templates.value[index]
+    await templatesApi.update(id, {
+      name: updates.name ?? current.name,
+      titleTemplate: updates.titleTemplate ?? current.titleTemplate,
+      descriptionTemplate: updates.descriptionTemplate ?? current.descriptionTemplate,
+      tags: updates.tagsTemplate ?? current.tagsTemplate ?? [],
+      category: updates.category ?? current.category,
+      platform: updates.platform ?? current.platform,
+    })
 
     templates.value[index] = {
       ...templates.value[index],
@@ -142,11 +136,7 @@ export const useTemplatesStore = defineStore('templates', () => {
   }
 
   const deleteTemplate = async (id: number) => {
-    try {
-      await templatesApi.delete(id)
-    } catch (error) {
-      throw error
-    }
+    await templatesApi.delete(id)
     const index = templates.value.findIndex((t) => t.id === id)
     if (index !== -1) {
       templates.value.splice(index, 1)
@@ -165,11 +155,7 @@ export const useTemplatesStore = defineStore('templates', () => {
   }
 
   const applyTemplate = async (id: number) => {
-    try {
-      await templatesApi.use(id)
-    } catch (error) {
-      throw error
-    }
+    await templatesApi.use(id)
     const template = templates.value.find((t) => t.id === id)
     if (template) {
       template.usageCount++

@@ -9,14 +9,19 @@
       :aria-describedby="messageId"
     >
       <div class="fixed inset-0 bg-black/50" aria-hidden="true" @click="cancel" />
-      <div ref="modalRef" class="glass-elevated relative max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-xl p-6">
-        <h3 :id="titleId" class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ title }}</h3>
+      <div
+        ref="modalRef"
+        class="glass-elevated relative max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-xl p-6"
+      >
+        <h3 :id="titleId" class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+          {{ title }}
+        </h3>
         <p :id="messageId" class="mb-6 text-sm text-gray-600 dark:text-gray-300">{{ message }}</p>
         <div class="flex justify-end gap-3">
-          <button class="btn-secondary" @click="cancel">
+          <button type="button" class="btn-secondary" @click="cancel">
             {{ cancelText }}
           </button>
-          <button :class="danger ? 'btn-danger' : 'btn-primary'" @click="confirm">
+          <button type="button" :class="danger ? 'btn-danger' : 'btn-primary'" @click="confirm">
             {{ confirmText }}
           </button>
         </div>
@@ -76,16 +81,19 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-watch(() => props.modelValue, async (isOpen) => {
-  if (isOpen) {
-    previousActiveElement.value = document.activeElement as HTMLElement
-    document.addEventListener('keydown', handleKeydown)
-    await nextTick()
-    activateFocusTrap()
-  } else {
-    document.removeEventListener('keydown', handleKeydown)
-    deactivateFocusTrap()
-    previousActiveElement.value?.focus()
-  }
-})
+watch(
+  () => props.modelValue,
+  async (isOpen) => {
+    if (isOpen) {
+      previousActiveElement.value = document.activeElement as HTMLElement
+      document.addEventListener('keydown', handleKeydown)
+      await nextTick()
+      activateFocusTrap()
+    } else {
+      document.removeEventListener('keydown', handleKeydown)
+      deactivateFocusTrap()
+      previousActiveElement.value?.focus()
+    }
+  },
+)
 </script>

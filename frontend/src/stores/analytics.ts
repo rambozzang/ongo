@@ -25,6 +25,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const postingHeatmapData = shallowRef<HeatmapData[]>([])
   const topVideos = shallowRef<TopVideo[]>([])
   const loading = ref(false)
+  const loadError = ref<string | null>(null)
   const period = ref<AnalyticsPeriod>('7d')
 
   // Deep analytics
@@ -38,13 +39,17 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   // 크로스 플랫폼 분석
   const crossPlatformData = ref<CrossPlatformSummaryResponse | null>(null)
   const crossPlatformLoading = ref(false)
+  const crossPlatformError = ref<string | null>(null)
+  const deepAnalyticsError = ref<string | null>(null)
 
   async function fetchCrossPlatform(days = 30) {
     crossPlatformLoading.value = true
+    crossPlatformError.value = null
     try {
       crossPlatformData.value = await analyticsApi.crossPlatformComparison(days)
-    } catch {
-      // silently ignore
+    } catch (error) {
+      crossPlatformError.value =
+        error instanceof Error ? error.message : '교차 플랫폼 분석을 불러오지 못했습니다.'
     } finally {
       crossPlatformLoading.value = false
     }
@@ -52,35 +57,32 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   async function fetchAnalytics() {
     loading.value = true
-    try {
-      const results = await Promise.allSettled([
-        analyticsApi.dashboard(period.value),
-        analyticsApi.trends(period.value),
-        analyticsApi.platformComparison(period.value),
-        analyticsApi.heatmap(),
-        analyticsApi.topVideos(period.value),
-      ])
+    loadError.value = null
+    const results = await Promise.allSettled([
+      analyticsApi.dashboard(period.value),
+      analyticsApi.trends(period.value),
+      analyticsApi.platformComparison(period.value),
+      analyticsApi.heatmap(),
+      analyticsApi.topVideos(period.value),
+    ])
 
-      if (results[0].status === 'fulfilled') kpi.value = results[0].value
-      if (results[1].status === 'fulfilled') trendData.value = results[1].value
-      if (results[2].status === 'fulfilled') platformComparison.value = results[2].value
-      if (results[3].status === 'fulfilled') {
-        heatmapData.value = results[3].value
-        // Use real heatmap data for posting heatmap as well
-        postingHeatmapData.value = results[3].value
-      }
-      if (results[4].status === 'fulfilled') topVideos.value = results[4].value
-
-      // 실패한 요청이 있으면 사용자에게 알림
-      const hasFailure = results.some((result) => result.status === 'rejected')
-      if (hasFailure) {
-        useNotificationStore().error('분석 데이터를 불러오는 중 오류가 발생했습니다')
-      }
-    } catch {
-      // analytics fetch failed silently
-    } finally {
-      loading.value = false
+    if (results[0].status === 'fulfilled') kpi.value = results[0].value
+    if (results[1].status === 'fulfilled') trendData.value = results[1].value
+    if (results[2].status === 'fulfilled') platformComparison.value = results[2].value
+    if (results[3].status === 'fulfilled') {
+      heatmapData.value = results[3].value
+      // Use real heatmap data for posting heatmap as well
+      postingHeatmapData.value = results[3].value
     }
+    if (results[4].status === 'fulfilled') topVideos.value = results[4].value
+
+    // 실패한 요청이 있으면 사용자에게 알림
+    const hasFailure = results.some((result) => result.status === 'rejected')
+    if (hasFailure) {
+      loadError.value = '일부 분석 데이터를 불러오지 못했습니다.'
+      useNotificationStore().error('분석 데이터를 불러오는 중 오류가 발생했습니다')
+    }
+    loading.value = false
   }
 
   function setPeriod(p: AnalyticsPeriod) {
@@ -90,6 +92,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   async function fetchDeepAnalytics(days = 30) {
     deepAnalyticsLoading.value = true
+    deepAnalyticsError.value = null
     try {
       const results = await Promise.allSettled([
         analyticsApi.trafficSources(days),
@@ -103,6 +106,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       if (results[2].status === 'fulfilled') ctrData.value = results[2].value
       if (results[3].status === 'fulfilled') avgViewDuration.value = results[3].value
       if (results[4].status === 'fulfilled') subscriberConversion.value = results[4].value
+      if (results.some((result) => result.status === 'rejected')) {
+        deepAnalyticsError.value = '일부 상세 분석 데이터를 불러오지 못했습니다.'
+      }
     } finally {
       deepAnalyticsLoading.value = false
     }
@@ -116,6 +122,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     postingHeatmapData,
     topVideos,
     loading,
+    loadError,
     period,
     fetchAnalytics,
     setPeriod,
@@ -128,6 +135,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     fetchDeepAnalytics,
     crossPlatformData,
     crossPlatformLoading,
+    crossPlatformError,
+    deepAnalyticsError,
     fetchCrossPlatform,
   }
 })

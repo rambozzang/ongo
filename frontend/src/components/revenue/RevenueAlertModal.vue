@@ -17,8 +17,8 @@ const revenueStore = useRevenueStore()
 // 알림 타입별 로컬 설정 상태 (백엔드 필드명에 맞춤)
 interface LocalConfig {
   isEnabled: boolean
-  scheduleTime: string       // HH:mm (DAILY_SUMMARY용)
-  thresholdValue: number     // 임계값 (ANOMALY_DETECTION용)
+  scheduleTime: string // HH:mm (DAILY_SUMMARY용)
+  thresholdValue: number // 임계값 (ANOMALY_DETECTION용)
 }
 
 const configs = ref<Record<AlertType, LocalConfig>>({
@@ -29,14 +29,20 @@ const configs = ref<Record<AlertType, LocalConfig>>({
 })
 
 const saving = ref(false)
+const error = ref<string | null>(null)
 
 // 모달 열릴 때 스토어의 설정을 로컬 상태에 동기화
-watch(() => props.modelValue, async (open) => {
-  if (open) {
-    await revenueStore.fetchAlertConfigs()
-    syncFromStore()
-  }
-})
+watch(
+  () => props.modelValue,
+  async (open) => {
+    if (open) {
+      error.value = null
+      await revenueStore.fetchAlertConfigs()
+      error.value = revenueStore.alertConfigError
+      syncFromStore()
+    }
+  },
+)
 
 function syncFromStore() {
   for (const cfg of revenueStore.alertConfigs) {
@@ -51,12 +57,18 @@ function syncFromStore() {
 
 async function handleSave() {
   saving.value = true
+  error.value = null
   try {
-    const alertTypes: AlertType[] = ['DAILY_SUMMARY', 'ANOMALY_DETECTION', 'GOAL_ACHIEVEMENT', 'MILESTONE']
+    const alertTypes: AlertType[] = [
+      'DAILY_SUMMARY',
+      'ANOMALY_DETECTION',
+      'GOAL_ACHIEVEMENT',
+      'MILESTONE',
+    ]
 
     for (const alertType of alertTypes) {
       const local = configs.value[alertType]
-      const existing = revenueStore.alertConfigs.find(c => c.alertType === alertType)
+      const existing = revenueStore.alertConfigs.find((c) => c.alertType === alertType)
 
       const payload: Omit<RevenueAlertConfig, 'id'> = {
         alertType,
@@ -73,8 +85,8 @@ async function handleSave() {
     }
 
     emit('update:modelValue', false)
-  } catch {
-    // 에러 무시 (실패해도 닫지 않음)
+  } catch (caught) {
+    error.value = caught instanceof Error ? caught.message : '수익 알림 설정을 저장하지 못했습니다.'
   } finally {
     saving.value = false
   }
@@ -89,6 +101,13 @@ async function handleSave() {
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <div class="space-y-6">
+      <div
+        v-if="error"
+        class="rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-sm text-error-strong"
+        role="alert"
+      >
+        {{ error }}
+      </div>
       <!-- 일간 수익 요약 -->
       <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
         <div class="flex items-start justify-between gap-4">
@@ -115,7 +134,9 @@ async function handleSave() {
           <button
             type="button"
             class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            :class="configs.DAILY_SUMMARY.isEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
+            :class="
+              configs.DAILY_SUMMARY.isEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'
+            "
             role="switch"
             :aria-checked="configs.DAILY_SUMMARY.isEnabled"
             @click="configs.DAILY_SUMMARY.isEnabled = !configs.DAILY_SUMMARY.isEnabled"
@@ -158,7 +179,11 @@ async function handleSave() {
           <button
             type="button"
             class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            :class="configs.ANOMALY_DETECTION.isEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
+            :class="
+              configs.ANOMALY_DETECTION.isEnabled
+                ? 'bg-primary-600'
+                : 'bg-gray-200 dark:bg-gray-600'
+            "
             role="switch"
             :aria-checked="configs.ANOMALY_DETECTION.isEnabled"
             @click="configs.ANOMALY_DETECTION.isEnabled = !configs.ANOMALY_DETECTION.isEnabled"
@@ -198,7 +223,9 @@ async function handleSave() {
           <button
             type="button"
             class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            :class="configs.GOAL_ACHIEVEMENT.isEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
+            :class="
+              configs.GOAL_ACHIEVEMENT.isEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'
+            "
             role="switch"
             :aria-checked="configs.GOAL_ACHIEVEMENT.isEnabled"
             @click="configs.GOAL_ACHIEVEMENT.isEnabled = !configs.GOAL_ACHIEVEMENT.isEnabled"
@@ -240,17 +267,10 @@ async function handleSave() {
     </div>
 
     <template #footer>
-      <button
-        class="btn-secondary"
-        @click="$emit('update:modelValue', false)"
-      >
+      <button class="btn-secondary" @click="$emit('update:modelValue', false)">
         {{ $t('revenue.alerts.cancel') }}
       </button>
-      <button
-        class="btn-primary"
-        :disabled="saving"
-        @click="handleSave"
-      >
+      <button class="btn-primary" :disabled="saving" @click="handleSave">
         {{ saving ? $t('action.loading') : $t('revenue.alerts.save') }}
       </button>
     </template>

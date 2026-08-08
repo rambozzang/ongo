@@ -15,6 +15,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const upcomingSchedules = shallowRef<Schedule[]>([])
   const topVideos = shallowRef<TopVideo[]>([])
   const isLoadingDashboard = ref(false)
+  const loadError = ref<string | null>(null)
   const period = ref<'7d' | '30d'>('7d')
 
   // Backwards-compatible loading ref
@@ -22,32 +23,34 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
   async function fetchDashboard() {
     isLoadingDashboard.value = true
-    try {
-      const results = await Promise.allSettled([
-        analyticsApi.dashboard(period.value),
-        analyticsApi.trends(period.value),
-        analyticsApi.platformComparison(period.value),
-        videoApi.list({ page: 0, size: 5, sort: 'createdAt', direction: 'DESC' }),
-        scheduleApi.list({ status: 'SCHEDULED' }),
-        analyticsApi.topVideos('30d'),
-      ])
+    loadError.value = null
+    const results = await Promise.allSettled([
+      analyticsApi.dashboard(period.value),
+      analyticsApi.trends(period.value),
+      analyticsApi.platformComparison(period.value),
+      videoApi.list({ page: 0, size: 5, sort: 'createdAt', direction: 'DESC' }),
+      scheduleApi.list({ status: 'SCHEDULED' }),
+      analyticsApi.topVideos('30d'),
+    ])
 
-      if (results[0].status === 'fulfilled') kpi.value = results[0].value
-      if (results[1].status === 'fulfilled') trendData.value = Array.isArray(results[1].value) ? results[1].value : []
-      if (results[2].status === 'fulfilled') platformComparison.value = Array.isArray(results[2].value) ? results[2].value : []
-      if (results[3].status === 'fulfilled') recentVideos.value = results[3].value?.content ?? []
-      if (results[4].status === 'fulfilled') {
-        const schedules = results[4].value as Schedule[] | { content: Schedule[] }
-        // Handle both array and object with content property
-        const scheduleList = Array.isArray(schedules) ? schedules : (schedules?.content ?? [])
-        upcomingSchedules.value = scheduleList.slice(0, 3)
-      }
-      if (results[5].status === 'fulfilled') topVideos.value = Array.isArray(results[5].value) ? results[5].value : []
-    } catch {
-      // dashboard fetch failed silently - partial data may be available
-    } finally {
-      isLoadingDashboard.value = false
+    if (results[0].status === 'fulfilled') kpi.value = results[0].value
+    if (results[1].status === 'fulfilled')
+      trendData.value = Array.isArray(results[1].value) ? results[1].value : []
+    if (results[2].status === 'fulfilled')
+      platformComparison.value = Array.isArray(results[2].value) ? results[2].value : []
+    if (results[3].status === 'fulfilled') recentVideos.value = results[3].value?.content ?? []
+    if (results[4].status === 'fulfilled') {
+      const schedules = results[4].value as Schedule[] | { content: Schedule[] }
+      // Handle both array and object with content property
+      const scheduleList = Array.isArray(schedules) ? schedules : (schedules?.content ?? [])
+      upcomingSchedules.value = scheduleList.slice(0, 3)
     }
+    if (results[5].status === 'fulfilled')
+      topVideos.value = Array.isArray(results[5].value) ? results[5].value : []
+    if (results.some((result) => result.status === 'rejected')) {
+      loadError.value = '일부 대시보드 데이터를 불러오지 못했습니다.'
+    }
+    isLoadingDashboard.value = false
   }
 
   function setPeriod(p: '7d' | '30d') {
@@ -64,6 +67,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     topVideos,
     loading,
     isLoadingDashboard,
+    loadError,
     period,
     fetchDashboard,
     setPeriod,

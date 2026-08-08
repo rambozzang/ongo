@@ -89,6 +89,10 @@ jobs:
         working-directory: frontend
         run: npm run test -- --run
 
+      - name: Lint errors
+        working-directory: frontend
+        run: npm run lint -- --quiet
+
       - name: Coverage report
         working-directory: frontend
         run: npm run test:coverage -- --run

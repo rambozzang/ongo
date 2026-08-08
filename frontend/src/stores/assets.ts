@@ -77,9 +77,7 @@ export const useAssetsStore = defineStore('assets', () => {
       })
     }
 
-    return result.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
+    return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   })
 
   const storageUsed = computed<number>(() => {
@@ -92,35 +90,27 @@ export const useAssetsStore = defineStore('assets', () => {
 
   // ---- Actions ----
   async function uploadAsset(file: File, tags: string[]): Promise<Asset> {
-    try {
-      const response = await assetsApi.upload(file, 'default', tags)
-      const newAsset: Asset = {
-        id: response.id,
-        type: (response.fileType as AssetType) ?? getAssetTypeFromMime(file.type),
-        name: response.originalFilename ?? file.name,
-        fileUrl: response.fileUrl,
-        fileSize: response.fileSizeBytes ?? file.size,
-        mimeType: response.mimeType ?? file.type,
-        tags: response.tags,
-        thumbnail: response.fileType === 'IMAGE' ? response.fileUrl : null,
-        duration: response.durationSeconds,
-        width: response.width,
-        height: response.height,
-        createdAt: response.createdAt ?? new Date().toISOString(),
-      }
-      assets.value.push(newAsset)
-      return newAsset
-    } catch (error) {
-      throw error
+    const response = await assetsApi.upload(file, 'default', tags)
+    const newAsset: Asset = {
+      id: response.id,
+      type: (response.fileType as AssetType) ?? getAssetTypeFromMime(file.type),
+      name: response.originalFilename ?? file.name,
+      fileUrl: response.fileUrl,
+      fileSize: response.fileSizeBytes ?? file.size,
+      mimeType: response.mimeType ?? file.type,
+      tags: response.tags,
+      thumbnail: response.fileType === 'IMAGE' ? response.fileUrl : null,
+      duration: response.durationSeconds,
+      width: response.width,
+      height: response.height,
+      createdAt: response.createdAt ?? new Date().toISOString(),
     }
+    assets.value.push(newAsset)
+    return newAsset
   }
 
   async function deleteAsset(id: number) {
-    try {
-      await assetsApi.delete(id)
-    } catch (error) {
-      throw error
-    }
+    await assetsApi.delete(id)
     const index = assets.value.findIndex((a) => a.id === id)
     if (index !== -1) {
       const asset = assets.value[index]
@@ -162,7 +152,6 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
   }
-
 
   async function bulkDelete(ids: number[]) {
     await Promise.all(ids.map((id) => deleteAsset(id)))
