@@ -9,6 +9,7 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
   const page = ref(0)
   const pageSize = ref(20)
   const totalCount = ref(0)
+  const loadError = ref<string | null>(null)
   const settings = ref<NotificationSetting[]>([
     { category: 'upload', inApp: true, email: true, kakao: false },
     { category: 'schedule', inApp: true, email: true, kakao: true },
@@ -130,6 +131,7 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
   const hasPrevPage = computed(() => page.value > 0)
 
   async function fetchNotifications() {
+    loadError.value = null
     try {
       const result = await notificationApi.list({ page: page.value, size: pageSize.value })
       totalCount.value = result.totalElements ?? 0
@@ -146,8 +148,9 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
           createdAt: n.createdAt ?? new Date().toISOString(),
         }))
       }
-    } catch {
-      throw new Error('알림을 불러오지 못했습니다')
+    } catch (error) {
+      loadError.value = error instanceof Error ? error.message : '알림을 불러오지 못했습니다'
+      throw error
     }
   }
 
@@ -187,6 +190,7 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     unreadCountByCategory,
     groupedByDate,
     totalPages,
+    loadError,
     hasNextPage,
     hasPrevPage,
     markAsRead,

@@ -9,11 +9,16 @@ export const useTemplatesStore = defineStore('templates', () => {
   const categoryFilter = ref<TemplateCategory | 'all'>('all')
   const platformFilter = ref<TemplatePlatform | 'all'>('all')
   const sortBy = ref<'latest' | 'usage' | 'name'>('latest')
+  const loading = ref(false)
+  const loadError = ref<string | null>(null)
 
   // Templates are server-owned. An API failure must remain visible to the caller.
   const loadTemplates = async () => {
-    const response = await templatesApi.list({ page: 0, size: 100 })
-    templates.value = response.templates.map((t) => ({
+    loading.value = true
+    loadError.value = null
+    try {
+      const response = await templatesApi.list({ page: 0, size: 100 })
+      templates.value = response.templates.map((t) => ({
         id: t.id,
         name: t.name,
         category: (t.category ?? 'full') as TemplateCategory,
@@ -25,7 +30,13 @@ export const useTemplatesStore = defineStore('templates', () => {
         usageCount: t.usageCount,
         createdAt: t.createdAt ?? new Date().toISOString(),
         updatedAt: t.updatedAt ?? new Date().toISOString(),
-    }))
+      }))
+    } catch (error) {
+      loadError.value = error instanceof Error ? error.message : '템플릿을 불러오지 못했습니다.'
+      throw error
+    } finally {
+      loading.value = false
+    }
   }
 
   // Getters
@@ -167,11 +178,10 @@ export const useTemplatesStore = defineStore('templates', () => {
     }
   }
 
-  // Initialize
-  loadTemplates()
-
   return {
     templates,
+    loading,
+    loadError,
     searchText,
     categoryFilter,
     platformFilter,
@@ -183,5 +193,6 @@ export const useTemplatesStore = defineStore('templates', () => {
     deleteTemplate,
     duplicateTemplate,
     applyTemplate,
+    loadTemplates,
   }
 })

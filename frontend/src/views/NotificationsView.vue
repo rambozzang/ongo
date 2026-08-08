@@ -23,7 +23,7 @@ const store = useNotificationCenterStore()
 const showSettings = ref(false)
 
 onMounted(() => {
-  store.fetchNotifications()
+  store.fetchNotifications().catch(() => undefined)
 })
 
 function handleFilterSelect(category: NotificationCategory | null) {
@@ -98,6 +98,13 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
     </PageHeader>
 
     <PageGuide :title="$t('notifications.pageGuideTitle')" :items="($tm('notifications.pageGuide') as string[])" />
+
+    <div v-if="store.loadError" class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-4 py-3 text-body-sm text-error-strong" role="alert">
+      <span class="min-w-0 flex-1">{{ store.loadError }}</span>
+      <button type="button" class="btn-secondary shrink-0" @click="store.fetchNotifications().catch(() => undefined)">
+        {{ $t('action.retry') }}
+      </button>
+    </div>
 
     <!-- Settings panel (collapsible) -->
     <Transition

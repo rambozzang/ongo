@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { scheduleApi } from '@/api/schedule'
 import { scheduleOptimizerApi } from '@/api/scheduleOptimizer'
 import type { Schedule } from '@/types/schedule'
-import { toDateStr } from '@/utils/schedule'
+import { toDateStr, toDateTimeLocal } from '@/utils/schedule'
 
 /**
  * 리디자인 캘린더 — 주간 예약 그리드.
@@ -45,7 +45,8 @@ export const useRedesignCalendarStore = defineStore('redesignCalendar', () => {
         endDate: toDateStr(addDays(weekStart.value, 6)),
       })
     } catch {
-      schedules.value = []
+      // Keep the last confirmed week visible. Replacing it with an empty
+      // calendar makes a transport failure look like deleted reservations.
       loadError.value = true
     } finally {
       loading.value = false
@@ -69,7 +70,10 @@ export const useRedesignCalendarStore = defineStore('redesignCalendar', () => {
   async function moveSchedule(id: number, newTime: Date) {
     moving.value = true
     try {
-      const updated = await scheduleApi.update(id, { scheduledAt: newTime.toISOString() })
+      // The backend deliberately uses LocalDateTime (KST), not an instant.
+      // Sending Date#toISOString() adds `Z`, which Jackson cannot bind to
+      // LocalDateTime and also shifts the creator's intended wall-clock time.
+      const updated = await scheduleApi.update(id, { scheduledAt: toDateTimeLocal(newTime) })
       schedules.value = schedules.value.map((s) => (s.id === id ? updated : s))
     } finally {
       moving.value = false

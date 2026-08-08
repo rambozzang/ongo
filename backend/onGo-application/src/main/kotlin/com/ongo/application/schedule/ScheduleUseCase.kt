@@ -58,7 +58,7 @@ class ScheduleUseCase(
     }
 
     fun getSchedules(userId: Long, from: LocalDateTime?, to: LocalDateTime?): ScheduleCalendarResponse {
-        val effectiveFrom = from ?: LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0)
+        val effectiveFrom = from ?: LocalDateTime.now(KST).withDayOfMonth(1).withHour(0).withMinute(0)
         val effectiveTo = to ?: effectiveFrom.plusMonths(1)
 
         val schedules = scheduleRepository.findByUserIdAndDateRange(userId, effectiveFrom, effectiveTo)
