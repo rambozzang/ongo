@@ -118,6 +118,28 @@
         </p>
       </section>
 
+      <!-- 원본 게시와 쇼츠 제작을 같은 작업으로 묶는다 -->
+      <section class="mt-3 rounded-[11px] border border-line bg-surface-card p-3.5">
+        <label class="flex cursor-pointer items-start gap-2.5">
+          <input v-model="shortsEnabled" type="checkbox" class="mt-0.5 h-4 w-4 accent-[var(--accent-primary)]" />
+          <span>
+            <span class="block text-[12px] font-bold text-content">{{ t('redesign.compose.autoShorts') }}</span>
+            <span class="mt-1 block text-[10.5px] leading-4 text-content-tertiary">
+              {{ t('redesign.compose.autoShortsHint') }}
+            </span>
+          </span>
+        </label>
+        <div v-if="shortsProcessing" class="mt-2.5 rounded-lg bg-surface-input px-3 py-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-semibold text-content">{{ t('redesign.compose.shortsProcessing') }}</span>
+            <span class="font-mono text-[10px] text-content-tertiary">{{ shortsStatus }}</span>
+          </div>
+          <div class="mt-2 h-1 overflow-hidden rounded-full bg-line">
+            <div class="h-full w-1/2 animate-pulse rounded-full bg-accent" />
+          </div>
+        </div>
+      </section>
+
       <!-- 문구 탭 -->
       <section class="mt-[18px] overflow-hidden rounded-[11px] border border-line bg-surface-card">
         <div class="flex border-b border-line-row">
@@ -138,23 +160,26 @@
         </div>
 
         <div class="p-[15px]">
-          <label class="block text-[11.5px] text-content-secondary">{{ t('redesign.compose.title') }}</label>
+          <div class="flex items-center justify-between gap-2">
+            <label class="block text-[11.5px] text-content-secondary">{{ t('redesign.compose.title') }}</label>
+            <span v-if="metadataGenerating" class="text-[10px] text-accent">{{ t('redesign.compose.metadataGenerating') }}</span>
+          </div>
           <div class="mt-1.5 flex items-center gap-2">
-            <input v-model="form.title" type="text" class="input-field !text-[12.5px]" />
+            <input v-model="activeDraft.title" type="text" class="input-field !text-[12.5px]" />
             <span class="shrink-0 font-mono text-[10px]" :class="titleOver ? 'text-bad' : 'text-content-tertiary'">
-              {{ form.title.length }} / {{ titleLimit }}
+              {{ activeDraft.title.length }} / {{ titleLimit }}
             </span>
           </div>
 
           <label class="mt-3.5 block text-[11.5px] text-content-secondary">
             {{ t('redesign.compose.description') }}
           </label>
-          <textarea v-model="form.description" class="input-field mt-1.5 min-h-[92px] !text-[12.5px]" />
+          <textarea v-model="activeDraft.description" class="input-field mt-1.5 min-h-[92px] !text-[12.5px]" />
 
           <label class="mt-3.5 block text-[11.5px] text-content-secondary">
             {{ t('redesign.compose.hashtags') }}
           </label>
-          <textarea v-model="form.hashtags" class="input-field mt-1.5 min-h-[62px] !text-[12.5px] !text-accent" />
+          <textarea v-model="activeDraft.hashtags" class="input-field mt-1.5 min-h-[62px] !text-[12.5px] !text-accent" />
 
           <!-- 규칙 경고는 발행 시점이 아니라 입력 시점에 뜬다 -->
           <div
@@ -194,9 +219,9 @@
         <div class="relative h-full w-full" :style="PLACEHOLDER">
           <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
             <p class="line-clamp-2 text-[12.5px] font-bold text-white">
-              {{ form.title || t('redesign.compose.previewTitleEmpty') }}
+              {{ previewDraft.title || t('redesign.compose.previewTitleEmpty') }}
             </p>
-            <p v-if="form.hashtags" class="mt-1 line-clamp-1 text-[10.5px] text-accent">{{ form.hashtags }}</p>
+            <p v-if="previewDraft.hashtags" class="mt-1 line-clamp-1 text-[10.5px] text-accent">{{ previewDraft.hashtags }}</p>
           </div>
         </div>
       </div>
@@ -246,7 +271,7 @@
             type="button"
             class="btn-primary !text-[12px]"
             style="flex: 1.4"
-            :disabled="!!blockedReason || submitting"
+            :disabled="!!blockedReason || submitting || uploadStore.isUploading || metadataGenerating"
             @click="submit"
           >
             {{
@@ -271,8 +296,11 @@ import { useLocale } from '@/composables/useLocale'
 import ThumbPlaceholder from '@/components/redesign/ThumbPlaceholder.vue'
 import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
+import { parseCues, serializeCues, countWords, totalDurationOf, subtitleEditorApi } from '@/api/subtitleEditor'
 import { videoApi } from '@/api/video'
+import { ugcShortsPipelineApi, type PipelineRunDetailResponse } from '@/api/ugcShortsPipeline'
 import { useUploadStore } from '@/stores/upload'
+import { useWorkspaceStore } from '@/stores/workspace'
 import type { Channel, Platform } from '@/types/channel'
 import type { PlatformPublishConfig } from '@/types/video'
 
@@ -315,6 +343,7 @@ const TIKTOK_HASHTAG_LIMIT = 5
 
 const router = useRouter()
 const uploadStore = useUploadStore()
+const workspaceStore = useWorkspaceStore()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const sourceMode = ref<'file' | 'url'>('file')
@@ -325,6 +354,11 @@ const importAvailability = ref<{ available: boolean; reason?: string | null } | 
 const submitting = ref(false)
 const saving = ref(false)
 const captioning = ref(false)
+const metadataGenerating = ref(false)
+const metadataGeneratedForVideoId = ref<number | null>(null)
+const shortsEnabled = ref(true)
+const shortsProcessing = ref(false)
+const shortsStatus = ref('')
 /** 사용자에게 보여줄 한 줄 안내(성공·실패 공용). */
 const notice = ref('')
 
@@ -335,7 +369,9 @@ const previewPlatform = ref<'Instagram' | 'TikTok' | 'YouTube'>('Instagram')
 const schedMode = ref<'now' | 'best' | 'fix'>('best')
 const fixedAt = ref('')
 
-const form = reactive({ title: '', description: '', hashtags: '' })
+type FormDraft = { title: string; description: string; hashtags: string }
+const form = reactive<FormDraft>({ title: '', description: '', hashtags: '' })
+const platformForms = reactive<Partial<Record<Platform, FormDraft>>>({})
 const file = reactive({ name: '', thumbnailUrl: null as string | null, meta: '' })
 
 const sourceModes = computed(() => [
@@ -386,13 +422,38 @@ const selectedChannels = computed(() =>
   platformOptions.value.filter((o) => isOn(o.code)).map((o) => o.channel),
 )
 const selectedCount = computed(() => selectedChannels.value.length)
+const shortsPlatforms = computed(() =>
+  selectedChannels.value
+    .map((channel) => channel.platform)
+    .filter((platform): platform is Platform => ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'].includes(platform)),
+)
+
+function platformForTab(tab: typeof activeTab.value): Platform | null {
+  return ({ YT: 'YOUTUBE', IG: 'INSTAGRAM', TT: 'TIKTOK', NV: 'NAVER_CLIP' } as Record<string, Platform>)[tab] ?? null
+}
+
+function draftFor(platform: Platform | null): FormDraft {
+  if (!platform) return form
+  if (!platformForms[platform]) {
+    platformForms[platform] = reactive({ ...form })
+  }
+  return platformForms[platform]!
+}
+
+const activeDraft = computed(() => draftFor(platformForTab(activeTab.value)))
+const previewDraft = computed(() => {
+  const platform = previewPlatform.value === 'Instagram'
+    ? 'INSTAGRAM'
+    : previewPlatform.value === 'TikTok' ? 'TIKTOK' : 'YOUTUBE'
+  return draftFor(platform)
+})
 
 const titleLimit = computed(() => TITLE_LIMIT[activeTab.value] ?? 100)
-const titleOver = computed(() => form.title.length > titleLimit.value)
+const titleOver = computed(() => activeDraft.value.title.length > titleLimit.value)
 
 const fileMeta = computed(() => file.meta || t('redesign.compose.noFileMeta'))
 
-const hashtagCount = computed(() => form.hashtags.split('#').filter((s) => s.trim()).length)
+const hashtagCount = computed(() => activeDraft.value.hashtags.split('#').filter((s) => s.trim()).length)
 
 const warnings = computed(() => {
   const out: string[] = []
@@ -415,6 +476,9 @@ const blockedReason = computed(() => {
   if (expired.length > 0) {
     return t('redesign.compose.blockExpired', { name: expired[0].channelName })
   }
+  if (shortsEnabled.value && shortsPlatforms.value.length === 0) {
+    return t('redesign.compose.blockShortsTargets')
+  }
   return ''
 })
 
@@ -433,6 +497,25 @@ async function onFileChosen(e: Event) {
   file.name = picked.name
   file.meta = `${formatBytes(picked.size)} · ${picked.type || 'video'}`
   if (!form.title) form.title = picked.name.replace(/\.[^.]+$/, '')
+
+  try {
+    // 파일 선택 시 원본을 먼저 보관해 두어 자동 문구를 게시 전에 편집할 수 있게 한다.
+    const uploaded = await uploadStore.cloudPublish(
+      picked,
+      {
+        title: form.title,
+        description: form.description,
+        tags: parseHashtags(form.hashtags),
+        category: 'general',
+        visibility: 'PUBLIC',
+        thumbnailUrl: '',
+      },
+      [],
+    )
+    await generateMetadataFor(uploaded.videoId)
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : t('redesign.compose.scheduleFailed')
+  }
 }
 
 /**
@@ -450,12 +533,82 @@ async function requestCaptions() {
   notice.value = ''
   try {
     const res = await aiApi.stt({ videoId: sourceId })
+    await saveSubtitleTrack(sourceId, res.text, res.segments)
     if (res?.text && !form.description) form.description = res.text
     notice.value = t('redesign.compose.captionsDone')
   } catch {
     notice.value = t('redesign.compose.captionsFailed')
   } finally {
     captioning.value = false
+  }
+}
+
+/** 기존 트랙은 보존하고, 트랙이 없을 때만 STT 결과를 시간축 자막으로 저장한다. */
+async function transcriptFor(videoId: number): Promise<string> {
+  const tracks = await subtitleEditorApi.listTracksByVideo(videoId)
+  const existing = tracks.find((track) => track.status !== 'FAILED')
+  if (existing) {
+    const cues = parseCues(existing.cues)
+    if (cues.length > 0) return cues.map((cue) => cue.text).join(' ')
+  }
+
+  const stt = await aiApi.stt({ videoId })
+  if (stt.text && !existing) await saveSubtitleTrack(videoId, stt.text, stt.segments)
+  return stt.text
+}
+
+async function saveSubtitleTrack(videoId: number, text: string, segments: { startTime: number; endTime: number; text: string }[]) {
+  if (!text || segments.length === 0) return
+  const cues = segments.map((segment) => ({
+    start: segment.startTime,
+    end: segment.endTime,
+    text: segment.text,
+  }))
+  const existing = await subtitleEditorApi.listTracksByVideo(videoId)
+  if (existing.some((track) => track.status !== 'FAILED')) return
+  await subtitleEditorApi.createTrack({
+    videoId,
+    language: 'ko',
+    cues: serializeCues(cues),
+    totalDuration: totalDurationOf(cues),
+    wordCount: countWords(cues),
+  })
+}
+
+/** 업로드 화면 안에서 자막/대본을 확보한 뒤 플랫폼별 메타데이터를 채운다. */
+async function generateMetadataFor(videoId: number) {
+  if (metadataGeneratedForVideoId.value === videoId || metadataGenerating.value) return
+  metadataGenerating.value = true
+  try {
+    const script = await transcriptFor(videoId)
+    const platforms = selectedChannels.value.map((channel) => channel.platform)
+    const targetPlatforms = platforms.length > 0 ? platforms : ['YOUTUBE' as Platform]
+    const result = await aiApi.generateMeta({
+      script: script || form.description || form.title,
+      videoId,
+      useStt: false,
+      targetPlatforms,
+      tone: 'friendly',
+      category: 'general',
+    })
+
+    for (const item of result.platforms) {
+      const platform = item.platform as Platform
+      const draft = draftFor(platform)
+      draft.title = item.titleCandidates[0] || draft.title
+      draft.description = item.description || draft.description
+      draft.hashtags = item.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
+    }
+    const first = result.platforms[0]
+    if (first) {
+      form.title = first.titleCandidates[0] || form.title
+      form.description = first.description || form.description
+      form.hashtags = first.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
+    }
+    metadataGeneratedForVideoId.value = videoId
+    notice.value = t('redesign.compose.metadataGenerated')
+  } finally {
+    metadataGenerating.value = false
   }
 }
 
@@ -500,38 +653,137 @@ async function submit() {
   submitting.value = true
   notice.value = ''
   try {
-    const configs: PlatformPublishConfig[] = selectedChannels.value.map((ch, index) => ({
-      platform: ch.platform,
-      title: form.title,
-      description: [form.description, form.hashtags].filter(Boolean).join('\n\n'),
-      tags: parseHashtags(form.hashtags),
-      visibility: 'PUBLIC' as const,
-      scheduledAt: scheduledAtFor(index),
-    }))
-
-    if (importedVideoId.value) {
-      await videoApi.publish(importedVideoId.value, { platforms: configs })
-    } else if (selected) {
-      await uploadStore.streamPublish(
+    let sourceVideoId = importedVideoId.value ?? uploadStore.videoId
+    if (!sourceVideoId && selected) {
+      // 원본을 보관해야 쇼츠 렌더와 재시도에서 같은 영상 ID를 계속 사용할 수 있다.
+      const uploaded = await uploadStore.cloudPublish(
         selected,
         {
-          title: form.title,
+          title: form.title || selected.name.replace(/\.[^.]+$/, ''),
           description: form.description,
           tags: parseHashtags(form.hashtags),
-          category: '',
+          category: 'general',
           visibility: 'PUBLIC',
           thumbnailUrl: '',
         },
-        configs,
+        [],
       )
+      sourceVideoId = uploaded.videoId
     }
+    if (!sourceVideoId) throw new Error(t('redesign.compose.needFile'))
+
+    try {
+      await generateMetadataFor(sourceVideoId)
+    } catch (error) {
+      // AI 장애가 원본 게시 자체를 막지는 않는다. 사용자가 검토·입력한 문구로 계속 진행한다.
+      if (!form.title.trim()) throw error
+      notice.value = t('redesign.compose.metadataFailed')
+    }
+    await videoApi.update(sourceVideoId, {
+      title: form.title,
+      description: form.description,
+      tags: parseHashtags(form.hashtags),
+      category: 'general',
+      visibility: 'PUBLIC',
+      mediaType: 'VIDEO',
+    })
+
+    const configs: PlatformPublishConfig[] = selectedChannels.value.map((ch, index) => {
+      const draft = draftFor(ch.platform)
+      return {
+        platform: ch.platform,
+        title: draft.title,
+        description: [draft.description, draft.hashtags].filter(Boolean).join('\n\n'),
+        tags: parseHashtags(draft.hashtags),
+        visibility: 'PUBLIC' as const,
+        scheduledAt: scheduledAtFor(index),
+      }
+    })
+
+    await videoApi.publish(sourceVideoId, { platforms: configs })
+    if (shortsEnabled.value) await publishAutomaticShorts(sourceVideoId)
     notice.value = t('redesign.compose.scheduled')
     router.push('/today')
   } catch (e) {
-    notice.value = uploadStore.uploadError || t('redesign.compose.scheduleFailed')
+    notice.value = e instanceof Error ? e.message : uploadStore.uploadError || t('redesign.compose.scheduleFailed')
   } finally {
     submitting.value = false
+    shortsProcessing.value = false
   }
+}
+
+const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms))
+
+async function waitForShortsState(
+  workspaceId: number,
+  runId: number,
+  expected: PipelineRunDetailResponse['run']['status'],
+): Promise<PipelineRunDetailResponse> {
+  const deadline = Date.now() + 15 * 60 * 1000
+  while (Date.now() < deadline) {
+    const detail = await ugcShortsPipelineApi.get(workspaceId, runId)
+    shortsStatus.value = detail.run.currentStage || detail.run.status
+    if (detail.run.status === 'FAILED' || detail.run.status === 'CANCELLED') {
+      throw new Error(detail.run.errorMessage || t('redesign.compose.shortsFailed'))
+    }
+    if (detail.run.status === expected) return detail
+    await wait(2000)
+  }
+  throw new Error(t('redesign.compose.shortsTimedOut'))
+}
+
+async function waitForRender(workspaceId: number, runId: number, clipId: number): Promise<number> {
+  const deadline = Date.now() + 15 * 60 * 1000
+  while (Date.now() < deadline) {
+    const status = await ugcShortsPipelineApi.getRenderStatus(workspaceId, runId, clipId)
+    shortsStatus.value = `${t('redesign.compose.shortsRendering')} ${status.progress ?? 0}%`
+    if (status.status === 'COMPLETED' && status.videoId != null) return status.videoId
+    if (status.status === 'FAILED') throw new Error(status.failureReason || t('redesign.compose.shortsRenderFailed'))
+    await wait(2000)
+  }
+  throw new Error(t('redesign.compose.shortsTimedOut'))
+}
+
+/** 쇼츠 생성 → 기본 후킹 선택 → 서버 렌더 → 선택 채널 예약 게시까지 한 번에 처리한다. */
+async function publishAutomaticShorts(sourceVideoId: number) {
+  if (shortsPlatforms.value.length === 0) throw new Error(t('redesign.compose.shortsNoCompatibleTargets'))
+  const workspaceId = await workspaceStore.ensureActiveWorkspace()
+  if (workspaceId == null) throw new Error(t('redesign.compose.shortsWorkspaceRequired'))
+
+  shortsProcessing.value = true
+  shortsStatus.value = t('redesign.compose.shortsStarting')
+  const availability = await ugcShortsPipelineApi.getRenderAvailability()
+  if (!availability.available) throw new Error(availability.reason || t('redesign.compose.shortsUnavailable'))
+
+  const run = await ugcShortsPipelineApi.create(workspaceId, { sourceVideoId, templateId: null })
+  let detail = await waitForShortsState(workspaceId, run.id, 'AWAITING_HOOK_SELECTION')
+  const selections = detail.clips
+    .filter((clip) => clip.status !== 'DISCARDED')
+    .map((clip) => {
+      const hook = clip.hooks.find((candidate) => candidate.variant === 'A') || clip.hooks[0]
+      return hook ? { clipId: clip.id, variant: hook.variant } : null
+    })
+    .filter((selection): selection is { clipId: number; variant: 'A' | 'B' | 'CUSTOM' } => selection !== null)
+  if (selections.length === 0) throw new Error(t('redesign.compose.shortsNoClips'))
+
+  await ugcShortsPipelineApi.selectHooks(workspaceId, run.id, { selections, discardClipIds: [] })
+  detail = await waitForShortsState(workspaceId, run.id, 'AWAITING_SCHEDULE')
+
+  const renderableClips = detail.clips.filter((clip) => clip.status !== 'DISCARDED')
+  shortsStatus.value = t('redesign.compose.shortsRendering')
+  await Promise.all(renderableClips.map(async (clip) => {
+    await ugcShortsPipelineApi.startRender(workspaceId, run.id, clip.id)
+    return waitForRender(workspaceId, run.id, clip.id)
+  }))
+
+  const startAt = new Date(Math.max(Date.now() + 5 * 60 * 1000, new Date(scheduledAtFor(0) || Date.now()).getTime()))
+  await ugcShortsPipelineApi.confirmSchedule(workspaceId, run.id, {
+    startAt: startAt.toISOString(),
+    intervalHours: 2,
+    platforms: shortsPlatforms.value,
+  })
+  await waitForShortsState(workspaceId, run.id, 'COMPLETED')
+  shortsStatus.value = t('redesign.compose.shortsDone')
 }
 
 /** 채널별 예약 시각. 최적 시간은 09:00·12:30·19:00 슬롯을 순서대로 돌려 쓴다. */
@@ -577,6 +829,10 @@ async function importFromUrl() {
     file.meta = `${result.provider} · ${t('redesign.compose.imported')}`
     if (!form.title) form.title = result.title
     notice.value = t('redesign.compose.importedSuccess')
+    // URL 가져오기는 즉시 videoId 를 얻으므로 같은 화면에서 메타데이터를 바로 준비한다.
+    void generateMetadataFor(result.videoId).catch((error) => {
+      notice.value = error instanceof Error ? error.message : t('redesign.compose.metadataFailed')
+    })
   } catch (error) {
     notice.value = error instanceof Error ? error.message : t('redesign.compose.importFailed')
   } finally {

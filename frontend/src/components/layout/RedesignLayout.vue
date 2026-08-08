@@ -1,10 +1,6 @@
 <template>
-  <!--
-    리디자인 시안은 다크 전용이다. 라이트 모드에서 열면 색이 어긋나므로 이 셸 안에서만
-    dark 를 강제한다. documentElement 를 건드리면 테마 스토어의 watcher 와 충돌하므로
-    클래스를 여기에 둔다 — CSS 변수가 이 요소와 하위에만 적용되고 레거시 화면은 영향이 없다.
-  -->
-  <div class="redesign-app dark flex h-screen overflow-hidden bg-surface-base">
+  <!-- 테마 스토어가 documentElement 에 적용한 라이트/다크 토큰을 그대로 사용한다. -->
+  <div class="redesign-app flex h-screen overflow-hidden bg-surface-base">
     <RedesignRail class="hidden tablet:flex" />
 
     <div class="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface">
