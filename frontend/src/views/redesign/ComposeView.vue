@@ -550,7 +550,9 @@ const tagsOver = computed(() => tagLimit.value > 0 && hashtagCount.value > tagLi
 
 const fileMeta = computed(() => file.meta || t('redesign.compose.noFileMeta'))
 
-const hashtagCount = computed(() => activeDraft.value.hashtags.split('#').filter((s) => s.trim()).length)
+// Count the same normalized tokens that are sent to the API. Splitting only
+// on '#' made comma/space-separated tags display an incorrect quota.
+const hashtagCount = computed(() => parseHashtags(activeDraft.value.hashtags).length)
 
 const warnings = computed(() => {
   const out: string[] = []
