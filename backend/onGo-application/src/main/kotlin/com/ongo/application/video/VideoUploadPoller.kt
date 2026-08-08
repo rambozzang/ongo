@@ -1,0 +1,188 @@
+package com.ongo.application.video
+
+import com.ongo.common.enums.UploadStatus
+import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.video.VideoUpload
+import com.ongo.domain.video.VideoUploadRepository
+import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
+import java.time.LocalDateTime
+import java.util.UUID
+
+/**
+ * 플랫폼이 수락했지만 아직 공개하지 않은 게시물을 polling한다.
+ *
+ * 모든 상태 변경은 DB lease를 가진 작업자만 반영하므로 여러 API 인스턴스가
+ * 동시에 떠 있거나 배포 중 재시작되어도 동일 게시물을 재전송하지 않는다.
+ */
+@Component
+class VideoUploadPoller(
+    private val platformUploadServices: List<PlatformUploadService>,
+    private val videoUploadRepository: VideoUploadRepository,
+    private val videoRepository: VideoRepository,
+    private val eventPublisher: ApplicationEventPublisher,
+) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    @Scheduled(fixedDelayString = "\${video.publish.poll-delay-ms:15000}")
+    fun pollDueUploads() {
+        val now = LocalDateTime.now()
+        videoUploadRepository.findDueProcessingUploads(now).forEach { poll(it, now) }
+    }
+
+    private fun poll(upload: VideoUpload, now: LocalDateTime) {
+        val uploadId = upload.id ?: return
+        val video = videoRepository.findById(upload.videoId) ?: return
+        val service = platformUploadServices.find { it.supports(upload.platform) }
+        if (service == null) {
+            finish(upload, video.userId, UploadStatus.FAILED, "지원되지 않는 플랫폼: ${upload.platform}", null, null)
+            return
+        }
+
+        val owner = "poll:${uploadId}:${UUID.randomUUID()}"
+        val claimed = videoUploadRepository.claim(
+            id = uploadId,
+            owner = owner,
+            now = now,
+            leaseUntil = now.plusMinutes(5),
+        ) ?: return
+
+        try {
+            val result = service.poll(upload.platform, claimed.pollToken!!, video.userId)
+            when (val outcome = result.toPublishOutcome()) {
+                is PublishOutcome.Published -> finish(
+                    claimed,
+                    video.userId,
+                    UploadStatus.PUBLISHED,
+                    null,
+                    outcome,
+                    owner,
+                )
+                is PublishOutcome.Accepted -> updateOwned(
+                    claimed,
+                    owner,
+                    status = UploadStatus.PROCESSING,
+                    errorMessage = null,
+                    platformVideoId = outcome.platformVideoId,
+                    platformUrl = result.platformUrl,
+                    pollToken = outcome.pollToken,
+                    nextRetryAt = now.plus(outcome.retryAfter),
+                )
+                is PublishOutcome.Failed -> finish(
+                    claimed,
+                    video.userId,
+                    UploadStatus.FAILED,
+                    outcome.message,
+                    null,
+                    owner,
+                )
+            }
+        } catch (e: Exception) {
+            val message = e.message ?: "플랫폼 상태 확인 중 오류가 발생했습니다."
+            if (claimed.attemptCount >= MAX_POLL_ATTEMPTS) {
+                finish(claimed, video.userId, UploadStatus.UNCONFIRMED, "게시 결과 확인 실패: $message", null, owner)
+            } else {
+                updateOwned(
+                    claimed,
+                    owner,
+                    status = UploadStatus.PROCESSING,
+                    errorMessage = "상태 확인 재시도 예정: $message",
+                    platformVideoId = claimed.platformVideoId,
+                    platformUrl = claimed.platformUrl,
+                    pollToken = claimed.pollToken,
+                    nextRetryAt = now.plusSeconds(POLL_RETRY_SECONDS),
+                )
+            }
+            log.warn("플랫폼 {} 게시 상태 확인 실패 (시도 {}): {}", upload.platform, claimed.attemptCount, message)
+        }
+    }
+
+    private fun finish(
+        upload: VideoUpload,
+        userId: Long,
+        status: UploadStatus,
+        errorMessage: String?,
+        published: PublishOutcome.Published?,
+        owner: String? = null,
+    ) {
+        updateOwned(
+            upload,
+            owner,
+            status = status,
+            errorMessage = errorMessage,
+            platformVideoId = published?.platformVideoId ?: upload.platformVideoId,
+            platformUrl = published?.platformUrl ?: upload.platformUrl,
+            pollToken = null,
+            nextRetryAt = null,
+            clearPollToken = true,
+        )
+        updateOverallVideoStatus(upload.videoId)
+        if (status == UploadStatus.PUBLISHED || status == UploadStatus.FAILED || status == UploadStatus.UNCONFIRMED) {
+            eventPublisher.publishEvent(
+                UploadCompletedEvent(
+                    videoId = upload.videoId,
+                    userId = userId,
+                    platform = upload.platform,
+                    success = status == UploadStatus.PUBLISHED,
+                    platformUrl = published?.platformUrl,
+                    errorMessage = errorMessage,
+                )
+            )
+        }
+    }
+
+    private fun updateOwned(
+        upload: VideoUpload,
+        owner: String?,
+        status: UploadStatus,
+        errorMessage: String?,
+        platformVideoId: String?,
+        platformUrl: String?,
+        pollToken: String?,
+        nextRetryAt: LocalDateTime?,
+        clearPollToken: Boolean = false,
+    ) {
+        val updated = upload.copy(
+            status = status,
+            errorMessage = errorMessage,
+            platformVideoId = platformVideoId,
+            platformUrl = platformUrl,
+            pollToken = if (clearPollToken) null else pollToken,
+            nextRetryAt = nextRetryAt,
+            leaseOwner = null,
+            leaseUntil = null,
+            lastError = errorMessage,
+            publishedAt = if (status == UploadStatus.PUBLISHED) LocalDateTime.now() else upload.publishedAt,
+        )
+        val changed = if (owner == null) {
+            videoUploadRepository.update(updated)
+            true
+        } else {
+            videoUploadRepository.updateOwned(updated, owner)
+        }
+        if (changed) updateOverallVideoStatus(upload.videoId)
+    }
+
+    private fun updateOverallVideoStatus(videoId: Long) {
+        val uploads = videoUploadRepository.findByVideoId(videoId)
+        val video = videoRepository.findById(videoId) ?: return
+        val status = when {
+            uploads.all { it.status == UploadStatus.PUBLISHED } -> UploadStatus.PUBLISHED
+            uploads.any { it.status == UploadStatus.PUBLISHED } && uploads.any {
+                it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED || it.status == UploadStatus.UNCONFIRMED
+            } -> UploadStatus.PARTIALLY_PUBLISHED
+            uploads.all { it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED } -> UploadStatus.FAILED
+            uploads.all { it.status == UploadStatus.UNCONFIRMED } -> UploadStatus.UNCONFIRMED
+            uploads.any { it.status == UploadStatus.PROCESSING || it.status == UploadStatus.REVIEW } -> UploadStatus.PROCESSING
+            else -> UploadStatus.UPLOADING
+        }
+        videoRepository.update(video.copy(status = status))
+    }
+
+    companion object {
+        private const val MAX_POLL_ATTEMPTS = 12
+        private const val POLL_RETRY_SECONDS = 60L
+    }
+}

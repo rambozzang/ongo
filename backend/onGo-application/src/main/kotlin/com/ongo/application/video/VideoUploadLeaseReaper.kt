@@ -29,7 +29,14 @@ class VideoUploadLeaseReaper(
         recovered.groupBy { it.videoId }.forEach { (videoId, _) ->
             updateOverallVideoStatus(videoId)
         }
-        log.warn("외부 게시 lease 만료 작업 {}건을 UNCONFIRMED로 회수했습니다", recovered.size)
+        val polling = recovered.count { it.status == UploadStatus.PROCESSING }
+        val unconfirmed = recovered.size - polling
+        log.warn(
+            "외부 게시 lease 만료 작업 {}건을 회수했습니다 (polling 재개={}, 결과 확인 필요={})",
+            recovered.size,
+            polling,
+            unconfirmed,
+        )
     }
 
     private fun updateOverallVideoStatus(videoId: Long) {

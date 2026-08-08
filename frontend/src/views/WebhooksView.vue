@@ -152,11 +152,15 @@ function handleDeletePrompt(webhook: Webhook) {
   showDeleteModal.value = true
 }
 
-function handleDelete() {
+async function handleDelete() {
   if (!deletingWebhook.value) return
-  webhookStore.deleteWebhook(deletingWebhook.value.id)
-  notification.success(t('webhooks.notify.deleted'))
-  deletingWebhook.value = null
+  try {
+    await webhookStore.deleteWebhook(deletingWebhook.value.id)
+    notification.success(t('webhooks.notify.deleted'))
+    deletingWebhook.value = null
+  } catch {
+    notification.error(t('webhooks.notify.deleteFailed'))
+  }
 }
 
 async function handleBulkDelete() {
@@ -172,10 +176,14 @@ async function handleBulkDelete() {
   }
 }
 
-function handleToggle(webhook: Webhook) {
-  webhookStore.toggleActive(webhook.id)
-  const status = !webhook.isActive ? t('webhooks.notify.activated') : t('webhooks.notify.deactivated')
-  notification.success(status)
+async function handleToggle(webhook: Webhook) {
+  try {
+    await webhookStore.toggleActive(webhook.id)
+    const status = webhook.isActive ? t('webhooks.notify.activated') : t('webhooks.notify.deactivated')
+    notification.success(status)
+  } catch {
+    notification.error(t('webhooks.notify.updateFailed'))
+  }
 }
 
 async function handleTest(webhook: Webhook) {
@@ -196,22 +204,26 @@ function handleTestFromModal(webhookId: number) {
   if (webhook) handleTest(webhook)
 }
 
-function handleSave(data: { url: string; events: WebhookEvent[]; secret?: string }) {
-  if (editingWebhook.value) {
-    webhookStore.updateWebhook(editingWebhook.value.id, {
-      url: data.url,
-      events: data.events,
-    })
-    notification.success(t('webhooks.notify.updated'))
-  } else {
-    webhookStore.createWebhook(data)
-    notification.success(t('webhooks.notify.created'))
+async function handleSave(data: { url: string; events: WebhookEvent[]; secret?: string }) {
+  try {
+    if (editingWebhook.value) {
+      await webhookStore.updateWebhook(editingWebhook.value.id, {
+        url: data.url,
+        events: data.events,
+      })
+      notification.success(t('webhooks.notify.updated'))
+    } else {
+      await webhookStore.createWebhook(data)
+      notification.success(t('webhooks.notify.created'))
+    }
+  } catch {
+    notification.error(t('webhooks.notify.updateFailed'))
   }
 }
 
-function handleRegenerateSecret(webhookId: number) {
+async function handleRegenerateSecret(webhookId: number) {
   try {
-    webhookStore.regenerateSecret(webhookId)
+    await webhookStore.regenerateSecret(webhookId)
     notification.success(t('webhooks.notify.secretRegenerated'))
   } catch {
     notification.error(t('webhooks.notify.secretRegenerateFailed'))

@@ -48,9 +48,10 @@ class TikTokClient(
 
             val status = response.data?.status ?: "unknown"
             val errorMessage = response.data?.failReason
+            val publishedVideoId = response.data?.publicPostId?.firstOrNull()
 
             return PlatformVideoStatus(
-                platformVideoId = platformVideoId,
+                platformVideoId = publishedVideoId ?: platformVideoId,
                 status = status,
                 errorMessage = errorMessage,
             )

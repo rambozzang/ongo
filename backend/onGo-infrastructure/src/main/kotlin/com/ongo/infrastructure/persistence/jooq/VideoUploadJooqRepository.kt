@@ -214,6 +214,17 @@ class VideoUploadJooqRepository(
             .fetch()
             .map { it.toVideoUpload() }
 
+    override fun findDueProcessingUploads(now: LocalDateTime): List<VideoUpload> =
+        dsl.select()
+            .from(VIDEO_UPLOADS)
+            .where(STATUS.eq(UploadStatus.PROCESSING.name))
+            .and(VIDEO_POLL_TOKEN.isNotNull)
+            .and(VIDEO_NEXT_RETRY_AT.isNull.or(VIDEO_NEXT_RETRY_AT.le(now)))
+            .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
+            .orderBy(UPDATED_AT.asc())
+            .fetch()
+            .map { it.toVideoUpload() }
+
     override fun claim(id: Long, owner: String, now: LocalDateTime, leaseUntil: LocalDateTime): VideoUpload? {
         val changed = dsl.update(VIDEO_UPLOADS)
             .set(VIDEO_LEASE_OWNER, owner)
@@ -240,9 +251,11 @@ class VideoUploadJooqRepository(
         if (expired.isEmpty()) return emptyList()
 
         dsl.update(VIDEO_UPLOADS)
-            .set(STATUS, UploadStatus.UNCONFIRMED.name)
+            .set(STATUS, DSL.`when`(VIDEO_POLL_TOKEN.isNotNull, UploadStatus.PROCESSING.name)
+                .else_(UploadStatus.UNCONFIRMED.name))
             .set(ERROR_MESSAGE, "작업 lease가 만료되어 게시 결과 확인이 필요합니다.")
             .set(VIDEO_LAST_ERROR, "작업자 lease 만료: $now")
+            .set(VIDEO_NEXT_RETRY_AT, DSL.`when`(VIDEO_POLL_TOKEN.isNotNull, now).else_(null as LocalDateTime?))
             .set(VIDEO_LEASE_OWNER, null as String?)
             .set(VIDEO_LEASE_UNTIL, null as LocalDateTime?)
             .where(ID.`in`(expired))

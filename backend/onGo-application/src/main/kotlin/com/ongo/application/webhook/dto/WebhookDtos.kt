@@ -26,6 +26,7 @@ data class UpdateWebhookRequest(
     val name: String? = null,
     val url: String? = null,
     val events: List<String>? = null,
+    val isActive: Boolean? = null,
 )
 
 data class WebhookTestResponse(

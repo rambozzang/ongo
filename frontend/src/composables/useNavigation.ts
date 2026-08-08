@@ -79,9 +79,9 @@ async function loadCapabilities() {
       enabledCapabilityKeys.value = new Set(items.filter((item) => item.enabled).map((item) => item.key))
     })
     .catch(() => {
-      // 기능 capability를 일시적으로 읽지 못한 동안 기존 메뉴를 숨겨 사용자를
-      // 막지 않는다. 서버가 응답하면 비활성 기능은 즉시 제거된다.
-      enabledCapabilityKeys.value = null
+      // capability를 확인하지 못하면 기능을 노출하지 않는다. 메뉴가 보이는데
+      // 실제 API가 없는 상태를 만들지 않고, 다음 인증/새로고침 때 다시 확인한다.
+      enabledCapabilityKeys.value = new Set()
     })
     .finally(() => {
       capabilityRequest = null

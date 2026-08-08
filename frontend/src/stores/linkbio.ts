@@ -4,16 +4,6 @@ import { linkBioApi } from '@/api/linkbio'
 import { useNotificationStore } from '@/stores/notification'
 import type { BioPage, BioBlock, ThemeStyle, BlockType, LinkBlock } from '@/types/linkbio'
 
-const STORAGE_KEY = 'ongo_linkbio_page'
-
-const saveToStorage = (page: BioPage) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(page))
-  } catch (error) {
-    useNotificationStore().error('링크 바이오 처리 중 오류가 발생했습니다')
-  }
-}
-
 export const useLinkBioStore = defineStore('linkbio', () => {
   const bioPage = ref<BioPage | null>(null)
   const isDirty = ref(false)
@@ -72,7 +62,7 @@ export const useLinkBioStore = defineStore('linkbio', () => {
       }
     } catch (e) {
       useNotificationStore().error('링크 바이오 처리 중 오류가 발생했습니다')
-      bioPage.value = null
+      throw e
     } finally {
       loading.value = false
     }
@@ -260,8 +250,8 @@ export const useLinkBioStore = defineStore('linkbio', () => {
       }
     } catch (e) {
       useNotificationStore().error('링크 바이오 처리 중 오류가 발생했습니다')
+      throw e
     }
-    saveToStorage(bioPage.value)
     isDirty.value = false
   }
 

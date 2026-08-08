@@ -35,9 +35,8 @@ export const useAssetsStore = defineStore('assets', () => {
         height: a.height,
         createdAt: a.createdAt ?? new Date().toISOString(),
       }))
-    } catch {
-      // API failed - start with empty list
-      assets.value = []
+    } catch (error) {
+      throw error
     } finally {
       loading.value = false
     }
@@ -121,35 +120,16 @@ export const useAssetsStore = defineStore('assets', () => {
       assets.value.push(newAsset)
       updateFolderCounts()
       return newAsset
-    } catch {
-      // Fallback to local creation
-      const assetType = getAssetTypeFromMime(file.type)
-      const newAsset: Asset = {
-        id: Math.max(...assets.value.map((a) => a.id), 0) + 1,
-        type: assetType,
-        name: file.name,
-        fileUrl: URL.createObjectURL(file),
-        fileSize: file.size,
-        mimeType: file.type,
-        tags,
-        folderId,
-        thumbnail: assetType === 'IMAGE' ? URL.createObjectURL(file) : null,
-        duration: null,
-        width: null,
-        height: null,
-        createdAt: new Date().toISOString(),
-      }
-      assets.value.push(newAsset)
-      updateFolderCounts()
-      return newAsset
+    } catch (error) {
+      throw error
     }
   }
 
   async function deleteAsset(id: number) {
     try {
       await assetsApi.delete(id)
-    } catch {
-      // Continue with local delete
+    } catch (error) {
+      throw error
     }
     const index = assets.value.findIndex((a) => a.id === id)
     if (index !== -1) {
@@ -166,9 +146,10 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
-  function moveToFolder(assetId: number, folderId: number | null) {
+  async function moveToFolder(assetId: number, folderId: number | null) {
     const asset = assets.value.find((a) => a.id === assetId)
     if (asset) {
+      await assetsApi.update(assetId, { folder: folderId === null ? '' : String(folderId) })
       asset.folderId = folderId
       updateFolderCounts()
     }
@@ -177,11 +158,13 @@ export const useAssetsStore = defineStore('assets', () => {
   async function addTag(assetId: number, tag: string) {
     const asset = assets.value.find((a) => a.id === assetId)
     if (asset && !asset.tags.includes(tag)) {
+      const previousTags = [...asset.tags]
       asset.tags.push(tag)
       try {
         await assetsApi.update(assetId, { tags: asset.tags })
-      } catch {
-        // Keep local state
+      } catch (error) {
+        asset.tags = previousTags
+        throw error
       }
     }
   }
@@ -189,11 +172,13 @@ export const useAssetsStore = defineStore('assets', () => {
   async function removeTag(assetId: number, tag: string) {
     const asset = assets.value.find((a) => a.id === assetId)
     if (asset) {
+      const previousTags = [...asset.tags]
       asset.tags = asset.tags.filter((t) => t !== tag)
       try {
         await assetsApi.update(assetId, { tags: asset.tags })
-      } catch {
-        // Keep local state
+      } catch (error) {
+        asset.tags = previousTags
+        throw error
       }
     }
   }
@@ -233,13 +218,13 @@ export const useAssetsStore = defineStore('assets', () => {
     updateFolderCounts()
   }
 
-  function bulkDelete(ids: number[]) {
-    ids.forEach((id) => deleteAsset(id))
+  async function bulkDelete(ids: number[]) {
+    await Promise.all(ids.map((id) => deleteAsset(id)))
     selectedAssets.value = new Set()
   }
 
-  function bulkMove(ids: number[], folderId: number | null) {
-    ids.forEach((id) => moveToFolder(id, folderId))
+  async function bulkMove(ids: number[], folderId: number | null) {
+    await Promise.all(ids.map((id) => moveToFolder(id, folderId)))
     selectedAssets.value = new Set()
   }
 

@@ -60,22 +60,8 @@ export const useWebhookStore = defineStore('webhooks', () => {
       webhooks.value.push(newWebhook)
       return newWebhook
     } catch (e) {
-
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
-      // Fallback to local
-      const newId = Math.max(...webhooks.value.map((w) => w.id), 0) + 1
-      const newWebhook: Webhook = {
-        id: newId,
-        url: data.url,
-        events: data.events,
-        secret: data.secret || generateSecret(),
-        isActive: true,
-        failureCount: 0,
-        createdAt: new Date().toISOString(),
-        recentDeliveries: [],
-      }
-      webhooks.value.push(newWebhook)
-      return newWebhook
+      throw e
     }
   }
 
@@ -90,13 +76,8 @@ export const useWebhookStore = defineStore('webhooks', () => {
         webhooks.value[index] = { ...webhooks.value[index], ...mapApiWebhook(result) }
       }
     } catch (e) {
-
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
-      const index = webhooks.value.findIndex((w) => w.id === id)
-      if (index !== -1) {
-        if (data.url !== undefined) webhooks.value[index].url = data.url
-        if (data.events !== undefined) webhooks.value[index].events = data.events
-      }
+      throw e
     }
   }
 
@@ -104,8 +85,8 @@ export const useWebhookStore = defineStore('webhooks', () => {
     try {
       await webhookApi.delete(id)
     } catch (e) {
-
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
+      throw e
     }
     const index = webhooks.value.findIndex((w) => w.id === id)
     if (index !== -1) {
@@ -116,10 +97,12 @@ export const useWebhookStore = defineStore('webhooks', () => {
     }
   }
 
-  function toggleActive(id: number) {
+  async function toggleActive(id: number) {
     const webhook = webhooks.value.find((w) => w.id === id)
     if (webhook) {
-      webhook.isActive = !webhook.isActive
+      const result = await webhookApi.update(id, { isActive: !webhook.isActive })
+      const index = webhooks.value.findIndex((w) => w.id === id)
+      if (index !== -1) webhooks.value[index] = mapApiWebhook(result)
     }
   }
 
@@ -143,32 +126,19 @@ export const useWebhookStore = defineStore('webhooks', () => {
       webhook.lastTriggeredAt = delivery.sentAt
       return delivery
     } catch (e) {
-
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
-      // Fallback to simulated
-      const delivery: WebhookDelivery = {
-        id: Date.now(),
-        webhookId: id,
-        event: webhook.events[0] || 'video.uploaded',
-        statusCode: 500,
-        responseBody: '{"error":"Test failed"}',
-        sentAt: new Date().toISOString(),
-        duration: 0,
-      }
-      if (!webhook.recentDeliveries) webhook.recentDeliveries = []
-      webhook.recentDeliveries.unshift(delivery)
-      webhook.failureCount++
-      return delivery
+      throw e
     }
   }
 
-  function regenerateSecret(id: number): string {
+  async function regenerateSecret(id: number): Promise<string> {
     const webhook = webhooks.value.find((w) => w.id === id)
     if (!webhook) throw new Error('웹훅을 찾을 수 없습니다')
 
-    const newSecret = generateSecret()
-    webhook.secret = newSecret
-    return newSecret
+    const updated = await webhookApi.rotateSecret(id)
+    const index = webhooks.value.findIndex((w) => w.id === id)
+    if (index !== -1) webhooks.value[index] = mapApiWebhook(updated)
+    return updated.secret ?? ''
   }
 
   async function retryDelivery(webhookId: number, deliveryId: number): Promise<WebhookDelivery> {
@@ -202,34 +172,9 @@ export const useWebhookStore = defineStore('webhooks', () => {
 
       return retried
     } catch (e) {
-
       useNotificationStore().error('웹훅 처리 중 오류가 발생했습니다')
-      const retried: WebhookDelivery = {
-        id: Date.now(),
-        webhookId,
-        event: originalDelivery.event,
-        statusCode: 500,
-        responseBody: '{"error":"Retry failed"}',
-        sentAt: new Date().toISOString(),
-        duration: 0,
-      }
-
-      if (!webhook.recentDeliveries) {
-        webhook.recentDeliveries = []
-      }
-      webhook.recentDeliveries.unshift(retried)
-      webhook.failureCount++
-
-      return retried
+      throw e
     }
-  }
-
-  // --- Helpers ---
-  function generateSecret(): string {
-    const array = new Uint8Array(20)
-    crypto.getRandomValues(array)
-    const hex = Array.from(array, (b) => b.toString(36)).join('').slice(0, 20)
-    return `whsec_${hex}`
   }
 
   return {

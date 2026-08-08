@@ -57,6 +57,14 @@ class WebhookController(
         return ResData.success(null, "웹훅이 삭제되었습니다")
     }
 
+    @Operation(summary = "웹훅 서명 비밀키 재발급")
+    @PostMapping("/{id}/rotate-secret")
+    fun rotateSecret(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<WebhookResponse>> =
+        ResData.success(webhookUseCase.rotateSecret(userId, id), "웹훅 비밀키가 재발급되었습니다")
+
     @Operation(summary = "웹훅 테스트 이벤트 전송")
     @PostMapping("/{id}/test")
     fun testWebhook(

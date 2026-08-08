@@ -139,6 +139,7 @@ data class PlatformVideoStatus(
     val platformVideoId: String,
     val status: String,
     val errorMessage: String? = null,
+    val platformUrl: String? = null,
 )
 
 data class PlatformAnalytics(

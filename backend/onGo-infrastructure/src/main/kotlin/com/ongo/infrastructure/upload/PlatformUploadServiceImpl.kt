@@ -12,6 +12,7 @@ import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.infrastructure.external.platform.PlatformClientFactory
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
+import com.ongo.infrastructure.external.platform.PlatformVideoStatus
 import com.ongo.infrastructure.external.platform.downloadFileToTemp
 import com.ongo.domain.video.VideoPlatformMeta
 import org.slf4j.LoggerFactory
@@ -36,6 +37,13 @@ class PlatformUploadServiceImpl(
     companion object {
         private const val MAX_RETRIES = 3
         private const val INITIAL_DELAY_MS = 1000L
+        private val PUBLISHED_STATUSES = setOf(
+            "PUBLISHED", "PUBLISH_COMPLETE", "FINISHED", "FINISH", "PROCESSED", "UPLOADED",
+            "READY", "LIVE", "SUCCEEDED", "SUCCESS", "COMPLETED", "COMPLETE", "POSTED",
+        )
+        private val FAILED_STATUSES = setOf(
+            "FAILED", "FAILURE", "REJECTED", "ERROR", "NOT_FOUND", "EXPIRED", "CANCELLED",
+        )
     }
 
     override fun supports(platform: Platform): Boolean {
@@ -128,6 +136,74 @@ class PlatformUploadServiceImpl(
             success = false,
             errorMessage = lastException?.message ?: "알 수 없는 오류가 발생했습니다",
         )
+    }
+
+    override fun poll(platform: Platform, pollToken: String, userId: Long): PlatformUploadResult {
+        var channel = channelRepository.findByUserIdAndPlatform(userId, platform)
+            ?: throw NotFoundException("채널", "$platform (userId=$userId)")
+        var accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value
+        var refreshedAfterUnauthorized = false
+
+        fun query(): PlatformVideoStatus = platformClientFactory.getClient(platform)
+            .getVideoStatus(pollToken, accessToken)
+
+        val status = try {
+            query()
+        } catch (e: Exception) {
+            if (!isUnauthorized(e) || channel.refreshToken == null || refreshedAfterUnauthorized) throw e
+            val refreshed = platformClientFactory.getClient(platform)
+                .refreshToken(tokenEncryptionPort.decrypt(channel.refreshToken!!).value)
+            channel = channelRepository.update(
+                channel.copy(
+                    accessToken = tokenEncryptionPort.encrypt(com.ongo.domain.channel.PlainToken(refreshed.accessToken)),
+                    refreshToken = refreshed.refreshToken?.let {
+                        tokenEncryptionPort.encrypt(com.ongo.domain.channel.PlainToken(it))
+                    } ?: channel.refreshToken,
+                    tokenExpiresAt = LocalDateTime.now().plusSeconds(refreshed.expiresIn),
+                )
+            )
+            accessToken = refreshed.accessToken
+            refreshedAfterUnauthorized = true
+            query()
+        }
+
+        val normalized = status.status.trim().uppercase()
+        return when {
+            normalized in PUBLISHED_STATUSES -> {
+                val videoId = status.platformVideoId.ifBlank { pollToken }
+                val url = status.platformUrl?.takeIf { it.isNotBlank() } ?: platformUrl(platform, videoId)
+                PlatformUploadResult(
+                    success = true,
+                    platformVideoId = videoId,
+                    platformUrl = url,
+                    published = url.isNotBlank(),
+                )
+            }
+            normalized in FAILED_STATUSES -> PlatformUploadResult(
+                success = false,
+                platformVideoId = status.platformVideoId.ifBlank { pollToken },
+                errorMessage = status.errorMessage ?: "플랫폼 게시 처리가 거부되었습니다."
+            )
+            else -> PlatformUploadResult(
+                success = true,
+                platformVideoId = status.platformVideoId.ifBlank { pollToken },
+                pollToken = pollToken,
+                published = false,
+            )
+        }
+    }
+
+    private fun platformUrl(platform: Platform, videoId: String): String = when (platform) {
+        Platform.YOUTUBE -> "https://www.youtube.com/watch?v=$videoId"
+        Platform.TIKTOK -> "https://www.tiktok.com/video/$videoId"
+        Platform.INSTAGRAM -> "https://www.instagram.com/reel/$videoId/"
+        Platform.THREADS -> "https://www.threads.net/post/$videoId"
+        Platform.TWITTER -> "https://twitter.com/i/status/$videoId"
+        Platform.NAVER_CLIP -> "https://tv.naver.com/v/$videoId"
+        Platform.FACEBOOK -> "https://www.facebook.com/watch/?v=$videoId"
+        Platform.PINTEREST -> "https://www.pinterest.com/pin/$videoId/"
+        Platform.LINKEDIN -> "https://www.linkedin.com/feed/update/$videoId"
+        Platform.WORDPRESS, Platform.TUMBLR, Platform.VIMEO, Platform.DAILYMOTION -> videoId
     }
 
     private fun uploadFromCloudUrl(

@@ -73,4 +73,35 @@ class PlatformUploadServiceImplTest {
         assertThat(result.published).isTrue()
         assertThat(result.platformUrl).isEqualTo("https://instagram.com/reel/media-1")
     }
+
+    @Test
+    fun `TikTok 비동기 완료 상태는 공개 영상 ID와 사용 가능한 URL로 정규화한다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channelRepository = mockk<ChannelRepository>()
+        val tokenEncryptionPort = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+        every { factory.getClient(Platform.TIKTOK) } returns client
+        every { channelRepository.findByUserIdAndPlatform(7L, Platform.TIKTOK) } returns Channel(
+            id = 2L,
+            userId = 7L,
+            platform = Platform.TIKTOK,
+            platformChannelId = "creator",
+            channelName = "creator",
+            accessToken = EncryptedToken("encrypted-token"),
+            status = ChannelStatus.ACTIVE,
+        )
+        every { tokenEncryptionPort.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("plain-token")
+        every { client.getVideoStatus("publish-1", "plain-token") } returns com.ongo.infrastructure.external.platform.PlatformVideoStatus(
+            platformVideoId = "video-1",
+            status = "PUBLISH_COMPLETE",
+        )
+
+        val service = PlatformUploadServiceImpl(factory, channelRepository, tokenEncryptionPort, emptyList())
+        val result = service.poll(Platform.TIKTOK, "publish-1", 7L)
+
+        assertThat(result.success).isTrue()
+        assertThat(result.published).isTrue()
+        assertThat(result.platformVideoId).isEqualTo("video-1")
+        assertThat(result.platformUrl).isEqualTo("https://www.tiktok.com/video/video-1")
+    }
 }

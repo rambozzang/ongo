@@ -90,18 +90,8 @@ export const useAutomationStore = defineStore('automation', {
         })
         this.rules.push(mapApiRule(data))
       } catch (e) {
-
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
-        // Fallback to local
-        const newRule: AutomationRule = {
-          ...rule,
-          id: Math.max(...this.rules.map(r => r.id), 0) + 1,
-          executionCount: 0,
-          lastExecutedAt: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-        this.rules.push(newRule)
+        throw e
       }
     },
 
@@ -120,16 +110,8 @@ export const useAutomationStore = defineStore('automation', {
           this.rules[index] = mapApiRule(data)
         }
       } catch (e) {
-
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
-        const index = this.rules.findIndex(r => r.id === id)
-        if (index !== -1) {
-          this.rules[index] = {
-            ...this.rules[index],
-            ...updates,
-            updatedAt: new Date().toISOString()
-          }
-        }
+        throw e
       }
     },
 
@@ -137,8 +119,8 @@ export const useAutomationStore = defineStore('automation', {
       try {
         await automationApi.delete(id)
       } catch (e) {
-
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
+        throw e
       }
       const index = this.rules.findIndex(r => r.id === id)
       if (index !== -1) {
@@ -154,33 +136,8 @@ export const useAutomationStore = defineStore('automation', {
           this.rules[index] = mapApiRule(data)
         }
       } catch (e) {
-
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
-        const rule = this.rules.find(r => r.id === id)
-        if (rule) {
-          rule.isEnabled = !rule.isEnabled
-          rule.status = rule.isEnabled ? 'active' : 'paused'
-          rule.updatedAt = new Date().toISOString()
-        }
-      }
-    },
-
-    executeRule(id: number) {
-      const rule = this.rules.find(r => r.id === id)
-      if (rule) {
-        rule.executionCount++
-        rule.lastExecutedAt = new Date().toISOString()
-        rule.updatedAt = new Date().toISOString()
-
-        const newLog: AutomationLog = {
-          id: Math.max(...this.logs.map(l => l.id), 0) + 1,
-          ruleId: rule.id,
-          ruleName: rule.name,
-          status: 'success',
-          message: `규칙 실행 완료`,
-          executedAt: new Date().toISOString()
-        }
-        this.logs.unshift(newLog)
+        throw e
       }
     },
   }

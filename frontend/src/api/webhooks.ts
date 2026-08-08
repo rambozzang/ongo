@@ -25,6 +25,7 @@ export interface UpdateWebhookRequest {
   name?: string
   url?: string
   events?: string[]
+  isActive?: boolean
 }
 
 export interface WebhookTestResponse {
@@ -61,6 +62,12 @@ export const webhookApi = {
   test(id: number) {
     return apiClient
       .post<ResData<WebhookTestResponse>>(`/webhooks/${id}/test`)
+      .then(unwrapResponse)
+  },
+
+  rotateSecret(id: number) {
+    return apiClient
+      .post<ResData<WebhookResponse>>(`/webhooks/${id}/rotate-secret`)
       .then(unwrapResponse)
   },
 }

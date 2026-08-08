@@ -20,6 +20,7 @@ class VideoPublishEventListener(
     private val videoUploadRepository: VideoUploadRepository,
     private val videoRepository: VideoRepository,
     private val eventPublisher: ApplicationEventPublisher,
+    private val storageService: StorageService? = null,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -88,7 +89,9 @@ class VideoPublishEventListener(
             return
         }
 
-        val fileUrl = event.fileUrl
+        val fileUrl = storageService?.let { storage ->
+            runCatching { storage.getFileUrl(event.videoId) }.getOrNull()
+        } ?: event.fileUrl
         if (fileUrl == null) {
             log.warn("영상 {} 에 fileUrl이 없어 플랫폼 업로드를 건너뜁니다 (스트리밍 업로드)", event.videoId)
             updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, "파일 URL이 없습니다. 스트리밍 방식으로 업로드된 영상입니다.", leaseOwner = leaseOwner)
@@ -106,6 +109,7 @@ class VideoPublishEventListener(
                         UploadStatus.PUBLISHED,
                         platformVideoId = outcome.platformVideoId,
                         platformUrl = outcome.platformUrl,
+                        clearPollToken = true,
                         leaseOwner = leaseOwner,
                     )
                     fireCompletedEvent(event, config.platform, true, platformUrl = outcome.platformUrl)
@@ -118,13 +122,13 @@ class VideoPublishEventListener(
                         platformVideoId = outcome.platformVideoId,
                         platformUrl = result.platformUrl,
                         pollToken = outcome.pollToken,
+                        nextRetryAt = LocalDateTime.now().plus(outcome.retryAfter),
                         leaseOwner = leaseOwner,
                     )
-                    fireCompletedEvent(event, config.platform, true, platformUrl = result.platformUrl)
                     log.info("플랫폼 {} 업로드 수락: videoId={}, 후속 상태 확인 예약", config.platform, event.videoId)
                 }
                 is PublishOutcome.Failed -> {
-                    updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, outcome.message, leaseOwner = leaseOwner)
+                    updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, outcome.message, clearPollToken = true, leaseOwner = leaseOwner)
                     fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
                     log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", config.platform, event.videoId, outcome.message)
                 }
@@ -146,6 +150,8 @@ class VideoPublishEventListener(
         platformVideoId: String? = null,
         platformUrl: String? = null,
         pollToken: String? = null,
+        nextRetryAt: LocalDateTime? = null,
+        clearPollToken: Boolean = false,
         leaseOwner: String? = null,
     ) {
         val upload = videoUploadRepository.findById(uploadId) ?: return
@@ -154,10 +160,10 @@ class VideoPublishEventListener(
                 errorMessage = errorMessage,
                 platformVideoId = platformVideoId ?: upload.platformVideoId,
                 platformUrl = platformUrl ?: upload.platformUrl,
-                pollToken = pollToken ?: upload.pollToken,
+                pollToken = if (clearPollToken) null else pollToken ?: upload.pollToken,
                 leaseOwner = null,
                 leaseUntil = null,
-                nextRetryAt = null,
+                nextRetryAt = nextRetryAt,
                 lastError = errorMessage,
                 publishedAt = if (status == UploadStatus.PUBLISHED) LocalDateTime.now() else upload.publishedAt,
             )
