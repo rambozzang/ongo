@@ -419,7 +419,7 @@ export const sectionsKo: ManualSection[] = [
           'Kimi K2.5 — 강력한 추론 능력과 Vision을 지원합니다.',
           'GLM-5 — 중국어/한국어에 강점이 있습니다.',
           'MiniMax M2.5 — 코딩 및 분석에 특화되어 있습니다.',
-          '선택한 AI 제공자는 메타 생성, 해시태그 추천, 아이디어 생성 등 모든 AI 기능에 적용됩니다.',
+          '선택한 AI 제공자는 메타 생성, 해시태그 추천, 성과 분석 등 모든 AI 기능에 적용됩니다.',
           '선택한 AI 제공자는 모든 AI 기능에 동일하게 적용됩니다.',
         ],
       },
@@ -1691,7 +1691,7 @@ export const sectionsKo: ManualSection[] = [
     content: [
       {
         subtitle: '개요',
-        text: '협업 보드는 칸반 스타일의 프로젝트 관리 도구로, 콘텐츠 제작 파이프라인(아이디어 → 대본 → 촬영 → 편집 → 검토 → 예약 → 발행)을 시각적으로 관리합니다.',
+        text: '협업 보드는 칸반 스타일의 프로젝트 관리 도구로, 콘텐츠 제작 파이프라인(기획 → 대본 → 촬영 → 편집 → 검토 → 예약 → 발행)을 시각적으로 관리합니다.',
       },
       {
         subtitle: '주요 기능',
@@ -2409,7 +2409,7 @@ export const sectionsKo: ManualSection[] = [
           '보드 관리: 카테고리별 무드보드를 생성하고 태그로 분류합니다.',
           '아이템 타입: 이미지, 컬러 팔레트, 텍스트 메모 등 다양한 타입의 아이템을 추가합니다.',
           '공유 설정: 공개/비공개를 선택하여 팀원과 영감을 공유합니다.',
-          '핀보드 레이아웃: Pinterest 스타일의 시각적 레이아웃으로 아이디어를 정리합니다.',
+          '핀보드 레이아웃: Pinterest 스타일의 시각적 레이아웃으로 콘텐츠 계획과 레퍼런스를 정리합니다.',
         ],
       },
       {
@@ -3379,7 +3379,7 @@ export const sectionsEn: ManualSection[] = [
           'Kimi K2.5 — Strong reasoning with Vision support.',
           'GLM-5 — Strength in Chinese/Korean languages.',
           'MiniMax M2.5 — Specialized in coding and analysis.',
-          'The selected AI provider applies to all AI features including meta generation, hashtag recommendations, and idea generation.',
+          'The selected AI provider applies to all AI features including metadata generation, hashtag recommendations, and performance analysis.',
           'The selected AI provider applies to all AI features.',
         ],
       },
@@ -5377,7 +5377,7 @@ export const sectionsEn: ManualSection[] = [
           'Board Management: Create mood boards by category and organize with tags.',
           'Item Types: Add various types of items including images, color palettes, and text notes.',
           'Sharing: Choose public or private visibility to share inspiration with team members.',
-          'Pin Board Layout: Organize ideas in a Pinterest-style visual layout.',
+          'Pin Board Layout: Organize content plans and references in a Pinterest-style visual layout.',
         ],
       },
       {

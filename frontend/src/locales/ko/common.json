@@ -545,7 +545,6 @@
     "comments": "댓글",
     "inbox": "인박스",
     "notifications": "알림",
-    "ideas": "아이디어",
     "linkbio": "링크인바이오",
     "team": "팀",
     "webhooks": "웹훅",
@@ -922,7 +921,7 @@
   "settings": {
     "aiProvider": {
       "title": "기본 AI 제공자",
-      "description": "AI 기능(메타 생성, 해시태그, 아이디어 등)에 사용할 AI 모델을 선택하세요.",
+      "description": "AI 기능(메타 생성, 해시태그, 성과 분석 등)에 사용할 AI 모델을 선택하세요.",
       "claude": "Anthropic의 Claude — 자연스러운 한국어 생성",
       "gemini": "Google의 Gemini — 다국어 지원 강점",
       "openai": "OpenAI GPT — 범용 AI 모델",
@@ -1610,9 +1609,7 @@
     "usedToday": "오늘 사용",
     "remaining": "잔여",
     "tabs": {
-      "tools": "AI 도구",
-      "presets": "프리셋",
-      "history": "사용 기록"
+      "tools": "AI 도구"
     },
     "credits": "크레딧",
     "creditsUsed": "크레딧 소모",
@@ -1627,7 +1624,6 @@
       "cancel": "취소",
       "generate": "생성하기",
       "recommend": "추천받기",
-      "generateIdea": "아이디어 생성",
       "generateReport": "리포트 생성",
       "strategyAnalysis": "전략 분석",
       "reAnalyze": "다시 분석"
@@ -1696,9 +1692,7 @@
     "videoTitle": "영상 제목",
     "videoTitlePlaceholder": "영상 제목을 입력하세요",
     "pageGuide": [
-      "AI 도구 탭에서 제목 생성·해시태그 추출·설명 작성·썸네일 분석 등 다양한 AI 도구를 사용하세요",
-      "프리셋 탭에서 자주 사용하는 AI 설정(톤, 타겟 플랫폼, 카테고리)을 저장하고 재사용하세요",
-      "사용 기록 탭에서 AI 크레딧 소비 내역과 생성 결과를 확인할 수 있습니다",
+      "AI 도구에서 제목 생성·해시태그 추출·설명 작성·성과 분석 등 실제 서버 연동 도구를 사용하세요",
       "상단의 일일 크레딧 사용량 표시가 빨간색이면 잔액이 부족하니 구독 페이지에서 충전하세요",
       "각 도구 카드의 툴팁 아이콘에 마우스를 올리면 소요 크레딧과 상세 설명을 확인할 수 있습니다"
     ],
@@ -1709,17 +1703,7 @@
     "expectedReaction": "예상 반응",
     "expectedImpact": "예상 영향",
     "expectedBoost": "예상 향상",
-    "analysisPeriod": "분석 기간",
-    "history": {
-      "clearTitle": "기록을 모두 지울까요?",
-      "clearMessage": "저장된 AI 사용 기록이 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
-      "deleteTitle": "이 기록을 삭제할까요?",
-      "deleteMessage": "삭제한 기록은 되돌릴 수 없습니다."
-    },
-    "preset": {
-      "deleteTitle": "프리셋을 삭제할까요?",
-      "deleteMessage": "삭제한 프리셋은 되돌릴 수 없습니다."
-    }
+    "analysisPeriod": "분석 기간"
   },
   "analyticsView": {
     "title": "통합 분석",
@@ -2837,52 +2821,6 @@
     },
     "clearAllTitle": "알림을 모두 지울까요?",
     "clearAllMessage": "읽지 않은 알림도 함께 삭제됩니다."
-  },
-  "ideas": {
-    "title": "콘텐츠 아이디어",
-    "description": "콘텐츠 아이디어를 관리하고 제작 진행 상태를 추적하세요",
-    "newIdea": "새 아이디어",
-    "pageGuideTitle": "아이디어 보드",
-    "pageGuide": [
-      "새 아이디어 버튼으로 콘텐츠 기획 아이디어를 작성하고 우선순위를 지정하세요",
-      "칸반 보드의 4단계(아이디어→기획중→제작중→완료) 컬럼 간에 드래그 앤 드롭으로 진행 상태를 변경하세요",
-      "검색과 우선순위 필터로 중요한 아이디어를 빠르게 찾을 수 있습니다",
-      "아이디어 카드를 클릭하면 상세 내용을 편집하고, 완료된 아이디어를 영상 제작으로 바로 연결하세요"
-    ],
-    "searchPlaceholder": "아이디어 검색...",
-    "priority": {
-      "all": "전체",
-      "high": "높음",
-      "medium": "보통",
-      "low": "낮음"
-    },
-    "columns": {
-      "idea": "아이디어",
-      "planning": "기획 중",
-      "producing": "제작 중",
-      "completed": "완료"
-    },
-    "aiGenerate": "AI 아이디어 생성",
-    "aiGenerateDesc": "AI가 채널에 맞는 콘텐츠 아이디어를 추천합니다",
-    "generating": "아이디어 생성 중...",
-    "selectCategory": "카테고리 선택 (선택)",
-    "estimatedViews": "예상 조회수",
-    "difficulty": "난이도",
-    "aiGenerated": "AI 생성",
-    "credits": "5 크레딧",
-    "deleteTitle": "아이디어를 삭제할까요?",
-    "deleteMessage": "삭제한 아이디어는 되돌릴 수 없습니다.",
-    "searchLabel": "아이디어 검색",
-    "sortTitle": "제목순",
-    "sortRecent": "최근순",
-    "sortPriority": "우선순위순",
-    "sortDueDate": "마감일순",
-    "bulkDeleteTitle": "선택한 아이디어를 삭제할까요?",
-    "bulkDeleteMessage": "아이디어 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
-    "bulkDeleteDone": "아이디어 {count}개를 삭제했습니다",
-    "emptyTitle": "아직 아이디어가 없습니다",
-    "emptyDescription": "떠오른 콘텐츠 아이디어를 기록해두면 나중에 영상으로 만들 수 있습니다.",
-    "createFirstIdea": "첫 아이디어 추가"
   },
   "team": {
     "description": "팀 멤버 관리 및 협업 활동 추적",

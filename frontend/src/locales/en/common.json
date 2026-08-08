@@ -545,7 +545,6 @@
     "comments": "Comments",
     "inbox": "Inbox",
     "notifications": "Notifications",
-    "ideas": "Ideas",
     "linkbio": "Link in Bio",
     "team": "Team",
     "webhooks": "Webhooks",
@@ -922,7 +921,7 @@
   "settings": {
     "aiProvider": {
       "title": "Default AI Provider",
-      "description": "Choose the AI model for AI features (meta generation, hashtags, ideas, etc.).",
+      "description": "Choose the AI model for AI features (metadata generation, hashtags, performance analysis, etc.).",
       "claude": "Anthropic Claude — Natural Korean generation",
       "gemini": "Google Gemini — Strong multilingual support",
       "openai": "OpenAI GPT — General-purpose AI model",
@@ -1610,9 +1609,7 @@
     "usedToday": "Used Today",
     "remaining": "Remaining",
     "tabs": {
-      "tools": "AI Tools",
-      "presets": "Presets",
-      "history": "History"
+      "tools": "AI Tools"
     },
     "credits": "credits",
     "creditsUsed": "credits used",
@@ -1627,7 +1624,6 @@
       "cancel": "Cancel",
       "generate": "Generate",
       "recommend": "Get Recommendations",
-      "generateIdea": "Generate Ideas",
       "generateReport": "Generate Report",
       "strategyAnalysis": "Analyze Strategy",
       "reAnalyze": "Re-analyze"
@@ -1696,9 +1692,7 @@
     "videoTitle": "Video Title",
     "videoTitlePlaceholder": "Enter video title",
     "pageGuide": [
-      "Use AI tools (title generation, hashtag extraction, description writing, etc.) in the AI Tools tab",
-      "Save and reuse frequently used AI settings (tone, target platform, category) in the Presets tab",
-      "View AI credit consumption history and generated results in the History tab",
+      "Use the server-backed AI tools for title generation, hashtag extraction, description writing, and performance analysis",
       "If the daily credit indicator turns red, recharge on the Subscription page",
       "Hover over tooltip icons on tool cards to see credit costs and descriptions"
     ],
@@ -1709,17 +1703,7 @@
     "expectedReaction": "Expected reaction",
     "expectedImpact": "Expected impact",
     "expectedBoost": "Expected boost",
-    "analysisPeriod": "Analysis period",
-    "history": {
-      "clearTitle": "Clear all history?",
-      "clearMessage": "All saved AI usage history will be deleted. This cannot be undone.",
-      "deleteTitle": "Delete this history entry?",
-      "deleteMessage": "This entry cannot be restored."
-    },
-    "preset": {
-      "deleteTitle": "Delete this preset?",
-      "deleteMessage": "This preset cannot be restored."
-    }
+    "analysisPeriod": "Analysis period"
   },
   "analyticsView": {
     "title": "Unified Analytics",
@@ -2837,52 +2821,6 @@
     },
     "clearAllTitle": "Clear all notifications?",
     "clearAllMessage": "Unread notifications will also be removed."
-  },
-  "ideas": {
-    "title": "Content Ideas",
-    "description": "Manage content ideas and track production progress",
-    "newIdea": "New Idea",
-    "pageGuideTitle": "Idea Board",
-    "pageGuide": [
-      "Use the New Idea button to create content ideas and set priorities",
-      "Drag and drop between the 4 Kanban columns (Idea → Planning → Producing → Completed) to change status",
-      "Use search and priority filters to quickly find important ideas",
-      "Click an idea card to edit details and link completed ideas directly to video production"
-    ],
-    "searchPlaceholder": "Search ideas...",
-    "priority": {
-      "all": "All",
-      "high": "High",
-      "medium": "Medium",
-      "low": "Low"
-    },
-    "columns": {
-      "idea": "Ideas",
-      "planning": "Planning",
-      "producing": "Producing",
-      "completed": "Completed"
-    },
-    "aiGenerate": "AI Generate Ideas",
-    "aiGenerateDesc": "AI recommends content ideas tailored to your channel",
-    "generating": "Generating ideas...",
-    "selectCategory": "Select Category (optional)",
-    "estimatedViews": "Est. Views",
-    "difficulty": "Difficulty",
-    "aiGenerated": "AI Generated",
-    "credits": "5 Credits",
-    "deleteTitle": "Delete this idea?",
-    "deleteMessage": "This idea cannot be restored.",
-    "searchLabel": "Search ideas",
-    "sortTitle": "By title",
-    "sortRecent": "Most recent",
-    "sortPriority": "By priority",
-    "sortDueDate": "By due date",
-    "bulkDeleteTitle": "Delete selected ideas?",
-    "bulkDeleteMessage": "{count} ideas will be deleted. This cannot be undone.",
-    "bulkDeleteDone": "Deleted {count} ideas",
-    "emptyTitle": "No ideas yet",
-    "emptyDescription": "Jot down content ideas now and turn them into videos later.",
-    "createFirstIdea": "Add your first idea"
   },
   "team": {
     "description": "Manage team members and track collaboration activities",
