@@ -111,7 +111,9 @@ class ScheduleExecutor(
                     // 아직 큐에 남아 있는 UPLOADING row를 한 번만 다시 dispatch한다.
                     // 확인불가/실패 row를 자동 재전송하면 외부에는 이미 게시됐을 수
                     // 있어 중복 게시가 생기므로 수동 재확인/재시도만 허용한다.
-                    val needsDispatch = uploads.isEmpty()
+                    val needsDispatch = uploads.isEmpty() || uploads.any {
+                        it.status == UploadStatus.UPLOADING && it.scheduledAt == null
+                    }
                     if (needsDispatch) {
                         // 여기서만 게이트를 본다. 이 분기는 **외부 플랫폼에 실제로 게시**한다.
                         // 삭제를 요청한 계정으로 새 콘텐츠를 외부에 올리는 것은 되돌릴 수 없다.

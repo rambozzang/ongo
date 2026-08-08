@@ -162,12 +162,28 @@ class ScheduleExecutorTest {
     fun doesNotRedispatchExistingUploadingRows() {
         every { scheduleRepository.findDueSchedules(any()) } returns listOf(schedule(1))
         every { videoUploadRepository.findByVideoId(10L) } returns listOf(
-            publishedUpload(10L).copy(status = UploadStatus.UPLOADING),
+            publishedUpload(10L).copy(
+                status = UploadStatus.UPLOADING,
+                scheduledAt = LocalDateTime.now(kst).minusMinutes(1),
+            ),
         )
 
         executor.syncScheduleStatuses()
 
         verify(exactly = 0) { streamPublishUseCase.executeScheduledUpload(any()) }
+    }
+
+    @Test
+    @DisplayName("scheduledAt이 없는 레거시 업로드 row는 예약 복구 대상으로 dispatch한다")
+    fun dispatchesLegacyUploadingRowWithoutScheduledAt() {
+        every { scheduleRepository.findDueSchedules(any()) } returns listOf(schedule(1))
+        every { videoUploadRepository.findByVideoId(10L) } returns listOf(
+            publishedUpload(10L).copy(status = UploadStatus.UPLOADING, scheduledAt = null),
+        )
+
+        executor.syncScheduleStatuses()
+
+        verify(exactly = 1) { streamPublishUseCase.executeScheduledUpload(match { it.id == 1L }) }
     }
 
     @Test
