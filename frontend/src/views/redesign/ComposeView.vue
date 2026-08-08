@@ -166,6 +166,12 @@
             <div class="h-full w-1/2 animate-pulse rounded-full bg-accent" />
           </div>
         </div>
+        <p
+          v-else-if="shortsEnabled && selectedCount > 0 && shortsPlatforms.length === 0"
+          class="mt-2.5 rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2 text-[10.5px] text-warning-strong"
+        >
+          {{ t('redesign.compose.shortsSkippedForTargets') }}
+        </p>
       </section>
 
       <!-- 문구 탭 -->
@@ -318,6 +324,13 @@
           </span>
         </button>
       </div>
+      <p
+        v-if="optimalTimesError && schedMode === 'best'"
+        class="mt-2 rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2 text-[10.5px] text-warning-strong"
+        role="status"
+      >
+        {{ optimalTimesError }}
+      </p>
 
       <input
         v-if="schedMode === 'fix'"
@@ -421,6 +434,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useLocale } from '@/composables/useLocale'
 import ThumbPlaceholder from '@/components/redesign/ThumbPlaceholder.vue'
 import { aiApi } from '@/api/ai'
+import { analyticsApi } from '@/api/analytics'
 import { channelApi } from '@/api/channel'
 import {
   parseCues,
@@ -439,7 +453,8 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import type { Channel, Platform } from '@/types/channel'
 import type { PlatformPublishConfig, PlatformUploadCapability } from '@/types/video'
 import { parsePublishHashtags, validatePublishDrafts } from '@/utils/publishValidation'
-import { toDateTimeLocal } from '@/utils/schedule'
+import type { OptimalTimeSlot } from '@/types/analytics'
+import { fallbackOptimalSlot, kstWallClockToInstant, nextOptimalDateTime } from '@/utils/optimalSchedule'
 
 /**
  * 새 업로드 — 파일 → 대상 → 문구 → 예약을 화면 이동 없이 한 번에.
@@ -509,6 +524,8 @@ const notice = ref('')
 
 const channels = ref<Channel[]>([])
 const capabilities = ref<PlatformUploadCapability[]>([])
+const optimalSlots = ref<Partial<Record<Platform, OptimalTimeSlot[]>>>({})
+const optimalTimesError = ref('')
 const disabled = reactive<Record<number, boolean>>({})
 const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW'>('common')
 const schedMode = ref<'now' | 'best' | 'fix'>('best')
@@ -549,9 +566,19 @@ const tabs = [
 
 const scheduleOptions = computed(() => [
   { key: 'now' as const, label: t('redesign.compose.schedNow'), hint: '' },
-  { key: 'best' as const, label: t('redesign.compose.schedBest'), hint: '09:00 · 12:30 · 19:00' },
+  { key: 'best' as const, label: t('redesign.compose.schedBest'), hint: bestTimeHint.value },
   { key: 'fix' as const, label: t('redesign.compose.schedFixed'), hint: fixedAt.value },
 ])
+
+const bestTimeHint = computed(() => {
+  const times = selectedChannels.value.flatMap(
+    (channel) => optimalSlots.value[channel.platform]?.slice(0, 3).map((slot) => slot.timeLabel) ?? [],
+  )
+  const uniqueTimes = [...new Set(times)]
+  return uniqueTimes.length > 0
+    ? uniqueTimes.slice(0, 3).join(' · ')
+    : t('redesign.compose.optimalFallback')
+})
 
 const platformOptions = computed(() =>
   channels.value.map((ch) => ({
@@ -729,6 +756,31 @@ function applyCommonToPlatforms() {
   notice.value = t('redesign.compose.commonApplied')
 }
 
+/** 채널별 성과 분석을 예약 시간 계산에 연결한다. 실패 시 일반 기본값을 사용하되 사용자에게 알린다. */
+async function loadOptimalTimes(targetChannels: Channel[]) {
+  const platforms = [...new Set(targetChannels.map((channel) => channel.platform))]
+  if (platforms.length === 0) {
+    optimalSlots.value = {}
+    optimalTimesError.value = ''
+    return
+  }
+
+  const results = await Promise.allSettled(
+    platforms.map(async (platform) => ({
+      platform,
+      result: await analyticsApi.getOptimalTimes(platform),
+    })),
+  )
+  const next: Partial<Record<Platform, OptimalTimeSlot[]>> = {}
+  let failures = 0
+  for (const result of results) {
+    if (result.status === 'fulfilled') next[result.value.platform] = result.value.result.slots
+    else failures += 1
+  }
+  optimalSlots.value = next
+  optimalTimesError.value = failures > 0 ? t('redesign.compose.optimalTimesFailed') : ''
+}
+
 /** 만료 채널이 대상에 포함되면 예약을 막는다. */
 const blockedReason = computed(() => {
   if (dataLoadError.value) return dataLoadError.value
@@ -738,9 +790,6 @@ const blockedReason = computed(() => {
   )
   if (expired.length > 0) {
     return t('redesign.compose.blockExpired', { name: expired[0].channelName })
-  }
-  if (shortsEnabled.value && shortsPlatforms.value.length === 0) {
-    return t('redesign.compose.blockShortsTargets')
   }
   if (validationIssues.value.length > 0) return validationIssues.value[0]
   return ''
@@ -933,6 +982,15 @@ async function submit() {
   let publishCompleted = false
   let recurringFailure = ''
   try {
+    // 쇼츠를 선택한 상태에서 렌더러가 내려가 있으면 원본만 먼저 게시하지 않는다.
+    // 그래야 사용자가 한 번의 작업으로 원본과 쇼츠가 함께 처리될 것이라는 기대를
+    // 어기고 부분 성공을 재전송하는 상황을 예방할 수 있다.
+    if (shortsEnabled.value && shortsPlatforms.value.length > 0) {
+      const availability = await ugcShortsPipelineApi.getRenderAvailability()
+      if (!availability.available) {
+        throw new Error(availability.reason || t('redesign.compose.shortsUnavailable'))
+      }
+    }
     let sourceVideoId = importedVideoId.value ?? uploadStore.videoId
     if (!sourceVideoId && selected) {
       // 원본을 보관해야 쇼츠 렌더와 재시도에서 같은 영상 ID를 계속 사용할 수 있다.
@@ -976,7 +1034,7 @@ async function submit() {
         description: draft.description,
         tags: parseHashtags(draft.hashtags),
         visibility: 'PUBLIC' as const,
-        scheduledAt: scheduledAtFor(index),
+        scheduledAt: scheduledAtFor(index, ch.platform),
       }
     })
 
@@ -1008,7 +1066,11 @@ async function submit() {
           error instanceof Error ? error.message : t('redesign.compose.recurringFailed')
       }
     }
-    if (shortsEnabled.value) await publishAutomaticShorts(sourceVideoId)
+    // Shorts is an optional follow-up. A Facebook/X-only post must still be
+    // considered successful when no selected channel can host a vertical clip.
+    if (shortsEnabled.value && shortsPlatforms.value.length > 0) {
+      await publishAutomaticShorts(sourceVideoId)
+    }
     if (recurringFailure) {
       notice.value = t('redesign.compose.partialActionFailed', { error: recurringFailure })
       return
@@ -1101,8 +1163,12 @@ async function publishAutomaticShorts(sourceVideoId: number) {
     }),
   )
 
+  const scheduledStart = scheduledAtFor(0, shortsPlatforms.value[0])
   const startAt = new Date(
-    Math.max(Date.now() + 5 * 60 * 1000, new Date(scheduledAtFor(0) || Date.now()).getTime()),
+    Math.max(
+      Date.now() + 5 * 60 * 1000,
+      scheduledStart ? kstWallClockToInstant(scheduledStart).getTime() : Date.now(),
+    ),
   )
   await ugcShortsPipelineApi.confirmSchedule(workspaceId, run.id, {
     startAt: startAt.toISOString(),
@@ -1113,24 +1179,15 @@ async function publishAutomaticShorts(sourceVideoId: number) {
   shortsStatus.value = t('redesign.compose.shortsDone')
 }
 
-/** 채널별 예약 시각. 최적 시간은 09:00·12:30·19:00 슬롯을 순서대로 돌려 쓴다. */
-function scheduledAtFor(index: number): string | undefined {
+/** 채널별 예약 시각. 최적 모드는 서버 분석값을 사용하고, 이력이 없을 때만 일반 기본값을 쓴다. */
+function scheduledAtFor(index: number, platform?: Platform): string | undefined {
   if (schedMode.value === 'now') return undefined
   if (schedMode.value === 'fix')
-    return fixedAt.value ? toDateTimeLocal(new Date(fixedAt.value)) : undefined
+    return fixedAt.value ? fixedAt.value.slice(0, 16) : undefined
 
-  const slots = [
-    [9, 0],
-    [12, 30],
-    [19, 0],
-  ]
-  const [h, m] = slots[index % slots.length]
-  const at = new Date()
-  at.setHours(h, m, 0, 0)
-  if (at.getTime() <= Date.now()) at.setDate(at.getDate() + 1)
-  // The publish endpoint binds `scheduledAt` to LocalDateTime (KST wall-clock).
-  // Sending ISO with `Z` would shift the time and can be rejected by Jackson.
-  return toDateTimeLocal(at)
+  const slots = platform ? optimalSlots.value[platform] ?? [] : []
+  const slot = slots.length > 0 ? slots[index % slots.length] : fallbackOptimalSlot(index)
+  return nextOptimalDateTime(new Date(), slot)
 }
 
 const parseHashtags = parsePublishHashtags
@@ -1198,6 +1255,8 @@ onMounted(async () => {
   try {
     // list() 는 { channels, maxAllowed, currentCount } 형태다
     channels.value = (await channelApi.list())?.channels ?? []
+    // 분석은 선택적인 예약 보강이므로 채널·게시 조건 로딩을 막지 않는다.
+    void loadOptimalTimes(channels.value)
   } catch (error) {
     channels.value = []
     dataLoadError.value =

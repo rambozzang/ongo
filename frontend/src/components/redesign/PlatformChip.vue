@@ -18,7 +18,7 @@ import { computed } from 'vue'
  */
 const props = withDefaults(
   defineProps<{
-    platform: 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'
+    platform: 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW'
     size?: 'sm' | 'md'
   }>(),
   { size: 'md' },
@@ -31,6 +31,7 @@ const CODES = {
   FB: 'FB',
   NV: 'NV',
   TH: 'TH',
+  TW: 'X',
 } as const
 
 const COLORS = {
@@ -40,6 +41,7 @@ const COLORS = {
   FB: 'bg-platform-fb-bg text-platform-fb-fg',
   NV: 'bg-platform-nv-bg text-platform-nv-fg',
   TH: 'bg-platform-th-bg text-platform-th-fg',
+  TW: 'bg-platform-x-bg text-platform-x-fg',
 } as const
 
 const colorClass = computed(() => COLORS[props.platform])

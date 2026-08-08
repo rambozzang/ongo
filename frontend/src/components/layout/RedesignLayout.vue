@@ -5,6 +5,20 @@
 
     <div class="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface">
       <RedesignTopBar :title="title" :subtitle="subtitle" />
+      <div
+        v-if="capabilityError"
+        class="mx-4 mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2 text-[11px] text-warning-strong tablet:mx-6"
+        role="alert"
+      >
+        <span class="min-w-0 flex-1">{{ t('redesign.shell.capabilitiesFailed') }}</span>
+        <button
+          type="button"
+          class="shrink-0 rounded-md border border-warning-strong px-2 py-1 font-semibold hover:bg-warning-strong hover:text-surface-base"
+          @click="retryCapabilities"
+        >
+          {{ t('action.retry') }}
+        </button>
+      </div>
       <main
         id="main-content"
         class="min-h-0 flex-1 overflow-y-auto scrollbar-dark"
@@ -28,6 +42,7 @@ import MobileBottomNav from '@/components/layout/MobileBottomNav.vue'
 import RedesignRail from '@/components/layout/RedesignRail.vue'
 import RedesignTopBar from '@/components/layout/RedesignTopBar.vue'
 import { useRedesignShellStore } from '@/stores/redesignShell'
+import { useNavigation } from '@/composables/useNavigation'
 
 /**
  * 리디자인 셸 — 좌측 고정 레일 + 우측 본문 2열.
@@ -38,6 +53,7 @@ import { useRedesignShellStore } from '@/stores/redesignShell'
 const route = useRoute()
 const { t } = useLocale()
 const shell = useRedesignShellStore()
+const { capabilityError, retryCapabilities } = useNavigation()
 
 /** 전용 리디자인 화면은 자체 여백을 갖고, 기존 화면은 셸에서 동일한 본문 여백을 받는다. */
 const isRedesignScreen = computed(() => String(route.name ?? '').startsWith('redesign-'))

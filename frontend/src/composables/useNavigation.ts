@@ -70,6 +70,7 @@ function loadExpandedSubGroups(): Set<string> {
 // 사이드바(데스크톱/모바일 드로어)와 모바일 전체 메뉴 시트가 공유하는 단일 상태
 const expandedSubGroups = ref<Set<string>>(loadExpandedSubGroups())
 const enabledCapabilityKeys = ref<Set<string> | null>(null)
+const capabilityError = ref<string | null>(null)
 let capabilityRequest: Promise<void> | null = null
 
 async function loadCapabilities() {
@@ -77,11 +78,14 @@ async function loadCapabilities() {
   capabilityRequest = capabilitiesApi.list()
     .then((items) => {
       enabledCapabilityKeys.value = new Set(items.filter((item) => item.enabled).map((item) => item.key))
+      capabilityError.value = null
     })
-    .catch(() => {
-      // capability를 확인하지 못하면 기능을 노출하지 않는다. 메뉴가 보이는데
-      // 실제 API가 없는 상태를 만들지 않고, 다음 인증/새로고침 때 다시 확인한다.
-      enabledCapabilityKeys.value = new Set()
+    .catch((error: unknown) => {
+      // capability 서버가 잠시 실패하면 메뉴 전체를 숨기지 않는다. 숨겨진 메뉴는
+      // 장애를 데이터 없음으로 오인하게 만들기 때문에, 기존 메뉴를 유지하고
+      // 셸에 capability 동기화 실패를 명시적으로 표시한다.
+      enabledCapabilityKeys.value = null
+      capabilityError.value = error instanceof Error ? error.message : 'capability request failed'
     })
     .finally(() => {
       capabilityRequest = null
@@ -111,7 +115,10 @@ export function useNavigation() {
     () => authStore.isAuthenticated,
     (authenticated) => {
       if (authenticated) void loadCapabilities()
-      else enabledCapabilityKeys.value = null
+      else {
+        enabledCapabilityKeys.value = null
+        capabilityError.value = null
+      }
     },
     { immediate: true },
   )
@@ -300,5 +307,7 @@ export function useNavigation() {
     isCurrentRoute,
     isSubGroupExpanded,
     toggleSubGroup,
+    capabilityError,
+    retryCapabilities: loadCapabilities,
   }
 }

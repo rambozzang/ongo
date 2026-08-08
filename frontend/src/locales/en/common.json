@@ -4186,6 +4186,9 @@
     "rail": {
       "monthlyUploads": "Uploads this month"
     },
+    "shell": {
+      "capabilitiesFailed": "Feature availability could not be synced. The current menu remains visible; retry when ready."
+    },
     "topbar": {
       "searchPlaceholder": "Search",
       "bulkImport": "Bulk import",
@@ -4285,6 +4288,8 @@
       "scheduleTitle": "Schedule",
       "schedNow": "Publish now",
       "schedBest": "Best time per channel",
+      "optimalFallback": "No history yet — using general recommended times",
+      "optimalTimesFailed": "Performance data could not be loaded; using general recommended times.",
       "schedFixed": "Pick a time",
       "recurringToggle": "Repeat publishing",
       "recurringHint": "After this post, repeat the same video and copy on the selected platforms.",
@@ -4299,7 +4304,7 @@
       "warnTiktokHashtags": "TikTok keeps only {limit} hashtags. The rest move to the description.",
       "blockNoTarget": "Select at least one channel",
       "blockExpired": "{name} is disconnected — reconnect to schedule",
-      "blockShortsTargets": "With Shorts enabled, select YouTube, TikTok, Instagram, or Naver Clip",
+      "shortsSkippedForTargets": "The selected channels cannot host Shorts, so only the original will be published.",
       "dataLoadFailed": "Could not load channels or publishing rules. Please try again.",
       "shortsNoCompatibleTargets": "None of the selected channels supports Shorts publishing.",
       "captioning": "Generating…",

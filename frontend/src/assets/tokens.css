@@ -45,6 +45,8 @@
   --platform-nv-fg: #1c6b3a;
   --platform-th-bg: #eef0f5;
   --platform-th-fg: #40465c;
+  --platform-x-bg: #e8e9ed;
+  --platform-x-fg: #17191f;
 
   /*
    * Semantic status colors.
@@ -166,6 +168,8 @@
   --platform-nv-fg: #8fdca8;
   --platform-th-bg: #22242f;
   --platform-th-fg: #c9cbe0;
+  --platform-x-bg: #17191f;
+  --platform-x-fg: #f5f6fa;
 
   /* 리디자인 규칙: 깊이는 보더와 표면 명도로 표현한다. 카드·컨트롤에는 그림자를 쓰지 않는다.
      떠 있는 표면(모달·팝오버·앱 프레임)에만 남긴다. */

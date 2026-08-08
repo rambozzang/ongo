@@ -131,13 +131,14 @@ const router = useRouter()
 const channelStore = useChannelStore()
 const { channels } = storeToRefs(channelStore)
 const notify = useNotificationStore()
-const PLATFORM_CODES: Partial<Record<Platform, 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'>> = {
+const PLATFORM_CODES: Partial<Record<Platform, 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW'>> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
   TIKTOK: 'TT',
   FACEBOOK: 'FB',
   NAVER_CLIP: 'NV',
   THREADS: 'TH',
+  TWITTER: 'TW',
 }
 
 const expiredChannels = computed(() => channels.value.filter((channel) => ['EXPIRED', 'DISCONNECTED'].includes(channel.tokenStatus)))

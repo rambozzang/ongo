@@ -104,6 +104,8 @@ export default {
           'nv-fg': 'var(--platform-nv-fg)',
           'th-bg': 'var(--platform-th-bg)',
           'th-fg': 'var(--platform-th-fg)',
+          'x-bg': 'var(--platform-x-bg)',
+          'x-fg': 'var(--platform-x-fg)',
         },
         youtube: '#FF0000',
         tiktok: '#000000',

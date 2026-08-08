@@ -4176,6 +4176,9 @@
     "rail": {
       "monthlyUploads": "이번 달 업로드"
     },
+    "shell": {
+      "capabilitiesFailed": "기능 목록을 동기화하지 못했습니다. 현재 메뉴를 표시하며 다시 시도할 수 있습니다."
+    },
     "topbar": {
       "searchPlaceholder": "검색",
       "bulkImport": "일괄 가져오기",
@@ -4275,6 +4278,8 @@
       "scheduleTitle": "발행 예약",
       "schedNow": "지금 발행 (즉시)",
       "schedBest": "채널별 최적 시간",
+      "optimalFallback": "분석 데이터가 없어 일반 추천 시간을 사용합니다",
+      "optimalTimesFailed": "성과 분석을 불러오지 못해 일반 추천 시간을 사용합니다.",
       "schedFixed": "직접 지정",
       "recurringToggle": "반복 게시 예약",
       "recurringHint": "현재 게시 후 선택한 플랫폼에 같은 영상과 문구를 반복 예약합니다.",
@@ -4289,7 +4294,7 @@
       "warnTiktokHashtags": "TikTok은 해시태그 {limit}개까지만 반영됩니다. 초과분은 설명 하단으로 이동합니다.",
       "blockNoTarget": "발행할 채널을 하나 이상 선택하세요",
       "blockExpired": "{name} 연결이 만료되어 예약할 수 없습니다",
-      "blockShortsTargets": "쇼츠 게시를 켠 경우 YouTube·TikTok·Instagram·Naver Clip 중 하나를 선택하세요",
+      "shortsSkippedForTargets": "선택한 채널에는 쇼츠를 게시할 수 없어 원본만 발행합니다.",
       "dataLoadFailed": "채널 또는 게시 조건을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
       "shortsNoCompatibleTargets": "선택한 채널에는 쇼츠 게시를 지원하는 플랫폼이 없습니다.",
       "captioning": "자막 생성 중…",

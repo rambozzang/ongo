@@ -256,8 +256,8 @@ const pendingAction = ref<PendingCalendarAction | null>(null)
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
-// PlatformChip 이 지원하는 6개 플랫폼으로 매핑. 그 외는 칩 없이 시간만 보여 준다
-type ChipPlatform = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'
+// PlatformChip 이 지원하는 7개 게시 플랫폼으로 매핑한다.
+type ChipPlatform = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW'
 const CHIP_MAP: Record<string, ChipPlatform> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
@@ -266,6 +266,7 @@ const CHIP_MAP: Record<string, ChipPlatform> = {
   NAVER_CLIP: 'NV',
   NAVER: 'NV',
   THREADS: 'TH',
+  TWITTER: 'TW',
 }
 
 const weekTitle = computed(() => {
