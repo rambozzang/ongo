@@ -32,37 +32,7 @@ const blockTypes: BlockTypeOption[] = [
     type: 'link',
     icon: '🔗',
     label: '링크',
-    description: 'URL 버튼',
-  },
-  {
-    type: 'header',
-    icon: '📝',
-    label: '헤더',
-    description: '섹션 제목',
-  },
-  {
-    type: 'social',
-    icon: '📱',
-    label: 'SNS',
-    description: '소셜 미디어',
-  },
-  {
-    type: 'video',
-    icon: '🎬',
-    label: '영상',
-    description: '비디오 카드',
-  },
-  {
-    type: 'divider',
-    icon: '➖',
-    label: '구분선',
-    description: '수평선',
-  },
-  {
-    type: 'text',
-    icon: '💬',
-    label: '텍스트',
-    description: '안내 문구',
+    description: '저장되는 URL 버튼',
   },
 ]
 </script>

@@ -21,6 +21,8 @@ export interface LinkBioPageResponse {
   theme: string
   backgroundColor: string
   textColor: string
+  buttonColor: string
+  buttonTextColor: string
   isPublished: boolean
   viewCount: number
   links: LinkBioLinkResponse[]
@@ -36,6 +38,8 @@ export interface CreatePageRequest {
   theme?: string
   backgroundColor?: string
   textColor?: string
+  buttonColor?: string
+  buttonTextColor?: string
 }
 
 export interface UpdatePageRequest {
@@ -46,6 +50,8 @@ export interface UpdatePageRequest {
   theme?: string
   backgroundColor?: string
   textColor?: string
+  buttonColor?: string
+  buttonTextColor?: string
 }
 
 export interface LinkItem {
@@ -65,6 +71,8 @@ export interface LinkBioPublicResponse {
   theme: string
   backgroundColor: string
   textColor: string
+  buttonColor: string
+  buttonTextColor: string
   links: { id: number; title: string; url: string; icon: string | null; sortOrder: number }[]
 }
 
@@ -95,7 +103,11 @@ export const linkBioApi = {
   },
 
   getPublicPage(slug: string) {
-    return apiClient.get<ResData<LinkBioPublicResponse>>(`/linkbio/${slug}`).then(unwrapResponse)
+    return apiClient.get<ResData<LinkBioPublicResponse>>(`/linkbio/public/${slug}`).then(unwrapResponse)
+  },
+
+  recordClick(slug: string, linkId: number) {
+    return apiClient.post<ResData<void>>(`/linkbio/public/${slug}/links/${linkId}/click`).then(unwrapResponse)
   },
 
   getAnalytics() {

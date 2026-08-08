@@ -66,6 +66,20 @@ pipeline {
             }
         }
 
+        stage('No Disabled Runtime Surface') {
+            steps {
+                script {
+                    def disabledSources = sh(
+                        script: "grep -R -l -E '^[[:space:]]*@Profile[(]\\\"disabled\\\"[)]' backend/onGo-api/src/main backend/onGo-application/src/main --include='*.kt' || true",
+                        returnStdout: true,
+                    ).trim()
+                    if (disabledSources) {
+                        error "@Profile(\\\"disabled\\\") must not reach the runtime tree:\n${disabledSources}"
+                    }
+                }
+            }
+        }
+
         stage('Build Backend') {
             steps {
                 dir('backend') {

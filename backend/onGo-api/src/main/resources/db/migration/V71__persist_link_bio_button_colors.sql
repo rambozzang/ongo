@@ -1,0 +1,3 @@
+ALTER TABLE link_bio_pages
+    ADD COLUMN IF NOT EXISTS button_color VARCHAR(7) NOT NULL DEFAULT '#000000',
+    ADD COLUMN IF NOT EXISTS button_text_color VARCHAR(7) NOT NULL DEFAULT '#ffffff';

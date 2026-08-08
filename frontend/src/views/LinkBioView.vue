@@ -2,10 +2,20 @@
   <div class="relative min-h-full space-y-5 py-5 text-content">
     <template v-if="!bioPage">
       <div class="flex min-h-[400px] items-center justify-center">
-        <div class="text-center">
+        <form class="w-full max-w-md rounded-xl border border-line bg-surface-card p-6" @submit.prevent="handleCreate">
           <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $t('linkBioView.noPage') }}</h2>
           <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $t('linkBioView.noPageDescription') }}</p>
-        </div>
+          <label class="mt-5 block text-sm font-medium">{{ $t('linkBioView.slug') }}
+            <input v-model="newSlug" required pattern="[A-Za-z0-9-]+" class="input-field mt-1 w-full" placeholder="my-page" />
+          </label>
+          <label class="mt-3 block text-sm font-medium">{{ $t('linkBioView.displayName') }}
+            <input v-model="newTitle" class="input-field mt-1 w-full" :placeholder="$t('linkBioView.displayName')" />
+          </label>
+          <p v-if="createError" class="mt-3 rounded-lg bg-error-subtle px-3 py-2 text-sm text-error-strong">{{ createError }}</p>
+          <button type="submit" class="btn-primary mt-5 w-full" :disabled="creating">
+            {{ creating ? $t('action.loading') : $t('linkBioView.createPage') }}
+          </button>
+        </form>
       </div>
     </template>
     <template v-else>
@@ -154,6 +164,7 @@ import { useLinkBioStore } from '@/stores/linkbio'
 import BioEditor from '@/components/linkbio/BioEditor.vue'
 import BioPreview from '@/components/linkbio/BioPreview.vue'
 import type { ThemeStyle, BlockType, BioBlock, BioPage } from '@/types/linkbio'
+import { linkBioApi } from '@/api/linkbio'
 
 const { t } = useI18n({ useScope: 'global' })
 const store = useLinkBioStore()
@@ -162,6 +173,10 @@ const { bioPage, isDirty, totalClicks, publishUrl } = storeToRefs(store)
 const activeTab = ref<'editor' | 'preview'>('editor')
 const showToast = ref(false)
 const toastMessage = ref('')
+const newSlug = ref('')
+const newTitle = ref('')
+const creating = ref(false)
+const createError = ref('')
 
 const clickRate = computed(() => {
   if (!bioPage.value || bioPage.value.totalViews === 0) return '0.0'
@@ -200,9 +215,26 @@ const reorderBlock = (fromIndex: number, toIndex: number) => {
   store.reorderBlock(fromIndex, toIndex)
 }
 
-const handleSave = () => {
-  store.savePage()
-  showToastMessage(t('linkBioView.saved'))
+const handleSave = async () => {
+  try {
+    await store.savePage()
+    showToastMessage(t('linkBioView.saved'))
+  } catch {
+    showToastMessage(t('linkBioView.saveFailed'))
+  }
+}
+
+const handleCreate = async () => {
+  creating.value = true
+  createError.value = ''
+  try {
+    await linkBioApi.createPage({ slug: newSlug.value.trim(), title: newTitle.value.trim() || undefined })
+    await store.fetchPage()
+  } catch (cause) {
+    createError.value = cause instanceof Error ? cause.message : t('linkBioView.createFailed')
+  } finally {
+    creating.value = false
+  }
 }
 
 const copyLink = async () => {

@@ -11,19 +11,23 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   const plans = ref<Plan[]>([])
   const currentPlan = ref<PlanType | null>(null)
   const loading = ref(false)
+  const error = ref<string | null>(null)
 
   async function fetchSubscription() {
     loading.value = true
+    error.value = null
     try {
       subscription.value = await subscriptionApi.getCurrent()
-    } catch {
-      // silently fail
+    } catch (cause) {
+      error.value = cause instanceof Error ? cause.message : '구독 정보를 불러오지 못했습니다'
+      throw cause
     } finally {
       loading.value = false
     }
   }
 
   async function fetchPlans() {
+    error.value = null
     try {
       const data = await subscriptionApi.getPlans()
       plans.value = data.plans.map(p => ({
@@ -42,8 +46,10 @@ export const useSubscriptionStore = defineStore('subscription', () => {
         support: getSupportLevel(p.planType),
       }))
       currentPlan.value = data.currentPlan
-    } catch {
-      // fallback to hardcoded PLANS
+    } catch (cause) {
+      plans.value = []
+      error.value = cause instanceof Error ? cause.message : '플랜 정보를 불러오지 못했습니다'
+      throw cause
     }
   }
 
@@ -81,10 +87,12 @@ export const useSubscriptionStore = defineStore('subscription', () => {
 
   async function fetchPayments(page = 0, size = 20) {
     loading.value = true
+    error.value = null
     try {
       payments.value = await paymentApi.getHistory({ page, size })
-    } catch {
-      // silently fail
+    } catch (cause) {
+      error.value = cause instanceof Error ? cause.message : '결제 내역을 불러오지 못했습니다'
+      throw cause
     } finally {
       loading.value = false
     }
@@ -145,6 +153,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     plans,
     currentPlan,
     loading,
+    error,
     fetchSubscription,
     fetchPlans,
     changePlan,

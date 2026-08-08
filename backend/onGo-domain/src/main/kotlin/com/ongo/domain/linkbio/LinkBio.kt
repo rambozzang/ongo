@@ -12,6 +12,8 @@ data class LinkBioPage(
     val theme: String = "default",
     val backgroundColor: String = "#ffffff",
     val textColor: String = "#000000",
+    val buttonColor: String = "#000000",
+    val buttonTextColor: String = "#ffffff",
     val isPublished: Boolean = false,
     val viewCount: Long = 0,
     val createdAt: LocalDateTime? = null,

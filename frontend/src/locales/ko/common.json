@@ -1918,6 +1918,10 @@
   "linkBioView": {
     "noPage": "링크 페이지가 없습니다",
     "noPageDescription": "나만의 링크 페이지를 만들어보세요",
+    "slug": "페이지 주소",
+    "displayName": "표시 이름",
+    "createPage": "페이지 만들기",
+    "createFailed": "페이지 생성에 실패했습니다",
     "title": "링크인바이오",
     "description": "나만의 링크 페이지를 만들어보세요",
     "save": "저장",
@@ -1927,6 +1931,7 @@
     "tabEditor": "편집",
     "tabPreview": "미리보기",
     "saved": "저장되었습니다",
+    "saveFailed": "저장에 실패했습니다",
     "linkCopied": "링크가 복사되었습니다",
     "linkCopyFailed": "링크 복사에 실패했습니다",
     "pageGuide": [
@@ -2317,6 +2322,7 @@
       "deleteTitle": "에셋을 삭제할까요?",
       "deleteMessage": "삭제한 에셋은 되돌릴 수 없습니다.",
       "downloadStarted": "다운로드를 시작했습니다",
+      "downloadFailed": "다운로드할 파일이 없습니다",
       "uploadFailed": "에셋 업로드에 실패했습니다"
     },
     "colors": {

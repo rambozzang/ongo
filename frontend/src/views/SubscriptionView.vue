@@ -342,7 +342,11 @@
           </span>
         </div>
 
+        <p v-if="subscriptionError && storePlans.length === 0" class="mb-4 rounded-lg border border-error-subtle bg-error-subtle px-4 py-3 text-body text-error-strong">
+          {{ subscriptionError }}
+        </p>
         <PlanComparisonTable
+          :plans="storePlans"
           :current-plan="subscription?.planType"
           :billing-cycle="billingCycle"
           @select-plan="selectPlan"
@@ -507,7 +511,7 @@ import { useSubscriptionStore } from '@/stores/subscription'
 import { useCreditStore } from '@/stores/credit'
 import { useChannelStore } from '@/stores/channel'
 import { useNotificationStore } from '@/stores/notification'
-import { PLANS, type PlanType } from '@/types/subscription'
+import { type PlanType } from '@/types/subscription'
 import type { CreditPackage } from '@/types/credit'
 import { subscriptionApi } from '@/api/subscription'
 import { useLocale } from '@/composables/useLocale'
@@ -521,6 +525,7 @@ const { t } = useLocale()
 const { ensureInitialized: initPortOne } = usePortOne()
 
 const { subscription } = storeToRefs(subscriptionStore)
+const { error: subscriptionError } = storeToRefs(subscriptionStore)
 const { balance: creditBalance, transactions: creditTransactions } = storeToRefs(creditStore)
 const { payments: paymentList } = storeToRefs(subscriptionStore)
 const { channels } = storeToRefs(channelStore)
@@ -557,7 +562,7 @@ const usageAlerts = ref([
 const connectedPlatformCount = computed(() => channels.value.length)
 
 // Computed
-const storePlans = computed(() => subscriptionStore.plans.length > 0 ? subscriptionStore.plans : PLANS)
+const storePlans = computed(() => subscriptionStore.plans)
 
 const currentPlanInfo = computed(() => {
   if (!subscription.value) return null

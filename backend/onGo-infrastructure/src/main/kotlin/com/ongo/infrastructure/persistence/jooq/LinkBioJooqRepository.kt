@@ -5,6 +5,8 @@ import com.ongo.domain.linkbio.LinkBioPage
 import com.ongo.domain.linkbio.LinkBioRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.AVATAR_URL
 import com.ongo.infrastructure.persistence.jooq.Fields.BACKGROUND_COLOR
+import com.ongo.infrastructure.persistence.jooq.Fields.BUTTON_COLOR
+import com.ongo.infrastructure.persistence.jooq.Fields.BUTTON_TEXT_COLOR
 import com.ongo.infrastructure.persistence.jooq.Fields.BIO
 import com.ongo.infrastructure.persistence.jooq.Fields.CLICK_COUNT
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
@@ -64,6 +66,8 @@ class LinkBioJooqRepository(
             .set(THEME, page.theme)
             .set(BACKGROUND_COLOR, page.backgroundColor)
             .set(TEXT_COLOR, page.textColor)
+            .set(BUTTON_COLOR, page.buttonColor)
+            .set(BUTTON_TEXT_COLOR, page.buttonTextColor)
             .set(IS_PUBLISHED, page.isPublished)
             .returningResult(ID)
             .fetchOne()!!
@@ -81,6 +85,8 @@ class LinkBioJooqRepository(
             .set(THEME, page.theme)
             .set(BACKGROUND_COLOR, page.backgroundColor)
             .set(TEXT_COLOR, page.textColor)
+            .set(BUTTON_COLOR, page.buttonColor)
+            .set(BUTTON_TEXT_COLOR, page.buttonTextColor)
             .set(IS_PUBLISHED, page.isPublished)
             .set(UPDATED_AT, java.time.LocalDateTime.now())
             .where(ID.eq(page.id))
@@ -168,6 +174,8 @@ class LinkBioJooqRepository(
         theme = get(THEME) ?: "default",
         backgroundColor = get(BACKGROUND_COLOR) ?: "#ffffff",
         textColor = get(TEXT_COLOR) ?: "#000000",
+        buttonColor = get(BUTTON_COLOR) ?: "#000000",
+        buttonTextColor = get(BUTTON_TEXT_COLOR) ?: "#ffffff",
         isPublished = get(IS_PUBLISHED) ?: false,
         viewCount = get(VIEW_COUNT) ?: 0,
         createdAt = localDateTime(CREATED_AT),

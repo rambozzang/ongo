@@ -8,7 +8,6 @@ export interface Asset {
   fileSize: number
   mimeType: string
   tags: string[]
-  folderId: number | null
   thumbnail: string | null
   duration: number | null
   width: number | null
@@ -16,18 +15,9 @@ export interface Asset {
   createdAt: string
 }
 
-export interface AssetFolder {
-  id: number
-  name: string
-  parentId: number | null
-  assetCount: number
-  createdAt: string
-}
-
 export interface AssetFilter {
   type?: AssetType
   tags?: string[]
-  folder?: number | null
   dateRange?: { startDate: string; endDate: string }
   search?: string
 }

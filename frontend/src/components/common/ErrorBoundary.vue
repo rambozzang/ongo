@@ -56,15 +56,6 @@
           </button>
         </div>
 
-        <!-- Report Link -->
-        <div class="mt-6">
-          <button
-            class="text-body text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-            @click="handleReport"
-          >
-            문제 신고하기
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -73,7 +64,6 @@
 <script setup lang="ts">
 import { ref, onErrorCaptured, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useNotificationStore } from '@/stores/notification'
 import {
   ExclamationTriangleIcon,
   ArrowPathIcon,
@@ -83,7 +73,6 @@ import {
 
 const router = useRouter()
 const route = useRoute()
-const notification = useNotificationStore()
 
 const hasError = ref(false)
 const errorMessage = ref('')
@@ -155,7 +144,6 @@ function handleRetry() {
   detailsExpanded.value = false
   resetKey.value++
 
-  notification.info('컴포넌트를 다시 로드합니다.')
 }
 
 function handleGoHome() {
@@ -163,10 +151,4 @@ function handleGoHome() {
   router.push('/')
 }
 
-function handleReport() {
-  // Mock report functionality
-  notification.info('문제 신고 기능은 곧 제공될 예정입니다.')
-
-  // In production, this would open a modal or send error to logging service
-}
 </script>

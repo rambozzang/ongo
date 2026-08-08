@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -61,6 +62,8 @@ class SecurityConfig(
                 }
                 auth
                     .requestMatchers(*publicPaths.toTypedArray()).permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/linkbio/public/*").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/linkbio/public/*/links/*/click").permitAll()
                     .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
             }

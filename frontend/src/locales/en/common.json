@@ -1918,6 +1918,10 @@
   "linkBioView": {
     "noPage": "No link page found",
     "noPageDescription": "Create your own link page",
+    "slug": "Page address",
+    "displayName": "Display name",
+    "createPage": "Create page",
+    "createFailed": "Failed to create page",
     "title": "Link in Bio",
     "description": "Create your own link page",
     "save": "Save",
@@ -1927,6 +1931,7 @@
     "tabEditor": "Editor",
     "tabPreview": "Preview",
     "saved": "Saved successfully",
+    "saveFailed": "Failed to save",
     "linkCopied": "Link copied",
     "linkCopyFailed": "Failed to copy link",
     "pageGuide": [
@@ -2317,6 +2322,7 @@
       "deleteTitle": "Delete this asset?",
       "deleteMessage": "This asset cannot be restored.",
       "downloadStarted": "Download started",
+      "downloadFailed": "No downloadable file is available",
       "uploadFailed": "Failed to upload asset"
     },
     "colors": {

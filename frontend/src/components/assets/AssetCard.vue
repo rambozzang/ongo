@@ -8,7 +8,6 @@ import {
   DocumentIcon,
   EyeIcon,
   TrashIcon,
-  FolderArrowDownIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
@@ -21,7 +20,6 @@ const emit = defineEmits<{
   (e: 'select', id: number): void
   (e: 'preview', asset: Asset): void
   (e: 'delete', id: number): void
-  (e: 'move', id: number): void
 }>()
 
 const typeConfig = computed(() => {
@@ -149,13 +147,6 @@ function formatDuration(seconds: number): string {
           <EyeIcon class="h-5 w-5" />
         </button>
         <button
-          class="rounded-full bg-white/90 p-2 text-gray-700 shadow-md transition-transform hover:scale-110 hover:bg-white dark:bg-gray-800/90 dark:text-gray-200 dark:hover:bg-gray-800"
-          title="폴더 이동"
-          @click="emit('move', asset.id)"
-        >
-          <FolderArrowDownIcon class="h-5 w-5" />
-        </button>
-        <button
           class="rounded-full bg-white/90 p-2 text-error-strong shadow-md transition-transform hover:scale-110 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800"
           title="삭제"
           @click="emit('delete', asset.id)"
@@ -266,13 +257,6 @@ function formatDuration(seconds: number): string {
     </td>
     <td class="px-4 py-3" @click.stop>
       <div class="flex items-center gap-1">
-        <button
-          class="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-          title="폴더 이동"
-          @click="emit('move', asset.id)"
-        >
-          <FolderArrowDownIcon class="h-4 w-4" />
-        </button>
         <button
           class="rounded-full p-1.5 text-gray-400 hover:bg-error-subtle hover:text-error-strong"
           title="삭제"

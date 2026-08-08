@@ -1,13 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Asset, AssetFolder, AssetFilter, AssetType } from '@/types/asset'
+import type { Asset, AssetFilter, AssetType } from '@/types/asset'
 import { assetsApi } from '@/api/assets'
 
 export const useAssetsStore = defineStore('assets', () => {
   // ---- State ----
   const assets = ref<Asset[]>([])
-  const folders = ref<AssetFolder[]>([])
-  const selectedFolderId = ref<number | null>(null)
   const viewMode = ref<'grid' | 'list'>('grid')
   const filter = ref<AssetFilter>({})
   const selectedAssets = ref<Set<number>>(new Set())
@@ -28,7 +26,6 @@ export const useAssetsStore = defineStore('assets', () => {
         fileSize: a.fileSizeBytes ?? 0,
         mimeType: a.mimeType ?? 'application/octet-stream',
         tags: a.tags,
-        folderId: null,
         thumbnail: a.fileType === 'IMAGE' ? a.fileUrl : null,
         duration: a.durationSeconds,
         width: a.width,
@@ -48,10 +45,6 @@ export const useAssetsStore = defineStore('assets', () => {
   // ---- Getters ----
   const filteredAssets = computed<Asset[]>(() => {
     let result = assets.value
-
-    if (selectedFolderId.value !== null) {
-      result = result.filter((a) => a.folderId === selectedFolderId.value)
-    }
 
     if (filter.value.type) {
       result = result.filter((a) => a.type === filter.value.type)
@@ -85,11 +78,6 @@ export const useAssetsStore = defineStore('assets', () => {
     )
   })
 
-  const currentFolder = computed<AssetFolder | null>(() => {
-    if (selectedFolderId.value === null) return null
-    return folders.value.find((f) => f.id === selectedFolderId.value) ?? null
-  })
-
   const storageUsed = computed<number>(() => {
     return assets.value.reduce((sum, a) => sum + a.fileSize, 0)
   })
@@ -99,9 +87,9 @@ export const useAssetsStore = defineStore('assets', () => {
   })
 
   // ---- Actions ----
-  async function uploadAsset(file: File, folderId: number | null, tags: string[]): Promise<Asset> {
+  async function uploadAsset(file: File, tags: string[]): Promise<Asset> {
     try {
-      const response = await assetsApi.upload(file, folderId?.toString() ?? 'default', tags)
+      const response = await assetsApi.upload(file, 'default', tags)
       const newAsset: Asset = {
         id: response.id,
         type: (response.fileType as AssetType) ?? getAssetTypeFromMime(file.type),
@@ -110,7 +98,6 @@ export const useAssetsStore = defineStore('assets', () => {
         fileSize: response.fileSizeBytes ?? file.size,
         mimeType: response.mimeType ?? file.type,
         tags: response.tags,
-        folderId,
         thumbnail: response.fileType === 'IMAGE' ? response.fileUrl : null,
         duration: response.durationSeconds,
         width: response.width,
@@ -118,7 +105,6 @@ export const useAssetsStore = defineStore('assets', () => {
         createdAt: response.createdAt ?? new Date().toISOString(),
       }
       assets.value.push(newAsset)
-      updateFolderCounts()
       return newAsset
     } catch (error) {
       throw error
@@ -142,16 +128,6 @@ export const useAssetsStore = defineStore('assets', () => {
       }
       assets.value.splice(index, 1)
       selectedAssets.value.delete(id)
-      updateFolderCounts()
-    }
-  }
-
-  async function moveToFolder(assetId: number, folderId: number | null) {
-    const asset = assets.value.find((a) => a.id === assetId)
-    if (asset) {
-      await assetsApi.update(assetId, { folder: folderId === null ? '' : String(folderId) })
-      asset.folderId = folderId
-      updateFolderCounts()
     }
   }
 
@@ -183,48 +159,9 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
-  function createFolder(name: string, parentId: number | null = null): AssetFolder {
-    const newFolder: AssetFolder = {
-      id: Math.max(...folders.value.map((f) => f.id), 0) + 1,
-      name,
-      parentId,
-      assetCount: 0,
-      createdAt: new Date().toISOString(),
-    }
-    folders.value.push(newFolder)
-    return newFolder
-  }
-
-  function renameFolder(id: number, name: string) {
-    const folder = folders.value.find((f) => f.id === id)
-    if (folder) {
-      folder.name = name
-    }
-  }
-
-  function deleteFolder(id: number) {
-    assets.value.forEach((a) => {
-      if (a.folderId === id) {
-        a.folderId = null
-      }
-    })
-    const index = folders.value.findIndex((f) => f.id === id)
-    if (index !== -1) {
-      folders.value.splice(index, 1)
-    }
-    if (selectedFolderId.value === id) {
-      selectedFolderId.value = null
-    }
-    updateFolderCounts()
-  }
 
   async function bulkDelete(ids: number[]) {
     await Promise.all(ids.map((id) => deleteAsset(id)))
-    selectedAssets.value = new Set()
-  }
-
-  async function bulkMove(ids: number[], folderId: number | null) {
-    await Promise.all(ids.map((id) => moveToFolder(id, folderId)))
     selectedAssets.value = new Set()
   }
 
@@ -254,38 +191,24 @@ export const useAssetsStore = defineStore('assets', () => {
     return 'TEMPLATE'
   }
 
-  function updateFolderCounts() {
-    folders.value.forEach((folder) => {
-      folder.assetCount = assets.value.filter((a) => a.folderId === folder.id).length
-    })
-  }
-
   return {
     // State
     assets,
-    folders,
-    selectedFolderId,
     viewMode,
     filter,
     selectedAssets,
     loading,
     // Getters
     filteredAssets,
-    currentFolder,
     storageUsed,
     storageLimit,
     // Actions
     fetchAssets,
     uploadAsset,
     deleteAsset,
-    moveToFolder,
     addTag,
     removeTag,
-    createFolder,
-    renameFolder,
-    deleteFolder,
     bulkDelete,
-    bulkMove,
     toggleSelection,
     selectAll,
     clearSelection,

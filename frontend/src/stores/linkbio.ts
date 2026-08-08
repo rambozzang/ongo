@@ -40,8 +40,8 @@ export const useLinkBioStore = defineStore('linkbio', () => {
           theme: (data.theme as ThemeStyle) || 'minimal',
           backgroundColor: data.backgroundColor,
           textColor: data.textColor,
-          buttonColor: bioPage.value?.buttonColor ?? '#000000',
-          buttonTextColor: bioPage.value?.buttonTextColor ?? '#ffffff',
+          buttonColor: data.buttonColor || '#000000',
+          buttonTextColor: data.buttonTextColor || '#ffffff',
           totalViews: data.viewCount,
           totalClicks: 0,
           blocks: data.links.map((link) => ({
@@ -238,16 +238,16 @@ export const useLinkBioStore = defineStore('linkbio', () => {
         theme: bioPage.value.theme,
         backgroundColor: bioPage.value.backgroundColor,
         textColor: bioPage.value.textColor,
+        buttonColor: bioPage.value.buttonColor,
+        buttonTextColor: bioPage.value.buttonTextColor,
       })
-      if (linkBlocks.length > 0) {
-        await linkBioApi.updateLinks(linkBlocks.map((b, idx) => ({
-          title: b.title,
-          url: b.url,
-          icon: b.icon,
-          sortOrder: idx,
-          isActive: b.isVisible,
-        })))
-      }
+      await linkBioApi.updateLinks(linkBlocks.map((b, idx) => ({
+        title: b.title,
+        url: b.url,
+        icon: b.icon,
+        sortOrder: idx,
+        isActive: b.isVisible,
+      })))
     } catch (e) {
       useNotificationStore().error('링크 바이오 처리 중 오류가 발생했습니다')
       throw e

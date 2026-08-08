@@ -5560,7 +5560,7 @@ export const sectionsEn: ManualSection[] = [
         subtitle: 'Key Features',
         text: '',
         items: [
-          'Folder Management: Create category folders to organize your content.',
+          'Library Management: Keep uploaded files in one searchable library.',
           'Type Filter: Filter by video, image, audio, or document types.',
           'Tag System: Add tags to easily search and find content.',
           'Storage Management: Monitor total usage and file sizes.',
@@ -5571,7 +5571,7 @@ export const sectionsEn: ManualSection[] = [
         text: '',
         steps: [
           'Click "Content Library" in the sidebar.',
-          'Create folders to categorize your content.',
+          'Upload files and add tags to categorize your content.',
           'Use type filters to find specific content.',
           'Delete unnecessary content to manage storage space.',
         ],

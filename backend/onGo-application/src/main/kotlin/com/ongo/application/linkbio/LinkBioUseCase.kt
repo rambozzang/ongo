@@ -36,6 +36,8 @@ class LinkBioUseCase(
             theme = request.theme,
             backgroundColor = request.backgroundColor,
             textColor = request.textColor,
+            buttonColor = request.buttonColor,
+            buttonTextColor = request.buttonTextColor,
         )
         val saved = linkBioRepository.savePage(page)
         return saved.toResponse(emptyList())
@@ -59,6 +61,8 @@ class LinkBioUseCase(
             theme = request.theme ?: page.theme,
             backgroundColor = request.backgroundColor ?: page.backgroundColor,
             textColor = request.textColor ?: page.textColor,
+            buttonColor = request.buttonColor ?: page.buttonColor,
+            buttonTextColor = request.buttonTextColor ?: page.buttonTextColor,
         )
         val saved = linkBioRepository.updatePage(updated)
         val links = linkBioRepository.findLinksByPageId(saved.id!!)
@@ -113,6 +117,8 @@ class LinkBioUseCase(
             theme = page.theme,
             backgroundColor = page.backgroundColor,
             textColor = page.textColor,
+            buttonColor = page.buttonColor,
+            buttonTextColor = page.buttonTextColor,
             links = links.map { PublicLinkResponse(id = it.id!!, title = it.title, url = it.url, icon = it.icon, sortOrder = it.sortOrder) },
         )
     }
@@ -125,6 +131,15 @@ class LinkBioUseCase(
             viewCount = page.viewCount,
             links = links.map { LinkClickAnalytics(id = it.id!!, title = it.title, clickCount = it.clickCount) },
         )
+    }
+
+    @Transactional
+    fun recordPublicClick(slug: String, linkId: Long) {
+        val page = linkBioRepository.findPageBySlug(slug) ?: throw NotFoundException("링크 페이지", slug)
+        if (!page.isPublished) throw NotFoundException("링크 페이지", slug)
+        val link = linkBioRepository.findLinksByPageId(page.id!!).firstOrNull { it.id == linkId && it.isActive }
+            ?: throw NotFoundException("링크", linkId)
+        linkBioRepository.incrementClickCount(link.id!!)
     }
 
     private fun validateSlug(slug: String) {
@@ -143,6 +158,8 @@ class LinkBioUseCase(
         theme = theme,
         backgroundColor = backgroundColor,
         textColor = textColor,
+        buttonColor = buttonColor,
+        buttonTextColor = buttonTextColor,
         isPublished = isPublished,
         viewCount = viewCount,
         links = links.map { it.toResponse() },

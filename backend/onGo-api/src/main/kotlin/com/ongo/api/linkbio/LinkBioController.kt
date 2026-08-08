@@ -75,8 +75,18 @@ class LinkBioController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "공개 링크 클릭 기록")
+    @PostMapping("/public/{slug}/links/{linkId}/click")
+    fun recordPublicClick(
+        @PathVariable slug: String,
+        @PathVariable linkId: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        linkBioUseCase.recordPublicClick(slug, linkId)
+        return ResData.success(null)
+    }
+
     @Operation(summary = "공개 페이지 조회 (인증 불필요)")
-    @GetMapping("/{slug}")
+    @GetMapping("/public/{slug}")
     fun getPublicPage(
         @PathVariable slug: String,
     ): ResponseEntity<ResData<LinkBioPublicResponse>> {

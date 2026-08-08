@@ -14,7 +14,6 @@ import {
   CalendarIcon,
   CubeIcon,
   ClockIcon,
-  FolderIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
@@ -50,12 +49,6 @@ const typeLabel = computed(() => {
     TEMPLATE: '템플릿',
   }
   return labels[props.asset.type] ?? '기타'
-})
-
-const folderName = computed(() => {
-  if (!props.asset || !props.asset.folderId) return '미분류'
-  const folder = assetsStore.folders.find((f) => f.id === props.asset!.folderId)
-  return folder?.name ?? '미분류'
 })
 
 function close() {
@@ -278,13 +271,6 @@ function formatDate(dateStr: string): string {
                     </span>
                   </div>
 
-                  <div class="flex items-center gap-2 text-body">
-                    <component :is="FolderIcon" class="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    <span class="text-gray-500 dark:text-gray-400">폴더:</span>
-                    <span class="font-medium text-gray-900 dark:text-gray-100">
-                      {{ folderName }}
-                    </span>
-                  </div>
                 </div>
               </div>
 
@@ -319,15 +305,6 @@ function formatDate(dateStr: string): string {
                 </div>
               </div>
 
-              <!-- Usage Info (mock) -->
-              <div>
-                <h3 class="mb-2 text-body-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                  사용 정보
-                </h3>
-                <p class="text-body text-gray-500 dark:text-gray-400">
-                  이 에셋은 아직 영상에 사용되지 않았습니다.
-                </p>
-              </div>
             </div>
 
             <!-- Actions Footer -->

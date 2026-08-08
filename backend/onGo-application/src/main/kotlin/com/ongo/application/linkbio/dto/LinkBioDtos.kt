@@ -11,6 +11,8 @@ data class LinkBioPageResponse(
     val theme: String,
     val backgroundColor: String,
     val textColor: String,
+    val buttonColor: String,
+    val buttonTextColor: String,
     val isPublished: Boolean,
     val viewCount: Long,
     val links: List<LinkBioLinkResponse>,
@@ -37,6 +39,8 @@ data class CreatePageRequest(
     val theme: String = "default",
     val backgroundColor: String = "#ffffff",
     val textColor: String = "#000000",
+    val buttonColor: String = "#000000",
+    val buttonTextColor: String = "#ffffff",
 )
 
 data class UpdatePageRequest(
@@ -47,6 +51,8 @@ data class UpdatePageRequest(
     val theme: String? = null,
     val backgroundColor: String? = null,
     val textColor: String? = null,
+    val buttonColor: String? = null,
+    val buttonTextColor: String? = null,
 )
 
 data class UpdateLinksRequest(
@@ -74,6 +80,8 @@ data class LinkBioPublicResponse(
     val theme: String,
     val backgroundColor: String,
     val textColor: String,
+    val buttonColor: String,
+    val buttonTextColor: String,
     val links: List<PublicLinkResponse>,
 )
 

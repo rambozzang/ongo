@@ -474,6 +474,8 @@ object Fields {
     val THEME = DSL.field("theme", String::class.java)
     val BACKGROUND_COLOR = DSL.field("background_color", String::class.java)
     val TEXT_COLOR = DSL.field("text_color", String::class.java)
+    val BUTTON_COLOR = DSL.field("button_color", String::class.java)
+    val BUTTON_TEXT_COLOR = DSL.field("button_text_color", String::class.java)
     val IS_PUBLISHED = DSL.field("is_published", Boolean::class.java)
     val VIEW_COUNT = DSL.field("view_count", Long::class.java)
 

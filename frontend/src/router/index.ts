@@ -3,6 +3,12 @@ import { useAuthStore } from '@/stores/auth'
 
 const routes: RouteRecordRaw[] = [
   {
+    path: '/bio/:slug',
+    name: 'public-linkbio',
+    component: () => import('@/views/PublicLinkBioView.vue'),
+    meta: { requiresAuth: false, allowAuthenticated: true },
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/LoginView.vue'),
@@ -426,7 +432,7 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   if (to.meta.requiresAuth === false) {
-    if (authStore.isAuthenticated) {
+    if (authStore.isAuthenticated && !to.meta.allowAuthenticated) {
       return next('/today')
     }
     return next()

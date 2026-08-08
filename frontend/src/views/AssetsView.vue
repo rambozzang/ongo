@@ -3,11 +3,9 @@ import { ref, shallowRef, computed, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAssetsStore } from '@/stores/assets'
 import type { Asset, AssetType } from '@/types/asset'
-import FolderSidebar from '@/components/assets/FolderSidebar.vue'
 import AssetCard from '@/components/assets/AssetCard.vue'
 import AssetUploadModal from '@/components/assets/AssetUploadModal.vue'
 import AssetPreviewModal from '@/components/assets/AssetPreviewModal.vue'
-import BaseModal from '@/components/common/BaseModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { useLocale } from '@/composables/useLocale'
@@ -19,7 +17,6 @@ import {
   Squares2X2Icon,
   ListBulletIcon,
   TrashIcon,
-  FolderArrowDownIcon,
   ArchiveBoxXMarkIcon,
   CloudArrowUpIcon,
 } from '@heroicons/vue/24/outline'
@@ -33,7 +30,6 @@ const {
   filter: _filter,
   storageUsed,
   storageLimit,
-  folders,
 } = storeToRefs(assetsStore)
 
 // Search
@@ -86,27 +82,9 @@ function onTagFilter(tag: string | undefined) {
 const showUploadModal = ref(false)
 const showPreviewModal = ref(false)
 const previewAsset = ref<Asset | null>(null)
-const showMoveModal = ref(false)
-const moveTargetAssetId = ref<number | null>(null)
-const moveTargetFolderId = ref<number | null>(null)
-
 function openPreview(asset: Asset) {
   previewAsset.value = asset
   showPreviewModal.value = true
-}
-
-function openMoveModal(assetId: number) {
-  moveTargetAssetId.value = assetId
-  moveTargetFolderId.value = null
-  showMoveModal.value = true
-}
-
-function confirmMove() {
-  if (moveTargetAssetId.value !== null) {
-    assetsStore.moveToFolder(moveTargetAssetId.value, moveTargetFolderId.value)
-  }
-  showMoveModal.value = false
-  moveTargetAssetId.value = null
 }
 
 // 삭제 확인 모달 — 단건 삭제 / 일괄 삭제가 하나의 모달을 공유
@@ -162,19 +140,6 @@ function handleBulkDelete() {
   askConfirm(t('assets.bulkDeleteTitle'), t('assets.bulkDeleteMessage', { count }), () => {
     assetsStore.bulkDelete(ids)
   })
-}
-
-const showBulkMoveModal = ref(false)
-const bulkMoveFolderId = ref<number | null>(null)
-
-function openBulkMoveModal() {
-  bulkMoveFolderId.value = null
-  showBulkMoveModal.value = true
-}
-
-function confirmBulkMove() {
-  assetsStore.bulkMove([...selectedAssets.value], bulkMoveFolderId.value)
-  showBulkMoveModal.value = false
 }
 
 // Storage
@@ -267,9 +232,9 @@ onUnmounted(() => {
     <PageGuide
 title="에셋 라이브러리" :items="[
       '업로드 버튼으로 영상·이미지·오디오·템플릿 파일을 라이브러리에 저장하세요',
-      '왼쪽 폴더 트리에서 폴더별로 에셋을 정리하고, 그리드/리스트 뷰로 전환하여 확인하세요',
+      '그리드/리스트 뷰를 전환하여 에셋을 원하는 방식으로 확인하세요',
       '유형 필터(영상/이미지/오디오/템플릿)와 태그 필터, 검색을 조합하여 원하는 에셋을 빠르게 찾으세요',
-      '여러 에셋을 선택하여 일괄 삭제·다운로드가 가능하며, 상단의 스토리지 사용량 바에서 잔여 공간을 확인하세요',
+      '여러 에셋을 선택하여 일괄 삭제하고, 상단의 스토리지 사용량 바에서 잔여 공간을 확인하세요',
       '에셋을 클릭하면 미리보기 모달에서 상세 정보를 확인하고 영상 업로드에 바로 활용할 수 있습니다',
     ]" />
 
@@ -368,9 +333,6 @@ title="에셋 라이브러리" :items="[
 
     <!-- Main Content -->
     <div class="flex flex-col gap-6 desktop:flex-row">
-      <!-- Folder Sidebar -->
-      <FolderSidebar />
-
       <!-- Assets Area -->
       <div class="min-w-0 flex-1">
         <!-- Select All -->
@@ -432,7 +394,6 @@ title="에셋 라이브러리" :items="[
             @select="assetsStore.toggleSelection"
             @preview="openPreview"
             @delete="handleDelete"
-            @move="openMoveModal"
           />
         </div>
 
@@ -470,7 +431,6 @@ title="에셋 라이브러리" :items="[
                   @select="assetsStore.toggleSelection"
                   @preview="openPreview"
                   @delete="handleDelete"
-                  @move="openMoveModal"
                 />
               </tbody>
             </table>
@@ -497,13 +457,6 @@ title="에셋 라이브러리" :items="[
           {{ selectedCount }}개 선택됨
         </span>
         <div class="h-5 w-px bg-gray-200 dark:bg-gray-700" />
-        <button
-          class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-          @click="openBulkMoveModal"
-        >
-          <FolderArrowDownIcon class="h-4 w-4" />
-          이동
-        </button>
         <button
           class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body font-medium text-error-strong hover:bg-error-subtle"
           @click="handleBulkDelete"
@@ -533,43 +486,6 @@ title="에셋 라이브러리" :items="[
       :asset="previewAsset"
       @delete="handleDelete"
     />
-
-    <!-- Move to Folder Modal (Single) -->
-    <BaseModal v-model="showMoveModal" title="폴더 이동" max-width="sm">
-      <select
-        v-model="moveTargetFolderId"
-        class="input mb-4"
-      >
-        <option :value="null">전체 (루트)</option>
-        <option v-for="folder in folders" :key="folder.id" :value="folder.id">
-          {{ folder.name }}
-        </option>
-      </select>
-      <template #footer>
-        <button class="btn-secondary" @click="showMoveModal = false">취소</button>
-        <button class="btn-primary" @click="confirmMove">이동</button>
-      </template>
-    </BaseModal>
-
-    <!-- Bulk Move Modal -->
-    <BaseModal v-model="showBulkMoveModal" title="폴더 이동" max-width="sm">
-      <p class="mb-4 text-body text-gray-500 dark:text-gray-400">
-        {{ selectedCount }}개의 에셋을 이동할 폴더를 선택하세요.
-      </p>
-      <select
-        v-model="bulkMoveFolderId"
-        class="input mb-4"
-      >
-        <option :value="null">전체 (루트)</option>
-        <option v-for="folder in folders" :key="folder.id" :value="folder.id">
-          {{ folder.name }}
-        </option>
-      </select>
-      <template #footer>
-        <button class="btn-secondary" @click="showBulkMoveModal = false">취소</button>
-        <button class="btn-primary" @click="confirmBulkMove">이동</button>
-      </template>
-    </BaseModal>
 
     <!-- 에셋 삭제 확인 (단건 / 일괄 공용) -->
     <ConfirmModal

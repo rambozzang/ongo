@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { useAssetsStore } from '@/stores/assets'
-import type { AssetFolder } from '@/types/asset'
 import {
   XMarkIcon,
   CloudArrowUpIcon,
@@ -24,11 +23,9 @@ const isDragging = ref(false)
 const selectedFiles = ref<File[]>([])
 const tagInput = ref('')
 const tags = ref<string[]>([])
-const selectedFolderId = ref<number | null>(null)
 const uploading = ref(false)
 const uploadProgress = ref(0)
-
-const folders = computed<AssetFolder[]>(() => assetsStore.folders)
+const uploadError = ref('')
 
 const acceptedTypes = 'video/*,image/*,audio/*,.psd,.aep,.prproj,.mogrt'
 
@@ -41,9 +38,9 @@ function resetForm() {
   selectedFiles.value = []
   tags.value = []
   tagInput.value = ''
-  selectedFolderId.value = null
   uploading.value = false
   uploadProgress.value = 0
+  uploadError.value = ''
 }
 
 function onDragEnter(e: DragEvent) {
@@ -116,21 +113,27 @@ async function handleUpload() {
 
   uploading.value = true
   uploadProgress.value = 0
+  uploadError.value = ''
   uploadCancelled = false
 
-  const totalFiles = selectedFiles.value.length
+  const files = [...selectedFiles.value]
+  const totalFiles = files.length
   for (let i = 0; i < totalFiles; i++) {
     if (uploadCancelled) break
-    const file = selectedFiles.value[i]
-    // Simulate upload delay
-    await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 500))
+    const file = files[i]
     if (uploadCancelled) break
-    assetsStore.uploadAsset(file, selectedFolderId.value, [...tags.value])
+    try {
+      await assetsStore.uploadAsset(file, [...tags.value])
+    } catch (cause) {
+      uploadError.value = cause instanceof Error ? cause.message : '에셋 업로드에 실패했습니다'
+      selectedFiles.value = files.slice(i)
+      break
+    }
     uploadProgress.value = Math.round(((i + 1) / totalFiles) * 100)
   }
 
   uploading.value = false
-  if (!uploadCancelled) {
+  if (!uploadCancelled && !uploadError.value) {
     emit('uploaded')
     close()
   }
@@ -242,22 +245,6 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Folder Selection -->
-          <div class="mb-4">
-            <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">
-              저장 폴더
-            </label>
-            <select
-              v-model="selectedFolderId"
-              class="input"
-            >
-              <option :value="null">전체 (루트)</option>
-              <option v-for="folder in folders" :key="folder.id" :value="folder.id">
-                {{ folder.name }}
-              </option>
-            </select>
-          </div>
-
           <!-- Tag Input -->
           <div class="mb-5">
             <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">
@@ -304,6 +291,10 @@ onUnmounted(() => {
               />
             </div>
           </div>
+
+          <p v-if="uploadError" class="mb-4 rounded-lg bg-error-subtle px-3 py-2 text-body text-error-strong">
+            {{ uploadError }}
+          </p>
 
           <!-- Actions -->
           <div class="flex items-center justify-end gap-3">
