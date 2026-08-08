@@ -31,12 +31,15 @@ import io.mockk.mockkStatic
 import io.mockk.Runs
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import io.mockk.slot
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.transaction.support.TransactionSynchronizationManager
+import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.web.multipart.MultipartFile
 import java.io.ByteArrayInputStream
+import java.nio.file.Files
 import java.time.LocalDateTime
 import java.time.YearMonth
 import kotlin.test.assertEquals
@@ -53,7 +56,7 @@ class StreamPublishUseCaseTest {
     private val tokenEncryptionPort = mockk<TokenEncryptionPort>()
     private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
     private val storageService = mockk<StorageService>()
-    private val streamWriterFactories = listOf(
+    private val defaultStreamWriterFactories = listOf(
         stubFactory(Platform.YOUTUBE),
         stubFactory(Platform.TIKTOK),
     )
@@ -72,18 +75,7 @@ class StreamPublishUseCaseTest {
     @BeforeEach
     fun setUp() {
         clearAllMocks()
-        useCase = StreamPublishUseCase(
-            videoRepository = videoRepository,
-            videoUploadRepository = videoUploadRepository,
-            videoPlatformMetaRepository = videoPlatformMetaRepository,
-            subscriptionRepository = subscriptionRepository,
-            channelRepository = channelRepository,
-            tokenEncryptionPort = tokenEncryptionPort,
-            eventPublisher = eventPublisher,
-            streamWriterFactories = streamWriterFactories,
-            scheduleRepository = scheduleRepository,
-            storageService = storageService,
-        )
+        useCase = createUseCase(defaultStreamWriterFactories)
 
         // TransactionSynchronizationManager 정적 메서드 mock — Spring 컨텍스트 없이 실행
         mockkStatic(TransactionSynchronizationManager::class)
@@ -94,6 +86,19 @@ class StreamPublishUseCaseTest {
         every { storageService.deleteFile(any()) } just Runs
         every { videoRepository.update(any()) } answers { firstArg() }
     }
+
+    private fun createUseCase(factories: List<PlatformStreamWriterFactory>) = StreamPublishUseCase(
+            videoRepository = videoRepository,
+            videoUploadRepository = videoUploadRepository,
+            videoPlatformMetaRepository = videoPlatformMetaRepository,
+            subscriptionRepository = subscriptionRepository,
+            channelRepository = channelRepository,
+            tokenEncryptionPort = tokenEncryptionPort,
+            eventPublisher = eventPublisher,
+            streamWriterFactories = factories,
+            scheduleRepository = scheduleRepository,
+            storageService = storageService,
+        )
 
     @AfterEach
     fun tearDown() {
@@ -305,6 +310,93 @@ class StreamPublishUseCaseTest {
         verify(exactly = 1) {
             videoPlatformMetaRepository.save(match { it.videoUploadId == 200L })
         }
+    }
+
+    @Test
+    fun `커밋 후 실제 스트리밍 경로가 복호화 토큰과 플랫폼 결과를 저장한다`() {
+        stubSubscription(PlanType.PRO)
+        stubMonthlyCount(0L)
+
+        val savedVideo = buildSavedVideo(id = 100L)
+        val savedUpload = buildSavedUpload(id = 200L, videoId = 100L)
+        val savedMeta = buildSavedMeta(id = 300L, uploadId = 200L)
+        val uploads = java.util.concurrent.ConcurrentHashMap<Long, VideoUpload>()
+        uploads[200L] = savedUpload
+        val videos = java.util.concurrent.ConcurrentHashMap<Long, Video>()
+        videos[100L] = savedVideo
+
+        every { videoRepository.save(any()) } returns savedVideo
+        every { videoRepository.findById(100L) } answers { videos[100L] }
+        every { videoRepository.update(any()) } answers {
+            val updated = firstArg<Video>()
+            videos[updated.id!!] = updated
+            updated
+        }
+        every { channelRepository.findByUserIdAndPlatform(userId, Platform.YOUTUBE) } returns buildActiveChannel()
+        every { videoUploadRepository.save(any()) } returns savedUpload
+        every { videoUploadRepository.findById(200L) } answers { uploads[200L] }
+        every { videoUploadRepository.findByVideoId(100L) } answers { uploads.values.toList() }
+        every { videoUploadRepository.claim(eq(200L), any(), any(), any()) } answers {
+            val claimed = uploads[200L]!!.copy(
+                leaseOwner = secondArg(),
+                leaseUntil = LocalDateTime.now().plusMinutes(30),
+            )
+            uploads[200L] = claimed
+            claimed
+        }
+        every { videoUploadRepository.updateOwned(any(), any()) } answers {
+            val updated = firstArg<VideoUpload>()
+            uploads[updated.id!!] = updated
+            true
+        }
+        every { videoPlatformMetaRepository.save(any()) } returns savedMeta
+
+        val seenToken = slot<PlainToken>()
+        val writer = mockk<PlatformStreamWriter>(relaxed = true)
+        every { writer.initSession(any(), capture(seenToken), any(), any(), any()) } returns "session-1"
+        every { writer.complete() } returns PlatformUploadResult(
+            success = true,
+            platformVideoId = "youtube-1",
+            platformUrl = "https://youtube.test/watch/youtube-1",
+            published = true,
+        )
+        val factory = object : PlatformStreamWriterFactory {
+            override val platform = Platform.YOUTUBE
+            override fun createWriter() = writer
+        }
+        useCase = createUseCase(listOf(factory))
+
+        val synchronization = slot<TransactionSynchronization>()
+        every { TransactionSynchronizationManager.registerSynchronization(capture(synchronization)) } just Runs
+
+        val uploadFile = buildFile()
+        every { uploadFile.transferTo(any<java.io.File>()) } answers {
+            Files.write(firstArg<java.io.File>().toPath(), byteArrayOf(1, 2, 3))
+        }
+        useCase.initiate(userId, uploadFile, buildRequest())
+        synchronization.captured.afterCommit()
+
+        waitUntil {
+            uploads[200L]?.status == UploadStatus.PUBLISHED &&
+                videos[100L]?.status == UploadStatus.PUBLISHED
+        }
+
+        assertEquals("access-token-value", seenToken.captured.value)
+        assertEquals(UploadStatus.PUBLISHED, uploads[200L]?.status)
+        assertEquals("youtube-1", uploads[200L]?.platformVideoId)
+        assertEquals("https://youtube.test/watch/youtube-1", uploads[200L]?.platformUrl)
+        assertEquals(UploadStatus.PUBLISHED, videos[100L]?.status)
+        verify(atLeast = 1) { writer.writeChunk(any(), 0L, fileSize) }
+        verify(exactly = 1) { writer.complete() }
+        verify { eventPublisher.publishEvent(match<UploadCompletedEvent> { it.success && it.platformUrl == "https://youtube.test/watch/youtube-1" }) }
+    }
+
+    private fun waitUntil(timeoutMillis: Long = 5_000, condition: () -> Boolean) {
+        val deadline = System.nanoTime() + timeoutMillis * 1_000_000
+        while (!condition() && System.nanoTime() < deadline) {
+            Thread.sleep(10)
+        }
+        assertTrue(condition(), "비동기 스트리밍 결과가 제한 시간 내에 반영되지 않았습니다.")
     }
 
     // 5. 예약 게시 시 Schedule 레코드 생성
