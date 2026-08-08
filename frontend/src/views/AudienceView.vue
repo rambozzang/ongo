@@ -4,6 +4,12 @@
 
     <PageGuide :title="$t('audience.pageGuideTitle')" :items="($tm('audience.pageGuide') as string[])" />
 
+    <div v-if="store.profilesError || store.segmentsError" class="flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong" role="alert">
+      <span class="min-w-0 flex-1">{{ store.profilesError || store.segmentsError }}</span>
+      <button v-if="store.profilesError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="store.loading" @click="loadProfiles">프로필 다시 시도</button>
+      <button v-if="store.segmentsError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="store.loading" @click="loadSegments">세그먼트 다시 시도</button>
+    </div>
+
     <!-- 탭 -->
     <OTabs v-model="activeTab" :tabs="tabs" class="mb-1" />
 
@@ -443,6 +449,10 @@ function formatDate(dateStr?: string): string {
 async function loadProfiles() {
   currentPage.value = 0
   await store.loadProfiles(sortBy.value, 0, 20)
+}
+
+async function loadSegments() {
+  await store.loadSegments()
 }
 
 async function changePage(page: number) {

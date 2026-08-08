@@ -7,11 +7,16 @@ export const useBrandDealStore = defineStore('branddeal', () => {
   const deals = ref<BrandDeal[]>([])
   const mediaKit = ref<MediaKit | null>(null)
   const loading = ref(false)
+  const loadError = ref<string | null>(null)
+  const mediaKitError = ref<string | null>(null)
 
   async function loadDeals(status?: string) {
     loading.value = true
+    loadError.value = null
     try {
       deals.value = await brandDealApi.getDeals(status)
+    } catch (error) {
+      loadError.value = error instanceof Error ? error.message : '브랜드딜을 불러오지 못했습니다.'
     } finally {
       loading.value = false
     }
@@ -30,8 +35,11 @@ export const useBrandDealStore = defineStore('branddeal', () => {
 
   async function loadMediaKit() {
     loading.value = true
+    mediaKitError.value = null
     try {
       mediaKit.value = await brandDealApi.getMediaKit()
+    } catch (error) {
+      mediaKitError.value = error instanceof Error ? error.message : '미디어킷을 불러오지 못했습니다.'
     } finally {
       loading.value = false
     }
@@ -42,5 +50,5 @@ export const useBrandDealStore = defineStore('branddeal', () => {
     return mediaKit.value
   }
 
-  return { deals, mediaKit, loading, loadDeals, createDeal, deleteDeal, loadMediaKit, saveMediaKit }
+  return { deals, mediaKit, loading, loadError, mediaKitError, loadDeals, createDeal, deleteDeal, loadMediaKit, saveMediaKit }
 })

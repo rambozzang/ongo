@@ -136,6 +136,11 @@
 
       <LoadingSpinner v-if="store.loading" />
 
+      <div v-else-if="store.historyError" class="rounded-lg border border-error-subtle bg-error-subtle p-4 text-body text-error-strong" role="alert">
+        <p>{{ store.historyError }}</p>
+        <button type="button" class="mt-3 rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" @click="store.fetchHistory()">다시 시도</button>
+      </div>
+
       <EmptyState
         v-else-if="store.history.length === 0"
         :title="$t('keywordResearch.historyEmpty')"

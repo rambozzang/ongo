@@ -8,6 +8,7 @@ export const useLinkBioStore = defineStore('linkbio', () => {
   const bioPage = ref<BioPage | null>(null)
   const isDirty = ref(false)
   const loading = ref(false)
+  const loadError = ref<string | null>(null)
 
   const visibleBlocks = computed(() => {
     if (!bioPage.value) return []
@@ -28,6 +29,7 @@ export const useLinkBioStore = defineStore('linkbio', () => {
 
   async function fetchPage() {
     loading.value = true
+    loadError.value = null
     try {
       const data = await linkBioApi.getPage()
       if (data) {
@@ -61,8 +63,8 @@ export const useLinkBioStore = defineStore('linkbio', () => {
         bioPage.value = null
       }
     } catch (e) {
+      loadError.value = e instanceof Error ? e.message : '링크 바이오를 불러오지 못했습니다.'
       useNotificationStore().error('링크 바이오 처리 중 오류가 발생했습니다')
-      throw e
     } finally {
       loading.value = false
     }
@@ -259,6 +261,7 @@ export const useLinkBioStore = defineStore('linkbio', () => {
     bioPage,
     isDirty,
     loading,
+    loadError,
     visibleBlocks,
     totalClicks,
     publishUrl,

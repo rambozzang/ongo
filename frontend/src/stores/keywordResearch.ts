@@ -13,6 +13,7 @@ export const useKeywordResearchStore = defineStore('keywordResearch', () => {
   const page = ref(1)
   const pageSize = ref(10)
   const currentResult = ref<KeywordResearchResult | null>(null)
+  const historyError = ref<string | null>(null)
 
   const totalPages = computed(() => Math.ceil(totalCount.value / pageSize.value))
   const hasNextPage = computed(() => (page.value + 1) * pageSize.value < totalCount.value)
@@ -36,6 +37,7 @@ export const useKeywordResearchStore = defineStore('keywordResearch', () => {
 
   const fetchHistory = async (resetPage = true) => {
     loading.value = true
+    historyError.value = null
     if (resetPage) page.value = 1
     try {
       const response = await keywordResearchApi.getHistory(page.value, pageSize.value)
@@ -43,12 +45,13 @@ export const useKeywordResearchStore = defineStore('keywordResearch', () => {
       totalCount.value = response.totalCount
     } catch (error: any) {
       if (error?.response?.status !== 404) {
-        useNotificationStore().error(
-          error?.response?.data?.message || error?.message || '검색 이력을 불러오지 못했습니다.',
-        )
+        historyError.value = error?.response?.data?.message || error?.message || '검색 이력을 불러오지 못했습니다.'
+        useNotificationStore().error(historyError.value ?? '검색 이력을 불러오지 못했습니다.')
       }
-      history.value = []
-      totalCount.value = 0
+      if (error?.response?.status === 404) {
+        history.value = []
+        totalCount.value = 0
+      }
     } finally {
       loading.value = false
     }
@@ -79,6 +82,7 @@ export const useKeywordResearchStore = defineStore('keywordResearch', () => {
     hasNextPage,
     hasPrevPage,
     currentResult,
+    historyError,
     research,
     fetchHistory,
     nextPage,

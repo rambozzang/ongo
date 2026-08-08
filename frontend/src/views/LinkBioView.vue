@@ -1,7 +1,13 @@
 <template>
   <div class="relative min-h-full space-y-5 py-5 text-content">
     <template v-if="!bioPage">
-      <div class="flex min-h-[400px] items-center justify-center">
+      <div v-if="store.loadError" class="flex min-h-[400px] items-center justify-center">
+        <div class="w-full max-w-md rounded-xl border border-error-subtle bg-error-subtle p-6 text-center text-body text-error-strong" role="alert">
+          <p>{{ store.loadError }}</p>
+          <button type="button" class="btn-primary mt-4" :disabled="store.loading" @click="store.fetchPage()">다시 시도</button>
+        </div>
+      </div>
+      <div v-else class="flex min-h-[400px] items-center justify-center">
         <form class="w-full max-w-md rounded-xl border border-line bg-surface-card p-6" @submit.prevent="handleCreate">
           <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">{{ $t('linkBioView.noPage') }}</h2>
           <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $t('linkBioView.noPageDescription') }}</p>

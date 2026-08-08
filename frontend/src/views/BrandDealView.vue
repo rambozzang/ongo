@@ -15,6 +15,12 @@
 
     <PageGuide :title="t('brandDeal.pageGuideTitle')" :items="(tm('brandDeal.pageGuide') as string[])" />
 
+    <div v-if="store.loadError || store.mediaKitError" class="flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong" role="alert">
+      <span class="min-w-0 flex-1">{{ store.loadError || store.mediaKitError }}</span>
+      <button v-if="store.loadError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="store.loading" @click="store.loadDeals()">딜 다시 시도</button>
+      <button v-if="store.mediaKitError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="store.loading" @click="store.loadMediaKit()">미디어킷 다시 시도</button>
+    </div>
+
     <!-- 탭 -->
     <OTabs v-model="activeTab" :tabs="tabs" class="mb-6" />
 
