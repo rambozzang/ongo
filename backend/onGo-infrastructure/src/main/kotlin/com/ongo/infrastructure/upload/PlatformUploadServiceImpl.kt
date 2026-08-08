@@ -8,6 +8,7 @@ import com.ongo.application.video.PlatformUploadCapabilities
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.infrastructure.external.platform.PlatformClientFactory
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
 import com.ongo.infrastructure.external.platform.downloadFileToTemp
@@ -23,6 +24,7 @@ import java.net.SocketTimeoutException
 class PlatformUploadServiceImpl(
     private val platformClientFactory: PlatformClientFactory,
     private val channelRepository: ChannelRepository,
+    private val tokenEncryptionPort: TokenEncryptionPort,
     private val streamWriterFactories: List<PlatformStreamWriterFactory>,
 ) : PlatformUploadService {
 
@@ -45,6 +47,9 @@ class PlatformUploadServiceImpl(
     override fun upload(config: PlatformUploadConfig, fileUrl: String, userId: Long): PlatformUploadResult {
         val channel = channelRepository.findByUserIdAndPlatform(userId, config.platform)
             ?: throw NotFoundException("채널", "${config.platform} (userId=$userId)")
+        // Channel.accessToken은 저장 시 AES-GCM으로 암호화된다. 외부 플랫폼 경계에서만
+        // 평문으로 만들고, DB/애플리케이션 객체에는 복호화된 값을 다시 저장하지 않는다.
+        val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
 
         var lastException: Exception? = null
         for (attempt in 0 until MAX_RETRIES) {
@@ -52,7 +57,7 @@ class PlatformUploadServiceImpl(
                 val directFactory = streamWriterFactories.find { it.platform == config.platform }
                     ?.takeIf { PlatformUploadCapabilities.get(config.platform)?.directVideoUpload == true }
                 val result = if (directFactory != null) {
-                    uploadFromCloudUrl(directFactory, config, fileUrl, channel.accessToken, channel.platformChannelId)
+                    uploadFromCloudUrl(directFactory, config, fileUrl, accessToken, channel.platformChannelId)
                 } else {
                     val client = platformClientFactory.getClient(config.platform)
                     val clientResult = client.uploadVideo(
@@ -63,7 +68,7 @@ class PlatformUploadServiceImpl(
                         tags = config.tags,
                         visibility = config.visibility.name,
                         thumbnailUrl = config.thumbnailUrl,
-                        accessToken = channel.accessToken,
+                        accessToken = accessToken,
                         platformChannelId = channel.platformChannelId,
                         fileSize = config.fileSize,
                         scheduledAt = config.scheduledAt,
@@ -72,7 +77,8 @@ class PlatformUploadServiceImpl(
                     PlatformUploadResult(
                         success = true,
                         platformVideoId = clientResult.platformVideoId,
-                        platformUrl = clientResult.platformUrl,
+                        platformUrl = clientResult.platformUrl.ifBlank { null },
+                        published = clientResult.status.equals("PUBLISHED", ignoreCase = true),
                     )
                 }
 

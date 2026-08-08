@@ -11,7 +11,6 @@ import {
   CreditCardIcon,
   Cog6ToothIcon,
   BanknotesIcon,
-  LightBulbIcon,
   InboxIcon,
   DocumentDuplicateIcon,
   SwatchIcon,
@@ -98,7 +97,6 @@ export function useNavigation() {
     {
       label: t('nav.groupPlan'),
       items: [
-        { to: '/ideas', label: t('nav.ideas'), icon: LightBulbIcon },
         { to: '/keyword-research', label: t('nav.keywordResearch'), icon: MagnifyingGlassIcon },
         { to: '/trends', label: t('nav.trends'), icon: ArrowTrendingUpIcon },
       ],

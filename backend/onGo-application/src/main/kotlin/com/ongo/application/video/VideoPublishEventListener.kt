@@ -97,8 +97,11 @@ class VideoPublishEventListener(
             }
         } catch (e: Exception) {
             log.error("플랫폼 {} 업로드 중 예외 발생: videoId={}", config.platform, event.videoId, e)
-            updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, e.message)
-            fireCompletedEvent(event, config.platform, false, errorMessage = e.message)
+            // 외부 플랫폼 호출은 타임아웃 시 이미 게시가 완료됐을 가능성이 있다.
+            // 무조건 FAILED로 기록하면 사용자가 재시도하여 중복 게시를 만들 수 있으므로
+            // 확인 불가 상태로 남기고, 후속 조회/운영 재검증 대상으로 보낸다.
+            updateUploadStatus(config.videoUploadId, UploadStatus.UNCONFIRMED, e.message)
+            fireCompletedEvent(event, config.platform, false, errorMessage = "게시 결과 확인 필요: ${e.message}")
         }
     }
 
@@ -129,7 +132,12 @@ class VideoPublishEventListener(
 
         val overallStatus = when {
             uploads.all { it.status == UploadStatus.PUBLISHED } -> UploadStatus.PUBLISHED
+            uploads.any { it.status == UploadStatus.PUBLISHED } && uploads.any {
+                it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED ||
+                    it.status == UploadStatus.UNCONFIRMED
+            } -> UploadStatus.PARTIALLY_PUBLISHED
             uploads.all { it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED } -> UploadStatus.FAILED
+            uploads.all { it.status == UploadStatus.UNCONFIRMED } -> UploadStatus.UNCONFIRMED
             uploads.any { it.status == UploadStatus.PROCESSING || it.status == UploadStatus.REVIEW } -> UploadStatus.PROCESSING
             else -> UploadStatus.UPLOADING
         }

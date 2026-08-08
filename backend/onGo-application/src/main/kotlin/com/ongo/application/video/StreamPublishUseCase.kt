@@ -10,6 +10,7 @@ import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.TokenEncryptionPort
 import org.springframework.context.ApplicationEventPublisher
 import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.schedule.Schedule
@@ -39,6 +40,7 @@ class StreamPublishUseCase(
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val subscriptionRepository: SubscriptionRepository,
     private val channelRepository: ChannelRepository,
+    private val tokenEncryptionPort: TokenEncryptionPort,
     private val streamWriterFactories: List<PlatformStreamWriterFactory>,
     private val scheduleRepository: ScheduleRepository,
     private val eventPublisher: ApplicationEventPublisher,
@@ -121,7 +123,7 @@ class StreamPublishUseCase(
                 platform = platformReq.platform,
                 videoUploadId = uploadId,
                 meta = meta,
-                accessToken = channel.accessToken,
+                accessToken = tokenEncryptionPort.decrypt(channel.accessToken),
                 platformChannelId = channel.platformChannelId,
                 scheduledAt = platformReq.scheduledAt,
             )
@@ -326,7 +328,7 @@ class StreamPublishUseCase(
                             }
                         } catch (e: Exception) {
                             log.error("플랫폼 {} 업로드 완료 처리 중 예외: videoId={}", ctx.platform, videoId, e)
-                            updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, e.message)
+                            updateUploadStatus(ctx.videoUploadId, UploadStatus.UNCONFIRMED, e.message)
                             fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = e.message)
                         }
                     }
@@ -336,7 +338,7 @@ class StreamPublishUseCase(
         } catch (e: Exception) {
             log.error("스트리밍 업로드 전체 실패: videoId={}", videoId, e)
             platformContexts.forEach { ctx ->
-                updateUploadStatus(ctx.videoUploadId, UploadStatus.FAILED, "스트리밍 업로드 실패: ${e.message}")
+                updateUploadStatus(ctx.videoUploadId, UploadStatus.UNCONFIRMED, "게시 결과 확인 필요: ${e.message}")
             }
         } finally {
             openedWriters.forEach { writer -> runCatching { writer.abort() } }
@@ -413,7 +415,12 @@ class StreamPublishUseCase(
 
         val overallStatus = when {
             uploads.all { it.status == UploadStatus.PUBLISHED } -> UploadStatus.PUBLISHED
+            uploads.any { it.status == UploadStatus.PUBLISHED } && uploads.any {
+                it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED ||
+                    it.status == UploadStatus.UNCONFIRMED
+            } -> UploadStatus.PARTIALLY_PUBLISHED
             uploads.all { it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED } -> UploadStatus.FAILED
+            uploads.all { it.status == UploadStatus.UNCONFIRMED } -> UploadStatus.UNCONFIRMED
             uploads.any { it.status == UploadStatus.PROCESSING || it.status == UploadStatus.REVIEW } -> UploadStatus.PROCESSING
             else -> UploadStatus.UPLOADING
         }
@@ -491,7 +498,7 @@ class StreamPublishUseCase(
                 platform = platform,
                 videoUploadId = uploadId,
                 meta = meta,
-                accessToken = channel.accessToken,
+                accessToken = tokenEncryptionPort.decrypt(channel.accessToken),
                 platformChannelId = channel.platformChannelId,
                 scheduledAt = null,
             )

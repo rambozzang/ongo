@@ -263,12 +263,6 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '구독 관리' },
       },
       {
-        path: 'ideas',
-        name: 'ideas',
-        component: () => import('@/views/IdeasView.vue'),
-        meta: { breadcrumb: '아이디어 보드' },
-      },
-      {
         path: 'team',
         name: 'team',
         component: () => import('@/views/TeamView.vue'),

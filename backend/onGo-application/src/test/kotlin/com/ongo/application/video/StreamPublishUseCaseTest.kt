@@ -9,6 +9,7 @@ import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.subscription.Subscription
@@ -47,6 +48,7 @@ class StreamPublishUseCaseTest {
     private val videoPlatformMetaRepository = mockk<VideoPlatformMetaRepository>()
     private val subscriptionRepository = mockk<SubscriptionRepository>()
     private val channelRepository = mockk<ChannelRepository>()
+    private val tokenEncryptionPort = mockk<TokenEncryptionPort>()
     private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
     private val streamWriterFactories = listOf(
         stubFactory(Platform.YOUTUBE),
@@ -73,6 +75,7 @@ class StreamPublishUseCaseTest {
             videoPlatformMetaRepository = videoPlatformMetaRepository,
             subscriptionRepository = subscriptionRepository,
             channelRepository = channelRepository,
+            tokenEncryptionPort = tokenEncryptionPort,
             eventPublisher = eventPublisher,
             streamWriterFactories = streamWriterFactories,
             scheduleRepository = scheduleRepository,
@@ -82,6 +85,7 @@ class StreamPublishUseCaseTest {
         mockkStatic(TransactionSynchronizationManager::class)
         every { TransactionSynchronizationManager.isActualTransactionActive() } returns true
         every { TransactionSynchronizationManager.registerSynchronization(any()) } just Runs
+        every { tokenEncryptionPort.decrypt(any()) } answers { invocation.args[0] as String }
     }
 
     @AfterEach

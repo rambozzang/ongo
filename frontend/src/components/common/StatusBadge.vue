@@ -20,6 +20,8 @@ const statusMap: Record<UploadStatus, { label: string; class: string }> = {
   PUBLISHED: { label: '게시완료', class: 'badge-success' },
   FAILED: { label: '실패', class: 'badge-danger' },
   REJECTED: { label: '반려', class: 'badge-danger' },
+  UNCONFIRMED: { label: '게시 확인 필요', class: 'badge-warning' },
+  PARTIALLY_PUBLISHED: { label: '일부 게시됨', class: 'badge-warning' },
 }
 
 const label = computed(() => statusMap[props.status].label)

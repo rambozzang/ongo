@@ -54,7 +54,6 @@ const pageEntries: PageEntry[] = [
   { id: 'p2', title: '업로드', group: '콘텐츠 제작', route: '/upload', keywords: 'upload 영상 올리기 게시' },
   { id: 'p3', title: '영상 관리', group: '콘텐츠 제작', route: '/videos', keywords: 'videos 비디오 목록' },
   { id: 'p4', title: 'AI 도구', group: '콘텐츠 제작', route: '/ai', keywords: 'ai tools 인공지능 생성' },
-  { id: 'p5', title: '아이디어', group: '콘텐츠 제작', route: '/ideas', keywords: 'ideas 기획 소재' },
   { id: 'p7', title: '템플릿', group: '콘텐츠 제작 · 콘텐츠 관리', route: '/templates', keywords: 'templates 양식' },
   { id: 'p8', title: '브랜드 키트', group: '콘텐츠 제작 · 콘텐츠 관리', route: '/brandkit', keywords: 'brandkit brand 로고 색상' },
   { id: 'p9', title: '에셋', group: '콘텐츠 제작 · 콘텐츠 관리', route: '/assets', keywords: 'assets 라이브러리 소재 파일 이미지' },

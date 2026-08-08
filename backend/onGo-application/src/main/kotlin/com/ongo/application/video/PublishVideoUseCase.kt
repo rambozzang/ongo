@@ -137,8 +137,8 @@ class PublishVideoUseCase(
         val upload = videoUploadRepository.findByVideoIdAndPlatform(videoId, platform)
             ?: throw NotFoundException("업로드 기록", "$videoId/$platformName")
 
-        if (upload.status != UploadStatus.FAILED && upload.status != UploadStatus.REJECTED) {
-            throw IllegalStateException("실패/반려 상태의 업로드만 재시도할 수 있습니다. 현재 상태: ${upload.status}")
+        if (upload.status != UploadStatus.FAILED && upload.status != UploadStatus.REJECTED && upload.status != UploadStatus.UNCONFIRMED) {
+            throw IllegalStateException("실패/반려/확인 필요 상태의 업로드만 재시도할 수 있습니다. 현재 상태: ${upload.status}")
         }
 
         // 상태를 UPLOADING으로 리셋

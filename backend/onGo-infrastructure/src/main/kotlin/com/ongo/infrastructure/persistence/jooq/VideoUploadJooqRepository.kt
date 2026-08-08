@@ -139,7 +139,11 @@ class VideoUploadJooqRepository(
     override fun findPendingUploads(): List<VideoUpload> =
         dsl.select()
             .from(VIDEO_UPLOADS)
-            .where(STATUS.`in`(UploadStatus.UPLOADING.name, UploadStatus.PROCESSING.name))
+            .where(STATUS.`in`(
+                UploadStatus.UPLOADING.name,
+                UploadStatus.PROCESSING.name,
+                UploadStatus.UNCONFIRMED.name,
+            ))
             .orderBy(CREATED_AT.asc())
             .fetch()
             .map { it.toVideoUpload() }

@@ -83,7 +83,6 @@ const routeLabels: Record<string, string> = {
   'ugc-campaign-new': '캠페인 만들기',
   'ugc-campaign-detail': '캠페인 상세',
   'creator-campaigns': '참여 캠페인',
-  ideas: '아이디어 보관함',
   inbox: '받은 편지함',
   notifications: '알림',
   brandkit: '브랜드 키트',

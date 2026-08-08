@@ -10,6 +10,8 @@ export type UploadStatus =
   | 'PUBLISHED'
   | 'FAILED'
   | 'REJECTED'
+  | 'UNCONFIRMED'
+  | 'PARTIALLY_PUBLISHED'
 
 export type Visibility = 'PUBLIC' | 'PRIVATE' | 'UNLISTED'
 

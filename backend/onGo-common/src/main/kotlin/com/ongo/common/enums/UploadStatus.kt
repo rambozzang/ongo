@@ -10,4 +10,8 @@ enum class UploadStatus {
     REJECTED,
     IMPORTING,
     IMPORT_FAILED,
+    /** 외부 API 호출이 끊겨 게시 여부를 확인할 수 없는 상태 */
+    UNCONFIRMED,
+    /** 여러 플랫폼 중 일부만 게시된 상태 */
+    PARTIALLY_PUBLISHED,
 }

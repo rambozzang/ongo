@@ -349,6 +349,10 @@ const platformConfigsAsMetadata = computed(() => {
 
 const requiresCloudUpload = computed(() =>
   platformConfigs.value.some((config) => {
+    // 예약 영상은 서버가 원본을 보관하고 예약 시점에 게시해야 한다.
+    // 직접 스트리밍 경로는 임시 파일을 즉시 삭제하므로 예약을 허용하면
+    // 예약 시점에 fileUrl이 없어 조용히 실패한다.
+    if (config.scheduledAt) return true
     const capability = uploadCapabilities.value.find((item) => item.platform === config.platform)
     return capability?.directVideoUpload === false && capability.cloudVideoUpload
   }),

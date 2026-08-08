@@ -23,12 +23,16 @@ class TikTokStreamWriterFactory(
 class TikTokStreamWriter(
     private val tikTokApi: TikTokApi,
     private val fileTransferHelper: PlatformFileTransferHelper,
+    private val statusPollIntervalMs: Long = 2_000L,
+    private val statusPollMaxAttempts: Int = 15,
 ) : PlatformStreamWriter {
 
     private val log = LoggerFactory.getLogger(javaClass)
     private val buffer = TempFileChunkBuffer("tiktok")
     private var publishId: String? = null
     private var uploadUrl: String? = null
+    private var accessToken: String? = null
+    private var platformChannelId: String? = null
 
     companion object {
         private const val CHUNK_SIZE = 10_000_000L // 10MB
@@ -43,6 +47,8 @@ class TikTokStreamWriter(
         fileSize: Long,
         scheduledAt: LocalDateTime?,
     ): String {
+        this.accessToken = accessToken
+        this.platformChannelId = platformChannelId
         if (fileSize > MAX_MEMORY_FILE_SIZE) {
             throw IllegalArgumentException(
                 "스트리밍 업로드 최대 파일 크기(${MAX_MEMORY_FILE_SIZE / 1024 / 1024}MB)를 초과합니다: ${fileSize / 1024 / 1024}MB"
@@ -104,11 +110,7 @@ class TikTokStreamWriter(
         return try {
             fileTransferHelper.uploadChunkedToTikTok(url, file, CHUNK_SIZE)
             log.info("TikTok 스트리밍 업로드 완료: publishId={}", pid)
-            PlatformUploadResult(
-                success = true,
-                platformVideoId = pid,
-                platformUrl = "",
-            )
+            awaitPublishStatus(pid)
         } catch (e: Exception) {
             log.error("TikTok 스트리밍 업로드 실패", e)
             PlatformUploadResult(success = false, errorMessage = e.message)
@@ -118,6 +120,73 @@ class TikTokStreamWriter(
     }
 
     override fun abort() = buffer.cleanup()
+
+    /**
+     * TikTok의 파일 전송 완료는 게시 완료가 아니다. publish_id 상태를 확인해
+     * 실제 게시 완료와 아직 처리 중인 결과를 구분한다.
+     */
+    private fun awaitPublishStatus(pid: String): PlatformUploadResult {
+        val token = accessToken ?: return processingResult(pid, "TikTok access token이 없습니다")
+        var lastStatus: String? = null
+        var lastFailureReason: String? = null
+
+        repeat(statusPollMaxAttempts.coerceAtLeast(1)) { attempt ->
+            val response = try {
+                tikTokApi.fetchPublishStatus(
+                    authorization = "Bearer $token",
+                    request = com.ongo.infrastructure.external.tiktok.dto.TikTokPublishStatusRequest(pid),
+                )
+            } catch (e: Exception) {
+                log.warn("TikTok 게시 상태 조회 실패: publishId={}, {}", pid, e.message)
+                return processingResult(pid, "게시 상태를 확인하지 못했습니다: ${e.message}")
+            }
+
+            if (response.error != null) {
+                return processingResult(pid, "게시 상태를 확인하지 못했습니다: ${response.error.message}")
+            }
+
+            lastStatus = response.data?.status
+            lastFailureReason = response.data?.failReason
+            when (lastStatus) {
+                "PUBLISH_COMPLETE" -> {
+                    val publicVideoId = response.data?.publicPostId?.firstOrNull() ?: pid
+                    return PlatformUploadResult(
+                        success = true,
+                        platformVideoId = publicVideoId,
+                        platformUrl = buildPlatformUrl(publicVideoId),
+                        published = true,
+                    )
+                }
+                "FAILED" -> return PlatformUploadResult(
+                    success = false,
+                    platformVideoId = pid,
+                    platformUrl = buildPlatformUrl(pid),
+                    errorMessage = lastFailureReason ?: "TikTok 게시에 실패했습니다",
+                )
+            }
+
+            if (attempt < statusPollMaxAttempts.coerceAtLeast(1) - 1) {
+                Thread.sleep(statusPollIntervalMs.coerceAtLeast(0))
+            }
+        }
+
+        return processingResult(
+            pid,
+            "TikTok 게시 처리 중입니다 (status=${lastStatus ?: "unknown"})",
+        )
+    }
+
+    private fun processingResult(pid: String, message: String) = PlatformUploadResult(
+        success = true,
+        platformVideoId = pid,
+        platformUrl = buildPlatformUrl(pid),
+        errorMessage = message,
+        published = false,
+    )
+
+    private fun buildPlatformUrl(videoId: String): String? = platformChannelId
+        ?.takeIf { it.isNotBlank() }
+        ?.let { "https://www.tiktok.com/@$it/video/$videoId" }
 
     private fun mapVisibility(visibility: String) = when (visibility.uppercase()) {
         "PUBLIC" -> "PUBLIC_TO_EVERYONE"
