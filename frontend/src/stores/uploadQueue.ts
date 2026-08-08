@@ -448,7 +448,15 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
 
     try {
       const uploadedVideoId = await upload(item)
-      if (uploadedVideoId === null) return
+      if (uploadedVideoId === null) {
+        // 취소된 항목을 uploading으로 남기면 큐가 영원히 busy 상태가 된다.
+        // removeFromQueue로 이미 빠진 항목은 건드리지 않고, 사용자가 재개할 수
+        // 있는 항목만 paused로 보존한다.
+        const current = queue.value.find((queuedItem) => queuedItem.id === id)
+        if (current && current.status === 'uploading') current.status = 'paused'
+        startNextPending()
+        return
+      }
 
       item.progress = 100
       item.completedAt = new Date().toISOString()

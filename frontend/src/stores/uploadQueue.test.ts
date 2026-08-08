@@ -78,6 +78,19 @@ describe('upload queue store', () => {
     expect(upload).toHaveBeenCalledTimes(2)
   })
 
+  it('does not leave a cancelled upload stuck in uploading state', async () => {
+    const upload = vi.fn().mockResolvedValue(null)
+    vi.mocked(usePresignedUpload).mockReturnValue({ upload, abort: vi.fn() } as never)
+    const store = useUploadQueueStore()
+    store.addToQueue(queueItem())
+
+    store.startProcessing()
+    await vi.waitFor(() => expect(store.queue[0].status).toBe('paused'))
+
+    expect(store.uploadingCount).toBe(0)
+    expect(store.isProcessing).toBe(false)
+  })
+
   it('aborts active transfers when an item is removed or the queue is cleared', async () => {
     let resolveUpload!: (videoId: number) => void
     const upload = vi.fn().mockImplementation(() => new Promise<number>((resolve) => { resolveUpload = resolve }))
