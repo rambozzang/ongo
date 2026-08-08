@@ -21,6 +21,12 @@ class PinterestConfig {
     @Value("\${platform.pinterest.app-secret:}")
     private lateinit var appSecret: String
 
+    @Value("\${platform.pinterest.media-poll-attempts:10}")
+    private var mediaPollAttempts: Int = 10
+
+    @Value("\${platform.pinterest.media-poll-interval-ms:1000}")
+    private var mediaPollIntervalMillis: Long = 1000
+
     @Bean
     fun pinterestApi(): PinterestApi {
         val restClient = RestClient.builder()
@@ -47,6 +53,8 @@ class PinterestConfig {
 
     fun getAppId(): String = appId
     fun getAppSecret(): String = appSecret
+    fun getMediaPollAttempts(): Int = mediaPollAttempts
+    fun getMediaPollIntervalMillis(): Long = mediaPollIntervalMillis
 
     private fun createRequestFactory(): SimpleClientHttpRequestFactory {
         return SimpleClientHttpRequestFactory().apply {

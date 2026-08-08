@@ -9,12 +9,16 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Base64
+import org.springframework.util.LinkedMultiValueMap
+import kotlin.io.path.deleteIfExists
 
 @Component
 class PinterestClient(
     private val pinterestApi: PinterestApi,
     private val pinterestOAuthApi: PinterestOAuthApi,
     private val pinterestConfig: PinterestConfig,
+    private val fileTransferHelper: PlatformFileTransferHelper,
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(PinterestClient::class.java)
@@ -31,14 +35,34 @@ class PinterestClient(
                 request = PinterestMediaRequest(mediaType = "video"),
             )
 
-            // Step 2: Create pin with media reference
+            val uploadUrl = mediaResponse.uploadUrl
+                ?: throw PlatformUploadException("Pinterest", "미디어 업로드 URL을 받지 못했습니다")
+            val uploadParameters = mediaResponse.uploadParameters
+                ?: throw PlatformUploadException("Pinterest", "미디어 업로드 파라미터를 받지 못했습니다")
+            val thumbnailUrl = request.thumbnailUrl?.takeIf { it.isNotBlank() }
+                ?: throw PlatformUploadException("Pinterest", "동영상 Pin에는 커버 이미지가 필요합니다")
+
+            // Step 2: Upload the binary to Pinterest's signed storage URL.
+            val tempFile = downloadFileToTemp(request.fileUrl)
+            try {
+                fileTransferHelper.uploadMultipartToPinterest(uploadUrl, uploadParameters, tempFile)
+            } finally {
+                tempFile.toPath().deleteIfExists()
+            }
+
+            // Step 3: Pinterest processes the uploaded media asynchronously.
+            awaitMediaSucceeded(mediaResponse.mediaId, request.accessToken)
+
+            // Step 4: Create pin with the ready media reference.
             val pinRequest = PinterestPinRequest(
                 title = request.title.take(100),
-                description = request.description.take(500),
+                description = request.description.take(800),
                 mediaSource = PinterestPinRequest.MediaSource(
                     sourceType = "video_id",
                     mediaId = mediaResponse.mediaId,
+                    coverImageUrl = thumbnailUrl,
                 ),
+                boardId = request.platformChannelId,
             )
 
             val pinResponse = pinterestApi.createPin(
@@ -57,6 +81,26 @@ class PinterestClient(
             log.error("Pinterest 업로드 실패: {}", e.message, e)
             throw PlatformUploadException("Pinterest", e.message ?: "알 수 없는 오류", e)
         }
+    }
+
+    private fun awaitMediaSucceeded(mediaId: String, accessToken: String) {
+        val attempts = pinterestConfig.getMediaPollAttempts().coerceAtLeast(1)
+        repeat(attempts) { attempt ->
+            val status = pinterestApi.getMediaStatus(
+                mediaId = mediaId,
+                authorization = "Bearer $accessToken",
+            ).status?.lowercase()
+
+            when (status) {
+                "succeeded", "success", "ready", "finished", "completed" -> return
+                "failed", "error" -> throw PlatformUploadException("Pinterest", "미디어 처리 실패")
+            }
+
+            if (attempt < attempts - 1) {
+                Thread.sleep(pinterestConfig.getMediaPollIntervalMillis().coerceAtLeast(0))
+            }
+        }
+        throw PlatformUploadException("Pinterest", "미디어 처리 시간이 초과되었습니다")
     }
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
@@ -120,11 +164,18 @@ class PinterestClient(
         val response = pinterestApi.getUserAccount(
             authorization = "Bearer $accessToken",
         )
+        val board = pinterestApi.listBoards(
+            pageSize = 1,
+            authorization = "Bearer $accessToken",
+        ).items.firstOrNull()
+            ?: throw PlatformUploadException("Pinterest", "게시할 Pinterest 보드가 없습니다")
 
         return PlatformChannelInfo(
-            channelId = response.username ?: "",
-            channelName = response.username ?: "",
-            channelUrl = response.username?.let { "https://www.pinterest.com/$it/" } ?: "",
+            // Pinterest video Pins require board_id. Store the first owned board as
+            // the channel target so a connected channel can publish valid Pins.
+            channelId = board.id,
+            channelName = listOfNotNull(response.username, board.name).joinToString(" · "),
+            channelUrl = board.url ?: response.username?.let { "https://www.pinterest.com/$it/" } ?: "",
             subscriberCount = response.followerCount ?: 0,
             profileImageUrl = response.profileImage,
         )
@@ -134,11 +185,13 @@ class PinterestClient(
         log.debug("Pinterest OAuth 인가 코드 교환")
 
         val response = pinterestOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "authorization_code",
-                "code" to authorizationCode,
-                "redirect_uri" to redirectUri,
-            ),
+            authorization = pinterestBasicAuthorization(),
+            body = LinkedMultiValueMap<String, String>().apply {
+                add("grant_type", "authorization_code")
+                add("code", authorizationCode)
+                add("redirect_uri", redirectUri)
+                add("continuous_refresh", "true")
+            },
         )
 
         return PlatformTokenResult(
@@ -152,10 +205,12 @@ class PinterestClient(
         log.debug("Pinterest OAuth 토큰 갱신")
 
         val response = pinterestOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "refresh_token",
-                "refresh_token" to refreshToken,
-            ),
+            authorization = pinterestBasicAuthorization(),
+            body = LinkedMultiValueMap<String, String>().apply {
+                add("grant_type", "refresh_token")
+                add("refresh_token", refreshToken)
+                add("scope", "boards:read,boards:write,pins:read,pins:write")
+            },
         )
 
         return PlatformTokenResult(
@@ -178,6 +233,11 @@ class PinterestClient(
             log.error("Pinterest 핀 삭제 실패: {}", e.message)
             false
         }
+    }
+
+    private fun pinterestBasicAuthorization(): String {
+        val credentials = "${pinterestConfig.getAppId()}:${pinterestConfig.getAppSecret()}"
+        return "Basic ${Base64.getEncoder().encodeToString(credentials.toByteArray(Charsets.UTF_8))}"
     }
 
     // --- Comment API ---

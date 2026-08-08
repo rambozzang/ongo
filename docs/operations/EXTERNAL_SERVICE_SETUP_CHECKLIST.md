@@ -499,11 +499,11 @@ GEMINI_LOCATION=us-central1
 
 ## 5. 후순위 SNS 등록
 
-다음은 백엔드 client 코드와 환경변수는 있으나 현재 `frontend/src/utils/oauth.ts`의 연결 UI가 지원하지 않는다. 핵심 6개 연동이 안정화된 뒤 등록한다.
+아래 표에서 Pinterest는 OAuth·보드 연결·동영상 Pin 계약까지 구현되어 있으며 공개 식별자와 실계정 검증이 남아 있다. 나머지는 백엔드 client 코드와 환경변수는 있으나 현재 `frontend/src/utils/oauth.ts`의 연결 UI가 지원하지 않는다.
 
 | 서비스 | 서버 환경변수 | 상태 |
 |---|---|---|
-| Pinterest | `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET` | 프런트 OAuth 미구현 |
+| Pinterest | `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET` | OAuth·보드 연결·동영상 Pin 서버 계약 구현. `VITE_PINTEREST_APP_ID` 설정 후 실계정 검증 필요 |
 | LinkedIn | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | 프런트 OAuth 미구현 |
 | WordPress.com | `WORDPRESS_CLIENT_ID`, `WORDPRESS_CLIENT_SECRET` | 프런트 OAuth 미구현 |
 | Tumblr | `TUMBLR_CONSUMER_KEY`, `TUMBLR_CONSUMER_SECRET` | 프런트 OAuth 미구현 |
@@ -623,6 +623,7 @@ VITE_NAVER_CLIENT_ID=
 VITE_TWITTER_CLIENT_ID=
 VITE_FACEBOOK_APP_ID=
 VITE_THREADS_APP_ID=
+VITE_PINTEREST_APP_ID=
 ```
 
 ## 8. 권장 가입 순서

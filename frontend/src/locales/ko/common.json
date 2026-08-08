@@ -1324,7 +1324,8 @@
         "naverClip": "네이버 클립 업로드",
         "twitter": "SNS 영상 게시",
         "facebook": "페이지 영상 업로드",
-        "threads": "스레드 영상 게시"
+        "threads": "스레드 영상 게시",
+        "pinterest": "보드에 동영상 Pin 게시"
       },
       "connectFailed": "채널 연동을 시작하지 못했습니다. 다시 시도해주세요."
     },

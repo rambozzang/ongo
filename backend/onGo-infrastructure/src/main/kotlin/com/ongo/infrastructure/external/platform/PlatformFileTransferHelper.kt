@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
@@ -133,6 +134,33 @@ class PlatformFileTransferHelper(
             .toBodilessEntity()
 
         log.info("Naver Clip 파일 업로드 완료")
+    }
+
+    /**
+     * Pinterest: media registration 응답의 서명된 URL로 multipart 업로드.
+     * Pinterest의 S3 업로드 URL에는 Pinterest Bearer 토큰을 전달하면 안 된다.
+     */
+    fun uploadMultipartToPinterest(
+        uploadUrl: String,
+        uploadParameters: Map<String, String>,
+        file: File,
+    ) {
+        val multipart = MultipartBodyBuilder().apply {
+            uploadParameters.forEach { (name, value) ->
+                part(name, value)
+            }
+            part("file", FileSystemResource(file))
+                .filename(file.name)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        }
+
+        log.info("Pinterest multipart 파일 업로드: {} bytes", file.length())
+        transferClient.post()
+            .uri(uploadUrl)
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .body(multipart.build())
+            .retrieve()
+            .toBodilessEntity()
     }
 
     /**

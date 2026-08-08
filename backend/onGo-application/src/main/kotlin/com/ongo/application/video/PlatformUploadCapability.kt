@@ -45,6 +45,10 @@ object PlatformUploadCapabilities {
             Platform.FACEBOOK, false, true, false, 2 * GB, 255, 5_000, 30, setOf("mp4", "mov"),
             "Facebook은 클라우드 임시 URL을 통해 업로드합니다.",
         ),
+        Platform.PINTEREST to PlatformUploadCapability(
+            Platform.PINTEREST, false, true, false, 2 * GB, 100, 800, 0, setOf("mp4", "mov", "m4v"),
+            "Pinterest는 연결된 보드와 커버 이미지가 있는 동영상 Pin으로 업로드합니다.",
+        ),
     )
 
     fun get(platform: Platform): PlatformUploadCapability? = capabilities[platform]

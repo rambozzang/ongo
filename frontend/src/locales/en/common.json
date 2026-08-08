@@ -1324,7 +1324,8 @@
         "naverClip": "Naver Clip videos",
         "twitter": "Social video posts",
         "facebook": "Page videos",
-        "threads": "Threads video posts"
+        "threads": "Threads video posts",
+        "pinterest": "Video Pins on your boards"
       },
       "connectFailed": "Couldn't start channel connection. Please try again."
     },

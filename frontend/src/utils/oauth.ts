@@ -109,6 +109,15 @@ export function buildOAuthUrl(platform: Platform, returnPath: string, codeChalle
         state,
       })}`
 
+    case 'PINTEREST':
+      return `https://www.pinterest.com/oauth/?${new URLSearchParams({
+        client_id: import.meta.env.VITE_PINTEREST_APP_ID || '',
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'boards:read,boards:write,pins:read,pins:write',
+        state,
+      })}`
+
     default:
       throw new Error(`Unsupported platform for OAuth: ${platform}`)
   }

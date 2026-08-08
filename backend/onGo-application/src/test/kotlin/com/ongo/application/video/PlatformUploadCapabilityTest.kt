@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class PlatformUploadCapabilityTest {
     @Test
-    fun `all seven publishing channels expose an explicit capability`() {
+    fun `publishing channels expose an explicit capability`() {
         val capabilities = PlatformUploadCapabilities.all().associateBy { it.platform }
 
         assertEquals(
@@ -21,13 +21,14 @@ class PlatformUploadCapabilityTest {
                 Platform.NAVER_CLIP,
                 Platform.THREADS,
                 Platform.TWITTER,
+                Platform.PINTEREST,
             ),
             capabilities.keys,
         )
         capabilities.values.forEach { capability ->
             assertTrue(capability.maxFileSizeBytes > 0)
             assertTrue(capability.maxTitleLength > 0)
-            assertTrue(capability.maxTagCount > 0)
+            assertTrue(capability.maxTagCount >= 0)
             assertTrue(capability.acceptedExtensions.isNotEmpty())
             assertTrue(capability.directVideoUpload || capability.cloudVideoUpload)
         }

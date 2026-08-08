@@ -25,6 +25,7 @@ data class PinterestPinRequest(
     data class MediaSource(
         @JsonProperty("source_type") val sourceType: String = "video_id",
         @JsonProperty("media_id") val mediaId: String,
+        @JsonProperty("cover_image_url") val coverImageUrl: String? = null,
     )
 }
 
@@ -41,6 +42,18 @@ data class PinterestPinResponse(
         @JsonProperty("media_type") val mediaType: String?,
     )
 }
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class PinterestBoardListResponse(
+    val items: List<PinterestBoard> = emptyList(),
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class PinterestBoard(
+    val id: String,
+    val name: String?,
+    val url: String?,
+)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class PinterestPinAnalyticsResponse(
