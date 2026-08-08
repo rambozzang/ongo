@@ -288,6 +288,9 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
         uploadIntervals.delete(id)
       }
       queue.value.splice(index, 1)
+      if (uploadingCount.value === 0 && queuedCount.value === 0) {
+        isProcessing.value = false
+      }
     }
   }
 
@@ -330,6 +333,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
     uploadIntervals.forEach((intervalId) => clearInterval(intervalId))
     uploadIntervals.clear()
     queue.value = []
+    isProcessing.value = false
   }
 
   /**
@@ -479,6 +483,8 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
     const nextItem = queue.value.find((item) => item.status === 'queued')
     if (nextItem) {
       presignedUpload(nextItem.id)
+    } else if (uploadingCount.value === 0) {
+      isProcessing.value = false
     }
   }
 
