@@ -8,10 +8,14 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
 import org.springframework.web.client.RestClient
+import org.springframework.http.MediaType
+import org.springframework.util.LinkedMultiValueMap
+import java.io.RandomAccessFile
 
 @Component
 class LinkedInClient(
     private val linkedInApi: LinkedInApi,
+    private val linkedInVideosApi: LinkedInVideosApi,
     private val linkedInOAuthApi: LinkedInOAuthApi,
     private val linkedInConfig: LinkedInConfig,
 ) : PlatformClient {
@@ -27,36 +31,9 @@ class LinkedInClient(
             ?: throw PlatformUploadException("LinkedIn", "사용자 ID가 필요합니다")
 
         try {
-            // Step 1: Register upload
-            val registerRequest = LinkedInRegisterUploadRequest(
-                registerUploadRequest = LinkedInRegisterUploadRequest.RegisterRequest(
-                    owner = "urn:li:person:$personId",
-                ),
-            )
-
-            val registerResponse = linkedInApi.registerUpload(
-                authorization = "Bearer ${request.accessToken}",
-                request = registerRequest,
-            )
-
-            val assetUrn = registerResponse.value?.asset
-                ?: throw PlatformUploadException("LinkedIn", "업로드 에셋 생성 실패")
-
-            val uploadUrl = registerResponse.value?.uploadMechanism?.httpRequest?.uploadUrl
-                ?: throw PlatformUploadException("LinkedIn", "업로드 URL을 가져올 수 없습니다")
-
-            // Step 2: Upload binary to uploadUrl
-            val fileBytes = downloadFileBytes(request.fileUrl)
-            val uploadResponse = RestClient.create()
-                .put()
-                .uri(uploadUrl)
-                .header("Content-Type", "application/octet-stream")
-                .body(fileBytes)
-                .retrieve()
-                .toBodilessEntity()
-            if (!uploadResponse.statusCode.is2xxSuccessful) {
-                throw PlatformUploadException("LinkedIn", "업로드 URL로 파일 전송 실패: ${uploadResponse.statusCode}")
-            }
+            // LinkedIn Assets API is deprecated for video uploads. Videos API requires
+            // initialize → 4MB range PUTs → ETag finalize → AVAILABLE confirmation.
+            val videoUrn = uploadLinkedInVideo(request.fileUrl, request.accessToken, personId)
 
             // Step 3: Create UGC post
             val ugcPost = LinkedInUgcPostRequest(
@@ -68,7 +45,7 @@ class LinkedInClient(
                         ),
                         media = listOf(
                             LinkedInUgcPostRequest.ShareMedia(
-                                media = assetUrn,
+                                media = videoUrn,
                                 title = LinkedInUgcPostRequest.MediaTitle(
                                     text = request.title.take(200),
                                 ),
@@ -102,6 +79,99 @@ class LinkedInClient(
             log.error("LinkedIn 업로드 실패: {}", e.message, e)
             throw PlatformUploadException("LinkedIn", e.message ?: "알 수 없는 오류", e)
         }
+    }
+
+    private fun uploadLinkedInVideo(fileUrl: String, accessToken: String, personId: String): String {
+        val sourceFile = downloadFileToTemp(fileUrl)
+        try {
+            val initialize = linkedInVideosApi.initializeUpload(
+                authorization = "Bearer $accessToken",
+                linkedinVersion = linkedInConfig.getApiVersion(),
+                restliVersion = RESTLI_VERSION,
+                request = LinkedInVideoInitializeRequest(
+                    initializeUploadRequest = LinkedInVideoInitializeRequest.InitializeUploadRequest(
+                        owner = "urn:li:person:$personId",
+                        fileSizeBytes = sourceFile.length(),
+                    ),
+                ),
+            )
+            val value = initialize.value
+                ?: throw PlatformUploadException("LinkedIn", "동영상 업로드 세션 생성 실패")
+            val videoUrn = value.video
+                ?: throw PlatformUploadException("LinkedIn", "동영상 URN을 받지 못했습니다")
+            if (value.uploadInstructions.isEmpty()) {
+                throw PlatformUploadException("LinkedIn", "동영상 업로드 파트 지시가 없습니다")
+            }
+
+            val uploadedPartIds = value.uploadInstructions.map { instruction ->
+                val length = instruction.lastByte - instruction.firstByte + 1
+                require(length in 1..MAX_VIDEO_PART_BYTES) {
+                    "LinkedIn 업로드 파트 크기가 허용 범위를 벗어났습니다"
+                }
+                val bytes = ByteArray(length.toInt())
+                RandomAccessFile(sourceFile, "r").use { file ->
+                    file.seek(instruction.firstByte)
+                    file.readFully(bytes)
+                }
+                val response = RestClient.create()
+                    .put()
+                    .uri(instruction.uploadUrl)
+                    .header("Authorization", "Bearer $accessToken")
+                    .header("Linkedin-Version", linkedInConfig.getApiVersion())
+                    .header("X-Restli-Protocol-Version", RESTLI_VERSION)
+                    .header("Content-Length", length.toString())
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(bytes)
+                    .retrieve()
+                    .toBodilessEntity()
+                if (!response.statusCode.is2xxSuccessful) {
+                    throw PlatformUploadException("LinkedIn", "동영상 파트 업로드 실패: ${response.statusCode}")
+                }
+                response.headers.getFirst("ETag")?.trim('"')
+                    ?: throw PlatformUploadException("LinkedIn", "동영상 파트 응답에 ETag가 없습니다")
+            }
+
+            linkedInVideosApi.finalizeUpload(
+                authorization = "Bearer $accessToken",
+                linkedinVersion = linkedInConfig.getApiVersion(),
+                restliVersion = RESTLI_VERSION,
+                request = LinkedInVideoFinalizeRequest(
+                    finalizeUploadRequest = LinkedInVideoFinalizeRequest.FinalizeUploadRequest(
+                        video = videoUrn,
+                        uploadToken = value.uploadToken ?: "",
+                        uploadedPartIds = uploadedPartIds,
+                    ),
+                ),
+            )
+
+            awaitVideoAvailable(videoUrn, accessToken)
+            return videoUrn
+        } finally {
+            sourceFile.delete()
+        }
+    }
+
+    private fun awaitVideoAvailable(videoUrn: String, accessToken: String) {
+        val attempts = linkedInConfig.getVideoPollAttempts().coerceAtLeast(1)
+        repeat(attempts) { attempt ->
+            val response = linkedInVideosApi.getVideo(
+                videoUrn = videoUrn,
+                authorization = "Bearer $accessToken",
+                linkedinVersion = linkedInConfig.getApiVersion(),
+                restliVersion = RESTLI_VERSION,
+            )
+            when (response.status?.uppercase()) {
+                "AVAILABLE" -> return
+                "PROCESSING_FAILED", "FAILED" -> throw PlatformUploadException(
+                    "LinkedIn",
+                    response.processingFailureReason ?: "동영상 처리 실패",
+                )
+            }
+            if (attempt < attempts - 1) {
+                Thread.sleep(linkedInConfig.getVideoPollIntervalMillis().coerceAtLeast(0))
+            }
+        }
+        throw PlatformUploadException("LinkedIn", "동영상 처리 시간이 초과되었습니다")
     }
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
@@ -170,13 +240,14 @@ class LinkedInClient(
         log.debug("LinkedIn OAuth 인가 코드 교환")
 
         val response = linkedInOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "authorization_code",
-                "code" to authorizationCode,
-                "redirect_uri" to redirectUri,
-                "client_id" to linkedInConfig.getClientId(),
-                "client_secret" to linkedInConfig.getClientSecret(),
-            ),
+            contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            body = LinkedMultiValueMap<String, String>().apply {
+                add("grant_type", "authorization_code")
+                add("code", authorizationCode)
+                add("redirect_uri", redirectUri)
+                add("client_id", linkedInConfig.getClientId())
+                add("client_secret", linkedInConfig.getClientSecret())
+            },
         )
 
         return PlatformTokenResult(
@@ -190,12 +261,13 @@ class LinkedInClient(
         log.debug("LinkedIn OAuth 토큰 갱신")
 
         val response = linkedInOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "refresh_token",
-                "refresh_token" to refreshToken,
-                "client_id" to linkedInConfig.getClientId(),
-                "client_secret" to linkedInConfig.getClientSecret(),
-            ),
+            contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            body = LinkedMultiValueMap<String, String>().apply {
+                add("grant_type", "refresh_token")
+                add("refresh_token", refreshToken)
+                add("client_id", linkedInConfig.getClientId())
+                add("client_secret", linkedInConfig.getClientSecret())
+            },
         )
 
         return PlatformTokenResult(
@@ -347,5 +419,10 @@ class LinkedInClient(
             log.error("LinkedIn 좋아요 실패: {}", e.message)
             false
         }
+    }
+
+    private companion object {
+        const val RESTLI_VERSION = "2.0.0"
+        const val MAX_VIDEO_PART_BYTES = 4L * 1024 * 1024
     }
 }

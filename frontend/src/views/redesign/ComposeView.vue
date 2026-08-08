@@ -465,7 +465,7 @@ import { fallbackOptimalSlot, kstWallClockToInstant, nextOptimalDateTime } from 
 const { t } = useLocale()
 const route = useRoute()
 
-type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI'
+type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI'
 const CHIP: Partial<Record<Platform, ChipCode>> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
@@ -475,6 +475,7 @@ const CHIP: Partial<Record<Platform, ChipCode>> = {
   THREADS: 'TH',
   TWITTER: 'TW',
   PINTEREST: 'PI',
+  LINKEDIN: 'LI',
 }
 
 const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
@@ -486,6 +487,7 @@ const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
   TH: { bg: 'var(--platform-th-bg)', fg: 'var(--platform-th-fg)' },
   TW: { bg: 'var(--platform-x-bg, #111827)', fg: 'var(--platform-x-fg, #ffffff)' },
   PI: { bg: '#E60023', fg: '#ffffff' },
+  LI: { bg: '#0A66C2', fg: '#ffffff' },
 }
 
 /** 플랫폼별 제목 상한. 핸드오프 검증 규칙. */
@@ -529,7 +531,7 @@ const capabilities = ref<PlatformUploadCapability[]>([])
 const optimalSlots = ref<Partial<Record<Platform, OptimalTimeSlot[]>>>({})
 const optimalTimesError = ref('')
 const disabled = reactive<Record<number, boolean>>({})
-const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI'>('common')
+const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI'>('common')
 const schedMode = ref<'now' | 'best' | 'fix'>('best')
 const fixedAt = ref('')
 const recurringEnabled = ref(false)
@@ -565,6 +567,7 @@ const tabs = [
   { key: 'TH' as const, label: 'Threads' },
   { key: 'TW' as const, label: 'X (Twitter)' },
   { key: 'PI' as const, label: 'Pinterest' },
+  { key: 'LI' as const, label: 'LinkedIn' },
 ]
 
 const scheduleOptions = computed(() => [
@@ -626,6 +629,7 @@ function platformForTab(tab: typeof activeTab.value): Platform | null {
         TH: 'THREADS',
         TW: 'TWITTER',
         PI: 'PINTEREST',
+        LI: 'LINKEDIN',
       } as Record<string, Platform>
     )[tab] ?? null
   )

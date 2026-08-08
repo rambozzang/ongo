@@ -1325,7 +1325,8 @@
         "twitter": "Social video posts",
         "facebook": "Page videos",
         "threads": "Threads video posts",
-        "pinterest": "Video Pins on your boards"
+        "pinterest": "Video Pins on your boards",
+        "linkedin": "Post videos to your profile"
       },
       "connectFailed": "Couldn't start channel connection. Please try again."
     },

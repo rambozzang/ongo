@@ -145,6 +145,53 @@ data class LinkedInTokenResponse(
     @JsonProperty("refresh_token_expires_in") val refreshTokenExpiresIn: Long?,
 )
 
+data class LinkedInVideoInitializeRequest(
+    val initializeUploadRequest: InitializeUploadRequest,
+) {
+    data class InitializeUploadRequest(
+        val owner: String,
+        val fileSizeBytes: Long,
+        val uploadCaptions: Boolean = false,
+        val uploadThumbnail: Boolean = false,
+    )
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class LinkedInVideoInitializeResponse(
+    val value: Value?,
+) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class Value(
+        val video: String?,
+        val uploadInstructions: List<UploadInstruction> = emptyList(),
+        val uploadToken: String? = null,
+    )
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    data class UploadInstruction(
+        val uploadUrl: String,
+        val firstByte: Long,
+        val lastByte: Long,
+    )
+}
+
+data class LinkedInVideoFinalizeRequest(
+    val finalizeUploadRequest: FinalizeUploadRequest,
+) {
+    data class FinalizeUploadRequest(
+        val video: String,
+        val uploadToken: String = "",
+        val uploadedPartIds: List<String>,
+    )
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class LinkedInVideoStatusResponse(
+    val id: String?,
+    val status: String?,
+    val processingFailureReason: String? = null,
+)
+
 // --- Comment DTOs ---
 
 @JsonIgnoreProperties(ignoreUnknown = true)

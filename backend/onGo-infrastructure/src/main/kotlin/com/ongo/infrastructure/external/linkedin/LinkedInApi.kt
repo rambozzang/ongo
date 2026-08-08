@@ -78,8 +78,37 @@ interface LinkedInApi {
 @HttpExchange
 interface LinkedInOAuthApi {
 
-    @PostExchange("/oauth/v2/accessToken")
+    @PostExchange("/oauth/v2/accessToken", contentType = org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     fun exchangeToken(
-        @RequestBody body: Map<String, String>,
+        @RequestHeader("Content-Type") contentType: String,
+        @RequestBody body: org.springframework.util.MultiValueMap<String, String>,
     ): LinkedInTokenResponse
+}
+
+@HttpExchange
+interface LinkedInVideosApi {
+
+    @PostExchange("/rest/videos?action=initializeUpload")
+    fun initializeUpload(
+        @RequestHeader("Authorization") authorization: String,
+        @RequestHeader("Linkedin-Version") linkedinVersion: String,
+        @RequestHeader("X-Restli-Protocol-Version") restliVersion: String,
+        @RequestBody request: LinkedInVideoInitializeRequest,
+    ): LinkedInVideoInitializeResponse
+
+    @PostExchange("/rest/videos?action=finalizeUpload")
+    fun finalizeUpload(
+        @RequestHeader("Authorization") authorization: String,
+        @RequestHeader("Linkedin-Version") linkedinVersion: String,
+        @RequestHeader("X-Restli-Protocol-Version") restliVersion: String,
+        @RequestBody request: LinkedInVideoFinalizeRequest,
+    )
+
+    @GetExchange("/rest/videos/{videoUrn}")
+    fun getVideo(
+        @org.springframework.web.bind.annotation.PathVariable("videoUrn") videoUrn: String,
+        @RequestHeader("Authorization") authorization: String,
+        @RequestHeader("Linkedin-Version") linkedinVersion: String,
+        @RequestHeader("X-Restli-Protocol-Version") restliVersion: String,
+    ): LinkedInVideoStatusResponse
 }

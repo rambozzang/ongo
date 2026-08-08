@@ -118,6 +118,15 @@ export function buildOAuthUrl(platform: Platform, returnPath: string, codeChalle
         state,
       })}`
 
+    case 'LINKEDIN':
+      return `https://www.linkedin.com/oauth/v2/authorization?${new URLSearchParams({
+        client_id: import.meta.env.VITE_LINKEDIN_CLIENT_ID || '',
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'openid profile w_member_social',
+        state,
+      })}`
+
     default:
       throw new Error(`Unsupported platform for OAuth: ${platform}`)
   }
