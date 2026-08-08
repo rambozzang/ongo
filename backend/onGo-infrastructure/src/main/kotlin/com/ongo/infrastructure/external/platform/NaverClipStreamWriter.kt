@@ -116,16 +116,21 @@ class NaverClipStreamWriter(
                 ?: throw IllegalStateException("Naver Clip clip_id를 받지 못했습니다")
 
             log.info("Naver Clip 스트리밍 업로드 완료: clipId={}", clipId)
+            val clipUrl = completeResponse.clipUrl?.takeIf { it.isNotBlank() }
             PlatformUploadResult(
                 success = true,
                 platformVideoId = clipId,
-                platformUrl = completeResponse.clipUrl ?: "",
-                // complete 응답이 clipId 를 주면 클립 등록이 끝난 상태다.
-                published = true,
+                platformUrl = clipUrl,
+                // URL이 없으면 등록은 접수됐지만 공개 링크는 아직 확정하지 않는다.
+                published = clipUrl != null &&
+                    (completeResponse.status.isNullOrBlank() ||
+                        completeResponse.status.equals("PUBLISHED", ignoreCase = true) ||
+                        completeResponse.status.equals("COMPLETED", ignoreCase = true)),
+                pollToken = clipId,
             )
         } catch (e: Exception) {
             log.error("Naver Clip 스트리밍 업로드 실패", e)
-            PlatformUploadResult(success = false, errorMessage = e.message)
+            uploadFailureResult(e)
         } finally {
             buffer.cleanup()
         }

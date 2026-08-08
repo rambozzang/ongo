@@ -114,7 +114,7 @@ class TikTokStreamWriter(
             awaitPublishStatus(pid)
         } catch (e: Exception) {
             log.error("TikTok 스트리밍 업로드 실패", e)
-            PlatformUploadResult(success = false, errorMessage = e.message)
+            uploadFailureResult(e)
         } finally {
             buffer.cleanup()
         }

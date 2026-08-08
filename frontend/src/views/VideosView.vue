@@ -62,6 +62,22 @@
       </span>
     </div>
 
+    <div
+      v-if="feedLoadError"
+      class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle p-3 text-body text-error-strong"
+      role="alert"
+    >
+      <span class="min-w-0 flex-1">{{ $t('videos.feedLoadFailed') }}</span>
+      <button
+        type="button"
+        class="shrink-0 rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold hover:bg-error-strong hover:text-surface-base"
+        :disabled="loading"
+        @click="loadFeed"
+      >
+        {{ $t('action.retry') }}
+      </button>
+    </div>
+
     <!-- Loading -->
     <LoadingSpinner v-if="loading" />
 
@@ -736,7 +752,7 @@ import { viewsPredictionApi, type ViewsPredictionResponse } from '@/api/viewsPre
 import { publishChecklistApi, type PublishChecklistResponse } from '@/api/publishChecklist'
 
 const videoStore = useVideoStore()
-const { feedItems, feedPlatforms, feedErrors, isFeedLoading: loading } = storeToRefs(videoStore)
+const { feedItems, feedPlatforms, feedErrors, feedLoadError, isFeedLoading: loading } = storeToRefs(videoStore)
 
 const selectedPlatform = ref<Platform | undefined>()
 const sortBy = ref('recent')

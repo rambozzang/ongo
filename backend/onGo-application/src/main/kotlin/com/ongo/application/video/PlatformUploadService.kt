@@ -2,6 +2,10 @@ package com.ongo.application.video
 
 import com.ongo.common.enums.Platform
 import java.time.Duration
+import java.net.ConnectException
+import java.io.IOException
+import java.io.FileNotFoundException
+import java.net.SocketTimeoutException
 
 interface PlatformUploadService {
     fun supports(platform: Platform): Boolean
@@ -9,6 +13,11 @@ interface PlatformUploadService {
     /** 비동기 게시가 수락된 뒤 외부 플랫폼의 최종 상태를 확인한다. */
     fun poll(platform: Platform, pollToken: String, userId: Long): PlatformUploadResult =
         PlatformUploadResult(success = false, errorMessage = "${platform.name} 상태 조회를 지원하지 않습니다.")
+}
+
+enum class PublishConfirmation {
+    CONFIRMED,
+    UNKNOWN,
 }
 
 data class PlatformUploadResult(
@@ -29,6 +38,8 @@ data class PlatformUploadResult(
     val published: Boolean = false,
     /** 비동기 플랫폼의 상태 조회 토큰. 없으면 platformVideoId를 토큰으로 사용한다. */
     val pollToken: String? = null,
+    /** 외부 호출이 끝났지만 응답을 잃었을 때 중복 재전송을 막기 위한 구분. */
+    val confirmation: PublishConfirmation = PublishConfirmation.CONFIRMED,
 )
 
 /** 외부 게시 결과를 호출자가 놓치지 않도록 성공 의미를 sealed 타입으로 고정한다. */
@@ -61,9 +72,23 @@ sealed interface PublishOutcome {
     ) : PublishOutcome {
         init { require(message.isNotBlank()) { "실패 결과 메시지가 필요합니다." } }
     }
+
+    /** 외부 호출 결과를 확인하지 못했으므로 자동 재전송하면 안 된다. */
+    data class Unconfirmed(
+        val message: String,
+        val platformVideoId: String? = null,
+        val pollToken: String? = null,
+    ) : PublishOutcome {
+        init { require(message.isNotBlank()) { "확인 불가 결과 메시지가 필요합니다." } }
+    }
 }
 
 fun PlatformUploadResult.toPublishOutcome(): PublishOutcome = when {
+    confirmation == PublishConfirmation.UNKNOWN -> PublishOutcome.Unconfirmed(
+        message = errorMessage ?: "게시 결과를 확인하지 못했습니다. 중복 게시를 막기 위해 자동 재전송하지 않습니다.",
+        platformVideoId = platformVideoId,
+        pollToken = pollToken,
+    )
     !success -> PublishOutcome.Failed(errorMessage ?: "플랫폼 게시에 실패했습니다.", retryable = true)
     published -> PublishOutcome.Published(platformVideoId.orEmpty(), platformUrl.orEmpty())
     else -> PublishOutcome.Accepted(
@@ -71,4 +96,28 @@ fun PlatformUploadResult.toPublishOutcome(): PublishOutcome = when {
         pollToken = pollToken ?: platformVideoId.orEmpty(),
         retryAfter = Duration.ofSeconds(30),
     )
+}
+
+/**
+ * A writer may be called after bytes have already reached the provider. Network
+ * failures therefore cannot be treated as ordinary, retryable 4xx failures.
+ */
+fun indeterminateUploadFailure(message: String?): PlatformUploadResult =
+    PlatformUploadResult(
+        success = false,
+        errorMessage = message ?: "게시 결과를 확인하지 못했습니다.",
+        confirmation = PublishConfirmation.UNKNOWN,
+    )
+
+fun Throwable.isIndeterminateUploadFailure(): Boolean {
+    val chain = generateSequence(this) { it.cause }.toList()
+    if (chain.any { it is FileNotFoundException }) return false
+    if (chain.any { it is SocketTimeoutException || it is ConnectException || it is IOException }) return true
+    if (chain.any { it.message?.contains("timeout", ignoreCase = true) == true ||
+            it.message?.contains("timed out", ignoreCase = true) == true ||
+            it.message?.contains("connection reset", ignoreCase = true) == true }) return true
+    return chain.any {
+        it is org.springframework.web.client.HttpStatusCodeException &&
+            (it.statusCode.value() == 429 || it.statusCode.value() >= 500)
+    }
 }

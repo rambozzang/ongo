@@ -711,6 +711,7 @@
 </template>
 
 <script setup lang="ts">
+import { escapeHtml } from '@/utils/html'
 import { ref, computed, onMounted, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -893,7 +894,7 @@ function platformLabel(platform: string): string {
 
 function renderMarkdown(md: string): string {
   // Basic markdown rendering: headings, bold, lists, line breaks
-  return md
+  return escapeHtml(md)
     .replace(/^### (.+)$/gm, '<h3 class="text-h3 text-gray-900 dark:text-gray-100 mt-4 mb-2">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="text-title font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-2">$1</h2>')
     .replace(/^# (.+)$/gm, '<h1 class="text-h2 font-bold text-gray-900 dark:text-gray-100 mt-4 mb-2">$1</h1>')

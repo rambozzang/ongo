@@ -215,7 +215,7 @@ deploy_frontend() {
         npm ci --silent 2>&1 | tail -3
 
         info "Vite 빌드 중..."
-        VITE_API_URL=/api npm run build 2>&1 | tail -5
+        VITE_API_BASE_URL=/api/v1 npm run build 2>&1 | tail -5
     else
         info "Frontend 빌드 건너뜀 (--skip-build)"
     fi

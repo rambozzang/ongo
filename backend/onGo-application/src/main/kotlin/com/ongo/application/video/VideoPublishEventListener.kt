@@ -132,6 +132,18 @@ class VideoPublishEventListener(
                     fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
                     log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", config.platform, event.videoId, outcome.message)
                 }
+                is PublishOutcome.Unconfirmed -> {
+                    updateUploadStatus(
+                        config.videoUploadId,
+                        UploadStatus.UNCONFIRMED,
+                        outcome.message,
+                        platformVideoId = outcome.platformVideoId,
+                        pollToken = outcome.pollToken,
+                        leaseOwner = leaseOwner,
+                    )
+                    fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
+                    log.warn("플랫폼 {} 게시 결과 확인 필요: videoId={}, error={}", config.platform, event.videoId, outcome.message)
+                }
             }
         } catch (e: Exception) {
             log.error("플랫폼 {} 업로드 중 예외 발생: videoId={}", config.platform, event.videoId, e)

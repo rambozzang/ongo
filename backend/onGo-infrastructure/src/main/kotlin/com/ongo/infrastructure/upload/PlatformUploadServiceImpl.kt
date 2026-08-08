@@ -5,6 +5,8 @@ import com.ongo.application.video.PlatformUploadResult
 import com.ongo.application.video.PlatformUploadService
 import com.ongo.application.video.PlatformStreamWriterFactory
 import com.ongo.application.video.PlatformUploadCapabilities
+import com.ongo.application.video.PublishConfirmation
+import com.ongo.application.video.isIndeterminateUploadFailure
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.channel.ChannelRepository
@@ -132,9 +134,15 @@ class PlatformUploadServiceImpl(
         }
 
         log.error("플랫폼 {} 업로드 실패: userId={}", config.platform, userId, lastException)
+        val confirmation = if (lastException?.isIndeterminateUploadFailure() == true) {
+            PublishConfirmation.UNKNOWN
+        } else {
+            PublishConfirmation.CONFIRMED
+        }
         return PlatformUploadResult(
             success = false,
             errorMessage = lastException?.message ?: "알 수 없는 오류가 발생했습니다",
+            confirmation = confirmation,
         )
     }
 

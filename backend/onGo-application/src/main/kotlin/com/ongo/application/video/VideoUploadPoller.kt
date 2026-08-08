@@ -103,6 +103,14 @@ class VideoUploadPoller(
                     null,
                     owner,
                 )
+                is PublishOutcome.Unconfirmed -> finish(
+                    claimed,
+                    video.userId,
+                    UploadStatus.UNCONFIRMED,
+                    outcome.message,
+                    null,
+                    owner,
+                )
             }
         } catch (e: Exception) {
             val message = e.message ?: "플랫폼 상태 확인 중 오류가 발생했습니다."

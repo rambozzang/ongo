@@ -31,6 +31,7 @@ export const useRevenueStore = defineStore('revenue', () => {
     topPlatformRevenue: 0,
   })
   const loading = ref(false)
+  const loadError = ref(false)
   const apiSummary = ref<RevenueSummary | null>(null)
   const apiTrends = shallowRef<RevenueTrendPoint[]>([])
   const apiPlatformRevenue = ref<PlatformRevenueData | null>(null)
@@ -134,6 +135,7 @@ export const useRevenueStore = defineStore('revenue', () => {
 
   async function fetchRevenue() {
     loading.value = true
+    loadError.value = false
     try {
       const results = await Promise.allSettled([
         revenueApi.summary('30d'),
@@ -166,10 +168,10 @@ export const useRevenueStore = defineStore('revenue', () => {
       if (results[2].status === 'fulfilled') apiPlatformRevenue.value = results[2].value
 
       summary.value = calculateSummary(monthlyRevenue.value)
+      loadError.value = results.some((result) => result.status === 'rejected')
     } catch {
-      // Keep empty state on failure
-      monthlyRevenue.value = []
-      summary.value = calculateSummary([])
+      // Keep the last successful values; an outage must not look like zero revenue.
+      loadError.value = true
     } finally {
       loading.value = false
     }
@@ -255,6 +257,7 @@ export const useRevenueStore = defineStore('revenue', () => {
     monthlyRevenue,
     summary,
     loading,
+    loadError,
     totalAnnualRevenue,
     platformBreakdown,
     growthTrend,

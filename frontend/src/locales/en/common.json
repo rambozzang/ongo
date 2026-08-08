@@ -2085,6 +2085,7 @@
   "videos": {
     "title": "Content Feed",
     "description": "View all content from your connected channels at a glance",
+    "feedLoadFailed": "We couldn't load the content feed. Check the server connection and try again.",
     "uploadNew": "Upload Video",
     "pageGuideTitle": "Video Management",
     "pageGuide": [
@@ -2661,6 +2662,7 @@
     "bulkDeleteMessage": "{count} items will be deleted. This cannot be undone."
   },
   "revenue": {
+    "loadFailed": "We couldn't load revenue data. The last successful data is still shown.",
     "title": "Revenue Analysis",
     "description": "Analyze revenue by platform and identify growth opportunities",
     "pageGuideTitle": "Revenue Analysis",

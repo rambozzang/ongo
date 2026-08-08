@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.upload
 
 import com.ongo.application.video.PlatformUploadConfig
+import com.ongo.application.video.toPublishOutcome
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.Visibility
 import com.ongo.domain.channel.Channel
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.web.client.HttpClientErrorException
+import java.net.SocketTimeoutException
 
 class PlatformUploadServiceImplTest {
 
@@ -160,6 +162,39 @@ class PlatformUploadServiceImplTest {
         assertThat(result.success).isFalse()
         assertThat(result.published).isFalse()
         assertThat(result.errorMessage).isNotBlank()
+    }
+
+    @Test
+    fun `타임아웃은 중복 게시 방지를 위해 확인 불가 결과로 남긴다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channels = mockk<ChannelRepository>()
+        val encryption = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+
+        every { factory.getClient(Platform.YOUTUBE) } returns client
+        every { channels.findByUserIdAndPlatform(7L, Platform.YOUTUBE) } returns channel()
+        every { encryption.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("plain-token")
+        every { client.uploadVideo(any()) } throws SocketTimeoutException("read timed out")
+
+        val result = PlatformUploadServiceImpl(factory, channels, encryption, emptyList()).upload(
+            config = PlatformUploadConfig(
+                platform = Platform.YOUTUBE,
+                videoUploadId = 10L,
+                title = "제목",
+                description = null,
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC,
+                thumbnailUrl = null,
+                fileSize = 100,
+                scheduledAt = null,
+            ),
+            fileUrl = "https://storage.example/video.mp4",
+            userId = 7L,
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.confirmation).isEqualTo(com.ongo.application.video.PublishConfirmation.UNKNOWN)
+        assertThat(result.toPublishOutcome()).isInstanceOf(com.ongo.application.video.PublishOutcome.Unconfirmed::class.java)
     }
 
     @Test

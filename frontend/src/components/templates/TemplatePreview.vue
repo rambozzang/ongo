@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TemplateCategory } from '@/types/template'
+import { highlightTemplateVariables } from '@/utils/html'
 
 interface Props {
   content: string
@@ -31,9 +32,7 @@ const highlightedContent = computed(() => {
   if (!props.content) return ''
 
   // Replace {{variable}} with highlighted version
-  return props.content.replace(/\{\{([^}]+)\}\}/g, (match) => {
-    return `<span class="variable-highlight">${match}</span>`
-  })
+  return highlightTemplateVariables(props.content)
 })
 
 const hint = computed(() => {
@@ -67,7 +66,7 @@ const hint = computed(() => {
           v-for="(tag, index) in content.split(',')"
           :key="index"
           class="px-2 py-1 text-body bg-info-subtle text-info-strong rounded"
-          v-html="tag.trim().replace(/\{\{([^}]+)\}\}/g, '<span class=\'variable-highlight\'>{{$1}}</span>')"
+          v-html="highlightTemplateVariables(tag.trim())"
         />
       </div>
       <div

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { CheckIcon } from '@heroicons/vue/24/outline'
+import { escapeHtml } from '@/utils/html'
 
 const props = defineProps<{
   modelValue: string
@@ -54,7 +55,7 @@ function formatLastSaved() {
 
 // Simple markdown-like parser for preview
 function parseMarkdown(text: string): string {
-  return text
+  return escapeHtml(text)
     .replace(/^# (.+)$/gm, '<h1 class="text-h1 font-bold mb-4 text-gray-900 dark:text-gray-100">$1</h1>')
     .replace(/^## (.+)$/gm, '<h2 class="text-h2 font-semibold mb-3 text-gray-900 dark:text-gray-100">$1</h2>')
     .replace(/^### (.+)$/gm, '<h3 class="text-title font-medium mb-2 text-gray-900 dark:text-gray-100">$1</h3>')

@@ -31,6 +31,22 @@
 
     <PageGuide :title="$t('revenue.pageGuideTitle')" :items="($tm('revenue.pageGuide') as string[])" />
 
+    <div
+      v-if="revenueStore.loadError"
+      class="flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong"
+      role="alert"
+    >
+      <span class="min-w-0 flex-1">{{ $t('revenue.loadFailed') }}</span>
+      <button
+        type="button"
+        class="shrink-0 rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold hover:bg-error-strong hover:text-surface-base"
+        :disabled="revenueStore.loading"
+        @click="revenueStore.fetchRevenue"
+      >
+        {{ $t('action.retry') }}
+      </button>
+    </div>
+
     <!-- Sub-tab Navigation -->
     <OTabs v-model="activeTab" :tabs="revenueTabs" class="mb-0" />
 

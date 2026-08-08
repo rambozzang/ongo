@@ -18,6 +18,7 @@ export const useVideoStore = defineStore('video', () => {
   const feedItems = ref<VideoFeedItem[]>([])
   const feedPlatforms = ref<Platform[]>([])
   const feedErrors = ref<string[] | null>(null)
+  const feedLoadError = ref(false)
   const isFeedLoading = ref(false)
   const feedFilter = ref<{ platform?: string; sort: string }>({ sort: 'recent' })
 
@@ -78,6 +79,7 @@ export const useVideoStore = defineStore('video', () => {
 
   async function fetchFeed(page = 0, size = 20) {
     isFeedLoading.value = true
+    feedLoadError.value = false
     try {
       const result = await videoApi.feed({
         platform: feedFilter.value.platform,
@@ -89,7 +91,9 @@ export const useVideoStore = defineStore('video', () => {
       feedPlatforms.value = result.platforms
       feedErrors.value = result.errors
     } catch {
-      feedItems.value = []
+      // Do not turn a server outage into a convincing empty feed. Keep the
+      // last successful data and let the screen expose a retryable error.
+      feedLoadError.value = true
     } finally {
       isFeedLoading.value = false
     }
@@ -118,6 +122,7 @@ export const useVideoStore = defineStore('video', () => {
     feedItems,
     feedPlatforms,
     feedErrors,
+    feedLoadError,
     isFeedLoading,
     feedFilter,
     fetchFeed,

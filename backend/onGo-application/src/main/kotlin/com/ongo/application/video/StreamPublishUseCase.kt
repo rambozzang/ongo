@@ -424,6 +424,18 @@ class StreamPublishUseCase(
                                     log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", ctx.platform, videoId, outcome.message)
                                     fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = outcome.message)
                                 }
+                                is PublishOutcome.Unconfirmed -> {
+                                    updateUploadStatus(
+                                        ctx.videoUploadId,
+                                        UploadStatus.UNCONFIRMED,
+                                        outcome.message,
+                                        platformVideoId = outcome.platformVideoId,
+                                        pollToken = outcome.pollToken,
+                                        leaseOwner = owner,
+                                    )
+                                    fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = outcome.message)
+                                    log.warn("플랫폼 {} 게시 결과 확인 필요: videoId={}, error={}", ctx.platform, videoId, outcome.message)
+                                }
                             }
                         } catch (e: Exception) {
                             log.error("플랫폼 {} 업로드 완료 처리 중 예외: videoId={}", ctx.platform, videoId, e)

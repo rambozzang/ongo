@@ -81,16 +81,22 @@ class InstagramStreamWriter(
                     fileSize = file.length(),
                 )
             )
-            PlatformUploadResult(
-                success = true,
-                platformVideoId = result.platformVideoId,
-                platformUrl = result.platformUrl.ifBlank { null },
-                published = result.status.equals("PUBLISHED", ignoreCase = true),
-                pollToken = result.platformVideoId,
-            )
+            val platformVideoId = result.platformVideoId?.takeIf { it.isNotBlank() }
+            val platformUrl = result.platformUrl.takeIf { it.isNotBlank() }
+            if (platformVideoId == null) {
+                PlatformUploadResult(success = false, errorMessage = "Instagram 게시 ID를 받지 못했습니다.")
+            } else {
+                PlatformUploadResult(
+                    success = true,
+                    platformVideoId = platformVideoId,
+                    platformUrl = platformUrl,
+                    published = result.status.equals("PUBLISHED", ignoreCase = true) && platformUrl != null,
+                    pollToken = platformVideoId,
+                )
+            }
         } catch (e: Exception) {
             log.error("Instagram 스트리밍 업로드 실패", e)
-            PlatformUploadResult(success = false, errorMessage = e.message)
+            uploadFailureResult(e)
         } finally {
             runCatching { storageClient.deleteFile(key) }
             storageKey = null
