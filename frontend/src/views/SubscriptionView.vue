@@ -4,10 +4,12 @@
 
     <PageGuide :title="$t('subscription.pageGuideTitle')" :items="($tm('subscription.pageGuide') as string[])" />
 
-    <div v-if="creditStore.balanceError || creditStore.transactionsError" class="flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong" role="alert">
-      <span class="min-w-0 flex-1">{{ creditStore.balanceError || creditStore.transactionsError }}</span>
+    <div v-if="subscriptionStore.error || creditStore.balanceError || creditStore.transactionsError || usageError || usageAlertsError" class="flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong" role="alert">
+      <span class="min-w-0 flex-1">{{ subscriptionStore.error || creditStore.balanceError || creditStore.transactionsError || usageError || usageAlertsError }}</span>
       <button v-if="creditStore.balanceError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="creditStore.isLoadingBalance" @click="creditStore.fetchBalance()">잔액 다시 시도</button>
       <button v-if="creditStore.transactionsError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="creditStore.isLoadingTransactions" @click="creditStore.fetchTransactions(0, 20)">내역 다시 시도</button>
+      <button v-if="usageError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="usageLoading" @click="fetchUsage()">사용량 다시 시도</button>
+      <button v-if="usageAlertsError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" @click="fetchUsageAlerts()">알림 다시 시도</button>
     </div>
 
     <LoadingSpinner v-if="subscriptionStore.loading && !subscription" full-page />
@@ -558,6 +560,8 @@ const usageData = ref({
   storageUsedMb: 0,
 })
 const usageLoading = ref(false)
+const usageError = ref<string | null>(null)
+const usageAlertsError = ref<string | null>(null)
 
 // Coupon
 const couponCode = ref('')
@@ -830,6 +834,7 @@ async function handleApplyCoupon() {
 }
 
 async function fetchUsageAlerts() {
+  usageAlertsError.value = null
   try {
     const alerts = await subscriptionApi.getUsageAlerts()
     for (const serverAlert of alerts) {
@@ -839,8 +844,8 @@ async function fetchUsageAlerts() {
         local.thresholdPercent = serverAlert.thresholdPercent
       }
     }
-  } catch {
-    // keep defaults
+  } catch (error) {
+    usageAlertsError.value = error instanceof Error ? error.message : '사용량 알림 설정을 불러오지 못했습니다.'
   }
 }
 
@@ -882,14 +887,15 @@ function loadPayments(page: number) {
 // Load usage data from the API
 async function fetchUsage() {
   usageLoading.value = true
+  usageError.value = null
   try {
     const data = await subscriptionApi.getUsage()
     usageData.value = {
       uploadsThisMonth: data.uploadsThisMonth ?? 0,
       storageUsedMb: data.storageUsedMb ?? 0,
     }
-  } catch {
-    // Non-critical: keep defaults if usage endpoint is unavailable
+  } catch (error) {
+    usageError.value = error instanceof Error ? error.message : '사용량을 불러오지 못했습니다.'
   } finally {
     usageLoading.value = false
   }
