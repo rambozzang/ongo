@@ -28,16 +28,19 @@ interface PlatformMeta {
 interface Props {
   platform: Platform
   meta: PlatformMeta
-  limits?: { title?: number; description?: number }
+  limits?: { title?: number; description?: number; tags?: number }
 }
 
 const props = defineProps<Props>()
 
-const CHAR_LIMITS: Partial<Record<Platform, { title?: number; description?: number }>> = {
-  YOUTUBE: { title: 100, description: 5000 },
-  TIKTOK: { title: 150 },
-  INSTAGRAM: { description: 2200 },
-  NAVER_CLIP: { title: 100, description: 1000 },
+const CHAR_LIMITS: Partial<Record<Platform, { title?: number; description?: number; tags?: number }>> = {
+  YOUTUBE: { title: 100, description: 5000, tags: 500 },
+  TIKTOK: { title: 2200, tags: 30 },
+  INSTAGRAM: { description: 2200, tags: 30 },
+  NAVER_CLIP: { title: 100, description: 1000, tags: 30 },
+  THREADS: { title: 500, tags: 30 },
+  TWITTER: { title: 280, tags: 30 },
+  FACEBOOK: { title: 255, description: 5000, tags: 30 },
 }
 
 const overflowDetail = computed(() => {
@@ -50,6 +53,9 @@ const overflowDetail = computed(() => {
   if (limits.description && props.meta.description.length > limits.description) {
     parts.push(t('preview.descCount', { current: props.meta.description.length, max: limits.description }))
   }
+  if (limits.tags && props.meta.tags.length > limits.tags) {
+    parts.push(t('preview.tagCount', { current: props.meta.tags.length, max: limits.tags }))
+  }
   return parts.join(', ')
 })
 
@@ -58,6 +64,7 @@ const hasOverflow = computed(() => {
   if (!limits) return false
   if (limits.title && props.meta.title.length > limits.title) return true
   if (limits.description && props.meta.description.length > limits.description) return true
+  if (limits.tags && props.meta.tags.length > limits.tags) return true
   return false
 })
 </script>

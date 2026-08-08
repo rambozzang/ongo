@@ -158,8 +158,8 @@ class ScheduleExecutorTest {
     }
 
     @Test
-    @DisplayName("예약 시각이 되면 미래 예약으로 보류된 UPLOADING row를 다시 dispatch한다")
-    fun dispatchesExistingUploadingRowsAtDueTime() {
+    @DisplayName("이미 생성된 UPLOADING row는 외부 게시를 재발행하지 않는다")
+    fun doesNotRedispatchExistingUploadingRows() {
         every { scheduleRepository.findDueSchedules(any()) } returns listOf(schedule(1))
         every { videoUploadRepository.findByVideoId(10L) } returns listOf(
             publishedUpload(10L).copy(status = UploadStatus.UPLOADING),
@@ -167,7 +167,22 @@ class ScheduleExecutorTest {
 
         executor.syncScheduleStatuses()
 
-        verify(exactly = 1) { streamPublishUseCase.executeScheduledUpload(match { it.id == 1L }) }
+        verify(exactly = 0) { streamPublishUseCase.executeScheduledUpload(any()) }
+    }
+
+    @Test
+    @DisplayName("PROCESSING 예약은 다시 claim하지 않고 상태만 동기화한다")
+    fun processingScheduleIsOnlySynchronized() {
+        every { scheduleRepository.findDueSchedules(any()) } returns listOf(
+            schedule(1).copy(status = ScheduleStatus.PROCESSING),
+        )
+        every { videoUploadRepository.findByVideoId(10L) } returns listOf(publishedUpload(10L))
+        every { scheduleRepository.update(any()) } answers { firstArg() }
+
+        executor.syncScheduleStatuses()
+
+        verify(exactly = 0) { scheduleRepository.claimDue(any(), any()) }
+        verify(exactly = 1) { scheduleRepository.update(match { it.status == ScheduleStatus.PUBLISHED }) }
     }
 
     @Test

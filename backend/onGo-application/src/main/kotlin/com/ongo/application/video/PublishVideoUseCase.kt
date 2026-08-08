@@ -50,8 +50,20 @@ class PublishVideoUseCase(
                 require(config.title.length <= capability.maxTitleLength) {
                     "${config.platform} 제목은 ${capability.maxTitleLength}자까지 입력할 수 있습니다."
                 }
+                require(config.title.isNotBlank()) {
+                    "${config.platform} 제목을 입력해주세요."
+                }
+                val description = config.description.orEmpty()
+                if (capability.maxDescriptionLength > 0) {
+                    require(description.length <= capability.maxDescriptionLength) {
+                        "${config.platform} 설명은 ${capability.maxDescriptionLength}자까지 입력할 수 있습니다."
+                    }
+                }
                 require(config.tags.size <= capability.maxTagCount) {
                     "${config.platform} 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다."
+                }
+                require(config.scheduledAt == null || config.scheduledAt.isAfter(LocalDateTime.now().plusMinutes(5))) {
+                    "예약 시간은 현재보다 최소 5분 이후여야 합니다."
                 }
             }
         }

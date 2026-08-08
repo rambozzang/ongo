@@ -4,9 +4,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.client.SimpleClientHttpRequestFactory
-import org.springframework.web.client.RestClient
 import org.springframework.web.client.support.RestClientAdapter
 import org.springframework.web.service.invoker.HttpServiceProxyFactory
+import com.ongo.infrastructure.external.platform.PlatformRestClientSupport
 import java.time.Duration
 
 @Configuration
@@ -23,8 +23,7 @@ class ThreadsConfig {
 
     @Bean
     fun threadsApi(): ThreadsApi {
-        val restClient = RestClient.builder()
-            .baseUrl(apiBaseUrl)
+        val restClient = PlatformRestClientSupport.builder(apiBaseUrl)
             .requestFactory(createRequestFactory())
             .build()
         val factory = HttpServiceProxyFactory
@@ -35,8 +34,7 @@ class ThreadsConfig {
 
     @Bean
     fun threadsOAuthApi(): ThreadsOAuthApi {
-        val restClient = RestClient.builder()
-            .baseUrl(apiBaseUrl)
+        val restClient = PlatformRestClientSupport.builder(apiBaseUrl)
             .requestFactory(createRequestFactory())
             .build()
         val factory = HttpServiceProxyFactory

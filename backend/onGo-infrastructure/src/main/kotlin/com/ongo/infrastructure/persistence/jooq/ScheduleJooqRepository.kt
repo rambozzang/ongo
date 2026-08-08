@@ -71,7 +71,9 @@ class ScheduleJooqRepository(
             .set(STATUS, ScheduleStatus.PROCESSING.name)
             .where(ID.eq(id))
             .and(SCHEDULED_AT.lessOrEqual(now))
-            .and(STATUS_TEXT.`in`(ScheduleStatus.SCHEDULED.name, ScheduleStatus.PROCESSING.name))
+            // PROCESSING is already owned by the worker that started the durable
+            // publish. Re-claiming it would enqueue the same external upload again.
+            .and(STATUS_TEXT.eq(ScheduleStatus.SCHEDULED.name))
             .execute()
 
         return if (changed == 1) findById(id) else null

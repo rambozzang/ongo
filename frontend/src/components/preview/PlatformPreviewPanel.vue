@@ -227,7 +227,7 @@ interface Props {
   tags?: string[]
   platforms: Platform[]
   platformMetadata?: Partial<Record<Platform, PlatformMeta>>
-  platformLimits?: Partial<Record<Platform, { title?: number; description?: number }>>
+  platformLimits?: Partial<Record<Platform, { title?: number; description?: number; tags?: number }>>
   comparisonMode?: boolean
 }
 

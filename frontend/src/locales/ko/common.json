@@ -1333,6 +1333,7 @@
     "exceeded": "초과",
     "titleCount": "제목 {current}/{max}",
     "descCount": "설명 {current}/{max}",
+    "tagCount": "태그 {current}/{max}",
     "enterTitle": "영상 제목을 입력하세요",
     "enterCaption": "캡션을 입력하세요",
     "charExceeded": "{max}자 초과",

@@ -4,9 +4,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.client.SimpleClientHttpRequestFactory
-import org.springframework.web.client.RestClient
 import org.springframework.web.client.support.RestClientAdapter
 import org.springframework.web.service.invoker.HttpServiceProxyFactory
+import com.ongo.infrastructure.external.platform.PlatformRestClientSupport
 import java.time.Duration
 
 @Configuration
@@ -35,8 +35,7 @@ class YouTubeConfig {
 
     @Bean
     fun youTubeApi(): YouTubeApi {
-        val restClient = RestClient.builder()
-            .baseUrl(apiBaseUrl)
+        val restClient = PlatformRestClientSupport.builder(apiBaseUrl)
             .requestFactory(createRequestFactory())
             .build()
         val factory = HttpServiceProxyFactory
@@ -47,8 +46,7 @@ class YouTubeConfig {
 
     @Bean
     fun youTubeAnalyticsApi(): YouTubeAnalyticsApi {
-        val restClient = RestClient.builder()
-            .baseUrl(analyticsBaseUrl)
+        val restClient = PlatformRestClientSupport.builder(analyticsBaseUrl)
             .requestFactory(createRequestFactory())
             .build()
         val factory = HttpServiceProxyFactory
@@ -59,8 +57,7 @@ class YouTubeConfig {
 
     @Bean
     fun googleOAuthApi(): GoogleOAuthApi {
-        val restClient = RestClient.builder()
-            .baseUrl(oauthBaseUrl)
+        val restClient = PlatformRestClientSupport.builder(oauthBaseUrl)
             .requestFactory(createRequestFactory())
             .build()
         val factory = HttpServiceProxyFactory

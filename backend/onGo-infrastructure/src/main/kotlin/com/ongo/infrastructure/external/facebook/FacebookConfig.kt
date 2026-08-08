@@ -4,9 +4,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.client.SimpleClientHttpRequestFactory
-import org.springframework.web.client.RestClient
 import org.springframework.web.client.support.RestClientAdapter
 import org.springframework.web.service.invoker.HttpServiceProxyFactory
+import com.ongo.infrastructure.external.platform.PlatformRestClientSupport
 import java.time.Duration
 
 @Configuration
@@ -23,8 +23,7 @@ class FacebookConfig {
 
     @Bean
     fun facebookApi(): FacebookApi {
-        val restClient = RestClient.builder()
-            .baseUrl(apiBaseUrl)
+        val restClient = PlatformRestClientSupport.builder(apiBaseUrl)
             .requestFactory(createRequestFactory())
             .build()
         val factory = HttpServiceProxyFactory
@@ -35,8 +34,7 @@ class FacebookConfig {
 
     @Bean
     fun facebookOAuthApi(): FacebookOAuthApi {
-        val restClient = RestClient.builder()
-            .baseUrl(apiBaseUrl)
+        val restClient = PlatformRestClientSupport.builder(apiBaseUrl)
             .requestFactory(createRequestFactory())
             .build()
         val factory = HttpServiceProxyFactory

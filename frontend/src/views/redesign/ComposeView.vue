@@ -180,7 +180,7 @@
             </div>
           </div>
           <div class="mt-1.5 flex items-center gap-2">
-            <input v-model="activeDraft.title" type="text" class="input-field !text-[12.5px]" />
+            <input v-model="activeDraft.title" type="text" class="input-field !text-[12.5px]" @input="markActivePlatformDraftDirty" />
             <span class="shrink-0 font-mono text-[10px]" :class="titleOver ? 'text-bad' : 'text-content-tertiary'">
               {{ activeDraft.title.length }} / {{ titleLimit }}
             </span>
@@ -189,7 +189,7 @@
           <label class="mt-3.5 block text-[11.5px] text-content-secondary">
             {{ t('redesign.compose.description') }}
           </label>
-          <textarea v-model="activeDraft.description" class="input-field mt-1.5 min-h-[92px] !text-[12.5px]" />
+          <textarea v-model="activeDraft.description" class="input-field mt-1.5 min-h-[92px] !text-[12.5px]" @input="markActivePlatformDraftDirty" />
           <div class="mt-1 text-right font-mono text-[10px]" :class="descriptionOver ? 'text-bad' : 'text-content-tertiary'">
             {{ activeDraft.description.length }} / {{ descriptionLimit || '∞' }}
           </div>
@@ -197,7 +197,7 @@
           <label class="mt-3.5 block text-[11.5px] text-content-secondary">
             {{ t('redesign.compose.hashtags') }}
           </label>
-          <textarea v-model="activeDraft.hashtags" class="input-field mt-1.5 min-h-[62px] !text-[12.5px] !text-accent" />
+          <textarea v-model="activeDraft.hashtags" class="input-field mt-1.5 min-h-[62px] !text-[12.5px] !text-accent" @input="markActivePlatformDraftDirty" />
           <div class="mt-1 text-right font-mono text-[10px]" :class="tagsOver ? 'text-bad' : 'text-content-tertiary'">
             {{ hashtagCount }} / {{ tagLimit || '∞' }}
           </div>
@@ -326,7 +326,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLocale } from '@/composables/useLocale'
 import ThumbPlaceholder from '@/components/redesign/ThumbPlaceholder.vue'
@@ -393,6 +393,7 @@ const saving = ref(false)
 const captioning = ref(false)
 const metadataGenerating = ref(false)
 const metadataGeneratedForVideoId = ref<number | null>(null)
+const metadataGeneratedPlatforms = ref<Platform[]>([])
 const dataLoadError = ref('')
 const shortsEnabled = ref(true)
 const shortsProcessing = ref(false)
@@ -415,6 +416,7 @@ const recurringDayOfMonth = ref(1)
 type FormDraft = { title: string; description: string; hashtags: string }
 const form = reactive<FormDraft>({ title: '', description: '', hashtags: '' })
 const platformForms = reactive<Partial<Record<Platform, FormDraft>>>({})
+const platformDraftDirty = reactive<Partial<Record<Platform, boolean>>>({})
 const file = reactive({ name: '', thumbnailUrl: null as string | null, meta: '' })
 
 const sourceModes = computed(() => [
@@ -490,8 +492,29 @@ function draftFor(platform: Platform | null): FormDraft {
   if (!platform) return form
   if (!platformForms[platform]) {
     platformForms[platform] = reactive({ ...form })
+    platformDraftDirty[platform] = false
   }
   return platformForms[platform]!
+}
+
+/** 공통 문구는 채널별로 따로 편집하기 전까지 자동으로 따라간다. */
+watch(
+  () => [form.title, form.description, form.hashtags],
+  () => {
+    for (const platform of Object.keys(platformForms) as Platform[]) {
+      if (platformDraftDirty[platform]) continue
+      const draft = platformForms[platform]
+      if (!draft) continue
+      draft.title = form.title
+      draft.description = form.description
+      draft.hashtags = form.hashtags
+    }
+  },
+)
+
+function markActivePlatformDraftDirty() {
+  const platform = platformForTab(activeTab.value)
+  if (platform) platformDraftDirty[platform] = true
 }
 
 const activeDraft = computed(() => draftFor(platformForTab(activeTab.value)))
@@ -510,6 +533,7 @@ const previewLimits = computed(() => Object.fromEntries(
   capabilities.value.map((capability) => [capability.platform, {
     title: capability.maxTitleLength,
     description: capability.maxDescriptionLength,
+    tags: capability.maxTagCount,
   }]),
 ))
 
@@ -571,6 +595,7 @@ function applyCommonToPlatforms() {
     draft.title = form.title
     draft.description = form.description
     draft.hashtags = form.hashtags
+    platformDraftDirty[channel.platform] = false
   }
   notice.value = t('redesign.compose.commonApplied')
 }
@@ -687,12 +712,16 @@ async function saveSubtitleTrack(videoId: number, text: string, segments: { star
 
 /** 업로드 화면 안에서 자막/대본을 확보한 뒤 플랫폼별 메타데이터를 채운다. */
 async function generateMetadataFor(videoId: number) {
-  if (metadataGeneratedForVideoId.value === videoId || metadataGenerating.value) return
+  const platforms = selectedChannels.value.map((channel) => channel.platform)
+  const targetPlatforms = [...new Set(platforms.length > 0 ? platforms : ['YOUTUBE' as Platform])]
+  if (
+    metadataGeneratedForVideoId.value === videoId &&
+    targetPlatforms.every((platform) => metadataGeneratedPlatforms.value.includes(platform))
+  ) return
+  if (metadataGenerating.value) return
   metadataGenerating.value = true
   try {
     const script = await transcriptFor(videoId)
-    const platforms = selectedChannels.value.map((channel) => channel.platform)
-    const targetPlatforms = platforms.length > 0 ? platforms : ['YOUTUBE' as Platform]
     const result = await aiApi.generateMeta({
       script: script || form.description || form.title,
       videoId,
@@ -705,6 +734,8 @@ async function generateMetadataFor(videoId: number) {
     for (const item of result.platforms) {
       const platform = item.platform as Platform
       const draft = draftFor(platform)
+      // AI가 만든 채널별 문구는 공통 문구와 독립된 편집 초안으로 취급한다.
+      platformDraftDirty[platform] = true
       draft.title = item.titleCandidates[0] || draft.title
       draft.description = item.description || draft.description
       draft.hashtags = item.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
@@ -716,6 +747,7 @@ async function generateMetadataFor(videoId: number) {
       form.hashtags = first.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
     }
     metadataGeneratedForVideoId.value = videoId
+    metadataGeneratedPlatforms.value = [...new Set([...metadataGeneratedPlatforms.value, ...targetPlatforms])]
     notice.value = t('redesign.compose.metadataGenerated')
   } finally {
     metadataGenerating.value = false
