@@ -266,8 +266,8 @@ class StreamPublishUseCase(
             require(extension in capability.acceptedExtensions) {
                 "${platformRequest.platform}은(는) .$extension 파일을 지원하지 않습니다. 지원 형식: ${capability.acceptedExtensions.joinToString { ".$it" }}"
             }
-            require(platformRequest.scheduledAt == null || capability.cloudVideoUpload) {
-                "${platformRequest.platform}은(는) durable 예약 게시에 필요한 클라우드 업로드를 지원하지 않습니다."
+            require(platformRequest.scheduledAt == null || capability.scheduling) {
+                "${platformRequest.platform} 직접 스트리밍 업로드는 예약 게시를 지원하지 않습니다. 예약 게시에는 일반 업로드 경로를 사용해주세요."
             }
             require(platformRequest.scheduledAt == null || platformRequest.scheduledAt.isAfter(LocalDateTime.now().plusMinutes(5))) {
                 "예약 시간은 현재보다 최소 5분 이후여야 합니다."

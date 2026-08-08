@@ -344,6 +344,28 @@ class StreamPublishUseCaseTest {
         }
     }
 
+    @Test
+    fun `직접 스트리밍은 플랫폼이 예약을 지원하지 않으면 저장 전에 거부한다`() {
+        stubSubscription(PlanType.PRO)
+        stubMonthlyCount(0L)
+
+        val request = buildRequest(
+            platforms = listOf(
+                buildPlatformRequest(
+                    platform = Platform.TIKTOK,
+                    scheduledAt = LocalDateTime.now().plusDays(1),
+                ),
+            ),
+        )
+
+        val ex = assertFailsWith<IllegalArgumentException> {
+            useCase.initiate(userId, buildFile(), request)
+        }
+
+        assertTrue(ex.message!!.contains("예약 게시를 지원하지 않습니다"))
+        verify(exactly = 0) { videoRepository.save(any()) }
+    }
+
     // 6. 예약 없는 즉시 게시 시 Schedule 미생성
     @Test
     fun `즉시 게시 시 Schedule 레코드 생성하지 않음`() {
