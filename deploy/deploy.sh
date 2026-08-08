@@ -4,7 +4,7 @@
 # 사용법: bash deploy.sh [all|backend|frontend] [--skip-git] [--skip-build]
 # ============================================================
 
-set -e
+set -euo pipefail
 
 # Colors
 RED='\033[0;31m'
@@ -90,11 +90,12 @@ deploy_backend() {
 
     cd "$SRC_DIR/backend"
 
-    # Gradle 빌드 (테스트 스킵)
+    # 운영 배포 전 단위/API 테스트와 패키징을 함께 검증한다.
+    # 배포 호스트는 Docker를 사용하지 않으므로 Testcontainers IT만 명시적으로 제외한다.
     if [ "$SKIP_BUILD" = false ]; then
-        info "Gradle bootJar 빌드 중..."
+        info "Gradle 테스트 및 bootJar 빌드 중..."
         chmod +x gradlew
-        ./gradlew :onGo-api:bootJar -x test --no-daemon 2>&1 | tail -5
+        ./gradlew :onGo-common:test :onGo-domain:test :onGo-application:test :onGo-infrastructure:test :onGo-api:test :onGo-api:bootJar --no-daemon -PskipIntegrationTests=true 2>&1 | tail -5
     else
         info "Backend 빌드 건너뜀 (--skip-build)"
     fi
