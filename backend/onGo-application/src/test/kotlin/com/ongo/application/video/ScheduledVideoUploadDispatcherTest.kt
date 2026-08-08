@@ -11,6 +11,7 @@ import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
@@ -57,6 +58,7 @@ class ScheduledVideoUploadDispatcherTest {
         dispatcher().dispatchDueUploads()
 
         verify(exactly = 0) { publisher.publishEvent(any()) }
+        verify(exactly = 0) { uploads.claim(any(), any(), any(), any()) }
     }
 
     @Test
@@ -65,15 +67,55 @@ class ScheduledVideoUploadDispatcherTest {
         every { videos.findById(101L) } returns video
         every { storage.getFileUrl(101L) } returns video.fileUrl!!
         every { guard.requireWritable(7L, any(), any()) } returns Unit
+        every { uploads.claim(201L, any(), any(), any()) } returns upload.copy(
+            leaseOwner = "scheduled:201:worker",
+            leaseUntil = LocalDateTime.now().plusMinutes(30),
+        )
 
         dispatcher().dispatchDueUploads()
 
+        val event = slot<VideoPublishEvent>()
         verify(exactly = 1) {
-            publisher.publishEvent(match<VideoPublishEvent> {
-                it.videoId == 101L &&
-                    it.platformConfigs.single().videoUploadId == 201L &&
-                    it.platformConfigs.single().scheduledAt == null
-            })
+            publisher.publishEvent(capture(event))
+        }
+        assert(event.captured.videoId == 101L)
+        assert(event.captured.platformConfigs.single().videoUploadId == 201L)
+        assert(event.captured.platformConfigs.single().scheduledAt == null)
+        assert(event.captured.platformConfigs.single().leaseOwner?.startsWith("scheduled:201:") == true)
+        verify(exactly = 1) { uploads.claim(201L, any(), any(), any()) }
+    }
+
+    @Test
+    fun `another instance winning the lease does not emit a duplicate event`() {
+        every { uploads.findDueScheduledUploads(any()) } returns listOf(upload)
+        every { videos.findById(101L) } returns video
+        every { storage.getFileUrl(101L) } returns video.fileUrl!!
+        every { guard.requireWritable(7L, any(), any()) } returns Unit
+        every { uploads.claim(201L, any(), any(), any()) } returns null
+
+        dispatcher().dispatchDueUploads()
+
+        verify(exactly = 0) { publisher.publishEvent(any()) }
+    }
+
+    @Test
+    fun `metadata failure after claim becomes unconfirmed without publishing`() {
+        every { uploads.findDueScheduledUploads(any()) } returns listOf(upload)
+        every { videos.findById(101L) } returns video
+        every { storage.getFileUrl(101L) } returns video.fileUrl!!
+        every { guard.requireWritable(7L, any(), any()) } returns Unit
+        every { uploads.claim(201L, any(), any(), any()) } returns upload.copy(
+            leaseOwner = "scheduled:201:worker",
+            leaseUntil = LocalDateTime.now().plusMinutes(30),
+        )
+        every { uploads.updateOwned(any(), any()) } returns true
+        every { metas.findByVideoUploadId(201L) } throws IllegalStateException("database unavailable")
+
+        dispatcher().dispatchDueUploads()
+
+        verify(exactly = 0) { publisher.publishEvent(any()) }
+        verify {
+            uploads.updateOwned(match { it.status == UploadStatus.UNCONFIRMED }, any())
         }
     }
 }

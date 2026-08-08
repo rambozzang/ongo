@@ -25,13 +25,16 @@ class VideoPublishEventListener(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    // PublishVideoUseCase는 트랜잭션 커밋 뒤에 처리하고, 예약 디스패처는
+    // 스케줄러 스레드에서 이미 claim을 커밋한 뒤 발행한다. 후자는 활성 트랜잭션이
+    // 없으므로 fallbackExecution 없이는 이벤트가 조용히 버려진다.
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     fun handleVideoPublish(event: VideoPublishEvent) {
         log.info("영상 게시 이벤트 수신: videoId={}, platforms={}", event.videoId,
             event.platformConfigs.map { it.platform })
 
         // Virtual Thread 기반 병렬 업로드 (Semaphore로 동시 실행 제한)
-        val leaseOwner = "publish:${event.videoId}:${UUID.randomUUID()}"
+        val eventLeaseOwner = "publish:${event.videoId}:${UUID.randomUUID()}"
         ExecutorConfig.newVirtualExecutor().use { executor ->
             val futures = event.platformConfigs.map { config ->
                 executor.submit<Unit> {
@@ -39,7 +42,7 @@ class VideoPublishEventListener(
                     val platformSemaphore = ExecutorConfig.platformUploadSemaphore(config.platform)
                     platformSemaphore.acquire()
                     try {
-                        uploadToPlatform(event, config, leaseOwner)
+                        uploadToPlatform(event, config, config.leaseOwner ?: eventLeaseOwner)
                     } finally {
                         platformSemaphore.release()
                         ExecutorConfig.uploadSemaphore.release()
@@ -78,14 +81,22 @@ class VideoPublishEventListener(
             return
         }
 
-        val claimed = videoUploadRepository.claim(
-            id = config.videoUploadId,
-            owner = leaseOwner,
-            now = LocalDateTime.now(),
-            leaseUntil = LocalDateTime.now().plusMinutes(30),
-        )
+        val claimed = if (config.leaseOwner == null) {
+            videoUploadRepository.claim(
+                id = config.videoUploadId,
+                owner = leaseOwner,
+                now = LocalDateTime.now(),
+                leaseUntil = LocalDateTime.now().plusMinutes(30),
+            )
+        } else {
+            // 예약 디스패처가 이미 원자적으로 확보한 lease를 이어서 사용한다.
+            // 소유자와 만료를 확인해 오래된/변조된 이벤트는 외부 호출하지 않는다.
+            videoUploadRepository.findById(config.videoUploadId)?.takeIf {
+                it.leaseOwner == leaseOwner && it.leaseUntil?.isAfter(LocalDateTime.now()) == true
+            }
+        }
         if (claimed == null) {
-            log.warn("플랫폼 {} 업로드 lease 획득 실패, 중복 작업을 건너뜁니다: videoUploadId={}", config.platform, config.videoUploadId)
+            log.warn("플랫폼 {} 업로드 lease 확인 실패, 중복 작업을 건너뜁니다: videoUploadId={}", config.platform, config.videoUploadId)
             return
         }
 

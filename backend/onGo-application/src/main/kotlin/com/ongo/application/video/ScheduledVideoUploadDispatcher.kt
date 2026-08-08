@@ -10,6 +10,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
+import java.util.UUID
 
 /** 예약 시각이 된 durable upload만 외부 게시 이벤트로 깨운다. */
 @Component
@@ -46,28 +47,58 @@ class ScheduledVideoUploadDispatcher(
                 log.info("동결된 계정의 예약 게시를 보류합니다. videoId={}, uploadId={}", video.id, uploadId)
                 return@forEach
             }
-            val meta = videoPlatformMetaRepository.findByVideoUploadId(uploadId)
-            eventPublisher.publishEvent(
-                VideoPublishEvent(
-                    videoId = video.id!!,
-                    userId = video.userId,
-                    fileUrl = fileUrl,
-                    platformConfigs = listOf(
-                        PlatformUploadConfig(
-                            platform = upload.platform,
-                            videoUploadId = uploadId,
-                            title = meta?.title ?: video.title,
-                            description = meta?.description,
-                            tags = meta?.tags ?: emptyList(),
-                            visibility = meta?.visibility ?: com.ongo.common.enums.Visibility.PUBLIC,
-                            thumbnailUrl = meta?.customThumbnailUrl,
-                            // durable queue가 due 작업을 깨웠으므로 플랫폼에는 과거 시각을
-                            // 다시 전달하지 않는다. 여기부터는 즉시 게시 호출이다.
-                            scheduledAt = null,
-                        )
-                    ),
-                )
+
+            // 조회 결과만 믿고 이벤트를 발행하면 두 인스턴스가 같은 due row를
+            // 동시에 깨워 외부에 중복 게시할 수 있다. 외부 호출 직전에 원자적으로
+            // lease를 확보하고, 그 소유권을 이벤트 소비자에게 전달한다.
+            val leaseOwner = "scheduled:$uploadId:${UUID.randomUUID()}"
+            val claimed = videoUploadRepository.claim(
+                id = uploadId,
+                owner = leaseOwner,
+                now = LocalDateTime.now(),
+                leaseUntil = LocalDateTime.now().plusMinutes(30),
             )
+            if (claimed == null) {
+                log.debug("예약 게시 lease 획득 실패, 다른 인스턴스가 처리 중입니다. uploadId={}", uploadId)
+                return@forEach
+            }
+            try {
+                val meta = videoPlatformMetaRepository.findByVideoUploadId(uploadId)
+                eventPublisher.publishEvent(
+                    VideoPublishEvent(
+                        videoId = video.id!!,
+                        userId = video.userId,
+                        fileUrl = fileUrl,
+                        platformConfigs = listOf(
+                            PlatformUploadConfig(
+                                platform = upload.platform,
+                                videoUploadId = uploadId,
+                                title = meta?.title ?: video.title,
+                                description = meta?.description,
+                                tags = meta?.tags ?: emptyList(),
+                                visibility = meta?.visibility ?: com.ongo.common.enums.Visibility.PUBLIC,
+                                thumbnailUrl = meta?.customThumbnailUrl,
+                                // durable queue가 due 작업을 깨웠으므로 플랫폼에는 과거 시각을
+                                // 다시 전달하지 않는다. 여기부터는 즉시 게시 호출이다.
+                                scheduledAt = null,
+                                leaseOwner = leaseOwner,
+                            )
+                        ),
+                    )
+                )
+            } catch (e: Exception) {
+                // 이벤트 전달 자체가 실패하면 lease가 만료될 때까지 계속 UPLOADING으로
+                // 남지 않도록 즉시 확인 불가 상태로 전환한다. 외부 재전송은 하지 않는다.
+                val failed = claimed.copy(
+                    status = com.ongo.common.enums.UploadStatus.UNCONFIRMED,
+                    errorMessage = "예약 게시 이벤트 전달 실패: ${e.message}",
+                    lastError = e.message,
+                    leaseOwner = null,
+                    leaseUntil = null,
+                )
+                videoUploadRepository.updateOwned(failed, leaseOwner)
+                log.error("예약 게시 이벤트 전달 실패. uploadId={}", uploadId, e)
+            }
         }
     }
 }
