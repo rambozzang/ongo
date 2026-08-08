@@ -896,12 +896,17 @@ async function saveSubtitleTrack(
 async function generateMetadataFor(videoId: number) {
   const platforms = selectedChannels.value.map((channel) => channel.platform)
   const targetPlatforms = [...new Set(platforms.length > 0 ? platforms : ['YOUTUBE' as Platform])]
-  if (
-    metadataGeneratedForVideoId.value === videoId &&
-    targetPlatforms.every((platform) => metadataGeneratedPlatforms.value.includes(platform))
+  if (metadataGeneratedForVideoId.value !== videoId) {
+    metadataGeneratedForVideoId.value = videoId
+    metadataGeneratedPlatforms.value = []
+  }
+  const missingPlatforms = targetPlatforms.filter(
+    (platform) => !metadataGeneratedPlatforms.value.includes(platform),
   )
+  if (missingPlatforms.length === 0)
     return
   if (metadataGenerating.value) return
+  const firstGeneration = metadataGeneratedPlatforms.value.length === 0
   metadataGenerating.value = true
   try {
     const script = await transcriptFor(videoId)
@@ -909,13 +914,15 @@ async function generateMetadataFor(videoId: number) {
       script: script || form.description || form.title,
       videoId,
       useStt: false,
-      targetPlatforms,
+      targetPlatforms: missingPlatforms,
       tone: 'friendly',
       category: 'general',
     })
 
     for (const item of result.platforms) {
       const platform = item.platform as Platform
+      // A later channel selection must never erase copy the creator already edited.
+      if (platformDraftDirty[platform]) continue
       const draft = draftFor(platform)
       // AI가 만든 채널별 문구는 공통 문구와 독립된 편집 초안으로 취급한다.
       platformDraftDirty[platform] = true
@@ -924,14 +931,13 @@ async function generateMetadataFor(videoId: number) {
       draft.hashtags = item.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
     }
     const first = result.platforms[0]
-    if (first) {
+    if (first && firstGeneration) {
       form.title = first.titleCandidates[0] || form.title
       form.description = first.description || form.description
       form.hashtags = first.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
     }
-    metadataGeneratedForVideoId.value = videoId
     metadataGeneratedPlatforms.value = [
-      ...new Set([...metadataGeneratedPlatforms.value, ...targetPlatforms]),
+      ...new Set([...metadataGeneratedPlatforms.value, ...missingPlatforms]),
     ]
     notice.value = t('redesign.compose.metadataGenerated')
   } finally {
