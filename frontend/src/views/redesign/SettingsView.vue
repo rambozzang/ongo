@@ -115,6 +115,48 @@
           <div v-else class="rounded-lg border border-dashed border-line-control px-5 py-12 text-center text-[12px] text-content-tertiary">{{ t('empty.noData') }}</div>
         </template>
 
+        <template v-else-if="activeSection === 'security'">
+          <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 class="text-[15px] font-bold text-content">{{ t('settings.apiKeys.title') }}</h2>
+              <p class="mt-1 max-w-[650px] text-[12px] leading-5 text-content-tertiary">{{ t('settings.apiKeys.description') }}</p>
+            </div>
+          </div>
+
+          <div v-if="newApiKeyToken" class="mb-4 rounded-[11px] border border-success-subtle bg-success-subtle p-4">
+            <p class="text-[12px] font-bold text-success-strong">{{ t('settings.apiKeys.createdTitle') }}</p>
+            <p class="mt-1 text-[11px] leading-5 text-success-strong">{{ t('settings.apiKeys.createdDescription') }}</p>
+            <div class="mt-3 flex items-center gap-2">
+              <code class="min-w-0 flex-1 overflow-x-auto rounded-lg bg-surface-base px-3 py-2 text-[11px] text-content">{{ newApiKeyToken }}</code>
+              <button type="button" class="btn-secondary shrink-0 !min-h-9 text-[11px]" @click="copyApiKey">{{ t('settings.apiKeys.copy') }}</button>
+            </div>
+          </div>
+
+          <form class="mb-4 grid gap-2 rounded-[11px] border border-line p-4 tablet:grid-cols-[minmax(0,1fr)_220px_auto] tablet:items-end" @submit.prevent="createApiKey">
+            <label class="block">
+              <span class="text-[11px] font-semibold text-content-secondary">{{ t('settings.apiKeys.name') }}</span>
+              <input v-model="apiKeyForm.name" required maxlength="80" class="input-field mt-2 w-full" :placeholder="t('settings.apiKeys.namePlaceholder')">
+            </label>
+            <label class="block">
+              <span class="text-[11px] font-semibold text-content-secondary">{{ t('settings.apiKeys.expiry') }}</span>
+              <input v-model="apiKeyForm.expiresAt" type="datetime-local" class="input-field mt-2 w-full">
+            </label>
+            <button type="submit" class="btn-primary !min-h-9 text-[11px]" :disabled="creatingApiKey">{{ creatingApiKey ? t('action.loading') : t('settings.apiKeys.create') }}</button>
+          </form>
+
+          <div v-if="apiKeys.length" class="overflow-hidden rounded-[11px] border border-line">
+            <div v-for="apiKey in apiKeys" :key="apiKey.id" class="flex flex-wrap items-center gap-3 border-b border-line-row px-4 py-3 last:border-0">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-[12px] font-semibold text-content">{{ apiKey.name }}</p>
+                <p class="mt-1 font-mono text-[10.5px] text-content-tertiary">{{ apiKey.keyPrefix }}••••••••</p>
+              </div>
+              <span class="text-[10.5px] text-content-tertiary">{{ apiKey.revokedAt ? t('settings.apiKeys.revoked') : (apiKey.expiresAt ? formatDate(apiKey.expiresAt) : t('settings.apiKeys.neverExpires')) }}</span>
+              <button v-if="!apiKey.revokedAt" type="button" class="rounded-lg border border-error-subtle px-3 py-2 text-[11px] font-semibold text-error-strong hover:bg-error-subtle" @click="revokeApiKey(apiKey.id)">{{ t('settings.apiKeys.revoke') }}</button>
+            </div>
+          </div>
+          <div v-else class="rounded-lg border border-dashed border-line-control px-5 py-12 text-center text-[12px] text-content-tertiary">{{ t('settings.apiKeys.empty') }}</div>
+        </template>
+
         <div v-else class="rounded-lg border border-dashed border-line-control px-5 py-14 text-center">
           <Cog6ToothIcon class="mx-auto mb-2 h-7 w-7 text-content-quaternary" />
           <p class="text-[12px] font-semibold text-content-secondary">{{ t('empty.noData') }}</p>
@@ -161,7 +203,7 @@ import { AdjustmentsHorizontalIcon, Cog6ToothIcon } from '@heroicons/vue/24/outl
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
-import { settingsApi, type UserSettingsResponse } from '@/api/settings'
+import { settingsApi, type ApiKey, type UserSettingsResponse } from '@/api/settings'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import { useAutomationStore } from '@/stores/automation'
@@ -176,13 +218,17 @@ const settingsData = ref<UserSettingsResponse | null>(null)
 const savingDefaults = ref(false)
 const deleteConfirmOpen = ref(false)
 const defaults = reactive({ visibility: '', defaultPlatforms: [] as string[], aiTone: '', aiProvider: '' })
+const apiKeys = ref<ApiKey[]>([])
+const apiKeyForm = reactive({ name: '', expiresAt: '' })
+const creatingApiKey = ref(false)
+const newApiKeyToken = ref<string | null>(null)
 const navigation = computed(() => [
   { key: 'account', label: t('settings.tabs.account') },
   { key: 'automation', label: t('nav.automation') },
   { key: 'notifications', label: t('settings.tabs.notifications') },
   { key: 'team', label: t('nav.team') },
   { key: 'billing', label: t('nav.subscription') },
-  { key: 'security', label: t('settings.tabs.profile') },
+  { key: 'security', label: t('settings.tabs.apiKeys') },
 ])
 
 function platformLabel(platform: string): string {
@@ -198,6 +244,36 @@ function platformLabel(platform: string): string {
 }
 function formatPrice(value: number): string {
   return new Intl.NumberFormat(locale.value, { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(value)
+}
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+}
+async function fetchApiKeys() {
+  apiKeys.value = await settingsApi.listApiKeys()
+}
+async function createApiKey() {
+  if (!apiKeyForm.name.trim()) return
+  creatingApiKey.value = true
+  try {
+    const created = await settingsApi.createApiKey({
+      name: apiKeyForm.name.trim(),
+      ...(apiKeyForm.expiresAt ? { expiresAt: apiKeyForm.expiresAt } : {}),
+    })
+    newApiKeyToken.value = created.token ?? null
+    apiKeyForm.name = ''
+    apiKeyForm.expiresAt = ''
+    await fetchApiKeys()
+  } finally {
+    creatingApiKey.value = false
+  }
+}
+async function revokeApiKey(id: number) {
+  if (!window.confirm(t('settings.apiKeys.revokeConfirm'))) return
+  await settingsApi.revokeApiKey(id)
+  await fetchApiKeys()
+}
+async function copyApiKey() {
+  if (newApiKeyToken.value) await navigator.clipboard?.writeText(newApiKeyToken.value).catch(() => undefined)
 }
 async function saveDefaults() {
   if (!settingsData.value) return
@@ -234,6 +310,7 @@ onMounted(async () => {
     automationStore.fetchRules(),
     subscriptionStore.fetchSubscription(),
     subscriptionStore.fetchPlans(),
+    fetchApiKeys(),
   ])
   if (!authStore.user) await authStore.fetchProfile()
 })

@@ -28,6 +28,17 @@ export interface UserSettingsResponse {
   notificationScheduleReminder: number
 }
 
+export interface ApiKey {
+  id: number
+  name: string
+  keyPrefix: string
+  token?: string | null
+  lastUsedAt: string | null
+  expiresAt: string | null
+  revokedAt: string | null
+  createdAt: string | null
+}
+
 export const settingsApi = {
   getSettings() {
     return apiClient
@@ -44,6 +55,24 @@ export const settingsApi = {
   updateDefaults(settings: DefaultSettings) {
     return apiClient
       .put<ResData<void>>('/settings/defaults', settings)
+      .then(unwrapResponse)
+  },
+
+  listApiKeys() {
+    return apiClient
+      .get<ResData<ApiKey[]>>('/settings/api-keys')
+      .then(unwrapResponse)
+  },
+
+  createApiKey(request: { name: string; expiresAt?: string }) {
+    return apiClient
+      .post<ResData<ApiKey>>('/settings/api-keys', request)
+      .then(unwrapResponse)
+  },
+
+  revokeApiKey(id: number) {
+    return apiClient
+      .delete<ResData<void>>(`/settings/api-keys/${id}`)
       .then(unwrapResponse)
   },
 }

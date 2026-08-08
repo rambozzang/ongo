@@ -96,7 +96,7 @@ class SecurityConfig(
         configuration.allowedOriginPatterns = allowedOrigins.split(",").map { it.trim() }
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
         configuration.allowedHeaders = listOf(
-            "Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin",
+            "Authorization", "X-API-Key", "Content-Type", "Accept", "X-Requested-With", "Origin",
         )
         configuration.exposedHeaders = listOf("Location")
         configuration.allowCredentials = true

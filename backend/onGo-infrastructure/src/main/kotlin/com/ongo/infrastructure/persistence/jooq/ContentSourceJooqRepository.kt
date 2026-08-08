@@ -12,7 +12,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.EXTERNAL_ACCOUNT_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.GRANTED_SCOPES
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.LAST_ERROR
-import com.ongo.infrastructure.persistence.jooq.Fields.LAST_USED_AT
+import com.ongo.infrastructure.persistence.jooq.Fields.CONTENT_SOURCE_LAST_USED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.REFRESH_TOKEN
 import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE_TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE_TYPE_TEXT
@@ -106,7 +106,7 @@ class ContentSourceJooqRepository(
     override fun markUsed(id: Long) {
         val now = LocalDateTime.now()
         dsl.update(USER_CONTENT_SOURCES)
-            .set(LAST_USED_AT, now)
+            .set(CONTENT_SOURCE_LAST_USED_AT, now)
             .set(UPDATED_AT, now)
             .where(ID.eq(id)).execute()
     }
@@ -132,7 +132,7 @@ class ContentSourceJooqRepository(
             status = try { ContentSourceStatus.valueOf(statusStr) } catch (_: Exception) { ContentSourceStatus.ACTIVE },
             lastError = get(LAST_ERROR),
             connectedAt = localDateTime(CONNECTED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
-            lastUsedAt = localDateTime(LAST_USED_AT)?.atZone(ZoneOffset.UTC)?.toInstant(),
+            lastUsedAt = localDateTime(CONTENT_SOURCE_LAST_USED_AT)?.atZone(ZoneOffset.UTC)?.toInstant(),
             updatedAt = localDateTime(UPDATED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
         )
     }

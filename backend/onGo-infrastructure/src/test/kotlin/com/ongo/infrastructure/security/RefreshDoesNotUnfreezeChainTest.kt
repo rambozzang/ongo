@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.ongo.common.exception.AccountFrozenException
 import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.auth.TokenBlacklistPort
+import com.ongo.domain.apikey.ApiKeyRepository
+import com.ongo.application.apikey.ApiKeyUseCase
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.AfterEach
@@ -43,8 +45,10 @@ class RefreshDoesNotUnfreezeChainTest {
     private val guard = mockk<UserWriteGuard>()
     private val blacklist = mockk<TokenBlacklistPort>(relaxed = true)
     private val jwtProvider = mockk<JwtTokenProvider>(relaxed = true)
+    private val apiKeyRepository = mockk<ApiKeyRepository>(relaxed = true)
+    private val apiKeyUseCase = ApiKeyUseCase(apiKeyRepository)
 
-    private val jwtFilter = JwtAuthenticationFilter(jwtProvider, blacklist)
+    private val jwtFilter = JwtAuthenticationFilter(jwtProvider, blacklist, apiKeyRepository, apiKeyUseCase)
     private val freezeFilter = AccountFreezeFilter(guard, ObjectMapper())
 
     private companion object {

@@ -959,7 +959,24 @@
       "notifications": "알림",
       "defaults": "기본 설정",
       "activity": "활동 로그",
-      "account": "계정"
+      "account": "계정",
+      "apiKeys": "자동화 API 키"
+    },
+    "apiKeys": {
+      "title": "자동화 API 키",
+      "description": "N8N, Make, Zapier 또는 직접 만든 스크립트에서 기존 onGo API를 호출할 때 사용합니다. 키 원문은 생성 직후 한 번만 표시됩니다.",
+      "createdTitle": "API 키가 생성되었습니다",
+      "createdDescription": "지금 복사해 안전한 비밀 저장소에 보관하세요. 이 화면을 떠나면 원문을 다시 볼 수 없습니다.",
+      "copy": "복사",
+      "name": "키 이름",
+      "namePlaceholder": "예: 콘텐츠 자동 게시",
+      "expiry": "만료일 (선택)",
+      "create": "키 생성",
+      "revoke": "폐기",
+      "revokeConfirm": "이 API 키를 폐기하시겠습니까? 연동된 자동화가 즉시 중단됩니다.",
+      "revoked": "폐기됨",
+      "neverExpires": "만료 없음",
+      "empty": "생성된 API 키가 없습니다."
     },
     "profile": {
       "title": "프로필 설정",

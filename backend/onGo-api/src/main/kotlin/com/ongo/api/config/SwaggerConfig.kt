@@ -27,6 +27,7 @@ class SwaggerConfig {
                 )
         )
         .addSecurityItem(SecurityRequirement().addList("Bearer 인증"))
+        .addSecurityItem(SecurityRequirement().addList("자동화 API 키"))
         .components(
             Components()
                 .addSecuritySchemes(
@@ -36,6 +37,14 @@ class SwaggerConfig {
                         .scheme("bearer")
                         .bearerFormat("JWT")
                         .description("JWT Access Token을 입력하세요")
+                )
+                .addSecuritySchemes(
+                    "자동화 API 키",
+                    SecurityScheme()
+                        .type(SecurityScheme.Type.APIKEY)
+                        .`in`(SecurityScheme.In.HEADER)
+                        .name("X-API-Key")
+                        .description("설정에서 생성한 og_live_... 키를 입력하세요. 키 관리 API에는 사용할 수 없습니다.")
                 )
         )
         .tags(
@@ -50,6 +59,7 @@ class SwaggerConfig {
                 Tag().name("구독").description("구독 현황 조회, 플랜 변경, 구독 취소, 플랜 비교"),
                 Tag().name("결제").description("결제 내역 조회 및 PortOne 결제 처리"),
                 Tag().name("파일 업로드").description("Tus 프로토콜 기반 대용량 파일 이어받기 업로드"),
+                Tag().name("개인 API 키").description("N8N, Make, Zapier 및 스크립트 자동화용 인증 키"),
             )
         )
 }

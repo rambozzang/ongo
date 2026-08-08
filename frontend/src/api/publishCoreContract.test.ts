@@ -10,6 +10,7 @@ import { channelApi } from './channel'
 import { ugcCampaignApi } from './ugcCampaign'
 import { ugcPublishingApi } from './ugcPublishing'
 import { ugcShortsPipelineApi } from './ugcShortsPipeline'
+import { settingsApi } from './settings'
 
 const response = (data: unknown = {}) => ({ data: { success: true, data } })
 
@@ -37,6 +38,19 @@ describe('publish core API contracts', () => {
     expect(get).toHaveBeenCalledWith('/videos/import-url/availability')
     await capabilitiesApi.list()
     expect(get).toHaveBeenCalledWith('/capabilities')
+  })
+
+  it('keeps automation API key lifecycle server-backed and never invents a local token', async () => {
+    await settingsApi.listApiKeys()
+    await settingsApi.createApiKey({ name: 'content automation', expiresAt: '2026-12-31T23:59' })
+    await settingsApi.revokeApiKey(12)
+
+    expect(get).toHaveBeenCalledWith('/settings/api-keys')
+    expect(post).toHaveBeenCalledWith('/settings/api-keys', {
+      name: 'content automation',
+      expiresAt: '2026-12-31T23:59',
+    })
+    expect(del).toHaveBeenCalledWith('/settings/api-keys/12')
   })
 
   it('creates, updates, publishes, retries, rechecks, and completes a video', async () => {

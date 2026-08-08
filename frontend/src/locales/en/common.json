@@ -959,7 +959,24 @@
       "notifications": "Notifications",
       "defaults": "Defaults",
       "activity": "Activity Log",
-      "account": "Account"
+      "account": "Account",
+      "apiKeys": "Automation API keys"
+    },
+    "apiKeys": {
+      "title": "Automation API keys",
+      "description": "Use these keys from N8N, Make, Zapier, or your own scripts to call the existing onGo API. The secret is shown only once after creation.",
+      "createdTitle": "API key created",
+      "createdDescription": "Copy it now and store it in a secure secret manager. The raw secret cannot be viewed again.",
+      "copy": "Copy",
+      "name": "Key name",
+      "namePlaceholder": "e.g. Content publishing automation",
+      "expiry": "Expiry (optional)",
+      "create": "Create key",
+      "revoke": "Revoke",
+      "revokeConfirm": "Revoke this API key? Connected automations will stop immediately.",
+      "revoked": "Revoked",
+      "neverExpires": "Never expires",
+      "empty": "No API keys have been created."
     },
     "profile": {
       "title": "Profile Settings",

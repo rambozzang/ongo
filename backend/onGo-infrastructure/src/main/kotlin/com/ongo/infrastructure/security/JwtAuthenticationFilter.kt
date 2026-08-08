@@ -1,6 +1,8 @@
 package com.ongo.infrastructure.security
 
 import com.ongo.domain.auth.TokenBlacklistPort
+import com.ongo.application.apikey.ApiKeyUseCase
+import com.ongo.domain.apikey.ApiKeyRepository
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,6 +16,8 @@ import org.springframework.web.filter.OncePerRequestFilter
 class JwtAuthenticationFilter(
     private val jwtTokenProvider: JwtTokenProvider,
     private val tokenBlacklist: TokenBlacklistPort,
+    private val apiKeyRepository: ApiKeyRepository,
+    private val apiKeyUseCase: ApiKeyUseCase,
 ) : OncePerRequestFilter() {
 
     companion object {
@@ -39,6 +43,11 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain,
     ) {
+        if (authenticateApiKey(request)) {
+            filterChain.doFilter(request, response)
+            return
+        }
+
         val token = resolveToken(request)
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
@@ -71,8 +80,35 @@ class JwtAuthenticationFilter(
         filterChain.doFilter(request, response)
     }
 
+    /**
+     * API keys are deliberately handled before JWT parsing. A key is not a JWT and must never
+     * be passed to the JWT provider (which would create noisy parse failures for automation).
+     */
+    private fun authenticateApiKey(request: HttpServletRequest): Boolean {
+        val rawKey = request.getHeader("X-API-Key")?.takeIf { it.isNotBlank() }
+            ?: request.getHeader("Authorization")
+                ?.takeIf { it.startsWith("Bearer og_live_", ignoreCase = false) }
+                ?.substring(7)
+            ?: return false
+
+        val apiKey = apiKeyRepository.findActiveByHash(apiKeyUseCase.hash(rawKey), java.time.LocalDateTime.now())
+            ?: return false
+        val authentication = UsernamePasswordAuthenticationToken(
+            apiKey.userId,
+            null,
+            listOf(
+                SimpleGrantedAuthority("ROLE_USER"),
+                SimpleGrantedAuthority("AUTH_API_KEY"),
+            ),
+        )
+        SecurityContextHolder.getContext().authentication = authentication
+        apiKeyRepository.touchLastUsed(apiKey.id!!, java.time.LocalDateTime.now())
+        return true
+    }
+
     private fun resolveToken(request: HttpServletRequest): String? {
         val bearerToken = request.getHeader("Authorization")
+        if (bearerToken?.startsWith("Bearer og_live_") == true) return null
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7)
         }

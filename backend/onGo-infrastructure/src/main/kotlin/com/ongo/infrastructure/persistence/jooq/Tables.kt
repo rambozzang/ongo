@@ -213,6 +213,9 @@ object Tables {
 
     // 계정 삭제 — users 를 외래키로 참조하지 않는다(삭제 후에도 남는 감사 기록).
     val ACCOUNT_DELETION_JOBS = DSL.table("account_deletion_jobs")
+
+    // Personal automation credentials
+    val API_KEYS = DSL.table("api_keys")
 }
 
 object Fields {
@@ -234,6 +237,14 @@ object Fields {
     val CATEGORY = DSL.field("category", String::class.java)
     val ONBOARDING_COMPLETED = DSL.field("onboarding_completed", Boolean::class.java)
     val ROLE = DSL.field("role", String::class.java)
+
+    // api_keys
+    val KEY_NAME = DSL.field("name", String::class.java)
+    val KEY_PREFIX = DSL.field("key_prefix", String::class.java)
+    val KEY_HASH = DSL.field("key_hash", String::class.java)
+    val API_KEY_LAST_USED_AT = DSL.field("last_used_at", java.time.LocalDateTime::class.java)
+    val KEY_EXPIRES_AT = DSL.field("expires_at", java.time.LocalDateTime::class.java)
+    val REVOKED_AT = DSL.field("revoked_at", java.time.LocalDateTime::class.java)
 
     // channels
     val PLATFORM = DSL.field("platform", String::class.java)
@@ -936,7 +947,7 @@ object Fields {
     val ACCOUNT_DISPLAY_NAME = DSL.field("account_display_name", String::class.java)
     val GRANTED_SCOPES = DSL.field("granted_scopes", String::class.java)
     val LAST_ERROR = DSL.field("last_error", String::class.java)
-    val LAST_USED_AT = DSL.field("last_used_at", java.time.LocalDateTime::class.java)
+    val CONTENT_SOURCE_LAST_USED_AT = DSL.field("last_used_at", java.time.LocalDateTime::class.java)
 
     // drive_import_jobs
     val CONTENT_SOURCE_ID = DSL.field("content_source_id", Long::class.java)
