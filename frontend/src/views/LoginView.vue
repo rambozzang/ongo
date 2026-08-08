@@ -167,6 +167,9 @@ async function loginWithGoogle() {
   isLoading.value = true
   errorMessage.value = ''
   try {
+    if (!GOOGLE_CLIENT_ID?.trim()) {
+      throw new Error(t('loginView.googleNotConfigured'))
+    }
     const { state } = await authApi.getOAuthState('google')
     sessionStorage.setItem('oauth_state', state)
     const params = new URLSearchParams({
@@ -189,6 +192,9 @@ async function loginWithKakao() {
   isLoading.value = true
   errorMessage.value = ''
   try {
+    if (!KAKAO_CLIENT_ID?.trim()) {
+      throw new Error(t('loginView.kakaoNotConfigured'))
+    }
     const { state } = await authApi.getOAuthState('kakao')
     sessionStorage.setItem('oauth_state', state)
     const params = new URLSearchParams({
@@ -210,11 +216,19 @@ async function handleOAuthCallback() {
   const code = url.searchParams.get('code')
   const state = url.searchParams.get('state')
   const path = url.pathname
+  const provider = path.includes('google') ? 'google' : path.includes('kakao') ? 'kakao' : null
+  const providerError = url.searchParams.get('error')
+
+  if (!provider) return
+
+  if (providerError) {
+    errorMessage.value = providerError === 'access_denied'
+      ? t('loginView.oauthCancelled')
+      : t('loginView.loginError')
+    return
+  }
 
   if (!code) return
-
-  const provider = path.includes('google') ? 'google' : path.includes('kakao') ? 'kakao' : null
-  if (!provider) return
 
   isLoading.value = true
   errorMessage.value = ''

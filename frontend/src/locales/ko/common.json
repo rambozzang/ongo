@@ -4122,7 +4122,10 @@
     "privacyPolicy": "개인정보처리방침",
     "devLoginError": "개발자 로그인에 실패했습니다.",
     "oauthPrepareError": "로그인 준비에 실패했습니다.",
-    "loginError": "로그인에 실패했습니다. 다시 시도해주세요."
+    "loginError": "로그인에 실패했습니다. 다시 시도해주세요.",
+    "googleNotConfigured": "Google 로그인이 아직 설정되지 않았습니다. 관리자에게 문의해주세요.",
+    "kakaoNotConfigured": "카카오 로그인이 아직 설정되지 않았습니다. 관리자에게 문의해주세요.",
+    "oauthCancelled": "로그인을 취소했습니다. 다시 시도해주세요."
   },
   "channelCallbackView": {
     "connecting": "채널을 연결하고 있습니다…",

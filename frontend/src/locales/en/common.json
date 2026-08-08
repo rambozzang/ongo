@@ -4132,7 +4132,10 @@
     "privacyPolicy": "Privacy Policy",
     "devLoginError": "Developer login failed.",
     "oauthPrepareError": "Couldn't start the sign-in process.",
-    "loginError": "Sign-in failed. Please try again."
+    "loginError": "Sign-in failed. Please try again.",
+    "googleNotConfigured": "Google sign-in is not configured yet. Please contact the administrator.",
+    "kakaoNotConfigured": "Kakao sign-in is not configured yet. Please contact the administrator.",
+    "oauthCancelled": "Sign-in was cancelled. Please try again."
   },
   "channelCallbackView": {
     "connecting": "Connecting your channel…",
