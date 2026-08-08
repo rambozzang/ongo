@@ -10,6 +10,8 @@ import io.mockk.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.TimeUnit
 
 class VideoPublishEventListenerTest {
 
@@ -116,6 +118,64 @@ class VideoPublishEventListenerTest {
         }
         verify {
             ttService.upload(any(), eq("https://storage/original.mp4"), any())
+        }
+    }
+
+    @Test
+    fun `should start all seven platform uploads concurrently`() {
+        val platforms = listOf(
+            Platform.YOUTUBE,
+            Platform.TIKTOK,
+            Platform.NAVER_CLIP,
+            Platform.TWITTER,
+            Platform.INSTAGRAM,
+            Platform.THREADS,
+            Platform.FACEBOOK,
+        )
+        val services = platforms.map(::createMockService)
+        platformUploadServices.addAll(services)
+        val barrier = CyclicBarrier(platforms.size)
+
+        services.forEachIndexed { index, service ->
+            every { service.upload(any(), eq("https://storage/original.mp4"), eq(100L)) } answers {
+                barrier.await(5, TimeUnit.SECONDS)
+                PlatformUploadResult(
+                    success = true,
+                    platformVideoId = "platform-$index",
+                    platformUrl = "https://platform.test/$index",
+                    published = true,
+                )
+            }
+        }
+        every { videoUploadRepository.claim(any(), any(), any(), any()) } answers {
+            VideoUpload(
+                id = firstArg(),
+                videoId = 1L,
+                platform = Platform.YOUTUBE,
+            )
+        }
+        every { videoUploadRepository.findById(any()) } answers {
+            VideoUpload(
+                id = firstArg(),
+                videoId = 1L,
+                platform = Platform.YOUTUBE,
+            )
+        }
+        every { videoUploadRepository.updateOwned(any(), any()) } returns true
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+        every { videoRepository.findById(1L) } returns null
+
+        val event = createEvent(
+            userId = 100L,
+            configs = platforms.mapIndexed { index, platform ->
+                createConfig(platform = platform, videoUploadId = 10L + index)
+            },
+        )
+
+        listener.handleVideoPublish(event)
+
+        services.forEach { service ->
+            verify(exactly = 1) { service.upload(any(), eq("https://storage/original.mp4"), eq(100L)) }
         }
     }
 }
