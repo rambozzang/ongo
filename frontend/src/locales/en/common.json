@@ -1326,7 +1326,8 @@
         "facebook": "Page videos",
         "threads": "Threads video posts",
         "pinterest": "Video Pins on your boards",
-        "linkedin": "Post videos to your profile"
+        "linkedin": "Post videos to your profile",
+        "wordpress": "Publish a video post to your site"
       },
       "connectFailed": "Couldn't start channel connection. Please try again."
     },

@@ -53,6 +53,10 @@ object PlatformUploadCapabilities {
             Platform.LINKEDIN, false, true, false, 500 * MB, 3_000, 3_000, 0, setOf("mp4"),
             "LinkedIn Videos API의 4MB 파트 업로드와 처리 완료 확인을 사용합니다.",
         ),
+        Platform.WORDPRESS to PlatformUploadCapability(
+            Platform.WORDPRESS, false, true, false, 2 * GB, 200, 5_000, 100, VIDEO_EXTENSIONS,
+            "WordPress.com 사이트의 미디어 허용 형식과 저장 용량 정책을 따릅니다.",
+        ),
     )
 
     fun get(platform: Platform): PlatformUploadCapability? = capabilities[platform]

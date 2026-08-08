@@ -6,6 +6,7 @@ import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.wordpress.dto.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.util.LinkedMultiValueMap
 import java.time.LocalDate
 
 @Component
@@ -29,8 +30,10 @@ class WordPressClient(
             // Step 1: Upload media
             val mediaResponse = wordPressApi.uploadMedia(
                 siteId = siteId,
-                mediaUrl = request.fileUrl,
                 authorization = "Bearer ${request.accessToken}",
+                body = LinkedMultiValueMap<String, String>().apply {
+                    add("media_urls[]", request.fileUrl)
+                },
             )
 
             // Step 2: Create post with embedded video
@@ -124,13 +127,13 @@ class WordPressClient(
         log.debug("WordPress OAuth 인가 코드 교환")
 
         val response = wordPressOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "authorization_code",
-                "code" to authorizationCode,
-                "redirect_uri" to redirectUri,
-                "client_id" to wordPressConfig.getClientId(),
-                "client_secret" to wordPressConfig.getClientSecret(),
-            ),
+            LinkedMultiValueMap<String, String>().apply {
+                add("grant_type", "authorization_code")
+                add("code", authorizationCode)
+                add("redirect_uri", redirectUri)
+                add("client_id", wordPressConfig.getClientId())
+                add("client_secret", wordPressConfig.getClientSecret())
+            },
         )
 
         return PlatformTokenResult(

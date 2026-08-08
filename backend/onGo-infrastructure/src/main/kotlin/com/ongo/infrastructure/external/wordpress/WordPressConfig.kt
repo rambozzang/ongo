@@ -21,6 +21,9 @@ class WordPressConfig {
     @Value("\${platform.wordpress.client-secret:}")
     private lateinit var clientSecret: String
 
+    @Value("\${platform.wordpress.oauth-base-url:https://public-api.wordpress.com}")
+    private lateinit var oauthBaseUrl: String
+
     @Bean
     fun wordPressApi(): WordPressApi {
         val restClient = RestClient.builder()
@@ -36,7 +39,7 @@ class WordPressConfig {
     @Bean
     fun wordPressOAuthApi(): WordPressOAuthApi {
         val restClient = RestClient.builder()
-            .baseUrl(apiBaseUrl)
+            .baseUrl(oauthBaseUrl)
             .requestFactory(createRequestFactory())
             .build()
         val factory = HttpServiceProxyFactory

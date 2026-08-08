@@ -451,6 +451,7 @@ const platforms = computed<{ key: Platform; label: string; description: string; 
   { key: 'THREADS', label: 'Threads', description: t('onboarding.channels.descriptions.threads'), bgColor: '#000000' },
   { key: 'PINTEREST', label: 'Pinterest', description: t('onboarding.channels.descriptions.pinterest'), bgColor: '#E60023' },
   { key: 'LINKEDIN', label: 'LinkedIn', description: t('onboarding.channels.descriptions.linkedin'), bgColor: '#0A66C2' },
+  { key: 'WORDPRESS', label: 'WordPress.com', description: t('onboarding.channels.descriptions.wordpress'), bgColor: '#21759B' },
 ])
 
 function startOnboarding() {

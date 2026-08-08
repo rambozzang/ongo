@@ -23,6 +23,7 @@ class PlatformUploadCapabilityTest {
                 Platform.TWITTER,
                 Platform.PINTEREST,
                 Platform.LINKEDIN,
+                Platform.WORDPRESS,
             ),
             capabilities.keys,
         )

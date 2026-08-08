@@ -465,7 +465,7 @@ import { fallbackOptimalSlot, kstWallClockToInstant, nextOptimalDateTime } from 
 const { t } = useLocale()
 const route = useRoute()
 
-type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI'
+type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP'
 const CHIP: Partial<Record<Platform, ChipCode>> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
@@ -476,6 +476,7 @@ const CHIP: Partial<Record<Platform, ChipCode>> = {
   TWITTER: 'TW',
   PINTEREST: 'PI',
   LINKEDIN: 'LI',
+  WORDPRESS: 'WP',
 }
 
 const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
@@ -488,6 +489,7 @@ const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
   TW: { bg: 'var(--platform-x-bg, #111827)', fg: 'var(--platform-x-fg, #ffffff)' },
   PI: { bg: '#E60023', fg: '#ffffff' },
   LI: { bg: '#0A66C2', fg: '#ffffff' },
+  WP: { bg: '#21759B', fg: '#ffffff' },
 }
 
 /** 플랫폼별 제목 상한. 핸드오프 검증 규칙. */
@@ -531,7 +533,7 @@ const capabilities = ref<PlatformUploadCapability[]>([])
 const optimalSlots = ref<Partial<Record<Platform, OptimalTimeSlot[]>>>({})
 const optimalTimesError = ref('')
 const disabled = reactive<Record<number, boolean>>({})
-const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI'>('common')
+const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP'>('common')
 const schedMode = ref<'now' | 'best' | 'fix'>('best')
 const fixedAt = ref('')
 const recurringEnabled = ref(false)
@@ -568,6 +570,7 @@ const tabs = [
   { key: 'TW' as const, label: 'X (Twitter)' },
   { key: 'PI' as const, label: 'Pinterest' },
   { key: 'LI' as const, label: 'LinkedIn' },
+  { key: 'WP' as const, label: 'WordPress.com' },
 ]
 
 const scheduleOptions = computed(() => [
@@ -630,6 +633,7 @@ function platformForTab(tab: typeof activeTab.value): Platform | null {
         TW: 'TWITTER',
         PI: 'PINTEREST',
         LI: 'LINKEDIN',
+        WP: 'WORDPRESS',
       } as Record<string, Platform>
     )[tab] ?? null
   )

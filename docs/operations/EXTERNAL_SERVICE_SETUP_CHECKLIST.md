@@ -505,7 +505,7 @@ GEMINI_LOCATION=us-central1
 |---|---|---|
 | Pinterest | `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET` | OAuth·보드 연결·동영상 Pin 서버 계약 구현. `VITE_PINTEREST_APP_ID` 설정 후 실계정 검증 필요 |
 | LinkedIn | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | OAuth·최신 Videos API 파트 업로드·UGC 게시 구현. `VITE_LINKEDIN_CLIENT_ID` 설정 후 실계정 검증 필요 |
-| WordPress.com | `WORDPRESS_CLIENT_ID`, `WORDPRESS_CLIENT_SECRET` | 프런트 OAuth 미구현 |
+| WordPress.com | `WORDPRESS_CLIENT_ID`, `WORDPRESS_CLIENT_SECRET` | OAuth·form 미디어 URL 업로드·video post 구현. `VITE_WORDPRESS_CLIENT_ID` 설정 후 실계정 검증 필요 |
 | Tumblr | `TUMBLR_CONSUMER_KEY`, `TUMBLR_CONSUMER_SECRET` | 프런트 OAuth 미구현 |
 | Vimeo | `VIMEO_CLIENT_ID`, `VIMEO_CLIENT_SECRET` | 프런트 OAuth 미구현 |
 | Dailymotion | `DAILYMOTION_API_KEY`, `DAILYMOTION_API_SECRET` | 프런트 OAuth 미구현 |
@@ -625,6 +625,7 @@ VITE_FACEBOOK_APP_ID=
 VITE_THREADS_APP_ID=
 VITE_PINTEREST_APP_ID=
 VITE_LINKEDIN_CLIENT_ID=
+VITE_WORDPRESS_CLIENT_ID=
 ```
 
 ## 8. 권장 가입 순서

@@ -127,6 +127,15 @@ export function buildOAuthUrl(platform: Platform, returnPath: string, codeChalle
         state,
       })}`
 
+    case 'WORDPRESS':
+      return `https://public-api.wordpress.com/oauth2/authorize?${new URLSearchParams({
+        client_id: import.meta.env.VITE_WORDPRESS_CLIENT_ID || '',
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'global',
+        state,
+      })}`
+
     default:
       throw new Error(`Unsupported platform for OAuth: ${platform}`)
   }

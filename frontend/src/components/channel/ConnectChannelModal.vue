@@ -112,7 +112,7 @@ import { CheckIcon, LinkIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
 
-const SUPPORTED_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP', 'TWITTER', 'FACEBOOK', 'THREADS', 'PINTEREST', 'LINKEDIN']
+const SUPPORTED_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP', 'TWITTER', 'FACEBOOK', 'THREADS', 'PINTEREST', 'LINKEDIN', 'WORDPRESS']
 
 const props = defineProps<{
   modelValue: boolean
@@ -149,6 +149,7 @@ function getPlatformInitial(platform: Platform): string {
     THREADS: 'Th',
     PINTEREST: 'P',
     LINKEDIN: 'Li',
+    WORDPRESS: 'W',
   }
   return initials[platform] || platform.charAt(0)
 }
@@ -164,6 +165,7 @@ function getPlatformDescription(platform: Platform): string {
     THREADS: '스레드 영상 게시',
     PINTEREST: '보드에 동영상 Pin 게시',
     LINKEDIN: '프로필에 동영상 게시',
+    WORDPRESS: '사이트에 동영상 글 게시',
   }
   return descriptions[platform] || ''
 }
