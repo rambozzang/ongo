@@ -270,6 +270,35 @@
 
       <input v-if="schedMode === 'fix'" v-model="fixedAt" type="datetime-local" class="input-field mt-2 !text-[12px]" />
 
+      <div class="mt-3 rounded-lg border border-line-control bg-surface-raised p-3">
+        <label class="flex cursor-pointer items-center gap-2 text-[11.5px] font-semibold text-content">
+          <input v-model="recurringEnabled" type="checkbox" class="h-4 w-4 accent-primary-600" />
+          {{ t('redesign.compose.recurringToggle') }}
+        </label>
+        <div v-if="recurringEnabled" class="mt-2.5 space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <select v-model="recurringFrequency" class="input-field !text-[11.5px]">
+              <option value="DAILY">매일</option>
+              <option value="WEEKLY">매주</option>
+              <option value="BIWEEKLY">격주</option>
+              <option value="MONTHLY">매월</option>
+            </select>
+            <input v-model="recurringTime" type="time" class="input-field !text-[11.5px]" />
+          </div>
+          <select v-if="recurringFrequency === 'WEEKLY' || recurringFrequency === 'BIWEEKLY'" v-model.number="recurringDayOfWeek" class="input-field !text-[11.5px]">
+            <option :value="1">월요일</option>
+            <option :value="2">화요일</option>
+            <option :value="3">수요일</option>
+            <option :value="4">목요일</option>
+            <option :value="5">금요일</option>
+            <option :value="6">토요일</option>
+            <option :value="7">일요일</option>
+          </select>
+          <input v-if="recurringFrequency === 'MONTHLY'" v-model.number="recurringDayOfMonth" type="number" min="1" max="31" class="input-field !text-[11.5px]" placeholder="매월 일자 (1~31)" />
+          <p class="text-[10.5px] leading-4 text-content-tertiary">{{ t('redesign.compose.recurringHint') }}</p>
+        </div>
+      </div>
+
       <!-- 액션 -->
       <div class="mt-auto pt-[18px]">
         <p v-if="blockedReason" class="mb-2 text-[11px] text-error-strong">{{ blockedReason }}</p>
@@ -314,7 +343,9 @@ import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
 import { parseCues, serializeCues, countWords, totalDurationOf, subtitleEditorApi } from '@/api/subtitleEditor'
 import { videoApi } from '@/api/video'
+import { templatesApi } from '@/api/templates'
 import { ugcShortsPipelineApi, type PipelineRunDetailResponse } from '@/api/ugcShortsPipeline'
+import { recurringApi, type RecurringFrequency } from '@/api/recurring'
 import { useUploadStore } from '@/stores/upload'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Channel, Platform } from '@/types/channel'
@@ -385,6 +416,11 @@ const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'>('commo
 const previewPlatform = ref<'Instagram' | 'TikTok' | 'YouTube' | 'Facebook' | 'Naver Clip' | 'Threads'>('Instagram')
 const schedMode = ref<'now' | 'best' | 'fix'>('best')
 const fixedAt = ref('')
+const recurringEnabled = ref(false)
+const recurringFrequency = ref<RecurringFrequency>('WEEKLY')
+const recurringTime = ref('09:00')
+const recurringDayOfWeek = ref(1)
+const recurringDayOfMonth = ref(1)
 
 type FormDraft = { title: string; description: string; hashtags: string }
 const form = reactive<FormDraft>({ title: '', description: '', hashtags: '' })
@@ -720,6 +756,8 @@ async function submit() {
 
   submitting.value = true
   notice.value = ''
+  let publishCompleted = false
+  let recurringFailure = ''
   try {
     let sourceVideoId = importedVideoId.value ?? uploadStore.videoId
     if (!sourceVideoId && selected) {
@@ -769,11 +807,40 @@ async function submit() {
     })
 
     await videoApi.publish(sourceVideoId, { platforms: configs })
+    publishCompleted = true
+    if (recurringEnabled.value) {
+      try {
+        await recurringApi.create({
+          videoId: sourceVideoId,
+          name: form.title || '반복 게시',
+          frequency: recurringFrequency.value,
+          dayOfWeek: recurringFrequency.value === 'WEEKLY' || recurringFrequency.value === 'BIWEEKLY' ? recurringDayOfWeek.value : undefined,
+          dayOfMonth: recurringFrequency.value === 'MONTHLY' ? recurringDayOfMonth.value : undefined,
+          timeOfDay: recurringTime.value,
+          timezone: 'Asia/Seoul',
+          platforms: [...new Set(selectedChannels.value.map((channel) => channel.platform))],
+          titleTemplate: form.title,
+          descriptionTemplate: form.description,
+          tags: parseHashtags(form.hashtags),
+          isActive: true,
+        })
+      } catch (error) {
+        // 원본 게시 성공을 실패로 오인하게 만들거나 재전송을 유도하지 않는다.
+        recurringFailure = error instanceof Error ? error.message : t('redesign.compose.recurringFailed')
+      }
+    }
     if (shortsEnabled.value) await publishAutomaticShorts(sourceVideoId)
+    if (recurringFailure) {
+      notice.value = t('redesign.compose.partialActionFailed', { error: recurringFailure })
+      return
+    }
     notice.value = t('redesign.compose.scheduled')
     router.push('/today')
   } catch (e) {
-    notice.value = e instanceof Error ? e.message : uploadStore.uploadError || t('redesign.compose.scheduleFailed')
+    const detail = e instanceof Error ? e.message : uploadStore.uploadError || t('redesign.compose.scheduleFailed')
+    notice.value = publishCompleted
+      ? t('redesign.compose.partialActionFailed', { error: detail })
+      : detail
   } finally {
     submitting.value = false
     shortsProcessing.value = false
@@ -921,6 +988,18 @@ onMounted(async () => {
   if (typeof at === 'string' && at) {
     schedMode.value = 'fix'
     fixedAt.value = at
+  }
+  const templateId = Number(route.query.templateId)
+  if (Number.isInteger(templateId) && templateId > 0) {
+    try {
+      const template = await templatesApi.get(templateId)
+      form.title = template.titleTemplate ?? ''
+      form.description = template.descriptionTemplate ?? ''
+      form.hashtags = template.tags.join(' ')
+      notice.value = '템플릿을 적용했습니다. 영상을 선택한 뒤 내용을 확인해 주세요.'
+    } catch (error) {
+      notice.value = error instanceof Error ? error.message : '템플릿을 불러오지 못했습니다.'
+    }
   }
   window.addEventListener('keydown', onKeydown)
   try {

@@ -15,6 +15,13 @@ data class ThreadsMediaContainerResponse(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+data class ThreadsMediaContainerStatusResponse(
+    val id: String? = null,
+    val status: String? = null,
+    @JsonProperty("error_message") val errorMessage: String? = null,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class ThreadsPublishResponse(
     val id: String,
 )

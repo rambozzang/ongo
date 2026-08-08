@@ -113,11 +113,77 @@
         </div>
       </div>
     </div>
+
+    <!-- 반복 게시 정의: 캘린더에서 생성된 서버 상태를 바로 관리한다 -->
+    <section class="rounded-[12px] border border-line bg-surface-card p-4" aria-labelledby="recurring-schedules-title">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id="recurring-schedules-title" class="text-[13px] font-bold text-content">
+            {{ t('redesign.calendar.recurringTitle') }}
+          </h2>
+          <p class="mt-1 text-[11px] text-content-tertiary">{{ t('redesign.calendar.recurringDescription') }}</p>
+        </div>
+        <button
+          type="button"
+          class="rounded-[7px] border border-line-control px-[10px] py-[6px] text-[11.5px] text-content-secondary transition-colors hover:border-line-hover hover:text-content disabled:opacity-50"
+          :disabled="recurringLoading"
+          @click="loadRecurring"
+        >
+          {{ t('action.retry') }}
+        </button>
+      </div>
+
+      <div v-if="recurringError" class="mt-3 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-[11px] text-error-strong" role="alert">
+        {{ recurringError }}
+      </div>
+      <p v-else-if="recurringLoading" class="mt-4 text-[11.5px] text-content-tertiary">
+        {{ t('redesign.calendar.recurringLoading') }}
+      </p>
+      <p v-else-if="recurringSchedules.length === 0" class="mt-4 rounded-lg border border-dashed border-line-soft px-3 py-4 text-center text-[11.5px] text-content-tertiary">
+        {{ t('redesign.calendar.recurringEmpty') }}
+      </p>
+      <div v-else class="mt-3 divide-y divide-line-row">
+        <article v-for="schedule in recurringSchedules" :key="schedule.id" class="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="truncate text-[12px] font-semibold text-content">{{ schedule.name }}</h3>
+              <StatusPill :variant="schedule.isActive ? 'success' : 'muted'">
+                {{ schedule.isActive ? t('redesign.calendar.recurringActive') : t('redesign.calendar.recurringPaused') }}
+              </StatusPill>
+            </div>
+            <p class="mt-1 text-[11px] text-content-secondary">
+              {{ recurringSummary(schedule) }}
+            </p>
+            <p class="mt-1 text-[10.5px] text-content-tertiary">
+              {{ t('redesign.calendar.recurringNextRun') }}: {{ formatRecurringDate(schedule.nextRunAt) }} · {{ schedule.platforms.join(', ') }}
+            </p>
+          </div>
+          <div class="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              class="rounded-[7px] border border-line-control px-2.5 py-1.5 text-[11px] text-content-secondary transition-colors hover:border-line-hover hover:text-content disabled:opacity-50"
+              :disabled="recurringBusyId === schedule.id"
+              @click="toggleRecurring(schedule)"
+            >
+              {{ schedule.isActive ? t('redesign.calendar.recurringPause') : t('redesign.calendar.recurringResume') }}
+            </button>
+            <button
+              type="button"
+              class="rounded-[7px] border border-error-subtle px-2.5 py-1.5 text-[11px] text-error-strong transition-colors hover:bg-error-subtle disabled:opacity-50"
+              :disabled="recurringBusyId === schedule.id"
+              @click="removeRecurring(schedule)"
+            >
+              {{ t('redesign.calendar.recurringDelete') }}
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
@@ -127,11 +193,16 @@ import PlatformChip from '@/components/redesign/PlatformChip.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
 import { toDateStr, toDateTimeLocal } from '@/utils/schedule'
 import type { Schedule } from '@/types/schedule'
+import { recurringApi, type RecurringSchedule } from '@/api/recurring'
 
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
 const store = useRedesignCalendarStore()
 const notify = useNotificationStore()
+const recurringSchedules = ref<RecurringSchedule[]>([])
+const recurringLoading = ref(false)
+const recurringError = ref('')
+const recurringBusyId = ref<number | null>(null)
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
@@ -232,7 +303,63 @@ function goCompose(day: Date) {
   router.push({ path: '/compose', query: { at: toDateTimeLocal(at) } })
 }
 
+function recurringSummary(schedule: RecurringSchedule): string {
+  const frequency = t(`redesign.calendar.recurringFrequency.${schedule.frequency}`)
+  const day = schedule.frequency === 'MONTHLY'
+    ? t('redesign.calendar.recurringDayOfMonth', { day: schedule.dayOfMonth ?? 1 })
+    : schedule.frequency === 'WEEKLY' || schedule.frequency === 'BIWEEKLY'
+      ? t(`redesign.calendar.weekdays.${WEEKDAY_KEYS[(schedule.dayOfWeek ?? 1) - 1]}`)
+      : ''
+  return [frequency, day, schedule.timeOfDay.slice(0, 5)].filter(Boolean).join(' · ')
+}
+
+function formatRecurringDate(value: string | null): string {
+  if (!value) return t('redesign.calendar.recurringNotScheduled')
+  return value.replace('T', ' ').slice(0, 16)
+}
+
+async function loadRecurring() {
+  recurringLoading.value = true
+  recurringError.value = ''
+  try {
+    recurringSchedules.value = await recurringApi.list()
+  } catch (e) {
+    recurringError.value = e instanceof Error ? e.message : t('redesign.calendar.recurringLoadFailed')
+  } finally {
+    recurringLoading.value = false
+  }
+}
+
+async function toggleRecurring(schedule: RecurringSchedule) {
+  recurringBusyId.value = schedule.id
+  try {
+    const updated = await recurringApi.toggle(schedule.id)
+    const index = recurringSchedules.value.findIndex((item) => item.id === schedule.id)
+    if (index >= 0) recurringSchedules.value[index] = updated
+    notify.success(updated.isActive ? t('redesign.calendar.recurringResumed') : t('redesign.calendar.recurringPausedNotice'))
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : t('redesign.calendar.recurringActionFailed'))
+  } finally {
+    recurringBusyId.value = null
+  }
+}
+
+async function removeRecurring(schedule: RecurringSchedule) {
+  if (!window.confirm(t('redesign.calendar.recurringConfirmDelete', { name: schedule.name }))) return
+  recurringBusyId.value = schedule.id
+  try {
+    await recurringApi.remove(schedule.id)
+    recurringSchedules.value = recurringSchedules.value.filter((item) => item.id !== schedule.id)
+    notify.success(t('redesign.calendar.recurringDeleted'))
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : t('redesign.calendar.recurringActionFailed'))
+  } finally {
+    recurringBusyId.value = null
+  }
+}
+
 onMounted(() => {
   store.fetchWeek()
+  loadRecurring()
 })
 </script>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useTemplatesStore } from '@/stores/templates'
@@ -24,6 +25,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 const { t } = useI18n()
 const templatesStore = useTemplatesStore()
 const notificationStore = useNotificationStore()
+const router = useRouter()
 // 카테고리·즐겨찾기는 화면을 떠났다 돌아와도 유지되도록 스토어 상태를 그대로 쓴다.
 // 검색어와 정렬은 useListControls가 소유한다.
 const { categoryFilter, showFavoritesOnly } = storeToRefs(templatesStore)
@@ -99,6 +101,10 @@ const handleCreateNew = () => {
 const handleEdit = (id: number) => {
   editingTemplateId.value = id
   showCreateModal.value = true
+}
+
+const handleApply = (id: number) => {
+  void router.push({ name: 'redesign-compose', query: { templateId: String(id) } })
 }
 
 const handleCloseModal = () => {
@@ -255,6 +261,7 @@ const handleBulkDelete = async () => {
           :template="template"
           class="min-w-0 flex-1"
           @edit="handleEdit"
+          @apply="handleApply"
         />
       </div>
     </div>

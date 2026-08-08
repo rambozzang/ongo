@@ -5,7 +5,6 @@ import {
   PlusIcon,
   BoltIcon,
   MagnifyingGlassIcon,
-  Squares2X2Icon,
   TrashIcon,
 } from '@heroicons/vue/24/outline'
 import { useAutomationStore } from '@/stores/automation'
@@ -15,8 +14,6 @@ import AutomationRuleCard from '@/components/automation/AutomationRuleCard.vue'
 import AutomationLogTable from '@/components/automation/AutomationLogTable.vue'
 import AutomationFormModal from '@/components/automation/AutomationFormModal.vue'
 import SmartTriggerTemplateSelector from '@/components/automation/SmartTriggerTemplateSelector.vue'
-import WorkflowNodeEditor from '@/components/automation/WorkflowNodeEditor.vue'
-import WorkflowExecutionHistory from '@/components/automation/WorkflowExecutionHistory.vue'
 import OTabs from '@/components/ui/OTabs.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -25,9 +22,8 @@ import ListToolbar from '@/components/common/ListToolbar.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
-import type { AutomationRule, ConditionOperator, Workflow, WorkflowTriggerType, WorkflowActionType } from '@/types/automation'
+import type { AutomationRule } from '@/types/automation'
 import type { SmartTriggerTemplate } from '@/components/automation/SmartTriggerTemplateSelector.vue'
-import { automationApi } from '@/api/automation'
 import apiClient, { unwrapResponse } from '@/api/client'
 import type { ResData } from '@/types/api'
 
@@ -39,10 +35,9 @@ const notification = useNotification()
 const CHECKBOX_CLASS =
   'h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-primary-600 focus:ring-2 focus:ring-primary-500 dark:border-gray-600'
 
-const activeTab = ref<'rules' | 'workflows' | 'logs'>('rules')
+const activeTab = ref<'rules' | 'logs'>('rules')
 const automationTabs = computed(() => [
   { key: 'rules', label: t('automation.tabRules'), count: automationStore.rules.length },
-  { key: 'workflows', label: t('automation.tabWorkflows'), count: workflows.value.length },
   { key: 'logs', label: t('automation.tabLogs'), count: automationStore.logs.length },
 ])
 const isModalOpen = ref(false)
@@ -84,7 +79,7 @@ const timeOf = (value: string | null | undefined): number => {
   return Number.isNaN(parsed) ? 0 : parsed
 }
 
-/** 규칙/워크플로우 두 목록이 공유하는 활성 상태 필터 옵션. */
+/** 규칙 목록의 활성 상태 필터 옵션. */
 const enabledFilters = computed(() => [
   { label: t('automation.filterAll'), value: 'all' as const },
   { label: t('automation.filterEnabled'), value: 'enabled' as const },
@@ -236,200 +231,9 @@ function handleSmartTriggerSelect(payload: { triggerType: string; config: Record
   }, 0)
 }
 
-// ─── Workflows ───────────────────────────────────────────
-const workflows = ref<Workflow[]>([])
-const showWorkflowEditor = ref(false)
-const editingWorkflow = ref<Workflow | null>(null)
-/** 실행 이력을 펼쳐 둔 워크플로우 — 목록의 다중 선택(selectedWorkflowIds)과는 별개다. */
-const selectedWorkflowId = ref<number | null>(null)
-const workflowsLoading = ref(false)
-
-const workflowPriority = (workflow: Workflow): number =>
-  (workflow.enabled ? ENABLED_BOOST : 0) + timeOf(workflow.updatedAt ?? workflow.createdAt)
-
-const workflowSortOptions = computed<ListSortOption<Workflow>[]>(() => [
-  {
-    key: 'status',
-    label: t('automation.sortEnabledFirst'),
-    accessor: workflowPriority,
-    kind: 'number',
-    defaultDir: 'desc',
-  },
-  {
-    key: 'recent',
-    label: t('automation.sortRecent'),
-    accessor: (workflow) => workflow.updatedAt ?? workflow.createdAt,
-    kind: 'date',
-    defaultDir: 'desc',
-  },
-  {
-    key: 'executions',
-    label: t('automation.sortExecutions'),
-    accessor: 'executionCount',
-    kind: 'number',
-    defaultDir: 'desc',
-  },
-  { key: 'name', label: t('automation.sortName'), accessor: 'name', kind: 'string', defaultDir: 'asc' },
-])
-
-const workflowFilter = ref<'all' | 'enabled' | 'disabled'>('all')
-
-/**
- * 규칙과 완전히 독립된 인스턴스다.
- * 규칙 id와 워크플로우 id는 서로 다른 시퀀스라 값이 겹칠 수 있으므로,
- * 선택 상태를 공유하면 다른 탭의 항목이 함께 지워지는 사고가 난다.
- */
-const {
-  query: workflowQuery,
-  sortKey: workflowSortKey,
-  sortDir: workflowSortDir,
-  filtered: filteredWorkflows,
-  visibleCount: visibleWorkflowCount,
-  isSourceEmpty: isWorkflowSourceEmpty,
-  isResultEmpty: isWorkflowResultEmpty,
-  resetFilters: resetWorkflowFilters,
-  selectedIds: selectedWorkflowIds,
-  selectedCount: selectedWorkflowCount,
-  allSelected: allWorkflowsSelected,
-  someSelected: someWorkflowsSelected,
-  isSelected: isWorkflowSelected,
-  toggle: toggleWorkflowSelection,
-  toggleAll: toggleAllWorkflows,
-  clearSelection: clearWorkflowSelection,
-} = useListControls<Workflow>(() => workflows.value, {
-  searchFields: ['name', 'description', 'triggerType'],
-  sortOptions: workflowSortOptions,
-  defaultSortKey: 'status',
-  filters: computed(() =>
-    workflowFilter.value === 'all'
-      ? []
-      : [
-          (workflow: Workflow) =>
-            workflowFilter.value === 'enabled' ? workflow.enabled : !workflow.enabled,
-        ],
-  ),
-})
-
-const resetWorkflowSearchAndFilters = () => {
-  resetWorkflowFilters()
-  workflowFilter.value = 'all'
-}
-
-async function fetchWorkflows() {
-  workflowsLoading.value = true
-  try {
-    workflows.value = await automationApi.listWorkflows()
-  } catch {
-    notification.error('워크플로우 목록을 불러오지 못했습니다')
-    workflows.value = []
-  } finally {
-    workflowsLoading.value = false
-  }
-}
-
-function openWorkflowEditor(workflow?: Workflow) {
-  editingWorkflow.value = workflow ?? null
-  showWorkflowEditor.value = true
-}
-
-async function handleWorkflowSave(data: {
-  triggerType: WorkflowTriggerType
-  triggerConfig: Record<string, unknown>
-  conditions: Array<{ groupType: string; field?: string; operator?: string; value?: string; expression?: string }>
-  actions: Array<{ actionType: WorkflowActionType; config: Record<string, unknown>; delayMinutes: number }>
-}) {
-  try {
-    if (editingWorkflow.value) {
-      await automationApi.updateWorkflow(editingWorkflow.value.id, {
-        triggerType: data.triggerType,
-        triggerConfig: data.triggerConfig,
-        conditions: data.conditions.map((c) => ({
-          groupType: (c.groupType as 'AND' | 'OR') ?? 'AND',
-          field: c.field,
-          operator: c.operator as ConditionOperator,
-          value: c.value,
-          expression: c.expression,
-        })),
-        actions: data.actions.map((a) => ({
-          actionType: a.actionType,
-          config: a.config,
-          delayMinutes: a.delayMinutes,
-        })),
-      })
-    } else {
-      await automationApi.createWorkflow({
-        name: '새 워크플로우',
-        triggerType: data.triggerType,
-        triggerConfig: data.triggerConfig,
-        conditions: data.conditions.map((c) => ({
-          groupType: (c.groupType as 'AND' | 'OR') ?? 'AND',
-          field: c.field,
-          operator: c.operator as ConditionOperator,
-          value: c.value,
-          expression: c.expression,
-        })),
-        actions: data.actions.map((a) => ({
-          actionType: a.actionType,
-          config: a.config,
-          delayMinutes: a.delayMinutes,
-        })),
-        enabled: false,
-      })
-    }
-    showWorkflowEditor.value = false
-    editingWorkflow.value = null
-    await fetchWorkflows()
-  } catch {
-    notification.error('워크플로우 저장에 실패했습니다')
-  }
-}
-
-async function handleWorkflowToggle(id: number) {
-  try {
-    await automationApi.toggleWorkflow(id)
-    await fetchWorkflows()
-  } catch {
-    notification.error('워크플로우 상태 변경에 실패했습니다')
-  }
-}
-
-function handleWorkflowDelete(id: number) {
-  askConfirm(t('automation.deleteWorkflowTitle'), t('automation.confirmDeleteWorkflow'), async () => {
-    try {
-      await automationApi.deleteWorkflow(id)
-      await fetchWorkflows()
-    } catch {
-      notification.error('워크플로우 삭제에 실패했습니다')
-    }
-  })
-}
-
-/** 선택된 워크플로우 일괄 삭제 — 규칙과 동일하게 기존 확인 모달을 재사용한다. */
-function handleBulkDeleteWorkflows() {
-  const ids = [...selectedWorkflowIds.value]
-  if (ids.length === 0) return
-  askConfirm(
-    t('automation.bulkDeleteWorkflowsTitle'),
-    t('automation.bulkDeleteMessage', { count: ids.length }),
-    async () => {
-      bulkDeleting.value = true
-      try {
-        await Promise.all(ids.map((id) => automationApi.deleteWorkflow(id)))
-      } catch {
-        notification.error('워크플로우 삭제에 실패했습니다')
-      } finally {
-        bulkDeleting.value = false
-        clearWorkflowSelection()
-        await fetchWorkflows()
-      }
-    },
-  )
-}
-
 onMounted(() => {
   automationStore.fetchRules()
   fetchSmartTemplates()
-  fetchWorkflows()
 })
 
 onUnmounted(() => {
@@ -578,195 +382,6 @@ onUnmounted(() => {
         </AsyncState>
       </div>
 
-      <!-- Workflows Tab -->
-      <div v-if="activeTab === 'workflows'">
-        <!-- Workflow Editor -->
-        <SectionCard v-if="showWorkflowEditor" class="mb-6" :title="editingWorkflow ? $t('automation.editWorkflow') : $t('automation.newWorkflow')">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">
-              {{ editingWorkflow ? $t('automation.editWorkflow') : $t('automation.newWorkflow') }}
-            </h2>
-            <button
-              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              @click="showWorkflowEditor = false; editingWorkflow = null"
-            >
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <WorkflowNodeEditor
-            :initial-trigger-type="editingWorkflow?.triggerType"
-            :initial-trigger-config="editingWorkflow?.triggerConfig"
-            :initial-conditions="editingWorkflow?.conditions"
-            :initial-actions="editingWorkflow?.actions"
-            @save="handleWorkflowSave"
-          />
-        </SectionCard>
-
-        <!-- Workflow list -->
-        <div v-else>
-          <div class="flex items-center justify-between mb-4">
-            <p class="text-body text-gray-600 dark:text-gray-400">
-              {{ $t('automation.workflowSubtitle') }}
-            </p>
-            <button
-              class="btn-primary inline-flex items-center gap-2"
-              @click="openWorkflowEditor()"
-            >
-              <PlusIcon class="w-4 h-4" />
-              {{ $t('automation.newWorkflow') }}
-            </button>
-          </div>
-
-          <!-- 검색 · 정렬 · 일괄 작업 -->
-          <ListToolbar
-            v-if="!isWorkflowSourceEmpty"
-            v-model="workflowQuery"
-            v-model:sort-key="workflowSortKey"
-            v-model:sort-dir="workflowSortDir"
-            :sort-options="workflowSortOptions"
-            :selected-count="selectedWorkflowCount"
-            :total-count="visibleWorkflowCount"
-            :search-placeholder="$t('automation.searchWorkflowsPlaceholder')"
-            :search-label="$t('automation.searchWorkflowsLabel')"
-            @clear-selection="clearWorkflowSelection"
-          >
-            <template #filters>
-              <button
-                v-for="option in enabledFilters"
-                :key="option.value"
-                type="button"
-                :class="[
-                  'min-h-9 rounded-lg border px-3 py-2 text-body font-medium transition-colors',
-                  workflowFilter === option.value
-                    ? 'border-accent bg-accent-dim text-accent'
-                    : 'border-line-control bg-surface-input text-content-secondary hover:bg-surface-raised hover:text-content'
-                ]"
-                @click="workflowFilter = option.value"
-              >
-                {{ option.label }}
-              </button>
-            </template>
-
-            <template #bulk-actions>
-              <button
-                type="button"
-                class="btn-danger inline-flex items-center gap-1.5"
-                :disabled="bulkDeleting"
-                @click="handleBulkDeleteWorkflows"
-              >
-                <TrashIcon class="h-4 w-4" aria-hidden="true" />
-                {{ $t('list.bulkDelete') }}
-              </button>
-            </template>
-          </ListToolbar>
-
-          <!-- 전체 선택 -->
-          <div v-if="!isWorkflowSourceEmpty && visibleWorkflowCount > 0" class="mb-3 flex items-center gap-2">
-            <input
-              id="automation-workflows-select-all"
-              type="checkbox"
-              :class="CHECKBOX_CLASS"
-              :checked="allWorkflowsSelected"
-              :indeterminate="someWorkflowsSelected"
-              @change="toggleAllWorkflows"
-            />
-            <label for="automation-workflows-select-all" class="cursor-pointer text-body text-gray-500 dark:text-gray-400">
-              {{ $t('list.selectAll', { count: visibleWorkflowCount }) }}
-            </label>
-          </div>
-
-          <AsyncState
-            :loading="workflowsLoading && isWorkflowSourceEmpty"
-            :empty="isWorkflowSourceEmpty"
-            skeleton="list"
-            :skeleton-count="3"
-            :empty-icon="Squares2X2Icon"
-            :empty-title="$t('automation.emptyWorkflowsTitle')"
-            :empty-description="$t('automation.emptyWorkflowsDesc')"
-            :empty-action-label="$t('automation.createFirstWorkflow')"
-            :retryable="false"
-            @empty-action="openWorkflowEditor()"
-          >
-            <!-- 검색·필터 결과만 비었을 때 -->
-            <EmptyState
-              v-if="isWorkflowResultEmpty"
-              :icon="MagnifyingGlassIcon"
-              :title="$t('list.noResultsTitle')"
-              :description="$t('list.noResultsDescription')"
-              :action-label="$t('list.resetFilters')"
-              @action="resetWorkflowSearchAndFilters"
-            />
-
-            <div v-else class="space-y-3">
-              <div
-                v-for="wf in filteredWorkflows"
-                :key="wf.id"
-                class="rounded-[11px] border border-line bg-surface-card p-4 transition-colors hover:bg-surface-raised"
-              >
-                <div class="flex items-center justify-between gap-3">
-                  <div class="flex min-w-0 items-center gap-3">
-                    <input
-                      type="checkbox"
-                      :class="CHECKBOX_CLASS"
-                      :checked="isWorkflowSelected(wf.id)"
-                      :aria-label="$t('list.selectItem', { name: wf.name })"
-                      @change="toggleWorkflowSelection(wf.id)"
-                    />
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" :class="wf.enabled ? 'bg-success-subtle' : 'bg-gray-100 dark:bg-gray-800'">
-                      <svg class="w-5 h-5" :class="wf.enabled ? 'text-success-strong' : 'text-gray-400'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">{{ wf.name }}</h3>
-                      <p class="text-body-xs text-gray-500 dark:text-gray-400">
-                        {{ $t('automation.workflowStats', { conditions: wf.conditions.length, actions: wf.actions.length }) }}
-                        <span v-if="wf.executionCount > 0" class="ml-2">{{ $t('automation.executionCount', { count: wf.executionCount }) }}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <button
-                      class="text-body-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                      @click="selectedWorkflowId = selectedWorkflowId === wf.id ? null : wf.id"
-                    >
-                      {{ $t('automation.history') }}
-                    </button>
-                    <button
-                      class="text-body-xs text-primary-600 dark:text-primary-400 hover:underline"
-                      @click="openWorkflowEditor(wf)"
-                    >
-                      {{ $t('automation.edit') }}
-                    </button>
-                    <button
-                      class="px-3 py-1 text-body-xs rounded-full font-medium transition-colors"
-                      :class="wf.enabled ? 'bg-success-subtle text-success-strong' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'"
-                      @click="handleWorkflowToggle(wf.id)"
-                    >
-                      {{ wf.enabled ? $t('automation.enabled') : $t('automation.disabled') }}
-                    </button>
-                    <button
-                      class="text-body-xs text-error-strong transition hover:opacity-80"
-                      @click="handleWorkflowDelete(wf.id)"
-                    >
-                      {{ $t('automation.delete') }}
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Execution history (expandable) -->
-                <div v-if="selectedWorkflowId === wf.id" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <WorkflowExecutionHistory :workflow-id="wf.id" />
-                </div>
-              </div>
-            </div>
-          </AsyncState>
-        </div>
-      </div>
-
-      <!-- Logs Tab -->
       <div v-if="activeTab === 'logs'">
         <AutomationLogTable :logs="automationStore.recentLogs" />
       </div>
@@ -779,7 +394,7 @@ onUnmounted(() => {
       @save="handleSave"
     />
 
-    <!-- 삭제 확인 (규칙 / 워크플로우 공용) -->
+    <!-- 삭제 확인 -->
     <ConfirmModal
       v-model="showConfirmModal"
       :title="confirmTitle"

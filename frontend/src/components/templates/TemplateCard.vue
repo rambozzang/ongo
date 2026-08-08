@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useTemplatesStore } from '@/stores/templates'
+import { useNotificationStore } from '@/stores/notification'
 import type { ContentTemplate } from '@/types/template'
 import {
   StarIcon,
@@ -18,9 +19,11 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   edit: [id: number]
+  apply: [id: number]
 }>()
 
 const templatesStore = useTemplatesStore()
+const notificationStore = useNotificationStore()
 const showHover = ref(false)
 const showDeleteConfirm = ref(false)
 
@@ -81,9 +84,13 @@ const handleDelete = () => {
   }
 }
 
-const handleApply = () => {
-  templatesStore.applyTemplate(props.template.id)
-  // TODO: Navigate to video upload or show success message
+const handleApply = async () => {
+  try {
+    await templatesStore.applyTemplate(props.template.id)
+    emit('apply', props.template.id)
+  } catch {
+    notificationStore.error('템플릿을 적용하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+  }
 }
 </script>
 

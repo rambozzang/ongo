@@ -9,6 +9,12 @@ export const templatesApi = {
       .then(unwrapResponse)
   },
 
+  get(id: number) {
+    return apiClient
+      .get<ResData<TemplateResponse>>(`/templates/${id}`)
+      .then(unwrapResponse)
+  },
+
   create(request: CreateTemplateRequest) {
     return apiClient
       .post<ResData<TemplateResponse>>('/templates', request)

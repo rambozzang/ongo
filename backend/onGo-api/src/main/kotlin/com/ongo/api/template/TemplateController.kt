@@ -37,6 +37,19 @@ class TemplateController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "템플릿 상세 조회", description = "사용자의 템플릿 한 건을 조회합니다.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "템플릿 조회 성공"),
+        ApiResponse(responseCode = "404", description = "템플릿을 찾을 수 없음"),
+    )
+    @GetMapping("/{id}")
+    fun getTemplate(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<TemplateResponse>> {
+        return ResData.success(templateUseCase.getTemplate(userId, id))
+    }
+
     @Operation(summary = "템플릿 생성", description = "새로운 메타데이터 템플릿을 생성합니다.")
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "템플릿 생성 성공"),

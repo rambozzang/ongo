@@ -25,6 +25,13 @@ interface ThreadsApi {
         @RequestParam("access_token") accessToken: String,
     ): ThreadsPublishResponse
 
+    @GetExchange("/{mediaContainerId}")
+    fun getContainerStatus(
+        @org.springframework.web.bind.annotation.PathVariable("mediaContainerId") mediaContainerId: String,
+        @RequestParam("fields") fields: String,
+        @RequestParam("access_token") accessToken: String,
+    ): ThreadsMediaContainerStatusResponse
+
     @GetExchange("/{threadId}")
     fun getThread(
         @org.springframework.web.bind.annotation.PathVariable("threadId") threadId: String,

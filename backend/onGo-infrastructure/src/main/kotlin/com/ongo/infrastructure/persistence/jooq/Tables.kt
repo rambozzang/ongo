@@ -83,11 +83,7 @@ object Tables {
     val ACTIVITY_LOGS = DSL.table("activity_logs")
     val RECYCLING_SUGGESTIONS = DSL.table("recycling_suggestions")
 
-    // Automation Workflows
-    val AUTOMATION_WORKFLOWS = DSL.table("automation_workflows")
-    val WORKFLOW_CONDITIONS = DSL.table("workflow_conditions")
-    val WORKFLOW_ACTIONS = DSL.table("workflow_actions")
-    val WORKFLOW_EXECUTIONS = DSL.table("workflow_executions")
+    // Automation rules
 
     // Approval
     val APPROVALS = DSL.table("approvals")
@@ -565,23 +561,11 @@ object Fields {
     // automation_workflows
     val ENABLED = DSL.field("enabled", Boolean::class.java)
 
-    // workflow_conditions
-    val WORKFLOW_ID = DSL.field("workflow_id", Long::class.java)
-    val PARENT_CONDITION_ID = DSL.field("parent_condition_id", Long::class.java)
-    val GROUP_TYPE = DSL.field("group_type", String::class.java)
+    // approval comments / conditions
     val FIELD = DSL.field("field", String::class.java)
     val OPERATOR = DSL.field("operator", String::class.java)
     val VALUE = DSL.field("value", String::class.java)
     val EXPRESSION = DSL.field("expression", String::class.java)
-
-    // workflow_actions
-    val DELAY_MINUTES = DSL.field("delay_minutes", Int::class.java)
-    val CONFIG_JSONB = DSL.field("config", Any::class.java)
-
-    // workflow_executions
-    val TRIGGER_DATA = DSL.field("trigger_data", Any::class.java)
-    val ACTION_RESULTS = DSL.field("action_results", Any::class.java)
-    val STARTED_AT_EXEC = DSL.field("started_at", java.time.LocalDateTime::class.java)
     val COMPLETED_AT = DSL.field("completed_at", java.time.LocalDateTime::class.java)
 
     // activity_logs

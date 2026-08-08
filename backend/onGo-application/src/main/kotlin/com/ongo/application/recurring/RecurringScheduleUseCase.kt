@@ -5,6 +5,8 @@ import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.recurring.RecurringSchedule
 import com.ongo.domain.recurring.RecurringScheduleRepository
+import com.ongo.domain.video.VideoRepository
+import com.ongo.common.enums.Platform
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.DayOfWeek
@@ -16,6 +18,7 @@ import java.time.temporal.TemporalAdjusters
 @Service
 class RecurringScheduleUseCase(
     private val recurringScheduleRepository: RecurringScheduleRepository,
+    private val videoRepository: VideoRepository,
 ) {
 
     companion object {
@@ -29,6 +32,9 @@ class RecurringScheduleUseCase(
     @Transactional
     fun createSchedule(userId: Long, request: CreateRecurringScheduleRequest): RecurringScheduleResponse {
         require(request.frequency in FREQUENCIES) { "유효하지 않은 빈도: ${request.frequency}" }
+        require(request.name.isNotBlank()) { "반복 예약 이름을 입력하세요." }
+        validateCadence(request.frequency, request.dayOfWeek, request.dayOfMonth, request.timezone)
+        validateSource(userId, request.videoId, request.platforms)
 
         val timeOfDay = LocalTime.parse(request.timeOfDay)
         val schedule = RecurringSchedule(
@@ -56,12 +62,17 @@ class RecurringScheduleUseCase(
         if (schedule.userId != userId) throw ForbiddenException("해당 반복 예약에 대한 권한이 없습니다")
 
         request.frequency?.let { require(it in FREQUENCIES) { "유효하지 않은 빈도: $it" } }
+        val nextVideoId = request.videoId ?: schedule.videoId
+            ?: throw IllegalStateException("반복 게시 원본 영상이 없습니다.")
+        validateSource(userId, nextVideoId, request.platforms ?: schedule.platforms)
 
         val newTimeOfDay = request.timeOfDay?.let { LocalTime.parse(it) } ?: schedule.timeOfDay
         val newFrequency = request.frequency ?: schedule.frequency
         val newDayOfWeek = request.dayOfWeek ?: schedule.dayOfWeek
         val newDayOfMonth = request.dayOfMonth ?: schedule.dayOfMonth
         val newTimezone = request.timezone ?: schedule.timezone
+        require((request.name ?: schedule.name).isNotBlank()) { "반복 예약 이름을 입력하세요." }
+        validateCadence(newFrequency, newDayOfWeek, newDayOfMonth, newTimezone)
 
         val updated = schedule.copy(
             videoId = request.videoId ?: schedule.videoId,
@@ -143,6 +154,34 @@ class RecurringScheduleUseCase(
             schedule.timezone,
             occurrence,
         )
+
+    private fun validateSource(userId: Long, videoId: Long, platforms: List<String>) {
+        val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
+        if (video.userId != userId) throw ForbiddenException("해당 영상에 대한 권한이 없습니다")
+        require(!video.fileUrl.isNullOrBlank()) { "반복 게시할 원본 영상 파일이 없습니다." }
+        validatePlatforms(platforms)
+    }
+
+    private fun validatePlatforms(platforms: List<String>) {
+        require(platforms.isNotEmpty()) { "반복 게시 플랫폼을 하나 이상 선택하세요." }
+        platforms.forEach { value ->
+            require(runCatching { Platform.valueOf(value.uppercase()) }.isSuccess) {
+                "지원하지 않는 반복 게시 플랫폼입니다: $value"
+            }
+        }
+    }
+
+    private fun validateCadence(frequency: String, dayOfWeek: Int?, dayOfMonth: Int?, timezone: String) {
+        require(timezone.isNotBlank() && runCatching { ZoneId.of(timezone) }.isSuccess) {
+            "유효하지 않은 시간대입니다: $timezone"
+        }
+        if (frequency == "WEEKLY" || frequency == "BIWEEKLY") {
+            require(dayOfWeek == null || dayOfWeek in 1..7) { "요일은 1(월요일)부터 7(일요일)까지 입력하세요." }
+        }
+        if (frequency == "MONTHLY") {
+            require(dayOfMonth == null || dayOfMonth in 1..31) { "월간 게시일은 1일부터 31일까지 입력하세요." }
+        }
+    }
 
     private fun RecurringSchedule.toResponse() = RecurringScheduleResponse(
         id = id!!,

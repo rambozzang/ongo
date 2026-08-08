@@ -36,6 +36,10 @@ class CapabilityUseCase {
             AppCapability("ugc/campaigns"),
             AppCapability("creator/campaigns"),
             AppCapability("team"),
+            AppCapability("manual"),
+            AppCapability("subscription"),
+            AppCapability("settings-v2"),
+            AppCapability("admin"),
         )
     }
 }

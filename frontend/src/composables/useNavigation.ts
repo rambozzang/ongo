@@ -232,7 +232,7 @@ export function useNavigation() {
     if (isAdmin.value) {
       items.push({ to: '/admin', label: t('nav.admin'), icon: ShieldCheckIcon })
     }
-    return items
+    return visibleItems(items)
   })
 
   /** 그룹/서브그룹/하단 메뉴를 모두 펼친 평면 목록 (즐겨찾기 조회용) */

@@ -6,6 +6,7 @@ import com.ongo.infrastructure.external.platform.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
+import java.util.concurrent.TimeUnit
 
 @Component
 class ThreadsClient(
@@ -15,6 +16,11 @@ class ThreadsClient(
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(ThreadsClient::class.java)
+
+    companion object {
+        private const val CONTAINER_STATUS_CHECK_INTERVAL_MS = 3000L
+        private const val CONTAINER_STATUS_MAX_RETRIES = 20
+    }
 
     override val platform: Platform = Platform.THREADS
 
@@ -34,6 +40,8 @@ class ThreadsClient(
                 accessToken = request.accessToken,
             )
 
+            waitForContainerReady(container.id, request.accessToken)
+
             // Step 2: Publish
             val published = threadsApi.publishThread(
                 userId = userId,
@@ -43,15 +51,43 @@ class ThreadsClient(
 
             log.info("Threads 업로드 완료: threadId={}", published.id)
 
+            val media = threadsApi.getThread(
+                threadId = published.id,
+                fields = "id,permalink",
+                accessToken = request.accessToken,
+            )
+
             return PlatformUploadResult(
                 platformVideoId = published.id,
-                platformUrl = "https://www.threads.net/post/${published.id}",
+                platformUrl = media.permalink ?: "https://www.threads.net/post/${published.id}",
                 status = "published",
             )
         } catch (e: Exception) {
             log.error("Threads 업로드 실패: {}", e.message, e)
             throw PlatformUploadException("Threads", e.message ?: "알 수 없는 오류", e)
         }
+    }
+
+    private fun waitForContainerReady(containerId: String, accessToken: String) {
+        repeat(CONTAINER_STATUS_MAX_RETRIES) { attempt ->
+            val status = threadsApi.getContainerStatus(
+                mediaContainerId = containerId,
+                fields = "id,status,error_message",
+                accessToken = accessToken,
+            )
+            when (status.status?.uppercase()) {
+                "FINISHED", "PUBLISHED" -> return
+                "ERROR", "EXPIRED" -> throw PlatformUploadException(
+                    "Threads",
+                    status.errorMessage ?: "미디어 컨테이너 처리에 실패했습니다 (${status.status})",
+                )
+                else -> {
+                    log.debug("Threads 컨테이너 처리 중... ({}회 확인)", attempt + 1)
+                    TimeUnit.MILLISECONDS.sleep(CONTAINER_STATUS_CHECK_INTERVAL_MS)
+                }
+            }
+        }
+        throw PlatformUploadException("Threads", "미디어 컨테이너 처리 시간 초과")
     }
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {

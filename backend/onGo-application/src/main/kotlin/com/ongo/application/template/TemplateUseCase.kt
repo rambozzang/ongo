@@ -25,6 +25,12 @@ class TemplateUseCase(
         )
     }
 
+    fun getTemplate(userId: Long, templateId: Long): TemplateResponse {
+        val template = templateRepository.findById(templateId) ?: throw NotFoundException("템플릿", templateId)
+        if (template.userId != userId) throw ForbiddenException("해당 템플릿에 대한 권한이 없습니다")
+        return template.toResponse()
+    }
+
     @Transactional
     fun createTemplate(userId: Long, request: CreateTemplateRequest): TemplateResponse {
         val template = Template(
