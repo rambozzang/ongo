@@ -45,7 +45,7 @@ class SwaggerConfig {
                 Tag().name("영상 관리").description("영상 업로드 초기화, 멀티플랫폼 게시, 목록/상세 조회, 수정, 삭제"),
                 Tag().name("예약 관리").description("영상 예약 게시 등록/수정/취소, 캘린더 조회"),
                 Tag().name("분석").description("대시보드 KPI, 트렌드, 영상별 분석, 히트맵, 인기 영상, 플랫폼 비교"),
-                Tag().name("AI 도구").description("AI 기반 메타데이터 생성, 해시태그, STT, 대본 분석, 댓글 답변, 일정 추천, 아이디어 생성, 리포트"),
+                Tag().name("AI 도구").description("AI 기반 메타데이터 생성, 해시태그, STT, 대본 분석, 댓글 답변, 일정 추천, 리포트"),
                 Tag().name("크레딧").description("AI 크레딧 잔액 조회, 사용 내역, 충전, 패키지 목록"),
                 Tag().name("구독").description("구독 현황 조회, 플랜 변경, 구독 취소, 플랜 비교"),
                 Tag().name("결제").description("결제 내역 조회 및 PortOne 결제 처리"),

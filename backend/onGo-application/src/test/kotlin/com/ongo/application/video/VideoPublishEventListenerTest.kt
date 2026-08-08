@@ -11,7 +11,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import kotlin.test.assertEquals
 
 class VideoPublishEventListenerTest {
 
@@ -177,5 +179,61 @@ class VideoPublishEventListenerTest {
         services.forEach { service ->
             verify(exactly = 1) { service.upload(any(), eq("https://storage/original.mp4"), eq(100L)) }
         }
+    }
+
+    @Test
+    fun `should expose a partial publish when one platform succeeds and another fails`() {
+        val ytService = createMockService(Platform.YOUTUBE)
+        val ttService = createMockService(Platform.TIKTOK)
+        platformUploadServices.addAll(listOf(ytService, ttService))
+
+        every { ytService.upload(any(), any(), any()) } returns PlatformUploadResult(
+            success = true,
+            platformVideoId = "yt-1",
+            platformUrl = "https://youtube.test/yt-1",
+            published = true,
+        )
+        every { ttService.upload(any(), any(), any()) } returns PlatformUploadResult(
+            success = false,
+            errorMessage = "토큰이 만료되었습니다.",
+            published = false,
+        )
+
+        val uploads = ConcurrentHashMap<Long, VideoUpload>().apply {
+            put(10L, VideoUpload(id = 10L, videoId = 1L, platform = Platform.YOUTUBE))
+            put(11L, VideoUpload(id = 11L, videoId = 1L, platform = Platform.TIKTOK))
+        }
+        every { videoUploadRepository.claim(any(), any(), any(), any()) } answers {
+            uploads[firstArg<Long>()]
+        }
+        every { videoUploadRepository.findById(any()) } answers { uploads[firstArg<Long>()] }
+        every { videoUploadRepository.updateOwned(any(), any()) } answers {
+            val updated = firstArg<VideoUpload>()
+            uploads[updated.id!!] = updated
+            true
+        }
+        every { videoUploadRepository.findByVideoId(1L) } answers { uploads.values.toList() }
+        val originalVideo = com.ongo.domain.video.Video(
+            id = 1L,
+            userId = 100L,
+            title = "원본",
+            fileUrl = "https://storage/original.mp4",
+        )
+        every { videoRepository.findById(1L) } returns originalVideo
+        val updatedVideo = slot<com.ongo.domain.video.Video>()
+        every { videoRepository.update(capture(updatedVideo)) } answers { firstArg() }
+
+        listener.handleVideoPublish(
+            createEvent(
+                configs = listOf(
+                    createConfig(Platform.YOUTUBE, 10L),
+                    createConfig(Platform.TIKTOK, 11L),
+                ),
+            ),
+        )
+
+        assertEquals(UploadStatus.PUBLISHED, uploads[10L]?.status)
+        assertEquals(UploadStatus.FAILED, uploads[11L]?.status)
+        assertEquals(UploadStatus.PARTIALLY_PUBLISHED, updatedVideo.captured.status)
     }
 }

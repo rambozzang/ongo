@@ -50,7 +50,7 @@ onGo 백엔드 애플리케이션에서 사용하는 환경변수 목록입니�
 
 | 환경변수 | 설명 | 기본값 | 필수 여부 |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | Anthropic Claude API 키 (메타데이터 생성, 아이디어 추천 등) | `your-api-key` | **필수** |
+| `ANTHROPIC_API_KEY` | Anthropic Claude API 키 (메타데이터·해시태그·분석 생성 등) | `your-api-key` | **필수** |
 | `OPENAI_API_KEY` | OpenAI API 키 (Whisper STT 등) | `your-api-key` | **필수** |
 
 ---

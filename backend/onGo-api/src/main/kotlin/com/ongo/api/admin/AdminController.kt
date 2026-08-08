@@ -79,6 +79,12 @@ class AdminController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "게시 대기열 운영 상태", description = "게시 중인 플랫폼 작업의 lease, 재시도, 미확인 상태를 조회합니다.")
+    @GetMapping("/publish-queue")
+    fun getPublishQueue(): ResponseEntity<ResData<AdminPublishQueueSummary>> {
+        return ResData.success(adminUseCase.getPublishQueue())
+    }
+
     // ─── 사용자 역할 및 상태 변경 ─────────────────────
 
     @Operation(summary = "사용자 역할 변경", description = "사용자의 역할을 변경합니다. (USER, ADMIN)")

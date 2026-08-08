@@ -10,7 +10,6 @@ enum class AiFeature(
     SCRIPT_ANALYSIS("스크립트 분석", 5),
     COMMENT_REPLY("댓글 답변 생성", 2),
     SCHEDULE_SUGGESTION("업로드 시간 추천", 3),
-    CONTENT_IDEA("콘텐츠 아이디어", 5),
     PERFORMANCE_REPORT("성과 리포트", 8),
     WEEKLY_DIGEST("주간 다이제스트", 8),
     CONTENT_GAP_ANALYSIS("콘텐츠 갭 분석", 10),

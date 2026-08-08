@@ -3,6 +3,7 @@ package com.ongo.application.video
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.Visibility
 import com.ongo.common.enums.UploadStatus
+import com.ongo.common.exception.ForbiddenException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.EncryptedToken
@@ -20,6 +21,7 @@ import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class PublishVideoUseCaseTest {
     private val videoRepository = mockk<VideoRepository>()
@@ -28,6 +30,38 @@ class PublishVideoUseCaseTest {
     private val eventPublisher = mockk<ApplicationEventPublisher>()
     private val channelRepository = mockk<ChannelRepository>()
     private val videoUploadPoller = mockk<VideoUploadPoller>(relaxed = true)
+
+    @Test
+    fun `cannot publish a video owned by another user`() {
+        every { videoRepository.findById(900L) } returns Video(
+            id = 900L,
+            userId = 7L,
+            title = "다른 사용자의 영상",
+            fileUrl = "https://storage.test/original.mp4",
+            status = UploadStatus.DRAFT,
+        )
+
+        assertFailsWith<ForbiddenException> {
+            useCase().publishVideo(
+                userId = 42L,
+                videoId = 900L,
+                configs = listOf(
+                    PlatformUploadConfig(
+                        platform = Platform.YOUTUBE,
+                        videoUploadId = 0L,
+                        title = "게시 시도",
+                        description = null,
+                        tags = emptyList(),
+                        visibility = Visibility.PUBLIC,
+                        thumbnailUrl = null,
+                        scheduledAt = null,
+                    ),
+                ),
+            )
+        }
+        verify(exactly = 0) { videoUploadRepository.save(any()) }
+        verify(exactly = 0) { eventPublisher.publishEvent(any()) }
+    }
 
     @Test
     fun `publishes one durable upload row for all seven supported video channels`() {
@@ -102,4 +136,13 @@ class PublishVideoUseCaseTest {
         verify(exactly = 7) { videoUploadRepository.save(any()) }
         verify(exactly = 7) { videoPlatformMetaRepository.save(any()) }
     }
+
+    private fun useCase() = PublishVideoUseCase(
+        videoRepository = videoRepository,
+        videoUploadRepository = videoUploadRepository,
+        videoPlatformMetaRepository = videoPlatformMetaRepository,
+        eventPublisher = eventPublisher,
+        channelRepository = channelRepository,
+        videoUploadPoller = videoUploadPoller,
+    )
 }

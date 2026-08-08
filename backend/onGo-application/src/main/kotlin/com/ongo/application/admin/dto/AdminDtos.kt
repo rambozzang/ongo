@@ -72,6 +72,31 @@ data class AdminSubscriptionDetail(
     val createdAt: String?,
 )
 
+/** 게시 worker의 현재 대기열을 관리자에게 보여주는 운영 상태 DTO. */
+data class AdminPublishQueueSummary(
+    val capturedAt: String,
+    val totalPending: Int,
+    val statusCounts: Map<String, Int>,
+    val activeLeases: Int,
+    val dueRetries: Int,
+    val unconfirmed: Int,
+    val items: List<AdminPublishQueueItem>,
+)
+
+data class AdminPublishQueueItem(
+    val uploadId: Long,
+    val videoId: Long,
+    val platform: Platform,
+    val status: UploadStatus,
+    val attemptCount: Int,
+    val nextRetryAt: String?,
+    val leaseUntil: String?,
+    val lastError: String?,
+    val errorMessage: String?,
+    val createdAt: String?,
+    val updatedAt: String?,
+)
+
 data class UpdateRoleRequest(
     val role: String,
 )

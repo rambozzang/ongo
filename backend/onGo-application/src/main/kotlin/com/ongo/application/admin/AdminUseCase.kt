@@ -13,6 +13,7 @@ import com.ongo.domain.video.VideoUploadRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class AdminUseCase(
@@ -154,6 +155,40 @@ class AdminUseCase(
             storageQuotaOverride = subscription.storageQuotaLimitBytes,
             cancelledAt = subscription.cancelledAt?.toString(),
             createdAt = subscription.createdAt?.toString(),
+        )
+    }
+
+    /** 게시 중인 작업의 lease·재시도·미확인 상태를 관리자 화면에 제공한다. */
+    fun getPublishQueue(): AdminPublishQueueSummary {
+        val now = LocalDateTime.now()
+        val pending = videoUploadRepository.findPendingUploads()
+        val statusCounts = pending.groupingBy { it.status.name }.eachCount()
+
+        return AdminPublishQueueSummary(
+            capturedAt = now.toString(),
+            totalPending = pending.size,
+            statusCounts = statusCounts,
+            activeLeases = pending.count { it.leaseUntil?.isAfter(now) == true },
+            dueRetries = pending.count { it.nextRetryAt?.isAfter(now) == false },
+            unconfirmed = pending.count { it.status == com.ongo.common.enums.UploadStatus.UNCONFIRMED },
+            items = pending
+                .sortedWith(compareBy<com.ongo.domain.video.VideoUpload> { it.status.name }.thenBy { it.createdAt })
+                .take(100)
+                .map { upload ->
+                    AdminPublishQueueItem(
+                        uploadId = upload.id!!,
+                        videoId = upload.videoId,
+                        platform = upload.platform,
+                        status = upload.status,
+                        attemptCount = upload.attemptCount,
+                        nextRetryAt = upload.nextRetryAt?.toString(),
+                        leaseUntil = upload.leaseUntil?.toString(),
+                        lastError = upload.lastError,
+                        errorMessage = upload.errorMessage,
+                        createdAt = upload.createdAt?.toString(),
+                        updatedAt = upload.updatedAt?.toString(),
+                    )
+                },
         )
     }
 

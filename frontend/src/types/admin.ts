@@ -68,6 +68,30 @@ export interface AdminSubscriptionDetail {
   createdAt: string | null
 }
 
+export interface AdminPublishQueueItem {
+  uploadId: number
+  videoId: number
+  platform: string
+  status: string
+  attemptCount: number
+  nextRetryAt: string | null
+  leaseUntil: string | null
+  lastError: string | null
+  errorMessage: string | null
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+export interface AdminPublishQueueSummary {
+  capturedAt: string
+  totalPending: number
+  statusCounts: Record<string, number>
+  activeLeases: number
+  dueRetries: number
+  unconfirmed: number
+  items: AdminPublishQueueItem[]
+}
+
 export interface UpdateRoleRequest {
   role: string
 }

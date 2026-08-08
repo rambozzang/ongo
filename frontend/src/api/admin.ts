@@ -6,6 +6,7 @@ import type {
   AdminVideoItem,
   AdminChannelItem,
   AdminSubscriptionDetail,
+  AdminPublishQueueSummary,
   StorageQuotaUpdateRequest,
   UpdateRoleRequest,
   PageResponse,
@@ -49,6 +50,12 @@ export const adminApi = {
   getUserSubscription(userId: number) {
     return apiClient
       .get<ResData<AdminSubscriptionDetail>>(`/admin/users/${userId}/subscription`)
+      .then(unwrapResponse)
+  },
+
+  getPublishQueue() {
+    return apiClient
+      .get<ResData<AdminPublishQueueSummary>>('/admin/publish-queue')
       .then(unwrapResponse)
   },
 

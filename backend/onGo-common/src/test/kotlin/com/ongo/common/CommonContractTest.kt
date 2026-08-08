@@ -2,6 +2,7 @@ package com.ongo.common
 
 import com.ongo.common.config.PageRequest
 import com.ongo.common.config.PageResponse
+import com.ongo.common.enums.CreditPackage
 import com.ongo.common.enums.MediaType
 import com.ongo.common.exception.FileValidationException
 import com.ongo.common.util.AESEncryptionUtil
@@ -64,6 +65,40 @@ class CommonContractTest {
         assertThrows<FileValidationException> {
             FileValidationUtil.detectMediaType("application/pdf")
         }
+    }
+
+    @Test
+    fun `media validation routes video and image contracts`() {
+        FileValidationUtil.validateByMediaType("clip.webm", "video/webm", 1024, MediaType.VIDEO)
+        FileValidationUtil.validateByMediaType("cover.webp", "image/webp", 1024, MediaType.IMAGE)
+
+        assertThrows<FileValidationException> {
+            FileValidationUtil.validateByMediaType("cover.webp", "image/webp", 1024, MediaType.VIDEO)
+        }
+        assertThrows<FileValidationException> {
+            FileValidationUtil.validateByMediaType("clip.mp4", "video/mp4", 1024, MediaType.IMAGE)
+        }
+    }
+
+    @Test
+    fun `credit packages expose the published pricing and validity contract`() {
+        assertEquals(4, CreditPackage.entries.size)
+        assertEquals(500, CreditPackage.STARTER.credits)
+        assertEquals(4_900, CreditPackage.STARTER.price)
+        assertEquals(10_000, CreditPackage.BUSINESS.credits)
+        assertEquals(180, CreditPackage.BUSINESS.validDays)
+
+        CreditPackage.entries.forEach { creditPackage ->
+            assertTrue(creditPackage.credits > 0)
+            assertTrue(creditPackage.price > 0)
+            assertTrue(creditPackage.validDays > 0)
+        }
+
+        assertTrue(CreditPackage.entries.zipWithNext().all { (current, next) ->
+            current.credits < next.credits &&
+                current.price < next.price &&
+                current.validDays < next.validDays
+        })
     }
 
     @Test

@@ -4,6 +4,79 @@
 
     <PageGuide :title="t('admin.pageGuideTitle')" :items="(tm('admin.pageGuide') as string[])" />
 
+    <!-- Publish worker operations -->
+    <section class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800" aria-labelledby="publish-queue-title">
+      <div class="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 id="publish-queue-title" class="text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('admin.publishQueueTitle') }}</h2>
+          <p class="mt-1 text-body text-gray-500 dark:text-gray-400">{{ t('admin.publishQueueDescription') }}</p>
+        </div>
+        <button
+          type="button"
+          class="btn-secondary shrink-0"
+          :disabled="queueLoading"
+          @click="fetchPublishQueue"
+        >
+          <ArrowPathIcon class="mr-1 inline h-4 w-4" :class="{ 'animate-spin': queueLoading }" aria-hidden="true" />
+          {{ queueLoading ? t('action.loading') : t('action.refresh') }}
+        </button>
+      </div>
+
+      <AsyncState
+        :loading="queueLoading"
+        :error="queueError"
+        skeleton="card"
+        :skeleton-count="4"
+        retryable
+        @retry="fetchPublishQueue"
+      >
+        <div v-if="queueSummary" class="space-y-4">
+          <div class="grid gap-3 tablet:grid-cols-4">
+            <div class="rounded-lg bg-muted-subtle p-3">
+              <p class="text-body-xs text-muted-strong">{{ t('admin.queuePending') }}</p>
+              <p class="mt-1 text-heading font-semibold text-content">{{ queueSummary.totalPending }}</p>
+            </div>
+            <div class="rounded-lg bg-warning-subtle p-3">
+              <p class="text-body-xs text-warning-strong">{{ t('admin.queueLeases') }}</p>
+              <p class="mt-1 text-heading font-semibold text-content">{{ queueSummary.activeLeases }}</p>
+            </div>
+            <div class="rounded-lg bg-info-subtle p-3">
+              <p class="text-body-xs text-info-strong">{{ t('admin.queueRetries') }}</p>
+              <p class="mt-1 text-heading font-semibold text-content">{{ queueSummary.dueRetries }}</p>
+            </div>
+            <div class="rounded-lg bg-error-subtle p-3">
+              <p class="text-body-xs text-error-strong">{{ t('admin.queueUnconfirmed') }}</p>
+              <p class="mt-1 text-heading font-semibold text-content">{{ queueSummary.unconfirmed }}</p>
+            </div>
+          </div>
+
+          <div v-if="queueSummary.items.length" class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+            <table class="min-w-full divide-y divide-gray-200 text-body dark:divide-gray-700">
+              <thead class="bg-gray-50 dark:bg-gray-900">
+                <tr>
+                  <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.queueVideo') }}</th>
+                  <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.queuePlatform') }}</th>
+                  <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.queueStatus') }}</th>
+                  <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.queueAttempts') }}</th>
+                  <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.queueError') }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tr v-for="item in queueSummary.items" :key="item.uploadId">
+                  <td class="whitespace-nowrap px-3 py-2 text-content">#{{ item.videoId }}</td>
+                  <td class="whitespace-nowrap px-3 py-2 font-medium text-content">{{ item.platform }}</td>
+                  <td class="whitespace-nowrap px-3 py-2"><span :class="statusBadgeClass(item.status)">{{ item.status }}</span></td>
+                  <td class="whitespace-nowrap px-3 py-2 text-muted-strong">{{ item.attemptCount }}</td>
+                  <td class="max-w-xs truncate px-3 py-2 text-muted-strong" :title="item.lastError || item.errorMessage || ''">{{ item.lastError || item.errorMessage || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-else class="rounded-lg border border-dashed border-gray-300 p-4 text-center text-body text-muted-strong dark:border-gray-600">{{ t('admin.queueEmpty') }}</p>
+        </div>
+      </AsyncState>
+    </section>
+
     <!-- Search -->
     <div class="mb-6 flex items-center gap-4">
       <div class="relative flex-1 max-w-md">
@@ -448,6 +521,7 @@ import {
   FilmIcon,
   LinkIcon,
   CreditCardIcon,
+  ArrowPathIcon,
 } from '@heroicons/vue/24/outline'
 import OTabs from '@/components/ui/OTabs.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
@@ -462,6 +536,7 @@ import type {
   AdminVideoItem,
   AdminChannelItem,
   AdminSubscriptionDetail,
+  AdminPublishQueueSummary,
 } from '@/types/admin'
 
 const { t, tm } = useLocale()
@@ -474,6 +549,23 @@ const currentPage = ref(0)
 const totalElements = ref(0)
 const totalPages = ref(0)
 const pageSize = 20
+
+// --- Publish queue operations ---
+const queueSummary = ref<AdminPublishQueueSummary | null>(null)
+const queueLoading = ref(false)
+const queueError = ref<string | null>(null)
+
+async function fetchPublishQueue() {
+  queueLoading.value = true
+  queueError.value = null
+  try {
+    queueSummary.value = await adminApi.getPublishQueue()
+  } catch (error) {
+    queueError.value = error instanceof Error ? error.message : t('admin.publishQueueLoadError')
+  } finally {
+    queueLoading.value = false
+  }
+}
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -797,9 +889,11 @@ function statusBadgeClass(status: string): string {
   switch (status) {
     case 'PUBLISHED': return 'rounded-full bg-success-subtle px-2 py-0.5 text-success-strong'
     case 'FAILED':
-    case 'REJECTED': return 'rounded-full bg-error-subtle px-2 py-0.5 text-error-strong'
+    case 'REJECTED':
+    case 'UNCONFIRMED': return 'rounded-full bg-error-subtle px-2 py-0.5 text-error-strong'
     case 'PROCESSING':
-    case 'UPLOADING': return 'rounded-full bg-warning-subtle px-2 py-0.5 text-warning-strong'
+    case 'UPLOADING':
+    case 'PARTIALLY_PUBLISHED': return 'rounded-full bg-warning-subtle px-2 py-0.5 text-warning-strong'
     default: return 'rounded-full bg-muted-subtle px-2 py-0.5 text-muted-strong'
   }
 }
@@ -808,10 +902,12 @@ function platformUploadClass(status: string): string {
   switch (status) {
     case 'PUBLISHED': return 'bg-success-subtle text-success-strong'
     case 'FAILED':
-    case 'REJECTED': return 'bg-error-subtle text-error-strong'
+    case 'REJECTED':
+    case 'UNCONFIRMED': return 'bg-error-subtle text-error-strong'
     case 'PROCESSING':
     case 'UPLOADING':
-    case 'REVIEW': return 'bg-warning-subtle text-warning-strong'
+    case 'REVIEW':
+    case 'PARTIALLY_PUBLISHED': return 'bg-warning-subtle text-warning-strong'
     default: return 'bg-muted-subtle text-muted-strong'
   }
 }
@@ -829,6 +925,7 @@ function subStatusClass(status: string): string {
 
 onMounted(() => {
   fetchUsers()
+  fetchPublishQueue()
 })
 
 onUnmounted(() => {
