@@ -31,7 +31,7 @@ pipeline {
             steps {
                 script {
                     def sensitiveFiles = sh(
-                        script: "git ls-files | grep -E '(^|/)(ongo_backup_[^/]*\\.sql|.*backup[^/]*\\.sql)$' || true",
+                        script: "git ls-files | grep -E '(^|/)(ongo_backup_[^/]*\\.sql|.*backup[^/]*\\.sql)\$' || true",
                         returnStdout: true,
                     ).trim()
                     if (sensitiveFiles) {
