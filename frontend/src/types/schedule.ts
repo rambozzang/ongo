@@ -1,6 +1,6 @@
 import type { Platform } from './channel'
 
-export type ScheduleStatus = 'SCHEDULED' | 'PUBLISHED' | 'FAILED' | 'CANCELLED'
+export type ScheduleStatus = 'SCHEDULED' | 'PROCESSING' | 'PUBLISHED' | 'PARTIALLY_PUBLISHED' | 'UNCONFIRMED' | 'FAILED' | 'CANCELLED'
 
 export interface Schedule {
   id: number

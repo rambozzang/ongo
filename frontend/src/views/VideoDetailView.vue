@@ -117,10 +117,35 @@
                 <div
                   v-for="upload in video.uploads"
                   :key="upload.id"
-                  class="flex items-center gap-1.5"
+                  class="flex min-w-0 flex-wrap items-center gap-1.5"
                 >
                   <PlatformBadge :platform="upload.platform" />
                   <StatusBadge :status="upload.status" />
+                  <a
+                    v-if="upload.platformUrl"
+                    :href="upload.platformUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-body-xs text-primary-600 underline underline-offset-2 dark:text-primary-400"
+                  >
+                    {{ $t('videoDetail.openPlatform') }}
+                  </a>
+                  <span v-if="upload.errorMessage" class="basis-full text-body-xs text-error-strong">
+                    {{ upload.errorMessage }}
+                  </span>
+                  <button
+                    v-if="upload.status === 'FAILED' || upload.status === 'REJECTED' || upload.status === 'UNCONFIRMED'"
+                    type="button"
+                    class="basis-full text-left text-body-xs font-semibold text-primary-600 underline underline-offset-2 disabled:opacity-50 dark:text-primary-400"
+                    :disabled="retryingUploadId === upload.id"
+                    @click="handleUploadRecovery(upload)"
+                  >
+                    {{ retryingUploadId === upload.id
+                      ? $t('videoDetail.recoveringUpload')
+                      : upload.status === 'UNCONFIRMED'
+                        ? $t('videoDetail.recheckUpload')
+                        : $t('videoDetail.retryUpload') }}
+                  </button>
                 </div>
               </div>
             </div>
@@ -446,26 +471,6 @@
           </div>
         </div>
 
-        <!-- Recent Comments Section (Phase 2 placeholder) -->
-        <div class="card">
-          <div class="flex items-center justify-between">
-            <h3 class="text-h3 text-gray-900 dark:text-gray-100">
-              {{ $t('videos.recentComments') }}
-            </h3>
-            <span class="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-caption text-gray-500 dark:text-gray-400">
-              Phase 2
-            </span>
-          </div>
-          <div class="mt-6 flex flex-col items-center justify-center py-8 text-center">
-            <ChatBubbleLeftEllipsisIcon class="mb-3 h-10 w-10 text-gray-300 dark:text-gray-600" />
-            <p class="text-body text-gray-500 dark:text-gray-400">
-              {{ $t('videoDetail.commentsPhase2') }}
-            </p>
-            <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">
-              {{ $t('videoDetail.commentsPhase2Hint') }}
-            </p>
-          </div>
-        </div>
       </div>
 
       <!-- No Uploads State -->
@@ -548,7 +553,9 @@ import PageGuide from '@/components/common/PageGuide.vue'
 import { useLocale } from '@/composables/useLocale'
 import { useVideoStore } from '@/stores/video'
 import { analyticsApi } from '@/api/analytics'
+import { videoApi } from '@/api/video'
 import type { VideoAnalytics } from '@/types/analytics'
+import type { VideoUpload } from '@/types/video'
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
 
@@ -573,6 +580,7 @@ const showPreviewModal = ref(false)
 const selectedPlatform = ref<Platform | null>(null)
 const analyticsData = ref<VideoAnalytics[]>([])
 const analyticsLoading = ref(false)
+const retryingUploadId = ref<number | null>(null)
 
 // ---- Computed ----
 
@@ -678,6 +686,23 @@ function handleRecycle() {
 
 async function handleRecycleConfirm() {
   await videoStore.fetchVideo(Number(props.id))
+}
+
+async function handleUploadRecovery(upload: VideoUpload) {
+  if (!video.value) return
+  retryingUploadId.value = upload.id
+  try {
+    if (upload.status === 'UNCONFIRMED') {
+      await videoApi.recheck(video.value.id, upload.platform)
+    } else {
+      await videoApi.retry(video.value.id, upload.platform)
+    }
+    await videoStore.fetchVideo(video.value.id)
+  } catch {
+    // API client의 서버 오류가 전역 알림으로 표시된다.
+  } finally {
+    retryingUploadId.value = null
+  }
 }
 
 function handleReUpload() {

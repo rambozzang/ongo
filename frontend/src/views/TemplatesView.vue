@@ -15,7 +15,6 @@ import {
   MagnifyingGlassIcon,
   PlusIcon,
   DocumentDuplicateIcon,
-  StarIcon,
   TrashIcon,
 } from '@heroicons/vue/24/outline'
 import type { ContentTemplate, TemplateCategory } from '@/types/template'
@@ -28,7 +27,7 @@ const notificationStore = useNotificationStore()
 const router = useRouter()
 // 카테고리·즐겨찾기는 화면을 떠났다 돌아와도 유지되도록 스토어 상태를 그대로 쓴다.
 // 검색어와 정렬은 useListControls가 소유한다.
-const { categoryFilter, showFavoritesOnly } = storeToRefs(templatesStore)
+const { categoryFilter } = storeToRefs(templatesStore)
 
 /** 체크박스 공통 스타일 — 목록 확산 시 그대로 복사해 쓴다. */
 const CHECKBOX_CLASS =
@@ -80,9 +79,6 @@ const {
     if (categoryFilter.value !== 'all') {
       predicates.push((template) => template.category === categoryFilter.value)
     }
-    if (showFavoritesOnly.value) {
-      predicates.push((template) => template.isFavorite)
-    }
     return predicates
   }),
 })
@@ -90,7 +86,6 @@ const {
 const resetSearchAndFilters = () => {
   resetFilters()
   categoryFilter.value = 'all'
-  showFavoritesOnly.value = false
 }
 
 const handleCreateNew = () => {
@@ -174,27 +169,6 @@ const handleBulkDelete = async () => {
       :search-label="$t('templates.searchLabel')"
       @clear-selection="clearSelection"
     >
-      <template #filters>
-        <button
-          type="button"
-          :class="[
-            'inline-flex min-h-10 items-center gap-1.5 rounded-lg border px-3 py-2 text-body font-medium transition-colors',
-            showFavoritesOnly
-              ? 'border-warning bg-warning-subtle text-warning-strong'
-              : 'border-line-control bg-surface-input text-content-secondary hover:bg-surface-raised hover:text-content',
-          ]"
-          :aria-pressed="showFavoritesOnly"
-          @click="showFavoritesOnly = !showFavoritesOnly"
-        >
-          <StarIcon
-            class="h-4 w-4"
-            :class="showFavoritesOnly ? 'fill-current' : ''"
-            aria-hidden="true"
-          />
-          {{ $t('templates.favorites') }}
-        </button>
-      </template>
-
       <template #bulk-actions>
         <button
           type="button"

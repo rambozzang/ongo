@@ -13,6 +13,9 @@ export interface BrandKitResponse {
   outroTemplateUrl: string | null
   watermarkUrl: string | null
   guidelines: string | null
+  colors: BrandKitColor[]
+  fonts: BrandKitFont[]
+  assets: BrandKitAsset[]
   isDefault: boolean
   createdAt: string
   updatedAt: string
@@ -29,6 +32,9 @@ export interface CreateBrandKitRequest {
   outroTemplateUrl?: string
   watermarkUrl?: string
   guidelines?: string
+  colors?: BrandKitColor[]
+  fonts?: BrandKitFont[]
+  assets?: BrandKitAsset[]
 }
 
 export interface UpdateBrandKitRequest {
@@ -42,7 +48,14 @@ export interface UpdateBrandKitRequest {
   outroTemplateUrl?: string
   watermarkUrl?: string
   guidelines?: string
+  colors?: BrandKitColor[]
+  fonts?: BrandKitFont[]
+  assets?: BrandKitAsset[]
 }
+
+export interface BrandKitColor { id: number; name: string; hex: string; usage: string }
+export interface BrandKitFont { id: number; name: string; family: string; weight: string; usage: string; sampleText: string }
+export interface BrandKitAsset { id: number; name: string; type: string; url: string; format: string; size: string; uploadedAt: string }
 
 export const brandKitApi = {
   list() {

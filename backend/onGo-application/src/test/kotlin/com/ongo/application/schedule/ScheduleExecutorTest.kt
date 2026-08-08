@@ -72,6 +72,9 @@ class ScheduleExecutorTest {
             secondArg<() -> Unit>().invoke()
             true
         }
+        every { scheduleRepository.claimDue(any(), any()) } answers {
+            schedule(firstArg<Long>())
+        }
 
         executor = ScheduleExecutor(
             scheduleRepository = scheduleRepository,
@@ -138,6 +141,7 @@ class ScheduleExecutorTest {
         executor.syncScheduleStatuses()
 
         verify(exactly = 0) { scheduleRepository.findDueSchedules(any()) }
+        verify(exactly = 0) { scheduleRepository.claimDue(any(), any()) }
         verify(exactly = 0) { scheduleRepository.update(any()) }
     }
 
@@ -151,5 +155,30 @@ class ScheduleExecutorTest {
 
         verify(exactly = 1) { streamPublishUseCase.executeScheduledUpload(match { it.id == 1L }) }
         verify(exactly = 0) { scheduleRepository.update(any()) }
+    }
+
+    @Test
+    @DisplayName("예약 시각이 되면 미래 예약으로 보류된 UPLOADING row를 다시 dispatch한다")
+    fun dispatchesExistingUploadingRowsAtDueTime() {
+        every { scheduleRepository.findDueSchedules(any()) } returns listOf(schedule(1))
+        every { videoUploadRepository.findByVideoId(10L) } returns listOf(
+            publishedUpload(10L).copy(status = UploadStatus.UPLOADING),
+        )
+
+        executor.syncScheduleStatuses()
+
+        verify(exactly = 1) { streamPublishUseCase.executeScheduledUpload(match { it.id == 1L }) }
+    }
+
+    @Test
+    @DisplayName("다른 작업자가 먼저 claim한 예약은 외부 게시하지 않는다")
+    fun skipsScheduleWhenClaimWasLost() {
+        every { scheduleRepository.findDueSchedules(any()) } returns listOf(schedule(1))
+        every { scheduleRepository.claimDue(any(), any()) } returns null
+
+        executor.syncScheduleStatuses()
+
+        verify(exactly = 0) { videoUploadRepository.findByVideoId(any()) }
+        verify(exactly = 0) { streamPublishUseCase.executeScheduledUpload(any()) }
     }
 }

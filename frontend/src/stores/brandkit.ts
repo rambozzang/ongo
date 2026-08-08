@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { brandKitApi } from '@/api/brandkit'
+import { brandKitApi, type BrandKitResponse } from '@/api/brandkit'
 import { useNotificationStore } from '@/stores/notification'
 import type { BrandKit, BrandColor, BrandFont, BrandAsset } from '@/types/brandkit'
 
@@ -21,6 +21,30 @@ export const useBrandKitStore = defineStore('brandkit', () => {
   const isDirty = ref(false)
   const loading = ref(false)
 
+  function assetsFromResponse(kit: BrandKitResponse): BrandAsset[] {
+    if (kit.assets.length > 0) {
+      return kit.assets.map((asset) => ({
+        ...asset,
+        type: asset.type as BrandAsset['type'],
+      }))
+    }
+    const entries: Array<[BrandAsset['type'], string | null]> = [
+      ['logo', kit.logoUrl],
+      ['watermark', kit.watermarkUrl],
+      ['intro', kit.introTemplateUrl],
+      ['outro', kit.outroTemplateUrl],
+    ]
+    return entries.flatMap(([type, url], index) => url ? [{
+      id: kit.id * 10 + index,
+      name: type,
+      type,
+      url,
+      format: url.split('.').pop()?.split('?')[0]?.toUpperCase() || 'FILE',
+      size: '',
+      uploadedAt: kit.updatedAt,
+    }] : [])
+  }
+
   async function fetchBrandKits() {
     loading.value = true
     try {
@@ -31,15 +55,15 @@ export const useBrandKitStore = defineStore('brandkit', () => {
           id: String(kit.id),
           name: kit.name,
           description: '',
-          colors: [
+          colors: kit.colors.length > 0 ? kit.colors : [
             { id: 1, name: '메인 컬러', hex: kit.primaryColor, usage: '주요 색상' },
             { id: 2, name: '서브 컬러', hex: kit.secondaryColor, usage: '보조 색상' },
             { id: 3, name: '액센트', hex: kit.accentColor, usage: '강조 색상' },
           ],
-          fonts: [
+          fonts: kit.fonts.length > 0 ? kit.fonts : [
             { id: 1, name: '메인 서체', family: kit.fontFamily, weight: '400', usage: '본문', sampleText: '샘플 텍스트' },
           ],
-          assets: [],
+          assets: assetsFromResponse(kit),
           guidelines: kit.guidelines || '',
           createdAt: kit.createdAt,
           updatedAt: kit.updatedAt,
@@ -115,26 +139,30 @@ export const useBrandKitStore = defineStore('brandkit', () => {
       const secondary = brandKit.value.colors.find(c => c.usage === '보조 색상')
       const accent = brandKit.value.colors.find(c => c.usage === '강조 색상')
       const mainFont = brandKit.value.fonts[0]
-
-      if (kitId && !isNaN(kitId)) {
-        await brandKitApi.update(kitId, {
-          name: brandKit.value.name,
-          primaryColor: primary?.hex,
-          secondaryColor: secondary?.hex,
-          accentColor: accent?.hex,
-          fontFamily: mainFont?.family,
-          guidelines: brandKit.value.guidelines,
-        })
-      } else {
-        await brandKitApi.create({
-          name: brandKit.value.name,
-          primaryColor: primary?.hex,
-          secondaryColor: secondary?.hex,
-          accentColor: accent?.hex,
-          fontFamily: mainFont?.family,
-          guidelines: brandKit.value.guidelines,
-        })
+      const assetUrl = (type: BrandAsset['type']) => brandKit.value.assets.find((asset) => asset.type === type)?.url
+      const request = {
+        name: brandKit.value.name,
+        primaryColor: primary?.hex,
+        secondaryColor: secondary?.hex,
+        accentColor: accent?.hex,
+        fontFamily: mainFont?.family,
+        guidelines: brandKit.value.guidelines,
+        logoUrl: assetUrl('logo') ?? '',
+        watermarkUrl: assetUrl('watermark') ?? '',
+        introTemplateUrl: assetUrl('intro') ?? '',
+        outroTemplateUrl: assetUrl('outro') ?? '',
+        colors: brandKit.value.colors,
+        fonts: brandKit.value.fonts,
+        assets: brandKit.value.assets,
       }
+
+      const saved = kitId && !isNaN(kitId)
+        ? await brandKitApi.update(kitId, request)
+        : await brandKitApi.create(request)
+      brandKit.value.id = String(saved.id)
+      brandKit.value.createdAt = saved.createdAt
+      brandKit.value.updatedAt = saved.updatedAt
+      brandKit.value.assets = assetsFromResponse(saved)
     } catch (e) {
       useNotificationStore().error('브랜드킷 저장 중 오류가 발생했습니다')
       throw e

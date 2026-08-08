@@ -161,28 +161,6 @@
               </div>
             </div>
 
-            <!-- AI Option (Disabled) -->
-            <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 p-4">
-              <label class="flex cursor-not-allowed items-start gap-3 opacity-50">
-                <input
-                  type="checkbox"
-                  disabled
-                  class="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600"
-                />
-                <div class="flex-1">
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      AI로 새 메타데이터 생성
-                    </span>
-                    <span class="badge-gray text-xs">크레딧 필요</span>
-                  </div>
-                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    AI가 플랫폼별 최적화된 제목과 설명을 자동 생성합니다
-                  </p>
-                </div>
-              </label>
-            </div>
-
             <!-- Scheduled Publish -->
             <div>
               <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -300,7 +278,6 @@ async function handleSubmit() {
     category: formData.value.category,
     platforms: formData.value.platforms,
     scheduledAt: formData.value.scheduledAt || undefined,
-    useAI: false,
   })
 
   success('콘텐츠가 성공적으로 재게시되었습니다')

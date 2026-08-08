@@ -22,7 +22,10 @@ const toChip = (p: Platform): ChipCode => CHIP[p] ?? 'TH'
 
 const SCHEDULE_STATUS: Record<ScheduleStatus, { label: string; variant: PillVariant }> = {
   SCHEDULED: { label: '예약 완료', variant: 'success' },
+  PROCESSING: { label: '발행 중', variant: 'warning' },
   PUBLISHED: { label: '발행 완료', variant: 'success' },
+  PARTIALLY_PUBLISHED: { label: '일부 발행', variant: 'warning' },
+  UNCONFIRMED: { label: '확인 필요', variant: 'warning' },
   FAILED: { label: '발행 실패', variant: 'error' },
   CANCELLED: { label: '취소됨', variant: 'muted' },
 }

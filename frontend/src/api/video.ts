@@ -59,6 +59,33 @@ export const videoApi = {
     return apiClient.post<ResData<Video>>(`/videos/${id}/publish`, request).then(unwrapResponse)
   },
 
+  retry(id: number, platform: string) {
+    return apiClient.post<ResData<void>>(`/videos/${id}/retry/${platform}`).then(unwrapResponse)
+  },
+
+  recheck(id: number, platform: string) {
+    return apiClient.post<ResData<void>>(`/videos/${id}/recheck/${platform}`).then(unwrapResponse)
+  },
+
+  recycle(id: number, request: {
+    title: string
+    description?: string
+    tags: string[]
+    category?: string
+    platforms: Array<{
+      platform: string
+      title?: string
+      description?: string
+      tags?: string[]
+      scheduledAt?: string
+    }>
+  }) {
+    return apiClient.post<ResData<{ videoId: number; uploads: Array<{ platform: string; status: string; errorMessage?: string }> }>>(
+      `/videos/${id}/recycle`,
+      request,
+    ).then(unwrapResponse)
+  },
+
   delete(id: number) {
     return apiClient.delete<ResData<void>>(`/videos/${id}`).then(unwrapResponse)
   },

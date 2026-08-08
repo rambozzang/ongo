@@ -7,10 +7,13 @@ import com.ongo.domain.brandkit.BrandKit
 import com.ongo.domain.brandkit.BrandKitRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 
 @Service
 class BrandKitUseCase(
     private val brandKitRepository: BrandKitRepository,
+    private val objectMapper: ObjectMapper,
 ) {
 
     fun listBrandKits(userId: Long): List<BrandKitResponse> {
@@ -31,6 +34,9 @@ class BrandKitUseCase(
             outroTemplateUrl = request.outroTemplateUrl,
             watermarkUrl = request.watermarkUrl,
             guidelines = request.guidelines,
+            colorsJson = objectMapper.writeValueAsString(request.colors),
+            fontsJson = objectMapper.writeValueAsString(request.fonts),
+            assetsJson = objectMapper.writeValueAsString(request.assets),
         )
         return brandKitRepository.save(brandKit).toResponse()
     }
@@ -51,6 +57,9 @@ class BrandKitUseCase(
             outroTemplateUrl = request.outroTemplateUrl ?: brandKit.outroTemplateUrl,
             watermarkUrl = request.watermarkUrl ?: brandKit.watermarkUrl,
             guidelines = request.guidelines ?: brandKit.guidelines,
+            colorsJson = request.colors?.let(objectMapper::writeValueAsString) ?: brandKit.colorsJson,
+            fontsJson = request.fonts?.let(objectMapper::writeValueAsString) ?: brandKit.fontsJson,
+            assetsJson = request.assets?.let(objectMapper::writeValueAsString) ?: brandKit.assetsJson,
         )
         return brandKitRepository.update(updated).toResponse()
     }
@@ -84,8 +93,18 @@ class BrandKitUseCase(
         outroTemplateUrl = outroTemplateUrl,
         watermarkUrl = watermarkUrl,
         guidelines = guidelines,
+        colors = parseList(colorsJson),
+        fonts = parseList(fontsJson),
+        assets = parseList(assetsJson),
         isDefault = isDefault,
         createdAt = createdAt,
         updatedAt = updatedAt,
     )
+
+    private inline fun <reified T> parseList(json: String?): List<T> {
+        if (json.isNullOrBlank()) return emptyList()
+        return runCatching {
+            objectMapper.readValue(json, object : TypeReference<List<T>>() {})
+        }.getOrDefault(emptyList())
+    }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBrandKitStore } from '@/stores/brandkit'
 import PageGuide from '@/components/common/PageGuide.vue'
@@ -27,8 +27,12 @@ function toggleSection(section: keyof typeof sections.value) {
   sections.value[section] = !sections.value[section]
 }
 
-function handleSave() {
-  brandKitStore.saveBrandKit()
+async function handleSave() {
+  try {
+    await brandKitStore.saveBrandKit()
+  } catch {
+    return
+  }
   notify.success(t('brandKit.saveSuccess'))
 }
 
@@ -71,6 +75,10 @@ function handleRemoveAsset(id: number) {
 function handleUpdateGuidelines(text: string) {
   brandKitStore.updateGuidelines(text)
 }
+
+onMounted(() => {
+  brandKitStore.fetchBrandKits().catch(() => undefined)
+})
 </script>
 
 <template>

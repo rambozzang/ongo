@@ -4,13 +4,11 @@ import { useTemplatesStore } from '@/stores/templates'
 import { useNotificationStore } from '@/stores/notification'
 import type { ContentTemplate } from '@/types/template'
 import {
-  StarIcon,
   DocumentDuplicateIcon,
   PencilIcon,
   TrashIcon,
   CheckIcon,
 } from '@heroicons/vue/24/outline'
-import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 
 interface Props {
   template: ContentTemplate
@@ -61,10 +59,6 @@ const getPreviewContent = () => {
   }
   if (props.template.thumbnailStyle) return props.template.thumbnailStyle
   return ''
-}
-
-const handleToggleFavorite = () => {
-  templatesStore.toggleFavorite(props.template.id)
 }
 
 const handleDuplicate = () => {
@@ -123,19 +117,6 @@ const handleApply = async () => {
             {{ template.name }}
           </h3>
         </div>
-        <button
-          class="ml-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-          @click="handleToggleFavorite"
-        >
-          <StarIconSolid
-            v-if="template.isFavorite"
-            class="w-5 h-5 text-warning-strong"
-          />
-          <StarIcon
-            v-else
-            class="w-5 h-5 text-gray-400 dark:text-gray-500"
-          />
-        </button>
       </div>
 
       <!-- Badges -->

@@ -287,17 +287,6 @@
         </template>
       </template>
 
-      <!-- AI 리포트 탭 (플레이스홀더) -->
-      <template v-if="activeTab === 'aiReport'">
-        <div class="card">
-          <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
-            <SparklesIcon class="h-12 w-12 mb-3" />
-            <p class="text-body font-medium">{{ $t('revenue.aiReportTitle') }}</p>
-            <p class="text-body-xs mt-1">{{ $t('revenue.aiReportDesc') }}</p>
-            <p class="text-body-xs mt-1 text-gray-400">{{ $t('revenue.comingSoon') }}</p>
-          </div>
-        </div>
-      </template>
     </template>
   </div>
 </template>
@@ -351,14 +340,13 @@ async function handleGenerateInsight() {
 }
 
 // ----- 탭 -----
-type RevenueTab = 'overview' | 'cpmRpm' | 'brandDeals' | 'aiReport'
+type RevenueTab = 'overview' | 'cpmRpm' | 'brandDeals'
 const activeTab = ref<RevenueTab>('overview')
 
 const revenueTabs: { key: RevenueTab; label: string }[] = [
   { key: 'overview', label: t('revenue.tabOverview') },
   { key: 'cpmRpm', label: t('revenue.tabCpmRpm') },
   { key: 'brandDeals', label: t('revenue.tabBrandDeals') },
-  { key: 'aiReport', label: t('revenue.tabAiReport') },
 ]
 
 watch(activeTab, (tab) => {

@@ -4,6 +4,8 @@ import com.ongo.api.video.dto.*
 import com.ongo.application.video.CrossPlatformOptimizationUseCase
 import com.ongo.application.video.PublishVideoUseCase
 import com.ongo.application.video.PlatformUploadConfig
+import com.ongo.application.video.RecyclePlatformConfig
+import com.ongo.application.video.RecycleVideoUseCase
 import com.ongo.application.video.UploadVideoUseCase
 import com.ongo.application.video.VideoFeedUseCase
 import com.ongo.application.video.VideoFeedResponse
@@ -37,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile
 class VideoController(
     private val uploadVideoUseCase: UploadVideoUseCase,
     private val publishVideoUseCase: PublishVideoUseCase,
+    private val recycleVideoUseCase: RecycleVideoUseCase,
     private val videoQueryUseCase: VideoQueryUseCase,
     private val videoFeedUseCase: VideoFeedUseCase,
     private val crossPlatformOptimizationUseCase: CrossPlatformOptimizationUseCase,
@@ -135,6 +138,51 @@ class VideoController(
                     )
                 },
             )
+        )
+    }
+
+    @Operation(
+        summary = "기존 영상 재게시",
+        description = "소유한 기존 영상의 파일을 재사용해 새 콘텐츠를 만들고 선택한 플랫폼에 게시합니다. 새 콘텐츠와 원본의 게시 상태는 독립적으로 관리됩니다.",
+    )
+    @RequiresPermission(Permission.VIDEO_PUBLISH)
+    @PostMapping("/{id}/recycle")
+    fun recycleVideo(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Parameter(description = "재게시할 원본 영상 ID") @PathVariable id: Long,
+        @Valid @RequestBody req: RecycleRequest,
+    ): ResponseEntity<ResData<PublishResponse>> {
+        val result = recycleVideoUseCase.recycle(
+            userId = userId,
+            sourceVideoId = id,
+            title = req.title,
+            description = req.description,
+            tags = req.tags,
+            category = req.category,
+            platforms = req.platforms.map { platform ->
+                RecyclePlatformConfig(
+                    platform = platform.platform,
+                    title = platform.title,
+                    description = platform.description,
+                    tags = platform.tags,
+                    visibility = platform.visibility,
+                    thumbnailUrl = platform.thumbnailUrl,
+                    scheduledAt = platform.scheduledAt,
+                )
+            },
+        )
+        return ResData.success(
+            PublishResponse(
+                videoId = result.videoId,
+                uploads = result.uploads.map { upload ->
+                    UploadStatusItem(
+                        platform = upload.platform,
+                        status = upload.status,
+                        errorMessage = upload.errorMessage,
+                    )
+                },
+            ),
+            "재게시가 시작되었습니다",
         )
     }
 
@@ -291,6 +339,7 @@ class VideoController(
         ApiResponse(responseCode = "500", description = "서버 내부 오류")
     )
     @PostMapping("/{id}/retry/{platform}")
+    @RequiresPermission(Permission.VIDEO_PUBLISH)
     fun retryUpload(
         @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
         @Parameter(description = "재시도할 영상 ID") @PathVariable id: Long,
@@ -298,6 +347,21 @@ class VideoController(
     ): ResponseEntity<ResData<Nothing?>> {
         publishVideoUseCase.retryUpload(userId, id, platform)
         return ResData.success(null, "재업로드가 시작되었습니다")
+    }
+
+    @Operation(
+        summary = "게시 결과 재확인",
+        description = "확인 불가 상태의 게시물에 대해 새 업로드 없이 플랫폼 상태 조회만 실행합니다.",
+    )
+    @RequiresPermission(Permission.VIDEO_PUBLISH)
+    @PostMapping("/{id}/recheck/{platform}")
+    fun recheckUpload(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @PathVariable id: Long,
+        @PathVariable platform: String,
+    ): ResponseEntity<ResData<Nothing?>> {
+        publishVideoUseCase.recheckUpload(userId, id, platform)
+        return ResData.success(null, "게시 결과를 재확인했습니다")
     }
 
     @Operation(summary = "이미지 업로드", description = "콘텐츠 이미지를 업로드합니다 (다중 파일 지원).")

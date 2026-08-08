@@ -1,9 +1,14 @@
 <template>
   <div class="platform-preview-panel">
     <!-- Header with toggle -->
-    <button
+    <div
+      role="button"
+      tabindex="0"
+      :aria-expanded="!collapsed"
       class="mb-4 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
       @click="collapsed = !collapsed"
+      @keydown.enter.prevent="collapsed = !collapsed"
+      @keydown.space.prevent="collapsed = !collapsed"
     >
       <div class="flex items-center gap-2">
         <svg
@@ -54,7 +59,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
         </svg>
       </div>
-    </button>
+    </div>
 
     <!-- Preview Content -->
     <div
@@ -79,12 +84,17 @@
                 {{ PLATFORM_CONFIG[platform].label }}
               </span>
             </div>
-            <CharCountBadge :platform="platform" :meta="getMetaForPlatform(platform)" />
+            <CharCountBadge
+              :platform="platform"
+              :meta="getMetaForPlatform(platform)"
+              :limits="props.platformLimits?.[platform]"
+            />
           </div>
           <!-- Scaled preview -->
           <div class="origin-top-left scale-[0.85] overflow-hidden">
             <component
               :is="previewComponent(platform)"
+              :platform="platform"
               :title="getMetaForPlatform(platform).title"
               :description="getMetaForPlatform(platform).description"
               :thumbnail="thumbnail"
@@ -116,7 +126,11 @@
                 :style="{ backgroundColor: PLATFORM_CONFIG[platform].color }"
               />
               {{ PLATFORM_CONFIG[platform].label }}
-              <CharCountBadge :platform="platform" :meta="getMetaForPlatform(platform)" />
+              <CharCountBadge
+                :platform="platform"
+                :meta="getMetaForPlatform(platform)"
+                :limits="props.platformLimits?.[platform]"
+              />
             </div>
           </button>
         </div>
@@ -126,6 +140,7 @@
           <component
             :is="previewComponent(selectedPlatform!)"
             v-if="selectedPlatform"
+            :platform="selectedPlatform"
             :title="getMetaForPlatform(selectedPlatform).title"
             :description="getMetaForPlatform(selectedPlatform).description"
             :thumbnail="thumbnail"
@@ -196,6 +211,7 @@ import TikTokPreview from './TikTokPreview.vue'
 import InstagramPreview from './InstagramPreview.vue'
 import NaverClipPreview from './NaverClipPreview.vue'
 import CharCountBadge from './CharCountBadge.vue'
+import GenericPlatformPreview from './GenericPlatformPreview.vue'
 
 interface PlatformMeta {
   title: string
@@ -211,6 +227,7 @@ interface Props {
   tags?: string[]
   platforms: Platform[]
   platformMetadata?: Partial<Record<Platform, PlatformMeta>>
+  platformLimits?: Partial<Record<Platform, { title?: number; description?: number }>>
   comparisonMode?: boolean
 }
 
@@ -222,6 +239,7 @@ const props = withDefaults(defineProps<Props>(), {
   tags: () => [],
   platforms: () => [],
   platformMetadata: undefined,
+  platformLimits: undefined,
   comparisonMode: false,
 })
 
@@ -248,7 +266,7 @@ const platformComponents: Partial<Record<Platform, Component>> = {
 }
 
 function previewComponent(platform: Platform): Component {
-  return platformComponents[platform] ?? YouTubePreview
+  return platformComponents[platform] ?? GenericPlatformPreview
 }
 
 // Auto-select first platform when platforms change

@@ -20,6 +20,7 @@ class PublishVideoUseCase(
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val eventPublisher: ApplicationEventPublisher,
     private val channelRepository: ChannelRepository,
+    private val videoUploadPoller: VideoUploadPoller,
 ) {
 
     @Transactional
@@ -137,8 +138,8 @@ class PublishVideoUseCase(
         val upload = videoUploadRepository.findByVideoIdAndPlatform(videoId, platform)
             ?: throw NotFoundException("업로드 기록", "$videoId/$platformName")
 
-        if (upload.status != UploadStatus.FAILED && upload.status != UploadStatus.REJECTED && upload.status != UploadStatus.UNCONFIRMED) {
-            throw IllegalStateException("실패/반려/확인 필요 상태의 업로드만 재시도할 수 있습니다. 현재 상태: ${upload.status}")
+        if (upload.status != UploadStatus.FAILED && upload.status != UploadStatus.REJECTED) {
+            throw IllegalStateException("실패/반려 상태만 재전송할 수 있습니다. 게시 결과 확인 필요 상태는 재확인을 사용하세요. 현재 상태: ${upload.status}")
         }
 
         // 상태를 UPLOADING으로 리셋
@@ -146,6 +147,11 @@ class PublishVideoUseCase(
             upload.copy(
                 status = UploadStatus.UPLOADING,
                 errorMessage = null,
+                nextRetryAt = null,
+                leaseOwner = null,
+                leaseUntil = null,
+                pollToken = null,
+                lastError = null,
             )
         )
 
@@ -175,6 +181,12 @@ class PublishVideoUseCase(
                 ),
             )
         )
+    }
+
+    /** 확인 불가 작업에 대해 외부 상태 조회만 실행한다. 새 게시 요청은 만들지 않는다. */
+    fun recheckUpload(userId: Long, videoId: Long, platformName: String) {
+        val platform = safeValueOfOrThrow<com.ongo.common.enums.Platform>(platformName)
+        videoUploadPoller.recheck(userId, videoId, platform)
     }
 }
 

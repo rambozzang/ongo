@@ -170,14 +170,6 @@
               >
                 {{ $t('redesign.inbox.hide') }}
               </button>
-              <button
-                type="button"
-                disabled
-                :title="$t('redesign.inbox.blockUnsupported')"
-                class="rounded-[7px] border border-line-control px-[10px] py-[6px] text-[11px] text-bad opacity-50"
-              >
-                {{ $t('redesign.inbox.block') }}
-              </button>
             </div>
           </div>
 

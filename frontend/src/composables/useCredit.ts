@@ -8,6 +8,7 @@ export function useCredit() {
 
   const balance = computed(() => creditStore.totalBalance)
   const isLow = computed(() => creditStore.isLow)
+  const usedToday = computed(() => creditStore.usedToday)
 
   async function checkAndUse(required: number, featureName: string): Promise<boolean> {
     await creditStore.fetchBalance()
@@ -27,6 +28,8 @@ export function useCredit() {
     isLow,
     checkAndUse,
     fetchBalance: creditStore.fetchBalance,
+    fetchTransactions: creditStore.fetchTransactions,
+    usedToday,
     hasEnoughCredits: creditStore.hasEnoughCredits,
   }
 }

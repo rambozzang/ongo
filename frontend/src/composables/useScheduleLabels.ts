@@ -14,7 +14,10 @@ export function useScheduleLabels() {
   function getStatusLabel(status: ScheduleStatus): string {
     const map: Record<ScheduleStatus, string> = {
       SCHEDULED: t('scheduleView.status.scheduled'),
+      PROCESSING: t('scheduleView.status.processing'),
       PUBLISHED: t('scheduleView.status.published'),
+      PARTIALLY_PUBLISHED: t('scheduleView.status.partiallyPublished'),
+      UNCONFIRMED: t('scheduleView.status.unconfirmed'),
       FAILED: t('scheduleView.status.failed'),
       CANCELLED: t('scheduleView.status.cancelled'),
     }

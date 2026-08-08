@@ -23,13 +23,7 @@
 
     <PageGuide :title="$t('aiView.pageGuideTitle')" :items="($tm('aiView.pageGuide') as string[])" />
 
-    <!-- Tab Navigation -->
-    <OTabs v-model="activeTab" :tabs="aiViewTabs" class="mb-6" />
-
-    <!-- Tab Content -->
     <div class="mt-6">
-      <!-- AI Tools Tab -->
-      <div v-show="activeTab === 'tools'">
     <SectionCard :title="$t('aiView.tabs.tools')" :meta="`${aiTools.length}`" body-class="p-4">
       <div class="page-grid page-grid--cards">
         <article
@@ -58,17 +52,6 @@
       </div>
     </SectionCard>
       </div>
-
-      <!-- Presets Tab -->
-      <div v-show="activeTab === 'presets'">
-        <AiPresetList @preset-selected="handlePresetSelected" />
-      </div>
-
-      <!-- History Tab -->
-      <div v-show="activeTab === 'history'">
-        <AiUsageHistory />
-      </div>
-    </div>
 
     <!-- Tool Form Modal -->
     <Teleport to="body">
@@ -631,7 +614,7 @@
               </div>
             </template>
 
-            <!-- Placeholder forms for other tools -->
+            <!-- Guard for a tool that is not enabled in this release. -->
             <template v-else>
               <div class="space-y-4">
                 <div class="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 px-6 py-12 text-center">
@@ -641,7 +624,7 @@
                   />
                   <h3 class="mb-1 text-body font-medium text-gray-900 dark:text-gray-100">{{ selectedTool.name }}</h3>
                   <p class="text-body text-gray-500 dark:text-gray-400">
-                    {{ $t('aiView.placeholder.preparing') }}
+                    {{ $t('aiView.toolUnavailable') }}
                   </p>
                 </div>
                 <div class="flex justify-end">
@@ -735,9 +718,6 @@ import {
   SparklesIcon,
   DocumentTextIcon,
   HashtagIcon,
-  MicrophoneIcon,
-  DocumentMagnifyingGlassIcon,
-  ChatBubbleLeftRightIcon,
   ClockIcon,
   ChartBarIcon,
   XMarkIcon,
@@ -746,14 +726,10 @@ import {
 } from '@heroicons/vue/24/outline'
 import AiLoadingOverlay from '@/components/ai/AiLoadingOverlay.vue'
 import AiTypingEffect from '@/components/ai/AiTypingEffect.vue'
-import AiPresetList from '@/components/ai/AiPresetList.vue'
-import AiUsageHistory from '@/components/ai/AiUsageHistory.vue'
-import OTabs from '@/components/ui/OTabs.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import { useAiStore } from '@/stores/ai'
-import { useAiHistoryStore, type AiPreset } from '@/stores/aiHistory'
 import { useCredit } from '@/composables/useCredit'
 import { CREDIT_PACKAGES } from '@/types/credit'
 import type { Platform } from '@/types/channel'
@@ -764,8 +740,7 @@ import type { AiTone } from '@/types/ai'
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
 const aiStore = useAiStore()
-const aiHistoryStore = useAiHistoryStore()
-const { balance, isLow, checkAndUse, fetchBalance } = useCredit()
+const { balance, isLow, usedToday, checkAndUse, fetchBalance, fetchTransactions } = useCredit()
 
 // Common hashtags across all platforms
 const commonHashtags = computed(() => {
@@ -804,42 +779,6 @@ const aiTools: AiTool[] = [
     icon: HashtagIcon,
     iconBg: 'bg-purple-100 dark:bg-purple-900/30',
     iconColor: 'text-purple-600 dark:text-purple-400',
-  },
-  {
-    id: 'stt',
-    name: '영상 STT 변환',
-    credits: 10,
-    description: '영상 음성을 텍스트로 변환 (최대 30분)',
-    icon: MicrophoneIcon,
-    iconBg: 'bg-red-100 dark:bg-red-900/30',
-    iconColor: 'text-red-600 dark:text-red-400',
-  },
-  {
-    id: 'analyze',
-    name: '스크립트 분석',
-    credits: 5,
-    description: '핵심 키워드, 타겟 시청자, 카테고리 자동 추출',
-    icon: DocumentMagnifyingGlassIcon,
-    iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-    iconColor: 'text-amber-600 dark:text-amber-400',
-  },
-  {
-    id: 'reply',
-    name: '댓글 답변 생성',
-    credits: 2,
-    description: '정중/친근/유머 3가지 톤으로 답변 초안 생성',
-    icon: ChatBubbleLeftRightIcon,
-    iconBg: 'bg-green-100 dark:bg-green-900/30',
-    iconColor: 'text-green-600 dark:text-green-400',
-  },
-  {
-    id: 'schedule',
-    name: '업로드 시간 추천',
-    credits: 3,
-    description: '채널 데이터 기반 요일별 최적 게시 시간 분석',
-    icon: ClockIcon,
-    iconBg: 'bg-cyan-100 dark:bg-cyan-900/30',
-    iconColor: 'text-cyan-600 dark:text-cyan-400',
   },
   {
     id: 'report',
@@ -904,12 +843,6 @@ const reportPeriods = [
 ]
 
 // --- State ---
-const activeTab = ref<'tools' | 'presets' | 'history'>('tools')
-const aiViewTabs = computed(() => [
-  { key: 'tools', label: t('aiView.tabs.tools') },
-  { key: 'presets', label: t('aiView.tabs.presets') },
-  { key: 'history', label: t('aiView.tabs.history') },
-])
 const selectedTool = ref<AiTool | null>(null)
 const showCreditModal = ref(false)
 const requiredCredits = ref(0)
@@ -917,13 +850,7 @@ const selectedPackage = ref<string | null>(null)
 const creditPackages = CREDIT_PACKAGES
 
 // --- Computed ---
-const creditsUsedToday = computed(() => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return aiHistoryStore.history
-    .filter(record => new Date(record.createdAt) >= today)
-    .reduce((sum, record) => sum + record.creditsUsed, 0)
-})
+const creditsUsedToday = usedToday
 
 // --- Form states ---
 const metaForm = ref({
@@ -955,6 +882,7 @@ const revenueReportForm = ref({
 // --- Lifecycle ---
 onMounted(() => {
   fetchBalance()
+  fetchTransactions(0, 100)
 })
 
 // --- Helpers ---
@@ -1026,25 +954,6 @@ function resetForms() {
   revenueReportForm.value = { period: '30d' }
 }
 
-// --- Preset handler ---
-function handlePresetSelected(preset: AiPreset) {
-  // Switch to tools tab
-  activeTab.value = 'tools'
-
-  // Find and open the corresponding tool
-  const tool = aiTools.find(t => t.id === preset.toolType)
-  if (tool) {
-    handleToolClick(tool)
-
-    // Pre-fill the form based on tool type
-    if (preset.toolType === 'meta') {
-      metaForm.value.script = preset.prompt
-    } else if (preset.toolType === 'hashtags') {
-      hashtagForm.value.title = preset.prompt
-    }
-  }
-}
-
 // --- Submit handlers ---
 async function submitMeta() {
   const canUse = await checkAndUse(5, '제목/설명 생성')
@@ -1066,15 +975,7 @@ async function submitMeta() {
     })
     await fetchBalance()
 
-    // Add to history
-    if (result) {
-      aiHistoryStore.addRecord({
-        toolType: '제목/설명 생성',
-        prompt: metaForm.value.script,
-        result: `플랫폼 ${metaForm.value.platforms.length}개에 대한 제목과 설명이 생성되었습니다`,
-        creditsUsed: 5,
-      })
-    }
+    void result
   } catch {
     // Error is handled by the store
   }
@@ -1098,17 +999,7 @@ async function submitHashtags() {
     })
     await fetchBalance()
 
-    // Add to history
-    if (result) {
-      const firstPlatformItem = result.platforms[0]
-      const sampleTags = firstPlatformItem?.hashtags.slice(0, 5).join(', ') || ''
-      aiHistoryStore.addRecord({
-        toolType: '해시태그 추천',
-        prompt: hashtagForm.value.title,
-        result: `#${sampleTags} 외 다수`,
-        creditsUsed: 3,
-      })
-    }
+    void result
   } catch {
     // Error is handled by the store
   }
@@ -1128,15 +1019,7 @@ async function submitReport() {
     const result = await aiStore.generateReport(reportForm.value.period)
     await fetchBalance()
 
-    // Add to history
-    if (result) {
-      aiHistoryStore.addRecord({
-        toolType: '성과 리포트',
-        prompt: reportForm.value.period === '7d' ? '최근 7일' : '최근 30일',
-        result: result.reportMarkdown.substring(0, 200) + '...',
-        creditsUsed: 8,
-      })
-    }
+    void result
   } catch {
     // Error is handled by the store
   }
@@ -1159,14 +1042,7 @@ async function submitStrategyCoach() {
     })
     await fetchBalance()
 
-    if (result) {
-      aiHistoryStore.addRecord({
-        toolType: 'AI 전략 코치',
-        prompt: strategyCoachForm.value.focusArea || '전체 전략',
-        result: result.overallStrategy.substring(0, 200) + '...',
-        creditsUsed: 10,
-      })
-    }
+    void result
   } catch {
     // Error is handled by the store
   }
@@ -1187,14 +1063,7 @@ async function submitRevenueReport() {
     const result = await aiStore.generateRevenueReport(days)
     await fetchBalance()
 
-    if (result) {
-      aiHistoryStore.addRecord({
-        toolType: '수익 분석 리포트',
-        prompt: revenueReportForm.value.period === '7d' ? '최근 7일' : '최근 30일',
-        result: result.reportMarkdown.substring(0, 200) + '...',
-        creditsUsed: 8,
-      })
-    }
+    void result
   } catch {
     // Error is handled by the store
   }

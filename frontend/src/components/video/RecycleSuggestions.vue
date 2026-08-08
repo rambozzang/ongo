@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!isDismissed && suggestions.length > 0" class="card">
+  <div v-if="!isDismissed && (suggestions.length > 0 || loadError)" class="card">
     <div class="mb-4 flex items-start justify-between">
       <div>
         <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">재활용 추천</h3>
@@ -15,6 +15,10 @@
         <XMarkIcon class="h-5 w-5" />
       </button>
     </div>
+
+    <p v-if="loadError" class="mb-3 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-body-xs text-error-strong" role="alert">
+      {{ loadError }}
+    </p>
 
     <div class="space-y-3">
       <div
@@ -104,6 +108,7 @@ const emit = defineEmits<{
 const isDismissed = ref(false)
 const suggestions = ref<RecycleSuggestion[]>([])
 const loadingSuggestions = ref(false)
+const loadError = ref('')
 
 function getMissingPlatforms(video: Video): Platform[] {
   const allPlatforms: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP']
@@ -121,23 +126,11 @@ function handleRecycle(video: Video) {
 
 function dismiss() {
   isDismissed.value = true
-  localStorage.setItem('recycleSuggestionsDismissed', Date.now().toString())
 }
 
 onMounted(async () => {
-  // Check if dismissed recently (within 7 days)
-  const dismissedAt = localStorage.getItem('recycleSuggestionsDismissed')
-  if (dismissedAt) {
-    const daysSinceDismissed = Math.floor(
-      (Date.now() - parseInt(dismissedAt)) / (1000 * 60 * 60 * 24)
-    )
-    if (daysSinceDismissed < 7) {
-      isDismissed.value = true
-      return
-    }
-  }
-
   loadingSuggestions.value = true
+  loadError.value = ''
   try {
     let apiSuggestions = await recyclingApi.getSuggestions('PENDING')
     if (apiSuggestions.length === 0) {
@@ -159,8 +152,8 @@ onMounted(async () => {
           missingPlatforms: getMissingPlatforms(video),
         }
       })
-  } catch {
-    // silently ignore — suggestions will be empty
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '재활용 추천을 불러오지 못했습니다.'
   } finally {
     loadingSuggestions.value = false
   }

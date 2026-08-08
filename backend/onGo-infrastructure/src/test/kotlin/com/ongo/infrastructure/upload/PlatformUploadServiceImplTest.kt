@@ -11,14 +11,31 @@ import com.ongo.domain.channel.EncryptedToken
 import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.platform.PlatformClient
 import com.ongo.infrastructure.external.platform.PlatformClientFactory
+import com.ongo.infrastructure.external.platform.PlatformTokenResult
 import com.ongo.infrastructure.external.platform.PlatformUploadResult as ClientUploadResult
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
+import org.springframework.web.client.HttpClientErrorException
 
 class PlatformUploadServiceImplTest {
+
+    private fun channel(
+        refreshToken: EncryptedToken? = null,
+    ) = Channel(
+        id = 1L,
+        userId = 7L,
+        platform = Platform.YOUTUBE,
+        platformChannelId = "yt-channel",
+        channelName = "creator",
+        accessToken = EncryptedToken("encrypted-token"),
+        refreshToken = refreshToken,
+        status = ChannelStatus.ACTIVE,
+    )
 
     @Test
     fun `Instagram 클라이언트의 PUBLISHED 결과를 게시 완료로 보존하고 저장 토큰은 복호화한다`() {
@@ -103,5 +120,99 @@ class PlatformUploadServiceImplTest {
         assertThat(result.published).isTrue()
         assertThat(result.platformVideoId).isEqualTo("video-1")
         assertThat(result.platformUrl).isEqualTo("https://www.tiktok.com/video/video-1")
+    }
+
+    @Test
+    fun `4xx 게시 오류는 예외를 밖으로 재전파하지 않고 실패 결과로 남긴다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channels = mockk<ChannelRepository>()
+        val encryption = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+        val badRequest = HttpClientErrorException.create(
+            HttpStatus.BAD_REQUEST,
+            "Bad Request",
+            HttpHeaders.EMPTY,
+            ByteArray(0),
+            Charsets.UTF_8,
+        )
+
+        every { factory.getClient(Platform.YOUTUBE) } returns client
+        every { channels.findByUserIdAndPlatform(7L, Platform.YOUTUBE) } returns channel()
+        every { encryption.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("plain-token")
+        every { client.uploadVideo(any()) } throws badRequest
+
+        val result = PlatformUploadServiceImpl(factory, channels, encryption, emptyList()).upload(
+            config = PlatformUploadConfig(
+                platform = Platform.YOUTUBE,
+                videoUploadId = 10L,
+                title = "제목",
+                description = null,
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC,
+                thumbnailUrl = null,
+                fileSize = 100,
+                scheduledAt = null,
+            ),
+            fileUrl = "https://storage.example/video.mp4",
+            userId = 7L,
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.published).isFalse()
+        assertThat(result.errorMessage).isNotBlank()
+    }
+
+    @Test
+    fun `401이면 저장된 refresh token으로 한 번 갱신한 뒤 새 토큰으로 재시도한다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channels = mockk<ChannelRepository>()
+        val encryption = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+        val requests = mutableListOf<String>()
+        val unauthorized = HttpClientErrorException.create(
+            HttpStatus.UNAUTHORIZED,
+            "Unauthorized",
+            HttpHeaders.EMPTY,
+            ByteArray(0),
+            Charsets.UTF_8,
+        )
+
+        every { factory.getClient(Platform.YOUTUBE) } returns client
+        every { channels.findByUserIdAndPlatform(7L, Platform.YOUTUBE) } returns channel(EncryptedToken("encrypted-refresh"))
+        every { encryption.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("old-token")
+        every { encryption.decrypt(EncryptedToken("encrypted-refresh")) } returns PlainToken("refresh-token")
+        every { encryption.encrypt(any()) } returns EncryptedToken("encrypted-new")
+        every { channels.update(any()) } answers { firstArg() }
+        every { client.refreshToken("refresh-token") } returns PlatformTokenResult(
+            accessToken = "new-token",
+            refreshToken = null,
+            expiresIn = 3600,
+        )
+        every { client.uploadVideo(any()) } answers {
+            val request = firstArg<com.ongo.infrastructure.external.platform.PlatformUploadRequest>()
+            requests += request.accessToken
+            if (requests.size == 1) throw unauthorized
+            ClientUploadResult("video-1", "https://youtube.com/watch?v=video-1", "PUBLISHED")
+        }
+
+        val result = PlatformUploadServiceImpl(factory, channels, encryption, emptyList()).upload(
+            config = PlatformUploadConfig(
+                platform = Platform.YOUTUBE,
+                videoUploadId = 10L,
+                title = "제목",
+                description = null,
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC,
+                thumbnailUrl = null,
+                fileSize = 100,
+                scheduledAt = null,
+            ),
+            fileUrl = "https://storage.example/video.mp4",
+            userId = 7L,
+        )
+
+        assertThat(requests).containsExactly("old-token", "new-token")
+        assertThat(result.success).isTrue()
+        assertThat(result.published).isTrue()
     }
 }

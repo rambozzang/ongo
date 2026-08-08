@@ -55,6 +55,9 @@ class ScheduleExecutorFreezeTest {
             secondArg<() -> Unit>().invoke()
             true
         }
+        every { scheduleRepository.claimDue(any(), any()) } answers {
+            schedule(firstArg<Long>())
+        }
 
         return ScheduleExecutor(
             scheduleRepository = scheduleRepository,

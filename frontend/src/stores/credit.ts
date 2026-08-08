@@ -24,6 +24,14 @@ export const useCreditStore = defineStore('credit', () => {
     return total > 0 && totalBalance.value / total <= 0.2
   })
 
+  const usedToday = computed(() => {
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    return (transactions.value?.content ?? [])
+      .filter((transaction) => transaction.type === 'DEDUCT' && new Date(transaction.createdAt) >= startOfToday)
+      .reduce((total, transaction) => total + Math.abs(transaction.amount), 0)
+  })
+
   async function fetchBalance() {
     isLoadingBalance.value = true
     try {
@@ -58,6 +66,7 @@ export const useCreditStore = defineStore('credit', () => {
     isLoadingTransactions,
     totalBalance,
     isLow,
+    usedToday,
     fetchBalance,
     fetchTransactions,
     hasEnoughCredits,

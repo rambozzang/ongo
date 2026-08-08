@@ -85,11 +85,14 @@ import { StarIcon, FilmIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useVideoStore } from '@/stores/video'
+import { videoApi } from '@/api/video'
+import { useNotification } from '@/composables/useNotification'
 import type { Video } from '@/types/video'
 
 const router = useRouter()
 const favoritesStore = useFavoritesStore()
 const videoStore = useVideoStore()
+const { error } = useNotification()
 
 const favoriteVideos = ref<Video[]>([])
 const loading = ref(false)
@@ -102,7 +105,8 @@ const displayedVideos = computed(() => favoriteVideos.value.slice(0, MAX_DISPLAY
 async function loadFavoriteVideos() {
   loading.value = true
   try {
-    // Get all favorite IDs
+    await favoritesStore.ensureLoaded()
+    // Get all favorite IDs from the server
     const favoriteIds = favoritesStore.favorites
 
     if (favoriteIds.length === 0) {
@@ -110,16 +114,17 @@ async function loadFavoriteVideos() {
       return
     }
 
-    // Get videos from the main video store
-    // In a real implementation, you might want to call an API to fetch these specific videos
-    // For now, we'll filter from the existing videos in the store
-    if (videoStore.videos && videoStore.videos.content) {
-      favoriteVideos.value = videoStore.videos.content.filter((video) =>
-        favoriteIds.includes(video.id)
-      )
-    } else {
-      favoriteVideos.value = []
-    }
+    const cached = videoStore.videos?.content ?? []
+    const cachedById = new Map(cached.map((video) => [video.id, video]))
+    const missingIds = favoriteIds.filter((id) => !cachedById.has(id)).slice(0, MAX_DISPLAY)
+    const fetched = await Promise.all(missingIds.map((id) => videoApi.get(id).catch(() => null)))
+    favoriteVideos.value = favoriteIds
+      .slice(0, MAX_DISPLAY)
+      .map((id) => cachedById.get(id) ?? fetched.find((video) => video?.id === id) ?? null)
+      .filter((video): video is Video => video !== null)
+  } catch (e) {
+    favoriteVideos.value = []
+    error(e instanceof Error ? e.message : '즐겨찾기를 불러오지 못했습니다')
   } finally {
     loading.value = false
   }
@@ -130,9 +135,9 @@ function goToVideo(videoId: number) {
 }
 
 function handleRemove(videoId: number) {
-  favoritesStore.removeFavorite(videoId)
-  // Remove from local display
-  favoriteVideos.value = favoriteVideos.value.filter((v) => v.id !== videoId)
+  favoritesStore.removeFavorite(videoId).then(() => {
+    favoriteVideos.value = favoriteVideos.value.filter((v) => v.id !== videoId)
+  }).catch((e) => error(e instanceof Error ? e.message : '즐겨찾기 해제에 실패했습니다'))
 }
 
 // Watch for changes in favorites

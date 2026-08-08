@@ -34,6 +34,10 @@ class VideoUploadJooqRepository(
     private val dsl: DSLContext,
 ) : VideoUploadRepository {
 
+    private companion object {
+        const val MAX_ERROR_LENGTH = 2_000
+    }
+
     override fun findById(id: Long): VideoUpload? =
         dsl.select()
             .from(VIDEO_UPLOADS)
@@ -105,14 +109,14 @@ class VideoUploadJooqRepository(
             .set(PLATFORM, upload.platform.name)
             .set(PLATFORM_VIDEO_ID, upload.platformVideoId)
             .set(STATUS, upload.status.name)
-            .set(ERROR_MESSAGE, upload.errorMessage)
+            .set(ERROR_MESSAGE, upload.errorMessage?.take(MAX_ERROR_LENGTH))
             .set(PLATFORM_URL, upload.platformUrl)
             .set(VIDEO_ATTEMPT_COUNT, upload.attemptCount)
             .set(VIDEO_NEXT_RETRY_AT, upload.nextRetryAt)
             .set(VIDEO_LEASE_OWNER, upload.leaseOwner)
             .set(VIDEO_LEASE_UNTIL, upload.leaseUntil)
             .set(VIDEO_POLL_TOKEN, upload.pollToken)
-            .set(VIDEO_LAST_ERROR, upload.lastError)
+            .set(VIDEO_LAST_ERROR, upload.lastError?.take(MAX_ERROR_LENGTH))
             .set(VIDEO_SCHEDULED_AT, upload.scheduledAt)
             .set(PUBLISHED_AT, upload.publishedAt)
             .returningResult(ID)
@@ -126,14 +130,14 @@ class VideoUploadJooqRepository(
         dsl.update(VIDEO_UPLOADS)
             .set(PLATFORM_VIDEO_ID, upload.platformVideoId)
             .set(STATUS, upload.status.name)
-            .set(ERROR_MESSAGE, upload.errorMessage)
+            .set(ERROR_MESSAGE, upload.errorMessage?.take(MAX_ERROR_LENGTH))
             .set(PLATFORM_URL, upload.platformUrl)
             .set(VIDEO_ATTEMPT_COUNT, upload.attemptCount)
             .set(VIDEO_NEXT_RETRY_AT, upload.nextRetryAt)
             .set(VIDEO_LEASE_OWNER, upload.leaseOwner)
             .set(VIDEO_LEASE_UNTIL, upload.leaseUntil)
             .set(VIDEO_POLL_TOKEN, upload.pollToken)
-            .set(VIDEO_LAST_ERROR, upload.lastError)
+            .set(VIDEO_LAST_ERROR, upload.lastError?.take(MAX_ERROR_LENGTH))
             .set(VIDEO_SCHEDULED_AT, upload.scheduledAt)
             .set(PUBLISHED_AT, upload.publishedAt)
             .where(ID.eq(upload.id))
@@ -146,14 +150,14 @@ class VideoUploadJooqRepository(
         val changed = dsl.update(VIDEO_UPLOADS)
             .set(PLATFORM_VIDEO_ID, upload.platformVideoId)
             .set(STATUS, upload.status.name)
-            .set(ERROR_MESSAGE, upload.errorMessage)
+            .set(ERROR_MESSAGE, upload.errorMessage?.take(MAX_ERROR_LENGTH))
             .set(PLATFORM_URL, upload.platformUrl)
             .set(VIDEO_ATTEMPT_COUNT, upload.attemptCount)
             .set(VIDEO_NEXT_RETRY_AT, upload.nextRetryAt)
             .set(VIDEO_LEASE_OWNER, upload.leaseOwner)
             .set(VIDEO_LEASE_UNTIL, upload.leaseUntil)
             .set(VIDEO_POLL_TOKEN, upload.pollToken)
-            .set(VIDEO_LAST_ERROR, upload.lastError)
+            .set(VIDEO_LAST_ERROR, upload.lastError?.take(MAX_ERROR_LENGTH))
             .set(VIDEO_SCHEDULED_AT, upload.scheduledAt)
             .set(PUBLISHED_AT, upload.publishedAt)
             .where(ID.eq(upload.id))
@@ -231,11 +235,20 @@ class VideoUploadJooqRepository(
             .set(VIDEO_LEASE_UNTIL, leaseUntil)
             .set(VIDEO_ATTEMPT_COUNT, VIDEO_ATTEMPT_COUNT.plus(1))
             .where(ID.eq(id))
-            .and(STATUS.`in`(
-                UploadStatus.UPLOADING.name,
-                UploadStatus.PROCESSING.name,
-                UploadStatus.UNCONFIRMED.name,
-            ))
+            .and(STATUS.eq(UploadStatus.UPLOADING.name))
+            .and(VIDEO_NEXT_RETRY_AT.isNull.or(VIDEO_NEXT_RETRY_AT.le(now)))
+            .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
+            .execute()
+        return if (changed == 1) findById(id) else null
+    }
+
+    override fun claimForStatusCheck(id: Long, owner: String, now: LocalDateTime, leaseUntil: LocalDateTime): VideoUpload? {
+        val changed = dsl.update(VIDEO_UPLOADS)
+            .set(VIDEO_LEASE_OWNER, owner)
+            .set(VIDEO_LEASE_UNTIL, leaseUntil)
+            .set(VIDEO_ATTEMPT_COUNT, VIDEO_ATTEMPT_COUNT.plus(1))
+            .where(ID.eq(id))
+            .and(STATUS.`in`(UploadStatus.PROCESSING.name, UploadStatus.UNCONFIRMED.name))
             .and(VIDEO_NEXT_RETRY_AT.isNull.or(VIDEO_NEXT_RETRY_AT.le(now)))
             .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
             .execute()

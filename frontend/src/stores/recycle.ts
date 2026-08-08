@@ -10,46 +10,26 @@ export interface RecycleMetadata {
   category: string
   platforms: string[]
   scheduledAt?: string
-  useAI: boolean
-}
-
-export interface RecycleRecord {
-  originalVideoId: number
-  originalTitle: string
-  recycledAt: string
-  platforms: string[]
 }
 
 export const useRecycleStore = defineStore('recycle', () => {
-  const recentRecycles = ref<RecycleRecord[]>([])
   const loading = ref(false)
 
   async function recycleVideo(videoId: number, metadata: RecycleMetadata): Promise<void> {
     loading.value = true
 
     try {
-      // Create a new video based on recycled content
-      await videoApi.create({
+      // The server clones the source media and creates independent upload records.
+      await videoApi.recycle(videoId, {
         title: metadata.title,
         description: metadata.description,
         tags: metadata.tags,
         category: metadata.category,
+        platforms: metadata.platforms.map((platform) => ({
+          platform,
+          scheduledAt: metadata.scheduledAt,
+        })),
       })
-
-      // Track recycle in recent list
-      const record: RecycleRecord = {
-        originalVideoId: videoId,
-        originalTitle: metadata.title,
-        recycledAt: new Date().toISOString(),
-        platforms: metadata.platforms,
-      }
-
-      recentRecycles.value.unshift(record)
-
-      // Keep only last 10 recycles
-      if (recentRecycles.value.length > 10) {
-        recentRecycles.value = recentRecycles.value.slice(0, 10)
-      }
 
     } catch (error) {
       useNotificationStore().error('리사이클 처리 중 오류가 발생했습니다')
@@ -59,14 +39,8 @@ export const useRecycleStore = defineStore('recycle', () => {
     }
   }
 
-  function clearRecycleHistory() {
-    recentRecycles.value = []
-  }
-
   return {
-    recentRecycles,
     loading,
     recycleVideo,
-    clearRecycleHistory,
   }
 })

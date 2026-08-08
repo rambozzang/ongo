@@ -3,6 +3,7 @@ package com.ongo.application.recycling
 import com.ongo.domain.recycling.RecyclingSuggestion
 import com.ongo.domain.recycling.RecyclingSuggestionRepository
 import com.ongo.domain.video.VideoRepository
+import com.ongo.common.exception.ForbiddenException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -86,8 +87,14 @@ class RecyclingUseCase(
             )
         }
 
-        // Save suggestions (limit to top 20 by priority)
-        val topSuggestions = suggestions.sortedByDescending { it.priorityScore }.take(20)
+        // Repeated generation must be idempotent. Keep dismissed/accepted history
+        // and only add a suggestion for a video/type pair that has not been seen.
+        val existingKeys = recyclingSuggestionRepository.findByUserId(userId)
+            .mapTo(HashSet()) { it.videoId to it.suggestionType }
+        val topSuggestions = suggestions
+            .filter { (it.videoId to it.suggestionType) !in existingKeys }
+            .sortedByDescending { it.priorityScore }
+            .take(20)
         return recyclingSuggestionRepository.saveAll(topSuggestions)
     }
 
@@ -97,7 +104,7 @@ class RecyclingUseCase(
             ?: throw com.ongo.common.exception.NotFoundException("재활용 제안", suggestionId)
 
         if (suggestion.userId != userId) {
-            throw com.ongo.common.exception.UnauthorizedException("해당 제안에 대한 권한이 없습니다")
+            throw ForbiddenException("해당 제안에 대한 권한이 없습니다")
         }
 
         return recyclingSuggestionRepository.updateStatus(suggestionId, "ACCEPTED")
@@ -110,7 +117,7 @@ class RecyclingUseCase(
             ?: throw com.ongo.common.exception.NotFoundException("재활용 제안", suggestionId)
 
         if (suggestion.userId != userId) {
-            throw com.ongo.common.exception.UnauthorizedException("해당 제안에 대한 권한이 없습니다")
+            throw ForbiddenException("해당 제안에 대한 권한이 없습니다")
         }
 
         return recyclingSuggestionRepository.updateStatus(suggestionId, "DISMISSED")

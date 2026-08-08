@@ -28,6 +28,7 @@ interface PlatformMeta {
 interface Props {
   platform: Platform
   meta: PlatformMeta
+  limits?: { title?: number; description?: number }
 }
 
 const props = defineProps<Props>()
@@ -40,7 +41,7 @@ const CHAR_LIMITS: Partial<Record<Platform, { title?: number; description?: numb
 }
 
 const overflowDetail = computed(() => {
-  const limits = CHAR_LIMITS[props.platform]
+  const limits = props.limits ?? CHAR_LIMITS[props.platform]
   if (!limits) return ''
   const parts: string[] = []
   if (limits.title && props.meta.title.length > limits.title) {
@@ -53,7 +54,7 @@ const overflowDetail = computed(() => {
 })
 
 const hasOverflow = computed(() => {
-  const limits = CHAR_LIMITS[props.platform]
+  const limits = props.limits ?? CHAR_LIMITS[props.platform]
   if (!limits) return false
   if (limits.title && props.meta.title.length > limits.title) return true
   if (limits.description && props.meta.description.length > limits.description) return true

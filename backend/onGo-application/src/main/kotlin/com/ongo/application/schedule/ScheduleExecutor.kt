@@ -86,17 +86,27 @@ class ScheduleExecutor(
         log.debug("상태 확인할 예약 {}건", dueSchedules.size)
 
         val failed = mutableListOf<Long?>()
-        dueSchedules.forEach { schedule ->
+        dueSchedules.forEach { candidate ->
             try {
                 perItemTx.executeWithoutResult {
+                    // findDueSchedules is deliberately only a candidate scan. The old
+                    // FOR UPDATE/SKIP LOCKED lived outside this transaction and did not
+                    // protect the external publish trigger. Claim inside the item
+                    // transaction so only one worker can proceed.
+                    val schedule = scheduleRepository.claimDue(candidate.id!!, now) ?: return@executeWithoutResult
+
                     // 24시간 이상 상태 변화 없으면 타임아웃 처리
                     val timeoutHours = 24L
                     val isTimedOut = schedule.scheduledAt.plusHours(timeoutHours).isBefore(now)
 
                     val uploads = videoUploadRepository.findByVideoId(schedule.videoId)
 
-                    // 아직 업로드가 시작되지 않은 예약 — 업로드 트리거
-                    if (uploads.isEmpty() && schedule.status == ScheduleStatus.SCHEDULED) {
+                    // 예약 시각 전 이벤트는 listener가 보류한다. 시각이 되면
+                    // 아직 큐에 남아 있는 UPLOADING row를 한 번만 다시 dispatch한다.
+                    // 확인불가/실패 row를 자동 재전송하면 외부에는 이미 게시됐을 수
+                    // 있어 중복 게시가 생기므로 수동 재확인/재시도만 허용한다.
+                    val needsDispatch = uploads.isEmpty() || uploads.any { it.status == UploadStatus.UPLOADING }
+                    if (needsDispatch) {
                         // 여기서만 게이트를 본다. 이 분기는 **외부 플랫폼에 실제로 게시**한다.
                         // 삭제를 요청한 계정으로 새 콘텐츠를 외부에 올리는 것은 되돌릴 수 없다.
                         //
@@ -130,6 +140,13 @@ class ScheduleExecutor(
 
                     val newStatus = when {
                         uploads.all { it.status == UploadStatus.PUBLISHED } -> ScheduleStatus.PUBLISHED
+                        uploads.any { it.status == UploadStatus.PUBLISHED } && uploads.any {
+                            it.status == UploadStatus.FAILED ||
+                                it.status == UploadStatus.REJECTED ||
+                                it.status == UploadStatus.UNCONFIRMED
+                        } -> ScheduleStatus.PARTIALLY_PUBLISHED
+                        uploads.all { it.status == UploadStatus.UNCONFIRMED } -> ScheduleStatus.UNCONFIRMED
+                        uploads.any { it.status == UploadStatus.UNCONFIRMED } -> ScheduleStatus.UNCONFIRMED
                         uploads.all { it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED } -> ScheduleStatus.FAILED
                         // 타임아웃 검사는 PROCESSING 분기보다 먼저 와야 한다. 뒤에 두면 진행 중인
                         // 업로드가 하나라도 있는 한 PROCESSING 이 먼저 매치되어 영원히 도달하지 못하고,
@@ -148,8 +165,8 @@ class ScheduleExecutor(
                     }
                 }
             } catch (e: Exception) {
-                failed += schedule.id
-                log.error("예약 상태 동기화 실패. job=scheduleSync scheduleId={}", schedule.id, e)
+                failed += candidate.id
+                log.error("예약 상태 동기화 실패. job=scheduleSync scheduleId={}", candidate.id, e)
             }
         }
 

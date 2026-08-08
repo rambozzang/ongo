@@ -12,7 +12,6 @@ export interface ContentTemplate {
   thumbnailStyle?: string
   variables: string[]  // e.g. ['{{video_title}}', '{{date}}', '{{channel_name}}']
   usageCount: number
-  isFavorite: boolean
   createdAt: string
   updatedAt: string
 }

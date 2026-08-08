@@ -60,7 +60,10 @@ export function getScheduleBorderColor(schedule: Schedule): string {
 
 const STATUS_BADGE_CLASS: Record<ScheduleStatus, string> = {
   SCHEDULED: 'badge-blue',
+  PROCESSING: 'badge-warning',
   PUBLISHED: 'badge-success',
+  PARTIALLY_PUBLISHED: 'badge-warning',
+  UNCONFIRMED: 'badge-warning',
   FAILED: 'badge-danger',
   CANCELLED: 'badge-gray',
 }

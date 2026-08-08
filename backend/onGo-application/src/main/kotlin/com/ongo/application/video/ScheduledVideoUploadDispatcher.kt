@@ -1,5 +1,7 @@
 package com.ongo.application.video
 
+import com.ongo.common.exception.AccountFrozenException
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUploadRepository
@@ -17,6 +19,7 @@ class ScheduledVideoUploadDispatcher(
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val eventPublisher: ApplicationEventPublisher,
     private val storageService: StorageService,
+    private val userWriteGuard: UserWriteGuard,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -32,6 +35,15 @@ class ScheduledVideoUploadDispatcher(
             val uploadId = upload.id
             if (video == null || fileUrl.isNullOrBlank() || uploadId == null) {
                 log.warn("예약 게시 작업을 깨울 수 없습니다: videoId={}, uploadId={}", upload.videoId, uploadId)
+                return@forEach
+            }
+            try {
+                userWriteGuard.requireWritable(video.userId)
+            } catch (_: AccountFrozenException) {
+                // A scheduled upload is still an external write. Do not let this
+                // independent dispatcher bypass the deletion/freeze guard used by
+                // ScheduleExecutor; the row remains queued for an explicit retry.
+                log.info("동결된 계정의 예약 게시를 보류합니다. videoId={}, uploadId={}", video.id, uploadId)
                 return@forEach
             }
             val meta = videoPlatformMetaRepository.findByVideoUploadId(uploadId)

@@ -1,0 +1,4 @@
+ALTER TABLE brand_kits
+    ADD COLUMN IF NOT EXISTS colors_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS fonts_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    ADD COLUMN IF NOT EXISTS assets_json JSONB NOT NULL DEFAULT '[]'::jsonb;

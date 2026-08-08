@@ -31,6 +31,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Reject disabled runtime profiles
+        working-directory: backend
+        run: |
+          if rg -n '^\s*@Profile\("(wip|disabled)"\)' onGo-api/src/main onGo-application/src/main --glob '*.kt'; then
+            echo 'Disabled/WIP runtime profiles are not allowed.'
+            exit 1
+          fi
+
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
@@ -67,7 +75,11 @@ jobs:
 
       - name: Type check
         working-directory: frontend
-        run: npx vue-tsc --noEmit || true
+        run: npx vue-tsc --noEmit
+
+      - name: Unit tests
+        working-directory: frontend
+        run: npm run test -- --run
 
       - name: Build
         working-directory: frontend

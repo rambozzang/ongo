@@ -63,10 +63,19 @@ class ScheduleJooqRepository(
             .where(SCHEDULED_AT.lessOrEqual(now))
             .and(STATUS_TEXT.`in`(ScheduleStatus.SCHEDULED.name, ScheduleStatus.PROCESSING.name))
             .orderBy(SCHEDULED_AT.asc())
-            .forUpdate()
-            .skipLocked()
             .fetch()
             .map { it.toSchedule() }
+
+    override fun claimDue(id: Long, now: LocalDateTime): Schedule? {
+        val changed = dsl.update(SCHEDULES)
+            .set(STATUS, ScheduleStatus.PROCESSING.name)
+            .where(ID.eq(id))
+            .and(SCHEDULED_AT.lessOrEqual(now))
+            .and(STATUS_TEXT.`in`(ScheduleStatus.SCHEDULED.name, ScheduleStatus.PROCESSING.name))
+            .execute()
+
+        return if (changed == 1) findById(id) else null
+    }
 
     override fun save(schedule: Schedule): Schedule {
         val platformsJson = JSONB.jsonb(objectMapper.writeValueAsString(schedule.platforms))

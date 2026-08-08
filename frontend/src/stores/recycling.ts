@@ -1,113 +1,23 @@
 import { defineStore } from 'pinia'
-import type {
-  RecyclingQueue,
-  RecyclingHistory,
-  RecyclingQueueCreateRequest,
-  RecyclingSuggestion,
-} from '@/types/recycling'
+import type { RecyclingSuggestion } from '@/types/recycling'
 import { recyclingApi } from '@/api/recycling'
 
-interface RecyclingState {
-  queues: RecyclingQueue[]
-  history: RecyclingHistory[]
-  suggestions: RecyclingSuggestion[]
-  suggestionsLoading: boolean
-  selectedQueueId: number | null
-}
-
+/** Server-backed repost recommendations. Queue/history state is intentionally not kept client-side. */
 export const useRecyclingStore = defineStore('recycling', {
-  state: (): RecyclingState => ({
-    queues: [],
-    history: [],
-    suggestions: [],
+  state: () => ({
+    suggestions: [] as RecyclingSuggestion[],
     suggestionsLoading: false,
-    selectedQueueId: null,
+    error: null as string | null,
   }),
 
-  getters: {
-    activeQueues: (state): RecyclingQueue[] => {
-      return state.queues.filter((q) => q.isActive)
-    },
-
-    selectedQueue: (state): RecyclingQueue | undefined => {
-      if (state.selectedQueueId === null) return undefined
-      return state.queues.find((q) => q.id === state.selectedQueueId)
-    },
-
-    recentHistory: (state): RecyclingHistory[] => {
-      return [...state.history].sort(
-        (a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()
-      )
-    },
-
-    totalRecycledCount: (state): number => {
-      return state.history.filter((h) => h.status === 'published').length
-    },
-
-    nextScheduledItem: (state): RecyclingHistory | undefined => {
-      const pending = state.history
-        .filter((h) => h.status === 'pending')
-        .sort(
-          (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
-        )
-      return pending[0]
-    },
-  },
-
   actions: {
-    createQueue(request: RecyclingQueueCreateRequest) {
-      const newQueue: RecyclingQueue = {
-        id: Math.max(...this.queues.map((q) => q.id), 0) + 1,
-        name: request.name,
-        filterCriteria: request.filterCriteria,
-        frequency: request.frequency,
-        scheduleDays: request.scheduleDays,
-        scheduleTime: request.scheduleTime,
-        platforms: request.platforms,
-        isActive: true,
-        videoCount: 0,
-        nextScheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        titleVariation: request.titleVariation,
-        createdAt: new Date().toISOString(),
-      }
-      this.queues.push(newQueue)
-    },
-
-    updateQueue(id: number, updates: Partial<RecyclingQueue>) {
-      const index = this.queues.findIndex((q) => q.id === id)
-      if (index !== -1) {
-        this.queues[index] = { ...this.queues[index], ...updates }
-      }
-    },
-
-    deleteQueue(id: number) {
-      const index = this.queues.findIndex((q) => q.id === id)
-      if (index !== -1) {
-        this.queues.splice(index, 1)
-        if (this.selectedQueueId === id) {
-          this.selectedQueueId = null
-        }
-      }
-    },
-
-    toggleActive(id: number) {
-      const queue = this.queues.find((q) => q.id === id)
-      if (queue) {
-        queue.isActive = !queue.isActive
-      }
-    },
-
-    selectQueue(id: number | null) {
-      this.selectedQueueId = id
-    },
-
-    // API-backed suggestion actions
     async fetchSuggestions(status?: string) {
       this.suggestionsLoading = true
+      this.error = null
       try {
         this.suggestions = await recyclingApi.getSuggestions(status)
-      } catch {
-        this.suggestions = []
+      } catch (error) {
+        this.error = error instanceof Error ? error.message : '재활용 제안을 불러오지 못했습니다.'
       } finally {
         this.suggestionsLoading = false
       }
@@ -115,39 +25,27 @@ export const useRecyclingStore = defineStore('recycling', {
 
     async generateSuggestions() {
       this.suggestionsLoading = true
+      this.error = null
       try {
-        const newSuggestions = await recyclingApi.generateSuggestions()
-        this.suggestions = [...this.suggestions, ...newSuggestions]
-        return newSuggestions
-      } catch {
+        this.suggestions = await recyclingApi.generateSuggestions()
+        return this.suggestions
+      } catch (error) {
+        this.error = error instanceof Error ? error.message : '재활용 제안을 생성하지 못했습니다.'
         return []
       } finally {
         this.suggestionsLoading = false
       }
     },
 
-    async acceptSuggestion(id: number) {
-      try {
-        const updated = await recyclingApi.acceptSuggestion(id)
-        const index = this.suggestions.findIndex((s) => s.id === id)
-        if (index !== -1) {
-          this.suggestions[index] = updated
-        }
-        return updated
-      } catch {
-        return null
-      }
-    },
-
     async dismissSuggestion(id: number) {
+      this.error = null
       try {
         const updated = await recyclingApi.dismissSuggestion(id)
-        const index = this.suggestions.findIndex((s) => s.id === id)
-        if (index !== -1) {
-          this.suggestions[index] = updated
-        }
+        const index = this.suggestions.findIndex((suggestion) => suggestion.id === id)
+        if (index !== -1) this.suggestions[index] = updated
         return updated
-      } catch {
+      } catch (error) {
+        this.error = error instanceof Error ? error.message : '재활용 제안을 숨기지 못했습니다.'
         return null
       }
     },

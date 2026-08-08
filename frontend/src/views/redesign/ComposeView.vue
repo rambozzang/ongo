@@ -71,8 +71,8 @@
             {{ importing ? t('redesign.compose.importing') : t('redesign.compose.importUrlAction') }}
           </button>
         </div>
-        <p v-if="importAvailability?.available === false" class="mt-2 text-[11px] text-warn">
-          {{ importAvailability.reason || t('redesign.compose.importUnavailable') }}
+        <p v-if="importAvailability?.available !== true" class="mt-2 text-[11px] text-warn">
+          {{ importAvailability?.reason || t('redesign.compose.importUnavailable') }}
         </p>
         <p v-else class="mt-2 text-[10.5px] text-content-tertiary">
           {{ t('redesign.compose.importUrlHint') }}
@@ -100,12 +100,17 @@
             type="button"
             class="flex items-center gap-2 rounded-md border px-2.5 py-2 transition-colors"
             :class="
-              isOn(opt.channel.id)
+              !opt.supported
+                ? 'cursor-not-allowed border-line bg-transparent text-content-tertiary opacity-50'
+                : isOn(opt.channel.id)
                 ? 'border-line-hover'
                 : 'border-line bg-transparent text-content-tertiary hover:border-line-hover'
             "
-            :style="isOn(opt.channel.id) ? onChipStyle(opt.code) : undefined"
+            :style="isOn(opt.channel.id) && opt.supported ? onChipStyle(opt.code) : undefined"
             :aria-pressed="isOn(opt.channel.id)"
+            :aria-disabled="!opt.supported"
+            :disabled="!opt.supported"
+            :title="!opt.supported ? t('redesign.compose.platformUnavailable') : undefined"
             @click="toggle(opt.channel.id)"
           >
             <span class="h-[7px] w-[7px] shrink-0" :style="{ background: 'currentColor' }" />
@@ -214,32 +219,15 @@
     <aside class="flex flex-col overflow-y-auto bg-surface-input px-4 py-[18px] scrollbar-dark">
       <h2 class="text-[12px] font-bold text-content">{{ t('redesign.compose.preview') }}</h2>
 
-      <div class="mt-2.5 flex gap-1">
-        <button
-          v-for="p in previewTabs"
-          :key="p"
-          type="button"
-          class="rounded-md border px-2.5 py-1.5 text-[11px] transition-colors"
-          :class="
-            previewPlatform === p
-              ? 'border-line-hover bg-surface-raised text-content'
-              : 'border-transparent text-content-tertiary hover:text-content'
-          "
-          @click="previewPlatform = p"
-        >
-          {{ p }}
-        </button>
-      </div>
-
-      <div class="mt-3 overflow-hidden rounded-[11px] border border-line" style="aspect-ratio: 9 / 16">
-        <div class="relative h-full w-full" :style="PLACEHOLDER">
-          <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-            <p class="line-clamp-2 text-[12.5px] font-bold text-white">
-              {{ previewDraft.title || t('redesign.compose.previewTitleEmpty') }}
-            </p>
-            <p v-if="previewDraft.hashtags" class="mt-1 line-clamp-1 text-[10.5px] text-accent">{{ previewDraft.hashtags }}</p>
-          </div>
-        </div>
+      <div class="mt-2.5">
+        <PlatformPreviewPanel
+          :platforms="selectedPreviewPlatforms"
+          :platform-metadata="previewMetadata"
+          :platform-limits="previewLimits"
+          :thumbnail="file.thumbnailUrl || undefined"
+          :channel-name="selectedChannels[0]?.channelName"
+          :comparison-mode="selectedPreviewPlatforms.length > 1"
+        />
       </div>
 
       <!-- 발행 예약 -->
@@ -301,6 +289,9 @@
 
       <!-- 액션 -->
       <div class="mt-auto pt-[18px]">
+        <p v-if="dataLoadError" class="mb-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-[11px] text-error-strong" role="alert">
+          {{ dataLoadError }}
+        </p>
         <p v-if="blockedReason" class="mb-2 text-[11px] text-error-strong">{{ blockedReason }}</p>
         <p v-else-if="notice" class="mb-2 text-[11px] text-content-secondary">{{ notice }}</p>
         <div class="flex gap-2">
@@ -346,6 +337,7 @@ import { videoApi } from '@/api/video'
 import { templatesApi } from '@/api/templates'
 import { ugcShortsPipelineApi, type PipelineRunDetailResponse } from '@/api/ugcShortsPipeline'
 import { recurringApi, type RecurringFrequency } from '@/api/recurring'
+import PlatformPreviewPanel from '@/components/preview/PlatformPreviewPanel.vue'
 import { useUploadStore } from '@/stores/upload'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Channel, Platform } from '@/types/channel'
@@ -360,11 +352,7 @@ import type { PlatformPublishConfig, PlatformUploadCapability } from '@/types/vi
 const { t } = useLocale()
 const route = useRoute()
 
-const PLACEHOLDER = {
-  background: 'repeating-linear-gradient(135deg,#262a41 0 6px,#2d3149 6px 12px)',
-}
-
-type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'
+type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW'
 const CHIP: Partial<Record<Platform, ChipCode>> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
@@ -372,6 +360,7 @@ const CHIP: Partial<Record<Platform, ChipCode>> = {
   FACEBOOK: 'FB',
   NAVER_CLIP: 'NV',
   THREADS: 'TH',
+  TWITTER: 'TW',
 }
 
 const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
@@ -381,6 +370,7 @@ const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
   FB: { bg: 'var(--platform-fb-bg)', fg: 'var(--platform-fb-fg)' },
   NV: { bg: 'var(--platform-nv-bg)', fg: 'var(--platform-nv-fg)' },
   TH: { bg: 'var(--platform-th-bg)', fg: 'var(--platform-th-fg)' },
+  TW: { bg: 'var(--platform-x-bg, #111827)', fg: 'var(--platform-x-fg, #ffffff)' },
 }
 
 /** 플랫폼별 제목 상한. 핸드오프 검증 규칙. */
@@ -403,6 +393,7 @@ const saving = ref(false)
 const captioning = ref(false)
 const metadataGenerating = ref(false)
 const metadataGeneratedForVideoId = ref<number | null>(null)
+const dataLoadError = ref('')
 const shortsEnabled = ref(true)
 const shortsProcessing = ref(false)
 const shortsStatus = ref('')
@@ -412,8 +403,7 @@ const notice = ref('')
 const channels = ref<Channel[]>([])
 const capabilities = ref<PlatformUploadCapability[]>([])
 const disabled = reactive<Record<number, boolean>>({})
-const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'>('common')
-const previewPlatform = ref<'Instagram' | 'TikTok' | 'YouTube' | 'Facebook' | 'Naver Clip' | 'Threads'>('Instagram')
+const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW'>('common')
 const schedMode = ref<'now' | 'best' | 'fix'>('best')
 const fixedAt = ref('')
 const recurringEnabled = ref(false)
@@ -431,7 +421,7 @@ const sourceModes = computed(() => [
   { key: 'file' as const, label: t('redesign.compose.fileSourceUpload') },
   { key: 'url' as const, label: t('redesign.compose.fileSourceUrl') },
 ])
-const importAvailable = computed(() => importAvailability.value?.available !== false)
+const importAvailable = computed(() => importAvailability.value?.available === true)
 
 function selectSourceMode(mode: 'file' | 'url') {
   sourceMode.value = mode
@@ -446,8 +436,8 @@ const tabs = [
   { key: 'FB' as const, label: 'Facebook' },
   { key: 'NV' as const, label: 'Naver' },
   { key: 'TH' as const, label: 'Threads' },
+  { key: 'TW' as const, label: 'X (Twitter)' },
 ]
-const previewTabs = ['Instagram', 'TikTok', 'YouTube', 'Facebook', 'Naver Clip', 'Threads'] as const
 
 const scheduleOptions = computed(() => [
   { key: 'now' as const, label: t('redesign.compose.schedNow'), hint: '' },
@@ -461,6 +451,7 @@ const platformOptions = computed(() =>
     label: ch.channelName,
     handle: '',
     channel: ch,
+    supported: capabilities.value.some((capability) => capability.platform === ch.platform),
   })),
 )
 
@@ -474,7 +465,7 @@ const onChipStyle = (code: string) => {
 }
 
 const selectedChannels = computed(() =>
-  platformOptions.value.filter((o) => isOn(o.channel.id)).map((o) => o.channel),
+  platformOptions.value.filter((o) => o.supported && isOn(o.channel.id)).map((o) => o.channel),
 )
 const selectedCount = computed(() => selectedChannels.value.length)
 const shortsPlatforms = computed(() =>
@@ -484,7 +475,15 @@ const shortsPlatforms = computed(() =>
 )
 
 function platformForTab(tab: typeof activeTab.value): Platform | null {
-  return ({ YT: 'YOUTUBE', IG: 'INSTAGRAM', TT: 'TIKTOK', FB: 'FACEBOOK', NV: 'NAVER_CLIP', TH: 'THREADS' } as Record<string, Platform>)[tab] ?? null
+  return ({
+    YT: 'YOUTUBE',
+    IG: 'INSTAGRAM',
+    TT: 'TIKTOK',
+    FB: 'FACEBOOK',
+    NV: 'NAVER_CLIP',
+    TH: 'THREADS',
+    TW: 'TWITTER',
+  } as Record<string, Platform>)[tab] ?? null
 }
 
 function draftFor(platform: Platform | null): FormDraft {
@@ -496,17 +495,23 @@ function draftFor(platform: Platform | null): FormDraft {
 }
 
 const activeDraft = computed(() => draftFor(platformForTab(activeTab.value)))
-const previewDraft = computed(() => {
-  const platform = ({
-    Instagram: 'INSTAGRAM',
-    TikTok: 'TIKTOK',
-    YouTube: 'YOUTUBE',
-    Facebook: 'FACEBOOK',
-    'Naver Clip': 'NAVER_CLIP',
-    Threads: 'THREADS',
-  } as Record<string, Platform>)[previewPlatform.value]
-  return draftFor(platform)
-})
+const selectedPreviewPlatforms = computed(() => [...new Set(selectedChannels.value.map((channel) => channel.platform))])
+const previewMetadata = computed(() => Object.fromEntries(
+  selectedPreviewPlatforms.value.map((platform) => {
+    const draft = draftFor(platform)
+    return [platform, {
+      title: draft.title,
+      description: draft.description,
+      tags: parseHashtags(draft.hashtags),
+    }]
+  }),
+))
+const previewLimits = computed(() => Object.fromEntries(
+  capabilities.value.map((capability) => [capability.platform, {
+    title: capability.maxTitleLength,
+    description: capability.maxDescriptionLength,
+  }]),
+))
 
 const activeCapability = computed(() => {
   const platform = platformForTab(activeTab.value)
@@ -572,6 +577,7 @@ function applyCommonToPlatforms() {
 
 /** 만료 채널이 대상에 포함되면 예약을 막는다. */
 const blockedReason = computed(() => {
+  if (dataLoadError.value) return dataLoadError.value
   if (selectedCount.value === 0) return t('redesign.compose.blockNoTarget')
   const expired = selectedChannels.value.filter(
     (c) => c.tokenStatus === 'EXPIRED' || c.tokenStatus === 'DISCONNECTED',
@@ -1005,18 +1011,22 @@ onMounted(async () => {
   try {
     // list() 는 { channels, maxAllowed, currentCount } 형태다
     channels.value = (await channelApi.list())?.channels ?? []
-  } catch {
+  } catch (error) {
     channels.value = []
+    dataLoadError.value = error instanceof Error ? error.message : t('redesign.compose.dataLoadFailed')
   }
   try {
     capabilities.value = await videoApi.getUploadCapabilities()
-  } catch {
+  } catch (error) {
     capabilities.value = []
+    dataLoadError.value ||= error instanceof Error ? error.message : t('redesign.compose.dataLoadFailed')
   }
   try {
     importAvailability.value = await videoApi.getImportAvailability()
-  } catch {
-    importAvailability.value = null
+  } catch (error) {
+    const message = error instanceof Error ? error.message : t('redesign.compose.dataLoadFailed')
+    importAvailability.value = { available: false, reason: message }
+    dataLoadError.value ||= message
   }
 })
 

@@ -1,6 +1,9 @@
 package com.ongo.application.video
 
 import com.ongo.common.enums.UploadStatus
+import com.ongo.common.enums.Platform
+import com.ongo.common.exception.ForbiddenException
+import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
@@ -32,7 +35,27 @@ class VideoUploadPoller(
         videoUploadRepository.findDueProcessingUploads(now).forEach { poll(it, now) }
     }
 
-    private fun poll(upload: VideoUpload, now: LocalDateTime) {
+    /**
+     * 외부 호출 결과를 잃어버린 작업을 사용자가 명시적으로 재확인한다.
+     *
+     * 이 경로는 새 업로드를 시작하지 않고 플랫폼의 상태 조회 API만 호출한다.
+     * platformVideoId/pollToken이 없는 작업은 중복 게시를 피하기 위해 재전송하지 않고
+     * 명시적으로 실패시킨다.
+     */
+    fun recheck(userId: Long, videoId: Long, platform: Platform) {
+        val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
+        if (video.userId != userId) throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        val upload = videoUploadRepository.findByVideoIdAndPlatform(videoId, platform)
+            ?: throw NotFoundException("업로드 기록", "$videoId/${platform.name}")
+        if (upload.status != UploadStatus.UNCONFIRMED) {
+            throw IllegalStateException("게시 결과 확인이 필요한 작업만 재확인할 수 있습니다. 현재 상태: ${upload.status}")
+        }
+        val token = upload.pollToken ?: upload.platformVideoId
+            ?: throw IllegalStateException("플랫폼에서 조회할 게시 식별자가 없습니다. 중복 게시를 막기 위해 자동 재전송하지 않습니다.")
+        poll(upload, LocalDateTime.now(), token)
+    }
+
+    private fun poll(upload: VideoUpload, now: LocalDateTime, tokenOverride: String? = null) {
         val uploadId = upload.id ?: return
         val video = videoRepository.findById(upload.videoId) ?: return
         val service = platformUploadServices.find { it.supports(upload.platform) }
@@ -42,7 +65,7 @@ class VideoUploadPoller(
         }
 
         val owner = "poll:${uploadId}:${UUID.randomUUID()}"
-        val claimed = videoUploadRepository.claim(
+        val claimed = videoUploadRepository.claimForStatusCheck(
             id = uploadId,
             owner = owner,
             now = now,
@@ -50,7 +73,9 @@ class VideoUploadPoller(
         ) ?: return
 
         try {
-            val result = service.poll(upload.platform, claimed.pollToken!!, video.userId)
+            val pollToken = claimed.pollToken ?: tokenOverride
+                ?: throw IllegalStateException("플랫폼 상태 조회 토큰이 없습니다.")
+            val result = service.poll(upload.platform, pollToken, video.userId)
             when (val outcome = result.toPublishOutcome()) {
                 is PublishOutcome.Published -> finish(
                     claimed,
@@ -81,7 +106,7 @@ class VideoUploadPoller(
             }
         } catch (e: Exception) {
             val message = e.message ?: "플랫폼 상태 확인 중 오류가 발생했습니다."
-            if (claimed.attemptCount >= MAX_POLL_ATTEMPTS) {
+            if (tokenOverride != null || claimed.attemptCount >= MAX_POLL_ATTEMPTS) {
                 finish(claimed, video.userId, UploadStatus.UNCONFIRMED, "게시 결과 확인 실패: $message", null, owner)
             } else {
                 updateOwned(

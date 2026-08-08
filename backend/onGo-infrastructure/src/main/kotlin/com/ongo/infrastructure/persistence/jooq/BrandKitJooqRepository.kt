@@ -20,6 +20,8 @@ import com.ongo.infrastructure.persistence.jooq.Fields.WATERMARK_URL
 import com.ongo.infrastructure.persistence.jooq.Tables.BRAND_KITS
 import org.jooq.DSLContext
 import org.jooq.Record
+import org.jooq.JSONB
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -55,6 +57,9 @@ class BrandKitJooqRepository(
             .set(OUTRO_TEMPLATE_URL, brandKit.outroTemplateUrl)
             .set(WATERMARK_URL, brandKit.watermarkUrl)
             .set(GUIDELINES, brandKit.guidelines)
+            .set(DSL.field("colors_json", JSONB::class.java), jsonb(brandKit.colorsJson))
+            .set(DSL.field("fonts_json", JSONB::class.java), jsonb(brandKit.fontsJson))
+            .set(DSL.field("assets_json", JSONB::class.java), jsonb(brandKit.assetsJson))
             .set(IS_DEFAULT, brandKit.isDefault)
             .returningResult(ID)
             .fetchOne()!!
@@ -75,6 +80,9 @@ class BrandKitJooqRepository(
             .set(OUTRO_TEMPLATE_URL, brandKit.outroTemplateUrl)
             .set(WATERMARK_URL, brandKit.watermarkUrl)
             .set(GUIDELINES, brandKit.guidelines)
+            .set(DSL.field("colors_json", JSONB::class.java), jsonb(brandKit.colorsJson))
+            .set(DSL.field("fonts_json", JSONB::class.java), jsonb(brandKit.fontsJson))
+            .set(DSL.field("assets_json", JSONB::class.java), jsonb(brandKit.assetsJson))
             .set(IS_DEFAULT, brandKit.isDefault)
             .set(UPDATED_AT, java.time.LocalDateTime.now())
             .where(ID.eq(brandKit.id))
@@ -109,8 +117,19 @@ class BrandKitJooqRepository(
         outroTemplateUrl = get(OUTRO_TEMPLATE_URL),
         watermarkUrl = get(WATERMARK_URL),
         guidelines = get(GUIDELINES),
+        colorsJson = jsonText("colors_json"),
+        fontsJson = jsonText("fonts_json"),
+        assetsJson = jsonText("assets_json"),
         isDefault = get(IS_DEFAULT) ?: false,
         createdAt = localDateTime(CREATED_AT),
         updatedAt = localDateTime(UPDATED_AT),
     )
+
+    private fun jsonb(value: String?) = JSONB.jsonb(value ?: "[]")
+
+    private fun Record.jsonText(fieldName: String): String? = when (val value = get(fieldName)) {
+        is JSONB -> value.data()
+        is String -> value
+        else -> null
+    }
 }

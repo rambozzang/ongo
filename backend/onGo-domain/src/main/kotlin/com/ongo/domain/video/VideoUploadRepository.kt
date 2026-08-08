@@ -19,6 +19,8 @@ interface VideoUploadRepository {
     fun findDueProcessingUploads(now: LocalDateTime): List<VideoUpload>
     /** 외부 호출 직전에 한 작업자만 원자적으로 lease를 획득한다. */
     fun claim(id: Long, owner: String, now: LocalDateTime, leaseUntil: LocalDateTime): VideoUpload?
+    /** 이미 수락된 외부 작업의 상태 조회만 lease한다. 새 업로드를 시작하지 않는다. */
+    fun claimForStatusCheck(id: Long, owner: String, now: LocalDateTime, leaseUntil: LocalDateTime): VideoUpload?
     /** lease가 만료된 작업은 외부 재전송 없이 결과 확인 필요 상태로 보낸다. */
     fun recoverExpiredLeases(now: LocalDateTime): List<VideoUpload>
     fun findByUserId(userId: Long): List<VideoUpload>

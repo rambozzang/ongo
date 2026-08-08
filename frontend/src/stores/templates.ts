@@ -9,7 +9,6 @@ export const useTemplatesStore = defineStore('templates', () => {
   const categoryFilter = ref<TemplateCategory | 'all'>('all')
   const platformFilter = ref<TemplatePlatform | 'all'>('all')
   const sortBy = ref<'latest' | 'usage' | 'name'>('latest')
-  const showFavoritesOnly = ref(false)
 
   // Templates are server-owned. An API failure must remain visible to the caller.
   const loadTemplates = async () => {
@@ -24,7 +23,6 @@ export const useTemplatesStore = defineStore('templates', () => {
         tagsTemplate: t.tags.length > 0 ? t.tags : undefined,
         variables: [],
         usageCount: t.usageCount,
-        isFavorite: false,
         createdAt: t.createdAt ?? new Date().toISOString(),
         updatedAt: t.updatedAt ?? new Date().toISOString(),
     }))
@@ -43,10 +41,6 @@ export const useTemplatesStore = defineStore('templates', () => {
     return grouped
   })
 
-  const favoriteTemplates = computed(() => {
-    return templates.value.filter((t) => t.isFavorite)
-  })
-
   const filteredTemplates = computed(() => {
     let result = templates.value
 
@@ -56,10 +50,6 @@ export const useTemplatesStore = defineStore('templates', () => {
 
     if (platformFilter.value !== 'all') {
       result = result.filter((t) => t.platform === platformFilter.value || t.platform === 'ALL')
-    }
-
-    if (showFavoritesOnly.value) {
-      result = result.filter((t) => t.isFavorite)
     }
 
     if (searchText.value.trim()) {
@@ -105,7 +95,6 @@ export const useTemplatesStore = defineStore('templates', () => {
         tagsTemplate: response.tags.length > 0 ? response.tags : undefined,
         variables: template.variables,
         usageCount: 0,
-        isFavorite: false,
         createdAt: response.createdAt ?? new Date().toISOString(),
         updatedAt: response.updatedAt ?? new Date().toISOString(),
       }
@@ -159,17 +148,8 @@ export const useTemplatesStore = defineStore('templates', () => {
       const duplicate = {
         ...original,
         name: `${original.name} (복사본)`,
-        isFavorite: false,
       }
       return createTemplate(duplicate)
-    }
-  }
-
-  const toggleFavorite = (id: number) => {
-    const template = templates.value.find((t) => t.id === id)
-    if (template) {
-      template.isFavorite = !template.isFavorite
-      template.updatedAt = new Date().toISOString()
     }
   }
 
@@ -196,15 +176,12 @@ export const useTemplatesStore = defineStore('templates', () => {
     categoryFilter,
     platformFilter,
     sortBy,
-    showFavoritesOnly,
     templatesByCategory,
-    favoriteTemplates,
     filteredTemplates,
     createTemplate,
     updateTemplate,
     deleteTemplate,
     duplicateTemplate,
-    toggleFavorite,
     applyTemplate,
   }
 })

@@ -516,7 +516,12 @@ class StreamPublishUseCase(
             pollToken = pollToken ?: upload.pollToken,
             nextRetryAt = when {
                 nextRetryAt != null -> nextRetryAt
-                status in setOf(UploadStatus.PUBLISHED, UploadStatus.FAILED, UploadStatus.REJECTED) -> null
+                status in setOf(
+                    UploadStatus.PUBLISHED,
+                    UploadStatus.FAILED,
+                    UploadStatus.REJECTED,
+                    UploadStatus.UNCONFIRMED,
+                ) -> null
                 else -> upload.nextRetryAt
             },
             lastError = errorMessage,
@@ -587,8 +592,21 @@ class StreamPublishUseCase(
 
         val platformConfigs = platforms.mapNotNull { platform ->
             val existing = videoUploadRepository.findByVideoIdAndPlatform(schedule.videoId, platform)
-            if (existing != null && existing.status !in setOf(UploadStatus.FAILED, UploadStatus.REJECTED, UploadStatus.UNCONFIRMED)) {
-                return@mapNotNull null
+            if (existing != null) {
+                if (existing.status != UploadStatus.UPLOADING) return@mapNotNull null
+
+                val meta = videoPlatformMetaRepository.findByVideoUploadId(existing.id!!)
+                return@mapNotNull PlatformUploadConfig(
+                    platform = platform,
+                    videoUploadId = existing.id!!,
+                    title = meta?.title ?: video.title,
+                    description = meta?.description ?: video.description,
+                    tags = meta?.tags ?: video.tags,
+                    visibility = meta?.visibility ?: Visibility.PUBLIC,
+                    thumbnailUrl = meta?.customThumbnailUrl ?: video.thumbnailUrls.firstOrNull(),
+                    fileSize = fileSize,
+                    scheduledAt = null,
+                )
             }
             val upload = videoUploadRepository.save(
                 VideoUpload(

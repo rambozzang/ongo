@@ -54,9 +54,9 @@ const iconSizeClasses = computed(() => {
 
 let animationTimeout: ReturnType<typeof setTimeout> | null = null
 
-function handleToggle() {
+async function handleToggle() {
   try {
-    const added = favoritesStore.toggleFavorite(props.videoId)
+    const added = await favoritesStore.toggleFavorite(props.videoId)
 
     // Trigger animation
     isAnimating.value = true
