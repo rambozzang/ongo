@@ -534,6 +534,7 @@ describe('ComposeView', () => {
         scheduleIntervalHours: 2,
         platforms: ['YOUTUBE#1', 'INSTAGRAM#2'],
       }),
+      expect.any(String),
     )
     expect(ugcShortsPipelineApi.selectHooks).not.toHaveBeenCalled()
     expect(ugcShortsPipelineApi.startRender).not.toHaveBeenCalled()

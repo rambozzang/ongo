@@ -17,6 +17,10 @@ data class PipelineRun(
     val autoScheduleIntervalHours: Int? = null,
     /** PLATFORM 또는 PLATFORM#channelId 형식의 게시 대상. */
     val autoSchedulePlatforms: List<String> = emptyList(),
+    /** 요청 재전송 시 동일한 파이프라인 실행으로 접기 위한 클라이언트 키. */
+    val idempotencyKey: String? = null,
+    /** 키 재사용으로 다른 요청을 덮어쓰지 않도록 비교하는 요청 지문. */
+    val requestHash: String? = null,
     val status: PipelineRunStatus = PipelineRunStatus.PENDING,
     val currentStage: PipelineStage? = null,
     val transcriptText: String? = null,

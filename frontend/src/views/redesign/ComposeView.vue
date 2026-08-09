@@ -685,6 +685,9 @@ const dataLoadError = ref('')
 const shortsEnabled = ref(true)
 const shortsProcessing = ref(false)
 const shortsStatus = ref('')
+// 쇼츠 생성 요청의 응답 유실 후 재시도에도 동일 실행으로 접기 위한 키.
+// 서버가 성공을 확인할 때까지 메모리에 유지하며 localStorage에는 저장하지 않는다.
+const shortsIdempotencyKey = ref<string | null>(null)
 /** 사용자에게 보여줄 한 줄 안내(성공·실패 공용). */
 const notice = ref('')
 
@@ -1572,9 +1575,11 @@ async function publishAutomaticShorts(sourceVideoId: number) {
     scheduleStartAt: startAt.toISOString(),
     scheduleIntervalHours: 2,
     platforms: shortsTargets.value,
-  })
+  }, shortsIdempotencyKey.value ?? (shortsIdempotencyKey.value = crypto.randomUUID()))
   await waitForShortsState(workspaceId, run.id, 'COMPLETED')
   shortsStatus.value = t('redesign.compose.shortsDone')
+  // 완료된 작업은 다음 Compose 제출에서 새 작업 키를 사용한다.
+  shortsIdempotencyKey.value = null
 }
 
 /** 채널별 예약 시각. 최적 모드는 서버 분석값을 사용하고, 이력이 없을 때만 일반 기본값을 쓴다. */

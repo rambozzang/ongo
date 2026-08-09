@@ -123,9 +123,13 @@ export interface ScheduleRunRequest {
 const base = (workspaceId: number) => `/workspaces/${workspaceId}/ugc/shorts/runs`
 
 export const ugcShortsPipelineApi = {
-  create(workspaceId: number, request: CreatePipelineRunRequest) {
-    return apiClient
-      .post<ResData<PipelineRunResponse>>(base(workspaceId), request)
+  create(workspaceId: number, request: CreatePipelineRunRequest, idempotencyKey?: string) {
+    const response = idempotencyKey
+      ? apiClient.post<ResData<PipelineRunResponse>>(base(workspaceId), request, {
+          headers: { 'Idempotency-Key': idempotencyKey },
+        })
+      : apiClient.post<ResData<PipelineRunResponse>>(base(workspaceId), request)
+    return response
       .then(unwrapResponse)
   },
 

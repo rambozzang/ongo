@@ -223,6 +223,47 @@ class ShortsPipelineUseCaseTest {
         verify(exactly = 0) { pipelineRunRepository.save(any()) }
     }
 
+    @Test
+    fun `같은 멱등 키로 재시도하면 기존 실행을 반환하고 이벤트를 다시 발행하지 않는다`() {
+        grantAccess(workspaceId)
+        val existing = run(PipelineRunStatus.RUNNING)
+        every { pipelineRunRepository.findByUserIdAndIdempotencyKey(userId, "retry-key") } returns existing
+        every { videoRepository.findById(videoId) } returns
+            Video(id = videoId, userId = userId, title = "내 롱폼")
+
+        val response = useCase.createRun(
+            userId,
+            workspaceId,
+            CreatePipelineRunRequest(sourceVideoId = videoId),
+            idempotencyKey = "retry-key",
+        )
+
+        assertEquals(runId, response.id)
+        verify(exactly = 0) { pipelineRunRepository.save(any()) }
+        verify(exactly = 0) { pipelineRunRepository.saveIdempotently(any()) }
+        verify(exactly = 0) { eventPublisher.publishEvent(any<ShortsPipelineEvent>()) }
+    }
+
+    @Test
+    fun `동시 멱등 저장에서 기존 실행을 돌려받으면 이벤트를 한 번만 발행한다`() {
+        grantAccess(workspaceId)
+        every { pipelineRunRepository.findByUserIdAndIdempotencyKey(userId, "race-key") } returns null
+        every { videoRepository.findById(videoId) } returns
+            Video(id = videoId, userId = userId, title = "내 롱폼")
+        every { pipelineRunRepository.saveIdempotently(any()) } returns
+            PipelineRunRepository.SaveResult(run(PipelineRunStatus.PENDING), created = false)
+
+        val response = useCase.createRun(
+            userId,
+            workspaceId,
+            CreatePipelineRunRequest(sourceVideoId = videoId),
+            idempotencyKey = "race-key",
+        )
+
+        assertEquals(runId, response.id)
+        verify(exactly = 0) { eventPublisher.publishEvent(any<ShortsPipelineEvent>()) }
+    }
+
     // ---- 단계 재실행 가드 ----
 
     @Test

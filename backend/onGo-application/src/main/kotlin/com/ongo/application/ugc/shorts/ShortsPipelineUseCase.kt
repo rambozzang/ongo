@@ -30,6 +30,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.ByteArrayOutputStream
+import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -54,8 +55,28 @@ class ShortsPipelineUseCase(
 
     /** 실행 생성: 원본 영상 확인 → PENDING 저장 → TRANSCRIBE부터 이벤트 발행. */
     @Transactional
-    fun createRun(userId: Long, workspaceId: Long, request: CreatePipelineRunRequest): PipelineRunResponse {
+    fun createRun(
+        userId: Long,
+        workspaceId: Long,
+        request: CreatePipelineRunRequest,
+        idempotencyKey: String? = null,
+    ): PipelineRunResponse {
         assertWorkspaceAccess(userId, workspaceId)
+        val normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey)
+        val requestHash = normalizedIdempotencyKey?.let { requestFingerprint(request) }
+
+        normalizedIdempotencyKey?.let { key ->
+            pipelineRunRepository.findByUserIdAndIdempotencyKey(userId, key)?.let { existing ->
+                require(existing.workspaceId == workspaceId) {
+                    "Idempotency-Key가 다른 워크스페이스 요청에 재사용되었습니다"
+                }
+                require(existing.requestHash == null || existing.requestHash == requestHash) {
+                    "Idempotency-Key가 다른 요청에 재사용되었습니다"
+                }
+                val existingTitle = videoRepository.findById(existing.sourceVideoId)?.title
+                return existing.toResponse(existingTitle)
+            }
+        }
 
         if (request.autoSchedule) {
             require(request.scheduleStartAt != null) { "자동 쇼츠 예약 시작 시각이 필요합니다" }
@@ -71,22 +92,35 @@ class ShortsPipelineUseCase(
             throw BusinessException("ACCESS_DENIED", "해당 영상에 접근 권한이 없습니다")
         }
 
-        val run = pipelineRunRepository.save(
-            PipelineRun(
-                workspaceId = workspaceId,
-                userId = userId,
-                sourceVideoId = request.sourceVideoId,
-                templateId = request.templateId,
-                autoSchedule = request.autoSchedule,
-                autoScheduleStartAt = request.scheduleStartAt,
-                autoScheduleIntervalHours = request.scheduleIntervalHours,
-                autoSchedulePlatforms = request.platforms,
-                status = PipelineRunStatus.PENDING,
-            ),
+        val run = PipelineRun(
+            workspaceId = workspaceId,
+            userId = userId,
+            sourceVideoId = request.sourceVideoId,
+            templateId = request.templateId,
+            autoSchedule = request.autoSchedule,
+            autoScheduleStartAt = request.scheduleStartAt,
+            autoScheduleIntervalHours = request.scheduleIntervalHours,
+            autoSchedulePlatforms = request.platforms,
+            idempotencyKey = normalizedIdempotencyKey,
+            requestHash = requestHash,
+            status = PipelineRunStatus.PENDING,
         )
 
-        eventPublisher.publishEvent(ShortsPipelineEvent(runId = run.id, fromStage = PipelineStage.TRANSCRIBE))
-        return run.toResponse(video.title)
+        val saved = if (normalizedIdempotencyKey == null) {
+            PipelineRunRepository.SaveResult(pipelineRunRepository.save(run), created = true)
+        } else {
+            pipelineRunRepository.saveIdempotently(run)
+        }
+        require(saved.run.workspaceId == workspaceId) {
+            "Idempotency-Key가 다른 워크스페이스 요청에 재사용되었습니다"
+        }
+        require(saved.run.requestHash == null || saved.run.requestHash == requestHash) {
+            "Idempotency-Key가 다른 요청에 재사용되었습니다"
+        }
+        if (saved.created) {
+            eventPublisher.publishEvent(ShortsPipelineEvent(runId = saved.run.id, fromStage = PipelineStage.TRANSCRIBE))
+        }
+        return saved.run.toResponse(video.title)
     }
 
     /** 실행 목록 (페이지네이션). */
@@ -331,6 +365,19 @@ class ShortsPipelineUseCase(
         val accessible = workspaceRepository.findAccessibleByUserId(userId).any { it.id == workspaceId }
         if (!accessible) throw NotFoundException("워크스페이스", workspaceId)
     }
+
+    private fun normalizeIdempotencyKey(value: String?): String? {
+        val key = value?.trim().takeUnless { it.isNullOrBlank() } ?: return null
+        require(key.length <= 255 && key.none(Char::isISOControl)) {
+            "Idempotency-Key는 1~255자의 제어문자 없는 값이어야 합니다"
+        }
+        return key
+    }
+
+    private fun requestFingerprint(request: CreatePipelineRunRequest): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(mapper.writeValueAsBytes(request))
+            .joinToString("") { byte -> "%02x".format(byte) }
 
     private fun loadRunInWorkspace(workspaceId: Long, runId: Long): PipelineRun {
         val run = pipelineRunRepository.findById(runId)
