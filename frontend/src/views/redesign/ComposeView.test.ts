@@ -81,7 +81,11 @@ function renderCompose() {
         plugins: [pinia, router, i18n],
         stubs: {
           ThumbPlaceholder: { template: '<div />' },
-          PlatformPreviewPanel: { template: '<div data-testid="preview" />' },
+          PlatformPreviewPanel: {
+            name: 'PlatformPreviewPanel',
+            props: ['targets'],
+            template: '<div data-testid="preview" />',
+          },
         },
       },
     })
@@ -133,6 +137,16 @@ describe('ComposeView', () => {
     await instagramTab.trigger('click')
 
     expect((wrapper.get('#compose-title').element as HTMLInputElement).value).toBe('인스타 전용 제목')
+  })
+
+  it('passes one preview target per selected account', async () => {
+    const { wrapper } = await renderCompose()
+    const preview = wrapper.findComponent({ name: 'PlatformPreviewPanel' })
+
+    expect(preview.props('targets')).toEqual([
+      expect.objectContaining({ key: 'YOUTUBE#1', channelName: '유튜브 채널' }),
+      expect.objectContaining({ key: 'INSTAGRAM#2', channelName: '인스타 채널' }),
+    ])
   })
 
   it('sends common and platform-specific visibility in the same publish request', async () => {
@@ -195,6 +209,27 @@ describe('ComposeView', () => {
       ]),
     }))
     expect(router.currentRoute.value.fullPath).toBe('/today')
+  })
+
+  it('does not overwrite a common field that the creator edited before auto-generation', async () => {
+    const { wrapper } = await renderCompose()
+    await wrapper.get('#compose-title').setValue('내가 직접 정한 제목')
+
+    const uploadStore = useUploadStore()
+    uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    uploadStore.videoId = 101
+    await wrapper.findAll('input[type="checkbox"]')[0].setValue(false)
+
+    const schedule = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    await schedule!.trigger('click')
+    await flushPromises()
+
+    expect(videoApi.publish).toHaveBeenCalledWith(101, expect.objectContaining({
+      platforms: expect.arrayContaining([
+        expect.objectContaining({ platform: 'YOUTUBE', title: '내가 직접 정한 제목' }),
+        expect.objectContaining({ platform: 'INSTAGRAM', title: '내가 직접 정한 제목' }),
+      ]),
+    }))
   })
 
   it('does not publish the original when automatic Shorts rendering is unavailable', async () => {

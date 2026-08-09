@@ -66,6 +66,7 @@ class RecycleVideoUseCase(
                 PlatformUploadConfig(
                     platform = platform.platform,
                     videoUploadId = 0,
+                    channelId = platform.channelId,
                     title = platform.title?.trim().orEmpty().ifBlank { title.trim() },
                     description = platform.description ?: description,
                     tags = platform.tags.ifEmpty { tags },
@@ -80,6 +81,8 @@ class RecycleVideoUseCase(
 
 data class RecyclePlatformConfig(
     val platform: com.ongo.common.enums.Platform,
+    /** 같은 플랫폼의 여러 연결 계정을 재활용할 때 선택한 계정. */
+    val channelId: Long? = null,
     val title: String? = null,
     val description: String? = null,
     val tags: List<String> = emptyList(),

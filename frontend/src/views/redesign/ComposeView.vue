@@ -241,7 +241,7 @@
               class="input-field !text-[12.5px]"
               :maxlength="titleLimit > 0 ? titleLimit : undefined"
               :aria-invalid="titleOver"
-              @input="markActivePlatformDraftDirty"
+              @input="markDraftDirty('title')"
             />
             <span
               class="shrink-0 font-mono text-[10px]"
@@ -260,7 +260,7 @@
             class="input-field mt-1.5 min-h-[92px] !text-[12.5px]"
             :maxlength="descriptionLimit > 0 ? descriptionLimit : undefined"
             :aria-invalid="descriptionOver"
-            @input="markActivePlatformDraftDirty"
+            @input="markDraftDirty('description')"
           />
           <div
             class="mt-1 text-right font-mono text-[10px]"
@@ -277,7 +277,7 @@
             v-model="activeDraft.hashtags"
             class="input-field mt-1.5 min-h-[62px] !text-[12.5px] !text-accent"
             :aria-invalid="tagsOver"
-            @input="markActivePlatformDraftDirty"
+            @input="markDraftDirty('hashtags')"
           />
           <div
             class="mt-1 text-right font-mono text-[10px]"
@@ -293,7 +293,7 @@
             id="compose-visibility"
             v-model="activeDraft.visibility"
             class="input-field mt-1.5 !text-[12px]"
-            @change="markActivePlatformDraftDirty"
+            @change="markDraftDirty('visibility')"
           >
             <option value="PUBLIC">{{ t('settings.defaults.visibilityPublic') }}</option>
             <option value="UNLISTED">{{ t('settings.defaults.visibilityUnlisted') }}</option>
@@ -322,6 +322,7 @@
           :platforms="selectedPreviewPlatforms"
           :platform-metadata="previewMetadata"
           :platform-limits="previewLimits"
+          :targets="previewTargets"
           :thumbnail="file.thumbnailUrl || undefined"
           :channel-names="previewChannelNames"
           :comparison-mode="selectedPreviewPlatforms.length > 1"
@@ -622,6 +623,12 @@ type FormDraft = { title: string; description: string; hashtags: string; visibil
 const form = reactive<FormDraft>({ title: '', description: '', hashtags: '', visibility: 'PUBLIC' })
 const channelForms = reactive<Record<number, FormDraft>>({})
 const channelDraftDirty = reactive<Record<number, boolean>>({})
+const commonDraftDirty = reactive<Record<keyof FormDraft, boolean>>({
+  title: false,
+  description: false,
+  hashtags: false,
+  visibility: false,
+})
 const pendingPlatformForms = reactive<Partial<Record<Platform, FormDraft>>>({})
 const pendingPlatformDirty = reactive<Partial<Record<Platform, boolean>>>({})
 const file = reactive({ name: '', thumbnailUrl: null as string | null, meta: '' })
@@ -777,14 +784,34 @@ watch(
   },
 )
 
-function markActivePlatformDraftDirty() {
-  if (activeChannel.value) channelDraftDirty[activeChannel.value.id] = true
+function markDraftDirty(field: keyof FormDraft) {
+  if (activeTab.value === 'common') {
+    commonDraftDirty[field] = true
+  } else if (activeChannel.value) {
+    channelDraftDirty[activeChannel.value.id] = true
+  }
 }
 
 const activeDraft = computed(() => draftFor(platformForTab(activeTab.value)))
 const selectedPreviewPlatforms = computed(() => [
   ...new Set(selectedChannels.value.map((channel) => channel.platform)),
 ])
+
+const previewTargets = computed(() =>
+  selectedChannels.value.map((channel) => {
+    const draft = draftForChannel(channel)
+    return {
+      key: `${channel.platform}#${channel.id}`,
+      platform: channel.platform,
+      channelName: channel.channelName,
+      metadata: {
+        title: draft.title,
+        description: draft.description,
+        tags: parseHashtags(draft.hashtags),
+      },
+    }
+  }),
+)
 
 watch(
   [activePlatformChannels, activeTab],
@@ -1090,16 +1117,20 @@ async function generateMetadataFor(videoId: number) {
         if (channelDraftDirty[channel.id]) continue
         // AI가 만든 채널별 문구는 공통 문구와 독립된 편집 초안으로 취급한다.
         channelDraftDirty[channel.id] = true
-        draft.title = item.titleCandidates[0] || draft.title
-        draft.description = item.description || draft.description
-        draft.hashtags = item.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
+        if (!commonDraftDirty.title) draft.title = item.titleCandidates[0] || draft.title
+        if (!commonDraftDirty.description) draft.description = item.description || draft.description
+        if (!commonDraftDirty.hashtags) {
+          draft.hashtags = item.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
+        }
       }
     }
     const first = result.platforms[0]
     if (first && firstGeneration) {
-      form.title = first.titleCandidates[0] || form.title
-      form.description = first.description || form.description
-      form.hashtags = first.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
+      if (!commonDraftDirty.title) form.title = first.titleCandidates[0] || form.title
+      if (!commonDraftDirty.description) form.description = first.description || form.description
+      if (!commonDraftDirty.hashtags) {
+        form.hashtags = first.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
+      }
     }
     metadataGeneratedPlatforms.value = [
       ...new Set([...metadataGeneratedPlatforms.value, ...missingPlatforms]),

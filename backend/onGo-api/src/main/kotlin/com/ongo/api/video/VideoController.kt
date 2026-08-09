@@ -164,6 +164,7 @@ class VideoController(
             platforms = req.platforms.map { platform ->
                 RecyclePlatformConfig(
                     platform = platform.platform,
+                    channelId = platform.channelId,
                     title = platform.title,
                     description = platform.description,
                     tags = platform.tags,

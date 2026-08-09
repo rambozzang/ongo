@@ -118,6 +118,19 @@ describe('CalendarView', () => {
     expect(router.currentRoute.value.fullPath).toBe('/videos/101')
   })
 
+  it('only renders schedules that belong to the visible week', async () => {
+    const outsideWeek = {
+      ...schedule(99, 15),
+      scheduledAt: localDateTime(new Date(monday().getTime() + 7 * 24 * 60 * 60 * 1000), 15),
+    }
+    vi.mocked(scheduleApi.list).mockResolvedValue([schedule(1, 9), outsideWeek] as never)
+
+    const { wrapper } = await renderCalendar()
+
+    expect(wrapper.text()).toContain('예약 영상 1')
+    expect(wrapper.text()).not.toContain('예약 영상 99')
+  })
+
   it('requires confirmation before cancelling an unstarted scheduled post', async () => {
     const { wrapper } = await renderCalendar()
     const cancel = wrapper.find('button[aria-label*="예약 영상 1"][aria-label*="취소"]')

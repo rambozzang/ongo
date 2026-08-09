@@ -26,7 +26,8 @@ export const useRecycleStore = defineStore('recycle', () => {
         tags: metadata.tags,
         category: metadata.category,
         platforms: metadata.platforms.map((platform) => ({
-          platform,
+          platform: platform.split('#', 1)[0],
+          channelId: Number(platform.split('#')[1]) || undefined,
           scheduledAt: metadata.scheduledAt,
         })),
       })

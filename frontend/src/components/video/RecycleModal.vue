@@ -45,7 +45,7 @@
                   <div class="flex flex-wrap gap-1">
                     <PlatformBadge
                       v-for="upload in video.uploads"
-                      :key="upload.platform"
+                      :key="`${upload.platform}#${upload.channelId ?? 'default'}`"
                       :platform="upload.platform"
                       class="scale-90"
                     />
@@ -138,24 +138,36 @@
               <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 업로드 플랫폼 *
               </label>
+              <p v-if="channelsLoading" class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                연결된 게시 계정을 불러오는 중...
+              </p>
+              <p v-if="channelsError" role="alert" class="mb-2 rounded border border-error-subtle bg-error-subtle px-3 py-2 text-xs text-error-strong">
+                {{ channelsError }}
+              </p>
+              <p v-else-if="!channelsLoading && availablePlatforms.length === 0" class="mb-2 rounded border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                먼저 채널 관리에서 게시 계정을 연결해주세요.
+              </p>
               <div class="grid grid-cols-2 gap-3">
                 <label
                   v-for="platform in availablePlatforms"
-                  :key="platform.value"
+                  :key="platform.key"
                   class="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                   :class="{
                     'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700':
-                      formData.platforms.includes(platform.value),
+                    formData.platforms.includes(platform.key),
                   }"
                 >
                   <input
                     v-model="formData.platforms"
                     type="checkbox"
-                    :value="platform.value"
+                    :value="platform.key"
                     class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                   />
                   <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {{ platform.label }}
+                    <span>
+                      {{ platform.label }}
+                      <span v-if="platform.channelName" class="ml-1 text-xs text-gray-500">({{ platform.channelName }})</span>
+                    </span>
                   </span>
                 </label>
               </div>
@@ -172,7 +184,7 @@
                 class="input w-full"
               />
               <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                비워두면 즉시 게시됩니다
+              비워두면 즉시 게시됩니다
               </p>
             </div>
           </form>
@@ -210,6 +222,8 @@ import type { Video } from '@/types/video'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import { useRecycleStore } from '@/stores/recycle'
 import { useNotification } from '@/composables/useNotification'
+import { channelApi } from '@/api/channel'
+import type { Channel, Platform } from '@/types/channel'
 
 interface Props {
   modelValue: boolean
@@ -235,13 +249,23 @@ const formData = ref({
 })
 
 const tagInput = ref('')
+const connectedChannels = ref<Channel[]>([])
+const channelsLoading = ref(false)
+const channelsError = ref('')
 
-const availablePlatforms = [
-  { label: 'YouTube', value: 'YOUTUBE' },
-  { label: 'TikTok', value: 'TIKTOK' },
-  { label: 'Instagram', value: 'INSTAGRAM' },
-  { label: 'Naver Clip', value: 'NAVER_CLIP' },
-]
+const PLATFORM_LABELS: Record<Platform, string> = {
+  YOUTUBE: 'YouTube', TIKTOK: 'TikTok', INSTAGRAM: 'Instagram', NAVER_CLIP: 'Naver Clip',
+  TWITTER: 'X (Twitter)', FACEBOOK: 'Facebook', THREADS: 'Threads', PINTEREST: 'Pinterest',
+  LINKEDIN: 'LinkedIn', WORDPRESS: 'WordPress', TUMBLR: 'Tumblr', VIMEO: 'Vimeo', DAILYMOTION: 'Dailymotion',
+}
+
+const availablePlatforms = computed(() => connectedChannels.value
+  .filter((channel) => channel.tokenStatus !== 'EXPIRED' && channel.tokenStatus !== 'DISCONNECTED')
+  .map((channel) => ({
+    key: `${channel.platform}#${channel.id}`,
+    label: PLATFORM_LABELS[channel.platform],
+    channelName: channel.channelName,
+  })))
 
 const isFormValid = computed(() => {
   return formData.value.title.trim() !== '' && formData.value.platforms.length > 0
@@ -289,6 +313,20 @@ function cancel() {
   emit('update:modelValue', false)
 }
 
+async function loadChannels() {
+  channelsLoading.value = true
+  channelsError.value = ''
+  try {
+    const response = await channelApi.list()
+    connectedChannels.value = response.channels
+  } catch (error) {
+    connectedChannels.value = []
+    channelsError.value = error instanceof Error ? error.message : '연결된 채널을 불러오지 못했습니다.'
+  } finally {
+    channelsLoading.value = false
+  }
+}
+
 // Initialize form data when video changes
 watch(
   () => props.video,
@@ -305,5 +343,13 @@ watch(
     }
   },
   { immediate: true }
+)
+
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (open) void loadChannels()
+  },
+  { immediate: true },
 )
 </script>

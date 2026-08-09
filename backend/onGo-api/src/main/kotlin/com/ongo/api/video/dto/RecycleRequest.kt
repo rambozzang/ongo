@@ -18,13 +18,14 @@ data class RecycleRequest(
     val tags: List<String> = emptyList(),
     val category: String? = null,
     @field:NotEmpty(message = "재게시할 플랫폼을 하나 이상 선택해주세요")
-    @field:Size(max = 4, message = "플랫폼은 최대 4개까지 선택할 수 있습니다")
+    @field:Size(max = 13, message = "플랫폼은 최대 13개까지 선택할 수 있습니다")
     @field:Valid
     val platforms: List<RecyclePlatformRequest>,
 )
 
 data class RecyclePlatformRequest(
     val platform: Platform,
+    val channelId: Long? = null,
     @field:Size(max = 100, message = "플랫폼 제목은 최대 100자까지 입력할 수 있습니다")
     val title: String? = null,
     @field:Size(max = 5000, message = "플랫폼 설명은 최대 5,000자까지 입력할 수 있습니다")

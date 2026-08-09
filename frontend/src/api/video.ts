@@ -82,6 +82,7 @@ export const videoApi = {
     category?: string
     platforms: Array<{
       platform: string
+      channelId?: number
       title?: string
       description?: string
       tags?: string[]

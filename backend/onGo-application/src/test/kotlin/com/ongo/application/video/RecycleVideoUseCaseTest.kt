@@ -6,6 +6,7 @@ import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -72,5 +73,44 @@ class RecycleVideoUseCaseTest {
             })
             publishVideoUseCase.publishVideo(1L, 20L, match { it.single().platform == Platform.YOUTUBE })
         }
+    }
+
+    @Test
+    fun `같은 플랫폼의 재게시 대상 계정을 게시 흐름에 보존한다`() {
+        val source = Video(
+            id = 30L,
+            userId = 1L,
+            title = "원본",
+            fileUrl = "https://storage/video.mp4",
+        )
+        val recycled = source.copy(id = 31L, title = "멀티 계정 복사본", status = UploadStatus.DRAFT)
+        every { videoRepository.findById(30L) } returns source
+        every { videoRepository.save(any()) } returns recycled
+        val configs = slot<List<PlatformUploadConfig>>()
+        every { publishVideoUseCase.publishVideo(1L, 31L, any()) } returns PublishResult(
+            videoId = 31L,
+            uploads = listOf(
+                PlatformUploadStatus(Platform.YOUTUBE, UploadStatus.UPLOADING),
+                PlatformUploadStatus(Platform.YOUTUBE, UploadStatus.UPLOADING),
+            ),
+        )
+
+        useCase.recycle(
+            userId = 1L,
+            sourceVideoId = 30L,
+            title = "멀티 계정 복사본",
+            description = null,
+            tags = emptyList(),
+            category = null,
+            platforms = listOf(
+                RecyclePlatformConfig(Platform.YOUTUBE, channelId = 101L),
+                RecyclePlatformConfig(Platform.YOUTUBE, channelId = 102L),
+            ),
+        )
+
+        verify {
+            publishVideoUseCase.publishVideo(1L, 31L, capture(configs))
+        }
+        assertEquals(listOf(101L, 102L), configs.captured.map { it.channelId })
     }
 }
