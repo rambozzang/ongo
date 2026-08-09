@@ -393,9 +393,10 @@ class PublicApiController(
         authentication: Authentication,
         @PathVariable postId: Long,
         @RequestParam(defaultValue = "30") days: Int,
+        @RequestParam(required = false) date: Int?,
     ): ResponseEntity<Any> {
         requireApiKey(authentication)
-        return raw(analyticsUseCase.post(userId, postId, days))
+        return raw(analyticsUseCase.post(userId, postId, date ?: days))
     }
 
     @Operation(summary = "integration 분석 조회")

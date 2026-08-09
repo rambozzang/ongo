@@ -36,6 +36,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 @Service
 class PublicApiUseCase(
@@ -193,9 +194,11 @@ class PublicApiUseCase(
 
     @Transactional
     fun create(userId: Long, request: CreatePublicPostRequest): PublicPostResponse {
-        require(request.posts.isNotEmpty()) { "posts는 하나 이상이어야 합니다" }
-        require(request.posts.size <= MAX_TARGETS) { "게시 대상은 최대 ${MAX_TARGETS}개까지 지정할 수 있습니다" }
         val type = parseType(request.type)
+        require(type == PublicApiPostType.DRAFT || request.posts.isNotEmpty()) {
+            "now 또는 schedule 게시에는 posts가 하나 이상이어야 합니다"
+        }
+        require(request.posts.size <= MAX_TARGETS) { "게시 대상은 최대 ${MAX_TARGETS}개까지 지정할 수 있습니다" }
         val scheduledAt = request.date?.let(::parseDate)
         if (type == PublicApiPostType.SCHEDULE) {
             require(scheduledAt != null) { "schedule 게시에는 date가 필요합니다" }
@@ -439,7 +442,7 @@ class PublicApiUseCase(
             return video
         }
 
-        val value = request.posts.first().value.firstOrNull()
+        val value = request.posts.firstOrNull()?.value?.firstOrNull()
         val mediaUrl = firstText(value?.video) ?: firstText(value?.image)
         if (mediaUrl == null) {
             require(parseType(request.type) == PublicApiPostType.DRAFT) {
@@ -487,7 +490,10 @@ class PublicApiUseCase(
             platform = channel.platform,
             videoUploadId = 0,
             channelId = channelId,
-            title = title.take(PlatformUploadLimits.title(channel.platform)),
+            // Keep the caller's exact metadata. PublishVideoUseCase validates it
+            // against the real platform capability; silently truncating here
+            // would make the public API publish different content than requested.
+            title = title,
             description = settings?.path("description")?.asText(null)
                 ?.takeIf(String::isNotBlank)
                 ?: value?.description
@@ -552,7 +558,7 @@ class PublicApiUseCase(
                 PublicApiPostStatus.SCHEDULED -> "QUEUE"
                 else -> status.name
             },
-            date = post.scheduledAt?.toString(),
+            date = post.scheduledAt?.let(::formatDate),
             videoId = post.videoId,
             error = post.errorMessage,
             posts = targets,
@@ -586,10 +592,14 @@ class PublicApiUseCase(
     private fun parseDate(value: String): LocalDateTime = runCatching {
         LocalDateTime.parse(value)
     }.recoverCatching {
-        OffsetDateTime.parse(value).toLocalDateTime()
+        OffsetDateTime.parse(value).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
     }.recoverCatching {
         Instant.parse(value).atZone(ZoneId.systemDefault()).toLocalDateTime()
     }.getOrElse { throw IllegalArgumentException("date는 ISO-8601 형식이어야 합니다") }
+
+    /** Postiz dates are UTC ISO-8601 values; the domain stores the server wall clock. */
+    private fun formatDate(value: LocalDateTime): String =
+        value.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC).toInstant().toString()
 
     private fun firstText(node: JsonNode?): String? = when {
         node == null || node.isNull -> null
@@ -613,12 +623,5 @@ class PublicApiUseCase(
     companion object {
         private const val MAX_TARGETS = 50
         private val TERMINAL_FAILURES = setOf(UploadStatus.FAILED, UploadStatus.REJECTED, UploadStatus.CANCELLED)
-    }
-}
-
-private object PlatformUploadLimits {
-    fun title(platform: Platform): Int = when (platform) {
-        Platform.TIKTOK, Platform.INSTAGRAM, Platform.THREADS -> 2200
-        else -> 100
     }
 }

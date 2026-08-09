@@ -26,10 +26,11 @@ import org.springframework.security.authentication.TestingAuthenticationToken
 
 class PublicApiControllerContractTest {
     private val useCase = mockk<PublicApiUseCase>(relaxed = true)
+    private val analyticsUseCase = mockk<PublicApiAnalyticsUseCase>(relaxed = true)
     private val controller = PublicApiController(
         useCase = useCase,
         mediaUseCase = mockk<PublicApiMediaUseCase>(relaxed = true),
-        analyticsUseCase = mockk<PublicApiAnalyticsUseCase>(relaxed = true),
+        analyticsUseCase = analyticsUseCase,
         channelUseCase = mockk<ChannelUseCase>(relaxed = true),
         notificationUseCase = mockk<NotificationUseCase>(relaxed = true),
         workspaceUseCase = mockk<WorkspaceUseCase>(relaxed = true),
@@ -139,5 +140,15 @@ class PublicApiControllerContractTest {
         )
 
         assertEquals(mapOf("id" to "41", "state" to "QUEUE"), response.body)
+    }
+
+    @Test
+    fun `post analytics accepts the official date query alias`() {
+        every { analyticsUseCase.post(1L, 41L, 90) } returns emptyList()
+
+        val response = controller.postAnalytics(1L, apiKeyAuthentication, 41L, 30, 90)
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals(emptyList<Any>(), response.body)
     }
 }

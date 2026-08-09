@@ -19,6 +19,7 @@ import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.schedule.Schedule
 import com.ongo.common.enums.ScheduleStatus
 import java.time.LocalDateTime
+import java.time.ZoneId
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
@@ -137,7 +138,8 @@ class PublicApiUseCaseTest {
             videoId = 11,
             type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
             status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
-            scheduledAt = LocalDateTime.parse("2026-08-05T10:00:00"),
+            scheduledAt = java.time.Instant.parse("2026-08-05T10:00:00Z")
+                .atZone(ZoneId.systemDefault()).toLocalDateTime(),
             payloadJson = "{\"posts\":[]}",
         )
         every {
@@ -153,6 +155,10 @@ class PublicApiUseCaseTest {
         val result = useCase.list(1, 20, "2026-08-01T00:00:00", "2026-08-31T23:59:59")
 
         assertEquals(listOf("41"), result.map { it.id })
+        assertEquals(
+            post.scheduledAt!!.atZone(ZoneId.systemDefault()).toInstant().toString(),
+            result.single().date,
+        )
         verify(exactly = 1) {
             posts.findByUserIdAndDateRange(
                 1,
@@ -161,6 +167,50 @@ class PublicApiUseCaseTest {
                 20,
             )
         }
+    }
+
+    @Test
+    fun `Postiz UTC 날짜는 서버 시간으로 조회하고 UTC로 다시 반환한다`() {
+        val post = PublicApiPost(
+            id = 44,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
+            scheduledAt = java.time.Instant.parse("2026-08-05T10:00:00Z")
+                .atZone(ZoneId.systemDefault()).toLocalDateTime(),
+            payloadJson = "{\"posts\":[]}",
+        )
+        val start = java.time.Instant.parse("2026-08-01T00:00:00Z")
+            .atZone(ZoneId.systemDefault()).toLocalDateTime()
+        val end = java.time.Instant.parse("2026-08-31T23:59:59Z")
+            .atZone(ZoneId.systemDefault()).toLocalDateTime()
+        every { posts.findByUserIdAndDateRange(1, start, end, 20) } returns listOf(post)
+        every { uploads.findByVideoId(11) } returns emptyList()
+
+        val result = useCase.list(1, 20, "2026-08-01T00:00:00Z", "2026-08-31T23:59:59Z")
+
+        assertEquals(listOf("44"), result.map { it.id })
+        assertEquals("2026-08-05T10:00:00Z", result.single().date)
+    }
+
+    @Test
+    fun `Postiz draft는 게시 대상 없이도 생성할 수 있다`() {
+        val draftVideo = Video(id = 11, userId = 1, title = "공개 API 초안")
+        every { uploadVideo.createVideo(1, any(), any(), any()) } returns draftVideo
+        every { posts.save(any()) } answers { firstArg<PublicApiPost>().copy(id = 45) }
+        every { uploads.findByVideoId(11) } returns emptyList()
+
+        val result = useCase.create(
+            1,
+            CreatePublicPostRequest(type = "draft"),
+        )
+
+        assertEquals("45", result.id)
+        assertEquals("draft", result.type)
+        assertEquals("draft", result.status)
+        verify(exactly = 1) { uploadVideo.createVideo(1, "공개 API 초안", any(), any()) }
+        verify(exactly = 0) { publishVideo.publishVideo(any(), any(), any()) }
     }
 
     @Test
@@ -255,6 +305,37 @@ class PublicApiUseCaseTest {
                     it.single().tags == listOf("configured") &&
                     it.single().visibility == com.ongo.common.enums.Visibility.PRIVATE
             })
+        }
+    }
+
+    @Test
+    fun `공개 API는 플랫폼별 제한보다 짧게 제목을 임의 변경하지 않는다`() {
+        val title = "x".repeat(150)
+        every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
+        every { channels.findById(7) } returns channel
+        every { posts.save(any()) } answers { firstArg<PublicApiPost>().copy(id = 46) }
+        every { posts.update(any()) } answers { firstArg() }
+        every { uploads.findByVideoId(11) } returns listOf(
+            VideoUpload(id = 94, videoId = 11, platform = Platform.YOUTUBE, channelId = 7, status = UploadStatus.UPLOADING),
+        )
+        every { publishVideo.publishVideo(any(), any(), any()) } returns
+            PublishResult(11, listOf(PlatformUploadStatus(Platform.YOUTUBE, UploadStatus.UPLOADING)))
+
+        useCase.create(
+            1,
+            CreatePublicPostRequest(
+                videoId = 11,
+                posts = listOf(
+                    PublicPostItem(
+                        integration = PublicIntegrationRef("7"),
+                        value = listOf(PublicPostValue(title = title)),
+                    ),
+                ),
+            ),
+        )
+
+        verify(exactly = 1) {
+            publishVideo.publishVideo(1, 11, match { it.single().title == title })
         }
     }
 

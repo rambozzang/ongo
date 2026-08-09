@@ -20,6 +20,8 @@ data class PublicPostItem(
     val value: List<PublicPostValue> = emptyList(),
     val settings: JsonNode? = null,
     val videoId: Long? = null,
+    /** Postiz groups related channel posts under this optional identifier. */
+    val group: String? = null,
 )
 
 data class PublicIntegrationRef(
