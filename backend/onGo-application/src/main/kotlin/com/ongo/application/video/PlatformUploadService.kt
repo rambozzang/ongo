@@ -95,10 +95,30 @@ fun PlatformUploadResult.toPublishOutcome(): PublishOutcome = when {
         pollToken = pollToken,
     )
     !success -> PublishOutcome.Failed(errorMessage ?: "플랫폼 게시에 실패했습니다.", retryable = true)
-    published -> PublishOutcome.Published(platformVideoId.orEmpty(), platformUrl.orEmpty())
+    published && platformVideoId.isNullOrBlank() -> PublishOutcome.Unconfirmed(
+        message = "플랫폼이 게시 성공 응답을 반환했지만 게시 ID가 없습니다. 중복 게시를 막기 위해 자동 재전송하지 않습니다.",
+        platformVideoId = platformVideoId,
+        pollToken = pollToken,
+    )
+    published && platformUrl?.isUsablePlatformUrl() != true -> PublishOutcome.Unconfirmed(
+        message = "플랫폼이 게시 성공 응답을 반환했지만 확인 가능한 게시 URL이 없습니다. 중복 게시를 막기 위해 자동 재전송하지 않습니다.",
+        platformVideoId = platformVideoId,
+        pollToken = pollToken,
+    )
+    published -> PublishOutcome.Published(platformVideoId!!, platformUrl!!)
+    platformVideoId.isNullOrBlank() -> PublishOutcome.Unconfirmed(
+        message = "플랫폼이 업로드를 접수했지만 게시 ID가 없습니다. 중복 게시를 막기 위해 자동 재전송하지 않습니다.",
+        platformVideoId = platformVideoId,
+        pollToken = pollToken,
+    )
+    (pollToken ?: platformVideoId).isNullOrBlank() -> PublishOutcome.Unconfirmed(
+        message = "플랫폼이 업로드를 접수했지만 상태 조회 토큰이 없습니다. 중복 게시를 막기 위해 자동 재전송하지 않습니다.",
+        platformVideoId = platformVideoId,
+        pollToken = pollToken,
+    )
     else -> PublishOutcome.Accepted(
-        platformVideoId = platformVideoId.orEmpty(),
-        pollToken = pollToken ?: platformVideoId.orEmpty(),
+        platformVideoId = platformVideoId!!,
+        pollToken = pollToken ?: platformVideoId!!,
         retryAfter = Duration.ofSeconds(30),
     )
 }

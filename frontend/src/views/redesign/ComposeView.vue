@@ -267,6 +267,20 @@
             {{ hashtagCount }} / {{ tagLimit || '∞' }}
           </div>
 
+          <label for="compose-visibility" class="mt-3.5 block text-[11.5px] text-content-secondary">
+            {{ t('settings.defaults.visibility') }}
+          </label>
+          <select
+            id="compose-visibility"
+            v-model="activeDraft.visibility"
+            class="input-field mt-1.5 !text-[12px]"
+            @change="markActivePlatformDraftDirty"
+          >
+            <option value="PUBLIC">{{ t('settings.defaults.visibilityPublic') }}</option>
+            <option value="UNLISTED">{{ t('settings.defaults.visibilityUnlisted') }}</option>
+            <option value="PRIVATE">{{ t('settings.defaults.visibilityPrivate') }}</option>
+          </select>
+
           <!-- 규칙 경고는 발행 시점이 아니라 입력 시점에 뜬다 -->
           <div
             v-for="warning in warnings"
@@ -463,6 +477,7 @@ import {
   subtitleEditorApi,
 } from '@/api/subtitleEditor'
 import { videoApi } from '@/api/video'
+import { settingsApi } from '@/api/settings'
 import { templatesApi } from '@/api/templates'
 import { ugcShortsPipelineApi, type PipelineRunDetailResponse } from '@/api/ugcShortsPipeline'
 import { recurringApi, type RecurringFrequency } from '@/api/recurring'
@@ -470,7 +485,7 @@ import PlatformPreviewPanel from '@/components/preview/PlatformPreviewPanel.vue'
 import { useUploadStore } from '@/stores/upload'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Channel, Platform } from '@/types/channel'
-import type { PlatformPublishConfig, PlatformUploadCapability } from '@/types/video'
+import type { PlatformPublishConfig, PlatformUploadCapability, Visibility } from '@/types/video'
 import { parsePublishHashtags, validatePublishDrafts } from '@/utils/publishValidation'
 import type { OptimalTimeSlot } from '@/types/analytics'
 import { fallbackOptimalSlot, kstWallClockToInstant, nextOptimalDateTime } from '@/utils/optimalSchedule'
@@ -546,6 +561,7 @@ const captioning = ref(false)
 const metadataGenerating = ref(false)
 const metadataGeneratedForVideoId = ref<number | null>(null)
 const metadataGeneratedPlatforms = ref<Platform[]>([])
+const draftLoaded = ref(false)
 const dataLoadError = ref('')
 const shortsEnabled = ref(true)
 const shortsProcessing = ref(false)
@@ -583,8 +599,8 @@ const recurringTime = ref('09:00')
 const recurringDayOfWeek = ref(1)
 const recurringDayOfMonth = ref(1)
 
-type FormDraft = { title: string; description: string; hashtags: string }
-const form = reactive<FormDraft>({ title: '', description: '', hashtags: '' })
+type FormDraft = { title: string; description: string; hashtags: string; visibility: Visibility }
+const form = reactive<FormDraft>({ title: '', description: '', hashtags: '', visibility: 'PUBLIC' })
 const platformForms = reactive<Partial<Record<Platform, FormDraft>>>({})
 const platformDraftDirty = reactive<Partial<Record<Platform, boolean>>>({})
 const file = reactive({ name: '', thumbnailUrl: null as string | null, meta: '' })
@@ -702,7 +718,7 @@ function draftFor(platform: Platform | null): FormDraft {
 
 /** 공통 문구는 채널별로 따로 편집하기 전까지 자동으로 따라간다. */
 watch(
-  () => [form.title, form.description, form.hashtags],
+  () => [form.title, form.description, form.hashtags, form.visibility],
   () => {
     for (const platform of Object.keys(platformForms) as Platform[]) {
       if (platformDraftDirty[platform]) continue
@@ -711,6 +727,7 @@ watch(
       draft.title = form.title
       draft.description = form.description
       draft.hashtags = form.hashtags
+      draft.visibility = form.visibility
     }
   },
 )
@@ -892,7 +909,7 @@ async function onFileChosen(e: Event) {
         description: form.description,
         tags: parseHashtags(form.hashtags),
         category: 'general',
-        visibility: 'PUBLIC',
+        visibility: form.visibility,
         thumbnailUrl: '',
       },
       [],
@@ -1034,7 +1051,7 @@ async function saveDraft() {
       title: form.title,
       description: form.description || undefined,
       tags: parseHashtags(form.hashtags),
-      visibility: 'PUBLIC' as const,
+      visibility: form.visibility,
       mediaType: 'VIDEO' as const,
     }
     // Keep the exact per-platform copy in the same save operation. The
@@ -1046,7 +1063,7 @@ async function saveDraft() {
         title: draft.title,
         description: draft.description || undefined,
         tags: parseHashtags(draft.hashtags),
-        visibility: 'PUBLIC' as const,
+        visibility: draft.visibility,
       }
     })
     // File selection/presigned upload creates the server video before the user
@@ -1104,7 +1121,7 @@ async function submit() {
           description: form.description,
           tags: parseHashtags(form.hashtags),
           category: 'general',
-          visibility: 'PUBLIC',
+          visibility: form.visibility,
           thumbnailUrl: '',
         },
         [],
@@ -1125,7 +1142,7 @@ async function submit() {
       description: form.description,
       tags: parseHashtags(form.hashtags),
       category: 'general',
-      visibility: 'PUBLIC',
+      visibility: form.visibility,
       mediaType: 'VIDEO',
       platforms: selectedChannels.value.map((channel) => {
         const draft = draftFor(channel.platform)
@@ -1134,7 +1151,7 @@ async function submit() {
           title: draft.title,
           description: draft.description || undefined,
           tags: parseHashtags(draft.hashtags),
-          visibility: 'PUBLIC' as const,
+          visibility: draft.visibility,
         }
       }),
     })
@@ -1146,7 +1163,7 @@ async function submit() {
         title: draft.title,
         description: draft.description,
         tags: parseHashtags(draft.hashtags),
-        visibility: 'PUBLIC' as const,
+        visibility: draft.visibility,
         scheduledAt: scheduledAtFor(index, ch.platform),
       }
     })
@@ -1349,6 +1366,7 @@ async function loadDraft(videoId: number) {
   form.title = video.title
   form.description = video.description ?? ''
   form.hashtags = video.tags.join(' ')
+  form.visibility = video.visibility
   file.name = video.title
   for (const upload of video.uploads ?? []) {
     const meta = upload.meta
@@ -1357,10 +1375,12 @@ async function loadDraft(videoId: number) {
       title: meta.title ?? video.title,
       description: meta.description ?? '',
       hashtags: meta.tags.join(' '),
+      visibility: meta.visibility ?? video.visibility,
     })
     // A persisted override must stay independent when the common copy changes.
     platformDraftDirty[upload.platform] = true
   }
+  draftLoaded.value = true
   notice.value = '저장된 초안을 불러왔습니다. 내용을 확인한 뒤 게시하세요.'
 }
 
@@ -1399,6 +1419,16 @@ onMounted(async () => {
     }
   }
   window.addEventListener('keydown', onKeydown)
+  try {
+    const settings = await settingsApi.getSettings()
+    if (!draftLoaded.value && ['PUBLIC', 'PRIVATE', 'UNLISTED'].includes(settings.defaultVisibility)) {
+      form.visibility = settings.defaultVisibility as Visibility
+    }
+  } catch (error) {
+    // 공개 범위 기본값은 기존 PUBLIC fallback을 사용하되, 설정 장애는 사용자에게 알린다.
+    // 설정 조회 실패만으로 이미 입력한 게시 작업 전체를 막지는 않는다.
+    notice.value = error instanceof Error ? error.message : t('redesign.compose.dataLoadFailed')
+  }
   try {
     // list() 는 { channels, maxAllowed, currentCount } 형태다
     channels.value = (await channelApi.list())?.channels ?? []

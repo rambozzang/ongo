@@ -10,6 +10,7 @@ import { channelApi } from '@/api/channel'
 import { recurringApi } from '@/api/recurring'
 import { subtitleEditorApi } from '@/api/subtitleEditor'
 import { videoApi } from '@/api/video'
+import { settingsApi } from '@/api/settings'
 import { ugcShortsPipelineApi } from '@/api/ugcShortsPipeline'
 import { useUploadStore } from '@/stores/upload'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -39,6 +40,9 @@ vi.mock('@/api/video', () => ({
     getUploadCapabilities: vi.fn(), getImportAvailability: vi.fn(), update: vi.fn(), publish: vi.fn(),
     create: vi.fn(), importUrl: vi.fn(),
   },
+}))
+vi.mock('@/api/settings', () => ({
+  settingsApi: { getSettings: vi.fn() },
 }))
 vi.mock('@/api/templates', () => ({ templatesApi: { get: vi.fn() } }))
 
@@ -94,6 +98,10 @@ describe('ComposeView', () => {
     } as never)
     vi.mocked(videoApi.getUploadCapabilities).mockResolvedValue(capabilities as never)
     vi.mocked(videoApi.getImportAvailability).mockResolvedValue({ available: false, reason: '가져오기 비활성' } as never)
+    vi.mocked(settingsApi.getSettings).mockResolvedValue({
+      defaultVisibility: 'PUBLIC', defaultPlatforms: [], defaultAiTone: 'FRIENDLY', defaultAiProvider: 'OPENAI',
+      notificationUpload: true, notificationComment: 'none', notificationCreditThreshold: 10, notificationScheduleReminder: 24,
+    } as never)
     vi.mocked(analyticsApi.getOptimalTimes).mockResolvedValue({
       slots: [{ dayOfWeek: 1, dayLabel: '월', hour: 9, timeLabel: '09:00', expectedViews: 10, engagementRate: 1, confidenceScore: 1, score: 1 }],
     } as never)
@@ -125,6 +133,29 @@ describe('ComposeView', () => {
     await instagramTab.trigger('click')
 
     expect((wrapper.get('#compose-title').element as HTMLInputElement).value).toBe('인스타 전용 제목')
+  })
+
+  it('sends common and platform-specific visibility in the same publish request', async () => {
+    const { wrapper } = await renderCompose()
+    await wrapper.get('#compose-visibility').setValue('PRIVATE')
+    await wrapper.get('[role="tab"]:nth-child(3)').trigger('click')
+    await wrapper.get('#compose-visibility').setValue('UNLISTED')
+
+    const uploadStore = useUploadStore()
+    uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    uploadStore.videoId = 101
+    await wrapper.findAll('input[type="checkbox"]')[0].setValue(false)
+
+    const schedule = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    await schedule!.trigger('click')
+    await flushPromises()
+
+    expect(videoApi.publish).toHaveBeenCalledWith(101, expect.objectContaining({
+      platforms: expect.arrayContaining([
+        expect.objectContaining({ platform: 'YOUTUBE', visibility: 'PRIVATE' }),
+        expect.objectContaining({ platform: 'INSTAGRAM', visibility: 'UNLISTED' }),
+      ]),
+    }))
   })
 
   it('shows a server loading error instead of enabling a fake publish flow', async () => {
