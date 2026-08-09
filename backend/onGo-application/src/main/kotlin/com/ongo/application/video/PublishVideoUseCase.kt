@@ -108,8 +108,11 @@ class PublishVideoUseCase(
 
         // 각 플랫폼별 VideoUpload + VideoPlatformMeta 생성
         val platformConfigs = configs.map { config ->
-            val existing = config.channelId?.let { videoUploadRepository.findByVideoIdAndChannelId(videoId, it) }
-                ?: videoUploadRepository.findByVideoIdAndPlatform(videoId, config.platform)
+            val existing = if (config.channelId != null) {
+                videoUploadRepository.findByVideoIdAndChannelId(videoId, config.channelId)
+            } else {
+                videoUploadRepository.findByVideoIdAndPlatform(videoId, config.platform)
+            }
             val upload = if (existing?.status == UploadStatus.CANCELLED || existing?.status == UploadStatus.DRAFT) {
                 // 저장된 초안/취소된 예약을 다시 게시할 때 unique(video_id,
                 // platform) 제약을 위반해 새 row를 만들지 않고 같은 durable

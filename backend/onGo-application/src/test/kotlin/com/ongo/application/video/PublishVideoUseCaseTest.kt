@@ -228,6 +228,67 @@ class PublishVideoUseCaseTest {
     }
 
     @Test
+    fun `selected channel does not fall back to another upload row on the same platform`() {
+        val userId = 42L
+        val videoId = 903L
+        val otherAccountUpload = VideoUpload(
+            id = 799L,
+            videoId = videoId,
+            platform = Platform.YOUTUBE,
+            channelId = 201L,
+            status = UploadStatus.PUBLISHED,
+        )
+        val saved = slot<VideoUpload>()
+        val event = slot<VideoPublishEvent>()
+
+        every { videoRepository.findById(videoId) } returns Video(
+            id = videoId,
+            userId = userId,
+            title = "계정 선택 영상",
+            fileUrl = "https://storage.test/account.mp4",
+            status = UploadStatus.DRAFT,
+        )
+        every { videoRepository.claimForPublish(userId, videoId) } returns true
+        every { channelRepository.findById(202L) } returns Channel(
+            id = 202L,
+            userId = userId,
+            platform = Platform.YOUTUBE,
+            platformChannelId = "selected-account",
+            channelName = "선택 계정",
+            accessToken = EncryptedToken("selected-token"),
+        )
+        every { videoUploadRepository.findByVideoIdAndChannelId(videoId, 202L) } returns null
+        every { videoUploadRepository.findByVideoIdAndPlatform(videoId, Platform.YOUTUBE) } returns otherAccountUpload
+        every { videoUploadRepository.save(capture(saved)) } answers { firstArg<VideoUpload>().copy(id = 800L) }
+        every { videoPlatformMetaRepository.save(any()) } answers { firstArg() }
+        every { eventPublisher.publishEvent(capture(event)) } just Runs
+
+        val result = useCase().publishVideo(
+            userId = userId,
+            videoId = videoId,
+            configs = listOf(
+                PlatformUploadConfig(
+                    platform = Platform.YOUTUBE,
+                    channelId = 202L,
+                    videoUploadId = 0L,
+                    title = "선택 계정 제목",
+                    description = "선택 계정 설명",
+                    tags = emptyList(),
+                    visibility = Visibility.PUBLIC,
+                    thumbnailUrl = null,
+                    scheduledAt = null,
+                ),
+            ),
+        )
+
+        assertEquals(202L, saved.captured.channelId)
+        assertEquals(202L, event.captured.platformConfigs.single().channelId)
+        assertEquals(800L, event.captured.platformConfigs.single().videoUploadId)
+        assertEquals(Platform.YOUTUBE, result.uploads.single().platform)
+        verify(exactly = 0) { videoUploadRepository.findByVideoIdAndPlatform(videoId, Platform.YOUTUBE) }
+    }
+
+    @Test
     fun `scheduled publish creates a calendar schedule linked to its durable upload`() {
         val videoId = 905L
         val scheduledAt = LocalDateTime.now().plusHours(2)

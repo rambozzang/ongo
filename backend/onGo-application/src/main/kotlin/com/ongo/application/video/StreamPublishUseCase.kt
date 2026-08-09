@@ -620,21 +620,45 @@ class StreamPublishUseCase(
 
         val fileSize = video.fileSizeBytes ?: 0L
 
-        val platforms = schedule.platforms.keys.mapNotNull { platformStr ->
-            try { Platform.valueOf(platformStr) } catch (_: Exception) { null }
+        // Recurring schedules persist the exact account as PLATFORM#channelId.
+        // A platform-only key remains supported for legacy schedules.
+        val targets = schedule.platforms.keys.map { rawKey ->
+            parseScheduledTarget(rawKey)
+                ?: run {
+                    log.error("예약 업로드 실패 — 잘못된 플랫폼 대상 [scheduleId={}, target={}]", schedule.id, rawKey)
+                    scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
+                    return
+                }
         }
 
-        if (platforms.isEmpty()) {
+        if (targets.isEmpty()) {
             log.error("예약 업로드 실패 — 유효한 플랫폼 없음 [scheduleId={}]", schedule.id)
             scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
             return
         }
 
-        val platformConfigs = platforms.mapNotNull { platform ->
-            val platformScheduledAt = schedule.platforms[platform.name]
+        val resolvedTargetChannels = targets.associateWith { target ->
+            target.channelId?.let { channelId ->
+                channelRepository.findById(channelId)
+                    ?.takeIf { it.userId == schedule.userId && it.platform == target.platform }
+            }
+        }
+        if (resolvedTargetChannels.any { (target, channel) -> target.channelId != null && channel == null }) {
+            log.error("예약 업로드 실패 — 게시 대상 계정을 확인할 수 없습니다 [scheduleId={}, targets={}]", schedule.id, targets)
+            scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))
+            return
+        }
+
+        val platformConfigs = targets.mapNotNull { target ->
+            val platform = target.platform
+            val platformScheduledAt = schedule.platforms[target.rawKey]
                 .asPlatformScheduleTime()
                 ?: schedule.scheduledAt
-            val existing = videoUploadRepository.findByVideoIdAndPlatform(schedule.videoId, platform)
+            val existing = if (target.channelId != null) {
+                videoUploadRepository.findByVideoIdAndChannelId(schedule.videoId, target.channelId)
+            } else {
+                videoUploadRepository.findByVideoIdAndPlatform(schedule.videoId, platform)
+            }
             if (existing != null) {
                 if (existing.status != UploadStatus.UPLOADING) return@mapNotNull null
 
@@ -649,13 +673,16 @@ class StreamPublishUseCase(
                     visibility = meta?.visibility ?: Visibility.PUBLIC,
                     thumbnailUrl = meta?.customThumbnailUrl ?: video.thumbnailUrls.firstOrNull(),
                     fileSize = fileSize,
-                    scheduledAt = existing.scheduledAt ?: platformScheduledAt,
+                    // The due scheduler is already at the requested time. Do
+                    // not pass a past time to a provider's native scheduler.
+                    scheduledAt = null,
                 )
             }
             val upload = videoUploadRepository.save(
                 VideoUpload(
                     videoId = schedule.videoId,
                     platform = platform,
+                    channelId = resolvedTargetChannels[target]?.id,
                     status = UploadStatus.UPLOADING,
                     scheduledAt = platformScheduledAt,
                 )
@@ -683,7 +710,8 @@ class StreamPublishUseCase(
                 visibility = meta.visibility,
                 thumbnailUrl = meta.customThumbnailUrl,
                 fileSize = fileSize,
-                scheduledAt = platformScheduledAt,
+                // Keep the requested time on the durable row, but publish now.
+                scheduledAt = null,
             )
         }
 
@@ -707,6 +735,26 @@ class StreamPublishUseCase(
             }
         })
     }
+}
+
+private data class ScheduledTarget(
+    val rawKey: String,
+    val platform: Platform,
+    val channelId: Long?,
+)
+
+private fun parseScheduledTarget(rawKey: String): ScheduledTarget? {
+    val parts = rawKey.split('#', limit = 2)
+    val platform = runCatching { Platform.valueOf(parts[0].trim().uppercase()) }.getOrNull() ?: return null
+    val channelPart = parts.getOrNull(1)?.trim().orEmpty()
+    if (parts.size > 1 && (channelPart.isBlank() || channelPart.toLongOrNull()?.let { it > 0 } != true)) {
+        return null
+    }
+    return ScheduledTarget(
+        rawKey = rawKey,
+        platform = platform,
+        channelId = channelPart.takeIf { it.isNotBlank() }?.toLong(),
+    )
 }
 
 /** 스트리밍 업로드 중 플랫폼별 컨텍스트 (트랜잭션 외부에서 사용) */

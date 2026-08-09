@@ -166,8 +166,12 @@ class StreamPublishUseCaseTest {
         status = UploadStatus.UPLOADING,
     )
 
-    private fun buildSavedUpload(id: Long = 200L, videoId: Long = 100L, platform: Platform = Platform.YOUTUBE) =
-        VideoUpload(id = id, videoId = videoId, platform = platform, status = UploadStatus.UPLOADING)
+    private fun buildSavedUpload(
+        id: Long = 200L,
+        videoId: Long = 100L,
+        platform: Platform = Platform.YOUTUBE,
+        channelId: Long? = null,
+    ) = VideoUpload(id = id, videoId = videoId, platform = platform, channelId = channelId, status = UploadStatus.UPLOADING)
 
     private fun buildSavedMeta(id: Long = 300L, uploadId: Long = 200L) =
         VideoPlatformMeta(id = id, videoUploadId = uploadId, title = "테스트 영상")
@@ -531,8 +535,8 @@ class StreamPublishUseCaseTest {
         verify(exactly = 1) {
             eventPublisher.publishEvent(match<VideoPublishEvent> { event ->
                 event.platformConfigs.associate { it.platform to it.scheduledAt } == mapOf(
-                    Platform.YOUTUBE to youtubeScheduledAt,
-                    Platform.INSTAGRAM to instagramScheduledAt,
+                    Platform.YOUTUBE to null,
+                    Platform.INSTAGRAM to null,
                 )
             })
         }
@@ -544,6 +548,65 @@ class StreamPublishUseCaseTest {
         verify(exactly = 1) {
             videoUploadRepository.save(match {
                 it.platform == Platform.INSTAGRAM && it.scheduledAt == instagramScheduledAt
+            })
+        }
+    }
+
+    @Test
+    fun `반복 예약의 동일 플랫폼 두 계정을 각각의 durable upload row로 복구한다`() {
+        val firstChannel = buildActiveChannel().copy(id = 11L, channelName = "첫 채널")
+        val secondChannel = buildActiveChannel().copy(id = 12L, channelName = "둘째 채널")
+        val defaultScheduledAt = LocalDateTime.now().plusDays(1).withSecond(0).withNano(0)
+        val firstAt = defaultScheduledAt.withHour(9)
+        val secondAt = defaultScheduledAt.withHour(13)
+        val video = buildSavedVideo(id = 100L).copy(
+            fileUrl = "https://storage.test/recurring-video.mp4",
+            fileSizeBytes = fileSize,
+        )
+        val firstUpload = buildSavedUpload(id = 211L, videoId = 100L, channelId = 11L)
+        val secondUpload = buildSavedUpload(id = 212L, videoId = 100L, channelId = 12L)
+        val synchronization = slot<TransactionSynchronization>()
+
+        every { videoRepository.findById(100L) } returns video
+        every { channelRepository.findById(11L) } returns firstChannel
+        every { channelRepository.findById(12L) } returns secondChannel
+        every { videoUploadRepository.findByVideoIdAndChannelId(100L, 11L) } returns null
+        every { videoUploadRepository.findByVideoIdAndChannelId(100L, 12L) } returns null
+        every { videoUploadRepository.save(match { it.channelId == 11L }) } returns firstUpload
+        every { videoUploadRepository.save(match { it.channelId == 12L }) } returns secondUpload
+        every { videoPlatformMetaRepository.save(any()) } answers {
+            val requested = firstArg<VideoPlatformMeta>()
+            requested.copy(id = requested.videoUploadId + 100L)
+        }
+        every { TransactionSynchronizationManager.registerSynchronization(capture(synchronization)) } just Runs
+
+        useCase.executeScheduledUpload(
+            Schedule(
+                id = 601L,
+                videoId = 100L,
+                userId = userId,
+                scheduledAt = defaultScheduledAt,
+                platforms = mapOf(
+                    "YOUTUBE#11" to mapOf("scheduledAt" to firstAt.toString()),
+                    "YOUTUBE#12" to mapOf("scheduledAt" to secondAt.toString()),
+                ),
+            ),
+        )
+        synchronization.captured.afterCommit()
+
+        verify(exactly = 1) {
+            videoUploadRepository.save(match {
+                it.platform == Platform.YOUTUBE && it.channelId == 11L && it.scheduledAt == firstAt
+            })
+        }
+        verify(exactly = 1) {
+            videoUploadRepository.save(match {
+                it.platform == Platform.YOUTUBE && it.channelId == 12L && it.scheduledAt == secondAt
+            })
+        }
+        verify(exactly = 1) {
+            eventPublisher.publishEvent(match<VideoPublishEvent> { event ->
+                event.platformConfigs.map { it.channelId to it.scheduledAt } == listOf(11L to null, 12L to null)
             })
         }
     }

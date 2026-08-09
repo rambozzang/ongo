@@ -62,8 +62,11 @@ class ShortsPublishAdapter(
         return requests.mapIndexed { index, request ->
             val uploadStatus = result.uploads[index]
             val target = parseShortsPublishTarget(request.platformName, request.channelId)
-            val upload = target.channelId?.let { videoUploadRepository.findByVideoIdAndChannelId(videoId, it) }
-                ?: videoUploadRepository.findByVideoIdAndPlatform(videoId, uploadStatus.platform)
+            val upload = if (target.channelId != null) {
+                videoUploadRepository.findByVideoIdAndChannelId(videoId, target.channelId)
+            } else {
+                videoUploadRepository.findByVideoIdAndPlatform(videoId, uploadStatus.platform)
+            }
             PlatformPublishOutcome(
                 // Keep the target key in the pipeline result so two accounts
                 // on one provider can be reconciled independently.
