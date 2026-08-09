@@ -47,6 +47,7 @@ pipeline {
             steps {
                 dir('frontend') {
                     sh 'npm ci'
+                    sh 'npm audit --audit-level=high'
                     sh 'npm run test -- --run'
                     sh 'npm run test:coverage -- --run'
                     sh 'npm run lint -- --quiet'

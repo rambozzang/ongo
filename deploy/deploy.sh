@@ -226,6 +226,10 @@ deploy_frontend() {
         exit 1
     fi
 
+    # hidden sourcemap도 정적 파일 서버에 남으면 직접 URL로 내려받을 수 있다.
+    # 현재 배포에는 오류 추적 업로드 경로가 없으므로 공개 산출물에서 제거한다.
+    find dist -type f -name '*.map' -delete
+
     # 백업
     if [ -d "$WWW_DIR" ]; then
         mv "$WWW_DIR" "$WWW_DIR.backup.$TIMESTAMP"
