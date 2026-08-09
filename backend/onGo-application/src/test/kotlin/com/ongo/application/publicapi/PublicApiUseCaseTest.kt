@@ -13,6 +13,10 @@ import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.channel.EncryptedToken
 import com.ongo.domain.publicapi.PublicApiPost
 import com.ongo.domain.publicapi.PublicApiPostRepository
+import com.ongo.domain.schedule.ScheduleRepository
+import com.ongo.domain.schedule.Schedule
+import com.ongo.common.enums.ScheduleStatus
+import java.time.LocalDateTime
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
@@ -32,10 +36,11 @@ class PublicApiUseCaseTest {
     private val posts = mockk<PublicApiPostRepository>()
     private val videos = mockk<VideoRepository>()
     private val uploads = mockk<VideoUploadRepository>()
+    private val schedules = mockk<ScheduleRepository>()
     private val uploadVideo = mockk<UploadVideoUseCase>()
     private val publishVideo = mockk<PublishVideoUseCase>()
     private val useCase = PublicApiUseCase(
-        channels, posts, videos, uploads, uploadVideo, publishVideo, jacksonObjectMapper(),
+        channels, posts, videos, uploads, schedules, uploadVideo, publishVideo, jacksonObjectMapper(),
     )
 
     private val channel = Channel(
@@ -105,5 +110,32 @@ class PublicApiUseCaseTest {
             )
         }
         verify(exactly = 0) { posts.save(any()) }
+    }
+
+    @Test
+    fun `schedule 상태를 draft로 바꾸면 durable upload와 schedule 행을 함께 취소한다`() {
+        val scheduled = PublicApiPost(
+            id = 30,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
+            scheduledAt = LocalDateTime.now().plusHours(2),
+            payloadJson = "{}",
+        )
+        every { posts.findByIdAndUserId(30, 1) } returns scheduled
+        every { posts.update(any()) } answers { firstArg() }
+        every { uploads.cancelScheduledUploads(11, any()) } returns 1
+        every { uploads.findByVideoId(11) } returns emptyList()
+        every { schedules.findByUserId(1) } returns listOf(
+            Schedule(id = 40, videoId = 11, userId = 1, scheduledAt = scheduled.scheduledAt!!),
+        )
+        every { schedules.update(any()) } answers { firstArg() }
+
+        val response = useCase.changeStatus(1, 30, ChangePublicPostStatusRequest("draft"))
+
+        assertEquals("draft", response.status)
+        verify(exactly = 1) { uploads.cancelScheduledUploads(11, any()) }
+        verify(exactly = 1) { schedules.update(match { it.status == ScheduleStatus.CANCELLED }) }
     }
 }

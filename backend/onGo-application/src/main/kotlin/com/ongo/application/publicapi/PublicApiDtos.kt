@@ -6,6 +6,10 @@ import com.fasterxml.jackson.databind.JsonNode
 data class CreatePublicPostRequest(
     val type: String = "now",
     val date: String? = null,
+    val shortLink: Boolean = false,
+    val tags: List<JsonNode> = emptyList(),
+    val order: String? = null,
+    val inter: Int? = null,
     val videoId: Long? = null,
     val posts: List<PublicPostItem> = emptyList(),
 )
@@ -58,8 +62,15 @@ data class PublicPostResponse(
     val id: String,
     val type: String,
     val status: String,
+    /** Postiz change-status 응답과의 호환 필드: DRAFT 또는 QUEUE. */
+    val state: String,
     val date: String?,
     val videoId: Long,
     val error: String?,
     val posts: List<PublicPostTargetResponse>,
+)
+
+data class PublicPostCreatedResponse(
+    val postId: String,
+    val integration: String,
 )

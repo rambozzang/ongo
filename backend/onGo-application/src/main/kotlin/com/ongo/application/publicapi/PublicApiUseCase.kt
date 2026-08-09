@@ -18,6 +18,8 @@ import com.ongo.domain.publicapi.PublicApiPost
 import com.ongo.domain.publicapi.PublicApiPostRepository
 import com.ongo.domain.publicapi.PublicApiPostStatus
 import com.ongo.domain.publicapi.PublicApiPostType
+import com.ongo.domain.schedule.ScheduleRepository
+import com.ongo.common.enums.ScheduleStatus
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
@@ -37,6 +39,7 @@ class PublicApiUseCase(
     private val postRepository: PublicApiPostRepository,
     private val videoRepository: VideoRepository,
     private val videoUploadRepository: VideoUploadRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val uploadVideoUseCase: UploadVideoUseCase,
     private val publishVideoUseCase: PublishVideoUseCase,
     private val objectMapper: ObjectMapper,
@@ -114,17 +117,25 @@ class PublicApiUseCase(
     fun changeStatus(userId: Long, id: Long, request: ChangePublicPostStatusRequest): PublicPostResponse {
         val current = load(userId, id)
         val target = request.status.trim().lowercase()
-        require(target == "draft" || target == "schedule" || target == "now") {
-            "status는 draft, schedule 또는 now만 지원합니다"
+        require(target == "draft" || target == "schedule") {
+            "status는 draft 또는 schedule만 지원합니다"
         }
         if (target == "draft") {
-            require(current.status == PublicApiPostStatus.DRAFT) { "게시가 시작된 작업은 draft로 되돌릴 수 없습니다" }
-            return toResponse(current)
+            require(current.status == PublicApiPostStatus.DRAFT || current.status == PublicApiPostStatus.SCHEDULED) {
+                "예약 중이거나 초안 상태의 게시만 draft로 바꿀 수 있습니다"
+            }
+            if (current.status == PublicApiPostStatus.SCHEDULED) {
+                videoUploadRepository.cancelScheduledUploads(current.videoId, LocalDateTime.now())
+                scheduleRepository.findByUserId(userId)
+                    .filter { it.videoId == current.videoId && it.status == ScheduleStatus.SCHEDULED }
+                    .forEach { scheduleRepository.update(it.copy(status = ScheduleStatus.CANCELLED)) }
+            }
+            return toResponse(postRepository.update(current.copy(status = PublicApiPostStatus.DRAFT)))
         }
         require(current.status == PublicApiPostStatus.DRAFT) { "draft 상태의 게시만 다시 예약할 수 있습니다" }
-        val type = if (target == "schedule") PublicApiPostType.SCHEDULE else PublicApiPostType.NOW
+        val type = PublicApiPostType.SCHEDULE
         val date = request.date?.let(::parseDate) ?: current.scheduledAt
-        if (type == PublicApiPostType.SCHEDULE) require(date != null) { "schedule 게시에는 date가 필요합니다" }
+        require(date != null) { "schedule 게시에는 저장된 date가 필요합니다" }
         val payload = objectMapper.readValue(current.payloadJson, CreatePublicPostRequest::class.java)
             .copy(type = type.name.lowercase(), date = date?.toString(), videoId = current.videoId)
         val updated = postRepository.update(
@@ -226,6 +237,11 @@ class PublicApiUseCase(
             id = post.id.toString(),
             type = post.type.name.lowercase(),
             status = status.name.lowercase(),
+            state = when (status) {
+                PublicApiPostStatus.DRAFT -> "DRAFT"
+                PublicApiPostStatus.SCHEDULED -> "QUEUE"
+                else -> status.name
+            },
             date = post.scheduledAt?.toString(),
             videoId = post.videoId,
             error = post.errorMessage,

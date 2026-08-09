@@ -5,6 +5,7 @@ import com.ongo.application.publicapi.ChangePublicPostStatusRequest
 import com.ongo.application.publicapi.CreatePublicPostRequest
 import com.ongo.application.publicapi.PublicApiUseCase
 import com.ongo.application.publicapi.PublicIntegrationResponse
+import com.ongo.application.publicapi.PublicPostCreatedResponse
 import com.ongo.application.publicapi.PublicPostResponse
 import com.ongo.common.ResData
 import com.ongo.common.exception.ForbiddenException
@@ -47,9 +48,12 @@ class PublicApiController(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         authentication: Authentication,
         @RequestBody request: CreatePublicPostRequest,
-    ): ResponseEntity<ResData<PublicPostResponse>> {
+    ): ResponseEntity<ResData<List<PublicPostCreatedResponse>>> {
         requireApiKey(authentication)
-        return ResData.success(useCase.create(userId, request))
+        val result = useCase.create(userId, request)
+        return ResData.success(result.posts.map { target ->
+            PublicPostCreatedResponse(postId = result.id, integration = target.integrationId)
+        })
     }
 
     @Operation(summary = "게시물 목록 조회")
@@ -74,7 +78,7 @@ class PublicApiController(
         return ResData.success(useCase.get(userId, id))
     }
 
-    @Operation(summary = "게시물 상태 변경", description = "draft 게시물을 schedule 또는 now로 전환합니다.")
+    @Operation(summary = "게시물 상태 변경", description = "draft 또는 예약 중인 게시물을 draft/schedule 상태로 전환합니다.")
     @PutMapping("/posts/{id}/status")
     fun changeStatus(
         @Parameter(hidden = true) @CurrentUser userId: Long,
