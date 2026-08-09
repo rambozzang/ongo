@@ -36,7 +36,10 @@ pipeline {
                 dir('backend') {
                     // skipIntegrationTests를 지정하지 않는다. 이 job의 목적은
                     // PostgreSQL을 포함한 실제 컨테이너 계약을 검증하는 것이다.
-                    sh './gradlew :onGo-infrastructure:test --no-daemon --console=plain'
+                    // Run every module so API context smoke tests and future
+                    // integration tests cannot silently disappear from this
+                    // Docker-only quality gate.
+                    sh './gradlew test --no-daemon --console=plain'
                 }
             }
         }
