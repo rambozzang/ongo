@@ -30,9 +30,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation(libs.caffeine)
 
-    // Redis
-    implementation("org.springframework.boot:spring-boot-starter-data-redis")
-
     // Storage (MinIO / S3)
     implementation(libs.minio)
     implementation(libs.aws.s3)

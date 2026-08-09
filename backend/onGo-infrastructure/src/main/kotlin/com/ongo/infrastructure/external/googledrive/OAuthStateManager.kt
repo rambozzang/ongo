@@ -9,16 +9,13 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import org.springframework.data.redis.connection.RedisConnectionFactory
-import org.springframework.data.redis.core.StringRedisTemplate
-import java.util.concurrent.TimeUnit
 
 /** One-time state consumption boundary. Implementations must be atomic. */
 interface OAuthStateStore {
     fun consumeOnce(state: String, ttlSeconds: Long): Boolean
 }
 
-/** Single-instance fallback used when Redis is not configured (for local development). */
+/** One-process TTL store used by the single backend instance. */
 class InMemoryOAuthStateStore : OAuthStateStore {
     private val consumedStates = ConcurrentHashMap<String, Long>()
 
@@ -26,27 +23,6 @@ class InMemoryOAuthStateStore : OAuthStateStore {
         val now = Instant.now().epochSecond
         consumedStates.entries.removeIf { now - it.value > ttlSeconds }
         return consumedStates.putIfAbsent(state, now) == null
-    }
-}
-
-/** Redis-backed atomic state consumption shared by all application instances. */
-class RedisOAuthStateStore(
-    connectionFactory: RedisConnectionFactory,
-) : OAuthStateStore {
-    private val redisTemplate = StringRedisTemplate(connectionFactory)
-    private val keyPrefix = "oauth:state:"
-
-    override fun consumeOnce(state: String, ttlSeconds: Long): Boolean {
-        val digest = MessageDigest.getInstance("SHA-256")
-            .digest(state.toByteArray(StandardCharsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
-        val ttl = ttlSeconds.coerceAtLeast(1)
-        return redisTemplate.opsForValue().setIfAbsent(
-            "$keyPrefix$digest",
-            "1",
-            ttl,
-            TimeUnit.SECONDS,
-        ) == true
     }
 }
 
@@ -74,9 +50,7 @@ class OAuthStateManager(
      * OAuth callback은 한 번만 처리해야 한다. state는 짧게 살지만, 같은 callback을
      * 새로고침하거나 동시에 두 번 보내면 코드 교환/연동이 중복될 수 있다.
      *
-     * 운영에서 Redis가 구성되면 [RedisOAuthStateStore]를 사용해 모든 인스턴스가
-     * 동일한 one-time 소비 기록을 공유한다. Redis가 없는 로컬 단일 인스턴스에서는
-     * [InMemoryOAuthStateStore]를 사용한다.
+     * 운영은 단일 백엔드 인스턴스 전제로 [InMemoryOAuthStateStore]를 사용한다.
      */
     fun issue(userId: Long): String {
         val nonce = UUID.randomUUID().toString()

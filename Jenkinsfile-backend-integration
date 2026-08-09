@@ -35,7 +35,7 @@ pipeline {
             steps {
                 dir('backend') {
                     // skipIntegrationTests를 지정하지 않는다. 이 job의 목적은
-                    // PostgreSQL/Redis를 포함한 실제 컨테이너 계약을 검증하는 것이다.
+                    // PostgreSQL을 포함한 실제 컨테이너 계약을 검증하는 것이다.
                     sh './gradlew :onGo-infrastructure:test --no-daemon --console=plain'
                 }
             }

@@ -159,7 +159,7 @@ class ScheduleExecutorTest {
 
     @Test
     @DisplayName("이미 생성된 UPLOADING row는 외부 게시를 재발행하지 않는다")
-    fun doesNotRedispatchExistingUploadingRows() {
+    fun doesNotDispatchExistingUploadingRows() {
         every { scheduleRepository.findDueSchedules(any()) } returns listOf(schedule(1))
         every { videoUploadRepository.findByVideoId(10L) } returns listOf(
             publishedUpload(10L).copy(
