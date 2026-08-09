@@ -17,6 +17,7 @@ data class OptimalSlotResponse(
 data class ScheduleRecommendationResponse(
     val id: Long,
     val videoId: Long,
+    val channelId: Long? = null,
     val videoTitle: String,
     val currentSchedule: LocalDateTime?,
     val recommendedSchedule: LocalDateTime,

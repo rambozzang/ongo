@@ -104,10 +104,13 @@
           <div class="min-w-0 flex-1">
             <p class="truncate text-[12px] font-semibold text-content">
               {{ recommendation.videoTitle }} · {{ recommendation.platform }}
+              <span v-if="recommendation.channelId" class="font-normal text-content-tertiary">
+                · {{ channelNameForRecommendation(recommendation) }}
+              </span>
             </p>
             <p class="mt-1 text-[11px] text-content-secondary">
               {{ formatRecommendationDate(recommendation.recommendedSchedule) }} ·
-              {{ t('redesign.calendar.autoArrangeImprovement', { count: recommendation.expectedImprovement }) }}
+              {{ t('redesign.calendar.autoArrangeConfidence', { count: recommendation.confidence }) }}
             </p>
           </div>
           <button
@@ -328,6 +331,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { useRedesignCalendarStore } from '@/stores/redesignCalendar'
+import { useChannelStore } from '@/stores/channel'
 import { useNotificationStore } from '@/stores/notification'
 import PlatformChip from '@/components/redesign/PlatformChip.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
@@ -340,6 +344,7 @@ import type { ScheduleRecommendation } from '@/api/scheduleOptimizer'
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
 const store = useRedesignCalendarStore()
+const channelStore = useChannelStore()
 const notify = useNotificationStore()
 const recurringSchedules = ref<RecurringSchedule[]>([])
 const recurringLoading = ref(false)
@@ -511,6 +516,13 @@ function formatRecommendationDate(value: string): string {
   return value.replace('T', ' ').slice(0, 16)
 }
 
+function channelNameForRecommendation(recommendation: ScheduleRecommendation): string {
+  const channel = recommendation.channelId
+    ? channelStore.channels.find((item) => item.id === recommendation.channelId)
+    : null
+  return channel?.channelName ?? t('redesign.calendar.autoArrangeChannelFallback', { id: recommendation.channelId })
+}
+
 async function refreshRecommendations() {
   try {
     await store.fetchOptimalRecommendations()
@@ -607,6 +619,7 @@ async function confirmPendingAction() {
 
 onMounted(() => {
   store.fetchWeek()
+  channelStore.fetchChannels()
   loadRecurring()
   refreshRecommendations()
 })

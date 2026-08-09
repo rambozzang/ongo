@@ -16,6 +16,7 @@ export interface OptimalSlot {
 export interface ScheduleRecommendation {
   id: number
   videoId: number
+  channelId?: number | null
   videoTitle: string
   currentSchedule: string | null
   recommendedSchedule: string

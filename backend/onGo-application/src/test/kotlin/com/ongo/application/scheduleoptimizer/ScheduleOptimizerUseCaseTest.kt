@@ -2,14 +2,19 @@ package com.ongo.application.scheduleoptimizer
 
 import com.ongo.application.ai.AiRateLimiter
 import com.ongo.application.ai.ChatClientResolver
+import com.ongo.application.analytics.AnalyticsUseCase
 import com.ongo.application.credit.CreditService
 import com.ongo.application.schedule.ScheduleUseCase
+import com.ongo.application.analytics.dto.OptimalTimeSlot
+import com.ongo.application.analytics.dto.OptimalTimesResponse
 import com.ongo.common.enums.ScheduleStatus
+import com.ongo.common.enums.Platform
 import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.scheduleoptimizer.OptimalSlotRepository
 import com.ongo.domain.scheduleoptimizer.ScheduleRecommendation
 import com.ongo.domain.scheduleoptimizer.ScheduleRecommendationRepository
+import com.ongo.domain.video.VideoRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -23,6 +28,8 @@ class ScheduleOptimizerUseCaseTest {
     private val recommendations = InMemoryRecommendationRepository()
     private val scheduleRepository = mockk<ScheduleRepository>()
     private val scheduleUseCase = mockk<ScheduleUseCase>(relaxed = true)
+    private val analyticsUseCase = mockk<AnalyticsUseCase>()
+    private val videoRepository = mockk<VideoRepository>()
     private val useCase = ScheduleOptimizerUseCase(
         slotRepository = mockk<OptimalSlotRepository>(),
         recRepository = recommendations,
@@ -31,6 +38,8 @@ class ScheduleOptimizerUseCaseTest {
         rateLimiter = mockk<AiRateLimiter>(),
         scheduleRepository = scheduleRepository,
         scheduleUseCase = scheduleUseCase,
+        analyticsUseCase = analyticsUseCase,
+        videoRepository = videoRepository,
     )
 
     init {
@@ -43,11 +52,13 @@ class ScheduleOptimizerUseCaseTest {
                 status = ScheduleStatus.SCHEDULED,
                 platforms = mapOf(
                     "YOUTUBE#101" to mapOf("scheduledAt" to "2026-08-10T08:00:00"),
+                    "YOUTUBE#303" to mapOf("scheduledAt" to "2026-08-10T08:15:00"),
                     "TIKTOK#202" to mapOf("scheduledAt" to "2026-08-10T08:30:00"),
                 ),
             ),
         )
         every { scheduleRepository.findByUserId(8L) } returns emptyList()
+        every { videoRepository.findById(42L) } returns null
     }
 
     @Test
@@ -63,7 +74,10 @@ class ScheduleOptimizerUseCaseTest {
             scheduleUseCase.updateSchedule(
                 userId = 7L,
                 scheduleId = 99L,
-                request = any(),
+                request = match { request ->
+                    request.platforms.orEmpty().first { it.channelId == 101L }.scheduledAt == LocalDateTime.of(2026, 8, 10, 9, 0) &&
+                        request.platforms.orEmpty().first { it.channelId == 303L }.scheduledAt == LocalDateTime.of(2026, 8, 10, 8, 15)
+                },
             )
         }
     }
@@ -79,9 +93,48 @@ class ScheduleOptimizerUseCaseTest {
         assertEquals("PENDING", recommendations.findByIdAndUserId(recommendationId, 7L)?.status)
     }
 
+    @Test
+    fun `legacy provider-wide recommendation is rejected for multiple accounts`() {
+        val recommendation = recommendations.save(recommendation(userId = 7L).copy(channelId = null))
+
+        assertFailsWith<RuntimeException> {
+            useCase.applyRecommendation(userId = 7L, id = recommendation.id!!)
+        }
+        assertEquals("PENDING", recommendations.findByIdAndUserId(recommendation.id!!, 7L)?.status)
+        verify(exactly = 0) { scheduleUseCase.updateSchedule(any(), any(), any()) }
+    }
+
+    @Test
+    fun `recommendation listing materializes an analytics backed next slot`() {
+        val tomorrow = LocalDateTime.now(ScheduleUseCase.KST).toLocalDate().plusDays(1)
+        every { analyticsUseCase.getOptimalPublishTimes(7L, Platform.YOUTUBE) } returns OptimalTimesResponse(
+            slots = listOf(
+                OptimalTimeSlot(
+                    dayOfWeek = tomorrow.dayOfWeek.value % 7,
+                    dayLabel = "내일",
+                    hour = 9,
+                    timeLabel = "09:00",
+                    expectedViews = 100,
+                    engagementRate = 4.2,
+                    confidenceScore = 76.0,
+                    score = 90.0,
+                ),
+            ),
+        )
+
+        val result = useCase.getRecommendations(userId = 7L)
+
+        assertEquals(2, result.size)
+        assertEquals(setOf(101L, 303L), result.map { it.channelId }.toSet())
+        assertEquals(setOf("YOUTUBE"), result.map { it.platform }.toSet())
+        assertEquals(setOf("PENDING"), result.map { it.status }.toSet())
+        assertEquals(setOf(76), result.map { it.confidence }.toSet())
+    }
+
     private fun recommendation(userId: Long) = ScheduleRecommendation(
         userId = userId,
         videoId = 42L,
+        channelId = 101L,
         videoTitle = "테스트 영상",
         recommendedSchedule = LocalDateTime.of(2026, 8, 10, 9, 0),
         platform = "YOUTUBE",

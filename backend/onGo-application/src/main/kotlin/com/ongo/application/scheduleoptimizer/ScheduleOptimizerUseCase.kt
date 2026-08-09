@@ -4,6 +4,7 @@ import com.ongo.application.ai.AiRateLimiter
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.PromptTemplates
 import com.ongo.application.ai.result.ScheduleOptimalResult
+import com.ongo.application.analytics.AnalyticsUseCase
 import com.ongo.application.credit.CreditService
 import com.ongo.application.schedule.ScheduleUseCase
 import com.ongo.application.schedule.dto.PlatformScheduleConfig
@@ -19,6 +20,7 @@ import com.ongo.domain.scheduleoptimizer.OptimalSlot
 import com.ongo.domain.scheduleoptimizer.OptimalSlotRepository
 import com.ongo.domain.scheduleoptimizer.ScheduleRecommendation
 import com.ongo.domain.scheduleoptimizer.ScheduleRecommendationRepository
+import com.ongo.domain.video.VideoRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -32,6 +34,8 @@ class ScheduleOptimizerUseCase(
     private val rateLimiter: AiRateLimiter,
     private val scheduleRepository: ScheduleRepository,
     private val scheduleUseCase: ScheduleUseCase,
+    private val analyticsUseCase: AnalyticsUseCase,
+    private val videoRepository: VideoRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(ScheduleOptimizerUseCase::class.java)
@@ -86,7 +90,9 @@ class ScheduleOptimizerUseCase(
         return slotRepository.findByPlatform(userId, platform).map { it.toResponse() }
     }
 
+    @Transactional
     fun getRecommendations(userId: Long): List<ScheduleRecommendationResponse> {
+        createRecommendationsFromAnalytics(userId)
         return recRepository.findByUserId(userId).map { it.toRecResponse() }
     }
 
@@ -114,17 +120,28 @@ class ScheduleOptimizerUseCase(
                 throw BusinessException("SCHEDULE_RECOMMENDATION_NOT_APPLICABLE", "지원하지 않는 플랫폼의 일정 추천입니다")
             }
 
-        val platformConfigs = schedule.platforms.map { (key, raw) ->
+        val parsedTargets = schedule.platforms.map { (key, raw) ->
             val (platform, channelId) = parseScheduleKey(key)
                 ?: throw BusinessException("SCHEDULE_RECOMMENDATION_NOT_APPLICABLE", "예약 플랫폼 정보가 올바르지 않습니다")
-            val currentTime = platformTime(raw) ?: schedule.scheduledAt
+            Triple(platform, channelId, platformTime(raw) ?: schedule.scheduledAt)
+        }
+        val matchingTargetIndexes = parsedTargets.mapIndexedNotNull { index, (platform, channelId, _) ->
+            if (platform == recommendedPlatform && (rec.channelId == null || channelId == rec.channelId)) index else null
+        }
+        if (rec.channelId == null && matchingTargetIndexes.size != 1) {
+            throw BusinessException(
+                "SCHEDULE_RECOMMENDATION_NOT_APPLICABLE",
+                "기존 일정 추천에 채널 계정 정보가 없어 다중 계정 예약에 적용할 수 없습니다",
+            )
+        }
+        val platformConfigs = parsedTargets.mapIndexed { index, (platform, channelId, currentTime) ->
             PlatformScheduleConfig(
                 platform = platform,
                 channelId = channelId,
-                scheduledAt = if (platform == recommendedPlatform) rec.recommendedSchedule else currentTime,
+                scheduledAt = if (index in matchingTargetIndexes) rec.recommendedSchedule else currentTime,
             )
         }
-        if (platformConfigs.none { it.platform == recommendedPlatform }) {
+        if (matchingTargetIndexes.isEmpty()) {
             throw BusinessException("SCHEDULE_RECOMMENDATION_NOT_APPLICABLE", "추천 플랫폼이 현재 예약 대상에 없습니다")
         }
 
@@ -164,7 +181,7 @@ class ScheduleOptimizerUseCase(
     )
 
     private fun ScheduleRecommendation.toRecResponse() = ScheduleRecommendationResponse(
-        id = id!!, videoId = videoId, videoTitle = videoTitle,
+        id = id!!, videoId = videoId, channelId = channelId, videoTitle = videoTitle,
         currentSchedule = currentSchedule, recommendedSchedule = recommendedSchedule,
         platform = platform, expectedImprovement = expectedImprovement,
         confidence = confidence, status = status, createdAt = createdAt,
@@ -181,5 +198,69 @@ class ScheduleOptimizerUseCase(
     private fun platformTime(raw: Any?): java.time.LocalDateTime? {
         val value = (raw as? Map<*, *>)?.get("scheduledAt")?.toString() ?: return null
         return runCatching { java.time.LocalDateTime.parse(value) }.getOrNull()
+    }
+
+    /**
+     * Materialise recommendations from the same analytics data used by the
+     * compose screen. Previously this table had a reader and an apply endpoint
+     * but no producer, so the calendar could never show a recommendation.
+     * Generation is idempotent for the same video/platform/current/next slot.
+     */
+    private fun createRecommendationsFromAnalytics(userId: Long) {
+        val now = java.time.LocalDateTime.now(ScheduleUseCase.KST)
+        val existing = recRepository.findByUserId(userId)
+        scheduleRepository.findByUserId(userId)
+            .filter { it.status == ScheduleStatus.SCHEDULED }
+            .forEach { schedule ->
+                val videoTitle = videoRepository.findById(schedule.videoId)?.title ?: "예약 영상"
+                schedule.platforms.forEach platformTarget@ { (key, raw) ->
+                    val (platform, channelId) = parseScheduleKey(key) ?: return@platformTarget
+                    val current = platformTime(raw) ?: schedule.scheduledAt
+                    val slot = runCatching {
+                        analyticsUseCase.getOptimalPublishTimes(userId, platform).slots.firstOrNull()
+                    }.getOrNull() ?: return@platformTarget
+                    val recommended = nextSlotAfter(now, slot.dayOfWeek, slot.hour) ?: return@platformTarget
+                    if (recommended == current) return@platformTarget
+                    val duplicate = existing.any {
+                        it.videoId == schedule.videoId &&
+                            it.channelId == channelId &&
+                            it.platform == platform.name &&
+                            it.currentSchedule == current &&
+                            it.recommendedSchedule == recommended &&
+                            it.status == "PENDING"
+                    }
+                    if (!duplicate) {
+                        recRepository.save(
+                            ScheduleRecommendation(
+                                userId = userId,
+                                videoId = schedule.videoId,
+                                channelId = channelId,
+                                videoTitle = videoTitle,
+                                currentSchedule = current,
+                                recommendedSchedule = recommended,
+                                platform = platform.name,
+                                // This value is a confidence signal, not a
+                                // fabricated view forecast. The UI displays
+                                // the confidence field explicitly.
+                                expectedImprovement = 0,
+                                confidence = slot.confidenceScore.toInt().coerceIn(0, 100),
+                            ),
+                        )
+                    }
+                }
+            }
+    }
+
+    private fun nextSlotAfter(
+        now: java.time.LocalDateTime,
+        dayOfWeek: Int,
+        hour: Int,
+    ): java.time.LocalDateTime? {
+        val safeHour = hour.coerceIn(0, 23)
+        return (0L..14L)
+            .map { now.toLocalDate().plusDays(it).atTime(safeHour, 0) }
+            .firstOrNull { candidate ->
+                candidate.isAfter(now.plusMinutes(5)) && candidate.dayOfWeek.value % 7 == dayOfWeek
+            }
     }
 }

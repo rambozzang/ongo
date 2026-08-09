@@ -25,6 +25,7 @@ class ScheduleRecommendationJooqRepository(
 
     private companion object {
         val RECOMMENDATION_CONFIDENCE = DSL.field("confidence", Int::class.java)
+        val RECOMMENDATION_CHANNEL_ID = DSL.field("channel_id", Long::class.java)
     }
 
     override fun findByIdAndUserId(id: Long, userId: Long): ScheduleRecommendation? =
@@ -47,6 +48,7 @@ class ScheduleRecommendationJooqRepository(
         val id = dsl.insertInto(SCHEDULE_RECOMMENDATIONS)
             .set(USER_ID, rec.userId)
             .set(VIDEO_ID, rec.videoId)
+            .set(RECOMMENDATION_CHANNEL_ID, rec.channelId)
             .set(VIDEO_TITLE, rec.videoTitle)
             .set(CURRENT_SCHEDULE, rec.currentSchedule)
             .set(RECOMMENDED_SCHEDULE, rec.recommendedSchedule)
@@ -72,6 +74,7 @@ class ScheduleRecommendationJooqRepository(
         id = get(ID),
         userId = get(USER_ID),
         videoId = get(VIDEO_ID),
+        channelId = get(RECOMMENDATION_CHANNEL_ID),
         videoTitle = get(VIDEO_TITLE) ?: "",
         currentSchedule = localDateTime(CURRENT_SCHEDULE),
         recommendedSchedule = localDateTime(RECOMMENDED_SCHEDULE)
