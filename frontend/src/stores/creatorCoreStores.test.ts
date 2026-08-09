@@ -175,6 +175,41 @@ describe('creator-facing core stores', () => {
     expect(store.templates.map((item) => item.id)).toEqual([3])
   })
 
+  it('restores prompt revisions and updates template reference assets through the server', async () => {
+    const store = useUgcShortsStore()
+    const prompt = { id: 1, stage: 'HOOK', revision: 3, userPrompt: '현재 프롬프트' } as any
+    const restored = { ...prompt, revision: 2, userPrompt: '복원된 프롬프트' }
+    const template = { id: 9, name: '세로 템플릿' } as any
+    const updatedTemplate = { ...template, name: '수정된 템플릿' }
+    const restoredDefault = { ...prompt, revision: 4, userPrompt: '기본 프롬프트' }
+
+    vi.mocked(ugcShortsPromptApi.resetToDefault).mockResolvedValue(restoredDefault)
+    vi.mocked(ugcShortsPromptApi.revisions).mockResolvedValue([
+      { revision: 2, userPrompt: '복원된 프롬프트' },
+    ] as never)
+    vi.mocked(ugcShortsPromptApi.restoreRevision).mockResolvedValue(restored)
+    vi.mocked(ugcShortsTemplateApi.update).mockResolvedValue(updatedTemplate)
+    vi.mocked(ugcShortsTemplateApi.uploadReferenceImage).mockResolvedValue({
+      ...updatedTemplate,
+      referenceImageUrl: 'https://cdn.test/reference.png',
+    })
+
+    store.prompts = [prompt]
+    store.templates = [template]
+    await store.resetPrompt('HOOK')
+    expect(store.prompts[0]).toMatchObject(restoredDefault)
+
+    await store.fetchRevisions('HOOK')
+    expect(store.revisions).toHaveLength(1)
+    await store.restoreRevision('HOOK', 2)
+    expect(store.prompts[0]).toMatchObject(restored)
+
+    await store.updateTemplate(9, {} as never)
+    expect(store.templates[0]).toMatchObject(updatedTemplate)
+    await store.uploadReferenceImage(9, new File(['image'], 'reference.png', { type: 'image/png' }))
+    expect(store.templates[0].referenceImageUrl).toBe('https://cdn.test/reference.png')
+  })
+
   it('calculates credit balance, low-balance warning, and today usage from server data', async () => {
     vi.mocked(creditApi.getBalance).mockResolvedValue({ totalBalance: 20, freeMonthly: 100, purchasedBalance: 0 } as never)
     vi.mocked(creditApi.getTransactions).mockResolvedValue(page([

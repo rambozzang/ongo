@@ -283,7 +283,13 @@ export const useUploadStore = defineStore('upload', () => {
       })
       if (resultId === null) throw new Error('업로드가 취소되었습니다.')
       videoId.value = resultId
-      progress.value.percentage = 100
+      progress.value = {
+        ...progress.value,
+        bytesUploaded: targetFile.size,
+        percentage: 100,
+        speed: 0,
+        remainingSeconds: 0,
+      }
       return { videoId: resultId }
     } catch (error) {
       uploadError.value = error instanceof Error ? error.message : '업로드에 실패했습니다.'
