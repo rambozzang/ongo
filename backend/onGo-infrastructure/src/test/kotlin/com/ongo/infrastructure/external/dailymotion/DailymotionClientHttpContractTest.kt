@@ -132,6 +132,74 @@ class DailymotionClientHttpContractTest {
             .contains("redirect_uri=https%3A%2F%2Fongo.test%2Fcallback")
     }
 
+    @Test
+    fun `Dailymotion uses v2 lifecycle endpoints and keeps metadata editable`() {
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                    {"video_id":"dm-video-2","video_url":"https://www.dailymotion.com/video/dm-video-2","processing":false,"is_published":true}
+                """.trimIndent()),
+        )
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                    {"video_id":"dm-video-2","title":"기존 제목","description":"기존 설명","tags":["one"],"processing":false,"is_published":true,"views_total":42,"likes_total":3,"comments_total":1}
+                """.trimIndent()),
+        )
+        server.enqueue(MockResponse().setResponseCode(204))
+        server.enqueue(MockResponse().setResponseCode(204))
+
+        val client = DailymotionClient(
+            dailymotionApi = proxy(),
+            dailymotionOAuthApi = mockk(),
+            dailymotionConfig = mockk(),
+            objectMapper = ObjectMapper(),
+            fileTransferHelper = mockk(),
+        )
+
+        val status = client.getVideoStatus("dm-video-2", "dm-token")
+        val metadata = client.getVideoMetadata("dm-video-2", "dm-token")
+        val updated = client.updateVideoMetadata(
+            platformVideoId = "dm-video-2",
+            accessToken = "dm-token",
+            title = "새 제목",
+            description = "새 설명",
+            tags = listOf("#new"),
+        )
+        val deleted = client.deleteVideo("dm-video-2", "dm-token")
+
+        assertThat(status.status).isEqualTo("published")
+        assertThat(status.platformUrl).isEqualTo("https://www.dailymotion.com/video/dm-video-2")
+        assertThat(metadata?.title).isEqualTo("기존 제목")
+        assertThat(metadata?.viewCount).isEqualTo(42)
+        assertThat(updated).isTrue()
+        assertThat(deleted).isTrue()
+
+        val statusRequest = server.takeRequest()
+        assertThat(statusRequest.path).isEqualTo("/v2/videos/dm-video-2?fields=video_id%2Cvideo_url%2Cprocessing%2Cis_published%2Cvisibility")
+        assertThat(statusRequest.getHeader("Authorization")).isEqualTo("Bearer dm-token")
+
+        val metadataRequest = server.takeRequest()
+        assertThat(metadataRequest.path).contains("/v2/videos/dm-video-2?fields=")
+        assertThat(metadataRequest.getHeader("Authorization")).isEqualTo("Bearer dm-token")
+
+        val updateRequest = server.takeRequest()
+        assertThat(updateRequest.method).isEqualTo("PATCH")
+        assertThat(updateRequest.path).isEqualTo("/v2/videos/dm-video-2")
+        assertThat(updateRequest.getHeader("Authorization")).isEqualTo("Bearer dm-token")
+        assertThat(updateRequest.body.readUtf8())
+            .contains("\"title\":\"새 제목\"")
+            .contains("\"description\":\"새 설명\"")
+            .contains("\"tags\":[\"new\"]")
+
+        val deleteRequest = server.takeRequest()
+        assertThat(deleteRequest.method).isEqualTo("DELETE")
+        assertThat(deleteRequest.path).isEqualTo("/v2/videos/dm-video-2")
+        assertThat(deleteRequest.getHeader("Authorization")).isEqualTo("Bearer dm-token")
+    }
+
     private fun proxy(): DailymotionApi = HttpServiceProxyFactory
         .builderFor(RestClientAdapter.create(PlatformRestClientSupport.builder(server.url("").toString().removeSuffix("/")).build()))
         .build()

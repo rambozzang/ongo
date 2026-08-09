@@ -28,6 +28,12 @@ data class DailymotionCreateVideoRequest(
     )
 }
 
+data class DailymotionUpdateVideoRequest(
+    val title: String,
+    val description: String? = null,
+    val tags: List<String> = emptyList(),
+)
+
 data class DailymotionPublishRequest(
     val url: String,
     val title: String,
@@ -43,6 +49,8 @@ data class DailymotionVideoResponse(
     val id: String? = null,
     @JsonProperty("video_id") val videoId: String? = null,
     val title: String?,
+    val description: String? = null,
+    val tags: List<String>? = null,
     val url: String?,
     val status: String?, // published, processing, deleted, etc
     @JsonProperty("views_total") val viewsTotal: Long?,
@@ -50,6 +58,9 @@ data class DailymotionVideoResponse(
     @JsonProperty("comments_total") val commentsTotal: Long?,
     @JsonProperty("bookmarks_total") val bookmarksTotal: Long?,
     val duration: Int?,
+    @JsonProperty("video_url") val videoUrl: String? = null,
+    val processing: Boolean? = null,
+    @JsonProperty("is_published") val isPublished: Boolean? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

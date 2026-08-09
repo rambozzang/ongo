@@ -9,6 +9,7 @@ import org.springframework.http.MediaType
 import org.springframework.web.service.annotation.DeleteExchange
 import org.springframework.web.service.annotation.GetExchange
 import org.springframework.web.service.annotation.HttpExchange
+import org.springframework.web.service.annotation.PatchExchange
 import org.springframework.web.service.annotation.PostExchange
 
 @HttpExchange
@@ -26,17 +27,32 @@ interface DailymotionApi {
         @RequestBody request: DailymotionCreateVideoRequest,
     ): DailymotionVideoResponse
 
-    @GetExchange("/video/{videoId}")
-    fun getVideo(
+    @GetExchange("/v2/videos/{videoId}")
+    fun getVideoV2(
         @org.springframework.web.bind.annotation.PathVariable("videoId") videoId: String,
         @RequestParam("fields") fields: String,
         @RequestHeader("Authorization") authorization: String,
     ): DailymotionVideoResponse
 
-    @DeleteExchange("/video/{videoId}")
+    /** Legacy video fields still expose aggregate engagement counters. */
+    @GetExchange("/video/{videoId}")
+    fun getVideoLegacy(
+        @org.springframework.web.bind.annotation.PathVariable("videoId") videoId: String,
+        @RequestParam("fields") fields: String,
+        @RequestHeader("Authorization") authorization: String,
+    ): DailymotionVideoResponse
+
+    @DeleteExchange("/v2/videos/{videoId}")
     fun deleteVideo(
         @org.springframework.web.bind.annotation.PathVariable("videoId") videoId: String,
         @RequestHeader("Authorization") authorization: String,
+    )
+
+    @PatchExchange("/v2/videos/{videoId}")
+    fun updateVideo(
+        @org.springframework.web.bind.annotation.PathVariable("videoId") videoId: String,
+        @RequestHeader("Authorization") authorization: String,
+        @RequestBody request: DailymotionUpdateVideoRequest,
     )
 
     @GetExchange("/v2/me")

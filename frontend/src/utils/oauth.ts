@@ -141,7 +141,7 @@ export function buildOAuthUrl(platform: Platform, returnPath: string, codeChalle
         client_id: import.meta.env.VITE_DAILYMOTION_API_KEY || '',
         redirect_uri: redirectUri,
         response_type: 'code',
-        scope: 'video.manage account.read offline',
+        scope: 'video.manage video.read account.read offline',
         state,
       })}`
 

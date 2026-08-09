@@ -5,6 +5,7 @@ import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ongo.infrastructure.external.dailymotion.dto.DailymotionCreateVideoRequest
+import com.ongo.infrastructure.external.dailymotion.dto.DailymotionUpdateVideoRequest
 import org.springframework.util.LinkedMultiValueMap
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -76,15 +77,21 @@ class DailymotionClient(
         log.debug("Dailymotion 영상 상태 조회: videoId={}", platformVideoId)
 
         return try {
-            val response = dailymotionApi.getVideo(
+            val response = dailymotionApi.getVideoV2(
                 videoId = platformVideoId,
-                fields = "id,status,title,url",
+                fields = "video_id,video_url,processing,is_published,visibility",
                 authorization = "Bearer $accessToken",
             )
 
             PlatformVideoStatus(
                 platformVideoId = platformVideoId,
-                status = response.status ?: "unknown",
+                status = when {
+                    response.processing == true -> "processing"
+                    response.isPublished == true -> "published"
+                    response.status != null -> response.status
+                    else -> "ready"
+                },
+                platformUrl = response.videoUrl ?: response.url,
             )
         } catch (e: Exception) {
             PlatformVideoStatus(
@@ -104,7 +111,7 @@ class DailymotionClient(
         log.debug("Dailymotion 분석 데이터 조회: videoId={}", platformVideoId)
 
         return try {
-            val response = dailymotionApi.getVideo(
+            val response = dailymotionApi.getVideoLegacy(
                 videoId = platformVideoId,
                 fields = "id,views_total,likes_total,comments_total,bookmarks_total",
                 authorization = "Bearer $accessToken",
@@ -193,6 +200,56 @@ class DailymotionClient(
             true
         } catch (e: Exception) {
             log.error("Dailymotion 영상 삭제 실패: {}", e.message)
+            false
+        }
+    }
+
+    override fun getVideoMetadata(platformVideoId: String, accessToken: String): PlatformVideoMetadata? {
+        return try {
+            val response = dailymotionApi.getVideoV2(
+                videoId = platformVideoId,
+                fields = "video_id,title,description,tags,processing,is_published,views_total,likes_total,comments_total,video_url",
+                authorization = "Bearer $accessToken",
+            )
+            PlatformVideoMetadata(
+                title = response.title.orEmpty(),
+                description = response.description.orEmpty(),
+                tags = response.tags.orEmpty(),
+                status = when {
+                    response.processing == true -> "processing"
+                    response.isPublished == true -> "published"
+                    else -> response.status ?: "ready"
+                },
+                viewCount = response.viewsTotal ?: 0,
+                likeCount = response.likesTotal ?: 0,
+                commentCount = response.commentsTotal ?: 0,
+            )
+        } catch (e: Exception) {
+            log.warn("Dailymotion 메타데이터 조회 실패: {}", e.message)
+            null
+        }
+    }
+
+    override fun updateVideoMetadata(
+        platformVideoId: String,
+        accessToken: String,
+        title: String,
+        description: String,
+        tags: List<String>,
+    ): Boolean {
+        return try {
+            dailymotionApi.updateVideo(
+                videoId = platformVideoId,
+                authorization = "Bearer $accessToken",
+                request = DailymotionUpdateVideoRequest(
+                    title = title.trim().take(255),
+                    description = description.trim().take(3000).ifBlank { null },
+                    tags = tags.map { it.removePrefix("#").trim() }.filter(String::isNotBlank).take(150),
+                ),
+            )
+            true
+        } catch (e: Exception) {
+            log.warn("Dailymotion 메타데이터 업데이트 실패: {}", e.message)
             false
         }
     }
