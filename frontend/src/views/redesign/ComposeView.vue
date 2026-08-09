@@ -466,6 +466,7 @@
               <option value="WEEKLY">매주</option>
               <option value="BIWEEKLY">격주</option>
               <option value="MONTHLY">매월</option>
+              <option value="INTERVAL">N일마다</option>
             </select>
             <input
               v-model="recurringTime"
@@ -497,6 +498,16 @@
             class="input-field !text-[11.5px]"
             placeholder="매월 일자 (1~31)"
             :aria-label="t('redesign.compose.recurringDayOfMonthLabel')"
+          />
+          <input
+            v-if="recurringFrequency === 'INTERVAL'"
+            v-model.number="recurringIntervalDays"
+            type="number"
+            min="1"
+            max="365"
+            class="input-field !text-[11.5px]"
+            placeholder="반복 간격 (1~365일)"
+            aria-label="반복 간격 (일)"
           />
           <p class="text-[10.5px] leading-4 text-content-tertiary">
             {{ t('redesign.compose.recurringHint') }}
@@ -703,6 +714,7 @@ const schedMode = ref<'now' | 'best' | 'fix'>('best')
 const fixedAt = ref('')
 const recurringEnabled = ref(false)
 const recurringFrequency = ref<RecurringFrequency>('WEEKLY')
+const recurringIntervalDays = ref(7)
 const recurringTime = ref('09:00')
 const recurringDayOfWeek = ref(1)
 const recurringDayOfMonth = ref(1)
@@ -1451,6 +1463,8 @@ async function submit() {
           videoId: sourceVideoId,
           name: form.title || '반복 게시',
           frequency: recurringFrequency.value,
+          intervalDays:
+            recurringFrequency.value === 'INTERVAL' ? recurringIntervalDays.value : undefined,
           dayOfWeek:
             recurringFrequency.value === 'WEEKLY' || recurringFrequency.value === 'BIWEEKLY'
               ? recurringDayOfWeek.value

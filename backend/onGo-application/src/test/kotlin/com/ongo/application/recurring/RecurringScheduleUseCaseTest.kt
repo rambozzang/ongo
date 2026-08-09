@@ -112,6 +112,26 @@ class RecurringScheduleUseCaseTest {
         assertEquals(LocalDateTime.of(2026, 1, 11, 23, 0), next)
     }
 
+    @Test
+    fun `INTERVAL 반복 예약은 Postiz inter의 정확한 일수 간격을 계산한다`() {
+        val source = RecurringSchedule(
+            id = 8L,
+            userId = 1L,
+            videoId = 10L,
+            name = "3일 간격",
+            frequency = "INTERVAL",
+            intervalDays = 3,
+            timeOfDay = LocalTime.of(9, 0),
+            timezone = "Asia/Seoul",
+            nextRunAt = LocalDateTime.of(2026, 1, 10, 9, 0),
+        )
+
+        assertEquals(
+            LocalDateTime.of(2026, 1, 13, 9, 0),
+            useCase().nextRunAtAfter(source, source.nextRunAt!!),
+        )
+    }
+
     private fun useCase(): RecurringScheduleUseCase {
         every { storageService.getFileUrl(any(), any()) } returns "https://storage.test/video.mp4"
         return RecurringScheduleUseCase(repository, videoRepository, userWriteGuard, channelRepository, storageService)

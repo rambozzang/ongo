@@ -9,6 +9,8 @@ data class RecurringSchedule(
     val videoId: Long? = null,
     val name: String,
     val frequency: String,
+    /** Number of days between runs when frequency is INTERVAL (Postiz inter). */
+    val intervalDays: Int? = null,
     val dayOfWeek: Int? = null,
     val dayOfMonth: Int? = null,
     val timeOfDay: LocalTime,

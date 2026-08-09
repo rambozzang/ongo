@@ -1,13 +1,14 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
 
-export type RecurringFrequency = 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY'
+export type RecurringFrequency = 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'INTERVAL'
 
 export interface RecurringSchedule {
   id: number
   videoId: number | null
   name: string
   frequency: RecurringFrequency
+  intervalDays?: number | null
   dayOfWeek: number | null
   dayOfMonth: number | null
   timeOfDay: string
@@ -27,6 +28,7 @@ export interface CreateRecurringScheduleRequest {
   videoId: number
   name: string
   frequency: RecurringFrequency
+  intervalDays?: number
   dayOfWeek?: number
   dayOfMonth?: number
   timeOfDay: string

@@ -27,6 +27,7 @@ import com.ongo.domain.video.VideoUploadRepository
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.workspace.WorkspaceRepository
 import com.ongo.domain.workspace.Workspace
+import com.ongo.domain.recurring.RecurringScheduleRepository
 import io.mockk.*
 import io.mockk.just
 import io.mockk.mockk
@@ -49,6 +50,7 @@ class PublicApiUseCaseTest {
     private val integrationTools = mockk<PlatformIntegrationToolPort>()
     private val workspaces = mockk<WorkspaceRepository>(relaxed = true)
     private val videoPlatformMetas = mockk<VideoPlatformMetaRepository>(relaxed = true)
+    private val recurringSchedules = mockk<RecurringScheduleRepository>(relaxed = true)
     private val useCase = PublicApiUseCase(
         channels,
         posts,
@@ -62,6 +64,7 @@ class PublicApiUseCaseTest {
         integrationTools,
         workspaces,
         videoPlatformMetas,
+        recurringSchedules,
     )
 
     private val channel = Channel(
@@ -288,14 +291,27 @@ class PublicApiUseCaseTest {
     }
 
     @Test
-    fun `지원하지 않는 Postiz 옵션은 게시를 시작하지 않고 명시적으로 거부한다`() {
-        assertFailsWith<com.ongo.common.exception.BusinessException> {
-            useCase.create(1, CreatePublicPostRequest(type = "draft", shortLink = true))
+    fun `Postiz shortLink은 단축 서비스가 없을 때 원문을 보존하고 inter는 반복 일정으로 연결한다`() {
+        every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
+        every { channels.findById(7) } returns channel
+        every { posts.save(any()) } answers { firstArg<PublicApiPost>().copy(id = 45) }
+        every { posts.update(any()) } answers { firstArg() }
+        every { uploads.findByVideoId(11) } returns emptyList()
+        every { recurringSchedules.save(any()) } answers {
+            firstArg<com.ongo.domain.recurring.RecurringSchedule>().copy(id = 91)
         }
-        assertFailsWith<com.ongo.common.exception.BusinessException> {
+        every { publishVideo.publishVideo(any(), any(), any()) } returns
+            PublishResult(11, listOf(PlatformUploadStatus(Platform.YOUTUBE, UploadStatus.UPLOADING)))
+
+        useCase.create(1, CreatePublicPostRequest(type = "now", shortLink = true, inter = 7, videoId = 11, posts = listOf(
+            PublicPostItem(PublicIntegrationRef("7"), listOf(PublicPostValue(content = "게시")))
+        )))
+
+        verify(exactly = 1) { posts.save(match { it.payloadJson.contains("\"shortLink\":true") }) }
+        verify(exactly = 1) { recurringSchedules.save(match { it.frequency == "INTERVAL" && it.intervalDays == 7 }) }
+        assertFailsWith<IllegalArgumentException> {
             useCase.create(1, CreatePublicPostRequest(type = "draft", inter = 7))
         }
-        verify(exactly = 0) { publishVideo.publishVideo(any(), any(), any()) }
     }
 
     @Test

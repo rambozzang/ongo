@@ -28,7 +28,7 @@ class RecurringScheduleUseCase(
 ) {
 
     companion object {
-        val FREQUENCIES = setOf("DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY")
+        val FREQUENCIES = setOf("DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "INTERVAL")
         val STORAGE_ZONE: ZoneId = ZoneId.of("Asia/Seoul")
     }
 
@@ -41,7 +41,7 @@ class RecurringScheduleUseCase(
         userWriteGuard.requireWritable(userId)
         require(request.frequency in FREQUENCIES) { "유효하지 않은 빈도: ${request.frequency}" }
         require(request.name.isNotBlank()) { "반복 예약 이름을 입력하세요." }
-        validateCadence(request.frequency, request.dayOfWeek, request.dayOfMonth, request.timezone)
+        validateCadence(request.frequency, request.intervalDays, request.dayOfWeek, request.dayOfMonth, request.timezone)
         validateSource(userId, request.videoId, request.platforms)
 
         val timeOfDay = LocalTime.parse(request.timeOfDay)
@@ -50,6 +50,7 @@ class RecurringScheduleUseCase(
             videoId = request.videoId,
             name = request.name,
             frequency = request.frequency,
+            intervalDays = request.intervalDays,
             dayOfWeek = request.dayOfWeek,
             dayOfMonth = request.dayOfMonth,
             timeOfDay = timeOfDay,
@@ -59,7 +60,7 @@ class RecurringScheduleUseCase(
             descriptionTemplate = request.descriptionTemplate,
             tags = request.tags,
             isActive = request.isActive,
-            nextRunAt = calculateNextRunAt(request.frequency, request.dayOfWeek, request.dayOfMonth, timeOfDay, request.timezone),
+            nextRunAt = calculateNextRunAt(request.frequency, request.intervalDays, request.dayOfWeek, request.dayOfMonth, timeOfDay, request.timezone),
         )
         return recurringScheduleRepository.save(schedule).toResponse()
     }
@@ -77,16 +78,21 @@ class RecurringScheduleUseCase(
 
         val newTimeOfDay = request.timeOfDay?.let { LocalTime.parse(it) } ?: schedule.timeOfDay
         val newFrequency = request.frequency ?: schedule.frequency
+        val newIntervalDays = when {
+            request.frequency != null && request.frequency != schedule.frequency -> request.intervalDays
+            else -> request.intervalDays ?: schedule.intervalDays
+        }
         val newDayOfWeek = request.dayOfWeek ?: schedule.dayOfWeek
         val newDayOfMonth = request.dayOfMonth ?: schedule.dayOfMonth
         val newTimezone = request.timezone ?: schedule.timezone
         require((request.name ?: schedule.name).isNotBlank()) { "반복 예약 이름을 입력하세요." }
-        validateCadence(newFrequency, newDayOfWeek, newDayOfMonth, newTimezone)
+        validateCadence(newFrequency, newIntervalDays, newDayOfWeek, newDayOfMonth, newTimezone)
 
         val updated = schedule.copy(
             videoId = request.videoId ?: schedule.videoId,
             name = request.name ?: schedule.name,
             frequency = newFrequency,
+            intervalDays = newIntervalDays,
             dayOfWeek = newDayOfWeek,
             dayOfMonth = newDayOfMonth,
             timeOfDay = newTimeOfDay,
@@ -95,7 +101,7 @@ class RecurringScheduleUseCase(
             titleTemplate = request.titleTemplate ?: schedule.titleTemplate,
             descriptionTemplate = request.descriptionTemplate ?: schedule.descriptionTemplate,
             tags = request.tags ?: schedule.tags,
-            nextRunAt = calculateNextRunAt(newFrequency, newDayOfWeek, newDayOfMonth, newTimeOfDay, newTimezone),
+            nextRunAt = calculateNextRunAt(newFrequency, newIntervalDays, newDayOfWeek, newDayOfMonth, newTimeOfDay, newTimezone),
         )
         return recurringScheduleRepository.update(updated).toResponse()
     }
@@ -120,6 +126,7 @@ class RecurringScheduleUseCase(
 
     private fun calculateNextRunAt(
         frequency: String,
+        intervalDays: Int?,
         dayOfWeek: Int?,
         dayOfMonth: Int?,
         timeOfDay: LocalTime,
@@ -132,6 +139,7 @@ class RecurringScheduleUseCase(
 
         val nextLocal = when (frequency) {
             "DAILY" -> if (todayAtTime.isAfter(now)) todayAtTime else todayAtTime.plusDays(1)
+            "INTERVAL" -> todayAtTime.plusDays(requireNotNull(intervalDays).toLong())
             "WEEKLY" -> {
                 val target = dayOfWeek?.let { DayOfWeek.of(it) } ?: now.dayOfWeek
                 val next = now.toLocalDate().with(TemporalAdjusters.nextOrSame(target)).atTime(timeOfDay)
@@ -163,6 +171,7 @@ class RecurringScheduleUseCase(
         ZoneId.of(schedule.timezone).let { zone ->
             calculateNextRunAt(
                 schedule.frequency,
+                schedule.intervalDays,
                 schedule.dayOfWeek,
                 schedule.dayOfMonth,
                 schedule.timeOfDay,
@@ -207,7 +216,7 @@ class RecurringScheduleUseCase(
         }
     }
 
-    private fun validateCadence(frequency: String, dayOfWeek: Int?, dayOfMonth: Int?, timezone: String) {
+    private fun validateCadence(frequency: String, intervalDays: Int?, dayOfWeek: Int?, dayOfMonth: Int?, timezone: String) {
         require(timezone.isNotBlank() && runCatching { ZoneId.of(timezone) }.isSuccess) {
             "유효하지 않은 시간대입니다: $timezone"
         }
@@ -217,12 +226,18 @@ class RecurringScheduleUseCase(
         if (frequency == "MONTHLY") {
             require(dayOfMonth == null || dayOfMonth in 1..31) { "월간 게시일은 1일부터 31일까지 입력하세요." }
         }
+        if (frequency == "INTERVAL") {
+            require(intervalDays != null && intervalDays in 1..365) { "반복 간격은 1~365일 사이여야 합니다." }
+        } else {
+            require(intervalDays == null) { "intervalDays는 INTERVAL 빈도에서만 사용할 수 있습니다." }
+        }
     }
 
     private fun RecurringSchedule.toResponse() = RecurringScheduleResponse(
         id = id!!,
         name = name,
         frequency = frequency,
+        intervalDays = intervalDays,
         dayOfWeek = dayOfWeek,
         dayOfMonth = dayOfMonth,
         timeOfDay = timeOfDay,

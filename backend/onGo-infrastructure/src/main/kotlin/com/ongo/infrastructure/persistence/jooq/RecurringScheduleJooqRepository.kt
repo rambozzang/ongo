@@ -7,6 +7,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.DAY_OF_MONTH
 import com.ongo.infrastructure.persistence.jooq.Fields.DAY_OF_WEEK
 import com.ongo.infrastructure.persistence.jooq.Fields.DESCRIPTION_TEMPLATE
 import com.ongo.infrastructure.persistence.jooq.Fields.FREQUENCY
+import com.ongo.infrastructure.persistence.jooq.Fields.INTERVAL_DAYS
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.IS_ACTIVE
 import com.ongo.infrastructure.persistence.jooq.Fields.LAST_RUN_AT
@@ -76,6 +77,7 @@ class RecurringScheduleJooqRepository(
             .set(RECURRING_VIDEO_ID, schedule.videoId)
             .set(NAME, schedule.name)
             .set(FREQUENCY, schedule.frequency)
+            .set(INTERVAL_DAYS, schedule.intervalDays)
             .set(DAY_OF_WEEK, schedule.dayOfWeek)
             .set(DAY_OF_MONTH, schedule.dayOfMonth)
             .set(TIME_OF_DAY, schedule.timeOfDay)
@@ -98,6 +100,7 @@ class RecurringScheduleJooqRepository(
             .set(RECURRING_VIDEO_ID, schedule.videoId)
             .set(NAME, schedule.name)
             .set(FREQUENCY, schedule.frequency)
+            .set(INTERVAL_DAYS, schedule.intervalDays)
             .set(DAY_OF_WEEK, schedule.dayOfWeek)
             .set(DAY_OF_MONTH, schedule.dayOfMonth)
             .set(TIME_OF_DAY, schedule.timeOfDay)
@@ -150,6 +153,7 @@ class RecurringScheduleJooqRepository(
             videoId = get(RECURRING_VIDEO_ID),
             name = get(NAME),
             frequency = get(FREQUENCY),
+            intervalDays = get(INTERVAL_DAYS),
             dayOfWeek = get(DAY_OF_WEEK),
             dayOfMonth = get(DAY_OF_MONTH),
             timeOfDay = timeOfDay,

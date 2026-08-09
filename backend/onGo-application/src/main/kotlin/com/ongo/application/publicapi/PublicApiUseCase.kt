@@ -33,6 +33,8 @@ import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.contentsource.VideoSource
 import com.ongo.domain.workspace.Workspace
 import com.ongo.domain.workspace.WorkspaceRepository
+import com.ongo.domain.recurring.RecurringSchedule
+import com.ongo.domain.recurring.RecurringScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
@@ -58,6 +60,7 @@ class PublicApiUseCase(
     private val integrationToolPort: PlatformIntegrationToolPort,
     private val workspaceRepository: WorkspaceRepository,
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
+    private val recurringScheduleRepository: RecurringScheduleRepository,
 ) {
 
     private companion object {
@@ -235,18 +238,7 @@ class PublicApiUseCase(
                 return toResponse(existing)
             }
         }
-        if (request.shortLink) {
-            throw BusinessException(
-                "PUBLIC_POST_SHORT_LINK_UNSUPPORTED",
-                "shortLink은 onGo에 연결된 링크 단축 서비스가 설정된 경우에만 사용할 수 있습니다.",
-            )
-        }
-        if (request.inter != null) {
-            throw BusinessException(
-                "PUBLIC_POST_RECURRING_UNSUPPORTED",
-                "inter 기반 반복 게시 일정은 공개 API에서 지원하지 않습니다. 반복 일정 메뉴를 사용해주세요.",
-            )
-        }
+        require(request.inter == null || request.inter in 1..365) { "inter는 1~365일 사이여야 합니다" }
         if (!request.order.isNullOrBlank()) {
             throw BusinessException(
                 "PUBLIC_POST_ORDER_UNSUPPORTED",
@@ -288,6 +280,9 @@ class PublicApiUseCase(
         if (type == PublicApiPostType.UPDATE) {
             return updateExistingPost(userId, request, sourcePostIds)
         }
+        require(request.inter == null || type == PublicApiPostType.NOW || type == PublicApiPostType.SCHEDULE) {
+            "inter 기반 반복 게시에는 now 또는 schedule 타입이 필요합니다"
+        }
         val scheduledAt = request.date?.let(::parseDate)
         if (type == PublicApiPostType.SCHEDULE) {
             require(scheduledAt != null) { "schedule 게시에는 date가 필요합니다" }
@@ -321,6 +316,12 @@ class PublicApiUseCase(
         )
 
         if (type != PublicApiPostType.DRAFT) {
+            // Persist the durable continuation before queueing the first publish.
+            // A recurring-definition failure must never leave a first publish
+            // queued without the continuation promised by `inter`.
+            val intervalSchedule = request.inter?.let { intervalDays ->
+                createIntervalSchedule(userId, normalized, video, scheduledAt, intervalDays)
+            }
             try {
                 publishVideoUseCase.publishVideo(
                     userId = userId,
@@ -331,10 +332,47 @@ class PublicApiUseCase(
                     post.copy(status = if (type == PublicApiPostType.SCHEDULE) PublicApiPostStatus.SCHEDULED else PublicApiPostStatus.PROCESSING),
                 )
             } catch (e: RuntimeException) {
+                intervalSchedule?.id?.let { recurringScheduleRepository.delete(it) }
                 post = postRepository.update(post.copy(status = PublicApiPostStatus.FAILED, errorMessage = safeError(e)))
             }
         }
         return toResponse(post)
+    }
+
+    private fun createIntervalSchedule(
+        userId: Long,
+        request: CreatePublicPostRequest,
+        video: Video,
+        scheduledAt: LocalDateTime?,
+        intervalDays: Int,
+    ): RecurringSchedule {
+        val firstOccurrence = (scheduledAt ?: LocalDateTime.now(DOMAIN_ZONE)).plusDays(intervalDays.toLong())
+        val firstValue = request.posts.firstOrNull()?.value?.firstOrNull()
+        val targetKeys = request.posts.map { item ->
+            val channelId = item.integration.id.toLongOrNull()
+                ?: throw IllegalArgumentException("integration.id는 onGo 채널 ID여야 합니다")
+            val channel = channelRepository.findById(channelId)
+                ?.takeIf { it.userId == userId }
+                ?: throw NotFoundException("integration", item.integration.id)
+            "${channel.platform.name}#$channelId"
+        }.distinct()
+        return recurringScheduleRepository.save(
+            RecurringSchedule(
+                userId = userId,
+                videoId = video.id,
+                name = "Postiz interval ${intervalDays}일",
+                frequency = "INTERVAL",
+                intervalDays = intervalDays,
+                timeOfDay = firstOccurrence.toLocalTime(),
+                timezone = DOMAIN_ZONE.id,
+                platforms = targetKeys,
+                titleTemplate = firstValue?.title,
+                descriptionTemplate = firstValue?.description ?: firstValue?.content,
+                tags = firstValue?.tags.orEmpty(),
+                isActive = true,
+                nextRunAt = firstOccurrence,
+            ),
+        )
     }
 
     fun list(

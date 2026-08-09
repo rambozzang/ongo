@@ -29,11 +29,13 @@ export function useScheduleLabels() {
       DAILY: t('scheduleView.recurrence.daily'),
       WEEKLY: t('scheduleView.recurrence.weekly'),
       MONTHLY: t('scheduleView.recurrence.monthly'),
+      INTERVAL: 'N일마다',
     }
     const unitMap: Record<string, string> = {
       DAILY: t('scheduleView.recurrence.dayUnit'),
       WEEKLY: t('scheduleView.recurrence.weekUnit'),
       MONTHLY: t('scheduleView.recurrence.monthUnit'),
+      INTERVAL: '일',
     }
 
     const base =

@@ -510,7 +510,9 @@ function openSchedule(schedule: Schedule) {
 function recurringSummary(schedule: RecurringSchedule): string {
   const frequency = t(`redesign.calendar.recurringFrequency.${schedule.frequency}`)
   const day =
-    schedule.frequency === 'MONTHLY'
+    schedule.frequency === 'INTERVAL'
+      ? `${schedule.intervalDays ?? 1}일마다`
+      : schedule.frequency === 'MONTHLY'
       ? t('redesign.calendar.recurringDayOfMonth', { day: schedule.dayOfMonth ?? 1 })
       : schedule.frequency === 'WEEKLY' || schedule.frequency === 'BIWEEKLY'
         ? t(`redesign.calendar.weekdays.${WEEKDAY_KEYS[(schedule.dayOfWeek ?? 1) - 1]}`)

@@ -543,6 +543,7 @@ object Fields {
 
     // recurring_schedules
     val FREQUENCY = DSL.field("frequency", String::class.java)
+    val INTERVAL_DAYS = DSL.field("interval_days", Int::class.java)
     val DAY_OF_WEEK = DSL.field("day_of_week", Int::class.java)
     val DAY_OF_MONTH = DSL.field("day_of_month", Int::class.java)
     val TIME_OF_DAY = DSL.field("time_of_day", java.time.LocalTime::class.java)

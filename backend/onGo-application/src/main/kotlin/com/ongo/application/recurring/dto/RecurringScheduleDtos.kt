@@ -8,6 +8,7 @@ data class RecurringScheduleResponse(
     val videoId: Long?,
     val name: String,
     val frequency: String,
+    val intervalDays: Int?,
     val dayOfWeek: Int?,
     val dayOfMonth: Int?,
     val timeOfDay: LocalTime,
@@ -27,6 +28,7 @@ data class CreateRecurringScheduleRequest(
     val videoId: Long,
     val name: String,
     val frequency: String,
+    val intervalDays: Int? = null,
     val dayOfWeek: Int? = null,
     val dayOfMonth: Int? = null,
     val timeOfDay: String, // HH:mm format
@@ -42,6 +44,7 @@ data class UpdateRecurringScheduleRequest(
     val videoId: Long? = null,
     val name: String? = null,
     val frequency: String? = null,
+    val intervalDays: Int? = null,
     val dayOfWeek: Int? = null,
     val dayOfMonth: Int? = null,
     val timeOfDay: String? = null,
