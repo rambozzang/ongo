@@ -230,10 +230,17 @@ class VideoUploadChannelTargetIT {
         assertEquals(meta.id, videoPlatformMetaRepository.findByVideoUploadId(upload.id!!)!!.id)
 
         val now = LocalDateTime.now()
-        val scheduled = videoUploadRepository.update(upload.copy(scheduledAt = now.minusMinutes(1)))
+        val scheduled = videoUploadRepository.update(
+            upload.copy(
+                scheduledAt = now.minusMinutes(1),
+                nextRetryAt = now.plusMinutes(5),
+            ),
+        )
+        assertEquals(0, videoUploadRepository.findDueScheduledUploads(now).size)
+        val dueScheduled = videoUploadRepository.update(scheduled.copy(nextRetryAt = now.minusSeconds(1)))
         assertEquals(1, videoUploadRepository.findDueScheduledUploads(now).size)
         val retryQueued = videoUploadRepository.update(
-            scheduled.copy(
+            dueScheduled.copy(
                 scheduledAt = null,
                 nextRetryAt = now.minusSeconds(1),
             ),

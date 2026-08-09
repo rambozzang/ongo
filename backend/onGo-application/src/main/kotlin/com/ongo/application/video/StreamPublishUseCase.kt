@@ -341,6 +341,8 @@ class StreamPublishUseCase(
     ) {
         val openedWriters = mutableListOf<PlatformStreamWriter>()
         val leaseOwners = ConcurrentHashMap<Long, String>()
+        val initializedContexts = ConcurrentHashMap.newKeySet<StreamPlatformContext>()
+        val externalAttemptedContexts = ConcurrentHashMap.newKeySet<StreamPlatformContext>()
         try {
             // 각 플랫폼별 writer 생성
             val writerMap: Map<StreamPlatformContext, PlatformStreamWriter> = platformContexts.mapNotNull { ctx ->
@@ -404,6 +406,7 @@ class StreamPublishUseCase(
                     try {
                         future.get()
                         activeWriterMap[ctx] = writerMap[ctx]!!
+                        initializedContexts += ctx
                     } catch (e: Exception) {
                         log.error("플랫폼 {} 세션 초기화 실패: videoId={}", ctx.platform, videoId, e)
                         val owner = leaseOwners[ctx.videoUploadId]
@@ -486,6 +489,10 @@ class StreamPublishUseCase(
                             val platformSemaphore = ExecutorConfig.platformUploadSemaphore(ctx.platform)
                             platformSemaphore.acquire()
                             val result = try {
+                                // complete() is the first point at which these writers
+                                // call the provider. If the surrounding workflow fails
+                                // after this point, the final state is indeterminate.
+                                externalAttemptedContexts += ctx
                                 if (distributedLockPort == null) {
                                     writer.complete()
                                 } else {
@@ -565,12 +572,30 @@ class StreamPublishUseCase(
             }
         } catch (e: Exception) {
             log.error("스트리밍 업로드 전체 실패: videoId={}", videoId, e)
-            platformContexts.forEach { ctx ->
+            initializedContexts.forEach { ctx ->
+                val owner = leaseOwners[ctx.videoUploadId]
+                if (owner == null) {
+                    log.warn(
+                        "스트리밍 실패 후 lease 소유자를 확인할 수 없어 상태를 덮어쓰지 않습니다: uploadId={}",
+                        ctx.videoUploadId,
+                    )
+                    return@forEach
+                }
+                val status = if (ctx in externalAttemptedContexts) {
+                    UploadStatus.UNCONFIRMED
+                } else {
+                    UploadStatus.FAILED
+                }
+                val message = if (status == UploadStatus.UNCONFIRMED) {
+                    "게시 결과 확인 필요: ${e.message}"
+                } else {
+                    "스트리밍 처리 실패: ${e.message}"
+                }
                 updateUploadStatus(
                     ctx.videoUploadId,
-                    UploadStatus.UNCONFIRMED,
-                    "게시 결과 확인 필요: ${e.message}",
-                    leaseOwner = leaseOwners[ctx.videoUploadId],
+                    status,
+                    message,
+                    leaseOwner = owner,
                 )
             }
         } finally {

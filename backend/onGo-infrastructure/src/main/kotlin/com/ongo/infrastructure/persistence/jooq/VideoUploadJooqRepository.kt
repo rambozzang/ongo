@@ -246,6 +246,7 @@ class VideoUploadJooqRepository(
             .from(VIDEO_UPLOADS)
             .where(VIDEO_SCHEDULED_AT.isNotNull.and(VIDEO_SCHEDULED_AT.le(now)))
             .and(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
+            .and(VIDEO_NEXT_RETRY_AT.isNull.or(VIDEO_NEXT_RETRY_AT.le(now)))
             .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
             .orderBy(VIDEO_SCHEDULED_AT.asc())
             .fetch()
