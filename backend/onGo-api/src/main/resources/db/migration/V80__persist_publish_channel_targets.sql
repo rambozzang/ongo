@@ -6,12 +6,21 @@ ALTER TABLE video_uploads
 -- Existing rows are associated with the account that was active when the
 -- upload was created. Rows for already-disconnected channels remain nullable
 -- and continue through the legacy platform fallback path.
-UPDATE video_uploads vu
-SET channel_id = c.id
-FROM videos v
-JOIN channels c ON c.user_id = v.user_id AND c.platform::text = vu.platform::text
-WHERE vu.video_id = v.id
-  AND vu.channel_id IS NULL;
+-- PostgreSQL does not allow the target UPDATE alias (vu) to be referenced from
+-- a JOIN ... ON clause in the FROM list. Use a scalar subquery instead. Also
+-- leave ambiguous legacy rows unassigned: before channel_id was persisted we
+-- cannot know which of several same-provider accounts was used, and guessing
+-- would make the historical publication point to the wrong account.
+UPDATE video_uploads AS vu
+SET channel_id = (
+    SELECT MIN(c.id)
+    FROM videos AS v
+    JOIN channels AS c ON c.user_id = v.user_id
+                       AND c.platform::text = vu.platform::text
+    WHERE v.id = vu.video_id
+    HAVING COUNT(*) = 1
+)
+WHERE vu.channel_id IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_video_uploads_channel_id ON video_uploads(channel_id);
 
