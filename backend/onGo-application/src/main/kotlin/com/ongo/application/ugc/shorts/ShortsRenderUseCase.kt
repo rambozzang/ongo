@@ -73,7 +73,10 @@ class ShortsRenderUseCase(
         // 다른 워크스페이스의 실행을 렌더하지 못하게 막는다. 경로에 runId 가 노출되므로
         // 소속을 확인하지 않으면 남의 클립을 인코딩시킬 수 있다.
         val run = runRepository.findById(runId) ?: throw NotFoundException("파이프라인 실행", runId)
-        require(run.workspaceId == workspaceId) { "실행이 이 워크스페이스에 속하지 않는다: runId=$runId" }
+        if (run.workspaceId != workspaceId) {
+            // 경로에 runId가 노출되므로 다른 워크스페이스의 존재 여부도 숨긴다.
+            throw NotFoundException("파이프라인 실행", runId)
+        }
 
         val clip = clipRepository.findById(clipId)
             ?: throw NotFoundException("클립", clipId)
@@ -92,7 +95,9 @@ class ShortsRenderUseCase(
     fun status(userId: Long, workspaceId: Long, runId: Long, clipId: Long): ShortsRenderJob {
         assertWorkspaceAccess(userId, workspaceId)
         val run = runRepository.findById(runId) ?: throw NotFoundException("파이프라인 실행", runId)
-        require(run.workspaceId == workspaceId) { "실행이 이 워크스페이스에 속하지 않는다: runId=$runId" }
+        if (run.workspaceId != workspaceId) {
+            throw NotFoundException("파이프라인 실행", runId)
+        }
 
         val job = renderJobRepository.findByRunAndClip(runId, clipId)
             ?: throw NotFoundException("렌더 작업", clipId)

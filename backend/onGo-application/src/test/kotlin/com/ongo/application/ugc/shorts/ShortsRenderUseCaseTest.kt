@@ -8,6 +8,7 @@ import com.ongo.domain.ugc.shorts.ShortsTemplateRepository
 import com.ongo.domain.ugc.shorts.VideoRenderer
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.workspace.WorkspaceRepository
+import com.ongo.domain.workspace.Workspace
 import io.mockk.every
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -55,6 +56,25 @@ class ShortsRenderUseCaseTest {
         }
 
         verify(exactly = 0) { runRepository.findById(any()) }
+        verify(exactly = 0) { renderJobRepository.findByRunAndClip(any(), any()) }
+    }
+
+    @Test
+    fun `렌더 실행이 다른 워크스페이스에 속하면 존재 여부를 노출하지 않고 거부한다`() {
+        every { workspaceRepository.findAccessibleByUserId(7L) } returns listOf(
+            Workspace(id = 11L, ownerId = 7L, name = "내 워크스페이스", slug = "mine"),
+        )
+        every { runRepository.findById(31L) } returns com.ongo.domain.ugc.shorts.PipelineRun(
+            id = 31L,
+            workspaceId = 99L,
+            userId = 8L,
+            sourceVideoId = 41L,
+        )
+
+        assertFailsWith<NotFoundException> {
+            useCase.status(userId = 7L, workspaceId = 11L, runId = 31L, clipId = 41L)
+        }
+
         verify(exactly = 0) { renderJobRepository.findByRunAndClip(any(), any()) }
     }
 }

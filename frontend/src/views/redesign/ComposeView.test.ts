@@ -12,6 +12,7 @@ import { subtitleEditorApi } from '@/api/subtitleEditor'
 import { videoApi } from '@/api/video'
 import { ugcShortsPipelineApi } from '@/api/ugcShortsPipeline'
 import { useUploadStore } from '@/stores/upload'
+import { useWorkspaceStore } from '@/stores/workspace'
 import koMessages from '@/locales/ko/common.json'
 
 vi.mock('@/api/ai', () => ({
@@ -28,7 +29,10 @@ vi.mock('@/api/subtitleEditor', () => ({
   subtitleEditorApi: { listTracksByVideo: vi.fn(), createTrack: vi.fn() },
 }))
 vi.mock('@/api/ugcShortsPipeline', () => ({
-  ugcShortsPipelineApi: { getRenderAvailability: vi.fn() },
+  ugcShortsPipelineApi: {
+    getRenderAvailability: vi.fn(), create: vi.fn(), get: vi.fn(), selectHooks: vi.fn(),
+    startRender: vi.fn(), getRenderStatus: vi.fn(), confirmSchedule: vi.fn(),
+  },
 }))
 vi.mock('@/api/video', () => ({
   videoApi: {
@@ -173,5 +177,52 @@ describe('ComposeView', () => {
 
     expect(videoApi.publish).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('서버 렌더러가 준비되지 않았습니다.')
+  })
+
+  it('runs the automatic Shorts pipeline after the original multi-channel publish', async () => {
+    vi.mocked(ugcShortsPipelineApi.getRenderAvailability).mockResolvedValue({ available: true, reason: null })
+    vi.mocked(ugcShortsPipelineApi.create).mockResolvedValue({ id: 77 } as never)
+    vi.mocked(ugcShortsPipelineApi.get)
+      .mockResolvedValueOnce({
+        run: { id: 77, status: 'AWAITING_HOOK_SELECTION', currentStage: null },
+        clips: [{ id: 501, status: 'DRAFT', hooks: [{ variant: 'A', text: '후킹', selected: false }] }],
+      } as never)
+      .mockResolvedValueOnce({
+        run: { id: 77, status: 'AWAITING_SCHEDULE', currentStage: null },
+        clips: [{ id: 501, status: 'READY', hooks: [] }],
+      } as never)
+      .mockResolvedValueOnce({
+        run: { id: 77, status: 'COMPLETED', currentStage: null },
+        clips: [{ id: 501, status: 'PUBLISHED', hooks: [] }],
+      } as never)
+    vi.mocked(ugcShortsPipelineApi.selectHooks).mockResolvedValue({ id: 77 } as never)
+    vi.mocked(ugcShortsPipelineApi.startRender).mockResolvedValue({ renderJobId: 'render-1' })
+    vi.mocked(ugcShortsPipelineApi.getRenderStatus).mockResolvedValue({
+      status: 'COMPLETED', progress: 100, videoId: 901, failureReason: null,
+    })
+    vi.mocked(ugcShortsPipelineApi.confirmSchedule).mockResolvedValue({ id: 77 } as never)
+
+    const { wrapper } = await renderCompose()
+    const uploadStore = useUploadStore()
+    uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    uploadStore.videoId = 101
+    const workspaceStore = useWorkspaceStore()
+    workspaceStore.workspaces = [{ id: 7 } as never]
+    workspaceStore.activeWorkspaceId = 7
+
+    const submit = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    expect(submit).toBeDefined()
+    await submit!.trigger('click')
+    await flushPromises()
+
+    expect(videoApi.publish).toHaveBeenCalledOnce()
+    expect(ugcShortsPipelineApi.create).toHaveBeenCalledWith(7, { sourceVideoId: 101, templateId: null })
+    expect(ugcShortsPipelineApi.selectHooks).toHaveBeenCalledWith(7, 77, {
+      selections: [{ clipId: 501, variant: 'A' }], discardClipIds: [],
+    })
+    expect(ugcShortsPipelineApi.startRender).toHaveBeenCalledWith(7, 77, 501)
+    expect(ugcShortsPipelineApi.confirmSchedule).toHaveBeenCalledWith(7, 77, expect.objectContaining({
+      platforms: ['YOUTUBE', 'INSTAGRAM'],
+    }))
   })
 })

@@ -16,6 +16,7 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
   // State
   const logs = ref<ActivityLog[]>([])
   const isLoading = ref(false)
+  const loadError = ref<string | null>(null)
   const page = ref(0)
   const pageSize = ref(20)
   const totalCount = ref(0)
@@ -33,6 +34,7 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
   // Actions
   async function fetchLogs() {
     isLoading.value = true
+    loadError.value = null
     try {
       const result = await activityLogApi.list({ page: page.value, size: pageSize.value })
       totalCount.value = result.totalElements ?? 0
@@ -51,9 +53,10 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
       } else {
         logs.value = []
       }
-    } catch {
-      // API failed — show empty list
-      logs.value = []
+    } catch (error) {
+      // 장애를 빈 타임라인으로 위장하지 않는다. 마지막으로 확인된 로그를
+      // 유지하고 화면에서 재시도할 수 있게 한다.
+      loadError.value = error instanceof Error ? error.message : '활동 로그를 불러오지 못했습니다.'
     } finally {
       isLoading.value = false
     }
@@ -278,6 +281,7 @@ export const useActivityLogsStore = defineStore('activityLogs', () => {
     // State
     logs,
     isLoading,
+    loadError,
     page,
     pageSize,
     totalCount,

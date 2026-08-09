@@ -1,5 +1,11 @@
 <template>
   <div>
+    <div v-if="inboxStore.loadError" class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-4 py-3 text-body-sm text-error-strong" role="alert">
+      <span class="min-w-0 flex-1">{{ inboxStore.loadError }}</span>
+      <button type="button" class="btn-secondary shrink-0" :disabled="inboxStore.loading" @click="inboxStore.initMessages()">
+        {{ $t('action.retry') }}
+      </button>
+    </div>
     <!-- 필터 -->
     <div class="mb-4 flex flex-wrap gap-3 items-center">
       <div class="flex items-center gap-2 flex-1 min-w-[200px]">

@@ -33,16 +33,19 @@ export const useInboxStore = defineStore('inbox', () => {
   const selectedMessageIds = ref<Set<number>>(new Set())
 
   const loading = ref(false)
+  const loadError = ref<string | null>(null)
 
   // Load messages from the real API
   const initMessages = async () => {
     loading.value = true
+    loadError.value = null
     try {
       const response = await inboxApi.listMessages({ page: 0, size: 100 })
       messages.value = response.messages.map(mapApiMessage)
-    } catch {
-      // API failed — show empty list
-      messages.value = []
+    } catch (error) {
+      // 통신 장애를 빈 인박스로 위장하지 않는다. 마지막으로 확인된 메시지는
+      // 유지하고 화면에 재시도 가능한 상태를 노출한다.
+      loadError.value = error instanceof Error ? error.message : '메시지를 불러오지 못했습니다.'
     } finally {
       loading.value = false
     }
@@ -221,6 +224,7 @@ export const useInboxStore = defineStore('inbox', () => {
     selectedMessageId,
     selectedMessageIds,
     loading,
+    loadError,
     // Getters
     filteredMessages,
     unreadCount,

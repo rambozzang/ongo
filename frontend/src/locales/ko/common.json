@@ -2833,6 +2833,7 @@
     "hubTitle": "소통 허브",
     "hubDescription": "댓글과 메시지를 한 곳에서 확인하고 응대하세요.",
     "confirmDeleteTitle": "메시지를 삭제할까요?",
+    "loadFailed": "메시지를 불러오지 못했습니다. 마지막으로 확인된 목록을 유지하고 있습니다.",
     "tabs": {
       "comments": "댓글",
       "messages": "메시지"

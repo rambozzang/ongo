@@ -25,7 +25,7 @@ const activityLogsStore = useActivityLogsStore()
 
 const {
   isLoading, filter, customDateRange, groupedByDate, actionCounts, uniqueUsers,
-  page, pageSize, totalCount, totalPages, hasNextPage, hasPrevPage,
+  page, pageSize, totalCount, totalPages, hasNextPage, hasPrevPage, loadError,
 } = storeToRefs(activityLogsStore)
 
 // Summary cards showing today's activity counts
@@ -113,6 +113,13 @@ onMounted(() => {
     </PageHeader>
 
     <PageGuide :title="$t('activityLog.pageGuideTitle')" :items="($tm('activityLog.pageGuide') as string[])" />
+
+    <div v-if="loadError" class="flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-4 py-3 text-body-sm text-error-strong" role="alert">
+      <span class="min-w-0 flex-1">{{ loadError }}</span>
+      <button type="button" class="btn-secondary shrink-0" :disabled="isLoading" @click="activityLogsStore.fetchLogs()">
+        {{ $t('action.retry') }}
+      </button>
+    </div>
 
     <!-- Today's activity summary cards -->
     <div class="grid gap-2.5 tablet:grid-cols-3 desktop:grid-cols-6">
