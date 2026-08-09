@@ -28,6 +28,8 @@ class SecurityConfig(
     private val environment: Environment,
     @org.springframework.beans.factory.annotation.Value("\${cors.allowed-origins:*}")
     private val allowedOrigins: String,
+    @org.springframework.beans.factory.annotation.Value("\${APP_BASE_URL:}")
+    private val appBaseUrl: String,
 ) {
 
     @Bean
@@ -96,7 +98,7 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOriginPatterns = allowedOrigins.split(",").map { it.trim() }
+        configuration.allowedOriginPatterns = effectiveAllowedOrigins().split(",").map { it.trim() }
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
         configuration.allowedHeaders = listOf(
             "Authorization", "X-API-Key", "Content-Type", "Accept", "X-Requested-With", "Origin",
@@ -109,4 +111,7 @@ class SecurityConfig(
         source.registerCorsConfiguration("/**", configuration)
         return source
     }
+
+    private fun effectiveAllowedOrigins(): String =
+        allowedOrigins.ifBlank { appBaseUrl }
 }

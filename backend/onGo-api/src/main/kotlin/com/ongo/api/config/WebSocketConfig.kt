@@ -22,6 +22,7 @@ import java.security.Principal
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
     @Value("\${cors.allowed-origins}") private val allowedOrigins: String,
+    @Value("\${APP_BASE_URL:}") private val appBaseUrl: String,
     private val authTokenPort: AuthTokenPort,
     private val tokenBlacklist: TokenBlacklistPort,
 ) : WebSocketMessageBrokerConfigurer {
@@ -32,11 +33,14 @@ class WebSocketConfig(
     }
 
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
-        val origins = allowedOrigins.split(",").map { it.trim() }.toTypedArray()
+        val origins = effectiveAllowedOrigins().split(",").map { it.trim() }.toTypedArray()
         registry.addEndpoint("/ws")
             .setAllowedOriginPatterns(*origins)
             .withSockJS()
     }
+
+    private fun effectiveAllowedOrigins(): String =
+        allowedOrigins.ifBlank { appBaseUrl }
 
     override fun configureWebSocketTransport(registration: WebSocketTransportRegistration) {
         registration.setMessageSizeLimit(128 * 1024)

@@ -1303,6 +1303,7 @@ async function submit() {
   notice.value = ''
   let publishCompleted = false
   let recurringFailure = ''
+  let shortsFailure = ''
   try {
     // 쇼츠를 선택한 상태에서 렌더러가 내려가 있으면 원본만 먼저 게시하지 않는다.
     // 그래야 사용자가 한 번의 작업으로 원본과 쇼츠가 함께 처리될 것이라는 기대를
@@ -1405,10 +1406,19 @@ async function submit() {
     // Shorts is an optional follow-up. A Facebook/X-only post must still be
     // considered successful when no selected channel can host a vertical clip.
     if (shortsEnabled.value && shortsPlatforms.value.length > 0) {
-      await publishAutomaticShorts(sourceVideoId)
+      try {
+        await publishAutomaticShorts(sourceVideoId)
+      } catch (error) {
+        // 원본 게시와 반복 게시가 끝난 뒤의 쇼츠 파이프라인 장애도
+        // 이미 성공한 작업을 실패로 오인하게 만들거나 재전송하게 하지 않는다.
+        shortsFailure = error instanceof Error ? error.message : t('redesign.compose.shortsFailed')
+      }
     }
-    if (recurringFailure) {
-      notice.value = t('redesign.compose.partialActionFailed', { error: recurringFailure })
+    const followUpFailures = [recurringFailure, shortsFailure].filter(Boolean)
+    if (followUpFailures.length > 0) {
+      notice.value = t('redesign.compose.partialActionFailed', {
+        error: followUpFailures.join(' · '),
+      })
       return
     }
     notice.value = t('redesign.compose.scheduled')

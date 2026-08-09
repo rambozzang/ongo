@@ -19,6 +19,7 @@ class ProductionConfigurationValidator(
     @Value("\${jwt.secret:}") private val jwtSecret: String,
     @Value("\${platform.token.encryption-key:}") private val platformEncryptionKey: String,
     @Value("\${cors.allowed-origins:}") private val allowedOrigins: String,
+    @Value("\${APP_BASE_URL:}") private val appBaseUrl: String,
     @Value("\${storage.type:}") private val storageType: String,
     @Value("\${storage.bucket:}") private val storageBucket: String,
     @Value("\${storage.s3.endpoint:}") private val storageEndpoint: String,
@@ -53,8 +54,9 @@ class ProductionConfigurationValidator(
             "platform.token.encryption-key must decode to exactly 32 bytes"
         }
 
-        requireReal("cors.allowed-origins", allowedOrigins)
-        require(!allowedOrigins.split(',').any { it.trim() == "*" || it.contains("localhost") }) {
+        val effectiveAllowedOrigins = allowedOrigins.ifBlank { appBaseUrl }
+        requireReal("cors.allowed-origins (or APP_BASE_URL)", effectiveAllowedOrigins)
+        require(!effectiveAllowedOrigins.split(',').any { it.trim() == "*" || it.contains("localhost") }) {
             "cors.allowed-origins must not contain '*' or localhost in production"
         }
 

@@ -363,4 +363,32 @@ describe('ComposeView', () => {
     expect(ugcShortsPipelineApi.startRender).not.toHaveBeenCalled()
     expect(ugcShortsPipelineApi.confirmSchedule).not.toHaveBeenCalled()
   })
+
+  it('still runs Shorts when the optional recurring schedule fails', async () => {
+    vi.mocked(ugcShortsPipelineApi.getRenderAvailability).mockResolvedValue({ available: true, reason: null })
+    vi.mocked(ugcShortsPipelineApi.create).mockResolvedValue({ id: 78 } as never)
+    vi.mocked(ugcShortsPipelineApi.get).mockResolvedValueOnce({
+      run: { id: 78, status: 'COMPLETED', currentStage: null },
+      clips: [],
+    } as never)
+    vi.mocked(recurringApi.create).mockRejectedValue(new Error('반복 게시 서버 장애'))
+
+    const { wrapper } = await renderCompose()
+    const uploadStore = useUploadStore()
+    uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    uploadStore.videoId = 101
+    const workspaceStore = useWorkspaceStore()
+    workspaceStore.workspaces = [{ id: 7 } as never]
+    workspaceStore.activeWorkspaceId = 7
+
+    const checkboxes = wrapper.findAll('input[type="checkbox"]')
+    await checkboxes[checkboxes.length - 1]!.setValue(true)
+    const submit = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    await submit!.trigger('click')
+    await flushPromises()
+
+    expect(recurringApi.create).toHaveBeenCalledOnce()
+    expect(ugcShortsPipelineApi.create).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain('반복 게시 서버 장애')
+  })
 })
