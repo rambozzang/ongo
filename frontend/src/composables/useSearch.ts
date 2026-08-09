@@ -64,8 +64,6 @@ const pageEntries: PageEntry[] = [
   { id: 'p15', title: '영상 비교', group: '분석', route: '/analytics/compare', keywords: 'compare 비교 크로스' },
   { id: 'p16', title: '수익', group: '분석', route: '/revenue', keywords: 'revenue 매출 정산 수입' },
   { id: 'p18', title: '채널 오디트', group: '분석 · 경쟁사/벤치마크', route: '/channel-audit', keywords: 'channel audit 진단 점검' },
-  { id: 'p19', title: '키워드 리서치', group: '분석 · 성장/트렌드', route: '/keyword-research', keywords: 'keyword research seo 검색어' },
-  { id: 'p20', title: '트렌드', group: '분석 · 성장/트렌드', route: '/trends', keywords: 'trends 트렌드 인기 급상승' },
   { id: 'p22', title: '소통 허브 (댓글 · 메시지)', group: '오디언스', route: '/inbox', keywords: 'inbox 메시지 dm comments 댓글 코멘트 답글' },
   { id: 'p23', title: '알림', group: '오디언스', route: '/notifications', keywords: 'notifications 알림함' },
   { id: 'p24', title: '오디언스', group: '오디언스', route: '/audience', keywords: 'audience crm 구독자 팬 세그먼트' },

@@ -17,12 +17,10 @@ import {
   BookOpenIcon,
   ShieldCheckIcon,
   ClipboardDocumentCheckIcon,
-  MagnifyingGlassIcon,
   MegaphoneIcon,
   HandRaisedIcon,
   BoltIcon,
   PhotoIcon,
-  ArrowTrendingUpIcon,
   IdentificationIcon,
   BriefcaseIcon,
   GlobeAltIcon,
@@ -140,15 +138,7 @@ export function useNavigation() {
         { to: '/today', label: t('redesign.nav.today'), icon: HomeIcon },
       ],
     },
-    // ── 2. 기획: 유입부터 제작 결정을 돕는 기능 ──
-    {
-      label: t('nav.groupPlan'),
-      items: [
-        { to: '/keyword-research', label: t('nav.keywordResearch'), icon: MagnifyingGlassIcon },
-        { to: '/trends', label: t('nav.trends'), icon: ArrowTrendingUpIcon },
-      ],
-    },
-    // ── 3. 콘텐츠 제작: 가장 빈번하고 유료 전환에 직접 연결되는 흐름 ──
+    // ── 2. 콘텐츠 제작: 가장 빈번하고 유료 전환에 직접 연결되는 흐름 ──
     {
       label: t('nav.groupCreate'),
       items: [

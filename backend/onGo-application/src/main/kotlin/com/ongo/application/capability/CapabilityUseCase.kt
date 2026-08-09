@@ -20,8 +20,6 @@ class CapabilityUseCase {
             AppCapability("templates"),
             AppCapability("brandkit"),
             AppCapability("assets"),
-            AppCapability("keyword-research"),
-            AppCapability("trends"),
             AppCapability("calendar-v2"),
             AppCapability("automation"),
             AppCapability("channels-v2"),

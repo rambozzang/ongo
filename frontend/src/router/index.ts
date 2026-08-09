@@ -366,7 +366,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'trends',
         name: 'trends',
-        component: () => import('@/views/TrendView.vue'),
+        redirect: '/today',
         meta: { breadcrumb: '트렌드 모니터링' },
       },
       {
@@ -378,7 +378,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'keyword-research',
         name: 'keyword-research',
-        component: () => import('@/views/KeywordResearchView.vue'),
+        redirect: '/today',
         meta: { breadcrumb: '키워드 리서치' },
       },
       {
