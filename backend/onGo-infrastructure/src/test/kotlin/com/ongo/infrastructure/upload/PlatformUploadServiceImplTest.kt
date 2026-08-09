@@ -281,6 +281,57 @@ class PlatformUploadServiceImplTest {
     }
 
     @Test
+    fun `429는 Retry-After를 존중해 재시도하고 성공하면 게시 결과를 반환한다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channels = mockk<ChannelRepository>()
+        val encryption = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+        val retryHeaders = HttpHeaders().apply { set("Retry-After", "1") }
+        val rateLimited = HttpClientErrorException.create(
+            HttpStatus.TOO_MANY_REQUESTS,
+            "Too Many Requests",
+            retryHeaders,
+            ByteArray(0),
+            Charsets.UTF_8,
+        )
+        var attempts = 0
+
+        every { factory.getClient(Platform.YOUTUBE) } returns client
+        every { channels.findByUserIdAndPlatform(7L, Platform.YOUTUBE) } returns channel()
+        every { encryption.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("plain-token")
+        every { client.uploadVideo(any()) } answers {
+            attempts++
+            if (attempts == 1) throw rateLimited
+            ClientUploadResult(
+                platformVideoId = "video-429-recovered",
+                platformUrl = "https://youtube.com/watch?v=video-429-recovered",
+                status = "PUBLISHED",
+            )
+        }
+
+        val result = PlatformUploadServiceImpl(factory, channels, encryption, emptyList()).upload(
+            config = PlatformUploadConfig(
+                platform = Platform.YOUTUBE,
+                videoUploadId = 10L,
+                title = "제목",
+                description = null,
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC,
+                thumbnailUrl = null,
+                fileSize = 100,
+                scheduledAt = null,
+            ),
+            fileUrl = "https://storage.example/video.mp4",
+            userId = 7L,
+        )
+
+        assertThat(attempts).isEqualTo(2)
+        assertThat(result.success).isTrue()
+        assertThat(result.published).isTrue()
+        assertThat(result.platformVideoId).isEqualTo("video-429-recovered")
+    }
+
+    @Test
     fun `타임아웃은 중복 게시 방지를 위해 확인 불가 결과로 남긴다`() {
         val factory = mockk<PlatformClientFactory>()
         val channels = mockk<ChannelRepository>()
