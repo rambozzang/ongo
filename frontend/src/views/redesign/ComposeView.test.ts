@@ -288,6 +288,26 @@ describe('ComposeView', () => {
     expect(aiApi.generateMeta).toHaveBeenCalledWith(expect.objectContaining({ videoId: 202 }))
   })
 
+  it('keeps automatic captions available after importing a source URL', async () => {
+    vi.mocked(videoApi.getImportAvailability).mockResolvedValue({ available: true, reason: null } as never)
+    vi.mocked(videoApi.importUrl).mockResolvedValue({
+      videoId: 303,
+      title: '가져온 영상',
+      provider: 'YouTube',
+    } as never)
+    const { wrapper } = await renderCompose()
+
+    const urlSource = wrapper.findAll('button').find((button) => button.text() === 'URL 가져오기')
+    await urlSource!.trigger('click')
+    await wrapper.get('#source-video-url').setValue('https://youtu.be/example')
+    await wrapper.findAll('button').find((button) => button.text() === '가져오기')!.trigger('click')
+    await flushPromises()
+
+    const caption = wrapper.findAll('button').find((button) => button.text() === '자동 자막')
+    expect(caption).toBeDefined()
+    expect(caption!.attributes('disabled')).toBeUndefined()
+  })
+
   it('does not allow saving while the server upload is still running', async () => {
     const { wrapper } = await renderCompose()
     const uploadStore = useUploadStore()

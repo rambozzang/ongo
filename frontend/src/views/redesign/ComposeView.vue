@@ -34,14 +34,19 @@
           </p>
           <p class="mt-1 font-mono text-[10.5px] text-content-tertiary">{{ fileMeta }}</p>
         </div>
-        <div v-if="sourceMode === 'file'" class="flex shrink-0 items-center gap-2">
-          <button type="button" class="btn-secondary !text-[11px]" @click="pickFile">
+        <div class="flex shrink-0 items-center gap-2">
+          <button
+            v-if="sourceMode === 'file'"
+            type="button"
+            class="btn-secondary !text-[11px]"
+            @click="pickFile"
+          >
             {{ t('redesign.compose.replace') }}
           </button>
           <button
             type="button"
             class="btn-secondary !text-[11px]"
-            :disabled="captioning"
+            :disabled="captioning || (!importedVideoId && !uploadStore.videoId)"
             @click="requestCaptions"
           >
             {{ captioning ? t('redesign.compose.captioning') : t('redesign.compose.autoCaption') }}
@@ -70,14 +75,25 @@
               <option value="horizontal">{{ t('redesign.compose.generateHorizontal') }}</option>
             </select>
           </label>
-          <button
-            type="button"
-            class="btn-primary shrink-0 !text-[11px]"
-            :disabled="generating || !generationPrompt.trim()"
-            @click="generateVideo"
-          >
-            {{ generating ? t('redesign.compose.generating') : t('redesign.compose.generateAction') }}
-          </button>
+          <div class="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              class="btn-primary !text-[11px]"
+              :disabled="generating || !generationPrompt.trim()"
+              @click="generateVideo"
+            >
+              {{ generating ? t('redesign.compose.generating') : t('redesign.compose.generateAction') }}
+            </button>
+            <button
+              v-if="importedVideoId"
+              type="button"
+              class="btn-secondary !text-[11px]"
+              :disabled="captioning"
+              @click="requestCaptions"
+            >
+              {{ captioning ? t('redesign.compose.captioning') : t('redesign.compose.autoCaption') }}
+            </button>
+          </div>
         </div>
         <p class="mt-2 text-[10.5px] leading-4 text-content-tertiary">
           {{ t('redesign.compose.generateHint') }}
