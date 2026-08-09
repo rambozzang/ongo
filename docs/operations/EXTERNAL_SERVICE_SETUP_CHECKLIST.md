@@ -29,7 +29,8 @@
 | Toss webhook (레거시) | `https://ongo.codelabtiger.com/api/v1/payments/webhook` |
 | 개인정보처리방침 | `https://ongo.codelabtiger.com/privacy` 또는 실제 공개 URL |
 | 이용약관 | `https://ongo.codelabtiger.com/terms` 또는 실제 공개 URL |
-| 계정/데이터 삭제 안내 | 실제 공개 URL을 새로 준비해야 함 |
+| 계정/데이터 삭제 안내 | `https://ongo.codelabtiger.com/data-deletion` |
+| 고객지원 | `https://ongo.codelabtiger.com/support` |
 
 로컬 callback은 프런트의 실제 포트에 맞춰 다음을 사용한다.
 

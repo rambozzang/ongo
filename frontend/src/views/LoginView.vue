@@ -117,10 +117,10 @@
           class="mt-8 text-center text-body-xs leading-relaxed text-gray-400 dark:text-gray-500"
         >
           <template #terms>
-            <a href="#" class="text-gray-500 dark:text-gray-400 underline transition-colors hover:text-gray-700 dark:hover:text-gray-300">{{ $t('loginView.termsOfService') }}</a>
+            <RouterLink to="/terms" class="text-gray-500 dark:text-gray-400 underline transition-colors hover:text-gray-700 dark:hover:text-gray-300">{{ $t('loginView.termsOfService') }}</RouterLink>
           </template>
           <template #privacy>
-            <a href="#" class="text-gray-500 dark:text-gray-400 underline transition-colors hover:text-gray-700 dark:hover:text-gray-300">{{ $t('loginView.privacyPolicy') }}</a>
+            <RouterLink to="/privacy" class="text-gray-500 dark:text-gray-400 underline transition-colors hover:text-gray-700 dark:hover:text-gray-300">{{ $t('loginView.privacyPolicy') }}</RouterLink>
           </template>
         </i18n-t>
       </div>

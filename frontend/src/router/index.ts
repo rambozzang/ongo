@@ -15,6 +15,36 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/terms',
+    name: 'terms',
+    component: () => import('@/views/LegalView.vue'),
+    meta: { requiresAuth: false, allowAuthenticated: true, document: 'terms' },
+  },
+  {
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('@/views/LegalView.vue'),
+    meta: { requiresAuth: false, allowAuthenticated: true, document: 'privacy' },
+  },
+  {
+    path: '/refund',
+    name: 'refund',
+    component: () => import('@/views/LegalView.vue'),
+    meta: { requiresAuth: false, allowAuthenticated: true, document: 'refund' },
+  },
+  {
+    path: '/data-deletion',
+    name: 'data-deletion',
+    component: () => import('@/views/LegalView.vue'),
+    meta: { requiresAuth: false, allowAuthenticated: true, document: 'data-deletion' },
+  },
+  {
+    path: '/support',
+    name: 'support',
+    component: () => import('@/views/LegalView.vue'),
+    meta: { requiresAuth: false, allowAuthenticated: true, document: 'support' },
+  },
+  {
     // 소셜 로그인 콜백. LoginView 가 pathname 에서 provider 를 판별해 처리한다.
     // 이 라우트가 없으면 catch-all 이 /dashboard 로 보내면서 code·state 쿼리가 사라져
     // 로그인이 조용히 실패한다.

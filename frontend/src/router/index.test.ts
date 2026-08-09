@@ -18,4 +18,13 @@ describe('application navigation contract', () => {
     const ideasMatched = router.resolve('/ideas').matched
     expect(ideasMatched[ideasMatched.length - 1]?.redirect).toBe('/today')
   })
+
+  it('keeps required public legal and support documents directly reachable', () => {
+    for (const path of ['/terms', '/privacy', '/refund', '/data-deletion', '/support']) {
+      const resolved = router.resolve(path)
+      expect(resolved.matched.length, path).toBeGreaterThan(0)
+      expect(resolved.meta.requiresAuth, path).toBe(false)
+      expect(resolved.meta.allowAuthenticated, path).toBe(true)
+    }
+  })
 })
