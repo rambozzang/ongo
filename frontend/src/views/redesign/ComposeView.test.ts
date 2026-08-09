@@ -37,7 +37,7 @@ vi.mock('@/api/ugcShortsPipeline', () => ({
 }))
 vi.mock('@/api/video', () => ({
   videoApi: {
-    getUploadCapabilities: vi.fn(), getImportAvailability: vi.fn(), update: vi.fn(), publish: vi.fn(),
+    getUploadCapabilities: vi.fn(), getImportAvailability: vi.fn(), get: vi.fn(), update: vi.fn(), publish: vi.fn(),
     create: vi.fn(), importUrl: vi.fn(), generate: vi.fn(),
   },
 }))
@@ -63,7 +63,7 @@ const capabilities = [
   { platform: 'INSTAGRAM', maxTitleLength: 2200, maxDescriptionLength: 2200, maxTagCount: 30 },
 ]
 
-function renderCompose() {
+function renderCompose(initialPath = '/compose') {
   const pinia = createPinia()
   setActivePinia(pinia)
   const router = createRouter({
@@ -74,7 +74,7 @@ function renderCompose() {
     ],
   })
   const i18n = createI18n({ legacy: false, locale: 'ko', messages: { ko: koMessages } })
-  return router.push('/compose').then(async () => {
+  return router.push(initialPath).then(async () => {
     await router.isReady()
     const wrapper = mount(ComposeView, {
       global: {
@@ -231,6 +231,61 @@ describe('ComposeView', () => {
         expect.objectContaining({ platform: 'INSTAGRAM', title: '내가 직접 정한 제목' }),
       ]),
     }))
+  })
+
+  it('preserves metadata loaded from a saved draft during publish preflight', async () => {
+    vi.mocked(videoApi.get).mockResolvedValue({
+      id: 404,
+      userId: 1,
+      title: '저장된 초안 제목',
+      description: '저장된 초안 설명',
+      tags: ['저장된태그'],
+      category: 'general',
+      mediaType: 'VIDEO',
+      fileUrl: 'https://cdn.example/video.mp4',
+      thumbnailUrl: null,
+      thumbnailCandidates: [],
+      fileSize: 4,
+      status: 'DRAFT',
+      visibility: 'PUBLIC',
+      createdAt: '2026-08-10T09:00:00Z',
+      updatedAt: '2026-08-10T09:00:00Z',
+      uploads: [{
+        id: 405,
+        videoId: 404,
+        platform: 'YOUTUBE',
+        channelId: 1,
+        status: 'DRAFT',
+        platformVideoId: null,
+        platformUrl: null,
+        description: null,
+        tags: [],
+        errorMessage: null,
+        publishedAt: null,
+        createdAt: '2026-08-10T09:00:00Z',
+        meta: {
+          title: '저장된 채널 제목',
+          description: '저장된 채널 설명',
+          tags: ['채널태그'],
+          visibility: 'PUBLIC',
+          customThumbnailUrl: null,
+        },
+      }],
+    } as never)
+    const { wrapper } = await renderCompose('/compose?videoId=404')
+    useUploadStore().file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    useUploadStore().videoId = 404
+    await wrapper.findAll('input[type="checkbox"]')[0].setValue(false)
+
+    const schedule = wrapper.findAll('button').find((button) => button.text().includes('채널 예약'))
+    await schedule!.trigger('click')
+    await flushPromises()
+
+    const publishRequest = vi.mocked(videoApi.publish).mock.calls[0]?.[1]
+    expect(publishRequest?.platforms).toEqual(expect.arrayContaining([
+      expect.objectContaining({ platform: 'YOUTUBE', title: '저장된 채널 제목' }),
+    ]))
+    expect(publishRequest?.platforms.some((platform) => platform.title === '유튜브 자동 제목')).toBe(false)
   })
 
   it('does not publish the original when automatic Shorts rendering is unavailable', async () => {

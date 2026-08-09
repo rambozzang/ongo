@@ -1198,17 +1198,28 @@ async function generateMetadataFor(videoId: number) {
 
     for (const item of result.platforms) {
       const platform = item.platform as Platform
+      const generatedDraft: FormDraft = {
+        title: item.titleCandidates[0] || form.title,
+        description: item.description || form.description,
+        hashtags: item.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' '),
+        visibility: form.visibility,
+      }
+      // Keep the generated platform default for accounts connected after the
+      // first generation pass. Otherwise a newly selected second account
+      // silently falls back to the common copy instead of the platform copy.
+      if (!pendingPlatformDirty[platform]) {
+        pendingPlatformForms[platform] = reactive({ ...generatedDraft })
+        pendingPlatformDirty[platform] = true
+      }
       // A later channel selection must never erase copy the creator already edited.
       for (const channel of selectedChannels.value.filter((candidate) => candidate.platform === platform)) {
         const draft = draftForChannel(channel)
         if (channelDraftDirty[channel.id]) continue
         // AI가 만든 채널별 문구는 공통 문구와 독립된 편집 초안으로 취급한다.
         channelDraftDirty[channel.id] = true
-        if (!commonDraftDirty.title) draft.title = item.titleCandidates[0] || draft.title
-        if (!commonDraftDirty.description) draft.description = item.description || draft.description
-        if (!commonDraftDirty.hashtags) {
-          draft.hashtags = item.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
-        }
+        if (!commonDraftDirty.title) draft.title = generatedDraft.title
+        if (!commonDraftDirty.description) draft.description = generatedDraft.description
+        if (!commonDraftDirty.hashtags) draft.hashtags = generatedDraft.hashtags
       }
     }
     const first = result.platforms[0]
@@ -1576,6 +1587,12 @@ async function loadDraft(videoId: number) {
   form.description = video.description ?? ''
   form.hashtags = video.tags.join(' ')
   form.visibility = video.visibility
+  // A loaded draft is an explicit creator decision. Never replace its common
+  // copy with a fresh AI suggestion during the publish preflight.
+  commonDraftDirty.title = form.title.trim().length > 0
+  commonDraftDirty.description = form.description.trim().length > 0
+  commonDraftDirty.hashtags = form.hashtags.trim().length > 0
+  commonDraftDirty.visibility = true
   file.name = video.title
   for (const upload of video.uploads ?? []) {
     const meta = upload.meta
@@ -1630,6 +1647,9 @@ onMounted(async () => {
       form.title = template.titleTemplate ?? ''
       form.description = template.descriptionTemplate ?? ''
       form.hashtags = template.tags.join(' ')
+      commonDraftDirty.title = form.title.trim().length > 0
+      commonDraftDirty.description = form.description.trim().length > 0
+      commonDraftDirty.hashtags = form.hashtags.trim().length > 0
       notice.value = '템플릿을 적용했습니다. 영상을 선택한 뒤 내용을 확인해 주세요.'
     } catch (error) {
       notice.value = error instanceof Error ? error.message : '템플릿을 불러오지 못했습니다.'
