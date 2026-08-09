@@ -307,6 +307,17 @@ class StreamPublishUseCase(
             require(tags.size <= capability.maxTagCount) {
                 "${platformRequest.platform} 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다."
             }
+            capability.maxCaptionLength?.let { limit ->
+                val caption = PlatformCaptionRules.compose(
+                    platformRequest.platform,
+                    title,
+                    description,
+                    tags,
+                ).orEmpty()
+                require(caption.length <= limit) {
+                    "${platformRequest.platform} 게시 문구는 ${limit}자까지 입력할 수 있습니다."
+                }
+            }
         }
     }
 

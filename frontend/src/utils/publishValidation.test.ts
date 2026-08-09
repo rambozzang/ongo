@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parsePublishHashtags, validatePublishDrafts } from './publishValidation'
+import { composePublishCaption, parsePublishHashtags, validatePublishDrafts } from './publishValidation'
 
 const capabilities = [
   { platform: 'YOUTUBE' as const, maxTitleLength: 5, maxDescriptionLength: 10, maxTagCount: 2 },
@@ -46,5 +46,22 @@ describe('publish validation', () => {
         FACEBOOK: { title: 'a'.repeat(500), description: '', hashtags: '' },
       }),
     ).toEqual([])
+  })
+
+  it('validates the composed caption for providers with one text field', () => {
+    expect(
+      composePublishCaption('TWITTER', {
+        title: '제목',
+        description: '설명',
+        hashtags: '#하나',
+      }),
+    ).toBe('제목\n\n설명\n\n#하나')
+
+    const issues = validatePublishDrafts(
+      [{ platform: 'TIKTOK', channelName: '틱톡' }],
+      [{ ...capabilities[1], maxTagCount: 10, maxCaptionLength: 10 }],
+      { TIKTOK: { title: '제목', description: '설명이 아주 깁니다', hashtags: '#하나' } },
+    )
+    expect(issues).toEqual([expect.objectContaining({ field: 'caption', limit: 10 })])
   })
 })

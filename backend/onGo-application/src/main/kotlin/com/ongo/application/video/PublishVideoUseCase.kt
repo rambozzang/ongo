@@ -69,6 +69,17 @@ class PublishVideoUseCase(
                 require(config.tags.size <= capability.maxTagCount) {
                     "${config.platform} 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다."
                 }
+                capability.maxCaptionLength?.let { limit ->
+                    val caption = PlatformCaptionRules.compose(
+                        config.platform,
+                        config.title,
+                        description,
+                        config.tags,
+                    ).orEmpty()
+                    require(caption.length <= limit) {
+                        "${config.platform} 게시 문구는 ${limit}자까지 입력할 수 있습니다."
+                    }
+                }
                 require(config.scheduledAt == null || config.scheduledAt.isAfter(LocalDateTime.now().plusMinutes(5))) {
                     "예약 시간은 현재보다 최소 5분 이후여야 합니다."
                 }

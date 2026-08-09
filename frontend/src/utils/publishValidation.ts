@@ -6,11 +6,37 @@ export interface PublishDraft {
   hashtags: string
 }
 
+export function composePublishCaption(
+  platform: Platform,
+  draft: PublishDraft,
+): string | null {
+  const body = [draft.title.trim(), draft.description.trim()]
+    .filter(Boolean)
+    .join('\n\n')
+  const hashtags = parsePublishHashtags(draft.hashtags)
+    .map((tag) => `#${tag}`)
+    .join(' ')
+
+  if (
+    platform === 'TWITTER' ||
+    platform === 'TIKTOK' ||
+    platform === 'INSTAGRAM' ||
+    platform === 'THREADS'
+  ) {
+    return [body, hashtags].filter(Boolean).join('\n\n')
+  }
+  if (platform === 'FACEBOOK' || platform === 'LINKEDIN') {
+    return [draft.description.trim(), hashtags].filter(Boolean).join('\n\n')
+  }
+  return null
+}
+
 export interface PublishCapability {
   platform: Platform
   maxTitleLength: number
   maxDescriptionLength: number
   maxTagCount: number
+  maxCaptionLength?: number | null
 }
 
 export interface PublishTarget {
@@ -22,7 +48,7 @@ export interface PublishTarget {
 export interface PublishValidationIssue {
   platform: Platform
   channelName: string
-  field: 'title' | 'description' | 'tags'
+  field: 'title' | 'description' | 'tags' | 'caption'
   current: number
   limit: number
 }
@@ -81,6 +107,16 @@ export function validatePublishDrafts(
         field: 'tags',
         current: tagCount,
         limit: capability.maxTagCount,
+      })
+    }
+    const caption = composePublishCaption(target.platform, draft)
+    if (capability.maxCaptionLength && caption && caption.length > capability.maxCaptionLength) {
+      issues.push({
+        platform: target.platform,
+        channelName: target.channelName,
+        field: 'caption',
+        current: caption.length,
+        limit: capability.maxCaptionLength,
       })
     }
   }

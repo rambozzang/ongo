@@ -557,7 +557,11 @@ import { useUploadStore } from '@/stores/upload'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Channel, Platform } from '@/types/channel'
 import type { PlatformPublishConfig, PlatformUploadCapability, Visibility } from '@/types/video'
-import { parsePublishHashtags, validatePublishDrafts } from '@/utils/publishValidation'
+import {
+  composePublishCaption,
+  parsePublishHashtags,
+  validatePublishDrafts,
+} from '@/utils/publishValidation'
 import type { OptimalTimeSlot } from '@/types/analytics'
 import { fallbackOptimalSlot, kstWallClockToInstant, nextOptimalDateTime } from '@/utils/optimalSchedule'
 
@@ -946,6 +950,7 @@ const titleLimit = computed(
 )
 const descriptionLimit = computed(() => activeCapability.value?.maxDescriptionLength ?? 0)
 const tagLimit = computed(() => activeCapability.value?.maxTagCount ?? null)
+const captionLimit = computed(() => activeCapability.value?.maxCaptionLength ?? null)
 const titleOver = computed(() => activeDraft.value.title.length > titleLimit.value)
 const descriptionOver = computed(
   () => descriptionLimit.value > 0 && activeDraft.value.description.length > descriptionLimit.value,
@@ -956,6 +961,17 @@ const tagsOver = computed(() => {
     ? hashtagCount.value > 0
     : hashtagCount.value > tagLimit.value
 })
+const captionLength = computed(() => {
+  const platform = platformForTab(activeTab.value)
+  if (!platform) return null
+  return composePublishCaption(platform, activeDraft.value)?.length ?? null
+})
+const captionOver = computed(
+  () =>
+    captionLimit.value !== null &&
+    captionLength.value !== null &&
+    captionLength.value > captionLimit.value,
+)
 
 const fileMeta = computed(() => file.meta || t('redesign.compose.noFileMeta'))
 
@@ -977,6 +993,9 @@ const warnings = computed(() => {
         ? t('redesign.compose.warnTagsUnsupported')
         : t('redesign.compose.warnTagCount', { limit: tagLimit.value }),
     )
+  }
+  if (captionOver.value) {
+    out.push(t('redesign.compose.warnCaptionLength', { limit: captionLimit.value }))
   }
   const hasTikTok = selectedChannels.value.some((c) => c.platform === 'TIKTOK')
   if (hasTikTok && hashtagCount.value > TIKTOK_HASHTAG_LIMIT && activeTab.value === 'common') {
@@ -1002,6 +1021,8 @@ const validationIssues = computed(() => {
         ? t('redesign.compose.warnTitleLength', { limit: issue.limit })
         : issue.field === 'description'
           ? t('redesign.compose.warnDescriptionLength', { limit: issue.limit })
+          : issue.field === 'caption'
+            ? t('redesign.compose.warnCaptionLength', { limit: issue.limit })
           : t('redesign.compose.warnTagCount', { limit: issue.limit })
     return `${issue.channelName}: ${message}`
   })

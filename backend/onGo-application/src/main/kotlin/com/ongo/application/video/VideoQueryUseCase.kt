@@ -267,11 +267,24 @@ class VideoQueryUseCase(
                 require(draft.title.length <= capability.maxTitleLength) {
                     "${draft.platform} 제목은 ${capability.maxTitleLength}자까지 입력할 수 있습니다."
                 }
-                require(draft.description.orEmpty().length <= capability.maxDescriptionLength) {
-                    "${draft.platform} 설명은 ${capability.maxDescriptionLength}자까지 입력할 수 있습니다."
+                if (capability.maxDescriptionLength > 0) {
+                    require(draft.description.orEmpty().length <= capability.maxDescriptionLength) {
+                        "${draft.platform} 설명은 ${capability.maxDescriptionLength}자까지 입력할 수 있습니다."
+                    }
                 }
                 require(draft.tags.size <= capability.maxTagCount) {
                     "${draft.platform} 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다."
+                }
+                capability.maxCaptionLength?.let { limit ->
+                    val caption = PlatformCaptionRules.compose(
+                        draft.platform,
+                        draft.title,
+                        draft.description.orEmpty(),
+                        draft.tags,
+                    ).orEmpty()
+                    require(caption.length <= limit) {
+                        "${draft.platform} 게시 문구는 ${limit}자까지 입력할 수 있습니다."
+                    }
                 }
             }
         }

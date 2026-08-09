@@ -187,11 +187,13 @@ class TwitterStreamWriter(
     }
 
     private fun buildTweetText(meta: VideoPlatformMeta): String {
-        val title = meta.title ?: ""
+        val body = listOf(meta.title.orEmpty().trim(), meta.description.orEmpty().trim())
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
         val tags = meta.tags
             .filter { it.isNotBlank() }
             .joinToString(" ") { if (it.startsWith("#")) it else "#$it" }
-        val combined = if (tags.isNotEmpty()) "$title\n\n$tags" else title
+        val combined = listOf(body, tags).filter(String::isNotBlank).joinToString("\n\n")
         return combined.take(280)
     }
 }

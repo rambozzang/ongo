@@ -13,6 +13,8 @@ data class PlatformUploadCapability(
     val maxTagCount: Int,
     val acceptedExtensions: Set<String>,
     val unavailableReason: String? = null,
+    /** Maximum length after fields are composed into the provider caption/text. */
+    val maxCaptionLength: Int? = null,
 )
 
 object PlatformUploadCapabilities {
@@ -26,24 +28,29 @@ object PlatformUploadCapabilities {
         ),
         Platform.TIKTOK to PlatformUploadCapability(
             Platform.TIKTOK, true, true, false, 2 * GB, 2_200, 0, 30, setOf("mp4", "mov", "webm"),
+            maxCaptionLength = 2_200,
         ),
         Platform.NAVER_CLIP to PlatformUploadCapability(
             Platform.NAVER_CLIP, true, true, true, 2 * GB, 100, 1_000, 30, setOf("mp4", "mov"),
         ),
         Platform.TWITTER to PlatformUploadCapability(
             Platform.TWITTER, true, true, false, 512 * MB, 280, 0, 30, setOf("mp4", "mov"),
+            maxCaptionLength = 280,
         ),
         Platform.INSTAGRAM to PlatformUploadCapability(
             Platform.INSTAGRAM, true, true, false, 500 * MB, 2_200, 0, 30, setOf("mp4", "mov"),
             "Instagram은 임시 오브젝트 URL을 통해 Graph API로 업로드합니다.",
+            maxCaptionLength = 2_200,
         ),
         Platform.THREADS to PlatformUploadCapability(
             Platform.THREADS, true, true, false, 500 * MB, 500, 0, 30, setOf("mp4", "mov"),
             "Threads는 임시 오브젝트 URL을 통해 Graph API로 업로드합니다.",
+            maxCaptionLength = 500,
         ),
         Platform.FACEBOOK to PlatformUploadCapability(
             Platform.FACEBOOK, false, true, false, 2 * GB, 255, 5_000, 30, setOf("mp4", "mov"),
             "Facebook은 클라우드 임시 URL을 통해 업로드합니다.",
+            maxCaptionLength = 5_000,
         ),
         Platform.PINTEREST to PlatformUploadCapability(
             Platform.PINTEREST, false, true, false, 2 * GB, 100, 800, 0, setOf("mp4", "mov", "m4v"),
@@ -52,6 +59,7 @@ object PlatformUploadCapabilities {
         Platform.LINKEDIN to PlatformUploadCapability(
             Platform.LINKEDIN, false, true, false, 500 * MB, 3_000, 3_000, 0, setOf("mp4"),
             "LinkedIn Videos API의 4MB 파트 업로드와 처리 완료 확인을 사용합니다.",
+            maxCaptionLength = 3_000,
         ),
         Platform.WORDPRESS to PlatformUploadCapability(
             Platform.WORDPRESS, false, true, false, 2 * GB, 200, 5_000, 100, VIDEO_EXTENSIONS,

@@ -91,6 +91,7 @@ class TwitterStreamWriterHttpContractTest {
         assertThat(tweet.getHeader("Authorization")).isEqualTo("Bearer twitter-token")
         assertThat(tweet.body.readUtf8())
             .contains("테스트 영상")
+            .contains("설명")
             .contains("media-1")
     }
 

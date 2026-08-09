@@ -4325,6 +4325,7 @@
       "warnDescriptionLength": "설명이 {limit}자를 넘었습니다.",
       "warnTagCount": "태그는 {limit}개까지 입력할 수 있습니다.",
       "warnTagsUnsupported": "이 플랫폼은 태그를 지원하지 않습니다. 태그를 지워 주세요.",
+      "warnCaptionLength": "최종 게시 문구가 {limit}자를 넘었습니다.",
       "warnTiktokHashtags": "TikTok은 해시태그 {limit}개까지만 반영됩니다. 초과분은 설명 하단으로 이동합니다.",
       "blockNoTarget": "발행할 채널을 하나 이상 선택하세요",
       "blockExpired": "{name} 연결이 만료되어 예약할 수 없습니다",

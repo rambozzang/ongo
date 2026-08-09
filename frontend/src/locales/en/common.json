@@ -4335,6 +4335,7 @@
       "warnDescriptionLength": "Description exceeds {limit} characters.",
       "warnTagCount": "Use up to {limit} tags.",
       "warnTagsUnsupported": "This platform does not support tags. Remove the tags to continue.",
+      "warnCaptionLength": "The final caption exceeds {limit} characters.",
       "warnTiktokHashtags": "TikTok keeps only {limit} hashtags. The rest move to the description.",
       "blockNoTarget": "Select at least one channel",
       "blockExpired": "{name} is disconnected — reconnect to schedule",

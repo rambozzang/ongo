@@ -140,6 +140,50 @@ class VideoQueryUseCaseTest {
     }
 
     @Test
+    fun `platforms without a separate description field can still save caption source text`() {
+        val video = createVideo()
+        val savedUpload = VideoUpload(
+            id = 41L,
+            videoId = video.id!!,
+            platform = Platform.TIKTOK,
+            status = UploadStatus.DRAFT,
+        )
+        every { videoRepository.findById(1L) } returns video
+        every { videoRepository.update(any()) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } returns listOf(savedUpload)
+        every { videoUploadRepository.update(any()) } returns savedUpload
+        every { videoPlatformMetaRepository.findByVideoUploadId(41L) } returns null
+        every { videoPlatformMetaRepository.save(any()) } answers { firstArg() }
+        every { videoPlatformMetaRepository.findByVideoUploadIds(listOf(41L)) } returns emptyMap()
+        every { videoUploadRepository.deleteEditableByVideoIdExceptTargets(1L, setOf(VideoUploadTarget(Platform.TIKTOK, null))) } returns 0
+
+        useCase.updateVideo(
+            userId = 100L,
+            videoId = 1L,
+            title = "틱톡 제목",
+            description = "자막에서 만든 캡션 원문",
+            tags = emptyList(),
+            category = null,
+            thumbnailIndex = null,
+            platformDrafts = listOf(
+                VideoPlatformDraft(
+                    platform = Platform.TIKTOK,
+                    title = "틱톡 제목",
+                    description = "자막에서 만든 캡션 원문",
+                    tags = emptyList(),
+                    visibility = Visibility.PUBLIC,
+                ),
+            ),
+        )
+
+        verify {
+            videoPlatformMetaRepository.save(match {
+                it.videoUploadId == 41L && it.description == "자막에서 만든 캡션 원문"
+            })
+        }
+    }
+
+    @Test
     fun `updateVideo keeps two accounts of the same platform as independent drafts`() {
         val video = createVideo()
         val savedUploads = mutableListOf<VideoUpload>()
