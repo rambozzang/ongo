@@ -787,25 +787,36 @@ class StreamPublishUseCaseTest {
     }
 
     @Test
-    fun `직접 스트리밍은 플랫폼이 예약을 지원하지 않으면 저장 전에 거부한다`() {
+    fun `네이티브 예약을 지원하지 않는 플랫폼도 onGo durable 예약으로 저장한다`() {
         stubSubscription(PlanType.PRO)
         stubMonthlyCount(0L)
+        val scheduledAt = LocalDateTime.now().plusDays(1)
+        every { videoRepository.save(any()) } returns buildSavedVideo(id = 100L)
+        every { channelRepository.findByUserIdAndPlatform(userId, Platform.TIKTOK) } returns
+            buildActiveChannel(Platform.TIKTOK)
+        every { videoUploadRepository.save(any()) } returns
+            buildSavedUpload(id = 200L, videoId = 100L, platform = Platform.TIKTOK, channelId = 10L)
+        every { videoPlatformMetaRepository.save(any()) } returns buildSavedMeta(id = 300L, uploadId = 200L)
 
         val request = buildRequest(
             platforms = listOf(
                 buildPlatformRequest(
                     platform = Platform.TIKTOK,
-                    scheduledAt = LocalDateTime.now().plusDays(1),
+                    scheduledAt = scheduledAt,
                 ),
             ),
         )
 
-        val ex = assertFailsWith<IllegalArgumentException> {
-            useCase.initiate(userId, buildFile(), request)
-        }
+        useCase.initiate(userId, buildFile(), request)
 
-        assertTrue(ex.message!!.contains("예약 게시를 지원하지 않습니다"))
-        verify(exactly = 0) { videoRepository.save(any()) }
+        verify(exactly = 1) {
+            scheduleRepository.save(match { schedule ->
+                schedule.videoId == 100L &&
+                    schedule.status == ScheduleStatus.SCHEDULED &&
+                    schedule.platforms["TIKTOK#10"] == mapOf("scheduledAt" to scheduledAt.toString())
+            })
+        }
+        verify(exactly = 1) { storageService.uploadFile(any(), any(), any(), fileSize) }
     }
 
     // 6. 예약 없는 즉시 게시 시 Schedule 미생성

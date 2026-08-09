@@ -6,6 +6,8 @@ data class PlatformUploadCapability(
     val platform: Platform,
     val directVideoUpload: Boolean,
     val cloudVideoUpload: Boolean,
+    /** Whether the provider itself supports native scheduling. onGo's durable
+     * scheduler remains available even when this is false. */
     val scheduling: Boolean,
     val maxFileSizeBytes: Long,
     val maxTitleLength: Int,

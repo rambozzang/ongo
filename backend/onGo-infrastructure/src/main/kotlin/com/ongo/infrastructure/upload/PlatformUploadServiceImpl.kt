@@ -87,12 +87,19 @@ class PlatformUploadServiceImpl(
                         customSettingsJson = config.customSettingsJson,
                     )
                     )
+                    val normalizedStatus = clientResult.status.trim().uppercase()
+                    val failed = normalizedStatus in FAILED_STATUSES
                     PlatformUploadResult(
-                        success = true,
+                        success = !failed,
                         platformVideoId = clientResult.platformVideoId,
                         platformUrl = clientResult.platformUrl.ifBlank { null },
-                    published = clientResult.status.trim().uppercase() in PUBLISHED_STATUSES &&
-                        clientResult.platformUrl.isUsablePlatformUrl(),
+                        errorMessage = if (failed) {
+                            "${config.platform} 업로드가 외부 플랫폼에서 거부되었습니다 (status=${clientResult.status})."
+                        } else {
+                            null
+                        },
+                        published = !failed && normalizedStatus in PUBLISHED_STATUSES &&
+                            clientResult.platformUrl.isUsablePlatformUrl(),
                     )
                 }
 

@@ -147,6 +147,51 @@ class PlatformUploadServiceImplTest {
     }
 
     @Test
+    fun `외부 클라이언트의 실패 상태는 처리중이 아니라 실패 결과로 보존한다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channels = mockk<ChannelRepository>()
+        val encryption = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+
+        every { factory.getClient(Platform.INSTAGRAM) } returns client
+        every { channels.findByUserIdAndPlatform(7L, Platform.INSTAGRAM) } returns Channel(
+            id = 1L,
+            userId = 7L,
+            platform = Platform.INSTAGRAM,
+            platformChannelId = "ig-user",
+            channelName = "creator",
+            accessToken = EncryptedToken("encrypted-token"),
+            status = ChannelStatus.ACTIVE,
+        )
+        every { encryption.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("plain-token")
+        every { client.uploadVideo(any()) } returns ClientUploadResult(
+            platformVideoId = "media-rejected",
+            platformUrl = "",
+            status = "REJECTED",
+        )
+
+        val result = PlatformUploadServiceImpl(factory, channels, encryption, emptyList()).upload(
+            config = PlatformUploadConfig(
+                platform = Platform.INSTAGRAM,
+                videoUploadId = 10L,
+                title = "제목",
+                description = "설명",
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC,
+                thumbnailUrl = null,
+                scheduledAt = null,
+            ),
+            fileUrl = "https://storage.example/video.mp4",
+            userId = 7L,
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.published).isFalse()
+        assertThat(result.errorMessage).contains("거부")
+        assertThat(result.toPublishOutcome()).isInstanceOf(com.ongo.application.video.PublishOutcome.Failed::class.java)
+    }
+
+    @Test
     fun `TikTok 비동기 완료 상태는 공개 영상 ID와 사용 가능한 URL로 정규화한다`() {
         val factory = mockk<PlatformClientFactory>()
         val channelRepository = mockk<ChannelRepository>()
