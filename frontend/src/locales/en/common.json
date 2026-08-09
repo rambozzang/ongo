@@ -949,6 +949,8 @@
     ]
   },
   "settings": {
+    "confirmationTitle": "Confirm this action",
+    "actionFailed": "The action failed. Please try again shortly.",
     "aiProvider": {
       "title": "Default AI Provider",
       "description": "Choose the AI model for AI features (metadata generation, hashtags, performance analysis, etc.).",

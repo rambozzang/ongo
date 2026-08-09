@@ -1,4 +1,13 @@
 <template>
+  <ConfirmModal
+    :model-value="pendingConfirmation !== null"
+    :title="confirmationTitle"
+    :message="confirmationMessage"
+    :confirm-text="t('action.confirm')"
+    :danger="true"
+    @update:model-value="clearPendingConfirmation"
+    @confirm="confirmPendingConfirmation"
+  />
   <div class="min-h-full bg-surface-base px-4 py-5 text-content tablet:px-[22px] tablet:py-6">
     <header class="mb-[18px]">
       <p class="font-mono text-[10px] uppercase tracking-[0.16em] text-content-tertiary">{{ t('nav.settings') }}</p>
@@ -308,12 +317,14 @@ import { useRoute } from 'vue-router'
 import { AdjustmentsHorizontalIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { settingsApi, type ApiKey, type UserSettingsResponse } from '@/api/settings'
 import { oauthApi, type PublicOAuthApp, type PublicOAuthTokenSummary } from '@/api/oauth'
 import { useAuthStore } from '@/stores/auth'
 import { useAutomationStore } from '@/stores/automation'
 import { useSubscriptionStore } from '@/stores/subscription'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useNotificationStore } from '@/stores/notification'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -321,6 +332,7 @@ const authStore = useAuthStore()
 const automationStore = useAutomationStore()
 const subscriptionStore = useSubscriptionStore()
 const workspaceStore = useWorkspaceStore()
+const notificationStore = useNotificationStore()
 const requestedTab = typeof route.query.tab === 'string' ? route.query.tab : ''
 const activeSection = ref(['account', 'automation', 'defaults', 'security', 'developer', 'workspaces'].includes(requestedTab) ? requestedTab : 'automation')
 const settingsData = ref<UserSettingsResponse | null>(null)
@@ -344,6 +356,13 @@ const oauthAppForm = reactive({ name: '', description: '', redirectUri: '', prof
 const creatingOAuthApp = ref(false)
 const newOAuthClientId = ref<string | null>(null)
 const newOAuthClientSecret = ref<string | null>(null)
+type PendingConfirmation =
+  | { type: 'revokeApiKey'; id: number }
+  | { type: 'rotateOAuthSecret'; id: number }
+  | { type: 'deleteOAuthApp'; id: number }
+  | { type: 'revokeOAuthToken'; id: number }
+  | { type: 'removeWorkspace'; id: number }
+const pendingConfirmation = ref<PendingConfirmation | null>(null)
 const navigation = computed(() => [
   { key: 'account', label: t('settings.tabs.account') },
   { key: 'automation', label: t('nav.automation') },
@@ -370,6 +389,66 @@ function formatPrice(value: number): string {
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
+const confirmationTitle = computed(() => t('settings.confirmationTitle'))
+const confirmationMessage = computed(() => {
+  const pending = pendingConfirmation.value
+  if (!pending) return ''
+  switch (pending.type) {
+    case 'revokeApiKey':
+      return t('settings.apiKeys.revokeConfirm')
+    case 'rotateOAuthSecret':
+      return t('settings.oauthApps.rotateConfirm')
+    case 'deleteOAuthApp':
+      return t('settings.oauthApps.deleteConfirm')
+    case 'revokeOAuthToken':
+      return t('settings.oauthApps.revokeTokenConfirm')
+    case 'removeWorkspace':
+      return t('workspace.deleteConfirm')
+  }
+  return t('settings.actionFailed')
+})
+
+function clearPendingConfirmation() {
+  pendingConfirmation.value = null
+}
+
+async function confirmPendingConfirmation() {
+  const pending = pendingConfirmation.value
+  clearPendingConfirmation()
+  if (!pending) return
+  try {
+    switch (pending.type) {
+      case 'revokeApiKey':
+        await settingsApi.revokeApiKey(pending.id)
+        await fetchApiKeys()
+        break
+      case 'rotateOAuthSecret': {
+        const rotated = await oauthApi.rotateSecret(pending.id)
+        newOAuthClientId.value = rotated.app.clientId
+        newOAuthClientSecret.value = rotated.clientSecret
+        await fetchOAuthApps()
+        break
+      }
+      case 'deleteOAuthApp':
+        await oauthApi.deleteApp(pending.id)
+        await fetchOAuthApps()
+        await fetchOAuthTokens()
+        break
+      case 'revokeOAuthToken':
+        await oauthApi.revokeToken(pending.id)
+        await fetchOAuthTokens()
+        break
+      case 'removeWorkspace':
+        await workspaceStore.removeWorkspace(pending.id)
+        break
+    }
+  } catch (error) {
+    notificationStore.error(
+      error instanceof Error ? error.message : t('settings.actionFailed'),
+    )
+  }
+}
+
 function reloadSettings() {
   window.location.reload()
 }
@@ -392,10 +471,8 @@ async function createApiKey() {
     creatingApiKey.value = false
   }
 }
-async function revokeApiKey(id: number) {
-  if (!window.confirm(t('settings.apiKeys.revokeConfirm'))) return
-  await settingsApi.revokeApiKey(id)
-  await fetchApiKeys()
+function revokeApiKey(id: number) {
+  pendingConfirmation.value = { type: 'revokeApiKey', id }
 }
 async function copyApiKey() {
   if (newApiKeyToken.value) await navigator.clipboard?.writeText(newApiKeyToken.value).catch(() => undefined)
@@ -442,23 +519,14 @@ async function createOAuthApp() {
     creatingOAuthApp.value = false
   }
 }
-async function rotateOAuthSecret(id: number) {
-  if (!window.confirm(t('settings.oauthApps.rotateConfirm'))) return
-  const rotated = await oauthApi.rotateSecret(id)
-  newOAuthClientId.value = rotated.app.clientId
-  newOAuthClientSecret.value = rotated.clientSecret
-  await fetchOAuthApps()
+function rotateOAuthSecret(id: number) {
+  pendingConfirmation.value = { type: 'rotateOAuthSecret', id }
 }
-async function deleteOAuthApp(id: number) {
-  if (!window.confirm(t('settings.oauthApps.deleteConfirm'))) return
-  await oauthApi.deleteApp(id)
-  await fetchOAuthApps()
-  await fetchOAuthTokens()
+function deleteOAuthApp(id: number) {
+  pendingConfirmation.value = { type: 'deleteOAuthApp', id }
 }
-async function revokeOAuthToken(id: number) {
-  if (!window.confirm(t('settings.oauthApps.revokeTokenConfirm'))) return
-  await oauthApi.revokeToken(id)
-  await fetchOAuthTokens()
+function revokeOAuthToken(id: number) {
+  pendingConfirmation.value = { type: 'revokeOAuthToken', id }
 }
 async function copyText(value: string | null) {
   if (value) await navigator.clipboard?.writeText(value).catch(() => undefined)
@@ -511,9 +579,8 @@ async function saveWorkspace() {
     savingWorkspace.value = false
   }
 }
-async function removeWorkspace(id: number) {
-  if (!window.confirm(t('workspace.deleteConfirm'))) return
-  await workspaceStore.removeWorkspace(id)
+function removeWorkspace(id: number) {
+  pendingConfirmation.value = { type: 'removeWorkspace', id }
 }
 
 onMounted(async () => {

@@ -85,7 +85,11 @@ async function renderSettings() {
       stubs: {
         SectionCard: { template: '<section><h2>{{ title }}</h2><slot /></section>', props: ['title'] },
         StatusPill: { template: '<span><slot /></span>' },
-        ConfirmModal: { template: '<div v-if="modelValue" role="dialog"><slot /></div>', props: ['modelValue'] },
+        ConfirmModal: {
+          template: '<div v-if="modelValue" role="dialog"><button type="button" @click="$emit(\'confirm\')">확인</button></div>',
+          props: ['modelValue'],
+          emits: ['confirm', 'update:modelValue'],
+        },
         AdjustmentsHorizontalIcon: true,
         Cog6ToothIcon: true,
       },
@@ -176,8 +180,6 @@ describe('SettingsView', () => {
       createdAt: '2026-08-09T00:00:00Z',
       revokedAt: null,
     }] as never)
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-
     const wrapper = await renderSettings()
     await wrapper.findAll('button').find((button) => button.text() === '개발자 앱')!.trigger('click')
     await flushPromises()
@@ -187,6 +189,7 @@ describe('SettingsView', () => {
     const revoke = wrapper.findAll('button').find((button) => button.text() === '접근 폐기')
     expect(revoke).toBeDefined()
     await revoke!.trigger('click')
+    await wrapper.get('[role="dialog"] button').trigger('click')
     await flushPromises()
     expect(oauthApi.revokeToken).toHaveBeenCalledWith(9)
   })
