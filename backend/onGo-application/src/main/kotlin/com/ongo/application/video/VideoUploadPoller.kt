@@ -75,7 +75,7 @@ class VideoUploadPoller(
         try {
             val pollToken = claimed.pollToken ?: tokenOverride
                 ?: throw IllegalStateException("플랫폼 상태 조회 토큰이 없습니다.")
-            val result = service.poll(upload.platform, pollToken, video.userId)
+            val result = service.poll(upload.platform, pollToken, video.userId, claimed.platformUrl)
             when (val outcome = result.toPublishOutcome()) {
                 is PublishOutcome.Published -> finish(
                     claimed,

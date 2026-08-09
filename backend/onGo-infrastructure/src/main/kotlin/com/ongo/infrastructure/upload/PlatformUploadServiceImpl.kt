@@ -42,6 +42,7 @@ class PlatformUploadServiceImpl(
         private val PUBLISHED_STATUSES = setOf(
             "PUBLISHED", "PUBLISH_COMPLETE", "FINISHED", "FINISH", "PROCESSED", "UPLOADED",
             "READY", "LIVE", "SUCCEEDED", "SUCCESS", "COMPLETED", "COMPLETE", "POSTED",
+            "PUBLISH", "AVAILABLE", "ACTIVE",
         )
         private val FAILED_STATUSES = setOf(
             "FAILED", "FAILURE", "REJECTED", "ERROR", "NOT_FOUND", "EXPIRED", "CANCELLED",
@@ -92,7 +93,8 @@ class PlatformUploadServiceImpl(
                         success = true,
                         platformVideoId = clientResult.platformVideoId,
                         platformUrl = clientResult.platformUrl.ifBlank { null },
-                        published = clientResult.status.equals("PUBLISHED", ignoreCase = true),
+                    published = clientResult.status.trim().uppercase() in PUBLISHED_STATUSES &&
+                        clientResult.platformUrl.isUsablePlatformUrl(),
                     )
                 }
 
@@ -147,7 +149,12 @@ class PlatformUploadServiceImpl(
         )
     }
 
-    override fun poll(platform: Platform, pollToken: String, userId: Long): PlatformUploadResult {
+    override fun poll(
+        platform: Platform,
+        pollToken: String,
+        userId: Long,
+        knownPlatformUrl: String?,
+    ): PlatformUploadResult {
         var channel = channelRepository.findByUserIdAndPlatform(userId, platform)
             ?: throw NotFoundException("채널", "$platform (userId=$userId)")
         var accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value
@@ -180,7 +187,18 @@ class PlatformUploadServiceImpl(
         return when {
             normalized in PUBLISHED_STATUSES -> {
                 val videoId = status.platformVideoId.ifBlank { pollToken }
-                val url = status.platformUrl?.takeIf { it.isNotBlank() } ?: platformUrl(platform, videoId)
+                val url = status.platformUrl?.takeIf { it.isUsablePlatformUrl() }
+                    ?: knownPlatformUrl?.takeIf { it.isUsablePlatformUrl() }
+                    ?: platformUrl(platform, videoId)
+                if (url == null) {
+                    return PlatformUploadResult(
+                        success = false,
+                        platformVideoId = videoId,
+                        published = false,
+                        errorMessage = "플랫폼 게시가 완료되었지만 열 수 있는 게시물 URL을 확인하지 못했습니다.",
+                        confirmation = PublishConfirmation.UNKNOWN,
+                    )
+                }
                 PlatformUploadResult(
                     success = true,
                     platformVideoId = videoId,
@@ -203,7 +221,7 @@ class PlatformUploadServiceImpl(
         }
     }
 
-    private fun platformUrl(platform: Platform, videoId: String): String = when (platform) {
+    private fun platformUrl(platform: Platform, videoId: String): String? = when (platform) {
         Platform.YOUTUBE -> "https://www.youtube.com/watch?v=$videoId"
         Platform.TIKTOK -> "https://www.tiktok.com/video/$videoId"
         Platform.INSTAGRAM -> "https://www.instagram.com/reel/$videoId/"
@@ -213,7 +231,9 @@ class PlatformUploadServiceImpl(
         Platform.FACEBOOK -> "https://www.facebook.com/watch/?v=$videoId"
         Platform.PINTEREST -> "https://www.pinterest.com/pin/$videoId/"
         Platform.LINKEDIN -> "https://www.linkedin.com/feed/update/$videoId"
-        Platform.WORDPRESS, Platform.TUMBLR, Platform.VIMEO, Platform.DAILYMOTION -> videoId
+        Platform.VIMEO -> "https://vimeo.com/$videoId"
+        Platform.DAILYMOTION -> "https://www.dailymotion.com/video/$videoId"
+        Platform.WORDPRESS, Platform.TUMBLR -> null
     }
 
     private fun uploadFromCloudUrl(
@@ -288,3 +308,6 @@ class PlatformUploadServiceImpl(
             .coerceIn(INITIAL_DELAY_MS, 60_000L)
     }
 }
+
+private fun String?.isUsablePlatformUrl(): Boolean =
+    this?.trim()?.let { it.startsWith("https://") || it.startsWith("http://") } == true

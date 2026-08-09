@@ -43,7 +43,7 @@ class VideoUploadPollerTest {
         every { uploads.claimForStatusCheck(eq(10L), any(), any(), any()) } returns claimed
         every { videos.findById(1L) } returns Video(id = 1L, userId = 7L, title = "영상")
         every { service.supports(Platform.TIKTOK) } returns true
-        every { service.poll(Platform.TIKTOK, "publish-1", 7L) } returns PlatformUploadResult(
+        every { service.poll(Platform.TIKTOK, "publish-1", 7L, any()) } returns PlatformUploadResult(
             success = true,
             platformVideoId = "video-1",
             platformUrl = "https://www.tiktok.com/video/video-1",
@@ -80,7 +80,7 @@ class VideoUploadPollerTest {
         every { uploads.claimForStatusCheck(eq(11L), any(), any(), any()) } returns due.copy(attemptCount = 1)
         every { videos.findById(2L) } returns Video(id = 2L, userId = 8L, title = "영상")
         every { service.supports(Platform.INSTAGRAM) } returns true
-        every { service.poll(Platform.INSTAGRAM, "container-1", 8L) } returns PlatformUploadResult(
+        every { service.poll(Platform.INSTAGRAM, "container-1", 8L, any()) } returns PlatformUploadResult(
             success = true,
             platformVideoId = "container-1",
             pollToken = "container-1",
@@ -112,7 +112,7 @@ class VideoUploadPollerTest {
         every { uploads.findByVideoIdAndPlatform(3L, Platform.THREADS) } returns upload
         every { uploads.claimForStatusCheck(eq(12L), any(), any(), any()) } returns upload.copy(attemptCount = 1)
         every { service.supports(Platform.THREADS) } returns true
-        every { service.poll(Platform.THREADS, "thread-1", 9L) } returns PlatformUploadResult(
+        every { service.poll(Platform.THREADS, "thread-1", 9L, any()) } returns PlatformUploadResult(
             success = true,
             platformVideoId = "thread-1",
             platformUrl = "https://www.threads.net/post/thread-1",
@@ -123,7 +123,7 @@ class VideoUploadPollerTest {
 
         poller.recheck(9L, 3L, Platform.THREADS)
 
-        verify(exactly = 1) { service.poll(Platform.THREADS, "thread-1", 9L) }
+        verify(exactly = 1) { service.poll(Platform.THREADS, "thread-1", 9L, any()) }
         verify(exactly = 0) { service.upload(any(), any(), any()) }
         verify { uploads.updateOwned(match { it.status == UploadStatus.PUBLISHED }, any()) }
     }
@@ -143,7 +143,7 @@ class VideoUploadPollerTest {
             poller.recheck(10L, 4L, Platform.INSTAGRAM)
         }
 
-        verify(exactly = 0) { service.poll(any(), any(), any()) }
+        verify(exactly = 0) { service.poll(any(), any(), any(), any()) }
         verify(exactly = 0) { service.upload(any(), any(), any()) }
     }
 }

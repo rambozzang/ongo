@@ -11,7 +11,12 @@ interface PlatformUploadService {
     fun supports(platform: Platform): Boolean
     fun upload(config: PlatformUploadConfig, fileUrl: String, userId: Long): PlatformUploadResult
     /** 비동기 게시가 수락된 뒤 외부 플랫폼의 최종 상태를 확인한다. */
-    fun poll(platform: Platform, pollToken: String, userId: Long): PlatformUploadResult =
+    fun poll(
+        platform: Platform,
+        pollToken: String,
+        userId: Long,
+        knownPlatformUrl: String? = null,
+    ): PlatformUploadResult =
         PlatformUploadResult(success = false, published = false, errorMessage = "${platform.name} 상태 조회를 지원하지 않습니다.")
 }
 

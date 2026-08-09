@@ -125,6 +125,71 @@ class PlatformUploadServiceImplTest {
     }
 
     @Test
+    fun `상태 조회 응답에 URL이 없어도 최초 응답의 유효한 URL을 보존한다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channels = mockk<ChannelRepository>()
+        val encryption = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+        every { factory.getClient(Platform.WORDPRESS) } returns client
+        every { channels.findByUserIdAndPlatform(7L, Platform.WORDPRESS) } returns Channel(
+            id = 3L,
+            userId = 7L,
+            platform = Platform.WORDPRESS,
+            platformChannelId = "site-1",
+            channelName = "site",
+            accessToken = EncryptedToken("encrypted-token"),
+            status = ChannelStatus.ACTIVE,
+        )
+        every { encryption.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("plain-token")
+        every { client.getVideoStatus("post-1", "plain-token") } returns com.ongo.infrastructure.external.platform.PlatformVideoStatus(
+            platformVideoId = "post-1",
+            status = "publish",
+        )
+
+        val result = PlatformUploadServiceImpl(factory, channels, encryption, emptyList()).poll(
+            Platform.WORDPRESS,
+            "post-1",
+            7L,
+            "https://example.wordpress.com/?p=post-1",
+        )
+
+        assertThat(result.published).isTrue()
+        assertThat(result.platformUrl).isEqualTo("https://example.wordpress.com/?p=post-1")
+    }
+
+    @Test
+    fun `완료 상태라도 URL이 없으면 확인 불가로 남긴다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channels = mockk<ChannelRepository>()
+        val encryption = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+        every { factory.getClient(Platform.TUMBLR) } returns client
+        every { channels.findByUserIdAndPlatform(7L, Platform.TUMBLR) } returns Channel(
+            id = 4L,
+            userId = 7L,
+            platform = Platform.TUMBLR,
+            platformChannelId = "blog",
+            channelName = "blog",
+            accessToken = EncryptedToken("encrypted-token"),
+            status = ChannelStatus.ACTIVE,
+        )
+        every { encryption.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("plain-token")
+        every { client.getVideoStatus("post-2", "plain-token") } returns com.ongo.infrastructure.external.platform.PlatformVideoStatus(
+            platformVideoId = "post-2",
+            status = "published",
+        )
+
+        val result = PlatformUploadServiceImpl(factory, channels, encryption, emptyList()).poll(
+            Platform.TUMBLR,
+            "post-2",
+            7L,
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.confirmation).isEqualTo(com.ongo.application.video.PublishConfirmation.UNKNOWN)
+    }
+
+    @Test
     fun `4xx 게시 오류는 예외를 밖으로 재전파하지 않고 실패 결과로 남긴다`() {
         val factory = mockk<PlatformClientFactory>()
         val channels = mockk<ChannelRepository>()
