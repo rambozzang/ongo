@@ -108,8 +108,14 @@ pipeline {
                     sh 'rsync -av --delete --exclude=".git" backend/ /data/ongo/src/backend/'
                     sh 'rsync -av --delete --exclude=".git" deploy/ /data/ongo/src/deploy/'
 
-                    echo 'Executing deployment script for backend...'
-                    sh 'JENKINS_NODE_COOKIE=dontKillMe bash /data/ongo/src/deploy/deploy.sh backend --skip-git --skip-build'
+                    // 배포 대상 서버의 build/libs 또는 jar 디렉터리에 남아 있던
+                    // 이전 산출물을 고르면 컴파일 성공 후에도 삭제된 Bean이 실행된다.
+                    // 방금 테스트한 Jenkins 산출물을 명시적으로 전달한다.
+                    sh '''
+                        ARTIFACT="$(find "$PWD/backend/onGo-api/build/libs" -maxdepth 1 -type f -name 'ongo-api-*.jar' ! -name '*-plain.jar' -print -quit)"
+                        test -n "$ARTIFACT"
+                        JENKINS_NODE_COOKIE=dontKillMe bash /data/ongo/src/deploy/deploy.sh backend --skip-git --skip-build --artifact="$ARTIFACT"
+                    '''
                 }
             }
         }

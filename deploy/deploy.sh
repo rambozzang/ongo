@@ -31,6 +31,7 @@ ENV_FILE="$BASE_DIR/.env"
 DEPLOY_TARGET="${1:-all}"
 SKIP_GIT=false
 SKIP_BUILD=false
+DEPLOY_ARTIFACT=""
 
 # Argument Parsing
 for arg in "$@"; do
@@ -41,6 +42,10 @@ for arg in "$@"; do
             ;;
         --skip-build)
             SKIP_BUILD=true
+            shift
+            ;;
+        --artifact=*)
+            DEPLOY_ARTIFACT="${arg#--artifact=}"
             shift
             ;;
     esac
@@ -111,21 +116,32 @@ deploy_backend() {
     # the deployment before the fallback can run (the service is then never
     # restarted even though the Gradle build succeeded).
     JAR_FILE=""
-    shopt -s nullglob
-    JAR_CANDIDATES=(onGo-api/build/libs/ongo-api-*-boot.jar)
-    if [ "${#JAR_CANDIDATES[@]}" -eq 0 ]; then
-        for candidate in onGo-api/build/libs/ongo-api-*.jar; do
-            [[ "$candidate" == *-plain.jar ]] && continue
-            JAR_CANDIDATES+=("$candidate")
-        done
-    fi
-    shopt -u nullglob
-    if [ "${#JAR_CANDIDATES[@]}" -gt 0 ]; then
-        # There is normally one artifact; sort by modification time when a
-        # workspace still contains outputs from more than one build.
-        JAR_FILE=$(for candidate in "${JAR_CANDIDATES[@]}"; do
-            printf '%s\t%s\n' "$(stat -c '%Y' "$candidate" 2>/dev/null || stat -f '%m' "$candidate" 2>/dev/null)" "$candidate"
-        done | sort -nr | cut -f2- | sed -n '1p')
+    if [ -n "$DEPLOY_ARTIFACT" ]; then
+        # CI must deploy the exact artifact it just tested. This avoids
+        # accidentally selecting an older build from the production checkout.
+        if [ ! -f "$DEPLOY_ARTIFACT" ]; then
+            error "전달된 배포 JAR을 찾을 수 없습니다: $DEPLOY_ARTIFACT"
+            exit 1
+        fi
+        JAR_FILE="$DEPLOY_ARTIFACT"
+        info "CI 빌드 산출물 사용: $JAR_FILE"
+    else
+        shopt -s nullglob
+        JAR_CANDIDATES=(onGo-api/build/libs/ongo-api-*-boot.jar)
+        if [ "${#JAR_CANDIDATES[@]}" -eq 0 ]; then
+            for candidate in onGo-api/build/libs/ongo-api-*.jar; do
+                [[ "$candidate" == *-plain.jar ]] && continue
+                JAR_CANDIDATES+=("$candidate")
+            done
+        fi
+        shopt -u nullglob
+        if [ "${#JAR_CANDIDATES[@]}" -gt 0 ]; then
+            # There is normally one artifact; sort by modification time when a
+            # workspace still contains outputs from more than one build.
+            JAR_FILE=$(for candidate in "${JAR_CANDIDATES[@]}"; do
+                printf '%s\t%s\n' "$(stat -c '%Y' "$candidate" 2>/dev/null || stat -f '%m' "$candidate" 2>/dev/null)" "$candidate"
+            done | sort -nr | cut -f2- | sed -n '1p')
+        fi
     fi
     if [ -z "$JAR_FILE" ]; then
         error "JAR 파일을 찾을 수 없습니다. 빌드 실패!"
