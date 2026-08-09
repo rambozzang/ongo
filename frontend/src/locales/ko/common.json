@@ -4159,6 +4159,7 @@
     "dailyViewsTrend": "일별 조회수 추이",
     "notEnoughData": "데이터가 충분하지 않습니다",
     "platformComparison": "플랫폼 간 비교",
+    "analyticsLoadFailed": "성과 데이터를 불러오지 못했습니다. 기존 데이터가 있다면 그대로 표시합니다.",
     "noAnalyticsData": "분석 데이터가 없습니다",
     "commentsPhase2": "댓글 통합 관리 기능은 Phase 2에서 제공됩니다.",
     "commentsPhase2Hint": "플랫폼별 댓글 조회 및 답글 작성이 가능해집니다.",

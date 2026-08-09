@@ -87,7 +87,7 @@ class PublishVideoUseCaseTest {
         var nextUploadId = 1L
 
         every { videoRepository.findById(videoId) } returns video
-        every { videoRepository.update(any()) } answers { firstArg() }
+        every { videoRepository.claimForPublish(userId, videoId) } returns true
         every { channelRepository.findByUserIdAndPlatform(userId, any()) } answers {
             Channel(
                 id = 100L,
@@ -135,6 +135,50 @@ class PublishVideoUseCaseTest {
         assertEquals(7, event.captured.platformConfigs.map { it.videoUploadId }.distinct().size)
         verify(exactly = 7) { videoUploadRepository.save(any()) }
         verify(exactly = 7) { videoPlatformMetaRepository.save(any()) }
+    }
+
+    @Test
+    fun `concurrent publish reservation is rejected before creating platform rows`() {
+        val userId = 42L
+        val videoId = 900L
+        every { videoRepository.findById(videoId) } returns Video(
+            id = videoId,
+            userId = userId,
+            title = "원본 영상",
+            fileUrl = "https://storage.test/original.mp4",
+            status = UploadStatus.DRAFT,
+        )
+        every { videoRepository.claimForPublish(userId, videoId) } returns false
+        every { channelRepository.findByUserIdAndPlatform(userId, Platform.YOUTUBE) } returns Channel(
+            id = 100L,
+            userId = userId,
+            platform = Platform.YOUTUBE,
+            platformChannelId = "channel-youtube",
+            channelName = "테스트 채널",
+            accessToken = EncryptedToken("encrypted-token"),
+        )
+
+        assertFailsWith<IllegalStateException> {
+            useCase().publishVideo(
+                userId = userId,
+                videoId = videoId,
+                configs = listOf(
+                    PlatformUploadConfig(
+                        platform = Platform.YOUTUBE,
+                        videoUploadId = 0L,
+                        title = "게시 시도",
+                        description = null,
+                        tags = emptyList(),
+                        visibility = Visibility.PUBLIC,
+                        thumbnailUrl = null,
+                        scheduledAt = null,
+                    ),
+                ),
+            )
+        }
+
+        verify(exactly = 0) { videoUploadRepository.save(any()) }
+        verify(exactly = 0) { eventPublisher.publishEvent(any()) }
     }
 
     private fun useCase() = PublishVideoUseCase(

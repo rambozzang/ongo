@@ -148,6 +148,19 @@ class VideoJooqRepository(
         return findById(video.id!!)!!
     }
 
+    /**
+     * Serialize concurrent publish requests at the database boundary.
+     * A read-then-update check in the use case is not enough: two requests can
+     * both observe DRAFT before either one writes its upload rows.
+     */
+    override fun claimForPublish(userId: Long, videoId: Long): Boolean =
+        dsl.update(VIDEOS)
+            .set(STATUS, UploadStatus.UPLOADING.name)
+            .where(ID.eq(videoId))
+            .and(USER_ID.eq(userId))
+            .and(STATUS_TEXT.eq(UploadStatus.DRAFT.name))
+            .execute() == 1
+
     override fun delete(id: Long) {
         dsl.deleteFrom(VIDEOS)
             .where(ID.eq(id))

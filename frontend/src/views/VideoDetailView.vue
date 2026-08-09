@@ -202,6 +202,22 @@
 
       <!-- Platform Analytics Section -->
       <div v-if="video.uploads.length > 0" class="mb-6">
+        <div
+          v-if="analyticsError"
+          class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong"
+          role="alert"
+        >
+          <span class="flex-1">{{ analyticsError }}</span>
+          <button
+            type="button"
+            class="btn-secondary min-h-11"
+            :disabled="analyticsLoading"
+            @click="video && fetchAnalytics(video.id)"
+          >
+            {{ analyticsLoading ? $t('action.loading') : $t('action.retry') }}
+          </button>
+        </div>
+
         <!-- Platform Tab Selector -->
         <div class="mb-4 flex gap-1 overflow-x-auto rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
           <button
@@ -528,6 +544,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import {
   ArrowLeftIcon,
@@ -576,9 +593,10 @@ const props = defineProps<{
 // ---- Router & Store ----
 
 const router = useRouter()
+const { t } = useI18n()
 const { currentLocale } = useLocale()
 const videoStore = useVideoStore()
-const { currentVideo: video, loading } = storeToRefs(videoStore)
+const { currentVideo: video, isLoadingDetail: loading } = storeToRefs(videoStore)
 
 // ---- Reactive State ----
 
@@ -588,6 +606,7 @@ const showPreviewModal = ref(false)
 const selectedPlatform = ref<Platform | null>(null)
 const analyticsData = ref<VideoAnalytics[]>([])
 const analyticsLoading = ref(false)
+const analyticsError = ref<string | null>(null)
 const retryingUploadId = ref<number | null>(null)
 
 // ---- Computed ----
@@ -728,10 +747,11 @@ async function handleDelete() {
 
 async function fetchAnalytics(videoId: number) {
   analyticsLoading.value = true
+  analyticsError.value = null
   try {
     analyticsData.value = await analyticsApi.videoAnalytics(videoId)
   } catch {
-    analyticsData.value = []
+    analyticsError.value = t('videoDetail.analyticsLoadFailed')
   } finally {
     analyticsLoading.value = false
   }

@@ -87,8 +87,13 @@ class PublishVideoUseCase(
             }
         }
 
-        // 영상 상태를 UPLOADING으로 변경
-        videoRepository.update(video.copy(status = UploadStatus.UPLOADING))
+        // The status read above is only advisory. Reserve the row atomically so
+        // concurrent clicks cannot both create durable platform upload rows.
+        // Validation happens first so a rejected request never strands the video
+        // in UPLOADING without any durable platform rows.
+        if (!videoRepository.claimForPublish(userId, videoId)) {
+            throw IllegalStateException("이미 게시 준비 중인 영상입니다. 현재 게시 상태를 확인해주세요.")
+        }
 
         // 각 플랫폼별 VideoUpload + VideoPlatformMeta 생성
         val platformConfigs = configs.map { config ->

@@ -4169,6 +4169,7 @@
     "dailyViewsTrend": "Daily views trend",
     "notEnoughData": "Not enough data yet",
     "platformComparison": "Platform comparison",
+    "analyticsLoadFailed": "Performance data could not be loaded. Existing data is still shown when available.",
     "noAnalyticsData": "No analytics data",
     "commentsPhase2": "Unified comment management arrives in Phase 2.",
     "commentsPhase2Hint": "You'll be able to view and reply to comments on each platform.",

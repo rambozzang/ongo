@@ -11,5 +11,7 @@ interface VideoRepository {
     fun countByUserIdAndMonth(userId: Long, yearMonth: YearMonth): Long
     fun save(video: Video): Video
     fun update(video: Video): Video
+    /** Atomically reserves a DRAFT for one publish request. */
+    fun claimForPublish(userId: Long, videoId: Long): Boolean
     fun delete(id: Long)
 }
