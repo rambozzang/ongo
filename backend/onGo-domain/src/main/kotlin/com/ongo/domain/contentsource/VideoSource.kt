@@ -15,4 +15,7 @@ enum class VideoSource {
 
     /** YouTube/TikTok/Instagram 등 외부 URL 에서 가져옴 */
     URL_IMPORT,
+
+    /** 작성 화면에서 서버가 생성함 */
+    GENERATED,
 }

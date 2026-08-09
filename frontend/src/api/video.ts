@@ -51,6 +51,16 @@ export const videoApi = {
     return apiClient.post<ResData<Video>>('/videos', request).then(unwrapResponse)
   },
 
+  generate(request: {
+    type: 'image-text-slides'
+    output: 'vertical' | 'horizontal'
+    customParams: { prompt: string; title?: string; tags?: string[] }
+  }) {
+    return apiClient
+      .post<ResData<Array<{ id: string; path: string }>>>('/videos/generate', request, { timeout: 240000 })
+      .then(unwrapResponse)
+  },
+
   update(id: number, request: Partial<VideoCreateRequest>) {
     return apiClient.put<ResData<Video>>(`/videos/${id}`, request).then(unwrapResponse)
   },

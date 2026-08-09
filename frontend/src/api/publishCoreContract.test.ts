@@ -77,6 +77,24 @@ describe('publish core API contracts', () => {
     expect(post).toHaveBeenCalledWith('/videos/7/upload/complete')
   })
 
+  it('creates a server-rendered source video with the same compose flow', async () => {
+    await videoApi.generate({
+      type: 'image-text-slides',
+      output: 'vertical',
+      customParams: { prompt: '오늘의 팁', title: '제목', tags: ['tip'] },
+    })
+
+    expect(post).toHaveBeenCalledWith(
+      '/videos/generate',
+      {
+        type: 'image-text-slides',
+        output: 'vertical',
+        customParams: { prompt: '오늘의 팁', title: '제목', tags: ['tip'] },
+      },
+      { timeout: 240000 },
+    )
+  })
+
   it('keeps list, detail, feed, and translation paths server-backed', async () => {
     await videoApi.list({ page: 0, size: 20, sort: 'createdAt,desc' })
     expect(get).toHaveBeenCalledWith('/videos', { params: { page: 0, size: 20, sort: 'createdAt,desc' } })

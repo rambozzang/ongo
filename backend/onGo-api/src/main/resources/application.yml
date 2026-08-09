@@ -151,6 +151,12 @@ shorts:
     crf: ${SHORTS_RENDER_CRF:20}
     preset: ${SHORTS_RENDER_PRESET:medium}
 
+# 작성 화면에서 생성하는 텍스트 슬라이드 영상
+# 동일한 ffmpeg 바이너리를 사용하며, 생성 요청은 이 시간 안에 끝나지 않으면 실패 처리한다.
+video:
+  generation:
+    timeout-seconds: ${VIDEO_GENERATION_TIMEOUT_SECONDS:180}
+
 # Payment (PortOne V2)
 payment:
   portone:

@@ -22,8 +22,9 @@
         </button>
       </div>
 
-      <!-- 파일 -->
+      <!-- 업로드/임포트 파일 -->
       <div
+        v-if="sourceMode !== 'generate'"
         class="flex items-center gap-3.5 rounded-[11px] border border-line bg-surface-card p-3.5"
       >
         <ThumbPlaceholder :src="file.thumbnailUrl" :width="104" :height="62" />
@@ -47,6 +48,40 @@
           </button>
         </div>
         <input ref="fileInput" type="file" accept="video/*" class="hidden" @change="onFileChosen" />
+      </div>
+
+      <!-- 서버 영상 생성 -->
+      <div v-else class="rounded-[11px] border border-line bg-surface-card p-3.5">
+        <label for="generate-video-prompt" class="block text-[11.5px] font-semibold text-content-secondary">
+          {{ t('redesign.compose.generatePromptLabel') }}
+        </label>
+        <textarea
+          id="generate-video-prompt"
+          v-model="generationPrompt"
+          maxlength="2000"
+          class="input-field mt-2 min-h-[100px] w-full !text-[12px]"
+          :placeholder="t('redesign.compose.generatePromptPlaceholder')"
+        />
+        <div class="mt-2 flex items-end gap-2">
+          <label class="min-w-0 flex-1 text-[11px] text-content-secondary">
+            {{ t('redesign.compose.generateOutputLabel') }}
+            <select v-model="generationOutput" class="input-field mt-1 w-full !text-[11px]">
+              <option value="vertical">{{ t('redesign.compose.generateVertical') }}</option>
+              <option value="horizontal">{{ t('redesign.compose.generateHorizontal') }}</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            class="btn-primary shrink-0 !text-[11px]"
+            :disabled="generating || !generationPrompt.trim()"
+            @click="generateVideo"
+          >
+            {{ generating ? t('redesign.compose.generating') : t('redesign.compose.generateAction') }}
+          </button>
+        </div>
+        <p class="mt-2 text-[10.5px] leading-4 text-content-tertiary">
+          {{ t('redesign.compose.generateHint') }}
+        </p>
       </div>
 
       <div
@@ -570,9 +605,12 @@ const uploadStore = useUploadStore()
 const workspaceStore = useWorkspaceStore()
 
 const fileInput = ref<HTMLInputElement | null>(null)
-const sourceMode = ref<'file' | 'url'>('file')
+const sourceMode = ref<'file' | 'url' | 'generate'>('file')
 const importUrl = ref('')
 const importing = ref(false)
+const generationPrompt = ref('')
+const generationOutput = ref<'vertical' | 'horizontal'>('vertical')
+const generating = ref(false)
 const importedVideoId = ref<number | null>(null)
 const importAvailability = ref<{ available: boolean; reason?: string | null } | null>(null)
 const submitting = ref(false)
@@ -636,10 +674,11 @@ const file = reactive({ name: '', thumbnailUrl: null as string | null, meta: '' 
 const sourceModes = computed(() => [
   { key: 'file' as const, label: t('redesign.compose.fileSourceUpload') },
   { key: 'url' as const, label: t('redesign.compose.fileSourceUrl') },
+  { key: 'generate' as const, label: t('redesign.compose.fileSourceGenerate') },
 ])
 const importAvailable = computed(() => importAvailability.value?.available === true)
 
-function selectSourceMode(mode: 'file' | 'url') {
+function selectSourceMode(mode: 'file' | 'url' | 'generate') {
   sourceMode.value = mode
   if (mode === 'file') importedVideoId.value = null
 }
@@ -1432,6 +1471,42 @@ async function importFromUrl() {
     notice.value = error instanceof Error ? error.message : t('redesign.compose.importFailed')
   } finally {
     importing.value = false
+  }
+}
+
+async function generateVideo() {
+  const prompt = generationPrompt.value.trim()
+  if (!prompt || generating.value) return
+  generating.value = true
+  notice.value = ''
+  try {
+    const result = await videoApi.generate({
+      type: 'image-text-slides',
+      output: generationOutput.value,
+      customParams: {
+        prompt,
+        title: form.title || prompt.split(/\r?\n/, 1)[0].slice(0, 100),
+        tags: parseHashtags(form.hashtags),
+      },
+    })
+    const generated = result[0]
+    if (!generated?.id) throw new Error(t('redesign.compose.generateFailed'))
+    const videoId = Number(generated.id)
+    if (!Number.isSafeInteger(videoId) || videoId <= 0) {
+      throw new Error(t('redesign.compose.generateFailed'))
+    }
+    importedVideoId.value = videoId
+    uploadStore.resetUpload()
+    uploadStore.videoId = videoId
+    file.name = `generated-${videoId}.mp4`
+    file.meta = generationOutput.value === 'vertical' ? '8초 · 9:16' : '8초 · 16:9'
+    if (!form.title) form.title = prompt.split(/\r?\n/, 1)[0].slice(0, 100)
+    notice.value = t('redesign.compose.generateSuccess')
+    await generateMetadataFor(videoId)
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : t('redesign.compose.generateFailed')
+  } finally {
+    generating.value = false
   }
 }
 

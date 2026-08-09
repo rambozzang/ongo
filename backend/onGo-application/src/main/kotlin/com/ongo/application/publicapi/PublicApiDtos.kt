@@ -123,6 +123,17 @@ data class PublicRemoteMediaUploadRequest(
     val filename: String? = null,
 )
 
+data class PublicGenerateVideoRequest(
+    val type: String,
+    val output: String,
+    val customParams: JsonNode,
+)
+
+data class PublicGeneratedVideoResponse(
+    val id: String,
+    val path: String,
+)
+
 data class PublicMissingContentResponse(
     val integration: String,
     val missing: List<String>,

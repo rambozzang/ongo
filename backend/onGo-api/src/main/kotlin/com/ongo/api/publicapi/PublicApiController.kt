@@ -12,6 +12,8 @@ import com.ongo.application.publicapi.PublicPostResponse
 import com.ongo.application.publicapi.PublicIntegrationSettingsResponse
 import com.ongo.application.publicapi.PublicConnectionResponse
 import com.ongo.application.publicapi.PublicRemoteMediaUploadRequest
+import com.ongo.application.publicapi.PublicGenerateVideoRequest
+import com.ongo.application.publicapi.GeneratedVideoUseCase
 import com.ongo.application.publicapi.PublicMissingContentResponse
 import com.ongo.application.publicapi.PublicReleaseIdRequest
 import com.ongo.application.publicapi.PublicGroupResponse
@@ -50,6 +52,7 @@ class PublicApiController(
     private val channelUseCase: ChannelUseCase,
     private val notificationUseCase: NotificationUseCase,
     private val workspaceUseCase: WorkspaceUseCase,
+    private val generatedVideoUseCase: GeneratedVideoUseCase,
 ) {
 
     @Operation(summary = "organization groups 조회")
@@ -163,6 +166,17 @@ class PublicApiController(
     ): ResponseEntity<ResData<com.ongo.application.publicapi.PublicMediaUploadResponse>> {
         requireApiKey(authentication)
         return ResData.success(mediaUseCase.uploadFromUrl(userId, request.url, request.filename))
+    }
+
+    @Operation(summary = "텍스트 슬라이드 영상 생성", description = "생성된 영상을 영상 목록에 저장하고 즉시 게시 대상에 사용할 수 있습니다.")
+    @PostMapping("/generate-video")
+    fun generateVideo(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @RequestBody request: PublicGenerateVideoRequest,
+    ): ResponseEntity<ResData<List<com.ongo.application.publicapi.PublicGeneratedVideoResponse>>> {
+        requireApiKey(authentication)
+        return ResData.success(generatedVideoUseCase.generate(userId, request))
     }
 
     @Operation(summary = "integration의 다음 예약 가능 시간 조회")
