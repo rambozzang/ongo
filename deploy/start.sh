@@ -36,6 +36,11 @@ if [ -n "$MISSING_VARS" ]; then
     exit 1
 fi
 
+if [ ! -f "$JAR_PATH" ]; then
+    echo "[ERROR] 실행할 JAR 파일이 없습니다: $JAR_PATH"
+    exit 1
+fi
+
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] $APP_NAME 시작..."
 
 # 이미 실행 중인지 확인
@@ -47,6 +52,9 @@ if [ -f "$PID_FILE" ]; then
     fi
     rm -f "$PID_FILE"
 fi
+
+# 이전 기동의 성공 문구를 새 기동 성공으로 오인하지 않도록 로그를 비운다.
+: > "$LOG_DIR/backend.log"
 
 # setsid로 완전히 독립된 프로세스로 실행
 setsid java \
@@ -66,19 +74,31 @@ echo "서비스 시작 대기 중 (로그 모니터링)..."
 MAX_RETRY=90
 COUNT=0
 STARTED=false
+SERVER_PORT="${SERVER_PORT:-8070}"
+
+process_alive() {
+    local pid
+    pid=$(cat "$PID_FILE" 2>/dev/null || true)
+    [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+    ps -p "$pid" -o command= 2>/dev/null | grep -q 'ongo-api.jar'
+}
+
+health_ready() {
+    command -v curl >/dev/null 2>&1 || return 1
+    curl -fsS --max-time 2 "http://127.0.0.1:${SERVER_PORT}/actuator/health" 2>/dev/null \
+        | grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"'
+}
 
 while [ $COUNT -lt $MAX_RETRY ]; do
-    if grep -q "Started .* in .* seconds" "$LOG_DIR/backend.log"; then
+    if process_alive && { grep -q "Started .* in .* seconds" "$LOG_DIR/backend.log" || health_ready; }; then
         STARTED=true
         break
     fi
 
     # 프로세스가 죽었는지 체크
-    if [ -f "$PID_FILE" ]; then
-        if ! ps -p $(cat "$PID_FILE") > /dev/null 2>&1; then
-            echo "프로세스가 비정상 종료되었습니다."
-            break
-        fi
+    if ! process_alive; then
+        echo "프로세스가 비정상 종료되었습니다."
+        break
     fi
 
     sleep 1
@@ -93,5 +113,6 @@ if [ "$STARTED" = true ]; then
 else
     echo "$APP_NAME 시작 실패 또는 타임아웃! 최신 로그:"
     tail -n 50 "$LOG_DIR/backend.log"
+    rm -f "$PID_FILE"
     exit 1
 fi
