@@ -145,8 +145,13 @@ class DailymotionClientHttpContractTest {
             MockResponse()
                 .setHeader("Content-Type", "application/json")
                 .setBody("""
-                    {"video_id":"dm-video-2","title":"기존 제목","description":"기존 설명","tags":["one"],"processing":false,"is_published":true,"views_total":42,"likes_total":3,"comments_total":1}
+                    {"video_id":"dm-video-2","title":"기존 제목","description":"기존 설명","tags":["one"],"processing":false,"is_published":true}
                 """.trimIndent()),
+        )
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""{"id":"dm-video-2","views_total":42,"likes_total":3,"comments_total":1}"""),
         )
         server.enqueue(MockResponse().setResponseCode(204))
         server.enqueue(MockResponse().setResponseCode(204))
@@ -184,6 +189,10 @@ class DailymotionClientHttpContractTest {
         val metadataRequest = server.takeRequest()
         assertThat(metadataRequest.path).contains("/v2/videos/dm-video-2?fields=")
         assertThat(metadataRequest.getHeader("Authorization")).isEqualTo("Bearer dm-token")
+
+        val countersRequest = server.takeRequest()
+        assertThat(countersRequest.path).isEqualTo("/video/dm-video-2?fields=id%2Cviews_total%2Clikes_total%2Ccomments_total")
+        assertThat(countersRequest.getHeader("Authorization")).isEqualTo("Bearer dm-token")
 
         val updateRequest = server.takeRequest()
         assertThat(updateRequest.method).isEqualTo("PATCH")

@@ -208,9 +208,16 @@ class DailymotionClient(
         return try {
             val response = dailymotionApi.getVideoV2(
                 videoId = platformVideoId,
-                fields = "video_id,title,description,tags,processing,is_published,views_total,likes_total,comments_total,video_url",
+                fields = "video_id,title,description,tags,processing,is_published,video_url",
                 authorization = "Bearer $accessToken",
             )
+            val counters = runCatching {
+                dailymotionApi.getVideoLegacy(
+                    videoId = platformVideoId,
+                    fields = "id,views_total,likes_total,comments_total",
+                    authorization = "Bearer $accessToken",
+                )
+            }.getOrNull()
             PlatformVideoMetadata(
                 title = response.title.orEmpty(),
                 description = response.description.orEmpty(),
@@ -220,9 +227,9 @@ class DailymotionClient(
                     response.isPublished == true -> "published"
                     else -> response.status ?: "ready"
                 },
-                viewCount = response.viewsTotal ?: 0,
-                likeCount = response.likesTotal ?: 0,
-                commentCount = response.commentsTotal ?: 0,
+                viewCount = counters?.viewsTotal ?: 0,
+                likeCount = counters?.likesTotal ?: 0,
+                commentCount = counters?.commentsTotal ?: 0,
             )
         } catch (e: Exception) {
             log.warn("Dailymotion 메타데이터 조회 실패: {}", e.message)
