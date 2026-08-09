@@ -176,11 +176,13 @@
 
       <!-- 문구 탭 -->
       <section class="mt-[18px] overflow-hidden rounded-[11px] border border-line bg-surface-card">
-        <div class="flex border-b border-line-row">
+        <div class="flex border-b border-line-row" role="tablist">
           <button
             v-for="tab in tabs"
             :key="tab.key"
             type="button"
+            role="tab"
+            :aria-selected="activeTab === tab.key"
             class="px-[15px] py-[11px] text-[12px] transition-colors"
             :class="
               activeTab === tab.key
@@ -195,7 +197,7 @@
 
         <div class="p-[15px]">
           <div class="flex items-center justify-between gap-2">
-            <label class="block text-[11.5px] text-content-secondary">{{
+            <label for="compose-title" class="block text-[11.5px] text-content-secondary">{{
               t('redesign.compose.title')
             }}</label>
             <div class="flex items-center gap-2">
@@ -214,6 +216,7 @@
           </div>
           <div class="mt-1.5 flex items-center gap-2">
             <input
+              id="compose-title"
               v-model="activeDraft.title"
               type="text"
               class="input-field !text-[12.5px]"
@@ -229,10 +232,11 @@
             </span>
           </div>
 
-          <label class="mt-3.5 block text-[11.5px] text-content-secondary">
+          <label for="compose-description" class="mt-3.5 block text-[11.5px] text-content-secondary">
             {{ t('redesign.compose.description') }}
           </label>
           <textarea
+            id="compose-description"
             v-model="activeDraft.description"
             class="input-field mt-1.5 min-h-[92px] !text-[12.5px]"
             :maxlength="descriptionLimit > 0 ? descriptionLimit : undefined"
@@ -246,10 +250,11 @@
             {{ activeDraft.description.length }} / {{ descriptionLimit || '∞' }}
           </div>
 
-          <label class="mt-3.5 block text-[11.5px] text-content-secondary">
+          <label for="compose-hashtags" class="mt-3.5 block text-[11.5px] text-content-secondary">
             {{ t('redesign.compose.hashtags') }}
           </label>
           <textarea
+            id="compose-hashtags"
             v-model="activeDraft.hashtags"
             class="input-field mt-1.5 min-h-[62px] !text-[12.5px] !text-accent"
             :aria-invalid="tagsOver"
@@ -295,17 +300,18 @@
         {{ t('redesign.compose.scheduleTitle') }}
       </h2>
       <div class="mt-2.5 space-y-2">
-        <button
-          v-for="opt in scheduleOptions"
+          <button
+            v-for="opt in scheduleOptions"
           :key="opt.key"
           type="button"
           class="flex w-full items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors"
-          :class="
+            :class="
             schedMode === opt.key
               ? 'border-accent bg-accent-dim'
               : 'border-line-control hover:border-line-hover'
-          "
-          @click="schedMode = opt.key"
+            "
+            :aria-pressed="schedMode === opt.key"
+            @click="schedMode = opt.key"
         >
           <span
             class="mt-0.5 flex h-3 w-3 shrink-0 items-center justify-center rounded-full border"
@@ -334,8 +340,10 @@
 
       <input
         v-if="schedMode === 'fix'"
+        id="compose-fixed-at"
         v-model="fixedAt"
         type="datetime-local"
+        :aria-label="t('redesign.compose.fixedAtLabel')"
         class="input-field mt-2 !text-[12px]"
       />
 
@@ -348,18 +356,28 @@
         </label>
         <div v-if="recurringEnabled" class="mt-2.5 space-y-2">
           <div class="grid grid-cols-2 gap-2">
-            <select v-model="recurringFrequency" class="input-field !text-[11.5px]">
+            <select
+              v-model="recurringFrequency"
+              class="input-field !text-[11.5px]"
+              :aria-label="t('redesign.compose.recurringFrequencyLabel')"
+            >
               <option value="DAILY">매일</option>
               <option value="WEEKLY">매주</option>
               <option value="BIWEEKLY">격주</option>
               <option value="MONTHLY">매월</option>
             </select>
-            <input v-model="recurringTime" type="time" class="input-field !text-[11.5px]" />
+            <input
+              v-model="recurringTime"
+              type="time"
+              class="input-field !text-[11.5px]"
+              :aria-label="t('redesign.compose.recurringTimeLabel')"
+            />
           </div>
           <select
             v-if="recurringFrequency === 'WEEKLY' || recurringFrequency === 'BIWEEKLY'"
             v-model.number="recurringDayOfWeek"
             class="input-field !text-[11.5px]"
+            :aria-label="t('redesign.compose.recurringDayOfWeekLabel')"
           >
             <option :value="1">월요일</option>
             <option :value="2">화요일</option>
@@ -377,6 +395,7 @@
             max="31"
             class="input-field !text-[11.5px]"
             placeholder="매월 일자 (1~31)"
+            :aria-label="t('redesign.compose.recurringDayOfMonthLabel')"
           />
           <p class="text-[10.5px] leading-4 text-content-tertiary">
             {{ t('redesign.compose.recurringHint') }}

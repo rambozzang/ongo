@@ -95,8 +95,14 @@
               v-for="s in schedulesOf(day)"
               :key="s.id"
               draggable="true"
+              role="button"
+              tabindex="0"
+              :aria-label="`${s.videoTitle}, ${timeOf(s.scheduledAt)}`"
               class="cursor-grab rounded-[8px] border border-line-control bg-surface-raised px-[9px] py-2 transition-[border-color] duration-[120ms] ease-out hover:border-accent"
               :class="store.moving ? 'opacity-60' : ''"
+              @click="openSchedule(s)"
+              @keydown.enter.prevent="openSchedule(s)"
+              @keydown.space.prevent="openSchedule(s)"
               @dragstart="onDragStart(s, $event)"
               @dragover.prevent.stop
               @drop.stop="onDropToBlock(day, s, $event)"
@@ -123,6 +129,7 @@
             <button
               type="button"
               class="flex min-h-[34px] items-center justify-center rounded-[8px] border border-dashed border-line-soft text-[11px] text-content-quaternary transition-colors duration-[120ms] ease-out hover:border-accent hover:text-accent"
+              :aria-label="t('redesign.calendar.addSchedule', { date: toDateStr(day) })"
               @click="goCompose(day)"
             >
               +
@@ -362,6 +369,10 @@ function goCompose(day: Date) {
   const at = new Date(day)
   at.setHours(9, 0, 0, 0)
   router.push({ path: '/compose', query: { at: toDateTimeLocal(at) } })
+}
+
+function openSchedule(schedule: Schedule) {
+  router.push(`/videos/${schedule.videoId}`)
 }
 
 function recurringSummary(schedule: RecurringSchedule): string {
