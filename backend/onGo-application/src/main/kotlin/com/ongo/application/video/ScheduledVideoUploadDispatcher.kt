@@ -79,6 +79,7 @@ class ScheduledVideoUploadDispatcher(
                                 tags = meta?.tags ?: emptyList(),
                                 visibility = meta?.visibility ?: com.ongo.common.enums.Visibility.PUBLIC,
                                 thumbnailUrl = meta?.customThumbnailUrl,
+                                customSettingsJson = meta?.customSettingsJson,
                                 // durable queue가 due 작업을 깨웠으므로 플랫폼에는 과거 시각을
                                 // 다시 전달하지 않는다. 여기부터는 즉시 게시 호출이다.
                                 scheduledAt = null,

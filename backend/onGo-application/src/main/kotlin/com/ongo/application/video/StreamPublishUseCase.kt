@@ -209,6 +209,7 @@ class StreamPublishUseCase(
                                     tags = ctx.meta.tags,
                                     visibility = ctx.meta.visibility,
                                     thumbnailUrl = ctx.meta.customThumbnailUrl,
+                                    customSettingsJson = ctx.meta.customSettingsJson,
                                     fileSize = fileSize,
                                     scheduledAt = ctx.scheduledAt,
                                 )
@@ -672,6 +673,7 @@ class StreamPublishUseCase(
                     tags = meta?.tags ?: video.tags,
                     visibility = meta?.visibility ?: Visibility.PUBLIC,
                     thumbnailUrl = meta?.customThumbnailUrl ?: video.thumbnailUrls.firstOrNull(),
+                    customSettingsJson = meta?.customSettingsJson,
                     fileSize = fileSize,
                     // The due scheduler is already at the requested time. Do
                     // not pass a past time to a provider's native scheduler.

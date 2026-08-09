@@ -49,6 +49,8 @@ data class PublicIntegrationResponse(
     val identifier: String,
     val provider: String,
     val picture: String?,
+    val disabled: Boolean,
+    val profile: String?,
     val status: String,
 )
 
@@ -57,6 +59,9 @@ data class PublicPostTargetResponse(
     val status: String,
     val platformUrl: String?,
     val error: String?,
+    val providerIdentifier: String? = null,
+    val name: String? = null,
+    val picture: String? = null,
 )
 
 data class PublicPostResponse(
@@ -69,6 +74,17 @@ data class PublicPostResponse(
     val videoId: Long,
     val error: String?,
     val posts: List<PublicPostTargetResponse>,
+    val content: String? = null,
+)
+
+/** Exact Postiz list item shape; the API wraps these in `{ "posts": [...] }`. */
+data class PublicPostListItem(
+    val id: String,
+    val content: String,
+    val publishDate: String?,
+    val releaseURL: String?,
+    val state: String,
+    val integration: Map<String, String>?,
 )
 
 data class PublicPostCreatedResponse(
@@ -154,8 +170,8 @@ data class PublicGeneratedVideoResponse(
 )
 
 data class PublicMissingContentResponse(
-    val integration: String,
-    val missing: List<String>,
+    val id: String,
+    val url: String?,
 )
 
 data class PublicReleaseIdRequest(

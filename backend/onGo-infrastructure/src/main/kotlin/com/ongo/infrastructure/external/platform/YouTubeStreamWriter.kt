@@ -1,5 +1,7 @@
 package com.ongo.infrastructure.external.platform
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.video.PlatformStreamWriter
 import com.ongo.application.video.PlatformStreamWriterFactory
 import com.ongo.application.video.PlatformUploadResult
@@ -26,6 +28,7 @@ class YouTubeStreamWriterFactory(
 class YouTubeStreamWriter(
     private val youTubeConfig: YouTubeConfig,
     private val fileTransferHelper: PlatformFileTransferHelper,
+    private val objectMapper: ObjectMapper = jacksonObjectMapper(),
 ) : PlatformStreamWriter {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -56,6 +59,8 @@ class YouTubeStreamWriter(
         //       UNLISTED 예약은 YouTube API에서 미지원
         val isScheduled = scheduledAt != null
         val userVisibility = mapVisibility(meta.visibility.name)
+        val settings = meta.customSettingsJson
+            ?.let { runCatching { objectMapper.readTree(it) }.getOrNull() }
         val privacyStatus = if (isScheduled) "private" else userVisibility
         val publishAtIso = scheduledAt?.let {
             it.atZone(ZoneId.of("Asia/Seoul"))
@@ -76,6 +81,9 @@ class YouTubeStreamWriter(
             status = YouTubeUploadRequest.Status(
                 privacyStatus = privacyStatus,
                 publishAt = publishAtIso,
+                selfDeclaredMadeForKids = settings?.path("selfDeclaredMadeForKids")
+                    ?.takeUnless { it.isMissingNode || it.isNull }
+                    ?.asBoolean() ?: false,
             ),
         )
 

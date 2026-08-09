@@ -109,7 +109,7 @@ onGo 백엔드 애플리케이션에서 사용하는 환경변수 목록입니�
 
 | 환경변수 | 설명 | 기본값 | 필수 여부 |
 |---|---|---|---|
-| `CORS_ALLOWED_ORIGINS` | 허용할 Origin 목록 (쉼표 구분) | `http://localhost:3000,http://localhost:3001,http://localhost:5173,https://ongo.kr,https://www.ongo.kr` | 선택 |
+| `CORS_ALLOWED_ORIGINS` | 허용할 Origin 목록 (쉼표 구분). prod에서 비워 두면 `APP_BASE_URL`을 동일 출처로 사용 | `APP_BASE_URL` (prod), localhost 기본값 (dev) | **필수 (prod) / 선택 (dev)** |
 
 ---
 

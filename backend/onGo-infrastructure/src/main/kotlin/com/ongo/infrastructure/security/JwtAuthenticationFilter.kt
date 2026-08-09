@@ -89,6 +89,8 @@ class JwtAuthenticationFilter(
             ?: request.getHeader("Authorization")
                 ?.takeIf { it.startsWith("Bearer og_live_", ignoreCase = false) }
                 ?.substring(7)
+            ?: request.getHeader("Authorization")
+                ?.takeIf { it.startsWith("og_live_", ignoreCase = false) }
             ?: return false
 
         val apiKey = apiKeyRepository.findActiveByHash(apiKeyUseCase.hash(rawKey), java.time.LocalDateTime.now())

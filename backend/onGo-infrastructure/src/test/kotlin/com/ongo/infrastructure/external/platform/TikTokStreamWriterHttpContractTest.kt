@@ -58,6 +58,9 @@ class TikTokStreamWriterHttpContractTest {
         assertThat(init.body.readUtf8())
             .contains("\"title\":\"테스트 영상\\n\\n설명\\n\\n#tag\"")
             .contains("\"privacy_level\":\"PUBLIC_TO_EVERYONE\"")
+            .contains("\"disable_duet\":true")
+            .contains("\"disable_comment\":false")
+            .contains("\"disable_stitch\":true")
 
         val upload = server.takeRequest()
         assertThat(upload.method).isEqualTo("PUT")
@@ -87,5 +90,6 @@ class TikTokStreamWriterHttpContractTest {
         description = "설명",
         tags = listOf("tag"),
         visibility = Visibility.PUBLIC,
+        customSettingsJson = """{"duet":false,"comment":true,"stitch":false}""",
     )
 }

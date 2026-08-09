@@ -82,5 +82,13 @@ ongo_load_env_file() {
     source "$env_file" || rc=2
     set +a
 
+    # Older production .env files predate the explicit CORS setting. Derive a
+    # same-origin allow-list from APP_BASE_URL so a routine deployment can
+    # recover without weakening the production validator. An explicit
+    # CORS_ALLOWED_ORIGINS value always wins and can contain multiple origins.
+    if [ -z "${CORS_ALLOWED_ORIGINS:-}" ] && [ -n "${APP_BASE_URL:-}" ]; then
+        export CORS_ALLOWED_ORIGINS="${APP_BASE_URL%/}"
+    fi
+
     return $rc
 }

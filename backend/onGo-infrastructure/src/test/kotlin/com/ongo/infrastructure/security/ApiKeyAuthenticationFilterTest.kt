@@ -60,6 +60,21 @@ class ApiKeyAuthenticationFilterTest {
         verify(exactly = 0) { jwtProvider.validateToken(any()) }
     }
 
+    @Test
+    fun `raw Authorization API key matches Postiz public API contract`() {
+        val raw = "og_live_test-secret"
+        every { repository.findActiveByHash(useCase.hash(raw), any()) } returns apiKey()
+
+        val request = MockHttpServletRequest("GET", "/public/v1/integrations")
+        request.addHeader("Authorization", raw)
+        filter.doFilter(request, MockHttpServletResponse(), chain)
+
+        assertEquals(77L, requireNotNull(SecurityContextHolder.getContext().authentication).principal)
+        assertTrue(requireNotNull(SecurityContextHolder.getContext().authentication)
+            .authorities.any { it.authority == "AUTH_API_KEY" })
+        verify(exactly = 0) { jwtProvider.validateToken(any()) }
+    }
+
     private fun apiKey() = ApiKey(
         id = 7L,
         userId = 77L,

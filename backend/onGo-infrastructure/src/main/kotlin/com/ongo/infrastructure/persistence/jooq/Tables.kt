@@ -296,6 +296,7 @@ object Fields {
     val VIDEO_UPLOAD_ID = DSL.field("video_upload_id", Long::class.java)
     val VISIBILITY = DSL.field("visibility", String::class.java)
     val CUSTOM_THUMBNAIL_URL = DSL.field("custom_thumbnail_url", String::class.java)
+    val CUSTOM_SETTINGS_JSON = DSL.field("custom_settings_json", String::class.java)
 
     // schedules
     val SCHEDULED_AT = DSL.field("scheduled_at", java.time.LocalDateTime::class.java)

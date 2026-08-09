@@ -10,4 +10,6 @@ data class VideoPlatformMeta(
     val tags: List<String> = emptyList(),
     val visibility: Visibility = Visibility.PUBLIC,
     val customThumbnailUrl: String? = null,
+    /** Provider-specific Postiz settings retained across retries and restarts. */
+    val customSettingsJson: String? = null,
 )

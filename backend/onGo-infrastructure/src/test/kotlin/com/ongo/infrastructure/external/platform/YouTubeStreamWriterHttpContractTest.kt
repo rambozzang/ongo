@@ -68,6 +68,7 @@ class YouTubeStreamWriterHttpContractTest {
         assertThat(metadata.body.readUtf8())
             .contains("테스트 제목")
             .contains("\"privacyStatus\":\"private\"")
+            .contains("\"selfDeclaredMadeForKids\":true")
             .contains("2026-08-10T03:30:00Z")
 
         val upload = server.takeRequest()
@@ -84,5 +85,6 @@ class YouTubeStreamWriterHttpContractTest {
         description = "테스트 설명",
         tags = listOf("tag"),
         visibility = Visibility.PUBLIC,
+        customSettingsJson = """{"selfDeclaredMadeForKids":true}""",
     )
 }

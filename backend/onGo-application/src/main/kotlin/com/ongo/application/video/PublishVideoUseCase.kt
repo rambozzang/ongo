@@ -152,8 +152,9 @@ class PublishVideoUseCase(
                     title = config.title.ifBlank { video.title },
                     description = config.description,
                     tags = config.tags,
-                    visibility = config.visibility,
-                    customThumbnailUrl = config.thumbnailUrl,
+                        visibility = config.visibility,
+                        customThumbnailUrl = config.thumbnailUrl,
+                        customSettingsJson = config.customSettingsJson,
                 )
             )
 
@@ -261,6 +262,7 @@ class PublishVideoUseCase(
                         tags = meta?.tags ?: emptyList(),
                         visibility = meta?.visibility ?: com.ongo.common.enums.Visibility.PUBLIC,
                         thumbnailUrl = meta?.customThumbnailUrl,
+                        customSettingsJson = meta?.customSettingsJson,
                         scheduledAt = null,
                     )
                 ),

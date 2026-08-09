@@ -5,6 +5,7 @@ import com.ongo.domain.video.VideoPlatformMeta
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.CUSTOM_THUMBNAIL_URL
+import com.ongo.infrastructure.persistence.jooq.Fields.CUSTOM_SETTINGS_JSON
 import com.ongo.infrastructure.persistence.jooq.Fields.DESCRIPTION
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.TAGS
@@ -57,6 +58,7 @@ class VideoPlatformMetaJooqRepository(
             .set(DSL.field("tags", Array<String>::class.java), tagsArray)
             .set(VISIBILITY, meta.visibility.name)
             .set(CUSTOM_THUMBNAIL_URL, meta.customThumbnailUrl)
+            .set(CUSTOM_SETTINGS_JSON, meta.customSettingsJson)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -73,6 +75,7 @@ class VideoPlatformMetaJooqRepository(
             .set(DSL.field("tags", Array<String>::class.java), tagsArray)
             .set(VISIBILITY, meta.visibility.name)
             .set(CUSTOM_THUMBNAIL_URL, meta.customThumbnailUrl)
+            .set(CUSTOM_SETTINGS_JSON, meta.customSettingsJson)
             .where(ID.eq(meta.id))
             .execute()
 
@@ -97,6 +100,7 @@ class VideoPlatformMetaJooqRepository(
             tags = tags,
             visibility = try { Visibility.valueOf(visibilityStr) } catch (_: Exception) { Visibility.PUBLIC },
             customThumbnailUrl = get(CUSTOM_THUMBNAIL_URL),
+            customSettingsJson = get(CUSTOM_SETTINGS_JSON),
         )
     }
 }

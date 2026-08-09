@@ -1,5 +1,7 @@
 package com.ongo.infrastructure.external.platform
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.video.PlatformStreamWriter
 import com.ongo.application.video.PlatformStreamWriterFactory
 import com.ongo.application.video.PlatformUploadResult
@@ -26,6 +28,7 @@ class TikTokStreamWriter(
     private val fileTransferHelper: PlatformFileTransferHelper,
     private val statusPollIntervalMs: Long = 2_000L,
     private val statusPollMaxAttempts: Int = 15,
+    private val objectMapper: ObjectMapper = jacksonObjectMapper(),
 ) : PlatformStreamWriter {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -57,6 +60,8 @@ class TikTokStreamWriter(
         }
 
         val privacyLevel = mapVisibility(meta.visibility.name)
+        val settings = meta.customSettingsJson
+            ?.let { runCatching { objectMapper.readTree(it) }.getOrNull() }
         val creatorInfo = tikTokApi.queryCreatorPublishInfo("Bearer ${accessToken.value}")
         if (creatorInfo.error != null) {
             throw IllegalStateException("TikTok 게시 권한 조회 실패: ${creatorInfo.error.message}")
@@ -73,6 +78,9 @@ class TikTokStreamWriter(
             postInfo = TikTokInitUploadRequest.PostInfo(
                 title = buildPostText(meta),
                 privacyLevel = privacyLevel,
+                disableDuet = settings?.booleanSetting("duet")?.not() ?: false,
+                disableComment = settings?.booleanSetting("comment")?.not() ?: false,
+                disableStitch = settings?.booleanSetting("stitch")?.not() ?: false,
             ),
             sourceInfo = TikTokInitUploadRequest.SourceInfo(
                 source = "FILE_UPLOAD",
@@ -195,6 +203,11 @@ class TikTokStreamWriter(
         "PRIVATE" -> "SELF_ONLY"
         "UNLISTED" -> "MUTUAL_FOLLOW_FRIENDS"
         else -> "SELF_ONLY"
+    }
+
+    private fun com.fasterxml.jackson.databind.JsonNode.booleanSetting(name: String): Boolean? {
+        val node = path(name)
+        return node.takeUnless { it.isMissingNode || it.isNull }?.asBoolean()
     }
 
     private fun buildPostText(meta: VideoPlatformMeta): String {

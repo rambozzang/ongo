@@ -74,7 +74,7 @@ class PublicApiUseCaseTest {
 
         assertEquals("7", result.single().id)
         assertEquals("youtube", result.single().provider)
-        assertEquals("yt-7", result.single().identifier)
+        assertEquals("youtube", result.single().identifier)
     }
 
     @Test
@@ -164,7 +164,7 @@ class PublicApiUseCaseTest {
     }
 
     @Test
-    fun `missing content는 다른 사용자의 게시물을 조회하지 않고 대상별 누락을 계산한다`() {
+    fun `missing content는 provider tool이 없으면 빈 목록을 반환한다`() {
         every { posts.findByIdAndUserId(42, 1) } returns PublicApiPost(
             id = 42,
             userId = 1,
@@ -176,8 +176,7 @@ class PublicApiUseCaseTest {
 
         val result = useCase.missingContent(1, 42)
 
-        assertEquals(listOf("content"), result.single().missing)
-        assertEquals("7", result.single().integration)
+        assertEquals(emptyList(), result)
     }
 
     @Test
@@ -238,6 +237,9 @@ class PublicApiUseCaseTest {
                     PublicPostItem(
                         integration = PublicIntegrationRef("7"),
                         value = listOf(PublicPostValue(title = "제목", content = "설명", tags = listOf("#one"))),
+                        settings = jacksonObjectMapper().readTree(
+                            """{"__type":"youtube","title":"설정 제목","description":"설정 설명","type":"private","tags":[{"value":"configured"}]}"""
+                        ),
                     ),
                 ),
             ),
@@ -246,7 +248,14 @@ class PublicApiUseCaseTest {
         assertEquals("21", response.id)
         assertEquals("processing", response.status)
         assertEquals(null, response.error)
-        verify(exactly = 1) { publishVideo.publishVideo(1, 11, any()) }
+        verify(exactly = 1) {
+            publishVideo.publishVideo(1, 11, match {
+                it.single().title == "설정 제목" &&
+                    it.single().description == "설정 설명" &&
+                    it.single().tags == listOf("configured") &&
+                    it.single().visibility == com.ongo.common.enums.Visibility.PRIVATE
+            })
+        }
     }
 
     @Test

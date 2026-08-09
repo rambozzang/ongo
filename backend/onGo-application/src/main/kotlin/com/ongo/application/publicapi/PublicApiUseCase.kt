@@ -56,9 +56,11 @@ class PublicApiUseCase(
             PublicIntegrationResponse(
                 id = requireNotNull(channel.id).toString(),
                 name = channel.channelName,
-                identifier = channel.platformChannelId,
+                identifier = postizIdentifier(channel.platform),
                 provider = channel.platform.name.lowercase(),
                 picture = channel.profileImageUrl,
+                disabled = channel.status != com.ongo.domain.channel.ChannelStatus.ACTIVE,
+                profile = channel.platformChannelId,
                 status = channel.status.name,
             )
         }
@@ -153,6 +155,11 @@ class PublicApiUseCase(
         if (!scheduling) add("native scheduling is not supported; onGo durable scheduling is used")
         if (directVideoUpload || cloudVideoUpload) add("video attachment is supported")
     }.joinToString(". ").ifBlank { "No additional provider rules" }
+
+    private fun postizIdentifier(platform: Platform): String = when (platform) {
+        Platform.TWITTER -> "x"
+        else -> platform.name.lowercase().replace("naver_clip", "naver-clip")
+    }
 
     /**
      * Postiz의 find-slot 어댑터. onGo가 저장한 예약 큐를 기준으로 해당 계정의
@@ -260,18 +267,43 @@ class PublicApiUseCase(
         val payload = runCatching {
             objectMapper.readValue(post.payloadJson, CreatePublicPostRequest::class.java)
         }.getOrNull() ?: return emptyList()
-        return payload.posts.mapNotNull { target ->
-            val value = target.value.firstOrNull()
-            val missing = buildList {
-                if (value == null || listOf(value.content, value.title, value.description).all { it.isNullOrBlank() }) {
-                    add("content")
-                }
-                if (post.videoId <= 0 && firstText(value?.video).isNullOrBlank() && firstText(value?.image).isNullOrBlank()) {
-                    add("media")
-                }
+
+        // Postiz's missing endpoint is a provider lookup for posts whose release ID
+        // was not confirmed. Providers without a list operation intentionally return
+        // an empty list, matching Postiz's optional `missing` contract.
+        return payload.posts.asSequence()
+            .mapNotNull { target ->
+                val channelId = target.integration.id.toLongOrNull() ?: return@mapNotNull null
+                val channel = runCatching { channelRepository.findById(channelId) }
+                    .getOrNull()
+                    ?.takeIf { it.userId == userId }
+                    ?: return@mapNotNull null
+                val definition = integrationToolPort.definitions(channel.platform)
+                    .firstOrNull { it.methodName == "listVideos" }
+                    ?: return@mapNotNull null
+                val output = runCatching {
+                    integrationToolPort.invoke(
+                        platform = channel.platform,
+                        accessToken = tokenEncryptionPort.decrypt(channel.accessToken),
+                        platformChannelId = channel.platformChannelId,
+                        methodName = definition.methodName,
+                        data = mapOf("maxResults" to 100),
+                    )
+                }.getOrNull() ?: return@mapNotNull null
+                objectMapper.valueToTree<JsonNode>(output).path("items")
+                    .mapNotNull { item ->
+                        val platformId = item.path("platformVideoId").asText(null) ?: return@mapNotNull null
+                        PublicMissingContentResponse(
+                            id = platformId,
+                            url = item.path("platformUrl").asText(null)
+                                ?: item.path("thumbnailUrl").asText(null),
+                        )
+                    }
             }
-            PublicMissingContentResponse(target.integration.id, missing).takeIf { it.missing.isNotEmpty() }
-        }
+            .flatten()
+            .distinctBy { it.id }
+            .take(100)
+            .toList()
     }
 
     /**
@@ -444,17 +476,52 @@ class PublicApiUseCase(
             ?.takeIf { it.userId == userId }
             ?: throw NotFoundException("integration", item.integration.id)
         val value = item.value.firstOrNull()
+        val settings = item.settings
+        val title = settings?.path("title")?.asText(null)
+            ?.takeIf(String::isNotBlank)
+            ?: value?.title
+            ?: value?.content
+            ?: "영상"
+        val tags = settingsTags(settings).ifEmpty { value?.tags.orEmpty() }
         PlatformUploadConfig(
             platform = channel.platform,
             videoUploadId = 0,
             channelId = channelId,
-            title = (value?.title ?: value?.content ?: "영상").take(PlatformUploadLimits.title(channel.platform)),
-            description = value?.description ?: value?.content,
-            tags = value?.tags.orEmpty(),
-            visibility = Visibility.PUBLIC,
+            title = title.take(PlatformUploadLimits.title(channel.platform)),
+            description = settings?.path("description")?.asText(null)
+                ?.takeIf(String::isNotBlank)
+                ?: value?.description
+                ?: value?.content,
+            tags = tags,
+            visibility = settingsVisibility(settings),
             thumbnailUrl = firstText(value?.image),
+            customSettingsJson = settings?.takeIf { it.isObject }?.toString(),
             scheduledAt = scheduledAt,
         )
+    }
+
+    private fun settingsTags(settings: JsonNode?): List<String> {
+        val tags = settings?.path("tags")
+        if (tags == null || !tags.isArray) return emptyList()
+        return tags.mapNotNull { tag ->
+            when {
+                tag.isTextual -> tag.asText()
+                tag.isObject -> tag.path("value").asText(null) ?: tag.path("label").asText(null)
+                else -> null
+            }
+        }.filter(String::isNotBlank)
+    }
+
+    private fun settingsVisibility(settings: JsonNode?): Visibility {
+        val raw = settings?.path("visibility")?.asText(null)
+            ?: settings?.path("type")?.asText(null)
+            ?: settings?.path("privacy_level")?.asText(null)
+            ?: return Visibility.PUBLIC
+        return when (raw.trim().uppercase()) {
+            "PRIVATE", "SELF_ONLY" -> Visibility.PRIVATE
+            "UNLISTED", "MUTUAL_FOLLOW_FRIENDS" -> Visibility.UNLISTED
+            else -> Visibility.PUBLIC
+        }
     }
 
     private fun toResponse(post: PublicApiPost): PublicPostResponse {
@@ -464,7 +531,17 @@ class PublicApiUseCase(
         val targets = payload?.posts.orEmpty().map { target ->
             val channelId = target.integration.id.toLongOrNull()
             val upload = uploads.firstOrNull { it.channelId == channelId }
-            PublicPostTargetResponse(target.integration.id, upload?.status?.name ?: status.name, upload?.platformUrl, upload?.errorMessage)
+            val channel = channelId?.let { channelRepository.findById(it) }
+                ?.takeIf { it.userId == post.userId }
+            PublicPostTargetResponse(
+                integrationId = target.integration.id,
+                status = upload?.status?.name ?: status.name,
+                platformUrl = upload?.platformUrl,
+                error = upload?.errorMessage,
+                providerIdentifier = channel?.let { postizIdentifier(it.platform) },
+                name = channel?.channelName,
+                picture = channel?.profileImageUrl,
+            )
         }
         return PublicPostResponse(
             id = post.id.toString(),
@@ -479,6 +556,7 @@ class PublicApiUseCase(
             videoId = post.videoId,
             error = post.errorMessage,
             posts = targets,
+            content = payload?.posts?.firstOrNull()?.value?.firstOrNull()?.content,
         )
     }
 
@@ -515,8 +593,11 @@ class PublicApiUseCase(
 
     private fun firstText(node: JsonNode?): String? = when {
         node == null || node.isNull -> null
-        node.isArray -> node.firstOrNull { it.isTextual }?.asText()
+        node.isArray -> node.asSequence().mapNotNull(::firstText).firstOrNull()
         node.isTextual -> node.asText()
+        node.isObject -> listOf("path", "url", "src").asSequence()
+            .mapNotNull { key -> node.path(key).asText(null) }
+            .firstOrNull()
         else -> null
     }
 

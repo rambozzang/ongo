@@ -263,6 +263,7 @@ class PlatformUploadServiceImpl(
                 tags = config.tags,
                 visibility = config.visibility,
                 customThumbnailUrl = config.thumbnailUrl,
+                customSettingsJson = config.customSettingsJson,
             ),
             accessToken = accessToken,
             platformChannelId = platformChannelId,
