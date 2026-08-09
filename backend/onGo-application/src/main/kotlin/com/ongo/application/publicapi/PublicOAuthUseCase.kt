@@ -49,8 +49,8 @@ class PublicOAuthUseCase(
 ) {
     /**
      * 공개 API OAuth callback은 외부 provider가 호출하므로 state를 한 번만
-     * 소비해야 한다. Redis를 사용하지 않는 단일 인스턴스 운영 정책에 맞춰
-     * 짧은 TTL의 인메모리 저장소를 사용한다.
+     * 소비해야 한다. 단일 인스턴스 운영 정책에 맞춰 짧은 TTL의
+     * 인메모리 저장소를 사용한다.
      */
     private val consumedStates = ConcurrentHashMap<String, Long>()
 
