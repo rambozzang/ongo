@@ -67,6 +67,11 @@ class PublicOAuthUseCaseTest {
                 match { it.authorizationCode == "one-time-code" && !it.codeVerifier.isNullOrBlank() },
             )
         }
+
+        assertFailsWith<IllegalArgumentException> {
+            oauth.complete("one-time-code", state)
+        }
+        verify(exactly = 1) { channelUseCase.connectChannel(any(), any(), any()) }
     }
 
     @Test

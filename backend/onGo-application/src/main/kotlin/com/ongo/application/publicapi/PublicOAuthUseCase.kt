@@ -12,7 +12,9 @@ import org.springframework.web.util.UriComponentsBuilder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.time.Instant
 import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -45,6 +47,13 @@ class PublicOAuthUseCase(
     @param:Value("\${platform.vimeo.client-id:}") private val vimeoClientId: String,
     @param:Value("\${platform.dailymotion.api-key:}") private val dailymotionClientId: String,
 ) {
+    /**
+     * 공개 API OAuth callback은 외부 provider가 호출하므로 state를 한 번만
+     * 소비해야 한다. Redis를 사용하지 않는 단일 인스턴스 운영 정책에 맞춰
+     * 짧은 TTL의 인메모리 저장소를 사용한다.
+     */
+    private val consumedStates = ConcurrentHashMap<String, Long>()
+
     fun authorizationUrl(userId: Long, integration: String, refresh: String?): PublicOAuthUrlResponse {
         val platform = parsePlatform(integration)
         refresh?.let { refreshChannelId ->
@@ -189,7 +198,14 @@ class PublicOAuthUseCase(
         require(values.size == 5 && values[0] == "1") { "OAuth state 형식이 올바르지 않습니다" }
         val expiresAt = values[4].toLongOrNull() ?: 0L
         require(expiresAt > System.currentTimeMillis()) { "OAuth state가 만료되었습니다" }
+        require(consumeStateOnce(state)) { "이미 사용된 OAuth state입니다. CSRF 공격일 수 있습니다." }
         return OAuthState(values[1].toLongOrNull() ?: 0L, Platform.valueOf(values[2]), values[3])
+    }
+
+    private fun consumeStateOnce(state: String): Boolean {
+        val now = Instant.now().toEpochMilli()
+        consumedStates.entries.removeIf { now - it.value > STATE_TTL_MS }
+        return consumedStates.putIfAbsent(state, now) == null
     }
 
     private fun sign(value: ByteArray): ByteArray = Mac.getInstance("HmacSHA256").run {
