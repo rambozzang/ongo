@@ -31,6 +31,7 @@ class ProductionConfigurationValidator(
     @Value("\${spring.security.oauth2.client.registration.google.client-secret:}") private val googleClientSecret: String,
     @Value("\${spring.security.oauth2.client.registration.kakao.client-id:}") private val kakaoClientId: String,
     @Value("\${spring.security.oauth2.client.registration.kakao.client-secret:}") private val kakaoClientSecret: String,
+    @Value("\${ongo.content-source.google-drive.oauth-state-secret:}") private val oauthStateSecret: String,
     @Value("\${spring.ai.anthropic.api-key:}") private val anthropicApiKey: String,
     @Value("\${spring.ai.openai.api-key:}") private val openAiApiKey: String,
     @Value("\${dashscope.api-key:}") private val dashScopeApiKey: String,
@@ -75,6 +76,10 @@ class ProductionConfigurationValidator(
         requireReal("google OAuth client-secret", googleClientSecret)
         requireReal("kakao OAuth client-id", kakaoClientId)
         requireReal("kakao OAuth client-secret", kakaoClientSecret)
+        requireReal("OAUTH_STATE_SECRET", oauthStateSecret)
+        require(oauthStateSecret.length >= 32) {
+            "OAUTH_STATE_SECRET must contain at least 32 characters in production"
+        }
 
         require(listOf(anthropicApiKey, openAiApiKey, dashScopeApiKey).any(::isRealValue)) {
             "at least one production AI provider API key must be configured"

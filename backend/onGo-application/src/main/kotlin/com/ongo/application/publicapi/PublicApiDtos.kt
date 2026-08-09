@@ -74,3 +74,7 @@ data class PublicPostCreatedResponse(
     val postId: String,
     val integration: String,
 )
+
+data class PublicAvailableSlotResponse(
+    val date: String,
+)

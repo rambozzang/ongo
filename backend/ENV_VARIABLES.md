@@ -43,6 +43,7 @@ onGo 백엔드 애플리케이션에서 사용하는 환경변수 목록입니�
 | `GOOGLE_CLIENT_SECRET` | Google OAuth 2.0 클라이언트 시크릿 | `your-client-secret` | **필수** |
 | `KAKAO_CLIENT_ID` | Kakao OAuth 2.0 클라이언트 ID | `your-client-id` | **필수** |
 | `KAKAO_CLIENT_SECRET` | Kakao OAuth 2.0 클라이언트 시크릿 | `your-client-secret` | **필수** |
+| `OAUTH_STATE_SECRET` | Google Drive OAuth state 서명용 시크릿(최소 32자) | 로컬 전용 기본값 | **필수 (prod)** |
 
 ---
 

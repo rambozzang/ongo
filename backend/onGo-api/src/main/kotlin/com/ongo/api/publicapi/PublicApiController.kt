@@ -4,6 +4,8 @@ import com.ongo.api.config.CurrentUser
 import com.ongo.application.publicapi.ChangePublicPostStatusRequest
 import com.ongo.application.publicapi.CreatePublicPostRequest
 import com.ongo.application.publicapi.PublicApiUseCase
+import com.ongo.application.publicapi.PublicApiAnalyticsUseCase
+import com.ongo.application.publicapi.PublicApiMediaUseCase
 import com.ongo.application.publicapi.PublicIntegrationResponse
 import com.ongo.application.publicapi.PublicPostCreatedResponse
 import com.ongo.application.publicapi.PublicPostResponse
@@ -13,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
+import org.springframework.http.MediaType
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -22,7 +25,9 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.multipart.MultipartFile
 
 /** Postiz public API의 핵심 integrations/posts 계약. API 키만 허용한다. */
 @Tag(name = "Public API", description = "Postiz 호환 자동화 API. Authorization: Bearer og_live_... 또는 X-API-Key")
@@ -30,6 +35,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/public/v1", "/api/v1/public/v1")
 class PublicApiController(
     private val useCase: PublicApiUseCase,
+    private val mediaUseCase: PublicApiMediaUseCase,
+    private val analyticsUseCase: PublicApiAnalyticsUseCase,
 ) {
 
     @Operation(summary = "연결된 integrations 조회")
@@ -40,6 +47,28 @@ class PublicApiController(
     ): ResponseEntity<ResData<List<PublicIntegrationResponse>>> {
         requireApiKey(authentication)
         return ResData.success(useCase.integrations(userId))
+    }
+
+    @Operation(summary = "미디어 업로드")
+    @PostMapping("/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun upload(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @RequestPart("file") file: MultipartFile,
+    ): ResponseEntity<ResData<com.ongo.application.publicapi.PublicMediaUploadResponse>> {
+        requireApiKey(authentication)
+        return ResData.success(mediaUseCase.upload(userId, file))
+    }
+
+    @Operation(summary = "integration의 다음 예약 가능 시간 조회")
+    @GetMapping("/find-slot/{integrationId}")
+    fun findSlot(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable integrationId: String,
+    ): ResponseEntity<ResData<com.ongo.application.publicapi.PublicAvailableSlotResponse>> {
+        requireApiKey(authentication)
+        return ResData.success(useCase.findAvailableSlot(userId, integrationId))
     }
 
     @Operation(summary = "게시물 생성", description = "type=now|schedule|draft. posts[].integration.id는 연결된 onGo 채널 ID입니다.")
@@ -100,6 +129,30 @@ class PublicApiController(
         requireApiKey(authentication)
         useCase.deleteDraft(userId, id)
         return ResData.success(null)
+    }
+
+    @Operation(summary = "게시물 분석 조회")
+    @GetMapping("/analytics/post/{postId}")
+    fun postAnalytics(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable postId: Long,
+        @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<List<com.ongo.application.publicapi.PublicAnalyticsMetric>>> {
+        requireApiKey(authentication)
+        return ResData.success(analyticsUseCase.post(userId, postId, days))
+    }
+
+    @Operation(summary = "integration 분석 조회")
+    @GetMapping("/analytics/{integrationId}")
+    fun integrationAnalytics(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable integrationId: String,
+        @RequestParam(defaultValue = "30") days: Int,
+    ): ResponseEntity<ResData<List<com.ongo.application.publicapi.PublicAnalyticsMetric>>> {
+        requireApiKey(authentication)
+        return ResData.success(analyticsUseCase.platform(userId, integrationId, days))
     }
 
     private fun requireApiKey(authentication: Authentication) {

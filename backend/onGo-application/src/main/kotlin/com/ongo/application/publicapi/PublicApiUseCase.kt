@@ -57,6 +57,36 @@ class PublicApiUseCase(
             )
         }
 
+    /**
+     * Postiz의 find-slot 어댑터. onGo가 저장한 예약 큐를 기준으로 해당 계정의
+     * 다음 비어 있는 15분 슬롯을 계산한다. 예약 데이터가 없는 경우에도 임의의
+     * 과거 시간이 아니라 현재 이후의 확정 가능한 시각만 반환한다.
+     */
+    fun findAvailableSlot(userId: Long, integrationId: String): PublicAvailableSlotResponse {
+        val channelId = integrationId.toLongOrNull()
+            ?: throw IllegalArgumentException("integration id는 onGo 채널 ID여야 합니다")
+        val channel = channelRepository.findById(channelId)
+            ?.takeIf { it.userId == userId }
+            ?: throw NotFoundException("integration", integrationId)
+
+        val platformKey = channel.platform.name
+        val busyTimes = scheduleRepository.findByUserId(userId)
+            .asSequence()
+            .filter { it.status == ScheduleStatus.SCHEDULED || it.status == ScheduleStatus.PROCESSING }
+            .filter { schedule ->
+                schedule.platforms.isEmpty() || schedule.platforms.keys.any { key ->
+                    key == platformKey || key == "$platformKey#$channelId"
+                }
+            }
+            .map { it.scheduledAt }
+            .toSet()
+
+        val now = LocalDateTime.now().plusMinutes(5).withSecond(0).withNano(0)
+        var candidate = now.plusMinutes(((15 - now.minute % 15) % 15).toLong())
+        while (candidate in busyTimes) candidate = candidate.plusMinutes(15)
+        return PublicAvailableSlotResponse(candidate.toString())
+    }
+
     @Transactional
     fun create(userId: Long, request: CreatePublicPostRequest): PublicPostResponse {
         require(request.posts.isNotEmpty()) { "posts는 하나 이상이어야 합니다" }
