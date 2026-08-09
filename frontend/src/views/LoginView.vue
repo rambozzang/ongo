@@ -172,7 +172,7 @@ async function loginWithGoogle() {
       throw new Error(t('loginView.googleNotConfigured'))
     }
     const { state } = await authApi.getOAuthState('google')
-    sessionStorage.setItem('oauth_state', state)
+    sessionStorage.setItem('oauth_state:google', state)
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
       redirect_uri: `${REDIRECT_URI}/google`,
@@ -197,7 +197,7 @@ async function loginWithKakao() {
       throw new Error(t('loginView.kakaoNotConfigured'))
     }
     const { state } = await authApi.getOAuthState('kakao')
-    sessionStorage.setItem('oauth_state', state)
+    sessionStorage.setItem('oauth_state:kakao', state)
     const params = new URLSearchParams({
       client_id: KAKAO_CLIENT_ID,
       redirect_uri: `${REDIRECT_URI}/kakao`,
@@ -231,6 +231,21 @@ async function handleOAuthCallback() {
 
   if (!code) return
 
+  // A state is one-time and browser-session bound. Check it before sending the
+  // code to the API so a refreshed/old callback cannot produce a confusing
+  // server error (and so two provider tabs do not overwrite each other).
+  const expectedState = sessionStorage.getItem(`oauth_state:${provider}`)
+  const clearCallbackUrl = () => {
+    window.history.replaceState({}, document.title, '/login')
+  }
+  if (!state || !expectedState || state !== expectedState) {
+    errorMessage.value = t('loginView.invalidOAuthState')
+    clearCallbackUrl()
+    return
+  }
+
+  sessionStorage.removeItem(`oauth_state:${provider}`)
+
   isLoading.value = true
   errorMessage.value = ''
 
@@ -243,6 +258,9 @@ async function handleOAuthCallback() {
   } catch (e: unknown) {
     errorMessage.value = loginErrorMessage(e, t('loginView.loginError'))
     isLoading.value = false
+    // The backend consumes state before exchanging the provider code. Remove
+    // the callback parameters after any failure so reload cannot replay them.
+    clearCallbackUrl()
   }
 }
 

@@ -89,12 +89,15 @@ class UserJooqRepository(
             .set(NAME, user.name)
             .set(NICKNAME, user.nickname)
             .set(PROFILE_IMAGE_URL, user.profileImageUrl)
-            .set(PROVIDER, user.provider.name)
+            // PostgreSQL enum columns do not accept a VARCHAR bind implicitly.
+            // Keep the cast at the bind site so first-time social login works
+            // on a real PostgreSQL database (not only in H2/mocks).
+            .set(PROVIDER, enumValue("auth_provider", user.provider.name))
             .set(PROVIDER_ID, user.providerId)
-            .set(PLAN_TYPE, user.planType.name)
+            .set(PLAN_TYPE, enumValue("plan_type", user.planType.name))
             .set(CATEGORY, user.category)
             .set(ONBOARDING_COMPLETED, user.onboardingCompleted)
-            .set(ROLE, user.role)
+            .set(ROLE, enumValue("user_role", user.role))
             .set(PADDLE_CUSTOMER_ID, user.paddleCustomerId)
             .returningResult(ID)
             .fetchOne()!!
@@ -109,10 +112,10 @@ class UserJooqRepository(
             .set(NAME, user.name)
             .set(NICKNAME, user.nickname)
             .set(PROFILE_IMAGE_URL, user.profileImageUrl)
-            .set(PLAN_TYPE, user.planType.name)
+            .set(PLAN_TYPE, enumValue("plan_type", user.planType.name))
             .set(CATEGORY, user.category)
             .set(ONBOARDING_COMPLETED, user.onboardingCompleted)
-            .set(ROLE, user.role)
+            .set(ROLE, enumValue("user_role", user.role))
             .set(PADDLE_CUSTOMER_ID, user.paddleCustomerId)
             .where(ID.eq(user.id))
             .execute()
@@ -142,4 +145,7 @@ class UserJooqRepository(
         createdAt = localDateTime(CREATED_AT),
         updatedAt = localDateTime(UPDATED_AT),
     )
+
+    private fun enumValue(typeName: String, value: String) =
+        DSL.field("?::$typeName", String::class.java, value)
 }

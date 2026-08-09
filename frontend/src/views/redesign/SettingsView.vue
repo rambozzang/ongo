@@ -210,6 +210,45 @@
           <div v-else class="rounded-lg border border-dashed border-line-control px-5 py-12 text-center text-[12px] text-content-tertiary">{{ t('settings.apiKeys.empty') }}</div>
         </template>
 
+        <template v-else-if="activeSection === 'developer'">
+          <div class="mb-5">
+            <h2 class="text-[15px] font-bold text-content">{{ t('settings.oauthApps.title') }}</h2>
+            <p class="mt-1 max-w-[650px] text-[12px] leading-5 text-content-tertiary">{{ t('settings.oauthApps.description') }}</p>
+          </div>
+
+          <div v-if="oauthLoadError" class="mb-4 rounded-lg border border-warning-subtle bg-warning-subtle px-4 py-3 text-[12px] text-warning-strong" role="alert">
+            {{ t('settings.oauthApps.loadFailed') }}
+            <button type="button" class="ml-2 font-semibold underline" @click="fetchOAuthApps">{{ t('action.retry') }}</button>
+          </div>
+
+          <div v-if="newOAuthClientSecret" class="mb-4 rounded-[11px] border border-success-subtle bg-success-subtle p-4">
+            <p class="text-[12px] font-bold text-success-strong">{{ t('settings.oauthApps.createdTitle') }}</p>
+            <p class="mt-1 text-[11px] leading-5 text-success-strong">{{ t('settings.oauthApps.createdDescription') }}</p>
+            <div class="mt-3 grid gap-2 text-[11px]">
+              <div class="flex items-center gap-2"><span class="w-24 shrink-0 font-semibold">{{ t('settings.oauthApps.clientId') }}</span><code class="min-w-0 flex-1 overflow-x-auto rounded-lg bg-surface-base px-3 py-2 text-content">{{ newOAuthClientId }}</code><button type="button" class="btn-secondary shrink-0 !min-h-9" @click="copyText(newOAuthClientId)">{{ t('settings.oauthApps.copy') }}</button></div>
+              <div class="flex items-center gap-2"><span class="w-24 shrink-0 font-semibold">{{ t('settings.oauthApps.clientSecret') }}</span><code class="min-w-0 flex-1 overflow-x-auto rounded-lg bg-surface-base px-3 py-2 text-content">{{ newOAuthClientSecret }}</code><button type="button" class="btn-secondary shrink-0 !min-h-9" @click="copyText(newOAuthClientSecret)">{{ t('settings.oauthApps.copy') }}</button></div>
+            </div>
+          </div>
+
+          <form class="mb-4 grid gap-2 rounded-[11px] border border-line p-4" @submit.prevent="createOAuthApp">
+            <div class="grid gap-2 tablet:grid-cols-2">
+              <label class="block"><span class="text-[11px] font-semibold text-content-secondary">{{ t('settings.oauthApps.name') }}</span><input v-model="oauthAppForm.name" required maxlength="120" class="input-field mt-2 w-full" :placeholder="t('settings.oauthApps.namePlaceholder')"></label>
+              <label class="block"><span class="text-[11px] font-semibold text-content-secondary">{{ t('settings.oauthApps.redirectUri') }}</span><input v-model="oauthAppForm.redirectUri" required type="url" class="input-field mt-2 w-full" :placeholder="t('settings.oauthApps.redirectPlaceholder')"></label>
+            </div>
+            <label class="block"><span class="text-[11px] font-semibold text-content-secondary">{{ t('settings.oauthApps.descriptionField') }}</span><textarea v-model="oauthAppForm.description" maxlength="500" rows="2" class="input-field mt-2 w-full resize-y" /></label>
+            <button type="submit" class="btn-primary !min-h-9 w-fit text-[11px]" :disabled="creatingOAuthApp">{{ creatingOAuthApp ? t('action.loading') : t('settings.oauthApps.create') }}</button>
+          </form>
+
+          <div v-if="oauthApps.length" class="overflow-hidden rounded-[11px] border border-line">
+            <div v-for="app in oauthApps" :key="app.id" class="flex flex-wrap items-center gap-3 border-b border-line-row px-4 py-3 last:border-0">
+              <div class="min-w-0 flex-1"><p class="truncate text-[12px] font-semibold text-content">{{ app.name }}</p><p class="mt-1 truncate font-mono text-[10.5px] text-content-tertiary">{{ app.clientId }} · {{ app.redirectUri }}</p></div>
+              <button v-if="!app.revokedAt" type="button" class="btn-secondary !min-h-8 text-[11px]" @click="rotateOAuthSecret(app.id)">{{ t('settings.oauthApps.rotate') }}</button>
+              <button v-if="!app.revokedAt" type="button" class="rounded-lg border border-error-subtle px-3 py-2 text-[11px] font-semibold text-error-strong hover:bg-error-subtle" @click="deleteOAuthApp(app.id)">{{ t('settings.oauthApps.delete') }}</button>
+            </div>
+          </div>
+          <div v-else class="rounded-lg border border-dashed border-line-control px-5 py-12 text-center text-[12px] text-content-tertiary">{{ t('settings.oauthApps.empty') }}</div>
+        </template>
+
         <div v-else class="rounded-lg border border-dashed border-line-control px-5 py-14 text-center">
           <Cog6ToothIcon class="mx-auto mb-2 h-7 w-7 text-content-quaternary" />
           <p class="text-[12px] font-semibold text-content-secondary">{{ t('empty.noData') }}</p>
@@ -240,13 +279,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { AdjustmentsHorizontalIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
 import { settingsApi, type ApiKey, type UserSettingsResponse } from '@/api/settings'
+import { oauthApi, type PublicOAuthApp } from '@/api/oauth'
 import { useAuthStore } from '@/stores/auth'
 import { useAutomationStore } from '@/stores/automation'
 import { useSubscriptionStore } from '@/stores/subscription'
@@ -259,7 +299,7 @@ const automationStore = useAutomationStore()
 const subscriptionStore = useSubscriptionStore()
 const workspaceStore = useWorkspaceStore()
 const requestedTab = typeof route.query.tab === 'string' ? route.query.tab : ''
-const activeSection = ref(['account', 'automation', 'defaults', 'security', 'workspaces'].includes(requestedTab) ? requestedTab : 'automation')
+const activeSection = ref(['account', 'automation', 'defaults', 'security', 'developer', 'workspaces'].includes(requestedTab) ? requestedTab : 'automation')
 const settingsData = ref<UserSettingsResponse | null>(null)
 const settingsLoadError = ref(false)
 const savingDefaults = ref(false)
@@ -271,11 +311,19 @@ const newApiKeyToken = ref<string | null>(null)
 const editingWorkspaceId = ref<number | null>(null)
 const workspaceForm = reactive({ name: '', slug: '', description: '' })
 const savingWorkspace = ref(false)
+const oauthApps = ref<PublicOAuthApp[]>([])
+const oauthLoadError = ref(false)
+const oauthLoaded = ref(false)
+const oauthAppForm = reactive({ name: '', description: '', redirectUri: '' })
+const creatingOAuthApp = ref(false)
+const newOAuthClientId = ref<string | null>(null)
+const newOAuthClientSecret = ref<string | null>(null)
 const navigation = computed(() => [
   { key: 'account', label: t('settings.tabs.account') },
   { key: 'automation', label: t('nav.automation') },
   { key: 'defaults', label: t('settings.defaults.title') },
   { key: 'security', label: t('settings.tabs.apiKeys') },
+  { key: 'developer', label: t('settings.tabs.developer') },
   { key: 'workspaces', label: t('workspace.manage') },
 ])
 
@@ -325,6 +373,49 @@ async function revokeApiKey(id: number) {
 }
 async function copyApiKey() {
   if (newApiKeyToken.value) await navigator.clipboard?.writeText(newApiKeyToken.value).catch(() => undefined)
+}
+async function fetchOAuthApps() {
+  oauthLoadError.value = false
+  try {
+    oauthApps.value = await oauthApi.listApps()
+    oauthLoaded.value = true
+  } catch {
+    oauthLoadError.value = true
+  }
+}
+async function createOAuthApp() {
+  if (!oauthAppForm.name.trim() || !oauthAppForm.redirectUri.trim()) return
+  creatingOAuthApp.value = true
+  try {
+    const created = await oauthApi.createApp({
+      name: oauthAppForm.name.trim(),
+      redirectUri: oauthAppForm.redirectUri.trim(),
+      ...(oauthAppForm.description.trim() ? { description: oauthAppForm.description.trim() } : {}),
+    })
+    newOAuthClientId.value = created.app.clientId
+    newOAuthClientSecret.value = created.clientSecret
+    oauthAppForm.name = ''
+    oauthAppForm.description = ''
+    oauthAppForm.redirectUri = ''
+    await fetchOAuthApps()
+  } finally {
+    creatingOAuthApp.value = false
+  }
+}
+async function rotateOAuthSecret(id: number) {
+  if (!window.confirm(t('settings.oauthApps.rotateConfirm'))) return
+  const rotated = await oauthApi.rotateSecret(id)
+  newOAuthClientId.value = rotated.app.clientId
+  newOAuthClientSecret.value = rotated.clientSecret
+  await fetchOAuthApps()
+}
+async function deleteOAuthApp(id: number) {
+  if (!window.confirm(t('settings.oauthApps.deleteConfirm'))) return
+  await oauthApi.deleteApp(id)
+  await fetchOAuthApps()
+}
+async function copyText(value: string | null) {
+  if (value) await navigator.clipboard?.writeText(value).catch(() => undefined)
 }
 async function saveDefaults() {
   if (!settingsData.value) return
@@ -397,4 +488,8 @@ onMounted(async () => {
   settingsLoadError.value = results.some((result) => result.status === 'rejected')
   if (!authStore.user) await authStore.fetchProfile()
 })
+
+watch(activeSection, (section) => {
+  if (section === 'developer' && !oauthLoaded.value) void fetchOAuthApps()
+}, { immediate: true })
 </script>

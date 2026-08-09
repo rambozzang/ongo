@@ -65,6 +65,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ChannelCallbackView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    // Third-party apps return users here for the Postiz-compatible consent step.
+    path: '/oauth/authorize',
+    name: 'oauth-authorize',
+    component: () => import('@/views/OAuthAuthorizeView.vue'),
+    meta: { requiresAuth: true, allowAuthenticated: true },
+  },
   /*
    * 2026-08 리디자인 셸. 하루 작업 순서(오늘 → 만들기 → 응답 → 확인)로 재편한 7개 화면.
    * 기존 URL은 필요한 경우 리디자인 화면으로 연결하고, 중복 레거시 화면은 유지하지 않는다.

@@ -49,8 +49,8 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 import java.net.URI
 
-/** Postiz public API의 핵심 integrations/posts 계약. API 키만 허용한다. */
-@Tag(name = "Public API", description = "Postiz 호환 자동화 API. Authorization: Bearer og_live_... 또는 X-API-Key")
+/** Postiz public API의 핵심 integrations/posts 계약. API key와 OAuth2 토큰을 허용한다. */
+@Tag(name = "Public API", description = "Postiz 호환 자동화 API. API key 또는 pos_ OAuth2 token")
 @RestController
 @RequestMapping("/public/v1", "/api/v1/public/v1")
 class PublicApiController(
@@ -415,8 +415,10 @@ class PublicApiController(
     }
 
     private fun requireApiKey(authentication: Authentication) {
-        if (!authentication.authorities.any { it.authority == "AUTH_API_KEY" }) {
-            throw ForbiddenException("Public API는 개인 API 키 인증만 지원합니다")
+        if (!authentication.authorities.any {
+                it.authority == "AUTH_API_KEY" || it.authority == "AUTH_PUBLIC_OAUTH"
+            }) {
+            throw ForbiddenException("Public API는 API 키 또는 OAuth2 토큰 인증이 필요합니다")
         }
     }
 

@@ -58,6 +58,10 @@ class SecurityConfig(
                     "/ws/**",
                     "/api/v1/ai/demo/**",
                     "/api/v1/portone/webhook",
+                    // Postiz-compatible developer OAuth token exchange is unauthenticated;
+                    // client_id/client_secret and the one-time code authenticate it.
+                    "/oauth/token",
+                    "/api/v1/oauth/token",
                     // Public API OAuth callback validates its own signed state.
                     "/api/v1/public/v1/social/callback",
                     "/public/v1/social/callback",

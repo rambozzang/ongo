@@ -3,6 +3,7 @@ package com.ongo.infrastructure.security
 import com.ongo.domain.auth.TokenBlacklistPort
 import com.ongo.application.apikey.ApiKeyUseCase
 import com.ongo.domain.apikey.ApiKeyRepository
+import com.ongo.domain.publicoauth.PublicOAuthTokenRepository
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -18,6 +19,7 @@ class JwtAuthenticationFilter(
     private val tokenBlacklist: TokenBlacklistPort,
     private val apiKeyRepository: ApiKeyRepository,
     private val apiKeyUseCase: ApiKeyUseCase,
+    private val publicOAuthTokenRepository: PublicOAuthTokenRepository? = null,
 ) : OncePerRequestFilter() {
 
     companion object {
@@ -43,7 +45,7 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain,
     ) {
-        if (authenticateApiKey(request)) {
+        if (authenticateApiKey(request) || authenticatePublicOAuthToken(request)) {
             filterChain.doFilter(request, response)
             return
         }
@@ -107,6 +109,32 @@ class JwtAuthenticationFilter(
         apiKeyRepository.touchLastUsed(apiKey.id!!, java.time.LocalDateTime.now())
         return true
     }
+
+    /** Postiz OAuth tokens are intentionally accepted both raw and as Bearer values. */
+    private fun authenticatePublicOAuthToken(request: HttpServletRequest): Boolean {
+        val authorization = request.getHeader("Authorization") ?: return false
+        val rawToken = when {
+            authorization.startsWith("Bearer pos_") -> authorization.substring(7).trim()
+            authorization.startsWith("pos_") -> authorization.trim()
+            else -> return false
+        }
+        val repository = publicOAuthTokenRepository ?: return false
+        val token = repository.findActiveByHash(sha256(rawToken)) ?: return false
+        SecurityContextHolder.getContext().authentication = UsernamePasswordAuthenticationToken(
+            token.userId,
+            null,
+            listOf(
+                SimpleGrantedAuthority("ROLE_USER"),
+                SimpleGrantedAuthority("AUTH_PUBLIC_OAUTH"),
+            ),
+        )
+        return true
+    }
+
+    private fun sha256(value: String): String =
+        java.security.MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(java.nio.charset.StandardCharsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
 
     private fun resolveToken(request: HttpServletRequest): String? {
         val bearerToken = request.getHeader("Authorization")

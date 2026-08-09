@@ -978,7 +978,8 @@
       "defaults": "Defaults",
       "activity": "Activity Log",
       "account": "Account",
-      "apiKeys": "Automation API keys"
+      "apiKeys": "Automation API keys",
+      "developer": "Developer apps"
     },
     "apiKeys": {
       "title": "Automation API keys",
@@ -995,6 +996,27 @@
       "revoked": "Revoked",
       "neverExpires": "Never expires",
       "empty": "No API keys have been created."
+    },
+    "oauthApps": {
+      "title": "Developer OAuth apps",
+      "description": "Register OAuth2 apps so external services can call the onGo Public API on a user's behalf.",
+      "name": "App name",
+      "namePlaceholder": "e.g. My content automation",
+      "redirectUri": "Redirect URL",
+      "redirectPlaceholder": "https://example.com/oauth/callback",
+      "descriptionField": "Description (optional)",
+      "create": "Create OAuth app",
+      "createdTitle": "OAuth app created",
+      "createdDescription": "The client secret is shown only now. Copy it to a secure secret store immediately.",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "copy": "Copy",
+      "rotate": "Rotate secret",
+      "rotateConfirm": "Rotate the secret? Existing integrations will stop immediately.",
+      "delete": "Revoke app",
+      "deleteConfirm": "Revoke this app and every OAuth token it issued? This cannot be undone.",
+      "empty": "No developer apps have been registered.",
+      "loadFailed": "Developer apps could not be loaded. Please try again."
     },
     "profile": {
       "title": "Profile Settings",
@@ -4148,7 +4170,8 @@
     "loginError": "Sign-in failed. Please try again.",
     "googleNotConfigured": "Google sign-in is not configured yet. Please contact the administrator.",
     "kakaoNotConfigured": "Kakao sign-in is not configured yet. Please contact the administrator.",
-    "oauthCancelled": "Sign-in was cancelled. Please try again."
+    "oauthCancelled": "Sign-in was cancelled. Please try again.",
+    "invalidOAuthState": "This sign-in request expired or was already used. Please sign in again."
   },
   "channelCallbackView": {
     "connecting": "Connecting your channel…",
