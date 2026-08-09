@@ -9,6 +9,7 @@ import com.ongo.common.enums.Platform
 import com.ongo.domain.video.VideoPlatformMeta
 import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.tiktok.TikTokApi
+import com.ongo.infrastructure.external.tiktok.dto.TikTokInboxVideoUploadRequest
 import com.ongo.infrastructure.external.tiktok.dto.TikTokInitUploadRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -62,38 +63,52 @@ class TikTokStreamWriter(
         val privacyLevel = mapVisibility(meta.visibility.name)
         val settings = meta.customSettingsJson
             ?.let { runCatching { objectMapper.readTree(it) }.getOrNull() }
-        val creatorInfo = tikTokApi.queryCreatorPublishInfo("Bearer ${accessToken.value}")
-        if (creatorInfo.error != null) {
-            throw IllegalStateException("TikTok 게시 권한 조회 실패: ${creatorInfo.error.message}")
+        val contentPostingMethod = settings?.path("content_posting_method")?.asText(null)
+            ?.uppercase() ?: "DIRECT_POST"
+        require(contentPostingMethod == "DIRECT_POST" || contentPostingMethod == "UPLOAD") {
+            "지원하지 않는 TikTok content_posting_method입니다: $contentPostingMethod"
         }
-        val allowedPrivacyLevels = creatorInfo.data?.privacyLevelOptions.orEmpty()
-        require(privacyLevel in allowedPrivacyLevels) {
-            "TikTok 계정에서 허용하지 않는 공개 범위입니다: $privacyLevel (허용: ${allowedPrivacyLevels.joinToString()})"
+        if (contentPostingMethod == "DIRECT_POST") {
+            val creatorInfo = tikTokApi.queryCreatorPublishInfo("Bearer ${accessToken.value}")
+            if (creatorInfo.error != null) {
+                throw IllegalStateException("TikTok 게시 권한 조회 실패: ${creatorInfo.error.message}")
+            }
+            val allowedPrivacyLevels = creatorInfo.data?.privacyLevelOptions.orEmpty()
+            require(privacyLevel in allowedPrivacyLevels) {
+                "TikTok 계정에서 허용하지 않는 공개 범위입니다: $privacyLevel (허용: ${allowedPrivacyLevels.joinToString()})"
+            }
         }
         val totalChunkCount = maxOf(1, ((fileSize + CHUNK_SIZE - 1) / CHUNK_SIZE).toInt())
 
         require(scheduledAt == null) { "TikTok Content Posting API는 예약 게시를 지원하지 않습니다." }
 
-        val initRequest = TikTokInitUploadRequest(
-            postInfo = TikTokInitUploadRequest.PostInfo(
-                title = buildPostText(meta),
-                privacyLevel = privacyLevel,
-                disableDuet = settings?.booleanSetting("duet")?.not() ?: false,
-                disableComment = settings?.booleanSetting("comment")?.not() ?: false,
-                disableStitch = settings?.booleanSetting("stitch")?.not() ?: false,
-            ),
-            sourceInfo = TikTokInitUploadRequest.SourceInfo(
-                source = "FILE_UPLOAD",
-                videoSize = fileSize,
-                chunkSize = CHUNK_SIZE,
-                totalChunkCount = totalChunkCount,
-            ),
+        val sourceInfo = TikTokInitUploadRequest.SourceInfo(
+            source = "FILE_UPLOAD",
+            videoSize = fileSize,
+            chunkSize = CHUNK_SIZE,
+            totalChunkCount = totalChunkCount,
         )
 
-        val response = tikTokApi.initVideoUpload(
-            authorization = "Bearer ${accessToken.value}",
-            request = initRequest,
-        )
+        val response = if (contentPostingMethod == "UPLOAD") {
+            tikTokApi.initInboxVideoUpload(
+                authorization = "Bearer ${accessToken.value}",
+                request = TikTokInboxVideoUploadRequest(sourceInfo),
+            )
+        } else {
+            tikTokApi.initVideoUpload(
+                authorization = "Bearer ${accessToken.value}",
+                request = TikTokInitUploadRequest(
+                    postInfo = TikTokInitUploadRequest.PostInfo(
+                        title = buildPostText(meta),
+                        privacyLevel = privacyLevel,
+                        disableDuet = settings?.booleanSetting("duet")?.not() ?: false,
+                        disableComment = settings?.booleanSetting("comment")?.not() ?: false,
+                        disableStitch = settings?.booleanSetting("stitch")?.not() ?: false,
+                    ),
+                    sourceInfo = sourceInfo,
+                ),
+            )
+        }
 
         if (response.error != null) {
             throw IllegalStateException("TikTok 업로드 초기화 실패: ${response.error.message}")
@@ -157,6 +172,7 @@ class TikTokStreamWriter(
             lastStatus = response.data?.status
             lastFailureReason = response.data?.failReason
             when (lastStatus) {
+                "SEND_TO_USER_INBOX" -> return inboxUploadResult(pid)
                 "PUBLISH_COMPLETE" -> {
                     val publicVideoId = response.data?.publicPostId?.firstOrNull()
                     if (publicVideoId.isNullOrBlank()) {
@@ -197,6 +213,15 @@ class TikTokStreamWriter(
         platformUrl = null,
         errorMessage = message,
         published = false,
+    )
+
+    private fun inboxUploadResult(pid: String) = PlatformUploadResult(
+        success = true,
+        platformVideoId = pid,
+        platformUrl = null,
+        errorMessage = "TikTok 받은편지함으로 전송되었습니다. TikTok 앱에서 편집 후 최종 게시해야 합니다.",
+        published = false,
+        confirmation = com.ongo.application.video.PublishConfirmation.UNKNOWN,
     )
 
     private fun buildPlatformUrl(videoId: String): String? = platformChannelId

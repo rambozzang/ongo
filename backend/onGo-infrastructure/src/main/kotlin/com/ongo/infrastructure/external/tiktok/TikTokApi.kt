@@ -21,6 +21,12 @@ interface TikTokApi {
         @RequestBody request: TikTokInitUploadRequest,
     ): TikTokInitUploadResponse
 
+    @PostExchange("/v2/post/publish/inbox/video/init/")
+    fun initInboxVideoUpload(
+        @RequestHeader("Authorization") authorization: String,
+        @RequestBody request: TikTokInboxVideoUploadRequest,
+    ): TikTokInitUploadResponse
+
     @PostExchange("/v2/post/publish/status/fetch/")
     fun fetchPublishStatus(
         @RequestHeader("Authorization") authorization: String,

@@ -42,6 +42,11 @@ data class TikTokInitUploadRequest(
     )
 }
 
+/** Upload API request: send a draft to the user's TikTok inbox without posting it. */
+data class TikTokInboxVideoUploadRequest(
+    @JsonProperty("source_info") val sourceInfo: TikTokInitUploadRequest.SourceInfo,
+)
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class TikTokInitUploadResponse(
     val data: UploadData?,

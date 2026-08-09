@@ -74,6 +74,43 @@ class TikTokStreamWriterHttpContractTest {
         assertThat(status.body.readUtf8()).contains("\"publish_id\":\"publish-1\"")
     }
 
+    @Test
+    fun `TikTok UPLOAD settings use inbox endpoint and finish as an actionable unconfirmed result`() {
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"data":{"publish_id":"inbox-1","upload_url":"${server.url("/upload/inbox")}"},"error":null}"""))
+        server.enqueue(MockResponse().setResponseCode(200))
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"data":{"status":"SEND_TO_USER_INBOX"},"error":null}"""))
+
+        val writer = TikTokStreamWriter(
+            proxy(),
+            PlatformFileTransferHelper(ObjectMapper()),
+            statusPollIntervalMs = 0,
+            statusPollMaxAttempts = 1,
+        )
+        writer.initSession(
+            meta().copy(customSettingsJson = """{"content_posting_method":"UPLOAD"}"""),
+            PlainToken("tiktok-token"),
+            "creator-1",
+            4,
+            null,
+        )
+        writer.writeChunk("test".toByteArray(), 0, 4)
+        val result = writer.complete()
+
+        assertThat(result.success).isTrue()
+        assertThat(result.published).isFalse()
+        assertThat(result.confirmation).isEqualTo(com.ongo.application.video.PublishConfirmation.UNKNOWN)
+        assertThat(result.platformUrl).isNull()
+
+        val init = server.takeRequest()
+        assertThat(init.path).isEqualTo("/api/v2/post/publish/inbox/video/init/")
+        assertThat(init.body.readUtf8())
+            .contains("\"source\":\"FILE_UPLOAD\"")
+            .doesNotContain("post_info")
+        server.takeRequest()
+        val status = server.takeRequest()
+        assertThat(status.path).isEqualTo("/api/v2/post/publish/status/fetch/")
+    }
+
     private fun proxy(): TikTokApi {
         val restClient = PlatformRestClientSupport
             .builder(server.url("/api").toString().removeSuffix("/"))
