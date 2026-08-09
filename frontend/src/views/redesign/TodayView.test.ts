@@ -7,11 +7,13 @@ import TodayView from './TodayView.vue'
 import { channelApi } from '@/api/channel'
 import { scheduleApi } from '@/api/schedule'
 import { inboxApi } from '@/api/inbox'
+import { analyticsApi } from '@/api/analytics'
 import koMessages from '@/locales/ko/common.json'
 
 vi.mock('@/api/channel', () => ({ channelApi: { list: vi.fn() } }))
 vi.mock('@/api/schedule', () => ({ scheduleApi: { list: vi.fn() } }))
 vi.mock('@/api/inbox', () => ({ inboxApi: { getUnreadCount: vi.fn() } }))
+vi.mock('@/api/analytics', () => ({ analyticsApi: { dashboard: vi.fn() } }))
 
 const schedule = (id: number, status: string = 'SCHEDULED') => ({
   id,
@@ -77,6 +79,7 @@ describe('TodayView', () => {
     vi.mocked(scheduleApi.list).mockResolvedValue([schedule(1), schedule(2, 'FAILED')] as never)
     vi.mocked(channelApi.list).mockResolvedValue({ channels: [channel()], maxAllowed: 7, currentCount: 1 } as never)
     vi.mocked(inboxApi.getUnreadCount).mockResolvedValue({ count: 4 } as never)
+    vi.mocked(analyticsApi.dashboard).mockResolvedValue({ totalViews: 12345, viewsChangePercent: 12.3 } as never)
   })
 
   it('renders the server queue, attention item, channel status and KPI count', async () => {
@@ -112,9 +115,10 @@ describe('TodayView', () => {
   })
 
   it('shows a full-load failure instead of presenting an empty successful dashboard', async () => {
-    vi.mocked(scheduleApi.list).mockRejectedValueOnce(new Error('schedule down'))
+    vi.mocked(scheduleApi.list).mockRejectedValueOnce(new Error('schedule down')).mockRejectedValueOnce(new Error('schedule down'))
     vi.mocked(channelApi.list).mockRejectedValueOnce(new Error('channel down'))
     vi.mocked(inboxApi.getUnreadCount).mockRejectedValueOnce(new Error('inbox down'))
+    vi.mocked(analyticsApi.dashboard).mockRejectedValueOnce(new Error('analytics down'))
     const { wrapper } = await renderToday()
 
     expect(wrapper.get('[role="status"]').text()).toContain('오늘 데이터를 불러오지 못했습니다')

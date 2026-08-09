@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { channelApi } from '@/api/channel'
 import { scheduleApi } from '@/api/schedule'
+import { analyticsApi } from '@/api/analytics'
 import type { Channel, Platform, TokenStatus } from '@/types/channel'
 import type { Schedule, ScheduleStatus } from '@/types/schedule'
 import { useRedesignShellStore } from './redesignShell'
@@ -166,17 +167,36 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
     return out
   }
 
+  function addDays(date: string, days: number): string {
+    const value = new Date(`${date}T00:00:00Z`)
+    value.setUTCDate(value.getUTCDate() + days)
+    return value.toISOString().slice(0, 10)
+  }
+
+  function weekStart(date: string): string {
+    const dayOfWeek = new Date(`${date}T00:00:00Z`).getUTCDay()
+    return addDays(date, -((dayOfWeek + 6) % 7))
+  }
+
+  function compactNumber(value: number): string {
+    return new Intl.NumberFormat('ko-KR', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+  }
+
   async function load() {
     loading.value = true
     loadError.value = null
     try {
       const day = kstDateString()
+      const weekFrom = weekStart(day)
+      const weekTo = addDays(day, 1)
 
-      const [scheduleRes, channelRes, unreadRes] = await Promise.allSettled([
+      const [scheduleRes, channelRes, unreadRes, analyticsRes, weeklyScheduleRes] = await Promise.allSettled([
         scheduleApi.list({ startDate: day, endDate: day }),
         channelApi.list(),
         // KPI와 레일 배지를 같은 서버 값으로 맞춘다. 댓글 목록을 다시 내려받지 않는다.
         import('@/api/inbox').then(({ inboxApi }) => inboxApi.getUnreadCount()),
+        analyticsApi.dashboard('1d'),
+        scheduleApi.list({ startDate: weekFrom, endDate: weekTo }),
       ])
 
       const scheduleList: Schedule[] | null = scheduleRes.status === 'fulfilled' ? (scheduleRes.value ?? []) : null
@@ -184,8 +204,11 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
       const channelList: Channel[] | null =
         channelRes.status === 'fulfilled' ? (channelRes.value?.channels ?? []) : null
       const unreadCount = unreadRes.status === 'fulfilled' ? unreadRes.value.count : kpi.value.unanswered
-      const rejectedCount = [scheduleRes, channelRes, unreadRes].filter((result) => result.status === 'rejected').length
-      loadError.value = rejectedCount === 3 ? 'loadFailed' : rejectedCount > 0 ? 'loadPartial' : null
+      const rejectedCount = [scheduleRes, channelRes, unreadRes, analyticsRes, weeklyScheduleRes].filter(
+        (result) => result.status === 'rejected',
+      ).length
+      const totalRequests = 5
+      loadError.value = rejectedCount === totalRequests ? 'loadFailed' : rejectedCount > 0 ? 'loadPartial' : null
 
       // 부분 실패 시 마지막 정상 데이터를 유지한다. 실패를 빈 상태로 바꾸면
       // 예약/채널이 사라진 것으로 오인해 중복 예약이나 잘못된 재연결을 유발할 수 있다.
@@ -218,6 +241,21 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
 
       if (unreadRes.status === 'fulfilled') {
         kpi.value = { ...kpi.value, unanswered: unreadCount }
+      }
+
+      if (analyticsRes.status === 'fulfilled') {
+        const { totalViews, viewsChangePercent } = analyticsRes.value
+        const delta = Number.isFinite(viewsChangePercent)
+          ? `${viewsChangePercent >= 0 ? '+' : ''}${viewsChangePercent.toFixed(1)}%`
+          : ''
+        kpi.value = { ...kpi.value, viewsLabel: compactNumber(totalViews), viewsDelta: delta }
+      }
+
+      if (weeklyScheduleRes.status === 'fulfilled') {
+        kpi.value = {
+          ...kpi.value,
+          weeklyPublished: weeklyScheduleRes.value.filter((schedule) => schedule.status === 'PUBLISHED').length,
+        }
       }
 
       // 레일 배지에 반영 — 막힌 것이 어디에 있는지 항상 보이게 한다
