@@ -199,7 +199,7 @@ class ScheduleUseCaseTest {
 
         verify(exactly = 0) { schedules.update(any()) }
         verify(exactly = 0) { videoUploads.rescheduleScheduledUploads(any(), any()) }
-        verify(exactly = 0) { videoUploads.cancelScheduledUploads(any(), any()) }
+        verify(exactly = 0) { videoUploads.cancelScheduledUploadsByIds(any(), any()) }
     }
 
     @Test
@@ -228,14 +228,14 @@ class ScheduleUseCaseTest {
                 VideoUpload(22L, 22L, Platform.YOUTUBE, status = com.ongo.common.enums.UploadStatus.CANCELLED),
             ),
         )
-        every { videoUploads.cancelScheduledUploads(22L, any()) } returns 1
+        every { videoUploads.cancelScheduledUploadsByIds(setOf(22L), any()) } returns 1
         every { videos.findById(22L) } returns video
         every { schedules.update(any()) } answers { firstArg() }
         every { videos.update(any()) } answers { firstArg() }
 
         useCase.cancelSchedule(7L, 41L)
 
-        verify { videoUploads.cancelScheduledUploads(22L, any()) }
+        verify { videoUploads.cancelScheduledUploadsByIds(setOf(22L), any()) }
         verify { schedules.update(match { it.status == ScheduleStatus.CANCELLED }) }
         verify { videos.update(match { it.id == 22L && it.status == com.ongo.common.enums.UploadStatus.DRAFT }) }
     }
@@ -260,12 +260,53 @@ class ScheduleUseCaseTest {
                 scheduledAt = scheduled.scheduledAt,
             ),
         )
-        every { videoUploads.cancelScheduledUploads(22L, any()) } returns 0
+        every { videoUploads.cancelScheduledUploadsByIds(setOf(22L), any()) } returns 0
 
         assertFailsWith<com.ongo.common.exception.BusinessException> {
             useCase.cancelSchedule(7L, 42L)
         }
         verify(exactly = 0) { schedules.update(any()) }
+    }
+
+    @Test
+    fun `공유 원본 영상 예약 취소는 현재 계정의 업로드만 취소한다`() {
+        val scheduledAt = LocalDateTime.now(ScheduleUseCase.KST).plusHours(1)
+        val scheduled = Schedule(
+            id = 43L,
+            videoId = 22L,
+            userId = 7L,
+            scheduledAt = scheduledAt,
+            status = ScheduleStatus.SCHEDULED,
+            platforms = mapOf("YOUTUBE#7" to mapOf("scheduledAt" to scheduledAt.toString())),
+        )
+        every { schedules.findById(43L) } returns scheduled
+        every { videoUploads.findByVideoId(22L) } returns listOf(
+            VideoUpload(
+                id = 701L,
+                videoId = 22L,
+                platform = Platform.YOUTUBE,
+                channelId = 7L,
+                status = com.ongo.common.enums.UploadStatus.UPLOADING,
+                scheduledAt = scheduledAt,
+            ),
+            VideoUpload(
+                id = 702L,
+                videoId = 22L,
+                platform = Platform.YOUTUBE,
+                channelId = 8L,
+                status = com.ongo.common.enums.UploadStatus.UPLOADING,
+                scheduledAt = scheduledAt,
+            ),
+        )
+        every { videoUploads.cancelScheduledUploadsByIds(setOf(701L), any()) } returns 1
+        every { schedules.update(any()) } answers { firstArg() }
+        every { videos.findById(22L) } returns Video(id = 22L, userId = 7L, title = "공유 영상")
+        every { videos.update(any()) } answers { firstArg() }
+
+        useCase.cancelSchedule(7L, 43L)
+
+        verify(exactly = 1) { videoUploads.cancelScheduledUploadsByIds(setOf(701L), any()) }
+        verify(exactly = 0) { videoUploads.cancelScheduledUploadsByIds(match { it.contains(702L) }, any()) }
     }
 
     @Test
@@ -294,7 +335,7 @@ class ScheduleUseCaseTest {
             providerId = "google-7",
             planType = PlanType.PRO,
         )
-        every { videoUploads.rescheduleScheduledUploads(22L, any()) } returns 1
+        every { videoUploads.rescheduleScheduledUploads(22L, any()) } returns 2
         every { schedules.update(any()) } answers { firstArg() }
         every { videos.findById(22L) } returns Video(id = 22L, userId = 7L, title = "예약 영상")
         every { videoUploads.findByVideoId(22L) } returns listOf(
@@ -315,6 +356,79 @@ class ScheduleUseCaseTest {
             )
         }
         verify { schedules.update(match { it.scheduledAt == moved && it.status == ScheduleStatus.SCHEDULED }) }
+    }
+
+    @Test
+    fun `lease를 보유한 예약 업로드는 서버에서 시간 수정을 거부한다`() {
+        val original = LocalDateTime.now(ScheduleUseCase.KST).plusHours(2)
+        val scheduled = Schedule(
+            id = 53L,
+            videoId = 22L,
+            userId = 7L,
+            scheduledAt = original,
+            status = ScheduleStatus.SCHEDULED,
+            platforms = mapOf("YOUTUBE#7" to mapOf("scheduledAt" to original.toString())),
+        )
+        every { schedules.findById(53L) } returns scheduled
+        every { users.findById(7L) } returns User(
+            id = 7L,
+            email = "creator@example.com",
+            name = "Creator",
+            provider = AuthProvider.GOOGLE,
+            providerId = "google-7",
+            planType = PlanType.PRO,
+        )
+        every { videoUploads.findByVideoId(22L) } returns listOf(
+            VideoUpload(
+                901L,
+                22L,
+                Platform.YOUTUBE,
+                channelId = 7L,
+                status = com.ongo.common.enums.UploadStatus.UPLOADING,
+                leaseUntil = LocalDateTime.now().plusMinutes(5),
+                scheduledAt = original,
+            ),
+        )
+
+        assertFailsWith<IllegalStateException> {
+            useCase.updateSchedule(7L, 53L, UpdateScheduleRequest(scheduledAt = original.plusHours(1)))
+        }
+        verify(exactly = 0) { videoUploads.rescheduleScheduledUploads(any(), any()) }
+        verify(exactly = 0) { schedules.update(any()) }
+    }
+
+    @Test
+    fun `공유 원본 영상 예약 시간 수정은 기존 예약 시각과 계정이 일치하는 업로드만 옮긴다`() {
+        val original = LocalDateTime.now(ScheduleUseCase.KST).plusHours(2)
+        val moved = original.plusHours(3)
+        val scheduled = Schedule(
+            id = 52L,
+            videoId = 22L,
+            userId = 7L,
+            scheduledAt = original,
+            status = ScheduleStatus.SCHEDULED,
+            platforms = mapOf("YOUTUBE#7" to mapOf("scheduledAt" to original.toString())),
+        )
+        every { schedules.findById(52L) } returns scheduled
+        every { users.findById(7L) } returns User(
+            id = 7L,
+            email = "creator@example.com",
+            name = "Creator",
+            provider = AuthProvider.GOOGLE,
+            providerId = "google-7",
+            planType = PlanType.PRO,
+        )
+        every { videoUploads.findByVideoId(22L) } returns listOf(
+            VideoUpload(801L, 22L, Platform.YOUTUBE, channelId = 7L, scheduledAt = original),
+            VideoUpload(802L, 22L, Platform.YOUTUBE, channelId = 8L, scheduledAt = original),
+        )
+        every { videoUploads.rescheduleScheduledUploads(22L, mapOf(801L to moved)) } returns 1
+        every { schedules.update(any()) } answers { firstArg() }
+        every { videos.findById(22L) } returns Video(id = 22L, userId = 7L, title = "공유 영상")
+
+        useCase.updateSchedule(7L, 52L, UpdateScheduleRequest(scheduledAt = moved))
+
+        verify { videoUploads.rescheduleScheduledUploads(22L, mapOf(801L to moved)) }
     }
 
     @Test

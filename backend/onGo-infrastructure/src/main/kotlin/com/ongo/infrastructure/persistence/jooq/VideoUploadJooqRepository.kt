@@ -384,15 +384,19 @@ class VideoUploadJooqRepository(
     override fun rescheduleScheduledUploads(
         videoId: Long,
         scheduledAtByUploadId: Map<Long, LocalDateTime>,
-    ): Int = scheduledAtByUploadId.entries.sumOf { (uploadId, scheduledAt) ->
-        dsl.update(VIDEO_UPLOADS)
-            .set(VIDEO_SCHEDULED_AT, scheduledAt)
-            .set(VIDEO_NEXT_RETRY_AT, null as LocalDateTime?)
-            .where(VIDEO_ID.eq(videoId))
-            .and(ID.eq(uploadId))
-            .and(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
-            .and(VIDEO_SCHEDULED_AT.isNotNull)
-            .execute()
+    ): Int {
+        val now = LocalDateTime.now()
+        return scheduledAtByUploadId.entries.sumOf { (uploadId, scheduledAt) ->
+            dsl.update(VIDEO_UPLOADS)
+                .set(VIDEO_SCHEDULED_AT, scheduledAt)
+                .set(VIDEO_NEXT_RETRY_AT, null as LocalDateTime?)
+                .where(VIDEO_ID.eq(videoId))
+                .and(ID.eq(uploadId))
+                .and(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
+                .and(VIDEO_SCHEDULED_AT.isNotNull)
+                .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
+                .execute()
+        }
     }
 
     private fun Record.toVideoUpload(): VideoUpload {

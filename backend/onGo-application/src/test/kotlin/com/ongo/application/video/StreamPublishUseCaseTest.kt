@@ -149,8 +149,10 @@ class StreamPublishUseCaseTest {
     private fun buildPlatformRequest(
         platform: Platform = Platform.YOUTUBE,
         scheduledAt: LocalDateTime? = null,
+        channelId: Long? = null,
     ) = PlatformPublishRequest(
         platform = platform,
+        channelId = channelId,
         title = null,
         description = null,
         tags = null,
@@ -599,13 +601,14 @@ class StreamPublishUseCaseTest {
 
         every { videoRepository.save(any()) } returns savedVideo
         every { channelRepository.findByUserIdAndPlatform(userId, Platform.YOUTUBE) } returns buildActiveChannel()
+        every { channelRepository.findById(10L) } returns buildActiveChannel()
         every { videoUploadRepository.save(any()) } returns savedUpload
         every { videoPlatformMetaRepository.save(any()) } returns savedMeta
         every { scheduleRepository.save(any()) } answers { firstArg() }
 
         val file = buildFile()
         val request = buildRequest(
-            platforms = listOf(buildPlatformRequest(Platform.YOUTUBE, scheduledAt = scheduledAt)),
+            platforms = listOf(buildPlatformRequest(Platform.YOUTUBE, scheduledAt = scheduledAt, channelId = 10L)),
         )
 
         // When
@@ -617,8 +620,44 @@ class StreamPublishUseCaseTest {
                 schedule.videoId == 100L &&
                     schedule.userId == userId &&
                     schedule.status == ScheduleStatus.SCHEDULED &&
-                    schedule.platforms.containsKey("YOUTUBE")
+                    schedule.platforms.containsKey("YOUTUBE#10")
             })
+        }
+    }
+
+    @Test
+    fun `예약 게시 스케줄은 같은 플랫폼의 여러 채널 대상을 모두 보존한다`() {
+        stubSubscription(PlanType.PRO)
+        stubMonthlyCount(0L)
+
+        val firstAt = LocalDateTime.now().plusDays(1)
+        val secondAt = firstAt.plusHours(2)
+        every { videoRepository.save(any()) } returns buildSavedVideo(id = 100L)
+        every { channelRepository.findById(11L) } returns buildActiveChannel().copy(id = 11L)
+        every { channelRepository.findById(12L) } returns buildActiveChannel().copy(id = 12L)
+        every { videoUploadRepository.save(match { it.channelId == 11L }) } returns
+            buildSavedUpload(id = 211L, videoId = 100L, channelId = 11L)
+        every { videoUploadRepository.save(match { it.channelId == 12L }) } returns
+            buildSavedUpload(id = 212L, videoId = 100L, channelId = 12L)
+        every { videoPlatformMetaRepository.save(any()) } answers {
+            val requested = firstArg<VideoPlatformMeta>()
+            requested.copy(id = requested.videoUploadId + 100L)
+        }
+        every { scheduleRepository.save(any()) } answers { firstArg() }
+
+        useCase.initiate(
+            userId,
+            buildFile(),
+            buildRequest(
+                platforms = listOf(
+                    buildPlatformRequest(Platform.YOUTUBE, scheduledAt = firstAt, channelId = 11L),
+                    buildPlatformRequest(Platform.YOUTUBE, scheduledAt = secondAt, channelId = 12L),
+                ),
+            ),
+        )
+
+        verify {
+            scheduleRepository.save(match { it.platforms.keys == setOf("YOUTUBE#11", "YOUTUBE#12") })
         }
     }
 

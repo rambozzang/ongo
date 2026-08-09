@@ -152,7 +152,10 @@ class StreamPublishUseCase(
         if (hasSchedule) {
             val earliestScheduledAt = platformConfigs.mapNotNull { it.scheduledAt }.min()
             val platformMap = platformConfigs.filter { it.scheduledAt != null }
-                .associate { it.platform.name to mapOf("scheduledAt" to it.scheduledAt.toString()) }
+                .associate {
+                    val key = if (it.channelId == null) it.platform.name else "${it.platform.name}#${it.channelId}"
+                    key to mapOf("scheduledAt" to it.scheduledAt.toString())
+                }
             scheduleRepository.save(
                 Schedule(
                     videoId = videoId,
@@ -265,13 +268,12 @@ class StreamPublishUseCase(
         require(request.title.isNotBlank()) { "제목을 입력해주세요." }
         require(request.platforms.isNotEmpty()) { "게시할 플랫폼을 하나 이상 선택해주세요." }
 
-        val duplicates = request.platforms.groupingBy { it.channelId ?: it.platform }.eachCount().filterValues { it > 1 }.keys
+        val duplicates = request.platforms
+            .groupingBy { "${it.platform.name}#${it.channelId ?: "default"}" }
+            .eachCount()
+            .filterValues { it > 1 }
+            .keys
         require(duplicates.isEmpty()) { "같은 게시 계정을 중복 선택할 수 없습니다: ${duplicates.joinToString()}" }
-        val scheduledDuplicatePlatforms = request.platforms.filter { it.scheduledAt != null }
-            .groupingBy { it.platform }.eachCount().filterValues { it > 1 }.keys
-        require(scheduledDuplicatePlatforms.isEmpty()) {
-            "같은 플랫폼의 여러 계정 예약 게시를 지원하려면 각 계정별 예약을 별도로 저장해야 합니다: ${scheduledDuplicatePlatforms.joinToString()}"
-        }
 
         val extension = filename.substringAfterLast('.', "").lowercase()
         request.platforms.forEach { platformRequest ->

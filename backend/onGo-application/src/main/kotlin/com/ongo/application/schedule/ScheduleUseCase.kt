@@ -1,6 +1,7 @@
 package com.ongo.application.schedule
 
 import com.ongo.application.schedule.dto.*
+import com.ongo.common.enums.Platform
 import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.enums.UploadStatus
@@ -145,14 +146,31 @@ class ScheduleUseCase(
             scheduledAt = newScheduledAt,
             platforms = updatedPlatformTimes,
         )
+        val originalTargets = schedule.scheduledTargets()
         val uploads = videoUploadRepository.findByVideoId(schedule.videoId)
+        val matchedUploads = originalTargets.mapNotNull { target ->
+            uploads.firstOrNull { it.belongsTo(target) }
+        }
+        val now = LocalDateTime.now()
+        if (matchedUploads.any { it.status != UploadStatus.UPLOADING || it.leaseUntil?.isAfter(now) == true }) {
+            throw IllegalStateException("이미 실행 중이거나 완료된 예약은 시간을 수정할 수 없습니다")
+        }
         val uploadTimes = updated.platforms.mapNotNull { (key, raw) ->
-            val (platform, channelId) = parseScheduleKey(key) ?: return@mapNotNull null
+            val originalTarget = originalTargets.firstOrNull { it.rawKey == key } ?: return@mapNotNull null
             val time = raw.asPlatformScheduleTime()
-            val upload = uploads.firstOrNull { it.platform == platform && it.channelId == channelId }
+            // A source video may have multiple schedule occurrences. Match both
+            // the exact account and the old occurrence time so moving one
+            // schedule cannot reschedule another schedule's durable row.
+            val upload = matchedUploads.firstOrNull { it.belongsTo(originalTarget) }
             upload?.id?.let { id -> if (time != null) id to time else null }
         }.toMap()
-        videoUploadRepository.rescheduleScheduledUploads(schedule.videoId, uploadTimes)
+        val rescheduledCount = videoUploadRepository.rescheduleScheduledUploads(schedule.videoId, uploadTimes)
+        if (rescheduledCount != uploadTimes.size) {
+            throw BusinessException(
+                "SCHEDULE_UPDATE_CONFLICT",
+                "예약 게시가 이미 실행 중이라 시간을 변경할 수 없습니다. 현재 게시 상태를 확인해주세요.",
+            )
+        }
         scheduleRepository.update(updated)
         val video = videoRepository.findById(schedule.videoId)
         return updated.toResponse(
@@ -173,10 +191,21 @@ class ScheduleUseCase(
         // Schedule만 취소하면 durable upload queue가 남아 dispatcher가 외부
         // 플랫폼에 게시한다. 같은 트랜잭션에서 아직 전송되지 않은 자식 작업도
         // CANCELLED로 바꿔 취소 의도를 큐까지 전파한다.
-        val cancellableUploadCount = videoUploadRepository.findByVideoId(schedule.videoId)
-            .count { it.status == UploadStatus.UPLOADING && it.scheduledAt != null }
-        val cancelledUploadCount = videoUploadRepository.cancelScheduledUploads(schedule.videoId, LocalDateTime.now())
-        if (cancelledUploadCount != cancellableUploadCount) {
+        val targets = schedule.scheduledTargets()
+        val cancellableUploadIds = videoUploadRepository.findByVideoId(schedule.videoId)
+            .asSequence()
+            .filter { upload ->
+                upload.status == UploadStatus.UPLOADING &&
+                    upload.scheduledAt != null &&
+                    targets.any { target -> upload.belongsTo(target) }
+            }
+            .mapNotNull { it.id }
+            .toSet()
+        val cancelledUploadCount = videoUploadRepository.cancelScheduledUploadsByIds(
+            cancellableUploadIds,
+            LocalDateTime.now(),
+        )
+        if (cancelledUploadCount != cancellableUploadIds.size) {
             throw BusinessException(
                 "SCHEDULE_CANCEL_CONFLICT",
                 "예약 게시가 이미 실행 중이라 취소할 수 없습니다. 현재 게시 상태를 확인해주세요.",
@@ -286,6 +315,29 @@ class ScheduleUseCase(
 
     private fun scheduleKey(platform: com.ongo.common.enums.Platform, channelId: Long?): String =
         if (channelId == null) platform.name else "${platform.name}#$channelId"
+
+    private data class ScheduledTarget(
+        val rawKey: String,
+        val platform: Platform,
+        val channelId: Long?,
+        val scheduledAt: LocalDateTime,
+    )
+
+    private fun Schedule.scheduledTargets(): List<ScheduledTarget> = platforms.map { (rawKey, raw) ->
+        val (platform, channelId) = parseScheduleKey(rawKey)
+            ?: throw IllegalArgumentException("잘못된 예약 플랫폼 키입니다: $rawKey")
+        ScheduledTarget(
+            rawKey = rawKey,
+            platform = platform,
+            channelId = channelId,
+            scheduledAt = raw.asPlatformScheduleTime() ?: scheduledAt,
+        )
+    }
+
+    private fun VideoUpload.belongsTo(target: ScheduledTarget): Boolean =
+        platform == target.platform &&
+            channelId == target.channelId &&
+            scheduledAt == target.scheduledAt
 
     private fun parseScheduleKey(key: String): Pair<com.ongo.common.enums.Platform, Long?>? {
         val parts = key.split('#', limit = 2)
