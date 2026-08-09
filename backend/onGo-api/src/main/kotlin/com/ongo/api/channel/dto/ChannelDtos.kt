@@ -26,6 +26,7 @@ data class ConnectChannelRequest(
     /** Twitter OAuth 2.0 PKCE code_verifier (Twitter 연동 시 필수) */
     @field:jakarta.validation.constraints.Size(max = 2048, message = "code_verifier는 최대 2048자까지 입력할 수 있습니다")
     val codeVerifier: String? = null,
+    val addAsNew: Boolean = false,
 )
 
 data class ConnectChannelResponse(

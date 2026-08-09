@@ -92,11 +92,12 @@ class StreamPublishUseCase(
 
         // 3. 채널 토큰 검증 + 각 플랫폼별 VideoUpload + VideoPlatformMeta 생성
         val platformConfigs = request.platforms.map { platformReq ->
-            val channel = platformReq.channelId
-                ?.let(channelRepository::findById)
-                ?.takeIf { it.userId == userId && it.platform == platformReq.platform }
-                ?: channelRepository.findByUserIdAndPlatform(userId, platformReq.platform)
-                ?: throw IllegalStateException("${platformReq.platform.name} 채널이 연동되어 있지 않습니다.")
+            val channel = if (platformReq.channelId != null) {
+                channelRepository.findById(platformReq.channelId)
+                    ?.takeIf { it.userId == userId && it.platform == platformReq.platform }
+            } else {
+                channelRepository.findByUserIdAndPlatform(userId, platformReq.platform)
+            } ?: throw IllegalStateException("${platformReq.platform.name} 채널이 연동되어 있지 않거나 게시 대상이 올바르지 않습니다.")
 
             val tokenExpiresAt = channel.tokenExpiresAt
             if (channel.status == ChannelStatus.EXPIRED || channel.status == ChannelStatus.REVOKED ||
@@ -257,8 +258,13 @@ class StreamPublishUseCase(
         require(request.title.isNotBlank()) { "제목을 입력해주세요." }
         require(request.platforms.isNotEmpty()) { "게시할 플랫폼을 하나 이상 선택해주세요." }
 
-        val duplicates = request.platforms.groupingBy { it.platform }.eachCount().filterValues { it > 1 }.keys
-        require(duplicates.isEmpty()) { "같은 플랫폼을 중복 선택할 수 없습니다: ${duplicates.joinToString()}" }
+        val duplicates = request.platforms.groupingBy { it.channelId ?: it.platform }.eachCount().filterValues { it > 1 }.keys
+        require(duplicates.isEmpty()) { "같은 게시 계정을 중복 선택할 수 없습니다: ${duplicates.joinToString()}" }
+        val scheduledDuplicatePlatforms = request.platforms.filter { it.scheduledAt != null }
+            .groupingBy { it.platform }.eachCount().filterValues { it > 1 }.keys
+        require(scheduledDuplicatePlatforms.isEmpty()) {
+            "같은 플랫폼의 여러 계정 예약 게시를 지원하려면 각 계정별 예약을 별도로 저장해야 합니다: ${scheduledDuplicatePlatforms.joinToString()}"
+        }
 
         val extension = filename.substringAfterLast('.', "").lowercase()
         request.platforms.forEach { platformRequest ->

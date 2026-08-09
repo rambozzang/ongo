@@ -63,6 +63,19 @@ class ChannelJooqRepository(
             .fetchOne()
             ?.toChannel()
 
+    override fun findByUserIdAndPlatformChannelId(
+        userId: Long,
+        platform: Platform,
+        platformChannelId: String,
+    ): Channel? =
+        dsl.select()
+            .from(CHANNELS)
+            .where(USER_ID.eq(userId))
+            .and(PLATFORM_TEXT.eq(platform.name))
+            .and(PLATFORM_CHANNEL_ID.eq(platformChannelId))
+            .fetchOne()
+            ?.toChannel()
+
     override fun save(channel: Channel): Channel {
         val id = dsl.insertInto(CHANNELS)
             .set(USER_ID, channel.userId)

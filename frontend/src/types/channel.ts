@@ -24,6 +24,8 @@ export interface ChannelConnectRequest {
   redirectUri: string
   /** Twitter OAuth 2.0 PKCE code_verifier (Twitter 연동 시 필수) */
   codeVerifier?: string
+  /** 같은 플랫폼의 다른 계정을 추가 연결할 때 사용 */
+  addAsNew?: boolean
 }
 
 export const PLATFORM_CONFIG: Record<

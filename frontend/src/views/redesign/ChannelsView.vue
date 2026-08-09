@@ -184,14 +184,14 @@ function openChannelManager() {
   isConnectModalOpen.value = true
 }
 
-async function connectChannel(platform: Platform) {
+async function connectChannel(platform: Platform, addAsNew = false) {
   try {
     // X는 OAuth 2.0 PKCE가 필수다. verifier는 콜백에서 토큰 교환에 사용한다.
     const challenge = platform === 'TWITTER'
       ? (await generatePKCE('twitter_code_verifier')).challenge
       : undefined
     const stateNonce = generateOAuthStateNonce()
-    window.location.href = buildOAuthUrl(platform, '/channels-v2', challenge, stateNonce)
+    window.location.href = buildOAuthUrl(platform, '/channels-v2', challenge, stateNonce, addAsNew)
   } catch (error) {
     isConnectModalOpen.value = false
     notify.error(error instanceof Error ? error.message : t('channels.connectFailed'))

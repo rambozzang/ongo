@@ -52,7 +52,7 @@ onMounted(async () => {
   }
 
   // Parse state: "PLATFORM|/return/path|nonce". The nonce prevents forged callbacks.
-  const [platformStr, pathPart, nonce] = state.split('|')
+  const [platformStr, pathPart, nonce, mode] = state.split('|')
   const platform = platformStr as Platform
   returnPath = pathPart && pathPart.startsWith('/') && !pathPart.startsWith('//') ? pathPart : '/channels'
 
@@ -72,6 +72,7 @@ onMounted(async () => {
     const request: import('@/types/channel').ChannelConnectRequest = {
       authorizationCode: code,
       redirectUri: getOAuthRedirectUri(),
+      addAsNew: mode === 'new',
     }
     if (platform === 'TWITTER') {
       request.codeVerifier = sessionStorage.getItem('twitter_code_verifier') || undefined

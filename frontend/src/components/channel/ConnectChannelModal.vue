@@ -32,8 +32,8 @@
             :key="platform"
             class="relative rounded-lg border p-3 transition-all"
             :class="{
-              'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-md cursor-pointer': !isConnected(platform) && !isAtLimit,
-              'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/30 cursor-not-allowed': isConnected(platform) || isAtLimit,
+              'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-md cursor-pointer': !isAtLimit,
+              'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/30 cursor-not-allowed': isAtLimit,
             }"
             @click="handleConnect(platform)"
           >
@@ -68,15 +68,6 @@
             <!-- Action Button -->
             <div class="mt-2">
               <button
-                v-if="isConnected(platform)"
-                class="btn-secondary w-full cursor-not-allowed opacity-60"
-                disabled
-              >
-                <CheckIcon class="h-4 w-4 inline-block mr-1" />
-                {{ $t('channels.connected') }}
-              </button>
-              <button
-                v-else
                 class="btn-primary w-full"
                 :disabled="connectingPlatform === platform || isAtLimit"
                 @click.stop="handleConnect(platform)"
@@ -87,7 +78,7 @@
                 </template>
                 <template v-else>
                   <LinkIcon class="h-4 w-4 inline-block mr-1" />
-                  {{ $t('channels.connect') }}
+                  {{ isConnected(platform) ? '다른 계정 추가' : $t('channels.connect') }}
                 </template>
               </button>
             </div>
@@ -131,7 +122,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  'connect': [platform: Platform]
+  'connect': [platform: Platform, addAsNew: boolean]
 }>()
 
 const connectingPlatform = ref<Platform | null>(null)
@@ -188,12 +179,12 @@ function getPlatformDescription(platform: Platform): string {
 }
 
 function handleConnect(platform: Platform) {
-  if (isConnected(platform) || isAtLimit.value || connectingPlatform.value) return
+  if (isAtLimit.value || connectingPlatform.value) return
 
   connectingPlatform.value = platform
 
   // Initiate real OAuth flow — redirect to backend authorization endpoint
-  emit('connect', platform)
+  emit('connect', platform, isConnected(platform))
 }
 
 async function loadPlatforms() {

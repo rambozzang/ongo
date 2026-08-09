@@ -40,8 +40,13 @@ class PublishVideoUseCase(
         }
 
         require(configs.isNotEmpty()) { "게시할 플랫폼을 하나 이상 선택해주세요." }
-        val duplicatePlatforms = configs.groupingBy { it.platform }.eachCount().filterValues { it > 1 }.keys
-        require(duplicatePlatforms.isEmpty()) { "같은 플랫폼을 중복 선택할 수 없습니다: ${duplicatePlatforms.joinToString()}" }
+        val duplicateTargets = configs.groupingBy { it.channelId ?: it.platform }.eachCount().filterValues { it > 1 }.keys
+        require(duplicateTargets.isEmpty()) { "같은 게시 계정을 중복 선택할 수 없습니다: ${duplicateTargets.joinToString()}" }
+        val scheduledDuplicatePlatforms = configs.filter { it.scheduledAt != null }
+            .groupingBy { it.platform }.eachCount().filterValues { it > 1 }.keys
+        require(scheduledDuplicatePlatforms.isEmpty()) {
+            "같은 플랫폼의 여러 계정 예약 게시를 지원하려면 각 계정별 예약을 별도로 저장해야 합니다: ${scheduledDuplicatePlatforms.joinToString()}"
+        }
 
         if (video.mediaType == MediaType.VIDEO) {
             require(video.fileUrl != null) { "업로드가 완료된 영상 파일을 찾을 수 없습니다." }
@@ -81,11 +86,12 @@ class PublishVideoUseCase(
 
         // 게시 전 채널 토큰 검증
         configs.forEach { config ->
-            val channel = config.channelId
-                ?.let(channelRepository::findById)
-                ?.takeIf { it.userId == userId && it.platform == config.platform }
-                ?: channelRepository.findByUserIdAndPlatform(userId, config.platform)
-                ?: throw NotFoundException("채널", "${config.platform}")
+            val channel = if (config.channelId != null) {
+                channelRepository.findById(config.channelId)
+                    ?.takeIf { it.userId == userId && it.platform == config.platform }
+            } else {
+                channelRepository.findByUserIdAndPlatform(userId, config.platform)
+            } ?: throw NotFoundException("채널", "${config.channelId ?: config.platform}")
 
             val tokenExpiresAt = channel.tokenExpiresAt
             if (channel.status == ChannelStatus.EXPIRED || channel.status == ChannelStatus.REVOKED ||

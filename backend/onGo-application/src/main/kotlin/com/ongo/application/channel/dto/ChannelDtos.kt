@@ -23,6 +23,8 @@ data class ConnectChannelRequest(
     val redirectUri: String,
     /** Twitter OAuth 2.0 PKCE code_verifier (Twitter 연동 시 필수) */
     val codeVerifier: String? = null,
+    /** 같은 플랫폼의 다른 계정을 추가할 때 true. 기본값은 기존 계정 재연결이다. */
+    val addAsNew: Boolean = false,
 )
 
 data class ConnectChannelResponse(

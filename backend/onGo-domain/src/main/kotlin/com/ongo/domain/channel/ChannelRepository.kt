@@ -7,6 +7,7 @@ interface ChannelRepository {
     fun findAllActive(): List<Channel>
     fun findByUserId(userId: Long): List<Channel>
     fun findByUserIdAndPlatform(userId: Long, platform: Platform): Channel?
+    fun findByUserIdAndPlatformChannelId(userId: Long, platform: Platform, platformChannelId: String): Channel?
     fun save(channel: Channel): Channel
     fun update(channel: Channel): Channel
     fun delete(id: Long)

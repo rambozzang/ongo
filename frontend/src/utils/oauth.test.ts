@@ -54,6 +54,11 @@ describe('channel OAuth contracts', () => {
     expect(url.searchParams.get('state')).toBe(`YOUTUBE|/channels-v2|${nonce}`)
   })
 
+  it('marks an OAuth connection as a new account when requested', () => {
+    const url = new URL(buildOAuthUrl('YOUTUBE', '/channels-v2', undefined, 'nonce', true))
+    expect(url.searchParams.get('state')).toBe('YOUTUBE|/channels-v2|nonce|new')
+  })
+
   it('returns the same callback URI sent to the provider', () => {
     expect(getOAuthRedirectUri()).toBe('https://ongo.test/auth/channel-callback')
   })

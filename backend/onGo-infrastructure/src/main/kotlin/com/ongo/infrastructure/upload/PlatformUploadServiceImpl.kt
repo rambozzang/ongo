@@ -238,10 +238,11 @@ class PlatformUploadServiceImpl(
     }
 
     private fun resolveChannel(channelId: Long?, userId: Long, platform: Platform) =
-        channelId
-            ?.let(channelRepository::findById)
-            ?.takeIf { it.userId == userId && it.platform == platform }
-            ?: channelRepository.findByUserIdAndPlatform(userId, platform)
+        if (channelId != null) {
+            channelRepository.findById(channelId)?.takeIf { it.userId == userId && it.platform == platform }
+        } else {
+            channelRepository.findByUserIdAndPlatform(userId, platform)
+        }
 
     private fun uploadFromCloudUrl(
         factory: PlatformStreamWriterFactory,

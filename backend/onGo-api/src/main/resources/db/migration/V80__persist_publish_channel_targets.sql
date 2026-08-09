@@ -14,3 +14,8 @@ WHERE vu.video_id = v.id
   AND vu.channel_id IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_video_uploads_channel_id ON video_uploads(channel_id);
+
+-- Postiz-style integrations allow more than one account for the same provider.
+-- The exact account is selected by channel_id on each publication.
+ALTER TABLE channels DROP CONSTRAINT IF EXISTS uq_channels_user_platform;
+CREATE INDEX IF NOT EXISTS idx_channels_user_platform ON channels(user_id, platform);

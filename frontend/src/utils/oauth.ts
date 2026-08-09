@@ -44,9 +44,9 @@ export function generateOAuthStateNonce(storageKey = 'channel_oauth_state_nonce'
  * The `state` parameter encodes `PLATFORM|returnPath` so the callback
  * view can route the user back after the token exchange.
  */
-export function buildOAuthUrl(platform: Platform, returnPath: string, codeChallenge?: string, stateNonce?: string): string {
-  const redirectUri = `${window.location.origin}${REDIRECT_URI_PATH}`
-  const state = `${platform}|${returnPath}${stateNonce ? `|${stateNonce}` : ''}`
+export function buildOAuthUrl(platform: Platform, returnPath: string, codeChallenge?: string, stateNonce?: string, addAsNew = false): string {
+    const redirectUri = `${window.location.origin}${REDIRECT_URI_PATH}`
+  const state = `${platform}|${returnPath}${stateNonce ? `|${stateNonce}` : ''}${addAsNew ? '|new' : ''}`
 
   switch (platform) {
     case 'YOUTUBE':
