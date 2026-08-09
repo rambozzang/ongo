@@ -30,6 +30,7 @@
     "upload": "Upload",
     "download": "Download",
     "create": "Create",
+    "publish": "Publish",
     "apply": "Apply",
     "back": "Back",
     "next": "Next",
@@ -249,6 +250,7 @@
       "ACTIVE": "Active",
       "PAUSED": "Paused",
       "COMPLETED": "Completed",
+      "CLOSED": "Closed",
       "CANCELLED": "Cancelled"
     },
     "objective": {
@@ -2122,6 +2124,7 @@
     "connected": "Connected",
     "connecting": "Connecting...",
     "connect": "Connect",
+    "loadingPlatforms": "Loading available platforms...",
     "close": "Close"
   },
   "videos": {

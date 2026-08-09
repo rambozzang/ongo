@@ -62,6 +62,7 @@ async function renderSettings() {
     history: createMemoryHistory(),
     routes: [
       { path: '/settings', component: { template: '<div />' } },
+      { path: '/settings-v2', component: { template: '<div />' } },
       { path: '/automation', component: { template: '<div />' } },
       { path: '/subscription', component: { template: '<div />' } },
     ],
