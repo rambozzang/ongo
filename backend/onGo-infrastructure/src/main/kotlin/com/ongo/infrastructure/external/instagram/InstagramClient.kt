@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.instagram
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import org.slf4j.LoggerFactory
@@ -100,26 +101,28 @@ class InstagramClient(
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
         log.debug("Instagram 미디어 상태 조회: mediaId={}", platformVideoId)
 
-        try {
-            val response = instagramApi.getContainerStatus(
-                containerId = platformVideoId,
-                fields = "id,status_code",
-                accessToken = accessToken,
-            )
-
-            return PlatformVideoStatus(
-                platformVideoId = platformVideoId,
-                status = response.statusCode ?: "unknown",
-                errorMessage = response.error?.message,
-            )
-        } catch (e: Exception) {
-            log.warn("Instagram 상태 조회 실패: {}", e.message)
-            return PlatformVideoStatus(
-                platformVideoId = platformVideoId,
-                status = "unknown",
-                errorMessage = e.message,
-            )
+        // 업로드 완료 후 보관하는 값은 media_publish 응답의 media ID다.
+        // 컨테이너 상태 API를 다시 호출하면 이미 게시된 Reel을 찾지 못하므로
+        // 게시물 상세 API로 확인해야 한다.
+        val response = instagramApi.getMedia(
+            mediaId = platformVideoId,
+            fields = "id,permalink",
+            accessToken = accessToken,
+        )
+        response.error?.let {
+            throw PlatformApiException("Instagram", "미디어 상태 조회 실패: ${it.message}")
         }
+        val mediaId = response.id?.takeIf { it.isNotBlank() }
+            ?: return PlatformVideoStatus(
+                platformVideoId = platformVideoId,
+                status = "NOT_FOUND",
+                errorMessage = "Instagram 게시물을 찾지 못했습니다.",
+            )
+        return PlatformVideoStatus(
+            platformVideoId = mediaId,
+            status = "PUBLISHED",
+            platformUrl = response.permalink,
+        )
     }
 
     override fun getVideoAnalytics(
@@ -130,29 +133,26 @@ class InstagramClient(
     ): PlatformAnalytics {
         log.debug("Instagram 분석 데이터 조회: mediaId={}", platformVideoId)
 
-        try {
-            val insightsResponse = instagramApi.getMediaInsights(
-                mediaId = platformVideoId,
-                metric = "plays,likes,comments,shares,saved",
-                accessToken = accessToken,
-            )
-
-            val metrics = insightsResponse.data?.associate {
-                (it.name ?: "") to (it.values?.firstOrNull()?.value ?: 0L)
-            } ?: emptyMap()
-
-            return PlatformAnalytics(
-                views = metrics["plays"] ?: 0,
-                likes = metrics["likes"] ?: 0,
-                comments = metrics["comments"] ?: 0,
-                shares = metrics["shares"] ?: 0,
-                watchTimeSeconds = 0, // Instagram insights don't directly expose watch time
-                subscriberGained = 0,
-            )
-        } catch (e: Exception) {
-            log.warn("Instagram 분석 데이터 조회 실패: {}", e.message)
-            return PlatformAnalytics(0, 0, 0, 0, 0, 0)
+        val insightsResponse = instagramApi.getMediaInsights(
+            mediaId = platformVideoId,
+            metric = "plays,likes,comments,shares,saved",
+            accessToken = accessToken,
+        )
+        insightsResponse.error?.let {
+            throw PlatformApiException("Instagram", "분석 데이터 조회 실패: ${it.message}")
         }
+        val metrics = insightsResponse.data?.associate {
+            (it.name ?: "") to (it.values?.firstOrNull()?.value ?: 0L)
+        } ?: emptyMap()
+
+        return PlatformAnalytics(
+            views = metrics["plays"] ?: 0,
+            likes = metrics["likes"] ?: 0,
+            comments = metrics["comments"] ?: 0,
+            shares = metrics["shares"] ?: 0,
+            watchTimeSeconds = 0, // Instagram insights don't directly expose watch time
+            subscriberGained = 0,
+        )
     }
 
     override fun getChannelInfo(accessToken: String): PlatformChannelInfo {

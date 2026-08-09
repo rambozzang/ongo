@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.vimeo
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.vimeo.dto.VimeoCommentRequest
@@ -79,11 +80,7 @@ class VimeoClient(
                 status = response.status ?: "unknown",
             )
         } catch (e: Exception) {
-            PlatformVideoStatus(
-                platformVideoId = platformVideoId,
-                status = "not_found",
-                errorMessage = e.message,
-            )
+            throw PlatformApiException("Vimeo", "영상 상태 조회 실패", e)
         }
     }
 
@@ -111,7 +108,7 @@ class VimeoClient(
             )
         } catch (e: Exception) {
             log.warn("Vimeo 분석 데이터 조회 실패: {}", e.message)
-            PlatformAnalytics(0, 0, 0, 0, 0, 0)
+            throw PlatformApiException("Vimeo", "분석 데이터 조회 실패", e)
         }
     }
 

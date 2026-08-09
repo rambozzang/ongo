@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.twitter
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.twitter.dto.TwitterCreateTweetRequest
@@ -132,11 +133,7 @@ class TwitterClient(
                 status = if (response.data != null) "published" else "not_found",
             )
         } catch (e: Exception) {
-            PlatformVideoStatus(
-                platformVideoId = platformVideoId,
-                status = "not_found",
-                errorMessage = e.message,
-            )
+            throw PlatformApiException("Twitter", "트윗 상태 조회 실패", e)
         }
     }
 
@@ -180,7 +177,7 @@ class TwitterClient(
             )
         } catch (e: Exception) {
             log.warn("Twitter 분석 데이터 조회 실패: {}", e.message)
-            PlatformAnalytics(0, 0, 0, 0, 0, 0)
+            throw PlatformApiException("Twitter", "분석 데이터 조회 실패", e)
         }
     }
 

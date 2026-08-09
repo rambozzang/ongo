@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.tiktok
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.tiktok.dto.TikTokPublishStatusRequest
@@ -57,11 +58,7 @@ class TikTokClient(
             )
         } catch (e: Exception) {
             log.warn("TikTok 상태 조회 실패: {}", e.message)
-            return PlatformVideoStatus(
-                platformVideoId = platformVideoId,
-                status = "unknown",
-                errorMessage = e.message,
-            )
+            throw PlatformApiException("TikTok", "영상 상태 조회 실패", e)
         }
     }
 
@@ -83,7 +80,7 @@ class TikTokClient(
             )
 
             val video = response.data?.videos?.firstOrNull()
-                ?: return PlatformAnalytics(0, 0, 0, 0, 0, 0)
+                ?: throw PlatformApiException("TikTok", "영상 분석 응답에 영상이 없습니다.")
 
             return PlatformAnalytics(
                 views = video.viewCount ?: 0,
@@ -95,7 +92,7 @@ class TikTokClient(
             )
         } catch (e: Exception) {
             log.warn("TikTok 분석 데이터 조회 실패: {}", e.message)
-            return PlatformAnalytics(0, 0, 0, 0, 0, 0)
+            throw PlatformApiException("TikTok", "분석 데이터 조회 실패", e)
         }
     }
 

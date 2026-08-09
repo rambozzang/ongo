@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.youtube
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.youtube.dto.YouTubeCommentInsertRequest
@@ -114,10 +115,10 @@ class YouTubeClient(
                 )
             }
 
-            return PlatformAnalytics(0, 0, 0, 0, 0, 0)
+            throw PlatformApiException("YouTube", "분석 데이터가 없습니다.")
         } catch (e: Exception) {
             log.warn("YouTube 분석 데이터 조회 실패: {}", e.message)
-            return PlatformAnalytics(0, 0, 0, 0, 0, 0)
+            throw PlatformApiException("YouTube", "분석 데이터 조회 실패", e)
         }
     }
 

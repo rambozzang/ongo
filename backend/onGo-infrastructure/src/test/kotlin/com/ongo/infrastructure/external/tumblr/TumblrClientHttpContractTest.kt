@@ -62,7 +62,7 @@ class TumblrClientHttpContractTest {
             ),
         )
 
-        assertThat(result.platformVideoId).isEqualTo("123")
+        assertThat(result.platformVideoId).isEqualTo("creator:123")
         assertThat(result.platformUrl).isEqualTo("https://creator.tumblr.com/post/123")
 
         val source = server.takeRequest()

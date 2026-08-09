@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.naverclip
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import org.slf4j.LoggerFactory
@@ -37,11 +38,7 @@ class NaverClipClient(
             )
 
             if (response.error != null) {
-                return PlatformVideoStatus(
-                    platformVideoId = platformVideoId,
-                    status = "FAILED",
-                    errorMessage = response.error.message,
-                )
+                throw PlatformApiException("Naver Clip", "영상 상태 조회 실패: ${response.error.message}")
             }
 
             return PlatformVideoStatus(
@@ -51,11 +48,7 @@ class NaverClipClient(
             )
         } catch (e: Exception) {
             log.warn("Naver Clip 상태 조회 실패: {}", e.message)
-            return PlatformVideoStatus(
-                platformVideoId = platformVideoId,
-                status = "unknown",
-                errorMessage = e.message,
-            )
+            throw PlatformApiException("Naver Clip", "영상 상태 조회 실패", e)
         }
     }
 
@@ -77,7 +70,7 @@ class NaverClipClient(
 
             if (response.error != null) {
                 log.warn("Naver Clip 분석 조회 실패: {}", response.error.message)
-                return PlatformAnalytics(0, 0, 0, 0, 0, 0)
+                throw PlatformApiException("Naver Clip", "분석 데이터 조회 실패: ${response.error.message}")
             }
 
             return PlatformAnalytics(
@@ -90,7 +83,7 @@ class NaverClipClient(
             )
         } catch (e: Exception) {
             log.warn("Naver Clip 분석 데이터 조회 실패: {}", e.message)
-            return PlatformAnalytics(0, 0, 0, 0, 0, 0)
+            throw PlatformApiException("Naver Clip", "분석 데이터 조회 실패", e)
         }
     }
 

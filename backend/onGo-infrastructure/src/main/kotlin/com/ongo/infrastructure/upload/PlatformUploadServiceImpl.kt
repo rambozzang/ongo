@@ -224,8 +224,9 @@ class PlatformUploadServiceImpl(
     private fun platformUrl(platform: Platform, videoId: String): String? = when (platform) {
         Platform.YOUTUBE -> "https://www.youtube.com/watch?v=$videoId"
         Platform.TIKTOK -> "https://www.tiktok.com/video/$videoId"
-        Platform.INSTAGRAM -> "https://www.instagram.com/reel/$videoId/"
-        Platform.THREADS -> "https://www.threads.net/post/$videoId"
+        // Instagram/Threads 상태 응답은 permalink를 반드시 반환해야 한다.
+        // ID만으로 URL을 조립하면 실제 게시 링크인지 검증할 수 없다.
+        Platform.INSTAGRAM, Platform.THREADS -> null
         Platform.TWITTER -> "https://twitter.com/i/status/$videoId"
         Platform.NAVER_CLIP -> "https://tv.naver.com/v/$videoId"
         Platform.FACEBOOK -> "https://www.facebook.com/watch/?v=$videoId"

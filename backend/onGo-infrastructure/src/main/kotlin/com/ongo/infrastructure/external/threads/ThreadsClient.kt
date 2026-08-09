@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.threads
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import org.slf4j.LoggerFactory
@@ -59,7 +60,9 @@ class ThreadsClient(
 
             return PlatformUploadResult(
                 platformVideoId = published.id,
-                platformUrl = media.permalink ?: "https://www.threads.net/post/${published.id}",
+                // permalink가 없으면 게시 완료 링크를 확정할 수 없다. ID로
+                // 임의 URL을 조립하면 존재하지 않는 게시물을 성공으로 보이게 된다.
+                platformUrl = media.permalink ?: "",
                 status = "published",
             )
         } catch (e: Exception) {
@@ -93,24 +96,23 @@ class ThreadsClient(
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
         log.debug("Threads 상태 조회: threadId={}", platformVideoId)
 
-        return try {
-            val response = threadsApi.getThread(
-                threadId = platformVideoId,
-                fields = "id,media_type,permalink",
-                accessToken = accessToken,
-            )
-
-            PlatformVideoStatus(
+        val response = threadsApi.getThread(
+            threadId = platformVideoId,
+            fields = "id,media_type,permalink",
+            accessToken = accessToken,
+        )
+        if (response.id.isBlank()) {
+            return PlatformVideoStatus(
                 platformVideoId = platformVideoId,
-                status = if (response.id.isNotEmpty()) "published" else "not_found",
-            )
-        } catch (e: Exception) {
-            PlatformVideoStatus(
-                platformVideoId = platformVideoId,
-                status = "not_found",
-                errorMessage = e.message,
+                status = "NOT_FOUND",
+                errorMessage = "Threads 게시물을 찾지 못했습니다.",
             )
         }
+        return PlatformVideoStatus(
+            platformVideoId = response.id,
+            status = "PUBLISHED",
+            platformUrl = response.permalink,
+        )
     }
 
     override fun getVideoAnalytics(
@@ -121,39 +123,34 @@ class ThreadsClient(
     ): PlatformAnalytics {
         log.debug("Threads 분석 데이터 조회: threadId={}", platformVideoId)
 
-        return try {
-            val response = threadsApi.getInsights(
-                threadId = platformVideoId,
-                metric = "views,likes,replies,reposts",
-                accessToken = accessToken,
-            )
+        val response = threadsApi.getInsights(
+            threadId = platformVideoId,
+            metric = "views,likes,replies,reposts",
+            accessToken = accessToken,
+        )
 
-            var views = 0L
-            var likes = 0L
-            var replies = 0L
-            var reposts = 0L
+        var views = 0L
+        var likes = 0L
+        var replies = 0L
+        var reposts = 0L
 
-            response.data.forEach { entry ->
-                when (entry.name) {
-                    "views" -> views = entry.values?.firstOrNull()?.value ?: 0
-                    "likes" -> likes = entry.values?.firstOrNull()?.value ?: 0
-                    "replies" -> replies = entry.values?.firstOrNull()?.value ?: 0
-                    "reposts" -> reposts = entry.values?.firstOrNull()?.value ?: 0
-                }
+        response.data.forEach { entry ->
+            when (entry.name) {
+                "views" -> views = entry.values?.firstOrNull()?.value ?: 0
+                "likes" -> likes = entry.values?.firstOrNull()?.value ?: 0
+                "replies" -> replies = entry.values?.firstOrNull()?.value ?: 0
+                "reposts" -> reposts = entry.values?.firstOrNull()?.value ?: 0
             }
-
-            PlatformAnalytics(
-                views = views,
-                likes = likes,
-                comments = replies,
-                shares = reposts,
-                watchTimeSeconds = 0,
-                subscriberGained = 0,
-            )
-        } catch (e: Exception) {
-            log.warn("Threads 분석 데이터 조회 실패: {}", e.message)
-            PlatformAnalytics(0, 0, 0, 0, 0, 0)
         }
+
+        return PlatformAnalytics(
+            views = views,
+            likes = likes,
+            comments = replies,
+            shares = reposts,
+            watchTimeSeconds = 0,
+            subscriberGained = 0,
+        )
     }
 
     override fun getChannelInfo(accessToken: String): PlatformChannelInfo {

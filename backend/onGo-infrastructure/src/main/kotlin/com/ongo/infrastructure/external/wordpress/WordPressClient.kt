@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.wordpress
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.wordpress.dto.*
@@ -69,10 +70,15 @@ class WordPressClient(
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
         log.debug("WordPress 게시물 상태 조회: postId={}", platformVideoId)
-
+        val response = wordPressApi.getPost(
+            siteId = "me",
+            postId = platformVideoId,
+            authorization = "Bearer $accessToken",
+        )
         return PlatformVideoStatus(
-            platformVideoId = platformVideoId,
-            status = "published",
+            platformVideoId = response.id.toString(),
+            status = response.status ?: "UNKNOWN",
+            platformUrl = response.url ?: response.shortUrl,
         )
     }
 
@@ -101,7 +107,7 @@ class WordPressClient(
             )
         } catch (e: Exception) {
             log.warn("WordPress 분석 데이터 조회 실패: {}", e.message)
-            PlatformAnalytics(0, 0, 0, 0, 0, 0)
+            throw PlatformApiException("WordPress", "분석 데이터 조회 실패", e)
         }
     }
 

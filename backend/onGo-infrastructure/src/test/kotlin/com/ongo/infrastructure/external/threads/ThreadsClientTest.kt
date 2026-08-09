@@ -64,4 +64,48 @@ class ThreadsClientTest {
         verify(exactly = 2) { api.getContainerStatus("container-1", "id,status,error_message", "token") }
         verify(exactly = 1) { api.publishThread("user-1", "container-1", "token") }
     }
+
+    @Test
+    fun `게시 상태 조회는 thread 상세의 실제 permalink를 반환한다`() {
+        val api = mockk<ThreadsApi>()
+        every { api.getThread("thread-1", "id,media_type,permalink", "token") } returns ThreadsMediaResponse(
+            id = "thread-1",
+            text = null,
+            timestamp = null,
+            mediaType = "VIDEO",
+            mediaUrl = null,
+            permalink = "https://threads.net/@creator/post/thread-1",
+            isQuotePost = false,
+        )
+
+        val result = ThreadsClient(api, mockk(), mockk()).getVideoStatus("thread-1", "token")
+
+        assertThat(result.status).isEqualTo("PUBLISHED")
+        assertThat(result.platformUrl).isEqualTo("https://threads.net/@creator/post/thread-1")
+    }
+
+    @Test
+    fun `permalink가 없는 게시 응답은 임의 URL을 만들지 않는다`() {
+        val api = mockk<ThreadsApi>()
+        every { api.createMediaContainer(any(), any(), any(), any(), any()) } returns
+            ThreadsMediaContainerResponse("container-1")
+        every { api.getContainerStatus(any(), any(), any()) } returns
+            ThreadsMediaContainerStatusResponse(id = "container-1", status = "FINISHED")
+        every { api.publishThread(any(), any(), any()) } returns ThreadsPublishResponse("thread-1")
+        every { api.getThread(any(), any(), any()) } returns ThreadsMediaResponse(
+            id = "thread-1", text = null, timestamp = null, mediaType = "VIDEO",
+            mediaUrl = null, permalink = null, isQuotePost = false,
+        )
+
+        val result = ThreadsClient(api, mockk(), mockk()).uploadVideo(
+            PlatformUploadRequest(
+                fileUrl = "https://storage.test/video.mp4",
+                title = "테스트", description = "", tags = emptyList(),
+                visibility = Visibility.PUBLIC.name, thumbnailUrl = null,
+                accessToken = "token", platformChannelId = "user-1", fileSize = 4,
+            ),
+        )
+
+        assertThat(result.platformUrl).isEmpty()
+    }
 }

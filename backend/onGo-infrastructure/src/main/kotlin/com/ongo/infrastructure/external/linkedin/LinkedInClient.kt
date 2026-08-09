@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.linkedin
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.linkedin.dto.*
@@ -221,7 +222,7 @@ class LinkedInClient(
             )
         } catch (e: Exception) {
             log.warn("LinkedIn 분석 데이터 조회 실패: {}", e.message)
-            PlatformAnalytics(0, 0, 0, 0, 0, 0)
+            throw PlatformApiException("LinkedIn", "분석 데이터 조회 실패", e)
         }
     }
 

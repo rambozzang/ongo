@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.tumblr
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.tumblr.dto.TumblrNpfPostRequest
@@ -69,7 +70,9 @@ class TumblrClient(
             log.info("Tumblr 업로드 완료: postId={}", postId)
 
             return PlatformUploadResult(
-                platformVideoId = postId,
+                // 상태/분석 API가 blog 이름을 요구하므로 외부 식별자에 함께
+                // 보관한다. 내부 DB에는 provider가 돌려준 ID를 그대로 잃지 않는다.
+                platformVideoId = "$blogName:$postId",
                 platformUrl = "https://$blogName.tumblr.com/post/$postId",
                 status = "published",
             )
@@ -85,10 +88,22 @@ class TumblrClient(
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
         log.debug("Tumblr 게시물 상태 조회: postId={}", platformVideoId)
-
+        val parts = platformVideoId.split(":", limit = 2)
+        val blogName = parts.getOrNull(0)?.takeIf { it.isNotBlank() }
+            ?: throw PlatformApiException("Tumblr", "블로그 식별자가 없는 게시 ID입니다.")
+        val postId = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
+            ?: throw PlatformApiException("Tumblr", "게시물 식별자가 없는 게시 ID입니다.")
+        val response = tumblrApi.getPost(
+            blogName = blogName,
+            postId = postId,
+            authorization = "Bearer $accessToken",
+        )
+        val post = response.response
+            ?: return PlatformVideoStatus(platformVideoId, "NOT_FOUND", "Tumblr 게시물을 찾지 못했습니다.")
         return PlatformVideoStatus(
-            platformVideoId = platformVideoId,
-            status = "published",
+            platformVideoId = "$blogName:${post.idString ?: post.id?.toString() ?: postId}",
+            status = post.state?.uppercase() ?: "PUBLISHED",
+            platformUrl = post.postUrl,
         )
     }
 
@@ -101,9 +116,12 @@ class TumblrClient(
         log.debug("Tumblr 분석 데이터 조회: postId={}", platformVideoId)
 
         return try {
+            val parts = platformVideoId.split(":", limit = 2)
+            val blogName = parts.getOrNull(0) ?: ""
+            val postId = parts.getOrNull(1) ?: platformVideoId
             val response = tumblrApi.getPostNotes(
-                blogName = "me",
-                postId = platformVideoId,
+                blogName = blogName,
+                postId = postId,
                 authorization = "Bearer $accessToken",
             )
 
@@ -129,7 +147,7 @@ class TumblrClient(
             )
         } catch (e: Exception) {
             log.warn("Tumblr 분석 데이터 조회 실패: {}", e.message)
-            PlatformAnalytics(0, 0, 0, 0, 0, 0)
+            throw PlatformApiException("Tumblr", "분석 데이터 조회 실패", e)
         }
     }
 
