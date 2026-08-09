@@ -34,11 +34,13 @@ import com.ongo.domain.workspace.WorkspaceRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
+import java.net.InetAddress
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.security.MessageDigest
 
 @Service
 class PublicApiUseCase(
@@ -214,8 +216,22 @@ class PublicApiUseCase(
     }
 
     @Transactional
-    fun create(userId: Long, request: CreatePublicPostRequest): PublicPostResponse {
+    fun create(
+        userId: Long,
+        request: CreatePublicPostRequest,
+        idempotencyKey: String? = null,
+    ): PublicPostResponse {
         val type = parseType(request.type)
+        val normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey)
+        val requestHash = normalizedIdempotencyKey?.let { requestFingerprint(request) }
+        normalizedIdempotencyKey?.let { key ->
+            postRepository.findByUserIdAndIdempotencyKey(userId, key)?.let { existing ->
+                require(existing.requestHash == null || existing.requestHash == requestHash) {
+                    "Idempotency-Key가 다른 요청에 재사용되었습니다"
+                }
+                return toResponse(existing)
+            }
+        }
         require(type == PublicApiPostType.DRAFT || request.posts.isNotEmpty()) {
             "now 또는 schedule 게시에는 posts가 하나 이상이어야 합니다"
         }
@@ -247,6 +263,8 @@ class PublicApiUseCase(
                 status = if (type == PublicApiPostType.DRAFT) PublicApiPostStatus.DRAFT else PublicApiPostStatus.PROCESSING,
                 scheduledAt = scheduledAt,
                 payloadJson = payloadJson,
+                idempotencyKey = normalizedIdempotencyKey,
+                requestHash = requestHash,
             ),
         )
 
@@ -532,7 +550,7 @@ class PublicApiUseCase(
                 tags = value?.tags ?: emptyList(),
             )
         }
-        validateMediaUrl(mediaUrl)
+        val normalizedMediaUrl = validateMediaUrl(mediaUrl)
         val draft = uploadVideoUseCase.createVideo(
             userId = userId,
             title = value?.title ?: value?.content?.lineSequence()?.firstOrNull()?.take(100) ?: "공개 API 영상",
@@ -540,7 +558,7 @@ class PublicApiUseCase(
             tags = value?.tags ?: emptyList(),
         )
         return videoRepository.update(
-            draft.copy(fileUrl = mediaUrl, mediaType = MediaType.VIDEO, source = VideoSource.URL_IMPORT),
+            draft.copy(fileUrl = normalizedMediaUrl, mediaType = MediaType.VIDEO, source = VideoSource.URL_IMPORT),
         )
     }
 
@@ -723,13 +741,67 @@ class PublicApiUseCase(
         else -> null
     }
 
-    private fun validateMediaUrl(value: String) {
-        val uri = runCatching { URI(value) }.getOrElse { throw IllegalArgumentException("media URL이 올바르지 않습니다") }
+    private fun validateMediaUrl(value: String): String {
+        val normalized = value.trim()
+        val uri = runCatching { URI(normalized) }
+            .getOrElse { throw IllegalArgumentException("media URL이 올바르지 않습니다") }
         require(uri.scheme == "https" || uri.scheme == "http") { "media URL은 http 또는 https여야 합니다" }
+        require(uri.userInfo == null) { "media URL에 인증 정보는 사용할 수 없습니다" }
         require(!uri.host.isNullOrBlank()) { "media URL의 호스트가 필요합니다" }
+        require(uri.port == -1 || uri.port == 80 || uri.port == 443) {
+            "media URL 포트는 80 또는 443만 지원합니다"
+        }
+        val addresses = runCatching { InetAddress.getAllByName(uri.host) }
+            .getOrElse { throw IllegalArgumentException("media URL 호스트를 확인할 수 없습니다") }
+        require(addresses.isNotEmpty() && addresses.none(::isPrivateOrReservedAddress)) {
+            "내부망 또는 로컬 주소의 media URL은 사용할 수 없습니다"
+        }
+        return normalized
+    }
+
+    private fun isPrivateOrReservedAddress(address: InetAddress): Boolean {
+        if (address.isAnyLocalAddress || address.isLoopbackAddress || address.isLinkLocalAddress ||
+            address.isSiteLocalAddress || address.isMulticastAddress
+        ) {
+            return true
+        }
+        val bytes = address.address.map { it.toInt() and 0xff }
+        if (bytes.size == 4) {
+            val first = bytes[0]
+            val second = bytes[1]
+            return first == 0 || first == 10 || first == 127 ||
+                (first == 100 && second in 64..127) ||
+                (first == 169 && second == 254) ||
+                (first == 172 && second in 16..31) ||
+                (first == 192 && second == 0) ||
+                (first == 192 && second == 168) ||
+                (first == 198 && second == 18) ||
+                (first == 198 && second == 19) ||
+                first >= 224
+        }
+        if (bytes.size == 16) {
+            // fc00::/7 (unique-local) and fe80::/10 (link-local).
+            return (bytes[0] and 0xfe) == 0xfc ||
+                (bytes[0] == 0xfe && (bytes[1] and 0xc0) == 0x80)
+        }
+        return false
     }
 
     private fun safeError(error: RuntimeException): String =
         (error.message ?: "공개 API 게시에 실패했습니다").take(2_000)
+
+    private fun normalizeIdempotencyKey(value: String?): String? {
+        val key = value?.trim().takeUnless { it.isNullOrBlank() } ?: return null
+        require(key.length <= 255 && key.none(Char::isISOControl)) {
+            "Idempotency-Key는 1~255자의 제어문자 없는 값이어야 합니다"
+        }
+        return key
+    }
+
+    private fun requestFingerprint(request: CreatePublicPostRequest): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest(objectMapper.writeValueAsBytes(request))
+        return digest.joinToString("") { byte -> "%02x".format(byte) }
+    }
 
 }

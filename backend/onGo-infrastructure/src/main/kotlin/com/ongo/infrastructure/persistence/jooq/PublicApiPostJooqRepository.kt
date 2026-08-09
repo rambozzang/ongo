@@ -27,9 +27,26 @@ class PublicApiPostJooqRepository(
             .set(PAYLOAD_JSON, post.payloadJson)
             .set(CREATED_AT, post.createdAt ?: LocalDateTime.now())
             .set(UPDATED_AT, post.updatedAt ?: LocalDateTime.now())
-            .returningResult(ID)
-            .fetchOne()!!
-            .get(ID)
+            .set(IDEMPOTENCY_KEY, post.idempotencyKey)
+            .set(REQUEST_HASH, post.requestHash)
+            .let { insert ->
+                if (post.idempotencyKey == null) {
+                    insert.returningResult(ID).fetchOne()!!.get(ID)
+                } else {
+                    val insertedId = insert
+                        .onConflict(USER_ID, IDEMPOTENCY_KEY)
+                        .doNothing()
+                        .returningResult(ID)
+                        .fetchOne()
+                        ?.get(ID)
+                    insertedId ?: dsl.select(ID)
+                        .from(TABLE)
+                        .where(USER_ID.eq(post.userId))
+                        .and(IDEMPOTENCY_KEY.eq(post.idempotencyKey))
+                        .fetchOne(ID)
+                        ?: error("공개 API idempotency key 작업을 저장한 뒤 조회할 수 없습니다")
+                }
+            }
         return findById(id) ?: error("공개 API 게시 작업을 저장한 뒤 조회할 수 없습니다: $id")
     }
 
@@ -42,6 +59,8 @@ class PublicApiPostJooqRepository(
             .set(SCHEDULED_AT, post.scheduledAt)
             .set(ERROR_MESSAGE, post.errorMessage?.take(MAX_ERROR_LENGTH))
             .set(PAYLOAD_JSON, post.payloadJson)
+            .set(IDEMPOTENCY_KEY, post.idempotencyKey)
+            .set(REQUEST_HASH, post.requestHash)
             .set(UPDATED_AT, LocalDateTime.now())
             .where(ID.eq(post.id))
             .and(USER_ID.eq(post.userId))
@@ -54,6 +73,14 @@ class PublicApiPostJooqRepository(
 
     override fun findByIdAndUserId(id: Long, userId: Long): PublicApiPost? =
         dsl.select().from(TABLE).where(ID.eq(id)).and(USER_ID.eq(userId)).fetchOne()?.toPost()
+
+    override fun findByUserIdAndIdempotencyKey(userId: Long, idempotencyKey: String): PublicApiPost? =
+        dsl.select()
+            .from(TABLE)
+            .where(USER_ID.eq(userId))
+            .and(IDEMPOTENCY_KEY.eq(idempotencyKey))
+            .fetchOne()
+            ?.toPost()
 
     override fun findByUserId(userId: Long, limit: Int): List<PublicApiPost> =
         dsl.select()
@@ -131,6 +158,8 @@ class PublicApiPostJooqRepository(
         payloadJson = get(PAYLOAD_JSON)!!,
         createdAt = get(CREATED_AT),
         updatedAt = get(UPDATED_AT),
+        idempotencyKey = get(IDEMPOTENCY_KEY),
+        requestHash = get(REQUEST_HASH),
     )
 
     companion object {
@@ -144,6 +173,8 @@ class PublicApiPostJooqRepository(
         private val SCHEDULED_AT = DSL.field(DSL.name("scheduled_at"), LocalDateTime::class.java)
         private val ERROR_MESSAGE = DSL.field(DSL.name("error_message"), String::class.java)
         private val PAYLOAD_JSON = DSL.field(DSL.name("payload_json"), String::class.java)
+        private val IDEMPOTENCY_KEY = DSL.field(DSL.name("idempotency_key"), String::class.java)
+        private val REQUEST_HASH = DSL.field(DSL.name("request_hash"), String::class.java)
         private val CREATED_AT = DSL.field(DSL.name("created_at"), LocalDateTime::class.java)
         private val UPDATED_AT = DSL.field(DSL.name("updated_at"), LocalDateTime::class.java)
         private const val MAX_ERROR_LENGTH = 2_000

@@ -282,6 +282,45 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `Idempotency-Key 재전송은 기존 공개 API 게시를 반환하고 영상을 다시 만들지 않는다`() {
+        val request = CreatePublicPostRequest(type = "draft")
+        val draftVideo = Video(id = 12, userId = 1, title = "공개 API 초안")
+        var persisted: PublicApiPost? = null
+        every { posts.findByUserIdAndIdempotencyKey(1, "retry-key") } answers { persisted }
+        every { uploadVideo.createVideo(1, any(), any(), any()) } returns draftVideo
+        every { posts.save(any()) } answers {
+            persisted = firstArg<PublicApiPost>().copy(id = 46)
+            persisted!!
+        }
+        every { uploads.findByVideoId(12) } returns emptyList()
+
+        val first = useCase.create(1, request, "retry-key")
+        val second = useCase.create(1, request, "retry-key")
+
+        assertEquals(first.id, second.id)
+        verify(exactly = 1) { uploadVideo.createVideo(1, any(), any(), any()) }
+        verify(exactly = 1) { posts.save(any()) }
+    }
+
+    @Test
+    fun `공개 게시의 media URL도 내부망 주소를 차단한다`() {
+        assertFailsWith<IllegalArgumentException> {
+            useCase.create(
+                1,
+                CreatePublicPostRequest(
+                    type = "now",
+                    posts = listOf(
+                        PublicPostItem(
+                            integration = PublicIntegrationRef("7"),
+                            value = listOf(PublicPostValue(video = jacksonObjectMapper().readTree("\"http://127.0.0.1/video.mp4\""))),
+                        ),
+                    ),
+                ),
+            )
+        }
+    }
+
+    @Test
     fun `missing content는 provider tool이 없으면 빈 목록을 반환한다`() {
         every { posts.findByIdAndUserId(42, 1) } returns PublicApiPost(
             id = 42,

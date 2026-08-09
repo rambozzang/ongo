@@ -17,6 +17,10 @@ data class PublicApiPost(
     val payloadJson: String,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
+    /** 공개 API 재전송을 같은 게시 작업으로 접기 위한 클라이언트 키. */
+    val idempotencyKey: String? = null,
+    /** 키를 다른 요청에 재사용했는지 검증하기 위한 요청 지문. */
+    val requestHash: String? = null,
 )
 
 enum class PublicApiPostType {
@@ -41,6 +45,7 @@ interface PublicApiPostRepository {
     fun update(post: PublicApiPost): PublicApiPost
     fun findById(id: Long): PublicApiPost?
     fun findByIdAndUserId(id: Long, userId: Long): PublicApiPost?
+    fun findByUserIdAndIdempotencyKey(userId: Long, idempotencyKey: String): PublicApiPost? = null
     fun findByUserId(userId: Long, limit: Int): List<PublicApiPost>
 
     fun findByUserIdAndWorkspaceId(userId: Long, workspaceId: Long, limit: Int): List<PublicApiPost> =

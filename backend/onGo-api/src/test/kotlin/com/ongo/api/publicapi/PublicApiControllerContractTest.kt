@@ -3,6 +3,7 @@ package com.ongo.api.publicapi
 import com.ongo.application.channel.ChannelUseCase
 import com.ongo.application.notification.NotificationUseCase
 import com.ongo.application.publicapi.ChangePublicPostStatusRequest
+import com.ongo.application.publicapi.CreatePublicPostRequest
 import com.ongo.application.publicapi.GeneratedVideoUseCase
 import com.ongo.application.publicapi.PublicApiAnalyticsUseCase
 import com.ongo.application.publicapi.PublicApiMediaUseCase
@@ -18,6 +19,7 @@ import com.ongo.application.publicapi.VideoFunctionUseCase
 import com.ongo.application.workspace.WorkspaceUseCase
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -140,6 +142,18 @@ class PublicApiControllerContractTest {
         )
 
         assertEquals(mapOf("id" to "41", "state" to "QUEUE"), response.body)
+    }
+
+    @Test
+    fun `create forwards Idempotency-Key to the durable public API use case`() {
+        val request = CreatePublicPostRequest(type = "draft")
+        every { useCase.create(1L, request, "retry-key") } returns
+            PublicPostResponse("41", "draft", "draft", "DRAFT", null, 11, null, emptyList())
+
+        val response = controller.create(1L, apiKeyAuthentication, "retry-key", request)
+
+        assertEquals(200, response.statusCode.value())
+        verify { useCase.create(1L, request, "retry-key") }
     }
 
     @Test
