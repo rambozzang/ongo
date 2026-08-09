@@ -17,6 +17,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.CURRENT_PERIOD_START
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.NEXT_BILLING_DATE
 import com.ongo.infrastructure.persistence.jooq.Fields.PLAN_TYPE
+import com.ongo.infrastructure.persistence.jooq.Fields.PLAN_TYPE_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.PRICE
 import com.ongo.infrastructure.persistence.jooq.Fields.RESUME_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
@@ -136,7 +137,7 @@ class SubscriptionJooqRepository(
     override fun findByPlanType(planType: PlanType): List<Subscription> =
         dsl.select()
             .from(SUBSCRIPTIONS)
-            .where(PLAN_TYPE.eq(planType.name))
+            .where(PLAN_TYPE_TEXT.eq(planType.name))
             .and(STATUS_TEXT.`in`(SubscriptionStatus.ACTIVE.name, SubscriptionStatus.FREE.name))
             .fetch()
             .map { it.toSubscription() }

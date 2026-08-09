@@ -247,6 +247,7 @@ object Fields {
     val PROVIDER_TEXT = DSL.field("provider::text", String::class.java)
     val PROVIDER_ID = DSL.field("provider_id", String::class.java)
     val PLAN_TYPE = DSL.field("plan_type", String::class.java)
+    val PLAN_TYPE_TEXT = DSL.field("plan_type::text", String::class.java)
     val CATEGORY = DSL.field("category", String::class.java)
     val ONBOARDING_COMPLETED = DSL.field("onboarding_completed", Boolean::class.java)
     val ROLE = DSL.field("role", String::class.java)

@@ -7,6 +7,8 @@ import com.ongo.common.enums.Visibility
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.EncryptedToken
+import com.ongo.domain.subscription.Subscription
+import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoPlatformMeta
 import com.ongo.domain.video.VideoUpload
@@ -26,6 +28,7 @@ import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.time.LocalDateTime
 
 /**
  * 멀티 계정 게시의 DB 계약을 실제 Flyway 스키마에 대해 고정한다.
@@ -44,6 +47,7 @@ class VideoUploadChannelTargetIT {
     @Autowired lateinit var videoUploadRepository: VideoUploadRepository
     @Autowired lateinit var videoPlatformMetaRepository: VideoPlatformMetaRepository
     @Autowired lateinit var videoRepository: VideoRepository
+    @Autowired lateinit var subscriptionRepository: SubscriptionRepository
 
     companion object {
         @Container @JvmStatic
@@ -68,6 +72,7 @@ class VideoUploadChannelTargetIT {
         dsl.execute("DELETE FROM video_uploads WHERE video_id IN (SELECT id FROM videos WHERE user_id IN (SELECT id FROM users WHERE email = ?))", EMAIL)
         dsl.execute("DELETE FROM videos WHERE user_id IN (SELECT id FROM users WHERE email = ?)", EMAIL)
         dsl.execute("DELETE FROM channels WHERE user_id IN (SELECT id FROM users WHERE email = ?)", EMAIL)
+        dsl.execute("DELETE FROM subscriptions WHERE user_id IN (SELECT id FROM users WHERE email = ?)", EMAIL)
         dsl.execute("DELETE FROM users WHERE email = ?", EMAIL)
     }
 
@@ -159,6 +164,42 @@ class VideoUploadChannelTargetIT {
         assertEquals(UploadStatus.UPLOADING, videoUploadRepository.findById(upload.id!!)!!.status)
         assertEquals(Visibility.PUBLIC, videoPlatformMetaRepository.findByVideoUploadId(upload.id!!)!!.visibility)
         assertEquals(meta.id, videoPlatformMetaRepository.findByVideoUploadId(upload.id!!)!!.id)
+
+        val now = LocalDateTime.now()
+        val scheduled = videoUploadRepository.update(upload.copy(scheduledAt = now.minusMinutes(1)))
+        assertEquals(1, videoUploadRepository.findDueScheduledUploads(now).size)
+        videoUploadRepository.update(
+            scheduled.copy(
+                status = UploadStatus.PROCESSING,
+                pollToken = "enum-poll-token",
+                scheduledAt = null,
+                nextRetryAt = now.minusSeconds(1),
+            ),
+        )
+        assertEquals(1, videoUploadRepository.findDueProcessingUploads(now).size)
+    }
+
+    @Test
+    @DisplayName("구독 플랜 enum 조회는 PostgreSQL에서 문자열 비교 오류 없이 동작한다")
+    fun subscriptionPlanLookupUsesPostgresEnumSafePredicate() {
+        val userId = dsl.fetchOne(
+            """
+            INSERT INTO users (email, name, provider, provider_id, role, plan_type)
+            VALUES (?, 'subscription-enum-test', 'GOOGLE', 'video-upload-subscription-it', 'USER', 'FREE')
+            RETURNING id
+            """.trimIndent(),
+            EMAIL,
+        )!!.get(0, Long::class.java)
+
+        subscriptionRepository.save(
+            Subscription(
+                userId = userId,
+                planType = com.ongo.common.enums.PlanType.PRO,
+                status = com.ongo.common.enums.SubscriptionStatus.ACTIVE,
+            ),
+        )
+
+        assertEquals(1, subscriptionRepository.findByPlanType(com.ongo.common.enums.PlanType.PRO).size)
     }
 
     private fun insertChannel(userId: Long, platformChannelId: String, name: String): Long =
