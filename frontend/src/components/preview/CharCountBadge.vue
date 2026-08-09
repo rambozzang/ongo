@@ -60,7 +60,7 @@ const overflowDetail = computed(() => {
   if (limits.description && props.meta.description.length > limits.description) {
     parts.push(t('preview.descCount', { current: props.meta.description.length, max: limits.description }))
   }
-  if (limits.tags && props.meta.tags.length > limits.tags) {
+  if (tagsOverflow.value) {
     parts.push(t('preview.tagCount', { current: props.meta.tags.length, max: limits.tags }))
   }
   if (limits.caption && composedCaption.value && composedCaption.value.length > limits.caption) {
@@ -74,8 +74,15 @@ const hasOverflow = computed(() => {
   if (!limits) return false
   if (limits.title && props.meta.title.length > limits.title) return true
   if (limits.description && props.meta.description.length > limits.description) return true
-  if (limits.tags && props.meta.tags.length > limits.tags) return true
+  if (tagsOverflow.value) return true
   if (limits.caption && composedCaption.value && composedCaption.value.length > limits.caption) return true
   return false
+})
+
+/** maxTagCount=0 means tags are unsupported, not unlimited. */
+const tagsOverflow = computed(() => {
+  const limits = props.limits ?? CHAR_LIMITS[props.platform]
+  if (!limits || limits.tags === undefined) return false
+  return limits.tags === 0 ? props.meta.tags.length > 0 : props.meta.tags.length > limits.tags
 })
 </script>

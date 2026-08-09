@@ -68,4 +68,27 @@ describe('PlatformPreviewPanel', () => {
     expect(badge.exists()).toBe(true)
     expect(badge.text()).toContain('초과')
   })
+
+  it('shows a preview warning when the server declares tags unsupported', () => {
+    const i18n = createI18n({ legacy: false, locale: 'ko', messages: { ko: koMessages } })
+    const wrapper = mount(PlatformPreviewPanel, {
+      props: {
+        platforms: ['INSTAGRAM'],
+        targets: [{
+          key: 'INSTAGRAM#11',
+          platform: 'INSTAGRAM',
+          metadata: { title: '제목', description: '설명', tags: ['태그'] },
+        }],
+        platformLimits: { INSTAGRAM: { tags: 0 } },
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { InstagramPreview: { template: '<div />' } },
+      },
+    })
+
+    const badge = wrapper.find('[title*="태그"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.text()).toContain('초과')
+  })
 })
