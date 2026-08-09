@@ -25,9 +25,11 @@ class CampaignPublishAdapter(
     override fun publish(creatorId: Long, videoId: Long, platforms: List<String>): List<PlatformPublishOutcome> {
         val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
 
-        val configs = platforms.map { platformName ->
+        val targets = platforms.map { parseCampaignPublishTarget(it) }
+        val configs = targets.map { target ->
             PlatformUploadConfig(
-                platform = Platform.valueOf(platformName),
+                platform = target.platform,
+                channelId = target.channelId,
                 videoUploadId = 0,
                 title = video.title,
                 description = null,
@@ -40,14 +42,36 @@ class CampaignPublishAdapter(
 
         val result = publishVideoUseCase.publishVideo(creatorId, videoId, configs)
 
-        return result.uploads.map { uploadStatus ->
-            val upload = videoUploadRepository.findByVideoIdAndPlatform(videoId, uploadStatus.platform)
+        return result.uploads.mapIndexed { index, uploadStatus ->
+            val target = targets[index]
+            val upload = if (target.channelId != null) {
+                videoUploadRepository.findByVideoIdAndChannelId(videoId, target.channelId)
+            } else {
+                videoUploadRepository.findByVideoIdAndPlatform(videoId, uploadStatus.platform)
+            }
             PlatformPublishOutcome(
-                platform = uploadStatus.platform.name,
+                platform = target.rawKey,
                 videoUploadId = upload?.id,
                 status = uploadStatus.status.name,
                 errorMessage = uploadStatus.errorMessage,
             )
         }
     }
+}
+
+private data class CampaignPublishTarget(
+    val rawKey: String,
+    val platform: Platform,
+    val channelId: Long?,
+)
+
+private fun parseCampaignPublishTarget(rawKey: String): CampaignPublishTarget {
+    val parts = rawKey.split('#', limit = 2)
+    val platform = runCatching { Platform.valueOf(parts[0].trim().uppercase()) }
+        .getOrElse { throw IllegalArgumentException("지원하지 않는 플랫폼입니다: $rawKey") }
+    val channelId = parts.getOrNull(1)?.trim()?.let {
+        it.toLongOrNull()?.takeIf { id -> id > 0 }
+            ?: throw IllegalArgumentException("잘못된 캠페인 게시 계정입니다: $rawKey")
+    }
+    return CampaignPublishTarget(rawKey, platform, channelId)
 }
