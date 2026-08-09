@@ -367,6 +367,7 @@
           "AWAITING_HOOK_SELECTION": "후킹 선택 대기",
           "AWAITING_SCHEDULE": "예약 대기",
           "COMPLETED": "완료",
+          "PARTIALLY_COMPLETED": "일부 게시 완료",
           "FAILED": "실패",
           "CANCELLED": "취소됨"
         },

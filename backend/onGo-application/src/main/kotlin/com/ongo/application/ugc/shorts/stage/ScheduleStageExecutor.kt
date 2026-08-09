@@ -49,6 +49,8 @@ class ScheduleStageExecutor(
         val skipped = mutableMapOf<Long, String>()
         val publications = mutableListOf<Map<String, Any?>>()
         val scheduledAts = mutableMapOf<Long, Instant>()
+        var successfulPublications = 0
+        var failedPublications = 0
 
         targets.forEach { clip ->
             val scheduledAt = plannedAts.getValue(clip.id)
@@ -61,6 +63,7 @@ class ScheduleStageExecutor(
             if (renderedVideoId == null) {
                 val reason = "렌더 영상 미연결"
                 skipped[clip.id] = reason
+                failedPublications += schedule.platforms.size
                 schedule.platforms.forEach { platform ->
                     savePublication(
                         ClipPublication(
@@ -104,6 +107,7 @@ class ScheduleStageExecutor(
                     val status = if (outcomes.isSuccess && result != null) ClipPublicationStatus.SCHEDULED else ClipPublicationStatus.FAILED
                     val error = outcomes.exceptionOrNull()?.message ?: result?.errorMessage
                     if (status == ClipPublicationStatus.SCHEDULED) clipScheduled = true
+                    if (status == ClipPublicationStatus.SCHEDULED) successfulPublications++ else failedPublications++
                     val previous = publicationRepository.findByClipIdAndPlatform(clip.id, platform)
                     savePublication(
                         (previous ?: ClipPublication(clipId = clip.id, platform = platform)).copy(
@@ -116,7 +120,19 @@ class ScheduleStageExecutor(
                     publications += mapOf("clipId" to clip.id, "platform" to platform, "status" to status.name, "error" to error)
                 }
             }
+            // 기존에 성공한 publication은 pending 목록에서 제외되므로, 중복 방지로
+            // 건너뛴 경우에도 해당 클립/플랫폼은 성공으로 집계한다.
+            if (clipScheduled && pendingPlatforms.size < schedule.platforms.size) {
+                successfulPublications += schedule.platforms.size - pendingPlatforms.size
+            }
             if (clipScheduled) scheduledAts[clip.id] = scheduledAt
+        }
+
+        val scheduleOutcome = when {
+            schedule.platforms.isEmpty() -> ScheduleOutcome.NONE
+            successfulPublications == 0 -> ScheduleOutcome.FAILED
+            failedPublications > 0 -> ScheduleOutcome.PARTIAL
+            else -> ScheduleOutcome.SUCCESS
         }
 
         return ShortsStageOutput(
@@ -125,6 +141,7 @@ class ScheduleStageExecutor(
                     "startAt" to schedule.startAt.toString(),
                     "intervalHours" to schedule.intervalHours,
                     "platforms" to schedule.platforms,
+                    "outcome" to scheduleOutcome.name,
                     "clips" to targets.map {
                         mapOf(
                             "clipId" to it.id,
@@ -139,6 +156,7 @@ class ScheduleStageExecutor(
             ),
             inputSnapshot = """{"clipCount":${targets.size},"intervalHours":${schedule.intervalHours},"platformCount":${schedule.platforms.size}}""",
             scheduledAts = scheduledAts,
+            scheduleOutcome = scheduleOutcome,
         )
     }
 

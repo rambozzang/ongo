@@ -367,6 +367,7 @@
           "AWAITING_HOOK_SELECTION": "Awaiting hook selection",
           "AWAITING_SCHEDULE": "Awaiting schedule",
           "COMPLETED": "Completed",
+          "PARTIALLY_COMPLETED": "Partially completed",
           "FAILED": "Failed",
           "CANCELLED": "Cancelled"
         },

@@ -11,6 +11,7 @@ export type PipelineRunStatus =
   | 'AWAITING_HOOK_SELECTION'
   | 'AWAITING_SCHEDULE'
   | 'COMPLETED'
+  | 'PARTIALLY_COMPLETED'
   | 'FAILED'
   | 'CANCELLED'
 

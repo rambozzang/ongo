@@ -52,7 +52,7 @@
             </span>
             <span v-if="run.createdAt">{{ formatDate(run.createdAt) }}</span>
           </div>
-          <p v-if="run.status === 'FAILED' && run.errorMessage" class="mt-1 truncate text-body-xs text-error-strong">
+          <p v-if="run.errorMessage" class="mt-1 truncate text-body-xs" :class="run.status === 'PARTIALLY_COMPLETED' ? 'text-warning-strong' : 'text-error-strong'">
             {{ run.errorMessage }}
           </p>
         </div>
@@ -159,6 +159,8 @@ function statusBadgeClass(status: PipelineRunStatus): string {
       return 'bg-warning-subtle text-warning-strong'
     case 'COMPLETED':
       return 'bg-success-subtle text-success-strong'
+    case 'PARTIALLY_COMPLETED':
+      return 'bg-warning-subtle text-warning-strong'
     case 'FAILED':
       return 'bg-error-subtle text-error-strong'
     default:

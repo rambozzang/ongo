@@ -1132,7 +1132,11 @@ async function waitForShortsState(
   while (Date.now() < deadline) {
     const detail = await ugcShortsPipelineApi.get(workspaceId, runId)
     shortsStatus.value = detail.run.currentStage || detail.run.status
-    if (detail.run.status === 'FAILED' || detail.run.status === 'CANCELLED') {
+    if (
+      detail.run.status === 'FAILED' ||
+      detail.run.status === 'PARTIALLY_COMPLETED' ||
+      detail.run.status === 'CANCELLED'
+    ) {
       throw new Error(detail.run.errorMessage || t('redesign.compose.shortsFailed'))
     }
     if (detail.run.status === expected) return detail

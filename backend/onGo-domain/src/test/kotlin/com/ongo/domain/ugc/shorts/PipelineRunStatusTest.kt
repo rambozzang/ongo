@@ -7,8 +7,9 @@ import kotlin.test.assertTrue
 class PipelineRunStatusTest {
 
     @Test
-    fun `실행 상태는 7개로 구성된다`() {
-        assertEquals(7, PipelineRunStatus.entries.size)
+    fun `실행 상태는 부분 성공을 포함한다`() {
+        assertEquals(8, PipelineRunStatus.entries.size)
+        assertTrue(PipelineRunStatus.entries.contains(PipelineRunStatus.PARTIALLY_COMPLETED))
     }
 
     @Test

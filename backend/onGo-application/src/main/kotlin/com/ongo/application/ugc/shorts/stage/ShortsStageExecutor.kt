@@ -82,7 +82,16 @@ data class ShortsStageOutput(
     val renderSpecs: Map<Long, String>? = null,
     // SCHEDULE: clipId -> 예약 시각
     val scheduledAts: Map<Long, Instant>? = null,
+    // SCHEDULE: 외부 게시 결과. null은 기존 단계 실행기와의 호환을 위해 성공으로 취급한다.
+    val scheduleOutcome: ScheduleOutcome? = null,
 )
+
+enum class ScheduleOutcome {
+    NONE,
+    SUCCESS,
+    PARTIAL,
+    FAILED,
+}
 
 /** 파이프라인 단계 실행기. 한 단계 = 한 구현체. */
 interface ShortsStageExecutor {

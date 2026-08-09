@@ -6,6 +6,7 @@ import com.ongo.application.ugc.shorts.stage.ClipCandidate
 import com.ongo.application.ugc.shorts.stage.GeneratedHook
 import com.ongo.application.ugc.shorts.stage.RenderSpecStageExecutor
 import com.ongo.application.ugc.shorts.stage.ScheduleParams
+import com.ongo.application.ugc.shorts.stage.ScheduleOutcome
 import com.ongo.application.ugc.shorts.stage.ScheduleStageExecutor
 import com.ongo.application.ugc.shorts.stage.ShortsStageContext
 import com.ongo.application.ugc.shorts.stage.ShortsStageExecutor
@@ -458,6 +459,30 @@ class ShortsPipelineOrchestratorTest {
         // SCHEDULE은 크레딧 차감이 없다
         verify(exactly = 0) { creditService.validateAndDeduct(any(), any<AiFeature>()) }
         assertEquals(0, stageRepo.records.first { it.stage == PipelineStage.SCHEDULE }.creditCost)
+    }
+
+    @Test
+    fun `SCHEDULE 일부 실패는 PARTIALLY_COMPLETED로 끝나고 재게시 안내를 남긴다`() {
+        stubCommon()
+        val runRepo = InMemoryPipelineRunRepository(baseRun(PipelineRunStatus.AWAITING_SCHEDULE))
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository(emptyList())
+        val hookRepo = InMemoryClipHookRepository()
+        val scheduleExecutor = object : ShortsStageExecutor {
+            override val stage = PipelineStage.SCHEDULE
+
+            override fun execute(context: ShortsStageContext) = ShortsStageOutput(
+                outputSnapshot = "{}",
+                scheduleOutcome = ScheduleOutcome.PARTIAL,
+            )
+        }
+
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, listOf(scheduleExecutor))
+            .run(1L, PipelineStage.SCHEDULE, ScheduleParams(Instant.parse("2026-03-01T09:00:00Z"), 6, listOf("YOUTUBE")))
+
+        val result = runRepo.findById(1L)!!
+        assertEquals(PipelineRunStatus.PARTIALLY_COMPLETED, result.status)
+        assertTrue(result.errorMessage!!.contains("일부 쇼츠 플랫폼"))
     }
 
     // ---- 6. 크레딧: 단계 실패 시 해당 단계분만 환불 ----

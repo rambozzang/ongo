@@ -162,7 +162,7 @@ class ScheduleStageExecutorTest {
         every { publicationRepository.save(capture(saved)) } answers { firstArg() }
         every { publishAdapter.publishAll(any(), any(), any()) } throws IllegalStateException("업로드 토큰 만료")
 
-        executor.execute(
+        val output = executor.execute(
             stageContext(
                 clips = listOf(clip(11, 1, renderedVideoId = 500L)),
                 schedule = ScheduleParams(startAt, 6, listOf("YOUTUBE")),
@@ -171,6 +171,31 @@ class ScheduleStageExecutorTest {
 
         assertEquals(ClipPublicationStatus.FAILED, saved.captured.status)
         assertEquals("업로드 토큰 만료", saved.captured.errorMessage)
+        assertEquals(ScheduleOutcome.FAILED, output.scheduleOutcome)
+    }
+
+    @Test
+    fun `한 플랫폼 성공과 한 플랫폼 실패는 PARTIAL 결과로 남긴다`() {
+        noPriorPublication()
+        val saved = mutableListOf<ClipPublication>()
+        every { publicationRepository.save(any()) } answers {
+            val publication = firstArg<ClipPublication>()
+            saved += publication
+            publication
+        }
+        every { publishAdapter.publishAll(any(), any(), any()) } returns listOf(
+            PlatformPublishOutcome("YOUTUBE", videoUploadId = 700L, status = "SCHEDULED", errorMessage = null),
+        )
+
+        val output = executor.execute(
+            stageContext(
+                clips = listOf(clip(11, 1, renderedVideoId = 500L)),
+                schedule = ScheduleParams(startAt, 6, listOf("YOUTUBE", "TIKTOK")),
+            ),
+        )
+
+        assertEquals(ScheduleOutcome.PARTIAL, output.scheduleOutcome)
+        assertTrue(saved.any { it.platform == "TIKTOK" && it.status == ClipPublicationStatus.FAILED })
     }
 
     // ---- 중복 게시 방지 ----

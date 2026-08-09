@@ -8,6 +8,7 @@ import com.ongo.application.ugc.shorts.stage.ScheduleParams
 import com.ongo.application.ugc.shorts.stage.ShortsStageContext
 import com.ongo.application.ugc.shorts.stage.ShortsStageExecutor
 import com.ongo.application.ugc.shorts.stage.ShortsStageOutput
+import com.ongo.application.ugc.shorts.stage.ScheduleOutcome
 import com.ongo.application.ugc.shorts.stage.TranscriptSegmentMs
 import com.ongo.common.enums.AiFeature
 import com.ongo.common.enums.AiProvider
@@ -81,7 +82,7 @@ class ShortsPipelineOrchestrator(
             )
             context.run = run
 
-            if (!executeStage(run, stage, context)) return
+            val output = executeStage(run, stage, context) ?: return
 
             when (stage) {
                 PipelineStage.HOOK -> {
@@ -93,7 +94,22 @@ class ShortsPipelineOrchestrator(
                     return
                 }
                 PipelineStage.SCHEDULE -> {
-                    persistRun(run.id) { it.copy(status = PipelineRunStatus.COMPLETED) }
+                    val outcome = output.scheduleOutcome
+                    when (outcome) {
+                        ScheduleOutcome.FAILED -> persistRun(run.id) {
+                            it.copy(
+                                status = PipelineRunStatus.FAILED,
+                                errorMessage = "모든 쇼츠 플랫폼 게시에 실패했습니다. 게시 결과를 확인한 뒤 다시 시도해 주세요.",
+                            )
+                        }
+                        ScheduleOutcome.PARTIAL -> persistRun(run.id) {
+                            it.copy(
+                                status = PipelineRunStatus.PARTIALLY_COMPLETED,
+                                errorMessage = "일부 쇼츠 플랫폼 게시에 실패했습니다. 실행 상세에서 플랫폼별 결과를 확인해 주세요.",
+                            )
+                        }
+                        else -> persistRun(run.id) { it.copy(status = PipelineRunStatus.COMPLETED) }
+                    }
                     return
                 }
                 else -> Unit
@@ -101,8 +117,8 @@ class ShortsPipelineOrchestrator(
         }
     }
 
-    /** 단계 하나를 실행한다. 실패하면 환불·FAILED 기록 후 false를 반환한다. */
-    private fun executeStage(run: PipelineRun, stage: PipelineStage, context: ShortsStageContext): Boolean {
+    /** 단계 하나를 실행한다. 실패하면 환불·FAILED 기록 후 null을 반환한다. */
+    private fun executeStage(run: PipelineRun, stage: PipelineStage, context: ShortsStageContext): ShortsStageOutput? {
         val feature = FEATURE_BY_STAGE[stage]
         val executor = executorsByStage[stage]
             ?: error("단계 실행기가 없습니다: $stage")
@@ -140,7 +156,7 @@ class ShortsPipelineOrchestrator(
                     outputSnapshot = output.outputSnapshot,
                 ),
             )
-            return true
+            return output
         } catch (e: Exception) {
             log.error("쇼츠 파이프라인 단계 실패: runId={}, stage={}", run.id, stage, e)
             // 단계 실패 시 그 단계분 크레딧만 환불한다 (차감이 실제로 일어났을 때만)
@@ -164,7 +180,7 @@ class ShortsPipelineOrchestrator(
                     errorMessage = "${stage.displayName} 단계 실패: ${e.message}",
                 )
             }
-            return false
+            return null
         }
     }
 
