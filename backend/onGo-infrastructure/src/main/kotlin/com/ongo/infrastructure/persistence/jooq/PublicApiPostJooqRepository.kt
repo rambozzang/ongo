@@ -62,6 +62,24 @@ class PublicApiPostJooqRepository(
             .fetch()
             .map { it.toPost() }
 
+    override fun findByUserIdAndDateRange(
+        userId: Long,
+        start: LocalDateTime,
+        end: LocalDateTime,
+        limit: Int,
+    ): List<PublicApiPost> =
+        dsl.select()
+            .from(TABLE)
+            .where(USER_ID.eq(userId))
+            .and(
+                SCHEDULED_AT.between(start, end)
+                    .or(SCHEDULED_AT.isNull().and(CREATED_AT.between(start, end)))
+            )
+            .orderBy(CREATED_AT.desc())
+            .limit(limit.coerceIn(1, 100))
+            .fetch()
+            .map { it.toPost() }
+
     override fun deleteDraft(id: Long, userId: Long): Boolean =
         dsl.deleteFrom(TABLE)
             .where(ID.eq(id))

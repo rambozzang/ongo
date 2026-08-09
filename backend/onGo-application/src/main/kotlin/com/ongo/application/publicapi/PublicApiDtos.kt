@@ -78,3 +78,36 @@ data class PublicPostCreatedResponse(
 data class PublicAvailableSlotResponse(
     val date: String,
 )
+
+data class PublicIntegrationSettingsResponse(
+    val id: String,
+    val provider: String,
+    val title: PublicFieldLimit,
+    val description: PublicFieldLimit,
+    val tags: PublicFieldLimit,
+    val scheduling: Boolean,
+    val directVideoUpload: Boolean,
+    val cloudVideoUpload: Boolean,
+    val maxFileSizeBytes: Long,
+    val acceptedExtensions: Set<String>,
+    val unavailableReason: String?,
+)
+
+data class PublicFieldLimit(
+    val maxLength: Int? = null,
+    val maxCount: Int? = null,
+)
+
+data class PublicConnectionResponse(
+    val connected: Boolean,
+)
+
+data class PublicRemoteMediaUploadRequest(
+    val url: String,
+    val filename: String? = null,
+)
+
+data class PublicMissingContentResponse(
+    val integration: String,
+    val missing: List<String>,
+)

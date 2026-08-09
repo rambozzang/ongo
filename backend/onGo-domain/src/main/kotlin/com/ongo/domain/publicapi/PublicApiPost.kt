@@ -40,5 +40,14 @@ interface PublicApiPostRepository {
     fun findById(id: Long): PublicApiPost?
     fun findByIdAndUserId(id: Long, userId: Long): PublicApiPost?
     fun findByUserId(userId: Long, limit: Int): List<PublicApiPost>
+
+    /** 외부 자동화 클라이언트의 calendar 범위 조회. */
+    fun findByUserIdAndDateRange(
+        userId: Long,
+        start: LocalDateTime,
+        end: LocalDateTime,
+        limit: Int,
+    ): List<PublicApiPost> = findByUserId(userId, limit)
+
     fun deleteDraft(id: Long, userId: Long): Boolean
 }

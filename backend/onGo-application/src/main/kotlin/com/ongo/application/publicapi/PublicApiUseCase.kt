@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ongo.application.channel.dto.ChannelResponse
 import com.ongo.application.video.PlatformUploadConfig
+import com.ongo.application.video.PlatformUploadCapabilities
 import com.ongo.application.video.PublishVideoUseCase
 import com.ongo.application.video.UploadVideoUseCase
 import com.ongo.common.enums.MediaType
@@ -56,6 +57,29 @@ class PublicApiUseCase(
                 status = channel.status.name,
             )
         }
+
+    fun integrationSettings(userId: Long, integrationId: String): PublicIntegrationSettingsResponse {
+        val channelId = integrationId.toLongOrNull()
+            ?: throw IllegalArgumentException("integration id는 onGo 채널 ID여야 합니다")
+        val channel = channelRepository.findById(channelId)
+            ?.takeIf { it.userId == userId }
+            ?: throw NotFoundException("integration", integrationId)
+        val capability = PlatformUploadCapabilities.get(channel.platform)
+            ?: throw IllegalArgumentException("${channel.platform} 게시 capability가 등록되지 않았습니다")
+        return PublicIntegrationSettingsResponse(
+            id = integrationId,
+            provider = channel.platform.name.lowercase(),
+            title = PublicFieldLimit(maxLength = capability.maxTitleLength),
+            description = PublicFieldLimit(maxLength = capability.maxDescriptionLength),
+            tags = PublicFieldLimit(maxCount = capability.maxTagCount),
+            scheduling = capability.scheduling,
+            directVideoUpload = capability.directVideoUpload,
+            cloudVideoUpload = capability.cloudVideoUpload,
+            maxFileSizeBytes = capability.maxFileSizeBytes,
+            acceptedExtensions = capability.acceptedExtensions,
+            unavailableReason = capability.unavailableReason,
+        )
+    }
 
     /**
      * Postiz의 find-slot 어댑터. onGo가 저장한 예약 큐를 기준으로 해당 계정의
@@ -137,11 +161,45 @@ class PublicApiUseCase(
         return toResponse(post)
     }
 
-    fun list(userId: Long, limit: Int): List<PublicPostResponse> =
-        postRepository.findByUserId(userId, limit).map(::toResponse)
+    fun list(
+        userId: Long,
+        limit: Int,
+        startDate: String? = null,
+        endDate: String? = null,
+    ): List<PublicPostResponse> {
+        val start = startDate?.let(::parseDate)
+        val end = endDate?.let(::parseDate)
+        require((start == null) == (end == null)) { "startDate와 endDate는 함께 지정해야 합니다" }
+        require(start == null || !end!!.isBefore(start)) { "endDate는 startDate보다 빠를 수 없습니다" }
+        val posts = if (start != null && end != null) {
+            postRepository.findByUserIdAndDateRange(userId, start, end, limit)
+        } else {
+            postRepository.findByUserId(userId, limit)
+        }
+        return posts.map(::toResponse)
+    }
 
     fun get(userId: Long, id: Long): PublicPostResponse =
         toResponse(load(userId, id))
+
+    fun missingContent(userId: Long, id: Long): List<PublicMissingContentResponse> {
+        val post = load(userId, id)
+        val payload = runCatching {
+            objectMapper.readValue(post.payloadJson, CreatePublicPostRequest::class.java)
+        }.getOrNull() ?: return emptyList()
+        return payload.posts.mapNotNull { target ->
+            val value = target.value.firstOrNull()
+            val missing = buildList {
+                if (value == null || listOf(value.content, value.title, value.description).all { it.isNullOrBlank() }) {
+                    add("content")
+                }
+                if (post.videoId <= 0 && firstText(value?.video).isNullOrBlank() && firstText(value?.image).isNullOrBlank()) {
+                    add("media")
+                }
+            }
+            PublicMissingContentResponse(target.integration.id, missing).takeIf { it.missing.isNotEmpty() }
+        }
+    }
 
     @Transactional
     fun changeStatus(userId: Long, id: Long, request: ChangePublicPostStatusRequest): PublicPostResponse {

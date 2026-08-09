@@ -65,6 +65,70 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `integration settings는 소유한 채널의 실제 게시 capability를 반환한다`() {
+        every { channels.findById(7) } returns channel
+
+        val result = useCase.integrationSettings(1, "7")
+
+        assertEquals("youtube", result.provider)
+        assertEquals(100, result.title.maxLength)
+        assertEquals(5_000, result.description.maxLength)
+        assertEquals(500, result.tags.maxCount)
+        assertEquals(true, result.scheduling)
+    }
+
+    @Test
+    fun `posts 날짜 범위가 지정되면 repository 범위 조회를 사용한다`() {
+        val post = PublicApiPost(
+            id = 41,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
+            scheduledAt = LocalDateTime.parse("2026-08-05T10:00:00"),
+            payloadJson = "{\"posts\":[]}",
+        )
+        every {
+            posts.findByUserIdAndDateRange(
+                1,
+                LocalDateTime.parse("2026-08-01T00:00:00"),
+                LocalDateTime.parse("2026-08-31T23:59:59"),
+                20,
+            )
+        } returns listOf(post)
+        every { uploads.findByVideoId(11) } returns emptyList()
+
+        val result = useCase.list(1, 20, "2026-08-01T00:00:00", "2026-08-31T23:59:59")
+
+        assertEquals(listOf("41"), result.map { it.id })
+        verify(exactly = 1) {
+            posts.findByUserIdAndDateRange(
+                1,
+                LocalDateTime.parse("2026-08-01T00:00:00"),
+                LocalDateTime.parse("2026-08-31T23:59:59"),
+                20,
+            )
+        }
+    }
+
+    @Test
+    fun `missing content는 다른 사용자의 게시물을 조회하지 않고 대상별 누락을 계산한다`() {
+        every { posts.findByIdAndUserId(42, 1) } returns PublicApiPost(
+            id = 42,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.DRAFT,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.DRAFT,
+            payloadJson = "{\"posts\":[{\"integration\":{\"id\":\"7\"},\"value\":[]}]}",
+        )
+
+        val result = useCase.missingContent(1, 42)
+
+        assertEquals(listOf("content"), result.single().missing)
+        assertEquals("7", result.single().integration)
+    }
+
+    @Test
     fun `now 게시가 내부 durable publisher를 호출하고 post id를 반환한다`() {
         every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
         every { channels.findById(7) } returns channel

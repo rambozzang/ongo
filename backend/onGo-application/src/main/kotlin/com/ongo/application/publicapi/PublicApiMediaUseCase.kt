@@ -6,6 +6,7 @@ import com.ongo.common.util.FileValidationUtil
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.util.UUID
+import java.nio.file.Files
 
 /**
  * Postiz public API의 /upload 어댑터.
@@ -17,6 +18,7 @@ import java.util.UUID
 @Service
 class PublicApiMediaUseCase(
     private val assetUseCase: AssetUseCase,
+    private val remoteMediaDownloader: PublicRemoteMediaDownloader,
 ) {
     fun upload(userId: Long, file: MultipartFile): PublicMediaUploadResponse {
         val originalFilename = file.originalFilename?.trim().orEmpty()
@@ -60,6 +62,51 @@ class PublicApiMediaUseCase(
             mimeType = response.mimeType,
             size = response.fileSizeBytes,
         )
+    }
+
+    fun uploadFromUrl(userId: Long, url: String, requestedFilename: String?): PublicMediaUploadResponse {
+        val downloaded = remoteMediaDownloader.download(url)
+        try {
+            val filename = requestedFilename?.trim().takeUnless { it.isNullOrBlank() } ?: downloaded.filename
+            val contentType = downloaded.contentType.lowercase().substringBefore(';').trim()
+            requireSafeFilename(filename)
+            if (downloaded.size <= 0 || downloaded.size > MAX_FILE_SIZE) {
+                throw FileValidationException("URL 미디어 크기는 0보다 크고 2GB 이하여야 합니다")
+            }
+            if (!isSupportedContentType(contentType)) {
+                throw FileValidationException("지원하지 않는 미디어 MIME 타입입니다: $contentType")
+            }
+            Files.newInputStream(downloaded.path).use {
+                FileValidationUtil.validateAssetContent(it, contentType)
+            }
+            val storedFilename = "${UUID.randomUUID()}_$filename"
+            val response = Files.newInputStream(downloaded.path).use { inputStream ->
+                assetUseCase.createAsset(
+                    userId = userId,
+                    filename = storedFilename,
+                    originalFilename = filename,
+                    fileType = fileType(contentType),
+                    fileSizeBytes = downloaded.size,
+                    mimeType = contentType,
+                    tags = emptyList(),
+                    folder = PUBLIC_API_FOLDER,
+                    width = null,
+                    height = null,
+                    durationSeconds = null,
+                    inputStream = inputStream,
+                    storageKey = "$PUBLIC_API_FOLDER/$userId/$storedFilename",
+                )
+            }
+            return PublicMediaUploadResponse(
+                id = response.id.toString(),
+                path = response.fileUrl,
+                name = response.originalFilename ?: response.filename,
+                mimeType = response.mimeType,
+                size = response.fileSizeBytes,
+            )
+        } finally {
+            Files.deleteIfExists(downloaded.path)
+        }
     }
 
     private fun requireSafeFilename(filename: String) {

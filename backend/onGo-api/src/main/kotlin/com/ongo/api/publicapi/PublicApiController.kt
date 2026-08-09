@@ -9,6 +9,10 @@ import com.ongo.application.publicapi.PublicApiMediaUseCase
 import com.ongo.application.publicapi.PublicIntegrationResponse
 import com.ongo.application.publicapi.PublicPostCreatedResponse
 import com.ongo.application.publicapi.PublicPostResponse
+import com.ongo.application.publicapi.PublicIntegrationSettingsResponse
+import com.ongo.application.publicapi.PublicConnectionResponse
+import com.ongo.application.publicapi.PublicRemoteMediaUploadRequest
+import com.ongo.application.publicapi.PublicMissingContentResponse
 import com.ongo.common.ResData
 import com.ongo.common.exception.ForbiddenException
 import io.swagger.v3.oas.annotations.Operation
@@ -49,6 +53,29 @@ class PublicApiController(
         return ResData.success(useCase.integrations(userId))
     }
 
+    @Operation(summary = "integration 연결 상태 조회")
+    @GetMapping("/is-connected")
+    fun isConnected(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+    ): ResponseEntity<ResData<PublicConnectionResponse>> {
+        requireApiKey(authentication)
+        // API key가 사용자에게 발급되어 이 요청까지 도달했다는 것은 onGo 공개 API
+        // 연결이 유효하다는 뜻이다. 플랫폼 계정 연결 여부는 integrations에서 확인한다.
+        return ResData.success(PublicConnectionResponse(connected = true))
+    }
+
+    @Operation(summary = "integration 게시 capability 조회")
+    @GetMapping("/integration-settings/{integrationId}")
+    fun integrationSettings(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable integrationId: String,
+    ): ResponseEntity<ResData<PublicIntegrationSettingsResponse>> {
+        requireApiKey(authentication)
+        return ResData.success(useCase.integrationSettings(userId, integrationId))
+    }
+
     @Operation(summary = "미디어 업로드")
     @PostMapping("/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun upload(
@@ -58,6 +85,17 @@ class PublicApiController(
     ): ResponseEntity<ResData<com.ongo.application.publicapi.PublicMediaUploadResponse>> {
         requireApiKey(authentication)
         return ResData.success(mediaUseCase.upload(userId, file))
+    }
+
+    @Operation(summary = "URL에서 미디어 업로드")
+    @PostMapping("/upload-from-url")
+    fun uploadFromUrl(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @RequestBody request: PublicRemoteMediaUploadRequest,
+    ): ResponseEntity<ResData<com.ongo.application.publicapi.PublicMediaUploadResponse>> {
+        requireApiKey(authentication)
+        return ResData.success(mediaUseCase.uploadFromUrl(userId, request.url, request.filename))
     }
 
     @Operation(summary = "integration의 다음 예약 가능 시간 조회")
@@ -91,9 +129,11 @@ class PublicApiController(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         authentication: Authentication,
         @RequestParam(defaultValue = "50") limit: Int,
+        @RequestParam(required = false) startDate: String?,
+        @RequestParam(required = false) endDate: String?,
     ): ResponseEntity<ResData<List<PublicPostResponse>>> {
         requireApiKey(authentication)
-        return ResData.success(useCase.list(userId, limit))
+        return ResData.success(useCase.list(userId, limit, startDate, endDate))
     }
 
     @Operation(summary = "게시물 상세 조회")
@@ -117,6 +157,29 @@ class PublicApiController(
     ): ResponseEntity<ResData<PublicPostResponse>> {
         requireApiKey(authentication)
         return ResData.success(useCase.changeStatus(userId, id, request))
+    }
+
+    @Operation(summary = "게시물 상태 변경(Postiz 호환 경로)")
+    @PostMapping("/posts/{id}/change-status")
+    fun changeStatusCompat(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable id: Long,
+        @RequestBody request: ChangePublicPostStatusRequest,
+    ): ResponseEntity<ResData<PublicPostResponse>> {
+        requireApiKey(authentication)
+        return ResData.success(useCase.changeStatus(userId, id, request))
+    }
+
+    @Operation(summary = "게시물에 필요한 콘텐츠 조회")
+    @GetMapping("/posts/{id}/missing")
+    fun missingContent(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<List<PublicMissingContentResponse>>> {
+        requireApiKey(authentication)
+        return ResData.success(useCase.missingContent(userId, id))
     }
 
     @Operation(summary = "초안 게시물 삭제")
