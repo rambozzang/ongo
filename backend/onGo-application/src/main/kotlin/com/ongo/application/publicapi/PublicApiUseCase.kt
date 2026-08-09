@@ -2,6 +2,7 @@ package com.ongo.application.publicapi
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.core.type.TypeReference
 import com.ongo.application.channel.dto.ChannelResponse
 import com.ongo.application.video.PlatformUploadConfig
 import com.ongo.application.video.PlatformUploadCapabilities
@@ -16,6 +17,7 @@ import com.ongo.common.exception.NotFoundException
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.publicapi.PublicApiPost
 import com.ongo.domain.publicapi.PublicApiPostRepository
 import com.ongo.domain.publicapi.PublicApiPostStatus
@@ -45,6 +47,8 @@ class PublicApiUseCase(
     private val uploadVideoUseCase: UploadVideoUseCase,
     private val publishVideoUseCase: PublishVideoUseCase,
     private val objectMapper: ObjectMapper,
+    private val tokenEncryptionPort: TokenEncryptionPort,
+    private val integrationToolPort: PlatformIntegrationToolPort,
 ) {
 
     fun integrations(userId: Long): List<PublicIntegrationResponse> =
@@ -67,6 +71,17 @@ class PublicApiUseCase(
             ?: throw NotFoundException("integration", integrationId)
         val capability = PlatformUploadCapabilities.get(channel.platform)
             ?: throw IllegalArgumentException("${channel.platform} 게시 capability가 등록되지 않았습니다")
+        val tools = integrationToolPort.definitions(channel.platform).map { definition ->
+            PublicIntegrationToolResponse(
+                methodName = definition.methodName,
+                description = definition.description,
+                dataSchema = objectMapper.createArrayNode().apply {
+                    definition.dataSchema.forEach { field ->
+                        add(objectMapper.valueToTree<JsonNode>(field))
+                    }
+                },
+            )
+        }
         return PublicIntegrationSettingsResponse(
             id = integrationId,
             provider = channel.platform.name.lowercase(),
@@ -82,13 +97,51 @@ class PublicApiUseCase(
             output = PublicIntegrationSettingsOutput(
                 rules = buildSettingsRules(capability.scheduling, capability.directVideoUpload, capability.cloudVideoUpload),
                 maxLength = capability.maxTitleLength,
-                // No provider-specific setting schema is exposed until the corresponding
-                // platform client can validate and persist it. An empty object schema is
-                // safer than accepting settings that are silently ignored.
                 settings = objectMapper.createObjectNode().put("type", "object"),
-                tools = emptyList(),
+                tools = tools,
             ),
         )
+    }
+
+    /**
+     * Execute one of the operations advertised by integration-settings.
+     * Discovery and invocation share the same allow-list so arbitrary provider
+     * methods can never be reached through the public API.
+     */
+    fun triggerIntegrationTool(
+        userId: Long,
+        integrationId: String,
+        request: PublicIntegrationToolRequest,
+    ): PublicIntegrationToolResult {
+        val channelId = integrationId.toLongOrNull()
+            ?: throw IllegalArgumentException("integration id는 onGo 채널 ID여야 합니다")
+        val channel = channelRepository.findById(channelId)
+            ?.takeIf { it.userId == userId }
+            ?: throw NotFoundException("integration", integrationId)
+        val methodName = request.methodName.trim()
+        require(methodName.isNotBlank() && methodName.length <= 100) {
+            "methodName은 1~100자여야 합니다"
+        }
+        if (integrationToolPort.definitions(channel.platform).none { it.methodName == methodName }) {
+            throw BusinessException(
+                "INTEGRATION_TOOL_UNAVAILABLE",
+                "${channel.platform} integration에서 지원하지 않는 tool입니다: $methodName",
+            )
+        }
+        val dataNode = request.data ?: objectMapper.createObjectNode()
+        require(dataNode.isObject) { "data는 JSON object여야 합니다" }
+        val data: Map<String, Any?> = objectMapper.convertValue(
+            dataNode,
+            object : TypeReference<Map<String, Any?>>() {},
+        )
+        val output = integrationToolPort.invoke(
+            platform = channel.platform,
+            accessToken = tokenEncryptionPort.decrypt(channel.accessToken),
+            platformChannelId = channel.platformChannelId,
+            methodName = methodName,
+            data = data,
+        )
+        return PublicIntegrationToolResult(objectMapper.valueToTree(output))
     }
 
     private fun buildSettingsRules(

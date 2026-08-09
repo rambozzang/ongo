@@ -5,6 +5,7 @@ import com.ongo.application.common.FileStoragePort
 import com.ongo.application.video.GeneratedVideoFile
 import com.ongo.application.video.VideoGenerationPort
 import com.ongo.application.video.VideoGenerationSpec
+import com.ongo.application.video.TextToSpeechPort
 import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
@@ -27,13 +28,15 @@ class GeneratedVideoUseCaseTest {
     private val storage = mockk<FileStoragePort>()
     private val videos = mockk<VideoRepository>()
     private val writeGuard = mockk<UserWriteGuard>()
+    private val textToSpeech = mockk<TextToSpeechPort>()
     private lateinit var useCase: GeneratedVideoUseCase
     private val temporaryDirectories = mutableListOf<java.nio.file.Path>()
 
     @BeforeEach
     fun setUp() {
         every { writeGuard.requireWritable(7L, any(), any()) } just runs
-        useCase = GeneratedVideoUseCase(generator, storage, videos, writeGuard, jacksonObjectMapper())
+        every { textToSpeech.availableVoices() } returns emptyList()
+        useCase = GeneratedVideoUseCase(generator, storage, videos, writeGuard, jacksonObjectMapper(), textToSpeech)
     }
 
     @AfterEach

@@ -156,6 +156,14 @@ shorts:
 video:
   generation:
     timeout-seconds: ${VIDEO_GENERATION_TIMEOUT_SECONDS:180}
+    tts:
+      base-url: ${OPENAI_TTS_BASE_URL:https://api.openai.com/v1}
+      model: ${OPENAI_TTS_MODEL:gpt-4o-mini-tts}
+
+public-api:
+  oauth:
+    callback-url: ${PUBLIC_OAUTH_CALLBACK_URL:${APP_BASE_URL:http://localhost:8070}/api/v1/public/v1/social/callback}
+    success-redirect: ${PUBLIC_OAUTH_SUCCESS_REDIRECT:${APP_BASE_URL:http://localhost:3000}/channels}
 
 # Payment (PortOne V2)
 payment:

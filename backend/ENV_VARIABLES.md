@@ -32,6 +32,7 @@ onGo 백엔드 애플리케이션에서 사용하는 환경변수 목록입니�
 |---|---|---|---|
 | `JWT_SECRET` | JWT 토큰 서명 시크릿 키 (최소 32바이트) | dev: `ongo-dev-jwt-secret-key-must-be-at-least-32-bytes-long`, prod: 없음 | **필수 (prod)** |
 | `PLATFORM_TOKEN_ENCRYPTION_KEY` | 플랫폼 토큰 AES-256 암호화 키 (Base64) | dev: `b25nby1kZXYtYWVzMjU2LWVuY3J5cHRpb24ta2V5MDA=`, prod: 없음 | **필수 (prod)** |
+| `APP_BASE_URL` | 공개 OAuth callback과 웹 리디렉션의 운영 기준 URL | `http://localhost` (dev) | **필수 (prod)** |
 
 ---
 

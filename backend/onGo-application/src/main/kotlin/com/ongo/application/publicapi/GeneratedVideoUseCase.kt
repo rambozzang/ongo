@@ -6,6 +6,7 @@ import com.ongo.application.video.GeneratedVideoFile
 import com.ongo.application.video.VideoGenerationPort
 import com.ongo.application.video.VideoGenerationSpec
 import com.ongo.application.video.VideoOrientation
+import com.ongo.application.video.TextToSpeechPort
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.accountdeletion.UserWriteGuard
@@ -25,6 +26,7 @@ class GeneratedVideoUseCase(
     private val videoRepository: VideoRepository,
     private val userWriteGuard: UserWriteGuard,
     private val objectMapper: ObjectMapper,
+    private val textToSpeechPort: TextToSpeechPort,
 ) {
 
     @Transactional
@@ -48,10 +50,11 @@ class GeneratedVideoUseCase(
         require(prompt.isNotBlank() && prompt.length <= MAX_PROMPT_LENGTH) {
             "customParams.prompt는 1~${MAX_PROMPT_LENGTH}자여야 합니다"
         }
-        if (params.path("voice").asText("").isNotBlank()) {
+        val voice = params.path("voice").asText("").trim().takeIf { it.isNotBlank() }
+        if (voice != null && textToSpeechPort.availableVoices().none { it.id == voice }) {
             throw BusinessException(
                 "VIDEO_VOICE_UNAVAILABLE",
-                "현재 image-text-slides 생성은 음성 합성을 지원하지 않습니다. voice를 제거해 무음 영상을 생성하거나 음성 공급자를 연결해 주세요.",
+                "요청한 음성을 사용할 수 없습니다. /video/function에서 사용 가능한 음성을 확인하세요.",
             )
         }
 
@@ -63,7 +66,7 @@ class GeneratedVideoUseCase(
             ?.take(MAX_TAGS)
             ?: emptyList()
 
-        val generated = videoGenerationPort.generate(VideoGenerationSpec(prompt, orientation))
+        val generated = videoGenerationPort.generate(VideoGenerationSpec(prompt, orientation, voice))
         val key = "generated/$userId/${UUID.randomUUID()}.mp4"
         try {
             val fileUrl = Files.newInputStream(generated.path).use { input ->
@@ -73,6 +76,7 @@ class GeneratedVideoUseCase(
                 put("type", type)
                 put("output", request.output.trim().lowercase())
                 put("prompt", prompt)
+                voice?.let { put("voice", it) }
             }
             val video = videoRepository.save(
                 Video(

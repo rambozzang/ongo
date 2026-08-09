@@ -11,6 +11,8 @@ import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.channel.EncryptedToken
+import com.ongo.domain.channel.PlainToken
+import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.publicapi.PublicApiPost
 import com.ongo.domain.publicapi.PublicApiPostRepository
 import com.ongo.domain.schedule.ScheduleRepository
@@ -39,8 +41,19 @@ class PublicApiUseCaseTest {
     private val schedules = mockk<ScheduleRepository>()
     private val uploadVideo = mockk<UploadVideoUseCase>()
     private val publishVideo = mockk<PublishVideoUseCase>()
+    private val tokenEncryption = mockk<TokenEncryptionPort>()
+    private val integrationTools = mockk<PlatformIntegrationToolPort>()
     private val useCase = PublicApiUseCase(
-        channels, posts, videos, uploads, schedules, uploadVideo, publishVideo, jacksonObjectMapper(),
+        channels,
+        posts,
+        videos,
+        uploads,
+        schedules,
+        uploadVideo,
+        publishVideo,
+        jacksonObjectMapper(),
+        tokenEncryption,
+        integrationTools,
     )
 
     private val channel = Channel(
@@ -67,6 +80,7 @@ class PublicApiUseCaseTest {
     @Test
     fun `integration settings는 소유한 채널의 실제 게시 capability를 반환한다`() {
         every { channels.findById(7) } returns channel
+        every { integrationTools.definitions(Platform.YOUTUBE) } returns emptyList()
 
         val result = useCase.integrationSettings(1, "7")
 
@@ -77,6 +91,42 @@ class PublicApiUseCaseTest {
         assertEquals(true, result.scheduling)
         assertEquals(100, result.output.maxLength)
         assertEquals(emptyList(), result.output.tools)
+    }
+
+    @Test
+    fun `integration trigger는 discovery에 등록된 tool만 복호화 토큰으로 실행한다`() {
+        every { channels.findById(7) } returns channel
+        every { integrationTools.definitions(Platform.YOUTUBE) } returns listOf(
+            PlatformToolDefinition("getChannelInfo", "profile"),
+        )
+        every { tokenEncryption.decrypt(EncryptedToken("encrypted")) } returns PlainToken("plain-token")
+        every {
+            integrationTools.invoke(
+                Platform.YOUTUBE,
+                PlainToken("plain-token"),
+                "yt-7",
+                "getChannelInfo",
+                emptyMap(),
+            )
+        } returns mapOf("channelName" to "내 채널")
+
+        val result = useCase.triggerIntegrationTool(
+            1,
+            "7",
+            PublicIntegrationToolRequest("getChannelInfo"),
+        )
+
+        assertEquals("내 채널", result.output.path("channelName").asText())
+        verify(exactly = 1) { tokenEncryption.decrypt(EncryptedToken("encrypted")) }
+    }
+
+    @Test
+    fun `integration trigger는 다른 사용자의 integration을 노출하지 않는다`() {
+        every { channels.findById(7) } returns channel.copy(userId = 99)
+
+        assertFailsWith<com.ongo.common.exception.NotFoundException> {
+            useCase.triggerIntegrationTool(1, "7", PublicIntegrationToolRequest("getChannelInfo"))
+        }
     }
 
     @Test

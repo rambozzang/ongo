@@ -92,7 +92,7 @@ data class PublicIntegrationSettingsResponse(
     val maxFileSizeBytes: Long,
     val acceptedExtensions: Set<String>,
     val unavailableReason: String?,
-    /** Postiz-compatible discovery payload. Provider-specific tools are empty unless onGo implements them. */
+    /** Postiz-compatible discovery payload backed by the provider capability registry. */
     val output: PublicIntegrationSettingsOutput,
 )
 
@@ -109,6 +109,15 @@ data class PublicIntegrationToolResponse(
     val dataSchema: JsonNode,
 )
 
+data class PublicIntegrationToolRequest(
+    val methodName: String,
+    val data: JsonNode? = null,
+)
+
+data class PublicIntegrationToolResult(
+    val output: JsonNode,
+)
+
 data class PublicFieldLimit(
     val maxLength: Int? = null,
     val maxCount: Int? = null,
@@ -116,6 +125,10 @@ data class PublicFieldLimit(
 
 data class PublicConnectionResponse(
     val connected: Boolean,
+)
+
+data class PublicOAuthUrlResponse(
+    val url: String,
 )
 
 data class PublicRemoteMediaUploadRequest(
@@ -127,6 +140,12 @@ data class PublicGenerateVideoRequest(
     val type: String,
     val output: String,
     val customParams: JsonNode,
+)
+
+data class PublicVideoFunctionRequest(
+    val functionName: String,
+    val identifier: String,
+    val params: JsonNode? = null,
 )
 
 data class PublicGeneratedVideoResponse(

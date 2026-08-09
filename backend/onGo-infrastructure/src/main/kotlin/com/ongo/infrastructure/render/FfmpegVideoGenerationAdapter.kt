@@ -3,6 +3,7 @@ package com.ongo.infrastructure.render
 import com.ongo.application.video.GeneratedVideoFile
 import com.ongo.application.video.VideoGenerationPort
 import com.ongo.application.video.VideoGenerationSpec
+import com.ongo.application.video.TextToSpeechPort
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -18,6 +19,7 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class FfmpegVideoGenerationAdapter(
+    private val textToSpeechPort: TextToSpeechPort,
     @param:Value("\${shorts.render.ffmpeg-path:ffmpeg}")
     private val executable: String,
     @param:Value("\${video.generation.timeout-seconds:180}")
@@ -33,20 +35,33 @@ class FfmpegVideoGenerationAdapter(
             Files.writeString(textFile, request.prompt, StandardCharsets.UTF_8)
             val output = workDir.resolve("generated.mp4")
             val filter = "drawtext=textfile=${filterPath(textFile)}:fontcolor=white:fontsize=64:line_spacing=14:x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.35:boxborderw=28"
+            val audio = request.voice?.trim()?.takeIf { it.isNotBlank() }?.let {
+                textToSpeechPort.synthesize(request.prompt, it)
+            }
+            val hasAudio = audio != null
             val command = listOf(
                 executable,
                 "-nostdin",
                 "-y",
                 "-f", "lavfi",
-                "-i", "color=c=0x111827:s=${request.orientation.width}x${request.orientation.height}:r=30:d=8",
+                "-i", "color=c=0x111827:s=${request.orientation.width}x${request.orientation.height}:r=30:d=${if (hasAudio) 120 else 8}",
                 "-vf", filter,
                 "-c:v", "libx264",
                 "-pix_fmt", "yuv420p",
                 "-movflags", "+faststart",
-                "-an",
-                output.fileName.toString(),
-            )
-            runProcess(command, workDir)
+            ).toMutableList().apply {
+                if (audio != null) {
+                    addAll(listOf("-i", audio.path.toString(), "-shortest", "-c:a", "aac", "-b:a", "128k"))
+                } else {
+                    add("-an")
+                }
+                add(output.fileName.toString())
+            }
+            try {
+                runProcess(command, workDir)
+            } finally {
+                audio?.let { Files.deleteIfExists(it.path) }
+            }
             require(Files.isRegularFile(output) && Files.size(output) > 0) {
                 "영상 인코더가 결과 파일을 만들지 않았습니다"
             }

@@ -4,6 +4,8 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
+import com.ongo.application.publicapi.PlatformToolDefinition
+import com.ongo.application.publicapi.PlatformToolField
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -19,6 +21,32 @@ class InstagramClient(
     private val log = LoggerFactory.getLogger(InstagramClient::class.java)
 
     override val platform: Platform = Platform.INSTAGRAM
+
+    override fun integrationTools(): List<PlatformToolDefinition> = super.integrationTools() + listOf(
+        PlatformToolDefinition(
+            methodName = "listVideos",
+            description = "List reels and videos visible on the connected Instagram account",
+            dataSchema = listOf(
+                PlatformToolField("maxResults", "integer", "Number of videos to return, 1 to 100"),
+                PlatformToolField("pageToken", "string", "Optional Instagram continuation cursor"),
+            ),
+        ),
+    )
+
+    override fun invokeIntegrationTool(
+        accessToken: String,
+        platformChannelId: String?,
+        methodName: String,
+        data: Map<String, Any?>,
+    ): Any? = when (methodName) {
+        "listVideos" -> listVideos(
+            accessToken = accessToken,
+            platformChannelId = platformChannelId,
+            maxResults = (data["maxResults"] as? Number)?.toInt()?.coerceIn(1, 100) ?: 25,
+            pageToken = data["pageToken"] as? String,
+        )
+        else -> super.invokeIntegrationTool(accessToken, platformChannelId, methodName, data)
+    }
 
     companion object {
         private const val CONTAINER_STATUS_CHECK_INTERVAL_MS = 3000L

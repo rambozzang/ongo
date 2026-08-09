@@ -2,6 +2,7 @@ package com.ongo.infrastructure.external.platform
 
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformUploadException
+import com.ongo.application.publicapi.PlatformToolDefinition
 import org.springframework.web.client.RestClient
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -85,6 +86,28 @@ interface PlatformClient {
 
     /** 플랫폼 OAuth 토큰 폐기. 지원하지 않는 플랫폼은 true 반환 */
     fun revokeToken(accessToken: String): Boolean = true
+
+    /**
+     * Operations exposed through the Postiz-compatible integration tool API.
+     * The default operation is deliberately limited to a real provider call;
+     * clients add provider-specific operations only when they implement them.
+     */
+    fun integrationTools(): List<PlatformToolDefinition> = listOf(
+        PlatformToolDefinition(
+            methodName = "getChannelInfo",
+            description = "Fetch the current connected channel profile and follower count",
+        ),
+    )
+
+    fun invokeIntegrationTool(
+        accessToken: String,
+        platformChannelId: String?,
+        methodName: String,
+        data: Map<String, Any?>,
+    ): Any? = when (methodName) {
+        "getChannelInfo" -> getChannelInfo(accessToken)
+        else -> throw IllegalArgumentException("지원하지 않는 ${platform.name} tool입니다: $methodName")
+    }
 
     // --- Comment API (default implementations for unsupported platforms) ---
 

@@ -10,6 +10,12 @@ import com.ongo.application.publicapi.PublicIntegrationResponse
 import com.ongo.application.publicapi.PublicPostCreatedResponse
 import com.ongo.application.publicapi.PublicPostResponse
 import com.ongo.application.publicapi.PublicIntegrationSettingsResponse
+import com.ongo.application.publicapi.PublicIntegrationToolRequest
+import com.ongo.application.publicapi.PublicIntegrationToolResult
+import com.ongo.application.publicapi.PublicVideoFunctionRequest
+import com.ongo.application.publicapi.VideoFunctionUseCase
+import com.ongo.application.publicapi.PublicOAuthUseCase
+import com.ongo.application.publicapi.PublicOAuthUrlResponse
 import com.ongo.application.publicapi.PublicConnectionResponse
 import com.ongo.application.publicapi.PublicRemoteMediaUploadRequest
 import com.ongo.application.publicapi.PublicGenerateVideoRequest
@@ -28,6 +34,7 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
 import org.springframework.http.MediaType
+import org.springframework.http.HttpStatus
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -40,6 +47,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+import java.net.URI
 
 /** Postiz public API의 핵심 integrations/posts 계약. API 키만 허용한다. */
 @Tag(name = "Public API", description = "Postiz 호환 자동화 API. Authorization: Bearer og_live_... 또는 X-API-Key")
@@ -53,6 +61,8 @@ class PublicApiController(
     private val notificationUseCase: NotificationUseCase,
     private val workspaceUseCase: WorkspaceUseCase,
     private val generatedVideoUseCase: GeneratedVideoUseCase,
+    private val videoFunctionUseCase: VideoFunctionUseCase,
+    private val publicOAuthUseCase: PublicOAuthUseCase,
 ) {
 
     @Operation(summary = "organization groups 조회")
@@ -87,6 +97,35 @@ class PublicApiController(
         // API key가 사용자에게 발급되어 이 요청까지 도달했다는 것은 onGo 공개 API
         // 연결이 유효하다는 뜻이다. 플랫폼 계정 연결 여부는 integrations에서 확인한다.
         return ResData.success(PublicConnectionResponse(connected = true))
+    }
+
+    @Operation(summary = "OAuth 채널 연결 URL 생성")
+    @GetMapping("/social/{integration}")
+    fun social(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable integration: String,
+        @RequestParam(required = false) refresh: String?,
+    ): ResponseEntity<ResData<PublicOAuthUrlResponse>> {
+        requireApiKey(authentication)
+        return ResData.success(publicOAuthUseCase.authorizationUrl(userId, integration, refresh))
+    }
+
+    /** Provider callback; the signed state restores the API-key owner's user context. */
+    @Operation(hidden = true)
+    @GetMapping("/social/callback")
+    fun socialCallback(
+        @RequestParam(required = false) code: String?,
+        @RequestParam(required = false) state: String?,
+        @RequestParam(required = false) error: String?,
+    ): ResponseEntity<Void> {
+        val redirect = if (!error.isNullOrBlank()) {
+            publicOAuthUseCase.failure(state, error)
+        } else {
+            require(!code.isNullOrBlank() && !state.isNullOrBlank()) { "OAuth callback이 올바르지 않습니다" }
+            publicOAuthUseCase.complete(code, state)
+        }
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirect ?: "/channels")).build()
     }
 
     @Operation(summary = "알림 목록 조회")
@@ -130,6 +169,18 @@ class PublicApiController(
     ): ResponseEntity<ResData<PublicIntegrationSettingsResponse>> {
         requireApiKey(authentication)
         return ResData.success(useCase.integrationSettings(userId, integrationId))
+    }
+
+    @Operation(summary = "integration provider tool 실행", description = "integration-settings에서 반환된 methodName만 실행합니다.")
+    @PostMapping("/integration-trigger/{integrationId}")
+    fun integrationTrigger(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable integrationId: String,
+        @RequestBody request: PublicIntegrationToolRequest,
+    ): ResponseEntity<ResData<PublicIntegrationToolResult>> {
+        requireApiKey(authentication)
+        return ResData.success(useCase.triggerIntegrationTool(userId, integrationId, request))
     }
 
     @Operation(summary = "integration 연결 해제")
@@ -177,6 +228,17 @@ class PublicApiController(
     ): ResponseEntity<ResData<List<com.ongo.application.publicapi.PublicGeneratedVideoResponse>>> {
         requireApiKey(authentication)
         return ResData.success(generatedVideoUseCase.generate(userId, request))
+    }
+
+    @Operation(summary = "영상 생성 함수 실행", description = "현재 지원하는 image-text-slides 음성 목록을 조회합니다.")
+    @PostMapping("/video/function")
+    fun videoFunction(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @RequestBody request: PublicVideoFunctionRequest,
+    ): ResponseEntity<ResData<com.fasterxml.jackson.databind.JsonNode>> {
+        requireApiKey(authentication)
+        return ResData.success(videoFunctionUseCase.execute(request))
     }
 
     @Operation(summary = "integration의 다음 예약 가능 시간 조회")

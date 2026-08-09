@@ -32,6 +32,7 @@ class ProductionConfigurationValidator(
     @Value("\${spring.security.oauth2.client.registration.kakao.client-id:}") private val kakaoClientId: String,
     @Value("\${spring.security.oauth2.client.registration.kakao.client-secret:}") private val kakaoClientSecret: String,
     @Value("\${ongo.content-source.google-drive.oauth-state-secret:}") private val oauthStateSecret: String,
+    @Value("\${public-api.oauth.callback-url:}") private val publicOAuthCallbackUrl: String,
     @Value("\${spring.ai.anthropic.api-key:}") private val anthropicApiKey: String,
     @Value("\${spring.ai.openai.api-key:}") private val openAiApiKey: String,
     @Value("\${dashscope.api-key:}") private val dashScopeApiKey: String,
@@ -79,6 +80,10 @@ class ProductionConfigurationValidator(
         requireReal("OAUTH_STATE_SECRET", oauthStateSecret)
         require(oauthStateSecret.length >= 32) {
             "OAUTH_STATE_SECRET must contain at least 32 characters in production"
+        }
+        requireReal("public-api.oauth.callback-url", publicOAuthCallbackUrl)
+        require(publicOAuthCallbackUrl.startsWith("https://")) {
+            "public-api.oauth.callback-url must use HTTPS in production"
         }
 
         require(listOf(anthropicApiKey, openAiApiKey, dashScopeApiKey).any(::isRealValue)) {

@@ -5,6 +5,8 @@ import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.youtube.dto.YouTubeCommentInsertRequest
+import com.ongo.application.publicapi.PlatformToolDefinition
+import com.ongo.application.publicapi.PlatformToolField
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -21,6 +23,32 @@ class YouTubeClient(
     private val log = LoggerFactory.getLogger(YouTubeClient::class.java)
 
     override val platform: Platform = Platform.YOUTUBE
+
+    override fun integrationTools(): List<PlatformToolDefinition> = super.integrationTools() + listOf(
+        PlatformToolDefinition(
+            methodName = "listVideos",
+            description = "List videos visible on the connected YouTube channel",
+            dataSchema = listOf(
+                PlatformToolField("maxResults", "integer", "Number of videos to return, 1 to 50"),
+                PlatformToolField("pageToken", "string", "Optional YouTube continuation token"),
+            ),
+        ),
+    )
+
+    override fun invokeIntegrationTool(
+        accessToken: String,
+        platformChannelId: String?,
+        methodName: String,
+        data: Map<String, Any?>,
+    ): Any? = when (methodName) {
+        "listVideos" -> listVideos(
+            accessToken = accessToken,
+            platformChannelId = platformChannelId,
+            maxResults = (data["maxResults"] as? Number)?.toInt()?.coerceIn(1, 50) ?: 20,
+            pageToken = data["pageToken"] as? String,
+        )
+        else -> super.invokeIntegrationTool(accessToken, platformChannelId, methodName, data)
+    }
 
     override fun uploadVideo(request: PlatformUploadRequest): PlatformUploadResult {
         // 스트리밍 업로드가 기본이므로 이 메서드는 더 이상 사용하지 않습니다.

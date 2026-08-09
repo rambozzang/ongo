@@ -10,6 +10,7 @@ interface VideoGenerationPort {
 data class VideoGenerationSpec(
     val prompt: String,
     val orientation: VideoOrientation,
+    val voice: String? = null,
 )
 
 enum class VideoOrientation(val width: Int, val height: Int) {
