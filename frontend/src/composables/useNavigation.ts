@@ -81,10 +81,10 @@ async function loadCapabilities() {
       capabilityError.value = null
     })
     .catch((error: unknown) => {
-      // capability 서버가 잠시 실패하면 메뉴 전체를 숨기지 않는다. 숨겨진 메뉴는
-      // 장애를 데이터 없음으로 오인하게 만들기 때문에, 기존 메뉴를 유지하고
-      // 셸에 capability 동기화 실패를 명시적으로 표시한다.
-      enabledCapabilityKeys.value = null
+      // 서버가 활성 기능 목록을 주지 못한 상태에서 정적 메뉴를 계속 노출하면,
+      // 비활성/WIP 기능을 장애 중에 잘못 열 수 있다. 현재 라우트는 유지하되
+      // 메뉴는 fail-closed 하고, 셸의 재시도 버튼으로만 다시 동기화한다.
+      enabledCapabilityKeys.value = new Set<string>()
       capabilityError.value = error instanceof Error ? error.message : 'capability request failed'
     })
     .finally(() => {

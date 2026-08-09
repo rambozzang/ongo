@@ -44,13 +44,13 @@ describe('useNavigation', () => {
     expect(navigation.capabilityError.value).toBeNull()
   })
 
-  it('keeps the menu visible and exposes a retry when capability sync fails', async () => {
+  it('fails closed and exposes a retry when capability sync fails', async () => {
     vi.mocked(capabilitiesApi.list).mockRejectedValueOnce(new Error('capability offline'))
       .mockResolvedValueOnce([{ key: 'today', enabled: true }])
 
     const navigation = useNavigation()
     await vi.waitFor(() => expect(navigation.capabilityError.value).toBe('capability offline'))
-    expect(paths(navigation)).toContain('/compose')
+    expect(paths(navigation)).toEqual([])
 
     await navigation.retryCapabilities()
 

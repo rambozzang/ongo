@@ -102,12 +102,32 @@ deploy_backend() {
 
     # JAR 파일 복사
     mkdir -p "$JAR_DIR"
-    JAR_FILE=$(ls -t onGo-api/build/libs/ongo-api-*-boot.jar 2>/dev/null | head -1)
-    if [ -z "$JAR_FILE" ]; then
-        JAR_FILE=$(ls -t onGo-api/build/libs/ongo-api-*.jar 2>/dev/null | grep -v plain | head -1)
+    # Spring Boot 4 names the executable artifact `ongo-api-<version>.jar` by
+    # default. Older builds used the optional `*-boot.jar` suffix. Do not use
+    # `ls | head` here: with `set -euo pipefail`, a missing first glob exits
+    # the deployment before the fallback can run (the service is then never
+    # restarted even though the Gradle build succeeded).
+    JAR_FILE=""
+    shopt -s nullglob
+    JAR_CANDIDATES=(onGo-api/build/libs/ongo-api-*-boot.jar)
+    if [ "${#JAR_CANDIDATES[@]}" -eq 0 ]; then
+        for candidate in onGo-api/build/libs/ongo-api-*.jar; do
+            [[ "$candidate" == *-plain.jar ]] && continue
+            JAR_CANDIDATES+=("$candidate")
+        done
+    fi
+    shopt -u nullglob
+    if [ "${#JAR_CANDIDATES[@]}" -gt 0 ]; then
+        # There is normally one artifact; sort by modification time when a
+        # workspace still contains outputs from more than one build.
+        JAR_FILE=$(for candidate in "${JAR_CANDIDATES[@]}"; do
+            printf '%s\t%s\n' "$(stat -c '%Y' "$candidate" 2>/dev/null || stat -f '%m' "$candidate" 2>/dev/null)" "$candidate"
+        done | sort -nr | cut -f2- | sed -n '1p')
     fi
     if [ -z "$JAR_FILE" ]; then
         error "JAR 파일을 찾을 수 없습니다. 빌드 실패!"
+        error "확인 경로: $SRC_DIR/backend/onGo-api/build/libs"
+        ls -la onGo-api/build/libs 2>/dev/null || true
         exit 1
     fi
 

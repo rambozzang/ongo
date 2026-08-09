@@ -4201,7 +4201,7 @@
       "monthlyUploads": "Uploads this month"
     },
     "shell": {
-      "capabilitiesFailed": "Feature availability could not be synced. The current menu remains visible; retry when ready."
+      "capabilitiesFailed": "Feature availability could not be synced. The menu is hidden until you retry."
     },
     "topbar": {
       "searchPlaceholder": "Search",
