@@ -33,6 +33,19 @@ spring:
       leak-detection-threshold: 60000
       data-source-properties:
         prepareThreshold: 5
+        # PostgreSQL enum 컬럼(visibility_type, plan_type, user_role 등 20종 이상)에
+        # 문자열을 바인딩할 수 있게 한다. 없으면 드라이버가 varchar 로 보내고
+        # PostgreSQL 은 varchar → enum 암묵 캐스팅을 허용하지 않아
+        #   column "default_visibility" is of type visibility_type
+        #   but expression is of type character varying
+        # 로 INSERT/UPDATE 가 전부 실패한다.
+        #
+        # url 기본값에도 ?stringtype=unspecified 가 붙어 있지만 거기에만 두면 안 된다.
+        # DB_URL 을 재정의하는 환경에서 쿼리 파라미터가 빠지면 조용히 사라지고,
+        # enum 을 쓰는 쓰기 경로가 실제로 실행될 때까지 아무도 모른다.
+        # 실제로 운영 .env 의 DB_URL 에서 이 파라미터가 누락돼 회원가입이 막혔다.
+        # 여기 두면 URL 을 어떻게 주든 항상 적용된다.
+        stringtype: unspecified
 
   # jOOQ
   jooq:
