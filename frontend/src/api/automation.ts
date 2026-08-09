@@ -16,6 +16,15 @@ export interface AutomationRuleResponse {
   updatedAt: string | null
 }
 
+export interface AutomationLogResponse {
+  id: number
+  ruleId: number
+  ruleName: string
+  status: 'SUCCESS' | 'FAILED' | string
+  message: string | null
+  executedAt: string | null
+}
+
 export interface CreateAutomationRuleRequest {
   name: string
   description?: string
@@ -39,6 +48,12 @@ export const automationApi = {
   list() {
     return apiClient
       .get<ResData<AutomationRuleResponse[]>>('/automation/rules')
+      .then(unwrapResponse)
+  },
+
+  listLogs() {
+    return apiClient
+      .get<ResData<AutomationLogResponse[]>>('/automation/rules/logs')
       .then(unwrapResponse)
   },
 

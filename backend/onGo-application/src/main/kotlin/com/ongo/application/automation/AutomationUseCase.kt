@@ -5,12 +5,14 @@ import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.automation.AutomationRule
 import com.ongo.domain.automation.AutomationRuleRepository
+import com.ongo.domain.platformautomation.AutomationLogRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class AutomationUseCase(
     private val automationRuleRepository: AutomationRuleRepository,
+    private val automationLogRepository: AutomationLogRepository,
 ) {
 
     companion object {
@@ -60,6 +62,18 @@ class AutomationUseCase(
     fun listRules(userId: Long): List<AutomationRuleResponse> {
         return automationRuleRepository.findByUserId(userId).map { it.toResponse() }
     }
+
+    fun listLogs(userId: Long): List<AutomationLogResponse> =
+        automationLogRepository.findByUserId(userId).map {
+            AutomationLogResponse(
+                id = it.id!!,
+                ruleId = it.ruleId,
+                ruleName = it.ruleName,
+                status = it.status,
+                message = it.message,
+                executedAt = it.executedAt,
+            )
+        }
 
     @Transactional
     fun createRule(userId: Long, request: CreateAutomationRuleRequest): AutomationRuleResponse {

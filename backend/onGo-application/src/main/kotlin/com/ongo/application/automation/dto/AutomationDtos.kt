@@ -43,3 +43,12 @@ data class SmartTriggerTemplate(
     val defaultConfig: Map<String, Any?>,
     val configSchema: Map<String, Any?>,
 )
+
+data class AutomationLogResponse(
+    val id: Long,
+    val ruleId: Long,
+    val ruleName: String,
+    val status: String,
+    val message: String?,
+    val executedAt: LocalDateTime?,
+)

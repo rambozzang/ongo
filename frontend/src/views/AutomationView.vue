@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed, onMounted, onUnmounted } from 'vue'
+import { ref, shallowRef, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   PlusIcon,
@@ -24,6 +24,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import type { AutomationRule } from '@/types/automation'
 import type { SmartTriggerTemplate } from '@/components/automation/SmartTriggerTemplateSelector.vue'
+import type { AutomationInitialTrigger } from '@/components/automation/AutomationFormModal.vue'
 import apiClient, { unwrapResponse } from '@/api/client'
 import type { ResData } from '@/types/api'
 
@@ -42,6 +43,7 @@ const automationTabs = computed(() => [
 ])
 const isModalOpen = ref(false)
 const editingRule = ref<AutomationRule | undefined>(undefined)
+const initialTrigger = ref<AutomationInitialTrigger | undefined>(undefined)
 
 // 삭제 확인 모달 — 규칙 / 워크플로우 삭제가 하나의 모달을 공유
 const showConfirmModal = ref(false)
@@ -152,17 +154,20 @@ const resetRuleSearchAndFilters = () => {
 
 const openCreateModal = () => {
   editingRule.value = undefined
+  initialTrigger.value = undefined
   isModalOpen.value = true
 }
 
 const openEditModal = (id: number) => {
   editingRule.value = automationStore.rules.find(r => r.id === id)
+  initialTrigger.value = undefined
   isModalOpen.value = true
 }
 
 const closeModal = () => {
   isModalOpen.value = false
   editingRule.value = undefined
+  initialTrigger.value = undefined
 }
 
 const handleSave = (rule: Omit<AutomationRule, 'id' | 'createdAt' | 'updatedAt' | 'executionCount' | 'lastExecutedAt'>) => {
@@ -217,18 +222,18 @@ async function fetchSmartTemplates() {
   }
 }
 
-let smartTriggerTimeout: ReturnType<typeof setTimeout> | null = null
-
 function handleSmartTriggerSelect(payload: { triggerType: string; config: Record<string, unknown> }) {
   const template = smartTemplates.value.find(t => t.triggerType === payload.triggerType)
   if (!template) return
 
   editingRule.value = undefined
+  initialTrigger.value = {
+    triggerType: payload.triggerType,
+    config: payload.config,
+    name: template.name,
+    description: template.description,
+  }
   isModalOpen.value = true
-  // Pre-fill with smart trigger data via a nextTick
-  smartTriggerTimeout = setTimeout(() => {
-    // The modal will be opened with pre-filled trigger type and config
-  }, 0)
 }
 
 onMounted(() => {
@@ -236,9 +241,10 @@ onMounted(() => {
   fetchSmartTemplates()
 })
 
-onUnmounted(() => {
-  if (smartTriggerTimeout) clearTimeout(smartTriggerTimeout)
+watch(activeTab, (tab) => {
+  if (tab === 'logs') void automationStore.fetchLogs()
 })
+
 </script>
 
 <template>
@@ -389,6 +395,12 @@ onUnmounted(() => {
       </div>
 
       <div v-if="activeTab === 'logs'">
+        <div v-if="automationStore.logsError" class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong" role="alert">
+          <span class="min-w-0 flex-1">{{ $t('automation.loadFailed') }}</span>
+          <button type="button" class="shrink-0 rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="automationStore.logsLoading" @click="automationStore.fetchLogs()">
+            {{ $t('action.retry') }}
+          </button>
+        </div>
         <AutomationLogTable :logs="automationStore.recentLogs" />
       </div>
 
@@ -396,6 +408,7 @@ onUnmounted(() => {
     <AutomationFormModal
       :is-open="isModalOpen"
       :rule="editingRule"
+      :initial-trigger="initialTrigger"
       @close="closeModal"
       @save="handleSave"
     />

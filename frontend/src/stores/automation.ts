@@ -9,6 +9,8 @@ interface AutomationState {
   logs: AutomationLog[]
   loading: boolean
   error: string | null
+  logsLoading: boolean
+  logsError: string | null
 }
 
 function mapApiRule(r: AutomationRuleResponse): AutomationRule {
@@ -18,12 +20,12 @@ function mapApiRule(r: AutomationRuleResponse): AutomationRule {
     description: r.description ?? '',
     trigger: {
       type: r.triggerType as AutomationRule['trigger']['type'],
-      config: (r.triggerConfig ?? {}) as Record<string, string | number | boolean>,
+      config: (r.triggerConfig ?? {}) as AutomationRule['trigger']['config'],
     },
     actions: [
       {
         type: r.actionType as AutomationRule['actions'][0]['type'],
-        config: (r.actionConfig ?? {}) as Record<string, string | number | boolean>,
+        config: (r.actionConfig ?? {}) as AutomationRule['actions'][number]['config'],
       },
     ],
     status: r.isActive ? 'active' : 'paused',
@@ -41,6 +43,8 @@ export const useAutomationStore = defineStore('automation', {
     logs: [],
     loading: false,
     error: null,
+    logsLoading: false,
+    logsError: null,
   }),
 
   getters: {
@@ -77,6 +81,27 @@ export const useAutomationStore = defineStore('automation', {
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
       } finally {
         this.loading = false
+      }
+    },
+
+    async fetchLogs() {
+      this.logsLoading = true
+      this.logsError = null
+      try {
+        const data = await automationApi.listLogs()
+        this.logs = data.map(log => ({
+          id: log.id,
+          ruleId: log.ruleId,
+          ruleName: log.ruleName,
+          status: log.status.toUpperCase() === 'SUCCESS' ? 'success' : 'failed',
+          message: log.message ?? '',
+          executedAt: log.executedAt ?? new Date().toISOString(),
+        }))
+      } catch (e) {
+        this.logsError = e instanceof Error ? e.message : '자동화 실행 로그를 불러오지 못했습니다.'
+        useNotificationStore().error('자동화 실행 로그를 불러오지 못했습니다')
+      } finally {
+        this.logsLoading = false
       }
     },
 

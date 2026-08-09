@@ -1,15 +1,27 @@
-export type TriggerType = 'video_published' | 'views_threshold' | 'schedule_time' | 'comment_received' | 'subscriber_milestone'
-export type ActionType = 'cross_post' | 'send_notification' | 'add_tag' | 'move_to_status' | 'generate_ai_metadata'
+/** Values accepted by the backend automation contract. */
+export type TriggerType =
+  | 'VIDEO_UPLOADED'
+  | 'SCHEDULE_DUE'
+  | 'COMMENT_RECEIVED'
+  | 'ANALYTICS_MILESTONE'
+  | 'CREDIT_LOW'
+  | 'VIEWS_MILESTONE'
+  | 'VIRAL_DETECTED'
+  | 'ENGAGEMENT_DROP'
+
+export type ActionType = 'SEND_NOTIFICATION' | 'AUTO_PUBLISH' | 'ADD_TAG' | 'GENERATE_METADATA'
 export type AutomationStatus = 'active' | 'paused' | 'error'
+
+export type AutomationConfigValue = string | number | boolean | string[] | number[]
 
 export interface AutomationTrigger {
   type: TriggerType
-  config: Record<string, string | number | boolean>
+  config: Record<string, AutomationConfigValue>
 }
 
 export interface AutomationAction {
   type: ActionType
-  config: Record<string, string | number | boolean>
+  config: Record<string, AutomationConfigValue>
 }
 
 export interface AutomationRule {

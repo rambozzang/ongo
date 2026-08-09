@@ -1,11 +1,19 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import type { AutomationRule, TriggerType, ActionType, AutomationStatus } from '@/types/automation'
+
+export interface AutomationInitialTrigger {
+  triggerType: string
+  config: Record<string, unknown>
+  name?: string
+  description?: string
+}
 
 const props = defineProps<{
   isOpen: boolean
   rule?: AutomationRule
+  initialTrigger?: AutomationInitialTrigger
 }>()
 
 const emit = defineEmits<{
@@ -21,39 +29,64 @@ const formData = ref({
   name: '',
   description: '',
   triggerType: '' as TriggerType | '',
-  triggerConfig: {} as Record<string, string | number | boolean>,
-  actions: [] as Array<{ type: ActionType; config: Record<string, string | number | boolean> }>,
+  triggerConfig: {} as AutomationRule['trigger']['config'],
+  actions: [] as AutomationRule['actions'],
   status: 'active' as AutomationStatus,
   isEnabled: true
 })
+const milestoneText = ref('1000, 5000, 10000, 100000')
 
-// Initialize form with rule data if editing
-if (props.rule) {
-  formData.value = {
-    name: props.rule.name,
-    description: props.rule.description,
-    triggerType: props.rule.trigger.type,
-    triggerConfig: { ...props.rule.trigger.config },
-    actions: props.rule.actions.map(a => ({ type: a.type, config: { ...a.config } })),
-    status: props.rule.status,
-    isEnabled: props.rule.isEnabled
+const resetForm = () => {
+  if (props.rule) {
+    formData.value = {
+      name: props.rule.name,
+      description: props.rule.description,
+      triggerType: props.rule.trigger.type,
+      triggerConfig: { ...props.rule.trigger.config },
+      actions: props.rule.actions.map(a => ({ type: a.type, config: { ...a.config } })),
+      status: props.rule.status,
+      isEnabled: props.rule.isEnabled
+    }
+  } else {
+    formData.value = {
+      name: props.initialTrigger?.name ?? '',
+      description: props.initialTrigger?.description ?? '',
+      triggerType: (props.initialTrigger?.triggerType ?? '') as TriggerType | '',
+      triggerConfig: (props.initialTrigger?.config ?? {}) as AutomationRule['trigger']['config'],
+      actions: [],
+      status: 'active',
+      isEnabled: true
+    }
   }
+  const milestones = formData.value.triggerConfig.milestones
+  milestoneText.value = Array.isArray(milestones) ? milestones.join(', ') : '1000, 5000, 10000, 100000'
+  currentStep.value = 1
 }
 
+watch(
+  () => [props.isOpen, props.rule, props.initialTrigger] as const,
+  ([isOpen]) => {
+    if (isOpen) resetForm()
+  },
+  { immediate: true },
+)
+
 const triggerTypes = [
-  { value: 'video_published', label: '영상 게시됨', description: '특정 플랫폼에 영상이 게시될 때' },
-  { value: 'views_threshold', label: '조회수 도달', description: '영상 조회수가 목표치에 도달할 때' },
-  { value: 'schedule_time', label: '예약 시간', description: '특정 시간에 실행' },
-  { value: 'comment_received', label: '댓글 수신', description: '특정 키워드를 포함한 댓글을 받을 때' },
-  { value: 'subscriber_milestone', label: '구독자 달성', description: '채널 구독자가 목표에 도달할 때' }
+  { value: 'VIDEO_UPLOADED', label: '영상 업로드됨', description: '영상 업로드가 완료될 때' },
+  { value: 'SCHEDULE_DUE', label: '예약 시간', description: '예약 게시 시간이 되면 실행' },
+  { value: 'COMMENT_RECEIVED', label: '댓글 수신', description: '특정 키워드를 포함한 댓글을 받을 때' },
+  { value: 'ANALYTICS_MILESTONE', label: '분석 마일스톤', description: '분석 지표가 목표에 도달할 때' },
+  { value: 'CREDIT_LOW', label: 'AI 크레딧 부족', description: 'AI 크레딧이 설정한 기준보다 낮아질 때' },
+  { value: 'VIEWS_MILESTONE', label: '조회수 마일스톤', description: '조회수가 설정한 목표에 도달할 때' },
+  { value: 'VIRAL_DETECTED', label: '바이럴 감지', description: '평균 대비 급격한 조회수 상승을 감지할 때' },
+  { value: 'ENGAGEMENT_DROP', label: '참여율 하락', description: '참여율이 평균 대비 크게 하락할 때' },
 ]
 
 const actionTypes = [
-  { value: 'cross_post', label: '크로스 포스팅', description: '다른 플랫폼에 자동 게시' },
-  { value: 'send_notification', label: '알림 전송', description: '이메일 또는 앱 알림 전송' },
-  { value: 'add_tag', label: '태그 추가', description: '영상에 태그 추가' },
-  { value: 'move_to_status', label: '상태 변경', description: '영상 상태 변경' },
-  { value: 'generate_ai_metadata', label: 'AI 메타데이터 생성', description: 'AI로 제목/설명/태그 생성' }
+  { value: 'SEND_NOTIFICATION', label: '알림 전송', description: '이메일 또는 앱 알림 전송' },
+  { value: 'AUTO_PUBLISH', label: '자동 게시', description: '조건 충족 시 게시 큐에 등록' },
+  { value: 'ADD_TAG', label: '태그 추가', description: '영상에 태그 추가' },
+  { value: 'GENERATE_METADATA', label: 'AI 메타데이터 생성', description: 'AI로 제목·설명·태그 생성' }
 ]
 
 const platforms = [
@@ -95,10 +128,23 @@ const prevStep = () => {
 }
 
 const addAction = (actionType: ActionType) => {
+  // The current server contract stores one action per rule. Do not silently drop extras.
+  if (formData.value.actions.length > 0) return
   formData.value.actions.push({
     type: actionType,
     config: {}
   })
+}
+
+const syncMilestones = () => {
+  const milestones = milestoneText.value
+    .split(',')
+    .map(value => Number(value.trim()))
+    .filter(value => Number.isFinite(value) && value > 0)
+  formData.value.triggerConfig = {
+    ...formData.value.triggerConfig,
+    milestones,
+  }
 }
 
 const removeAction = (index: number) => {
@@ -257,8 +303,8 @@ const close = () => {
             <div v-if="formData.triggerType" class="mt-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg space-y-4">
               <h5 class="text-body font-semibold text-gray-900 dark:text-white">트리거 설정</h5>
 
-              <!-- video_published config -->
-              <div v-if="formData.triggerType === 'video_published'">
+              <!-- video upload config -->
+              <div v-if="formData.triggerType === 'VIDEO_UPLOADED'">
                 <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                   플랫폼 선택
                 </label>
@@ -273,8 +319,8 @@ const close = () => {
                 </select>
               </div>
 
-              <!-- views_threshold config -->
-              <div v-if="formData.triggerType === 'views_threshold'" class="space-y-3">
+              <!-- analytics milestone config -->
+              <div v-if="formData.triggerType === 'ANALYTICS_MILESTONE'" class="space-y-3">
                 <div>
                   <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     목표 조회수
@@ -302,8 +348,14 @@ const close = () => {
                 </div>
               </div>
 
-              <!-- schedule_time config -->
-              <div v-if="formData.triggerType === 'schedule_time'" class="space-y-3">
+              <div v-if="formData.triggerType === 'VIEWS_MILESTONE'" class="space-y-3">
+                <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">조회수 목표 (쉼표로 구분)</label>
+                <input v-model="milestoneText" type="text" placeholder="1000, 5000, 10000" @blur="syncMilestones" class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                <p class="text-body-xs text-gray-500 dark:text-gray-400">목표 중 하나에 도달하면 규칙이 한 번 실행됩니다.</p>
+              </div>
+
+              <!-- schedule due config -->
+              <div v-if="formData.triggerType === 'SCHEDULE_DUE'" class="space-y-3">
                 <div>
                   <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     반복 유형
@@ -348,7 +400,7 @@ const close = () => {
               </div>
 
               <!-- comment_received config -->
-              <div v-if="formData.triggerType === 'comment_received'" class="space-y-3">
+              <div v-if="formData.triggerType === 'COMMENT_RECEIVED'" class="space-y-3">
                 <div>
                   <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     키워드 (쉼표로 구분)
@@ -376,8 +428,8 @@ const close = () => {
                 </div>
               </div>
 
-              <!-- subscriber_milestone config -->
-              <div v-if="formData.triggerType === 'subscriber_milestone'" class="space-y-3">
+              <!-- credit threshold config -->
+              <div v-if="formData.triggerType === 'CREDIT_LOW'" class="space-y-3">
                 <div>
                   <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     목표 구독자 수
@@ -413,6 +465,7 @@ const close = () => {
               <h4 class="text-md font-semibold text-gray-900 dark:text-white">
                 액션 추가
               </h4>
+              <span class="text-body-xs text-gray-500 dark:text-gray-400">규칙당 액션 1개</span>
             </div>
 
             <!-- Action Type Selection -->
@@ -420,7 +473,8 @@ const close = () => {
               <button
                 v-for="action in actionTypes"
                 :key="action.value"
-                class="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-500 text-left transition-all"
+                :disabled="formData.actions.length > 0"
+                class="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-500 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50"
                 @click="addAction(action.value as ActionType)"
               >
                 <div class="font-medium text-gray-900 dark:text-white">{{ action.label }}</div>
@@ -450,7 +504,7 @@ const close = () => {
                 </div>
 
                 <!-- cross_post config -->
-                <div v-if="action.type === 'cross_post'" class="space-y-3">
+                <div v-if="action.type === 'AUTO_PUBLISH'" class="space-y-3">
                   <div>
                     <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                       대상 플랫폼
@@ -476,7 +530,7 @@ const close = () => {
                 </div>
 
                 <!-- send_notification config -->
-                <div v-if="action.type === 'send_notification'" class="space-y-3">
+                <div v-if="action.type === 'SEND_NOTIFICATION'" class="space-y-3">
                   <div>
                     <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                       알림 메시지
@@ -505,7 +559,7 @@ const close = () => {
                 </div>
 
                 <!-- add_tag config -->
-                <div v-if="action.type === 'add_tag'">
+                <div v-if="action.type === 'ADD_TAG'">
                   <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                     태그
                   </label>
@@ -517,25 +571,8 @@ const close = () => {
                   >
                 </div>
 
-                <!-- move_to_status config -->
-                <div v-if="action.type === 'move_to_status'">
-                  <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    상태
-                  </label>
-                  <select
-                    v-model="action.config.status"
-                    class="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  >
-                    <option value="">선택하세요</option>
-                    <option value="draft">임시저장</option>
-                    <option value="published">게시됨</option>
-                    <option value="review">검토 필요</option>
-                    <option value="archived">보관됨</option>
-                  </select>
-                </div>
-
                 <!-- generate_ai_metadata config -->
-                <div v-if="action.type === 'generate_ai_metadata'" class="space-y-3">
+                <div v-if="action.type === 'GENERATE_METADATA'" class="space-y-3">
                   <div>
                     <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-2">
                       언어

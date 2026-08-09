@@ -26,6 +26,14 @@ class AutomationController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "자동화 실행 로그 조회")
+    @GetMapping("/rules/logs")
+    fun listLogs(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<List<AutomationLogResponse>>> {
+        return ResData.success(automationUseCase.listLogs(userId))
+    }
+
     @Operation(summary = "자동화 규칙 생성")
     @PostMapping("/rules")
     fun createRule(

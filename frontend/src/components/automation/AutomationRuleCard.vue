@@ -15,22 +15,24 @@ const emit = defineEmits<{
 
 const triggerLabel = computed(() => {
   const labels: Record<string, string> = {
-    video_published: '영상 게시됨',
-    views_threshold: '조회수 도달',
-    schedule_time: '예약 시간',
-    comment_received: '댓글 수신',
-    subscriber_milestone: '구독자 달성'
+    VIDEO_UPLOADED: '영상 업로드됨',
+    SCHEDULE_DUE: '예약 시간',
+    COMMENT_RECEIVED: '댓글 수신',
+    ANALYTICS_MILESTONE: '분석 마일스톤',
+    CREDIT_LOW: 'AI 크레딧 부족',
+    VIEWS_MILESTONE: '조회수 마일스톤',
+    VIRAL_DETECTED: '바이럴 감지',
+    ENGAGEMENT_DROP: '참여율 하락'
   }
   return labels[props.rule.trigger.type] || props.rule.trigger.type
 })
 
 const actionLabels = computed(() => {
   const labels: Record<string, string> = {
-    cross_post: '크로스 포스팅',
-    send_notification: '알림 전송',
-    add_tag: '태그 추가',
-    move_to_status: '상태 변경',
-    generate_ai_metadata: 'AI 메타데이터 생성'
+    SEND_NOTIFICATION: '알림 전송',
+    AUTO_PUBLISH: '자동 게시',
+    ADD_TAG: '태그 추가',
+    GENERATE_METADATA: 'AI 메타데이터 생성'
   }
   return props.rule.actions.map(action => labels[action.type] || action.type)
 })

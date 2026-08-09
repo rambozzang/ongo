@@ -7,6 +7,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Component
 class PerformanceTriggerEvaluator(
@@ -45,6 +46,10 @@ class PerformanceTriggerEvaluator(
 
             for (rule in userRules) {
                 try {
+                    // The scheduler runs repeatedly. Keep a triggered rule quiet
+                    // for one evaluation window so the same condition cannot
+                    // create duplicate notifications every 15 minutes.
+                    if (rule.lastTriggeredAt?.isAfter(LocalDateTime.now().minusHours(1)) == true) continue
                     val triggered = when (rule.triggerType) {
                         "VIEWS_MILESTONE" -> evaluateViewsMilestone(rule.triggerConfig, totalViews)
                         "VIRAL_DETECTED" -> evaluateViralDetection(rule.triggerConfig, recentAnalytics, avgViews)
