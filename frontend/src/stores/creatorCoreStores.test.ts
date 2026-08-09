@@ -148,6 +148,11 @@ describe('creator-facing core stores', () => {
     })
     await store.publish(4)
     expect(store.current?.campaign.status).toBe('ACTIVE')
+
+    vi.mocked(ugcCampaignApi.list).mockRejectedValueOnce(new Error('캠페인 서버 장애'))
+    await expect(store.fetchCampaigns()).rejects.toThrow('캠페인 서버 장애')
+    expect(store.campaigns).toHaveLength(1)
+    expect(store.loadError).toBe('캠페인 서버 장애')
   })
 
   it('keeps Shorts prompt/template lists in sync after edits and deletion', async () => {
@@ -160,6 +165,16 @@ describe('creator-facing core stores', () => {
     await store.fetchTemplates()
     expect(store.prompts).toEqual([prompt])
     expect(store.templates).toEqual([template])
+
+    vi.mocked(ugcShortsPromptApi.list).mockRejectedValueOnce(new Error('프롬프트 서버 장애'))
+    await expect(store.fetchPrompts()).rejects.toThrow('프롬프트 서버 장애')
+    expect(store.prompts).toEqual([prompt])
+    expect(store.promptsLoadError).toBe('프롬프트 서버 장애')
+
+    vi.mocked(ugcShortsTemplateApi.list).mockRejectedValueOnce(new Error('템플릿 서버 장애'))
+    await expect(store.fetchTemplates()).rejects.toThrow('템플릿 서버 장애')
+    expect(store.templates).toEqual([template])
+    expect(store.templatesLoadError).toBe('템플릿 서버 장애')
 
     const revisedPrompt = { ...prompt, revision: 2 } as any
     vi.mocked(ugcShortsPromptApi.update).mockResolvedValue(revisedPrompt)

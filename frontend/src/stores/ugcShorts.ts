@@ -19,11 +19,13 @@ export const useUgcShortsStore = defineStore('ugcShorts', () => {
 
   const prompts = ref<ShortsPromptResponse[]>([])
   const promptsLoading = ref(false)
+  const promptsLoadError = ref<string | null>(null)
   const revisions = ref<ShortsPromptRevisionResponse[]>([])
   const revisionsLoading = ref(false)
 
   const templates = ref<ShortsTemplateResponse[]>([])
   const templatesLoading = ref(false)
+  const templatesLoadError = ref<string | null>(null)
 
   async function requireWorkspaceId(): Promise<number> {
     const id = await workspaceStore.ensureActiveWorkspace()
@@ -47,6 +49,7 @@ export const useUgcShortsStore = defineStore('ugcShorts', () => {
 
   async function fetchPrompts() {
     promptsLoading.value = true
+    promptsLoadError.value = null
     try {
       const id = await workspaceStore.ensureActiveWorkspace()
       if (id == null) {
@@ -54,6 +57,9 @@ export const useUgcShortsStore = defineStore('ugcShorts', () => {
         return
       }
       prompts.value = await ugcShortsPromptApi.list(id)
+    } catch (error) {
+      promptsLoadError.value = error instanceof Error ? error.message : '쇼츠 프롬프트를 불러오지 못했습니다.'
+      throw error
     } finally {
       promptsLoading.value = false
     }
@@ -89,6 +95,7 @@ export const useUgcShortsStore = defineStore('ugcShorts', () => {
 
   async function fetchTemplates() {
     templatesLoading.value = true
+    templatesLoadError.value = null
     try {
       const id = await workspaceStore.ensureActiveWorkspace()
       if (id == null) {
@@ -96,6 +103,9 @@ export const useUgcShortsStore = defineStore('ugcShorts', () => {
         return
       }
       templates.value = await ugcShortsTemplateApi.list(id)
+    } catch (error) {
+      templatesLoadError.value = error instanceof Error ? error.message : '쇼츠 템플릿을 불러오지 못했습니다.'
+      throw error
     } finally {
       templatesLoading.value = false
     }
@@ -131,10 +141,12 @@ export const useUgcShortsStore = defineStore('ugcShorts', () => {
   return {
     prompts,
     promptsLoading,
+    promptsLoadError,
     revisions,
     revisionsLoading,
     templates,
     templatesLoading,
+    templatesLoadError,
     fetchPrompts,
     updatePrompt,
     resetPrompt,

@@ -11,6 +11,18 @@
 
     <LoadingSpinner v-if="store.promptsLoading" full-page />
 
+    <div
+      v-else-if="store.promptsLoadError"
+      class="card flex flex-col items-center justify-center gap-3 py-16 text-center"
+      role="alert"
+    >
+      <ExclamationTriangleIcon class="h-10 w-10 text-error-strong" />
+      <p class="text-body text-error-strong">{{ store.promptsLoadError }}</p>
+      <button type="button" class="btn-secondary mt-2" @click="retryPrompts">
+        {{ $t('action.retry') }}
+      </button>
+    </div>
+
     <!-- 9단계 카드 목록 -->
     <div v-else class="space-y-3">
       <button
@@ -188,7 +200,7 @@ import BaseModal from '@/components/common/BaseModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import OTabs from '@/components/ui/OTabs.vue'
-import { ChevronRightIcon, Square2StackIcon } from '@heroicons/vue/24/outline'
+import { ChevronRightIcon, ExclamationTriangleIcon, Square2StackIcon } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n({ useScope: 'global' })
 const store = useUgcShortsStore()
@@ -247,6 +259,14 @@ function openEditor(p: ShortsPromptResponse) {
   store.fetchRevisions(p.stage).catch((e) => {
     notify.error(e instanceof Error ? e.message : t('ugc.shorts.prompts.revisionsLoadFailed'))
   })
+}
+
+async function retryPrompts() {
+  try {
+    await store.fetchPrompts()
+  } catch {
+    // The store exposes the error inline; keep the retry event handled.
+  }
 }
 
 async function save() {

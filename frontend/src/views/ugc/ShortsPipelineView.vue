@@ -19,8 +19,20 @@
 
     <LoadingSpinner v-if="store.runsLoading" full-page />
 
+    <div
+      v-else-if="store.runsLoadError"
+      class="card flex flex-col items-center justify-center gap-3 py-16 text-center"
+      role="alert"
+    >
+      <ExclamationTriangleIcon class="h-10 w-10 text-error-strong" />
+      <p class="text-body text-error-strong">{{ store.runsLoadError }}</p>
+      <button type="button" class="btn-secondary mt-2" @click="retryRuns">
+        {{ $t('action.retry') }}
+      </button>
+    </div>
+
     <EmptyState
-      v-else-if="store.runs.length === 0"
+      v-else-if="!store.runsLoadError && store.runs.length === 0"
       :title="$t('ugc.shorts.runs.empty')"
       :description="$t('ugc.shorts.runs.emptyDescription')"
       :action-label="$t('ugc.shorts.runs.newRun')"
@@ -128,6 +140,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import {
   ChatBubbleLeftRightIcon,
   ChevronRightIcon,
+  ExclamationTriangleIcon,
   FilmIcon,
   PlusIcon,
   Square2StackIcon,
@@ -170,6 +183,14 @@ function statusBadgeClass(status: PipelineRunStatus): string {
 
 function formatDate(iso: string): string {
   return iso.slice(0, 16).replace('T', ' ')
+}
+
+async function retryRuns() {
+  try {
+    await store.fetchRuns(store.runsPage)
+  } catch {
+    // The store exposes the error inline; keep the retry event handled.
+  }
 }
 
 /** 기본 템플릿은 이름 뒤에 배지를 붙여 구분한다 */

@@ -18,6 +18,7 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
 
   const runs = ref<PipelineRunResponse[]>([])
   const runsLoading = ref(false)
+  const runsLoadError = ref<string | null>(null)
   const runsPage = ref(0)
   const runsTotalPages = ref(0)
   const runsHasNext = ref(false)
@@ -42,6 +43,7 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
 
   async function fetchRuns(page = 0, size = 20) {
     runsLoading.value = true
+    runsLoadError.value = null
     try {
       const id = await workspaceStore.ensureActiveWorkspace()
       if (id == null) {
@@ -54,6 +56,11 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
       runsTotalPages.value = res.totalPages
       runsHasNext.value = res.hasNext
       runsHasPrevious.value = res.hasPrevious
+    } catch (error) {
+      // Preserve confirmed runs so a transient outage cannot look like a
+      // completed deletion or encourage a duplicate render.
+      runsLoadError.value = error instanceof Error ? error.message : '쇼츠 실행 목록을 불러오지 못했습니다.'
+      throw error
     } finally {
       runsLoading.value = false
     }
@@ -144,6 +151,7 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
   return {
     runs,
     runsLoading,
+    runsLoadError,
     runsPage,
     runsTotalPages,
     runsHasNext,

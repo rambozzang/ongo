@@ -20,6 +20,7 @@ export const useUgcCampaignStore = defineStore('ugcCampaign', () => {
   const statusFilter = ref<string | null>(null)
   const query = ref('')
   const loading = ref(false)
+  const loadError = ref<string | null>(null)
   const current = ref<CampaignDetailResponse | null>(null)
 
   const totalPages = computed(() => Math.max(1, Math.ceil(totalElements.value / size.value)))
@@ -36,6 +37,7 @@ export const useUgcCampaignStore = defineStore('ugcCampaign', () => {
 
   async function fetchCampaigns() {
     loading.value = true
+    loadError.value = null
     try {
       const id = await workspaceStore.ensureActiveWorkspace()
       if (id == null) {
@@ -51,6 +53,11 @@ export const useUgcCampaignStore = defineStore('ugcCampaign', () => {
       })
       campaigns.value = res.items
       totalElements.value = res.totalElements
+    } catch (error) {
+      // Keep the last confirmed page. An API outage must not look like an
+      // empty campaign workspace and invite duplicate campaign creation.
+      loadError.value = error instanceof Error ? error.message : '캠페인을 불러오지 못했습니다.'
+      throw error
     } finally {
       loading.value = false
     }
@@ -125,6 +132,7 @@ export const useUgcCampaignStore = defineStore('ugcCampaign', () => {
     statusFilter,
     query,
     loading,
+    loadError,
     current,
     totalPages,
     hasNextPage,

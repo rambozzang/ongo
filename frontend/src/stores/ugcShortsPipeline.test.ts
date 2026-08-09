@@ -43,6 +43,11 @@ describe('UGC Shorts pipeline store', () => {
     expect(store.runsHasNext).toBe(true)
     expect(store.runsHasPrevious).toBe(true)
     expect(store.runsLoading).toBe(false)
+
+    vi.mocked(ugcShortsPipelineApi.list).mockRejectedValueOnce(new Error('실행 목록 장애'))
+    await expect(store.fetchRuns(2, 10)).rejects.toThrow('실행 목록 장애')
+    expect(store.runs).toHaveLength(1)
+    expect(store.runsLoadError).toBe('실행 목록 장애')
   })
 
   it('runs stage actions, refreshes detail, and removes a run locally', async () => {

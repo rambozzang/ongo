@@ -15,8 +15,20 @@
 
     <LoadingSpinner v-if="store.templatesLoading" full-page />
 
+    <div
+      v-else-if="store.templatesLoadError"
+      class="card flex flex-col items-center justify-center gap-3 py-16 text-center"
+      role="alert"
+    >
+      <ExclamationTriangleIcon class="h-10 w-10 text-error-strong" />
+      <p class="text-body text-error-strong">{{ store.templatesLoadError }}</p>
+      <button type="button" class="btn-secondary mt-2" @click="retryTemplates">
+        {{ $t('action.retry') }}
+      </button>
+    </div>
+
     <EmptyState
-      v-else-if="store.templates.length === 0"
+      v-else-if="!store.templatesLoadError && store.templates.length === 0"
       :title="$t('ugc.shorts.templates.empty')"
       :description="$t('ugc.shorts.templates.emptyDescription')"
       :action-label="$t('ugc.shorts.templates.newTemplate')"
@@ -313,6 +325,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import {
   ArrowUpTrayIcon,
   ChatBubbleLeftRightIcon,
+  ExclamationTriangleIcon,
   PlusIcon,
   RectangleGroupIcon,
 } from '@heroicons/vue/24/outline'
@@ -479,6 +492,14 @@ async function onFileChange(event: Event) {
 function askDelete(tpl: ShortsTemplateResponse) {
   deletingTemplate.value = tpl
   deleteConfirmOpen.value = true
+}
+
+async function retryTemplates() {
+  try {
+    await store.fetchTemplates()
+  } catch {
+    // The store exposes the error inline; keep the retry event handled.
+  }
 }
 
 async function confirmDelete() {

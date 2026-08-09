@@ -67,9 +67,21 @@
       {{ $t('action.loading') }}
     </div>
 
+    <div
+      v-else-if="store.loadError && store.campaigns.length === 0"
+      class="card flex flex-col items-center justify-center gap-3 py-16 text-center"
+      role="alert"
+    >
+      <ExclamationTriangleIcon class="h-10 w-10 text-error-strong" />
+      <p class="text-body text-error-strong">{{ store.loadError }}</p>
+      <button type="button" class="btn-secondary mt-2" @click="retryCampaigns">
+        {{ $t('action.retry') }}
+      </button>
+    </div>
+
     <!-- Empty -->
     <div
-      v-else-if="store.campaigns.length === 0"
+      v-else-if="!store.loadError && store.campaigns.length === 0"
       class="card flex flex-col items-center justify-center gap-3 py-16 text-center"
     >
       <MegaphoneIcon class="h-10 w-10 text-gray-300 dark:text-gray-600" />
@@ -83,8 +95,21 @@
       </router-link>
     </div>
 
+    <div
+      v-if="store.loadError && store.campaigns.length > 0"
+      class="rounded-lg border border-error-subtle bg-error-subtle px-4 py-3 text-body text-error-strong"
+      role="alert"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span>{{ store.loadError }}</span>
+        <button type="button" class="btn-secondary" @click="retryCampaigns">
+          {{ $t('action.retry') }}
+        </button>
+      </div>
+    </div>
+
     <!-- List -->
-    <div v-else class="space-y-3">
+    <div v-if="store.campaigns.length > 0" class="space-y-3">
       <button
         v-for="c in store.campaigns"
         :key="c.id"
@@ -189,6 +214,15 @@ function formatPeriod(startAt: string | null, endAt: string | null): string {
 
 function applySearch() {
   store.setQuery(searchInput.value)
+}
+
+async function retryCampaigns() {
+  try {
+    await store.fetchCampaigns()
+  } catch {
+    // The store keeps the visible error state; avoid an unhandled rejection
+    // from the template event handler.
+  }
 }
 
 function goCreate() {
