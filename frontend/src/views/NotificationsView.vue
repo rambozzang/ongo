@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useNotificationCenterStore } from '@/stores/notificationCenter'
@@ -9,6 +9,7 @@ import NotificationSettings from '@/components/notifications/NotificationSetting
 import PageGuide from '@/components/common/PageGuide.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import type { Notification, NotificationCategory } from '@/types/notification'
+import { settingsApi, type NotificationSettings as NotificationSettingsForm } from '@/api/settings'
 import {
   Cog6ToothIcon,
   CheckIcon,
@@ -21,10 +22,71 @@ const router = useRouter()
 const store = useNotificationCenterStore()
 
 const showSettings = ref(false)
+const notificationSettings = reactive<NotificationSettingsForm>({
+  uploadEmail: true,
+  commentFrequency: 'realtime',
+  creditThreshold: 20,
+  scheduleReminderMinutes: 60,
+})
+const settingsLoading = ref(false)
+const settingsSaving = ref(false)
+const settingsError = ref<string | null>(null)
+const settingsSaved = ref(false)
 
 onMounted(() => {
   store.fetchNotifications().catch(() => undefined)
 })
+
+async function loadNotificationSettings() {
+  settingsLoading.value = true
+  settingsError.value = null
+  try {
+    const result = await settingsApi.getSettings()
+    notificationSettings.uploadEmail = result.notificationUpload
+    notificationSettings.commentFrequency = result.notificationComment.toLowerCase()
+    notificationSettings.creditThreshold = result.notificationCreditThreshold
+    notificationSettings.scheduleReminderMinutes = result.notificationScheduleReminder === 30
+      ? 30
+      : result.notificationScheduleReminder > 0 ? 60 : 0
+  } catch (error) {
+    settingsError.value = error instanceof Error ? error.message : '알림 설정을 불러오지 못했습니다'
+  } finally {
+    settingsLoading.value = false
+  }
+}
+
+function handleSettingsToggle() {
+  showSettings.value = !showSettings.value
+  if (showSettings.value && !settingsLoading.value) {
+    loadNotificationSettings()
+  }
+}
+
+function handleUpdateSettings(next: NotificationSettingsForm) {
+  Object.assign(notificationSettings, next)
+  settingsSaved.value = false
+  settingsError.value = null
+}
+
+async function saveNotificationSettings() {
+  settingsSaving.value = true
+  settingsSaved.value = false
+  settingsError.value = null
+  try {
+    const result = await settingsApi.updateNotifications({ ...notificationSettings })
+    notificationSettings.uploadEmail = result.notificationUpload
+    notificationSettings.commentFrequency = result.notificationComment.toLowerCase()
+    notificationSettings.creditThreshold = result.notificationCreditThreshold
+    notificationSettings.scheduleReminderMinutes = result.notificationScheduleReminder === 30
+      ? 30
+      : result.notificationScheduleReminder > 0 ? 60 : 0
+    settingsSaved.value = true
+  } catch (error) {
+    settingsError.value = error instanceof Error ? error.message : '알림 설정 저장에 실패했습니다'
+  } finally {
+    settingsSaving.value = false
+  }
+}
 
 function handleFilterSelect(category: NotificationCategory | null) {
   store.filterByCategory(category)
@@ -65,9 +127,6 @@ function handleClick(notification: Notification) {
   }
 }
 
-function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'email' | 'kakao', value: boolean) {
-  store.updateSetting(category, field, value)
-}
 </script>
 
 <template>
@@ -89,7 +148,7 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
         <button
           class="btn-secondary inline-flex items-center gap-1.5"
           :class="showSettings ? 'border-accent text-accent' : ''"
-          @click="showSettings = !showSettings"
+          @click="handleSettingsToggle"
         >
           <Cog6ToothIcon class="h-4 w-4" />
           {{ $t('notifications.settings') }}
@@ -116,9 +175,15 @@ function handleUpdateSetting(category: NotificationCategory, field: 'inApp' | 'e
       leave-to-class="opacity-0 -translate-y-2 max-h-0"
     >
       <div v-if="showSettings" class="overflow-hidden">
+        <div v-if="settingsLoading" class="card mb-4 h-56 animate-pulse" aria-label="알림 설정 불러오는 중" />
         <NotificationSettings
-          :settings="store.settings"
-          @update="handleUpdateSetting"
+          v-else
+          :settings="notificationSettings"
+          :saving="settingsSaving"
+          :error="settingsError"
+          :saved="settingsSaved"
+          @update="handleUpdateSettings"
+          @save="saveNotificationSettings"
         />
       </div>
     </Transition>

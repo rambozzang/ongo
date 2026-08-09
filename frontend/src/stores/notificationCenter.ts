@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Notification, NotificationCategory, NotificationSetting } from '@/types/notification'
+import type { Notification, NotificationCategory } from '@/types/notification'
 import { notificationApi } from '@/api/notification'
 
 export const useNotificationCenterStore = defineStore('notificationCenter', () => {
@@ -10,15 +10,6 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
   const pageSize = ref(20)
   const totalCount = ref(0)
   const loadError = ref<string | null>(null)
-  const settings = ref<NotificationSetting[]>([
-    { category: 'upload', inApp: true, email: true, kakao: false },
-    { category: 'schedule', inApp: true, email: true, kakao: true },
-    { category: 'channel', inApp: true, email: true, kakao: false },
-    { category: 'ai', inApp: true, email: false, kakao: false },
-    { category: 'analytics', inApp: true, email: false, kakao: false },
-    { category: 'subscription', inApp: true, email: true, kakao: true },
-  ])
-
   // --- Computed ---
 
   const unreadCount = computed(() => notifications.value.filter((n) => !n.isRead).length)
@@ -111,7 +102,12 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     notifications.value = notifications.value.filter((n) => n.id !== id)
   }
 
-  function clearAll() {
+  async function clearAll() {
+    try {
+      await notificationApi.deleteAll()
+    } catch {
+      throw new Error('알림 삭제에 실패했습니다')
+    }
     notifications.value = []
   }
 
@@ -126,17 +122,6 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
 
   function filterByCategory(category: NotificationCategory | null) {
     activeCategory.value = category
-  }
-
-  function updateSetting(
-    category: NotificationCategory,
-    field: 'inApp' | 'email' | 'kakao',
-    value: boolean,
-  ) {
-    const setting = settings.value.find((s) => s.category === category)
-    if (setting) {
-      setting[field] = value
-    }
   }
 
   const totalPages = computed(() => Math.ceil(totalCount.value / pageSize.value))
@@ -193,7 +178,6 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     page,
     pageSize,
     totalCount,
-    settings,
     unreadCount,
     hasUnread,
     unreadNotifications,
@@ -210,7 +194,6 @@ export const useNotificationCenterStore = defineStore('notificationCenter', () =
     clearAll,
     addNotification,
     filterByCategory,
-    updateSetting,
     fetchNotifications,
     nextPage,
     prevPage,

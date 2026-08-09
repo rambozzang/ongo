@@ -9,4 +9,5 @@ interface NotificationRepository {
     fun markAllAsRead(userId: Long)
     fun save(notification: Notification): Notification
     fun delete(id: Long)
+    fun deleteAllByUserId(userId: Long)
 }

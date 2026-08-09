@@ -54,6 +54,11 @@ class NotificationUseCase(
         notificationRepository.delete(id)
     }
 
+    @Transactional
+    fun deleteAllNotifications(userId: Long) {
+        notificationRepository.deleteAllByUserId(userId)
+    }
+
     private fun Notification.toResponse(): NotificationResponse = NotificationResponse(
         id = id!!,
         type = type.name,

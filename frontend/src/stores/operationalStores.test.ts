@@ -17,7 +17,7 @@ vi.mock('@/api/analytics', () => ({
 }))
 vi.mock('@/api/notification', () => ({
   notificationApi: {
-    list: vi.fn(), markAsRead: vi.fn(), markAllAsRead: vi.fn(), delete: vi.fn(),
+    list: vi.fn(), markAsRead: vi.fn(), markAllAsRead: vi.fn(), delete: vi.fn(), deleteAll: vi.fn(),
   },
 }))
 vi.mock('@/api/subscription', () => ({
@@ -93,9 +93,6 @@ describe('operational stores', () => {
     expect(store.groupedByDate).toHaveLength(2)
     store.filterByCategory('channel')
     expect(store.filteredNotifications).toHaveLength(1)
-    store.updateSetting('channel', 'email', true)
-    expect(store.settings.find((item) => item.category === 'channel')?.email).toBe(true)
-
     vi.mocked(notificationApi.markAsRead).mockResolvedValue(undefined)
     await store.markAsRead(1)
     expect(store.unreadCount).toBe(0)
@@ -106,7 +103,8 @@ describe('operational stores', () => {
     expect(store.notifications).toHaveLength(1)
     store.addNotification({ type: 'upload_success', category: 'upload', title: '새 알림', message: '새 알림', isRead: false })
     expect(store.notifications[0].title).toBe('새 알림')
-    store.clearAll()
+    vi.mocked(notificationApi.deleteAll).mockResolvedValue(undefined)
+    await store.clearAll()
     expect(store.notifications).toEqual([])
   })
 
@@ -119,6 +117,10 @@ describe('operational stores', () => {
     store.notifications.push({ id: 1, type: 'upload_success', category: 'upload', title: 't', message: 'm', isRead: false, createdAt: new Date().toISOString() })
     await expect(store.markAsRead(1)).rejects.toThrow('알림 읽음 처리에 실패했습니다')
     expect(store.notifications[0].isRead).toBe(false)
+
+    vi.mocked(notificationApi.deleteAll).mockRejectedValue(new Error('clear failed'))
+    await expect(store.clearAll()).rejects.toThrow('알림 삭제에 실패했습니다')
+    expect(store.notifications).toHaveLength(1)
   })
 
   it('maps subscription plans, billing actions, coupon actions, and payment history', async () => {

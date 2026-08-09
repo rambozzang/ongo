@@ -110,6 +110,9 @@
         >
           모두 지우기
         </button>
+        <p v-if="clearAllError" class="mt-2 text-center text-body-xs text-error-strong" role="alert">
+          {{ clearAllError }}
+        </p>
       </div>
     </div>
   </Transition>
@@ -165,6 +168,7 @@ type FilterValue = 'all' | 'unread'
 
 const currentFilter = ref<FilterValue>('all')
 const showClearAllModal = ref(false)
+const clearAllError = ref<string | null>(null)
 
 const filterTabs = [
   { value: 'all' as FilterValue, label: '전체' },
@@ -233,10 +237,16 @@ function handleMarkAllAsRead() {
 }
 
 function handleClearAll() {
+  clearAllError.value = null
   showClearAllModal.value = true
 }
 
-function confirmClearAll() {
-  notificationStore.clearAll()
+async function confirmClearAll() {
+  clearAllError.value = null
+  try {
+    await notificationStore.clearAll()
+  } catch (error) {
+    clearAllError.value = error instanceof Error ? error.message : '알림 삭제에 실패했습니다'
+  }
 }
 </script>

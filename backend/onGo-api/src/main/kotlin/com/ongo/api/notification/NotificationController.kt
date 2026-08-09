@@ -78,4 +78,16 @@ class NotificationController(
         notificationUseCase.deleteNotification(userId, id)
         return ResData.success(null, "알림이 삭제되었습니다")
     }
+
+    @Operation(summary = "모든 알림 삭제", description = "현재 로그인한 사용자의 알림을 모두 삭제합니다.")
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "모든 알림 삭제 성공"),
+    )
+    @DeleteMapping("/clear")
+    fun deleteAllNotifications(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        notificationUseCase.deleteAllNotifications(userId)
+        return ResData.success(null, "모든 알림이 삭제되었습니다")
+    }
 }

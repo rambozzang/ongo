@@ -43,4 +43,8 @@ export const notificationApi = {
   delete(id: number) {
     return apiClient.delete<ResData<void>>(`/notifications/${id}`).then(unwrapResponse)
   },
+
+  deleteAll() {
+    return apiClient.delete<ResData<void>>('/notifications/clear').then(unwrapResponse)
+  },
 }

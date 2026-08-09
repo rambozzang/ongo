@@ -93,6 +93,12 @@ class NotificationJooqRepository(
             .execute()
     }
 
+    override fun deleteAllByUserId(userId: Long) {
+        dsl.deleteFrom(NOTIFICATIONS)
+            .where(USER_ID.eq(userId))
+            .execute()
+    }
+
     private fun Record.toNotification(): Notification {
         val typeStr = get(TYPE) ?: "SYSTEM"
         return Notification(

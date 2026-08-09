@@ -13,6 +13,9 @@ import com.ongo.domain.video.VideoRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -25,14 +28,32 @@ class RecurringScheduleExecutor(
     private val videoRepository: VideoRepository,
     private val distributedLockPort: DistributedLockPort,
     private val userWriteGuard: UserWriteGuard,
+    transactionManager: PlatformTransactionManager,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val clockZone = ZoneId.of("Asia/Seoul")
+    private val perOccurrenceTx = TransactionTemplate(transactionManager).apply {
+        propagationBehavior = TransactionDefinition.PROPAGATION_REQUIRES_NEW
+    }
 
     @Scheduled(fixedDelayString = "\${recurring.schedule.delay-ms:30000}")
     fun executeDueSchedules() {
         val ran = distributedLockPort.withLock(javaClass.name.hashCode().toLong()) {
-            recurringRepository.findDue(LocalDateTime.now(clockZone)).forEach { execute(it) }
+            recurringRepository.findDue(LocalDateTime.now(clockZone)).forEach { definition ->
+                try {
+                    // 다음 실행 시각 갱신과 회차 Schedule 생성을 원자적으로
+                    // 커밋한다. 둘 사이에 프로세스가 죽으면 회차가 유실된다.
+                    perOccurrenceTx.executeWithoutResult { execute(definition) }
+                } catch (error: Exception) {
+                    // 트랜잭션 롤백으로 due 행은 그대로 남고 다음 주기에 재시도된다.
+                    log.error(
+                        "반복 예약 회차 생성 실패. recurringId={}, nextRunAt={}",
+                        definition.id,
+                        definition.nextRunAt,
+                        error,
+                    )
+                }
+            }
         }
         if (!ran) log.debug("다른 인스턴스에서 반복 예약 실행 중, 스킵")
     }
@@ -46,52 +67,49 @@ class RecurringScheduleExecutor(
             .onFailure { log.info("동결된 계정의 반복 예약을 보류합니다. recurringId={}", id) }
             .getOrElse { return }
 
-        // Advance first: a crash may skip one occurrence, but can never publish it twice.
+        // 이 메서드는 perOccurrenceTx 안에서 실행된다. markRun과 회차 생성이
+        // 같은 트랜잭션이므로 외부 게시 전에 DB 작업이 부분 커밋되지 않는다.
         if (!recurringRepository.markRun(id, occurrence, occurrence, next)) return
 
-        try {
-            val sourceId = definition.videoId
-            val source = sourceId?.let(videoRepository::findById)
-            val platforms = definition.platforms.mapNotNull { it.toPlatformOrNull() }.distinct()
-            if (source == null || source.fileUrl.isNullOrBlank() || platforms.isEmpty()) {
-                log.warn(
-                    "반복 예약을 건너뜁니다: source video/file/platform 설정이 없습니다. recurringId={}, videoId={}, platforms={}",
-                    id, sourceId, platforms,
-                )
-                return
-            }
-
-            // video_uploads has a deliberate unique(video_id, platform) key. Each
-            // occurrence therefore gets its own library row while retaining the
-            // original media URL and making every occurrence independently visible.
-            val occurrenceVideo = videoRepository.save(
-                source.copy(
-                    id = null,
-                    title = definition.titleTemplate?.takeIf { it.isNotBlank() } ?: source.title,
-                    description = definition.descriptionTemplate ?: source.description,
-                    tags = if (definition.tags.isEmpty()) source.tags else definition.tags,
-                    status = UploadStatus.DRAFT,
-                    createdAt = null,
-                    updatedAt = null,
-                )
+        val sourceId = definition.videoId
+        val source = sourceId?.let(videoRepository::findById)
+        val platforms = definition.platforms.mapNotNull { it.toPlatformOrNull() }.distinct()
+        if (source == null || source.fileUrl.isNullOrBlank() || platforms.isEmpty()) {
+            log.warn(
+                "반복 예약을 건너뜁니다: source video/file/platform 설정이 없습니다. recurringId={}, videoId={}, platforms={}",
+                id, sourceId, platforms,
             )
-            val scheduledAt = occurrence.atZone(ZoneId.of(definition.timezone))
-                .withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-                .toLocalDateTime()
-            scheduleRepository.save(
-                Schedule(
-                    videoId = occurrenceVideo.id!!,
-                    userId = definition.userId,
-                    scheduledAt = scheduledAt,
-                    platforms = platforms.associate { platform ->
-                        platform.name to mapOf("scheduledAt" to scheduledAt.toString(), "recurringId" to id)
-                    },
-                )
-            )
-            log.info("반복 예약 실행을 생성했습니다. recurringId={}, videoId={}, scheduledAt={}", id, occurrenceVideo.id, scheduledAt)
-        } catch (error: Exception) {
-            log.error("반복 예약 실행 생성 실패. recurringId={}, occurrence={}", id, occurrence, error)
+            return
         }
+
+        // video_uploads has a deliberate unique(video_id, platform) key. Each
+        // occurrence therefore gets its own library row while retaining the
+        // original media URL and making every occurrence independently visible.
+        val occurrenceVideo = videoRepository.save(
+            source.copy(
+                id = null,
+                title = definition.titleTemplate?.takeIf { it.isNotBlank() } ?: source.title,
+                description = definition.descriptionTemplate ?: source.description,
+                tags = if (definition.tags.isEmpty()) source.tags else definition.tags,
+                status = UploadStatus.DRAFT,
+                createdAt = null,
+                updatedAt = null,
+            )
+        )
+        val scheduledAt = occurrence.atZone(ZoneId.of(definition.timezone))
+            .withZoneSameInstant(ZoneId.of("Asia/Seoul"))
+            .toLocalDateTime()
+        scheduleRepository.save(
+            Schedule(
+                videoId = occurrenceVideo.id!!,
+                userId = definition.userId,
+                scheduledAt = scheduledAt,
+                platforms = platforms.associate { platform ->
+                    platform.name to mapOf("scheduledAt" to scheduledAt.toString(), "recurringId" to id)
+                },
+            )
+        )
+        log.info("반복 예약 실행을 생성했습니다. recurringId={}, videoId={}, scheduledAt={}", id, occurrenceVideo.id, scheduledAt)
     }
 
     private fun String.toPlatformOrNull(): Platform? =

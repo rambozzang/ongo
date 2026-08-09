@@ -1,106 +1,116 @@
 <script setup lang="ts">
-import type { NotificationCategory, NotificationSetting } from '@/types/notification'
+import type { NotificationSettings } from '@/api/settings'
 
-defineProps<{
-  settings: NotificationSetting[]
-}>()
+const props = withDefaults(defineProps<{
+  settings: NotificationSettings
+  saving?: boolean
+  error?: string | null
+  saved?: boolean
+}>(), {
+  saving: false,
+  error: null,
+  saved: false,
+})
 
 const emit = defineEmits<{
-  (e: 'update', category: NotificationCategory, field: 'inApp' | 'email' | 'kakao', value: boolean): void
+  (e: 'update', settings: NotificationSettings): void
+  (e: 'save'): void
 }>()
 
-const categoryLabels: Record<NotificationCategory, string> = {
-  upload: '업로드',
-  schedule: '예약 게시',
-  channel: '채널 관리',
-  ai: 'AI 크레딧',
-  analytics: '분석 / 리포트',
-  subscription: '구독 / 결제',
+function update(field: keyof NotificationSettings, value: boolean | string | number) {
+  emit('update', {
+    ...props.settings,
+    [field]: value,
+  } as NotificationSettings)
 }
 
-function handleToggle(category: NotificationCategory, field: 'inApp' | 'email' | 'kakao', current: boolean) {
-  emit('update', category, field, !current)
+function updateBoolean(field: 'uploadEmail', event: Event) {
+  update(field, (event.target as HTMLInputElement).checked)
 }
+
+function updateString(field: 'commentFrequency', event: Event) {
+  update(field, (event.target as HTMLSelectElement).value)
+}
+
+function updateReminder(event: Event) {
+  update(fieldName, Number((event.target as HTMLSelectElement).value))
+}
+
+const fieldName = 'scheduleReminderMinutes' as const
 </script>
 
 <template>
-  <div class="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+  <form class="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800" @submit.prevent="emit('save')">
     <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
       <h3 class="text-title font-semibold text-gray-900 dark:text-white">알림 설정</h3>
       <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
-        카테고리별로 알림 수신 방법을 설정합니다.
+        실제 계정에 저장되는 알림 수신 기준을 설정합니다.
       </p>
     </div>
 
-    <!-- Header row -->
-    <div class="grid grid-cols-4 gap-4 border-b border-gray-100 px-6 py-3 dark:border-gray-700">
-      <div class="text-body font-medium text-gray-500 dark:text-gray-400">카테고리</div>
-      <div class="text-center text-body font-medium text-gray-500 dark:text-gray-400">앱 내 알림</div>
-      <div class="text-center text-body font-medium text-gray-500 dark:text-gray-400">이메일</div>
-      <div class="text-center text-body font-medium text-gray-500 dark:text-gray-400">카카오톡</div>
-    </div>
-
-    <!-- Setting rows -->
-    <div
-      v-for="setting in settings"
-      :key="setting.category"
-      class="grid grid-cols-4 items-center gap-4 border-b border-gray-50 px-6 py-4 last:border-b-0 dark:border-gray-700/50"
-    >
-      <!-- Category label -->
-      <div class="text-body font-medium text-gray-700 dark:text-gray-300">
-        {{ categoryLabels[setting.category] }}
-      </div>
-
-      <!-- In-app toggle -->
-      <div class="flex justify-center">
-        <button
-          type="button"
-          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-          :class="setting.inApp ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
-          role="switch"
-          :aria-checked="setting.inApp"
-          @click="handleToggle(setting.category, 'inApp', setting.inApp)"
+    <div class="space-y-5 px-6 py-5">
+      <label class="flex items-start justify-between gap-4">
+        <span>
+          <span class="block text-body font-medium text-gray-700 dark:text-gray-300">업로드 결과 이메일 알림</span>
+          <span class="mt-1 block text-body-sm text-gray-500 dark:text-gray-400">업로드 완료 및 실패 결과를 이메일로 받습니다.</span>
+        </span>
+        <input
+          type="checkbox"
+          class="mt-0.5 h-5 w-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          :checked="settings.uploadEmail"
+          @change="updateBoolean('uploadEmail', $event)"
         >
-          <span
-            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-            :class="setting.inApp ? 'translate-x-5' : 'translate-x-0'"
-          />
-        </button>
-      </div>
+      </label>
 
-      <!-- Email toggle -->
-      <div class="flex justify-center">
-        <button
-          type="button"
-          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-          :class="setting.email ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
-          role="switch"
-          :aria-checked="setting.email"
-          @click="handleToggle(setting.category, 'email', setting.email)"
+      <label class="block">
+        <span class="text-body font-medium text-gray-700 dark:text-gray-300">댓글 알림 빈도</span>
+        <select
+          class="input-field mt-2 w-full"
+          :value="settings.commentFrequency"
+          @change="updateString('commentFrequency', $event)"
         >
-          <span
-            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-            :class="setting.email ? 'translate-x-5' : 'translate-x-0'"
-          />
-        </button>
-      </div>
+          <option value="realtime">실시간</option>
+          <option value="daily">하루 한 번</option>
+          <option value="none">받지 않음</option>
+        </select>
+      </label>
 
-      <!-- Kakao toggle -->
-      <div class="flex justify-center">
-        <button
-          type="button"
-          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-          :class="setting.kakao ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'"
-          role="switch"
-          :aria-checked="setting.kakao"
-          @click="handleToggle(setting.category, 'kakao', setting.kakao)"
+      <label class="block">
+        <span class="text-body font-medium text-gray-700 dark:text-gray-300">AI 크레딧 알림 기준</span>
+        <span class="mt-1 block text-body-sm text-gray-500 dark:text-gray-400">크레딧이 이 값 이하가 되면 알림을 보냅니다.</span>
+        <input
+          type="number"
+          min="0"
+          max="1000000"
+          class="input-field mt-2 w-full"
+          :value="settings.creditThreshold"
+          @input="update('creditThreshold', Math.max(0, Number(($event.target as HTMLInputElement).value) || 0))"
         >
-          <span
-            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-            :class="setting.kakao ? 'translate-x-5' : 'translate-x-0'"
-          />
+      </label>
+
+      <label class="block">
+        <span class="text-body font-medium text-gray-700 dark:text-gray-300">예약 게시 알림</span>
+        <select
+          class="input-field mt-2 w-full"
+          :value="settings.scheduleReminderMinutes"
+          @change="updateReminder($event)"
+        >
+          <option :value="0">받지 않음</option>
+          <option :value="30">30분 전</option>
+          <option :value="60">1시간 전</option>
+        </select>
+      </label>
+
+      <p v-if="error" class="rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-body-sm text-error-strong" role="alert">
+        {{ error }}
+      </p>
+      <p v-if="saved" class="text-body-sm text-success-strong" role="status">알림 설정을 저장했습니다.</p>
+
+      <div class="flex justify-end">
+        <button type="submit" class="btn-primary" :disabled="saving">
+          {{ saving ? '저장 중…' : '저장' }}
         </button>
       </div>
     </div>
-  </div>
+  </form>
 </template>

@@ -3,11 +3,9 @@ import type { ResData } from '@/types/api'
 
 export interface NotificationSettings {
   uploadEmail: boolean
-  uploadPush: boolean
   commentFrequency: string
   creditThreshold: number
-  scheduleReminder1h: boolean
-  scheduleReminder30m: boolean
+  scheduleReminderMinutes: 0 | 30 | 60
 }
 
 export interface DefaultSettings {
@@ -48,7 +46,16 @@ export const settingsApi = {
 
   updateNotifications(settings: NotificationSettings) {
     return apiClient
-      .put<ResData<void>>('/settings/notifications', settings)
+      .put<ResData<UserSettingsResponse>>('/settings/notifications', {
+        uploadEmail: settings.uploadEmail,
+        // Push delivery is not configured by this endpoint yet; do not expose
+        // a control that would appear persisted while being ignored by the API.
+        uploadPush: true,
+        commentFrequency: settings.commentFrequency,
+        creditThreshold: settings.creditThreshold,
+        scheduleReminder1h: settings.scheduleReminderMinutes === 60,
+        scheduleReminder30m: settings.scheduleReminderMinutes === 30,
+      })
       .then(unwrapResponse)
   },
 
