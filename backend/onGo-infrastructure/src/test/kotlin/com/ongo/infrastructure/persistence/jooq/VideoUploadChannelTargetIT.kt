@@ -212,6 +212,77 @@ class VideoUploadChannelTargetIT {
         assertEquals(1, subscriptionRepository.findByPlanType(com.ongo.common.enums.PlanType.PRO).size)
     }
 
+    @Test
+    @DisplayName("동일한 예약 업로드는 PostgreSQL 원자 claim으로 한 작업자만 획득한다")
+    fun uploadLeaseIsAtomicAcrossWorkers() {
+        val userId = insertUser("lease-claim")
+        val videoId = videoRepository.save(
+            Video(userId = userId, title = "lease claim video", status = UploadStatus.DRAFT),
+        ).id!!
+        val uploadId = videoUploadRepository.save(
+            VideoUpload(videoId = videoId, platform = Platform.YOUTUBE, status = UploadStatus.UPLOADING),
+        ).id!!
+        val now = LocalDateTime.now()
+
+        val first = videoUploadRepository.claim(
+            uploadId,
+            owner = "worker-a",
+            now = now,
+            leaseUntil = now.plusMinutes(5),
+        )
+        val second = videoUploadRepository.claim(
+            uploadId,
+            owner = "worker-b",
+            now = now,
+            leaseUntil = now.plusMinutes(5),
+        )
+
+        assertEquals("worker-a", first?.leaseOwner)
+        assertEquals(1, first?.attemptCount)
+        assertEquals(null, second)
+        assertEquals("worker-a", videoUploadRepository.findById(uploadId)?.leaseOwner)
+    }
+
+    @Test
+    @DisplayName("lease가 만료된 외부 전송은 자동 재전송하지 않고 UNCONFIRMED로 복구한다")
+    fun expiredUploadWithoutPollTokenBecomesUnconfirmed() {
+        val userId = insertUser("lease-recovery")
+        val videoId = videoRepository.save(
+            Video(userId = userId, title = "lease recovery video", status = UploadStatus.DRAFT),
+        ).id!!
+        val now = LocalDateTime.now()
+        val uploadId = videoUploadRepository.save(
+            VideoUpload(
+                videoId = videoId,
+                platform = Platform.YOUTUBE,
+                status = UploadStatus.UPLOADING,
+                leaseOwner = "dead-worker",
+                leaseUntil = now.minusMinutes(1),
+            ),
+        ).id!!
+
+        val recovered = videoUploadRepository.recoverExpiredLeases(now)
+        val persisted = videoUploadRepository.findById(uploadId)!!
+
+        assertEquals(listOf(uploadId), recovered.mapNotNull { it.id })
+        assertEquals(UploadStatus.UNCONFIRMED, persisted.status)
+        assertEquals(null, persisted.leaseOwner)
+        assertEquals(null, persisted.leaseUntil)
+        assertEquals(null, persisted.pollToken)
+        assertEquals("작업 lease가 만료되어 게시 결과 확인이 필요합니다.", persisted.errorMessage)
+    }
+
+    private fun insertUser(providerIdSuffix: String): Long =
+        dsl.fetchOne(
+            """
+            INSERT INTO users (email, name, provider, provider_id, role, plan_type)
+            VALUES (?, 'lease-test', 'GOOGLE', ?, 'USER', 'FREE')
+            RETURNING id
+            """.trimIndent(),
+            EMAIL,
+            "video-upload-$providerIdSuffix-it",
+        )!!.get(0, Long::class.java)
+
     private fun insertChannel(userId: Long, platformChannelId: String, name: String): Long =
         dsl.fetchOne(
             """
