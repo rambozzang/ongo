@@ -27,6 +27,11 @@ class WorkspaceUseCase(
     fun getWorkspace(userId: Long, workspaceId: Long): WorkspaceResponse {
         val workspace = workspaceRepository.findById(workspaceId)
             ?: throw NotFoundException("워크스페이스", workspaceId)
+        if (workspaceRepository.findAccessibleByUserId(userId).none { it.id == workspaceId }) {
+            // 존재 여부를 외부에 노출하지 않고, 목록과 상세 조회의 접근 계약을
+            // 동일하게 유지한다.
+            throw NotFoundException("워크스페이스", workspaceId)
+        }
         return workspace.toResponse()
     }
 
@@ -109,7 +114,9 @@ class WorkspaceUseCase(
 
     private fun Workspace.toResponse(): WorkspaceResponse {
         val wsId = id!!
-        val memberCount = teamMemberRepository.countByUserId(wsId)
+        // owner는 team_members에 저장되지 않으므로 활성 초대 수가 아닌
+        // 실제 joined 멤버 수에 owner를 더해 UI에서 팀 규모를 표시한다.
+        val memberCount = teamMemberRepository.countByWorkspaceId(wsId) + 1
         return WorkspaceResponse(
             id = wsId,
             ownerId = ownerId,

@@ -49,6 +49,17 @@ class PermissionService(
         return checkMemberPermission(member.role, member.permissions, permission)
     }
 
+    /**
+     * API 인증 주체의 user id와 team_members의 row id는 서로 다른 식별자다.
+     * 권한 검사는 이미 이메일로 찾은 membership row를 넘겨서 두 ID를 혼동하지
+     * 않도록 한다.
+     */
+    fun hasPermissionForMember(memberId: Long, teamOwnerId: Long, permission: Permission): Boolean {
+        val member = teamMemberRepository.findById(memberId) ?: return false
+        if (member.userId != teamOwnerId || member.status != "JOINED") return false
+        return checkMemberPermission(member.role, member.permissions, permission)
+    }
+
     fun getEffectivePermissions(memberId: Long): Set<Permission> {
         val member = teamMemberRepository.findById(memberId) ?: return emptySet()
         val rolePerms = RolePermissions.defaultPermissions(member.role)

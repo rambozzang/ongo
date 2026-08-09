@@ -37,7 +37,8 @@ class PermissionCheckAspect(
         val teamMemberships = teamMemberRepository.findTeamsForMember(user.email)
         if (teamMemberships.isNotEmpty()) {
             val activeMembership = teamMemberships.first()
-            if (!permissionService.hasPermissionForUser(userId, activeMembership.userId, permission)) {
+            val memberId = activeMembership.id
+            if (memberId == null || !permissionService.hasPermissionForMember(memberId, activeMembership.userId, permission)) {
                 throw ForbiddenException("${permission.name} 권한이 필요합니다")
             }
         }

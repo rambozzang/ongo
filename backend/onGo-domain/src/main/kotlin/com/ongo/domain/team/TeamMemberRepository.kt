@@ -10,5 +10,6 @@ interface TeamMemberRepository {
     fun delete(id: Long)
     fun resendInvite(id: Long, invitedAt: java.time.LocalDateTime): TeamMember
     fun countByUserId(userId: Long): Int
+    fun countByWorkspaceId(workspaceId: Long): Int
     fun findTeamsForMember(memberEmail: String): List<TeamMember>
 }

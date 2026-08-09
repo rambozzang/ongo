@@ -44,7 +44,7 @@ class TeamMemberJooqRepository(
         dsl.select()
             .from(TEAM_MEMBERS)
             .where(USER_ID.eq(userId))
-            .and(MEMBER_EMAIL.eq(email))
+            .and(DSL.lower(MEMBER_EMAIL).eq(email.lowercase()))
             .fetchOne()
             ?.toTeamMember()
 
@@ -108,6 +108,13 @@ class TeamMemberJooqRepository(
         dsl.selectCount()
             .from(TEAM_MEMBERS)
             .where(USER_ID.eq(userId))
+            .fetchOne(0, Int::class.java) ?: 0
+
+    override fun countByWorkspaceId(workspaceId: Long): Int =
+        dsl.selectCount()
+            .from(TEAM_MEMBERS)
+            .where(WORKSPACE_ID.eq(workspaceId))
+            .and(STATUS.eq("JOINED"))
             .fetchOne(0, Int::class.java) ?: 0
 
     override fun findTeamsForMember(memberEmail: String): List<TeamMember> =

@@ -8,6 +8,9 @@ import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.team.RolePermissions
 import com.ongo.domain.team.TeamMember
 import com.ongo.domain.team.TeamMemberRepository
+import com.ongo.domain.user.UserRepository
+import com.ongo.domain.workspace.Workspace
+import com.ongo.domain.workspace.WorkspaceRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -16,6 +19,8 @@ import java.time.LocalDateTime
 class TeamUseCase(
     private val teamMemberRepository: TeamMemberRepository,
     private val permissionService: PermissionService,
+    private val workspaceRepository: WorkspaceRepository,
+    private val userRepository: UserRepository,
 ) {
 
     fun listMembers(userId: Long): List<TeamMemberResponse> =
@@ -23,18 +28,40 @@ class TeamUseCase(
 
     @Transactional
     fun inviteMember(userId: Long, request: InviteMemberRequest): TeamMemberResponse {
-        val existing = teamMemberRepository.findByUserIdAndEmail(userId, request.email)
+        val email = request.email.trim().lowercase()
+        val role = request.role.trim().uppercase()
+        if (!EMAIL_PATTERN.matches(email)) {
+            throw com.ongo.common.exception.BusinessException("INVALID_TEAM_EMAIL", "유효한 초대 이메일을 입력해주세요")
+        }
+        if (role !in INVITABLE_ROLES) {
+            throw com.ongo.common.exception.BusinessException("INVALID_TEAM_ROLE", "초대할 수 없는 팀 역할입니다: $role")
+        }
+
+        val existing = teamMemberRepository.findByUserIdAndEmail(userId, email)
         if (existing != null) {
-            throw DuplicateResourceException("팀 멤버", request.email)
+            throw DuplicateResourceException("팀 멤버", email)
         }
 
         val member = TeamMember(
             userId = userId,
-            memberEmail = request.email,
-            role = request.role,
+            memberEmail = email,
+            role = role,
             status = "INVITED",
+            workspaceId = ensureOwnerWorkspace(userId).id,
         )
         return teamMemberRepository.save(member).toResponse()
+    }
+
+    private fun ensureOwnerWorkspace(userId: Long): Workspace {
+        workspaceRepository.findByOwnerId(userId).firstOrNull()?.let { return it }
+        val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+        return workspaceRepository.save(
+            Workspace(
+                ownerId = userId,
+                name = user.nickname ?: user.name,
+                slug = "ws-$userId",
+            )
+        )
     }
 
     @Transactional
@@ -197,5 +224,7 @@ class TeamUseCase(
 
     private companion object {
         const val INVITE_VALID_DAYS = 7L
+        val INVITABLE_ROLES = setOf("ADMIN", "EDITOR", "VIEWER")
+        val EMAIL_PATTERN = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
 }

@@ -2,6 +2,10 @@ package com.ongo.application.team
 
 import com.ongo.domain.team.TeamMember
 import com.ongo.domain.team.TeamMemberRepository
+import com.ongo.domain.workspace.Workspace
+import com.ongo.domain.workspace.WorkspaceRepository
+import com.ongo.domain.user.UserRepository
+import com.ongo.application.team.dto.InviteMemberRequest
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -13,7 +17,9 @@ import kotlin.test.assertFailsWith
 class TeamUseCaseTest {
     private val repository = mockk<TeamMemberRepository>()
     private val permissionService = mockk<PermissionService>(relaxed = true)
-    private val useCase = TeamUseCase(repository, permissionService)
+    private val workspaces = mockk<WorkspaceRepository>()
+    private val users = mockk<UserRepository>()
+    private val useCase = TeamUseCase(repository, permissionService, workspaces, users)
 
     @Test
     fun `초대 응답은 만료 시각과 만료 상태를 서버에서 계산한다`() {
@@ -48,5 +54,23 @@ class TeamUseCaseTest {
             useCase.resendInvite(1L, 7L)
         }
         verify(exactly = 0) { repository.resendInvite(any(), any()) }
+    }
+
+    @Test
+    fun `초대는 소유자의 워크스페이스에 연결되고 이메일과 역할을 정규화한다`() {
+        every { repository.findByUserIdAndEmail(1L, "new@example.com") } returns null
+        every { workspaces.findByOwnerId(1L) } returns listOf(
+            Workspace(id = 22L, ownerId = 1L, name = "내 작업공간", slug = "mine"),
+        )
+        every { repository.save(any()) } answers { firstArg<TeamMember>().copy(id = 8L) }
+
+        val result = useCase.inviteMember(
+            1L,
+            InviteMemberRequest(email = " New@Example.com ", role = "editor"),
+        )
+
+        assertEquals("new@example.com", result.memberEmail)
+        assertEquals("EDITOR", result.role)
+        verify { repository.save(match { it.workspaceId == 22L && it.memberEmail == "new@example.com" }) }
     }
 }
