@@ -75,6 +75,10 @@
             {{ $t('ugc.registerExternal') }}
           </button>
         </div>
+        <div v-if="postsLoadError" class="rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-body-xs text-error-strong" role="alert">
+          {{ postsLoadError }}
+          <button type="button" class="ml-2 font-semibold underline" @click="loadMyPosts">{{ $t('action.retry') }}</button>
+        </div>
         <ul v-if="myPosts.length" class="space-y-1 border-t border-gray-100 pt-2 dark:border-gray-700">
           <li v-for="post in myPosts" :key="post.id" class="flex items-center justify-between text-body">
             <span class="truncate text-gray-700 dark:text-gray-300">{{ post.platform }}</span>
@@ -111,6 +115,7 @@ const extPlatform = ref('YOUTUBE')
 const extUrl = ref('')
 const registering = ref(false)
 const myPosts = ref<CampaignPostResponse[]>([])
+const postsLoadError = ref<string | null>(null)
 const externalPlatforms = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP', 'TWITTER', 'FACEBOOK', 'THREADS']
 
 const editable = computed(() => !submission.value || submission.value.status === 'DRAFT' || submission.value.status === 'CHANGES_REQUESTED')
@@ -121,11 +126,12 @@ const canRegisterExternal = computed(() =>
 
 async function loadMyPosts() {
   if (!submission.value) return
+  postsLoadError.value = null
   try {
     const res = await ugcPublishingApi.myPosts(submission.value.id)
     myPosts.value = res.items
-  } catch {
-    // 게시물 로드 실패는 조용히 무시
+  } catch (e) {
+    postsLoadError.value = e instanceof Error ? e.message : t('ugc.postsLoadFailed')
   }
 }
 

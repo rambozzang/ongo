@@ -193,6 +193,7 @@
     "external": "external",
     "externalTitle": "Register external post",
     "externalHint": "Register the URL of a post you already published on social media.",
+    "postsLoadFailed": "Could not load external posts.",
     "registerExternal": "Register",
     "externalRegistered": "External post registered.",
     "postStatus": {

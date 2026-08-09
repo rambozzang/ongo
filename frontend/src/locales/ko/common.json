@@ -193,6 +193,7 @@
     "external": "외부",
     "externalTitle": "외부 게시물 등록",
     "externalHint": "이미 SNS에 올린 게시물 URL을 등록하세요.",
+    "postsLoadFailed": "외부 게시물 목록을 불러오지 못했습니다.",
     "registerExternal": "등록",
     "externalRegistered": "외부 게시물을 등록했습니다.",
     "postStatus": {
