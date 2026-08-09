@@ -179,3 +179,45 @@ tasks.register<JacocoCoverageVerification>("jacocoRootCoverageVerification") {
         }
     }
 }
+
+// The roadmap has a stricter target for the actual publishing path than for
+// the whole backend bundle. Keep the class set explicit so a new writer or
+// durable-queue branch cannot silently lower confidence behind unrelated
+// infrastructure code.
+tasks.register<JacocoCoverageVerification>("jacocoPublishingPathCoverageVerification") {
+    dependsOn("jacocoRootReport")
+    sourceDirectories.from(subprojects.map { it.file("src/main/kotlin") })
+    classDirectories.from(
+        subprojects.map { subproject ->
+            fileTree(subproject.file("build/classes/kotlin/main")) {
+                include(
+                    "**/application/video/StreamPublishUseCase.class",
+                    "**/application/video/VideoPublishEventListener.class",
+                    "**/application/video/VideoUploadPoller.class",
+                    "**/application/video/VideoUploadLeaseReaper.class",
+                    "**/application/video/ScheduledVideoUploadDispatcher.class",
+                    "**/application/video/PublishVideoUseCase.class",
+                    "**/infrastructure/upload/PlatformUploadServiceImpl.class",
+                    "**/infrastructure/external/platform/TikTokStreamWriter.class",
+                    "**/infrastructure/external/platform/YouTubeStreamWriter.class",
+                    "**/infrastructure/external/platform/TwitterStreamWriter.class",
+                    "**/infrastructure/external/platform/NaverClipStreamWriter.class",
+                    "**/infrastructure/external/platform/InstagramStreamWriter.class",
+                    "**/infrastructure/external/platform/ThreadsStreamWriter.class",
+                )
+            }
+        }
+    )
+    executionData.from(subprojects.map { it.file("build/jacoco/test.exec") })
+    jacocoClasspath = configurations.getByName("jacocoAnt")
+    violationRules {
+        rule {
+            element = "BUNDLE"
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+    }
+}

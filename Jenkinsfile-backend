@@ -103,6 +103,7 @@ pipeline {
                     sh './gradlew clean :onGo-common:test :onGo-domain:test :onGo-application:test :onGo-infrastructure:test :onGo-api:test :onGo-api:bootJar --no-daemon -PskipIntegrationTests=true'
                     sh './gradlew jacocoRootReport --no-daemon -PskipIntegrationTests=true'
                     sh './gradlew jacocoRootCoverageVerification --no-daemon -PskipIntegrationTests=true'
+                    sh './gradlew jacocoPublishingPathCoverageVerification --no-daemon -PskipIntegrationTests=true'
                 }
             }
         }

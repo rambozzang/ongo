@@ -64,6 +64,10 @@ jobs:
         working-directory: backend
         run: ./gradlew jacocoRootCoverageVerification --no-daemon
 
+      - name: Publishing path coverage gate
+        working-directory: backend
+        run: ./gradlew jacocoPublishingPathCoverageVerification --no-daemon
+
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
