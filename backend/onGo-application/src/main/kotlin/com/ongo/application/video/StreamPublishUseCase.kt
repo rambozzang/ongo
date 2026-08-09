@@ -489,16 +489,18 @@ class StreamPublishUseCase(
                             val platformSemaphore = ExecutorConfig.platformUploadSemaphore(ctx.platform)
                             platformSemaphore.acquire()
                             val result = try {
-                                // complete() is the first point at which these writers
-                                // call the provider. If the surrounding workflow fails
-                                // after this point, the final state is indeterminate.
-                                externalAttemptedContexts += ctx
                                 if (distributedLockPort == null) {
+                                    // complete() is the first point at which these
+                                    // writers call the provider. If the surrounding
+                                    // workflow fails after this point, the final state
+                                    // is indeterminate.
+                                    externalAttemptedContexts += ctx
                                     writer.complete()
                                 } else {
                                     distributedLockPort.withAnyLock(
                                         ExecutorConfig.platformUploadLockIds(ctx.platform),
                                     ) {
+                                        externalAttemptedContexts += ctx
                                         writer.complete()
                                     } ?: throw IllegalStateException("플랫폼 분산 동시성 슬롯을 확보하지 못했습니다.")
                                 }
