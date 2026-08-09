@@ -92,7 +92,10 @@ class StreamPublishUseCase(
 
         // 3. 채널 토큰 검증 + 각 플랫폼별 VideoUpload + VideoPlatformMeta 생성
         val platformConfigs = request.platforms.map { platformReq ->
-            val channel = channelRepository.findByUserIdAndPlatform(userId, platformReq.platform)
+            val channel = platformReq.channelId
+                ?.let(channelRepository::findById)
+                ?.takeIf { it.userId == userId && it.platform == platformReq.platform }
+                ?: channelRepository.findByUserIdAndPlatform(userId, platformReq.platform)
                 ?: throw IllegalStateException("${platformReq.platform.name} 채널이 연동되어 있지 않습니다.")
 
             val tokenExpiresAt = channel.tokenExpiresAt
@@ -108,6 +111,7 @@ class StreamPublishUseCase(
                 VideoUpload(
                     videoId = videoId,
                     platform = platformReq.platform,
+                    channelId = channel.id,
                     status = UploadStatus.UPLOADING,
                     scheduledAt = platformReq.scheduledAt,
                 )
@@ -128,6 +132,7 @@ class StreamPublishUseCase(
             StreamPlatformContext(
                 platform = platformReq.platform,
                 videoUploadId = uploadId,
+                channelId = channel.id,
                 meta = meta,
                 accessToken = tokenEncryptionPort.decrypt(channel.accessToken),
                 platformChannelId = channel.platformChannelId,
@@ -197,6 +202,7 @@ class StreamPublishUseCase(
                                 PlatformUploadConfig(
                                     platform = ctx.platform,
                                     videoUploadId = ctx.videoUploadId,
+                                    channelId = ctx.channelId,
                                     title = ctx.meta.title ?: "",
                                     description = ctx.meta.description,
                                     tags = ctx.meta.tags,
@@ -630,6 +636,7 @@ class StreamPublishUseCase(
                 return@mapNotNull PlatformUploadConfig(
                     platform = platform,
                     videoUploadId = existing.id!!,
+                    channelId = existing.channelId,
                     title = meta?.title ?: video.title,
                     description = meta?.description ?: video.description,
                     tags = meta?.tags ?: video.tags,
@@ -663,6 +670,7 @@ class StreamPublishUseCase(
             PlatformUploadConfig(
                 platform = platform,
                 videoUploadId = uploadId,
+                channelId = upload.channelId,
                 title = meta.title ?: "",
                 description = meta.description,
                 tags = meta.tags,
@@ -699,6 +707,7 @@ class StreamPublishUseCase(
 private data class StreamPlatformContext(
     val platform: Platform,
     val videoUploadId: Long,
+    val channelId: Long?,
     val meta: VideoPlatformMeta,
     val accessToken: com.ongo.domain.channel.PlainToken,
     val platformChannelId: String?,
@@ -716,6 +725,7 @@ data class StreamPublishRequest(
 
 data class PlatformPublishRequest(
     val platform: Platform,
+    val channelId: Long? = null,
     val title: String?,
     val description: String?,
     val tags: List<String>?,

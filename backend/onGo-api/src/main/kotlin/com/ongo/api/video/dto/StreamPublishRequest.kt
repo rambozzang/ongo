@@ -21,6 +21,7 @@ data class StreamPublishMetadataRequest(
 
 data class PlatformPublishConfigRequest(
     val platform: Platform,
+    val channelId: Long? = null,
     val title: String? = null,
     val description: String? = null,
     val tags: List<String>? = null,

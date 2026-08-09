@@ -5,6 +5,7 @@ import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
+import com.ongo.infrastructure.persistence.jooq.Fields.CHANNEL_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.ERROR_MESSAGE
 import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_ATTEMPT_COUNT
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
@@ -72,10 +73,19 @@ class VideoUploadJooqRepository(
             .fetchOne()
             ?.toVideoUpload()
 
+    override fun findByVideoIdAndChannelId(videoId: Long, channelId: Long): VideoUpload? =
+        dsl.select()
+            .from(VIDEO_UPLOADS)
+            .where(VIDEO_ID.eq(videoId))
+            .and(CHANNEL_ID.eq(channelId))
+            .fetchOne()
+            ?.toVideoUpload()
+
     override fun findByPlatformAndUserId(platform: Platform, userId: Long): List<VideoUpload> =
         dsl.select(
             DSL.field("video_uploads.id", Long::class.java).`as`("id"),
             DSL.field("video_uploads.video_id", Long::class.java).`as`("video_id"),
+            DSL.field("video_uploads.channel_id", Long::class.java).`as`("channel_id"),
             DSL.field("video_uploads.platform", String::class.java).`as`("platform"),
             DSL.field("video_uploads.platform_video_id", String::class.java).`as`("platform_video_id"),
             DSL.field("video_uploads.status", String::class.java).`as`("status"),
@@ -106,6 +116,7 @@ class VideoUploadJooqRepository(
     override fun save(upload: VideoUpload): VideoUpload {
         val id = dsl.insertInto(VIDEO_UPLOADS)
             .set(VIDEO_ID, upload.videoId)
+            .set(CHANNEL_ID, upload.channelId)
             .set(PLATFORM, upload.platform.name)
             .set(PLATFORM_VIDEO_ID, upload.platformVideoId)
             .set(STATUS, upload.status.name)
@@ -129,6 +140,7 @@ class VideoUploadJooqRepository(
     override fun update(upload: VideoUpload): VideoUpload {
         dsl.update(VIDEO_UPLOADS)
             .set(PLATFORM_VIDEO_ID, upload.platformVideoId)
+            .set(CHANNEL_ID, upload.channelId)
             .set(STATUS, upload.status.name)
             .set(ERROR_MESSAGE, upload.errorMessage?.take(MAX_ERROR_LENGTH))
             .set(PLATFORM_URL, upload.platformUrl)
@@ -159,6 +171,7 @@ class VideoUploadJooqRepository(
     override fun updateOwned(upload: VideoUpload, owner: String): Boolean {
         val changed = dsl.update(VIDEO_UPLOADS)
             .set(PLATFORM_VIDEO_ID, upload.platformVideoId)
+            .set(CHANNEL_ID, upload.channelId)
             .set(STATUS, upload.status.name)
             .set(ERROR_MESSAGE, upload.errorMessage?.take(MAX_ERROR_LENGTH))
             .set(PLATFORM_URL, upload.platformUrl)
@@ -180,6 +193,7 @@ class VideoUploadJooqRepository(
         dsl.select(
             DSL.field("video_uploads.id", Long::class.java).`as`("id"),
             DSL.field("video_uploads.video_id", Long::class.java).`as`("video_id"),
+            DSL.field("video_uploads.channel_id", Long::class.java).`as`("channel_id"),
             DSL.field("video_uploads.platform", String::class.java).`as`("platform"),
             DSL.field("video_uploads.platform_video_id", String::class.java).`as`("platform_video_id"),
             DSL.field("video_uploads.status", String::class.java).`as`("status"),
@@ -335,6 +349,7 @@ class VideoUploadJooqRepository(
             id = get(ID),
             videoId = get(VIDEO_ID),
             platform = try { Platform.valueOf(platformStr) } catch (_: Exception) { Platform.YOUTUBE },
+            channelId = get(CHANNEL_ID),
             platformVideoId = get(PLATFORM_VIDEO_ID),
             status = try { UploadStatus.valueOf(statusStr) } catch (_: Exception) { UploadStatus.DRAFT },
             errorMessage = get(ERROR_MESSAGE),

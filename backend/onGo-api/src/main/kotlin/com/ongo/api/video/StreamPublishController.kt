@@ -74,6 +74,7 @@ class StreamPublishController(
 
     private fun PlatformPublishConfigRequest.toDomain() = PlatformPublishRequest(
         platform = platform,
+        channelId = channelId,
         title = title,
         description = description,
         tags = tags,

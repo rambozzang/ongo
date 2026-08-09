@@ -94,6 +94,53 @@ class PlatformUploadServiceImplTest {
     }
 
     @Test
+    fun `게시 요청의 channelId가 있으면 플랫폼 기본 채널 대신 지정 계정을 사용한다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channels = mockk<ChannelRepository>()
+        val encryption = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+        val requestSlot = slot<com.ongo.infrastructure.external.platform.PlatformUploadRequest>()
+        val selected = Channel(
+            id = 77L,
+            userId = 7L,
+            platform = Platform.INSTAGRAM,
+            platformChannelId = "second-instagram-account",
+            channelName = "second",
+            accessToken = EncryptedToken("selected-token"),
+            status = ChannelStatus.ACTIVE,
+        )
+
+        every { channels.findById(77L) } returns selected
+        every { factory.getClient(Platform.INSTAGRAM) } returns client
+        every { encryption.decrypt(EncryptedToken("selected-token")) } returns PlainToken("selected-plain-token")
+        every { client.uploadVideo(capture(requestSlot)) } returns ClientUploadResult(
+            platformVideoId = "media-77",
+            platformUrl = "https://instagram.com/reel/media-77",
+            status = "PUBLISHED",
+        )
+
+        val result = PlatformUploadServiceImpl(factory, channels, encryption, emptyList()).upload(
+            config = PlatformUploadConfig(
+                platform = Platform.INSTAGRAM,
+                videoUploadId = 10L,
+                channelId = 77L,
+                title = "제목",
+                description = "설명",
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC,
+                thumbnailUrl = null,
+                scheduledAt = null,
+            ),
+            fileUrl = "https://storage.example/video.mp4",
+            userId = 7L,
+        )
+
+        assertThat(requestSlot.captured.platformChannelId).isEqualTo("second-instagram-account")
+        assertThat(requestSlot.captured.accessToken).isEqualTo("selected-plain-token")
+        assertThat(result.published).isTrue()
+    }
+
+    @Test
     fun `TikTok 비동기 완료 상태는 공개 영상 ID와 사용 가능한 URL로 정규화한다`() {
         val factory = mockk<PlatformClientFactory>()
         val channelRepository = mockk<ChannelRepository>()

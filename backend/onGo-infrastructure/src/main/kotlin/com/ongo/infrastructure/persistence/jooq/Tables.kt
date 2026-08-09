@@ -276,6 +276,7 @@ object Fields {
 
     // video_uploads
     val VIDEO_ID = DSL.field("video_id", Long::class.java)
+    val CHANNEL_ID = DSL.field("channel_id", Long::class.java)
     val PLATFORM_VIDEO_ID = DSL.field("platform_video_id", String::class.java)
     val ERROR_MESSAGE = DSL.field("error_message", String::class.java)
     val PLATFORM_URL = DSL.field("platform_url", String::class.java)

@@ -22,6 +22,7 @@ export interface PresignedUploadItem {
   }
   platformConfigs?: Array<{
     platform: string
+    channelId?: number
     title: string
     description: string
     tags: string[]

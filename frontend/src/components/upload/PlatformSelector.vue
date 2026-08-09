@@ -510,6 +510,7 @@ function emitUpdate() {
     const meta = platformMeta[p]
     return {
       platform: p,
+      channelId: getChannel(p)?.id,
       title: meta?.title || '',
       description: meta?.description || '',
       tags: meta?.tags || [],

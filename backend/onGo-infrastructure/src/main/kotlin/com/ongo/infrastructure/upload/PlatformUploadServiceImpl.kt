@@ -59,7 +59,7 @@ class PlatformUploadServiceImpl(
     }
 
     override fun upload(config: PlatformUploadConfig, fileUrl: String, userId: Long): PlatformUploadResult {
-        var channel = channelRepository.findByUserIdAndPlatform(userId, config.platform)
+        var channel = resolveChannel(config.channelId, userId, config.platform)
             ?: throw NotFoundException("채널", "${config.platform} (userId=$userId)")
         // Channel.accessToken은 저장 시 AES-GCM으로 암호화된다. 외부 플랫폼 경계에서만
         // 평문으로 만들고, DB/애플리케이션 객체에는 복호화된 값을 다시 저장하지 않는다.
@@ -236,6 +236,12 @@ class PlatformUploadServiceImpl(
         Platform.DAILYMOTION -> "https://www.dailymotion.com/video/$videoId"
         Platform.WORDPRESS, Platform.TUMBLR -> null
     }
+
+    private fun resolveChannel(channelId: Long?, userId: Long, platform: Platform) =
+        channelId
+            ?.let(channelRepository::findById)
+            ?.takeIf { it.userId == userId && it.platform == platform }
+            ?: channelRepository.findByUserIdAndPlatform(userId, platform)
 
     private fun uploadFromCloudUrl(
         factory: PlatformStreamWriterFactory,

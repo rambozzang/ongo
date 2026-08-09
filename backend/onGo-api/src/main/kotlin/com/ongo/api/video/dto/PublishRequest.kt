@@ -15,6 +15,7 @@ data class PublishRequest(
 
 data class PlatformPublishConfig(
     val platform: Platform,
+    val channelId: Long? = null,
     @field:Size(max = 100, message = "제목은 최대 100자까지 입력할 수 있습니다")
     val title: String? = null,
     @field:Size(max = 5000, message = "설명은 최대 5,000자까지 입력할 수 있습니다")

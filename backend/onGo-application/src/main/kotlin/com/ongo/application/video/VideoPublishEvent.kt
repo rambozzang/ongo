@@ -14,6 +14,8 @@ data class VideoPublishEvent(
 data class PlatformUploadConfig(
     val platform: Platform,
     val videoUploadId: Long,
+    /** 실제 게시 대상 채널. null은 기존 단일 플랫폼 계정 데이터의 하위 호환이다. */
+    val channelId: Long? = null,
     val title: String,
     val description: String?,
     val tags: List<String>,

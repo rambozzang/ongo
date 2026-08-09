@@ -120,6 +120,7 @@ class VideoQueryUseCase(
             PlatformUploadDetailResult(
                 id = uploadId,
                 platform = upload.platform,
+                channelId = upload.channelId,
                 status = upload.status,
                 platformVideoId = upload.platformVideoId,
                 platformUrl = upload.platformUrl,
@@ -481,6 +482,7 @@ data class ContentImageResult(
 data class PlatformUploadDetailResult(
     val id: Long,
     val platform: Platform,
+    val channelId: Long?,
     val status: UploadStatus,
     val platformVideoId: String?,
     val platformUrl: String?,

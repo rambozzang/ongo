@@ -73,6 +73,7 @@ class ScheduledVideoUploadDispatcher(
                             PlatformUploadConfig(
                                 platform = upload.platform,
                                 videoUploadId = uploadId,
+                                channelId = upload.channelId,
                                 title = meta?.title ?: video.title,
                                 description = meta?.description,
                                 tags = meta?.tags ?: emptyList(),

@@ -1160,6 +1160,7 @@ async function submit() {
       const draft = draftFor(ch.platform)
       return {
         platform: ch.platform,
+        channelId: ch.id,
         title: draft.title,
         description: draft.description,
         tags: parseHashtags(draft.hashtags),

@@ -158,6 +158,7 @@ export const useUploadStore = defineStore('upload', () => {
       thumbnailUrl: publishMetadata.thumbnailUrl || null,
       platforms: platformConfigs.map(pc => ({
         platform: pc.platform,
+        channelId: pc.channelId,
         title: pc.title,
         description: pc.description,
         tags: pc.tags,

@@ -48,6 +48,7 @@ export interface VideoUpload {
   id: number
   videoId: number
   platform: Platform
+  channelId?: number | null
   status: UploadStatus
   platformVideoId: string | null
   platformUrl: string | null
@@ -107,6 +108,7 @@ export interface VideoDownloadAvailability {
 
 export interface PlatformPublishConfig {
   platform: Platform
+  channelId?: number
   title: string
   description: string
   tags: string[]

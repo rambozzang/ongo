@@ -118,6 +118,7 @@ class VideoController(
             PlatformUploadConfig(
                 platform = config.platform,
                 videoUploadId = 0, // will be assigned in use case
+                channelId = config.channelId,
                 title = config.title ?: "",
                 description = config.description,
                 tags = config.tags ?: emptyList(),
@@ -473,6 +474,7 @@ private fun com.ongo.application.video.VideoDetailResult.toResponse() = VideoDet
         PlatformUploadDetail(
             id = upload.id,
             platform = upload.platform,
+            channelId = upload.channelId,
             status = upload.status,
             platformVideoId = upload.platformVideoId,
             platformUrl = upload.platformUrl,

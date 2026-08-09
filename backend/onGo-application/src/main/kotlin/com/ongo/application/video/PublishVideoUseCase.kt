@@ -81,7 +81,10 @@ class PublishVideoUseCase(
 
         // 게시 전 채널 토큰 검증
         configs.forEach { config ->
-            val channel = channelRepository.findByUserIdAndPlatform(userId, config.platform)
+            val channel = config.channelId
+                ?.let(channelRepository::findById)
+                ?.takeIf { it.userId == userId && it.platform == config.platform }
+                ?: channelRepository.findByUserIdAndPlatform(userId, config.platform)
                 ?: throw NotFoundException("채널", "${config.platform}")
 
             val tokenExpiresAt = channel.tokenExpiresAt
@@ -103,7 +106,8 @@ class PublishVideoUseCase(
 
         // 각 플랫폼별 VideoUpload + VideoPlatformMeta 생성
         val platformConfigs = configs.map { config ->
-            val existing = videoUploadRepository.findByVideoIdAndPlatform(videoId, config.platform)
+            val existing = config.channelId?.let { videoUploadRepository.findByVideoIdAndChannelId(videoId, it) }
+                ?: videoUploadRepository.findByVideoIdAndPlatform(videoId, config.platform)
             val upload = if (existing?.status == UploadStatus.CANCELLED || existing?.status == UploadStatus.DRAFT) {
                 // 저장된 초안/취소된 예약을 다시 게시할 때 unique(video_id,
                 // platform) 제약을 위반해 새 row를 만들지 않고 같은 durable
@@ -129,6 +133,7 @@ class PublishVideoUseCase(
                     VideoUpload(
                         videoId = videoId,
                         platform = config.platform,
+                        channelId = config.channelId,
                         status = UploadStatus.UPLOADING,
                         scheduledAt = config.scheduledAt,
                     )
@@ -147,7 +152,7 @@ class PublishVideoUseCase(
                 )
             )
 
-            config.copy(videoUploadId = uploadId)
+            config.copy(videoUploadId = uploadId, channelId = upload.channelId ?: config.channelId)
         }
 
         val scheduledConfigs = configs.filter { it.scheduledAt != null }

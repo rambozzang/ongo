@@ -35,6 +35,7 @@ data class ContentImageItem(
 data class PlatformUploadDetail(
     val id: Long,
     val platform: Platform,
+    val channelId: Long?,
     val status: UploadStatus,
     val platformVideoId: String?,
     val platformUrl: String?,
