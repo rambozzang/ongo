@@ -35,6 +35,31 @@ class TeamController(
         return ResData.success(result)
     }
 
+    @Operation(summary = "받은 팀 초대 목록 조회", description = "현재 로그인한 이메일로 받은 대기 중인 팀 초대를 조회합니다.")
+    @GetMapping("/invitations")
+    fun listIncomingInvitations(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<List<TeamInvitationResponse>>> =
+        ResData.success(teamUseCase.listIncomingInvitations(userId))
+
+    @Operation(summary = "팀 초대 수락", description = "초대를 수락하고 해당 워크스페이스에 멤버로 참여합니다.")
+    @PostMapping("/invitations/{id}/accept")
+    fun acceptInvitation(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<TeamMemberResponse>> =
+        ResData.success(teamUseCase.acceptInvitation(userId, id), "팀 초대를 수락했습니다")
+
+    @Operation(summary = "팀 초대 거절", description = "받은 팀 초대를 거절합니다.")
+    @PostMapping("/invitations/{id}/decline")
+    fun declineInvitation(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable id: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        teamUseCase.declineInvitation(userId, id)
+        return ResData.success(null, "팀 초대를 거절했습니다")
+    }
+
     @Operation(summary = "팀 멤버 초대", description = "이메일로 팀 멤버를 초대합니다.")
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "초대 성공"),

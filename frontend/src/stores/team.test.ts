@@ -6,6 +6,9 @@ import { teamApi } from '@/api/team'
 vi.mock('@/api/team', () => ({
   teamApi: {
     listMembers: vi.fn(),
+    listIncomingInvitations: vi.fn(),
+    acceptInvitation: vi.fn(),
+    declineInvitation: vi.fn(),
     inviteMember: vi.fn(),
     removeMember: vi.fn(),
     resendInvite: vi.fn(),
@@ -30,6 +33,7 @@ describe('team store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    vi.mocked(teamApi.listIncomingInvitations).mockResolvedValue([] as never)
   })
 
   it('분리된 서버 응답을 멤버와 초대 목록으로 나눈다', async () => {
@@ -65,5 +69,26 @@ describe('team store', () => {
     await store.cancelInvite(4)
     expect(teamApi.removeMember).toHaveBeenCalledWith(4)
     expect(store.invites).toHaveLength(0)
+  })
+
+  it('받은 초대를 수락하거나 거절할 때 서버 성공 뒤에만 제거한다', async () => {
+    vi.mocked(teamApi.listIncomingInvitations).mockResolvedValue([{
+      id: 8,
+      workspaceId: 22,
+      workspaceName: '브랜드 작업공간',
+      ownerId: 1,
+      role: 'EDITOR',
+      status: 'INVITED',
+      invitedAt: '2026-08-09T00:00:00Z',
+      expiresAt: '2026-08-16T00:00:00Z',
+    }] as never)
+    vi.mocked(teamApi.acceptInvitation).mockResolvedValue(entry({ id: 8, status: 'JOINED' }) as never)
+
+    const store = useTeamStore()
+    await store.fetchMembers()
+    await store.acceptInvitation(8)
+
+    expect(teamApi.acceptInvitation).toHaveBeenCalledWith(8)
+    expect(store.incomingInvites).toHaveLength(0)
   })
 })

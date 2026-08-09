@@ -26,6 +26,31 @@ class TeamUseCase(
     fun listMembers(userId: Long): List<TeamMemberResponse> =
         teamMemberRepository.findByUserId(userId).map { it.toResponse() }
 
+    fun listIncomingInvitations(userId: Long): List<TeamInvitationResponse> {
+        val email = userRepository.findById(userId)?.email
+            ?: throw NotFoundException("사용자", userId)
+        return teamMemberRepository.findInvitationsForMember(email)
+            .map { it.toInvitationResponse() }
+    }
+
+    @Transactional
+    fun acceptInvitation(userId: Long, invitationId: Long): TeamMemberResponse {
+        val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+        val member = invitationFor(user.email, invitationId)
+        ensureInvitationActive(member)
+        return teamMemberRepository.update(
+            member.copy(status = "JOINED", joinedAt = LocalDateTime.now()),
+        ).toResponse()
+    }
+
+    @Transactional
+    fun declineInvitation(userId: Long, invitationId: Long) {
+        val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+        val member = invitationFor(user.email, invitationId)
+        ensureInvitationActive(member)
+        teamMemberRepository.delete(invitationId)
+    }
+
     @Transactional
     fun inviteMember(userId: Long, request: InviteMemberRequest): TeamMemberResponse {
         val email = request.email.trim().lowercase()
@@ -62,6 +87,25 @@ class TeamUseCase(
                 slug = "ws-$userId",
             )
         )
+    }
+
+    private fun invitationFor(email: String, invitationId: Long): TeamMember {
+        val invitation = teamMemberRepository.findById(invitationId)
+            ?: throw NotFoundException("팀 초대", invitationId)
+        if (invitation.memberEmail.trim().lowercase() != email.trim().lowercase()) {
+            throw ForbiddenException("해당 초대에 대한 권한이 없습니다")
+        }
+        if (invitation.status != "INVITED") {
+            throw com.ongo.common.exception.BusinessException("INVITATION_NOT_PENDING", "대기 중인 초대가 아닙니다")
+        }
+        return invitation
+    }
+
+    private fun ensureInvitationActive(invitation: TeamMember) {
+        val expiresAt = invitation.invitedAt?.plusDays(INVITE_VALID_DAYS)
+        if (expiresAt != null && expiresAt.isBefore(LocalDateTime.now())) {
+            throw com.ongo.common.exception.BusinessException("INVITATION_EXPIRED", "만료된 초대입니다. 팀 소유자에게 재발송을 요청해주세요")
+        }
     }
 
     @Transactional
@@ -218,6 +262,22 @@ class TeamUseCase(
             invitedAt = invitedAt,
             joinedAt = joinedAt,
             createdAt = createdAt,
+            expiresAt = expiresAt,
+        )
+    }
+
+    private fun TeamMember.toInvitationResponse(): TeamInvitationResponse {
+        val expiresAt = invitedAt?.plusDays(INVITE_VALID_DAYS)
+        val status = if (expiresAt != null && expiresAt.isBefore(LocalDateTime.now())) "EXPIRED" else status
+        val workspace = workspaceId?.let { workspaceRepository.findById(it) }
+        return TeamInvitationResponse(
+            id = id!!,
+            workspaceId = workspaceId,
+            workspaceName = workspace?.name,
+            ownerId = userId,
+            role = role,
+            status = status,
+            invitedAt = invitedAt,
             expiresAt = expiresAt,
         )
     }

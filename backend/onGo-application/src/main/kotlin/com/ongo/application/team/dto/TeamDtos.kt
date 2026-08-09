@@ -14,6 +14,17 @@ data class TeamMemberResponse(
     val expiresAt: LocalDateTime?,
 )
 
+data class TeamInvitationResponse(
+    val id: Long,
+    val workspaceId: Long?,
+    val workspaceName: String?,
+    val ownerId: Long,
+    val role: String,
+    val status: String,
+    val invitedAt: LocalDateTime?,
+    val expiresAt: LocalDateTime?,
+)
+
 data class InviteMemberRequest(
     val email: String,
     val role: String = "VIEWER",

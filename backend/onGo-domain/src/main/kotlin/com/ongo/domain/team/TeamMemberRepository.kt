@@ -12,4 +12,5 @@ interface TeamMemberRepository {
     fun countByUserId(userId: Long): Int
     fun countByWorkspaceId(workspaceId: Long): Int
     fun findTeamsForMember(memberEmail: String): List<TeamMember>
+    fun findInvitationsForMember(memberEmail: String): List<TeamMember>
 }

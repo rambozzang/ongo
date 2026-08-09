@@ -5,6 +5,8 @@ import com.ongo.domain.team.TeamMemberRepository
 import com.ongo.domain.workspace.Workspace
 import com.ongo.domain.workspace.WorkspaceRepository
 import com.ongo.domain.user.UserRepository
+import com.ongo.domain.user.User
+import com.ongo.common.enums.AuthProvider
 import com.ongo.application.team.dto.InviteMemberRequest
 import io.mockk.every
 import io.mockk.mockk
@@ -72,5 +74,39 @@ class TeamUseCaseTest {
         assertEquals("new@example.com", result.memberEmail)
         assertEquals("EDITOR", result.role)
         verify { repository.save(match { it.workspaceId == 22L && it.memberEmail == "new@example.com" }) }
+    }
+
+    @Test
+    fun `초대받은 사용자는 자신의 이메일로만 초대를 수락하고 joined 멤버가 된다`() {
+        val user = User(id = 9L, email = "invitee@example.com", name = "Invitee", provider = AuthProvider.GOOGLE, providerId = "google-9")
+        val invitation = TeamMember(
+            id = 12L,
+            userId = 1L,
+            memberEmail = "invitee@example.com",
+            role = "EDITOR",
+            status = "INVITED",
+            invitedAt = LocalDateTime.now().minusHours(1),
+            workspaceId = 22L,
+        )
+        every { users.findById(9L) } returns user
+        every { repository.findById(12L) } returns invitation
+        every { repository.update(any()) } answers { firstArg<TeamMember>() }
+
+        val result = useCase.acceptInvitation(9L, 12L)
+
+        assertEquals("JOINED", result.status)
+        verify { repository.update(match { it.id == 12L && it.status == "JOINED" && it.joinedAt != null }) }
+    }
+
+    @Test
+    fun `다른 이메일로는 초대를 수락할 수 없다`() {
+        val user = User(id = 9L, email = "other@example.com", name = "Other", provider = AuthProvider.GOOGLE, providerId = "google-9")
+        every { users.findById(9L) } returns user
+        every { repository.findById(12L) } returns TeamMember(id = 12L, userId = 1L, memberEmail = "invitee@example.com")
+
+        assertFailsWith<com.ongo.common.exception.ForbiddenException> {
+            useCase.acceptInvitation(9L, 12L)
+        }
+        verify(exactly = 0) { repository.update(any()) }
     }
 }

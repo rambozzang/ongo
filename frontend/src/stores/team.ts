@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
-import type { TeamMember, TeamInvite, TeamActivity, TeamRole } from '@/types/team'
+import type { TeamMember, TeamInvite, TeamIncomingInvite, TeamActivity, TeamRole } from '@/types/team'
 import { teamApi } from '@/api/team'
-import type { TeamMemberResponse } from '@/api/team'
+import type { TeamInvitationResponse, TeamMemberResponse } from '@/api/team'
 
 interface TeamState {
   teamName: string
   members: TeamMember[]
   invites: TeamInvite[]
+  incomingInvites: TeamIncomingInvite[]
   activities: TeamActivity[]
   loading: boolean
   error: string | null
@@ -38,10 +39,26 @@ function mapApiInvite(m: TeamMemberResponse): TeamInvite {
   }
 }
 
+function mapIncomingInvite(m: TeamInvitationResponse): TeamIncomingInvite {
+  const invitedAt = m.invitedAt ?? new Date().toISOString()
+  const normalizedStatus = m.status.toLowerCase()
+  return {
+    id: m.id,
+    workspaceId: m.workspaceId,
+    workspaceName: m.workspaceName,
+    ownerId: m.ownerId,
+    role: (m.role?.toLowerCase() ?? 'viewer') as TeamRole,
+    status: normalizedStatus === 'expired' ? 'expired' : 'pending',
+    invitedAt,
+    expiresAt: m.expiresAt ?? new Date(new Date(invitedAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  }
+}
+
 const emptyState = (): TeamState => ({
   teamName: '내 팀',
   members: [],
   invites: [],
+  incomingInvites: [],
   activities: [],
   loading: false,
   error: null,
@@ -71,18 +88,32 @@ export const useTeamStore = defineStore('team', {
       this.loading = true
       this.error = null
       try {
-        const entries = await teamApi.listMembers()
+        const [entries, incoming] = await Promise.all([
+          teamApi.listMembers(),
+          teamApi.listIncomingInvitations(),
+        ])
         this.members = entries
           .filter((entry) => ['JOINED', 'ACCEPTED'].includes(entry.status.toUpperCase()))
           .map(mapApiMember)
         this.invites = entries
           .filter((entry) => !['JOINED', 'ACCEPTED'].includes(entry.status.toUpperCase()))
           .map(mapApiInvite)
+        this.incomingInvites = incoming.map(mapIncomingInvite)
       } catch (error) {
         this.error = error instanceof Error ? error.message : '팀 정보를 불러오지 못했습니다'
       } finally {
         this.loading = false
       }
+    },
+
+    async acceptInvitation(invitationId: number) {
+      await teamApi.acceptInvitation(invitationId)
+      this.incomingInvites = this.incomingInvites.filter((invite) => invite.id !== invitationId)
+    },
+
+    async declineInvitation(invitationId: number) {
+      await teamApi.declineInvitation(invitationId)
+      this.incomingInvites = this.incomingInvites.filter((invite) => invite.id !== invitationId)
     },
 
     async inviteMember(email: string, role: TeamRole) {

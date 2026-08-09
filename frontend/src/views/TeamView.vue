@@ -17,6 +17,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { useTeamStore } from '@/stores/team'
 import { useApprovalStore } from '@/stores/approval'
+import { useWorkspaceStore } from '@/stores/workspace'
 import { useNotification } from '@/composables/useNotification'
 import { useListControls, type ListSortOption } from '@/composables/useListControls'
 import OTabs from '@/components/ui/OTabs.vue'
@@ -40,6 +41,7 @@ const { t } = useI18n({ useScope: 'global' })
 const authStore = useAuthStore()
 const teamStore = useTeamStore()
 const approvalStore = useApprovalStore()
+const workspaceStore = useWorkspaceStore()
 const notification = useNotification()
 
 /** 체크박스 공통 스타일 — 목록 확산 시 그대로 복사해 쓴다. */
@@ -330,6 +332,25 @@ const handleResendInvite = async (inviteId: number) => {
   }
 }
 
+const handleAcceptIncoming = async (inviteId: number) => {
+  try {
+    await teamStore.acceptInvitation(inviteId)
+    await workspaceStore.fetchWorkspaces(true)
+    notification.success(t('team.acceptIncomingDone'))
+  } catch {
+    notification.error(t('team.acceptIncomingFailed'))
+  }
+}
+
+const handleDeclineIncoming = async (inviteId: number) => {
+  try {
+    await teamStore.declineInvitation(inviteId)
+    notification.success(t('team.declineIncomingDone'))
+  } catch {
+    notification.error(t('team.declineIncomingFailed'))
+  }
+}
+
 const relativeTime = (dateString: string): string => {
   const diff = Date.now() - new Date(dateString).getTime()
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
@@ -391,6 +412,48 @@ onMounted(() => {
         {{ $t('action.retry') }}
       </button>
     </div>
+
+    <section
+      v-if="teamStore.incomingInvites.length > 0"
+      class="rounded-[11px] border border-primary-200 bg-primary-50 p-4 dark:border-primary-900 dark:bg-primary-950/30"
+      aria-labelledby="incoming-team-invites-title"
+    >
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h2 id="incoming-team-invites-title" class="text-body-lg font-semibold text-content">
+            {{ $t('team.incomingInvitations') }}
+          </h2>
+          <p class="mt-1 text-body text-content-muted">{{ $t('team.incomingInvitationsDescription') }}</p>
+        </div>
+        <EnvelopeIcon class="h-6 w-6 text-primary-600" aria-hidden="true" />
+      </div>
+      <div class="mt-3 space-y-2">
+        <div
+          v-for="invite in teamStore.incomingInvites"
+          :key="invite.id"
+          class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface-card px-3 py-2"
+        >
+          <div class="min-w-0">
+            <p class="truncate text-body font-medium text-content">
+              {{ invite.workspaceName || $t('team.workspaceFallback') }}
+            </p>
+            <p class="text-body-xs text-content-muted">
+              <RoleBadge :role="invite.role" />
+              <span class="ml-2">{{ expiresIn(invite.expiresAt) }}</span>
+            </p>
+          </div>
+          <div v-if="invite.status === 'pending'" class="flex items-center gap-2">
+            <button type="button" class="btn-primary" @click="handleAcceptIncoming(invite.id)">
+              {{ $t('team.acceptIncoming') }}
+            </button>
+            <button type="button" class="btn-secondary" @click="handleDeclineIncoming(invite.id)">
+              {{ $t('team.declineIncoming') }}
+            </button>
+          </div>
+          <span v-else class="text-body-xs text-error-strong">{{ $t('team.inviteStatus.expired') }}</span>
+        </div>
+      </div>
+    </section>
 
     <!-- Stats -->
     <div class="grid gap-2.5 tablet:grid-cols-2 desktop:grid-cols-4">

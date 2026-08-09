@@ -21,6 +21,17 @@ export interface TeamInvite {
   expiresAt: string
 }
 
+export interface TeamIncomingInvite {
+  id: number
+  workspaceId: number | null
+  workspaceName: string | null
+  ownerId: number
+  role: TeamRole
+  status: InviteStatus
+  invitedAt: string
+  expiresAt: string
+}
+
 export interface TeamActivity {
   id: number
   memberId: number

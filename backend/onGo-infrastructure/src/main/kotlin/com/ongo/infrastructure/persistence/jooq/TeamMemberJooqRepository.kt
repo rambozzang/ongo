@@ -120,9 +120,18 @@ class TeamMemberJooqRepository(
     override fun findTeamsForMember(memberEmail: String): List<TeamMember> =
         dsl.select()
             .from(TEAM_MEMBERS)
-            .where(MEMBER_EMAIL.eq(memberEmail))
+            .where(DSL.lower(MEMBER_EMAIL).eq(memberEmail.lowercase()))
             .and(STATUS.eq("JOINED"))
             .orderBy(CREATED_AT.desc())
+            .fetch()
+            .map { it.toTeamMember() }
+
+    override fun findInvitationsForMember(memberEmail: String): List<TeamMember> =
+        dsl.select()
+            .from(TEAM_MEMBERS)
+            .where(DSL.lower(MEMBER_EMAIL).eq(memberEmail.lowercase()))
+            .and(STATUS.eq("INVITED"))
+            .orderBy(INVITED_AT.desc(), CREATED_AT.desc())
             .fetch()
             .map { it.toTeamMember() }
 

@@ -14,6 +14,17 @@ export interface TeamMemberResponse {
   expiresAt: string | null
 }
 
+export interface TeamInvitationResponse {
+  id: number
+  workspaceId: number | null
+  workspaceName: string | null
+  ownerId: number
+  role: string
+  status: string
+  invitedAt: string | null
+  expiresAt: string | null
+}
+
 export interface InviteMemberRequest {
   email: string
   role: string
@@ -47,6 +58,18 @@ export interface PermissionCatalogResponse {
 export const teamApi = {
   listMembers() {
     return apiClient.get<ResData<TeamMemberResponse[]>>('/team/members').then(unwrapResponse)
+  },
+
+  listIncomingInvitations() {
+    return apiClient.get<ResData<TeamInvitationResponse[]>>('/team/invitations').then(unwrapResponse)
+  },
+
+  acceptInvitation(id: number) {
+    return apiClient.post<ResData<TeamMemberResponse>>(`/team/invitations/${id}/accept`).then(unwrapResponse)
+  },
+
+  declineInvitation(id: number) {
+    return apiClient.post<ResData<void>>(`/team/invitations/${id}/decline`).then(unwrapResponse)
   },
 
   inviteMember(request: InviteMemberRequest) {
