@@ -4206,6 +4206,7 @@
     "retryUpload": "Republish on this platform",
     "recheckUpload": "Recheck publish result",
     "recoveringUpload": "Working…",
+    "recoveryFailed": "We could not verify the publish status. Please try again shortly.",
     "preview": "Preview",
     "dailyViewsTrend": "Daily views trend",
     "notEnoughData": "Not enough data yet",

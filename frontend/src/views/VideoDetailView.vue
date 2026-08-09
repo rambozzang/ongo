@@ -580,6 +580,7 @@ import VideoPreviewModal from '@/components/video/VideoPreviewModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { useLocale } from '@/composables/useLocale'
 import { useVideoStore } from '@/stores/video'
+import { useNotificationStore } from '@/stores/notification'
 import { analyticsApi } from '@/api/analytics'
 import { videoApi } from '@/api/video'
 import type { VideoAnalytics } from '@/types/analytics'
@@ -599,6 +600,7 @@ const router = useRouter()
 const { t } = useI18n()
 const { currentLocale } = useLocale()
 const videoStore = useVideoStore()
+const notificationStore = useNotificationStore()
 const { currentVideo: video, isLoadingDetail: loading } = storeToRefs(videoStore)
 
 // ---- Reactive State ----
@@ -735,8 +737,10 @@ async function handleUploadRecovery(upload: VideoUpload) {
       await videoApi.retryUpload(video.value.id, upload.id)
     }
     await videoStore.fetchVideo(video.value.id)
-  } catch {
-    // API client의 서버 오류가 전역 알림으로 표시된다.
+  } catch (error) {
+    notificationStore.error(
+      error instanceof Error ? error.message : t('videoDetail.recoveryFailed'),
+    )
   } finally {
     retryingUploadId.value = null
   }

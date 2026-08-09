@@ -4196,6 +4196,7 @@
     "retryUpload": "이 플랫폼 재게시",
     "recheckUpload": "게시 결과 재확인",
     "recoveringUpload": "처리 중…",
+    "recoveryFailed": "게시 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "preview": "미리보기",
     "dailyViewsTrend": "일별 조회수 추이",
     "notEnoughData": "데이터가 충분하지 않습니다",
