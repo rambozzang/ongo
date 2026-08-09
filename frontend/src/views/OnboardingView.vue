@@ -452,6 +452,7 @@ const platforms = computed<{ key: Platform; label: string; description: string; 
   { key: 'PINTEREST', label: 'Pinterest', description: t('onboarding.channels.descriptions.pinterest'), bgColor: '#E60023' },
   { key: 'LINKEDIN', label: 'LinkedIn', description: t('onboarding.channels.descriptions.linkedin'), bgColor: '#0A66C2' },
   { key: 'WORDPRESS', label: 'WordPress.com', description: t('onboarding.channels.descriptions.wordpress'), bgColor: '#21759B' },
+  { key: 'DAILYMOTION', label: 'Dailymotion', description: t('onboarding.channels.descriptions.dailymotion'), bgColor: '#00D2F3' },
 ])
 
 function startOnboarding() {

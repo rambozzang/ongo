@@ -465,7 +465,7 @@ import { fallbackOptimalSlot, kstWallClockToInstant, nextOptimalDateTime } from 
 const { t } = useLocale()
 const route = useRoute()
 
-type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP'
+type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP' | 'DM'
 const CHIP: Partial<Record<Platform, ChipCode>> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
@@ -477,6 +477,7 @@ const CHIP: Partial<Record<Platform, ChipCode>> = {
   PINTEREST: 'PI',
   LINKEDIN: 'LI',
   WORDPRESS: 'WP',
+  DAILYMOTION: 'DM',
 }
 
 const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
@@ -490,6 +491,7 @@ const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
   PI: { bg: '#E60023', fg: '#ffffff' },
   LI: { bg: '#0A66C2', fg: '#ffffff' },
   WP: { bg: '#21759B', fg: '#ffffff' },
+  DM: { bg: '#00D2F3', fg: '#06141a' },
 }
 
 /** 플랫폼별 제목 상한. 핸드오프 검증 규칙. */
@@ -533,7 +535,7 @@ const capabilities = ref<PlatformUploadCapability[]>([])
 const optimalSlots = ref<Partial<Record<Platform, OptimalTimeSlot[]>>>({})
 const optimalTimesError = ref('')
 const disabled = reactive<Record<number, boolean>>({})
-const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP'>('common')
+const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP' | 'DM'>('common')
 const schedMode = ref<'now' | 'best' | 'fix'>('best')
 const fixedAt = ref('')
 const recurringEnabled = ref(false)
@@ -571,6 +573,7 @@ const tabs = [
   { key: 'PI' as const, label: 'Pinterest' },
   { key: 'LI' as const, label: 'LinkedIn' },
   { key: 'WP' as const, label: 'WordPress.com' },
+  { key: 'DM' as const, label: 'Dailymotion' },
 ]
 
 const scheduleOptions = computed(() => [
@@ -634,6 +637,7 @@ function platformForTab(tab: typeof activeTab.value): Platform | null {
         PI: 'PINTEREST',
         LI: 'LINKEDIN',
         WP: 'WORDPRESS',
+        DM: 'DAILYMOTION',
       } as Record<string, Platform>
     )[tab] ?? null
   )

@@ -14,6 +14,20 @@ data class DailymotionUploadResult(
     val url: String, // uploaded video URL to pass to publish
 )
 
+data class DailymotionCreateVideoRequest(
+    val title: String,
+    val description: String? = null,
+    val category: String = "creation",
+    val visibility: String = "private",
+    @JsonProperty("is_for_kids") val isForKids: Boolean = false,
+    val tags: List<String> = emptyList(),
+    val source: Source,
+) {
+    data class Source(
+        @JsonProperty("file_url") val fileUrl: String,
+    )
+}
+
 data class DailymotionPublishRequest(
     val url: String,
     val title: String,
@@ -26,7 +40,8 @@ data class DailymotionPublishRequest(
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class DailymotionVideoResponse(
-    val id: String,
+    val id: String? = null,
+    @JsonProperty("video_id") val videoId: String? = null,
     val title: String?,
     val url: String?,
     val status: String?, // published, processing, deleted, etc
@@ -39,7 +54,9 @@ data class DailymotionVideoResponse(
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class DailymotionUserResponse(
-    val id: String,
+    val id: String? = null,
+    @JsonProperty("user_id") val userId: String? = null,
+    @JsonProperty("display_name") val displayName: String? = null,
     val screenname: String?,
     val url: String?,
     @JsonProperty("avatar_720_url") val avatarUrl: String?,

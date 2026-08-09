@@ -1327,7 +1327,8 @@
         "threads": "스레드 영상 게시",
         "pinterest": "보드에 동영상 Pin 게시",
         "linkedin": "프로필에 동영상 게시",
-        "wordpress": "사이트에 동영상 글 게시"
+        "wordpress": "사이트에 동영상 글 게시",
+        "dailymotion": "프로필에 동영상 게시"
       },
       "connectFailed": "채널 연동을 시작하지 못했습니다. 다시 시도해주세요."
     },

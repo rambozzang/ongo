@@ -24,6 +24,7 @@ class PlatformUploadCapabilityTest {
                 Platform.PINTEREST,
                 Platform.LINKEDIN,
                 Platform.WORDPRESS,
+                Platform.DAILYMOTION,
             ),
             capabilities.keys,
         )

@@ -4,6 +4,8 @@ import com.ongo.infrastructure.external.dailymotion.dto.*
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.util.MultiValueMap
+import org.springframework.http.MediaType
 import org.springframework.web.service.annotation.DeleteExchange
 import org.springframework.web.service.annotation.GetExchange
 import org.springframework.web.service.annotation.HttpExchange
@@ -12,20 +14,16 @@ import org.springframework.web.service.annotation.PostExchange
 @HttpExchange
 interface DailymotionApi {
 
-    @GetExchange("/file/upload")
-    fun getUploadUrl(
+    @PostExchange("/v2/files/upload_sessions")
+    fun createUploadSession(
         @RequestHeader("Authorization") authorization: String,
     ): DailymotionUploadUrlResponse
 
-    @PostExchange("/me/videos")
-    fun publishVideo(
+    @PostExchange("/v2/profiles/{profileId}/videos")
+    fun createVideo(
+        @org.springframework.web.bind.annotation.PathVariable("profileId") profileId: String,
         @RequestHeader("Authorization") authorization: String,
-        @RequestParam("url") url: String,
-        @RequestParam("title") title: String,
-        @RequestParam("description") description: String,
-        @RequestParam("tags") tags: String,
-        @RequestParam("published") published: Boolean,
-        @RequestParam("is_created_for_kids") isCreatedForKids: Boolean,
+        @RequestBody request: DailymotionCreateVideoRequest,
     ): DailymotionVideoResponse
 
     @GetExchange("/video/{videoId}")
@@ -41,7 +39,7 @@ interface DailymotionApi {
         @RequestHeader("Authorization") authorization: String,
     )
 
-    @GetExchange("/me")
+    @GetExchange("/v2/me")
     fun getUser(
         @RequestParam("fields") fields: String,
         @RequestHeader("Authorization") authorization: String,
@@ -75,8 +73,8 @@ interface DailymotionApi {
 @HttpExchange
 interface DailymotionOAuthApi {
 
-    @PostExchange("/oauth/token")
+    @PostExchange(value = "/oauth/token", contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     fun exchangeToken(
-        @RequestBody body: Map<String, String>,
+        @RequestBody body: MultiValueMap<String, String>,
     ): DailymotionTokenResponse
 }

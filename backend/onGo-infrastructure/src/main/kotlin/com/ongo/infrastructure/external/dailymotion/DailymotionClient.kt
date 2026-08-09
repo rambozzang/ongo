@@ -3,6 +3,9 @@ package com.ongo.infrastructure.external.dailymotion
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.ongo.infrastructure.external.dailymotion.dto.DailymotionCreateVideoRequest
+import org.springframework.util.LinkedMultiValueMap
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
@@ -12,6 +15,8 @@ class DailymotionClient(
     private val dailymotionApi: DailymotionApi,
     private val dailymotionOAuthApi: DailymotionOAuthApi,
     private val dailymotionConfig: DailymotionConfig,
+    private val objectMapper: ObjectMapper,
+    private val fileTransferHelper: PlatformFileTransferHelper,
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(DailymotionClient::class.java)
@@ -21,34 +26,49 @@ class DailymotionClient(
     override fun uploadVideo(request: PlatformUploadRequest): PlatformUploadResult {
         log.info("Dailymotion 영상 업로드 시작: title={}", request.title)
 
+        val profileId = request.platformChannelId
+            ?: throw PlatformUploadException("Dailymotion", "프로필 ID가 필요합니다")
+        val sourceFile = downloadFileToTemp(request.fileUrl)
         try {
-            // Step 1: Get upload URL
-            val uploadUrlResponse = dailymotionApi.getUploadUrl(
+            // API v2: create a resumable upload session.
+            val uploadSession = dailymotionApi.createUploadSession(
                 authorization = "Bearer ${request.accessToken}",
             )
 
-            // Step 2: Publish video with the URL (using pull approach via url param)
-            val tags = request.tags.joinToString(",").take(150)
-            val response = dailymotionApi.publishVideo(
-                authorization = "Bearer ${request.accessToken}",
-                url = request.fileUrl,
-                title = request.title.take(255),
-                description = request.description.take(3000),
-                tags = tags,
-                published = request.visibility.uppercase() == "PUBLIC",
-                isCreatedForKids = false,
+            // The signed upload URL does not accept the platform Bearer token.
+            val uploadBody = fileTransferHelper.uploadMultipartFile(
+                uploadUrl = uploadSession.uploadUrl,
+                file = sourceFile,
             )
+            val uploadedUrl = objectMapper.readTree(uploadBody).path("url").asText(null)
+                ?: throw PlatformUploadException("Dailymotion", "업로드 서버 응답에 파일 URL이 없습니다")
 
-            log.info("Dailymotion 업로드 완료: videoId={}", response.id)
+            val response = dailymotionApi.createVideo(
+                profileId = profileId,
+                authorization = "Bearer ${request.accessToken}",
+                request = DailymotionCreateVideoRequest(
+                    title = request.title.trim().take(255),
+                    description = request.description.trim().take(3000).ifBlank { null },
+                    visibility = mapVisibility(request.visibility),
+                    tags = request.tags.map { it.removePrefix("#").trim() }.filter(String::isNotBlank).take(150),
+                    source = DailymotionCreateVideoRequest.Source(uploadedUrl),
+                ),
+            )
+            val videoId = response.videoId ?: response.id
+                ?: throw PlatformUploadException("Dailymotion", "영상 생성 응답에 ID가 없습니다")
+
+            log.info("Dailymotion 업로드 완료: videoId={}", videoId)
 
             return PlatformUploadResult(
-                platformVideoId = response.id,
-                platformUrl = response.url ?: "https://www.dailymotion.com/video/${response.id}",
+                platformVideoId = videoId,
+                platformUrl = response.url ?: "https://www.dailymotion.com/video/$videoId",
                 status = response.status ?: "processing",
             )
         } catch (e: Exception) {
             log.error("Dailymotion 업로드 실패: {}", e.message, e)
             throw PlatformUploadException("Dailymotion", e.message ?: "알 수 없는 오류", e)
+        } finally {
+            sourceFile.delete()
         }
     }
 
@@ -108,14 +128,16 @@ class DailymotionClient(
         log.debug("Dailymotion 사용자 정보 조회")
 
         val response = dailymotionApi.getUser(
-            fields = "id,screenname,url,avatar_720_url,followers_total",
+            fields = "user_id,display_name,username,id,screenname,url,avatar_720_url,followers_total",
             authorization = "Bearer $accessToken",
         )
+        val profileId = response.userId ?: response.id
+            ?: throw PlatformUploadException("Dailymotion", "프로필 ID를 가져올 수 없습니다")
 
         return PlatformChannelInfo(
-            channelId = response.id,
-            channelName = response.screenname ?: "",
-            channelUrl = response.url ?: "https://www.dailymotion.com/${response.id}",
+            channelId = profileId,
+            channelName = response.displayName ?: response.screenname ?: "",
+            channelUrl = response.url ?: "https://www.dailymotion.com/$profileId",
             subscriberCount = response.followersTotal ?: 0,
             profileImageUrl = response.avatarUrl,
         )
@@ -125,13 +147,13 @@ class DailymotionClient(
         log.debug("Dailymotion OAuth 인가 코드 교환")
 
         val response = dailymotionOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "authorization_code",
-                "client_id" to dailymotionConfig.getApiKey(),
-                "client_secret" to dailymotionConfig.getApiSecret(),
-                "code" to authorizationCode,
-                "redirect_uri" to redirectUri,
-            ),
+            LinkedMultiValueMap<String, String>().apply {
+                add("grant_type", "authorization_code")
+                add("client_id", dailymotionConfig.getApiKey())
+                add("client_secret", dailymotionConfig.getApiSecret())
+                add("code", authorizationCode)
+                add("redirect_uri", redirectUri)
+            },
         )
 
         return PlatformTokenResult(
@@ -145,12 +167,12 @@ class DailymotionClient(
         log.debug("Dailymotion OAuth 토큰 갱신")
 
         val response = dailymotionOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "refresh_token",
-                "client_id" to dailymotionConfig.getApiKey(),
-                "client_secret" to dailymotionConfig.getApiSecret(),
-                "refresh_token" to refreshToken,
-            ),
+            LinkedMultiValueMap<String, String>().apply {
+                add("grant_type", "refresh_token")
+                add("client_id", dailymotionConfig.getApiKey())
+                add("client_secret", dailymotionConfig.getApiSecret())
+                add("refresh_token", refreshToken)
+            },
         )
 
         return PlatformTokenResult(
@@ -174,6 +196,13 @@ class DailymotionClient(
             false
         }
     }
+
+    private fun mapVisibility(visibility: String): String =
+        when (visibility.uppercase()) {
+            "PUBLIC" -> "public"
+            "PASSWORD" -> "password"
+            else -> "private"
+        }
 
     // --- Comment API ---
 

@@ -164,6 +164,32 @@ class PlatformFileTransferHelper(
     }
 
     /**
+     * Dailymotion upload session: signed upload URL에 multipart 파일을 전송하고
+     * 업로드 서버가 반환한 JSON을 그대로 돌려준다.
+     *
+     * 세션 URL 자체가 인증 정보를 포함하므로 플랫폼 Bearer 토큰은 전달하지 않는다.
+     */
+    fun uploadMultipartFile(
+        uploadUrl: String,
+        file: File,
+    ): String {
+        val multipart = MultipartBodyBuilder().apply {
+            part("file", FileSystemResource(file))
+                .filename(file.name)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        }
+
+        log.info("multipart 파일 업로드: {} bytes → {}", file.length(), uploadUrl.substringBefore('?'))
+        return transferClient.post()
+            .uri(uploadUrl)
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .body(multipart.build())
+            .retrieve()
+            .body(String::class.java)
+            ?: throw IllegalStateException("multipart 업로드 응답이 비어 있습니다")
+    }
+
+    /**
      * Twitter Media Upload APPEND: 미디어 데이터를 청크 단위로 전송.
      * multipart/form-data 형태로 command, media_id, segment_index, media_data(binary) 전송.
      */

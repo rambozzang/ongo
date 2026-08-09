@@ -57,6 +57,10 @@ object PlatformUploadCapabilities {
             Platform.WORDPRESS, false, true, false, 2 * GB, 200, 5_000, 100, VIDEO_EXTENSIONS,
             "WordPress.com 사이트의 미디어 허용 형식과 저장 용량 정책을 따릅니다.",
         ),
+        Platform.DAILYMOTION to PlatformUploadCapability(
+            Platform.DAILYMOTION, false, true, false, 2 * GB, 255, 3_000, 150, setOf("mp4", "mov"),
+            "Dailymotion API v2 세션 업로드와 프로필 영상 생성을 사용합니다.",
+        ),
     )
 
     fun get(platform: Platform): PlatformUploadCapability? = capabilities[platform]

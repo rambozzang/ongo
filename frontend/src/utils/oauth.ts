@@ -136,6 +136,15 @@ export function buildOAuthUrl(platform: Platform, returnPath: string, codeChalle
         state,
       })}`
 
+    case 'DAILYMOTION':
+      return `https://api.dailymotion.com/oauth/authorize?${new URLSearchParams({
+        client_id: import.meta.env.VITE_DAILYMOTION_API_KEY || '',
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'video.manage account.read offline',
+        state,
+      })}`
+
     default:
       throw new Error(`Unsupported platform for OAuth: ${platform}`)
   }

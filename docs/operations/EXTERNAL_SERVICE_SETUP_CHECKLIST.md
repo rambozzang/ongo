@@ -499,7 +499,7 @@ GEMINI_LOCATION=us-central1
 
 ## 5. 후순위 SNS 등록
 
-아래 표에서 Pinterest는 OAuth·보드 연결·동영상 Pin 계약까지 구현되어 있으며 공개 식별자와 실계정 검증이 남아 있다. 나머지는 백엔드 client 코드와 환경변수는 있으나 현재 `frontend/src/utils/oauth.ts`의 연결 UI가 지원하지 않는다.
+아래 표에서 Pinterest·LinkedIn·WordPress.com·Dailymotion은 OAuth·업로드 계약과 연결 UI까지 구현되어 있으며 공개 식별자와 실계정 검증이 남아 있다. Tumblr와 Vimeo는 백엔드 client 코드는 있으나 최신 업로드 계약 및 연결 UI 검증이 끝나지 않아 아직 노출하지 않는다.
 
 | 서비스 | 서버 환경변수 | 상태 |
 |---|---|---|
@@ -508,9 +508,9 @@ GEMINI_LOCATION=us-central1
 | WordPress.com | `WORDPRESS_CLIENT_ID`, `WORDPRESS_CLIENT_SECRET` | OAuth·form 미디어 URL 업로드·video post 구현. `VITE_WORDPRESS_CLIENT_ID` 설정 후 실계정 검증 필요 |
 | Tumblr | `TUMBLR_CONSUMER_KEY`, `TUMBLR_CONSUMER_SECRET` | 프런트 OAuth 미구현 |
 | Vimeo | `VIMEO_CLIENT_ID`, `VIMEO_CLIENT_SECRET` | 프런트 OAuth 미구현 |
-| Dailymotion | `DAILYMOTION_API_KEY`, `DAILYMOTION_API_SECRET` | 프런트 OAuth 미구현 |
+| Dailymotion | `DAILYMOTION_API_KEY`, `DAILYMOTION_API_SECRET` | OAuth·API v2 세션 multipart 업로드·프로필 영상 생성 구현. `VITE_DAILYMOTION_API_KEY` 설정 후 실계정 검증 필요 |
 
-이 서비스들은 키를 지금 받아도 사용자가 연결할 수 없으므로 가입 시간을 쓰지 않는 것을 권장한다.
+Tumblr와 Vimeo는 키를 지금 받아도 사용자가 연결할 수 없으므로 가입 시간을 쓰지 않는 것을 권장한다. Dailymotion은 API v2 Private API key와 callback URL을 발급해야 한다.
 
 ## 6. 직접 생성해야 하는 내부 비밀값
 
@@ -626,6 +626,7 @@ VITE_THREADS_APP_ID=
 VITE_PINTEREST_APP_ID=
 VITE_LINKEDIN_CLIENT_ID=
 VITE_WORDPRESS_CLIENT_ID=
+VITE_DAILYMOTION_API_KEY=
 ```
 
 ## 8. 권장 가입 순서
