@@ -56,6 +56,12 @@ export function buildOAuthUrl(platform: Platform, returnPath: string, codeChalle
         response_type: 'code',
         scope: 'https://www.googleapis.com/auth/youtube',
         access_type: 'offline',
+        // 채널 연동은 로그인과 반대로 consent 를 강제해야 한다.
+        // 구글은 access_type=offline 만으로는 **최초 동의 때만** 리프레시 토큰을 준다.
+        // 예약 게시와 지표 동기화는 사용자가 접속해 있지 않을 때 도는 작업이라
+        // 리프레시 토큰이 없으면 액세스 토큰 만료와 함께 채널이 죽는다.
+        // 그러면 한 번 연동했던 계정을 다시 연동할 때 조용히 재발한다.
+        prompt: 'consent',
         state,
       })}`
 
