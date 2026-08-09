@@ -156,6 +156,19 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `X integration settings는 선택적인 답글 정책을 필수로 오표시하지 않는다`() {
+        every { channels.findById(7) } returns channel.copy(platform = Platform.TWITTER)
+        every { integrationTools.definitions(Platform.TWITTER) } returns emptyList()
+
+        val result = useCase.integrationSettings(1, "7")
+
+        assertEquals(
+            false,
+            result.output.settings.path("required").any { it.asText() == "who_can_reply_post" },
+        )
+    }
+
+    @Test
     fun `public post settings의 provider type이 다른 채널로 향하면 거부한다`() {
         every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
         every { channels.findById(7) } returns channel

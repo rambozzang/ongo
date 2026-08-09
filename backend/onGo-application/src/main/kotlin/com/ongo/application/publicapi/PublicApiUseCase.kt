@@ -738,7 +738,7 @@ class PublicApiUseCase(
                 arrayField("collaborators")
             }
             Platform.TWITTER -> {
-                stringField("who_can_reply_post", values = listOf("everyone", "mentionedUsers", "following"), isRequired = true)
+                stringField("who_can_reply_post", values = listOf("everyone", "mentionedUsers", "following"))
                 stringField("community")
                 booleanField("made_with_ai")
             }
