@@ -716,7 +716,7 @@ class PublicApiUseCase(
                 arrayField("tags")
             }
             Platform.TIKTOK -> {
-                stringField("title", maxLength = 90)
+                stringField("title", maxLength = 2_000)
                 stringField(
                     "privacy_level",
                     values = listOf("PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "SELF_ONLY"),

@@ -145,6 +145,17 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `TikTok integration settings는 Postiz provider의 2000자 제한을 노출한다`() {
+        every { channels.findById(7) } returns channel.copy(platform = Platform.TIKTOK)
+        every { integrationTools.definitions(Platform.TIKTOK) } returns emptyList()
+
+        val result = useCase.integrationSettings(1, "7")
+
+        assertEquals(2_000, result.title.maxLength)
+        assertEquals(2_000, result.output.settings.path("properties").path("title").path("maxLength").asInt())
+    }
+
+    @Test
     fun `public post settings의 provider type이 다른 채널로 향하면 거부한다`() {
         every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
         every { channels.findById(7) } returns channel

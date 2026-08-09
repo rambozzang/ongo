@@ -45,6 +45,8 @@ class PlatformUploadCapabilityTest {
 
         assertTrue(capabilities.getValue(Platform.YOUTUBE).scheduling)
         assertTrue(capabilities.getValue(Platform.NAVER_CLIP).scheduling)
+        assertEquals(2_000, capabilities.getValue(Platform.TIKTOK).maxTitleLength)
+        assertEquals(2_000, capabilities.getValue(Platform.TIKTOK).maxCaptionLength)
         assertFalse(capabilities.getValue(Platform.TIKTOK).scheduling)
         assertFalse(capabilities.getValue(Platform.TWITTER).scheduling)
         assertFalse(capabilities.getValue(Platform.INSTAGRAM).scheduling)

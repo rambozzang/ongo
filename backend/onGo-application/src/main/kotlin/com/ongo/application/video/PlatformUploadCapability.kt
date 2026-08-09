@@ -29,8 +29,8 @@ object PlatformUploadCapabilities {
             Platform.YOUTUBE, true, true, true, 2 * GB, 100, 5_000, 500, VIDEO_EXTENSIONS,
         ),
         Platform.TIKTOK to PlatformUploadCapability(
-            Platform.TIKTOK, true, true, false, 2 * GB, 2_200, 0, 30, setOf("mp4", "mov", "webm"),
-            maxCaptionLength = 2_200,
+            Platform.TIKTOK, true, true, false, 2 * GB, 2_000, 0, 30, setOf("mp4", "mov", "webm"),
+            maxCaptionLength = 2_000,
         ),
         Platform.NAVER_CLIP to PlatformUploadCapability(
             Platform.NAVER_CLIP, true, true, true, 2 * GB, 100, 1_000, 30, setOf("mp4", "mov"),

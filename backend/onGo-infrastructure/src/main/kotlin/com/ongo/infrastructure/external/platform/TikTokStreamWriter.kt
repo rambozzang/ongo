@@ -254,6 +254,6 @@ class TikTokStreamWriter(
         return listOf(body, hashtags)
             .filter(String::isNotBlank)
             .joinToString("\n\n")
-            .take(2200)
+            .take(2000)
     }
 }
