@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ChevronUpDownIcon, PlusIcon, CheckIcon } from '@heroicons/vue/24/outline'
 import { useWorkspaceStore } from '@/stores/workspace'
 
@@ -7,6 +8,7 @@ const props = defineProps<{ collapsed: boolean }>()
 
 const workspaceStore = useWorkspaceStore()
 const isOpen = ref(false)
+const { t } = useI18n()
 
 onMounted(() => {
   if (workspaceStore.workspaces.length === 0) {
@@ -51,6 +53,12 @@ function getInitial(name: string): string {
       v-if="isOpen"
       class="absolute left-3 right-3 top-full z-50 mt-1 rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-xl"
     >
+      <div v-if="workspaceStore.loadError" class="border-b border-white/10 px-3 py-2 text-xs text-amber-300">
+        <p>{{ t('workspace.loadFailed') }}</p>
+        <button type="button" class="mt-1 font-semibold underline" :disabled="workspaceStore.loading" @click="workspaceStore.fetchWorkspaces(true)">
+          {{ t('action.retry') }}
+        </button>
+      </div>
       <button
         v-for="ws in workspaceStore.workspaces"
         :key="ws.id"
@@ -63,9 +71,12 @@ function getInitial(name: string): string {
         <span class="flex-1 truncate text-gray-200">{{ ws.name }}</span>
         <CheckIcon v-if="ws.id === workspaceStore.activeWorkspaceId" class="h-4 w-4 text-primary-300" />
       </button>
+      <div v-if="!workspaceStore.workspaces.length && !workspaceStore.loading" class="px-3 py-3 text-xs text-gray-400">
+        {{ t('workspace.empty') }}
+      </div>
       <div class="mt-1 border-t border-white/10 pt-1">
         <router-link
-          to="/settings?tab=workspaces"
+          to="/settings-v2?tab=workspaces"
           class="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:bg-white/10 hover:text-gray-100"
           @click="isOpen = false"
         >

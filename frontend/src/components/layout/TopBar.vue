@@ -88,7 +88,7 @@
             <span class="badge-blue mt-1">{{ user?.planType }}</span>
           </div>
           <router-link
-            to="/settings"
+            to="/settings-v2"
             role="menuitem"
             class="flex items-center px-4 py-2 text-body text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
             @click="profileOpen = false"

@@ -84,6 +84,55 @@
           </div>
         </template>
 
+        <template v-else-if="activeSection === 'workspaces'">
+          <div class="mb-5">
+            <h2 class="text-[15px] font-bold text-content">{{ t('workspace.manage') }}</h2>
+            <p class="mt-1 text-[12px] text-content-tertiary">{{ t('workspace.description') }}</p>
+          </div>
+
+          <div v-if="workspaceStore.loadError" class="mb-4 rounded-lg border border-error-subtle bg-error-subtle px-4 py-3 text-[12px] text-error-strong">
+            <span>{{ t('workspace.loadFailed') }}</span>
+            <button type="button" class="ml-2 font-semibold underline" :disabled="workspaceStore.loading" @click="workspaceStore.fetchWorkspaces(true)">{{ t('action.retry') }}</button>
+          </div>
+
+          <form class="mb-4 grid gap-2 rounded-[11px] border border-line p-4" @submit.prevent="saveWorkspace">
+            <div class="grid gap-2 tablet:grid-cols-2">
+              <label class="block">
+                <span class="text-[11px] font-semibold text-content-secondary">{{ t('workspace.name') }}</span>
+                <input v-model="workspaceForm.name" required maxlength="80" class="input-field mt-2 w-full" :placeholder="t('workspace.namePlaceholder')">
+              </label>
+              <label class="block">
+                <span class="text-[11px] font-semibold text-content-secondary">{{ t('workspace.slug') }}</span>
+                <input v-model="workspaceForm.slug" required maxlength="80" pattern="[a-z0-9-]+" class="input-field mt-2 w-full" :placeholder="t('workspace.slugPlaceholder')">
+              </label>
+            </div>
+            <label class="block">
+              <span class="text-[11px] font-semibold text-content-secondary">{{ t('workspace.descriptionField') }}</span>
+              <textarea v-model="workspaceForm.description" maxlength="300" rows="2" class="input-field mt-2 w-full resize-y" />
+            </label>
+            <div class="flex flex-wrap gap-2">
+              <button type="submit" class="btn-primary !min-h-9 text-[11px]" :disabled="savingWorkspace">
+                {{ savingWorkspace ? t('action.loading') : (editingWorkspaceId ? t('action.save') : t('workspace.create')) }}
+              </button>
+              <button v-if="editingWorkspaceId" type="button" class="btn-secondary !min-h-9 text-[11px]" @click="resetWorkspaceForm">{{ t('action.cancel') }}</button>
+            </div>
+          </form>
+
+          <div v-if="workspaceStore.loading && !workspaceStore.workspaces.length" class="rounded-lg border border-dashed border-line-control px-5 py-12 text-center text-[12px] text-content-tertiary">{{ t('action.loading') }}</div>
+          <div v-else-if="!workspaceStore.workspaces.length" class="rounded-lg border border-dashed border-line-control px-5 py-12 text-center text-[12px] text-content-tertiary">{{ t('workspace.empty') }}</div>
+          <div v-else class="overflow-hidden rounded-[11px] border border-line">
+            <div v-for="workspace in workspaceStore.workspaces" :key="workspace.id" class="flex flex-wrap items-center gap-3 border-b border-line-row px-4 py-3 last:border-0">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-[12px] font-semibold text-content">{{ workspace.name }}</p>
+                <p class="mt-1 truncate font-mono text-[10.5px] text-content-tertiary">{{ workspace.slug }}</p>
+              </div>
+              <span class="text-[10.5px] text-content-tertiary">{{ workspace.memberCount ?? 0 }}명</span>
+              <button type="button" class="btn-secondary !min-h-8 text-[11px]" @click="editWorkspace(workspace)">{{ t('action.edit') }}</button>
+              <button type="button" class="rounded-lg border border-error-subtle px-3 py-2 text-[11px] font-semibold text-error-strong hover:bg-error-subtle" @click="removeWorkspace(workspace.id)">{{ t('action.delete') }}</button>
+            </div>
+          </div>
+        </template>
+
         <template v-else-if="activeSection === 'defaults'">
           <div class="mb-5">
             <h2 class="text-[15px] font-bold text-content">{{ t('settings.defaults.title') }}</h2>
@@ -166,7 +215,7 @@
         <div v-if="activeSection === 'automation'" class="mt-6 grid gap-2.5 tablet:grid-cols-3">
           <SectionCard :title="t('settings.defaults.title')" body-class="p-[15px]">
             <p class="text-[11.5px] leading-5 text-content-secondary">{{ settingsData ? settingsData.defaultPlatforms.map(platformLabel).join(', ') || t('empty.noData') : t('empty.noData') }}</p>
-            <RouterLink to="/settings" class="mt-3 inline-block text-[11px] font-semibold text-accent">{{ t('settings.save') }}</RouterLink>
+            <RouterLink to="/settings-v2?tab=defaults" class="mt-3 inline-block text-[11px] font-semibold text-accent">{{ t('settings.save') }}</RouterLink>
           </SectionCard>
           <SectionCard :title="t('subscription.currentPlan')" body-class="p-[15px]">
             <template v-if="subscriptionStore.subscription">
@@ -177,56 +226,52 @@
             <RouterLink to="/subscription" class="mt-3 inline-block text-[11px] font-semibold text-accent">{{ t('subscription.changePlan') }}</RouterLink>
           </SectionCard>
           <SectionCard :title="t('settings.account.dangerZone')" body-class="border border-error-subtle bg-error-subtle p-[15px]">
-            <p class="text-[11.5px] leading-5 text-error-strong">{{ t('settings.account.dangerDesc') }}</p>
-            <button type="button" class="mt-3 rounded-lg border border-error-strong px-3 py-2 text-[11px] font-semibold text-error-strong transition-colors duration-150 hover:bg-error-strong hover:text-surface-base" @click="deleteConfirmOpen = true">{{ t('settings.account.deleteBtn') }}</button>
+            <p class="text-[11.5px] leading-5 text-error-strong">{{ t('settings.account.deleteUnavailable') }}</p>
+            <p class="mt-2 text-[11px] leading-5 text-error-strong">{{ t('settings.account.deleteUnavailableDesc') }}</p>
           </SectionCard>
         </div>
       </main>
     </div>
-
-    <ConfirmModal
-      v-model="deleteConfirmOpen"
-      :title="t('settings.account.deleteBtn')"
-      :message="t('settings.account.deleteConfirm')"
-      :confirm-text="t('settings.account.deleteBtn')"
-      :cancel-text="t('action.cancel')"
-      danger
-      @confirm="deleteAccount"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { AdjustmentsHorizontalIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
-import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
 import { settingsApi, type ApiKey, type UserSettingsResponse } from '@/api/settings'
-import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import { useAutomationStore } from '@/stores/automation'
 import { useSubscriptionStore } from '@/stores/subscription'
+import { useWorkspaceStore } from '@/stores/workspace'
 
 const { t, locale } = useI18n()
+const route = useRoute()
 const authStore = useAuthStore()
 const automationStore = useAutomationStore()
 const subscriptionStore = useSubscriptionStore()
-const activeSection = ref('automation')
+const workspaceStore = useWorkspaceStore()
+const requestedTab = typeof route.query.tab === 'string' ? route.query.tab : ''
+const activeSection = ref(['account', 'automation', 'defaults', 'security', 'workspaces'].includes(requestedTab) ? requestedTab : 'automation')
 const settingsData = ref<UserSettingsResponse | null>(null)
 const savingDefaults = ref(false)
-const deleteConfirmOpen = ref(false)
 const defaults = reactive({ visibility: '', defaultPlatforms: [] as string[], aiTone: '', aiProvider: '' })
 const apiKeys = ref<ApiKey[]>([])
 const apiKeyForm = reactive({ name: '', expiresAt: '' })
 const creatingApiKey = ref(false)
 const newApiKeyToken = ref<string | null>(null)
+const editingWorkspaceId = ref<number | null>(null)
+const workspaceForm = reactive({ name: '', slug: '', description: '' })
+const savingWorkspace = ref(false)
 const navigation = computed(() => [
   { key: 'account', label: t('settings.tabs.account') },
   { key: 'automation', label: t('nav.automation') },
   { key: 'defaults', label: t('settings.defaults.title') },
   { key: 'security', label: t('settings.tabs.apiKeys') },
+  { key: 'workspaces', label: t('workspace.manage') },
 ])
 
 function platformLabel(platform: string): string {
@@ -287,13 +332,43 @@ async function saveDefaults() {
     savingDefaults.value = false
   }
 }
-async function deleteAccount() {
+function resetWorkspaceForm() {
+  editingWorkspaceId.value = null
+  workspaceForm.name = ''
+  workspaceForm.slug = ''
+  workspaceForm.description = ''
+}
+function editWorkspace(workspace: { id: number; name: string; slug: string; description?: string | null }) {
+  editingWorkspaceId.value = workspace.id
+  workspaceForm.name = workspace.name
+  workspaceForm.slug = workspace.slug
+  workspaceForm.description = workspace.description ?? ''
+}
+async function saveWorkspace() {
+  if (!workspaceForm.name.trim() || !workspaceForm.slug.trim()) return
+  savingWorkspace.value = true
   try {
-    await authApi.deleteAccount()
-    await authStore.logout()
-  } catch {
-    // 공용 알림 토스트가 오류를 표시하므로 화면 상태를 임의로 바꾸지 않는다.
+    if (editingWorkspaceId.value) {
+      await workspaceStore.updateWorkspace(editingWorkspaceId.value, {
+        name: workspaceForm.name.trim(),
+        slug: workspaceForm.slug.trim(),
+        description: workspaceForm.description.trim() || null,
+      })
+    } else {
+      await workspaceStore.createWorkspace({
+        name: workspaceForm.name.trim(),
+        slug: workspaceForm.slug.trim(),
+        description: workspaceForm.description.trim() || null,
+      })
+    }
+    resetWorkspaceForm()
+  } finally {
+    savingWorkspace.value = false
   }
+}
+async function removeWorkspace(id: number) {
+  if (!window.confirm(t('workspace.deleteConfirm'))) return
+  await workspaceStore.removeWorkspace(id)
 }
 
 onMounted(async () => {
@@ -309,6 +384,7 @@ onMounted(async () => {
     subscriptionStore.fetchSubscription(),
     subscriptionStore.fetchPlans(),
     fetchApiKeys(),
+    workspaceStore.fetchWorkspaces(),
   ])
   if (!authStore.user) await authStore.fetchProfile()
 })

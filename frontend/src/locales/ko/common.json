@@ -3,6 +3,19 @@
     "name": "onGo",
     "description": "크리에이터 멀티 플랫폼 관리"
   },
+  "workspace": {
+    "loadFailed": "워크스페이스를 불러오지 못했습니다.",
+    "empty": "사용 가능한 워크스페이스가 없습니다.",
+    "manage": "워크스페이스",
+    "description": "프로젝트와 팀별 작업공간을 만들고 관리합니다.",
+    "name": "이름",
+    "namePlaceholder": "예: 브랜드 콘텐츠팀",
+    "slug": "식별자",
+    "slugPlaceholder": "예: brand-content",
+    "descriptionField": "설명",
+    "create": "워크스페이스 만들기",
+    "deleteConfirm": "이 워크스페이스를 삭제하시겠습니까? 연결된 데이터를 확인한 뒤 진행하세요."
+  },
   "action": {
     "save": "저장",
     "cancel": "취소",
@@ -1079,6 +1092,8 @@
       "deleteAccount": "회원 탈퇴",
       "deleteConfirm": "모든 데이터가 삭제되며 복구할 수 없습니다. 정말로 탈퇴하시겠습니까?",
       "deleteBtn": "탈퇴하기",
+      "deleteUnavailable": "회원 탈퇴는 현재 사용할 수 없습니다.",
+      "deleteUnavailableDesc": "데이터와 외부 연동을 안전하게 정리하는 삭제 절차가 준비되면 다시 제공됩니다. 현재는 계정이 변경되지 않습니다.",
       "deleteSuccess": "회원 탈퇴가 완료되었습니다.",
       "deleteError": "회원 탈퇴에 실패했습니다. 다시 시도해주세요."
     }

@@ -3,6 +3,19 @@
     "name": "onGo",
     "description": "Creator Multi-Platform Management"
   },
+  "workspace": {
+    "loadFailed": "We couldn't load your workspaces.",
+    "empty": "No workspaces are available.",
+    "manage": "Workspaces",
+    "description": "Create and manage workspaces for projects and teams.",
+    "name": "Name",
+    "namePlaceholder": "e.g. Brand content team",
+    "slug": "Slug",
+    "slugPlaceholder": "e.g. brand-content",
+    "descriptionField": "Description",
+    "create": "Create workspace",
+    "deleteConfirm": "Delete this workspace? Confirm its connected data before continuing."
+  },
   "action": {
     "save": "Save",
     "cancel": "Cancel",
@@ -1079,6 +1092,8 @@
       "deleteAccount": "Delete Account",
       "deleteConfirm": "All data will be permanently deleted. Are you sure you want to delete your account?",
       "deleteBtn": "Delete",
+      "deleteUnavailable": "Account deletion is currently unavailable.",
+      "deleteUnavailableDesc": "It will return once the safe cleanup flow for your data and external connections is ready. Your account has not been changed.",
       "deleteSuccess": "Account has been deleted.",
       "deleteError": "Failed to delete account. Please try again."
     }

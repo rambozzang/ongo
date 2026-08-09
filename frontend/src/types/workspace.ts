@@ -12,12 +12,12 @@ export interface Workspace {
 export interface CreateWorkspaceRequest {
   name: string
   slug: string
-  description?: string
+  description?: string | null
 }
 
 export interface UpdateWorkspaceRequest {
   name?: string
   slug?: string
-  description?: string
+  description?: string | null
   logoUrl?: string
 }

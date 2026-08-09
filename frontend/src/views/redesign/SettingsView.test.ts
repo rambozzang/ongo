@@ -7,6 +7,7 @@ import SettingsView from './SettingsView.vue'
 import { settingsApi } from '@/api/settings'
 import { automationApi } from '@/api/automation'
 import { subscriptionApi } from '@/api/subscription'
+import { workspaceApi } from '@/api/workspace'
 import { useAuthStore } from '@/stores/auth'
 import koMessages from '@/locales/ko/common.json'
 
@@ -21,6 +22,9 @@ vi.mock('@/api/settings', () => ({
 }))
 vi.mock('@/api/automation', () => ({ automationApi: { list: vi.fn(), toggle: vi.fn() } }))
 vi.mock('@/api/subscription', () => ({ subscriptionApi: { getCurrent: vi.fn(), getPlans: vi.fn() } }))
+vi.mock('@/api/workspace', () => ({ workspaceApi: {
+  list: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn(),
+} }))
 
 const rule = (active = true) => ({
   id: 8,
@@ -90,6 +94,7 @@ describe('SettingsView', () => {
     vi.mocked(automationApi.toggle).mockResolvedValue(rule(false) as never)
     vi.mocked(subscriptionApi.getCurrent).mockResolvedValue(null as never)
     vi.mocked(subscriptionApi.getPlans).mockResolvedValue({ plans: [], currentPlan: 'FREE' } as never)
+    vi.mocked(workspaceApi.list).mockResolvedValue([] as never)
   })
 
   it('loads automation and defaults from the server, then saves changed defaults', async () => {
@@ -124,5 +129,18 @@ describe('SettingsView', () => {
     expect(settingsApi.createApiKey).toHaveBeenCalledWith({ name: '게시 자동화' })
     expect(wrapper.text()).toContain('ongo_secret_token')
     expect(wrapper.text()).toContain('게시 자동화')
+  })
+
+  it('opens workspace management from the settings tab and creates a workspace through the server API', async () => {
+    vi.mocked(workspaceApi.create).mockResolvedValue({ id: 7, name: '브랜드팀', slug: 'brand-team', description: null, ownerId: 1, logoUrl: null, memberCount: 1, createdAt: null } as never)
+    const wrapper = await renderSettings()
+    await wrapper.findAll('button').find((button) => button.text() === '워크스페이스')!.trigger('click')
+    await wrapper.find('input[placeholder="예: 브랜드 콘텐츠팀"]').setValue('브랜드팀')
+    await wrapper.find('input[placeholder="예: brand-content"]').setValue('brand-team')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(workspaceApi.create).toHaveBeenCalledWith({ name: '브랜드팀', slug: 'brand-team', description: null })
+    expect(wrapper.text()).toContain('브랜드팀')
   })
 })

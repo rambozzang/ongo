@@ -9,6 +9,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const workspaces = ref<Workspace[]>([])
   const activeWorkspaceId = ref<number | null>(null)
   const loading = ref(false)
+  const loadError = ref(false)
   let fetchPromise: Promise<Workspace[]> | null = null
 
   const activeWorkspace = computed(() =>
@@ -24,6 +25,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     loading.value = true
     fetchPromise = workspaceApi.list()
       .then((items) => {
+        loadError.value = false
         workspaces.value = items
         const savedId = localStorage.getItem(STORAGE_KEY)
         if (savedId && items.some(w => w.id === Number(savedId))) {
@@ -38,8 +40,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
         return items
       })
       .catch(() => {
-        workspaces.value = []
-        activeWorkspaceId.value = null
+        // Keep the last confirmed workspace visible. A transient API failure must
+        // not look like an empty tenant and must not discard the user's context.
+        loadError.value = true
         return []
       })
       .finally(() => {
@@ -95,6 +98,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     activeWorkspaceId,
     activeWorkspace,
     loading,
+    loadError,
     fetchWorkspaces,
     ensureActiveWorkspace,
     switchWorkspace,

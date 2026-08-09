@@ -23,7 +23,7 @@
         <div class="min-w-0 text-body">
           <p class="font-semibold text-warning-strong">{{ $t('ugc.noWorkspace') }}</p>
           <p class="mt-1 text-warning-strong">{{ $t('ugc.noWorkspaceHint') }}</p>
-          <router-link to="/settings?tab=workspaces" class="mt-2 inline-flex font-medium text-warning-strong underline underline-offset-2">{{ $t('ugc.manageWorkspace') }}</router-link>
+          <router-link to="/settings-v2?tab=workspaces" class="mt-2 inline-flex font-medium text-warning-strong underline underline-offset-2">{{ $t('ugc.manageWorkspace') }}</router-link>
         </div>
       </div>
       <div v-if="hasWorkspace" class="grid grid-cols-3 gap-2 rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
@@ -78,7 +78,7 @@
         <PlusIcon class="h-5 w-5" />
         {{ $t('ugc.newCampaign') }}
       </router-link>
-      <router-link v-else to="/settings?tab=workspaces" class="btn-secondary mt-2 inline-flex items-center gap-2">
+      <router-link v-else to="/settings-v2?tab=workspaces" class="btn-secondary mt-2 inline-flex items-center gap-2">
         {{ $t('ugc.manageWorkspace') }}
       </router-link>
     </div>

@@ -7,7 +7,7 @@
       <div class="min-w-0 text-body">
         <p class="font-semibold text-warning-strong">{{ $t('ugc.noWorkspace') }}</p>
         <p class="mt-1 text-warning-strong">{{ $t('ugc.noWorkspaceHint') }}</p>
-        <router-link to="/settings?tab=workspaces" class="mt-2 inline-flex font-medium text-warning-strong underline underline-offset-2">{{ $t('ugc.manageWorkspace') }}</router-link>
+        <router-link to="/settings-v2?tab=workspaces" class="mt-2 inline-flex font-medium text-warning-strong underline underline-offset-2">{{ $t('ugc.manageWorkspace') }}</router-link>
       </div>
     </div>
 

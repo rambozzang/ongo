@@ -35,4 +35,19 @@ describe('workspace store', () => {
     expect(store.activeWorkspaceId).toBe(3)
     expect(store.workspaces.map((workspace) => workspace.id)).toEqual([3])
   })
+
+  it('preserves the last confirmed workspace and exposes a retryable load error', async () => {
+    vi.mocked(workspaceApi.list).mockResolvedValueOnce([
+      { id: 3, name: '작업공간', slug: 'work', ownerId: 1 },
+    ] as never)
+    const store = useWorkspaceStore()
+    await store.fetchWorkspaces()
+
+    vi.mocked(workspaceApi.list).mockRejectedValueOnce(new Error('network'))
+    await store.fetchWorkspaces(true)
+
+    expect(store.loadError).toBe(true)
+    expect(store.activeWorkspace?.id).toBe(3)
+    expect(store.workspaces).toHaveLength(1)
+  })
 })
