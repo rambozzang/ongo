@@ -576,4 +576,62 @@ class PublicApiUseCaseTest {
         assertFailsWith<com.ongo.common.exception.BusinessException> { useCase.delete(1, 32) }
         verify(exactly = 0) { posts.update(any()) }
     }
+
+    @Test
+    fun `즉시 게시가 아직 업로드 중이면 게시물만 취소하지 않는다`() {
+        val publishing = PublicApiPost(
+            id = 34,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.NOW,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.PROCESSING,
+            payloadJson = "{}",
+        )
+        every { posts.findByIdAndUserId(34, 1) } returns publishing
+        every { uploads.findByVideoId(11) } returns listOf(
+            VideoUpload(
+                id = 94,
+                videoId = 11,
+                platform = Platform.YOUTUBE,
+                channelId = 7,
+                status = UploadStatus.UPLOADING,
+            ),
+        )
+
+        assertFailsWith<com.ongo.common.exception.BusinessException> { useCase.delete(1, 34) }
+        verify(exactly = 0) { posts.update(any()) }
+    }
+
+    @Test
+    fun `예약 취소가 lease 경합으로 일부만 반영되면 게시물 취소를 거부한다`() {
+        val scheduledAt = LocalDateTime.now().plusHours(2)
+        val scheduled = PublicApiPost(
+            id = 35,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
+            scheduledAt = scheduledAt,
+            payloadJson = "{\"posts\":[{\"integration\":{\"id\":\"7\"}}]}",
+        )
+        every { posts.findByIdAndUserId(35, 1) } returns scheduled
+        every { posts.update(any()) } answers { firstArg() }
+        every { channels.findById(7) } returns channel
+        every { uploads.findByVideoId(11) } returns listOf(
+            VideoUpload(
+                id = 95,
+                videoId = 11,
+                platform = Platform.YOUTUBE,
+                channelId = 7,
+                status = UploadStatus.UPLOADING,
+                scheduledAt = scheduledAt,
+            ),
+        )
+        every { uploads.cancelScheduledUploadsByIds(setOf(95), any()) } returns 0
+        every { schedules.findByUserId(1) } returns emptyList()
+
+        assertFailsWith<com.ongo.common.exception.BusinessException> { useCase.delete(1, 35) }
+        verify(exactly = 0) { posts.update(any()) }
+        verify(exactly = 0) { schedules.update(any()) }
+    }
 }

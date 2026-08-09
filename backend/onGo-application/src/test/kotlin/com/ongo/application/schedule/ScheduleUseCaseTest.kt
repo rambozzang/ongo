@@ -187,11 +187,22 @@ class ScheduleUseCaseTest {
         )
         val video = Video(id = 22L, userId = 7L, title = "예약 영상", status = com.ongo.common.enums.UploadStatus.UPLOADING)
         every { schedules.findById(41L) } returns scheduled
+        every { videoUploads.findByVideoId(22L) } returnsMany listOf(
+            listOf(
+                VideoUpload(
+                    22L,
+                    22L,
+                    Platform.YOUTUBE,
+                    status = com.ongo.common.enums.UploadStatus.UPLOADING,
+                    scheduledAt = scheduled.scheduledAt,
+                ),
+            ),
+            listOf(
+                VideoUpload(22L, 22L, Platform.YOUTUBE, status = com.ongo.common.enums.UploadStatus.CANCELLED),
+            ),
+        )
         every { videoUploads.cancelScheduledUploads(22L, any()) } returns 1
         every { videos.findById(22L) } returns video
-        every { videoUploads.findByVideoId(22L) } returns listOf(
-            VideoUpload(22L, 22L, Platform.YOUTUBE, status = com.ongo.common.enums.UploadStatus.CANCELLED),
-        )
         every { schedules.update(any()) } answers { firstArg() }
         every { videos.update(any()) } answers { firstArg() }
 
@@ -200,6 +211,34 @@ class ScheduleUseCaseTest {
         verify { videoUploads.cancelScheduledUploads(22L, any()) }
         verify { schedules.update(match { it.status == ScheduleStatus.CANCELLED }) }
         verify { videos.update(match { it.id == 22L && it.status == com.ongo.common.enums.UploadStatus.DRAFT }) }
+    }
+
+    @Test
+    fun `예약 업로드가 lease 경합으로 일부만 취소되면 예약 상태를 바꾸지 않는다`() {
+        val scheduled = Schedule(
+            id = 42L,
+            videoId = 22L,
+            userId = 7L,
+            scheduledAt = LocalDateTime.now(ScheduleUseCase.KST).plusHours(1),
+            status = ScheduleStatus.SCHEDULED,
+            platforms = mapOf(Platform.YOUTUBE.name to emptyMap<String, Any>()),
+        )
+        every { schedules.findById(42L) } returns scheduled
+        every { videoUploads.findByVideoId(22L) } returns listOf(
+            VideoUpload(
+                22L,
+                22L,
+                Platform.YOUTUBE,
+                status = com.ongo.common.enums.UploadStatus.UPLOADING,
+                scheduledAt = scheduled.scheduledAt,
+            ),
+        )
+        every { videoUploads.cancelScheduledUploads(22L, any()) } returns 0
+
+        assertFailsWith<com.ongo.common.exception.BusinessException> {
+            useCase.cancelSchedule(7L, 42L)
+        }
+        verify(exactly = 0) { schedules.update(any()) }
     }
 
     @Test

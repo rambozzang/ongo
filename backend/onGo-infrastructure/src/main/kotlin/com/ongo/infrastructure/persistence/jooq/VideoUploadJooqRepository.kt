@@ -346,6 +346,7 @@ class VideoUploadJooqRepository(
             .where(VIDEO_ID.eq(videoId))
             .and(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
             .and(VIDEO_SCHEDULED_AT.isNotNull)
+            .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
             .execute()
 
     override fun cancelScheduledUploadsByIds(uploadIds: Set<Long>, now: LocalDateTime): Int {
@@ -361,6 +362,7 @@ class VideoUploadJooqRepository(
             .where(ID.`in`(uploadIds))
             .and(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
             .and(VIDEO_SCHEDULED_AT.isNotNull)
+            .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
             .execute()
     }
 
@@ -376,6 +378,7 @@ class VideoUploadJooqRepository(
             .where(CHANNEL_ID.eq(channelId))
             .and(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
             .and(VIDEO_SCHEDULED_AT.isNotNull)
+            .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
             .execute()
 
     override fun rescheduleScheduledUploads(

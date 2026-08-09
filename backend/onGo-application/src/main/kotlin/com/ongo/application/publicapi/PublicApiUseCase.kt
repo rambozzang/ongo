@@ -440,10 +440,17 @@ class PublicApiUseCase(
     fun delete(userId: Long, id: Long) {
         val current = load(userId, id)
         val uploads = videoUploadRepository.findByVideoId(current.videoId)
-        if (uploads.any { it.status == UploadStatus.PUBLISHED || it.status == UploadStatus.UNCONFIRMED || it.status == UploadStatus.PROCESSING }) {
+        val cannotCancel = uploads.any {
+            it.status == UploadStatus.PUBLISHED ||
+                it.status == UploadStatus.UNCONFIRMED ||
+                it.status == UploadStatus.PROCESSING ||
+                it.status == UploadStatus.REVIEW ||
+                (it.status == UploadStatus.UPLOADING && current.status != PublicApiPostStatus.SCHEDULED)
+        }
+        if (cannotCancel) {
             throw BusinessException(
                 "PUBLIC_POST_DELETE_UNSAFE",
-                "외부 게시가 이미 접수되었거나 완료된 게시물은 삭제할 수 없습니다. 플랫폼에서 직접 삭제한 뒤 onGo 기록을 보존해 주세요.",
+                "외부 게시가 시작되었거나 결과를 확인할 수 없는 게시물은 삭제할 수 없습니다. 플랫폼에서 직접 삭제한 뒤 onGo 기록을 보존해 주세요.",
             )
         }
 
@@ -489,7 +496,13 @@ class PublicApiUseCase(
             .mapNotNull { it.id }
             .toSet()
 
-        videoUploadRepository.cancelScheduledUploadsByIds(matchingUploadIds, LocalDateTime.now())
+        val cancelledCount = videoUploadRepository.cancelScheduledUploadsByIds(matchingUploadIds, LocalDateTime.now())
+        if (cancelledCount != matchingUploadIds.size) {
+            throw BusinessException(
+                "PUBLIC_POST_DELETE_CONFLICT",
+                "예약 게시가 이미 실행 중이라 취소할 수 없습니다. 현재 게시 상태를 확인해주세요.",
+            )
+        }
 
         scheduleRepository.findByUserId(userId)
             .asSequence()

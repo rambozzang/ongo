@@ -3,6 +3,8 @@ package com.ongo.application.channel
 import com.ongo.application.channel.dto.*
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.PlanType
+import com.ongo.common.enums.UploadStatus
+import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.exception.PlanLimitExceededException
@@ -141,7 +143,16 @@ class ChannelUseCase(
         // Postiz의 채널 삭제 계약과 동일하게, 아직 외부 전송을 시작하지 않은
         // 예약 작업은 채널 삭제와 함께 durable queue에서도 취소한다. 이미 전송된
         // 작업은 결과 확인을 위해 보존한다.
-        videoUploadRepository.cancelScheduledUploadsByChannelId(channelId, LocalDateTime.now())
+        val now = LocalDateTime.now()
+        val cancellableUploadCount = videoUploadRepository.findByUserId(userId)
+            .count { it.channelId == channelId && it.status == UploadStatus.UPLOADING && it.scheduledAt != null }
+        val cancelledUploadCount = videoUploadRepository.cancelScheduledUploadsByChannelId(channelId, now)
+        if (cancelledUploadCount != cancellableUploadCount) {
+            throw BusinessException(
+                "CHANNEL_DISCONNECT_CONFLICT",
+                "예약 게시가 이미 실행 중이라 채널을 해제할 수 없습니다. 현재 게시 상태를 확인해주세요.",
+            )
+        }
 
         // 플랫폼 OAuth 토큰 폐기
         try {

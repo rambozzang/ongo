@@ -7,6 +7,7 @@ import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.exception.PlanLimitExceededException
+import com.ongo.common.exception.BusinessException
 import com.ongo.common.util.safeValueOfOrThrow
 import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.schedule.Schedule
@@ -172,7 +173,15 @@ class ScheduleUseCase(
         // Schedule만 취소하면 durable upload queue가 남아 dispatcher가 외부
         // 플랫폼에 게시한다. 같은 트랜잭션에서 아직 전송되지 않은 자식 작업도
         // CANCELLED로 바꿔 취소 의도를 큐까지 전파한다.
-        videoUploadRepository.cancelScheduledUploads(schedule.videoId, LocalDateTime.now())
+        val cancellableUploadCount = videoUploadRepository.findByVideoId(schedule.videoId)
+            .count { it.status == UploadStatus.UPLOADING && it.scheduledAt != null }
+        val cancelledUploadCount = videoUploadRepository.cancelScheduledUploads(schedule.videoId, LocalDateTime.now())
+        if (cancelledUploadCount != cancellableUploadCount) {
+            throw BusinessException(
+                "SCHEDULE_CANCEL_CONFLICT",
+                "예약 게시가 이미 실행 중이라 취소할 수 없습니다. 현재 게시 상태를 확인해주세요.",
+            )
+        }
         scheduleRepository.update(schedule.copy(status = ScheduleStatus.CANCELLED))
         val video = videoRepository.findById(schedule.videoId)
         val uploads = videoUploadRepository.findByVideoId(schedule.videoId)

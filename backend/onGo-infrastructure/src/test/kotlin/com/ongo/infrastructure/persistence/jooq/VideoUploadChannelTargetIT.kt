@@ -127,6 +127,36 @@ class VideoUploadChannelTargetIT {
     }
 
     @Test
+    @DisplayName("활성 lease가 있는 예약 업로드는 취소되지 않는다")
+    fun scheduledUploadWithActiveLeaseCannotBeCancelled() {
+        val userId = insertUser("scheduled-lease")
+        val channelId = insertChannel(userId, "scheduled-lease-channel", "lease")
+        val videoId = dsl.fetchOne(
+            """
+            INSERT INTO videos (user_id, title, status)
+            VALUES (?, 'scheduled lease video', 'DRAFT')
+            RETURNING id
+            """.trimIndent(),
+            userId,
+        )!!.get(0, Long::class.java)
+        val now = LocalDateTime.now()
+        val uploadId = dsl.fetchOne(
+            """
+            INSERT INTO video_uploads (video_id, platform, channel_id, status, scheduled_at, lease_until)
+            VALUES (?, 'YOUTUBE', ?, 'UPLOADING', ?, ?)
+            RETURNING id
+            """.trimIndent(),
+            videoId,
+            channelId,
+            now.plusHours(1),
+            now.plusMinutes(5),
+        )!!.get(0, Long::class.java)
+
+        assertEquals(0, videoUploadRepository.cancelScheduledUploadsByIds(setOf(uploadId), now))
+        assertEquals(UploadStatus.UPLOADING, videoUploadRepository.findById(uploadId)!!.status)
+    }
+
+    @Test
     @DisplayName("게시 핵심 저장소는 PostgreSQL enum 컬럼에 안전하게 round-trip한다")
     fun corePublishingRepositoriesRoundTripPostgresEnums() {
         val userId = dsl.fetchOne(
