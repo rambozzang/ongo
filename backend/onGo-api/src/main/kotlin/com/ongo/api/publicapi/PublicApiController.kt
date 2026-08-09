@@ -14,7 +14,11 @@ import com.ongo.application.publicapi.PublicConnectionResponse
 import com.ongo.application.publicapi.PublicRemoteMediaUploadRequest
 import com.ongo.application.publicapi.PublicMissingContentResponse
 import com.ongo.application.publicapi.PublicReleaseIdRequest
+import com.ongo.application.publicapi.PublicGroupResponse
+import com.ongo.application.publicapi.PublicNotificationListResponse
 import com.ongo.application.channel.ChannelUseCase
+import com.ongo.application.notification.NotificationUseCase
+import com.ongo.application.workspace.WorkspaceUseCase
 import com.ongo.common.ResData
 import com.ongo.common.exception.ForbiddenException
 import io.swagger.v3.oas.annotations.Operation
@@ -44,7 +48,21 @@ class PublicApiController(
     private val mediaUseCase: PublicApiMediaUseCase,
     private val analyticsUseCase: PublicApiAnalyticsUseCase,
     private val channelUseCase: ChannelUseCase,
+    private val notificationUseCase: NotificationUseCase,
+    private val workspaceUseCase: WorkspaceUseCase,
 ) {
+
+    @Operation(summary = "organization groups 조회")
+    @GetMapping("/groups")
+    fun groups(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+    ): ResponseEntity<ResData<List<PublicGroupResponse>>> {
+        requireApiKey(authentication)
+        val groups = workspaceUseCase.listWorkspaces(userId)
+            .map { PublicGroupResponse(id = it.id.toString(), name = it.name) }
+        return ResData.success(groups)
+    }
 
     @Operation(summary = "연결된 integrations 조회")
     @GetMapping("/integrations")
@@ -66,6 +84,38 @@ class PublicApiController(
         // API key가 사용자에게 발급되어 이 요청까지 도달했다는 것은 onGo 공개 API
         // 연결이 유효하다는 뜻이다. 플랫폼 계정 연결 여부는 integrations에서 확인한다.
         return ResData.success(PublicConnectionResponse(connected = true))
+    }
+
+    @Operation(summary = "알림 목록 조회")
+    @GetMapping("/notifications")
+    fun notifications(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @RequestParam(defaultValue = "0") page: Int,
+    ): ResponseEntity<ResData<PublicNotificationListResponse>> {
+        requireApiKey(authentication)
+        require(page >= 0) { "page는 0 이상이어야 합니다" }
+        val limit = 100
+        val result = notificationUseCase.listNotifications(userId, page, limit)
+        val response = PublicNotificationListResponse(
+            notifications = result.notifications.map { notification ->
+                com.ongo.application.publicapi.PublicNotificationResponse(
+                    id = notification.id.toString(),
+                    content = listOf(notification.title, notification.message)
+                        .filter(String::isNotBlank)
+                        .joinToString("\n"),
+                    link = notification.referenceType?.let { type ->
+                        notification.referenceId?.let { id -> "/$type/$id" }
+                    },
+                    createdAt = notification.createdAt,
+                )
+            },
+            total = result.totalElements,
+            page = result.page,
+            limit = limit,
+            hasMore = (result.page + 1L) * limit < result.totalElements,
+        )
+        return ResData.success(response)
     }
 
     @Operation(summary = "integration 게시 capability 조회")

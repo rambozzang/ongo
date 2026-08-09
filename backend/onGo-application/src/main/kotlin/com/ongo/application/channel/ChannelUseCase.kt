@@ -15,6 +15,7 @@ import com.ongo.domain.channel.PlatformOAuth2Port
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.user.UserRepository
+import com.ongo.domain.video.VideoUploadRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -29,7 +30,8 @@ class ChannelUseCase(
     private val userRepository: UserRepository,
     private val platformOAuth2Port: PlatformOAuth2Port,
     private val platformClientPort: PlatformClientPort,
-    private val tokenEncryptionPort: TokenEncryptionPort
+    private val tokenEncryptionPort: TokenEncryptionPort,
+    private val videoUploadRepository: VideoUploadRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -132,6 +134,11 @@ class ChannelUseCase(
     fun disconnectChannel(userId: Long, channelId: Long) {
         val channel = channelRepository.findById(channelId) ?: throw NotFoundException("채널", channelId)
         if (channel.userId != userId) throw ForbiddenException("해당 채널에 대한 권한이 없습니다")
+
+        // Postiz의 채널 삭제 계약과 동일하게, 아직 외부 전송을 시작하지 않은
+        // 예약 작업은 채널 삭제와 함께 durable queue에서도 취소한다. 이미 전송된
+        // 작업은 결과 확인을 위해 보존한다.
+        videoUploadRepository.cancelScheduledUploadsByChannelId(channelId, LocalDateTime.now())
 
         // 플랫폼 OAuth 토큰 폐기
         try {

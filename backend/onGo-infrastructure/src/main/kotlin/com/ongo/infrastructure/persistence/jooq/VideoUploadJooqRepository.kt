@@ -335,6 +335,20 @@ class VideoUploadJooqRepository(
             .and(VIDEO_SCHEDULED_AT.isNotNull)
             .execute()
 
+    override fun cancelScheduledUploadsByChannelId(channelId: Long, now: LocalDateTime): Int =
+        dsl.update(VIDEO_UPLOADS)
+            .set(STATUS, UploadStatus.CANCELLED.name)
+            .set(ERROR_MESSAGE, "채널 연동 해제로 예약 게시가 취소되었습니다.")
+            .set(VIDEO_LAST_ERROR, "채널 연동 해제: $now")
+            .set(VIDEO_NEXT_RETRY_AT, null as LocalDateTime?)
+            .set(VIDEO_POLL_TOKEN, null as String?)
+            .set(VIDEO_LEASE_OWNER, null as String?)
+            .set(VIDEO_LEASE_UNTIL, null as LocalDateTime?)
+            .where(CHANNEL_ID.eq(channelId))
+            .and(STATUS.eq(UploadStatus.UPLOADING.name))
+            .and(VIDEO_SCHEDULED_AT.isNotNull)
+            .execute()
+
     override fun rescheduleScheduledUploads(
         videoId: Long,
         scheduledAtByUploadId: Map<Long, LocalDateTime>,

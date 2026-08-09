@@ -1,6 +1,7 @@
 package com.ongo.application.publicapi
 
 import com.fasterxml.jackson.databind.JsonNode
+import java.time.LocalDateTime
 
 /** Postiz public API의 핵심 요청 형태를 onGo 게시 모델에 매핑한다. */
 data class CreatePublicPostRequest(
@@ -116,4 +117,24 @@ data class PublicReleaseIdRequest(
     val releaseId: String,
     /** 여러 채널 게시에서 어떤 외부 integration을 연결할지 명시한다. */
     val integrationId: String? = null,
+)
+
+data class PublicGroupResponse(
+    val id: String,
+    val name: String,
+)
+
+data class PublicNotificationResponse(
+    val id: String,
+    val content: String,
+    val link: String?,
+    val createdAt: LocalDateTime?,
+)
+
+data class PublicNotificationListResponse(
+    val notifications: List<PublicNotificationResponse>,
+    val total: Long,
+    val page: Int,
+    val limit: Int,
+    val hasMore: Boolean,
 )
