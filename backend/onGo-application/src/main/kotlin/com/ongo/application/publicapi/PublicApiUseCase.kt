@@ -703,6 +703,8 @@ class PublicApiUseCase(
             if (isRequired) required.add(name)
         }
 
+        fun objectField(name: String) = properties.putObject(name).put("type", "object")
+
         val providerType = postizIdentifier(platform)
         properties.putObject("__type").put("type", "string").put("const", providerType)
         when (platform) {
@@ -731,16 +733,21 @@ class PublicApiUseCase(
             }
             Platform.INSTAGRAM -> {
                 stringField("post_type", values = listOf("post", "story"), isRequired = true)
+                booleanField("is_trial_reel")
+                stringField("graduation_strategy", values = listOf("MANUAL", "SS_PERFORMANCE"))
                 arrayField("collaborators")
             }
             Platform.TWITTER -> {
                 stringField("who_can_reply_post", values = listOf("everyone", "mentionedUsers", "following"), isRequired = true)
                 stringField("community")
                 booleanField("made_with_ai")
-                booleanField("paid_partnership")
             }
-            Platform.FACEBOOK -> stringField("url", format = "uri")
-            Platform.LINKEDIN -> booleanField("post_as_images_carousel")
+            // The public API currently publishes videos only. Postiz fields
+            // for Facebook link posts and LinkedIn image carousels are not
+            // advertised here because these writers cannot apply them to a
+            // video request.
+            Platform.FACEBOOK,
+            Platform.LINKEDIN -> Unit
             Platform.PINTEREST -> {
                 stringField("board", isRequired = true)
                 stringField("title", maxLength = 100)
@@ -748,9 +755,14 @@ class PublicApiUseCase(
                 stringField("dominant_color")
             }
             Platform.WORDPRESS -> {
-                stringField("title", maxLength = 200, isRequired = true)
-                stringField("type", values = listOf("publish", "draft", "private"), isRequired = true)
-                stringField("main_image", format = "uri")
+                stringField("title", maxLength = 200, minLength = 2, isRequired = true)
+                // WordPress' Postiz `type` is the post type (post/page/custom
+                // type), while visibility remains the common onGo field.
+                stringField("type", isRequired = true)
+                val mainImage = objectField("main_image")
+                val imageProperties = mainImage.putObject("properties")
+                imageProperties.putObject("id").put("type", "string")
+                imageProperties.putObject("path").put("type", "string").put("format", "uri")
             }
             Platform.THREADS,
             Platform.NAVER_CLIP,

@@ -32,6 +32,9 @@ data class TikTokInitUploadRequest(
         @JsonProperty("disable_comment") val disableComment: Boolean = false,
         @JsonProperty("disable_stitch") val disableStitch: Boolean = false,
         @JsonProperty("video_cover_timestamp_ms") val videoCoverTimestampMs: Long = 0,
+        @JsonProperty("brand_content_toggle") val brandContentToggle: Boolean = false,
+        @JsonProperty("brand_organic_toggle") val brandOrganicToggle: Boolean = false,
+        @JsonProperty("is_aigc") val isAigc: Boolean = false,
     )
 
     data class SourceInfo(

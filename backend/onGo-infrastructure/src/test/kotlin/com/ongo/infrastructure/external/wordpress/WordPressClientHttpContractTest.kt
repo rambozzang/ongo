@@ -80,6 +80,47 @@ class WordPressClientHttpContractTest {
     }
 
     @Test
+    fun `WordPress uploads Postiz main image and sends featured image id`() {
+        server.enqueue(
+            MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("""{"ID":12,"URL":"https://cdn.wp.test/video.mp4"}"""),
+        )
+        server.enqueue(
+            MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("""{"ID":13,"URL":"https://cdn.wp.test/cover.jpg"}"""),
+        )
+        server.enqueue(
+            MockResponse().setHeader("Content-Type", "application/json")
+                .setBody("""{"ID":99,"URL":"https://creator.wordpress.com/post/99/","status":"publish"}"""),
+        )
+
+        val config = mockk<WordPressConfig>()
+        every { config.getClientId() } returns "client-id"
+        every { config.getClientSecret() } returns "client-secret"
+        val client = WordPressClient(proxy(), mockk(), config)
+
+        client.uploadVideo(
+            PlatformUploadRequest(
+                fileUrl = "https://cdn.test/video.mp4",
+                title = "제목",
+                description = "설명",
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC.name,
+                thumbnailUrl = null,
+                accessToken = "wp-token",
+                platformChannelId = "site-1",
+                customSettingsJson = """{"__type":"wordpress","title":"제목","type":"post","main_image":{"id":"cover-1","path":"https://cdn.test/cover.jpg"}}""",
+            ),
+        )
+
+        server.takeRequest()
+        val cover = server.takeRequest()
+        assertThat(cover.body.readUtf8()).contains("media_urls%5B%5D=https%3A%2F%2Fcdn.test%2Fcover.jpg")
+        val post = server.takeRequest()
+        assertThat(post.body.readUtf8()).contains("\"featured_image\":13")
+    }
+
+    @Test
     fun `WordPress OAuth uses official oauth2 token endpoint and form body`() {
         server.enqueue(
             MockResponse()

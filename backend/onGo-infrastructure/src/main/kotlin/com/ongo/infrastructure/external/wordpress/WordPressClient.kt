@@ -1,5 +1,7 @@
 package com.ongo.infrastructure.external.wordpress
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
@@ -15,6 +17,7 @@ class WordPressClient(
     private val wordPressApi: WordPressApi,
     private val wordPressOAuthApi: WordPressOAuthApi,
     private val wordPressConfig: WordPressConfig,
+    private val objectMapper: ObjectMapper = jacksonObjectMapper(),
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(WordPressClient::class.java)
@@ -37,6 +40,29 @@ class WordPressClient(
                 },
             )
 
+            // Postiz exposes main_image as a separate media object. Upload it
+            // before creating the post so WordPress can set the attachment as
+            // the actual featured image instead of merely ignoring the URL.
+            val settings = request.customSettingsJson
+                ?.let { runCatching { objectMapper.readTree(it) }.getOrNull() }
+            val featuredImageId = settings?.path("main_image")
+                ?.path("id")
+                ?.asLong(-1L)
+                ?.takeIf { it > 0 }
+                ?: settings?.path("main_image")
+                    ?.path("path")
+                    ?.asText(null)
+                    ?.takeIf(String::isNotBlank)
+                    ?.let { imageUrl ->
+                        wordPressApi.uploadMedia(
+                            siteId = siteId,
+                            authorization = "Bearer ${request.accessToken}",
+                            body = LinkedMultiValueMap<String, String>().apply {
+                                add("media_urls[]", imageUrl)
+                            },
+                        ).id
+                    }
+
             // Step 2: Create post with embedded video
             val videoEmbed = """<video src="${mediaResponse.url}" controls width="100%"></video>"""
             val content = "$videoEmbed\n\n${request.description}"
@@ -47,6 +73,7 @@ class WordPressClient(
                 status = mapVisibility(request.visibility),
                 tags = request.tags,
                 format = "video",
+                featuredImage = featuredImageId,
             )
 
             val postResponse = wordPressApi.createPost(

@@ -8,6 +8,9 @@ data class TwitterCreateTweetRequest(
     val text: String,
     val media: MediaPayload? = null,
     val reply: ReplyPayload? = null,
+    @JsonProperty("reply_settings") val replySettings: String? = null,
+    @JsonProperty("community_id") val communityId: String? = null,
+    @JsonProperty("made_with_ai") val madeWithAi: Boolean? = null,
 ) {
     data class MediaPayload(
         @JsonProperty("media_ids") val mediaIds: List<String>,

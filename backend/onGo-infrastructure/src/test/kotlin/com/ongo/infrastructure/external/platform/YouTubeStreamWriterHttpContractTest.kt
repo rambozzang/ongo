@@ -79,12 +79,46 @@ class YouTubeStreamWriterHttpContractTest {
         assertThat(upload.body.readByteArray()).containsExactly(*"test".toByteArray())
     }
 
+    @Test
+    fun `YouTube sends configured thumbnail to thumbnails set endpoint`() {
+        server.enqueue(MockResponse().setResponseCode(200).setHeader("Location", server.url("/upload/session-2").toString()))
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"id":"youtube-video-2"}"""))
+        server.enqueue(MockResponse().setResponseCode(200).setBody("thumbnail-bytes"))
+        server.enqueue(MockResponse().setResponseCode(200))
+
+        val config = mockk<YouTubeConfig>()
+        every { config.getUploadBaseUrl() } returns server.url("/").toString().removeSuffix("/")
+        val writer = YouTubeStreamWriter( config, PlatformFileTransferHelper(jacksonObjectMapper()))
+
+        writer.initSession(
+            meta().copy(customThumbnailUrl = server.url("/cover.jpg").toString()),
+            PlainToken("youtube-token"),
+            null,
+            4,
+            null,
+        )
+        writer.writeChunk("test".toByteArray(), 0, 4)
+        writer.complete()
+
+        server.takeRequest()
+        server.takeRequest()
+        val download = server.takeRequest()
+        assertThat(download.method).isEqualTo("GET")
+        assertThat(download.path).isEqualTo("/cover.jpg")
+        val thumbnail = server.takeRequest()
+        assertThat(thumbnail.method).isEqualTo("POST")
+        assertThat(thumbnail.path).isEqualTo("/youtube/v3/thumbnails/set?videoId=youtube-video-2")
+        assertThat(thumbnail.getHeader("Authorization")).isEqualTo("Bearer youtube-token")
+        assertThat(thumbnail.getHeader("Content-Type")).startsWith("multipart/form-data")
+        assertThat(thumbnail.body.readUtf8()).contains("thumbnail-bytes")
+    }
+
     private fun meta() = VideoPlatformMeta(
         videoUploadId = 1L,
         title = "테스트 제목",
         description = "테스트 설명",
         tags = listOf("tag"),
         visibility = Visibility.PUBLIC,
-        customSettingsJson = """{"selfDeclaredMadeForKids":true}""",
+        customSettingsJson = """{"selfDeclaredMadeForKids":"yes"}""",
     )
 }

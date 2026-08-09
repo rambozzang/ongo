@@ -69,6 +69,27 @@ class InstagramClient(
             else -> throw PlatformUploadException("Instagram", "지원하지 않는 Instagram post_type입니다: $postType")
         }
 
+        val collaborators = settings?.path("collaborators")
+            ?.takeIf { it.isArray }
+            ?.mapNotNull { collaborator ->
+                when {
+                    collaborator.isTextual -> collaborator.asText()
+                    collaborator.isObject -> collaborator.path("label").asText(null)
+                        ?: collaborator.path("value").asText(null)
+                    else -> null
+                }
+            }
+            ?.filter(String::isNotBlank)
+            ?.takeIf(List<String>::isNotEmpty)
+            ?.let(objectMapper::writeValueAsString)
+        val isTrialReel = settings?.path("is_trial_reel")
+            ?.takeIf { it.isBoolean }
+            ?.asBoolean()
+            ?.takeIf { mediaType == "REELS" }
+        val trialReelType = settings?.path("graduation_strategy")
+            ?.asText(null)
+            ?.takeIf { isTrialReel == true }
+
         val igUserId = request.platformChannelId
             ?: throw PlatformUploadException("Instagram", "Instagram 사용자 ID(platformChannelId)가 필요합니다")
 
@@ -80,6 +101,9 @@ class InstagramClient(
                 videoUrl = request.fileUrl,
                 caption = caption,
                 shareToFeed = if (mediaType == "REELS") true else null,
+                collaborators = collaborators,
+                isTrialReel = isTrialReel,
+                trialReelType = trialReelType,
                 accessToken = request.accessToken,
             )
 

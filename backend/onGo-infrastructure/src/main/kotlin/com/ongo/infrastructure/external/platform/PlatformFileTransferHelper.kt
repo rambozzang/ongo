@@ -84,6 +84,41 @@ class PlatformFileTransferHelper(
     }
 
     /**
+     * YouTube의 별도 thumbnails.set API에 커스텀 썸네일을 올린다.
+     * 업로드 본문에 썸네일 URL을 넣는 것만으로는 YouTube가 썸네일을
+     * 변경하지 않으므로, 공개 URL을 먼저 다운로드해 multipart로 전송한다.
+     */
+    fun setYouTubeThumbnail(
+        uploadBaseUrl: String,
+        videoId: String,
+        thumbnailUrl: String,
+        accessToken: String,
+    ) {
+        val tempFile = downloadFileToTemp(thumbnailUrl)
+        try {
+            val contentType = when (tempFile.extension.lowercase()) {
+                "png" -> MediaType.IMAGE_PNG
+                "webp" -> MediaType.parseMediaType("image/webp")
+                else -> MediaType.IMAGE_JPEG
+            }
+            val multipart = MultipartBodyBuilder().apply {
+                part("media", FileSystemResource(tempFile))
+                    .filename(tempFile.name)
+                    .contentType(contentType)
+            }
+            transferClient.post()
+                .uri("$uploadBaseUrl/youtube/v3/thumbnails/set?videoId=$videoId")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(multipart.build())
+                .retrieve()
+                .toBodilessEntity()
+        } finally {
+            tempFile.delete()
+        }
+    }
+
+    /**
      * TikTok: uploadUrl에 ByteArray를 청크 단위로 PUT 업로드.
      * Content-Range: bytes {start}-{end}/{total} 형식.
      */

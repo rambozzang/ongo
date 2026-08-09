@@ -17,6 +17,7 @@ data class WordPressPostRequest(
     val status: String = "publish", // publish, draft, private
     val tags: List<String> = emptyList(),
     val format: String = "video",
+    @JsonProperty("featured_image") val featuredImage: Long? = null,
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

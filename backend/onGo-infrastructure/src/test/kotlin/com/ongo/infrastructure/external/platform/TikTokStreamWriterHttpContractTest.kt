@@ -61,6 +61,9 @@ class TikTokStreamWriterHttpContractTest {
             .contains("\"disable_duet\":true")
             .contains("\"disable_comment\":false")
             .contains("\"disable_stitch\":true")
+            .contains("\"brand_content_toggle\":true")
+            .contains("\"brand_organic_toggle\":false")
+            .contains("\"is_aigc\":true")
 
         val upload = server.takeRequest()
         assertThat(upload.method).isEqualTo("PUT")
@@ -127,6 +130,6 @@ class TikTokStreamWriterHttpContractTest {
         description = "설명",
         tags = listOf("tag"),
         visibility = Visibility.PUBLIC,
-        customSettingsJson = """{"duet":false,"comment":true,"stitch":false}""",
+        customSettingsJson = """{"duet":false,"comment":true,"stitch":false,"brand_content_toggle":true,"brand_organic_toggle":false,"video_made_with_ai":true}""",
     )
 }

@@ -1,5 +1,6 @@
 package com.ongo.infrastructure.external.platform
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.video.PlatformStreamWriter
 import com.ongo.application.video.PlatformStreamWriterFactory
 import com.ongo.application.video.PlatformUploadResult
@@ -43,6 +44,9 @@ class TwitterStreamWriter(
     private var mediaId: String? = null
     private var accessTokenRef: String? = null
     private var tweetText: String = ""
+    private var replySettings: String? = null
+    private var communityId: String? = null
+    private var madeWithAi: Boolean? = null
 
     companion object {
         private const val APPEND_CHUNK_SIZE = 5 * 1024 * 1024 // 5MB — Twitter 권장 청크 크기
@@ -69,6 +73,12 @@ class TwitterStreamWriter(
 
         accessTokenRef = accessToken.value
         tweetText = buildTweetText(meta)
+        val settings = meta.customSettingsJson
+            ?.let { runCatching { jacksonObjectMapper().readTree(it) }.getOrNull() }
+        replySettings = settings?.path("who_can_reply_post")?.asText(null)
+            ?.takeIf { it in setOf("everyone", "mentionedUsers", "following") }
+        communityId = settings?.path("community")?.asText(null)?.takeIf(String::isNotBlank)
+        madeWithAi = settings?.path("made_with_ai")?.takeIf { it.isBoolean }?.asBoolean()
 
         val initResponse = twitterMediaApi.initUpload(
             authorization = "Bearer ${accessToken.value}",
@@ -134,6 +144,9 @@ class TwitterStreamWriter(
                 media = TwitterCreateTweetRequest.MediaPayload(
                     mediaIds = listOf(currentMediaId),
                 ),
+                replySettings = replySettings,
+                communityId = communityId,
+                madeWithAi = madeWithAi,
             )
 
             val tweetResponse = twitterApi.createTweet(

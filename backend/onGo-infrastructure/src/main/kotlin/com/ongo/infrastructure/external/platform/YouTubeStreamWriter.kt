@@ -34,6 +34,8 @@ class YouTubeStreamWriter(
     private val log = LoggerFactory.getLogger(javaClass)
     private val buffer = TempFileChunkBuffer("youtube")
     private var sessionUri: String? = null
+    private var accessTokenRef: String? = null
+    private var customThumbnailUrl: String? = null
 
     companion object {
         private const val MAX_FILE_SIZE = 256L * 1024 * 1024 * 1024 // 256GB — YouTube 제한이지만 메모리 보호를 위해 실질 제한 적용
@@ -47,6 +49,8 @@ class YouTubeStreamWriter(
         fileSize: Long,
         scheduledAt: LocalDateTime?,
     ): String {
+        accessTokenRef = accessToken.value
+        customThumbnailUrl = meta.customThumbnailUrl?.takeIf(String::isNotBlank)
         if (fileSize > MAX_MEMORY_FILE_SIZE) {
             throw IllegalArgumentException(
                 "스트리밍 업로드 최대 파일 크기(${MAX_MEMORY_FILE_SIZE / 1024 / 1024}MB)를 초과합니다: ${fileSize / 1024 / 1024}MB"
@@ -81,9 +85,13 @@ class YouTubeStreamWriter(
             status = YouTubeUploadRequest.Status(
                 privacyStatus = privacyStatus,
                 publishAt = publishAtIso,
-                selfDeclaredMadeForKids = settings?.path("selfDeclaredMadeForKids")
-                    ?.takeUnless { it.isMissingNode || it.isNull }
-                    ?.asBoolean() ?: false,
+                selfDeclaredMadeForKids = settings?.path("selfDeclaredMadeForKids")?.let { value ->
+                    when {
+                        value.isBoolean -> value.asBoolean()
+                        value.isTextual -> value.asText().equals("yes", ignoreCase = true)
+                        else -> false
+                    }
+                } ?: false,
             ),
         )
 
@@ -111,6 +119,21 @@ class YouTubeStreamWriter(
         val uri = sessionUri ?: throw IllegalStateException("initSession() 호출 필요")
         return try {
             val videoId = fileTransferHelper.uploadToYouTubeSession(uri, file)
+            customThumbnailUrl?.let { thumbnailUrl ->
+                runCatching {
+                    fileTransferHelper.setYouTubeThumbnail(
+                        uploadBaseUrl = youTubeConfig.getUploadBaseUrl(),
+                        videoId = videoId,
+                        thumbnailUrl = thumbnailUrl,
+                        accessToken = accessTokenRef ?: error("YouTube access token이 없습니다"),
+                    )
+                }.onFailure { thumbnailError ->
+                    // The video itself is already published. Keep that final
+                    // state truthful while surfacing the thumbnail failure in
+                    // logs for the retry/repair workflow.
+                    log.warn("YouTube 커스텀 썸네일 설정 실패: videoId={}, {}", videoId, thumbnailError.message)
+                }
+            }
             log.info("YouTube 스트리밍 업로드 완료: videoId={}", videoId)
             PlatformUploadResult(
                 success = true,

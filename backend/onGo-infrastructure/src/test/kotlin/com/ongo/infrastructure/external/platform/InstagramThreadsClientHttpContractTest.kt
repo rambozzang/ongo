@@ -145,6 +145,37 @@ class InstagramThreadsClientHttpContractTest {
         assertThat(create.requestUrl?.queryParameter("share_to_feed")).isNull()
     }
 
+    @Test
+    fun `Instagram trial reel and collaborators settings are sent to Graph API`() {
+        server.enqueue(json("""{"id":"container-trial"}"""))
+        server.enqueue(json("""{"id":"container-trial","status_code":"FINISHED"}"""))
+        server.enqueue(json("""{"id":"media-trial"}"""))
+        server.enqueue(json("""{"id":"media-trial","permalink":"https://instagram.test/reel/media-trial"}"""))
+
+        InstagramClient(
+            instagramApi = proxy<InstagramApi>(),
+            instagramOAuthApi = mockk(),
+            instagramConfig = mockk<InstagramConfig>(relaxed = true),
+        ).uploadVideo(
+            PlatformUploadRequest(
+                fileUrl = "https://cdn.test/trial.mp4",
+                title = "Trial Reel",
+                description = "설명",
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC.name,
+                thumbnailUrl = null,
+                accessToken = "instagram-token",
+                platformChannelId = "ig-user-1",
+                customSettingsJson = """{"__type":"instagram","post_type":"post","is_trial_reel":true,"graduation_strategy":"SS_PERFORMANCE","collaborators":[{"label":"partner"}]}""",
+            ),
+        )
+
+        val create = server.takeRequest()
+        assertThat(create.requestUrl?.queryParameter("is_trial_reel")).isEqualTo("true")
+        assertThat(create.requestUrl?.queryParameter("trial_reel_type")).isEqualTo("SS_PERFORMANCE")
+        assertThat(create.requestUrl?.queryParameter("collaborators")).isEqualTo("[\"partner\"]")
+    }
+
     private fun json(body: String) = MockResponse()
         .setHeader("Content-Type", "application/json")
         .setBody(body)

@@ -21,6 +21,9 @@ interface InstagramApi {
         @RequestParam("video_url") videoUrl: String,
         @RequestParam("caption") caption: String,
         @RequestParam("share_to_feed", required = false) shareToFeed: Boolean?,
+        @RequestParam("collaborators", required = false) collaborators: String?,
+        @RequestParam("is_trial_reel", required = false) isTrialReel: Boolean?,
+        @RequestParam("trial_reel_type", required = false) trialReelType: String?,
         @RequestParam("access_token") accessToken: String,
     ): InstagramContainerResponse
 

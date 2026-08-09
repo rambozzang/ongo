@@ -93,6 +93,9 @@ class TwitterStreamWriterHttpContractTest {
             .contains("테스트 영상")
             .contains("설명")
             .contains("media-1")
+            .contains("\"reply_settings\":\"following\"")
+            .contains("\"community_id\":\"community-1\"")
+            .contains("\"made_with_ai\":true")
     }
 
     private fun json(body: String) = MockResponse()
@@ -105,6 +108,7 @@ class TwitterStreamWriterHttpContractTest {
         description = "설명",
         tags = listOf("tag"),
         visibility = Visibility.PUBLIC,
+        customSettingsJson = """{"who_can_reply_post":"following","community":"community-1","made_with_ai":true}""",
     )
 
     private inline fun <reified T : Any> proxy(server: MockWebServer, type: Class<T>): T {
