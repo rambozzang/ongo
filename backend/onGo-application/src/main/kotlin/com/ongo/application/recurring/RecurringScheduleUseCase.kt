@@ -23,6 +23,7 @@ class RecurringScheduleUseCase(
 
     companion object {
         val FREQUENCIES = setOf("DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY")
+        val STORAGE_ZONE: ZoneId = ZoneId.of("Asia/Seoul")
     }
 
     fun listSchedules(userId: Long): List<RecurringScheduleResponse> {
@@ -119,7 +120,7 @@ class RecurringScheduleUseCase(
         val now = reference
         val todayAtTime = now.toLocalDate().atTime(timeOfDay)
 
-        return when (frequency) {
+        val nextLocal = when (frequency) {
             "DAILY" -> if (todayAtTime.isAfter(now)) todayAtTime else todayAtTime.plusDays(1)
             "WEEKLY" -> {
                 val target = dayOfWeek?.let { DayOfWeek.of(it) } ?: now.dayOfWeek
@@ -142,18 +143,23 @@ class RecurringScheduleUseCase(
             }
             else -> todayAtTime.plusDays(1)
         }
+        // The database due query uses one shared wall-clock zone. Persist the
+        // instant in KST while calculating the recurrence in the user's zone.
+        return nextLocal.atZone(zone).withZoneSameInstant(STORAGE_ZONE).toLocalDateTime()
     }
 
     /** Calculates the next occurrence strictly after a consumed occurrence. */
     fun nextRunAtAfter(schedule: RecurringSchedule, occurrence: LocalDateTime): LocalDateTime =
-        calculateNextRunAt(
-            schedule.frequency,
-            schedule.dayOfWeek,
-            schedule.dayOfMonth,
-            schedule.timeOfDay,
-            schedule.timezone,
-            occurrence,
-        )
+        ZoneId.of(schedule.timezone).let { zone ->
+            calculateNextRunAt(
+                schedule.frequency,
+                schedule.dayOfWeek,
+                schedule.dayOfMonth,
+                schedule.timeOfDay,
+                schedule.timezone,
+                occurrence.atZone(STORAGE_ZONE).withZoneSameInstant(zone).toLocalDateTime(),
+            )
+        }
 
     private fun validateSource(userId: Long, videoId: Long, platforms: List<String>) {
         val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
@@ -164,6 +170,9 @@ class RecurringScheduleUseCase(
 
     private fun validatePlatforms(platforms: List<String>) {
         require(platforms.isNotEmpty()) { "반복 게시 플랫폼을 하나 이상 선택하세요." }
+        require(platforms.map { it.uppercase() }.distinct().size == platforms.size) {
+            "반복 게시 플랫폼은 중복될 수 없습니다."
+        }
         platforms.forEach { value ->
             require(runCatching { Platform.valueOf(value.uppercase()) }.isSuccess) {
                 "지원하지 않는 반복 게시 플랫폼입니다: $value"

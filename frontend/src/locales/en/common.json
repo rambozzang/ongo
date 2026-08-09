@@ -4407,6 +4407,16 @@
       "autoArrangeFailed": "Failed to load recommendations.",
       "moveFailed": "Failed to move the schedule.",
       "failed": "Failed",
+      "openPublished": "Open published post",
+      "status": {
+        "SCHEDULED": "Scheduled",
+        "PROCESSING": "Processing",
+        "PUBLISHED": "Published",
+        "PARTIALLY_PUBLISHED": "Partially published",
+        "UNCONFIRMED": "Needs confirmation",
+        "FAILED": "Failed",
+        "CANCELLED": "Cancelled"
+      },
       "recurringTitle": "Recurring posts",
       "recurringDescription": "Publish the same video and copy repeatedly to the selected platforms.",
       "recurringLoading": "Loading recurring posts...",

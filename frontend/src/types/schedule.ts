@@ -19,7 +19,8 @@ export interface Schedule {
 export interface SchedulePlatform {
   platform: Platform
   scheduledAt: string
-  status: ScheduleStatus
+  status?: ScheduleStatus | null
+  platformUrl?: string | null
 }
 
 export interface ScheduleCreateRequest {

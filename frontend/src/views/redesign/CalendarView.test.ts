@@ -118,6 +118,25 @@ describe('CalendarView', () => {
     expect(router.currentRoute.value.fullPath).toBe('/videos/101')
   })
 
+  it('renders the server-confirmed status and published link', async () => {
+    const published = {
+      ...schedule(3, 9),
+      status: 'PUBLISHED',
+      platforms: [{
+        platform: 'YOUTUBE',
+        scheduledAt: localDateTime(monday(), 9),
+        status: 'PUBLISHED',
+        platformUrl: 'https://youtube.test/watch/3',
+      }],
+    }
+    vi.mocked(scheduleApi.list).mockResolvedValue([published] as never)
+
+    const { wrapper } = await renderCalendar()
+
+    expect(wrapper.text()).toContain('게시 완료')
+    expect(wrapper.find('a[target="_blank"]').attributes('href')).toBe('https://youtube.test/watch/3')
+  })
+
   it('requires confirmation before a drag-and-drop reschedule reaches the server', async () => {
     const { wrapper } = await renderCalendar()
     const blocks = wrapper.findAll('[draggable="true"]')

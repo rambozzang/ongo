@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
+import java.time.LocalTime
 
 class RecurringScheduleUseCaseTest {
 
@@ -69,6 +71,25 @@ class RecurringScheduleUseCaseTest {
             useCase().createSchedule(1L, request().copy(timezone = "Not/AZone"))
         }
         assertTrue(invalidZone.message!!.contains("시간대"))
+    }
+
+    @Test
+    fun `반복 예약의 다음 실행 시각은 사용자 시간대를 KST 저장 시각으로 변환한다`() {
+        val source = RecurringSchedule(
+            id = 7L,
+            userId = 1L,
+            videoId = 10L,
+            name = "뉴욕 반복 게시",
+            frequency = "DAILY",
+            timeOfDay = LocalTime.of(9, 0),
+            timezone = "America/New_York",
+            nextRunAt = LocalDateTime.of(2026, 1, 10, 23, 0),
+        )
+
+        val next = useCase().nextRunAtAfter(source, source.nextRunAt!!)
+
+        // Jan 11 09:00 in New York is Jan 11 23:00 in KST.
+        assertEquals(LocalDateTime.of(2026, 1, 11, 23, 0), next)
     }
 
     private fun useCase() = RecurringScheduleUseCase(repository, videoRepository)

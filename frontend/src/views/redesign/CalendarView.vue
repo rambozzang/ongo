@@ -116,13 +116,23 @@
                 <span class="font-mono text-[10px] text-content-secondary">{{
                   timeOf(s.scheduledAt)
                 }}</span>
-                <StatusPill v-if="s.status === 'FAILED'" variant="error">
-                  {{ $t('redesign.calendar.failed') }}
+                <StatusPill v-if="s.status !== 'SCHEDULED'" :variant="statusVariant(s.status)">
+                  {{ statusLabel(s.status) }}
                 </StatusPill>
               </div>
               <div class="mt-[6px] text-[11.5px] font-semibold leading-[1.35] text-content">
                 {{ s.videoTitle }}
               </div>
+              <a
+                v-if="firstPlatformUrl(s)"
+                :href="firstPlatformUrl(s)!"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="mt-1 inline-block text-[10.5px] font-semibold text-accent hover:underline"
+                @click.stop
+              >
+                {{ t('redesign.calendar.openPublished') }}
+              </a>
             </div>
 
             <!-- 빈 슬롯: 클릭하면 해당 일시로 컴포저 프리필 -->
@@ -305,6 +315,21 @@ function chipOf(platform: string | null | undefined): ChipPlatform | null {
 
 function firstPlatform(s: Schedule): string | null {
   return s.platforms[0]?.platform ?? null
+}
+
+function firstPlatformUrl(s: Schedule): string | null {
+  return s.platforms.find((platform) => platform.platformUrl)?.platformUrl ?? null
+}
+
+function statusVariant(status: Schedule['status']): 'success' | 'warning' | 'error' | 'muted' {
+  if (status === 'PUBLISHED') return 'success'
+  if (status === 'FAILED') return 'error'
+  if (status === 'UNCONFIRMED' || status === 'PARTIALLY_PUBLISHED') return 'warning'
+  return 'muted'
+}
+
+function statusLabel(status: Schedule['status']): string {
+  return t(`redesign.calendar.status.${status}`)
 }
 
 /** 로컬 날짜가 같은 예약만 시간순으로 */

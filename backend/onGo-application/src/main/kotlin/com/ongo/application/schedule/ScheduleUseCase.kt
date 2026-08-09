@@ -3,6 +3,7 @@ package com.ongo.application.schedule
 import com.ongo.application.schedule.dto.*
 import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.ScheduleStatus
+import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.exception.PlanLimitExceededException
@@ -11,6 +12,8 @@ import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.user.UserRepository
 import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.video.VideoUpload
+import com.ongo.domain.video.VideoUploadRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -20,6 +23,7 @@ import java.time.ZoneId
 class ScheduleUseCase(
     private val scheduleRepository: ScheduleRepository,
     private val videoRepository: VideoRepository,
+    private val videoUploadRepository: VideoUploadRepository,
     private val userRepository: UserRepository
 ) {
     companion object {
@@ -49,18 +53,36 @@ class ScheduleUseCase(
         )
 
         val saved = scheduleRepository.save(schedule)
-        return saved.toResponse(video.title, video.thumbnailUrls.firstOrNull())
+        return saved.toResponse(
+            video.title,
+            video.thumbnailUrls.firstOrNull(),
+            videoUploadRepository.findByVideoId(request.videoId),
+        )
     }
 
-    fun getSchedules(userId: Long, from: LocalDateTime?, to: LocalDateTime?): ScheduleCalendarResponse {
+    fun getSchedules(
+        userId: Long,
+        from: LocalDateTime?,
+        to: LocalDateTime?,
+        status: String? = null,
+    ): ScheduleCalendarResponse {
         val effectiveFrom = from ?: LocalDateTime.now(KST).withDayOfMonth(1).withHour(0).withMinute(0)
         val effectiveTo = to ?: effectiveFrom.plusMonths(1)
+        val requestedStatus = parseStatus(status)
 
         val schedules = scheduleRepository.findByUserIdAndDateRange(userId, effectiveFrom, effectiveTo)
+            .filter { requestedStatus == null || it.status == requestedStatus }
+        val videoIds = schedules.map { it.videoId }.distinct()
+        val videosById = videoRepository.findByIds(videoIds).associateBy { it.id }
+        val uploadsByVideoId = videoUploadRepository.findByVideoIds(videoIds)
         return ScheduleCalendarResponse(
             schedules = schedules.map { schedule ->
-                val video = videoRepository.findById(schedule.videoId)
-                schedule.toResponse(video?.title, video?.thumbnailUrls?.firstOrNull())
+                val video = videosById[schedule.videoId]
+                schedule.toResponse(
+                    video?.title,
+                    video?.thumbnailUrls?.firstOrNull(),
+                    uploadsByVideoId[schedule.videoId].orEmpty(),
+                )
             },
             from = effectiveFrom,
             to = effectiveTo
@@ -71,7 +93,8 @@ class ScheduleUseCase(
         val schedule = scheduleRepository.findById(scheduleId) ?: throw NotFoundException("예약", scheduleId)
         if (schedule.userId != userId) throw ForbiddenException("해당 예약에 대한 권한이 없습니다")
         val video = videoRepository.findById(schedule.videoId)
-        return schedule.toResponse(video?.title, video?.thumbnailUrls?.firstOrNull())
+        val uploads = videoUploadRepository.findByVideoId(schedule.videoId)
+        return schedule.toResponse(video?.title, video?.thumbnailUrls?.firstOrNull(), uploads)
     }
 
     @Transactional
@@ -101,7 +124,11 @@ class ScheduleUseCase(
         )
         scheduleRepository.update(updated)
         val video = videoRepository.findById(schedule.videoId)
-        return updated.toResponse(video?.title, video?.thumbnailUrls?.firstOrNull())
+        return updated.toResponse(
+            video?.title,
+            video?.thumbnailUrls?.firstOrNull(),
+            videoUploadRepository.findByVideoId(schedule.videoId),
+        )
     }
 
     @Transactional
@@ -140,12 +167,31 @@ class ScheduleUseCase(
         }
     }
 
-    private fun Schedule.toResponse(videoTitle: String?, thumbnailUrl: String?): ScheduleResponse {
+    private fun parseStatus(raw: String?): ScheduleStatus? {
+        if (raw.isNullOrBlank()) return null
+        return runCatching { ScheduleStatus.valueOf(raw.trim().uppercase()) }
+            .getOrElse { throw IllegalArgumentException("지원하지 않는 예약 상태입니다: $raw") }
+    }
+
+    private fun Schedule.toResponse(
+        videoTitle: String?,
+        thumbnailUrl: String?,
+        uploads: List<VideoUpload>,
+    ): ScheduleResponse {
+        val uploadsByPlatform = uploads.groupBy { it.platform }
         val platformConfigs = platforms.map { (key, value) ->
             val platformScheduledAt = value.asPlatformScheduleTime() ?: scheduledAt
+            val platform = safeValueOfOrThrow<com.ongo.common.enums.Platform>(key)
+            // A video can have more than one schedule. Match the upload by its
+            // platform-specific scheduled time instead of leaking the result
+            // from another occurrence into this calendar item.
+            val upload = uploadsByPlatform[platform]
+                ?.firstOrNull { it.scheduledAt == platformScheduledAt }
             PlatformScheduleConfig(
-                platform = safeValueOfOrThrow<com.ongo.common.enums.Platform>(key),
+                platform = platform,
                 scheduledAt = platformScheduledAt,
+                status = upload?.status?.toScheduleStatus(),
+                platformUrl = upload?.platformUrl,
             )
         }
         return ScheduleResponse(
@@ -158,6 +204,15 @@ class ScheduleUseCase(
             platforms = platformConfigs,
             createdAt = createdAt
         )
+    }
+
+    private fun UploadStatus.toScheduleStatus(): ScheduleStatus = when (this) {
+        UploadStatus.PUBLISHED -> ScheduleStatus.PUBLISHED
+        UploadStatus.FAILED, UploadStatus.REJECTED, UploadStatus.IMPORT_FAILED -> ScheduleStatus.FAILED
+        UploadStatus.UNCONFIRMED -> ScheduleStatus.UNCONFIRMED
+        UploadStatus.PARTIALLY_PUBLISHED -> ScheduleStatus.PARTIALLY_PUBLISHED
+        UploadStatus.PROCESSING, UploadStatus.REVIEW -> ScheduleStatus.PROCESSING
+        UploadStatus.DRAFT, UploadStatus.UPLOADING, UploadStatus.IMPORTING -> ScheduleStatus.SCHEDULED
     }
 
     private fun Any?.asPlatformScheduleTime(): LocalDateTime? {

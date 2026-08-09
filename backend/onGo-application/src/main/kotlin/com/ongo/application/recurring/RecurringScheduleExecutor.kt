@@ -67,19 +67,13 @@ class RecurringScheduleExecutor(
             .onFailure { log.info("동결된 계정의 반복 예약을 보류합니다. recurringId={}", id) }
             .getOrElse { return }
 
-        // 이 메서드는 perOccurrenceTx 안에서 실행된다. markRun과 회차 생성이
-        // 같은 트랜잭션이므로 외부 게시 전에 DB 작업이 부분 커밋되지 않는다.
-        if (!recurringRepository.markRun(id, occurrence, occurrence, next)) return
-
         val sourceId = definition.videoId
         val source = sourceId?.let(videoRepository::findById)
         val platforms = definition.platforms.mapNotNull { it.toPlatformOrNull() }.distinct()
         if (source == null || source.fileUrl.isNullOrBlank() || platforms.isEmpty()) {
-            log.warn(
-                "반복 예약을 건너뜁니다: source video/file/platform 설정이 없습니다. recurringId={}, videoId={}, platforms={}",
-                id, sourceId, platforms,
+            throw IllegalStateException(
+                "반복 예약 원본 영상/파일/플랫폼 설정이 없습니다: recurringId=$id videoId=$sourceId platforms=$platforms",
             )
-            return
         }
 
         // video_uploads has a deliberate unique(video_id, platform) key. Each
@@ -96,9 +90,8 @@ class RecurringScheduleExecutor(
                 updatedAt = null,
             )
         )
-        val scheduledAt = occurrence.atZone(ZoneId.of(definition.timezone))
-            .withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-            .toLocalDateTime()
+        // nextRunAt is persisted in the scheduler's shared KST storage zone.
+        val scheduledAt = occurrence
         scheduleRepository.save(
             Schedule(
                 videoId = occurrenceVideo.id!!,
@@ -109,6 +102,11 @@ class RecurringScheduleExecutor(
                 },
             )
         )
+        // Consume the occurrence only after the copied video and schedule are
+        // both persisted. Any earlier failure rolls back and remains due.
+        if (!recurringRepository.markRun(id, occurrence, occurrence, next)) {
+            throw IllegalStateException("반복 예약 회차 선점 상태가 변경되었습니다: recurringId=$id")
+        }
         log.info("반복 예약 실행을 생성했습니다. recurringId={}, videoId={}, scheduledAt={}", id, occurrenceVideo.id, scheduledAt)
     }
 

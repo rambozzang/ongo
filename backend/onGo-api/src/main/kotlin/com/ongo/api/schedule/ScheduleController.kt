@@ -58,9 +58,9 @@ class ScheduleController(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @Parameter(description = "조회 시작 일시 (ISO 8601 형식, 예: 2025-01-01T00:00:00)") @RequestParam(required = false) from: LocalDateTime?,
         @Parameter(description = "조회 종료 일시 (ISO 8601 형식, 예: 2025-01-31T23:59:59)") @RequestParam(required = false) to: LocalDateTime?,
-        @Parameter(description = "예약 상태 필터 (PENDING, PUBLISHED, CANCELLED 등)") @RequestParam(required = false) status: String?
+        @Parameter(description = "예약 상태 필터 (SCHEDULED, PROCESSING, PUBLISHED, FAILED 등)") @RequestParam(required = false) status: String?
     ): ResponseEntity<ResData<ScheduleCalendarResponse>> {
-        val result = scheduleUseCase.getSchedules(userId, from, to)
+        val result = scheduleUseCase.getSchedules(userId, from, to, status)
         return ResData.success(result)
     }
 

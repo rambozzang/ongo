@@ -57,16 +57,15 @@ class RecurringScheduleExecutorTest {
     }
 
     @Test
-    fun `회차 생성 중 DB 오류가 나면 markRun과 회차 생성이 함께 롤백되어 다음 실행이 재시도된다`() {
+    fun `회차 생성 중 DB 오류가 나면 markRun을 소비하지 않아 다음 실행이 재시도된다`() {
         val definition = definition()
         every { recurringRepository.findDue(any()) } returns listOf(definition)
-        every { recurringRepository.markRun(11L, occurrence, occurrence, nextOccurrence) } returns true
         every { videoRepository.findById(10L) } returns sourceVideo()
         every { videoRepository.save(any()) } throws IllegalStateException("database unavailable")
 
         executor.executeDueSchedules()
 
-        verify(exactly = 1) { recurringRepository.markRun(11L, occurrence, occurrence, nextOccurrence) }
+        verify(exactly = 0) { recurringRepository.markRun(any(), any(), any(), any()) }
         verify(exactly = 0) { scheduleRepository.save(any()) }
         verify(exactly = 1) { transactionManager.rollback(any<TransactionStatus>()) }
     }
@@ -87,6 +86,20 @@ class RecurringScheduleExecutorTest {
             scheduleRepository.save(match { it.videoId == 20L && it.platforms.keys == setOf(Platform.YOUTUBE.name) })
         }
         verify(exactly = 1) { transactionManager.commit(any<TransactionStatus>()) }
+    }
+
+    @Test
+    fun `원본 영상이 사라지면 회차를 소비하지 않고 다음 실행에서 재시도한다`() {
+        val definition = definition()
+        every { recurringRepository.findDue(any()) } returns listOf(definition)
+        every { videoRepository.findById(10L) } returns null
+
+        executor.executeDueSchedules()
+
+        verify(exactly = 0) { recurringRepository.markRun(any(), any(), any(), any()) }
+        verify(exactly = 0) { videoRepository.save(any()) }
+        verify(exactly = 0) { scheduleRepository.save(any()) }
+        verify(exactly = 1) { transactionManager.rollback(any<TransactionStatus>()) }
     }
 
     private fun definition() = RecurringSchedule(
