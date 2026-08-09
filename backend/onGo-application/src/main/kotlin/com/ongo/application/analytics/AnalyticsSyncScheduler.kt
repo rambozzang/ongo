@@ -114,7 +114,7 @@ class AnalyticsSyncScheduler(
     private fun syncVideoAnalytics(platform: com.ongo.common.enums.Platform, videoId: String, token: String, uploadId: Long, date: LocalDate, userId: Long) {
         try {
             val analytics = platformClientPort.getVideoAnalytics(
-                platform, videoId, token, date, date
+                platform, videoId, com.ongo.domain.channel.PlainToken(token), date, date
             )
             // 플랫폼 API 호출이 끝났다. 쓰기 직전에 게이트를 다시 본다.
             // 위 호출은 네트워크라 그 사이 탈퇴 요청이 들어올 수 있다. 채널 단위

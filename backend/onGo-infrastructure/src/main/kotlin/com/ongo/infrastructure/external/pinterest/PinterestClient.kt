@@ -35,7 +35,7 @@ class PinterestClient(
         try {
             // Step 1: Register media
             val mediaResponse = pinterestApi.registerMedia(
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
                 request = PinterestMediaRequest(mediaType = "video"),
             )
 
@@ -55,7 +55,7 @@ class PinterestClient(
             }
 
             // Step 3: Pinterest processes the uploaded media asynchronously.
-            awaitMediaSucceeded(mediaResponse.mediaId, request.accessToken)
+            awaitMediaSucceeded(mediaResponse.mediaId, request.accessToken.value)
 
             // Step 4: Create pin with the ready media reference.
             val settings = request.customSettingsJson
@@ -79,7 +79,7 @@ class PinterestClient(
             )
 
             val pinResponse = pinterestApi.createPin(
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
                 request = pinRequest,
             )
 

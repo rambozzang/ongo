@@ -104,7 +104,7 @@ class InstagramClient(
                 collaborators = collaborators,
                 isTrialReel = isTrialReel,
                 trialReelType = trialReelType,
-                accessToken = request.accessToken,
+                accessToken = request.accessToken.value,
             )
 
             if (containerResponse.error != null) {
@@ -120,13 +120,13 @@ class InstagramClient(
             log.debug("Instagram 컨테이너 생성 완료: containerId={}", containerId)
 
             // Step 2: Wait for container processing
-            waitForContainerReady(containerId, request.accessToken)
+            waitForContainerReady(containerId, request.accessToken.value)
 
             // Step 3: Publish the container
             val publishResponse = instagramApi.publishMedia(
                 igUserId = igUserId,
                 creationId = containerId,
-                accessToken = request.accessToken,
+                accessToken = request.accessToken.value,
             )
 
             if (publishResponse.error != null) {
@@ -145,7 +145,7 @@ class InstagramClient(
             val mediaDetail = instagramApi.getMedia(
                 mediaId = mediaId,
                 fields = "id,permalink",
-                accessToken = request.accessToken,
+                accessToken = request.accessToken.value,
             )
 
             return PlatformUploadResult(

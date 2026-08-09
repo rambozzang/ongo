@@ -38,16 +38,16 @@ class ThreadsClient(
                 mediaType = "VIDEO",
                 videoUrl = request.fileUrl,
                 text = buildText(request),
-                accessToken = request.accessToken,
+                accessToken = request.accessToken.value,
             )
 
-            waitForContainerReady(container.id, request.accessToken)
+            waitForContainerReady(container.id, request.accessToken.value)
 
             // Step 2: Publish
             val published = threadsApi.publishThread(
                 userId = userId,
                 creationId = container.id,
-                accessToken = request.accessToken,
+                accessToken = request.accessToken.value,
             )
 
             log.info("Threads 업로드 완료: threadId={}", published.id)
@@ -55,7 +55,7 @@ class ThreadsClient(
             val media = threadsApi.getThread(
                 threadId = published.id,
                 fields = "id,permalink",
-                accessToken = request.accessToken,
+                accessToken = request.accessToken.value,
             )
 
             return PlatformUploadResult(

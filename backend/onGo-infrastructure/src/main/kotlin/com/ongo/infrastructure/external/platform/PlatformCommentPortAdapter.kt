@@ -3,6 +3,7 @@ package com.ongo.infrastructure.external.platform
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformApiException
 import com.ongo.domain.comment.*
+import com.ongo.domain.channel.PlainToken
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import io.github.resilience4j.retry.annotation.Retry
 import org.slf4j.LoggerFactory
@@ -31,13 +32,13 @@ class PlatformCommentPortAdapter(
     override fun fetchComments(
         platform: Platform,
         platformVideoId: String,
-        accessToken: String,
+        accessToken: PlainToken,
         pageToken: String?,
         maxResults: Int,
         publishedAfter: java.time.LocalDateTime?,
     ): FetchedCommentList {
         val result = platformClientFactory.getClient(platform)
-            .listComments(platformVideoId, accessToken, pageToken, maxResults, publishedAfter)
+            .listComments(platformVideoId, accessToken.value, pageToken, maxResults, publishedAfter)
         return FetchedCommentList(
             comments = result.comments.map { it.toDomain() },
             nextPageToken = result.nextPageToken,
@@ -51,11 +52,11 @@ class PlatformCommentPortAdapter(
         platform: Platform,
         platformCommentId: String,
         content: String,
-        accessToken: String,
+        accessToken: PlainToken,
         platformVideoId: String?,
     ): PostReplyResult {
         val result = platformClientFactory.getClient(platform)
-            .replyToComment(platformCommentId, content, accessToken, platformVideoId)
+            .replyToComment(platformCommentId, content, accessToken.value, platformVideoId)
         return PostReplyResult(
             platformCommentId = result.platformCommentId,
             success = result.success,
@@ -68,10 +69,10 @@ class PlatformCommentPortAdapter(
     override fun deleteComment(
         platform: Platform,
         platformCommentId: String,
-        accessToken: String,
+        accessToken: PlainToken,
     ): DeleteCommentResult {
         val result = platformClientFactory.getClient(platform)
-            .deleteComment(platformCommentId, accessToken)
+            .deleteComment(platformCommentId, accessToken.value)
         return DeleteCommentResult(
             success = result.success,
             errorMessage = result.errorMessage,
@@ -83,17 +84,17 @@ class PlatformCommentPortAdapter(
     override fun likeComment(
         platform: Platform,
         platformCommentId: String,
-        accessToken: String,
+        accessToken: PlainToken,
     ): Boolean {
         return platformClientFactory.getClient(platform)
-            .likeComment(platformCommentId, accessToken)
+            .likeComment(platformCommentId, accessToken.value)
     }
 
     @Suppress("unused")
     private fun fetchCommentsFallback(
         platform: Platform,
         platformVideoId: String,
-        accessToken: String,
+        accessToken: PlainToken,
         pageToken: String?,
         maxResults: Int,
         publishedAfter: java.time.LocalDateTime?,

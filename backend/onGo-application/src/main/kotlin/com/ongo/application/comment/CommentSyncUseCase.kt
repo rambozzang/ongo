@@ -7,6 +7,7 @@ import com.ongo.common.exception.NotFoundException
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
+import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.comment.PlatformCommentPort
 import com.ongo.domain.user.UserRepository
@@ -51,7 +52,7 @@ class CommentSyncUseCase(
             if (!capabilities.canListComments) continue
 
             val accessToken = try {
-                tokenEncryptionPort.decrypt(channel.accessToken).value
+                tokenEncryptionPort.decrypt(channel.accessToken)
             } catch (e: Exception) {
                 errors.add("${platform.name}: 토큰 복호화 실패")
                 continue

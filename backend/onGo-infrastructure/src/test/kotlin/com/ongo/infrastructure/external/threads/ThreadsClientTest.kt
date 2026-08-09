@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.threads
 
 import com.ongo.common.enums.Visibility
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
 import com.ongo.infrastructure.external.threads.dto.ThreadsMediaContainerResponse
 import com.ongo.infrastructure.external.threads.dto.ThreadsMediaContainerStatusResponse
@@ -44,7 +45,7 @@ class ThreadsClientTest {
                 tags = listOf("#태그", "topic"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "token",
+                accessToken = PlainToken("token"),
                 platformChannelId = "user-1",
                 fileSize = 4,
             ),
@@ -102,7 +103,7 @@ class ThreadsClientTest {
                 fileUrl = "https://storage.test/video.mp4",
                 title = "테스트", description = "", tags = emptyList(),
                 visibility = Visibility.PUBLIC.name, thumbnailUrl = null,
-                accessToken = "token", platformChannelId = "user-1", fileSize = 4,
+                accessToken = PlainToken("token"), platformChannelId = "user-1", fileSize = 4,
             ),
         )
 

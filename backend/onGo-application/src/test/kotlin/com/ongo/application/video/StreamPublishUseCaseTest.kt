@@ -367,7 +367,7 @@ class StreamPublishUseCaseTest {
         every { channelRepository.findById(10L) } returns buildActiveChannel().copy(refreshToken = EncryptedToken("refresh-token"))
         every { channelRepository.update(any()) } answers { firstArg() }
         every { tokenEncryptionPort.encrypt(any()) } answers { EncryptedToken(firstArg<PlainToken>().value) }
-        every { platformClientPort.refreshToken(Platform.YOUTUBE, "refresh-token") } returns PlatformTokenRefreshResult(
+        every { platformClientPort.refreshToken(Platform.YOUTUBE, PlainToken("refresh-token")) } returns PlatformTokenRefreshResult(
             accessToken = "refreshed-access-token",
             refreshToken = null,
             expiresIn = 3600,

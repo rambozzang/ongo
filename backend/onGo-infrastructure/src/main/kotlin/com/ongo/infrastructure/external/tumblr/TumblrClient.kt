@@ -57,7 +57,7 @@ class TumblrClient(
 
             val responseBody = fileTransferHelper.postMultipartJsonWithFile(
                 url = "${tumblrConfig.getApiBaseUrl()}/v2/blog/$blogName/posts",
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
                 jsonBody = objectMapper.writeValueAsString(npfPost),
                 filePartName = "ongo-video",
                 file = sourceFile,

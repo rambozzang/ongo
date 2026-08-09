@@ -226,7 +226,7 @@ class VideoQueryUseCase(
                             channelRepository.findByUserIdAndPlatform(userId, upload.platform)
                         }
                         if (channel != null && channel.status == ChannelStatus.ACTIVE) {
-                            val accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value
+                            val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
                             platformClientPort.updateVideoMetadata(
                                 upload.platform,
                                 platformVideoId,
@@ -377,7 +377,7 @@ class VideoQueryUseCase(
                         channelRepository.findByUserIdAndPlatform(userId, upload.platform)
                     }
                     if (channel != null && channel.status == ChannelStatus.ACTIVE) {
-                        val accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value
+                        val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
                         platformClientPort.deleteVideo(upload.platform, platformVideoId, accessToken)
                         log.info("플랫폼 영상 삭제 완료: platform={}, videoId={}", upload.platform, platformVideoId)
                     }

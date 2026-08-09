@@ -9,6 +9,7 @@ import com.ongo.domain.channel.PlatformTokenRefreshResult
 import com.ongo.domain.channel.PlatformFeedPortResult
 import com.ongo.domain.channel.FeedItemResult
 import com.ongo.domain.channel.PlatformVideoMetadataResult
+import com.ongo.domain.channel.PlainToken
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import io.github.resilience4j.retry.annotation.Retry
 import org.slf4j.LoggerFactory
@@ -27,12 +28,12 @@ class PlatformClientPortAdapter(
     override fun getVideoAnalytics(
         platform: Platform,
         platformVideoId: String,
-        accessToken: String,
+        accessToken: PlainToken,
         startDate: LocalDate,
         endDate: LocalDate
     ): PlatformAnalyticsResult {
         val client = platformClientFactory.getClient(platform)
-        val analytics = client.getVideoAnalytics(platformVideoId, accessToken, startDate, endDate)
+        val analytics = client.getVideoAnalytics(platformVideoId, accessToken.value, startDate, endDate)
         return PlatformAnalyticsResult(
             views = analytics.views,
             likes = analytics.likes,
@@ -47,9 +48,9 @@ class PlatformClientPortAdapter(
 
     @Retry(name = "platformApi")
     @CircuitBreaker(name = "platformApi", fallbackMethod = "getChannelInfoFallback")
-    override fun getChannelInfo(platform: Platform, accessToken: String): PlatformChannelInfoResult {
+    override fun getChannelInfo(platform: Platform, accessToken: PlainToken): PlatformChannelInfoResult {
         val client = platformClientFactory.getClient(platform)
-        val info = client.getChannelInfo(accessToken)
+        val info = client.getChannelInfo(accessToken.value)
         return PlatformChannelInfoResult(
             channelId = info.channelId,
             channelName = info.channelName,
@@ -60,9 +61,9 @@ class PlatformClientPortAdapter(
     }
 
     @Retry(name = "platformApi")
-    override fun refreshToken(platform: Platform, refreshToken: String): PlatformTokenRefreshResult {
+    override fun refreshToken(platform: Platform, refreshToken: PlainToken): PlatformTokenRefreshResult {
         val client = platformClientFactory.getClient(platform)
-        val result = client.refreshToken(refreshToken)
+        val result = client.refreshToken(refreshToken.value)
         return PlatformTokenRefreshResult(
             accessToken = result.accessToken,
             refreshToken = result.refreshToken,
@@ -72,9 +73,9 @@ class PlatformClientPortAdapter(
 
     @Retry(name = "platformApi")
     @CircuitBreaker(name = "platformApi", fallbackMethod = "deleteVideoFallback")
-    override fun deleteVideo(platform: Platform, platformVideoId: String, accessToken: String): Boolean {
+    override fun deleteVideo(platform: Platform, platformVideoId: String, accessToken: PlainToken): Boolean {
         val client = platformClientFactory.getClient(platform)
-        return client.deleteVideo(platformVideoId, accessToken)
+        return client.deleteVideo(platformVideoId, accessToken.value)
     }
 
     @Retry(name = "platformApi")
@@ -82,20 +83,20 @@ class PlatformClientPortAdapter(
     override fun updateVideoMetadata(
         platform: Platform,
         platformVideoId: String,
-        accessToken: String,
+        accessToken: PlainToken,
         title: String,
         description: String,
         tags: List<String>,
     ): Boolean {
         val client = platformClientFactory.getClient(platform)
-        return client.updateVideoMetadata(platformVideoId, accessToken, title, description, tags)
+        return client.updateVideoMetadata(platformVideoId, accessToken.value, title, description, tags)
     }
 
     @Retry(name = "platformApi")
     @CircuitBreaker(name = "platformApi", fallbackMethod = "getVideoMetadataFallback")
-    override fun getVideoMetadata(platform: Platform, platformVideoId: String, accessToken: String): PlatformVideoMetadataResult? {
+    override fun getVideoMetadata(platform: Platform, platformVideoId: String, accessToken: PlainToken): PlatformVideoMetadataResult? {
         val client = platformClientFactory.getClient(platform)
-        val meta = client.getVideoMetadata(platformVideoId, accessToken) ?: return null
+        val meta = client.getVideoMetadata(platformVideoId, accessToken.value) ?: return null
         return PlatformVideoMetadataResult(
             title = meta.title,
             description = meta.description,
@@ -109,9 +110,9 @@ class PlatformClientPortAdapter(
 
     @Retry(name = "platformApi")
     @CircuitBreaker(name = "platformApi", fallbackMethod = "listVideosFallback")
-    override fun listVideos(platform: Platform, accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedPortResult {
+    override fun listVideos(platform: Platform, accessToken: PlainToken, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedPortResult {
         val client = platformClientFactory.getClient(platform)
-        val result = client.listVideos(accessToken, platformChannelId, maxResults, pageToken)
+        val result = client.listVideos(accessToken.value, platformChannelId, maxResults, pageToken)
         return PlatformFeedPortResult(
             items = result.items.map { item ->
                 FeedItemResult(
@@ -136,22 +137,22 @@ class PlatformClientPortAdapter(
     private fun getVideoMetadataFallback(
         platform: Platform,
         platformVideoId: String,
-        accessToken: String,
+        accessToken: PlainToken,
         e: Throwable,
     ): PlatformVideoMetadataResult? {
         log.warn("플랫폼 {} 영상 메타데이터 조회 실패 (Circuit Breaker): {}", platform, e.message)
         throw PlatformApiException(platform.name, "영상 메타데이터 조회 Circuit Breaker 발생: ${e.message}", e)
     }
 
-    override fun revokeToken(platform: Platform, accessToken: String): Boolean {
+    override fun revokeToken(platform: Platform, accessToken: PlainToken): Boolean {
         val client = platformClientFactory.getClient(platform)
-        return client.revokeToken(accessToken)
+        return client.revokeToken(accessToken.value)
     }
 
     @Suppress("unused")
     private fun listVideosFallback(
         platform: Platform,
-        accessToken: String,
+        accessToken: PlainToken,
         platformChannelId: String?,
         maxResults: Int,
         pageToken: String?,
@@ -165,7 +166,7 @@ class PlatformClientPortAdapter(
     private fun getVideoAnalyticsFallback(
         platform: Platform,
         platformVideoId: String,
-        accessToken: String,
+        accessToken: PlainToken,
         startDate: LocalDate,
         endDate: LocalDate,
         e: Throwable,
@@ -177,7 +178,7 @@ class PlatformClientPortAdapter(
     @Suppress("unused")
     private fun getChannelInfoFallback(
         platform: Platform,
-        accessToken: String,
+        accessToken: PlainToken,
         e: Throwable,
     ): PlatformChannelInfoResult {
         log.warn("플랫폼 {} 채널 정보 조회 실패 (Circuit Breaker): {}", platform, e.message)
@@ -188,7 +189,7 @@ class PlatformClientPortAdapter(
     private fun deleteVideoFallback(
         platform: Platform,
         platformVideoId: String,
-        accessToken: String,
+        accessToken: PlainToken,
         e: Throwable,
     ): Boolean {
         log.warn("플랫폼 {} 영상 삭제 실패 (Circuit Breaker): {}", platform, e.message)
@@ -199,7 +200,7 @@ class PlatformClientPortAdapter(
     private fun updateVideoMetadataFallback(
         platform: Platform,
         platformVideoId: String,
-        accessToken: String,
+        accessToken: PlainToken,
         title: String,
         description: String,
         tags: List<String>,

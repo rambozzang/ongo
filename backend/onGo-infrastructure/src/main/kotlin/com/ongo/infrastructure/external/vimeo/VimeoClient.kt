@@ -47,7 +47,7 @@ class VimeoClient(
 
         try {
             val response = vimeoApi.createVideo(
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
                 accept = VIMEO_ACCEPT,
                 request = uploadRequest,
             )

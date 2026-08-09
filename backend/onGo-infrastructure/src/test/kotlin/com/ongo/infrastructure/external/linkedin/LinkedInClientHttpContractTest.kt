@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.linkedin
 
 import com.ongo.common.enums.Visibility
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.platform.PlatformRestClientSupport
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
 import io.mockk.every
@@ -72,7 +73,7 @@ class LinkedInClientHttpContractTest {
                 tags = listOf("tag"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "linkedin-token",
+                accessToken = PlainToken("linkedin-token"),
                 platformChannelId = "person-1",
             ),
         )

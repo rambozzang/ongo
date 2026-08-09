@@ -2,6 +2,7 @@ package com.ongo.infrastructure.external.dailymotion
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ongo.common.enums.Visibility
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.platform.PlatformFileTransferHelper
 import com.ongo.infrastructure.external.platform.PlatformRestClientSupport
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
@@ -65,7 +66,7 @@ class DailymotionClientHttpContractTest {
                 tags = listOf("#tag", "topic"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "dm-token",
+                accessToken = PlainToken("dm-token"),
                 platformChannelId = "profile-1",
             ),
         )

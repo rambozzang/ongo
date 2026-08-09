@@ -3,6 +3,7 @@ package com.ongo.infrastructure.external.platform
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.application.publicapi.PlatformToolDefinition
+import com.ongo.domain.channel.PlainToken
 import org.springframework.web.client.RestClient
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -146,7 +147,7 @@ data class PlatformUploadRequest(
     val tags: List<String>,
     val visibility: String,
     val thumbnailUrl: String?,
-    val accessToken: String,
+    val accessToken: PlainToken,
     val platformChannelId: String? = null,
     val fileSize: Long = 0,
     val scheduledAt: LocalDateTime? = null,

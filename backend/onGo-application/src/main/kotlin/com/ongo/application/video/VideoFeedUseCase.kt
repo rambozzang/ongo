@@ -45,7 +45,7 @@ class VideoFeedUseCase(
                         val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
                         val result = platformClientPort.listVideos(
                             platform = channel.platform,
-                        accessToken = decryptedToken.value,
+                        accessToken = decryptedToken,
                             platformChannelId = channel.platformChannelId,
                             maxResults = size,
                             pageToken = if (page > 0) page.toString() else null,

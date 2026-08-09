@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.vimeo
 
 import com.ongo.common.enums.Visibility
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.platform.PlatformRestClientSupport
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
 import io.mockk.every
@@ -49,7 +50,7 @@ class VimeoClientHttpContractTest {
                 tags = emptyList(),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "vimeo-token",
+                accessToken = PlainToken("vimeo-token"),
                 fileSize = 1234,
             ),
         )

@@ -34,7 +34,7 @@ class DailymotionClient(
         try {
             // API v2: create a resumable upload session.
             val uploadSession = dailymotionApi.createUploadSession(
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
             )
 
             // The signed upload URL does not accept the platform Bearer token.
@@ -47,7 +47,7 @@ class DailymotionClient(
 
             val response = dailymotionApi.createVideo(
                 profileId = profileId,
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
                 request = DailymotionCreateVideoRequest(
                     title = request.title.trim().take(255),
                     description = request.description.trim().take(3000).ifBlank { null },

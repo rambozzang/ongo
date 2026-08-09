@@ -39,7 +39,7 @@ class InstagramThreadsStreamWriterTest {
         assertThat(result.published).isTrue()
         assertThat(result.platformVideoId).isEqualTo("ig-1")
         assertThat(result.platformUrl).isEqualTo("https://instagram.com/reel/ig-1")
-        assertThat(request.captured.accessToken).isEqualTo("plain-token")
+        assertThat(request.captured.accessToken.value).isEqualTo("plain-token")
         verify(exactly = 1) { storageClient.deleteFile(any()) }
     }
 
@@ -65,7 +65,7 @@ class InstagramThreadsStreamWriterTest {
         assertThat(result.published).isTrue()
         assertThat(result.platformVideoId).isEqualTo("thread-1")
         assertThat(result.platformUrl).isEqualTo("https://threads.net/post/thread-1")
-        assertThat(request.captured.accessToken).isEqualTo("plain-token")
+        assertThat(request.captured.accessToken.value).isEqualTo("plain-token")
         verify(exactly = 1) { storageClient.deleteFile(any()) }
     }
 

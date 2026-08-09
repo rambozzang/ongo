@@ -31,7 +31,7 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon.svg', 'icons/icon-1024-v10.png'],
+      includeAssets: ['icons/icon.svg', 'icons/icon-1024-v11.png'],
       manifest: {
         name: 'onGo - 크리에이터 멀티 플랫폼 관리',
         short_name: 'onGo',
@@ -56,7 +56,7 @@ export default defineConfig({
             purpose: 'maskable',
           },
           {
-            src: '/icons/icon-1024-v10.png',
+            src: '/icons/icon-1024-v11.png',
             sizes: '1024x1024',
             type: 'image/png',
             purpose: 'any maskable',

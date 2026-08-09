@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.wordpress
 
 import com.ongo.common.enums.Visibility
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.platform.PlatformRestClientSupport
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
 import io.mockk.every
@@ -57,7 +58,7 @@ class WordPressClientHttpContractTest {
                 tags = listOf("tag"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "wp-token",
+                accessToken = PlainToken("wp-token"),
                 platformChannelId = "site-1",
             ),
         )
@@ -107,7 +108,7 @@ class WordPressClientHttpContractTest {
                 tags = emptyList(),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "wp-token",
+                accessToken = PlainToken("wp-token"),
                 platformChannelId = "site-1",
                 customSettingsJson = """{"__type":"wordpress","title":"제목","type":"post","main_image":{"id":"cover-1","path":"https://cdn.test/cover.jpg"}}""",
             ),

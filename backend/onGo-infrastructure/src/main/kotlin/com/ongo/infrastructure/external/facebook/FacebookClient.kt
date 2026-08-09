@@ -31,7 +31,7 @@ class FacebookClient(
                 fileUrl = request.fileUrl,
                 title = request.title.take(255),
                 description = buildDescription(request),
-                accessToken = request.accessToken,
+                accessToken = request.accessToken.value,
             )
 
             log.info("Facebook 업로드 완료: videoId={}", response.id)

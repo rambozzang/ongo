@@ -5,6 +5,7 @@ import com.ongo.application.notification.WebSocketNotificationService
 import com.ongo.common.enums.NotificationType
 import com.ongo.common.enums.Platform
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.comment.Comment
 import com.ongo.domain.comment.CommentRepository
@@ -42,12 +43,12 @@ class VideoCommentSyncService(
         videoId: Long,
         platform: Platform,
         platformVideoId: String,
-        accessToken: String? = null,
+        accessToken: PlainToken? = null,
     ): Pair<Int, Int> {
         val token = accessToken ?: run {
             val channel = channelRepository.findByUserIdAndPlatform(userId, platform)
                 ?: throw IllegalStateException("채널을 찾을 수 없습니다: $platform")
-            tokenEncryptionPort.decrypt(channel.accessToken).value
+            tokenEncryptionPort.decrypt(channel.accessToken)
         }
 
         // Incremental sync: 마지막 동기화 시간 이후의 댓글만 조회

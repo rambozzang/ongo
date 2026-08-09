@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.platform
 
 import com.ongo.common.enums.Visibility
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.instagram.InstagramApi
 import com.ongo.infrastructure.external.instagram.InstagramClient
 import com.ongo.infrastructure.external.instagram.InstagramConfig
@@ -51,7 +52,7 @@ class InstagramThreadsClientHttpContractTest {
                 tags = listOf("#태그"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "instagram-token",
+                accessToken = PlainToken("instagram-token"),
                 platformChannelId = "ig-user-1",
             ),
         )
@@ -93,7 +94,7 @@ class InstagramThreadsClientHttpContractTest {
                 tags = listOf("#태그"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "threads-token",
+                accessToken = PlainToken("threads-token"),
                 platformChannelId = "threads-user-1",
             ),
         )
@@ -134,7 +135,7 @@ class InstagramThreadsClientHttpContractTest {
                 tags = emptyList(),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "instagram-token",
+                accessToken = PlainToken("instagram-token"),
                 platformChannelId = "ig-user-1",
                 customSettingsJson = """{"__type":"instagram","post_type":"story"}""",
             ),
@@ -164,7 +165,7 @@ class InstagramThreadsClientHttpContractTest {
                 tags = emptyList(),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "instagram-token",
+                accessToken = PlainToken("instagram-token"),
                 platformChannelId = "ig-user-1",
                 customSettingsJson = """{"__type":"instagram","post_type":"post","is_trial_reel":true,"graduation_strategy":"SS_PERFORMANCE","collaborators":[{"label":"partner"}]}""",
             ),

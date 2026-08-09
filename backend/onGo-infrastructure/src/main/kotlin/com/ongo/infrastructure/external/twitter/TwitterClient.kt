@@ -35,7 +35,7 @@ class TwitterClient(
 
             // Step 2: Init chunked media upload
             val initResponse = twitterMediaApi.initUpload(
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
                 command = "INIT",
                 totalBytes = fileBytes.size.toLong(),
                 mediaType = "video/mp4",
@@ -63,7 +63,7 @@ class TwitterClient(
                 }
                 uploadRestClient.post()
                     .uri("/1.1/media/upload.json")
-                    .header("Authorization", "Bearer ${request.accessToken}")
+                    .header("Authorization", "Bearer ${request.accessToken.value}")
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(body)
                     .retrieve()
@@ -74,7 +74,7 @@ class TwitterClient(
 
             // Step 4: Finalize
             val finalizeResponse = twitterMediaApi.finalizeUpload(
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
                 command = "FINALIZE",
                 mediaId = mediaId,
             )
@@ -83,7 +83,7 @@ class TwitterClient(
             if (finalizeResponse.processingInfo?.state == "pending" ||
                 finalizeResponse.processingInfo?.state == "in_progress"
             ) {
-                waitForMediaProcessing(mediaId, request.accessToken)
+                waitForMediaProcessing(mediaId, request.accessToken.value)
             }
 
             // Step 6: Create tweet with media
@@ -96,7 +96,7 @@ class TwitterClient(
             )
 
             val tweetResponse = twitterApi.createTweet(
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
                 request = tweetRequest,
             )
 

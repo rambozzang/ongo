@@ -76,7 +76,7 @@ class ChannelUseCase(
         val tokenResult = platformOAuth2Port.exchangeCodeForTokens(platform, request.authorizationCode, request.redirectUri, request.codeVerifier)
 
         // 플랫폼에서 채널 정보 조회
-        val channelInfo = platformClientPort.getChannelInfo(platform, tokenResult.accessToken)
+        val channelInfo = platformClientPort.getChannelInfo(platform, PlainToken(tokenResult.accessToken))
 
         // 토큰 암호화
         val encryptedToken = tokenEncryptionPort.encrypt(PlainToken(tokenResult.accessToken))
@@ -157,7 +157,7 @@ class ChannelUseCase(
         // 플랫폼 OAuth 토큰 폐기
         try {
             val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
-            platformClientPort.revokeToken(channel.platform, decryptedToken.value)
+            platformClientPort.revokeToken(channel.platform, decryptedToken)
             log.info("플랫폼 토큰 폐기 완료: platform={}, channelId={}", channel.platform, channelId)
         } catch (e: Exception) {
             log.warn("플랫폼 토큰 폐기 실패 (계속 진행): platform={}, error={}", channel.platform, e.message)
@@ -175,7 +175,7 @@ class ChannelUseCase(
         if (channel.userId != userId) throw ForbiddenException("해당 채널에 대한 권한이 없습니다")
 
         val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
-        val info = platformClientPort.getChannelInfo(channel.platform, decryptedToken.value)
+        val info = platformClientPort.getChannelInfo(channel.platform, decryptedToken)
 
         val updated = channel.copy(
             channelName = info.channelName,

@@ -92,7 +92,7 @@ class PlatformUploadServiceImplTest {
             userId = 7L,
         )
 
-        assertThat(requestSlot.captured.accessToken).isEqualTo("plain-token")
+        assertThat(requestSlot.captured.accessToken.value).isEqualTo("plain-token")
         assertThat(requestSlot.captured.customSettingsJson).isEqualTo("{\"privacy_level\":\"PUBLIC\"}")
         assertThat(result.success).isTrue()
         assertThat(result.published).isTrue()
@@ -142,7 +142,7 @@ class PlatformUploadServiceImplTest {
         )
 
         assertThat(requestSlot.captured.platformChannelId).isEqualTo("second-instagram-account")
-        assertThat(requestSlot.captured.accessToken).isEqualTo("selected-plain-token")
+        assertThat(requestSlot.captured.accessToken.value).isEqualTo("selected-plain-token")
         assertThat(result.published).isTrue()
     }
 
@@ -471,7 +471,7 @@ class PlatformUploadServiceImplTest {
         )
         every { client.uploadVideo(any()) } answers {
             val request = firstArg<com.ongo.infrastructure.external.platform.PlatformUploadRequest>()
-            requests += request.accessToken
+            requests += request.accessToken.value
             if (requests.size == 1) throw unauthorized
             ClientUploadResult("video-1", "https://youtube.com/watch?v=video-1", "PUBLISHED")
         }

@@ -35,7 +35,7 @@ class ChannelScheduler(
         val channels = channelRepository.findAllActive()
         channels.forEach { channel ->
             try {
-                val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken).value
+                val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
                 val info = platformClientPort.getChannelInfo(channel.platform, decryptedToken)
                 channelRepository.update(channel.copy(
                     channelName = info.channelName,
@@ -66,7 +66,7 @@ class ChannelScheduler(
         expiringSoon.forEach { channel ->
             try {
                 if (channel.platform == Platform.INSTAGRAM) {
-                    val decryptedAccessToken = tokenEncryptionPort.decrypt(channel.accessToken).value
+                    val decryptedAccessToken = tokenEncryptionPort.decrypt(channel.accessToken)
                     val newTokens = platformClientPort.refreshToken(channel.platform, decryptedAccessToken)
                     channelRepository.update(channel.copy(
                         accessToken = tokenEncryptionPort.encrypt(PlainToken(newTokens.accessToken)),
@@ -75,7 +75,7 @@ class ChannelScheduler(
                     ))
                     log.info("토큰 갱신 성공 [${channel.platform}:${channel.id}]")
                 } else {
-                    val decryptedRefreshToken = channel.refreshToken?.let { tokenEncryptionPort.decrypt(it).value }
+                    val decryptedRefreshToken = channel.refreshToken?.let { tokenEncryptionPort.decrypt(it) }
                     if (decryptedRefreshToken != null) {
                         val newTokens = platformClientPort.refreshToken(channel.platform, decryptedRefreshToken)
                         channelRepository.update(channel.copy(

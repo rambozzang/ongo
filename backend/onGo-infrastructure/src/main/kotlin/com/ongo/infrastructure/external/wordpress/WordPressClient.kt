@@ -34,7 +34,7 @@ class WordPressClient(
             // Step 1: Upload media
             val mediaResponse = wordPressApi.uploadMedia(
                 siteId = siteId,
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
                 body = LinkedMultiValueMap<String, String>().apply {
                     add("media_urls[]", request.fileUrl)
                 },
@@ -56,7 +56,7 @@ class WordPressClient(
                     ?.let { imageUrl ->
                         wordPressApi.uploadMedia(
                             siteId = siteId,
-                            authorization = "Bearer ${request.accessToken}",
+                            authorization = "Bearer ${request.accessToken.value}",
                             body = LinkedMultiValueMap<String, String>().apply {
                                 add("media_urls[]", imageUrl)
                             },
@@ -78,7 +78,7 @@ class WordPressClient(
 
             val postResponse = wordPressApi.createPost(
                 siteId = siteId,
-                authorization = "Bearer ${request.accessToken}",
+                        authorization = "Bearer ${request.accessToken.value}",
                 request = postRequest,
             )
 

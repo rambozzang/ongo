@@ -75,7 +75,7 @@ class ThreadsStreamWriter(
                     tags = currentMeta.tags,
                     visibility = currentMeta.visibility.name,
                     thumbnailUrl = currentMeta.customThumbnailUrl,
-                    accessToken = token.value,
+                    accessToken = token,
                     platformChannelId = platformChannelId,
                     fileSize = file.length(),
                     customSettingsJson = currentMeta.customSettingsJson,

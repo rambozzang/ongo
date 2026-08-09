@@ -644,7 +644,7 @@ class StreamPublishUseCase(
             val encryptedRefreshToken = channel.refreshToken ?: throw error
             val refreshed = clientPort.refreshToken(
                 context.platform,
-                tokenEncryptionPort.decrypt(encryptedRefreshToken).value,
+                tokenEncryptionPort.decrypt(encryptedRefreshToken),
             )
             channelRepository.update(
                 channel.copy(

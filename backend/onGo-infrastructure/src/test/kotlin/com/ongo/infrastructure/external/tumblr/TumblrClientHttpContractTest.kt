@@ -2,6 +2,7 @@ package com.ongo.infrastructure.external.tumblr
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.common.enums.Visibility
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.platform.PlatformFileTransferHelper
 import com.ongo.infrastructure.external.platform.PlatformRestClientSupport
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
@@ -57,7 +58,7 @@ class TumblrClientHttpContractTest {
                 tags = listOf("#tag"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "tumblr-token",
+                accessToken = PlainToken("tumblr-token"),
                 platformChannelId = "creator",
             ),
         )

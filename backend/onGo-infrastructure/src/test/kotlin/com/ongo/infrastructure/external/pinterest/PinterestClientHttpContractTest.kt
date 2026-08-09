@@ -2,6 +2,7 @@ package com.ongo.infrastructure.external.pinterest
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ongo.common.enums.Visibility
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.platform.PlatformFileTransferHelper
 import com.ongo.infrastructure.external.platform.PlatformRestClientSupport
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
@@ -71,7 +72,7 @@ class PinterestClientHttpContractTest {
                 tags = emptyList(),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = server.url("/source/cover.jpg").toString(),
-                accessToken = "pinterest-token",
+                accessToken = PlainToken("pinterest-token"),
                 platformChannelId = "board-1",
                 customSettingsJson = """
                     {

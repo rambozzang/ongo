@@ -34,7 +34,7 @@ class LinkedInClient(
         try {
             // LinkedIn Assets API is deprecated for video uploads. Videos API requires
             // initialize → 4MB range PUTs → ETag finalize → AVAILABLE confirmation.
-            val videoUrn = uploadLinkedInVideo(request.fileUrl, request.accessToken, personId)
+            val videoUrn = uploadLinkedInVideo(request.fileUrl, request.accessToken.value, personId)
 
             // Step 3: Create UGC post
             val ugcPost = LinkedInUgcPostRequest(
@@ -63,7 +63,7 @@ class LinkedInClient(
             )
 
             val postResponse = linkedInApi.createUgcPost(
-                authorization = "Bearer ${request.accessToken}",
+                authorization = "Bearer ${request.accessToken.value}",
                 request = ugcPost,
             )
 

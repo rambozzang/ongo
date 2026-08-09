@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.facebook
 
 import com.ongo.common.enums.Visibility
+import com.ongo.domain.channel.PlainToken
 import com.ongo.infrastructure.external.platform.PlatformRestClientSupport
 import com.ongo.infrastructure.external.platform.PlatformUploadRequest
 import io.mockk.mockk
@@ -40,7 +41,7 @@ class FacebookClientHttpContractTest {
                 tags = listOf("#tag"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
-                accessToken = "fb-token",
+                accessToken = PlainToken("fb-token"),
                 platformChannelId = "page-1",
             ),
         )
