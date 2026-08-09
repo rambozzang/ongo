@@ -19,6 +19,7 @@ import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.schedule.Schedule
 import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.exception.NotFoundException
+import com.ongo.domain.lock.DistributedLockPort
 import java.time.LocalDateTime
 import java.time.ZoneId
 import com.ongo.domain.video.Video
@@ -35,6 +36,9 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import org.junit.jupiter.api.Test
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionStatus
+import org.springframework.transaction.support.SimpleTransactionStatus
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
@@ -52,6 +56,28 @@ class PublicApiUseCaseTest {
     private val workspaces = mockk<WorkspaceRepository>(relaxed = true)
     private val videoPlatformMetas = mockk<VideoPlatformMetaRepository>(relaxed = true)
     private val recurringSchedules = mockk<RecurringScheduleRepository>(relaxed = true)
+    private val idempotencyLockIds = mutableListOf<Long>()
+    private val transactionManager = mockk<PlatformTransactionManager>()
+    private val distributedLock = object : DistributedLockPort {
+        override fun <T> withAnyLock(lockIds: Collection<Long>, block: () -> T): T? {
+            idempotencyLockIds += lockIds
+            return block()
+        }
+        override fun withLock(lockId: Long, block: () -> Unit): Boolean {
+            block()
+            return true
+        }
+        @Suppress("DEPRECATION")
+        override fun tryLock(lockId: Long): Boolean = true
+        @Suppress("DEPRECATION")
+        override fun releaseLock(lockId: Long) = Unit
+    }
+
+    init {
+        every { transactionManager.getTransaction(any()) } returns SimpleTransactionStatus()
+        every { transactionManager.commit(any<TransactionStatus>()) } returns Unit
+        every { transactionManager.rollback(any<TransactionStatus>()) } returns Unit
+    }
     private val useCase = PublicApiUseCase(
         channels,
         posts,
@@ -66,6 +92,8 @@ class PublicApiUseCaseTest {
         workspaces,
         videoPlatformMetas,
         recurringSchedules,
+        distributedLock,
+        transactionManager,
     )
 
     private val channel = Channel(
@@ -494,6 +522,8 @@ class PublicApiUseCaseTest {
         assertEquals(first.id, second.id)
         verify(exactly = 1) { uploadVideo.createVideo(1, any(), any(), any()) }
         verify(exactly = 1) { posts.save(any()) }
+        assertEquals(2, idempotencyLockIds.size)
+        assertEquals(1, idempotencyLockIds.toSet().size)
     }
 
     @Test

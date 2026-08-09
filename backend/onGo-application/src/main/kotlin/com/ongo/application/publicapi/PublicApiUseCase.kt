@@ -19,6 +19,7 @@ import com.ongo.common.exception.BusinessException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.lock.DistributedLockPort
 import com.ongo.domain.publicapi.PublicApiPost
 import com.ongo.domain.publicapi.PublicApiPostRepository
 import com.ongo.domain.publicapi.PublicApiPostStatus
@@ -36,9 +37,12 @@ import com.ongo.domain.workspace.WorkspaceRepository
 import com.ongo.domain.recurring.RecurringSchedule
 import com.ongo.domain.recurring.RecurringScheduleRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
 import java.net.InetAddress
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -61,7 +65,11 @@ class PublicApiUseCase(
     private val workspaceRepository: WorkspaceRepository,
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val recurringScheduleRepository: RecurringScheduleRepository,
+    private val distributedLockPort: DistributedLockPort,
+    transactionManager: PlatformTransactionManager,
 ) {
+
+    private val createTransaction = TransactionTemplate(transactionManager)
 
     private companion object {
         private val DOMAIN_ZONE: ZoneId = ZoneId.of("Asia/Seoul")
@@ -221,14 +229,32 @@ class PublicApiUseCase(
         )
     }
 
-    @Transactional
     fun create(
         userId: Long,
         request: CreatePublicPostRequest,
         idempotencyKey: String? = null,
     ): PublicPostResponse {
-        val type = parseType(request.type)
         val normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey)
+        val create = {
+            createTransaction.execute { createUnlocked(userId, request, normalizedIdempotencyKey) }
+                ?: throw IllegalStateException("공개 API 게시 작업 트랜잭션이 결과 없이 종료되었습니다")
+        }
+        return if (normalizedIdempotencyKey == null) {
+            create()
+        } else {
+            distributedLockPort.withAnyLock(
+                listOf(idempotencyLockId(userId, normalizedIdempotencyKey)),
+                create,
+            ) ?: throw IllegalStateException("같은 Idempotency-Key 요청이 처리 중입니다. 잠시 후 다시 시도해주세요")
+        }
+    }
+
+    private fun createUnlocked(
+        userId: Long,
+        request: CreatePublicPostRequest,
+        normalizedIdempotencyKey: String?,
+    ): PublicPostResponse {
+        val type = parseType(request.type)
         val requestHash = normalizedIdempotencyKey?.let { requestFingerprint(request) }
         normalizedIdempotencyKey?.let { key ->
             postRepository.findByUserIdAndIdempotencyKey(userId, key)?.let { existing ->
@@ -1263,6 +1289,13 @@ class PublicApiUseCase(
         val digest = MessageDigest.getInstance("SHA-256")
             .digest(objectMapper.writeValueAsBytes(request))
         return digest.joinToString("") { byte -> "%02x".format(byte) }
+    }
+
+    private fun idempotencyLockId(userId: Long, key: String): Long {
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest("$userId\u0000$key".toByteArray(Charsets.UTF_8))
+        val lockId = ByteBuffer.wrap(digest).long
+        return if (lockId == 0L) 1L else lockId
     }
 
 }
