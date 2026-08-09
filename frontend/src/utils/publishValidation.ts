@@ -72,7 +72,9 @@ export function validatePublishDrafts(
       })
     }
     const tagCount = parsePublishHashtags(draft.hashtags).length
-    if (capability.maxTagCount > 0 && tagCount > capability.maxTagCount) {
+    const tagsUnsupported = capability.maxTagCount === 0 && tagCount > 0
+    const tagsExceedLimit = capability.maxTagCount > 0 && tagCount > capability.maxTagCount
+    if (tagsUnsupported || tagsExceedLimit) {
       issues.push({
         platform: target.platform,
         channelName: target.channelName,

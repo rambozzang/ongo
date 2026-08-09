@@ -334,7 +334,7 @@
             class="mt-1 text-right font-mono text-[10px]"
             :class="tagsOver ? 'text-bad' : 'text-content-tertiary'"
           >
-            {{ hashtagCount }} / {{ tagLimit || '∞' }}
+            {{ hashtagCount }} / {{ tagLimit === null ? '∞' : tagLimit }}
           </div>
 
           <label for="compose-visibility" class="mt-3.5 block text-[11.5px] text-content-secondary">
@@ -945,12 +945,17 @@ const titleLimit = computed(
   () => activeCapability.value?.maxTitleLength ?? TITLE_LIMIT[activeTab.value] ?? 100,
 )
 const descriptionLimit = computed(() => activeCapability.value?.maxDescriptionLength ?? 0)
-const tagLimit = computed(() => activeCapability.value?.maxTagCount ?? 0)
+const tagLimit = computed(() => activeCapability.value?.maxTagCount ?? null)
 const titleOver = computed(() => activeDraft.value.title.length > titleLimit.value)
 const descriptionOver = computed(
   () => descriptionLimit.value > 0 && activeDraft.value.description.length > descriptionLimit.value,
 )
-const tagsOver = computed(() => tagLimit.value > 0 && hashtagCount.value > tagLimit.value)
+const tagsOver = computed(() => {
+  if (!activeCapability.value || tagLimit.value === null) return false
+  return tagLimit.value === 0
+    ? hashtagCount.value > 0
+    : hashtagCount.value > tagLimit.value
+})
 
 const fileMeta = computed(() => file.meta || t('redesign.compose.noFileMeta'))
 
@@ -967,7 +972,11 @@ const warnings = computed(() => {
     out.push(t('redesign.compose.warnDescriptionLength', { limit: descriptionLimit.value }))
   }
   if (tagsOver.value) {
-    out.push(t('redesign.compose.warnTagCount', { limit: tagLimit.value }))
+    out.push(
+      tagLimit.value === 0
+        ? t('redesign.compose.warnTagsUnsupported')
+        : t('redesign.compose.warnTagCount', { limit: tagLimit.value }),
+    )
   }
   const hasTikTok = selectedChannels.value.some((c) => c.platform === 'TIKTOK')
   if (hasTikTok && hashtagCount.value > TIKTOK_HASHTAG_LIMIT && activeTab.value === 'common') {

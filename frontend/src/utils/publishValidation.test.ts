@@ -21,14 +21,21 @@ describe('publish validation', () => {
     expect(issues[2]).toMatchObject({ current: 3, limit: 2, channelName: '메인 채널' })
   })
 
-  it('treats zero description and tag limits as no limit', () => {
+  it('treats zero description as no limit but zero tag limit as unsupported', () => {
+    const issues = validatePublishDrafts([{ platform: 'TIKTOK', channelName: '틱톡' }], capabilities, {
+      TIKTOK: {
+        title: 'a'.repeat(3000),
+        description: 'a'.repeat(10000),
+        hashtags: '#one #two #three',
+      },
+    })
+
+    expect(issues).toEqual([
+      expect.objectContaining({ field: 'tags', current: 3, limit: 0 }),
+    ])
     expect(
       validatePublishDrafts([{ platform: 'TIKTOK', channelName: '틱톡' }], capabilities, {
-        TIKTOK: {
-          title: 'a'.repeat(3000),
-          description: 'a'.repeat(10000),
-          hashtags: '#one #two #three',
-        },
+        TIKTOK: { title: '제목', description: '설명', hashtags: '' },
       }),
     ).toEqual([])
   })
