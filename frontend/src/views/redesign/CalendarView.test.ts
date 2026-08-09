@@ -167,6 +167,28 @@ describe('CalendarView', () => {
     expect(wrapper.find('a[target="_blank"]').attributes('href')).toBe('https://youtube.test/watch/3')
   })
 
+  it('does not make completed or in-flight posts draggable', async () => {
+    vi.mocked(scheduleApi.list).mockResolvedValue([
+      {
+        ...schedule(3, 9),
+        status: 'PUBLISHED',
+        platforms: [{
+          platform: 'YOUTUBE',
+          scheduledAt: localDateTime(monday(), 9),
+          status: 'PUBLISHED',
+          platformUrl: 'https://youtube.test/watch/3',
+        }],
+      },
+      { ...schedule(4, 11), status: 'PROCESSING' },
+    ] as never)
+
+    const { wrapper } = await renderCalendar()
+
+    expect(wrapper.findAll('[draggable="true"]')).toHaveLength(0)
+    expect(wrapper.findAll('[draggable="false"]')).toHaveLength(2)
+    expect(wrapper.text()).toContain('게시 완료')
+  })
+
   it('requires confirmation before a drag-and-drop reschedule reaches the server', async () => {
     const { wrapper } = await renderCalendar()
     const blocks = wrapper.findAll('[draggable="true"]')

@@ -5,6 +5,7 @@ import com.ongo.common.enums.AuthProvider
 import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.exception.AccountFrozenException
+import com.ongo.common.exception.ForbiddenException
 import com.ongo.application.schedule.dto.CreateScheduleRequest
 import com.ongo.application.schedule.dto.PlatformScheduleConfig
 import com.ongo.application.schedule.dto.UpdateScheduleRequest
@@ -173,6 +174,32 @@ class ScheduleUseCaseTest {
 
         assertFailsWith<IllegalStateException> { useCase.cancelSchedule(7L, 31L) }
         verify(exactly = 0) { schedules.update(any()) }
+    }
+
+    @Test
+    fun `다른 사용자의 예약은 시간 수정과 취소 모두 거부한다`() {
+        val foreignSchedule = Schedule(
+            id = 35L,
+            videoId = 22L,
+            userId = 99L,
+            scheduledAt = LocalDateTime.now(ScheduleUseCase.KST).plusHours(1),
+            status = ScheduleStatus.SCHEDULED,
+            platforms = mapOf(Platform.YOUTUBE.name to emptyMap<String, Any>()),
+        )
+        every { schedules.findById(35L) } returns foreignSchedule
+
+        assertFailsWith<ForbiddenException> {
+            useCase.updateSchedule(
+                7L,
+                35L,
+                UpdateScheduleRequest(scheduledAt = foreignSchedule.scheduledAt.plusHours(1)),
+            )
+        }
+        assertFailsWith<ForbiddenException> { useCase.cancelSchedule(7L, 35L) }
+
+        verify(exactly = 0) { schedules.update(any()) }
+        verify(exactly = 0) { videoUploads.rescheduleScheduledUploads(any(), any()) }
+        verify(exactly = 0) { videoUploads.cancelScheduledUploads(any(), any()) }
     }
 
     @Test

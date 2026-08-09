@@ -164,8 +164,8 @@
             <div
               v-for="s in schedulesOf(day)"
               :key="s.id"
-              draggable="true"
-              class="cursor-grab rounded-[8px] border border-line-control bg-surface-raised px-[9px] py-2 transition-[border-color] duration-[120ms] ease-out hover:border-accent"
+              :draggable="isMovable(s)"
+              class="rounded-[8px] border border-line-control bg-surface-raised px-[9px] py-2 transition-[border-color] duration-[120ms] ease-out hover:border-accent"
               :class="store.moving ? 'opacity-60' : ''"
               @dragstart="onDragStart(s, $event)"
               @dragover.prevent.stop
@@ -445,16 +445,25 @@ function isToday(day: Date): boolean {
   return toDateStr(day) === toDateStr(new Date())
 }
 
+/** 서버가 허용하는 유일한 이동 상태와 UI의 드래그 가능 상태를 일치시킨다. */
+function isMovable(schedule: Schedule): boolean {
+  return schedule.status === 'SCHEDULED' && !store.moving
+}
+
 // ---- 드래그 이동 ----
 // 같은 날 다른 블록 위에 놓으면 그 블록의 시각을 따르고, 빈 곳에 놓으면 시각은 유지한 채 요일만 바꾼다
 function onDragStart(s: Schedule, e: DragEvent) {
+  if (!isMovable(s)) {
+    e.preventDefault()
+    return
+  }
   e.dataTransfer?.setData('text/plain', String(s.id))
   if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
 }
 
 function moveTo(scheduleId: number, next: Date) {
   const current = store.schedules.find((s) => s.id === scheduleId)
-  if (!current) return
+  if (!current || !isMovable(current)) return
   // 같은 시각이면 호출하지 않는다
   if (new Date(current.scheduledAt).getTime() === next.getTime()) return
   pendingAction.value = {
@@ -469,7 +478,7 @@ function moveTo(scheduleId: number, next: Date) {
 function onDropToDay(day: Date, e: DragEvent) {
   const id = Number(e.dataTransfer?.getData('text/plain'))
   const s = store.schedules.find((item) => item.id === id)
-  if (!s) return
+  if (!s || !isMovable(s)) return
   const old = new Date(s.scheduledAt)
   const next = new Date(day)
   next.setHours(old.getHours(), old.getMinutes(), 0, 0)
@@ -479,6 +488,8 @@ function onDropToDay(day: Date, e: DragEvent) {
 function onDropToBlock(day: Date, target: Schedule, e: DragEvent) {
   const id = Number(e.dataTransfer?.getData('text/plain'))
   if (id === target.id) return
+  const source = store.schedules.find((item) => item.id === id)
+  if (!source || !isMovable(source)) return
   const targetTime = new Date(target.scheduledAt)
   const next = new Date(day)
   next.setHours(targetTime.getHours(), targetTime.getMinutes(), 0, 0)
