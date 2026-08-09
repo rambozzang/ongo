@@ -236,4 +236,29 @@ class VideoPublishEventListenerTest {
         assertEquals(UploadStatus.FAILED, uploads[11L]?.status)
         assertEquals(UploadStatus.PARTIALLY_PUBLISHED, updatedVideo.captured.status)
     }
+
+    @Test
+    fun `does not call an external platform after a queued upload is cancelled`() {
+        val ytService = createMockService(Platform.YOUTUBE)
+        platformUploadServices.add(ytService)
+        val config = createConfig(Platform.YOUTUBE, 10L)
+
+        every { videoUploadRepository.claim(10L, any(), any(), any()) } returns VideoUpload(
+            id = 10L,
+            videoId = 1L,
+            platform = Platform.YOUTUBE,
+            status = UploadStatus.UPLOADING,
+        )
+        every { videoUploadRepository.findById(10L) } returns VideoUpload(
+            id = 10L,
+            videoId = 1L,
+            platform = Platform.YOUTUBE,
+            status = UploadStatus.CANCELLED,
+        )
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+
+        listener.handleVideoPublish(createEvent(configs = listOf(config)))
+
+        verify(exactly = 0) { ytService.upload(any(), any(), any()) }
+    }
 }

@@ -100,6 +100,13 @@ class VideoPublishEventListener(
             return
         }
 
+        // 예약 취소와 dispatcher가 동시에 경합할 수 있다. 취소가 lease를
+        // 회수한 뒤에는 외부 HTTP 호출을 시작하지 않는다.
+        if (videoUploadRepository.findById(config.videoUploadId)?.status == UploadStatus.CANCELLED) {
+            log.info("취소된 업로드는 외부 게시를 시작하지 않습니다: videoUploadId={}", config.videoUploadId)
+            return
+        }
+
         val fileUrl = storageService?.let { storage ->
             runCatching { storage.getFileUrl(event.videoId) }.getOrNull()
         } ?: event.fileUrl
@@ -207,8 +214,9 @@ class VideoPublishEventListener(
             uploads.all { it.status == UploadStatus.PUBLISHED } -> UploadStatus.PUBLISHED
             uploads.any { it.status == UploadStatus.PUBLISHED } && uploads.any {
                 it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED ||
-                    it.status == UploadStatus.UNCONFIRMED
+                    it.status == UploadStatus.UNCONFIRMED || it.status == UploadStatus.CANCELLED
             } -> UploadStatus.PARTIALLY_PUBLISHED
+            uploads.all { it.status == UploadStatus.CANCELLED } -> UploadStatus.DRAFT
             uploads.all { it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED } -> UploadStatus.FAILED
             uploads.all { it.status == UploadStatus.UNCONFIRMED } -> UploadStatus.UNCONFIRMED
             uploads.any { it.status == UploadStatus.PROCESSING || it.status == UploadStatus.REVIEW } -> UploadStatus.PROCESSING

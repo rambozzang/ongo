@@ -17,6 +17,7 @@ import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -117,15 +118,38 @@ class ScheduleUseCase(
             validateScheduleLimit(user.planType, newScheduledAt)
         }
         request.platforms?.let {
+            require(schedule.platforms.keys == it.map { config -> config.platform.name }.toSet()) {
+                "예약 플랫폼 변경은 새 게시 작업으로 생성해주세요. 기존 예약은 플랫폼별 시간만 수정할 수 있습니다."
+            }
             validatePlatformScheduleTimes(user.planType, newScheduledAt, it, LocalDateTime.now(KST))
         }
 
+        val updatedPlatformTimes = when {
+            request.platforms != null -> request.platforms.associate { config ->
+                config.platform.name to mapOf("scheduledAt" to (config.scheduledAt ?: newScheduledAt).toString())
+            }
+            request.scheduledAt != null -> {
+                // Calendar drag sends only the parent time. Move every platform
+                // by the same delta so per-platform offsets and the durable
+                // queue remain consistent.
+                val delta = Duration.between(schedule.scheduledAt, newScheduledAt)
+                schedule.platforms.mapValues { (_, raw) ->
+                    val platformTime = raw.asPlatformScheduleTime() ?: schedule.scheduledAt
+                    mapOf("scheduledAt" to platformTime.plus(delta).toString())
+                }
+            }
+            else -> schedule.platforms
+        }
         val updated = schedule.copy(
             scheduledAt = newScheduledAt,
-            platforms = request.platforms?.associate { config ->
-                config.platform.name to mapOf("scheduledAt" to (config.scheduledAt ?: newScheduledAt).toString())
-            } ?: schedule.platforms
+            platforms = updatedPlatformTimes,
         )
+        val uploadTimes = updated.platforms.mapNotNull { (platformName, raw) ->
+            val platform = runCatching { com.ongo.common.enums.Platform.valueOf(platformName) }.getOrNull()
+            val time = raw.asPlatformScheduleTime()
+            if (platform != null && time != null) platform to time else null
+        }.toMap()
+        videoUploadRepository.rescheduleScheduledUploads(schedule.videoId, uploadTimes)
         scheduleRepository.update(updated)
         val video = videoRepository.findById(schedule.videoId)
         return updated.toResponse(
@@ -143,7 +167,25 @@ class ScheduleUseCase(
         if (schedule.status != ScheduleStatus.SCHEDULED) {
             throw IllegalStateException("아직 실행되지 않은 예약만 취소할 수 있습니다. 현재 상태: ${schedule.status}")
         }
+        // Schedule만 취소하면 durable upload queue가 남아 dispatcher가 외부
+        // 플랫폼에 게시한다. 같은 트랜잭션에서 아직 전송되지 않은 자식 작업도
+        // CANCELLED로 바꿔 취소 의도를 큐까지 전파한다.
+        videoUploadRepository.cancelScheduledUploads(schedule.videoId, LocalDateTime.now())
         scheduleRepository.update(schedule.copy(status = ScheduleStatus.CANCELLED))
+        val video = videoRepository.findById(schedule.videoId)
+        val uploads = videoUploadRepository.findByVideoId(schedule.videoId)
+        if (video != null && uploads.isNotEmpty()) {
+            val nextVideoStatus = when {
+                uploads.all { it.status == UploadStatus.CANCELLED } -> UploadStatus.DRAFT
+                uploads.any { it.status == UploadStatus.PUBLISHED } && uploads.all {
+                    it.status == UploadStatus.PUBLISHED || it.status == UploadStatus.CANCELLED
+                } -> UploadStatus.PARTIALLY_PUBLISHED
+                else -> null
+            }
+            if (nextVideoStatus != null && nextVideoStatus != video.status) {
+                videoRepository.update(video.copy(status = nextVideoStatus))
+            }
+        }
     }
 
     private fun validateScheduleLimit(planType: PlanType, scheduledAt: LocalDateTime) {
@@ -219,6 +261,7 @@ class ScheduleUseCase(
         UploadStatus.FAILED, UploadStatus.REJECTED, UploadStatus.IMPORT_FAILED -> ScheduleStatus.FAILED
         UploadStatus.UNCONFIRMED -> ScheduleStatus.UNCONFIRMED
         UploadStatus.PARTIALLY_PUBLISHED -> ScheduleStatus.PARTIALLY_PUBLISHED
+        UploadStatus.CANCELLED -> ScheduleStatus.CANCELLED
         UploadStatus.PROCESSING, UploadStatus.REVIEW -> ScheduleStatus.PROCESSING
         UploadStatus.DRAFT, UploadStatus.UPLOADING, UploadStatus.IMPORTING -> ScheduleStatus.SCHEDULED
     }

@@ -9,7 +9,6 @@ import java.time.LocalDateTime
 
 data class PublishRequest(
     @field:NotEmpty(message = "게시할 플랫폼을 1개 이상 선택해주세요")
-    @field:Size(max = 4, message = "플랫폼은 최대 4개까지 선택할 수 있습니다")
     @field:Valid
     val platforms: List<PlatformPublishConfig>,
 )

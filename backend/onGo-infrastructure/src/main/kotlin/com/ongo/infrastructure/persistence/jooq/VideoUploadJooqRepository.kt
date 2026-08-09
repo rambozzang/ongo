@@ -290,6 +290,34 @@ class VideoUploadJooqRepository(
         return expired.mapNotNull { findById(it) }
     }
 
+    override fun cancelScheduledUploads(videoId: Long, now: LocalDateTime): Int =
+        dsl.update(VIDEO_UPLOADS)
+            .set(STATUS, UploadStatus.CANCELLED.name)
+            .set(ERROR_MESSAGE, "예약 게시가 취소되었습니다.")
+            .set(VIDEO_LAST_ERROR, "사용자가 예약 게시를 취소했습니다: $now")
+            .set(VIDEO_NEXT_RETRY_AT, null as LocalDateTime?)
+            .set(VIDEO_POLL_TOKEN, null as String?)
+            .set(VIDEO_LEASE_OWNER, null as String?)
+            .set(VIDEO_LEASE_UNTIL, null as LocalDateTime?)
+            .where(VIDEO_ID.eq(videoId))
+            .and(STATUS.eq(UploadStatus.UPLOADING.name))
+            .and(VIDEO_SCHEDULED_AT.isNotNull)
+            .execute()
+
+    override fun rescheduleScheduledUploads(
+        videoId: Long,
+        scheduledAtByPlatform: Map<Platform, LocalDateTime>,
+    ): Int = scheduledAtByPlatform.entries.sumOf { (platform, scheduledAt) ->
+        dsl.update(VIDEO_UPLOADS)
+            .set(VIDEO_SCHEDULED_AT, scheduledAt)
+            .set(VIDEO_NEXT_RETRY_AT, null as LocalDateTime?)
+            .where(VIDEO_ID.eq(videoId))
+            .and(PLATFORM_TEXT.eq(platform.name))
+            .and(STATUS.eq(UploadStatus.UPLOADING.name))
+            .and(VIDEO_SCHEDULED_AT.isNotNull)
+            .execute()
+    }
+
     private fun Record.toVideoUpload(): VideoUpload {
         val platformStr = get(PLATFORM) ?: "YOUTUBE"
         val statusStr = get(STATUS) ?: "DRAFT"

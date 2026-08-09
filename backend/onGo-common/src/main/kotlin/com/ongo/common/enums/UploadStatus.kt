@@ -14,4 +14,6 @@ enum class UploadStatus {
     UNCONFIRMED,
     /** 여러 플랫폼 중 일부만 게시된 상태 */
     PARTIALLY_PUBLISHED,
+    /** 사용자가 예약 게시를 취소해 외부 전송을 시작하지 않은 상태 */
+    CANCELLED,
 }

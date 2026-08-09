@@ -55,7 +55,7 @@ sealed interface PublishOutcome {
     ) : PublishOutcome {
         init {
             require(platformVideoId.isNotBlank()) { "게시 완료 결과에는 platformVideoId가 필요합니다." }
-            require(platformUrl.isNotBlank()) { "게시 완료 결과에는 사용 가능한 platformUrl이 필요합니다." }
+            require(platformUrl.isUsablePlatformUrl()) { "게시 완료 결과에는 사용 가능한 platformUrl이 필요합니다." }
         }
     }
 
@@ -127,3 +127,6 @@ fun Throwable.isIndeterminateUploadFailure(): Boolean {
             (it.statusCode.value() == 429 || it.statusCode.value() >= 500)
     }
 }
+
+private fun String.isUsablePlatformUrl(): Boolean =
+    startsWith("https://") || startsWith("http://")

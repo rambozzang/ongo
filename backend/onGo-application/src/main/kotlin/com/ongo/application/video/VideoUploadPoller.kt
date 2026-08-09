@@ -204,8 +204,10 @@ class VideoUploadPoller(
         val status = when {
             uploads.all { it.status == UploadStatus.PUBLISHED } -> UploadStatus.PUBLISHED
             uploads.any { it.status == UploadStatus.PUBLISHED } && uploads.any {
-                it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED || it.status == UploadStatus.UNCONFIRMED
+                it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED ||
+                    it.status == UploadStatus.UNCONFIRMED || it.status == UploadStatus.CANCELLED
             } -> UploadStatus.PARTIALLY_PUBLISHED
+            uploads.all { it.status == UploadStatus.CANCELLED } -> UploadStatus.DRAFT
             uploads.all { it.status == UploadStatus.FAILED || it.status == UploadStatus.REJECTED } -> UploadStatus.FAILED
             uploads.all { it.status == UploadStatus.UNCONFIRMED } -> UploadStatus.UNCONFIRMED
             uploads.any { it.status == UploadStatus.PROCESSING || it.status == UploadStatus.REVIEW } -> UploadStatus.PROCESSING

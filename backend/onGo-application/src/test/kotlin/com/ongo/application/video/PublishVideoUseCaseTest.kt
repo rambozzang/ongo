@@ -9,6 +9,7 @@ import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.EncryptedToken
 import com.ongo.domain.accountdeletion.UserWriteGuard
+import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.video.VideoRepository
@@ -24,15 +25,17 @@ import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import java.time.LocalDateTime
 
 class PublishVideoUseCaseTest {
     private val videoRepository = mockk<VideoRepository>()
-    private val videoUploadRepository = mockk<VideoUploadRepository>()
+    private val videoUploadRepository = mockk<VideoUploadRepository>(relaxed = true)
     private val videoPlatformMetaRepository = mockk<VideoPlatformMetaRepository>()
     private val eventPublisher = mockk<ApplicationEventPublisher>()
     private val channelRepository = mockk<ChannelRepository>()
     private val videoUploadPoller = mockk<VideoUploadPoller>(relaxed = true)
     private val userWriteGuard = mockk<UserWriteGuard>(relaxed = true)
+    private val scheduleRepository = mockk<ScheduleRepository>(relaxed = true)
 
     @Test
     fun `cannot publish a video owned by another user`() {
@@ -142,6 +145,7 @@ class PublishVideoUseCaseTest {
             channelRepository = channelRepository,
             videoUploadPoller = videoUploadPoller,
             userWriteGuard = userWriteGuard,
+            scheduleRepository = scheduleRepository,
         )
 
         val result = useCase.publishVideo(
@@ -166,6 +170,64 @@ class PublishVideoUseCaseTest {
         assertEquals(7, event.captured.platformConfigs.map { it.videoUploadId }.distinct().size)
         verify(exactly = 7) { videoUploadRepository.save(any()) }
         verify(exactly = 7) { videoPlatformMetaRepository.save(any()) }
+    }
+
+    @Test
+    fun `scheduled publish creates a calendar schedule linked to its durable upload`() {
+        val videoId = 905L
+        val scheduledAt = LocalDateTime.now().plusHours(2)
+        every { videoRepository.findById(videoId) } returns Video(
+            id = videoId,
+            userId = 42L,
+            title = "예약 원본",
+            fileUrl = "https://storage.test/scheduled.mp4",
+            status = UploadStatus.DRAFT,
+        )
+        every { videoRepository.claimForPublish(42L, videoId) } returns true
+        every { channelRepository.findByUserIdAndPlatform(42L, Platform.YOUTUBE) } returns Channel(
+            id = 1L,
+            userId = 42L,
+            platform = Platform.YOUTUBE,
+            platformChannelId = "youtube-channel",
+            channelName = "테스트 채널",
+            accessToken = EncryptedToken("encrypted-token"),
+        )
+        every { videoUploadRepository.save(any()) } returns VideoUpload(
+            id = 501L,
+            videoId = videoId,
+            platform = Platform.YOUTUBE,
+            status = UploadStatus.UPLOADING,
+            scheduledAt = scheduledAt,
+        )
+        every { videoPlatformMetaRepository.save(any()) } answers { firstArg() }
+        every { scheduleRepository.save(any()) } answers { firstArg() }
+        every { eventPublisher.publishEvent(any<VideoPublishEvent>()) } just Runs
+
+        useCase().publishVideo(
+            userId = 42L,
+            videoId = videoId,
+            configs = listOf(
+                PlatformUploadConfig(
+                    platform = Platform.YOUTUBE,
+                    videoUploadId = 0L,
+                    title = "예약 제목",
+                    description = "설명",
+                    tags = emptyList(),
+                    visibility = Visibility.PUBLIC,
+                    thumbnailUrl = null,
+                    scheduledAt = scheduledAt,
+                ),
+            ),
+        )
+
+        verify {
+            scheduleRepository.save(match {
+                it.videoId == videoId &&
+                    it.status == com.ongo.common.enums.ScheduleStatus.SCHEDULED &&
+                    it.scheduledAt == scheduledAt &&
+                    it.platforms[Platform.YOUTUBE.name] != null
+            })
+        }
     }
 
     @Test
@@ -248,5 +310,6 @@ class PublishVideoUseCaseTest {
         channelRepository = channelRepository,
         videoUploadPoller = videoUploadPoller,
         userWriteGuard = userWriteGuard,
+        scheduleRepository = scheduleRepository,
     )
 }

@@ -12,6 +12,7 @@ export type UploadStatus =
   | 'REJECTED'
   | 'UNCONFIRMED'
   | 'PARTIALLY_PUBLISHED'
+  | 'CANCELLED'
 
 export type Visibility = 'PUBLIC' | 'PRIVATE' | 'UNLISTED'
 

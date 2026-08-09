@@ -8,6 +8,8 @@ import com.ongo.common.util.safeValueOfOrThrow
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.accountdeletion.UserWriteGuard
+import com.ongo.domain.schedule.Schedule
+import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.video.*
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -23,6 +25,7 @@ class PublishVideoUseCase(
     private val channelRepository: ChannelRepository,
     private val videoUploadPoller: VideoUploadPoller,
     private val userWriteGuard: UserWriteGuard,
+    private val scheduleRepository: ScheduleRepository,
 ) {
 
     @Transactional
@@ -100,14 +103,36 @@ class PublishVideoUseCase(
 
         // 각 플랫폼별 VideoUpload + VideoPlatformMeta 생성
         val platformConfigs = configs.map { config ->
-            val upload = videoUploadRepository.save(
-                VideoUpload(
-                    videoId = videoId,
-                    platform = config.platform,
-                    status = UploadStatus.UPLOADING,
-                    scheduledAt = config.scheduledAt,
+            val existing = videoUploadRepository.findByVideoIdAndPlatform(videoId, config.platform)
+            val upload = if (existing?.status == UploadStatus.CANCELLED) {
+                // 취소된 예약을 다시 게시할 때 unique(video_id, platform) 제약을
+                // 위반해 새 row를 만들지 않고 같은 durable 작업을 재사용한다.
+                videoUploadRepository.update(
+                    existing.copy(
+                        status = UploadStatus.UPLOADING,
+                        platformVideoId = null,
+                        platformUrl = null,
+                        errorMessage = null,
+                        attemptCount = 0,
+                        nextRetryAt = null,
+                        leaseOwner = null,
+                        leaseUntil = null,
+                        pollToken = null,
+                        lastError = null,
+                        scheduledAt = config.scheduledAt,
+                        publishedAt = null,
+                    )
                 )
-            )
+            } else {
+                videoUploadRepository.save(
+                    VideoUpload(
+                        videoId = videoId,
+                        platform = config.platform,
+                        status = UploadStatus.UPLOADING,
+                        scheduledAt = config.scheduledAt,
+                    )
+                )
+            }
             val uploadId = upload.id!!
 
             videoPlatformMetaRepository.save(
@@ -122,6 +147,22 @@ class PublishVideoUseCase(
             )
 
             config.copy(videoUploadId = uploadId)
+        }
+
+        val scheduledConfigs = configs.filter { it.scheduledAt != null }
+        if (scheduledConfigs.isNotEmpty()) {
+            val earliest = scheduledConfigs.minOf { it.scheduledAt!! }
+            scheduleRepository.save(
+                Schedule(
+                    videoId = videoId,
+                    userId = userId,
+                    scheduledAt = earliest,
+                    status = com.ongo.common.enums.ScheduleStatus.SCHEDULED,
+                    platforms = scheduledConfigs.associate { config ->
+                        config.platform.name to mapOf("scheduledAt" to config.scheduledAt.toString())
+                    },
+                )
+            )
         }
 
         // VideoPublishEvent 발행 (비동기 처리)
