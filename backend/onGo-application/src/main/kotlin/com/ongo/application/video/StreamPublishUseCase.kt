@@ -11,6 +11,8 @@ import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.channel.PlatformClientPort
+import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.lock.DistributedLockPort
 import com.ongo.domain.accountdeletion.UserWriteGuard
 import org.springframework.context.ApplicationEventPublisher
@@ -30,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.web.multipart.MultipartFile
+import org.springframework.web.client.HttpStatusCodeException
 import java.nio.file.Files
 import java.time.LocalDateTime
 import java.time.YearMonth
@@ -50,6 +53,7 @@ class StreamPublishUseCase(
     private val storageService: StorageService,
     private val userWriteGuard: UserWriteGuard,
     private val distributedLockPort: DistributedLockPort? = null,
+    private val platformClientPort: PlatformClientPort? = null,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -372,12 +376,12 @@ class StreamPublishUseCase(
                             try {
                                 platformSemaphore.acquire()
                                 if (distributedLockPort == null) {
-                                    writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize, ctx.scheduledAt)
+                                    initializeSessionWithSafeTokenRefresh(ctx, writer, fileSize)
                                 } else {
                                     distributedLockPort.withAnyLock(
                                         ExecutorConfig.platformUploadLockIds(ctx.platform),
                                     ) {
-                                        writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize, ctx.scheduledAt)
+                                        initializeSessionWithSafeTokenRefresh(ctx, writer, fileSize)
                                     } ?: throw IllegalStateException("플랫폼 분산 동시성 슬롯을 확보하지 못했습니다.")
                                 }
                             } finally {
@@ -555,6 +559,66 @@ class StreamPublishUseCase(
             updateOverallVideoStatus(videoId)
         }
     }
+
+    /**
+     * 스트리밍 writer는 예외를 자체적으로 결과로 바꾸는 complete()와 달리
+     * initSession()에서 provider의 401을 그대로 던진다. 이 시점에는 아직
+     * provider에 바이트를 보낸 적이 없으므로 refresh token으로 세션만 한 번
+     * 다시 열 수 있다. 세션이 열린 뒤의 전송 오류는 이 메서드에 들어오지
+     * 않으므로 중복 게시를 만들지 않는다.
+     */
+    private fun initializeSessionWithSafeTokenRefresh(
+        context: StreamPlatformContext,
+        writer: PlatformStreamWriter,
+        fileSize: Long,
+    ): String {
+        try {
+            return writer.initSession(
+                context.meta,
+                context.accessToken,
+                context.platformChannelId,
+                fileSize,
+                context.scheduledAt,
+            )
+        } catch (error: Exception) {
+            if (!isUnauthorized(error)) throw error
+
+            val clientPort = platformClientPort ?: throw error
+            val channel = context.channelId?.let { channelRepository.findById(it) }
+                ?: throw error
+            val encryptedRefreshToken = channel.refreshToken ?: throw error
+            val refreshed = clientPort.refreshToken(
+                context.platform,
+                tokenEncryptionPort.decrypt(encryptedRefreshToken).value,
+            )
+            channelRepository.update(
+                channel.copy(
+                    accessToken = tokenEncryptionPort.encrypt(PlainToken(refreshed.accessToken)),
+                    refreshToken = refreshed.refreshToken?.let { tokenEncryptionPort.encrypt(PlainToken(it)) }
+                        ?: channel.refreshToken,
+                    tokenExpiresAt = LocalDateTime.now().plusSeconds(refreshed.expiresIn),
+                    updatedAt = LocalDateTime.now(),
+                )
+            )
+            context.accessToken = PlainToken(refreshed.accessToken)
+            writer.abort()
+            log.info("플랫폼 {} 스트리밍 세션 초기화 전 access token을 갱신하고 한 번 재시도합니다", context.platform)
+            return writer.initSession(
+                context.meta,
+                context.accessToken,
+                context.platformChannelId,
+                fileSize,
+                context.scheduledAt,
+            )
+        }
+    }
+
+    private fun isUnauthorized(error: Throwable): Boolean = generateSequence(error) { it.cause }
+        .any {
+            (it as? HttpStatusCodeException)?.statusCode?.value() == 401 ||
+                it.message?.contains("401") == true ||
+                it.message?.contains("Unauthorized", ignoreCase = true) == true
+        }
 
     /**
      * 플랫폼별 게시 결과를 알린다(알림 저장 + WebSocket 푸시).
@@ -817,7 +881,7 @@ private data class StreamPlatformContext(
     val videoUploadId: Long,
     val channelId: Long?,
     val meta: VideoPlatformMeta,
-    val accessToken: com.ongo.domain.channel.PlainToken,
+    var accessToken: com.ongo.domain.channel.PlainToken,
     val platformChannelId: String?,
     val scheduledAt: LocalDateTime?,
 )

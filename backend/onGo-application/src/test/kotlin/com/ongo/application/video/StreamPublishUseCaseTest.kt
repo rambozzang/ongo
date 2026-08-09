@@ -12,6 +12,8 @@ import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.channel.EncryptedToken
 import com.ongo.domain.channel.PlainToken
+import com.ongo.domain.channel.PlatformClientPort
+import com.ongo.domain.channel.PlatformTokenRefreshResult
 import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.subscription.Subscription
@@ -38,6 +40,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionSynchronization
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
+import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.multipart.MultipartFile
 import java.io.ByteArrayInputStream
 import java.nio.file.Files
@@ -91,7 +96,10 @@ class StreamPublishUseCaseTest {
         every { videoRepository.update(any()) } answers { firstArg() }
     }
 
-    private fun createUseCase(factories: List<PlatformStreamWriterFactory>) = StreamPublishUseCase(
+    private fun createUseCase(
+        factories: List<PlatformStreamWriterFactory>,
+        platformClientPort: PlatformClientPort? = null,
+    ) = StreamPublishUseCase(
             videoRepository = videoRepository,
             videoUploadRepository = videoUploadRepository,
             videoPlatformMetaRepository = videoPlatformMetaRepository,
@@ -103,6 +111,7 @@ class StreamPublishUseCaseTest {
             scheduleRepository = scheduleRepository,
             storageService = storageService,
             userWriteGuard = userWriteGuard,
+            platformClientPort = platformClientPort,
         )
 
     @AfterEach
@@ -343,7 +352,24 @@ class StreamPublishUseCaseTest {
             videos[updated.id!!] = updated
             updated
         }
-        every { channelRepository.findByUserIdAndPlatform(userId, Platform.YOUTUBE) } returns buildActiveChannel()
+        val expiredAccessToken = HttpClientErrorException.create(
+            HttpStatus.UNAUTHORIZED,
+            "Unauthorized",
+            HttpHeaders.EMPTY,
+            ByteArray(0),
+            Charsets.UTF_8,
+        )
+        val platformClientPort = mockk<PlatformClientPort>()
+        every { channelRepository.findByUserIdAndPlatform(userId, Platform.YOUTUBE) } returns
+            buildActiveChannel().copy(refreshToken = EncryptedToken("refresh-token"))
+        every { channelRepository.findById(10L) } returns buildActiveChannel().copy(refreshToken = EncryptedToken("refresh-token"))
+        every { channelRepository.update(any()) } answers { firstArg() }
+        every { tokenEncryptionPort.encrypt(any()) } answers { EncryptedToken(firstArg<PlainToken>().value) }
+        every { platformClientPort.refreshToken(Platform.YOUTUBE, "refresh-token") } returns PlatformTokenRefreshResult(
+            accessToken = "refreshed-access-token",
+            refreshToken = null,
+            expiresIn = 3600,
+        )
         every { videoUploadRepository.save(any()) } returns savedUpload
         every { videoUploadRepository.findById(200L) } answers { uploads[200L] }
         every { videoUploadRepository.findByVideoId(100L) } answers { uploads.values.toList() }
@@ -364,7 +390,10 @@ class StreamPublishUseCaseTest {
 
         val seenToken = slot<PlainToken>()
         val writer = mockk<PlatformStreamWriter>(relaxed = true)
-        every { writer.initSession(any(), capture(seenToken), any(), any(), any()) } returns "session-1"
+        every { writer.initSession(any(), capture(seenToken), any(), any(), any()) } answers {
+            if (secondArg<PlainToken>().value == "access-token-value") throw expiredAccessToken
+            "session-1"
+        }
         every { writer.complete() } returns PlatformUploadResult(
             success = true,
             platformVideoId = "youtube-1",
@@ -375,7 +404,7 @@ class StreamPublishUseCaseTest {
             override val platform = Platform.YOUTUBE
             override fun createWriter() = writer
         }
-        useCase = createUseCase(listOf(factory))
+        useCase = createUseCase(listOf(factory), platformClientPort)
 
         val synchronization = slot<TransactionSynchronization>()
         every { TransactionSynchronizationManager.registerSynchronization(capture(synchronization)) } just Runs
@@ -392,7 +421,7 @@ class StreamPublishUseCaseTest {
                 videos[100L]?.status == UploadStatus.PUBLISHED
         }
 
-        assertEquals("access-token-value", seenToken.captured.value)
+        assertEquals("refreshed-access-token", seenToken.captured.value)
         assertEquals(UploadStatus.PUBLISHED, uploads[200L]?.status)
         assertEquals("youtube-1", uploads[200L]?.platformVideoId)
         assertEquals("https://youtube.test/watch/youtube-1", uploads[200L]?.platformUrl)
