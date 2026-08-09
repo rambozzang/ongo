@@ -43,10 +43,12 @@ class ShortsPublishAdapter(
         require(requests.isNotEmpty()) { "게시할 플랫폼을 하나 이상 선택해주세요." }
 
         val configs = requests.map { request ->
-            val platform = runCatching { Platform.valueOf(request.platformName) }
+            val target = parseShortsPublishTarget(request.platformName, request.channelId)
+            val platform = runCatching { Platform.valueOf(target.platformName) }
                 .getOrElse { throw IllegalArgumentException("지원하지 않는 플랫폼입니다: ${request.platformName}") }
             PlatformUploadConfig(
                 platform = platform,
+                channelId = target.channelId,
                 videoUploadId = 0,
                 title = request.title?.ifBlank { video.title } ?: video.title,
                 description = request.caption,
@@ -57,10 +59,15 @@ class ShortsPublishAdapter(
             )
         }
         val result = publishVideoUseCase.publishVideo(userId, videoId, configs)
-        return result.uploads.map { uploadStatus ->
-            val upload = videoUploadRepository.findByVideoIdAndPlatform(videoId, uploadStatus.platform)
+        return requests.mapIndexed { index, request ->
+            val uploadStatus = result.uploads[index]
+            val target = parseShortsPublishTarget(request.platformName, request.channelId)
+            val upload = target.channelId?.let { videoUploadRepository.findByVideoIdAndChannelId(videoId, it) }
+                ?: videoUploadRepository.findByVideoIdAndPlatform(videoId, uploadStatus.platform)
             PlatformPublishOutcome(
-                platform = uploadStatus.platform.name,
+                // Keep the target key in the pipeline result so two accounts
+                // on one provider can be reconciled independently.
+                platform = shortsPublishTargetKey(target.platformName, target.channelId),
                 videoUploadId = upload?.id,
                 status = uploadStatus.status.name,
                 errorMessage = uploadStatus.errorMessage,
@@ -74,4 +81,21 @@ data class ShortsPublishRequest(
     val title: String?,
     val caption: String?,
     val scheduledAt: Instant,
+    val channelId: Long? = null,
 )
+
+data class ShortsPublishTarget(val platformName: String, val channelId: Long?)
+
+fun parseShortsPublishTarget(rawPlatformName: String, explicitChannelId: Long? = null): ShortsPublishTarget {
+    val parts = rawPlatformName.split('#', limit = 2)
+    val platformName = parts[0]
+    val encodedChannelId = parts.getOrNull(1)?.toLongOrNull()
+        ?: if (parts.size > 1) throw IllegalArgumentException("잘못된 쇼츠 게시 계정입니다: $rawPlatformName") else null
+    if (explicitChannelId != null && encodedChannelId != null && explicitChannelId != encodedChannelId) {
+        throw IllegalArgumentException("쇼츠 게시 계정 정보가 일치하지 않습니다: $rawPlatformName")
+    }
+    return ShortsPublishTarget(platformName, explicitChannelId ?: encodedChannelId)
+}
+
+fun shortsPublishTargetKey(platformName: String, channelId: Long?): String =
+    if (channelId == null) platformName else "$platformName#$channelId"

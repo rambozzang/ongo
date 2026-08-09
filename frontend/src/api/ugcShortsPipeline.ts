@@ -110,6 +110,7 @@ export interface SelectHooksRequest {
 export interface ScheduleRunRequest {
   startAt: string
   intervalHours: number
+  /** PLATFORM or PLATFORM#channelId for a specific connected account. */
   platforms: string[]
 }
 

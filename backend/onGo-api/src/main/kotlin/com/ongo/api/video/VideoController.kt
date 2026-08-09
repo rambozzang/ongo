@@ -308,6 +308,7 @@ class VideoController(
             platformDrafts = req.platforms?.map { draft ->
                 VideoPlatformDraft(
                     platform = draft.platform,
+                    channelId = draft.channelId,
                     title = draft.title,
                     description = draft.description,
                     tags = draft.tags,

@@ -6,6 +6,7 @@ import com.ongo.common.enums.Visibility
 /** A platform-specific metadata snapshot kept with a video draft. */
 data class VideoPlatformDraft(
     val platform: Platform,
+    val channelId: Long? = null,
     val title: String,
     val description: String?,
     val tags: List<String>,

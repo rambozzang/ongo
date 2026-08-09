@@ -90,6 +90,8 @@ export interface VideoCreateRequest {
 
 export interface VideoPlatformDraftRequest {
   platform: Platform
+  /** The connected account this platform override belongs to. */
+  channelId?: number
   title: string
   description?: string
   tags: string[]

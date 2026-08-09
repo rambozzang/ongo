@@ -284,7 +284,7 @@ describe('ComposeView', () => {
     })
     expect(ugcShortsPipelineApi.startRender).toHaveBeenCalledWith(7, 77, 501)
     expect(ugcShortsPipelineApi.confirmSchedule).toHaveBeenCalledWith(7, 77, expect.objectContaining({
-      platforms: ['YOUTUBE', 'INSTAGRAM'],
+      platforms: ['YOUTUBE#1', 'INSTAGRAM#2'],
     }))
   })
 })

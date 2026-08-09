@@ -3,6 +3,7 @@ package com.ongo.infrastructure.persistence.jooq
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.video.VideoUpload
+import com.ongo.domain.video.VideoUploadTarget
 import com.ongo.domain.video.VideoUploadRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.CHANNEL_ID
@@ -158,11 +159,17 @@ class VideoUploadJooqRepository(
         return findById(upload.id!!)!!
     }
 
-    override fun deleteEditableByVideoIdExceptPlatforms(videoId: Long, platforms: Set<Platform>): Int {
-        val keep = platforms.map { it.name }
+    override fun deleteEditableByVideoIdExceptTargets(videoId: Long, targets: Set<VideoUploadTarget>): Int {
         val condition = VIDEO_ID.eq(videoId)
             .and(STATUS.`in`(UploadStatus.DRAFT.name, UploadStatus.CANCELLED.name))
-        val scoped = if (keep.isEmpty()) condition else condition.and(PLATFORM_TEXT.notIn(keep))
+        val keepCondition = targets
+            .map { target ->
+                PLATFORM_TEXT.eq(target.platform.name).and(
+                    target.channelId?.let { CHANNEL_ID.eq(it) } ?: CHANNEL_ID.isNull
+                )
+            }
+            .reduceOrNull { left, right -> left.or(right) }
+        val scoped = if (keepCondition == null) condition else condition.and(keepCondition.not())
         return dsl.deleteFrom(VIDEO_UPLOADS)
             .where(scoped)
             .execute()

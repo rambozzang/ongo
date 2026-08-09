@@ -154,8 +154,9 @@ class PlatformUploadServiceImpl(
         pollToken: String,
         userId: Long,
         knownPlatformUrl: String?,
+        channelId: Long?,
     ): PlatformUploadResult {
-        var channel = channelRepository.findByUserIdAndPlatform(userId, platform)
+        var channel = resolveChannel(channelId, userId, platform)
             ?: throw NotFoundException("채널", "$platform (userId=$userId)")
         var accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value
         var refreshedAfterUnauthorized = false

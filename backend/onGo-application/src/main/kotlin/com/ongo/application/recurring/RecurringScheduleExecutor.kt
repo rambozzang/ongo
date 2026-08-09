@@ -69,10 +69,10 @@ class RecurringScheduleExecutor(
 
         val sourceId = definition.videoId
         val source = sourceId?.let(videoRepository::findById)
-        val platforms = definition.platforms.mapNotNull { it.toPlatformOrNull() }.distinct()
-        if (source == null || source.fileUrl.isNullOrBlank() || platforms.isEmpty()) {
+        val targetKeys = definition.platforms.mapNotNull { it.toTargetKeyOrNull() }.distinct()
+        if (source == null || source.fileUrl.isNullOrBlank() || targetKeys.isEmpty()) {
             throw IllegalStateException(
-                "반복 예약 원본 영상/파일/플랫폼 설정이 없습니다: recurringId=$id videoId=$sourceId platforms=$platforms",
+                "반복 예약 원본 영상/파일/플랫폼 설정이 없습니다: recurringId=$id videoId=$sourceId platforms=$targetKeys",
             )
         }
 
@@ -97,8 +97,8 @@ class RecurringScheduleExecutor(
                 videoId = occurrenceVideo.id!!,
                 userId = definition.userId,
                 scheduledAt = scheduledAt,
-                platforms = platforms.associate { platform ->
-                    platform.name to mapOf("scheduledAt" to scheduledAt.toString(), "recurringId" to id)
+                platforms = targetKeys.associate { targetKey ->
+                    targetKey to mapOf("scheduledAt" to scheduledAt.toString(), "recurringId" to id)
                 },
             )
         )
@@ -110,6 +110,12 @@ class RecurringScheduleExecutor(
         log.info("반복 예약 실행을 생성했습니다. recurringId={}, videoId={}, scheduledAt={}", id, occurrenceVideo.id, scheduledAt)
     }
 
-    private fun String.toPlatformOrNull(): Platform? =
-        runCatching { Platform.valueOf(this.uppercase()) }.getOrNull()
+    private fun String.toTargetKeyOrNull(): String? {
+        val platformName = substringBefore('#').uppercase()
+        val channelPart = substringAfter('#', "")
+        if (channelPart.isNotBlank() && channelPart.toLongOrNull()?.let { it > 0 } != true) return null
+        return runCatching { Platform.valueOf(platformName) }.getOrNull()?.let {
+            if (channelPart.isBlank()) it.name else "${it.name}#${channelPart.toLong()}"
+        }
+    }
 }

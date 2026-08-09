@@ -9,6 +9,8 @@ import com.ongo.domain.ugc.shorts.ClipPublicationStatus
 import com.ongo.domain.ugc.shorts.PipelineStage
 import com.ongo.application.ugc.shorts.ShortsPublishAdapter
 import com.ongo.application.ugc.shorts.ShortsPublishRequest
+import com.ongo.application.ugc.shorts.parseShortsPublishTarget
+import com.ongo.application.ugc.shorts.shortsPublishTargetKey
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -52,6 +54,11 @@ class ScheduleStageExecutor(
         var successfulPublications = 0
         var failedPublications = 0
 
+        val publishTargets = schedule.platforms.map { raw ->
+            val parsed = parseShortsPublishTarget(raw)
+            parsed to shortsPublishTargetKey(parsed.platformName, parsed.channelId)
+        }
+
         targets.forEach { clip ->
             val scheduledAt = plannedAts.getValue(clip.id)
             val renderedVideoId = clip.renderedVideoId
@@ -64,27 +71,27 @@ class ScheduleStageExecutor(
                 val reason = "렌더 영상 미연결"
                 skipped[clip.id] = reason
                 failedPublications += schedule.platforms.size
-                schedule.platforms.forEach { platform ->
+                publishTargets.forEach { (_, targetKey) ->
                     savePublication(
                         ClipPublication(
                             clipId = clip.id,
-                            platform = platform,
+                            platform = targetKey,
                             status = ClipPublicationStatus.SKIPPED,
                             scheduledAt = scheduledAt,
                             errorMessage = reason,
                         ),
                     )
-                    publications += mapOf("clipId" to clip.id, "platform" to platform, "status" to "SKIPPED", "reason" to reason)
+                    publications += mapOf("clipId" to clip.id, "platform" to targetKey, "status" to "SKIPPED", "reason" to reason)
                 }
                 return@forEach
             }
 
             var clipScheduled = false
-            val pendingPlatforms = schedule.platforms.filter { platform ->
-                val previous = publicationRepository.findByClipIdAndPlatform(clip.id, platform)
+            val pendingPlatforms = publishTargets.filter { (_, targetKey) ->
+                val previous = publicationRepository.findByClipIdAndPlatform(clip.id, targetKey)
                 if (previous?.status == ClipPublicationStatus.PUBLISHED || previous?.status == ClipPublicationStatus.SCHEDULED) {
                     clipScheduled = true
-                    publications += mapOf("clipId" to clip.id, "platform" to platform, "status" to previous.status.name, "duplicate" to true)
+                    publications += mapOf("clipId" to clip.id, "platform" to targetKey, "status" to previous.status.name, "duplicate" to true)
                     false
                 } else {
                     true
@@ -92,8 +99,8 @@ class ScheduleStageExecutor(
             }
 
             if (pendingPlatforms.isNotEmpty()) {
-                val requests = pendingPlatforms.map {
-                    ShortsPublishRequest(it, clip.title, clip.caption, scheduledAt)
+                val requests = pendingPlatforms.map { (target, _) ->
+                    ShortsPublishRequest(target.platformName, clip.title, clip.caption, scheduledAt, target.channelId)
                 }
                 val outcomes = runCatching {
                     shortsPublishAdapter.publishAll(
@@ -102,28 +109,28 @@ class ScheduleStageExecutor(
                         requests = requests,
                     )
                 }
-                pendingPlatforms.forEach { platform ->
-                    val result = outcomes.getOrNull()?.firstOrNull { it.platform == platform }
+                pendingPlatforms.forEach { (target, targetKey) ->
+                    val result = outcomes.getOrNull()?.firstOrNull { it.platform == targetKey }
                     val status = if (outcomes.isSuccess && result != null) ClipPublicationStatus.SCHEDULED else ClipPublicationStatus.FAILED
                     val error = outcomes.exceptionOrNull()?.message ?: result?.errorMessage
                     if (status == ClipPublicationStatus.SCHEDULED) clipScheduled = true
                     if (status == ClipPublicationStatus.SCHEDULED) successfulPublications++ else failedPublications++
-                    val previous = publicationRepository.findByClipIdAndPlatform(clip.id, platform)
+                    val previous = publicationRepository.findByClipIdAndPlatform(clip.id, targetKey)
                     savePublication(
-                        (previous ?: ClipPublication(clipId = clip.id, platform = platform)).copy(
+                        (previous ?: ClipPublication(clipId = clip.id, platform = targetKey)).copy(
                             videoUploadId = result?.videoUploadId,
                             status = status,
                             scheduledAt = scheduledAt,
                             errorMessage = error,
                         ),
                     )
-                    publications += mapOf("clipId" to clip.id, "platform" to platform, "status" to status.name, "error" to error)
+                    publications += mapOf("clipId" to clip.id, "platform" to targetKey, "status" to status.name, "error" to error)
                 }
             }
             // 기존에 성공한 publication은 pending 목록에서 제외되므로, 중복 방지로
             // 건너뛴 경우에도 해당 클립/플랫폼은 성공으로 집계한다.
-            if (clipScheduled && pendingPlatforms.size < schedule.platforms.size) {
-                successfulPublications += schedule.platforms.size - pendingPlatforms.size
+            if (clipScheduled && pendingPlatforms.size < publishTargets.size) {
+                successfulPublications += publishTargets.size - pendingPlatforms.size
             }
             if (clipScheduled) scheduledAts[clip.id] = scheduledAt
         }

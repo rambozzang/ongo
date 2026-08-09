@@ -111,7 +111,7 @@
         <div class="mt-2.5 flex flex-wrap gap-2">
           <button
             v-for="opt in platformOptions"
-            :key="opt.code"
+            :key="opt.channel.id"
             type="button"
             class="flex items-center gap-2 rounded-md border px-2.5 py-2 transition-colors"
             :class="
@@ -196,6 +196,25 @@
         </div>
 
         <div class="p-[15px]">
+          <div
+            v-if="activeTab !== 'common' && activePlatformChannels.length > 1"
+            class="mb-3 rounded-lg border border-line-control bg-surface-input p-2.5"
+          >
+            <p class="mb-1.5 text-[10.5px] font-semibold text-content-secondary">게시 계정</p>
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                v-for="channel in activePlatformChannels"
+                :key="channel.id"
+                type="button"
+                class="rounded-md px-2.5 py-1.5 text-[11px] transition-colors"
+                :class="activeChannelId === channel.id ? 'bg-accent text-white' : 'bg-surface-card text-content-secondary hover:text-content'"
+                :aria-pressed="activeChannelId === channel.id"
+                @click="activeChannelId = channel.id"
+              >
+                {{ channel.channelName }}
+              </button>
+            </div>
+          </div>
           <div class="flex items-center justify-between gap-2">
             <label for="compose-title" class="block text-[11.5px] text-content-secondary">{{
               t('redesign.compose.title')
@@ -601,8 +620,10 @@ const recurringDayOfMonth = ref(1)
 
 type FormDraft = { title: string; description: string; hashtags: string; visibility: Visibility }
 const form = reactive<FormDraft>({ title: '', description: '', hashtags: '', visibility: 'PUBLIC' })
-const platformForms = reactive<Partial<Record<Platform, FormDraft>>>({})
-const platformDraftDirty = reactive<Partial<Record<Platform, boolean>>>({})
+const channelForms = reactive<Record<number, FormDraft>>({})
+const channelDraftDirty = reactive<Record<number, boolean>>({})
+const pendingPlatformForms = reactive<Partial<Record<Platform, FormDraft>>>({})
+const pendingPlatformDirty = reactive<Partial<Record<Platform, boolean>>>({})
 const file = reactive({ name: '', thumbnailUrl: null as string | null, meta: '' })
 
 const sourceModes = computed(() => [
@@ -694,6 +715,15 @@ const onChipStyle = (code: string) => {
 const selectedChannels = computed(() =>
   platformOptions.value.filter((o) => o.supported && isOn(o.channel.id)).map((o) => o.channel),
 )
+const activeChannelId = ref<number | null>(null)
+const activePlatformChannels = computed(() => {
+  const platform = platformForTab(activeTab.value)
+  return platform ? selectedChannels.value.filter((channel) => channel.platform === platform) : []
+})
+const activeChannel = computed(() => {
+  const candidates = activePlatformChannels.value
+  return candidates.find((channel) => channel.id === activeChannelId.value) ?? candidates[0] ?? null
+})
 const selectedCount = computed(() => selectedChannels.value.length)
 const shortsPlatforms = computed(() =>
   selectedChannels.value
@@ -702,27 +732,42 @@ const shortsPlatforms = computed(() =>
       ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'].includes(platform),
     ),
 )
+const shortsTargets = computed(() =>
+  selectedChannels.value
+    .filter((channel) => ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'].includes(channel.platform))
+    .map((channel) => `${channel.platform}#${channel.id}`),
+)
 
 function platformForTab(tab: MetadataTab): Platform | null {
   return tab === 'common' ? null : TAB_PLATFORM[tab]
 }
 
+function draftForChannel(channel: Channel): FormDraft {
+  if (!channelForms[channel.id]) {
+    channelForms[channel.id] = reactive({
+      ...(pendingPlatformForms[channel.platform] ?? form),
+    })
+    channelDraftDirty[channel.id] = pendingPlatformDirty[channel.platform] ?? false
+  }
+  return channelForms[channel.id]!
+}
+
 function draftFor(platform: Platform | null): FormDraft {
   if (!platform) return form
-  if (!platformForms[platform]) {
-    platformForms[platform] = reactive({ ...form })
-    platformDraftDirty[platform] = false
-  }
-  return platformForms[platform]!
+  const channel =
+    activeChannel.value?.platform === platform
+      ? activeChannel.value
+      : selectedChannels.value.find((item) => item.platform === platform)
+  return channel ? draftForChannel(channel) : (pendingPlatformForms[platform] ?? form)
 }
 
 /** 공통 문구는 채널별로 따로 편집하기 전까지 자동으로 따라간다. */
 watch(
   () => [form.title, form.description, form.hashtags, form.visibility],
   () => {
-    for (const platform of Object.keys(platformForms) as Platform[]) {
-      if (platformDraftDirty[platform]) continue
-      const draft = platformForms[platform]
+    for (const channelId of Object.keys(channelForms).map(Number)) {
+      if (channelDraftDirty[channelId]) continue
+      const draft = channelForms[channelId]
       if (!draft) continue
       draft.title = form.title
       draft.description = form.description
@@ -733,14 +778,23 @@ watch(
 )
 
 function markActivePlatformDraftDirty() {
-  const platform = platformForTab(activeTab.value)
-  if (platform) platformDraftDirty[platform] = true
+  if (activeChannel.value) channelDraftDirty[activeChannel.value.id] = true
 }
 
 const activeDraft = computed(() => draftFor(platformForTab(activeTab.value)))
 const selectedPreviewPlatforms = computed(() => [
   ...new Set(selectedChannels.value.map((channel) => channel.platform)),
 ])
+
+watch(
+  [activePlatformChannels, activeTab],
+  ([channelsForTab]) => {
+    if (!channelsForTab.some((channel) => channel.id === activeChannelId.value)) {
+      activeChannelId.value = channelsForTab[0]?.id ?? null
+    }
+  },
+  { immediate: true },
+)
 
 watch(
   tabs,
@@ -818,10 +872,14 @@ const warnings = computed(() => {
 
 const validationIssues = computed(() => {
   return validatePublishDrafts(
-    selectedChannels.value,
+    selectedChannels.value.map((channel) => ({
+      platform: channel.platform,
+      channelName: channel.channelName,
+      channelId: channel.id,
+    })),
     capabilities.value,
     Object.fromEntries(
-      selectedChannels.value.map((channel) => [channel.platform, draftFor(channel.platform)]),
+      selectedChannels.value.map((channel) => [String(channel.id), draftForChannel(channel)]),
     ),
   ).map((issue) => {
     const message =
@@ -836,11 +894,12 @@ const validationIssues = computed(() => {
 
 function applyCommonToPlatforms() {
   for (const channel of selectedChannels.value) {
-    const draft = draftFor(channel.platform)
+    const draft = draftForChannel(channel)
     draft.title = form.title
     draft.description = form.description
     draft.hashtags = form.hashtags
-    platformDraftDirty[channel.platform] = false
+    draft.visibility = form.visibility
+    channelDraftDirty[channel.id] = false
   }
   notice.value = t('redesign.compose.commonApplied')
 }
@@ -1011,13 +1070,15 @@ async function generateMetadataFor(videoId: number) {
     for (const item of result.platforms) {
       const platform = item.platform as Platform
       // A later channel selection must never erase copy the creator already edited.
-      if (platformDraftDirty[platform]) continue
-      const draft = draftFor(platform)
-      // AI가 만든 채널별 문구는 공통 문구와 독립된 편집 초안으로 취급한다.
-      platformDraftDirty[platform] = true
-      draft.title = item.titleCandidates[0] || draft.title
-      draft.description = item.description || draft.description
-      draft.hashtags = item.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
+      for (const channel of selectedChannels.value.filter((candidate) => candidate.platform === platform)) {
+        const draft = draftForChannel(channel)
+        if (channelDraftDirty[channel.id]) continue
+        // AI가 만든 채널별 문구는 공통 문구와 독립된 편집 초안으로 취급한다.
+        channelDraftDirty[channel.id] = true
+        draft.title = item.titleCandidates[0] || draft.title
+        draft.description = item.description || draft.description
+        draft.hashtags = item.hashtags.map((tag) => `#${tag.replace(/^#/, '')}`).join(' ')
+      }
     }
     const first = result.platforms[0]
     if (first && firstGeneration) {
@@ -1057,9 +1118,10 @@ async function saveDraft() {
     // Keep the exact per-platform copy in the same save operation. The
     // backend stores these as editable DRAFT rows and never publishes them.
     const platforms = selectedChannels.value.map((channel) => {
-      const draft = draftFor(channel.platform)
+      const draft = draftForChannel(channel)
       return {
         platform: channel.platform,
+        channelId: channel.id,
         title: draft.title,
         description: draft.description || undefined,
         tags: parseHashtags(draft.hashtags),
@@ -1145,9 +1207,10 @@ async function submit() {
       visibility: form.visibility,
       mediaType: 'VIDEO',
       platforms: selectedChannels.value.map((channel) => {
-        const draft = draftFor(channel.platform)
+        const draft = draftForChannel(channel)
         return {
           platform: channel.platform,
+          channelId: channel.id,
           title: draft.title,
           description: draft.description || undefined,
           tags: parseHashtags(draft.hashtags),
@@ -1157,7 +1220,7 @@ async function submit() {
     })
 
     const configs: PlatformPublishConfig[] = selectedChannels.value.map((ch, index) => {
-      const draft = draftFor(ch.platform)
+      const draft = draftForChannel(ch)
       return {
         platform: ch.platform,
         channelId: ch.id,
@@ -1185,7 +1248,9 @@ async function submit() {
             recurringFrequency.value === 'MONTHLY' ? recurringDayOfMonth.value : undefined,
           timeOfDay: recurringTime.value,
           timezone: 'Asia/Seoul',
-          platforms: [...new Set(selectedChannels.value.map((channel) => channel.platform))],
+          // Recurring executions must retain the exact connected account;
+          // platform-only values would silently fall back to the first account.
+          platforms: selectedChannels.value.map((channel) => `${channel.platform}#${channel.id}`),
           titleTemplate: form.title,
           descriptionTemplate: form.description,
           tags: parseHashtags(form.hashtags),
@@ -1308,7 +1373,7 @@ async function publishAutomaticShorts(sourceVideoId: number) {
   await ugcShortsPipelineApi.confirmSchedule(workspaceId, run.id, {
     startAt: startAt.toISOString(),
     intervalHours: 2,
-    platforms: shortsPlatforms.value,
+    platforms: shortsTargets.value,
   })
   await waitForShortsState(workspaceId, run.id, 'COMPLETED')
   shortsStatus.value = t('redesign.compose.shortsDone')
@@ -1372,14 +1437,22 @@ async function loadDraft(videoId: number) {
   for (const upload of video.uploads ?? []) {
     const meta = upload.meta
     if (!meta) continue
-    platformForms[upload.platform] = reactive({
+    const draft = reactive({
       title: meta.title ?? video.title,
       description: meta.description ?? '',
       hashtags: meta.tags.join(' '),
       visibility: meta.visibility ?? video.visibility,
     })
-    // A persisted override must stay independent when the common copy changes.
-    platformDraftDirty[upload.platform] = true
+    if (upload.channelId != null) {
+      channelForms[upload.channelId] = draft
+      // A persisted override must stay independent when the common copy changes.
+      channelDraftDirty[upload.channelId] = true
+    } else {
+      // Legacy drafts did not persist a channel id. Keep them available until
+      // the channel list arrives, then clone them into the matching accounts.
+      pendingPlatformForms[upload.platform] = draft
+      pendingPlatformDirty[upload.platform] = true
+    }
   }
   draftLoaded.value = true
   notice.value = '저장된 초안을 불러왔습니다. 내용을 확인한 뒤 게시하세요.'
@@ -1434,9 +1507,23 @@ onMounted(async () => {
     // list() 는 { channels, maxAllowed, currentCount } 형태다
     channels.value = (await channelApi.list())?.channels ?? []
     if (Number.isInteger(draftId) && draftId > 0) {
-      const savedPlatforms = new Set(Object.keys(platformForms))
+      // A legacy platform-only draft is copied to each matching account. New
+      // drafts remain scoped to their persisted channel id.
+      for (const channel of channels.value) {
+        const legacy = pendingPlatformForms[channel.platform]
+        if (legacy && !channelForms[channel.id]) {
+          channelForms[channel.id] = reactive({ ...legacy })
+          channelDraftDirty[channel.id] = pendingPlatformDirty[channel.platform] ?? true
+        }
+      }
+      const savedChannelIds = new Set(Object.keys(channelForms).map(Number))
+      const savedPlatforms = new Set(Object.keys(pendingPlatformForms))
       channels.value.forEach((channel) => {
-        if (savedPlatforms.size > 0) disabled[channel.id] = !savedPlatforms.has(channel.platform)
+        const hasSavedDraft =
+          savedChannelIds.has(channel.id) || savedPlatforms.has(channel.platform)
+        if (savedChannelIds.size > 0 || savedPlatforms.size > 0) {
+          disabled[channel.id] = !hasSavedDraft
+        }
       })
     }
     // 분석은 선택적인 예약 보강이므로 채널·게시 조건 로딩을 막지 않는다.

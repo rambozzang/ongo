@@ -18,6 +18,7 @@ import com.ongo.domain.video.VideoPlatformMeta
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
+import com.ongo.domain.video.VideoUploadTarget
 import com.ongo.domain.video.VideoUploadRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -207,7 +208,7 @@ class VideoQueryUseCase(
         videoRepository.update(updatedVideo)
 
         if (platformDrafts != null) {
-            savePlatformDrafts(video, platformDrafts)
+            savePlatformDrafts(userId, video, platformDrafts)
         }
 
         // 플랫폼 메타데이터 동기화 (제목/설명/태그 변경 시)
@@ -250,10 +251,16 @@ class VideoQueryUseCase(
      * Save only metadata rows. This path is deliberately restricted to a
      * parent DRAFT and never changes an upload into an active job.
      */
-    private fun savePlatformDrafts(video: Video, drafts: List<VideoPlatformDraft>) {
-        val duplicates = drafts.groupingBy { it.platform }.eachCount().filterValues { it > 1 }.keys
-        require(duplicates.isEmpty()) { "같은 플랫폼을 중복 저장할 수 없습니다: ${duplicates.joinToString()}" }
+    private fun savePlatformDrafts(userId: Long, video: Video, drafts: List<VideoPlatformDraft>) {
+        val duplicates = drafts.groupingBy { it.channelId ?: it.platform }.eachCount().filterValues { it > 1 }.keys
+        require(duplicates.isEmpty()) { "같은 게시 계정을 중복 저장할 수 없습니다: ${duplicates.joinToString()}" }
         drafts.forEach { draft ->
+            if (draft.channelId != null) {
+                val channel = channelRepository.findById(draft.channelId)
+                require(channel?.userId == userId && channel.platform == draft.platform) {
+                    "게시 계정이 현재 사용자 또는 플랫폼과 일치하지 않습니다: ${draft.platform}/${draft.channelId}"
+                }
+            }
             require(draft.title.isNotBlank()) { "${draft.platform} 플랫폼별 제목을 입력해주세요." }
             val capability = PlatformUploadCapabilities.get(draft.platform)
             if (capability != null) {
@@ -271,10 +278,10 @@ class VideoQueryUseCase(
 
         val existing = videoUploadRepository.findByVideoId(video.id!!)
         val videoId = video.id!!
-        val existingByPlatform = existing.associateBy { it.platform }
-        val requestedPlatforms = drafts.map { it.platform }.toSet()
+        val existingByTarget = existing.associateBy { VideoUploadTarget(it.platform, it.channelId) }
+        val requestedTargets = drafts.map { VideoUploadTarget(it.platform, it.channelId) }.toSet()
         val nonEditableRemoved = existing.filter {
-            it.platform !in requestedPlatforms &&
+            VideoUploadTarget(it.platform, it.channelId) !in requestedTargets &&
                 it.status !in setOf(UploadStatus.DRAFT, UploadStatus.CANCELLED)
         }
         require(nonEditableRemoved.isEmpty()) {
@@ -283,12 +290,13 @@ class VideoQueryUseCase(
         }
 
         drafts.forEach { draft ->
-            val existingUpload = existingByPlatform[draft.platform]
+            val existingUpload = existingByTarget[VideoUploadTarget(draft.platform, draft.channelId)]
             val upload = when (existingUpload?.status) {
                 null -> videoUploadRepository.save(
                     VideoUpload(
                         videoId = videoId,
                         platform = draft.platform,
+                        channelId = draft.channelId,
                         status = UploadStatus.DRAFT,
                     )
                 )
@@ -328,7 +336,7 @@ class VideoQueryUseCase(
 
         // A removed platform is removed only while it is still an editable
         // draft. Published/processing rows were rejected above and are kept.
-        videoUploadRepository.deleteEditableByVideoIdExceptPlatforms(videoId, requestedPlatforms)
+        videoUploadRepository.deleteEditableByVideoIdExceptTargets(videoId, requestedTargets)
     }
 
     @Transactional
@@ -348,7 +356,13 @@ class VideoQueryUseCase(
             val platformVideoId = upload.platformVideoId
             if (platformVideoId != null) {
                 try {
-                    val channel = channelRepository.findByUserIdAndPlatform(userId, upload.platform)
+                    val uploadChannelId = upload.channelId
+                    val channel = if (uploadChannelId != null) {
+                        channelRepository.findById(uploadChannelId)
+                            ?.takeIf { it.userId == userId && it.platform == upload.platform }
+                    } else {
+                        channelRepository.findByUserIdAndPlatform(userId, upload.platform)
+                    }
                     if (channel != null && channel.status == ChannelStatus.ACTIVE) {
                         val accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value
                         platformClientPort.deleteVideo(upload.platform, platformVideoId, accessToken)

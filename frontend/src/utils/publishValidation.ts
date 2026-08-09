@@ -16,6 +16,7 @@ export interface PublishCapability {
 export interface PublishTarget {
   platform: Platform
   channelName: string
+  channelId?: number
 }
 
 export interface PublishValidationIssue {
@@ -38,13 +39,15 @@ export function parsePublishHashtags(raw: string): string[] {
 export function validatePublishDrafts(
   targets: PublishTarget[],
   capabilities: PublishCapability[],
-  drafts: Partial<Record<Platform, PublishDraft>>,
+  drafts: Partial<Record<string, PublishDraft>>,
 ): PublishValidationIssue[] {
   const issues: PublishValidationIssue[] = []
 
   for (const target of targets) {
     const capability = capabilities.find((item) => item.platform === target.platform)
-    const draft = drafts[target.platform]
+    const draft =
+      (target.channelId != null ? drafts[String(target.channelId)] : undefined) ??
+      drafts[target.platform]
     if (!capability || !draft) continue
 
     if (capability.maxTitleLength > 0 && draft.title.length > capability.maxTitleLength) {

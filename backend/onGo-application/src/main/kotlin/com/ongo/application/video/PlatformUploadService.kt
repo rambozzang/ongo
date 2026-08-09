@@ -16,6 +16,7 @@ interface PlatformUploadService {
         pollToken: String,
         userId: Long,
         knownPlatformUrl: String? = null,
+        channelId: Long? = null,
     ): PlatformUploadResult =
         PlatformUploadResult(success = false, published = false, errorMessage = "${platform.name} 상태 조회를 지원하지 않습니다.")
 }

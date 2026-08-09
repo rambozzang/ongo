@@ -6,6 +6,8 @@ import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.Channel
+import com.ongo.domain.channel.EncryptedToken
 import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.video.*
@@ -105,7 +107,7 @@ class VideoQueryUseCaseTest {
         every { videoPlatformMetaRepository.findByVideoUploadId(41L) } returns null
         every { videoPlatformMetaRepository.save(any()) } answers { firstArg() }
         every { videoPlatformMetaRepository.findByVideoUploadIds(listOf(41L)) } returns emptyMap()
-        every { videoUploadRepository.deleteEditableByVideoIdExceptPlatforms(1L, setOf(Platform.YOUTUBE)) } returns 0
+        every { videoUploadRepository.deleteEditableByVideoIdExceptTargets(1L, setOf(VideoUploadTarget(Platform.YOUTUBE, null))) } returns 0
 
         useCase.updateVideo(
             userId = 100L,
@@ -135,6 +137,79 @@ class VideoQueryUseCaseTest {
             })
         }
         verify(exactly = 0) { videoUploadRepository.save(any()) }
+    }
+
+    @Test
+    fun `updateVideo keeps two accounts of the same platform as independent drafts`() {
+        val video = createVideo()
+        val savedUploads = mutableListOf<VideoUpload>()
+        val firstChannel = Channel(
+            id = 101L,
+            userId = 100L,
+            platform = Platform.YOUTUBE,
+            platformChannelId = "youtube-a",
+            channelName = "브랜드 A",
+            accessToken = EncryptedToken("token-a"),
+        )
+        val secondChannel = firstChannel.copy(
+            id = 102L,
+            platformChannelId = "youtube-b",
+            channelName = "브랜드 B",
+        )
+
+        every { videoRepository.findById(1L) } returns video
+        every { videoRepository.update(any()) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } answers { savedUploads.toList() }
+        every { videoUploadRepository.save(any()) } answers {
+            val requested = firstArg<VideoUpload>()
+            val saved = requested.copy(id = requested.channelId)
+            savedUploads += saved
+            saved
+        }
+        every { channelRepository.findById(101L) } returns firstChannel
+        every { channelRepository.findById(102L) } returns secondChannel
+        every { videoPlatformMetaRepository.findByVideoUploadId(any()) } returns null
+        every { videoPlatformMetaRepository.save(any()) } answers { firstArg() }
+        every { videoPlatformMetaRepository.findByVideoUploadIds(any()) } returns emptyMap()
+        every { videoUploadRepository.deleteEditableByVideoIdExceptTargets(1L, setOf(
+            VideoUploadTarget(Platform.YOUTUBE, 101L),
+            VideoUploadTarget(Platform.YOUTUBE, 102L),
+        )) } returns 0
+
+        useCase.updateVideo(
+            userId = 100L,
+            videoId = 1L,
+            title = "공통 제목",
+            description = "공통 설명",
+            tags = listOf("공통"),
+            category = null,
+            thumbnailIndex = null,
+            platformDrafts = listOf(
+                VideoPlatformDraft(
+                    platform = Platform.YOUTUBE,
+                    channelId = 101L,
+                    title = "브랜드 A 제목",
+                    description = "A 설명",
+                    tags = listOf("A"),
+                    visibility = Visibility.PUBLIC,
+                ),
+                VideoPlatformDraft(
+                    platform = Platform.YOUTUBE,
+                    channelId = 102L,
+                    title = "브랜드 B 제목",
+                    description = "B 설명",
+                    tags = listOf("B"),
+                    visibility = Visibility.PUBLIC,
+                ),
+            ),
+        )
+
+        assert(savedUploads.map { it.channelId } == listOf(101L, 102L))
+        verify(exactly = 2) { videoUploadRepository.save(any()) }
+        verify {
+            videoPlatformMetaRepository.save(match { it.videoUploadId == 101L && it.title == "브랜드 A 제목" })
+            videoPlatformMetaRepository.save(match { it.videoUploadId == 102L && it.title == "브랜드 B 제목" })
+        }
     }
 
     @Test

@@ -8,6 +8,7 @@ import com.ongo.domain.recurring.RecurringSchedule
 import com.ongo.domain.recurring.RecurringScheduleRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.channel.ChannelRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -23,6 +24,7 @@ class RecurringScheduleUseCaseTest {
     private val repository = mockk<RecurringScheduleRepository>()
     private val videoRepository = mockk<VideoRepository>()
     private val userWriteGuard = mockk<UserWriteGuard>(relaxed = true)
+    private val channelRepository = mockk<ChannelRepository>(relaxed = true)
 
     @Test
     fun `동결된 계정은 반복 예약을 생성할 수 없다`() {
@@ -108,7 +110,7 @@ class RecurringScheduleUseCaseTest {
         assertEquals(LocalDateTime.of(2026, 1, 11, 23, 0), next)
     }
 
-    private fun useCase() = RecurringScheduleUseCase(repository, videoRepository, userWriteGuard)
+    private fun useCase() = RecurringScheduleUseCase(repository, videoRepository, userWriteGuard, channelRepository)
 
     private fun request() = CreateRecurringScheduleRequest(
         videoId = 10L,

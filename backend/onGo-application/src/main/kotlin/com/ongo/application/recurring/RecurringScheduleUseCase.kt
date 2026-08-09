@@ -7,6 +7,7 @@ import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.recurring.RecurringSchedule
 import com.ongo.domain.recurring.RecurringScheduleRepository
 import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.channel.ChannelRepository
 import com.ongo.common.enums.Platform
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,6 +22,7 @@ class RecurringScheduleUseCase(
     private val recurringScheduleRepository: RecurringScheduleRepository,
     private val videoRepository: VideoRepository,
     private val userWriteGuard: UserWriteGuard,
+    private val channelRepository: ChannelRepository,
 ) {
 
     companion object {
@@ -171,17 +173,28 @@ class RecurringScheduleUseCase(
         val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
         if (video.userId != userId) throw ForbiddenException("해당 영상에 대한 권한이 없습니다")
         require(!video.fileUrl.isNullOrBlank()) { "반복 게시할 원본 영상 파일이 없습니다." }
-        validatePlatforms(platforms)
+        validatePlatforms(userId, platforms)
     }
 
-    private fun validatePlatforms(platforms: List<String>) {
+    private fun validatePlatforms(userId: Long, platforms: List<String>) {
         require(platforms.isNotEmpty()) { "반복 게시 플랫폼을 하나 이상 선택하세요." }
         require(platforms.map { it.uppercase() }.distinct().size == platforms.size) {
             "반복 게시 플랫폼은 중복될 수 없습니다."
         }
         platforms.forEach { value ->
-            require(runCatching { Platform.valueOf(value.uppercase()) }.isSuccess) {
+            val platformName = value.substringBefore('#').uppercase()
+            val channelId = value.substringAfter('#', "").takeIf { it.isNotBlank() }?.toLongOrNull()
+            require('#' !in value || channelId != null && channelId > 0) {
+                "유효하지 않은 반복 게시 계정입니다: $value"
+            }
+            require(runCatching { Platform.valueOf(platformName) }.isSuccess) {
                 "지원하지 않는 반복 게시 플랫폼입니다: $value"
+            }
+            if (channelId != null) {
+                val channel = channelRepository.findById(channelId)
+                require(channel?.userId == userId && channel.platform.name == platformName) {
+                    "반복 게시 계정이 현재 사용자 또는 플랫폼과 일치하지 않습니다: $value"
+                }
             }
         }
     }

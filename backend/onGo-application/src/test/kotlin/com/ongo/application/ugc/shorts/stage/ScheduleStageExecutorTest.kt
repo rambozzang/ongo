@@ -134,6 +134,26 @@ class ScheduleStageExecutorTest {
     }
 
     @Test
+    fun `같은 플랫폼의 두 계정은 쇼츠 게시 대상과 중복 방지를 계정별로 분리한다`() {
+        noPriorPublication()
+        val requests = slot<List<ShortsPublishRequest>>()
+        every { publishAdapter.publishAll(any(), any(), capture(requests)) } returns listOf(
+            PlatformPublishOutcome("YOUTUBE#101", videoUploadId = 701L, status = "SCHEDULED"),
+            PlatformPublishOutcome("YOUTUBE#102", videoUploadId = 702L, status = "SCHEDULED"),
+        )
+
+        val output = executor.execute(
+            stageContext(
+                clips = listOf(clip(11, 1, renderedVideoId = 500L)),
+                schedule = ScheduleParams(startAt, 6, listOf("YOUTUBE#101", "YOUTUBE#102")),
+            ),
+        )
+
+        assertEquals(listOf(101L, 102L), requests.captured.map { it.channelId })
+        assertEquals(ScheduleOutcome.SUCCESS, output.scheduleOutcome)
+    }
+
+    @Test
     fun `렌더 영상이 없으면 게시하지 않고 SKIPPED 로 남긴다`() {
         noPriorPublication()
         val saved = slot<ClipPublication>()
