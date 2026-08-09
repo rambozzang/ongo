@@ -132,6 +132,25 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
       }
     }
 
+    const attentionStatuses = scheduleList.filter(
+      (s) => s.status === 'UNCONFIRMED' || s.status === 'PARTIALLY_PUBLISHED',
+    )
+    for (const schedule of attentionStatuses) {
+      const isPartial = schedule.status === 'PARTIALLY_PUBLISHED'
+      out.push({
+        id: `publish-${schedule.id}`,
+        severity: 'warning',
+        message: isPartial
+          ? `${schedule.videoTitle} 일부 채널만 발행되었습니다`
+          : `${schedule.videoTitle} 게시 결과 확인이 필요합니다`,
+        meta: isPartial
+          ? '성공한 채널은 유지되고 실패한 채널만 상세 화면에서 확인할 수 있습니다'
+          : '중복 게시를 막기 위해 자동 재전송하지 않았습니다',
+        cta: '상세 확인',
+        to: schedule.videoId ? `/videos/${schedule.videoId}` : '/calendar-v2',
+      })
+    }
+
     const failed = scheduleList.filter((s) => s.status === 'FAILED')
     if (failed.length > 0) {
       out.push({

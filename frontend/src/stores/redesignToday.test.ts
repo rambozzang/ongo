@@ -18,7 +18,11 @@ vi.mock('@/api/inbox', () => ({
   inboxApi: { getUnreadCount: vi.fn() },
 }))
 
-const makeSchedule = (id: number, status: 'SCHEDULED' | 'PROCESSING' | 'FAILED', scheduledAt: string) => ({
+const makeSchedule = (
+  id: number,
+  status: 'SCHEDULED' | 'PROCESSING' | 'FAILED' | 'UNCONFIRMED' | 'PARTIALLY_PUBLISHED',
+  scheduledAt: string,
+) => ({
   id,
   videoId: id * 10,
   videoTitle: `영상 ${id}`,
@@ -64,6 +68,32 @@ describe('redesign today store', () => {
     expect(store.kpi).toMatchObject({ scheduled: 1, pending: 1, failed: 1, unanswered: 4 })
     expect(useRedesignShellStore().badges).toEqual({ today: '3', inbox: '4', calendar: '1', channels: '!' })
     expect(store.loadError).toBeNull()
+  })
+
+  it('surfaces unconfirmed and partial publication as actionable detail items', async () => {
+    vi.mocked(scheduleApi.list).mockResolvedValue([
+      makeSchedule(10, 'UNCONFIRMED', '2026-08-09T09:00'),
+      makeSchedule(11, 'PARTIALLY_PUBLISHED', '2026-08-09T10:00'),
+    ] as never)
+    vi.mocked(channelApi.list).mockResolvedValue({ channels: [] } as never)
+    vi.mocked(inboxApi.getUnreadCount).mockResolvedValue({ count: 0 } as never)
+
+    const store = useRedesignTodayStore()
+    await store.load()
+
+    expect(store.attention).toEqual([
+      expect.objectContaining({
+        id: 'publish-10',
+        severity: 'warning',
+        to: '/videos/100',
+        cta: '상세 확인',
+      }),
+      expect.objectContaining({
+        id: 'publish-11',
+        severity: 'warning',
+        to: '/videos/110',
+      }),
+    ])
   })
 
   it('keeps the last confirmed queue when a later refresh partially fails', async () => {
