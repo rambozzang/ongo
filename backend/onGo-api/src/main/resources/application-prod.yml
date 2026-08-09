@@ -16,7 +16,12 @@ storage:
 
 # CORS — 프로덕션에서는 실제 도메인만 허용 (localhost 차단)
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  # APP_BASE_URL is the single-origin production default. Keep the explicit
+  # CORS_ALLOWED_ORIGINS override for deployments serving more than one UI,
+  # but let the application start safely when an older server .env has not yet
+  # added that redundant variable. ProductionConfigurationValidator still
+  # rejects localhost, wildcards, and empty values.
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:${APP_BASE_URL:}}
 
 logging:
   file:
