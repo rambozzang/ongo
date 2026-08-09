@@ -28,23 +28,25 @@ class KakaoOAuth2Service(
         params.add("redirect_uri", redirectUri)
         params.add("code", code)
 
-        return restClient.post()
-            .uri("https://kauth.kakao.com/oauth/token")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(params)
-            .retrieve()
-            .body(KakaoTokenResponse::class.java)
-            ?: throw UnauthorizedException("Kakao 토큰 발급에 실패했습니다")
+        return OAuth2ErrorReporter.report("Kakao", "토큰 발급") {
+            restClient.post()
+                .uri("https://kauth.kakao.com/oauth/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(params)
+                .retrieve()
+                .body(KakaoTokenResponse::class.java)
+        } ?: throw UnauthorizedException("Kakao 토큰 발급에 실패했습니다")
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun fetchUserInfo(tokenResponse: KakaoTokenResponse): OAuth2UserInfo {
-        val userInfo = restClient.get()
-            .uri("https://kapi.kakao.com/v2/user/me")
-            .header("Authorization", "Bearer ${tokenResponse.accessToken}")
-            .retrieve()
-            .body(Map::class.java)
-            ?: throw UnauthorizedException("Kakao 사용자 정보를 가져올 수 없습니다")
+        val userInfo = OAuth2ErrorReporter.report("Kakao", "사용자 조회") {
+            restClient.get()
+                .uri("https://kapi.kakao.com/v2/user/me")
+                .header("Authorization", "Bearer ${tokenResponse.accessToken}")
+                .retrieve()
+                .body(Map::class.java)
+        } ?: throw UnauthorizedException("Kakao 사용자 정보를 가져올 수 없습니다")
 
         val id = userInfo["id"].toString()
         val kakaoAccount = userInfo["kakao_account"] as? Map<String, Any> ?: emptyMap()

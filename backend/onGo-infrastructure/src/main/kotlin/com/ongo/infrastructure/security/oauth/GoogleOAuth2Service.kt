@@ -28,22 +28,24 @@ class GoogleOAuth2Service(
         params.add("redirect_uri", redirectUri)
         params.add("grant_type", "authorization_code")
 
-        return restClient.post()
-            .uri("https://oauth2.googleapis.com/token")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(params)
-            .retrieve()
-            .body(GoogleTokenResponse::class.java)
-            ?: throw UnauthorizedException("Google 토큰 발급에 실패했습니다")
+        return OAuth2ErrorReporter.report("Google", "토큰 발급") {
+            restClient.post()
+                .uri("https://oauth2.googleapis.com/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(params)
+                .retrieve()
+                .body(GoogleTokenResponse::class.java)
+        } ?: throw UnauthorizedException("Google 토큰 발급에 실패했습니다")
     }
 
     private fun fetchUserInfo(tokenResponse: GoogleTokenResponse): OAuth2UserInfo {
-        val userInfo = restClient.get()
-            .uri("https://www.googleapis.com/oauth2/v2/userinfo")
-            .header("Authorization", "Bearer ${tokenResponse.accessToken}")
-            .retrieve()
-            .body(GoogleUserInfo::class.java)
-            ?: throw UnauthorizedException("Google 사용자 정보를 가져올 수 없습니다")
+        val userInfo = OAuth2ErrorReporter.report("Google", "사용자 조회") {
+            restClient.get()
+                .uri("https://www.googleapis.com/oauth2/v2/userinfo")
+                .header("Authorization", "Bearer ${tokenResponse.accessToken}")
+                .retrieve()
+                .body(GoogleUserInfo::class.java)
+        } ?: throw UnauthorizedException("Google 사용자 정보를 가져올 수 없습니다")
 
         return OAuth2UserInfo(
             providerId = userInfo.id,
