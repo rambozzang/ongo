@@ -4,9 +4,17 @@
     <div class="border-b dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-4">
       <div class="flex max-w-3xl items-center justify-between">
         <OnGoLogo size="md" />
-        <span v-if="currentStep > 0 && currentStep <= 4" class="text-body text-gray-400 dark:text-gray-500">
-          {{ t('onboarding.stepProgress', { current: currentStep, total: steps.length }) }}
-        </span>
+        <div class="flex items-center gap-4">
+          <span v-if="currentStep > 0 && currentStep <= 4" class="text-body text-gray-400 dark:text-gray-500">
+            {{ t('onboarding.stepProgress', { current: currentStep, total: steps.length }) }}
+          </span>
+          <!-- 온보딩은 AppLayout 밖이라 TopBar 가 없다. 여기서 나갈 방법이 없으면
+               다른 계정으로 로그인하거나 중단할 수가 없다. -->
+          <button type="button" class="btn-secondary" @click="authStore.logout()">
+            <ArrowRightOnRectangleIcon class="h-4 w-4" />
+            {{ t('nav.logout') }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -396,7 +404,7 @@ import { channelApi } from '@/api/channel'
 import { videoApi } from '@/api/video'
 import { subscriptionApi } from '@/api/subscription'
 import { buildOAuthUrl, generateOAuthStateNonce, generatePKCE } from '@/utils/oauth'
-import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
+import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/outline'
 import OnboardingStepIndicator from '@/components/onboarding/OnboardingStepIndicator.vue'
 import PlanSelectionCard from '@/components/onboarding/PlanSelectionCard.vue'
 import { PLANS } from '@/types/subscription'
