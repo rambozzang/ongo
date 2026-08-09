@@ -17,8 +17,10 @@ describe('application navigation contract', () => {
     }
     const ideasMatched = router.resolve('/ideas').matched
     expect(ideasMatched[ideasMatched.length - 1]?.redirect).toBe('/today')
-    expect(router.resolve('/keyword-research').matched.at(-1)?.redirect).toBe('/today')
-    expect(router.resolve('/trends').matched.at(-1)?.redirect).toBe('/today')
+    const keywordResearchMatched = router.resolve('/keyword-research').matched
+    expect(keywordResearchMatched[keywordResearchMatched.length - 1]?.redirect).toBe('/today')
+    const trendsMatched = router.resolve('/trends').matched
+    expect(trendsMatched[trendsMatched.length - 1]?.redirect).toBe('/today')
   })
 
   it('keeps required public legal and support documents directly reachable', () => {
