@@ -16,6 +16,24 @@ class OAuthStateManagerTest {
     }
 
     @Test
+    fun `a state can only be consumed once`() {
+        val manager = OAuthStateManager(secret, ttlSeconds = 300)
+        val state = manager.issue(userId = 42L)
+
+        assertEquals(42L, manager.verify(state))
+        assertThrows(OAuthStateMismatchException::class.java) { manager.verify(state) }
+    }
+
+    @Test
+    fun `anonymous login state can only be consumed once`() {
+        val manager = OAuthStateManager(secret, ttlSeconds = 300)
+        val state = manager.issueAnonymous()
+
+        assertEquals(true, manager.verifyAnonymous(state))
+        assertEquals(false, manager.verifyAnonymous(state))
+    }
+
+    @Test
     fun `verify throws on tampered state`() {
         val manager = OAuthStateManager(secret, ttlSeconds = 300)
         val state = manager.issue(userId = 42L)

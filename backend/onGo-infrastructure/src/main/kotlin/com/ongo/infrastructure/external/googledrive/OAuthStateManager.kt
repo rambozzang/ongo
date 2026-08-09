@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -28,6 +29,15 @@ class OAuthStateManager(
     private val secret: String,
     private val ttlSeconds: Long = 300,
 ) {
+    /**
+     * OAuth callback은 한 번만 처리해야 한다. state는 짧게 살지만, 같은 callback을
+     * 새로고침하거나 동시에 두 번 보내면 코드 교환/연동이 중복될 수 있다.
+     *
+     * 이 매니저는 현재 애플리케이션 인스턴스에서 원자적으로 소비한다. 멀티 인스턴스
+     * 운영에서는 앞단의 sticky session 또는 공유 저장소를 사용해야 한다.
+     */
+    private val consumedStates = ConcurrentHashMap<String, Long>()
+
     fun issue(userId: Long): String {
         val nonce = UUID.randomUUID().toString()
         val issuedAt = Instant.now().epochSecond
@@ -61,6 +71,7 @@ class OAuthStateManager(
         val userId = userIdStr.toLongOrNull() ?: throw OAuthStateMismatchException()
         val issuedAt = issuedAtStr.toLongOrNull() ?: throw OAuthStateMismatchException()
         if (Instant.now().epochSecond - issuedAt > ttlSeconds) throw OAuthStateMismatchException()
+        if (!consumeOnce(state)) throw OAuthStateMismatchException()
         return userId
     }
 
@@ -98,7 +109,14 @@ class OAuthStateManager(
         val (prefix, _, issuedAtStr) = segments
         if (prefix != "anonymous") return false
         val issuedAt = issuedAtStr.toLongOrNull() ?: return false
-        return Instant.now().epochSecond - issuedAt <= ttlSeconds
+        if (Instant.now().epochSecond - issuedAt > ttlSeconds) return false
+        return consumeOnce(state)
+    }
+
+    private fun consumeOnce(state: String): Boolean {
+        val now = Instant.now().epochSecond
+        consumedStates.entries.removeIf { now - it.value > ttlSeconds }
+        return consumedStates.putIfAbsent(state, now) == null
     }
 
     private fun hmac(payload: String): String {
