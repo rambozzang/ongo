@@ -5,11 +5,13 @@ import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import ChannelsView from './ChannelsView.vue'
 import { channelApi } from '@/api/channel'
+import { videoApi } from '@/api/video'
 import koMessages from '@/locales/ko/common.json'
 
 vi.mock('@/api/channel', () => ({
   channelApi: { list: vi.fn(), sync: vi.fn(), disconnect: vi.fn(), connect: vi.fn() },
 }))
+vi.mock('@/api/video', () => ({ videoApi: { getUploadCapabilities: vi.fn() } }))
 
 const channel = (overrides: Record<string, unknown> = {}) => ({
   id: 7,
@@ -102,5 +104,29 @@ describe('ChannelsView', () => {
     await syncButton!.trigger('click')
     await flushPromises()
     expect(channelApi.sync).toHaveBeenCalledWith(7)
+  })
+
+  it('opens the real OAuth channel picker from the primary add action', async () => {
+    vi.mocked(channelApi.list).mockResolvedValue({ channels: [], maxAllowed: 7, currentCount: 0 } as never)
+    vi.mocked(videoApi.getUploadCapabilities).mockResolvedValue([{
+      platform: 'YOUTUBE',
+      directVideoUpload: true,
+      cloudVideoUpload: true,
+      scheduling: true,
+      maxFileSizeBytes: 2_000_000_000,
+      maxTitleLength: 100,
+      maxDescriptionLength: 5_000,
+      maxTagCount: 30,
+      acceptedExtensions: ['mp4'],
+      unavailableReason: null,
+    }] as never)
+    const wrapper = await renderChannels()
+    await flushPromises()
+
+    const addButton = wrapper.findAll('button').find((button) => button.text().includes('새 채널 연결'))
+    expect(addButton).toBeDefined()
+    await addButton!.trigger('click')
+    await flushPromises()
+    expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain('YouTube')
   })
 })

@@ -8,6 +8,7 @@ interface AutomationState {
   rules: AutomationRule[]
   logs: AutomationLog[]
   loading: boolean
+  error: string | null
 }
 
 function mapApiRule(r: AutomationRuleResponse): AutomationRule {
@@ -39,6 +40,7 @@ export const useAutomationStore = defineStore('automation', {
     rules: [],
     logs: [],
     loading: false,
+    error: null,
   }),
 
   getters: {
@@ -66,11 +68,12 @@ export const useAutomationStore = defineStore('automation', {
   actions: {
     async fetchRules() {
       this.loading = true
+      this.error = null
       try {
         const data = await automationApi.list()
         this.rules = data.map(mapApiRule)
       } catch (e) {
-
+        this.error = e instanceof Error ? e.message : '자동화 규칙을 불러오지 못했습니다.'
         useNotificationStore().error('자동화 처리 중 오류가 발생했습니다')
       } finally {
         this.loading = false

@@ -395,7 +395,7 @@ import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
 import { videoApi } from '@/api/video'
 import { subscriptionApi } from '@/api/subscription'
-import { buildOAuthUrl, generatePKCE } from '@/utils/oauth'
+import { buildOAuthUrl, generateOAuthStateNonce, generatePKCE } from '@/utils/oauth'
 import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import OnboardingStepIndicator from '@/components/onboarding/OnboardingStepIndicator.vue'
 import PlanSelectionCard from '@/components/onboarding/PlanSelectionCard.vue'
@@ -580,7 +580,7 @@ async function connectPlatform(platform: Platform) {
     const challenge = platform === 'TWITTER'
       ? (await generatePKCE('twitter_code_verifier')).challenge
       : undefined
-    window.location.href = buildOAuthUrl(platform, '/onboarding', challenge)
+    window.location.href = buildOAuthUrl(platform, '/onboarding', challenge, generateOAuthStateNonce())
   } catch (e) {
     isConnecting.value = false
     channelError.value = e instanceof Error ? e.message : t('onboarding.channels.connectFailed')

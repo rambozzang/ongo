@@ -246,6 +246,7 @@ class StreamPublishUseCase(
         val filename = file.originalFilename?.trim().orEmpty()
         val contentType = file.contentType?.trim().orEmpty()
         FileValidationUtil.validate(filename, contentType, file.size)
+        file.inputStream.use { FileValidationUtil.validateVideoContent(it, contentType) }
 
         require(request.title.isNotBlank()) { "제목을 입력해주세요." }
         require(request.platforms.isNotEmpty()) { "게시할 플랫폼을 하나 이상 선택해주세요." }

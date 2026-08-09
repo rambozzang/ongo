@@ -24,6 +24,10 @@
       </aside>
 
       <main class="min-w-0 max-w-[880px] p-4 tablet:p-6">
+        <div v-if="settingsLoadError" class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2.5 text-[12px] text-warning-strong" role="alert">
+          <span class="min-w-0 flex-1">{{ t('settings.loadFailed') }}</span>
+          <button type="button" class="shrink-0 rounded-md border border-warning-strong px-2 py-1 text-[11px] font-semibold" @click="reloadSettings">{{ t('action.retry') }}</button>
+        </div>
         <template v-if="activeSection === 'automation'">
           <div class="mb-4 flex items-end justify-between gap-3">
             <div>
@@ -257,6 +261,7 @@ const workspaceStore = useWorkspaceStore()
 const requestedTab = typeof route.query.tab === 'string' ? route.query.tab : ''
 const activeSection = ref(['account', 'automation', 'defaults', 'security', 'workspaces'].includes(requestedTab) ? requestedTab : 'automation')
 const settingsData = ref<UserSettingsResponse | null>(null)
+const settingsLoadError = ref(false)
 const savingDefaults = ref(false)
 const defaults = reactive({ visibility: '', defaultPlatforms: [] as string[], aiTone: '', aiProvider: '' })
 const apiKeys = ref<ApiKey[]>([])
@@ -290,6 +295,9 @@ function formatPrice(value: number): string {
 }
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+}
+function reloadSettings() {
+  window.location.reload()
 }
 async function fetchApiKeys() {
   apiKeys.value = await settingsApi.listApiKeys()
@@ -372,7 +380,7 @@ async function removeWorkspace(id: number) {
 }
 
 onMounted(async () => {
-  await Promise.allSettled([
+  const results = await Promise.allSettled([
     settingsApi.getSettings().then((data) => {
       settingsData.value = data
       defaults.visibility = data.defaultVisibility
@@ -386,6 +394,7 @@ onMounted(async () => {
     fetchApiKeys(),
     workspaceStore.fetchWorkspaces(),
   ])
+  settingsLoadError.value = results.some((result) => result.status === 'rejected')
   if (!authStore.user) await authStore.fetchProfile()
 })
 </script>

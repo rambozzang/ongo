@@ -961,6 +961,7 @@
     },
     "title": "Settings",
     "description": "Manage your profile, notifications, and default preferences",
+    "loadFailed": "Some settings could not be loaded. Please try again.",
     "pageGuideTitle": "Settings Guide",
     "pageGuide": [
       "Set up your profile information and creator category",
@@ -2654,6 +2655,7 @@
   "automation": {
     "title": "Automation Rules",
     "description": "Automate repetitive tasks for efficient management",
+    "loadFailed": "Could not load automation rules. The last confirmed list is still shown.",
     "newRule": "New Rule",
     "activeRules": "{count} Active Rules",
     "pageGuideTitle": "Automation",

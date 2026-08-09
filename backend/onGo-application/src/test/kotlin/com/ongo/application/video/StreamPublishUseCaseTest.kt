@@ -120,7 +120,9 @@ class StreamPublishUseCaseTest {
         every { file.originalFilename } returns name
         every { file.contentType } returns "video/mp4"
         every { file.transferTo(any<java.io.File>()) } just Runs
-        every { file.inputStream } returns ByteArrayInputStream(ByteArray(0))
+        every { file.inputStream } returns ByteArrayInputStream(
+            byteArrayOf(0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70),
+        )
         return file
     }
 

@@ -216,7 +216,12 @@ async function loadPlatforms() {
 watch(
   () => props.modelValue,
   (open) => {
-    if (open) void loadPlatforms()
+    if (open) {
+      connectingPlatform.value = null
+      void loadPlatforms()
+    } else {
+      connectingPlatform.value = null
+    }
   },
   { immediate: true },
 )

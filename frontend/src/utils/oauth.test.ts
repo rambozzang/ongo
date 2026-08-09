@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Platform } from '@/types/channel'
-import { buildOAuthUrl, getOAuthRedirectUri } from './oauth'
+import { buildOAuthUrl, generateOAuthStateNonce, getOAuthRedirectUri } from './oauth'
 
 describe('channel OAuth contracts', () => {
   beforeEach(() => {
@@ -8,6 +8,7 @@ describe('channel OAuth contracts', () => {
       configurable: true,
       value: { location: { origin: 'https://ongo.test' } },
     })
+    sessionStorage.clear()
   })
 
   it.each([
@@ -43,6 +44,14 @@ describe('channel OAuth contracts', () => {
     expect(url.hostname).toBe('twitter.com')
     expect(url.searchParams.get('code_challenge')).toBe('challenge')
     expect(url.searchParams.get('code_challenge_method')).toBe('S256')
+  })
+
+  it('stores and carries a per-session callback nonce', () => {
+    const nonce = generateOAuthStateNonce()
+    const url = new URL(buildOAuthUrl('YOUTUBE', '/channels-v2', undefined, nonce))
+
+    expect(sessionStorage.getItem('channel_oauth_state_nonce')).toBe(nonce)
+    expect(url.searchParams.get('state')).toBe(`YOUTUBE|/channels-v2|${nonce}`)
   })
 
   it('returns the same callback URI sent to the provider', () => {

@@ -961,6 +961,7 @@
     },
     "title": "설정",
     "description": "프로필, 알림, 기본값 등 계정 설정을 관리하세요",
+    "loadFailed": "설정 일부를 불러오지 못했습니다. 다시 시도해 주세요.",
     "pageGuideTitle": "설정 안내",
     "pageGuide": [
       "프로필 정보와 크리에이터 카테고리를 설정합니다",
@@ -2654,6 +2655,7 @@
   "automation": {
     "title": "자동화 규칙",
     "description": "반복 작업을 자동화하여 효율적으로 관리하세요",
+    "loadFailed": "자동화 규칙을 불러오지 못했습니다. 마지막으로 확인된 목록을 유지하고 있습니다.",
     "newRule": "새 규칙",
     "activeRules": "활성 규칙 {count}개",
     "pageGuideTitle": "자동화",

@@ -110,14 +110,22 @@
         </div>
       </SectionCard>
     </template>
+
+    <ConnectChannelModal
+      v-model="isConnectModalOpen"
+      :connected-platforms="channelStore.connectedPlatforms"
+      :max-allowed="channelStore.maxAllowed"
+      :current-count="channels.length"
+      @connect="connectChannel"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useNotificationStore } from '@/stores/notification'
 import { AdjustmentsHorizontalIcon, ExclamationTriangleIcon, LinkIcon, PlusIcon } from '@heroicons/vue/24/outline'
 import type { Channel, Platform } from '@/types/channel'
@@ -125,12 +133,16 @@ import PlatformChip from '@/components/redesign/PlatformChip.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
 import { useChannelStore } from '@/stores/channel'
+import ConnectChannelModal from '@/components/channel/ConnectChannelModal.vue'
+import { buildOAuthUrl, generateOAuthStateNonce, generatePKCE } from '@/utils/oauth'
 
 const { t, locale } = useI18n()
+const route = useRoute()
 const router = useRouter()
 const channelStore = useChannelStore()
 const { channels } = storeToRefs(channelStore)
 const notify = useNotificationStore()
+const isConnectModalOpen = ref(false)
 const PLATFORM_CODES: Partial<Record<Platform, 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW'>> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
@@ -169,7 +181,21 @@ function syncNote(channel: Channel): string {
   return `${t('channels.syncAll')} · ${new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' }).format(date)}`
 }
 function openChannelManager() {
-  router.push('/channels')
+  isConnectModalOpen.value = true
+}
+
+async function connectChannel(platform: Platform) {
+  try {
+    // X는 OAuth 2.0 PKCE가 필수다. verifier는 콜백에서 토큰 교환에 사용한다.
+    const challenge = platform === 'TWITTER'
+      ? (await generatePKCE('twitter_code_verifier')).challenge
+      : undefined
+    const stateNonce = generateOAuthStateNonce()
+    window.location.href = buildOAuthUrl(platform, '/channels-v2', challenge, stateNonce)
+  } catch (error) {
+    isConnectModalOpen.value = false
+    notify.error(error instanceof Error ? error.message : t('channels.connectFailed'))
+  }
 }
 
 async function syncChannel(id: number) {
@@ -181,5 +207,12 @@ async function syncChannel(id: number) {
   }
 }
 
-onMounted(() => channelStore.fetchChannels())
+onMounted(() => {
+  void channelStore.fetchChannels()
+  if (route.query.connect === '1') {
+    isConnectModalOpen.value = true
+    // 뒤로 가기 시 모달이 다시 열리지 않도록 한 번 소비한다.
+    void router.replace({ query: { ...route.query, connect: undefined } })
+  }
+})
 </script>

@@ -11,6 +11,7 @@ import com.ongo.common.util.FileValidationUtil
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDateTime
+import java.io.ByteArrayInputStream
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
@@ -77,6 +78,24 @@ class CommonContractTest {
         }
         assertThrows<FileValidationException> {
             FileValidationUtil.validateByMediaType("clip.mp4", "video/mp4", 1024, MediaType.IMAGE)
+        }
+    }
+
+    @Test
+    fun `content validation rejects spoofed media and accepts real container signatures`() {
+        FileValidationUtil.validateVideoContent(
+            ByteArrayInputStream(byteArrayOf(0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70)),
+            "video/mp4",
+        )
+        FileValidationUtil.validateAssetContent(
+            ByteArrayInputStream(byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)),
+            "image/png",
+        )
+        assertThrows<FileValidationException> {
+            FileValidationUtil.validateVideoContent(ByteArrayInputStream("not a video".encodeToByteArray()), "video/mp4")
+        }
+        assertThrows<FileValidationException> {
+            FileValidationUtil.validateAssetContent(ByteArrayInputStream("not a pdf".encodeToByteArray()), "application/pdf")
         }
     }
 

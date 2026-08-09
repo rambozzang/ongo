@@ -53,7 +53,7 @@
               <p v-else-if="isConnected(platform)" class="text-body-xs text-success-strong">연동됨</p>
               <router-link
                 v-else
-                to="/channels"
+                to="/channels?connect=1"
                 class="text-body-xs text-primary-600 hover:text-primary-700"
                 @click.stop
               >

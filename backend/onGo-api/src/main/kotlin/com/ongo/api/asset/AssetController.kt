@@ -7,6 +7,7 @@ import com.ongo.application.asset.dto.AssetResponse
 import com.ongo.application.asset.dto.UpdateAssetRequest
 import com.ongo.common.ResData
 import com.ongo.common.exception.FileValidationException
+import com.ongo.common.util.FileValidationUtil
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -68,6 +69,7 @@ class AssetController(
         if (!allowedContentType) {
             throw FileValidationException("지원하지 않는 에셋 MIME 타입입니다: $contentType")
         }
+        file.inputStream.use { FileValidationUtil.validateAssetContent(it, contentType) }
 
         val filename = "${UUID.randomUUID()}_$originalFilename"
         val fileType = resolveFileType(file.contentType)

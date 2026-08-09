@@ -51,10 +51,22 @@ onMounted(async () => {
     return
   }
 
-  // Parse state: "PLATFORM|/return/path"
-  const [platformStr, ...pathParts] = state.split('|')
+  // Parse state: "PLATFORM|/return/path|nonce". The nonce prevents forged callbacks.
+  const [platformStr, pathPart, nonce] = state.split('|')
   const platform = platformStr as Platform
-  returnPath = pathParts.join('|') || '/channels'
+  returnPath = pathPart && pathPart.startsWith('/') && !pathPart.startsWith('//') ? pathPart : '/channels'
+
+  const supportedPlatforms: Platform[] = [
+    'YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP', 'TWITTER', 'FACEBOOK', 'THREADS',
+    'PINTEREST', 'LINKEDIN', 'WORDPRESS', 'TUMBLR', 'VIMEO', 'DAILYMOTION',
+  ]
+  const expectedNonce = sessionStorage.getItem('channel_oauth_state_nonce')
+  if (!supportedPlatforms.includes(platform) || !nonce || !expectedNonce || nonce !== expectedNonce) {
+    errorMessage.value = t('channelCallbackView.invalidCallback')
+    isProcessing.value = false
+    sessionStorage.removeItem('channel_oauth_state_nonce')
+    return
+  }
 
   try {
     const request: import('@/types/channel').ChannelConnectRequest = {
@@ -66,11 +78,14 @@ onMounted(async () => {
     }
     await channelApi.connect(platform, request)
     router.replace(returnPath)
-  } catch {
-    errorMessage.value = t('channelCallbackView.connectError')
+  } catch (error) {
+    errorMessage.value = error instanceof Error && error.message
+      ? error.message
+      : t('channelCallbackView.connectError')
     isProcessing.value = false
   } finally {
     sessionStorage.removeItem('twitter_code_verifier')
+    sessionStorage.removeItem('channel_oauth_state_nonce')
   }
 })
 </script>

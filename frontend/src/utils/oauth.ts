@@ -30,14 +30,23 @@ export async function generatePKCE(storageKey: string): Promise<{ verifier: stri
   return { verifier, challenge }
 }
 
+/** OAuth callback을 현재 브라우저 세션에서 시작했는지 확인하기 위한 nonce입니다. */
+export function generateOAuthStateNonce(storageKey = 'channel_oauth_state_nonce'): string {
+  const bytes = new Uint8Array(24)
+  crypto.getRandomValues(bytes)
+  const nonce = base64URLEncode(bytes)
+  sessionStorage.setItem(storageKey, nonce)
+  return nonce
+}
+
 /**
  * Build the OAuth authorization URL for a given platform.
  * The `state` parameter encodes `PLATFORM|returnPath` so the callback
  * view can route the user back after the token exchange.
  */
-export function buildOAuthUrl(platform: Platform, returnPath: string, codeChallenge?: string): string {
+export function buildOAuthUrl(platform: Platform, returnPath: string, codeChallenge?: string, stateNonce?: string): string {
   const redirectUri = `${window.location.origin}${REDIRECT_URI_PATH}`
-  const state = `${platform}|${returnPath}`
+  const state = `${platform}|${returnPath}${stateNonce ? `|${stateNonce}` : ''}`
 
   switch (platform) {
     case 'YOUTUBE':
