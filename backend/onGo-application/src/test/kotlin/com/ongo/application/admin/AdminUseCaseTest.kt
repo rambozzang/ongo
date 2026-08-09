@@ -41,6 +41,14 @@ class AdminUseCaseTest {
                 createdAt = now.minusMinutes(4),
             ),
             VideoUpload(
+                id = 3L,
+                videoId = 10L,
+                platform = Platform.INSTAGRAM,
+                status = UploadStatus.UPLOADING,
+                attemptCount = 1,
+                createdAt = now.minusMinutes(3),
+            ),
+            VideoUpload(
                 id = 2L,
                 videoId = 10L,
                 platform = Platform.TIKTOK,
@@ -54,12 +62,12 @@ class AdminUseCaseTest {
 
         val summary = useCase.getPublishQueue()
 
-        assertEquals(2, summary.totalPending)
+        assertEquals(3, summary.totalPending)
         assertEquals(1, summary.statusCounts[UploadStatus.PROCESSING.name])
         assertEquals(1, summary.activeLeases)
         assertEquals(1, summary.dueRetries)
         assertEquals(1, summary.unconfirmed)
-        assertEquals(2, summary.items.size)
+        assertEquals(3, summary.items.size)
         assertTrue(summary.items.any { it.lastError == "외부 응답이 끊겼습니다." })
     }
 }

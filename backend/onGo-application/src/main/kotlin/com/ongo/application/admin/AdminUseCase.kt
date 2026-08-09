@@ -169,7 +169,12 @@ class AdminUseCase(
             totalPending = pending.size,
             statusCounts = statusCounts,
             activeLeases = pending.count { it.leaseUntil?.isAfter(now) == true },
-            dueRetries = pending.count { it.nextRetryAt?.isAfter(now) == false },
+            // A null retry time means that no retry is scheduled. Kotlin's
+            // nullable comparison would otherwise treat null?.isAfter(now)
+            // as false and count every active upload as immediately retryable.
+            dueRetries = pending.count { retryAt ->
+                retryAt.nextRetryAt?.let { !it.isAfter(now) } == true
+            },
             unconfirmed = pending.count { it.status == com.ongo.common.enums.UploadStatus.UNCONFIRMED },
             items = pending
                 .sortedWith(compareBy<com.ongo.domain.video.VideoUpload> { it.status.name }.thenBy { it.createdAt })
