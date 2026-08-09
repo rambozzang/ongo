@@ -21,6 +21,8 @@ interface VideoUploadRepository {
     fun claim(id: Long, owner: String, now: LocalDateTime, leaseUntil: LocalDateTime): VideoUpload?
     /** 이미 수락된 외부 작업의 상태 조회만 lease한다. 새 업로드를 시작하지 않는다. */
     fun claimForStatusCheck(id: Long, owner: String, now: LocalDateTime, leaseUntil: LocalDateTime): VideoUpload?
+    /** 실패한 업로드를 한 번의 재시도 이벤트로 원자적으로 예약한다. */
+    fun claimForRetry(id: Long): Boolean
     /** lease가 만료된 작업은 외부 재전송 없이 결과 확인 필요 상태로 보낸다. */
     fun recoverExpiredLeases(now: LocalDateTime): List<VideoUpload>
     fun findByUserId(userId: Long): List<VideoUpload>

@@ -7,6 +7,7 @@ import com.ongo.common.exception.NotFoundException
 import com.ongo.common.util.safeValueOfOrThrow
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.video.*
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -21,10 +22,12 @@ class PublishVideoUseCase(
     private val eventPublisher: ApplicationEventPublisher,
     private val channelRepository: ChannelRepository,
     private val videoUploadPoller: VideoUploadPoller,
+    private val userWriteGuard: UserWriteGuard,
 ) {
 
     @Transactional
     fun publishVideo(userId: Long, videoId: Long, configs: List<PlatformUploadConfig>): PublishResult {
+        userWriteGuard.requireWritable(userId)
         val video = videoRepository.findById(videoId)
             ?: throw NotFoundException("영상", videoId)
 
@@ -144,6 +147,7 @@ class PublishVideoUseCase(
 
     @Transactional
     fun retryUpload(userId: Long, videoId: Long, platformName: String) {
+        userWriteGuard.requireWritable(userId)
         val video = videoRepository.findById(videoId)
             ?: throw NotFoundException("영상", videoId)
 
@@ -159,21 +163,14 @@ class PublishVideoUseCase(
             throw IllegalStateException("실패/반려 상태만 재전송할 수 있습니다. 게시 결과 확인 필요 상태는 재확인을 사용하세요. 현재 상태: ${upload.status}")
         }
 
-        // 상태를 UPLOADING으로 리셋
-        videoUploadRepository.update(
-            upload.copy(
-                status = UploadStatus.UPLOADING,
-                errorMessage = null,
-                nextRetryAt = null,
-                leaseOwner = null,
-                leaseUntil = null,
-                pollToken = null,
-                lastError = null,
-            )
-        )
-
         // video.fileUrl이 null이면 스트리밍 업로드로 재시도 불가
         val fileUrl = video.fileUrl ?: throw IllegalStateException("스트리밍 방식으로 업로드된 영상은 재시도를 지원하지 않습니다. 새로 업로드해주세요.")
+
+        // Read-then-update allows two retry clicks to enqueue two external calls.
+        // Reserve the failed row atomically before creating the event.
+        if (!videoUploadRepository.claimForRetry(upload.id!!)) {
+            throw IllegalStateException("이미 재게시 준비 중인 업로드입니다. 현재 게시 상태를 확인해주세요.")
+        }
 
         val uploadId = upload.id!!
         val meta = videoPlatformMetaRepository.findByVideoUploadId(uploadId)

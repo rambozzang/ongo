@@ -255,6 +255,19 @@ class VideoUploadJooqRepository(
         return if (changed == 1) findById(id) else null
     }
 
+    override fun claimForRetry(id: Long): Boolean =
+        dsl.update(VIDEO_UPLOADS)
+            .set(STATUS, UploadStatus.UPLOADING.name)
+            .set(ERROR_MESSAGE, null as String?)
+            .set(VIDEO_NEXT_RETRY_AT, null as LocalDateTime?)
+            .set(VIDEO_LEASE_OWNER, null as String?)
+            .set(VIDEO_LEASE_UNTIL, null as LocalDateTime?)
+            .set(VIDEO_POLL_TOKEN, null as String?)
+            .set(VIDEO_LAST_ERROR, null as String?)
+            .where(ID.eq(id))
+            .and(STATUS.`in`(UploadStatus.FAILED.name, UploadStatus.REJECTED.name))
+            .execute() == 1
+
     override fun recoverExpiredLeases(now: LocalDateTime): List<VideoUpload> {
         val expired = dsl.select(ID)
             .from(VIDEO_UPLOADS)

@@ -21,6 +21,7 @@ import com.ongo.domain.video.VideoPlatformMeta
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.channel.ChannelStatus
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import io.mockk.clearAllMocks
@@ -42,6 +43,8 @@ import java.io.ByteArrayInputStream
 import java.nio.file.Files
 import java.time.LocalDateTime
 import java.time.YearMonth
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -56,6 +59,7 @@ class StreamPublishUseCaseTest {
     private val tokenEncryptionPort = mockk<TokenEncryptionPort>()
     private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
     private val storageService = mockk<StorageService>()
+    private val userWriteGuard = mockk<UserWriteGuard>(relaxed = true)
     private val defaultStreamWriterFactories = listOf(
         stubFactory(Platform.YOUTUBE),
         stubFactory(Platform.TIKTOK),
@@ -98,6 +102,7 @@ class StreamPublishUseCaseTest {
             streamWriterFactories = factories,
             scheduleRepository = scheduleRepository,
             storageService = storageService,
+            userWriteGuard = userWriteGuard,
         )
 
     @AfterEach
@@ -389,6 +394,47 @@ class StreamPublishUseCaseTest {
         verify(atLeast = 1) { writer.writeChunk(any(), 0L, fileSize) }
         verify(exactly = 1) { writer.complete() }
         verify { eventPublisher.publishEvent(match<UploadCompletedEvent> { it.success && it.platformUrl == "https://youtube.test/watch/youtube-1" }) }
+    }
+
+    @Test
+    fun `이미 다른 작업자가 lease를 보유하면 세션 초기화 실패가 남의 행을 덮어쓰지 않는다`() {
+        stubSubscription(PlanType.PRO)
+        stubMonthlyCount(0L)
+
+        val savedVideo = buildSavedVideo(id = 100L)
+        val savedUpload = buildSavedUpload(id = 200L, videoId = 100L)
+        val savedMeta = buildSavedMeta(id = 300L, uploadId = 200L)
+        every { videoRepository.save(any()) } returns savedVideo
+        every { videoRepository.findById(100L) } returns savedVideo
+        every { videoUploadRepository.save(any()) } returns savedUpload
+        every { videoUploadRepository.findByVideoId(100L) } returns listOf(savedUpload)
+        every { videoPlatformMetaRepository.save(any()) } returns savedMeta
+        every { channelRepository.findByUserIdAndPlatform(userId, Platform.YOUTUBE) } returns buildActiveChannel()
+        val claimCalled = CountDownLatch(1)
+        every { videoUploadRepository.claim(eq(200L), any(), any(), any()) } answers {
+            claimCalled.countDown()
+            null
+        }
+
+        val writer = mockk<PlatformStreamWriter>(relaxed = true)
+        every { writer.initSession(any(), any(), any(), any(), any()) } returns "session-ignored"
+        val factory = object : PlatformStreamWriterFactory {
+            override val platform = Platform.YOUTUBE
+            override fun createWriter() = writer
+        }
+        useCase = createUseCase(listOf(factory))
+
+        val synchronization = slot<TransactionSynchronization>()
+        every { TransactionSynchronizationManager.registerSynchronization(capture(synchronization)) } just Runs
+
+        useCase.initiate(userId, buildFile(), buildRequest())
+        synchronization.captured.afterCommit()
+
+        assertTrue(claimCalled.await(5, TimeUnit.SECONDS), "스트리밍 worker가 lease를 시도하지 않았습니다.")
+
+        verify(exactly = 0) { videoUploadRepository.update(match { it.id == 200L }) }
+        verify(exactly = 0) { videoUploadRepository.updateOwned(any(), any()) }
+        verify(exactly = 0) { writer.initSession(any(), any(), any(), any(), any()) }
     }
 
     private fun waitUntil(timeoutMillis: Long = 5_000, condition: () -> Boolean) {

@@ -4,6 +4,7 @@ import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import io.mockk.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -13,13 +14,14 @@ class UploadVideoUseCaseTest {
 
     private val videoRepository = mockk<VideoRepository>()
     private val storageService = mockk<StorageService>(relaxed = true)
+    private val userWriteGuard = mockk<UserWriteGuard>(relaxed = true)
 
     private lateinit var useCase: UploadVideoUseCase
 
     @BeforeEach
     fun setUp() {
         clearAllMocks()
-        useCase = UploadVideoUseCase(videoRepository, storageService)
+        useCase = UploadVideoUseCase(videoRepository, storageService, userWriteGuard)
     }
 
     @Test

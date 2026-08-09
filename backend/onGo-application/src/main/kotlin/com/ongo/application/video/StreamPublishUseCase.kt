@@ -11,6 +11,7 @@ import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import org.springframework.context.ApplicationEventPublisher
 import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.schedule.Schedule
@@ -46,6 +47,7 @@ class StreamPublishUseCase(
     private val scheduleRepository: ScheduleRepository,
     private val eventPublisher: ApplicationEventPublisher,
     private val storageService: StorageService,
+    private val userWriteGuard: UserWriteGuard,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -56,6 +58,7 @@ class StreamPublishUseCase(
 
     @Transactional
     fun initiate(userId: Long, file: MultipartFile, request: StreamPublishRequest): StreamPublishResponse {
+        userWriteGuard.requireWritable(userId)
         val fileSize = file.size
 
         validateRequest(file, request)
@@ -348,12 +351,23 @@ class StreamPublishUseCase(
                         activeWriterMap[ctx] = writerMap[ctx]!!
                     } catch (e: Exception) {
                         log.error("플랫폼 {} 세션 초기화 실패: videoId={}", ctx.platform, videoId, e)
-                        updateUploadStatus(
-                            ctx.videoUploadId,
-                            UploadStatus.FAILED,
-                            "세션 초기화 실패: ${e.cause?.message ?: e.message}",
-                            leaseOwner = leaseOwners[ctx.videoUploadId],
-                        )
+                        val owner = leaseOwners[ctx.videoUploadId]
+                        if (owner != null) {
+                            updateUploadStatus(
+                                ctx.videoUploadId,
+                                UploadStatus.FAILED,
+                                "세션 초기화 실패: ${e.cause?.message ?: e.message}",
+                                leaseOwner = owner,
+                            )
+                        } else {
+                            // A null owner means another worker already owns the
+                            // upload lease. Never overwrite that worker's state.
+                            log.debug(
+                                "플랫폼 {} 세션 초기화 결과를 반영하지 않습니다: 다른 작업자가 lease를 보유 중입니다. uploadId={}",
+                                ctx.platform,
+                                ctx.videoUploadId,
+                            )
+                        }
                     }
                 }
             }

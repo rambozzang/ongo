@@ -3,10 +3,12 @@ package com.ongo.application.video
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.Visibility
 import com.ongo.common.enums.UploadStatus
+import com.ongo.common.exception.AccountFrozenException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.EncryptedToken
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.video.VideoRepository
@@ -30,6 +32,7 @@ class PublishVideoUseCaseTest {
     private val eventPublisher = mockk<ApplicationEventPublisher>()
     private val channelRepository = mockk<ChannelRepository>()
     private val videoUploadPoller = mockk<VideoUploadPoller>(relaxed = true)
+    private val userWriteGuard = mockk<UserWriteGuard>(relaxed = true)
 
     @Test
     fun `cannot publish a video owned by another user`() {
@@ -60,6 +63,33 @@ class PublishVideoUseCaseTest {
             )
         }
         verify(exactly = 0) { videoUploadRepository.save(any()) }
+        verify(exactly = 0) { eventPublisher.publishEvent(any()) }
+    }
+
+    @Test
+    fun `frozen account cannot start a publish write`() {
+        every { userWriteGuard.requireWritable(42L) } throws AccountFrozenException()
+
+        assertFailsWith<AccountFrozenException> {
+            useCase().publishVideo(
+                userId = 42L,
+                videoId = 900L,
+                configs = listOf(
+                    PlatformUploadConfig(
+                        platform = Platform.YOUTUBE,
+                        videoUploadId = 0L,
+                        title = "게시 시도",
+                        description = null,
+                        tags = emptyList(),
+                        visibility = Visibility.PUBLIC,
+                        thumbnailUrl = null,
+                        scheduledAt = null,
+                    ),
+                ),
+            )
+        }
+
+        verify(exactly = 0) { videoRepository.findById(any()) }
         verify(exactly = 0) { eventPublisher.publishEvent(any()) }
     }
 
@@ -111,6 +141,7 @@ class PublishVideoUseCaseTest {
             eventPublisher = eventPublisher,
             channelRepository = channelRepository,
             videoUploadPoller = videoUploadPoller,
+            userWriteGuard = userWriteGuard,
         )
 
         val result = useCase.publishVideo(
@@ -181,6 +212,34 @@ class PublishVideoUseCaseTest {
         verify(exactly = 0) { eventPublisher.publishEvent(any()) }
     }
 
+    @Test
+    fun `retry claim is rejected atomically before creating a duplicate event`() {
+        val userId = 42L
+        val videoId = 901L
+        val upload = VideoUpload(
+            id = 1L,
+            videoId = videoId,
+            platform = Platform.YOUTUBE,
+            status = UploadStatus.FAILED,
+        )
+        every { videoRepository.findById(videoId) } returns Video(
+            id = videoId,
+            userId = userId,
+            title = "실패 영상",
+            fileUrl = "https://storage.test/retry.mp4",
+            status = UploadStatus.PARTIALLY_PUBLISHED,
+        )
+        every { videoUploadRepository.findByVideoIdAndPlatform(videoId, Platform.YOUTUBE) } returns upload
+        every { videoUploadRepository.claimForRetry(upload.id!!) } returns false
+
+        assertFailsWith<IllegalStateException> {
+            useCase().retryUpload(userId, videoId, Platform.YOUTUBE.name)
+        }
+
+        verify(exactly = 0) { videoUploadRepository.update(any()) }
+        verify(exactly = 0) { eventPublisher.publishEvent(any()) }
+    }
+
     private fun useCase() = PublishVideoUseCase(
         videoRepository = videoRepository,
         videoUploadRepository = videoUploadRepository,
@@ -188,5 +247,6 @@ class PublishVideoUseCaseTest {
         eventPublisher = eventPublisher,
         channelRepository = channelRepository,
         videoUploadPoller = videoUploadPoller,
+        userWriteGuard = userWriteGuard,
     )
 }

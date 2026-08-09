@@ -4,6 +4,7 @@ import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.util.FileValidationUtil
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 class UploadVideoUseCase(
     private val videoRepository: VideoRepository,
     private val storageService: StorageService,
+    private val userWriteGuard: UserWriteGuard,
 ) {
 
     @Transactional
@@ -26,6 +28,7 @@ class UploadVideoUseCase(
         thumbnailUrl: String? = null,
         mediaType: MediaType = MediaType.VIDEO,
     ): Video {
+        userWriteGuard.requireWritable(userId)
         val video = videoRepository.save(
             Video(
                 userId = userId,
@@ -48,6 +51,7 @@ class UploadVideoUseCase(
         contentType: String,
         fileSize: Long,
     ): PresignedUploadResult {
+        userWriteGuard.requireWritable(userId)
         FileValidationUtil.validate(filename, contentType, fileSize)
         val video = videoRepository.save(
             Video(
@@ -68,6 +72,7 @@ class UploadVideoUseCase(
 
     @Transactional
     fun confirmPresignedUpload(userId: Long, videoId: Long) {
+        userWriteGuard.requireWritable(userId)
         val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
         if (video.userId != userId) throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
 
