@@ -138,6 +138,33 @@ class PublicApiUseCaseTest {
         assertEquals(true, result.scheduling)
         assertEquals(100, result.output.maxLength)
         assertEquals(emptyList(), result.output.tools)
+        assertEquals("object", result.output.settings.path("type").asText())
+        assertEquals("youtube", result.output.settings.path("properties").path("__type").path("const").asText())
+        assertEquals("__type", result.output.settings.path("required").first().asText())
+        assertEquals("title", result.output.settings.path("required")[1].asText())
+    }
+
+    @Test
+    fun `public post settings의 provider type이 다른 채널로 향하면 거부한다`() {
+        every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
+        every { channels.findById(7) } returns channel
+
+        assertFailsWith<IllegalArgumentException> {
+            useCase.create(
+                1,
+                CreatePublicPostRequest(
+                    type = "now",
+                    videoId = 11,
+                    posts = listOf(
+                        PublicPostItem(
+                            integration = PublicIntegrationRef("7"),
+                            value = listOf(PublicPostValue(content = "설명")),
+                            settings = jacksonObjectMapper().readTree("""{"__type":"tiktok"}"""),
+                        ),
+                    ),
+                ),
+            )
+        }
     }
 
     @Test
@@ -434,7 +461,7 @@ class PublicApiUseCaseTest {
                         integration = PublicIntegrationRef("7"),
                         value = listOf(PublicPostValue(title = "제목", content = "설명", tags = listOf("#one"))),
                         settings = jacksonObjectMapper().readTree(
-                            """{"__type":"youtube","title":"설정 제목","description":"설정 설명","type":"private","tags":[{"value":"configured"}]}"""
+                            """{"__type":"youtube","title":"설정 제목","description":"설정 설명","type":"private","thumbnail":{"id":"thumb-1","path":"https://cdn/thumbnail.jpg"},"tags":[{"value":"configured"}]}"""
                         ),
                     ),
                 ),
@@ -449,7 +476,9 @@ class PublicApiUseCaseTest {
                 it.single().title == "설정 제목" &&
                     it.single().description == "설정 설명" &&
                     it.single().tags == listOf("configured") &&
-                    it.single().visibility == com.ongo.common.enums.Visibility.PRIVATE
+                    it.single().visibility == com.ongo.common.enums.Visibility.PRIVATE &&
+                    it.single().thumbnailUrl == "https://cdn/thumbnail.jpg" &&
+                    it.single().customSettingsJson?.contains("\"__type\":\"youtube\"") == true
             })
         }
     }

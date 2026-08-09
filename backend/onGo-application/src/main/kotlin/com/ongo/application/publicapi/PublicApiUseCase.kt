@@ -1,6 +1,7 @@
 package com.ongo.application.publicapi
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.core.type.TypeReference
 import com.ongo.application.channel.dto.ChannelResponse
@@ -113,7 +114,7 @@ class PublicApiUseCase(
             output = PublicIntegrationSettingsOutput(
                 rules = buildSettingsRules(capability.scheduling, capability.directVideoUpload, capability.cloudVideoUpload),
                 maxLength = capability.maxTitleLength,
-                settings = objectMapper.createObjectNode().put("type", "object"),
+                settings = settingsSchema(channel.platform),
                 tools = tools,
             ),
         )
@@ -605,7 +606,7 @@ class PublicApiUseCase(
             "integration은 요청한 group에 속하지 않습니다"
         }
         val value = item.value.firstOrNull()
-        val settings = item.settings
+        val settings = normalizeSettings(item.settings, channel.platform)
         val title = settings?.path("title")?.asText(null)
             ?.takeIf(String::isNotBlank)
             ?: value?.title
@@ -626,10 +627,139 @@ class PublicApiUseCase(
                 ?: value?.content,
             tags = tags,
             visibility = settingsVisibility(settings),
-            thumbnailUrl = firstText(value?.image),
+            // Postiz uses value.image for the media itself and settings.thumbnail
+            // for a YouTube cover. Never treat the video media URL as a thumbnail.
+            thumbnailUrl = firstText(settings?.path("thumbnail")),
             customSettingsJson = settings?.takeIf { it.isObject }?.toString(),
             scheduledAt = scheduledAt,
         )
+    }
+
+    /**
+     * Normalize the Postiz settings envelope at the public API boundary.
+     * Clients may omit settings for the convenient/default path, but when they
+     * provide `__type` it must identify the selected integration. The normalized
+     * object is persisted in the provider metadata so every later durable retry
+     * receives the same provider contract.
+     */
+    private fun normalizeSettings(settings: JsonNode?, platform: Platform): JsonNode {
+        val normalized: ObjectNode = when {
+            settings == null || settings.isNull -> objectMapper.createObjectNode()
+            settings.isObject -> settings.deepCopy()
+            else -> throw IllegalArgumentException("${platform.name} settings는 JSON object여야 합니다")
+        }
+        val expected = postizIdentifier(platform)
+        val provided = normalized.path("__type").asText(null)
+        require(provided.isNullOrBlank() || provided.equals(expected, ignoreCase = true)) {
+            "integration settings.__type은 $expected 이어야 합니다"
+        }
+        normalized.put("__type", expected)
+        return normalized
+    }
+
+    /**
+     * Return a discoverable JSON Schema instead of the old empty object. This is
+     * intentionally generated from the same platform capability boundary that
+     * validates publishing, so API clients can build a correct form before they
+     * send a post.
+     */
+    private fun settingsSchema(platform: Platform): JsonNode {
+        val schema = objectMapper.createObjectNode()
+            .put("type", "object")
+            .put("additionalProperties", true)
+        val properties = schema.putObject("properties")
+        val required = schema.putArray("required")
+        required.add("__type")
+
+        fun stringField(
+            name: String,
+            maxLength: Int? = null,
+            minLength: Int? = null,
+            values: List<String> = emptyList(),
+            isRequired: Boolean = false,
+            format: String? = null,
+        ) {
+            val field = properties.putObject(name).put("type", "string")
+            minLength?.let { field.put("minLength", it) }
+            maxLength?.let { field.put("maxLength", it) }
+            if (values.isNotEmpty()) {
+                val enum = field.putArray("enum")
+                values.forEach(enum::add)
+            }
+            format?.let { field.put("format", it) }
+            if (isRequired) required.add(name)
+        }
+
+        fun booleanField(name: String, isRequired: Boolean = false) {
+            properties.putObject(name).put("type", "boolean")
+            if (isRequired) required.add(name)
+        }
+
+        fun arrayField(name: String, isRequired: Boolean = false) {
+            properties.putObject(name)
+                .put("type", "array")
+                .putObject("items")
+                .put("type", "object")
+            if (isRequired) required.add(name)
+        }
+
+        val providerType = postizIdentifier(platform)
+        properties.putObject("__type").put("type", "string").put("const", providerType)
+        when (platform) {
+            Platform.YOUTUBE -> {
+                stringField("title", maxLength = 100, minLength = 2, isRequired = true)
+                stringField("type", values = listOf("public", "unlisted", "private"), isRequired = true)
+                stringField("selfDeclaredMadeForKids", values = listOf("yes", "no"))
+                properties.putObject("thumbnail").put("type", "object")
+                arrayField("tags")
+            }
+            Platform.TIKTOK -> {
+                stringField("title", maxLength = 90)
+                stringField(
+                    "privacy_level",
+                    values = listOf("PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "SELF_ONLY"),
+                    isRequired = true,
+                )
+                booleanField("duet", isRequired = true)
+                booleanField("stitch", isRequired = true)
+                booleanField("comment", isRequired = true)
+                stringField("autoAddMusic", values = listOf("yes", "no"), isRequired = true)
+                booleanField("brand_content_toggle", isRequired = true)
+                booleanField("brand_organic_toggle", isRequired = true)
+                booleanField("video_made_with_ai")
+                stringField("content_posting_method", values = listOf("DIRECT_POST", "UPLOAD"), isRequired = true)
+            }
+            Platform.INSTAGRAM -> {
+                stringField("post_type", values = listOf("REELS", "VIDEO"), isRequired = true)
+                arrayField("collaborators")
+            }
+            Platform.TWITTER -> {
+                stringField("who_can_reply_post", values = listOf("everyone", "mentionedUsers", "following"), isRequired = true)
+                stringField("community")
+                booleanField("made_with_ai")
+                booleanField("paid_partnership")
+            }
+            Platform.FACEBOOK -> stringField("url", format = "uri")
+            Platform.LINKEDIN -> booleanField("post_as_images_carousel")
+            Platform.PINTEREST -> {
+                stringField("board", isRequired = true)
+                stringField("title", maxLength = 100)
+                stringField("link", format = "uri")
+                stringField("dominant_color")
+            }
+            Platform.WORDPRESS -> {
+                stringField("title", maxLength = 200, isRequired = true)
+                stringField("type", values = listOf("publish", "draft", "private"), isRequired = true)
+                stringField("main_image", format = "uri")
+            }
+            Platform.THREADS,
+            Platform.NAVER_CLIP,
+            Platform.VIMEO,
+            Platform.DAILYMOTION,
+            Platform.TUMBLR,
+            -> Unit
+        }
+        return schema
     }
 
     private fun settingsTags(settings: JsonNode?): List<String> {

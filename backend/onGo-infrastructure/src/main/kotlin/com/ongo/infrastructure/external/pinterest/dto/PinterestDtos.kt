@@ -20,6 +20,7 @@ data class PinterestPinRequest(
     val description: String,
     val link: String? = null,
     @JsonProperty("board_id") val boardId: String? = null,
+    @JsonProperty("dominant_color") val dominantColor: String? = null,
     @JsonProperty("media_source") val mediaSource: MediaSource,
 ) {
     data class MediaSource(

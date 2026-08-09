@@ -1,5 +1,7 @@
 package com.ongo.infrastructure.external.pinterest
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
@@ -20,6 +22,7 @@ class PinterestClient(
     private val pinterestOAuthApi: PinterestOAuthApi,
     private val pinterestConfig: PinterestConfig,
     private val fileTransferHelper: PlatformFileTransferHelper,
+    private val objectMapper: ObjectMapper = jacksonObjectMapper(),
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(PinterestClient::class.java)
@@ -55,15 +58,24 @@ class PinterestClient(
             awaitMediaSucceeded(mediaResponse.mediaId, request.accessToken)
 
             // Step 4: Create pin with the ready media reference.
+            val settings = request.customSettingsJson
+                ?.let { runCatching { objectMapper.readTree(it) }.getOrNull() }
+            val boardId = settings?.path("board")?.asText(null)
+                ?.takeIf(String::isNotBlank)
+                ?: request.platformChannelId
             val pinRequest = PinterestPinRequest(
-                title = request.title.take(100),
+                title = settings?.path("title")?.asText(null)?.takeIf(String::isNotBlank)
+                    ?.take(100)
+                    ?: request.title.take(100),
                 description = request.description.take(800),
+                link = settings?.path("link")?.asText(null)?.takeIf(String::isNotBlank),
+                boardId = boardId,
+                dominantColor = settings?.path("dominant_color")?.asText(null)?.takeIf(String::isNotBlank),
                 mediaSource = PinterestPinRequest.MediaSource(
                     sourceType = "video_id",
                     mediaId = mediaResponse.mediaId,
                     coverImageUrl = thumbnailUrl,
                 ),
-                boardId = request.platformChannelId,
             )
 
             val pinResponse = pinterestApi.createPin(

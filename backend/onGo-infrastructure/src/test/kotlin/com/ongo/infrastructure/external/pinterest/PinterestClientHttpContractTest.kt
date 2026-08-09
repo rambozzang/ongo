@@ -73,6 +73,15 @@ class PinterestClientHttpContractTest {
                 thumbnailUrl = server.url("/source/cover.jpg").toString(),
                 accessToken = "pinterest-token",
                 platformChannelId = "board-1",
+                customSettingsJson = """
+                    {
+                      "__type":"pinterest",
+                      "board":"board-9",
+                      "title":"설정 핀 제목",
+                      "link":"https://ongo.test/video/1",
+                      "dominant_color":"#6E7874"
+                    }
+                """.trimIndent(),
             ),
         )
 
@@ -107,7 +116,10 @@ class PinterestClientHttpContractTest {
         assertThat(pin.method).isEqualTo("POST")
         assertThat(pin.path).isEqualTo("/v5/pins")
         assertThat(pin.body.readUtf8())
-            .contains("\"board_id\":\"board-1\"")
+            .contains("\"board_id\":\"board-9\"")
+            .contains("\"title\":\"설정 핀 제목\"")
+            .contains("\"link\":\"https://ongo.test/video/1\"")
+            .contains("\"dominant_color\":\"#6E7874\"")
             .contains("\"source_type\":\"video_id\"")
             .contains("\"media_id\":\"media-1\"")
             .contains("\"cover_image_url\":\"${server.url("/source/cover.jpg")}\"")
