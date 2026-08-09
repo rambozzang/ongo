@@ -308,6 +308,17 @@ describe('ComposeView', () => {
     expect(caption!.attributes('disabled')).toBeUndefined()
   })
 
+  it('does not reuse a previous server video after switching source modes', async () => {
+    const { wrapper } = await renderCompose()
+    useUploadStore().videoId = 101
+
+    const urlSource = wrapper.findAll('button').find((button) => button.text() === 'URL 가져오기')
+    await urlSource!.trigger('click')
+
+    expect(useUploadStore().videoId).toBeNull()
+    expect(wrapper.get('#source-video-url').element).toBeTruthy()
+  })
+
   it('does not allow saving while the server upload is still running', async () => {
     const { wrapper } = await renderCompose()
     const uploadStore = useUploadStore()

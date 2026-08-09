@@ -695,8 +695,17 @@ const sourceModes = computed(() => [
 const importAvailable = computed(() => importAvailability.value?.available === true)
 
 function selectSourceMode(mode: 'file' | 'url' | 'generate') {
+  if (sourceMode.value === mode) return
   sourceMode.value = mode
-  if (mode === 'file') importedVideoId.value = null
+  // A source switch starts a new source-selection flow. Keeping the previous
+  // server video ID here could publish the old video when the new source has
+  // not been imported or generated yet.
+  importedVideoId.value = null
+  uploadStore.resetUpload()
+  file.name = ''
+  file.thumbnailUrl = null
+  file.meta = ''
+  importUrl.value = ''
 }
 
 const TAB_PLATFORM: Record<Exclude<MetadataTab, 'common'>, Platform> = {
