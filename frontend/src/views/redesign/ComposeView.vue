@@ -1034,7 +1034,12 @@ async function saveDraft() {
       mediaType: 'VIDEO' as const,
     }
     if (importedVideoId.value) await videoApi.update(importedVideoId.value, metadata)
-    else await videoApi.create(metadata)
+    else {
+      const created = await videoApi.create(metadata)
+      // Keep the server-created draft attached to this compose session so a
+      // later save/edit does not create a second orphan draft.
+      importedVideoId.value = created.id
+    }
     notice.value = t('redesign.compose.draftSaved')
   } catch {
     notice.value = t('redesign.compose.draftFailed')

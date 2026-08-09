@@ -437,6 +437,70 @@ class StreamPublishUseCaseTest {
     }
 
     @Test
+    fun `레거시 예약 복구 시 플랫폼별 예약 시각을 durable queue 이벤트에 보존한다`() {
+        val defaultScheduledAt = LocalDateTime.now().plusDays(1).withSecond(0).withNano(0)
+        val youtubeScheduledAt = defaultScheduledAt.withHour(9)
+        val instagramScheduledAt = defaultScheduledAt.withHour(13).withMinute(30)
+        val video = buildSavedVideo(id = 100L).copy(
+            title = "예약 영상",
+            description = "예약 설명",
+            tags = listOf("예약"),
+            fileUrl = "https://storage.test/scheduled-video.mp4",
+            fileSizeBytes = fileSize,
+        )
+        val savedUploads = mapOf(
+            Platform.YOUTUBE to buildSavedUpload(id = 201L, videoId = 100L, platform = Platform.YOUTUBE),
+            Platform.INSTAGRAM to buildSavedUpload(id = 202L, videoId = 100L, platform = Platform.INSTAGRAM),
+        )
+        val synchronization = slot<TransactionSynchronization>()
+
+        every { videoRepository.findById(100L) } returns video
+        every { videoUploadRepository.findByVideoIdAndPlatform(100L, any()) } returns null
+        every { videoUploadRepository.save(any()) } answers {
+            val requested = firstArg<VideoUpload>()
+            savedUploads.getValue(requested.platform)
+        }
+        every { videoPlatformMetaRepository.save(any()) } answers {
+            val requested = firstArg<VideoPlatformMeta>()
+            requested.copy(id = requested.videoUploadId + 100L)
+        }
+        every { TransactionSynchronizationManager.registerSynchronization(capture(synchronization)) } just Runs
+
+        val schedule = Schedule(
+            id = 501L,
+            videoId = 100L,
+            userId = userId,
+            scheduledAt = defaultScheduledAt,
+            platforms = mapOf(
+                Platform.YOUTUBE.name to mapOf("scheduledAt" to youtubeScheduledAt.toString()),
+                Platform.INSTAGRAM.name to mapOf("scheduledAt" to instagramScheduledAt.toString()),
+            ),
+        )
+
+        useCase.executeScheduledUpload(schedule)
+        synchronization.captured.afterCommit()
+
+        verify(exactly = 1) {
+            eventPublisher.publishEvent(match<VideoPublishEvent> { event ->
+                event.platformConfigs.associate { it.platform to it.scheduledAt } == mapOf(
+                    Platform.YOUTUBE to youtubeScheduledAt,
+                    Platform.INSTAGRAM to instagramScheduledAt,
+                )
+            })
+        }
+        verify(exactly = 1) {
+            videoUploadRepository.save(match {
+                it.platform == Platform.YOUTUBE && it.scheduledAt == youtubeScheduledAt
+            })
+        }
+        verify(exactly = 1) {
+            videoUploadRepository.save(match {
+                it.platform == Platform.INSTAGRAM && it.scheduledAt == instagramScheduledAt
+            })
+        }
+    }
+
+    @Test
     fun `직접 스트리밍은 플랫폼이 예약을 지원하지 않으면 저장 전에 거부한다`() {
         stubSubscription(PlanType.PRO)
         stubMonthlyCount(0L)

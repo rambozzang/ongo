@@ -34,12 +34,7 @@ class ScheduleUseCase(
 
         // 과거 시간 예약 방지
         val nowKst = LocalDateTime.now(KST)
-        if (request.scheduledAt.isBefore(nowKst)) {
-            throw IllegalArgumentException("예약 시간은 현재 시간 이후여야 합니다")
-        }
-
-        // 플랜별 예약 가능 기간 체크
-        validateScheduleLimit(user.planType, request.scheduledAt)
+        validatePlatformScheduleTimes(user.planType, request.scheduledAt, request.platforms, nowKst)
 
         val platformConfigs = request.platforms.associate { config ->
             config.platform.name to mapOf("scheduledAt" to (config.scheduledAt ?: request.scheduledAt).toString())
@@ -94,6 +89,9 @@ class ScheduleUseCase(
             }
             validateScheduleLimit(user.planType, newScheduledAt)
         }
+        request.platforms?.let {
+            validatePlatformScheduleTimes(user.planType, newScheduledAt, it, LocalDateTime.now(KST))
+        }
 
         val updated = schedule.copy(
             scheduledAt = newScheduledAt,
@@ -122,11 +120,32 @@ class ScheduleUseCase(
         }
     }
 
+    private fun validatePlatformScheduleTimes(
+        planType: PlanType,
+        globalScheduledAt: LocalDateTime,
+        platforms: List<PlatformScheduleConfig>,
+        nowKst: LocalDateTime,
+    ) {
+        require(platforms.isNotEmpty()) { "예약할 플랫폼을 하나 이상 선택해야 합니다" }
+        require(platforms.map { it.platform }.distinct().size == platforms.size) {
+            "예약 플랫폼은 중복될 수 없습니다"
+        }
+
+        platforms.forEach { config ->
+            val scheduledAt = config.scheduledAt ?: globalScheduledAt
+            if (scheduledAt.isBefore(nowKst)) {
+                throw IllegalArgumentException("플랫폼별 예약 시간은 현재 시간 이후여야 합니다")
+            }
+            validateScheduleLimit(planType, scheduledAt)
+        }
+    }
+
     private fun Schedule.toResponse(videoTitle: String?, thumbnailUrl: String?): ScheduleResponse {
-        val platformConfigs = platforms.map { (key, _) ->
+        val platformConfigs = platforms.map { (key, value) ->
+            val platformScheduledAt = value.asPlatformScheduleTime() ?: scheduledAt
             PlatformScheduleConfig(
                 platform = safeValueOfOrThrow<com.ongo.common.enums.Platform>(key),
-                scheduledAt = scheduledAt
+                scheduledAt = platformScheduledAt,
             )
         }
         return ScheduleResponse(
@@ -139,5 +158,10 @@ class ScheduleUseCase(
             platforms = platformConfigs,
             createdAt = createdAt
         )
+    }
+
+    private fun Any?.asPlatformScheduleTime(): LocalDateTime? {
+        val raw = (this as? Map<*, *>)?.get("scheduledAt")?.toString() ?: return null
+        return runCatching { LocalDateTime.parse(raw) }.getOrNull()
     }
 }

@@ -12,7 +12,7 @@ describe('schedule API range mapping', () => {
       }),
     ).toEqual({
       from: '2026-08-10T00:00:00',
-      to: '2026-08-16T23:59:59',
+      to: '2026-08-17T00:00:00',
       status: 'SCHEDULED',
     })
   })

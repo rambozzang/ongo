@@ -4,9 +4,19 @@ import type { Schedule, ScheduleCreateRequest, ScheduleUpdateRequest } from '@/t
 
 export function toScheduleRangeParams(params?: { startDate?: string; endDate?: string; status?: string }) {
   const { startDate, endDate, status } = params ?? {}
+  // The backend treats `to` as an exclusive LocalDateTime bound. Advance the
+  // inclusive UI end date to the next local midnight so the final second is
+  // not silently omitted.
+  const endExclusive = endDate
+    ? (() => {
+        const date = new Date(`${endDate}T00:00:00`)
+        date.setDate(date.getDate() + 1)
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T00:00:00`
+      })()
+    : undefined
   return {
     from: startDate ? `${startDate}T00:00:00` : undefined,
-    to: endDate ? `${endDate}T23:59:59` : undefined,
+    to: endExclusive,
     status,
   }
 }

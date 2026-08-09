@@ -92,7 +92,7 @@ describe('publish core API contracts', () => {
   it('maps schedule ranges to inclusive LocalDateTime and persists actions', async () => {
     await scheduleApi.list({ startDate: '2026-08-10', endDate: '2026-08-16' })
     expect(get).toHaveBeenCalledWith('/schedules', {
-      params: { from: '2026-08-10T00:00:00', to: '2026-08-16T23:59:59', status: undefined },
+      params: { from: '2026-08-10T00:00:00', to: '2026-08-17T00:00:00', status: undefined },
     })
     await scheduleApi.get(3)
     await scheduleApi.create({ videoId: 7, scheduledAt: '2026-08-10T09:00', platforms: [] })

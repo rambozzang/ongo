@@ -603,6 +603,9 @@ class StreamPublishUseCase(
         }
 
         val platformConfigs = platforms.mapNotNull { platform ->
+            val platformScheduledAt = schedule.platforms[platform.name]
+                .asPlatformScheduleTime()
+                ?: schedule.scheduledAt
             val existing = videoUploadRepository.findByVideoIdAndPlatform(schedule.videoId, platform)
             if (existing != null) {
                 if (existing.status != UploadStatus.UPLOADING) return@mapNotNull null
@@ -617,7 +620,7 @@ class StreamPublishUseCase(
                     visibility = meta?.visibility ?: Visibility.PUBLIC,
                     thumbnailUrl = meta?.customThumbnailUrl ?: video.thumbnailUrls.firstOrNull(),
                     fileSize = fileSize,
-                    scheduledAt = null,
+                    scheduledAt = existing.scheduledAt ?: platformScheduledAt,
                 )
             }
             val upload = videoUploadRepository.save(
@@ -625,6 +628,7 @@ class StreamPublishUseCase(
                     videoId = schedule.videoId,
                     platform = platform,
                     status = UploadStatus.UPLOADING,
+                    scheduledAt = platformScheduledAt,
                 )
             )
             val uploadId = upload.id!!
@@ -649,7 +653,7 @@ class StreamPublishUseCase(
                 visibility = meta.visibility,
                 thumbnailUrl = meta.customThumbnailUrl,
                 fileSize = fileSize,
-                scheduledAt = null,
+                scheduledAt = platformScheduledAt,
             )
         }
 
@@ -706,3 +710,9 @@ data class PlatformPublishRequest(
 data class StreamPublishResponse(
     val videoId: Long,
 )
+
+/** Parse the per-platform wall-clock value persisted in a legacy Schedule JSON map. */
+private fun Any?.asPlatformScheduleTime(): LocalDateTime? {
+    val raw = (this as? Map<*, *>)?.get("scheduledAt")?.toString() ?: return null
+    return runCatching { LocalDateTime.parse(raw) }.getOrNull()
+}
