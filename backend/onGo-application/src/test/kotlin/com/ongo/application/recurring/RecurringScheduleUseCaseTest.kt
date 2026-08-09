@@ -2,12 +2,15 @@ package com.ongo.application.recurring
 
 import com.ongo.application.recurring.dto.CreateRecurringScheduleRequest
 import com.ongo.common.exception.ForbiddenException
+import com.ongo.common.exception.AccountFrozenException
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.recurring.RecurringSchedule
 import com.ongo.domain.recurring.RecurringScheduleRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -19,6 +22,19 @@ class RecurringScheduleUseCaseTest {
 
     private val repository = mockk<RecurringScheduleRepository>()
     private val videoRepository = mockk<VideoRepository>()
+    private val userWriteGuard = mockk<UserWriteGuard>(relaxed = true)
+
+    @Test
+    fun `동결된 계정은 반복 예약을 생성할 수 없다`() {
+        every { userWriteGuard.requireWritable(1L) } throws AccountFrozenException()
+
+        assertThrows(AccountFrozenException::class.java) {
+            useCase().createSchedule(1L, request())
+        }
+
+        verify(exactly = 0) { videoRepository.findById(any()) }
+        verify(exactly = 0) { repository.save(any()) }
+    }
 
     @Test
     fun `반복 예약은 원본 영상 소유자만 생성할 수 있다`() {
@@ -92,7 +108,7 @@ class RecurringScheduleUseCaseTest {
         assertEquals(LocalDateTime.of(2026, 1, 11, 23, 0), next)
     }
 
-    private fun useCase() = RecurringScheduleUseCase(repository, videoRepository)
+    private fun useCase() = RecurringScheduleUseCase(repository, videoRepository, userWriteGuard)
 
     private fun request() = CreateRecurringScheduleRequest(
         videoId = 10L,

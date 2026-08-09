@@ -3,6 +3,7 @@ package com.ongo.application.recurring
 import com.ongo.application.recurring.dto.*
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.recurring.RecurringSchedule
 import com.ongo.domain.recurring.RecurringScheduleRepository
 import com.ongo.domain.video.VideoRepository
@@ -19,6 +20,7 @@ import java.time.temporal.TemporalAdjusters
 class RecurringScheduleUseCase(
     private val recurringScheduleRepository: RecurringScheduleRepository,
     private val videoRepository: VideoRepository,
+    private val userWriteGuard: UserWriteGuard,
 ) {
 
     companion object {
@@ -32,6 +34,7 @@ class RecurringScheduleUseCase(
 
     @Transactional
     fun createSchedule(userId: Long, request: CreateRecurringScheduleRequest): RecurringScheduleResponse {
+        userWriteGuard.requireWritable(userId)
         require(request.frequency in FREQUENCIES) { "유효하지 않은 빈도: ${request.frequency}" }
         require(request.name.isNotBlank()) { "반복 예약 이름을 입력하세요." }
         validateCadence(request.frequency, request.dayOfWeek, request.dayOfMonth, request.timezone)
@@ -59,6 +62,7 @@ class RecurringScheduleUseCase(
 
     @Transactional
     fun updateSchedule(userId: Long, scheduleId: Long, request: UpdateRecurringScheduleRequest): RecurringScheduleResponse {
+        userWriteGuard.requireWritable(userId)
         val schedule = recurringScheduleRepository.findById(scheduleId) ?: throw NotFoundException("반복 예약", scheduleId)
         if (schedule.userId != userId) throw ForbiddenException("해당 반복 예약에 대한 권한이 없습니다")
 
@@ -94,6 +98,7 @@ class RecurringScheduleUseCase(
 
     @Transactional
     fun deleteSchedule(userId: Long, scheduleId: Long) {
+        userWriteGuard.requireWritable(userId)
         val schedule = recurringScheduleRepository.findById(scheduleId) ?: throw NotFoundException("반복 예약", scheduleId)
         if (schedule.userId != userId) throw ForbiddenException("해당 반복 예약에 대한 권한이 없습니다")
         recurringScheduleRepository.delete(scheduleId)
@@ -101,6 +106,7 @@ class RecurringScheduleUseCase(
 
     @Transactional
     fun toggleSchedule(userId: Long, scheduleId: Long): RecurringScheduleResponse {
+        userWriteGuard.requireWritable(userId)
         val schedule = recurringScheduleRepository.findById(scheduleId) ?: throw NotFoundException("반복 예약", scheduleId)
         if (schedule.userId != userId) throw ForbiddenException("해당 반복 예약에 대한 권한이 없습니다")
 

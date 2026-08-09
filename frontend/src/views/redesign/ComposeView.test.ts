@@ -179,6 +179,31 @@ describe('ComposeView', () => {
     expect(wrapper.text()).toContain('서버 렌더러가 준비되지 않았습니다.')
   })
 
+  it('saves metadata into the already uploaded server video instead of creating an orphan draft', async () => {
+    const { wrapper } = await renderCompose()
+    const uploadStore = useUploadStore()
+    uploadStore.videoId = 101
+
+    await wrapper.get('#compose-title').setValue('저장할 제목')
+    const save = wrapper.findAll('button').find((button) => button.text().includes('임시 저장'))
+    expect(save).toBeDefined()
+    await save!.trigger('click')
+    await flushPromises()
+
+    expect(videoApi.update).toHaveBeenCalledWith(101, expect.objectContaining({ title: '저장할 제목' }))
+    expect(videoApi.create).not.toHaveBeenCalled()
+  })
+
+  it('does not allow saving while the server upload is still running', async () => {
+    const { wrapper } = await renderCompose()
+    const uploadStore = useUploadStore()
+    uploadStore.uploading = true
+    await wrapper.vm.$nextTick()
+
+    const save = wrapper.findAll('button').find((button) => button.text().includes('임시 저장'))
+    expect(save?.attributes('disabled')).toBeDefined()
+  })
+
   it('runs the automatic Shorts pipeline after the original multi-channel publish', async () => {
     vi.mocked(ugcShortsPipelineApi.getRenderAvailability).mockResolvedValue({ available: true, reason: null })
     vi.mocked(ugcShortsPipelineApi.create).mockResolvedValue({ id: 77 } as never)

@@ -4331,6 +4331,7 @@
       "draftNeedTitle": "Enter a title",
       "draftSaved": "Draft saved",
       "draftFailed": "Could not save the draft",
+      "uploadInProgress": "Save the draft after the upload finishes",
       "saving": "Saving…",
       "needFile": "Choose a video to upload",
       "scheduling": "Scheduling…",

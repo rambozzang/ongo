@@ -418,7 +418,7 @@
           <button
             type="button"
             class="btn-secondary flex-1 !text-[12px]"
-            :disabled="saving"
+            :disabled="saving || uploadStore.isUploading"
             @click="saveDraft"
           >
             {{ saving ? t('redesign.compose.saving') : t('redesign.compose.saveDraft') }}
@@ -1023,6 +1023,10 @@ async function saveDraft() {
     notice.value = t('redesign.compose.draftNeedTitle')
     return
   }
+  if (uploadStore.isUploading) {
+    notice.value = t('redesign.compose.uploadInProgress')
+    return
+  }
   saving.value = true
   notice.value = ''
   try {
@@ -1033,7 +1037,10 @@ async function saveDraft() {
       visibility: 'PUBLIC' as const,
       mediaType: 'VIDEO' as const,
     }
-    if (importedVideoId.value) await videoApi.update(importedVideoId.value, metadata)
+    // File selection/presigned upload creates the server video before the user
+    // presses Save draft. Reuse that row instead of creating an orphan draft.
+    const existingVideoId = importedVideoId.value ?? uploadStore.videoId
+    if (existingVideoId) await videoApi.update(existingVideoId, metadata)
     else {
       const created = await videoApi.create(metadata)
       // Keep the server-created draft attached to this compose session so a
