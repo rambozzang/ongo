@@ -79,8 +79,27 @@ class PublicApiUseCase(
             maxFileSizeBytes = capability.maxFileSizeBytes,
             acceptedExtensions = capability.acceptedExtensions,
             unavailableReason = capability.unavailableReason,
+            output = PublicIntegrationSettingsOutput(
+                rules = buildSettingsRules(capability.scheduling, capability.directVideoUpload, capability.cloudVideoUpload),
+                maxLength = capability.maxTitleLength,
+                // No provider-specific setting schema is exposed until the corresponding
+                // platform client can validate and persist it. An empty object schema is
+                // safer than accepting settings that are silently ignored.
+                settings = objectMapper.createObjectNode().put("type", "object"),
+                tools = emptyList(),
+            ),
         )
     }
+
+    private fun buildSettingsRules(
+        scheduling: Boolean,
+        directVideoUpload: Boolean,
+        cloudVideoUpload: Boolean,
+    ): String = buildList {
+        if (!directVideoUpload && !cloudVideoUpload) add("video upload is not supported")
+        if (!scheduling) add("native scheduling is not supported; onGo durable scheduling is used")
+        if (directVideoUpload || cloudVideoUpload) add("video attachment is supported")
+    }.joinToString(". ").ifBlank { "No additional provider rules" }
 
     /**
      * Postiz의 find-slot 어댑터. onGo가 저장한 예약 큐를 기준으로 해당 계정의

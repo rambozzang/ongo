@@ -75,6 +75,8 @@ class PublicApiUseCaseTest {
         assertEquals(5_000, result.description.maxLength)
         assertEquals(500, result.tags.maxCount)
         assertEquals(true, result.scheduling)
+        assertEquals(100, result.output.maxLength)
+        assertEquals(emptyList(), result.output.tools)
     }
 
     @Test

@@ -92,6 +92,21 @@ data class PublicIntegrationSettingsResponse(
     val maxFileSizeBytes: Long,
     val acceptedExtensions: Set<String>,
     val unavailableReason: String?,
+    /** Postiz-compatible discovery payload. Provider-specific tools are empty unless onGo implements them. */
+    val output: PublicIntegrationSettingsOutput,
+)
+
+data class PublicIntegrationSettingsOutput(
+    val rules: String,
+    val maxLength: Int,
+    val settings: JsonNode,
+    val tools: List<PublicIntegrationToolResponse>,
+)
+
+data class PublicIntegrationToolResponse(
+    val methodName: String,
+    val description: String,
+    val dataSchema: JsonNode,
 )
 
 data class PublicFieldLimit(
