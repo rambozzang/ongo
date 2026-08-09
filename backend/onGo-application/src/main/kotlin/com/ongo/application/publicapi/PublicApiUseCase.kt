@@ -445,7 +445,10 @@ class PublicApiUseCase(
     fun delete(userId: Long, id: Long) {
         val current = load(userId, id)
         val uploads = videoUploadRepository.findByVideoId(current.videoId)
-        val cannotCancel = uploads.any {
+        // A single source video may back several independent public API posts.
+        // Deleting one post must not be blocked by a completed or uncertain
+        // upload belonging to another post that happens to reuse the video.
+        val cannotCancel = uploadsForPost(current, uploads).any {
             it.status == UploadStatus.PUBLISHED ||
                 it.status == UploadStatus.UNCONFIRMED ||
                 it.status == UploadStatus.PROCESSING ||

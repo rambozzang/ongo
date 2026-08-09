@@ -150,6 +150,8 @@ data class PlatformUploadRequest(
     val platformChannelId: String? = null,
     val fileSize: Long = 0,
     val scheduledAt: LocalDateTime? = null,
+    /** Provider-specific Postiz settings preserved through the upload boundary. */
+    val customSettingsJson: String? = null,
 )
 
 data class PlatformUploadResult(

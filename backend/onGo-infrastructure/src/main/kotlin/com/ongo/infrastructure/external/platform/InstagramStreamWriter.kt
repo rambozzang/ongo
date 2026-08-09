@@ -79,6 +79,7 @@ class InstagramStreamWriter(
                     accessToken = token.value,
                     platformChannelId = platformChannelId,
                     fileSize = file.length(),
+                    customSettingsJson = currentMeta.customSettingsJson,
                 )
             )
             val platformVideoId = result.platformVideoId?.takeIf { it.isNotBlank() }

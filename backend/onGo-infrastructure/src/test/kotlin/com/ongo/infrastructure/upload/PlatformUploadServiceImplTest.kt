@@ -84,6 +84,7 @@ class PlatformUploadServiceImplTest {
                 tags = listOf("tag"),
                 visibility = Visibility.PUBLIC,
                 thumbnailUrl = null,
+                customSettingsJson = "{\"privacy_level\":\"PUBLIC\"}",
                 fileSize = 100,
                 scheduledAt = null,
             ),
@@ -92,6 +93,7 @@ class PlatformUploadServiceImplTest {
         )
 
         assertThat(requestSlot.captured.accessToken).isEqualTo("plain-token")
+        assertThat(requestSlot.captured.customSettingsJson).isEqualTo("{\"privacy_level\":\"PUBLIC\"}")
         assertThat(result.success).isTrue()
         assertThat(result.published).isTrue()
         assertThat(result.platformUrl).isEqualTo("https://instagram.com/reel/media-1")

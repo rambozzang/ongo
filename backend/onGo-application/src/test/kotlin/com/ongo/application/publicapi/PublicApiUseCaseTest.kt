@@ -636,6 +636,36 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `같은 영상을 공유한 다른 게시물의 완료 상태는 현재 게시물 삭제를 막지 않는다`() {
+        val current = PublicApiPost(
+            id = 36,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.NOW,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.PROCESSING,
+            payloadJson = "{\"posts\":[{\"integration\":{\"id\":\"7\"}}]}",
+        )
+        every { posts.findByIdAndUserId(36, 1) } returns current
+        every { uploads.findByVideoId(11) } returns listOf(
+            VideoUpload(
+                id = 96,
+                videoId = 11,
+                platform = Platform.YOUTUBE,
+                channelId = 8,
+                status = UploadStatus.PUBLISHED,
+                platformUrl = "https://youtu.be/other-post",
+            ),
+        )
+        every { posts.update(any()) } answers { firstArg() }
+
+        useCase.delete(1, 36)
+
+        verify(exactly = 1) {
+            posts.update(match { it.id == 36L && it.status == com.ongo.domain.publicapi.PublicApiPostStatus.CANCELLED })
+        }
+    }
+
+    @Test
     fun `즉시 게시가 아직 업로드 중이면 게시물만 취소하지 않는다`() {
         val publishing = PublicApiPost(
             id = 34,

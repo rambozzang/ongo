@@ -84,6 +84,7 @@ class PlatformUploadServiceImpl(
                         platformChannelId = channel.platformChannelId,
                         fileSize = config.fileSize,
                         scheduledAt = config.scheduledAt,
+                        customSettingsJson = config.customSettingsJson,
                     )
                     )
                     PlatformUploadResult(
