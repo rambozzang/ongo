@@ -11,6 +11,9 @@ export default defineConfig({
       include: ['src/**/*.{ts,vue}'],
       reporter: ['text', 'json-summary', 'html', 'lcov'],
       reportsDirectory: './coverage',
+      thresholds: {
+        lines: 15,
+      },
       exclude: ['src/**/*.d.ts', 'src/**/index.ts', 'src/**/types/**'],
     },
   },
