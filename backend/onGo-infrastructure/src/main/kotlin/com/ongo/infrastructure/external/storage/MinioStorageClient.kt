@@ -41,6 +41,22 @@ class MinioStorageClient(
         return "${storageProperties.minio.endpoint}/${storageProperties.bucket}/$key"
     }
 
+    override fun copyObject(sourceKey: String, targetKey: String) {
+        ensureBucketExists()
+        minioClient.copyObject(
+            CopyObjectArgs.builder()
+                .bucket(storageProperties.bucket)
+                .`object`(targetKey)
+                .source(
+                    CopySource.builder()
+                        .bucket(storageProperties.bucket)
+                        .`object`(sourceKey)
+                        .build(),
+                )
+                .build(),
+        )
+    }
+
     override fun deleteFile(key: String) {
         log.info("MinIO 파일 삭제: key={}", key)
 

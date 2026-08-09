@@ -91,27 +91,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import {
   ListBulletIcon,
   ChevronDownIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
-import { sectionsKo, sectionsEn } from '@/components/manual/manualSections'
+import {
+  filterReleasedManualSections,
+  sectionsKo,
+  sectionsEn,
+} from '@/components/manual/manualSections'
 import type { ManualSection } from '@/components/manual/manualSections'
+import { capabilitiesApi } from '@/api/capabilities'
 
 const { isKorean, t } = useLocale()
 
 const showToc = ref(false)
 const isMobile = ref(false)
 const activeSection = ref('getting-started')
+const enabledCapabilityKeys = ref<Set<string>>(new Set())
 
-const sections = computed<ManualSection[]>(() =>
+const sections = computed<ManualSection[]>(() => filterReleasedManualSections(
   isKorean.value ? sectionsKo : sectionsEn,
-)
+  enabledCapabilityKeys.value,
+))
 
 // Intersection Observer for active section tracking
 let observer: IntersectionObserver | null = null
+
+function observeSections() {
+  if (!observer) return
+  observer.disconnect()
+  const sectionElements = document.querySelectorAll('section[id]')
+  sectionElements.forEach((el) => observer?.observe(el))
+}
 
 function checkMobile() {
   isMobile.value = window.innerWidth < 1024
@@ -132,11 +146,21 @@ onMounted(() => {
     { rootMargin: '-20% 0px -60% 0px' },
   )
 
-  setTimeout(() => {
-    const sectionElements = document.querySelectorAll('section[id]')
-    sectionElements.forEach((el) => observer?.observe(el))
-  }, 100)
+  // Capability sync is authoritative for the manual too. A failed request
+  // leaves only general help visible rather than documenting disabled WIP.
+  void capabilitiesApi.list()
+    .then((items) => {
+      enabledCapabilityKeys.value = new Set(items.filter((item) => item.enabled).map((item) => item.key))
+    })
+    .catch(() => {
+      enabledCapabilityKeys.value = new Set()
+    })
+    .finally(() => void nextTick(observeSections))
+
+  void nextTick(observeSections)
 })
+
+watch(sections, () => void nextTick(observeSections))
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)

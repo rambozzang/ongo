@@ -34,7 +34,7 @@ class ScheduledVideoUploadDispatcher(
             // DB에 저장된 URL이 presigned URL인 경우 예약 기간 중 만료될 수 있다.
             // due 시점에 새 URL을 발급해 외부 Graph/API가 실제 파일을 읽게 한다.
             val fileUrl = video?.let { current ->
-                runCatching { storageService.getFileUrl(current.id!!) }.getOrNull() ?: current.fileUrl
+                runCatching { storageService.getFileUrl(current.id!!, current.fileUrl) }.getOrNull() ?: current.fileUrl
             }
             val uploadId = upload.id
             if (video == null || fileUrl.isNullOrBlank() || uploadId == null) {

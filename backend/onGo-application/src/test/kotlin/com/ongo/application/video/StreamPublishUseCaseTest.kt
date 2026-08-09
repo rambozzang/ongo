@@ -432,6 +432,111 @@ class StreamPublishUseCaseTest {
     }
 
     @Test
+    fun `한 플랫폼의 청크 실패가 다른 플랫폼 게시를 중단시키지 않고 부분 게시로 남는다`() {
+        stubSubscription(PlanType.PRO)
+        stubMonthlyCount(0L)
+
+        val savedVideo = buildSavedVideo(id = 100L)
+        val youtubeUpload = buildSavedUpload(id = 201L, videoId = 100L, platform = Platform.YOUTUBE)
+        val tiktokUpload = buildSavedUpload(id = 202L, videoId = 100L, platform = Platform.TIKTOK)
+        val uploads = java.util.concurrent.ConcurrentHashMap<Long, VideoUpload>()
+        uploads[201L] = youtubeUpload
+        uploads[202L] = tiktokUpload
+        val videos = java.util.concurrent.ConcurrentHashMap<Long, Video>()
+        videos[100L] = savedVideo
+        val savedMetas = mapOf(
+            201L to buildSavedMeta(id = 301L, uploadId = 201L),
+            202L to buildSavedMeta(id = 302L, uploadId = 202L),
+        )
+
+        every { videoRepository.save(any()) } returns savedVideo
+        every { videoRepository.findById(100L) } answers { videos[100L] }
+        every { videoRepository.update(any()) } answers {
+            val updated = firstArg<Video>()
+            videos[updated.id!!] = updated
+            updated
+        }
+        every { channelRepository.findByUserIdAndPlatform(userId, Platform.YOUTUBE) } returns buildActiveChannel(Platform.YOUTUBE)
+        every { channelRepository.findByUserIdAndPlatform(userId, Platform.TIKTOK) } returns buildActiveChannel(Platform.TIKTOK)
+        every { videoUploadRepository.save(match { it.platform == Platform.YOUTUBE }) } returns youtubeUpload
+        every { videoUploadRepository.save(match { it.platform == Platform.TIKTOK }) } returns tiktokUpload
+        every { videoPlatformMetaRepository.save(match { it.videoUploadId == 201L }) } returns savedMetas.getValue(201L)
+        every { videoPlatformMetaRepository.save(match { it.videoUploadId == 202L }) } returns savedMetas.getValue(202L)
+        every { videoUploadRepository.findById(any()) } answers { uploads[firstArg()] }
+        every { videoUploadRepository.findByVideoId(100L) } answers { uploads.values.toList() }
+        every { videoUploadRepository.claim(any(), any(), any(), any()) } answers {
+            val id = firstArg<Long>()
+            val claimed = uploads.getValue(id).copy(
+                leaseOwner = secondArg(),
+                leaseUntil = LocalDateTime.now().plusMinutes(30),
+            )
+            uploads[id] = claimed
+            claimed
+        }
+        every { videoUploadRepository.updateOwned(any(), any()) } answers {
+            val updated = firstArg<VideoUpload>()
+            uploads[updated.id!!] = updated
+            true
+        }
+
+        val failedWriter = mockk<PlatformStreamWriter>(relaxed = true)
+        every { failedWriter.initSession(any(), any(), any(), any(), any()) } returns "youtube-session"
+        every { failedWriter.writeChunk(any(), any(), any()) } throws IllegalStateException("chunk timeout")
+
+        val successfulWriter = mockk<PlatformStreamWriter>(relaxed = true)
+        every { successfulWriter.initSession(any(), any(), any(), any(), any()) } returns "tiktok-session"
+        every { successfulWriter.complete() } returns PlatformUploadResult(
+            success = true,
+            platformVideoId = "tiktok-1",
+            platformUrl = "https://tiktok.test/video/tiktok-1",
+            published = true,
+        )
+        val factories = listOf(
+            object : PlatformStreamWriterFactory {
+                override val platform = Platform.YOUTUBE
+                override fun createWriter() = failedWriter
+            },
+            object : PlatformStreamWriterFactory {
+                override val platform = Platform.TIKTOK
+                override fun createWriter() = successfulWriter
+            },
+        )
+        useCase = createUseCase(factories)
+
+        val synchronization = slot<TransactionSynchronization>()
+        every { TransactionSynchronizationManager.registerSynchronization(capture(synchronization)) } just Runs
+        val uploadFile = buildFile()
+        every { uploadFile.transferTo(any<java.io.File>()) } answers {
+            Files.write(firstArg<java.io.File>().toPath(), byteArrayOf(1, 2, 3))
+        }
+
+        useCase.initiate(
+            userId,
+            uploadFile,
+            buildRequest(
+                platforms = listOf(
+                    buildPlatformRequest(Platform.YOUTUBE),
+                    buildPlatformRequest(Platform.TIKTOK),
+                ),
+            ),
+        )
+        synchronization.captured.afterCommit()
+
+        waitUntil {
+            uploads[201L]?.status == UploadStatus.UNCONFIRMED &&
+                uploads[202L]?.status == UploadStatus.PUBLISHED &&
+                videos[100L]?.status == UploadStatus.PARTIALLY_PUBLISHED
+        }
+
+        verify(atLeast = 1) { failedWriter.writeChunk(any(), 0L, fileSize) }
+        verify(exactly = 1) { successfulWriter.complete() }
+        verify { eventPublisher.publishEvent(match<UploadCompletedEvent> { it.platform == Platform.YOUTUBE && !it.success }) }
+        verify { eventPublisher.publishEvent(match<UploadCompletedEvent> { it.platform == Platform.TIKTOK && it.success }) }
+        assertEquals("게시 결과 확인 필요: chunk timeout", uploads[201L]?.errorMessage)
+        assertEquals("https://tiktok.test/video/tiktok-1", uploads[202L]?.platformUrl)
+    }
+
+    @Test
     fun `이미 다른 작업자가 lease를 보유하면 세션 초기화 실패가 남의 행을 덮어쓰지 않는다`() {
         stubSubscription(PlanType.PRO)
         stubMonthlyCount(0L)
@@ -536,7 +641,7 @@ class StreamPublishUseCaseTest {
         val synchronization = slot<TransactionSynchronization>()
 
         every { videoRepository.findById(100L) } returns video
-        every { storageService.getFileUrl(100L) } returns "https://storage.test/fresh-scheduled-video.mp4"
+        every { storageService.getFileUrl(100L, any()) } returns "https://storage.test/fresh-scheduled-video.mp4"
         every { videoUploadRepository.findByVideoIdAndPlatform(100L, any()) } returns null
         every { videoUploadRepository.save(any()) } answers {
             val requested = firstArg<VideoUpload>()

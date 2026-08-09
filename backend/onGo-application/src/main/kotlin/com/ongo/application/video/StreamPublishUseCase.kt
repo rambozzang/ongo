@@ -437,11 +437,34 @@ class StreamPublishUseCase(
                     val chunk = if (bytesRead < CHUNK_SIZE) buffer.copyOf(bytesRead) else buffer.copyOf()
                     val currentOffset = offset
 
-                    activeWriterMap.values.forEach { writer ->
-                        writer.writeChunk(chunk, currentOffset, fileSize)
+                    // A single writer can fail while buffering a chunk. Do not
+                    // abort the other platforms: the failed writer may already
+                    // have sent bytes, so mark only that row UNCONFIRMED and
+                    // keep the remaining providers moving toward completion.
+                    activeWriterMap.toList().forEach { (ctx, writer) ->
+                        try {
+                            writer.writeChunk(chunk, currentOffset, fileSize)
+                        } catch (error: Exception) {
+                            log.error("플랫폼 {} 청크 처리 실패: videoId={}", ctx.platform, videoId, error)
+                            activeWriterMap.remove(ctx)
+                            updateUploadStatus(
+                                ctx.videoUploadId,
+                                UploadStatus.UNCONFIRMED,
+                                "게시 결과 확인 필요: ${error.message}",
+                                leaseOwner = leaseOwners[ctx.videoUploadId],
+                            )
+                            fireCompletedEvent(
+                                videoId,
+                                userId,
+                                ctx.platform,
+                                false,
+                                errorMessage = "게시 결과 확인 필요: ${error.message}",
+                            )
+                        }
                     }
 
                     offset += bytesRead
+                    if (activeWriterMap.isEmpty()) break
                 }
             }
 
@@ -732,7 +755,7 @@ class StreamPublishUseCase(
         // schedule was waiting. Reissue it from the durable object key at the
         // moment the legacy schedule is recovered; retain the stored value as
         // a compatibility fallback for old storage adapters.
-        val fileUrl = runCatching { storageService.getFileUrl(video.id!!) }.getOrNull()
+        val fileUrl = runCatching { storageService.getFileUrl(video.id!!, video.fileUrl) }.getOrNull()
             ?: video.fileUrl
         if (fileUrl.isNullOrBlank()) {
             log.error("예약 업로드 실패 — fileUrl 없음 [scheduleId={}, videoId={}]", schedule.id, schedule.videoId)

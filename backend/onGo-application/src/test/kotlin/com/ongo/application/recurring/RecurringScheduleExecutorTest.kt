@@ -10,6 +10,7 @@ import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
+import com.ongo.application.video.StorageService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -28,6 +29,7 @@ class RecurringScheduleExecutorTest {
     private val videoRepository = mockk<VideoRepository>()
     private val distributedLockPort = mockk<DistributedLockPort>()
     private val userWriteGuard = mockk<UserWriteGuard>()
+    private val storageService = mockk<StorageService>()
     private val transactionManager = mockk<PlatformTransactionManager>()
 
     private lateinit var executor: RecurringScheduleExecutor
@@ -52,6 +54,7 @@ class RecurringScheduleExecutorTest {
             videoRepository,
             distributedLockPort,
             userWriteGuard,
+            storageService,
             transactionManager,
         )
     }
@@ -77,6 +80,8 @@ class RecurringScheduleExecutorTest {
         every { recurringRepository.markRun(11L, occurrence, occurrence, nextOccurrence) } returns true
         every { videoRepository.findById(10L) } returns sourceVideo()
         every { videoRepository.save(any()) } returns sourceVideo().copy(id = 20L, status = UploadStatus.DRAFT)
+        every { storageService.copyVideoFile(10L, 20L, "https://storage.test/source.mp4") } returns "https://storage.test/occurrence.mp4"
+        every { videoRepository.update(any()) } answers { firstArg() }
         every { scheduleRepository.save(any()) } answers { firstArg() }
 
         executor.executeDueSchedules()
@@ -85,7 +90,28 @@ class RecurringScheduleExecutorTest {
         verify(exactly = 1) {
             scheduleRepository.save(match { it.videoId == 20L && it.platforms.keys == setOf(Platform.YOUTUBE.name) })
         }
+        verify(exactly = 1) {
+            videoRepository.update(match { it.id == 20L && it.fileUrl == "https://storage.test/occurrence.mp4" })
+        }
         verify(exactly = 1) { transactionManager.commit(any<TransactionStatus>()) }
+    }
+
+    @Test
+    fun `스토리지 복제가 실패하면 대상 오브젝트를 보상 삭제하고 회차를 소비하지 않는다`() {
+        val definition = definition()
+        every { recurringRepository.findDue(any()) } returns listOf(definition)
+        every { videoRepository.findById(10L) } returns sourceVideo()
+        every { videoRepository.save(any()) } returns sourceVideo().copy(id = 20L, status = UploadStatus.DRAFT)
+        every { storageService.copyVideoFile(10L, 20L, "https://storage.test/source.mp4") } throws IllegalStateException("copy failed")
+        every { storageService.deleteFile(20L) } returns Unit
+
+        executor.executeDueSchedules()
+
+        verify(exactly = 1) { storageService.deleteFile(20L) }
+        verify(exactly = 0) { videoRepository.update(any()) }
+        verify(exactly = 0) { scheduleRepository.save(any()) }
+        verify(exactly = 0) { recurringRepository.markRun(any(), any(), any(), any()) }
+        verify(exactly = 1) { transactionManager.rollback(any<TransactionStatus>()) }
     }
 
     @Test

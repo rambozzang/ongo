@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.io.InputStream
+import java.net.URI
 
 @Service
 class VideoStorageService(
@@ -31,13 +32,45 @@ class VideoStorageService(
         return "$tusBaseEndpoint/$videoId"
     }
 
-    override fun getFileUrl(videoId: Long): String {
+    override fun getFileUrl(videoId: Long, storedFileUrl: String?): String {
         val prefix = "videos/$videoId/"
-        val keys = storageClient.listObjects(prefix)
-        val firstKey = keys.firstOrNull()
+        val firstKey = storageClient.listObjects(prefix).firstOrNull()
+            ?: storedFileUrl?.let(::resolveStoredObjectKey)
+                ?.takeIf(storageClient::objectExists)
             ?: throw IllegalStateException("업로드된 파일을 찾을 수 없습니다: videoId=$videoId")
 
         return storageClient.generatePresignedDownloadUrl(firstKey, 60 * 24 * 7) // 7 days
+    }
+
+    override fun copyVideoFile(sourceVideoId: Long, targetVideoId: Long, storedFileUrl: String?): String {
+        require(sourceVideoId > 0 && targetVideoId > 0) { "영상 ID가 올바르지 않습니다." }
+        val sourcePrefix = "videos/$sourceVideoId/"
+        val sourceKey = storageClient.listObjects(sourcePrefix).firstOrNull()
+            ?: storedFileUrl?.let(::resolveStoredObjectKey)
+                ?.takeIf(storageClient::objectExists)
+            ?: throw IllegalStateException("복제할 영상 파일을 찾을 수 없습니다: videoId=$sourceVideoId")
+        val filename = sourceKey.substringAfterLast('/').ifBlank { "video.bin" }
+        val targetKey = "videos/$targetVideoId/$filename"
+        storageClient.copyObject(sourceKey, targetKey)
+        return storageClient.getFileUrl(targetKey)
+    }
+
+    /**
+     * Old rows did not persist an object key. Their stored URL is still enough
+     * to recover the key for our MinIO/S3 adapters, but an arbitrary external
+     * URL must never be treated as durable media for a recurring job.
+     */
+    private fun resolveStoredObjectKey(fileUrl: String): String? {
+        val path = runCatching { URI(fileUrl).path }.getOrNull()
+            ?.trim('/')
+            ?.takeIf { it.isNotBlank() }
+            ?: return null
+        val bucketPrefix = "${storageProperties.bucket}/"
+        return when {
+            path.startsWith(bucketPrefix) -> path.removePrefix(bucketPrefix)
+            path.startsWith("videos/") -> path
+            else -> null
+        }?.takeIf { it.isNotBlank() && !it.contains("..") }
     }
 
     override fun deleteFile(videoId: Long) {

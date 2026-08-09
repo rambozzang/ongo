@@ -9,6 +9,7 @@ import com.ongo.domain.recurring.RecurringScheduleRepository
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.common.enums.Platform
+import com.ongo.application.video.StorageService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.DayOfWeek
@@ -23,6 +24,7 @@ class RecurringScheduleUseCase(
     private val videoRepository: VideoRepository,
     private val userWriteGuard: UserWriteGuard,
     private val channelRepository: ChannelRepository,
+    private val storageService: StorageService,
 ) {
 
     companion object {
@@ -173,6 +175,12 @@ class RecurringScheduleUseCase(
         val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
         if (video.userId != userId) throw ForbiddenException("해당 영상에 대한 권한이 없습니다")
         require(!video.fileUrl.isNullOrBlank()) { "반복 게시할 원본 영상 파일이 없습니다." }
+        // A database URL alone is not durable: it may be an expired presigned
+        // URL or an external URL that onGo cannot refresh for the next run.
+        // Verify that the source object is owned by our durable storage now.
+        require(runCatching { storageService.getFileUrl(videoId, video.fileUrl) }.isSuccess) {
+            "반복 게시할 원본 영상이 onGo 스토리지에 없습니다. 영상을 다시 업로드해주세요."
+        }
         validatePlatforms(userId, platforms)
     }
 

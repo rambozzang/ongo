@@ -10,6 +10,7 @@ import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
+import com.ongo.application.video.StorageService
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -28,6 +29,7 @@ class RecurringScheduleExecutor(
     private val videoRepository: VideoRepository,
     private val distributedLockPort: DistributedLockPort,
     private val userWriteGuard: UserWriteGuard,
+    private val storageService: StorageService,
     transactionManager: PlatformTransactionManager,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -77,11 +79,13 @@ class RecurringScheduleExecutor(
         }
 
         // video_uploads has a deliberate unique(video_id, platform) key. Each
-        // occurrence therefore gets its own library row while retaining the
-        // original media URL and making every occurrence independently visible.
+        // occurrence therefore gets its own library row. The media object is
+        // copied to the occurrence prefix below so its URL remains refreshable
+        // after the original row or its presigned URL changes.
         val occurrenceVideo = videoRepository.save(
             source.copy(
                 id = null,
+                fileUrl = null,
                 title = definition.titleTemplate?.takeIf { it.isNotBlank() } ?: source.title,
                 description = definition.descriptionTemplate ?: source.description,
                 tags = if (definition.tags.isEmpty()) source.tags else definition.tags,
@@ -90,11 +94,23 @@ class RecurringScheduleExecutor(
                 updatedAt = null,
             )
         )
+        val occurrenceVideoId = requireNotNull(occurrenceVideo.id) { "반복 회차 영상 생성에 실패했습니다." }
+        val durableFileUrl = try {
+            storageService.copyVideoFile(requireNotNull(source.id), occurrenceVideoId, source.fileUrl)
+        } catch (error: Exception) {
+            // The database transaction will roll back, but an object-store copy
+            // cannot be rolled back by PostgreSQL. Remove the destination so a
+            // failed occurrence never leaks storage or quota.
+            runCatching { storageService.deleteFile(occurrenceVideoId) }
+                .onFailure { cleanupError -> log.error("반복 회차 파일 보상 삭제 실패. videoId={}", occurrenceVideoId, cleanupError) }
+            throw error
+        }
+        val durableOccurrenceVideo = videoRepository.update(occurrenceVideo.copy(fileUrl = durableFileUrl))
         // nextRunAt is persisted in the scheduler's shared KST storage zone.
         val scheduledAt = occurrence
         scheduleRepository.save(
             Schedule(
-                videoId = occurrenceVideo.id!!,
+                videoId = durableOccurrenceVideo.id!!,
                 userId = definition.userId,
                 scheduledAt = scheduledAt,
                 platforms = targetKeys.associate { targetKey ->

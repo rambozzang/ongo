@@ -91,6 +91,57 @@ export interface ManualSection {
   content: ContentBlock[]
 }
 
+/**
+ * 사용자 매뉴얼에 실제 출시된 기능만 남긴다.
+ *
+ * 이 파일은 예전에 기획 아이디어를 한꺼번에 문서화하면서 180개가 넘는
+ * 섹션을 포함하게 됐다. 라우트와 capability가 없는 섹션까지 매뉴얼에
+ * 노출하면 사용자는 존재하지 않는 메뉴를 찾게 되고, "구현됨"으로
+ * 오해한다. 출시 목록을 코드로 고정하고 서버 capability와 다시 대조해
+ * 화면에 표시한다.
+ */
+const RELEASED_MANUAL_SECTION_CAPABILITIES: Record<string, string> = {
+  'ugc-campaigns': 'ugc/campaigns',
+  'ugc-shorts': 'ugc/shorts/runs',
+  'subtitle-editor': 'compose',
+  channels: 'channels-v2',
+  upload: 'compose',
+  'image-upload': 'assets',
+  scheduling: 'calendar-v2',
+  'ai-tools': 'ai',
+  analytics: 'performance',
+  team: 'team',
+  subscription: 'subscription',
+  settings: 'settings-v2',
+  'quality-score': 'videos',
+  'ab-test-results': 'ab-tests',
+  'platform-automation-pro': 'automation',
+}
+
+/** General sections do not claim that a separate feature/menu exists. */
+const RELEASED_GENERAL_MANUAL_SECTION_IDS = new Set(['getting-started', 'faq'])
+
+export const RELEASED_MANUAL_SECTION_IDS = new Set([
+  ...RELEASED_GENERAL_MANUAL_SECTION_IDS,
+  ...Object.keys(RELEASED_MANUAL_SECTION_CAPABILITIES),
+])
+
+/**
+ * Filter both Korean and English manuals with the same release contract.
+ * An empty capability set is intentional: if capability sync fails, only
+ * general help remains visible instead of stale feature promises.
+ */
+export function filterReleasedManualSections(
+  sections: ManualSection[],
+  enabledCapabilityKeys: ReadonlySet<string>,
+): ManualSection[] {
+  return sections.filter((section) => {
+    if (!RELEASED_MANUAL_SECTION_IDS.has(section.id)) return false
+    const capabilityKey = RELEASED_MANUAL_SECTION_CAPABILITIES[section.id]
+    return capabilityKey === undefined || enabledCapabilityKeys.has(capabilityKey)
+  })
+}
+
 export const sectionsKo: ManualSection[] = [
   {
     id: 'ugc-campaigns',

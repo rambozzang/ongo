@@ -43,6 +43,16 @@ class S3StorageClient(
         return generatePresignedDownloadUrl(key, 60 * 24 * 7) // 7 days
     }
 
+    override fun copyObject(sourceKey: String, targetKey: String) {
+        s3Client.copyObject(
+            CopyObjectRequest.builder()
+                .copySource("${storageProperties.bucket}/$sourceKey")
+                .destinationBucket(storageProperties.bucket)
+                .destinationKey(targetKey)
+                .build(),
+        )
+    }
+
     override fun deleteFile(key: String) {
         log.info("S3 파일 삭제: key={}", key)
 

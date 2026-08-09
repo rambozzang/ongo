@@ -121,7 +121,7 @@ class VideoPublishEventListener(
         }
 
         val fileUrl = storageService?.let { storage ->
-            runCatching { storage.getFileUrl(event.videoId) }.getOrNull()
+            runCatching { storage.getFileUrl(event.videoId, event.fileUrl) }.getOrNull()
         } ?: event.fileUrl
         if (fileUrl == null) {
             log.warn("영상 {} 에 fileUrl이 없어 플랫폼 업로드를 건너뜁니다 (스트리밍 업로드)", event.videoId)

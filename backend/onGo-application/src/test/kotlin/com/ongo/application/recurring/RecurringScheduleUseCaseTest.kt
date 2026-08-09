@@ -9,6 +9,7 @@ import com.ongo.domain.recurring.RecurringScheduleRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.application.video.StorageService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -25,6 +26,7 @@ class RecurringScheduleUseCaseTest {
     private val videoRepository = mockk<VideoRepository>()
     private val userWriteGuard = mockk<UserWriteGuard>(relaxed = true)
     private val channelRepository = mockk<ChannelRepository>(relaxed = true)
+    private val storageService = mockk<StorageService>(relaxed = true)
 
     @Test
     fun `동결된 계정은 반복 예약을 생성할 수 없다`() {
@@ -110,7 +112,10 @@ class RecurringScheduleUseCaseTest {
         assertEquals(LocalDateTime.of(2026, 1, 11, 23, 0), next)
     }
 
-    private fun useCase() = RecurringScheduleUseCase(repository, videoRepository, userWriteGuard, channelRepository)
+    private fun useCase(): RecurringScheduleUseCase {
+        every { storageService.getFileUrl(any(), any()) } returns "https://storage.test/video.mp4"
+        return RecurringScheduleUseCase(repository, videoRepository, userWriteGuard, channelRepository, storageService)
+    }
 
     private fun request() = CreateRecurringScheduleRequest(
         videoId = 10L,
