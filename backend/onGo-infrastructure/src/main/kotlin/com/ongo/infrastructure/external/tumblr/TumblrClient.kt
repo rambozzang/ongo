@@ -4,8 +4,10 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.tumblr.dto.TumblrNpfPostRequest
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.util.LinkedMultiValueMap
 import java.time.LocalDate
 
 @Component
@@ -13,6 +15,8 @@ class TumblrClient(
     private val tumblrApi: TumblrApi,
     private val tumblrOAuthApi: TumblrOAuthApi,
     private val tumblrConfig: TumblrConfig,
+    private val objectMapper: ObjectMapper,
+    private val fileTransferHelper: PlatformFileTransferHelper,
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(TumblrClient::class.java)
@@ -24,28 +28,40 @@ class TumblrClient(
 
         val blogName = request.platformChannelId
             ?: throw PlatformUploadException("Tumblr", "블로그 이름이 필요합니다")
+        val sourceFile = downloadFileToTemp(request.fileUrl)
 
         try {
             val npfPost = TumblrNpfPostRequest(
                 content = listOf(
                     TumblrNpfPostRequest.ContentBlock(
                         type = "video",
-                        url = request.fileUrl,
+                        media = TumblrNpfPostRequest.Media(
+                            type = "video/mp4",
+                            identifier = "ongo-video",
+                        ),
                     ),
                     TumblrNpfPostRequest.ContentBlock(
                         type = "text",
-                        text = request.title,
+                        text = listOf(request.title.trim(), request.description.trim())
+                            .filter(String::isNotBlank)
+                            .joinToString("\n\n"),
                     ),
                 ),
-                tags = request.tags.joinToString(","),
+                tags = request.tags.map { it.removePrefix("#").trim() }
+                    .filter(String::isNotBlank)
+                    .joinToString(",")
+                    .take(500),
                 state = mapVisibility(request.visibility),
             )
 
-            val response = tumblrApi.createPost(
-                blogName = blogName,
+            val responseBody = fileTransferHelper.postMultipartJsonWithFile(
+                url = "${tumblrConfig.getApiBaseUrl()}/v2/blog/$blogName/posts",
                 authorization = "Bearer ${request.accessToken}",
-                request = npfPost,
+                jsonBody = objectMapper.writeValueAsString(npfPost),
+                filePartName = "ongo-video",
+                file = sourceFile,
             )
+            val response = objectMapper.readValue(responseBody, com.ongo.infrastructure.external.tumblr.dto.TumblrPostResponse::class.java)
 
             val postId = response.response?.idString ?: response.response?.id?.toString()
                 ?: throw PlatformUploadException("Tumblr", "게시물 생성 응답에 ID가 없습니다")
@@ -62,6 +78,8 @@ class TumblrClient(
         } catch (e: Exception) {
             log.error("Tumblr 업로드 실패: {}", e.message, e)
             throw PlatformUploadException("Tumblr", e.message ?: "알 수 없는 오류", e)
+        } finally {
+            sourceFile.delete()
         }
     }
 
@@ -142,13 +160,13 @@ class TumblrClient(
         log.debug("Tumblr OAuth 인가 코드 교환")
 
         val response = tumblrOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "authorization_code",
-                "code" to authorizationCode,
-                "redirect_uri" to redirectUri,
-                "client_id" to tumblrConfig.getConsumerKey(),
-                "client_secret" to tumblrConfig.getConsumerSecret(),
-            ),
+            LinkedMultiValueMap<String, String>().apply {
+                add("grant_type", "authorization_code")
+                add("code", authorizationCode)
+                add("redirect_uri", redirectUri)
+                add("client_id", tumblrConfig.getConsumerKey())
+                add("client_secret", tumblrConfig.getConsumerSecret())
+            },
         )
 
         return PlatformTokenResult(
@@ -162,12 +180,12 @@ class TumblrClient(
         log.debug("Tumblr OAuth 토큰 갱신")
 
         val response = tumblrOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "refresh_token",
-                "refresh_token" to refreshToken,
-                "client_id" to tumblrConfig.getConsumerKey(),
-                "client_secret" to tumblrConfig.getConsumerSecret(),
-            ),
+            LinkedMultiValueMap<String, String>().apply {
+                add("grant_type", "refresh_token")
+                add("refresh_token", refreshToken)
+                add("client_id", tumblrConfig.getConsumerKey())
+                add("client_secret", tumblrConfig.getConsumerSecret())
+            },
         )
 
         return PlatformTokenResult(

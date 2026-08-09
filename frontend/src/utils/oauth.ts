@@ -154,6 +154,15 @@ export function buildOAuthUrl(platform: Platform, returnPath: string, codeChalle
         state,
       })}`
 
+    case 'TUMBLR':
+      return `https://www.tumblr.com/oauth2/authorize?${new URLSearchParams({
+        client_id: import.meta.env.VITE_TUMBLR_CONSUMER_KEY || '',
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'basic write offline_access',
+        state,
+      })}`
+
     default:
       throw new Error(`Unsupported platform for OAuth: ${platform}`)
   }

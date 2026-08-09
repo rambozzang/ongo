@@ -13,6 +13,12 @@ data class TumblrNpfPostRequest(
         val type: String, // video, text
         val url: String? = null, // for video type
         val text: String? = null, // for text type
+        val media: Media? = null,
+    )
+
+    data class Media(
+        val type: String,
+        val identifier: String,
     )
 
     data class LayoutBlock(

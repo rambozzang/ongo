@@ -26,6 +26,7 @@ class PlatformUploadCapabilityTest {
                 Platform.WORDPRESS,
                 Platform.DAILYMOTION,
                 Platform.VIMEO,
+                Platform.TUMBLR,
             ),
             capabilities.keys,
         )

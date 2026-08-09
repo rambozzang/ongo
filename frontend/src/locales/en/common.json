@@ -1329,7 +1329,8 @@
         "linkedin": "Post videos to your profile",
         "wordpress": "Publish a video post to your site",
         "dailymotion": "Post videos to your profile",
-        "vimeo": "Upload and manage videos"
+        "vimeo": "Upload and manage videos",
+        "tumblr": "Publish native videos to your blog"
       },
       "connectFailed": "Couldn't start channel connection. Please try again."
     },

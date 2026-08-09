@@ -36,7 +36,7 @@ class TumblrConfig {
     @Bean
     fun tumblrOAuthApi(): TumblrOAuthApi {
         val restClient = RestClient.builder()
-            .baseUrl("https://www.tumblr.com")
+            .baseUrl(apiBaseUrl)
             .requestFactory(createRequestFactory())
             .build()
         val factory = HttpServiceProxyFactory
@@ -47,6 +47,7 @@ class TumblrConfig {
 
     fun getConsumerKey(): String = consumerKey
     fun getConsumerSecret(): String = consumerSecret
+    fun getApiBaseUrl(): String = apiBaseUrl
 
     private fun createRequestFactory(): SimpleClientHttpRequestFactory {
         return SimpleClientHttpRequestFactory().apply {

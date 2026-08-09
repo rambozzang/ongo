@@ -3,6 +3,8 @@ package com.ongo.infrastructure.external.tumblr
 import com.ongo.infrastructure.external.tumblr.dto.*
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.http.MediaType
+import org.springframework.util.MultiValueMap
 import org.springframework.web.service.annotation.DeleteExchange
 import org.springframework.web.service.annotation.GetExchange
 import org.springframework.web.service.annotation.HttpExchange
@@ -48,8 +50,8 @@ interface TumblrApi {
 @HttpExchange
 interface TumblrOAuthApi {
 
-    @PostExchange("/v2/oauth2/token")
+    @PostExchange(value = "/v2/oauth2/token", contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     fun exchangeToken(
-        @RequestBody body: Map<String, String>,
+        @RequestBody body: MultiValueMap<String, String>,
     ): TumblrTokenResponse
 }

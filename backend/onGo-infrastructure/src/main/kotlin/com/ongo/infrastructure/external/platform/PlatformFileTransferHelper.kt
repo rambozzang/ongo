@@ -189,6 +189,32 @@ class PlatformFileTransferHelper(
             ?: throw IllegalStateException("multipart 업로드 응답이 비어 있습니다")
     }
 
+    /** Tumblr NPF native video: JSON 파트와 identifier 파일 파트를 함께 전송한다. */
+    fun postMultipartJsonWithFile(
+        url: String,
+        authorization: String,
+        jsonBody: String,
+        filePartName: String,
+        file: File,
+    ): String {
+        val multipart = MultipartBodyBuilder().apply {
+            part("json", jsonBody).contentType(MediaType.APPLICATION_JSON)
+            part(filePartName, FileSystemResource(file))
+                .filename(file.name)
+                .contentType(MediaType.parseMediaType("video/mp4"))
+        }
+
+        log.info("JSON + multipart 파일 업로드: {} bytes → {}", file.length(), url.substringBefore('?'))
+        return transferClient.post()
+            .uri(url)
+            .header(HttpHeaders.AUTHORIZATION, authorization)
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .body(multipart.build())
+            .retrieve()
+            .body(String::class.java)
+            ?: throw IllegalStateException("multipart 업로드 응답이 비어 있습니다")
+    }
+
     /**
      * Twitter Media Upload APPEND: 미디어 데이터를 청크 단위로 전송.
      * multipart/form-data 형태로 command, media_id, segment_index, media_data(binary) 전송.

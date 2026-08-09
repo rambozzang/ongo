@@ -65,6 +65,10 @@ object PlatformUploadCapabilities {
             Platform.VIMEO, false, true, false, 300 * GB, 128, 5_000, 0, setOf("mp4", "mov", "webm"),
             "Vimeo pull 업로드는 공개 또는 장시간 유효한 presigned 파일 URL을 사용합니다.",
         ),
+        Platform.TUMBLR to PlatformUploadCapability(
+            Platform.TUMBLR, false, true, false, 500 * MB, 5_000, 5_000, 30, setOf("mp4", "mov"),
+            "Tumblr NPF native video multipart 업로드를 사용합니다. 계정별 일일 업로드 제한이 적용됩니다.",
+        ),
     )
 
     fun get(platform: Platform): PlatformUploadCapability? = capabilities[platform]

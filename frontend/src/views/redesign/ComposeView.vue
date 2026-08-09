@@ -465,7 +465,7 @@ import { fallbackOptimalSlot, kstWallClockToInstant, nextOptimalDateTime } from 
 const { t } = useLocale()
 const route = useRoute()
 
-type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP' | 'DM' | 'VI'
+type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP' | 'DM' | 'VI' | 'TU'
 const CHIP: Partial<Record<Platform, ChipCode>> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
@@ -479,6 +479,7 @@ const CHIP: Partial<Record<Platform, ChipCode>> = {
   WORDPRESS: 'WP',
   DAILYMOTION: 'DM',
   VIMEO: 'VI',
+  TUMBLR: 'TU',
 }
 
 const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
@@ -494,6 +495,7 @@ const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
   WP: { bg: '#21759B', fg: '#ffffff' },
   DM: { bg: '#00D2F3', fg: '#06141a' },
   VI: { bg: '#1AB7EA', fg: '#ffffff' },
+  TU: { bg: '#36465D', fg: '#ffffff' },
 }
 
 /** 플랫폼별 제목 상한. 핸드오프 검증 규칙. */
@@ -537,7 +539,7 @@ const capabilities = ref<PlatformUploadCapability[]>([])
 const optimalSlots = ref<Partial<Record<Platform, OptimalTimeSlot[]>>>({})
 const optimalTimesError = ref('')
 const disabled = reactive<Record<number, boolean>>({})
-const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP' | 'DM' | 'VI'>('common')
+const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP' | 'DM' | 'VI' | 'TU'>('common')
 const schedMode = ref<'now' | 'best' | 'fix'>('best')
 const fixedAt = ref('')
 const recurringEnabled = ref(false)
@@ -577,6 +579,7 @@ const tabs = [
   { key: 'WP' as const, label: 'WordPress.com' },
   { key: 'DM' as const, label: 'Dailymotion' },
   { key: 'VI' as const, label: 'Vimeo' },
+  { key: 'TU' as const, label: 'Tumblr' },
 ]
 
 const scheduleOptions = computed(() => [
@@ -642,6 +645,7 @@ function platformForTab(tab: typeof activeTab.value): Platform | null {
         WP: 'WORDPRESS',
         DM: 'DAILYMOTION',
         VI: 'VIMEO',
+        TU: 'TUMBLR',
       } as Record<string, Platform>
     )[tab] ?? null
   )
