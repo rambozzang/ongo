@@ -3,6 +3,19 @@ package com.ongo.domain.lock
 interface DistributedLockPort {
 
     /**
+     * 여러 advisory-lock 슬롯 중 하나를 확보한 동안 [block]을 실행한다.
+     *
+     * 플랫폼별 업로드처럼 "동일 키를 직렬화"하는 것이 아니라 여러 작업을
+     * 제한된 수만큼 병렬 실행해야 하는 경우 사용한다. 구현체는 슬롯이 모두
+     * 사용 중이면 대기하고, 획득한 세션 락을 block 종료까지 유지해야 한다.
+     */
+    fun <T> withAnyLock(lockIds: Collection<Long>, block: () -> T): T? {
+        var result: T? = null
+        val ran = lockIds.firstOrNull()?.let { withLock(it) { result = block() } } ?: false
+        return result.takeIf { ran }
+    }
+
+    /**
      * 락을 잡고 [block] 을 실행한 뒤 **반드시 해제한다.** 락을 못 잡으면 실행하지 않는다.
      *
      * @return 실행했으면 true, 다른 인스턴스가 락을 쥐고 있어 건너뛰었으면 false

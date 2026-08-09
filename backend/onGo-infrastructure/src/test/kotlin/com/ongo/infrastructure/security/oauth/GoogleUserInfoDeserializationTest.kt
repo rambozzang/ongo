@@ -65,4 +65,34 @@ class GoogleUserInfoDeserializationTest {
         assertEquals("홍길동", info.name)
         assertEquals("https://lh3.googleusercontent.com/a/abc123", info.picture)
     }
+
+    @Test
+    fun `구글 token 응답의 snake case 필드가 채워진다`() {
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody(
+                    """
+                    {
+                      "access_token": "access-token",
+                      "token_type": "Bearer",
+                      "expires_in": 3600,
+                      "scope": "openid email profile",
+                      "id_token": "id-token"
+                    }
+                    """.trimIndent(),
+                ),
+        )
+
+        val token = RestClient.create()
+            .get()
+            .uri(server.url("/token").toString())
+            .retrieve()
+            .body(GoogleOAuth2Service.GoogleTokenResponse::class.java)!!
+
+        assertEquals("access-token", token.accessToken)
+        assertEquals("Bearer", token.tokenType)
+        assertEquals(3600, token.expiresIn)
+        assertEquals("id-token", token.idToken)
+    }
 }

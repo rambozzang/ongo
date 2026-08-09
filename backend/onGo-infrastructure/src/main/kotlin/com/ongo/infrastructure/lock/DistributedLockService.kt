@@ -28,6 +28,52 @@ class DistributedLockService(
 
     private val log = LoggerFactory.getLogger(DistributedLockService::class.java)
 
+    override fun <T> withAnyLock(lockIds: Collection<Long>, block: () -> T): T? {
+        val ids = lockIds.distinct()
+        if (ids.isEmpty()) return null
+
+        // 슬롯이 모두 사용 중이면 연결을 반납한 뒤 잠시 후 다시 시도한다.
+        // 외부 HTTP 호출 동안에는 획득한 연결을 유지해야 advisory session lock과
+        // 해제가 같은 세션에서 이뤄진다. 대기 중에는 연결을 점유하지 않는다.
+        while (!Thread.currentThread().isInterrupted) {
+            val connection = try {
+                dataSource.connection
+            } catch (e: Exception) {
+                log.error("advisory lock 커넥션 확보 실패. lockIds={}", ids, e)
+                return null
+            }
+
+            var acquired: Long? = null
+            var enteredBlock = false
+            try {
+                acquired = ids.firstOrNull { acquire(connection, it) }
+                if (acquired != null) {
+                    enteredBlock = true
+                    return block()
+                }
+            } catch (e: Exception) {
+                // block 내부의 플랫폼/DB 예외는 호출자에게 그대로 전달한다.
+                // 락 획득 단계의 DB 예외만 분산 제한기 실패로 처리한다.
+                if (enteredBlock) throw e
+                log.error("advisory lock 슬롯 획득 실패. lockIds={}", ids, e)
+                return null
+            } finally {
+                if (acquired != null) {
+                    release(connection, acquired)
+                }
+                runCatching { connection.close() }
+            }
+
+            try {
+                Thread.sleep(100)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                return null
+            }
+        }
+        return null
+    }
+
     override fun withLock(lockId: Long, block: () -> Unit): Boolean {
         val conn = try {
             dataSource.connection

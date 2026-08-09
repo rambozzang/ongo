@@ -5,6 +5,7 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.domain.lock.DistributedLockPort
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Async
@@ -21,6 +22,7 @@ class VideoPublishEventListener(
     private val videoRepository: VideoRepository,
     private val eventPublisher: ApplicationEventPublisher,
     private val storageService: StorageService? = null,
+    private val distributedLockPort: DistributedLockPort? = null,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -42,7 +44,18 @@ class VideoPublishEventListener(
                     val platformSemaphore = ExecutorConfig.platformUploadSemaphore(config.platform)
                     platformSemaphore.acquire()
                     try {
-                        uploadToPlatform(event, config, config.leaseOwner ?: eventLeaseOwner)
+                        val ran = distributedLockPort?.withAnyLock(
+                            ExecutorConfig.platformUploadLockIds(config.platform),
+                        ) {
+                            uploadToPlatform(event, config, config.leaseOwner ?: eventLeaseOwner)
+                            true
+                        } ?: run {
+                            uploadToPlatform(event, config, config.leaseOwner ?: eventLeaseOwner)
+                            true
+                        }
+                        if (!ran) {
+                            log.warn("플랫폼 {} 분산 동시성 슬롯을 확보하지 못해 업로드를 보류합니다: videoId={}", config.platform, event.videoId)
+                        }
                     } finally {
                         platformSemaphore.release()
                         ExecutorConfig.uploadSemaphore.release()

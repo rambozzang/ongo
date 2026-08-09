@@ -11,6 +11,7 @@ import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.lock.DistributedLockPort
 import com.ongo.domain.accountdeletion.UserWriteGuard
 import org.springframework.context.ApplicationEventPublisher
 import com.ongo.domain.channel.ChannelStatus
@@ -48,6 +49,7 @@ class StreamPublishUseCase(
     private val eventPublisher: ApplicationEventPublisher,
     private val storageService: StorageService,
     private val userWriteGuard: UserWriteGuard,
+    private val distributedLockPort: DistributedLockPort? = null,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -234,11 +236,11 @@ class StreamPublishUseCase(
                         return
                     }
                     Thread.ofVirtual().name("stream-publish-$videoId").start {
-                        ExecutorConfig.uploadSemaphore.acquire()
+                        ExecutorConfig.streamingJobSemaphore.acquire()
                         try {
                             runStreamingUpload(videoId, userId, tempFile.toFile(), fileSize, platformConfigs)
                         } finally {
-                            ExecutorConfig.uploadSemaphore.release()
+                            ExecutorConfig.streamingJobSemaphore.release()
                         }
                     }
                 }
@@ -364,12 +366,25 @@ class StreamPublishUseCase(
                             leaseUntil = LocalDateTime.now().plusMinutes(30),
                         ) ?: throw IllegalStateException("업로드 lease를 획득하지 못했습니다.")
                         leaseOwners[ctx.videoUploadId] = owner
-                        val platformSemaphore = ExecutorConfig.platformUploadSemaphore(ctx.platform)
-                        platformSemaphore.acquire()
+                        ExecutorConfig.uploadSemaphore.acquire()
                         val sessionId = try {
-                            writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize, ctx.scheduledAt)
+                            val platformSemaphore = ExecutorConfig.platformUploadSemaphore(ctx.platform)
+                            try {
+                                platformSemaphore.acquire()
+                                if (distributedLockPort == null) {
+                                    writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize, ctx.scheduledAt)
+                                } else {
+                                    distributedLockPort.withAnyLock(
+                                        ExecutorConfig.platformUploadLockIds(ctx.platform),
+                                    ) {
+                                        writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize, ctx.scheduledAt)
+                                    } ?: throw IllegalStateException("플랫폼 분산 동시성 슬롯을 확보하지 못했습니다.")
+                                }
+                            } finally {
+                                platformSemaphore.release()
+                            }
                         } finally {
-                            platformSemaphore.release()
+                            ExecutorConfig.uploadSemaphore.release()
                         }
                         val scheduleInfo = if (ctx.scheduledAt != null) ", scheduledAt=${ctx.scheduledAt}" else ""
                         log.info("플랫폼 {} 업로드 세션 초기화: videoId={}, sessionId={}{}",
@@ -435,12 +450,22 @@ class StreamPublishUseCase(
                             // provider calls happen in complete(), so apply the
                             // platform-specific rate limit at the external boundary
                             // for direct streaming as well as URL-based publishing.
+                            ExecutorConfig.uploadSemaphore.acquire()
                             val platformSemaphore = ExecutorConfig.platformUploadSemaphore(ctx.platform)
                             platformSemaphore.acquire()
                             val result = try {
-                                writer.complete()
+                                if (distributedLockPort == null) {
+                                    writer.complete()
+                                } else {
+                                    distributedLockPort.withAnyLock(
+                                        ExecutorConfig.platformUploadLockIds(ctx.platform),
+                                    ) {
+                                        writer.complete()
+                                    } ?: throw IllegalStateException("플랫폼 분산 동시성 슬롯을 확보하지 못했습니다.")
+                                }
                             } finally {
                                 platformSemaphore.release()
+                                ExecutorConfig.uploadSemaphore.release()
                             }
                             val owner = leaseOwners[ctx.videoUploadId]
                             when (val outcome = result.toPublishOutcome()) {
