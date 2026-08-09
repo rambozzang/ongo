@@ -416,6 +416,64 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `같은 영상을 공유한 다른 공개 게시물의 업로드 결과는 상태 집계에서 제외한다`() {
+        val post = PublicApiPost(
+            id = 47,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.NOW,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.PROCESSING,
+            payloadJson = "{\"posts\":[{\"integration\":{\"id\":\"7\"}}]}",
+        )
+        every { posts.findByIdAndUserId(47, 1) } returns post
+        every { uploads.findByVideoId(11) } returns listOf(
+            VideoUpload(
+                id = 96,
+                videoId = 11,
+                platform = Platform.YOUTUBE,
+                channelId = 7,
+                status = UploadStatus.PUBLISHED,
+                platformVideoId = "published-7",
+                platformUrl = "https://youtube.com/watch?v=published-7",
+            ),
+            VideoUpload(
+                id = 97,
+                videoId = 11,
+                platform = Platform.INSTAGRAM,
+                channelId = 8,
+                status = UploadStatus.FAILED,
+                errorMessage = "other post failed",
+            ),
+        )
+        every { channels.findById(7) } returns channel
+
+        val response = useCase.get(1, 47)
+
+        assertEquals("published", response.status)
+        assertEquals("PUBLISHED", response.posts.single().status)
+        assertEquals("https://youtube.com/watch?v=published-7", response.posts.single().platformUrl)
+    }
+
+    @Test
+    fun `한 번의 공개 게시 요청에서 같은 integration을 중복 지정할 수 없다`() {
+        every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
+
+        assertFailsWith<IllegalArgumentException> {
+            useCase.create(
+                1,
+                CreatePublicPostRequest(
+                    videoId = 11,
+                    posts = listOf(
+                        PublicPostItem(PublicIntegrationRef("7")),
+                        PublicPostItem(PublicIntegrationRef("7")),
+                    ),
+                ),
+            )
+        }
+        verify(exactly = 0) { posts.save(any()) }
+    }
+
+    @Test
     fun `공개 API는 플랫폼별 제한보다 짧게 제목을 임의 변경하지 않는다`() {
         val title = "x".repeat(150)
         every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")

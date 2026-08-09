@@ -236,6 +236,11 @@ class PublicApiUseCase(
             "now 또는 schedule 게시에는 posts가 하나 이상이어야 합니다"
         }
         require(request.posts.size <= MAX_TARGETS) { "게시 대상은 최대 ${MAX_TARGETS}개까지 지정할 수 있습니다" }
+        val integrationIds = request.posts.map { it.integration.id.trim() }
+        require(integrationIds.all(String::isNotBlank)) { "모든 게시 대상에는 integration.id가 필요합니다" }
+        require(integrationIds.distinct().size == integrationIds.size) {
+            "같은 integration은 한 번의 게시 요청에 중복 지정할 수 없습니다"
+        }
         val scheduledAt = request.date?.let(::parseDate)
         if (type == PublicApiPostType.SCHEDULE) {
             require(scheduledAt != null) { "schedule 게시에는 date가 필요합니다" }
@@ -680,15 +685,25 @@ class PublicApiUseCase(
 
     private fun aggregateStatus(post: PublicApiPost, uploads: List<VideoUpload>): PublicApiPostStatus {
         if (post.status == PublicApiPostStatus.DRAFT) return post.status
-        if (uploads.isEmpty()) return post.status
+        // A video may intentionally be reused by several public API posts. The
+        // post payload is the durable ownership boundary; aggregating every
+        // upload for the video would let an unrelated failed channel make this
+        // post look partially published (or failed).
+        val scopedUploads = uploadsForPost(post, uploads)
+        if (scopedUploads.isEmpty()) return post.status
         return when {
-            uploads.all { it.status == UploadStatus.PUBLISHED } -> PublicApiPostStatus.PUBLISHED
-            uploads.any { it.status == UploadStatus.PUBLISHED } && uploads.any { it.status in TERMINAL_FAILURES } -> PublicApiPostStatus.PARTIALLY_PUBLISHED
-            uploads.any { it.status == UploadStatus.UNCONFIRMED } -> PublicApiPostStatus.UNCONFIRMED
-            uploads.all { it.status in TERMINAL_FAILURES } -> PublicApiPostStatus.FAILED
-            post.type == PublicApiPostType.SCHEDULE && uploads.all { it.status == UploadStatus.UPLOADING } -> PublicApiPostStatus.SCHEDULED
+            scopedUploads.all { it.status == UploadStatus.PUBLISHED } -> PublicApiPostStatus.PUBLISHED
+            scopedUploads.any { it.status == UploadStatus.PUBLISHED } && scopedUploads.any { it.status in TERMINAL_FAILURES } -> PublicApiPostStatus.PARTIALLY_PUBLISHED
+            scopedUploads.any { it.status == UploadStatus.UNCONFIRMED } -> PublicApiPostStatus.UNCONFIRMED
+            scopedUploads.all { it.status in TERMINAL_FAILURES } -> PublicApiPostStatus.FAILED
+            post.type == PublicApiPostType.SCHEDULE && scopedUploads.all { it.status == UploadStatus.UPLOADING } -> PublicApiPostStatus.SCHEDULED
             else -> PublicApiPostStatus.PROCESSING
         }
+    }
+
+    private fun uploadsForPost(post: PublicApiPost, uploads: List<VideoUpload>): List<VideoUpload> {
+        val targetChannelIds = publicTargets(post).map { it.channelId }.toSet()
+        return if (targetChannelIds.isEmpty()) uploads else uploads.filter { it.channelId in targetChannelIds }
     }
 
     private fun load(userId: Long, id: Long): PublicApiPost =
