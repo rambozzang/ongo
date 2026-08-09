@@ -77,7 +77,6 @@ const routeLabels: Record<string, string> = {
   comments: '댓글 관리',
   competitor: '경쟁 채널',
   'channel-audit': '채널 진단',
-  'keyword-research': '키워드 리서치',
   'activity-log': '활동 기록',
   'ugc-campaigns': 'UGC 캠페인',
   'ugc-campaign-new': '캠페인 만들기',

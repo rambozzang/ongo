@@ -364,7 +364,13 @@ class StreamPublishUseCase(
                             leaseUntil = LocalDateTime.now().plusMinutes(30),
                         ) ?: throw IllegalStateException("업로드 lease를 획득하지 못했습니다.")
                         leaseOwners[ctx.videoUploadId] = owner
-                        val sessionId = writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize, ctx.scheduledAt)
+                        val platformSemaphore = ExecutorConfig.platformUploadSemaphore(ctx.platform)
+                        platformSemaphore.acquire()
+                        val sessionId = try {
+                            writer.initSession(ctx.meta, ctx.accessToken, ctx.platformChannelId, fileSize, ctx.scheduledAt)
+                        } finally {
+                            platformSemaphore.release()
+                        }
                         val scheduleInfo = if (ctx.scheduledAt != null) ", scheduledAt=${ctx.scheduledAt}" else ""
                         log.info("플랫폼 {} 업로드 세션 초기화: videoId={}, sessionId={}{}",
                             ctx.platform, videoId, sessionId, scheduleInfo)
@@ -425,7 +431,17 @@ class StreamPublishUseCase(
                 val completeFutures = activeWriterMap.map { (ctx, writer) ->
                     executor.submit<Unit> {
                         try {
-                            val result = writer.complete()
+                            // writeChunk() only fills the local buffer. The actual
+                            // provider calls happen in complete(), so apply the
+                            // platform-specific rate limit at the external boundary
+                            // for direct streaming as well as URL-based publishing.
+                            val platformSemaphore = ExecutorConfig.platformUploadSemaphore(ctx.platform)
+                            platformSemaphore.acquire()
+                            val result = try {
+                                writer.complete()
+                            } finally {
+                                platformSemaphore.release()
+                            }
                             val owner = leaseOwners[ctx.videoUploadId]
                             when (val outcome = result.toPublishOutcome()) {
                                 is PublishOutcome.Published -> {

@@ -371,22 +371,10 @@ const routes: RouteRecordRaw[] = [
         meta: { breadcrumb: '웹훅 관리' },
       },
       {
-        path: 'trends',
-        name: 'trends',
-        redirect: '/today',
-        meta: { breadcrumb: '트렌드 모니터링' },
-      },
-      {
         path: 'channel-audit',
         name: 'channel-audit',
         component: () => import('@/views/ChannelAuditView.vue'),
         meta: { breadcrumb: '채널 오디트' },
-      },
-      {
-        path: 'keyword-research',
-        name: 'keyword-research',
-        redirect: '/today',
-        meta: { breadcrumb: '키워드 리서치' },
       },
       {
         path: 'audience',
