@@ -280,6 +280,11 @@ class PublicApiUseCase(
         if (type == PublicApiPostType.UPDATE) {
             return updateExistingPost(userId, request, sourcePostIds)
         }
+        // Drafts do not build upload configs, but their integration references
+        // are still persisted and later drive settings/edit/delete operations.
+        // Validate ownership before creating a video or saving an invalid
+        // public-post snapshot.
+        validateRequestedTargets(userId, request.posts)
         require(request.inter == null || type == PublicApiPostType.NOW || type == PublicApiPostType.SCHEDULE) {
             "inter 기반 반복 게시에는 now 또는 schedule 타입이 필요합니다"
         }
@@ -1131,6 +1136,20 @@ class PublicApiUseCase(
     private fun resolveRequestedWorkspace(userId: Long, groups: List<String>): Workspace? {
         require(groups.size <= 1) { "한 번의 Postiz 요청에는 하나의 group만 사용할 수 있습니다" }
         return resolveWorkspace(userId, groups.singleOrNull())
+    }
+
+    private fun validateRequestedTargets(userId: Long, targets: List<PublicPostItem>) {
+        val workspace = resolveRequestedWorkspace(userId, targets.mapNotNull { it.group }.distinct())
+        targets.forEach { target ->
+            val channelId = target.integration.id.trim().toLongOrNull()
+                ?: throw IllegalArgumentException("integration.id는 onGo 채널 ID여야 합니다")
+            val channel = channelRepository.findById(channelId)
+                ?.takeIf { it.userId == userId }
+                ?: throw NotFoundException("integration", target.integration.id)
+            require(workspace == null || channel.workspaceId == workspace.id) {
+                "integration은 요청한 group에 속하지 않습니다"
+            }
+        }
     }
 
     private fun resolveWorkspace(userId: Long, group: String?): Workspace? {

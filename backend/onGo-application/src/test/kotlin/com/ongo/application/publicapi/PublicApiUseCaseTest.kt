@@ -18,6 +18,7 @@ import com.ongo.domain.publicapi.PublicApiPostRepository
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.schedule.Schedule
 import com.ongo.common.enums.ScheduleStatus
+import com.ongo.common.exception.NotFoundException
 import java.time.LocalDateTime
 import java.time.ZoneId
 import com.ongo.domain.video.Video
@@ -456,6 +457,25 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `Postiz draft도 integration 소유권을 먼저 검증한다`() {
+        every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
+        every { channels.findById(7) } returns channel.copy(userId = 99)
+
+        assertFailsWith<NotFoundException> {
+            useCase.create(
+                1,
+                CreatePublicPostRequest(
+                    type = "draft",
+                    videoId = 11,
+                    posts = listOf(PublicPostItem(PublicIntegrationRef("7"))),
+                ),
+            )
+        }
+        verify(exactly = 0) { posts.save(any()) }
+        verify(exactly = 0) { uploadVideo.createVideo(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `Idempotency-Key 재전송은 기존 공개 API 게시를 반환하고 영상을 다시 만들지 않는다`() {
         val request = CreatePublicPostRequest(type = "draft")
         val draftVideo = Video(id = 12, userId = 1, title = "공개 API 초안")
@@ -478,6 +498,8 @@ class PublicApiUseCaseTest {
 
     @Test
     fun `공개 게시의 media URL도 내부망 주소를 차단한다`() {
+        every { channels.findById(7) } returns channel
+
         assertFailsWith<IllegalArgumentException> {
             useCase.create(
                 1,
@@ -722,6 +744,7 @@ class PublicApiUseCaseTest {
     @Test
     fun `다른 사용자의 videoId는 공개 API에서도 거부한다`() {
         every { videos.findById(11) } returns Video(id = 11, userId = 999, title = "남의 영상", fileUrl = "https://cdn/video.mp4")
+        every { channels.findById(7) } returns channel
 
         assertFailsWith<com.ongo.common.exception.ForbiddenException> {
             useCase.create(
