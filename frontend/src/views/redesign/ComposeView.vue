@@ -16,6 +16,7 @@
               ? 'bg-surface-card text-content shadow-sm'
               : 'text-content-tertiary hover:text-content'
           "
+          :disabled="uploadStore.isUploading"
           @click="selectSourceMode(mode.key)"
         >
           {{ mode.label }}
@@ -39,6 +40,7 @@
             v-if="sourceMode === 'file'"
             type="button"
             class="btn-secondary !text-[11px]"
+            :disabled="uploadStore.isUploading"
             @click="pickFile"
           >
             {{ t('redesign.compose.replace') }}

@@ -57,6 +57,10 @@ export const useUploadStore = defineStore('upload', () => {
 
   let lastTimestamp = 0
   let lastBytesUploaded = 0
+  // A late response from an upload that the user replaced must never mutate
+  // the new compose session. This is intentionally local to the store so it
+  // also protects callers that do not render the ComposeView buttons.
+  let sessionGeneration = 0
 
   // 진행 중인 업로드 취소 핸들러 — 경로별(stream/cloud)로 등록·해제한다
   let abortHandler: (() => void) | null = null
@@ -70,7 +74,16 @@ export const useUploadStore = defineStore('upload', () => {
     abortHandler?.()
   }
 
+  function beginNewSession() {
+    if (uploading.value) abortPublish()
+    sessionGeneration += 1
+    videoId.value = null
+    contentImages.value = []
+    registerAbort(null)
+  }
+
   async function startUpload(selectedFile: File) {
+    beginNewSession()
     if (isImageFile(selectedFile)) {
       return startImageUpload([selectedFile])
     }
@@ -90,6 +103,7 @@ export const useUploadStore = defineStore('upload', () => {
   }
 
   async function startImageUpload(files: File[]) {
+    beginNewSession()
     mediaType.value = 'IMAGE'
     imageFiles.value = files
     file.value = files[0]
@@ -108,6 +122,7 @@ export const useUploadStore = defineStore('upload', () => {
   async function uploadImagesToServer(targetVideoId: number): Promise<ContentImage[]> {
     if (imageFiles.value.length === 0) return []
 
+    const operationGeneration = sessionGeneration
     uploading.value = true
     uploadError.value = null
     videoId.value = targetVideoId
@@ -123,15 +138,18 @@ export const useUploadStore = defineStore('upload', () => {
       }
 
       const result = await videoApi.uploadImages(targetVideoId, imageFiles.value)
+      if (operationGeneration !== sessionGeneration) throw new Error('이미지 업로드가 취소되었습니다.')
       contentImages.value = result
 
       progress.value.percentage = 100
       progress.value.bytesUploaded = totalSize
-      uploading.value = false
+      if (operationGeneration === sessionGeneration) uploading.value = false
       return result
     } catch (error) {
-      uploading.value = false
-      uploadError.value = error instanceof Error ? error.message : '이미지 업로드 실패'
+      if (operationGeneration === sessionGeneration) {
+        uploading.value = false
+        uploadError.value = error instanceof Error ? error.message : '이미지 업로드 실패'
+      }
       throw error
     }
   }
@@ -141,6 +159,7 @@ export const useUploadStore = defineStore('upload', () => {
     publishMetadata: UploadMetadata,
     platformConfigs: PlatformPublishConfig[],
   ): Promise<{ videoId: number }> {
+    const operationGeneration = sessionGeneration
     uploading.value = true
     uploadError.value = null
     progress.value = { bytesUploaded: 0, bytesTotal: targetFile.size, percentage: 0, speed: 0, remainingSeconds: 0 }
@@ -176,6 +195,7 @@ export const useUploadStore = defineStore('upload', () => {
       registerAbort(() => xhr.abort())
 
       xhr.upload.onprogress = (e: ProgressEvent) => {
+        if (operationGeneration !== sessionGeneration) return
         if (!e.lengthComputable) return
         const now = Date.now()
         const elapsed = (now - lastTimestamp) / 1000
@@ -194,6 +214,10 @@ export const useUploadStore = defineStore('upload', () => {
       }
 
       xhr.onload = () => {
+        if (operationGeneration !== sessionGeneration) {
+          reject(new Error('업로드가 취소되었습니다'))
+          return
+        }
         uploading.value = false
         registerAbort(null)
         if (xhr.status === 202 || xhr.status === 200) {
@@ -221,14 +245,20 @@ export const useUploadStore = defineStore('upload', () => {
       }
 
       xhr.onerror = () => {
+        if (operationGeneration !== sessionGeneration) {
+          reject(new Error('업로드가 취소되었습니다'))
+          return
+        }
         uploading.value = false
         registerAbort(null)
         reject(new Error('네트워크 오류'))
       }
 
       xhr.onabort = () => {
-        uploading.value = false
-        registerAbort(null)
+        if (operationGeneration === sessionGeneration) {
+          uploading.value = false
+          registerAbort(null)
+        }
         reject(new Error('업로드가 취소되었습니다'))
       }
 
@@ -243,6 +273,7 @@ export const useUploadStore = defineStore('upload', () => {
     publishMetadata: UploadMetadata,
     platformConfigs: PlatformPublishConfig[],
   ): Promise<{ videoId: number }> {
+    const operationGeneration = sessionGeneration
     uploading.value = true
     uploadError.value = null
     progress.value = { bytesUploaded: 0, bytesTotal: targetFile.size, percentage: 0, speed: 0, remainingSeconds: 0 }
@@ -283,6 +314,7 @@ export const useUploadStore = defineStore('upload', () => {
         platformConfigs,
       })
       if (resultId === null) throw new Error('업로드가 취소되었습니다.')
+      if (operationGeneration !== sessionGeneration) throw new Error('업로드가 취소되었습니다.')
       videoId.value = resultId
       progress.value = {
         ...progress.value,
@@ -293,15 +325,20 @@ export const useUploadStore = defineStore('upload', () => {
       }
       return { videoId: resultId }
     } catch (error) {
-      uploadError.value = error instanceof Error ? error.message : '업로드에 실패했습니다.'
+      if (operationGeneration === sessionGeneration) {
+        uploadError.value = error instanceof Error ? error.message : '업로드에 실패했습니다.'
+      }
       throw error
     } finally {
-      uploading.value = false
-      registerAbort(null)
+      if (operationGeneration === sessionGeneration) {
+        uploading.value = false
+        registerAbort(null)
+      }
     }
   }
 
   function resetUpload() {
+    beginNewSession()
     file.value = null
     imageFiles.value = []
     mediaType.value = 'VIDEO'

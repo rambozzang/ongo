@@ -60,6 +60,27 @@ describe('upload store', () => {
     expect(store.isUploading).toBe(false)
   })
 
+  it('cancels the previous transfer before replacing a file and ignores its late result', async () => {
+    let rejectFirst!: (error: Error) => void
+    const firstAbort = vi.fn(() => rejectFirst(new Error('업로드가 취소되었습니다')))
+    vi.mocked(usePresignedUpload).mockReturnValue({
+      upload: vi.fn(() => new Promise<number>((_resolve, reject) => { rejectFirst = reject })),
+      abort: firstAbort,
+    } as never)
+    const store = useUploadStore()
+    await store.startUpload(videoFile('first.mp4'))
+    const firstPublish = store.cloudPublish(videoFile('first.mp4'), metadata, platformConfigs)
+    await vi.waitFor(() => expect(store.canAbort).toBe(true))
+
+    await store.startUpload(videoFile('second.mp4'))
+    await expect(firstPublish).rejects.toThrow('업로드가 취소되었습니다')
+
+    expect(firstAbort).toHaveBeenCalledOnce()
+    expect(store.file?.name).toBe('second.mp4')
+    expect(store.videoId).toBeNull()
+    expect(store.isUploading).toBe(false)
+  })
+
   it('uploads images through the server and records final progress', async () => {
     const images = [{ id: 7, url: 'https://cdn.test/cover.png' }]
     vi.mocked(videoApi.uploadImages).mockResolvedValue(images as never)
