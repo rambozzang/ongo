@@ -69,6 +69,6 @@ class KakaoOAuth2Service(
         @JsonProperty("token_type") val tokenType: String = "",
         @JsonProperty("refresh_token") val refreshToken: String? = null,
         @JsonProperty("expires_in") val expiresIn: Int = 0,
-        val scope: String? = null,
+        @JsonProperty("scope") val scope: String? = null,
     )
 }

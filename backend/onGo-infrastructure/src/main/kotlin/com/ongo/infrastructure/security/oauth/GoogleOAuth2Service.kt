@@ -59,7 +59,7 @@ class GoogleOAuth2Service(
         @JsonProperty("access_token") val accessToken: String = "",
         @JsonProperty("token_type") val tokenType: String = "",
         @JsonProperty("expires_in") val expiresIn: Int = 0,
-        val scope: String = "",
+        @JsonProperty("scope") val scope: String = "",
         @JsonProperty("id_token") val idToken: String? = null,
     )
 

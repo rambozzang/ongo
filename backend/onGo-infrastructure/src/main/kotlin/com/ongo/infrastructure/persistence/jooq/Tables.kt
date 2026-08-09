@@ -77,6 +77,11 @@ object Tables {
     // Workspace
     val WORKSPACES = DSL.table("workspaces")
 
+    // Public API developer OAuth2
+    val PUBLIC_OAUTH_APPS = DSL.table("public_oauth_apps")
+    val PUBLIC_OAUTH_AUTHORIZATION_CODES = DSL.table("public_oauth_authorization_codes")
+    val PUBLIC_OAUTH_TOKENS = DSL.table("public_oauth_tokens")
+
     // Collab
     val TEAM_MEMBERS = DSL.table("team_members")
     val INBOX_MESSAGES = DSL.table("inbox_messages")
