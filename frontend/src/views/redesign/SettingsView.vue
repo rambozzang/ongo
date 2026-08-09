@@ -235,6 +235,7 @@
               <label class="block"><span class="text-[11px] font-semibold text-content-secondary">{{ t('settings.oauthApps.name') }}</span><input v-model="oauthAppForm.name" required maxlength="120" class="input-field mt-2 w-full" :placeholder="t('settings.oauthApps.namePlaceholder')"></label>
               <label class="block"><span class="text-[11px] font-semibold text-content-secondary">{{ t('settings.oauthApps.redirectUri') }}</span><input v-model="oauthAppForm.redirectUri" required type="url" class="input-field mt-2 w-full" :placeholder="t('settings.oauthApps.redirectPlaceholder')"></label>
             </div>
+            <label class="block"><span class="text-[11px] font-semibold text-content-secondary">{{ t('settings.oauthApps.profilePictureUrl') }}</span><input v-model="oauthAppForm.profilePictureUrl" type="url" class="input-field mt-2 w-full" :placeholder="t('settings.oauthApps.profilePicturePlaceholder')"></label>
             <label class="block"><span class="text-[11px] font-semibold text-content-secondary">{{ t('settings.oauthApps.descriptionField') }}</span><textarea v-model="oauthAppForm.description" maxlength="500" rows="2" class="input-field mt-2 w-full resize-y" /></label>
             <button type="submit" class="btn-primary !min-h-9 w-fit text-[11px]" :disabled="creatingOAuthApp">{{ creatingOAuthApp ? t('action.loading') : t('settings.oauthApps.create') }}</button>
           </form>
@@ -247,6 +248,28 @@
             </div>
           </div>
           <div v-else class="rounded-lg border border-dashed border-line-control px-5 py-12 text-center text-[12px] text-content-tertiary">{{ t('settings.oauthApps.empty') }}</div>
+
+          <section class="mt-6 rounded-[11px] border border-line p-4" aria-labelledby="oauth-approved-title">
+            <div class="mb-4">
+              <h3 id="oauth-approved-title" class="text-[13px] font-bold text-content">{{ t('settings.oauthApps.approvedTitle') }}</h3>
+              <p class="mt-1 text-[11.5px] leading-5 text-content-tertiary">{{ t('settings.oauthApps.approvedDescription') }}</p>
+            </div>
+            <div v-if="oauthTokenLoadError" class="rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2.5 text-[11px] text-warning-strong" role="alert">
+              {{ t('settings.oauthApps.tokensLoadFailed') }}
+              <button type="button" class="ml-2 font-semibold underline" @click="fetchOAuthTokens">{{ t('action.retry') }}</button>
+            </div>
+            <div v-else-if="oauthTokens.length" class="overflow-hidden rounded-lg border border-line">
+              <div v-for="token in oauthTokens" :key="token.id" class="flex flex-wrap items-center gap-3 border-b border-line-row px-3 py-3 last:border-0">
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-[11.5px] font-semibold text-content">{{ oauthAppName(token.appId) }}</p>
+                  <p class="mt-1 font-mono text-[10px] text-content-tertiary">{{ token.tokenPrefix }}•••• · {{ token.createdAt ? formatDate(token.createdAt) : '—' }}</p>
+                </div>
+                <span class="text-[10.5px] text-content-tertiary">{{ token.revokedAt ? t('settings.oauthApps.revoked') : t('settings.oauthApps.active') }}</span>
+                <button v-if="!token.revokedAt" type="button" class="rounded-lg border border-error-subtle px-3 py-2 text-[11px] font-semibold text-error-strong hover:bg-error-subtle" @click="revokeOAuthToken(token.id)">{{ t('settings.oauthApps.revokeToken') }}</button>
+              </div>
+            </div>
+            <p v-else class="rounded-lg border border-dashed border-line-control px-4 py-8 text-center text-[11.5px] text-content-tertiary">{{ t('settings.oauthApps.noApprovedApps') }}</p>
+          </section>
         </template>
 
         <div v-else class="rounded-lg border border-dashed border-line-control px-5 py-14 text-center">
@@ -286,7 +309,7 @@ import { AdjustmentsHorizontalIcon, Cog6ToothIcon } from '@heroicons/vue/24/outl
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
 import { settingsApi, type ApiKey, type UserSettingsResponse } from '@/api/settings'
-import { oauthApi, type PublicOAuthApp } from '@/api/oauth'
+import { oauthApi, type PublicOAuthApp, type PublicOAuthTokenSummary } from '@/api/oauth'
 import { useAuthStore } from '@/stores/auth'
 import { useAutomationStore } from '@/stores/automation'
 import { useSubscriptionStore } from '@/stores/subscription'
@@ -314,7 +337,10 @@ const savingWorkspace = ref(false)
 const oauthApps = ref<PublicOAuthApp[]>([])
 const oauthLoadError = ref(false)
 const oauthLoaded = ref(false)
-const oauthAppForm = reactive({ name: '', description: '', redirectUri: '' })
+const oauthTokens = ref<PublicOAuthTokenSummary[]>([])
+const oauthTokenLoadError = ref(false)
+const oauthTokensLoaded = ref(false)
+const oauthAppForm = reactive({ name: '', description: '', redirectUri: '', profilePictureUrl: '' })
 const creatingOAuthApp = ref(false)
 const newOAuthClientId = ref<string | null>(null)
 const newOAuthClientSecret = ref<string | null>(null)
@@ -383,6 +409,18 @@ async function fetchOAuthApps() {
     oauthLoadError.value = true
   }
 }
+async function fetchOAuthTokens() {
+  oauthTokenLoadError.value = false
+  try {
+    oauthTokens.value = await oauthApi.listTokens()
+    oauthTokensLoaded.value = true
+  } catch {
+    oauthTokenLoadError.value = true
+  }
+}
+function oauthAppName(appId: number): string {
+  return oauthApps.value.find((app) => app.id === appId)?.name ?? `App #${appId}`
+}
 async function createOAuthApp() {
   if (!oauthAppForm.name.trim() || !oauthAppForm.redirectUri.trim()) return
   creatingOAuthApp.value = true
@@ -391,12 +429,14 @@ async function createOAuthApp() {
       name: oauthAppForm.name.trim(),
       redirectUri: oauthAppForm.redirectUri.trim(),
       ...(oauthAppForm.description.trim() ? { description: oauthAppForm.description.trim() } : {}),
+      ...(oauthAppForm.profilePictureUrl.trim() ? { profilePictureUrl: oauthAppForm.profilePictureUrl.trim() } : {}),
     })
     newOAuthClientId.value = created.app.clientId
     newOAuthClientSecret.value = created.clientSecret
     oauthAppForm.name = ''
     oauthAppForm.description = ''
     oauthAppForm.redirectUri = ''
+    oauthAppForm.profilePictureUrl = ''
     await fetchOAuthApps()
   } finally {
     creatingOAuthApp.value = false
@@ -413,6 +453,12 @@ async function deleteOAuthApp(id: number) {
   if (!window.confirm(t('settings.oauthApps.deleteConfirm'))) return
   await oauthApi.deleteApp(id)
   await fetchOAuthApps()
+  await fetchOAuthTokens()
+}
+async function revokeOAuthToken(id: number) {
+  if (!window.confirm(t('settings.oauthApps.revokeTokenConfirm'))) return
+  await oauthApi.revokeToken(id)
+  await fetchOAuthTokens()
 }
 async function copyText(value: string | null) {
   if (value) await navigator.clipboard?.writeText(value).catch(() => undefined)
@@ -490,6 +536,9 @@ onMounted(async () => {
 })
 
 watch(activeSection, (section) => {
-  if (section === 'developer' && !oauthLoaded.value) void fetchOAuthApps()
+  if (section === 'developer') {
+    if (!oauthLoaded.value) void fetchOAuthApps()
+    if (!oauthTokensLoaded.value) void fetchOAuthTokens()
+  }
 }, { immediate: true })
 </script>

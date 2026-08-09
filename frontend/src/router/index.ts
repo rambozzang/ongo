@@ -476,7 +476,15 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   if ((to.meta.requiresAuth ?? true) && !authStore.isAuthenticated) {
-    return next('/login')
+    // Preserve OAuth consent links (and any other protected deep link) across
+    // the external social-login round trip. AuthStore validates and consumes
+    // this value after login, so the redirect cannot point to another origin.
+    try {
+      sessionStorage.setItem('ongo:post-login-redirect', to.fullPath)
+    } catch {
+      // Private browsing/storage-disabled clients can still use normal login.
+    }
+    return next({ name: 'login', query: { redirect: to.fullPath } })
   }
 
   if (

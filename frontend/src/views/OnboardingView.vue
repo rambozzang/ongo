@@ -652,11 +652,11 @@ async function completeOnboarding() {
 }
 
 function goToUpload() {
-  router.push('/upload')
+  router.push(authStore.consumePostLoginRedirect() ?? '/upload')
 }
 
 function goToDashboard() {
-  router.push('/dashboard')
+  router.push(authStore.consumePostLoginRedirect() ?? '/dashboard')
 }
 
 // Load existing connected channels

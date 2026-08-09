@@ -4,11 +4,29 @@ import type { User, LoginRequest } from '@/types/user'
 import { authApi } from '@/api/auth'
 import router from '@/router'
 
+export const POST_LOGIN_REDIRECT_KEY = 'ongo:post-login-redirect'
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const accessToken = ref<string | null>(localStorage.getItem('accessToken'))
 
   const isAuthenticated = computed(() => !!accessToken.value)
+
+  /**
+   * OAuth consent links commonly arrive while the user is logged out. Keep
+   * only an internal path so the login hand-off cannot become an open redirect.
+   */
+  function consumePostLoginRedirect(): string | null {
+    let redirect: string | null = null
+    try {
+      redirect = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY)
+      sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY)
+    } catch {
+      return null
+    }
+    if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//')) return null
+    return redirect
+  }
 
   async function login(provider: 'google' | 'kakao', request: LoginRequest) {
     const response = await authApi.login(provider, request)
@@ -20,7 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (response.isNewUser) {
       await router.push('/onboarding')
     } else {
-      await router.push('/today')
+      await router.push(consumePostLoginRedirect() ?? '/today')
     }
   }
 
@@ -43,7 +61,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('accessToken', response.accessToken)
     localStorage.setItem('refreshToken', response.refreshToken)
     user.value = response.user
-    await router.push('/today')
+    await router.push(consumePostLoginRedirect() ?? '/today')
   }
 
   async function logout() {
@@ -74,6 +92,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     devLogin,
     fetchProfile,
+    consumePostLoginRedirect,
     logout,
     initialize,
   }

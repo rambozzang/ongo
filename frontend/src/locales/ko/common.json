@@ -1004,6 +1004,8 @@
       "namePlaceholder": "예: 나의 콘텐츠 자동화",
       "redirectUri": "Redirect URL",
       "redirectPlaceholder": "https://example.com/oauth/callback",
+      "profilePictureUrl": "프로필 이미지 URL (선택)",
+      "profilePicturePlaceholder": "https://example.com/app-icon.png",
       "descriptionField": "설명 (선택)",
       "create": "OAuth 앱 생성",
       "createdTitle": "OAuth 앱이 생성되었습니다",
@@ -1016,7 +1018,15 @@
       "delete": "앱 폐기",
       "deleteConfirm": "앱과 발급된 OAuth 토큰을 모두 폐기하시겠습니까? 되돌릴 수 없습니다.",
       "empty": "등록된 개발자 앱이 없습니다.",
-      "loadFailed": "개발자 앱을 불러오지 못했습니다. 다시 시도해 주세요."
+      "loadFailed": "개발자 앱을 불러오지 못했습니다. 다시 시도해 주세요.",
+      "approvedTitle": "승인된 앱과 토큰",
+      "approvedDescription": "외부 앱에 발급된 토큰을 확인하고 더 이상 사용하지 않는 접근 권한을 즉시 폐기할 수 있습니다.",
+      "tokensLoadFailed": "승인된 앱 목록을 불러오지 못했습니다. 다시 시도해 주세요.",
+      "noApprovedApps": "발급된 OAuth 토큰이 없습니다.",
+      "active": "사용 중",
+      "revoked": "폐기됨",
+      "revokeToken": "접근 폐기",
+      "revokeTokenConfirm": "이 앱의 접근 토큰을 폐기하시겠습니까? 외부 앱은 더 이상 onGo API를 호출할 수 없습니다."
     },
     "profile": {
       "title": "프로필 설정",

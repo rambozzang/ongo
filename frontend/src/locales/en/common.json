@@ -1004,6 +1004,8 @@
       "namePlaceholder": "e.g. My content automation",
       "redirectUri": "Redirect URL",
       "redirectPlaceholder": "https://example.com/oauth/callback",
+      "profilePictureUrl": "Profile picture URL (optional)",
+      "profilePicturePlaceholder": "https://example.com/app-icon.png",
       "descriptionField": "Description (optional)",
       "create": "Create OAuth app",
       "createdTitle": "OAuth app created",
@@ -1016,7 +1018,15 @@
       "delete": "Revoke app",
       "deleteConfirm": "Revoke this app and every OAuth token it issued? This cannot be undone.",
       "empty": "No developer apps have been registered.",
-      "loadFailed": "Developer apps could not be loaded. Please try again."
+      "loadFailed": "Developer apps could not be loaded. Please try again.",
+      "approvedTitle": "Approved apps and tokens",
+      "approvedDescription": "Review tokens issued to external apps and revoke access immediately when it is no longer needed.",
+      "tokensLoadFailed": "Approved app access could not be loaded. Please try again.",
+      "noApprovedApps": "No OAuth tokens have been issued.",
+      "active": "Active",
+      "revoked": "Revoked",
+      "revokeToken": "Revoke access",
+      "revokeTokenConfirm": "Revoke this app's access token? The external app will no longer be able to call the onGo API."
     },
     "profile": {
       "title": "Profile Settings",
