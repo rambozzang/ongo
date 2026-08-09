@@ -29,7 +29,7 @@ class FacebookClient(
                 pageId = pageId,
                 fileUrl = request.fileUrl,
                 title = request.title.take(255),
-                description = request.description.take(5000),
+                description = buildDescription(request),
                 accessToken = request.accessToken,
             )
 
@@ -67,6 +67,17 @@ class FacebookClient(
                 errorMessage = e.message,
             )
         }
+    }
+
+    private fun buildDescription(request: PlatformUploadRequest): String {
+        val hashtags = request.tags
+            .map { it.removePrefix("#").trim() }
+            .filter(String::isNotBlank)
+            .joinToString(" ") { "#$it" }
+        return listOf(request.description.trim(), hashtags)
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
+            .take(5000)
     }
 
     override fun getVideoAnalytics(

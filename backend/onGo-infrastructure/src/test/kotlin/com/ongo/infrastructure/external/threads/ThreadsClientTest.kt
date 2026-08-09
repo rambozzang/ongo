@@ -41,7 +41,7 @@ class ThreadsClientTest {
                 fileUrl = "https://storage.test/video.mp4",
                 title = "테스트",
                 description = "설명",
-                tags = emptyList(),
+                tags = listOf("#태그", "topic"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
                 accessToken = "token",
@@ -52,6 +52,15 @@ class ThreadsClientTest {
 
         assertThat(result.platformVideoId).isEqualTo("thread-1")
         assertThat(result.platformUrl).isEqualTo("https://threads.net/@creator/post/thread-1")
+        verify(exactly = 1) {
+            api.createMediaContainer(
+                "user-1",
+                "VIDEO",
+                "https://storage.test/video.mp4",
+                "테스트\n\n설명\n\n#태그 #topic",
+                "token",
+            )
+        }
         verify(exactly = 2) { api.getContainerStatus("container-1", "id,status,error_message", "token") }
         verify(exactly = 1) { api.publishThread("user-1", "container-1", "token") }
     }

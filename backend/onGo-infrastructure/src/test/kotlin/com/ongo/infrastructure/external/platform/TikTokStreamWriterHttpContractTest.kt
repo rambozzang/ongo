@@ -56,7 +56,7 @@ class TikTokStreamWriterHttpContractTest {
         assertThat(init.path).isEqualTo("/api/v2/post/publish/video/init/")
         assertThat(init.getHeader("Authorization")).isEqualTo("Bearer tiktok-token")
         assertThat(init.body.readUtf8())
-            .contains("\"title\":\"테스트 영상\"")
+            .contains("\"title\":\"테스트 영상\\n\\n설명\\n\\n#tag\"")
             .contains("\"privacy_level\":\"PUBLIC_TO_EVERYONE\"")
 
         val upload = server.takeRequest()

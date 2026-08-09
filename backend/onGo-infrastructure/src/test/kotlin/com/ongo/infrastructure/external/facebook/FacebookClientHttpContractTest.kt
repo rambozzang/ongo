@@ -37,7 +37,7 @@ class FacebookClientHttpContractTest {
                 fileUrl = "https://cdn.test/video.mp4",
                 title = "테스트 제목",
                 description = "테스트 설명",
-                tags = emptyList(),
+                tags = listOf("#tag"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
                 accessToken = "fb-token",
@@ -54,6 +54,7 @@ class FacebookClientHttpContractTest {
         assertThat(request.path).contains("file_url=https%3A%2F%2Fcdn.test%2Fvideo.mp4")
         assertThat(request.path).contains("title=")
         assertThat(request.path).contains("description=")
+        assertThat(request.requestUrl?.queryParameter("description")).contains("테스트 설명").contains("#tag")
         assertThat(request.path).contains("access_token=fb-token")
     }
 

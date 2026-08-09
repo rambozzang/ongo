@@ -86,7 +86,7 @@ class TwitterClient(
             }
 
             // Step 6: Create tweet with media
-            val tweetText = request.title.take(280)
+            val tweetText = buildTweetText(request)
             val tweetRequest = TwitterCreateTweetRequest(
                 text = tweetText,
                 media = TwitterCreateTweetRequest.MediaPayload(
@@ -138,6 +138,20 @@ class TwitterClient(
                 errorMessage = e.message,
             )
         }
+    }
+
+    private fun buildTweetText(request: PlatformUploadRequest): String {
+        val body = listOf(request.title.trim(), request.description.trim())
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
+        val hashtags = request.tags
+            .map { it.removePrefix("#").trim() }
+            .filter(String::isNotBlank)
+            .joinToString(" ") { "#$it" }
+        return listOf(body, hashtags)
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
+            .take(280)
     }
 
     override fun getVideoAnalytics(

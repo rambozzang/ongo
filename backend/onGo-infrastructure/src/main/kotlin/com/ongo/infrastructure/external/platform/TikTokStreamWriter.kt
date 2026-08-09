@@ -71,7 +71,7 @@ class TikTokStreamWriter(
 
         val initRequest = TikTokInitUploadRequest(
             postInfo = TikTokInitUploadRequest.PostInfo(
-                title = (meta.title ?: "Untitled").take(2200),
+                title = buildPostText(meta),
                 privacyLevel = privacyLevel,
             ),
             sourceInfo = TikTokInitUploadRequest.SourceInfo(
@@ -195,5 +195,19 @@ class TikTokStreamWriter(
         "PRIVATE" -> "SELF_ONLY"
         "UNLISTED" -> "MUTUAL_FOLLOW_FRIENDS"
         else -> "SELF_ONLY"
+    }
+
+    private fun buildPostText(meta: VideoPlatformMeta): String {
+        val body = listOf(meta.title.orEmpty().trim(), meta.description.orEmpty().trim())
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
+        val hashtags = meta.tags
+            .map { it.removePrefix("#").trim() }
+            .filter(String::isNotBlank)
+            .joinToString(" ") { "#$it" }
+        return listOf(body, hashtags)
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
+            .take(2200)
     }
 }

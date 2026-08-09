@@ -36,7 +36,7 @@ class ThreadsClient(
                 userId = userId,
                 mediaType = "VIDEO",
                 videoUrl = request.fileUrl,
-                text = request.title.take(500),
+                text = buildText(request),
                 accessToken = request.accessToken,
             )
 
@@ -327,4 +327,18 @@ class ThreadsClient(
         } catch (_: Exception) {
             null
         }
+
+    private fun buildText(request: PlatformUploadRequest): String {
+        val body = listOf(request.title.trim(), request.description.trim())
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
+        val hashtags = request.tags
+            .map { it.removePrefix("#").trim() }
+            .filter(String::isNotBlank)
+            .joinToString(" ") { "#$it" }
+        return listOf(body, hashtags)
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
+            .take(500)
+    }
 }

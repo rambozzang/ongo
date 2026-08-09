@@ -41,7 +41,7 @@ class LinkedInClient(
                 specificContent = LinkedInUgcPostRequest.SpecificContent(
                     shareContent = LinkedInUgcPostRequest.ShareContent(
                         shareCommentary = LinkedInUgcPostRequest.ShareCommentary(
-                            text = request.description.take(3000),
+                            text = buildShareCommentary(request),
                         ),
                         media = listOf(
                             LinkedInUgcPostRequest.ShareMedia(
@@ -79,6 +79,17 @@ class LinkedInClient(
             log.error("LinkedIn 업로드 실패: {}", e.message, e)
             throw PlatformUploadException("LinkedIn", e.message ?: "알 수 없는 오류", e)
         }
+    }
+
+    private fun buildShareCommentary(request: PlatformUploadRequest): String {
+        val hashtags = request.tags
+            .map { it.removePrefix("#").trim() }
+            .filter(String::isNotBlank)
+            .joinToString(" ") { "#$it" }
+        return listOf(request.description.trim(), hashtags)
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
+            .take(3000)
     }
 
     private fun uploadLinkedInVideo(fileUrl: String, accessToken: String, personId: String): String {

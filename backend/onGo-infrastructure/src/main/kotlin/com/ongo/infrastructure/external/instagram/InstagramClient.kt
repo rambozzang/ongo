@@ -367,9 +367,19 @@ class InstagramClient(
         }
 
     private fun buildCaption(request: PlatformUploadRequest): String {
-        val hashtags = request.tags.joinToString(" ") { "#$it" }
-        val description = request.description.take(2200 - hashtags.length - 2)
-        return "$description\n\n$hashtags".take(2200)
+        val hashtags = request.tags
+            .map { it.removePrefix("#").trim() }
+            .filter(String::isNotBlank)
+            .joinToString(" ") { "#$it" }
+        val body = listOf(request.title.trim(), request.description.trim())
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
+        val bodyLimit = (2200 - hashtags.length - if (hashtags.isBlank()) 0 else 2).coerceAtLeast(0)
+        val trimmedBody = body.take(bodyLimit)
+        return listOf(trimmedBody, hashtags)
+            .filter(String::isNotBlank)
+            .joinToString("\n\n")
+            .take(2200)
     }
 
     private fun waitForContainerReady(containerId: String, accessToken: String) {

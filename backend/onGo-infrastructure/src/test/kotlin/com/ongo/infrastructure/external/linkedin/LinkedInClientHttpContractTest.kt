@@ -69,7 +69,7 @@ class LinkedInClientHttpContractTest {
                 fileUrl = server.url("/source/video.mp4").toString(),
                 title = "제목",
                 description = "설명",
-                tags = emptyList(),
+                tags = listOf("tag"),
                 visibility = Visibility.PUBLIC.name,
                 thumbnailUrl = null,
                 accessToken = "linkedin-token",
@@ -104,7 +104,9 @@ class LinkedInClientHttpContractTest {
             .contains("\"uploadedPartIds\":[\"etag-1\"]")
 
         assertThat(server.takeRequest().path).contains("/rest/videos/")
-        assertThat(server.takeRequest().path).isEqualTo("/v2/ugcPosts")
+        val post = server.takeRequest()
+        assertThat(post.path).isEqualTo("/v2/ugcPosts")
+        assertThat(post.body.readUtf8()).contains("설명").contains("#tag")
     }
 
     @Test
