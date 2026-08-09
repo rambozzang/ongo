@@ -13,6 +13,8 @@ import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.channel.EncryptedToken
 import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.asset.Asset
+import com.ongo.domain.asset.AssetRepository
 import com.ongo.domain.publicapi.PublicApiPost
 import com.ongo.domain.publicapi.PublicApiPostRepository
 import com.ongo.domain.schedule.ScheduleRepository
@@ -56,8 +58,10 @@ class PublicApiUseCaseTest {
     private val workspaces = mockk<WorkspaceRepository>(relaxed = true)
     private val videoPlatformMetas = mockk<VideoPlatformMetaRepository>(relaxed = true)
     private val recurringSchedules = mockk<RecurringScheduleRepository>(relaxed = true)
+    private val assets = mockk<AssetRepository>()
     private val idempotencyLockIds = mutableListOf<Long>()
     private val transactionManager = mockk<PlatformTransactionManager>()
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     private val distributedLock = object : DistributedLockPort {
         override fun <T> withAnyLock(lockIds: Collection<Long>, block: () -> T): T? {
             idempotencyLockIds += lockIds
@@ -67,9 +71,9 @@ class PublicApiUseCaseTest {
             block()
             return true
         }
-        @Suppress("DEPRECATION")
+        @Deprecated("Test double for the legacy interface member")
         override fun tryLock(lockId: Long): Boolean = true
-        @Suppress("DEPRECATION")
+        @Deprecated("Test double for the legacy interface member")
         override fun releaseLock(lockId: Long) = Unit
     }
 
@@ -93,6 +97,7 @@ class PublicApiUseCaseTest {
         videoPlatformMetas,
         recurringSchedules,
         distributedLock,
+        assets,
         transactionManager,
     )
 
@@ -524,6 +529,86 @@ class PublicApiUseCaseTest {
         verify(exactly = 1) { posts.save(any()) }
         assertEquals(2, idempotencyLockIds.size)
         assertEquals(1, idempotencyLockIds.toSet().size)
+    }
+
+    @Test
+    fun `Postiz upload asset id는 소유권을 검증하고 URL 재수입 없이 영상에 연결한다`() {
+        val asset = Asset(
+            id = 31,
+            userId = 1,
+            filename = "upload.mp4",
+            originalFilename = "원본.mp4",
+            fileUrl = "s3://private-bucket/public-api/1/upload.mp4",
+            fileType = "VIDEO",
+            fileSizeBytes = 1234,
+            mimeType = "video/mp4",
+        )
+        val draft = Video(id = 12, userId = 1, title = "업로드 영상")
+        every { assets.findById(31) } returns asset
+        every { uploadVideo.createVideo(1, any(), any(), any()) } returns draft
+        every { videos.update(any()) } answers { firstArg() }
+        every { channels.findById(7) } returns channel
+        every { posts.save(any()) } answers { firstArg<PublicApiPost>().copy(id = 47) }
+        every { uploads.findByVideoId(12) } returns emptyList()
+
+        val result = useCase.create(
+            1,
+            CreatePublicPostRequest(
+                type = "draft",
+                posts = listOf(
+                    PublicPostItem(
+                        integration = PublicIntegrationRef("7"),
+                        value = listOf(
+                            PublicPostValue(
+                                video = jacksonObjectMapper().readTree("""{"id":"31","path":"http://internal.invalid/video.mp4"}"""),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals("47", result.id)
+        verify {
+            videos.update(match {
+                it.fileUrl == asset.fileUrl &&
+                    it.originalFilename == asset.originalFilename &&
+                    it.fileSizeBytes == asset.fileSizeBytes
+            })
+        }
+    }
+
+    @Test
+    fun `Postiz upload asset id가 다른 사용자의 것이면 영상 생성 전에 거부한다`() {
+        every { channels.findById(7) } returns channel
+        every { assets.findById(31) } returns Asset(
+            id = 31,
+            userId = 99,
+            filename = "other.mp4",
+            fileUrl = "https://cdn.example/other.mp4",
+            fileType = "VIDEO",
+            mimeType = "video/mp4",
+        )
+
+        assertFailsWith<com.ongo.common.exception.ForbiddenException> {
+            useCase.create(
+                1,
+                CreatePublicPostRequest(
+                    type = "draft",
+                    posts = listOf(
+                        PublicPostItem(
+                            integration = PublicIntegrationRef("7"),
+                            value = listOf(
+                                PublicPostValue(
+                                    video = jacksonObjectMapper().readTree("""{"id":"31"}"""),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+        }
+        verify(exactly = 0) { uploadVideo.createVideo(any(), any(), any(), any()) }
     }
 
     @Test

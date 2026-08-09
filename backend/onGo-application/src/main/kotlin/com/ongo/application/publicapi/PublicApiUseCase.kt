@@ -19,6 +19,7 @@ import com.ongo.common.exception.BusinessException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.asset.AssetRepository
 import com.ongo.domain.lock.DistributedLockPort
 import com.ongo.domain.publicapi.PublicApiPost
 import com.ongo.domain.publicapi.PublicApiPostRepository
@@ -66,6 +67,7 @@ class PublicApiUseCase(
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
     private val recurringScheduleRepository: RecurringScheduleRepository,
     private val distributedLockPort: DistributedLockPort,
+    private val assetRepository: AssetRepository,
     transactionManager: PlatformTransactionManager,
 ) {
 
@@ -859,6 +861,34 @@ class PublicApiUseCase(
         }
 
         val value = request.posts.firstOrNull()?.value?.firstOrNull()
+        val mediaNode = value?.video ?: value?.image
+        val mediaAssetId = firstMediaAssetId(mediaNode)
+        if (mediaAssetId != null) {
+            val asset = assetRepository.findById(mediaAssetId)
+                ?: throw NotFoundException("에셋", mediaAssetId)
+            if (asset.userId != userId) {
+                throw ForbiddenException("해당 에셋에 대한 권한이 없습니다")
+            }
+            require(asset.fileType.equals("VIDEO", ignoreCase = true) ||
+                asset.mimeType?.startsWith("video/", ignoreCase = true) == true) {
+                "공개 API 게시에는 동영상 에셋만 사용할 수 있습니다"
+            }
+            val draft = uploadVideoUseCase.createVideo(
+                userId = userId,
+                title = value?.title ?: value?.content?.lineSequence()?.firstOrNull()?.take(100) ?: "공개 API 영상",
+                description = value?.description ?: value?.content,
+                tags = value?.tags ?: emptyList(),
+            )
+            return videoRepository.update(
+                draft.copy(
+                    fileUrl = asset.fileUrl,
+                    fileSizeBytes = asset.fileSizeBytes,
+                    originalFilename = asset.originalFilename ?: asset.filename,
+                    mediaType = MediaType.VIDEO,
+                    source = VideoSource.UPLOAD_PC,
+                ),
+            )
+        }
         val mediaUrl = firstText(value?.video) ?: firstText(value?.image)
         if (mediaUrl == null) {
             require(parseType(request.type) == PublicApiPostType.DRAFT) {
@@ -1225,6 +1255,17 @@ class PublicApiUseCase(
         node.isObject -> listOf("path", "url", "src").asSequence()
             .mapNotNull { key -> node.path(key).asText(null) }
             .firstOrNull()
+        else -> null
+    }
+
+    /** Postiz /upload returns media objects with an owned numeric id. */
+    private fun firstMediaAssetId(node: JsonNode?): Long? = when {
+        node == null || node.isNull -> null
+        node.isArray -> node.asSequence().mapNotNull(::firstMediaAssetId).firstOrNull()
+        node.isObject -> node.path("id").asText(null)?.trim()?.toLongOrNull()
+            ?: listOf("path", "url", "src").asSequence()
+                .mapNotNull { key -> firstMediaAssetId(node.path(key)) }
+                .firstOrNull()
         else -> null
     }
 
