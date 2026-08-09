@@ -64,6 +64,71 @@
       </button>
     </div>
 
+    <!-- 추천을 실제 예약과 연결한다. 적용 전에는 서버의 PENDING 상태만 보여준다. -->
+    <section
+      v-if="store.recommendations.length > 0 || store.recommendationsError"
+      class="rounded-[12px] border border-line bg-surface-card p-4"
+      aria-labelledby="schedule-recommendations-title"
+    >
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id="schedule-recommendations-title" class="text-[13px] font-bold text-content">
+            {{ t('redesign.calendar.autoArrange') }}
+          </h2>
+          <p class="mt-1 text-[11px] text-content-tertiary">
+            {{ t('redesign.calendar.autoArrangeDescription') }}
+          </p>
+        </div>
+        <button
+          type="button"
+          class="rounded-[7px] border border-line-control px-[10px] py-[6px] text-[11.5px] text-content-secondary transition-colors hover:border-line-hover hover:text-content disabled:opacity-50"
+          :disabled="store.applyingRecommendationId !== null"
+          @click="refreshRecommendations"
+        >
+          {{ t('action.retry') }}
+        </button>
+      </div>
+      <div
+        v-if="store.recommendationsError"
+        class="mt-3 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-[11px] text-error-strong"
+        role="alert"
+      >
+        {{ t('redesign.calendar.autoArrangeFailed') }}
+      </div>
+      <div v-else class="mt-3 space-y-2">
+        <article
+          v-for="recommendation in pendingRecommendations"
+          :key="recommendation.id"
+          class="flex flex-wrap items-center gap-3 rounded-lg border border-line-row px-3 py-2.5"
+        >
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-[12px] font-semibold text-content">
+              {{ recommendation.videoTitle }} · {{ recommendation.platform }}
+            </p>
+            <p class="mt-1 text-[11px] text-content-secondary">
+              {{ formatRecommendationDate(recommendation.recommendedSchedule) }} ·
+              {{ t('redesign.calendar.autoArrangeImprovement', { count: recommendation.expectedImprovement }) }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 rounded-[7px] bg-accent px-3 py-1.5 text-[11px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            :disabled="store.applyingRecommendationId !== null"
+            @click="applyRecommendation(recommendation.id)"
+          >
+            {{
+              store.applyingRecommendationId === recommendation.id
+                ? t('redesign.calendar.autoArranging')
+                : t('redesign.calendar.autoArrangeApply')
+            }}
+          </button>
+        </article>
+        <p v-if="pendingRecommendations.length === 0" class="text-[11.5px] text-content-tertiary">
+          {{ t('redesign.calendar.autoArrangeEmpty') }}
+        </p>
+      </div>
+    </section>
+
     <!-- 주간 그리드 -->
     <div class="overflow-x-auto rounded-[12px] border border-line bg-surface-card">
       <div class="min-w-[840px]">
@@ -270,6 +335,7 @@ import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { toDateStr, toDateTimeLocal } from '@/utils/schedule'
 import type { Schedule } from '@/types/schedule'
 import { recurringApi, type RecurringSchedule } from '@/api/recurring'
+import type { ScheduleRecommendation } from '@/api/scheduleOptimizer'
 
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
@@ -286,6 +352,9 @@ type PendingCalendarAction =
   | { type: 'delete'; schedule: RecurringSchedule }
 
 const pendingAction = ref<PendingCalendarAction | null>(null)
+const pendingRecommendations = computed<ScheduleRecommendation[]>(() =>
+  store.recommendations.filter((recommendation) => recommendation.status === 'PENDING'),
+)
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
@@ -438,6 +507,27 @@ function formatRecurringDate(value: string | null): string {
   return value.replace('T', ' ').slice(0, 16)
 }
 
+function formatRecommendationDate(value: string): string {
+  return value.replace('T', ' ').slice(0, 16)
+}
+
+async function refreshRecommendations() {
+  try {
+    await store.fetchOptimalRecommendations()
+  } catch {
+    // The store exposes the server error without replacing confirmed data.
+  }
+}
+
+async function applyRecommendation(id: number) {
+  try {
+    await store.applyRecommendation(id)
+    notify.success(t('redesign.calendar.autoArrangeApplied'))
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : t('redesign.calendar.autoArrangeFailed'))
+  }
+}
+
 async function loadRecurring() {
   recurringLoading.value = true
   recurringError.value = ''
@@ -518,5 +608,6 @@ async function confirmPendingAction() {
 onMounted(() => {
   store.fetchWeek()
   loadRecurring()
+  refreshRecommendations()
 })
 </script>

@@ -5,10 +5,16 @@ import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.PromptTemplates
 import com.ongo.application.ai.result.ScheduleOptimalResult
 import com.ongo.application.credit.CreditService
+import com.ongo.application.schedule.ScheduleUseCase
+import com.ongo.application.schedule.dto.PlatformScheduleConfig
+import com.ongo.application.schedule.dto.UpdateScheduleRequest
 import com.ongo.application.scheduleoptimizer.dto.*
 import com.ongo.common.enums.AiFeature
+import com.ongo.common.enums.Platform
+import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.scheduleoptimizer.OptimalSlot
 import com.ongo.domain.scheduleoptimizer.OptimalSlotRepository
 import com.ongo.domain.scheduleoptimizer.ScheduleRecommendation
@@ -24,6 +30,8 @@ class ScheduleOptimizerUseCase(
     private val chatClientResolver: ChatClientResolver,
     private val creditService: CreditService,
     private val rateLimiter: AiRateLimiter,
+    private val scheduleRepository: ScheduleRepository,
+    private val scheduleUseCase: ScheduleUseCase,
 ) {
 
     private val log = LoggerFactory.getLogger(ScheduleOptimizerUseCase::class.java)
@@ -86,6 +94,48 @@ class ScheduleOptimizerUseCase(
     fun applyRecommendation(userId: Long, id: Long): ScheduleRecommendationResponse {
         val rec = recRepository.findByIdAndUserId(id, userId)
             ?: throw NotFoundException("일정 추천", id)
+
+        // Update the durable schedule and video_uploads queue before reporting
+        // success. Marking only this row as APPLIED leaves the dispatcher at the
+        // old time and makes the UI lie about the user's actual schedule.
+        if (rec.status == "APPLIED") return rec.toRecResponse()
+        if (rec.status != "PENDING") {
+            throw BusinessException("SCHEDULE_RECOMMENDATION_NOT_APPLICABLE", "이미 처리된 일정 추천입니다")
+        }
+
+        val schedule = scheduleRepository.findByUserId(userId)
+            .firstOrNull { it.videoId == rec.videoId && it.status == ScheduleStatus.SCHEDULED }
+            ?: throw BusinessException(
+                "SCHEDULE_RECOMMENDATION_NOT_APPLICABLE",
+                "현재 예약에 연결되지 않은 일정 추천입니다. 예약을 새로 확인해주세요",
+            )
+        val recommendedPlatform = runCatching { Platform.valueOf(rec.platform.trim().uppercase()) }
+            .getOrElse {
+                throw BusinessException("SCHEDULE_RECOMMENDATION_NOT_APPLICABLE", "지원하지 않는 플랫폼의 일정 추천입니다")
+            }
+
+        val platformConfigs = schedule.platforms.map { (key, raw) ->
+            val (platform, channelId) = parseScheduleKey(key)
+                ?: throw BusinessException("SCHEDULE_RECOMMENDATION_NOT_APPLICABLE", "예약 플랫폼 정보가 올바르지 않습니다")
+            val currentTime = platformTime(raw) ?: schedule.scheduledAt
+            PlatformScheduleConfig(
+                platform = platform,
+                channelId = channelId,
+                scheduledAt = if (platform == recommendedPlatform) rec.recommendedSchedule else currentTime,
+            )
+        }
+        if (platformConfigs.none { it.platform == recommendedPlatform }) {
+            throw BusinessException("SCHEDULE_RECOMMENDATION_NOT_APPLICABLE", "추천 플랫폼이 현재 예약 대상에 없습니다")
+        }
+
+        scheduleUseCase.updateSchedule(
+            userId = userId,
+            scheduleId = schedule.id ?: throw NotFoundException("예약", 0),
+            request = UpdateScheduleRequest(
+                scheduledAt = platformConfigs.minOf { it.scheduledAt ?: schedule.scheduledAt },
+                platforms = platformConfigs,
+            ),
+        )
         if (!recRepository.updateStatus(id, userId, "APPLIED")) {
             throw NotFoundException("일정 추천", id)
         }
@@ -119,4 +169,17 @@ class ScheduleOptimizerUseCase(
         platform = platform, expectedImprovement = expectedImprovement,
         confidence = confidence, status = status, createdAt = createdAt,
     )
+
+    private fun parseScheduleKey(key: String): Pair<Platform, Long?>? {
+        val parts = key.split('#', limit = 2)
+        val platform = runCatching { Platform.valueOf(parts[0].trim().uppercase()) }.getOrNull() ?: return null
+        val channelId = parts.getOrNull(1)?.let { runCatching { it.toLong() }.getOrNull() }
+            ?: if (parts.size == 1) null else return null
+        return platform to channelId
+    }
+
+    private fun platformTime(raw: Any?): java.time.LocalDateTime? {
+        val value = (raw as? Map<*, *>)?.get("scheduledAt")?.toString() ?: return null
+        return runCatching { java.time.LocalDateTime.parse(value) }.getOrNull()
+    }
 }

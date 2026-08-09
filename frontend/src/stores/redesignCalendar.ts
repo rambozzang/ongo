@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { scheduleApi } from '@/api/schedule'
-import { scheduleOptimizerApi } from '@/api/scheduleOptimizer'
+import { scheduleOptimizerApi, type ScheduleRecommendation } from '@/api/scheduleOptimizer'
 import type { Schedule } from '@/types/schedule'
 import { toDateStr, toDateTimeLocal } from '@/utils/schedule'
 
@@ -32,6 +32,9 @@ export const useRedesignCalendarStore = defineStore('redesignCalendar', () => {
   const loading = ref(false)
   const loadError = ref(false)
   const moving = ref(false)
+  const recommendations = ref<ScheduleRecommendation[]>([])
+  const recommendationsError = ref(false)
+  const applyingRecommendationId = ref<number | null>(null)
 
   /** 주 단위 7일 (월~일) */
   const days = computed(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart.value, i)))
@@ -91,10 +94,31 @@ export const useRedesignCalendarStore = defineStore('redesignCalendar', () => {
     }
   }
 
-  /** 최적 시간 추천 개수 — 자동 배치 API는 아직 없어 추천 조회만 연결한다 */
+  /** 서버 추천을 캘린더에 표시한다. 추천 상태는 서버가 최종 권위다. */
   async function fetchOptimalRecommendations() {
-    const res = await scheduleOptimizerApi.getRecommendations()
-    return res.length
+    recommendationsError.value = false
+    try {
+      recommendations.value = await scheduleOptimizerApi.getRecommendations()
+      return recommendations.value.length
+    } catch (error) {
+      recommendationsError.value = true
+      throw error
+    }
+  }
+
+  /** 추천 적용은 durable 예약 큐까지 갱신한 서버 응답으로 캘린더를 교체한다. */
+  async function applyRecommendation(id: number) {
+    applyingRecommendationId.value = id
+    try {
+      const applied = await scheduleOptimizerApi.applyRecommendation(id)
+      recommendations.value = recommendations.value.map((recommendation) =>
+        recommendation.id === id ? applied : recommendation,
+      )
+      await fetchWeek()
+      return applied
+    } finally {
+      applyingRecommendationId.value = null
+    }
   }
 
   return {
@@ -103,6 +127,9 @@ export const useRedesignCalendarStore = defineStore('redesignCalendar', () => {
     loading,
     loadError,
     moving,
+    recommendations,
+    recommendationsError,
+    applyingRecommendationId,
     days,
     fetchWeek,
     shiftWeek,
@@ -110,5 +137,6 @@ export const useRedesignCalendarStore = defineStore('redesignCalendar', () => {
     moveSchedule,
     cancelSchedule,
     fetchOptimalRecommendations,
+    applyRecommendation,
   }
 })

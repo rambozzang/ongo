@@ -14,6 +14,7 @@ vi.mock('@/api/schedule', () => ({
 vi.mock('@/api/scheduleOptimizer', () => ({
   scheduleOptimizerApi: {
     getRecommendations: vi.fn(),
+    applyRecommendation: vi.fn(),
   },
 }))
 
@@ -75,5 +76,34 @@ describe('redesign calendar store', () => {
     vi.mocked(scheduleOptimizerApi.getRecommendations).mockResolvedValue([{} as never, {} as never])
     const store = useRedesignCalendarStore()
     await expect(store.fetchOptimalRecommendations()).resolves.toBe(2)
+  })
+
+  it('applies a recommendation and refreshes the confirmed calendar', async () => {
+    const recommendation = {
+      id: 11,
+      videoId: 10,
+      videoTitle: '예약 영상',
+      currentSchedule: '2026-08-10T09:00',
+      recommendedSchedule: '2026-08-11T10:00',
+      platform: 'YOUTUBE',
+      expectedImprovement: 18,
+      confidence: 82,
+      status: 'PENDING',
+      createdAt: '2026-08-01T00:00',
+    }
+    vi.mocked(scheduleOptimizerApi.getRecommendations).mockResolvedValue([recommendation])
+    vi.mocked(scheduleOptimizerApi.applyRecommendation).mockResolvedValue({
+      ...recommendation,
+      status: 'APPLIED',
+    })
+    vi.mocked(scheduleApi.list).mockResolvedValue([schedule])
+    const store = useRedesignCalendarStore()
+
+    await store.fetchOptimalRecommendations()
+    await store.applyRecommendation(11)
+
+    expect(scheduleOptimizerApi.applyRecommendation).toHaveBeenCalledWith(11)
+    expect(scheduleApi.list).toHaveBeenCalled()
+    expect(store.recommendations[0]?.status).toBe('APPLIED')
   })
 })
