@@ -44,16 +44,18 @@ class VideoPublishEventListener(
                     val platformSemaphore = ExecutorConfig.platformUploadSemaphore(config.platform)
                     platformSemaphore.acquire()
                     try {
-                        val ran = distributedLockPort?.withAnyLock(
-                            ExecutorConfig.platformUploadLockIds(config.platform),
-                        ) {
+                        val ran = if (distributedLockPort == null) {
                             uploadToPlatform(event, config, config.leaseOwner ?: eventLeaseOwner)
                             true
-                        } ?: run {
-                            uploadToPlatform(event, config, config.leaseOwner ?: eventLeaseOwner)
-                            true
+                        } else {
+                            distributedLockPort.withAnyLock(
+                                ExecutorConfig.platformUploadLockIds(config.platform),
+                            ) {
+                                uploadToPlatform(event, config, config.leaseOwner ?: eventLeaseOwner)
+                                true
+                            }
                         }
-                        if (!ran) {
+                        if (ran != true) {
                             log.warn("플랫폼 {} 분산 동시성 슬롯을 확보하지 못해 업로드를 보류합니다: videoId={}", config.platform, event.videoId)
                         }
                     } finally {

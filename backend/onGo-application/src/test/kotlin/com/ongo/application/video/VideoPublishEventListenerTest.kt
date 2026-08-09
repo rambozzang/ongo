@@ -3,6 +3,7 @@ package com.ongo.application.video
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
+import com.ongo.domain.lock.DistributedLockPort
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoUpload
@@ -301,5 +302,51 @@ class VideoPublishEventListenerTest {
         listener.handleVideoPublish(createEvent(configs = listOf(config)))
 
         verify(exactly = 0) { ytService.upload(any(), any(), any()) }
+    }
+
+    @Test
+    fun `does not upload when distributed concurrency slot cannot be acquired`() {
+        val ytService = createMockService(Platform.YOUTUBE)
+        platformUploadServices.add(ytService)
+        every { ytService.upload(any(), any(), any()) } returns PlatformUploadResult(
+            success = false,
+            published = false,
+            errorMessage = "should not be called",
+        )
+        val upload = VideoUpload(
+            id = 10L,
+            videoId = 1L,
+            platform = Platform.YOUTUBE,
+            status = UploadStatus.UPLOADING,
+        )
+        every { videoUploadRepository.claim(10L, any(), any(), any()) } returns upload
+        every { videoUploadRepository.findById(10L) } returns upload
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+
+        val lockPort = NeverAcquiresDistributedLock()
+        val lockedListener = VideoPublishEventListener(
+            platformUploadServices,
+            videoUploadRepository,
+            videoRepository,
+            eventPublisher,
+            distributedLockPort = lockPort,
+        )
+
+        lockedListener.handleVideoPublish(createEvent(configs = listOf(createConfig())))
+
+        verify(exactly = 0) { ytService.upload(any(), any(), any()) }
+        verify(exactly = 0) { videoUploadRepository.claim(any(), any(), any(), any()) }
+    }
+
+    private class NeverAcquiresDistributedLock : DistributedLockPort {
+        override fun <T> withAnyLock(lockIds: Collection<Long>, block: () -> T): T? = null
+
+        override fun withLock(lockId: Long, block: () -> Unit): Boolean = false
+
+        @Deprecated("test implementation")
+        override fun tryLock(lockId: Long): Boolean = false
+
+        @Deprecated("test implementation")
+        override fun releaseLock(lockId: Long) = Unit
     }
 }
