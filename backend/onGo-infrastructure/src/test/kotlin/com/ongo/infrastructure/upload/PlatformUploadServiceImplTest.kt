@@ -15,8 +15,12 @@ import com.ongo.infrastructure.external.platform.PlatformClientFactory
 import com.ongo.infrastructure.external.platform.PlatformTokenResult
 import com.ongo.infrastructure.external.platform.PlatformUploadResult as ClientUploadResult
 import io.mockk.every
+import io.mockk.Runs
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpHeaders
@@ -361,5 +365,78 @@ class PlatformUploadServiceImplTest {
         assertThat(requests).containsExactly("old-token", "new-token")
         assertThat(result.success).isTrue()
         assertThat(result.published).isTrue()
+    }
+
+    @Test
+    fun `직접 스트리밍 writer가 반환한 401도 토큰 갱신 후 세션을 재시도한다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channels = mockk<ChannelRepository>()
+        val encryption = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+        val writer = mockk<com.ongo.application.video.PlatformStreamWriter>()
+        val tokens = mutableListOf<String>()
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setBody("test video"))
+        server.enqueue(MockResponse().setBody("test video"))
+        server.start()
+
+        try {
+            every { factory.getClient(Platform.YOUTUBE) } returns client
+            every { channels.findByUserIdAndPlatform(7L, Platform.YOUTUBE) } returns channel(EncryptedToken("encrypted-refresh"))
+            every { encryption.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("old-token")
+            every { encryption.decrypt(EncryptedToken("encrypted-refresh")) } returns PlainToken("refresh-token")
+            every { encryption.encrypt(any()) } returns EncryptedToken("encrypted-new")
+            every { channels.update(any()) } answers { firstArg() }
+            every { client.refreshToken("refresh-token") } returns PlatformTokenResult(
+                accessToken = "new-token",
+                refreshToken = null,
+                expiresIn = 3600,
+            )
+            every { writer.initSession(any(), any(), any(), any(), any()) } answers {
+                tokens += secondArg<PlainToken>().value
+                "session"
+            }
+            every { writer.writeChunk(any(), any(), any()) } just Runs
+            every { writer.abort() } just Runs
+            every { writer.complete() } returnsMany listOf(
+                com.ongo.application.video.PlatformUploadResult(
+                    success = false,
+                    published = false,
+                    errorMessage = "Unauthorized",
+                    httpStatus = 401,
+                ),
+                com.ongo.application.video.PlatformUploadResult(
+                    success = true,
+                    platformVideoId = "video-1",
+                    platformUrl = "https://youtube.com/watch?v=video-1",
+                    published = true,
+                ),
+            )
+            val streamFactory = object : com.ongo.application.video.PlatformStreamWriterFactory {
+                override val platform = Platform.YOUTUBE
+                override fun createWriter() = writer
+            }
+
+            val result = PlatformUploadServiceImpl(factory, channels, encryption, listOf(streamFactory)).upload(
+                config = PlatformUploadConfig(
+                    platform = Platform.YOUTUBE,
+                    videoUploadId = 10L,
+                    title = "제목",
+                    description = null,
+                    tags = emptyList(),
+                    visibility = Visibility.PUBLIC,
+                    thumbnailUrl = null,
+                    fileSize = 100,
+                    scheduledAt = null,
+                ),
+                fileUrl = server.url("/video.mp4").toString(),
+                userId = 7L,
+            )
+
+            assertThat(tokens).containsExactly("old-token", "new-token")
+            assertThat(result.published).isTrue()
+        } finally {
+            server.shutdown()
+        }
     }
 }

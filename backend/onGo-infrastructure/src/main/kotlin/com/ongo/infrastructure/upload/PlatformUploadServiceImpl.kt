@@ -98,6 +98,40 @@ class PlatformUploadServiceImpl(
                     )
                 }
 
+                // StreamWriter implementations intentionally convert provider
+                // exceptions into a result so that a background worker can persist
+                // the final state. Preserve the one safe refresh case here: a 401
+                // returned before a provider upload session is created. Writers
+                // that already sent bytes mark the result UNKNOWN, so this branch
+                // cannot duplicate an external post.
+                if (!refreshedAfterUnauthorized &&
+                    result.httpStatus == 401 &&
+                    result.confirmation == PublishConfirmation.CONFIRMED &&
+                    channel.refreshToken != null
+                ) {
+                    try {
+                        val refreshed = platformClientFactory.getClient(config.platform)
+                            .refreshToken(tokenEncryptionPort.decrypt(channel.refreshToken!!).value)
+                        channel = channelRepository.update(
+                            channel.copy(
+                                accessToken = tokenEncryptionPort.encrypt(com.ongo.domain.channel.PlainToken(refreshed.accessToken)),
+                                refreshToken = refreshed.refreshToken?.let {
+                                    tokenEncryptionPort.encrypt(com.ongo.domain.channel.PlainToken(it))
+                                } ?: channel.refreshToken,
+                                tokenExpiresAt = LocalDateTime.now().plusSeconds(refreshed.expiresIn),
+                            )
+                        )
+                        accessToken = refreshed.accessToken
+                        refreshedAfterUnauthorized = true
+                        log.info("플랫폼 {} access token을 갱신하고 writer 업로드를 한 번 재시도합니다", config.platform)
+                        continue
+                    } catch (refreshException: Exception) {
+                        lastException = refreshException
+                        log.warn("플랫폼 {} writer access token 갱신 실패", config.platform, refreshException)
+                        return result
+                    }
+                }
+
                 return result
             } catch (e: Exception) {
                 lastException = e

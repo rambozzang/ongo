@@ -93,7 +93,9 @@ class ThreadsStreamWriter(
             }
         } catch (e: Exception) {
             log.error("Threads 스트리밍 업로드 실패", e)
-            uploadFailureResult(e)
+            // Temporary storage is complete, but Threads has not accepted a
+            // container yet. A 401 here is safe to refresh and retry once.
+            uploadFailureResult(e, safeToRetryUnauthorized = true)
         } finally {
             runCatching { storageClient.deleteFile(key) }
             storageKey = null

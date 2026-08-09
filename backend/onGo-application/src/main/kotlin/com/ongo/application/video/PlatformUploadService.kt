@@ -46,6 +46,8 @@ data class PlatformUploadResult(
     val pollToken: String? = null,
     /** 외부 호출이 끝났지만 응답을 잃었을 때 중복 재전송을 막기 위한 구분. */
     val confirmation: PublishConfirmation = PublishConfirmation.CONFIRMED,
+    /** writer가 예외를 결과로 변환한 경우에도 토큰 갱신 판단을 잃지 않도록 보존한다. */
+    val httpStatus: Int? = null,
 )
 
 /** 외부 게시 결과를 호출자가 놓치지 않도록 성공 의미를 sealed 타입으로 고정한다. */

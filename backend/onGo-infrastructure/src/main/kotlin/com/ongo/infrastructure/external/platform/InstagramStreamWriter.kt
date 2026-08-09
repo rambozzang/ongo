@@ -96,7 +96,9 @@ class InstagramStreamWriter(
             }
         } catch (e: Exception) {
             log.error("Instagram 스트리밍 업로드 실패", e)
-            uploadFailureResult(e)
+            // Temporary storage is complete, but Instagram has not accepted a
+            // container yet. A 401 here is safe to refresh and retry once.
+            uploadFailureResult(e, safeToRetryUnauthorized = true)
         } finally {
             runCatching { storageClient.deleteFile(key) }
             storageKey = null
