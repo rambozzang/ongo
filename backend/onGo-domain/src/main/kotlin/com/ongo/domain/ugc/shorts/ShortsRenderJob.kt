@@ -35,6 +35,7 @@ data class ShortsRenderJob(
 interface ShortsRenderJobRepository {
     fun findById(id: String): ShortsRenderJob?
     fun findByRunAndClip(runId: Long, clipId: Long): ShortsRenderJob?
+    fun findByStatus(status: ShortsRenderJobStatus, limit: Int): List<ShortsRenderJob>
     /** 동시 요청에서도 (runId, clipId)당 하나만 생성하고 기존 job을 반환한다. */
     fun saveIfAbsent(job: ShortsRenderJob): ShortsRenderJob
     /** QUEUED 상태를 원자적으로 RUNNING으로 선점한다. 이미 선점됐으면 null을 반환한다. */

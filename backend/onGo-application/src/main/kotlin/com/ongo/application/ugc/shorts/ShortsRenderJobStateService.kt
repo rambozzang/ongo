@@ -63,6 +63,14 @@ class ShortsRenderJobStateService(
         }
     }
 
+    /** QUEUED job을 이 실행자만 RUNNING으로 바꾼다. 이미 선점된 job은 null이다. */
+    @Transactional
+    fun claimForExecution(jobId: String): ShortsRenderJob? {
+        val current = find(jobId)
+        if (current.status != ShortsRenderJobStatus.QUEUED) return null
+        return repository.claimQueued(jobId, Instant.now())
+    }
+
     @Transactional
     fun markCompleted(jobId: String, videoId: Long): ShortsRenderJob {
         val current = find(jobId)

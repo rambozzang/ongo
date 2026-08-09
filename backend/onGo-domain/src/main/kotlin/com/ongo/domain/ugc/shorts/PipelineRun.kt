@@ -11,6 +11,12 @@ data class PipelineRun(
     val userId: Long,
     val sourceVideoId: Long,
     val templateId: Long? = null,
+    /** Compose의 원클릭 쇼츠 작업인지. 수동 UGC 실행은 false다. */
+    val autoSchedule: Boolean = false,
+    val autoScheduleStartAt: Instant? = null,
+    val autoScheduleIntervalHours: Int? = null,
+    /** PLATFORM 또는 PLATFORM#channelId 형식의 게시 대상. */
+    val autoSchedulePlatforms: List<String> = emptyList(),
     val status: PipelineRunStatus = PipelineRunStatus.PENDING,
     val currentStage: PipelineStage? = null,
     val transcriptText: String? = null,

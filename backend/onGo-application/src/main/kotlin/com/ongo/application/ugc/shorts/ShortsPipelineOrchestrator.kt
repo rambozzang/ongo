@@ -16,6 +16,7 @@ import com.ongo.domain.settings.UserSettingsRepository
 import com.ongo.domain.ugc.shorts.ClipHook
 import com.ongo.domain.ugc.shorts.ClipStatus
 import com.ongo.domain.ugc.shorts.ClipHookRepository
+import com.ongo.domain.ugc.shorts.HookVariant
 import com.ongo.domain.ugc.shorts.PipelineRun
 import com.ongo.domain.ugc.shorts.PipelineRunRepository
 import com.ongo.domain.ugc.shorts.PipelineRunStatus
@@ -86,8 +87,14 @@ class ShortsPipelineOrchestrator(
 
             when (stage) {
                 PipelineStage.HOOK -> {
-                    persistRun(run.id) { it.copy(status = PipelineRunStatus.AWAITING_HOOK_SELECTION) }
-                    return
+                    if (!run.autoSchedule) {
+                        persistRun(run.id) { it.copy(status = PipelineRunStatus.AWAITING_HOOK_SELECTION) }
+                        return
+                    }
+
+                    // Compose의 원클릭 모드는 브라우저가 선택 게이트를 대신할 수 없다.
+                    // 서버가 A(없으면 첫 번째) 후킹을 확정하고 같은 실행을 계속한다.
+                    selectDefaultHooks(context)
                 }
                 PipelineStage.VALIDATE -> {
                     persistRun(run.id) { it.copy(status = PipelineRunStatus.AWAITING_SCHEDULE) }
@@ -258,6 +265,20 @@ class ShortsPipelineOrchestrator(
         val clip = context.clips.find { it.id == clipId } ?: return
         val updated = shortsClipRepository.update(transform(clip))
         context.clips = context.clips.map { if (it.id == clipId) updated else it }
+    }
+
+    /** 자동 실행에서만 사용하는 기본 후킹 확정. 후킹이 없는 클립은 조용히 누락시키지 않는다. */
+    private fun selectDefaultHooks(context: ShortsStageContext) {
+        context.clips
+            .filter { it.status != ClipStatus.DISCARDED }
+            .forEach { clip ->
+                val hook = context.hooks[clip.id]?.firstOrNull { it.variant == HookVariant.A }
+                    ?: context.hooks[clip.id]?.firstOrNull()
+                    ?: throw IllegalStateException("자동 쇼츠 후킹을 만들지 못했습니다: clipId=${clip.id}")
+                clipHookRepository.clearSelection(clip.id)
+                clipHookRepository.markSelected(clip.id, hook.variant, hook.text)
+                updateClip(context, clip.id) { it.copy(status = ClipStatus.HOOK_SELECTED) }
+            }
     }
 
     /** 실행을 다시 읽어 갱신하고 컨텍스트에도 반영한다 (낙관적 락 충돌 방지를 위해 항상 재조회). */

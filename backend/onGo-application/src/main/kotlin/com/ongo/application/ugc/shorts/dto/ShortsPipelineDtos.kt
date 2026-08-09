@@ -88,6 +88,11 @@ data class PipelineRunDetailResponse(
 data class CreatePipelineRunRequest(
     val sourceVideoId: Long,
     val templateId: Long? = null,
+    /** true면 후킹 선택·렌더·예약 확정까지 서버 워커가 이어서 처리한다. */
+    val autoSchedule: Boolean = false,
+    val scheduleStartAt: Instant? = null,
+    val scheduleIntervalHours: Int? = null,
+    val platforms: List<String> = emptyList(),
 )
 
 /** 후킹 선택 하나. CUSTOM이면 customText가 필요하다. */

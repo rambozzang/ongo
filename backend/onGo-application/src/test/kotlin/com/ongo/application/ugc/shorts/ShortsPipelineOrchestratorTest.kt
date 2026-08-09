@@ -56,6 +56,8 @@ class ShortsPipelineOrchestratorTest {
         override fun save(run: PipelineRun) = run.also { current = it }
         override fun update(run: PipelineRun) = run.also { current = it }
         override fun findById(id: Long) = current.takeIf { it.id == id }
+        override fun findByStatus(status: PipelineRunStatus, limit: Int) =
+            listOf(current).filter { it.status == status }.take(limit)
         override fun findByWorkspace(workspaceId: Long, offset: Int, limit: Int) = listOf(current)
         override fun countByWorkspace(workspaceId: Long) = 1L
         override fun delete(id: Long) = true
@@ -328,6 +330,36 @@ class ShortsPipelineOrchestratorTest {
         assertEquals(4, hookRepo.hooks.size)
         // 전사 결과가 실행에 기록된다
         assertEquals("전사 전문", runRepo.findById(1L)!!.transcriptText)
+    }
+
+    @Test
+    fun `자동 실행은 기본 후킹을 확정하고 브라우저 게이트 없이 예약 대기로 진행한다`() {
+        stubCommon()
+        val runRepo = InMemoryPipelineRunRepository(baseRun().copy(autoSchedule = true))
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository(listOf(clip(11, 1)))
+        val hookRepo = InMemoryClipHookRepository()
+        val hook = FakeStageExecutor(PipelineStage.HOOK) {
+            ShortsStageOutput(
+                outputSnapshot = "{}",
+                hooks = listOf(GeneratedHook(11, HookVariant.A, "자동 후킹")),
+            )
+        }
+        val template = FakeStageExecutor(PipelineStage.TEMPLATE) { ShortsStageOutput(outputSnapshot = "{}") }
+        val renderSpec = FakeStageExecutor(PipelineStage.RENDER_SPEC) {
+            ShortsStageOutput(outputSnapshot = "{}", renderSpecs = mapOf(11L to "{}"))
+        }
+        val validate = FakeStageExecutor(PipelineStage.VALIDATE) { ShortsStageOutput(outputSnapshot = "{}") }
+
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, listOf(hook, template, renderSpec, validate))
+            .run(1L, PipelineStage.HOOK)
+
+        assertEquals(PipelineRunStatus.AWAITING_SCHEDULE, runRepo.findById(1L)!!.status)
+        assertEquals(ClipStatus.RENDER_READY, clipRepo.findById(11)!!.status)
+        assertEquals(true, hookRepo.hooks.last { it.clipId == 11L }.selected)
+        assertEquals(1, template.callCount)
+        assertEquals(1, renderSpec.callCount)
+        assertEquals(1, validate.callCount)
     }
 
     @Test

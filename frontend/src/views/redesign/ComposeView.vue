@@ -1357,20 +1357,7 @@ async function waitForShortsState(
   throw new Error(t('redesign.compose.shortsTimedOut'))
 }
 
-async function waitForRender(workspaceId: number, runId: number, clipId: number): Promise<number> {
-  const deadline = Date.now() + 15 * 60 * 1000
-  while (Date.now() < deadline) {
-    const status = await ugcShortsPipelineApi.getRenderStatus(workspaceId, runId, clipId)
-    shortsStatus.value = `${t('redesign.compose.shortsRendering')} ${status.progress ?? 0}%`
-    if (status.status === 'COMPLETED' && status.videoId != null) return status.videoId
-    if (status.status === 'FAILED')
-      throw new Error(status.failureReason || t('redesign.compose.shortsRenderFailed'))
-    await wait(2000)
-  }
-  throw new Error(t('redesign.compose.shortsTimedOut'))
-}
-
-/** 쇼츠 생성 → 기본 후킹 선택 → 서버 렌더 → 선택 채널 예약 게시까지 한 번에 처리한다. */
+/** 쇼츠 생성만 요청한다. 후킹·렌더·예약 게시의 나머지는 서버 워커가 이어서 처리한다. */
 async function publishAutomaticShorts(sourceVideoId: number) {
   if (shortsPlatforms.value.length === 0)
     throw new Error(t('redesign.compose.shortsNoCompatibleTargets'))
@@ -1383,32 +1370,6 @@ async function publishAutomaticShorts(sourceVideoId: number) {
   if (!availability.available)
     throw new Error(availability.reason || t('redesign.compose.shortsUnavailable'))
 
-  const run = await ugcShortsPipelineApi.create(workspaceId, { sourceVideoId, templateId: null })
-  let detail = await waitForShortsState(workspaceId, run.id, 'AWAITING_HOOK_SELECTION')
-  const selections = detail.clips
-    .filter((clip) => clip.status !== 'DISCARDED')
-    .map((clip) => {
-      const hook = clip.hooks.find((candidate) => candidate.variant === 'A') || clip.hooks[0]
-      return hook ? { clipId: clip.id, variant: hook.variant } : null
-    })
-    .filter(
-      (selection): selection is { clipId: number; variant: 'A' | 'B' | 'CUSTOM' } =>
-        selection !== null,
-    )
-  if (selections.length === 0) throw new Error(t('redesign.compose.shortsNoClips'))
-
-  await ugcShortsPipelineApi.selectHooks(workspaceId, run.id, { selections, discardClipIds: [] })
-  detail = await waitForShortsState(workspaceId, run.id, 'AWAITING_SCHEDULE')
-
-  const renderableClips = detail.clips.filter((clip) => clip.status !== 'DISCARDED')
-  shortsStatus.value = t('redesign.compose.shortsRendering')
-  await Promise.all(
-    renderableClips.map(async (clip) => {
-      await ugcShortsPipelineApi.startRender(workspaceId, run.id, clip.id)
-      return waitForRender(workspaceId, run.id, clip.id)
-    }),
-  )
-
   const scheduledStart = scheduledAtFor(0, shortsPlatforms.value[0])
   const startAt = new Date(
     Math.max(
@@ -1416,9 +1377,12 @@ async function publishAutomaticShorts(sourceVideoId: number) {
       scheduledStart ? kstWallClockToInstant(scheduledStart).getTime() : Date.now(),
     ),
   )
-  await ugcShortsPipelineApi.confirmSchedule(workspaceId, run.id, {
-    startAt: startAt.toISOString(),
-    intervalHours: 2,
+  const run = await ugcShortsPipelineApi.create(workspaceId, {
+    sourceVideoId,
+    templateId: null,
+    autoSchedule: true,
+    scheduleStartAt: startAt.toISOString(),
+    scheduleIntervalHours: 2,
     platforms: shortsTargets.value,
   })
   await waitForShortsState(workspaceId, run.id, 'COMPLETED')

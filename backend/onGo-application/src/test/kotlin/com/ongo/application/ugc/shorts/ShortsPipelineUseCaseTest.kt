@@ -179,6 +179,50 @@ class ShortsPipelineUseCaseTest {
         assertEquals("내 롱폼", response.sourceVideoTitle)
     }
 
+    @Test
+    fun `자동 쇼츠 실행은 예약 설정을 영속화하고 서버 워커 시작 이벤트를 발행한다`() {
+        grantAccess(workspaceId)
+        every { videoRepository.findById(videoId) } returns
+            Video(id = videoId, userId = userId, title = "내 롱폼")
+        val startAt = Instant.parse("2026-08-10T01:00:00Z")
+        val saved = slot<PipelineRun>()
+        every { pipelineRunRepository.save(capture(saved)) } returns run(PipelineRunStatus.PENDING)
+        val event = slot<ShortsPipelineEvent>()
+        every { eventPublisher.publishEvent(capture(event)) } just runs
+
+        useCase.createRun(
+            userId,
+            workspaceId,
+            CreatePipelineRunRequest(
+                sourceVideoId = videoId,
+                autoSchedule = true,
+                scheduleStartAt = startAt,
+                scheduleIntervalHours = 2,
+                platforms = listOf("YOUTUBE#channel-1", "INSTAGRAM#channel-2"),
+            ),
+        )
+
+        assertEquals(true, saved.captured.autoSchedule)
+        assertEquals(startAt, saved.captured.autoScheduleStartAt)
+        assertEquals(2, saved.captured.autoScheduleIntervalHours)
+        assertEquals(listOf("YOUTUBE#channel-1", "INSTAGRAM#channel-2"), saved.captured.autoSchedulePlatforms)
+        assertEquals(PipelineStage.TRANSCRIBE, event.captured.fromStage)
+    }
+
+    @Test
+    fun `자동 쇼츠는 예약 설정이 빠지면 생성되지 않는다`() {
+        grantAccess(workspaceId)
+
+        assertFailsWith<IllegalArgumentException> {
+            useCase.createRun(
+                userId,
+                workspaceId,
+                CreatePipelineRunRequest(sourceVideoId = videoId, autoSchedule = true),
+            )
+        }
+        verify(exactly = 0) { pipelineRunRepository.save(any()) }
+    }
+
     // ---- 단계 재실행 가드 ----
 
     @Test

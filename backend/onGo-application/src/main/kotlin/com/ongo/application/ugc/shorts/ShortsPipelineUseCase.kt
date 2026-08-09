@@ -57,6 +57,14 @@ class ShortsPipelineUseCase(
     fun createRun(userId: Long, workspaceId: Long, request: CreatePipelineRunRequest): PipelineRunResponse {
         assertWorkspaceAccess(userId, workspaceId)
 
+        if (request.autoSchedule) {
+            require(request.scheduleStartAt != null) { "자동 쇼츠 예약 시작 시각이 필요합니다" }
+            require(request.scheduleIntervalHours != null && request.scheduleIntervalHours > 0) {
+                "자동 쇼츠 예약 간격은 1시간 이상이어야 합니다"
+            }
+            require(request.platforms.isNotEmpty()) { "자동 쇼츠 게시 대상 플랫폼이 필요합니다" }
+        }
+
         val video = videoRepository.findById(request.sourceVideoId)
             ?: throw BusinessException("SHORTS_SOURCE_VIDEO_NOT_FOUND", "원본 영상을 찾을 수 없습니다: ${request.sourceVideoId}")
         if (video.userId != userId) {
@@ -69,6 +77,10 @@ class ShortsPipelineUseCase(
                 userId = userId,
                 sourceVideoId = request.sourceVideoId,
                 templateId = request.templateId,
+                autoSchedule = request.autoSchedule,
+                autoScheduleStartAt = request.scheduleStartAt,
+                autoScheduleIntervalHours = request.scheduleIntervalHours,
+                autoSchedulePlatforms = request.platforms,
                 status = PipelineRunStatus.PENDING,
             ),
         )

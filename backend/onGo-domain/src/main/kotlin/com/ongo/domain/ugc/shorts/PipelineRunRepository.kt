@@ -4,6 +4,7 @@ interface PipelineRunRepository {
     fun save(run: PipelineRun): PipelineRun
     fun update(run: PipelineRun): PipelineRun
     fun findById(id: Long): PipelineRun?
+    fun findByStatus(status: PipelineRunStatus, limit: Int): List<PipelineRun>
     fun findByWorkspace(workspaceId: Long, offset: Int, limit: Int): List<PipelineRun>
     fun countByWorkspace(workspaceId: Long): Long
     fun delete(id: Long): Boolean

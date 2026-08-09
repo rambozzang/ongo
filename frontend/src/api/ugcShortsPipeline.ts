@@ -94,6 +94,12 @@ export interface PipelineRunDetailResponse {
 export interface CreatePipelineRunRequest {
   sourceVideoId: number
   templateId?: number | null
+  /** 브라우저 없이 서버가 후킹·렌더·예약 게시까지 이어서 처리한다. */
+  autoSchedule?: boolean
+  scheduleStartAt?: string | null
+  scheduleIntervalHours?: number | null
+  /** PLATFORM 또는 PLATFORM#channelId */
+  platforms?: string[]
 }
 
 export interface HookSelectionItem {

@@ -279,25 +279,10 @@ describe('ComposeView', () => {
   it('runs the automatic Shorts pipeline after the original multi-channel publish', async () => {
     vi.mocked(ugcShortsPipelineApi.getRenderAvailability).mockResolvedValue({ available: true, reason: null })
     vi.mocked(ugcShortsPipelineApi.create).mockResolvedValue({ id: 77 } as never)
-    vi.mocked(ugcShortsPipelineApi.get)
-      .mockResolvedValueOnce({
-        run: { id: 77, status: 'AWAITING_HOOK_SELECTION', currentStage: null },
-        clips: [{ id: 501, status: 'DRAFT', hooks: [{ variant: 'A', text: '후킹', selected: false }] }],
-      } as never)
-      .mockResolvedValueOnce({
-        run: { id: 77, status: 'AWAITING_SCHEDULE', currentStage: null },
-        clips: [{ id: 501, status: 'READY', hooks: [] }],
-      } as never)
-      .mockResolvedValueOnce({
+    vi.mocked(ugcShortsPipelineApi.get).mockResolvedValueOnce({
         run: { id: 77, status: 'COMPLETED', currentStage: null },
         clips: [{ id: 501, status: 'PUBLISHED', hooks: [] }],
       } as never)
-    vi.mocked(ugcShortsPipelineApi.selectHooks).mockResolvedValue({ id: 77 } as never)
-    vi.mocked(ugcShortsPipelineApi.startRender).mockResolvedValue({ renderJobId: 'render-1' })
-    vi.mocked(ugcShortsPipelineApi.getRenderStatus).mockResolvedValue({
-      status: 'COMPLETED', progress: 100, videoId: 901, failureReason: null,
-    })
-    vi.mocked(ugcShortsPipelineApi.confirmSchedule).mockResolvedValue({ id: 77 } as never)
 
     const { wrapper } = await renderCompose()
     const uploadStore = useUploadStore()
@@ -313,13 +298,16 @@ describe('ComposeView', () => {
     await flushPromises()
 
     expect(videoApi.publish).toHaveBeenCalledOnce()
-    expect(ugcShortsPipelineApi.create).toHaveBeenCalledWith(7, { sourceVideoId: 101, templateId: null })
-    expect(ugcShortsPipelineApi.selectHooks).toHaveBeenCalledWith(7, 77, {
-      selections: [{ clipId: 501, variant: 'A' }], discardClipIds: [],
-    })
-    expect(ugcShortsPipelineApi.startRender).toHaveBeenCalledWith(7, 77, 501)
-    expect(ugcShortsPipelineApi.confirmSchedule).toHaveBeenCalledWith(7, 77, expect.objectContaining({
+    expect(ugcShortsPipelineApi.create).toHaveBeenCalledWith(7, expect.objectContaining({
+      sourceVideoId: 101,
+      templateId: null,
+      autoSchedule: true,
+      scheduleStartAt: expect.any(String),
+      scheduleIntervalHours: 2,
       platforms: ['YOUTUBE#1', 'INSTAGRAM#2'],
     }))
+    expect(ugcShortsPipelineApi.selectHooks).not.toHaveBeenCalled()
+    expect(ugcShortsPipelineApi.startRender).not.toHaveBeenCalled()
+    expect(ugcShortsPipelineApi.confirmSchedule).not.toHaveBeenCalled()
   })
 })

@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.nio.file.Files
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 클립을 **서버에서** 렌더해 완성 영상을 만든다.
@@ -59,6 +60,7 @@ class ShortsRenderUseCase(
 
     /** 렌더 작업 전용 실행기. 요청 스레드를 붙잡지 않는다. */
     private val executor: ExecutorService = ExecutorConfig.newVirtualExecutor()
+    private val activeJobIds = ConcurrentHashMap.newKeySet<String>()
 
     fun availability(): RendererAvailability = renderer.checkAvailability()
 
@@ -87,9 +89,14 @@ class ShortsRenderUseCase(
 
         val job = stateService.enqueue(runId, clipId)
         if (job.status == com.ongo.domain.ugc.shorts.ShortsRenderJobStatus.QUEUED) {
-            executor.submit { runRender(job.id, runId, clipId) }
+            // 제출 전에 원자적으로 선점한다. 워커 tick/재시도/동시 POST가 겹쳐도
+            // QUEUED job 하나당 실행 스레드는 하나만 만들어진다.
+            val claimed = stateService.claimForExecution(job.id)
+            if (claimed != null) {
+                executor.submit { runRender(claimed.id, runId, clipId) }
+            }
         }
-        return job
+        return stateService.find(job.id)
     }
 
     fun status(userId: Long, workspaceId: Long, runId: Long, clipId: Long): ShortsRenderJob {
@@ -114,10 +121,9 @@ class ShortsRenderUseCase(
      * 실패는 job 상태로 남겨야 사용자가 안다.
      */
     private fun runRender(jobId: String, runId: Long, clipId: Long) {
+        activeJobIds += jobId
         try {
             resourceManager.withPermit(runId) {
-                stateService.markRunning(jobId)
-
                 val clip = clipRepository.findById(clipId) ?: throw NotFoundException("클립", clipId)
                 val spec = renderSpecBuilder.parseSpec(clip.renderSpec!!)
                 val source = spec.sourceFileUrl
@@ -175,8 +181,13 @@ class ShortsRenderUseCase(
             // 사유는 사용자에게 보인다. 경로나 스택트레이스를 넣지 않는다.
             log.error("shorts_render event=failed runId={} clipId={} jobId={}", runId, clipId, jobId, e)
             runCatching { stateService.markFailed(jobId, safeReason(e)) }
+        } finally {
+            activeJobIds -= jobId
         }
     }
+
+    /** 같은 JVM에서 아직 실행 중인 job은 재기동 복구기가 건드리지 않게 한다. */
+    fun isActiveInThisProcess(jobId: String): Boolean = jobId in activeJobIds
 
     private fun safeReason(e: Exception): String = when (e) {
         is ShortsRenderCapacityException -> "렌더 대기열이 가득 찼습니다. 잠시 후 다시 시도해 주세요."

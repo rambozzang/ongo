@@ -13,6 +13,10 @@ import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE_VIDEO_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.TEMPLATE_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.CROP_JSON
+import com.ongo.infrastructure.persistence.jooq.Fields.AUTO_SCHEDULE
+import com.ongo.infrastructure.persistence.jooq.Fields.AUTO_SCHEDULE_INTERVAL_HOURS
+import com.ongo.infrastructure.persistence.jooq.Fields.AUTO_SCHEDULE_PLATFORMS
+import com.ongo.infrastructure.persistence.jooq.Fields.AUTO_SCHEDULE_START_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.TRANSCRIPT_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
@@ -36,6 +40,10 @@ class ShortsRunJooqRepository(
             .set(USER_ID, run.userId)
             .set(SOURCE_VIDEO_ID, run.sourceVideoId)
             .set(TEMPLATE_ID, run.templateId)
+            .set(AUTO_SCHEDULE, run.autoSchedule)
+            .set(AUTO_SCHEDULE_START_AT, run.autoScheduleStartAt?.let(::localDateTime))
+            .set(AUTO_SCHEDULE_INTERVAL_HOURS, run.autoScheduleIntervalHours)
+            .set(AUTO_SCHEDULE_PLATFORMS, run.autoSchedulePlatforms.takeIf { it.isNotEmpty() }?.joinToString("\n"))
             .set(STATUS, run.status.name)
             .set(CURRENT_STAGE, run.currentStage?.name)
             .set(TRANSCRIPT_TEXT, run.transcriptText)
@@ -53,6 +61,10 @@ class ShortsRunJooqRepository(
         // 낙관적 락: 로드 시점 version과 일치할 때만 갱신하고 version을 증가시킨다.
         val affected = dsl.update(UGC_SHORTS_PIPELINE_RUNS)
             .set(TEMPLATE_ID, run.templateId)
+            .set(AUTO_SCHEDULE, run.autoSchedule)
+            .set(AUTO_SCHEDULE_START_AT, run.autoScheduleStartAt?.let(::localDateTime))
+            .set(AUTO_SCHEDULE_INTERVAL_HOURS, run.autoScheduleIntervalHours)
+            .set(AUTO_SCHEDULE_PLATFORMS, run.autoSchedulePlatforms.takeIf { it.isNotEmpty() }?.joinToString("\n"))
             .set(STATUS, run.status.name)
             .set(CURRENT_STAGE, run.currentStage?.name)
             .set(TRANSCRIPT_TEXT, run.transcriptText)
@@ -78,6 +90,15 @@ class ShortsRunJooqRepository(
             .fetchOne()
             ?.toPipelineRun()
 
+    override fun findByStatus(status: PipelineRunStatus, limit: Int): List<PipelineRun> =
+        dsl.select()
+            .from(UGC_SHORTS_PIPELINE_RUNS)
+            .where(STATUS.eq(status.name))
+            .orderBy(UPDATED_AT.asc())
+            .limit(limit.coerceIn(1, 200))
+            .fetch()
+            .map { it.toPipelineRun() }
+
     override fun findByWorkspace(workspaceId: Long, offset: Int, limit: Int): List<PipelineRun> =
         dsl.select()
             .from(UGC_SHORTS_PIPELINE_RUNS)
@@ -102,6 +123,14 @@ class ShortsRunJooqRepository(
         userId = get(USER_ID),
         sourceVideoId = get(SOURCE_VIDEO_ID),
         templateId = get(TEMPLATE_ID),
+        autoSchedule = get(AUTO_SCHEDULE) == true,
+        autoScheduleStartAt = localDateTime(AUTO_SCHEDULE_START_AT)?.atZone(ZoneOffset.UTC)?.toInstant(),
+        autoScheduleIntervalHours = get(AUTO_SCHEDULE_INTERVAL_HOURS),
+        autoSchedulePlatforms = get(AUTO_SCHEDULE_PLATFORMS)
+            ?.toString()
+            ?.split('\n')
+            ?.filter { it.isNotBlank() }
+            .orEmpty(),
         status = PipelineRunStatus.valueOf(get(STATUS)),
         currentStage = get(CURRENT_STAGE)?.let { PipelineStage.valueOf(it) },
         transcriptText = get(TRANSCRIPT_TEXT),
@@ -112,4 +141,7 @@ class ShortsRunJooqRepository(
         updatedAt = localDateTime(UPDATED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
         version = get(VERSION),
     )
+
+    private fun localDateTime(value: java.time.Instant): LocalDateTime =
+        LocalDateTime.ofInstant(value, ZoneOffset.UTC)
 }

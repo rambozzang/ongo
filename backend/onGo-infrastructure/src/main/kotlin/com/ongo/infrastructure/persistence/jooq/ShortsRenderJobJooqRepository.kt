@@ -32,6 +32,15 @@ class ShortsRenderJobJooqRepository(
             .fetchOne()
             ?.toJob()
 
+    override fun findByStatus(status: ShortsRenderJobStatus, limit: Int): List<ShortsRenderJob> =
+        dsl.select()
+            .from(TABLE)
+            .where(STATUS.eq(status.name))
+            .orderBy(UPDATED_AT.asc())
+            .limit(limit.coerceIn(1, 200))
+            .fetch()
+            .map { it.toJob() }
+
     override fun saveIfAbsent(job: ShortsRenderJob): ShortsRenderJob {
         dsl.insertInto(TABLE)
             .set(ID, job.id)
@@ -54,7 +63,7 @@ class ShortsRenderJobJooqRepository(
     }
 
     override fun claimQueued(id: String, startedAt: Instant): ShortsRenderJob? {
-        dsl.update(TABLE)
+        val affected = dsl.update(TABLE)
             .set(STATUS, ShortsRenderJobStatus.RUNNING.name)
             .set(PROGRESS, 0)
             .set(ATTEMPT_COUNT, ATTEMPT_COUNT.plus(1))
@@ -65,7 +74,7 @@ class ShortsRenderJobJooqRepository(
             .where(ID.eq(id))
             .and(STATUS.eq(ShortsRenderJobStatus.QUEUED.name))
             .execute()
-        return findById(id)
+        return if (affected == 1) findById(id) else null
     }
 
     override fun update(job: ShortsRenderJob): ShortsRenderJob {
