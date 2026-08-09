@@ -427,7 +427,7 @@ class PublicApiUseCase(
                 errorMessage = null,
             ),
         )
-        updatedTargets.forEach { target ->
+        request.posts.forEach { target ->
             target.integration.id.toLongOrNull()?.let { channelId ->
                 syncPendingProviderMetadata(userId, updated, updatedPayload, channelId)
             }
