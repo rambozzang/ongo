@@ -13,6 +13,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 
 class InstagramThreadsStreamWriterTest {
 
@@ -66,6 +67,42 @@ class InstagramThreadsStreamWriterTest {
         assertThat(result.platformUrl).isEqualTo("https://threads.net/post/thread-1")
         assertThat(request.captured.accessToken).isEqualTo("plain-token")
         verify(exactly = 1) { storageClient.deleteFile(any()) }
+    }
+
+    @Test
+    fun `Instagram과 Threads writer는 dispatcher가 전달한 예약 메타데이터를 거부하지 않는다`() {
+        val instagramClient = mockk<InstagramClient>()
+        val threadsClient = mockk<ThreadsClient>()
+        val storageClient = mockk<StorageClient>()
+        every { storageClient.uploadFile(any(), any(), any(), any()) } returnsMany listOf(
+            "https://storage.test/instagram-scheduled.mp4",
+            "https://storage.test/threads-scheduled.mp4",
+        )
+        justRun { storageClient.deleteFile(any()) }
+        every { instagramClient.uploadVideo(any()) } returns PlatformUploadResult(
+            platformVideoId = "ig-scheduled",
+            platformUrl = "https://instagram.com/reel/ig-scheduled",
+            status = "PUBLISHED",
+        )
+        every { threadsClient.uploadVideo(any()) } returns PlatformUploadResult(
+            platformVideoId = "threads-scheduled",
+            platformUrl = "https://threads.net/post/threads-scheduled",
+            status = "PUBLISHED",
+        )
+
+        val scheduledAt = LocalDateTime.now().minusMinutes(1)
+        val instagram = InstagramStreamWriter(instagramClient, storageClient)
+        instagram.initSession(meta(), PlainToken("ig-token"), "ig-user", 4, scheduledAt)
+        instagram.writeChunk("test".toByteArray(), 0, 4)
+        val instagramResult = instagram.complete()
+
+        val threads = ThreadsStreamWriter(threadsClient, storageClient)
+        threads.initSession(meta(), PlainToken("threads-token"), "threads-user", 4, scheduledAt)
+        threads.writeChunk("test".toByteArray(), 0, 4)
+        val threadsResult = threads.complete()
+
+        assertThat(instagramResult.published).isTrue()
+        assertThat(threadsResult.published).isTrue()
     }
 
     private fun meta() = VideoPlatformMeta(

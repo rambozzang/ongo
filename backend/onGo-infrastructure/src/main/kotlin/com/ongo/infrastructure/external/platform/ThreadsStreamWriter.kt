@@ -43,7 +43,9 @@ class ThreadsStreamWriter(
         scheduledAt: LocalDateTime?,
     ): String {
         require(fileSize <= 500L * 1024 * 1024) { "Threads 영상은 500MB 이하만 지원합니다." }
-        require(scheduledAt == null) { "Threads 스트리밍 업로드는 예약 시각에 도달한 뒤 실행해야 합니다." }
+        // 예약 게시도 durable dispatcher가 예약 시각에 도달한 뒤 이 writer를
+        // 호출한다. scheduledAt은 upload 레코드의 추적 정보로 전달되므로,
+        // writer가 null만 허용하면 예약 Threads 게시가 항상 거부된다.
         require(!platformChannelId.isNullOrBlank()) { "Threads 사용자 ID가 필요합니다." }
         this.meta = meta
         this.accessToken = accessToken
