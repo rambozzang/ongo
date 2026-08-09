@@ -3,9 +3,11 @@ package com.ongo.infrastructure.external.googledrive
 import io.netty.channel.ChannelOption
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
+import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
@@ -40,12 +42,18 @@ class GoogleDriveAutoConfiguration {
      * 지정할 수 있다. 그래서 prod 에서는 조용히 기동시키지 않고 즉시 실패시킨다.
      */
     @Bean
-    fun oauthStateManager(props: GoogleDriveProperties, environment: Environment): OAuthStateManager {
+    fun oauthStateManager(
+        props: GoogleDriveProperties,
+        environment: Environment,
+        redisConnectionFactory: ObjectProvider<RedisConnectionFactory>,
+    ): OAuthStateManager {
         val isProd = environment.activeProfiles.contains("prod")
         require(!(isProd && props.oauthStateSecret == GoogleDriveProperties.DEV_ONLY_STATE_SECRET)) {
             "OAUTH_STATE_SECRET 환경변수가 설정되지 않았습니다. " +
                 "운영 환경에서는 기본 secret 을 사용할 수 없습니다(32자 이상의 임의 값을 주입하세요)."
         }
-        return OAuthStateManager(secret = props.oauthStateSecret, ttlSeconds = 300)
+        val stateStore = redisConnectionFactory.ifAvailable?.let(::RedisOAuthStateStore)
+            ?: InMemoryOAuthStateStore()
+        return OAuthStateManager(secret = props.oauthStateSecret, ttlSeconds = 300, stateStore = stateStore)
     }
 }

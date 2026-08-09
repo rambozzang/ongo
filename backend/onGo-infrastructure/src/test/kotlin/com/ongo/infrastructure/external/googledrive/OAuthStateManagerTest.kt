@@ -1,6 +1,9 @@
 package com.ongo.infrastructure.external.googledrive
 
 import com.ongo.domain.contentsource.exception.OAuthStateMismatchException
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -31,6 +34,18 @@ class OAuthStateManagerTest {
 
         assertEquals(true, manager.verifyAnonymous(state))
         assertEquals(false, manager.verifyAnonymous(state))
+    }
+
+    @Test
+    fun `one-time consumption is delegated to the configured shared store`() {
+        val store = mockk<OAuthStateStore>()
+        every { store.consumeOnce(any(), 300) } returnsMany listOf(true, false)
+        val manager = OAuthStateManager(secret, ttlSeconds = 300, stateStore = store)
+        val state = manager.issueAnonymous()
+
+        assertEquals(true, manager.verifyAnonymous(state))
+        assertEquals(false, manager.verifyAnonymous(state))
+        verify(exactly = 2) { store.consumeOnce(state, 300) }
     }
 
     @Test
