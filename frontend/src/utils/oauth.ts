@@ -145,6 +145,15 @@ export function buildOAuthUrl(platform: Platform, returnPath: string, codeChalle
         state,
       })}`
 
+    case 'VIMEO':
+      return `https://api.vimeo.com/oauth/authorize?${new URLSearchParams({
+        client_id: import.meta.env.VITE_VIMEO_CLIENT_ID || '',
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'public private upload edit',
+        state,
+      })}`
+
     default:
       throw new Error(`Unsupported platform for OAuth: ${platform}`)
   }

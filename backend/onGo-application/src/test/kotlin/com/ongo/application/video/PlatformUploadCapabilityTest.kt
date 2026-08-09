@@ -25,6 +25,7 @@ class PlatformUploadCapabilityTest {
                 Platform.LINKEDIN,
                 Platform.WORDPRESS,
                 Platform.DAILYMOTION,
+                Platform.VIMEO,
             ),
             capabilities.keys,
         )

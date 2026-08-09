@@ -5,9 +5,11 @@ import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.vimeo.dto.VimeoCommentRequest
 import com.ongo.infrastructure.external.vimeo.dto.VimeoUploadRequest
+import com.ongo.infrastructure.external.vimeo.dto.VimeoTokenRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
+import java.util.Base64
 
 @Component
 class VimeoClient(
@@ -23,12 +25,17 @@ class VimeoClient(
     override fun uploadVideo(request: PlatformUploadRequest): PlatformUploadResult {
         log.info("Vimeo 영상 업로드 시작: title={}", request.title)
 
+        if (request.fileSize <= 0) {
+            throw PlatformUploadException("Vimeo", "pull 업로드에 필요한 파일 크기를 확인할 수 없습니다")
+        }
+
         val privacyView = mapVisibility(request.visibility)
 
         val uploadRequest = VimeoUploadRequest(
-            upload = VimeoUploadRequest.Upload(
-                approach = "pull",
-                link = request.fileUrl,
+                upload = VimeoUploadRequest.Upload(
+                    approach = "pull",
+                    size = request.fileSize,
+                    link = request.fileUrl,
             ),
             name = request.title.take(128),
             description = request.description.take(5000),
@@ -40,6 +47,7 @@ class VimeoClient(
         try {
             val response = vimeoApi.createVideo(
                 authorization = "Bearer ${request.accessToken}",
+                accept = VIMEO_ACCEPT,
                 request = uploadRequest,
             )
 
@@ -131,12 +139,12 @@ class VimeoClient(
         log.debug("Vimeo OAuth 인가 코드 교환")
 
         val response = vimeoOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "authorization_code",
-                "code" to authorizationCode,
-                "redirect_uri" to redirectUri,
-                "client_id" to vimeoConfig.getClientId(),
-                "client_secret" to vimeoConfig.getClientSecret(),
+            authorization = basicAuthorization(),
+            accept = VIMEO_ACCEPT,
+            body = VimeoTokenRequest(
+                grantType = "authorization_code",
+                code = authorizationCode,
+                redirectUri = redirectUri,
             ),
         )
 
@@ -151,11 +159,11 @@ class VimeoClient(
         log.debug("Vimeo OAuth 토큰 갱신")
 
         val response = vimeoOAuthApi.exchangeToken(
-            mapOf(
-                "grant_type" to "refresh_token",
-                "refresh_token" to refreshToken,
-                "client_id" to vimeoConfig.getClientId(),
-                "client_secret" to vimeoConfig.getClientSecret(),
+            authorization = basicAuthorization(),
+            accept = VIMEO_ACCEPT,
+            body = VimeoTokenRequest(
+                grantType = "refresh_token",
+                refreshToken = refreshToken,
             ),
         )
 
@@ -291,4 +299,13 @@ class VimeoClient(
             "UNLISTED" -> "unlisted"
             else -> "nobody"
         }
+
+    private fun basicAuthorization(): String {
+        val credentials = "${vimeoConfig.getClientId()}:${vimeoConfig.getClientSecret()}"
+        return "Basic ${Base64.getEncoder().encodeToString(credentials.toByteArray())}"
+    }
+
+    companion object {
+        private const val VIMEO_ACCEPT = "application/vnd.vimeo.*+json;version=3.4"
+    }
 }

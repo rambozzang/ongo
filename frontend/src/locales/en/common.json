@@ -1328,7 +1328,8 @@
         "pinterest": "Video Pins on your boards",
         "linkedin": "Post videos to your profile",
         "wordpress": "Publish a video post to your site",
-        "dailymotion": "Post videos to your profile"
+        "dailymotion": "Post videos to your profile",
+        "vimeo": "Upload and manage videos"
       },
       "connectFailed": "Couldn't start channel connection. Please try again."
     },

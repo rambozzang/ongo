@@ -12,6 +12,7 @@ data class VimeoUploadRequest(
 ) {
     data class Upload(
         val approach: String = "pull",
+        val size: Long,
         val link: String, // URL to pull video from
     )
     data class Privacy(
@@ -97,6 +98,13 @@ data class VimeoTokenResponse(
     @JsonProperty("scope") val scope: String?,
     @JsonProperty("refresh_token") val refreshToken: String?,
     @JsonProperty("expires_in") val expiresIn: Long? = null,
+)
+
+data class VimeoTokenRequest(
+    @JsonProperty("grant_type") val grantType: String,
+    val code: String? = null,
+    @JsonProperty("redirect_uri") val redirectUri: String? = null,
+    @JsonProperty("refresh_token") val refreshToken: String? = null,
 )
 
 // --- Comment API ---

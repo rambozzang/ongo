@@ -4,6 +4,7 @@ import com.ongo.infrastructure.external.vimeo.dto.VimeoCommentRequest
 import com.ongo.infrastructure.external.vimeo.dto.VimeoCommentResponse
 import com.ongo.infrastructure.external.vimeo.dto.VimeoCommentsResponse
 import com.ongo.infrastructure.external.vimeo.dto.VimeoTokenResponse
+import com.ongo.infrastructure.external.vimeo.dto.VimeoTokenRequest
 import com.ongo.infrastructure.external.vimeo.dto.VimeoUploadRequest
 import com.ongo.infrastructure.external.vimeo.dto.VimeoUserResponse
 import com.ongo.infrastructure.external.vimeo.dto.VimeoVideoResponse
@@ -22,6 +23,7 @@ interface VimeoApi {
     @PostExchange("/me/videos")
     fun createVideo(
         @RequestHeader("Authorization") authorization: String,
+        @RequestHeader("Accept") accept: String,
         @RequestBody request: VimeoUploadRequest,
     ): VimeoVideoResponse
 
@@ -79,6 +81,8 @@ interface VimeoOAuthApi {
 
     @PostExchange("/oauth/access_token")
     fun exchangeToken(
-        @RequestBody body: Map<String, String>,
+        @RequestHeader("Authorization") authorization: String,
+        @RequestHeader("Accept") accept: String,
+        @RequestBody body: VimeoTokenRequest,
     ): VimeoTokenResponse
 }
