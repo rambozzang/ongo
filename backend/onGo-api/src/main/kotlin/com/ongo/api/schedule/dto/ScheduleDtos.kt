@@ -12,7 +12,8 @@ data class CreateScheduleRequest(
 
 data class PlatformScheduleConfig(
     val platform: Platform,
-    val scheduledAt: LocalDateTime? = null
+    val scheduledAt: LocalDateTime? = null,
+    val channelId: Long? = null
 )
 
 data class UpdateScheduleRequest(

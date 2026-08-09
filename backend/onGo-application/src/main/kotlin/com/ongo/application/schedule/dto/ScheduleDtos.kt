@@ -13,6 +13,7 @@ data class CreateScheduleRequest(
 data class PlatformScheduleConfig(
     val platform: Platform,
     val scheduledAt: LocalDateTime? = null,
+    val channelId: Long? = null,
     val status: ScheduleStatus? = null,
     val platformUrl: String? = null,
 )

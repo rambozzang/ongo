@@ -49,6 +49,7 @@ export interface VideoUpload {
   videoId: number
   platform: Platform
   channelId?: number | null
+  channelName?: string | null
   status: UploadStatus
   platformVideoId: string | null
   platformUrl: string | null

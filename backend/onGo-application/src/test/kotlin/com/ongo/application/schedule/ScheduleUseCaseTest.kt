@@ -231,7 +231,10 @@ class ScheduleUseCaseTest {
         every { videoUploads.rescheduleScheduledUploads(22L, any()) } returns 1
         every { schedules.update(any()) } answers { firstArg() }
         every { videos.findById(22L) } returns Video(id = 22L, userId = 7L, title = "예약 영상")
-        every { videoUploads.findByVideoId(22L) } returns emptyList()
+        every { videoUploads.findByVideoId(22L) } returns listOf(
+            VideoUpload(id = 1001L, videoId = 22L, platform = Platform.YOUTUBE, scheduledAt = original),
+            VideoUpload(id = 1002L, videoId = 22L, platform = Platform.INSTAGRAM, scheduledAt = originalInstagram),
+        )
 
         useCase.updateSchedule(
             7L,
@@ -242,7 +245,7 @@ class ScheduleUseCaseTest {
         verify {
             videoUploads.rescheduleScheduledUploads(
                 22L,
-                match { it == mapOf(Platform.YOUTUBE to moved, Platform.INSTAGRAM to movedInstagram) },
+                match { it == mapOf(1001L to moved, 1002L to movedInstagram) },
             )
         }
         verify { schedules.update(match { it.scheduledAt == moved && it.status == ScheduleStatus.SCHEDULED }) }

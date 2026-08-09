@@ -121,6 +121,7 @@ class VideoQueryUseCase(
                 id = uploadId,
                 platform = upload.platform,
                 channelId = upload.channelId,
+                channelName = upload.channelId?.let { channelRepository.findById(it)?.channelName },
                 status = upload.status,
                 platformVideoId = upload.platformVideoId,
                 platformUrl = upload.platformUrl,
@@ -216,7 +217,13 @@ class VideoQueryUseCase(
                 val platformVideoId = upload.platformVideoId
                 if (platformVideoId != null && upload.status == UploadStatus.PUBLISHED) {
                     try {
-                        val channel = channelRepository.findByUserIdAndPlatform(userId, upload.platform)
+                        val uploadChannelId = upload.channelId
+                        val channel = if (uploadChannelId != null) {
+                            channelRepository.findById(uploadChannelId)
+                                ?.takeIf { it.userId == userId && it.platform == upload.platform }
+                        } else {
+                            channelRepository.findByUserIdAndPlatform(userId, upload.platform)
+                        }
                         if (channel != null && channel.status == ChannelStatus.ACTIVE) {
                             val accessToken = tokenEncryptionPort.decrypt(channel.accessToken).value
                             platformClientPort.updateVideoMetadata(
@@ -483,6 +490,7 @@ data class PlatformUploadDetailResult(
     val id: Long,
     val platform: Platform,
     val channelId: Long?,
+    val channelName: String? = null,
     val status: UploadStatus,
     val platformVideoId: String?,
     val platformUrl: String?,

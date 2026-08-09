@@ -2,6 +2,7 @@ package com.ongo.application.video
 
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.MediaType
+import com.ongo.common.enums.Platform
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.util.safeValueOfOrThrow
@@ -42,11 +43,6 @@ class PublishVideoUseCase(
         require(configs.isNotEmpty()) { "게시할 플랫폼을 하나 이상 선택해주세요." }
         val duplicateTargets = configs.groupingBy { it.channelId ?: it.platform }.eachCount().filterValues { it > 1 }.keys
         require(duplicateTargets.isEmpty()) { "같은 게시 계정을 중복 선택할 수 없습니다: ${duplicateTargets.joinToString()}" }
-        val scheduledDuplicatePlatforms = configs.filter { it.scheduledAt != null }
-            .groupingBy { it.platform }.eachCount().filterValues { it > 1 }.keys
-        require(scheduledDuplicatePlatforms.isEmpty()) {
-            "같은 플랫폼의 여러 계정 예약 게시를 지원하려면 각 계정별 예약을 별도로 저장해야 합니다: ${scheduledDuplicatePlatforms.joinToString()}"
-        }
 
         if (video.mediaType == MediaType.VIDEO) {
             require(video.fileUrl != null) { "업로드가 완료된 영상 파일을 찾을 수 없습니다." }
@@ -171,7 +167,9 @@ class PublishVideoUseCase(
                     scheduledAt = earliest,
                     status = com.ongo.common.enums.ScheduleStatus.SCHEDULED,
                     platforms = scheduledConfigs.associate { config ->
-                        config.platform.name to mapOf("scheduledAt" to config.scheduledAt.toString())
+                        val key = if (config.channelId == null) config.platform.name
+                        else "${config.platform.name}#${config.channelId}"
+                        key to mapOf("scheduledAt" to config.scheduledAt.toString())
                     },
                 )
             )
@@ -212,6 +210,23 @@ class PublishVideoUseCase(
         val upload = videoUploadRepository.findByVideoIdAndPlatform(videoId, platform)
             ?: throw NotFoundException("업로드 기록", "$videoId/$platformName")
 
+        retryUploadRow(userId, video, upload, platform)
+    }
+
+    /** Retry a specific upload row so two accounts on the same platform never collide. */
+    fun retryUpload(userId: Long, videoId: Long, uploadId: Long) {
+        userWriteGuard.requireWritable(userId)
+        val video = videoRepository.findById(videoId)
+            ?: throw NotFoundException("영상", videoId)
+        if (video.userId != userId) throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        val upload = videoUploadRepository.findById(uploadId)
+            ?.takeIf { it.videoId == videoId }
+            ?: throw NotFoundException("업로드 기록", "$videoId/$uploadId")
+        retryUploadRow(userId, video, upload, upload.platform)
+    }
+
+    private fun retryUploadRow(userId: Long, video: Video, upload: VideoUpload, platform: Platform) {
+
         if (upload.status != UploadStatus.FAILED && upload.status != UploadStatus.REJECTED) {
             throw IllegalStateException("실패/반려 상태만 재전송할 수 있습니다. 게시 결과 확인 필요 상태는 재확인을 사용하세요. 현재 상태: ${upload.status}")
         }
@@ -231,7 +246,7 @@ class PublishVideoUseCase(
         // 재업로드 이벤트 발행
         eventPublisher.publishEvent(
             VideoPublishEvent(
-                videoId = videoId,
+                videoId = video.id!!,
                 userId = userId,
                 fileUrl = fileUrl,
                 platformConfigs = listOf(
@@ -254,6 +269,10 @@ class PublishVideoUseCase(
     fun recheckUpload(userId: Long, videoId: Long, platformName: String) {
         val platform = safeValueOfOrThrow<com.ongo.common.enums.Platform>(platformName)
         videoUploadPoller.recheck(userId, videoId, platform)
+    }
+
+    fun recheckUpload(userId: Long, videoId: Long, uploadId: Long) {
+        videoUploadPoller.recheckUpload(userId, videoId, uploadId)
     }
 }
 

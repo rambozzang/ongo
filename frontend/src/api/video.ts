@@ -63,8 +63,16 @@ export const videoApi = {
     return apiClient.post<ResData<void>>(`/videos/${id}/retry/${platform}`).then(unwrapResponse)
   },
 
+  retryUpload(id: number, uploadId: number) {
+    return apiClient.post<ResData<void>>(`/videos/${id}/uploads/${uploadId}/retry`).then(unwrapResponse)
+  },
+
   recheck(id: number, platform: string) {
     return apiClient.post<ResData<void>>(`/videos/${id}/recheck/${platform}`).then(unwrapResponse)
+  },
+
+  recheckUpload(id: number, uploadId: number) {
+    return apiClient.post<ResData<void>>(`/videos/${id}/uploads/${uploadId}/recheck`).then(unwrapResponse)
   },
 
   recycle(id: number, request: {

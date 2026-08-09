@@ -55,6 +55,21 @@ class VideoUploadPoller(
         poll(upload, LocalDateTime.now(), token)
     }
 
+    /** Same-provider accounts must be rechecked by their durable upload row. */
+    fun recheckUpload(userId: Long, videoId: Long, uploadId: Long) {
+        val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
+        if (video.userId != userId) throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        val upload = videoUploadRepository.findById(uploadId)
+            ?.takeIf { it.videoId == videoId }
+            ?: throw NotFoundException("업로드 기록", "$videoId/$uploadId")
+        if (upload.status != UploadStatus.UNCONFIRMED) {
+            throw IllegalStateException("게시 결과 확인이 필요한 작업만 재확인할 수 있습니다. 현재 상태: ${upload.status}")
+        }
+        val token = upload.pollToken ?: upload.platformVideoId
+            ?: throw IllegalStateException("플랫폼에서 조회할 게시 식별자가 없습니다. 중복 게시를 막기 위해 자동 재전송하지 않습니다.")
+        poll(upload, LocalDateTime.now(), token)
+    }
+
     private fun poll(upload: VideoUpload, now: LocalDateTime, tokenOverride: String? = null) {
         val uploadId = upload.id ?: return
         val video = videoRepository.findById(upload.videoId) ?: return

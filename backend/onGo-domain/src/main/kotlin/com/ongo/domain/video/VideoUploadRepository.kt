@@ -31,6 +31,6 @@ interface VideoUploadRepository {
     /** 아직 외부 전송을 시작하지 않은 예약 업로드를 취소한다. */
     fun cancelScheduledUploads(videoId: Long, now: LocalDateTime): Int
     /** 화면에서 예약 시간을 옮길 때 durable queue의 실제 게시 시간도 갱신한다. */
-    fun rescheduleScheduledUploads(videoId: Long, scheduledAtByPlatform: Map<Platform, LocalDateTime>): Int
+    fun rescheduleScheduledUploads(videoId: Long, scheduledAtByUploadId: Map<Long, LocalDateTime>): Int
     fun findByUserId(userId: Long): List<VideoUpload>
 }

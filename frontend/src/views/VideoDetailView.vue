@@ -128,6 +128,9 @@
                   class="flex min-w-0 flex-wrap items-center gap-1.5"
                 >
                   <PlatformBadge :platform="upload.platform" />
+                  <span v-if="upload.channelName" class="text-body-xs text-gray-500 dark:text-gray-400">
+                    {{ upload.channelName }}
+                  </span>
                   <StatusBadge :status="upload.status" />
                   <a
                     v-if="upload.platformUrl"
@@ -727,9 +730,9 @@ async function handleUploadRecovery(upload: VideoUpload) {
   retryingUploadId.value = upload.id
   try {
     if (upload.status === 'UNCONFIRMED') {
-      await videoApi.recheck(video.value.id, upload.platform)
+      await videoApi.recheckUpload(video.value.id, upload.id)
     } else {
-      await videoApi.retry(video.value.id, upload.platform)
+      await videoApi.retryUpload(video.value.id, upload.id)
     }
     await videoStore.fetchVideo(video.value.id)
   } catch {

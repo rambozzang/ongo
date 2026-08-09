@@ -45,7 +45,7 @@ class ScheduleUseCase(
         validatePlatformScheduleTimes(user.planType, request.scheduledAt, request.platforms, nowKst)
 
         val platformConfigs = request.platforms.associate { config ->
-            config.platform.name to mapOf("scheduledAt" to (config.scheduledAt ?: request.scheduledAt).toString())
+            scheduleKey(config.platform, config.channelId) to mapOf("scheduledAt" to (config.scheduledAt ?: request.scheduledAt).toString())
         }
 
         val schedule = Schedule(
@@ -118,7 +118,7 @@ class ScheduleUseCase(
             validateScheduleLimit(user.planType, newScheduledAt)
         }
         request.platforms?.let {
-            require(schedule.platforms.keys == it.map { config -> config.platform.name }.toSet()) {
+            require(schedule.platforms.keys == it.map { config -> scheduleKey(config.platform, config.channelId) }.toSet()) {
                 "예약 플랫폼 변경은 새 게시 작업으로 생성해주세요. 기존 예약은 플랫폼별 시간만 수정할 수 있습니다."
             }
             validatePlatformScheduleTimes(user.planType, newScheduledAt, it, LocalDateTime.now(KST))
@@ -126,7 +126,7 @@ class ScheduleUseCase(
 
         val updatedPlatformTimes = when {
             request.platforms != null -> request.platforms.associate { config ->
-                config.platform.name to mapOf("scheduledAt" to (config.scheduledAt ?: newScheduledAt).toString())
+                scheduleKey(config.platform, config.channelId) to mapOf("scheduledAt" to (config.scheduledAt ?: newScheduledAt).toString())
             }
             request.scheduledAt != null -> {
                 // Calendar drag sends only the parent time. Move every platform
@@ -144,10 +144,12 @@ class ScheduleUseCase(
             scheduledAt = newScheduledAt,
             platforms = updatedPlatformTimes,
         )
-        val uploadTimes = updated.platforms.mapNotNull { (platformName, raw) ->
-            val platform = runCatching { com.ongo.common.enums.Platform.valueOf(platformName) }.getOrNull()
+        val uploads = videoUploadRepository.findByVideoId(schedule.videoId)
+        val uploadTimes = updated.platforms.mapNotNull { (key, raw) ->
+            val (platform, channelId) = parseScheduleKey(key) ?: return@mapNotNull null
             val time = raw.asPlatformScheduleTime()
-            if (platform != null && time != null) platform to time else null
+            val upload = uploads.firstOrNull { it.platform == platform && it.channelId == channelId }
+            upload?.id?.let { id -> if (time != null) id to time else null }
         }.toMap()
         videoUploadRepository.rescheduleScheduledUploads(schedule.videoId, uploadTimes)
         scheduleRepository.update(updated)
@@ -204,7 +206,7 @@ class ScheduleUseCase(
         nowKst: LocalDateTime,
     ) {
         require(platforms.isNotEmpty()) { "예약할 플랫폼을 하나 이상 선택해야 합니다" }
-        require(platforms.map { it.platform }.distinct().size == platforms.size) {
+        require(platforms.map { scheduleKey(it.platform, it.channelId) }.distinct().size == platforms.size) {
             "예약 플랫폼은 중복될 수 없습니다"
         }
 
@@ -231,14 +233,16 @@ class ScheduleUseCase(
         val uploadsByPlatform = uploads.groupBy { it.platform }
         val platformConfigs = platforms.map { (key, value) ->
             val platformScheduledAt = value.asPlatformScheduleTime() ?: scheduledAt
-            val platform = safeValueOfOrThrow<com.ongo.common.enums.Platform>(key)
+            val (platform, channelId) = parseScheduleKey(key)
+                ?: throw IllegalArgumentException("잘못된 예약 플랫폼 키입니다: $key")
             // A video can have more than one schedule. Match the upload by its
             // platform-specific scheduled time instead of leaking the result
             // from another occurrence into this calendar item.
             val upload = uploadsByPlatform[platform]
-                ?.firstOrNull { it.scheduledAt == platformScheduledAt }
+                ?.firstOrNull { it.channelId == channelId && it.scheduledAt == platformScheduledAt }
             PlatformScheduleConfig(
                 platform = platform,
+                channelId = channelId,
                 scheduledAt = platformScheduledAt,
                 status = upload?.status?.toScheduleStatus(),
                 platformUrl = upload?.platformUrl,
@@ -269,5 +273,16 @@ class ScheduleUseCase(
     private fun Any?.asPlatformScheduleTime(): LocalDateTime? {
         val raw = (this as? Map<*, *>)?.get("scheduledAt")?.toString() ?: return null
         return runCatching { LocalDateTime.parse(raw) }.getOrNull()
+    }
+
+    private fun scheduleKey(platform: com.ongo.common.enums.Platform, channelId: Long?): String =
+        if (channelId == null) platform.name else "${platform.name}#$channelId"
+
+    private fun parseScheduleKey(key: String): Pair<com.ongo.common.enums.Platform, Long?>? {
+        val parts = key.split('#', limit = 2)
+        val platform = runCatching { com.ongo.common.enums.Platform.valueOf(parts[0]) }.getOrNull() ?: return null
+        val channelId = parts.getOrNull(1)?.toLongOrNull()
+        if (parts.size > 1 && channelId == null) return null
+        return platform to channelId
     }
 }

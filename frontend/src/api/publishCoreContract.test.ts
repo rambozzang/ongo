@@ -67,9 +67,13 @@ describe('publish core API contracts', () => {
 
     await videoApi.retry(7, 'YOUTUBE')
     await videoApi.recheck(7, 'YOUTUBE')
+    await videoApi.retryUpload(7, 41)
+    await videoApi.recheckUpload(7, 41)
     await videoApi.confirmUpload(7)
     expect(post).toHaveBeenCalledWith('/videos/7/retry/YOUTUBE')
     expect(post).toHaveBeenCalledWith('/videos/7/recheck/YOUTUBE')
+    expect(post).toHaveBeenCalledWith('/videos/7/uploads/41/retry')
+    expect(post).toHaveBeenCalledWith('/videos/7/uploads/41/recheck')
     expect(post).toHaveBeenCalledWith('/videos/7/upload/complete')
   })
 

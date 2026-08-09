@@ -330,13 +330,13 @@ class VideoUploadJooqRepository(
 
     override fun rescheduleScheduledUploads(
         videoId: Long,
-        scheduledAtByPlatform: Map<Platform, LocalDateTime>,
-    ): Int = scheduledAtByPlatform.entries.sumOf { (platform, scheduledAt) ->
+        scheduledAtByUploadId: Map<Long, LocalDateTime>,
+    ): Int = scheduledAtByUploadId.entries.sumOf { (uploadId, scheduledAt) ->
         dsl.update(VIDEO_UPLOADS)
             .set(VIDEO_SCHEDULED_AT, scheduledAt)
             .set(VIDEO_NEXT_RETRY_AT, null as LocalDateTime?)
             .where(VIDEO_ID.eq(videoId))
-            .and(PLATFORM_TEXT.eq(platform.name))
+            .and(ID.eq(uploadId))
             .and(STATUS.eq(UploadStatus.UPLOADING.name))
             .and(VIDEO_SCHEDULED_AT.isNotNull)
             .execute()

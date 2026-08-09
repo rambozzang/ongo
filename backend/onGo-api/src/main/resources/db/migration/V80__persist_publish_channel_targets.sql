@@ -15,6 +15,19 @@ WHERE vu.video_id = v.id
 
 CREATE INDEX IF NOT EXISTS idx_video_uploads_channel_id ON video_uploads(channel_id);
 
+-- The original schema allowed only one upload per provider.  That is not
+-- sufficient once a creator connects two accounts on the same provider.
+-- Keep one legacy row per provider for disconnected/old records (NULL
+-- channel_id), while making connected-account rows unique by channel.
+ALTER TABLE video_uploads
+    DROP CONSTRAINT IF EXISTS uq_video_uploads_video_platform;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_video_uploads_video_platform_legacy
+    ON video_uploads(video_id, platform)
+    WHERE channel_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_video_uploads_video_channel
+    ON video_uploads(video_id, channel_id)
+    WHERE channel_id IS NOT NULL;
+
 -- Postiz-style integrations allow more than one account for the same provider.
 -- The exact account is selected by channel_id on each publication.
 ALTER TABLE channels DROP CONSTRAINT IF EXISTS uq_channels_user_platform;

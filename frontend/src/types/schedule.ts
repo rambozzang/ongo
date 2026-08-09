@@ -18,6 +18,7 @@ export interface Schedule {
 
 export interface SchedulePlatform {
   platform: Platform
+  channelId?: number | null
   scheduledAt: string
   status?: ScheduleStatus | null
   platformUrl?: string | null
@@ -32,6 +33,7 @@ export interface ScheduleCreateRequest {
 
 export interface SchedulePlatformRequest {
   platform: Platform
+  channelId?: number
   scheduledAt?: string
 }
 

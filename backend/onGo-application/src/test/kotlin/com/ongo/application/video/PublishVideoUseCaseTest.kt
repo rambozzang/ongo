@@ -173,6 +173,61 @@ class PublishVideoUseCaseTest {
     }
 
     @Test
+    fun `publishes two durable rows when the same platform has two selected accounts`() {
+        val userId = 42L
+        val videoId = 902L
+        val video = Video(
+            id = videoId,
+            userId = userId,
+            title = "멀티 계정 영상",
+            fileUrl = "https://storage.test/multi-account.mp4",
+            status = UploadStatus.DRAFT,
+        )
+        val event = slot<VideoPublishEvent>()
+        var nextUploadId = 700L
+        every { videoRepository.findById(videoId) } returns video
+        every { videoRepository.claimForPublish(userId, videoId) } returns true
+        every { channelRepository.findById(101L) } returns Channel(
+            id = 101L, userId = userId, platform = Platform.INSTAGRAM,
+            platformChannelId = "creator-a", channelName = "브랜드 A",
+            accessToken = EncryptedToken("token-a"),
+        )
+        every { channelRepository.findById(102L) } returns Channel(
+            id = 102L, userId = userId, platform = Platform.INSTAGRAM,
+            platformChannelId = "creator-b", channelName = "브랜드 B",
+            accessToken = EncryptedToken("token-b"),
+        )
+        every { videoUploadRepository.findByVideoIdAndChannelId(videoId, any()) } returns null
+        every { videoUploadRepository.save(any()) } answers {
+            firstArg<VideoUpload>().copy(id = nextUploadId++)
+        }
+        every { videoPlatformMetaRepository.save(any()) } answers { firstArg() }
+        every { eventPublisher.publishEvent(capture(event)) } just Runs
+
+        val result = useCase().publishVideo(
+            userId = userId,
+            videoId = videoId,
+            configs = listOf(101L to "브랜드 A", 102L to "브랜드 B").map { (channelId, _) ->
+                PlatformUploadConfig(
+                    platform = Platform.INSTAGRAM,
+                    videoUploadId = 0L,
+                    channelId = channelId,
+                    title = "계정별 제목",
+                    description = "계정별 설명",
+                    tags = listOf("ongo"),
+                    visibility = Visibility.PUBLIC,
+                    thumbnailUrl = null,
+                    scheduledAt = null,
+                )
+            },
+        )
+
+        assertEquals(listOf(Platform.INSTAGRAM, Platform.INSTAGRAM), result.uploads.map { it.platform })
+        assertEquals(listOf(101L, 102L), event.captured.platformConfigs.map { it.channelId })
+        verify(exactly = 2) { videoUploadRepository.save(any()) }
+    }
+
+    @Test
     fun `scheduled publish creates a calendar schedule linked to its durable upload`() {
         val videoId = 905L
         val scheduledAt = LocalDateTime.now().plusHours(2)

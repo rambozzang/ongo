@@ -361,6 +361,18 @@ class VideoController(
         return ResData.success(null, "재업로드가 시작되었습니다")
     }
 
+    @Operation(summary = "특정 계정 업로드 재시도")
+    @RequiresPermission(Permission.VIDEO_PUBLISH)
+    @PostMapping("/{id}/uploads/{uploadId}/retry")
+    fun retryUploadRow(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @PathVariable id: Long,
+        @PathVariable uploadId: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        publishVideoUseCase.retryUpload(userId, id, uploadId)
+        return ResData.success(null, "재업로드가 시작되었습니다")
+    }
+
     @Operation(
         summary = "게시 결과 재확인",
         description = "확인 불가 상태의 게시물에 대해 새 업로드 없이 플랫폼 상태 조회만 실행합니다.",
@@ -373,6 +385,18 @@ class VideoController(
         @PathVariable platform: String,
     ): ResponseEntity<ResData<Nothing?>> {
         publishVideoUseCase.recheckUpload(userId, id, platform)
+        return ResData.success(null, "게시 결과를 재확인했습니다")
+    }
+
+    @Operation(summary = "특정 계정 게시 결과 재확인")
+    @RequiresPermission(Permission.VIDEO_PUBLISH)
+    @PostMapping("/{id}/uploads/{uploadId}/recheck")
+    fun recheckUploadRow(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @PathVariable id: Long,
+        @PathVariable uploadId: Long,
+    ): ResponseEntity<ResData<Nothing?>> {
+        publishVideoUseCase.recheckUpload(userId, id, uploadId)
         return ResData.success(null, "게시 결과를 재확인했습니다")
     }
 
