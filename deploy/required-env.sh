@@ -14,7 +14,12 @@
 #
 # 비밀값 자체는 절대 출력하지 않는다. 누락된 **변수명만** 보고한다.
 
-ONGO_REQUIRED_ENV_VARS="JWT_SECRET DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET OAUTH_STATE_SECRET APP_BASE_URL R2_ACCOUNT_ID R2_BUCKET R2_ACCESS_KEY R2_SECRET_KEY CORS_ALLOWED_ORIGINS PORTONE_STORE_ID PORTONE_CHANNEL_KEY PORTONE_API_SECRET"
+# CORS_ALLOWED_ORIGINS is intentionally not a separate required value. The
+# application derives a same-origin allow-list from APP_BASE_URL when an
+# installation does not need multiple frontends. Keeping both variables in the
+# required list made older production .env files fail before the application
+# could use the safe APP_BASE_URL fallback.
+ONGO_REQUIRED_ENV_VARS="JWT_SECRET DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET OAUTH_STATE_SECRET APP_BASE_URL R2_ACCOUNT_ID R2_BUCKET R2_ACCESS_KEY R2_SECRET_KEY PORTONE_STORE_ID PORTONE_CHANNEL_KEY PORTONE_API_SECRET"
 
 # 누락된 변수명을 공백 구분 문자열로 표준출력에 낸다. 전부 있으면 빈 문자열.
 ongo_missing_env_vars() {
