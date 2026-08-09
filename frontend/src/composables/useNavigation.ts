@@ -67,7 +67,9 @@ function loadExpandedSubGroups(): Set<string> {
 
 // 사이드바(데스크톱/모바일 드로어)와 모바일 전체 메뉴 시트가 공유하는 단일 상태
 const expandedSubGroups = ref<Set<string>>(loadExpandedSubGroups())
-const enabledCapabilityKeys = ref<Set<string> | null>(null)
+// Capability sync is authoritative. Start empty so a slow/failed response
+// never flashes the static menu before the server has confirmed it.
+const enabledCapabilityKeys = ref<Set<string>>(new Set())
 const capabilityError = ref<string | null>(null)
 let capabilityRequest: Promise<void> | null = null
 
@@ -112,9 +114,12 @@ export function useNavigation() {
   watch(
     () => authStore.isAuthenticated,
     (authenticated) => {
-      if (authenticated) void loadCapabilities()
+      if (authenticated) {
+        enabledCapabilityKeys.value = new Set<string>()
+        void loadCapabilities()
+      }
       else {
-        enabledCapabilityKeys.value = null
+        enabledCapabilityKeys.value = new Set<string>()
         capabilityError.value = null
       }
     },
@@ -126,8 +131,7 @@ export function useNavigation() {
     capabilityKey: item.capabilityKey ?? item.to.replace(/^\//, ''),
   })
   const visibleItems = (items: NavItem[]) => items.map(withCapability).filter((item) => {
-    const enabled = enabledCapabilityKeys.value
-    return enabled === null || enabled.has(item.capabilityKey!)
+    return enabledCapabilityKeys.value.has(item.capabilityKey!)
   })
 
   const navGroups = computed<NavGroup[]>(() => {

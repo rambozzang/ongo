@@ -30,6 +30,11 @@ interface VideoUploadRepository {
     fun recoverExpiredLeases(now: LocalDateTime): List<VideoUpload>
     /** 아직 외부 전송을 시작하지 않은 예약 업로드를 취소한다. */
     fun cancelScheduledUploads(videoId: Long, now: LocalDateTime): Int
+    /**
+     * 공개 API/그룹 게시물처럼 하나의 영상에 여러 예약이 있을 때,
+     * 해당 게시물의 대상 row만 원자적으로 취소한다.
+     */
+    fun cancelScheduledUploadsByIds(uploadIds: Set<Long>, now: LocalDateTime): Int
     /** 채널 해제 시 해당 채널의 미전송 예약 업로드를 취소한다. */
     fun cancelScheduledUploadsByChannelId(channelId: Long, now: LocalDateTime): Int
     /** 화면에서 예약 시간을 옮길 때 durable queue의 실제 게시 시간도 갱신한다. */

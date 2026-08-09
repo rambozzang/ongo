@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { capabilitiesApi } from '@/api/capabilities'
 import { useNavigation } from './useNavigation'
 
@@ -27,6 +27,25 @@ const paths = (navigation: ReturnType<typeof useNavigation>) =>
   navigation.allNavItems.value.map((item) => item.to)
 
 describe('useNavigation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('does not flash static menu items while capability sync is pending', async () => {
+    type Capability = { key: string; enabled: boolean }
+    let release: (items: Capability[]) => void = () => undefined
+    const pending = new Promise<Capability[]>((resolve) => {
+      release = resolve
+    })
+    vi.mocked(capabilitiesApi.list).mockReturnValueOnce(pending)
+
+    const navigation = useNavigation()
+    expect(paths(navigation)).toEqual([])
+
+    release([{ key: 'today', enabled: true }])
+    await vi.waitFor(() => expect(paths(navigation)).toEqual(['/today']))
+  })
+
   it('keeps the working creator menu and never exposes an ideas surface', async () => {
     vi.mocked(capabilitiesApi.list).mockResolvedValue([
       { key: 'today', enabled: true },

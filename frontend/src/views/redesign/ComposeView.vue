@@ -617,9 +617,6 @@ const TITLE_LIMIT: Record<string, number> = {
   NV: 100,
   TH: 500,
 }
-/** TikTok 은 해시태그 5개까지만 반영된다. */
-const TIKTOK_HASHTAG_LIMIT = 5
-
 const router = useRouter()
 const uploadStore = useUploadStore()
 const workspaceStore = useWorkspaceStore()
@@ -996,10 +993,6 @@ const warnings = computed(() => {
   }
   if (captionOver.value) {
     out.push(t('redesign.compose.warnCaptionLength', { limit: captionLimit.value }))
-  }
-  const hasTikTok = selectedChannels.value.some((c) => c.platform === 'TIKTOK')
-  if (hasTikTok && hashtagCount.value > TIKTOK_HASHTAG_LIMIT && activeTab.value === 'common') {
-    out.push(t('redesign.compose.warnTiktokHashtags', { limit: TIKTOK_HASHTAG_LIMIT }))
   }
   return out
 })

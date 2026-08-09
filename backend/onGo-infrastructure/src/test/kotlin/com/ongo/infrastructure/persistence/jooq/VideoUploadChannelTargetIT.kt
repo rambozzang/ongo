@@ -108,12 +108,22 @@ class VideoUploadChannelTargetIT {
             videoId,
             secondChannelId,
         )
+        dsl.execute(
+            "UPDATE video_uploads SET scheduled_at = ? WHERE video_id = ?",
+            LocalDateTime.now().plusHours(1),
+            videoId,
+        )
 
         assertEquals(
             2,
             dsl.fetchOne("SELECT count(*) FROM video_uploads WHERE video_id = ?", videoId)!!
                 .get(0, Int::class.java),
         )
+
+        val targets = videoUploadRepository.findByVideoId(videoId)
+        assertEquals(1, videoUploadRepository.cancelScheduledUploadsByIds(setOf(targets.first().id!!), LocalDateTime.now()))
+        assertEquals(UploadStatus.CANCELLED, videoUploadRepository.findById(targets.first().id!!)!!.status)
+        assertEquals(UploadStatus.UPLOADING, videoUploadRepository.findById(targets.last().id!!)!!.status)
     }
 
     @Test

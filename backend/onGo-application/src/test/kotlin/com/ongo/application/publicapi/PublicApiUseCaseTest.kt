@@ -83,6 +83,34 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `find slot은 해당 계정의 플랫폼별 예약 시각을 건너뛰고 UTC ISO 날짜를 반환한다`() {
+        val zone = ZoneId.of("Asia/Seoul")
+        val now = LocalDateTime.now(zone).plusMinutes(5).withSecond(0).withNano(0)
+        val firstQuarter = now.plusMinutes(((15 - now.minute % 15) % 15).toLong())
+        every { channels.findById(7) } returns channel
+        every { schedules.findByUserId(1) } returns listOf(
+            Schedule(
+                id = 70,
+                videoId = 11,
+                userId = 1,
+                scheduledAt = firstQuarter,
+                platforms = mapOf(
+                    "YOUTUBE#7" to mapOf("scheduledAt" to firstQuarter.toString()),
+                    "INSTAGRAM#99" to mapOf("scheduledAt" to firstQuarter.minusMinutes(15).toString()),
+                ),
+            ),
+        )
+
+        val result = useCase.findAvailableSlot(1, "7")
+        val returned = java.time.Instant.parse(result.date).atZone(zone).toLocalDateTime()
+
+        assertEquals(0, returned.minute % 15)
+        assertEquals(0, returned.second)
+        assertEquals(0, returned.nano)
+        assertEquals(true, !returned.isBefore(firstQuarter.plusMinutes(15)))
+    }
+
+    @Test
     fun `integrations group은 접근 가능한 workspace에 속한 채널만 반환한다`() {
         val workspace = Workspace(id = 22, ownerId = 1, name = "브랜드", slug = "brand")
         every { workspaces.findAccessibleByUserId(1) } returns listOf(workspace)
@@ -157,7 +185,7 @@ class PublicApiUseCaseTest {
             type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
             status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
             scheduledAt = java.time.Instant.parse("2026-08-05T10:00:00Z")
-                .atZone(ZoneId.systemDefault()).toLocalDateTime(),
+                .atZone(ZoneId.of("Asia/Seoul")).toLocalDateTime(),
             payloadJson = "{\"posts\":[]}",
         )
         every {
@@ -174,7 +202,7 @@ class PublicApiUseCaseTest {
 
         assertEquals(listOf("41"), result.map { it.id })
         assertEquals(
-            post.scheduledAt!!.atZone(ZoneId.systemDefault()).toInstant().toString(),
+            post.scheduledAt!!.atZone(ZoneId.of("Asia/Seoul")).toInstant().toString(),
             result.single().date,
         )
         verify(exactly = 1) {
@@ -218,13 +246,13 @@ class PublicApiUseCaseTest {
             type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
             status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
             scheduledAt = java.time.Instant.parse("2026-08-05T10:00:00Z")
-                .atZone(ZoneId.systemDefault()).toLocalDateTime(),
+                .atZone(ZoneId.of("Asia/Seoul")).toLocalDateTime(),
             payloadJson = "{\"posts\":[]}",
         )
         val start = java.time.Instant.parse("2026-08-01T00:00:00Z")
-            .atZone(ZoneId.systemDefault()).toLocalDateTime()
+            .atZone(ZoneId.of("Asia/Seoul")).toLocalDateTime()
         val end = java.time.Instant.parse("2026-08-31T23:59:59Z")
-            .atZone(ZoneId.systemDefault()).toLocalDateTime()
+            .atZone(ZoneId.of("Asia/Seoul")).toLocalDateTime()
         every { posts.findByUserIdAndDateRange(1, start, end, 20) } returns listOf(post)
         every { uploads.findByVideoId(11) } returns emptyList()
 
@@ -408,7 +436,7 @@ class PublicApiUseCaseTest {
         )
         every { posts.findByIdAndUserId(30, 1) } returns scheduled
         every { posts.update(any()) } answers { firstArg() }
-        every { uploads.cancelScheduledUploads(11, any()) } returns 1
+        every { uploads.cancelScheduledUploadsByIds(emptySet(), any()) } returns 0
         every { uploads.findByVideoId(11) } returns emptyList()
         every { schedules.findByUserId(1) } returns listOf(
             Schedule(id = 40, videoId = 11, userId = 1, scheduledAt = scheduled.scheduledAt!!),
@@ -418,7 +446,7 @@ class PublicApiUseCaseTest {
         val response = useCase.changeStatus(1, 30, ChangePublicPostStatusRequest("draft"))
 
         assertEquals("draft", response.status)
-        verify(exactly = 1) { uploads.cancelScheduledUploads(11, any()) }
+        verify(exactly = 1) { uploads.cancelScheduledUploadsByIds(emptySet(), any()) }
         verify(exactly = 1) { schedules.update(match { it.status == ScheduleStatus.CANCELLED }) }
     }
 
@@ -431,24 +459,64 @@ class PublicApiUseCaseTest {
             type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
             status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
             scheduledAt = LocalDateTime.now().plusHours(2),
-            payloadJson = "{}",
+            payloadJson = "{\"posts\":[{\"integration\":{\"id\":\"7\"}}]}",
         )
         every { posts.findByIdAndUserId(31, 1) } returns scheduled
         every { posts.update(any()) } answers { firstArg() }
+        every { channels.findById(7) } returns channel
         every { uploads.findByVideoId(11) } returns listOf(
             VideoUpload(id = 92, videoId = 11, platform = Platform.YOUTUBE, channelId = 7, status = UploadStatus.UPLOADING, scheduledAt = scheduled.scheduledAt),
         )
-        every { uploads.cancelScheduledUploads(11, any()) } returns 1
+        every { uploads.cancelScheduledUploadsByIds(setOf(92), any()) } returns 1
         every { schedules.findByUserId(1) } returns listOf(
-            Schedule(id = 41, videoId = 11, userId = 1, scheduledAt = scheduled.scheduledAt!!),
+            Schedule(
+                id = 41,
+                videoId = 11,
+                userId = 1,
+                scheduledAt = scheduled.scheduledAt!!,
+                platforms = mapOf("YOUTUBE#7" to emptyMap<String, String>()),
+            ),
         )
         every { schedules.update(any()) } answers { firstArg() }
 
         useCase.deleteGroup(1, "31")
 
-        verify(exactly = 1) { uploads.cancelScheduledUploads(11, any()) }
+        verify(exactly = 1) { uploads.cancelScheduledUploadsByIds(setOf(92), any()) }
         verify(exactly = 1) { schedules.update(match { it.status == ScheduleStatus.CANCELLED }) }
         verify(exactly = 1) { posts.update(match { it.status == com.ongo.domain.publicapi.PublicApiPostStatus.CANCELLED }) }
+    }
+
+    @Test
+    fun `같은 영상을 공유한 다른 예약은 공개 API 게시물 삭제로 취소하지 않는다`() {
+        val scheduledAt = LocalDateTime.now().plusHours(2)
+        val scheduled = PublicApiPost(
+            id = 33,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
+            scheduledAt = scheduledAt,
+            payloadJson = "{\"posts\":[{\"integration\":{\"id\":\"7\"}}]}",
+        )
+        every { posts.findByIdAndUserId(33, 1) } returns scheduled
+        every { posts.update(any()) } answers { firstArg() }
+        every { channels.findById(7) } returns channel
+        every { uploads.findByVideoId(11) } returns listOf(
+            VideoUpload(id = 101, videoId = 11, platform = Platform.YOUTUBE, channelId = 7, status = UploadStatus.UPLOADING, scheduledAt = scheduledAt),
+            VideoUpload(id = 102, videoId = 11, platform = Platform.YOUTUBE, channelId = 8, status = UploadStatus.UPLOADING, scheduledAt = scheduledAt),
+        )
+        every { uploads.cancelScheduledUploadsByIds(setOf(101), any()) } returns 1
+        every { schedules.findByUserId(1) } returns listOf(
+            Schedule(id = 51, videoId = 11, userId = 1, scheduledAt = scheduledAt, platforms = mapOf("YOUTUBE#7" to emptyMap<String, String>())),
+            Schedule(id = 52, videoId = 11, userId = 1, scheduledAt = scheduledAt, platforms = mapOf("YOUTUBE#8" to emptyMap<String, String>())),
+        )
+        every { schedules.update(any()) } answers { firstArg() }
+
+        useCase.delete(1, 33)
+
+        verify(exactly = 1) { uploads.cancelScheduledUploadsByIds(setOf(101), any()) }
+        verify(exactly = 1) { schedules.update(match { it.id == 51L && it.status == ScheduleStatus.CANCELLED }) }
+        verify(exactly = 0) { schedules.update(match { it.id == 52L }) }
     }
 
     @Test

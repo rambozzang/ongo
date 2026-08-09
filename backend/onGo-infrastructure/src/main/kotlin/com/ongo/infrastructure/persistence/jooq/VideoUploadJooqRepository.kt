@@ -337,6 +337,22 @@ class VideoUploadJooqRepository(
             .and(VIDEO_SCHEDULED_AT.isNotNull)
             .execute()
 
+    override fun cancelScheduledUploadsByIds(uploadIds: Set<Long>, now: LocalDateTime): Int {
+        if (uploadIds.isEmpty()) return 0
+        return dsl.update(VIDEO_UPLOADS)
+            .set(STATUS, statusValue(UploadStatus.CANCELLED))
+            .set(ERROR_MESSAGE, "예약 게시가 취소되었습니다.")
+            .set(VIDEO_LAST_ERROR, "사용자가 공개 API 예약 게시를 취소했습니다: $now")
+            .set(VIDEO_NEXT_RETRY_AT, null as LocalDateTime?)
+            .set(VIDEO_POLL_TOKEN, null as String?)
+            .set(VIDEO_LEASE_OWNER, null as String?)
+            .set(VIDEO_LEASE_UNTIL, null as LocalDateTime?)
+            .where(ID.`in`(uploadIds))
+            .and(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
+            .and(VIDEO_SCHEDULED_AT.isNotNull)
+            .execute()
+    }
+
     override fun cancelScheduledUploadsByChannelId(channelId: Long, now: LocalDateTime): Int =
         dsl.update(VIDEO_UPLOADS)
             .set(STATUS, statusValue(UploadStatus.CANCELLED))

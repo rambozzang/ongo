@@ -55,6 +55,12 @@ class PublicApiUseCase(
     private val workspaceRepository: WorkspaceRepository,
 ) {
 
+    private companion object {
+        private val DOMAIN_ZONE: ZoneId = ZoneId.of("Asia/Seoul")
+        private const val MAX_TARGETS = 50
+        private val TERMINAL_FAILURES = setOf(UploadStatus.FAILED, UploadStatus.REJECTED, UploadStatus.CANCELLED)
+    }
+
     fun integrations(userId: Long, group: String? = null): List<PublicIntegrationResponse> =
         channelsForScope(userId, group).map { channel ->
             val workspace = channel.workspaceId?.let(workspaceRepository::findById)
@@ -188,13 +194,23 @@ class PublicApiUseCase(
                     key == platformKey || key == "$platformKey#$channelId"
                 }
             }
-            .map { it.scheduledAt }
+            .flatMap { schedule ->
+                if (schedule.platforms.isEmpty()) {
+                    sequenceOf(schedule.scheduledAt)
+                } else {
+                    schedule.platforms.asSequence()
+                        .filter { (key, _) -> key == platformKey || key == "$platformKey#$channelId" }
+                        .map { (_, raw) -> platformScheduleTime(raw) ?: schedule.scheduledAt }
+                }
+            }
             .toSet()
 
-        val now = LocalDateTime.now().plusMinutes(5).withSecond(0).withNano(0)
-        var candidate = now.plusMinutes(((15 - now.minute % 15) % 15).toLong())
+        val now = LocalDateTime.now(DOMAIN_ZONE).plusMinutes(5).withSecond(0).withNano(0)
+        var candidate = roundUpToQuarter(now)
         while (candidate in busyTimes) candidate = candidate.plusMinutes(15)
-        return PublicAvailableSlotResponse(candidate.toString())
+        return PublicAvailableSlotResponse(
+            candidate.atZone(DOMAIN_ZONE).withZoneSameInstant(ZoneOffset.UTC).toInstant().toString(),
+        )
     }
 
     @Transactional
@@ -371,10 +387,7 @@ class PublicApiUseCase(
                 "예약 중이거나 초안 상태의 게시만 draft로 바꿀 수 있습니다"
             }
             if (current.status == PublicApiPostStatus.SCHEDULED) {
-                videoUploadRepository.cancelScheduledUploads(current.videoId, LocalDateTime.now())
-                scheduleRepository.findByUserId(userId)
-                    .filter { it.videoId == current.videoId && it.status == ScheduleStatus.SCHEDULED }
-                    .forEach { scheduleRepository.update(it.copy(status = ScheduleStatus.CANCELLED)) }
+                cancelScheduledWorkForPost(userId, current)
             }
             return toResponse(postRepository.update(current.copy(status = PublicApiPostStatus.DRAFT)))
         }
@@ -424,13 +437,66 @@ class PublicApiUseCase(
         }
 
         if (current.status == PublicApiPostStatus.SCHEDULED) {
-            videoUploadRepository.cancelScheduledUploads(current.videoId, LocalDateTime.now())
-            scheduleRepository.findByUserId(userId)
-                .filter { it.videoId == current.videoId && it.status == ScheduleStatus.SCHEDULED }
-                .forEach { scheduleRepository.update(it.copy(status = ScheduleStatus.CANCELLED)) }
+            cancelScheduledWorkForPost(userId, current)
         }
         postRepository.update(current.copy(status = PublicApiPostStatus.CANCELLED, errorMessage = null))
     }
+
+    /**
+     * A video can intentionally be reused by several Postiz posts. Cancelling by
+     * videoId alone would therefore cancel unrelated accounts or occurrences.
+     * The public payload is the durable association between a post and its
+     * integrations; use it to select only matching scheduled rows. The update
+     * itself remains atomic in the repository and only changes UPLOADING rows,
+     * so a worker that won the lease cannot be cancelled after external work
+     * has started.
+     */
+    private fun cancelScheduledWorkForPost(userId: Long, post: PublicApiPost) {
+        val targets = publicTargets(post)
+        val targetChannelIds = targets.mapNotNull { it.channelId }.toSet()
+        val uploads = videoUploadRepository.findByVideoId(post.videoId)
+        val matchingUploadIds = uploads.asSequence()
+            .filter { it.status == UploadStatus.UPLOADING && it.scheduledAt != null }
+            .filter { upload ->
+                val sameOccurrence = post.scheduledAt == null || upload.scheduledAt == post.scheduledAt
+                val targetMatches = if (targetChannelIds.isNotEmpty()) {
+                    upload.channelId != null && upload.channelId in targetChannelIds
+                } else {
+                    // Legacy rows may not have integration IDs in their payload.
+                    // Exact occurrence matching is the narrowest safe fallback.
+                    sameOccurrence
+                }
+                sameOccurrence && targetMatches
+            }
+            .mapNotNull { it.id }
+            .toSet()
+
+        videoUploadRepository.cancelScheduledUploadsByIds(matchingUploadIds, LocalDateTime.now())
+
+        scheduleRepository.findByUserId(userId)
+            .asSequence()
+            .filter { it.videoId == post.videoId && it.status == ScheduleStatus.SCHEDULED }
+            .filter { post.scheduledAt == null || it.scheduledAt == post.scheduledAt }
+            .filter { schedule ->
+                if (targets.isEmpty()) return@filter true
+                schedule.platforms.keys.any { key ->
+                    targets.any { target -> key.endsWith("#${target.channelId}") }
+                }
+            }
+            .forEach { scheduleRepository.update(it.copy(status = ScheduleStatus.CANCELLED)) }
+    }
+
+    private fun publicTargets(post: PublicApiPost): List<PublicTarget> {
+        val payload = runCatching {
+            objectMapper.readValue(post.payloadJson, CreatePublicPostRequest::class.java)
+        }.getOrNull()
+        return payload?.posts.orEmpty().mapNotNull { item ->
+            val channelId = item.integration.id.toLongOrNull() ?: return@mapNotNull null
+            PublicTarget(channelId)
+        }
+    }
+
+    private data class PublicTarget(val channelId: Long)
 
     /** Postiz의 group 삭제. onGo의 한 번의 다중 채널 요청은 하나의 post 행으로 저장된다. */
     @Transactional
@@ -628,14 +694,24 @@ class PublicApiUseCase(
     private fun parseDate(value: String): LocalDateTime = runCatching {
         LocalDateTime.parse(value)
     }.recoverCatching {
-        OffsetDateTime.parse(value).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+        OffsetDateTime.parse(value).toInstant().atZone(DOMAIN_ZONE).toLocalDateTime()
     }.recoverCatching {
-        Instant.parse(value).atZone(ZoneId.systemDefault()).toLocalDateTime()
+        Instant.parse(value).atZone(DOMAIN_ZONE).toLocalDateTime()
     }.getOrElse { throw IllegalArgumentException("date는 ISO-8601 형식이어야 합니다") }
 
     /** Postiz dates are UTC ISO-8601 values; the domain stores the server wall clock. */
     private fun formatDate(value: LocalDateTime): String =
-        value.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC).toInstant().toString()
+        value.atZone(DOMAIN_ZONE).withZoneSameInstant(ZoneOffset.UTC).toInstant().toString()
+
+    private fun roundUpToQuarter(value: LocalDateTime): LocalDateTime {
+        val remainder = value.minute % 15
+        return if (remainder == 0) value else value.plusMinutes((15 - remainder).toLong())
+    }
+
+    private fun platformScheduleTime(raw: Any?): LocalDateTime? {
+        val text = (raw as? Map<*, *>)?.get("scheduledAt")?.toString() ?: return null
+        return runCatching { parseDate(text) }.getOrNull()
+    }
 
     private fun firstText(node: JsonNode?): String? = when {
         node == null || node.isNull -> null
@@ -656,8 +732,4 @@ class PublicApiUseCase(
     private fun safeError(error: RuntimeException): String =
         (error.message ?: "공개 API 게시에 실패했습니다").take(2_000)
 
-    companion object {
-        private const val MAX_TARGETS = 50
-        private val TERMINAL_FAILURES = setOf(UploadStatus.FAILED, UploadStatus.REJECTED, UploadStatus.CANCELLED)
-    }
 }
