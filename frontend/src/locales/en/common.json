@@ -2864,6 +2864,7 @@
   },
   "team": {
     "description": "Manage team members and track collaboration activities",
+    "loadFailed": "We couldn't load team data. Please try again.",
     "inviteMember": "Invite Member",
     "pageGuideTitle": "Team Management",
     "pageGuide": [
@@ -2902,7 +2903,9 @@
     },
     "invitedAt": "Invited",
     "resendInvite": "Resend Invitation",
+    "resendInviteDone": "Invitation resent",
     "cancelInvite": "Cancel Invitation",
+    "cancelInviteDone": "Invitation cancelled",
     "confirmCancelInvite": "Are you sure you want to cancel this invitation?",
     "workflowBoard": "Workflow Board",
     "myTasks": "My Tasks",
@@ -2935,6 +2938,7 @@
     "bulkRemoveMessage": "{count} members will be removed from the team. This cannot be undone.",
     "bulkRemoveDone": "Removed {count} members",
     "removeFailed": "Failed to remove members",
+    "inviteFailed": "Failed to send invitation",
     "memberNotRemovable": "Owners and yourself cannot be removed",
     "emptyMembersTitle": "No team members yet",
     "emptyMembersDesc": "Invite teammates to collaborate on uploads and reviews.",

@@ -10,6 +10,7 @@ import com.ongo.domain.team.TeamMember
 import com.ongo.domain.team.TeamMemberRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class TeamUseCase(
@@ -34,6 +35,16 @@ class TeamUseCase(
             status = "INVITED",
         )
         return teamMemberRepository.save(member).toResponse()
+    }
+
+    @Transactional
+    fun resendInvite(userId: Long, memberId: Long): TeamMemberResponse {
+        val member = teamMemberRepository.findById(memberId)
+            ?: throw NotFoundException("팀 멤버", memberId)
+        if (member.userId != userId) throw ForbiddenException("해당 팀 멤버에 대한 권한이 없습니다")
+        if (member.status == "JOINED") throw ForbiddenException("이미 가입한 멤버의 초대는 재발송할 수 없습니다")
+
+        return teamMemberRepository.resendInvite(memberId, LocalDateTime.now()).toResponse()
     }
 
     @Transactional
@@ -164,14 +175,27 @@ class TeamUseCase(
         Permission.SHORTS_PIPELINE_MANAGE -> "쇼츠 파이프라인 프롬프트·템플릿 편집"
     }
 
-    private fun TeamMember.toResponse(): TeamMemberResponse = TeamMemberResponse(
-        id = id!!,
-        memberEmail = memberEmail,
-        memberName = memberName,
-        role = role,
-        status = status,
-        invitedAt = invitedAt,
-        joinedAt = joinedAt,
-        createdAt = createdAt,
-    )
+    private fun TeamMember.toResponse(): TeamMemberResponse {
+        val expiresAt = invitedAt?.plusDays(INVITE_VALID_DAYS)
+        val responseStatus = when {
+            status == "INVITED" && expiresAt != null && expiresAt.isBefore(LocalDateTime.now()) -> "EXPIRED"
+            else -> status
+        }
+
+        return TeamMemberResponse(
+            id = id!!,
+            memberEmail = memberEmail,
+            memberName = memberName,
+            role = role,
+            status = responseStatus,
+            invitedAt = invitedAt,
+            joinedAt = joinedAt,
+            createdAt = createdAt,
+            expiresAt = expiresAt,
+        )
+    }
+
+    private companion object {
+        const val INVITE_VALID_DAYS = 7L
+    }
 }

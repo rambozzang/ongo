@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { XMarkIcon, PaperAirplaneIcon } from '@heroicons/vue/24/outline'
 import type { TeamRole } from '@/types/team'
 import { useTeamStore } from '@/stores/team'
+import { useNotification } from '@/composables/useNotification'
 
 interface Props {
   show: boolean
@@ -16,6 +17,7 @@ defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const teamStore = useTeamStore()
+const notification = useNotification()
 
 const emailInput = ref('')
 const selectedRole = ref<TeamRole>('editor')
@@ -52,11 +54,14 @@ const handleEmailInput = () => {
   }
 }
 
-const handleInvite = () => {
+const handleInvite = async () => {
   if (!isValid.value) return
 
-  for (const email of emails.value) {
-    teamStore.inviteMember(email, selectedRole.value)
+  try {
+    await Promise.all(emails.value.map((email) => teamStore.inviteMember(email, selectedRole.value)))
+  } catch {
+    notification.error('초대 전송에 실패했습니다. 입력한 주소와 권한을 확인해 주세요.')
+    return
   }
 
   emailInput.value = ''

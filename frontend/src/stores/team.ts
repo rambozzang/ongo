@@ -8,6 +8,8 @@ interface TeamState {
   members: TeamMember[]
   invites: TeamInvite[]
   activities: TeamActivity[]
+  loading: boolean
+  error: string | null
 }
 
 function mapApiMember(m: TeamMemberResponse): TeamMember {
@@ -23,11 +25,26 @@ function mapApiMember(m: TeamMemberResponse): TeamMember {
   }
 }
 
+function mapApiInvite(m: TeamMemberResponse): TeamInvite {
+  const invitedAt = m.invitedAt ?? m.createdAt ?? new Date().toISOString()
+  const normalizedStatus = m.status.toLowerCase()
+  return {
+    id: m.id,
+    email: m.memberEmail,
+    role: (m.role?.toLowerCase() ?? 'viewer') as TeamRole,
+    status: normalizedStatus === 'expired' ? 'expired' : normalizedStatus === 'accepted' || normalizedStatus === 'joined' ? 'accepted' : 'pending',
+    invitedAt,
+    expiresAt: m.expiresAt ?? new Date(new Date(invitedAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  }
+}
+
 const emptyState = (): TeamState => ({
-  teamName: '',
+  teamName: '내 팀',
   members: [],
   invites: [],
   activities: [],
+  loading: false,
+  error: null,
 })
 
 export const useTeamStore = defineStore('team', {
@@ -51,19 +68,26 @@ export const useTeamStore = defineStore('team', {
 
   actions: {
     async fetchMembers() {
+      this.loading = true
+      this.error = null
       try {
-        const members = await teamApi.listMembers()
-        this.members = members.map(mapApiMember)
-      } catch {
-        // API failed — keep empty state
-        this.members = []
+        const entries = await teamApi.listMembers()
+        this.members = entries
+          .filter((entry) => ['JOINED', 'ACCEPTED'].includes(entry.status.toUpperCase()))
+          .map(mapApiMember)
+        this.invites = entries
+          .filter((entry) => !['JOINED', 'ACCEPTED'].includes(entry.status.toUpperCase()))
+          .map(mapApiInvite)
+      } catch (error) {
+        this.error = error instanceof Error ? error.message : '팀 정보를 불러오지 못했습니다'
+      } finally {
+        this.loading = false
       }
     },
 
     async inviteMember(email: string, role: TeamRole) {
       const result = await teamApi.inviteMember({ email, role: role.toUpperCase() })
-      const member = mapApiMember(result)
-      this.members.unshift(member)
+      this.invites.unshift(mapApiInvite(result))
     },
 
     async removeMember(memberId: number) {
@@ -79,17 +103,15 @@ export const useTeamStore = defineStore('team', {
       member.role = newRole
     },
 
-    cancelInvite(inviteId: number) {
+    async cancelInvite(inviteId: number) {
+      await teamApi.removeMember(inviteId)
       this.invites = this.invites.filter((i) => i.id !== inviteId)
     },
 
-    resendInvite(inviteId: number) {
-      const invite = this.invites.find((i) => i.id === inviteId)
-      if (!invite) return
-
-      invite.status = 'pending'
-      invite.invitedAt = new Date().toISOString()
-      invite.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
+    async resendInvite(inviteId: number) {
+      const result = await teamApi.resendInvite(inviteId)
+      const index = this.invites.findIndex((i) => i.id === inviteId)
+      if (index !== -1) this.invites[index] = mapApiInvite(result)
     },
   },
 })

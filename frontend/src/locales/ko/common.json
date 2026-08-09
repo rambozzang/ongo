@@ -2864,6 +2864,7 @@
   },
   "team": {
     "description": "팀 멤버 관리 및 협업 활동 추적",
+    "loadFailed": "팀 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "inviteMember": "멤버 초대",
     "pageGuideTitle": "팀 관리",
     "pageGuide": [
@@ -2902,7 +2903,9 @@
     },
     "invitedAt": "초대",
     "resendInvite": "초대 재전송",
+    "resendInviteDone": "초대를 재전송했습니다",
     "cancelInvite": "초대 취소",
+    "cancelInviteDone": "초대를 취소했습니다",
     "confirmCancelInvite": "초대를 취소하시겠습니까?",
     "workflowBoard": "워크플로우 보드",
     "myTasks": "내 작업",
@@ -2935,6 +2938,7 @@
     "bulkRemoveMessage": "팀원 {count}명이 팀에서 제외됩니다. 이 작업은 되돌릴 수 없습니다.",
     "bulkRemoveDone": "팀원 {count}명을 제외했습니다",
     "removeFailed": "팀원 제외에 실패했습니다",
+    "inviteFailed": "초대 전송에 실패했습니다",
     "memberNotRemovable": "소유자와 본인은 제외할 수 없습니다",
     "emptyMembersTitle": "아직 팀원이 없습니다",
     "emptyMembersDesc": "동료를 초대하면 업로드와 검수를 함께 진행할 수 있습니다.",

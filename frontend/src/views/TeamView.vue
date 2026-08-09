@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   UserGroupIcon,
@@ -244,12 +244,16 @@ const toggleAllCancellableInvites = () => {
   )
 }
 
-const handleBulkCancelInvites = () => {
+const handleBulkCancelInvites = async () => {
   const ids = [...selectedInviteIds.value]
   if (ids.length === 0) return
-  ids.forEach((id) => teamStore.cancelInvite(id))
-  notification.success(t('team.bulkCancelInvitesDone', { count: ids.length }))
-  clearInviteSelection()
+  try {
+    await Promise.all(ids.map((id) => teamStore.cancelInvite(id)))
+    notification.success(t('team.bulkCancelInvitesDone', { count: ids.length }))
+    clearInviteSelection()
+  } catch {
+    notification.error(t('team.removeFailed'))
+  }
 }
 
 const roleStats = computed(() => {
@@ -305,15 +309,25 @@ const handleCancelInvite = (inviteId: number) => {
   showCancelInviteModal.value = true
 }
 
-const confirmCancelInvite = () => {
+const confirmCancelInvite = async () => {
   const inviteId = cancelInviteTargetId.value
   cancelInviteTargetId.value = null
   if (inviteId === null) return
-  teamStore.cancelInvite(inviteId)
+  try {
+    await teamStore.cancelInvite(inviteId)
+    notification.success(t('team.cancelInviteDone'))
+  } catch {
+    notification.error(t('team.removeFailed'))
+  }
 }
 
-const handleResendInvite = (inviteId: number) => {
-  teamStore.resendInvite(inviteId)
+const handleResendInvite = async (inviteId: number) => {
+  try {
+    await teamStore.resendInvite(inviteId)
+    notification.success(t('team.resendInviteDone'))
+  } catch {
+    notification.error(t('team.inviteFailed'))
+  }
 }
 
 const relativeTime = (dateString: string): string => {
@@ -343,6 +357,10 @@ watch(activeTab, (tab) => {
     approvalStore.fetchPendingReviews()
   }
 })
+
+onMounted(() => {
+  teamStore.fetchMembers()
+})
 </script>
 
 <template>
@@ -362,6 +380,17 @@ watch(activeTab, (tab) => {
     </PageHeader>
 
     <PageGuide :title="$t('team.pageGuideTitle')" :items="($tm('team.pageGuide') as string[])" />
+
+    <div
+      v-if="teamStore.error"
+      class="flex items-center justify-between gap-3 rounded-lg border border-error/30 bg-error-subtle px-4 py-3 text-body text-error-strong"
+      role="alert"
+    >
+      <span>{{ $t('team.loadFailed') }}</span>
+      <button type="button" class="btn-secondary shrink-0" @click="teamStore.fetchMembers()">
+        {{ $t('action.retry') }}
+      </button>
+    </div>
 
     <!-- Stats -->
     <div class="grid gap-2.5 tablet:grid-cols-2 desktop:grid-cols-4">

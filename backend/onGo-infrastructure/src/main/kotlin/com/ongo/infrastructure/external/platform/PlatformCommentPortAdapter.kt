@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.platform
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.exception.PlatformApiException
 import com.ongo.domain.comment.*
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import io.github.resilience4j.retry.annotation.Retry
@@ -99,7 +100,7 @@ class PlatformCommentPortAdapter(
         e: Throwable,
     ): FetchedCommentList {
         log.warn("플랫폼 {} 댓글 조회 실패 (Circuit Breaker): {}", platform, e.message)
-        return FetchedCommentList(emptyList())
+        throw PlatformApiException(platform.name, "댓글 조회 Circuit Breaker 발생: ${e.message}", e)
     }
 
     private fun PlatformComment.toDomain(): FetchedComment = FetchedComment(

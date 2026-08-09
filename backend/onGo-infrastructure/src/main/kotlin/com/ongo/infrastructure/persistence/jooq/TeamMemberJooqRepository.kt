@@ -85,6 +85,17 @@ class TeamMemberJooqRepository(
             .execute()
     }
 
+    override fun resendInvite(id: Long, invitedAt: java.time.LocalDateTime): TeamMember {
+        dsl.update(TEAM_MEMBERS)
+            .set(INVITED_AT, invitedAt)
+            .set(STATUS, "INVITED")
+            .set(JOINED_AT, null as java.time.LocalDateTime?)
+            .where(ID.eq(id))
+            .execute()
+
+        return findById(id)!!
+    }
+
     override fun findByMemberEmailAndUserId(memberEmail: String, teamOwnerId: Long): TeamMember? =
         dsl.select()
             .from(TEAM_MEMBERS)

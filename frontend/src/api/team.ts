@@ -11,6 +11,7 @@ export interface TeamMemberResponse {
   invitedAt: string | null
   joinedAt: string | null
   createdAt: string | null
+  expiresAt: string | null
 }
 
 export interface InviteMemberRequest {
@@ -50,6 +51,12 @@ export const teamApi = {
 
   inviteMember(request: InviteMemberRequest) {
     return apiClient.post<ResData<TeamMemberResponse>>('/team/invite', request).then(unwrapResponse)
+  },
+
+  resendInvite(id: number) {
+    return apiClient
+      .post<ResData<TeamMemberResponse>>(`/team/members/${id}/invite/resend`)
+      .then(unwrapResponse)
   },
 
   updateRole(id: number, request: UpdateRoleRequest) {

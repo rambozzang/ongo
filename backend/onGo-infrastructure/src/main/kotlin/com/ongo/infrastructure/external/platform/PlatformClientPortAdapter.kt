@@ -140,7 +140,7 @@ class PlatformClientPortAdapter(
         e: Throwable,
     ): PlatformVideoMetadataResult? {
         log.warn("플랫폼 {} 영상 메타데이터 조회 실패 (Circuit Breaker): {}", platform, e.message)
-        return null
+        throw PlatformApiException(platform.name, "영상 메타데이터 조회 Circuit Breaker 발생: ${e.message}", e)
     }
 
     override fun revokeToken(platform: Platform, accessToken: String): Boolean {
@@ -158,7 +158,7 @@ class PlatformClientPortAdapter(
         e: Throwable,
     ): PlatformFeedPortResult {
         log.warn("플랫폼 {} 영상 목록 조회 실패 (Circuit Breaker): {}", platform, e.message)
-        return PlatformFeedPortResult(emptyList())
+        throw PlatformApiException(platform.name, "영상 목록 조회 Circuit Breaker 발생: ${e.message}", e)
     }
 
     @Suppress("unused")
@@ -171,7 +171,7 @@ class PlatformClientPortAdapter(
         e: Throwable,
     ): PlatformAnalyticsResult {
         log.warn("플랫폼 {} 분석 데이터 조회 실패 (Circuit Breaker): {}", platform, e.message)
-        return PlatformAnalyticsResult(0, 0, 0, 0, 0, 0)
+        throw PlatformApiException(platform.name, "분석 데이터 조회 Circuit Breaker 발생: ${e.message}", e)
     }
 
     @Suppress("unused")
@@ -181,7 +181,7 @@ class PlatformClientPortAdapter(
         e: Throwable,
     ): PlatformChannelInfoResult {
         log.warn("플랫폼 {} 채널 정보 조회 실패 (Circuit Breaker): {}", platform, e.message)
-        throw e
+        throw PlatformApiException(platform.name, "채널 정보 조회 Circuit Breaker 발생: ${e.message}", e)
     }
 
     @Suppress("unused")

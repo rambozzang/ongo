@@ -11,6 +11,7 @@ data class TeamMemberResponse(
     val invitedAt: LocalDateTime?,
     val joinedAt: LocalDateTime?,
     val createdAt: LocalDateTime?,
+    val expiresAt: LocalDateTime?,
 )
 
 data class InviteMemberRequest(

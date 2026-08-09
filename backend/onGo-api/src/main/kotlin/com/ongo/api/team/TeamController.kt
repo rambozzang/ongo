@@ -51,6 +51,17 @@ class TeamController(
         return ResData.success(result, "멤버가 초대되었습니다")
     }
 
+    @Operation(summary = "팀 초대 재발송", description = "만료되었거나 대기 중인 초대의 유효기간을 7일 연장합니다.")
+    @RequiresPermission(Permission.TEAM_INVITE)
+    @PostMapping("/members/{id}/invite/resend")
+    fun resendInvite(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @Parameter(description = "초대 멤버 ID") @PathVariable id: Long,
+    ): ResponseEntity<ResData<TeamMemberResponse>> {
+        val result = teamUseCase.resendInvite(userId, id)
+        return ResData.success(result, "초대가 재발송되었습니다")
+    }
+
     @Operation(summary = "멤버 역할 변경", description = "팀 멤버의 역할을 변경합니다.")
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "역할 변경 성공"),
