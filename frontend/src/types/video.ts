@@ -51,12 +51,19 @@ export interface VideoUpload {
   status: UploadStatus
   platformVideoId: string | null
   platformUrl: string | null
-  title: string
+  title?: string
   description: string | null
   tags: string[]
   errorMessage: string | null
   publishedAt: string | null
   createdAt: string
+  meta?: {
+    title: string | null
+    description: string | null
+    tags: string[]
+    visibility: Visibility
+    customThumbnailUrl: string | null
+  } | null
 }
 
 export interface VideoListFilter {
@@ -75,6 +82,17 @@ export interface VideoCreateRequest {
   thumbnailUrl?: string
   visibility?: Visibility
   mediaType?: MediaType
+  /** Present when a compose draft saves platform-specific overrides. */
+  platforms?: VideoPlatformDraftRequest[]
+}
+
+export interface VideoPlatformDraftRequest {
+  platform: Platform
+  title: string
+  description?: string
+  tags: string[]
+  visibility: Visibility
+  customThumbnailUrl?: string
 }
 
 export interface VideoPublishRequest {

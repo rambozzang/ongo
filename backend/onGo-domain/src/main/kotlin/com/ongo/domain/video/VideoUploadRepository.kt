@@ -11,6 +11,8 @@ interface VideoUploadRepository {
     fun findByPlatformAndUserId(platform: Platform, userId: Long): List<VideoUpload>
     fun save(upload: VideoUpload): VideoUpload
     fun update(upload: VideoUpload): VideoUpload
+    /** DRAFT/CANCELLED 초안 행만 정리한다. 게시 중인 외부 결과는 절대 삭제하지 않는다. */
+    fun deleteEditableByVideoIdExceptPlatforms(videoId: Long, platforms: Set<Platform>): Int
     /** lease를 보유한 작업자만 외부 호출 결과를 반영한다. */
     fun updateOwned(upload: VideoUpload, owner: String): Boolean
     fun findPendingUploads(): List<VideoUpload>

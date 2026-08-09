@@ -146,6 +146,16 @@ class VideoUploadJooqRepository(
         return findById(upload.id!!)!!
     }
 
+    override fun deleteEditableByVideoIdExceptPlatforms(videoId: Long, platforms: Set<Platform>): Int {
+        val keep = platforms.map { it.name }
+        val condition = VIDEO_ID.eq(videoId)
+            .and(STATUS.`in`(UploadStatus.DRAFT.name, UploadStatus.CANCELLED.name))
+        val scoped = if (keep.isEmpty()) condition else condition.and(PLATFORM_TEXT.notIn(keep))
+        return dsl.deleteFrom(VIDEO_UPLOADS)
+            .where(scoped)
+            .execute()
+    }
+
     override fun updateOwned(upload: VideoUpload, owner: String): Boolean {
         val changed = dsl.update(VIDEO_UPLOADS)
             .set(PLATFORM_VIDEO_ID, upload.platformVideoId)

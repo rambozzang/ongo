@@ -6,15 +6,18 @@ import { scheduleApi } from '@/api/schedule'
 export const useScheduleStore = defineStore('schedule', () => {
   const schedules = ref<Schedule[]>([])
   const loading = ref(false)
+  const loadError = ref<string | null>(null)
   const calendarView = ref<CalendarView>('month')
 
   async function fetchSchedules(startDate?: string, endDate?: string) {
     loading.value = true
+    loadError.value = null
     try {
       schedules.value = await scheduleApi.list({ startDate, endDate })
-    } catch {
-      // Guest mode or API error - continue with empty schedules
-      schedules.value = []
+    } catch (error) {
+      // Preserve the last confirmed data. An empty calendar after a network
+      // failure looks like deleted reservations and invites duplicate posts.
+      loadError.value = error instanceof Error ? error.message : '예약을 불러오지 못했습니다.'
     } finally {
       loading.value = false
     }
@@ -49,6 +52,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   return {
     schedules,
     loading,
+    loadError,
     calendarView,
     fetchSchedules,
     createSchedule,

@@ -704,6 +704,13 @@ function handleAnalyzeAnomaly(videoId: number) {
 }
 
 function handleEdit() {
+  // DRAFTs use the production compose flow so their server-persisted
+  // platform overrides are restored. Published videos keep the legacy
+  // metadata editor because it also handles remote platform updates.
+  if (video.value?.status === 'DRAFT') {
+    router.push({ path: '/compose', query: { videoId: String(props.id) } })
+    return
+  }
   router.push(`/upload?edit=${props.id}`)
 }
 

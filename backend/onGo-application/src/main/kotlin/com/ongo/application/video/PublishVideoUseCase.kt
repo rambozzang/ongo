@@ -104,9 +104,10 @@ class PublishVideoUseCase(
         // 각 플랫폼별 VideoUpload + VideoPlatformMeta 생성
         val platformConfigs = configs.map { config ->
             val existing = videoUploadRepository.findByVideoIdAndPlatform(videoId, config.platform)
-            val upload = if (existing?.status == UploadStatus.CANCELLED) {
-                // 취소된 예약을 다시 게시할 때 unique(video_id, platform) 제약을
-                // 위반해 새 row를 만들지 않고 같은 durable 작업을 재사용한다.
+            val upload = if (existing?.status == UploadStatus.CANCELLED || existing?.status == UploadStatus.DRAFT) {
+                // 저장된 초안/취소된 예약을 다시 게시할 때 unique(video_id,
+                // platform) 제약을 위반해 새 row를 만들지 않고 같은 durable
+                // 작업을 재사용한다.
                 videoUploadRepository.update(
                     existing.copy(
                         status = UploadStatus.UPLOADING,

@@ -231,6 +231,57 @@ class PublishVideoUseCaseTest {
     }
 
     @Test
+    fun `publishing a saved platform draft reuses its durable upload row`() {
+        val videoId = 906L
+        val draftUpload = VideoUpload(
+            id = 601L,
+            videoId = videoId,
+            platform = Platform.YOUTUBE,
+            status = UploadStatus.DRAFT,
+        )
+        every { videoRepository.findById(videoId) } returns Video(
+            id = videoId,
+            userId = 42L,
+            title = "저장된 초안",
+            fileUrl = "https://storage.test/draft.mp4",
+            status = UploadStatus.DRAFT,
+        )
+        every { videoRepository.claimForPublish(42L, videoId) } returns true
+        every { channelRepository.findByUserIdAndPlatform(42L, Platform.YOUTUBE) } returns Channel(
+            id = 1L,
+            userId = 42L,
+            platform = Platform.YOUTUBE,
+            platformChannelId = "youtube-channel",
+            channelName = "테스트 채널",
+            accessToken = EncryptedToken("encrypted-token"),
+        )
+        every { videoUploadRepository.findByVideoIdAndPlatform(videoId, Platform.YOUTUBE) } returns draftUpload
+        every { videoUploadRepository.update(any()) } answers { firstArg() }
+        every { videoPlatformMetaRepository.save(any()) } answers { firstArg() }
+        every { eventPublisher.publishEvent(any<VideoPublishEvent>()) } just Runs
+
+        useCase().publishVideo(
+            userId = 42L,
+            videoId = videoId,
+            configs = listOf(
+                PlatformUploadConfig(
+                    platform = Platform.YOUTUBE,
+                    videoUploadId = 0L,
+                    title = "초안 제목",
+                    description = "초안 설명",
+                    tags = listOf("초안"),
+                    visibility = Visibility.PUBLIC,
+                    thumbnailUrl = null,
+                    scheduledAt = null,
+                ),
+            ),
+        )
+
+        verify(exactly = 1) { videoUploadRepository.update(match { it.id == 601L && it.status == UploadStatus.UPLOADING }) }
+        verify(exactly = 0) { videoUploadRepository.save(any()) }
+    }
+
+    @Test
     fun `concurrent publish reservation is rejected before creating platform rows`() {
         val userId = 42L
         val videoId = 900L

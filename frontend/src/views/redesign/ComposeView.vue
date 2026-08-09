@@ -1037,15 +1037,28 @@ async function saveDraft() {
       visibility: 'PUBLIC' as const,
       mediaType: 'VIDEO' as const,
     }
+    // Keep the exact per-platform copy in the same save operation. The
+    // backend stores these as editable DRAFT rows and never publishes them.
+    const platforms = selectedChannels.value.map((channel) => {
+      const draft = draftFor(channel.platform)
+      return {
+        platform: channel.platform,
+        title: draft.title,
+        description: draft.description || undefined,
+        tags: parseHashtags(draft.hashtags),
+        visibility: 'PUBLIC' as const,
+      }
+    })
     // File selection/presigned upload creates the server video before the user
     // presses Save draft. Reuse that row instead of creating an orphan draft.
     const existingVideoId = importedVideoId.value ?? uploadStore.videoId
-    if (existingVideoId) await videoApi.update(existingVideoId, metadata)
+    if (existingVideoId) await videoApi.update(existingVideoId, { ...metadata, platforms })
     else {
       const created = await videoApi.create(metadata)
       // Keep the server-created draft attached to this compose session so a
       // later save/edit does not create a second orphan draft.
       importedVideoId.value = created.id
+      await videoApi.update(created.id, { ...metadata, platforms })
     }
     notice.value = t('redesign.compose.draftSaved')
   } catch {
@@ -1114,6 +1127,16 @@ async function submit() {
       category: 'general',
       visibility: 'PUBLIC',
       mediaType: 'VIDEO',
+      platforms: selectedChannels.value.map((channel) => {
+        const draft = draftFor(channel.platform)
+        return {
+          platform: channel.platform,
+          title: draft.title,
+          description: draft.description || undefined,
+          tags: parseHashtags(draft.hashtags),
+          visibility: 'PUBLIC' as const,
+        }
+      }),
     })
 
     const configs: PlatformPublishConfig[] = selectedChannels.value.map((ch, index) => {
@@ -1319,6 +1342,28 @@ async function importFromUrl() {
   }
 }
 
+async function loadDraft(videoId: number) {
+  const video = await videoApi.get(videoId)
+  importedVideoId.value = videoId
+  uploadStore.videoId = videoId
+  form.title = video.title
+  form.description = video.description ?? ''
+  form.hashtags = video.tags.join(' ')
+  file.name = video.title
+  for (const upload of video.uploads ?? []) {
+    const meta = upload.meta
+    if (!meta) continue
+    platformForms[upload.platform] = reactive({
+      title: meta.title ?? video.title,
+      description: meta.description ?? '',
+      hashtags: meta.tags.join(' '),
+    })
+    // A persisted override must stay independent when the common copy changes.
+    platformDraftDirty[upload.platform] = true
+  }
+  notice.value = '저장된 초안을 불러왔습니다. 내용을 확인한 뒤 게시하세요.'
+}
+
 function onKeydown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
     e.preventDefault()
@@ -1333,8 +1378,16 @@ onMounted(async () => {
     schedMode.value = 'fix'
     fixedAt.value = at
   }
+  const draftId = Number(route.query.videoId)
+  if (Number.isInteger(draftId) && draftId > 0) {
+    try {
+      await loadDraft(draftId)
+    } catch (error) {
+      notice.value = error instanceof Error ? error.message : '초안을 불러오지 못했습니다.'
+    }
+  }
   const templateId = Number(route.query.templateId)
-  if (Number.isInteger(templateId) && templateId > 0) {
+  if ((!Number.isInteger(draftId) || draftId <= 0) && Number.isInteger(templateId) && templateId > 0) {
     try {
       const template = await templatesApi.get(templateId)
       form.title = template.titleTemplate ?? ''
@@ -1349,6 +1402,12 @@ onMounted(async () => {
   try {
     // list() 는 { channels, maxAllowed, currentCount } 형태다
     channels.value = (await channelApi.list())?.channels ?? []
+    if (Number.isInteger(draftId) && draftId > 0) {
+      const savedPlatforms = new Set(Object.keys(platformForms))
+      channels.value.forEach((channel) => {
+        if (savedPlatforms.size > 0) disabled[channel.id] = !savedPlatforms.has(channel.platform)
+      })
+    }
     // 분석은 선택적인 예약 보강이므로 채널·게시 조건 로딩을 막지 않는다.
     void loadOptimalTimes(channels.value)
   } catch (error) {

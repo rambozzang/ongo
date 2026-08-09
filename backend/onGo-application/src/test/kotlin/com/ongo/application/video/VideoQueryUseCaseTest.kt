@@ -1,6 +1,8 @@
 package com.ongo.application.video
 
+import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
+import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.channel.ChannelRepository
@@ -84,6 +86,75 @@ class VideoQueryUseCaseTest {
         assertFailsWith<ForbiddenException> {
             useCase.getVideoDetail(999L, 1L)
         }
+    }
+
+    @Test
+    fun `updateVideo persists platform-specific draft metadata without publishing`() {
+        val video = createVideo()
+        val savedUpload = VideoUpload(
+            id = 41L,
+            videoId = video.id!!,
+            platform = Platform.YOUTUBE,
+            status = UploadStatus.DRAFT,
+        )
+        every { videoRepository.findById(1L) } returns video
+        every { videoRepository.update(any()) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } returns listOf(savedUpload)
+        every { videoUploadRepository.save(any()) } returns savedUpload
+        every { videoUploadRepository.update(any()) } returns savedUpload
+        every { videoPlatformMetaRepository.findByVideoUploadId(41L) } returns null
+        every { videoPlatformMetaRepository.save(any()) } answers { firstArg() }
+        every { videoPlatformMetaRepository.findByVideoUploadIds(listOf(41L)) } returns emptyMap()
+        every { videoUploadRepository.deleteEditableByVideoIdExceptPlatforms(1L, setOf(Platform.YOUTUBE)) } returns 0
+
+        useCase.updateVideo(
+            userId = 100L,
+            videoId = 1L,
+            title = "공통 제목",
+            description = "공통 설명",
+            tags = listOf("공통"),
+            category = null,
+            thumbnailIndex = null,
+            platformDrafts = listOf(
+                VideoPlatformDraft(
+                    platform = Platform.YOUTUBE,
+                    title = "유튜브 전용 제목",
+                    description = "유튜브 전용 설명",
+                    tags = listOf("유튜브"),
+                    visibility = Visibility.PUBLIC,
+                ),
+            ),
+        )
+
+        verify {
+            videoPlatformMetaRepository.save(match {
+                it.videoUploadId == 41L &&
+                    it.title == "유튜브 전용 제목" &&
+                    it.description == "유튜브 전용 설명" &&
+                    it.tags == listOf("유튜브")
+            })
+        }
+        verify(exactly = 0) { videoUploadRepository.save(any()) }
+    }
+
+    @Test
+    fun `updateVideo rejects platform draft edits after publish has started`() {
+        val video = createVideo(status = UploadStatus.UPLOADING)
+        every { videoRepository.findById(1L) } returns video
+
+        assertFailsWith<IllegalStateException> {
+            useCase.updateVideo(
+                userId = 100L,
+                videoId = 1L,
+                title = null,
+                description = null,
+                tags = null,
+                category = null,
+                thumbnailIndex = null,
+                platformDrafts = emptyList(),
+            )
+        }
+        verify(exactly = 0) { videoUploadRepository.findByVideoId(any()) }
     }
 
     // ---- deleteVideo tests ----

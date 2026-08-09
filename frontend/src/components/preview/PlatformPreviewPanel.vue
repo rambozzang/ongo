@@ -1,48 +1,29 @@
 <template>
   <div class="platform-preview-panel">
     <!-- Header with toggle -->
-    <div
-      role="button"
-      tabindex="0"
-      :aria-expanded="!collapsed"
-      class="mb-4 flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
-      @click="collapsed = !collapsed"
-      @keydown.enter.prevent="collapsed = !collapsed"
-      @keydown.space.prevent="collapsed = !collapsed"
-    >
-      <div class="flex items-center gap-2">
-        <svg
-          class="h-5 w-5 text-primary-600 dark:text-primary-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-          />
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-          />
+    <div class="mb-4 flex w-full items-center justify-between rounded-lg border border-line-control bg-surface-card px-4 py-3 transition-colors hover:bg-surface-raised">
+      <button
+        type="button"
+        :aria-expanded="!collapsed"
+        class="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left"
+        @click="collapsed = !collapsed"
+      >
+        <svg class="h-5 w-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
-        <span class="font-semibold text-gray-900 dark:text-gray-100">{{ t('preview.platformPreview') }}</span>
-        <span
-          v-if="platforms.length > 0"
-          class="rounded-full bg-primary-100 px-2 py-0.5 text-body-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
-        >
+        <span class="font-semibold text-content">{{ t('preview.platformPreview') }}</span>
+        <span v-if="platforms.length > 0" class="rounded-full bg-accent-dim px-2 py-0.5 text-body-xs font-semibold text-accent">
           {{ platforms.length }}
         </span>
-      </div>
+      </button>
       <div class="flex items-center gap-2">
         <!-- Tab/Grid toggle button -->
         <button
           v-if="platforms.length > 1"
-          class="rounded-md p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+          type="button"
+          class="min-h-11 min-w-11 rounded-md p-1 text-content-tertiary transition-colors hover:bg-surface-raised hover:text-content"
+          :aria-label="isGridView ? t('preview.switchToTab') : t('preview.switchToGrid')"
           :title="isGridView ? t('preview.switchToTab') : t('preview.switchToGrid')"
           @click.stop="isGridView = !isGridView"
         >
@@ -50,7 +31,7 @@
           <ListBulletIcon v-else class="h-5 w-5" />
         </button>
         <svg
-          class="h-5 w-5 text-gray-600 transition-transform dark:text-gray-400"
+          class="h-5 w-5 text-content-tertiary transition-transform"
           :class="{ 'rotate-180': !collapsed }"
           fill="none"
           stroke="currentColor"
@@ -64,14 +45,14 @@
     <!-- Preview Content -->
     <div
       v-if="!collapsed && platforms.length > 0"
-      class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
+      class="rounded-lg border border-line bg-surface-raised p-4"
     >
       <!-- Comparison Grid View -->
       <div v-if="isGridView" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div
           v-for="platform in platforms"
           :key="platform"
-          class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-800"
+          class="rounded-lg border border-line-control bg-surface-card p-3"
         >
           <!-- Platform header with char count badge -->
           <div class="mb-2 flex items-center justify-between">
@@ -80,7 +61,7 @@
                 class="h-2.5 w-2.5 rounded-full"
                 :style="{ backgroundColor: PLATFORM_CONFIG[platform].color }"
               />
-              <span class="text-body font-semibold text-gray-900 dark:text-gray-100">
+                <span class="text-body font-semibold text-content">
                 {{ PLATFORM_CONFIG[platform].label }}
               </span>
             </div>
@@ -112,11 +93,13 @@
           <button
             v-for="platform in platforms"
             :key="platform"
+            type="button"
+            :aria-pressed="selectedPlatform === platform"
             class="rounded-lg px-4 py-2 text-body font-medium transition-all"
             :class="
-              selectedPlatform === platform
-                ? 'bg-white text-primary-600 shadow-sm dark:bg-gray-700 dark:text-primary-400'
-                : 'text-gray-600 hover:bg-white/50 dark:text-gray-400 dark:hover:bg-gray-700/50'
+                selectedPlatform === platform
+                ? 'bg-surface-card text-accent shadow-sm'
+                : 'text-content-secondary hover:bg-surface-card/50'
             "
             @click="selectedPlatform = platform"
           >
@@ -170,10 +153,10 @@
     <!-- Empty State -->
     <div
       v-else-if="!collapsed && platforms.length === 0"
-      class="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center dark:border-gray-700 dark:bg-gray-800/50"
+      class="rounded-lg border border-line bg-surface-raised p-8 text-center"
     >
       <svg
-        class="mx-auto mb-3 h-12 w-12 text-gray-400 dark:text-gray-600"
+        class="mx-auto mb-3 h-12 w-12 text-content-quaternary"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -191,7 +174,7 @@
           d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
         />
       </svg>
-      <p class="text-body text-gray-600 dark:text-gray-400">
+      <p class="text-body text-content-secondary">
         {{ t('preview.selectPlatform') }}
       </p>
     </div>

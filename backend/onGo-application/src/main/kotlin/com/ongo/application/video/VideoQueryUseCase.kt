@@ -14,8 +14,10 @@ import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.video.ContentImage
 import com.ongo.domain.video.ContentImageRepository
 import com.ongo.domain.video.Video
+import com.ongo.domain.video.VideoPlatformMeta
 import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -170,12 +172,24 @@ class VideoQueryUseCase(
     }
 
     @Transactional
-    fun updateVideo(userId: Long, videoId: Long, title: String?, description: String?, tags: List<String>?, category: String?, thumbnailIndex: Int?): VideoDetailResult {
+    fun updateVideo(
+        userId: Long,
+        videoId: Long,
+        title: String?,
+        description: String?,
+        tags: List<String>?,
+        category: String?,
+        thumbnailIndex: Int?,
+        platformDrafts: List<VideoPlatformDraft>? = null,
+    ): VideoDetailResult {
         val video = videoRepository.findById(videoId)
             ?: throw NotFoundException("영상", videoId)
 
         if (video.userId != userId) {
             throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        }
+        if (platformDrafts != null && video.status != UploadStatus.DRAFT) {
+            throw IllegalStateException("게시 준비 중이거나 게시된 영상의 플랫폼 초안은 수정할 수 없습니다.")
         }
 
         val newTitle = title ?: video.title
@@ -189,6 +203,10 @@ class VideoQueryUseCase(
             category = category ?: video.category,
         )
         videoRepository.update(updatedVideo)
+
+        if (platformDrafts != null) {
+            savePlatformDrafts(video, platformDrafts)
+        }
 
         // 플랫폼 메타데이터 동기화 (제목/설명/태그 변경 시)
         if (title != null || description != null || tags != null) {
@@ -218,6 +236,91 @@ class VideoQueryUseCase(
         }
 
         return getVideoDetail(userId, videoId)
+    }
+
+    /**
+     * Save only metadata rows. This path is deliberately restricted to a
+     * parent DRAFT and never changes an upload into an active job.
+     */
+    private fun savePlatformDrafts(video: Video, drafts: List<VideoPlatformDraft>) {
+        val duplicates = drafts.groupingBy { it.platform }.eachCount().filterValues { it > 1 }.keys
+        require(duplicates.isEmpty()) { "같은 플랫폼을 중복 저장할 수 없습니다: ${duplicates.joinToString()}" }
+        drafts.forEach { draft ->
+            require(draft.title.isNotBlank()) { "${draft.platform} 플랫폼별 제목을 입력해주세요." }
+            val capability = PlatformUploadCapabilities.get(draft.platform)
+            if (capability != null) {
+                require(draft.title.length <= capability.maxTitleLength) {
+                    "${draft.platform} 제목은 ${capability.maxTitleLength}자까지 입력할 수 있습니다."
+                }
+                require(draft.description.orEmpty().length <= capability.maxDescriptionLength) {
+                    "${draft.platform} 설명은 ${capability.maxDescriptionLength}자까지 입력할 수 있습니다."
+                }
+                require(draft.tags.size <= capability.maxTagCount) {
+                    "${draft.platform} 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다."
+                }
+            }
+        }
+
+        val existing = videoUploadRepository.findByVideoId(video.id!!)
+        val videoId = video.id!!
+        val existingByPlatform = existing.associateBy { it.platform }
+        val requestedPlatforms = drafts.map { it.platform }.toSet()
+        val nonEditableRemoved = existing.filter {
+            it.platform !in requestedPlatforms &&
+                it.status !in setOf(UploadStatus.DRAFT, UploadStatus.CANCELLED)
+        }
+        require(nonEditableRemoved.isEmpty()) {
+            "이미 게시되었거나 게시 중인 플랫폼은 초안에서 제거할 수 없습니다: " +
+                nonEditableRemoved.joinToString { it.platform.name }
+        }
+
+        drafts.forEach { draft ->
+            val existingUpload = existingByPlatform[draft.platform]
+            val upload = when (existingUpload?.status) {
+                null -> videoUploadRepository.save(
+                    VideoUpload(
+                        videoId = videoId,
+                        platform = draft.platform,
+                        status = UploadStatus.DRAFT,
+                    )
+                )
+                UploadStatus.DRAFT, UploadStatus.CANCELLED -> videoUploadRepository.update(
+                    existingUpload.copy(
+                        status = UploadStatus.DRAFT,
+                        platformVideoId = null,
+                        platformUrl = null,
+                        errorMessage = null,
+                        attemptCount = 0,
+                        nextRetryAt = null,
+                        leaseOwner = null,
+                        leaseUntil = null,
+                        pollToken = null,
+                        lastError = null,
+                        scheduledAt = null,
+                        publishedAt = null,
+                    )
+                )
+                else -> throw IllegalStateException(
+                    "${draft.platform}는 현재 ${existingUpload.status} 상태라 초안을 수정할 수 없습니다."
+                )
+            }
+            val uploadId = upload.id ?: error("플랫폼 초안 저장 후 ID를 받지 못했습니다.")
+            val meta = VideoPlatformMeta(
+                videoUploadId = uploadId,
+                title = draft.title,
+                description = draft.description,
+                tags = draft.tags,
+                visibility = draft.visibility,
+                customThumbnailUrl = draft.customThumbnailUrl,
+            )
+            val existingMeta = videoPlatformMetaRepository.findByVideoUploadId(uploadId)
+            if (existingMeta == null) videoPlatformMetaRepository.save(meta)
+            else videoPlatformMetaRepository.update(meta.copy(id = existingMeta.id))
+        }
+
+        // A removed platform is removed only while it is still an editable
+        // draft. Published/processing rows were rejected above and are kept.
+        videoUploadRepository.deleteEditableByVideoIdExceptPlatforms(videoId, requestedPlatforms)
     }
 
     @Transactional

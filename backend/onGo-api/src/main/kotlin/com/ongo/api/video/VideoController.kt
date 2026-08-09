@@ -9,6 +9,7 @@ import com.ongo.application.video.RecycleVideoUseCase
 import com.ongo.application.video.UploadVideoUseCase
 import com.ongo.application.video.VideoFeedUseCase
 import com.ongo.application.video.VideoFeedResponse
+import com.ongo.application.video.VideoPlatformDraft
 import com.ongo.application.video.VideoQueryUseCase
 import com.ongo.application.video.dto.AiOptimizationRequest
 import com.ongo.application.video.dto.AiOptimizationResponse
@@ -303,6 +304,16 @@ class VideoController(
             tags = req.tags,
             category = req.category,
             thumbnailIndex = req.thumbnailIndex,
+            platformDrafts = req.platforms?.map { draft ->
+                VideoPlatformDraft(
+                    platform = draft.platform,
+                    title = draft.title,
+                    description = draft.description,
+                    tags = draft.tags,
+                    visibility = draft.visibility,
+                    customThumbnailUrl = draft.customThumbnailUrl,
+                )
+            },
         )
         return ResData.success(result.toResponse())
     }

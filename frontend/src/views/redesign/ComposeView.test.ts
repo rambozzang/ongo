@@ -150,7 +150,13 @@ describe('ComposeView', () => {
 
     expect(subtitleEditorApi.listTracksByVideo).toHaveBeenCalledWith(101)
     expect(aiApi.generateMeta).toHaveBeenCalledWith(expect.objectContaining({ videoId: 101, targetPlatforms: ['YOUTUBE', 'INSTAGRAM'] }))
-    expect(videoApi.update).toHaveBeenCalledWith(101, expect.objectContaining({ title: '유튜브 자동 제목' }))
+    expect(videoApi.update).toHaveBeenCalledWith(101, expect.objectContaining({
+      title: '유튜브 자동 제목',
+      platforms: expect.arrayContaining([
+        expect.objectContaining({ platform: 'YOUTUBE', title: '유튜브 자동 제목' }),
+        expect.objectContaining({ platform: 'INSTAGRAM', title: '인스타 자동 제목' }),
+      ]),
+    }))
     expect(videoApi.publish).toHaveBeenCalledWith(101, expect.objectContaining({
       platforms: expect.arrayContaining([
         expect.objectContaining({ platform: 'YOUTUBE', title: '유튜브 자동 제목' }),
