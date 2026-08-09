@@ -311,6 +311,7 @@ class PlatformUploadServiceImplTest {
         assertThat(result.success).isFalse()
         assertThat(result.confirmation).isEqualTo(com.ongo.application.video.PublishConfirmation.UNKNOWN)
         assertThat(result.toPublishOutcome()).isInstanceOf(com.ongo.application.video.PublishOutcome.Unconfirmed::class.java)
+        io.mockk.verify(exactly = 1) { client.uploadVideo(any()) }
     }
 
     @Test

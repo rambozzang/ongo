@@ -178,8 +178,15 @@ class VideoUploadChannelTargetIT {
         val now = LocalDateTime.now()
         val scheduled = videoUploadRepository.update(upload.copy(scheduledAt = now.minusMinutes(1)))
         assertEquals(1, videoUploadRepository.findDueScheduledUploads(now).size)
-        videoUploadRepository.update(
+        val retryQueued = videoUploadRepository.update(
             scheduled.copy(
+                scheduledAt = null,
+                nextRetryAt = now.minusSeconds(1),
+            ),
+        )
+        assertEquals(1, videoUploadRepository.findDueRetryUploads(now).size)
+        videoUploadRepository.update(
+            retryQueued.copy(
                 status = UploadStatus.PROCESSING,
                 pollToken = "enum-poll-token",
                 scheduledAt = null,

@@ -4,6 +4,7 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
 import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import io.mockk.*
@@ -13,6 +14,7 @@ import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.time.Duration
 import kotlin.test.assertEquals
 
 class VideoPublishEventListenerTest {
@@ -235,6 +237,45 @@ class VideoPublishEventListenerTest {
         assertEquals(UploadStatus.PUBLISHED, uploads[10L]?.status)
         assertEquals(UploadStatus.FAILED, uploads[11L]?.status)
         assertEquals(UploadStatus.PARTIALLY_PUBLISHED, updatedVideo.captured.status)
+    }
+
+    @Test
+    fun `temporary provider failure is persisted as a durable retry instead of immediate failure`() {
+        val ytService = createMockService(Platform.YOUTUBE)
+        platformUploadServices.add(ytService)
+        val upload = VideoUpload(
+            id = 10L,
+            videoId = 1L,
+            platform = Platform.YOUTUBE,
+            status = UploadStatus.UPLOADING,
+            attemptCount = 1,
+        )
+        val uploads = ConcurrentHashMap<Long, VideoUpload>().apply { put(10L, upload) }
+        every { ytService.upload(any(), any(), any()) } returns PlatformUploadResult(
+            success = false,
+            published = false,
+            errorMessage = "429 Too Many Requests",
+            retryable = true,
+            retryAfter = Duration.ofSeconds(30),
+            httpStatus = 429,
+        )
+        every { videoUploadRepository.claim(10L, any(), any(), any()) } returns upload.copy(
+            leaseOwner = "worker",
+            leaseUntil = java.time.LocalDateTime.now().plusMinutes(5),
+        )
+        every { videoUploadRepository.findById(10L) } answers { uploads[10L] }
+        every { videoUploadRepository.updateOwned(any(), any()) } answers {
+            uploads[10L] = firstArg()
+            true
+        }
+        every { videoUploadRepository.findByVideoId(1L) } answers { uploads.values.toList() }
+        every { videoRepository.findById(1L) } returns Video(id = 1L, userId = 100L, title = "원본")
+
+        listener.handleVideoPublish(createEvent(configs = listOf(createConfig())))
+
+        assertEquals(UploadStatus.UPLOADING, uploads[10L]?.status)
+        assertEquals(true, uploads[10L]?.nextRetryAt?.isAfter(java.time.LocalDateTime.now()) == true)
+        verify(exactly = 0) { eventPublisher.publishEvent(any<UploadCompletedEvent>()) }
     }
 
     @Test

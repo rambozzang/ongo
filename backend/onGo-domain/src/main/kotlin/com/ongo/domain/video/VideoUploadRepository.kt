@@ -18,6 +18,8 @@ interface VideoUploadRepository {
     fun updateOwned(upload: VideoUpload, owner: String): Boolean
     fun findPendingUploads(): List<VideoUpload>
     fun findDueScheduledUploads(now: LocalDateTime): List<VideoUpload>
+    /** 일시적 외부 오류로 영속 재시도 예약된 업로드. */
+    fun findDueRetryUploads(now: LocalDateTime): List<VideoUpload>
     /** 외부 플랫폼의 비동기 처리를 확인할 polling 대상. */
     fun findDueProcessingUploads(now: LocalDateTime): List<VideoUpload>
     /** 외부 호출 직전에 한 작업자만 원자적으로 lease를 획득한다. */

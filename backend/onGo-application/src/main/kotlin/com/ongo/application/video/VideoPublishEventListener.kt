@@ -159,9 +159,32 @@ class VideoPublishEventListener(
                     log.info("플랫폼 {} 업로드 수락: videoId={}, 후속 상태 확인 예약", config.platform, event.videoId)
                 }
                 is PublishOutcome.Failed -> {
-                    updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, outcome.message, clearPollToken = true, leaseOwner = leaseOwner)
-                    fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
-                    log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", config.platform, event.videoId, outcome.message)
+                    val current = videoUploadRepository.findById(config.videoUploadId)
+                    val retryScheduled = outcome.retryable &&
+                        outcome.retryAfter != null &&
+                        current != null &&
+                        current.attemptCount < MAX_DURABLE_UPLOAD_ATTEMPTS
+                    if (retryScheduled) {
+                        updateUploadStatus(
+                            config.videoUploadId,
+                            UploadStatus.UPLOADING,
+                            outcome.message,
+                            nextRetryAt = LocalDateTime.now().plus(outcome.retryAfter!!),
+                            clearPollToken = true,
+                            leaseOwner = leaseOwner,
+                        )
+                        log.warn(
+                            "플랫폼 {} 일시 오류를 durable 재시도로 예약합니다: videoId={}, attempt={}, nextRetryAt={}",
+                            config.platform,
+                            event.videoId,
+                            current.attemptCount,
+                            LocalDateTime.now().plus(outcome.retryAfter),
+                        )
+                    } else {
+                        updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, outcome.message, clearPollToken = true, leaseOwner = leaseOwner)
+                        fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
+                        log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", config.platform, event.videoId, outcome.message)
+                    }
                 }
                 is PublishOutcome.Unconfirmed -> {
                     updateUploadStatus(
@@ -256,5 +279,10 @@ class VideoPublishEventListener(
                 errorMessage = errorMessage,
             )
         )
+    }
+
+    companion object {
+        /** 한 번의 요청 안에서 재시도한 뒤에도 지속 오류면 운영자/사용자 재시도로 넘긴다. */
+        private const val MAX_DURABLE_UPLOAD_ATTEMPTS = 5
     }
 }

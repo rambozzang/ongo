@@ -48,6 +48,10 @@ data class PlatformUploadResult(
     val confirmation: PublishConfirmation = PublishConfirmation.CONFIRMED,
     /** writer가 예외를 결과로 변환한 경우에도 토큰 갱신 판단을 잃지 않도록 보존한다. */
     val httpStatus: Int? = null,
+    /** 외부 일시 오류를 다음 durable 시도로 넘길 수 있는지. */
+    val retryable: Boolean = false,
+    /** Retry-After 또는 지수 백오프를 반영한 다음 시도까지의 대기 시간. */
+    val retryAfter: Duration? = null,
 )
 
 /** 외부 게시 결과를 호출자가 놓치지 않도록 성공 의미를 sealed 타입으로 고정한다. */
@@ -77,6 +81,7 @@ sealed interface PublishOutcome {
     data class Failed(
         val message: String,
         val retryable: Boolean,
+        val retryAfter: Duration? = null,
     ) : PublishOutcome {
         init { require(message.isNotBlank()) { "실패 결과 메시지가 필요합니다." } }
     }
@@ -97,7 +102,11 @@ fun PlatformUploadResult.toPublishOutcome(): PublishOutcome = when {
         platformVideoId = platformVideoId,
         pollToken = pollToken,
     )
-    !success -> PublishOutcome.Failed(errorMessage ?: "플랫폼 게시에 실패했습니다.", retryable = true)
+    !success -> PublishOutcome.Failed(
+        errorMessage ?: "플랫폼 게시에 실패했습니다.",
+        retryable = retryable,
+        retryAfter = retryAfter,
+    )
     published && platformVideoId.isNullOrBlank() -> PublishOutcome.Unconfirmed(
         message = "플랫폼이 게시 성공 응답을 반환했지만 게시 ID가 없습니다. 중복 게시를 막기 위해 자동 재전송하지 않습니다.",
         platformVideoId = platformVideoId,
@@ -147,7 +156,7 @@ fun Throwable.isIndeterminateUploadFailure(): Boolean {
             it.message?.contains("connection reset", ignoreCase = true) == true }) return true
     return chain.any {
         it is org.springframework.web.client.HttpStatusCodeException &&
-            (it.statusCode.value() == 429 || it.statusCode.value() >= 500)
+            it.statusCode.value() >= 500
     }
 }
 

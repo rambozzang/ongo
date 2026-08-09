@@ -19,11 +19,8 @@ import com.ongo.infrastructure.external.platform.downloadFileToTemp
 import com.ongo.domain.video.VideoPlatformMeta
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.io.FileNotFoundException
-import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketTimeoutException
 import java.time.LocalDateTime
+import java.time.Duration
 import org.springframework.web.client.HttpStatusCodeException
 
 @Service
@@ -175,11 +172,19 @@ class PlatformUploadServiceImpl(
         } else {
             PublishConfirmation.CONFIRMED
         }
+        val durableRetryable = confirmation == PublishConfirmation.CONFIRMED &&
+            lastException?.let(::isTransient) == true
         return PlatformUploadResult(
             success = false,
             published = false,
             errorMessage = lastException?.message ?: "알 수 없는 오류가 발생했습니다",
             confirmation = confirmation,
+            retryable = durableRetryable,
+            retryAfter = if (durableRetryable) {
+                Duration.ofMillis(retryDelayMillis(lastException!!, MAX_RETRIES - 1))
+            } else {
+                null
+            },
         )
     }
 
@@ -323,14 +328,9 @@ class PlatformUploadServiceImpl(
 
     private fun isTransient(e: Exception): Boolean {
         val status = httpStatus(e)
-        if (status == 429 || status in 500..599) return true
-        var cause: Throwable? = e
-        while (cause != null) {
-            if (cause is FileNotFoundException) return false
-            if (cause is SocketTimeoutException || cause is ConnectException || cause is IOException) return true
-            cause = cause.cause
-        }
-        return false
+        // Only an explicit 429 is safe to replay: timeout/connection/5xx may
+        // have arrived after the provider accepted the bytes.
+        return status == 429
     }
 
     private fun isUnauthorized(e: Exception): Boolean = httpStatus(e) == 401 ||

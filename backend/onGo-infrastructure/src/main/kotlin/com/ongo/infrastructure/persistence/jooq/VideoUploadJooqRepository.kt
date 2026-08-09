@@ -251,6 +251,17 @@ class VideoUploadJooqRepository(
             .fetch()
             .map { it.toVideoUpload() }
 
+    override fun findDueRetryUploads(now: LocalDateTime): List<VideoUpload> =
+        dsl.select()
+            .from(VIDEO_UPLOADS)
+            .where(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
+            .and(VIDEO_SCHEDULED_AT.isNull)
+            .and(VIDEO_NEXT_RETRY_AT.isNotNull.and(VIDEO_NEXT_RETRY_AT.le(now)))
+            .and(VIDEO_LEASE_UNTIL.isNull.or(VIDEO_LEASE_UNTIL.lt(now)))
+            .orderBy(VIDEO_NEXT_RETRY_AT.asc())
+            .fetch()
+            .map { it.toVideoUpload() }
+
     override fun findDueProcessingUploads(now: LocalDateTime): List<VideoUpload> =
         dsl.select()
             .from(VIDEO_UPLOADS)

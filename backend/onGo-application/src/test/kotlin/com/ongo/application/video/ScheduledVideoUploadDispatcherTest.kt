@@ -14,6 +14,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.BeforeEach
 import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDateTime
 
@@ -24,6 +25,11 @@ class ScheduledVideoUploadDispatcherTest {
     private val publisher = mockk<ApplicationEventPublisher>(relaxed = true)
     private val storage = mockk<StorageService>()
     private val guard = mockk<UserWriteGuard>()
+
+    @BeforeEach
+    fun defaultRetryQueue() {
+        every { uploads.findDueRetryUploads(any()) } returns emptyList()
+    }
 
     private val video = Video(
         id = 101L,
@@ -96,6 +102,29 @@ class ScheduledVideoUploadDispatcherTest {
         dispatcher().dispatchDueUploads()
 
         verify(exactly = 0) { publisher.publishEvent(any()) }
+    }
+
+    @Test
+    fun `durable retry row is dispatched without treating it as a future schedule`() {
+        val retry = upload.copy(
+            scheduledAt = null,
+            nextRetryAt = LocalDateTime.now().minusSeconds(1),
+        )
+        every { uploads.findDueScheduledUploads(any()) } returns emptyList()
+        every { uploads.findDueRetryUploads(any()) } returns listOf(retry)
+        every { videos.findById(101L) } returns video
+        every { storage.getFileUrl(101L) } returns video.fileUrl!!
+        every { guard.requireWritable(7L, any(), any()) } returns Unit
+        every { uploads.claim(201L, any(), any(), any()) } returns retry.copy(
+            leaseOwner = "scheduled:201:worker",
+            leaseUntil = LocalDateTime.now().plusMinutes(30),
+        )
+
+        dispatcher().dispatchDueUploads()
+
+        val event = slot<VideoPublishEvent>()
+        verify(exactly = 1) { publisher.publishEvent(capture(event)) }
+        assert(event.captured.platformConfigs.single().scheduledAt == null)
     }
 
     @Test

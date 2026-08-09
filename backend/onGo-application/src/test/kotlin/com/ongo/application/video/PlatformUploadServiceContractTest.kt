@@ -1,7 +1,9 @@
 package com.ongo.application.video
 
 import org.junit.jupiter.api.Test
+import java.time.Duration
 import kotlin.test.assertIs
+import kotlin.test.assertEquals
 
 class PlatformUploadServiceContractTest {
     @Test
@@ -24,5 +26,20 @@ class PlatformUploadServiceContractTest {
         ).toPublishOutcome()
 
         assertIs<PublishOutcome.Unconfirmed>(outcome)
+    }
+
+    @Test
+    fun `retryable provider failure preserves durable retry timing`() {
+        val outcome = PlatformUploadResult(
+            success = false,
+            errorMessage = "429 Too Many Requests",
+            published = false,
+            retryable = true,
+            retryAfter = Duration.ofSeconds(12),
+        ).toPublishOutcome()
+
+        val failed = assertIs<PublishOutcome.Failed>(outcome)
+        assertEquals(true, failed.retryable)
+        assertEquals(Duration.ofSeconds(12), failed.retryAfter)
     }
 }
