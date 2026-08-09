@@ -42,4 +42,18 @@ class PlatformUploadServiceContractTest {
         assertEquals(true, failed.retryable)
         assertEquals(Duration.ofSeconds(12), failed.retryAfter)
     }
+
+    @Test
+    fun `accepted response preserves provider retry timing`() {
+        val outcome = PlatformUploadResult(
+            success = true,
+            platformVideoId = "processing-1",
+            pollToken = "poll-1",
+            published = false,
+            retryAfter = Duration.ofSeconds(47),
+        ).toPublishOutcome()
+
+        val accepted = assertIs<PublishOutcome.Accepted>(outcome)
+        assertEquals(Duration.ofSeconds(47), accepted.retryAfter)
+    }
 }

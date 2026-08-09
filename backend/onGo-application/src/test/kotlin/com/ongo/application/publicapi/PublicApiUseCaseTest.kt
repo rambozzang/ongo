@@ -374,6 +374,45 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `release id 연결은 같은 video를 공유한 다른 공개 게시물의 upload를 건드리지 않는다`() {
+        val post = PublicApiPost(
+            id = 44,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.NOW,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.UNCONFIRMED,
+            payloadJson = """{"posts":[{"integration":{"id":"7"},"value":[] }]}""",
+        )
+        val target = VideoUpload(
+            id = 92,
+            videoId = 11,
+            platform = Platform.YOUTUBE,
+            channelId = 7,
+            status = UploadStatus.UNCONFIRMED,
+        )
+        val unrelated = VideoUpload(
+            id = 93,
+            videoId = 11,
+            platform = Platform.INSTAGRAM,
+            channelId = 8,
+            status = UploadStatus.UNCONFIRMED,
+        )
+        every { posts.findByIdAndUserId(44, 1) } returns post
+        every { uploads.findByVideoId(11) } returns listOf(target, unrelated)
+        every { channels.findById(7) } returns channel
+        every { uploads.update(any()) } answers { firstArg() }
+
+        useCase.connectReleaseId(1, 44, PublicReleaseIdRequest("yt-video-2", "7"))
+
+        verify(exactly = 1) {
+            uploads.update(match { it.id == 92L && it.platformVideoId == "yt-video-2" })
+        }
+        verify(exactly = 0) {
+            uploads.update(match { it.id == 93L })
+        }
+    }
+
+    @Test
     fun `now 게시가 내부 durable publisher를 호출하고 post id를 반환한다`() {
         every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
         every { channels.findById(7) } returns channel

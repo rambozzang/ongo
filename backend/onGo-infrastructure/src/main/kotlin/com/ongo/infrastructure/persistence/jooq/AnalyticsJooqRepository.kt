@@ -162,7 +162,7 @@ class AnalyticsJooqRepository(
 
         if (uploadIds.isEmpty()) return emptyList()
 
-        val platformField = DSL.field("vu.platform", String::class.java)
+        val platformField = DSL.field("vu.platform::text", String::class.java)
         val dateField = DSL.field("ad.date", LocalDate::class.java)
         val viewsSum = DSL.sum(DSL.field("ad.views", Int::class.java)).`as`("total_views")
         val subscribersSum = DSL.sum(DSL.field("ad.subscriber_gained", Int::class.java)).`as`("total_subscribers")
@@ -381,7 +381,7 @@ class AnalyticsJooqRepository(
             .where(DSL.field("v.user_id", Long::class.java).eq(userId))
 
         if (platform != null) {
-            uploadIdsQuery.and(DSL.field("vu.platform", String::class.java).eq(platform.name))
+            uploadIdsQuery.and(DSL.field("vu.platform::text", String::class.java).eq(platform.name))
         }
 
         val uploadIds = uploadIdsQuery.fetch().map { it.get(0, Long::class.java) }
@@ -504,7 +504,7 @@ class AnalyticsJooqRepository(
 
         val videoIdField = DSL.field("v.id", Long::class.java)
         val videoTitleField = DSL.field("v.title", String::class.java)
-        val platformField = DSL.field("vu.platform", String::class.java)
+        val platformField = DSL.field("vu.platform::text", String::class.java)
         val vuIdField = DSL.field("vu.id", Long::class.java)
 
         return dsl.select(
@@ -593,7 +593,7 @@ class AnalyticsJooqRepository(
         val videoTitleField = DSL.field("v.title", String::class.java)
         val thumbnailField = DSL.field("v.thumbnail_urls")
         val videoCreatedField = DSL.field("v.created_at", java.time.LocalDateTime::class.java)
-        val platformField = DSL.field("vu.platform", String::class.java)
+        val platformField = DSL.field("vu.platform::text", String::class.java)
         val vuIdField = DSL.field("vu.id", Long::class.java)
 
         return dsl.select(

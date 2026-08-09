@@ -89,9 +89,9 @@ class VideoUploadJooqRepository(
             DSL.field("video_uploads.id", Long::class.java).`as`("id"),
             DSL.field("video_uploads.video_id", Long::class.java).`as`("video_id"),
             DSL.field("video_uploads.channel_id", Long::class.java).`as`("channel_id"),
-            DSL.field("video_uploads.platform", String::class.java).`as`("platform"),
+            DSL.field("video_uploads.platform::text", String::class.java).`as`("platform"),
             DSL.field("video_uploads.platform_video_id", String::class.java).`as`("platform_video_id"),
-            DSL.field("video_uploads.status", String::class.java).`as`("status"),
+            DSL.field("video_uploads.status::text", String::class.java).`as`("status"),
             DSL.field("video_uploads.error_message", String::class.java).`as`("error_message"),
             DSL.field("video_uploads.platform_url", String::class.java).`as`("platform_url"),
             DSL.field("video_uploads.published_at", java.time.LocalDateTime::class.java).`as`("published_at"),
@@ -110,7 +110,7 @@ class VideoUploadJooqRepository(
                 DSL.field("video_uploads.video_id", Long::class.java)
                     .eq(DSL.field("videos.id", Long::class.java))
             )
-            .where(DSL.field("video_uploads.platform", String::class.java).eq(platform.name))
+            .where(DSL.field("video_uploads.platform::text", String::class.java).eq(platform.name))
             .and(DSL.field("videos.user_id", Long::class.java).eq(userId))
             .orderBy(DSL.field("video_uploads.created_at"))
             .fetch()
@@ -203,9 +203,9 @@ class VideoUploadJooqRepository(
             DSL.field("video_uploads.id", Long::class.java).`as`("id"),
             DSL.field("video_uploads.video_id", Long::class.java).`as`("video_id"),
             DSL.field("video_uploads.channel_id", Long::class.java).`as`("channel_id"),
-            DSL.field("video_uploads.platform", String::class.java).`as`("platform"),
+            DSL.field("video_uploads.platform::text", String::class.java).`as`("platform"),
             DSL.field("video_uploads.platform_video_id", String::class.java).`as`("platform_video_id"),
-            DSL.field("video_uploads.status", String::class.java).`as`("status"),
+            DSL.field("video_uploads.status::text", String::class.java).`as`("status"),
             DSL.field("video_uploads.error_message", String::class.java).`as`("error_message"),
             DSL.field("video_uploads.platform_url", String::class.java).`as`("platform_url"),
             DSL.field("video_uploads.published_at", java.time.LocalDateTime::class.java).`as`("published_at"),

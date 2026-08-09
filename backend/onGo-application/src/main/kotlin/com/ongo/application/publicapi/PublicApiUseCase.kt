@@ -371,7 +371,13 @@ class PublicApiUseCase(
         require(releaseId.isNotBlank() && releaseId.length <= 255) { "releaseId가 유효하지 않습니다" }
         val requestedChannelId = request.integrationId?.toLongOrNull()
             ?: request.integrationId?.let { throw IllegalArgumentException("integrationId는 onGo 채널 ID여야 합니다") }
-        val candidates = videoUploadRepository.findByVideoId(post.videoId)
+        val targetChannelIds = publicTargets(post).map { it.channelId }.toSet()
+        if (requestedChannelId != null && targetChannelIds.isNotEmpty()) {
+            require(requestedChannelId in targetChannelIds) {
+                "releaseId를 연결하려는 integration은 해당 게시물의 대상이 아닙니다"
+            }
+        }
+        val candidates = uploadsForPost(post, videoUploadRepository.findByVideoId(post.videoId))
             .filter { it.platformVideoId.isNullOrBlank() }
             .filter { requestedChannelId == null || it.channelId == requestedChannelId }
         require(candidates.size == 1) {

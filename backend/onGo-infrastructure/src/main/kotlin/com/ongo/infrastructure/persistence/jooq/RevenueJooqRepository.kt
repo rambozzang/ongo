@@ -20,7 +20,7 @@ class RevenueJooqRepository(
         if (uploadIds.isEmpty()) return emptyList()
 
         val dateField = DSL.field("ad.date", LocalDate::class.java)
-        val platformField = DSL.field("vu.platform", String::class.java)
+        val platformField = DSL.field("vu.platform::text", String::class.java)
         val revenueSum = DSL.sum(DSL.field("ad.revenue_micro", Long::class.java)).`as`("total_revenue")
 
         return dsl.select(dateField, platformField, revenueSum)
@@ -46,7 +46,7 @@ class RevenueJooqRepository(
         val uploadIds = getUserUploadIds(userId)
         if (uploadIds.isEmpty()) return emptyList()
 
-        val platformField = DSL.field("vu.platform", String::class.java)
+        val platformField = DSL.field("vu.platform::text", String::class.java)
         val revenueSum = DSL.sum(DSL.field("ad.revenue_micro", Long::class.java)).`as`("total_revenue")
 
         return dsl.select(platformField, revenueSum)
@@ -95,7 +95,7 @@ class RevenueJooqRepository(
         val uploadIds = getUserUploadIds(userId)
         if (uploadIds.isEmpty()) return emptyList()
 
-        val platformField = DSL.field("vu.platform", String::class.java)
+        val platformField = DSL.field("vu.platform::text", String::class.java)
         val impressionsSum = DSL.sum(DSL.field("ad.impressions", Int::class.java)).`as`("total_impressions")
         val viewsSum = DSL.sum(DSL.field("ad.views", Int::class.java)).`as`("total_views")
         val revenueSum = DSL.sum(DSL.field("ad.revenue_micro", Long::class.java)).`as`("total_revenue")

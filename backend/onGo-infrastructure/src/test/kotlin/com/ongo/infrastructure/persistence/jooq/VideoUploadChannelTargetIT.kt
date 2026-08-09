@@ -127,6 +127,30 @@ class VideoUploadChannelTargetIT {
     }
 
     @Test
+    @DisplayName("enum platform 필터는 문자열 바인딩 오류 없이 동작한다")
+    fun platformFilterUsesPostgresEnumTextComparison() {
+        val userId = insertUser("platform-filter")
+        val channelId = insertChannel(userId, "platform-filter-channel", "filter")
+        val videoId = dsl.fetchOne(
+            """
+            INSERT INTO videos (user_id, title, status)
+            VALUES (?, 'platform filter video', 'DRAFT')
+            RETURNING id
+            """.trimIndent(),
+            userId,
+        )!!.get(0, Long::class.java)
+        dsl.execute(
+            "INSERT INTO video_uploads (video_id, platform, channel_id, status) VALUES (?, 'YOUTUBE', ?, 'UPLOADING')",
+            videoId,
+            channelId,
+        )
+
+        val uploads = videoUploadRepository.findByPlatformAndUserId(Platform.YOUTUBE, userId)
+
+        assertEquals(1, uploads.count { it.videoId == videoId && it.platform == Platform.YOUTUBE })
+    }
+
+    @Test
     @DisplayName("활성 lease가 있는 예약 업로드는 취소되지 않는다")
     fun scheduledUploadWithActiveLeaseCannotBeCancelled() {
         val userId = insertUser("scheduled-lease")

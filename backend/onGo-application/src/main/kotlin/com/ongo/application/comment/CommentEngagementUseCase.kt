@@ -92,7 +92,11 @@ class CommentEngagementUseCase(
             val platform = Platform.valueOf(delPlatform)
             val capabilities = platformCommentPort.getCommentCapabilities(platform)
 
-            if (capabilities.canDelete || capabilities.canHide) {
+            // canHide is not equivalent to canDelete. Some providers (for
+            // example Threads) expose moderation/hide semantics but have no
+            // delete endpoint. Calling the default delete operation in that
+            // case turns a local comment deletion into a provider error.
+            if (capabilities.canDelete) {
                 val channel = channelRepository.findByUserIdAndPlatform(userId, platform)
                 if (channel != null) {
                     val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)

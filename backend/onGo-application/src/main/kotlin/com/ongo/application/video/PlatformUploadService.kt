@@ -131,7 +131,11 @@ fun PlatformUploadResult.toPublishOutcome(): PublishOutcome = when {
     else -> PublishOutcome.Accepted(
         platformVideoId = platformVideoId!!,
         pollToken = pollToken ?: platformVideoId!!,
-        retryAfter = Duration.ofSeconds(30),
+        // Preserve a provider-specific Retry-After/backoff chosen by the
+        // writer. Falling back here keeps older writers safe without silently
+        // discarding a rate-limit response.
+        retryAfter = retryAfter?.takeUnless { it.isNegative || it.isZero }
+            ?: Duration.ofSeconds(30),
     )
 }
 
