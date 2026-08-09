@@ -41,14 +41,23 @@ export interface PresignedUploadOptions {
   onSpeedUpdate?: (id: string, bytesPerSecond: number, remainingSeconds: number) => void
   /** Check if upload should continue (e.g., not paused) */
   shouldContinue?: (id: string) => boolean
+  /** Abort a stuck upload instead of leaving the UI in an indefinite loading state. */
+  timeoutMs?: number
 }
 
 export function usePresignedUpload(options: PresignedUploadOptions = {}) {
   let currentXhr: XMLHttpRequest | null = null
+  let currentAbortController: AbortController | null = null
+  let abortRequested = false
+
+  const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000
 
   function getBaseUrl(): string {
     if (options.getBaseUrl) return options.getBaseUrl()
-    return (import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_BASE_URL || '/api/v1'
+    return (
+      (import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_BASE_URL ||
+      '/api/v1'
+    )
   }
 
   function getToken(): string {
@@ -59,151 +68,186 @@ export function usePresignedUpload(options: PresignedUploadOptions = {}) {
   async function upload(item: PresignedUploadItem): Promise<number | null> {
     const baseUrl = getBaseUrl()
     const token = getToken()
+    const abortController = new AbortController()
+    const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+    let timedOut = false
+    const timeoutId =
+      timeoutMs > 0
+        ? setTimeout(() => {
+            timedOut = true
+            abortController.abort()
+            currentXhr?.abort()
+          }, timeoutMs)
+        : undefined
+    currentAbortController = abortController
+    abortRequested = false
 
-    // Step 1: Init upload — videoId + presigned URL 발급
-    const initResponse = await fetch(`${baseUrl}/videos/upload/init`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        filename: item.fileName,
-        fileSize: item.fileSize,
-        contentType: item.file.type || 'video/mp4',
-      }),
-    })
-
-    if (!initResponse.ok) {
-      const errorBody = await initResponse.json().catch(() => null)
-      const message = errorBody?.error || errorBody?.message || `업로드 초기화 실패: ${initResponse.status}`
-      throw new Error(message)
-    }
-
-    const initData = await initResponse.json()
-    const videoId = initData.data?.id ?? initData.data?.videoId
-    const presignedUrl = initData.data?.uploadUrl
-
-    if (!videoId) {
-      throw new Error('videoId를 받지 못했습니다')
-    }
-    if (!presignedUrl) {
-      throw new Error('presigned URL을 받지 못했습니다')
-    }
-
-    // Step 2: PUT 파일을 presigned URL로 직접 업로드
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      currentXhr = xhr
-
-      // Speed tracking
-      let lastCalcTime = Date.now()
-      let lastCalcBytes = 0
-
-      xhr.upload.onprogress = (e: ProgressEvent) => {
-        if (!e.lengthComputable) return
-
-        // Pause 체크
-        if (options.shouldContinue && !options.shouldContinue(item.id)) {
-          xhr.abort()
-          return
-        }
-
-        const progress = Math.min(99, Math.round((e.loaded / e.total) * 100))
-        options.onProgress?.(item.id, progress)
-
-        // Speed 계산
-        const now = Date.now()
-        const timeSinceLastCalc = (now - lastCalcTime) / 1000
-        if (timeSinceLastCalc >= 1) {
-          const bytesPerSecond = (e.loaded - lastCalcBytes) / timeSinceLastCalc
-          const remainingBytes = e.total - e.loaded
-          const remainingSeconds = bytesPerSecond > 0 ? remainingBytes / bytesPerSecond : 0
-          options.onSpeedUpdate?.(item.id, bytesPerSecond, remainingSeconds)
-          lastCalcTime = now
-          lastCalcBytes = e.loaded
-        }
-      }
-
-      xhr.onload = () => {
-        currentXhr = null
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve()
-        } else {
-          reject(new Error(`S3 업로드 실패: ${xhr.status}`))
-        }
-      }
-
-      xhr.onerror = () => {
-        currentXhr = null
-        reject(new Error('네트워크 오류로 업로드 실패'))
-      }
-
-      xhr.onabort = () => {
-        currentXhr = null
-        // shouldContinue가 false인 경우 (일시정지) — 에러 아님
-        if (options.shouldContinue && !options.shouldContinue(item.id)) {
-          resolve()
-          return
-        }
-        reject(new Error('업로드가 취소되었습니다'))
-      }
-
-      xhr.open('PUT', presignedUrl)
-      xhr.setRequestHeader('Content-Type', item.file.type || 'video/mp4')
-      xhr.send(item.file)
-    })
-
-    // Pause로 인한 중단인 경우 완료 처리 스킵
-    if (options.shouldContinue && !options.shouldContinue(item.id)) {
-      return null
-    }
-
-    // Step 3: 백엔드에 업로드 완료 알림
-    const confirmResponse = await fetch(`${baseUrl}/videos/${videoId}/upload/complete`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    if (!confirmResponse.ok) {
-      const errorBody = await confirmResponse.json().catch(() => null)
-      const message = errorBody?.error || errorBody?.message || `업로드 완료 확인 실패: ${confirmResponse.status}`
-      throw new Error(message)
-    }
-
-    if (item.metadata) {
-      const updateResponse = await fetch(`${baseUrl}/videos/${videoId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(item.metadata),
-      })
-      if (!updateResponse.ok) {
-        const body = await updateResponse.json().catch(() => null)
-        throw new Error(body?.error || body?.message || '콘텐츠 정보 저장에 실패했습니다.')
-      }
-    }
-
-    if (item.platformConfigs?.length) {
-      const publishResponse = await fetch(`${baseUrl}/videos/${videoId}/publish`, {
+    try {
+      // Step 1: Init upload — videoId + presigned URL 발급
+      const initResponse = await fetch(`${baseUrl}/videos/upload/init`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ platforms: item.platformConfigs }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          filename: item.fileName,
+          fileSize: item.fileSize,
+          contentType: item.file.type || 'video/mp4',
+        }),
+        signal: abortController.signal,
       })
-      if (!publishResponse.ok) {
-        const body = await publishResponse.json().catch(() => null)
-        throw new Error(body?.error || body?.message || '멀티 플랫폼 게시 요청에 실패했습니다.')
-      }
-    }
 
-    options.onProgress?.(item.id, 100)
-    options.onComplete?.(item.id)
-    return videoId
+      if (!initResponse.ok) {
+        const errorBody = await initResponse.json().catch(() => null)
+        const message =
+          errorBody?.error || errorBody?.message || `업로드 초기화 실패: ${initResponse.status}`
+        throw new Error(message)
+      }
+
+      const initData = await initResponse.json()
+      const videoId = initData.data?.id ?? initData.data?.videoId
+      const presignedUrl = initData.data?.uploadUrl
+
+      if (!videoId) {
+        throw new Error('videoId를 받지 못했습니다')
+      }
+      if (!presignedUrl) {
+        throw new Error('presigned URL을 받지 못했습니다')
+      }
+
+      // Step 2: PUT 파일을 presigned URL로 직접 업로드
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        currentXhr = xhr
+
+        // Speed tracking
+        let lastCalcTime = Date.now()
+        let lastCalcBytes = 0
+
+        xhr.upload.onprogress = (e: ProgressEvent) => {
+          if (!e.lengthComputable) return
+
+          // Pause 체크
+          if (options.shouldContinue && !options.shouldContinue(item.id)) {
+            xhr.abort()
+            return
+          }
+
+          const progress = Math.min(99, Math.round((e.loaded / e.total) * 100))
+          options.onProgress?.(item.id, progress)
+
+          // Speed 계산
+          const now = Date.now()
+          const timeSinceLastCalc = (now - lastCalcTime) / 1000
+          if (timeSinceLastCalc >= 1) {
+            const bytesPerSecond = (e.loaded - lastCalcBytes) / timeSinceLastCalc
+            const remainingBytes = e.total - e.loaded
+            const remainingSeconds = bytesPerSecond > 0 ? remainingBytes / bytesPerSecond : 0
+            options.onSpeedUpdate?.(item.id, bytesPerSecond, remainingSeconds)
+            lastCalcTime = now
+            lastCalcBytes = e.loaded
+          }
+        }
+
+        xhr.onload = () => {
+          currentXhr = null
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve()
+          } else {
+            reject(new Error(`S3 업로드 실패: ${xhr.status}`))
+          }
+        }
+
+        xhr.onerror = () => {
+          currentXhr = null
+          reject(new Error('네트워크 오류로 업로드 실패'))
+        }
+
+        xhr.onabort = () => {
+          currentXhr = null
+          // shouldContinue가 false인 경우 (일시정지) — 에러 아님
+          if (options.shouldContinue && !options.shouldContinue(item.id)) {
+            resolve()
+            return
+          }
+          reject(new Error('업로드가 취소되었습니다'))
+        }
+
+        xhr.open('PUT', presignedUrl)
+        xhr.setRequestHeader('Content-Type', item.file.type || 'video/mp4')
+        xhr.send(item.file)
+      })
+
+      // Pause로 인한 중단인 경우 완료 처리 스킵
+      if (options.shouldContinue && !options.shouldContinue(item.id)) {
+        return null
+      }
+
+      // Step 3: 백엔드에 업로드 완료 알림
+      const confirmResponse = await fetch(`${baseUrl}/videos/${videoId}/upload/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        signal: abortController.signal,
+      })
+
+      if (!confirmResponse.ok) {
+        const errorBody = await confirmResponse.json().catch(() => null)
+        const message =
+          errorBody?.error ||
+          errorBody?.message ||
+          `업로드 완료 확인 실패: ${confirmResponse.status}`
+        throw new Error(message)
+      }
+
+      if (item.metadata) {
+        const updateResponse = await fetch(`${baseUrl}/videos/${videoId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(item.metadata),
+          signal: abortController.signal,
+        })
+        if (!updateResponse.ok) {
+          const body = await updateResponse.json().catch(() => null)
+          throw new Error(body?.error || body?.message || '콘텐츠 정보 저장에 실패했습니다.')
+        }
+      }
+
+      if (item.platformConfigs?.length) {
+        const publishResponse = await fetch(`${baseUrl}/videos/${videoId}/publish`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ platforms: item.platformConfigs }),
+          signal: abortController.signal,
+        })
+        if (!publishResponse.ok) {
+          const body = await publishResponse.json().catch(() => null)
+          throw new Error(body?.error || body?.message || '멀티 플랫폼 게시 요청에 실패했습니다.')
+        }
+      }
+
+      options.onProgress?.(item.id, 100)
+      options.onComplete?.(item.id)
+      return videoId
+    } catch (error) {
+      if (timedOut) throw new Error('업로드 시간이 초과되었습니다')
+      if (abortRequested || abortController.signal.aborted) {
+        throw new Error('업로드가 취소되었습니다')
+      }
+      throw error
+    } finally {
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
+      if (currentAbortController === abortController) currentAbortController = null
+      currentXhr = null
+    }
   }
 
   function abort(): void {
+    abortRequested = true
+    currentAbortController?.abort()
     currentXhr?.abort()
     currentXhr = null
   }

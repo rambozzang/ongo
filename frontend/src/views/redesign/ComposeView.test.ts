@@ -31,14 +31,25 @@ vi.mock('@/api/subtitleEditor', () => ({
 }))
 vi.mock('@/api/ugcShortsPipeline', () => ({
   ugcShortsPipelineApi: {
-    getRenderAvailability: vi.fn(), create: vi.fn(), get: vi.fn(), selectHooks: vi.fn(),
-    startRender: vi.fn(), getRenderStatus: vi.fn(), confirmSchedule: vi.fn(),
+    getRenderAvailability: vi.fn(),
+    create: vi.fn(),
+    get: vi.fn(),
+    selectHooks: vi.fn(),
+    startRender: vi.fn(),
+    getRenderStatus: vi.fn(),
+    confirmSchedule: vi.fn(),
   },
 }))
 vi.mock('@/api/video', () => ({
   videoApi: {
-    getUploadCapabilities: vi.fn(), getImportAvailability: vi.fn(), get: vi.fn(), update: vi.fn(), publish: vi.fn(),
-    create: vi.fn(), importUrl: vi.fn(), generate: vi.fn(),
+    getUploadCapabilities: vi.fn(),
+    getImportAvailability: vi.fn(),
+    get: vi.fn(),
+    update: vi.fn(),
+    publish: vi.fn(),
+    create: vi.fn(),
+    importUrl: vi.fn(),
+    generate: vi.fn(),
   },
 }))
 vi.mock('@/api/settings', () => ({
@@ -101,29 +112,70 @@ describe('ComposeView', () => {
       channels: [channel('YOUTUBE', 1), channel('INSTAGRAM', 2)],
     } as never)
     vi.mocked(videoApi.getUploadCapabilities).mockResolvedValue(capabilities as never)
-    vi.mocked(videoApi.getImportAvailability).mockResolvedValue({ available: false, reason: '가져오기 비활성' } as never)
+    vi.mocked(videoApi.getImportAvailability).mockResolvedValue({
+      available: false,
+      reason: '가져오기 비활성',
+    } as never)
     vi.mocked(settingsApi.getSettings).mockResolvedValue({
-      defaultVisibility: 'PUBLIC', defaultPlatforms: [], defaultAiTone: 'FRIENDLY', defaultAiProvider: 'OPENAI',
-      notificationUpload: true, notificationComment: 'none', notificationCreditThreshold: 10, notificationScheduleReminder: 24,
+      defaultVisibility: 'PUBLIC',
+      defaultPlatforms: [],
+      defaultAiTone: 'FRIENDLY',
+      defaultAiProvider: 'OPENAI',
+      notificationUpload: true,
+      notificationComment: 'none',
+      notificationCreditThreshold: 10,
+      notificationScheduleReminder: 24,
     } as never)
     vi.mocked(analyticsApi.getOptimalTimes).mockResolvedValue({
-      slots: [{ dayOfWeek: 1, dayLabel: '월', hour: 9, timeLabel: '09:00', expectedViews: 10, engagementRate: 1, confidenceScore: 1, score: 1 }],
+      slots: [
+        {
+          dayOfWeek: 1,
+          dayLabel: '월',
+          hour: 9,
+          timeLabel: '09:00',
+          expectedViews: 10,
+          engagementRate: 1,
+          confidenceScore: 1,
+          score: 1,
+        },
+      ],
     } as never)
-    vi.mocked(subtitleEditorApi.listTracksByVideo).mockResolvedValue([{
-      id: 1, videoId: 101, videoTitle: null, language: 'ko', status: 'COMPLETED',
-      cues: JSON.stringify([{ start: 0, end: 2, text: '기존 자막' }]), totalDuration: 2, wordCount: 2,
-      createdAt: null, updatedAt: null,
-    }] as never)
+    vi.mocked(subtitleEditorApi.listTracksByVideo).mockResolvedValue([
+      {
+        id: 1,
+        videoId: 101,
+        videoTitle: null,
+        language: 'ko',
+        status: 'COMPLETED',
+        cues: JSON.stringify([{ start: 0, end: 2, text: '기존 자막' }]),
+        totalDuration: 2,
+        wordCount: 2,
+        createdAt: null,
+        updatedAt: null,
+      },
+    ] as never)
     vi.mocked(aiApi.generateMeta).mockResolvedValue({
       platforms: [
-        { platform: 'YOUTUBE', titleCandidates: ['유튜브 자동 제목'], description: '유튜브 설명', hashtags: ['유튜브'] },
-        { platform: 'INSTAGRAM', titleCandidates: ['인스타 자동 제목'], description: '인스타 설명', hashtags: ['인스타'] },
+        {
+          platform: 'YOUTUBE',
+          titleCandidates: ['유튜브 자동 제목'],
+          description: '유튜브 설명',
+          hashtags: ['유튜브'],
+        },
+        {
+          platform: 'INSTAGRAM',
+          titleCandidates: ['인스타 자동 제목'],
+          description: '인스타 설명',
+          hashtags: ['인스타'],
+        },
       ],
     } as never)
     vi.mocked(videoApi.update).mockResolvedValue(undefined as never)
     vi.mocked(videoApi.publish).mockResolvedValue(undefined as never)
     vi.mocked(recurringApi.create).mockResolvedValue(undefined as never)
-    vi.mocked(videoApi.generate).mockResolvedValue([{ id: '202', path: 'https://cdn.example/generated.mp4' }] as never)
+    vi.mocked(videoApi.generate).mockResolvedValue([
+      { id: '202', path: 'https://cdn.example/generated.mp4' },
+    ] as never)
   })
 
   it('keeps common and channel-specific metadata independently editable', async () => {
@@ -137,7 +189,27 @@ describe('ComposeView', () => {
     await wrapper.get('#compose-title').setValue('공통 수정 제목')
     await instagramTab.trigger('click')
 
-    expect((wrapper.get('#compose-title').element as HTMLInputElement).value).toBe('인스타 전용 제목')
+    expect((wrapper.get('#compose-title').element as HTMLInputElement).value).toBe(
+      '인스타 전용 제목',
+    )
+  })
+
+  it('keeps untouched channel fields synchronized after one channel field is overridden', async () => {
+    const { wrapper } = await renderCompose()
+    const instagramTab = wrapper.get('[role="tab"]:nth-child(3)')
+
+    await instagramTab.trigger('click')
+    await wrapper.get('#compose-title').setValue('인스타 전용 제목')
+    await wrapper.get('[role="tab"]:first-child').trigger('click')
+    await wrapper.get('#compose-description').setValue('공통 설명 업데이트')
+    await instagramTab.trigger('click')
+
+    expect((wrapper.get('#compose-title').element as HTMLInputElement).value).toBe(
+      '인스타 전용 제목',
+    )
+    expect((wrapper.get('#compose-description').element as HTMLTextAreaElement).value).toBe(
+      '공통 설명 업데이트',
+    )
   })
 
   it('passes one preview target per selected account', async () => {
@@ -161,16 +233,21 @@ describe('ComposeView', () => {
     uploadStore.videoId = 101
     await wrapper.findAll('input[type="checkbox"]')[0].setValue(false)
 
-    const schedule = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    const schedule = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
     await schedule!.trigger('click')
     await flushPromises()
 
-    expect(videoApi.publish).toHaveBeenCalledWith(101, expect.objectContaining({
-      platforms: expect.arrayContaining([
-        expect.objectContaining({ platform: 'YOUTUBE', visibility: 'PRIVATE' }),
-        expect.objectContaining({ platform: 'INSTAGRAM', visibility: 'UNLISTED' }),
-      ]),
-    }))
+    expect(videoApi.publish).toHaveBeenCalledWith(
+      101,
+      expect.objectContaining({
+        platforms: expect.arrayContaining([
+          expect.objectContaining({ platform: 'YOUTUBE', visibility: 'PRIVATE' }),
+          expect.objectContaining({ platform: 'INSTAGRAM', visibility: 'UNLISTED' }),
+        ]),
+      }),
+    )
   })
 
   it('shows a server loading error instead of enabling a fake publish flow', async () => {
@@ -189,26 +266,36 @@ describe('ComposeView', () => {
     uploadStore.videoId = 101
     await wrapper.findAll('input[type="checkbox"]')[0].setValue(false)
 
-    const schedule = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    const schedule = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
     expect(schedule).toBeDefined()
     await schedule!.trigger('click')
     await flushPromises()
 
     expect(subtitleEditorApi.listTracksByVideo).toHaveBeenCalledWith(101)
-    expect(aiApi.generateMeta).toHaveBeenCalledWith(expect.objectContaining({ videoId: 101, targetPlatforms: ['YOUTUBE', 'INSTAGRAM'] }))
-    expect(videoApi.update).toHaveBeenCalledWith(101, expect.objectContaining({
-      title: '유튜브 자동 제목',
-      platforms: expect.arrayContaining([
-        expect.objectContaining({ platform: 'YOUTUBE', title: '유튜브 자동 제목' }),
-        expect.objectContaining({ platform: 'INSTAGRAM', title: '인스타 자동 제목' }),
-      ]),
-    }))
-    expect(videoApi.publish).toHaveBeenCalledWith(101, expect.objectContaining({
-      platforms: expect.arrayContaining([
-        expect.objectContaining({ platform: 'YOUTUBE', title: '유튜브 자동 제목' }),
-        expect.objectContaining({ platform: 'INSTAGRAM', title: '인스타 자동 제목' }),
-      ]),
-    }))
+    expect(aiApi.generateMeta).toHaveBeenCalledWith(
+      expect.objectContaining({ videoId: 101, targetPlatforms: ['YOUTUBE', 'INSTAGRAM'] }),
+    )
+    expect(videoApi.update).toHaveBeenCalledWith(
+      101,
+      expect.objectContaining({
+        title: '유튜브 자동 제목',
+        platforms: expect.arrayContaining([
+          expect.objectContaining({ platform: 'YOUTUBE', title: '유튜브 자동 제목' }),
+          expect.objectContaining({ platform: 'INSTAGRAM', title: '인스타 자동 제목' }),
+        ]),
+      }),
+    )
+    expect(videoApi.publish).toHaveBeenCalledWith(
+      101,
+      expect.objectContaining({
+        platforms: expect.arrayContaining([
+          expect.objectContaining({ platform: 'YOUTUBE', title: '유튜브 자동 제목' }),
+          expect.objectContaining({ platform: 'INSTAGRAM', title: '인스타 자동 제목' }),
+        ]),
+      }),
+    )
     expect(router.currentRoute.value.fullPath).toBe('/today')
   })
 
@@ -221,16 +308,21 @@ describe('ComposeView', () => {
     uploadStore.videoId = 101
     await wrapper.findAll('input[type="checkbox"]')[0].setValue(false)
 
-    const schedule = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    const schedule = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
     await schedule!.trigger('click')
     await flushPromises()
 
-    expect(videoApi.publish).toHaveBeenCalledWith(101, expect.objectContaining({
-      platforms: expect.arrayContaining([
-        expect.objectContaining({ platform: 'YOUTUBE', title: '내가 직접 정한 제목' }),
-        expect.objectContaining({ platform: 'INSTAGRAM', title: '내가 직접 정한 제목' }),
-      ]),
-    }))
+    expect(videoApi.publish).toHaveBeenCalledWith(
+      101,
+      expect.objectContaining({
+        platforms: expect.arrayContaining([
+          expect.objectContaining({ platform: 'YOUTUBE', title: '내가 직접 정한 제목' }),
+          expect.objectContaining({ platform: 'INSTAGRAM', title: '내가 직접 정한 제목' }),
+        ]),
+      }),
+    )
   })
 
   it('preserves metadata loaded from a saved draft during publish preflight', async () => {
@@ -250,27 +342,29 @@ describe('ComposeView', () => {
       visibility: 'PUBLIC',
       createdAt: '2026-08-10T09:00:00Z',
       updatedAt: '2026-08-10T09:00:00Z',
-      uploads: [{
-        id: 405,
-        videoId: 404,
-        platform: 'YOUTUBE',
-        channelId: 1,
-        status: 'DRAFT',
-        platformVideoId: null,
-        platformUrl: null,
-        description: null,
-        tags: [],
-        errorMessage: null,
-        publishedAt: null,
-        createdAt: '2026-08-10T09:00:00Z',
-        meta: {
-          title: '저장된 채널 제목',
-          description: '저장된 채널 설명',
-          tags: ['채널태그'],
-          visibility: 'PUBLIC',
-          customThumbnailUrl: null,
+      uploads: [
+        {
+          id: 405,
+          videoId: 404,
+          platform: 'YOUTUBE',
+          channelId: 1,
+          status: 'DRAFT',
+          platformVideoId: null,
+          platformUrl: null,
+          description: null,
+          tags: [],
+          errorMessage: null,
+          publishedAt: null,
+          createdAt: '2026-08-10T09:00:00Z',
+          meta: {
+            title: '저장된 채널 제목',
+            description: '저장된 채널 설명',
+            tags: ['채널태그'],
+            visibility: 'PUBLIC',
+            customThumbnailUrl: null,
+          },
         },
-      }],
+      ],
     } as never)
     const { wrapper } = await renderCompose('/compose?videoId=404')
     useUploadStore().file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
@@ -282,10 +376,14 @@ describe('ComposeView', () => {
     await flushPromises()
 
     const publishRequest = vi.mocked(videoApi.publish).mock.calls[0]?.[1]
-    expect(publishRequest?.platforms).toEqual(expect.arrayContaining([
-      expect.objectContaining({ platform: 'YOUTUBE', title: '저장된 채널 제목' }),
-    ]))
-    expect(publishRequest?.platforms.some((platform) => platform.title === '유튜브 자동 제목')).toBe(false)
+    expect(publishRequest?.platforms).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ platform: 'YOUTUBE', title: '저장된 채널 제목' }),
+      ]),
+    )
+    expect(
+      publishRequest?.platforms.some((platform) => platform.title === '유튜브 자동 제목'),
+    ).toBe(false)
   })
 
   it('does not publish the original when automatic Shorts rendering is unavailable', async () => {
@@ -298,7 +396,9 @@ describe('ComposeView', () => {
     uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
     uploadStore.videoId = 101
 
-    const schedule = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    const schedule = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
     expect(schedule).toBeDefined()
     await schedule!.trigger('click')
     await flushPromises()
@@ -318,13 +418,18 @@ describe('ComposeView', () => {
     await save!.trigger('click')
     await flushPromises()
 
-    expect(videoApi.update).toHaveBeenCalledWith(101, expect.objectContaining({ title: '저장할 제목' }))
+    expect(videoApi.update).toHaveBeenCalledWith(
+      101,
+      expect.objectContaining({ title: '저장할 제목' }),
+    )
     expect(videoApi.create).not.toHaveBeenCalled()
   })
 
   it('creates a source video in the composer and keeps it in the publish path', async () => {
     const { wrapper } = await renderCompose()
-    const createSource = wrapper.findAll('button').find((button) => button.text() === '새 영상 만들기')
+    const createSource = wrapper
+      .findAll('button')
+      .find((button) => button.text() === '새 영상 만들기')
     expect(createSource).toBeDefined()
     await createSource!.trigger('click')
     await wrapper.get('#generate-video-prompt').setValue('아침 루틴을 소개하는 영상')
@@ -334,17 +439,22 @@ describe('ComposeView', () => {
     await generate!.trigger('click')
     await flushPromises()
 
-    expect(videoApi.generate).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'image-text-slides',
-      output: 'vertical',
-      customParams: expect.objectContaining({ prompt: '아침 루틴을 소개하는 영상' }),
-    }))
+    expect(videoApi.generate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'image-text-slides',
+        output: 'vertical',
+        customParams: expect.objectContaining({ prompt: '아침 루틴을 소개하는 영상' }),
+      }),
+    )
     expect(useUploadStore().videoId).toBe(202)
     expect(aiApi.generateMeta).toHaveBeenCalledWith(expect.objectContaining({ videoId: 202 }))
   })
 
   it('keeps automatic captions available after importing a source URL', async () => {
-    vi.mocked(videoApi.getImportAvailability).mockResolvedValue({ available: true, reason: null } as never)
+    vi.mocked(videoApi.getImportAvailability).mockResolvedValue({
+      available: true,
+      reason: null,
+    } as never)
     vi.mocked(videoApi.importUrl).mockResolvedValue({
       videoId: 303,
       title: '가져온 영상',
@@ -355,7 +465,10 @@ describe('ComposeView', () => {
     const urlSource = wrapper.findAll('button').find((button) => button.text() === 'URL 가져오기')
     await urlSource!.trigger('click')
     await wrapper.get('#source-video-url').setValue('https://youtu.be/example')
-    await wrapper.findAll('button').find((button) => button.text() === '가져오기')!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '가져오기')!
+      .trigger('click')
     await flushPromises()
 
     const caption = wrapper.findAll('button').find((button) => button.text() === '자동 자막')
@@ -385,12 +498,15 @@ describe('ComposeView', () => {
   })
 
   it('runs the automatic Shorts pipeline after the original multi-channel publish', async () => {
-    vi.mocked(ugcShortsPipelineApi.getRenderAvailability).mockResolvedValue({ available: true, reason: null })
+    vi.mocked(ugcShortsPipelineApi.getRenderAvailability).mockResolvedValue({
+      available: true,
+      reason: null,
+    })
     vi.mocked(ugcShortsPipelineApi.create).mockResolvedValue({ id: 77 } as never)
     vi.mocked(ugcShortsPipelineApi.get).mockResolvedValueOnce({
-        run: { id: 77, status: 'COMPLETED', currentStage: null },
-        clips: [{ id: 501, status: 'PUBLISHED', hooks: [] }],
-      } as never)
+      run: { id: 77, status: 'COMPLETED', currentStage: null },
+      clips: [{ id: 501, status: 'PUBLISHED', hooks: [] }],
+    } as never)
 
     const { wrapper } = await renderCompose()
     const uploadStore = useUploadStore()
@@ -400,27 +516,35 @@ describe('ComposeView', () => {
     workspaceStore.workspaces = [{ id: 7 } as never]
     workspaceStore.activeWorkspaceId = 7
 
-    const submit = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    const submit = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
     expect(submit).toBeDefined()
     await submit!.trigger('click')
     await flushPromises()
 
     expect(videoApi.publish).toHaveBeenCalledOnce()
-    expect(ugcShortsPipelineApi.create).toHaveBeenCalledWith(7, expect.objectContaining({
-      sourceVideoId: 101,
-      templateId: null,
-      autoSchedule: true,
-      scheduleStartAt: expect.any(String),
-      scheduleIntervalHours: 2,
-      platforms: ['YOUTUBE#1', 'INSTAGRAM#2'],
-    }))
+    expect(ugcShortsPipelineApi.create).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        sourceVideoId: 101,
+        templateId: null,
+        autoSchedule: true,
+        scheduleStartAt: expect.any(String),
+        scheduleIntervalHours: 2,
+        platforms: ['YOUTUBE#1', 'INSTAGRAM#2'],
+      }),
+    )
     expect(ugcShortsPipelineApi.selectHooks).not.toHaveBeenCalled()
     expect(ugcShortsPipelineApi.startRender).not.toHaveBeenCalled()
     expect(ugcShortsPipelineApi.confirmSchedule).not.toHaveBeenCalled()
   })
 
   it('still runs Shorts when the optional recurring schedule fails', async () => {
-    vi.mocked(ugcShortsPipelineApi.getRenderAvailability).mockResolvedValue({ available: true, reason: null })
+    vi.mocked(ugcShortsPipelineApi.getRenderAvailability).mockResolvedValue({
+      available: true,
+      reason: null,
+    })
     vi.mocked(ugcShortsPipelineApi.create).mockResolvedValue({ id: 78 } as never)
     vi.mocked(ugcShortsPipelineApi.get).mockResolvedValueOnce({
       run: { id: 78, status: 'COMPLETED', currentStage: null },
@@ -438,7 +562,9 @@ describe('ComposeView', () => {
 
     const checkboxes = wrapper.findAll('input[type="checkbox"]')
     await checkboxes[checkboxes.length - 1]!.setValue(true)
-    const submit = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    const submit = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
     await submit!.trigger('click')
     await flushPromises()
 

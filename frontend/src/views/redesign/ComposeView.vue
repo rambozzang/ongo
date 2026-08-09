@@ -57,7 +57,10 @@
 
       <!-- 서버 영상 생성 -->
       <div v-else class="rounded-[11px] border border-line bg-surface-card p-3.5">
-        <label for="generate-video-prompt" class="block text-[11.5px] font-semibold text-content-secondary">
+        <label
+          for="generate-video-prompt"
+          class="block text-[11.5px] font-semibold text-content-secondary"
+        >
           {{ t('redesign.compose.generatePromptLabel') }}
         </label>
         <textarea
@@ -82,7 +85,9 @@
               :disabled="generating || !generationPrompt.trim()"
               @click="generateVideo"
             >
-              {{ generating ? t('redesign.compose.generating') : t('redesign.compose.generateAction') }}
+              {{
+                generating ? t('redesign.compose.generating') : t('redesign.compose.generateAction')
+              }}
             </button>
             <button
               v-if="importedVideoId"
@@ -91,7 +96,9 @@
               :disabled="captioning"
               @click="requestCaptions"
             >
-              {{ captioning ? t('redesign.compose.captioning') : t('redesign.compose.autoCaption') }}
+              {{
+                captioning ? t('redesign.compose.captioning') : t('redesign.compose.autoCaption')
+              }}
             </button>
           </div>
         </div>
@@ -258,7 +265,11 @@
                 :key="channel.id"
                 type="button"
                 class="rounded-md px-2.5 py-1.5 text-[11px] transition-colors"
-                :class="activeChannelId === channel.id ? 'bg-accent text-white' : 'bg-surface-card text-content-secondary hover:text-content'"
+                :class="
+                  activeChannelId === channel.id
+                    ? 'bg-accent text-white'
+                    : 'bg-surface-card text-content-secondary hover:text-content'
+                "
                 :aria-pressed="activeChannelId === channel.id"
                 @click="activeChannelId = channel.id"
               >
@@ -302,7 +313,10 @@
             </span>
           </div>
 
-          <label for="compose-description" class="mt-3.5 block text-[11.5px] text-content-secondary">
+          <label
+            for="compose-description"
+            class="mt-3.5 block text-[11.5px] text-content-secondary"
+          >
             {{ t('redesign.compose.description') }}
           </label>
           <textarea
@@ -385,18 +399,18 @@
         {{ t('redesign.compose.scheduleTitle') }}
       </h2>
       <div class="mt-2.5 space-y-2">
-          <button
-            v-for="opt in scheduleOptions"
+        <button
+          v-for="opt in scheduleOptions"
           :key="opt.key"
           type="button"
           class="flex w-full items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors"
-            :class="
+          :class="
             schedMode === opt.key
               ? 'border-accent bg-accent-dim'
               : 'border-line-control hover:border-line-hover'
-            "
-            :aria-pressed="schedMode === opt.key"
-            @click="schedMode = opt.key"
+          "
+          :aria-pressed="schedMode === opt.key"
+          @click="schedMode = opt.key"
         >
           <span
             class="mt-0.5 flex h-3 w-3 shrink-0 items-center justify-center rounded-full border"
@@ -563,7 +577,11 @@ import {
   validatePublishDrafts,
 } from '@/utils/publishValidation'
 import type { OptimalTimeSlot } from '@/types/analytics'
-import { fallbackOptimalSlot, kstWallClockToInstant, nextOptimalDateTime } from '@/utils/optimalSchedule'
+import {
+  fallbackOptimalSlot,
+  kstWallClockToInstant,
+  nextOptimalDateTime,
+} from '@/utils/optimalSchedule'
 
 /**
  * 새 업로드 — 파일 → 대상 → 문구 → 예약을 화면 이동 없이 한 번에.
@@ -574,7 +592,20 @@ import { fallbackOptimalSlot, kstWallClockToInstant, nextOptimalDateTime } from 
 const { t } = useLocale()
 const route = useRoute()
 
-type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP' | 'DM' | 'VI' | 'TU'
+type ChipCode =
+  | 'YT'
+  | 'IG'
+  | 'TT'
+  | 'FB'
+  | 'NV'
+  | 'TH'
+  | 'TW'
+  | 'PI'
+  | 'LI'
+  | 'WP'
+  | 'DM'
+  | 'VI'
+  | 'TU'
 const CHIP: Partial<Record<Platform, ChipCode>> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
@@ -675,9 +706,23 @@ const recurringDayOfWeek = ref(1)
 const recurringDayOfMonth = ref(1)
 
 type FormDraft = { title: string; description: string; hashtags: string; visibility: Visibility }
+type DraftDirty = Record<keyof FormDraft, boolean>
+
+function emptyDraftDirty(): DraftDirty {
+  return { title: false, description: false, hashtags: false, visibility: false }
+}
+
+function cloneDraftDirty(dirty?: Partial<DraftDirty>): DraftDirty {
+  return { ...emptyDraftDirty(), ...dirty }
+}
+
+function allDraftDirty(): DraftDirty {
+  return { title: true, description: true, hashtags: true, visibility: true }
+}
+
 const form = reactive<FormDraft>({ title: '', description: '', hashtags: '', visibility: 'PUBLIC' })
 const channelForms = reactive<Record<number, FormDraft>>({})
-const channelDraftDirty = reactive<Record<number, boolean>>({})
+const channelDraftDirty = reactive<Record<number, DraftDirty>>({})
 const commonDraftDirty = reactive<Record<keyof FormDraft, boolean>>({
   title: false,
   description: false,
@@ -685,7 +730,7 @@ const commonDraftDirty = reactive<Record<keyof FormDraft, boolean>>({
   visibility: false,
 })
 const pendingPlatformForms = reactive<Partial<Record<Platform, FormDraft>>>({})
-const pendingPlatformDirty = reactive<Partial<Record<Platform, boolean>>>({})
+const pendingPlatformDirty = reactive<Partial<Record<Platform, DraftDirty>>>({})
 const file = reactive({ name: '', thumbnailUrl: null as string | null, meta: '' })
 
 const sourceModes = computed(() => [
@@ -757,7 +802,8 @@ const scheduleOptions = computed(() => [
 
 const bestTimeHint = computed(() => {
   const times = selectedChannels.value.flatMap(
-    (channel) => optimalSlots.value[channel.platform]?.slice(0, 3).map((slot) => slot.timeLabel) ?? [],
+    (channel) =>
+      optimalSlots.value[channel.platform]?.slice(0, 3).map((slot) => slot.timeLabel) ?? [],
   )
   const uniqueTimes = [...new Set(times)]
   return uniqueTimes.length > 0
@@ -806,7 +852,9 @@ const shortsPlatforms = computed(() =>
 )
 const shortsTargets = computed(() =>
   selectedChannels.value
-    .filter((channel) => ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'].includes(channel.platform))
+    .filter((channel) =>
+      ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'].includes(channel.platform),
+    )
     .map((channel) => `${channel.platform}#${channel.id}`),
 )
 
@@ -819,7 +867,9 @@ function draftForChannel(channel: Channel): FormDraft {
     channelForms[channel.id] = reactive({
       ...(pendingPlatformForms[channel.platform] ?? form),
     })
-    channelDraftDirty[channel.id] = pendingPlatformDirty[channel.platform] ?? false
+    channelDraftDirty[channel.id] = cloneDraftDirty(pendingPlatformDirty[channel.platform])
+  } else if (!channelDraftDirty[channel.id]) {
+    channelDraftDirty[channel.id] = emptyDraftDirty()
   }
   return channelForms[channel.id]!
 }
@@ -838,13 +888,14 @@ watch(
   () => [form.title, form.description, form.hashtags, form.visibility],
   () => {
     for (const channelId of Object.keys(channelForms).map(Number)) {
-      if (channelDraftDirty[channelId]) continue
       const draft = channelForms[channelId]
+      const dirty = channelDraftDirty[channelId]
       if (!draft) continue
-      draft.title = form.title
-      draft.description = form.description
-      draft.hashtags = form.hashtags
-      draft.visibility = form.visibility
+      if (!dirty) continue
+      if (!dirty.title) draft.title = form.title
+      if (!dirty.description) draft.description = form.description
+      if (!dirty.hashtags) draft.hashtags = form.hashtags
+      if (!dirty.visibility) draft.visibility = form.visibility
     }
   },
 )
@@ -853,7 +904,9 @@ function markDraftDirty(field: keyof FormDraft) {
   if (activeTab.value === 'common') {
     commonDraftDirty[field] = true
   } else if (activeChannel.value) {
-    channelDraftDirty[activeChannel.value.id] = true
+    const dirty = channelDraftDirty[activeChannel.value.id] ?? emptyDraftDirty()
+    dirty[field] = true
+    channelDraftDirty[activeChannel.value.id] = dirty
   }
 }
 
@@ -915,15 +968,17 @@ const previewMetadata = computed(() =>
  * 같은 플랫폼 계정이 여러 개면 현재 편집 중인 계정을 우선하고,
  * 다른 플랫폼은 해당 플랫폼에서 선택된 첫 계정을 사용한다.
  */
-const previewChannelNames = computed<Partial<Record<Platform, string>>>(() =>
-  Object.fromEntries(
-    selectedPreviewPlatforms.value.map((platform) => {
-      const channel = activeChannel.value?.platform === platform
-        ? activeChannel.value
-        : selectedChannels.value.find((item) => item.platform === platform)
-      return [platform, channel?.channelName ?? '']
-    }),
-  ) as Partial<Record<Platform, string>>,
+const previewChannelNames = computed<Partial<Record<Platform, string>>>(
+  () =>
+    Object.fromEntries(
+      selectedPreviewPlatforms.value.map((platform) => {
+        const channel =
+          activeChannel.value?.platform === platform
+            ? activeChannel.value
+            : selectedChannels.value.find((item) => item.platform === platform)
+        return [platform, channel?.channelName ?? '']
+      }),
+    ) as Partial<Record<Platform, string>>,
 )
 const previewLimits = computed(() =>
   Object.fromEntries(
@@ -954,9 +1009,7 @@ const descriptionOver = computed(
 )
 const tagsOver = computed(() => {
   if (!activeCapability.value || tagLimit.value === null) return false
-  return tagLimit.value === 0
-    ? hashtagCount.value > 0
-    : hashtagCount.value > tagLimit.value
+  return tagLimit.value === 0 ? hashtagCount.value > 0 : hashtagCount.value > tagLimit.value
 })
 const captionLength = computed(() => {
   const platform = platformForTab(activeTab.value)
@@ -1016,7 +1069,7 @@ const validationIssues = computed(() => {
           ? t('redesign.compose.warnDescriptionLength', { limit: issue.limit })
           : issue.field === 'caption'
             ? t('redesign.compose.warnCaptionLength', { limit: issue.limit })
-          : t('redesign.compose.warnTagCount', { limit: issue.limit })
+            : t('redesign.compose.warnTagCount', { limit: issue.limit })
     return `${issue.channelName}: ${message}`
   })
 })
@@ -1028,7 +1081,7 @@ function applyCommonToPlatforms() {
     draft.description = form.description
     draft.hashtags = form.hashtags
     draft.visibility = form.visibility
-    channelDraftDirty[channel.id] = false
+    channelDraftDirty[channel.id] = emptyDraftDirty()
   }
   notice.value = t('redesign.compose.commonApplied')
 }
@@ -1180,8 +1233,7 @@ async function generateMetadataFor(videoId: number) {
   const missingPlatforms = targetPlatforms.filter(
     (platform) => !metadataGeneratedPlatforms.value.includes(platform),
   )
-  if (missingPlatforms.length === 0)
-    return
+  if (missingPlatforms.length === 0) return
   if (metadataGenerating.value) return
   const firstGeneration = metadataGeneratedPlatforms.value.length === 0
   metadataGenerating.value = true
@@ -1209,17 +1261,28 @@ async function generateMetadataFor(videoId: number) {
       // silently falls back to the common copy instead of the platform copy.
       if (!pendingPlatformDirty[platform]) {
         pendingPlatformForms[platform] = reactive({ ...generatedDraft })
-        pendingPlatformDirty[platform] = true
+        pendingPlatformDirty[platform] = allDraftDirty()
       }
       // A later channel selection must never erase copy the creator already edited.
-      for (const channel of selectedChannels.value.filter((candidate) => candidate.platform === platform)) {
+      for (const channel of selectedChannels.value.filter(
+        (candidate) => candidate.platform === platform,
+      )) {
         const draft = draftForChannel(channel)
-        if (channelDraftDirty[channel.id]) continue
+        const dirty = channelDraftDirty[channel.id] ?? emptyDraftDirty()
         // AI가 만든 채널별 문구는 공통 문구와 독립된 편집 초안으로 취급한다.
-        channelDraftDirty[channel.id] = true
-        if (!commonDraftDirty.title) draft.title = generatedDraft.title
-        if (!commonDraftDirty.description) draft.description = generatedDraft.description
-        if (!commonDraftDirty.hashtags) draft.hashtags = generatedDraft.hashtags
+        if (!dirty.title && !commonDraftDirty.title) {
+          draft.title = generatedDraft.title
+          dirty.title = true
+        }
+        if (!dirty.description && !commonDraftDirty.description) {
+          draft.description = generatedDraft.description
+          dirty.description = true
+        }
+        if (!dirty.hashtags && !commonDraftDirty.hashtags) {
+          draft.hashtags = generatedDraft.hashtags
+          dirty.hashtags = true
+        }
+        channelDraftDirty[channel.id] = dirty
       }
     }
     const first = result.platforms[0]
@@ -1500,10 +1563,9 @@ async function publishAutomaticShorts(sourceVideoId: number) {
 /** 채널별 예약 시각. 최적 모드는 서버 분석값을 사용하고, 이력이 없을 때만 일반 기본값을 쓴다. */
 function scheduledAtFor(index: number, platform?: Platform): string | undefined {
   if (schedMode.value === 'now') return undefined
-  if (schedMode.value === 'fix')
-    return fixedAt.value ? fixedAt.value.slice(0, 16) : undefined
+  if (schedMode.value === 'fix') return fixedAt.value ? fixedAt.value.slice(0, 16) : undefined
 
-  const slots = platform ? optimalSlots.value[platform] ?? [] : []
+  const slots = platform ? (optimalSlots.value[platform] ?? []) : []
   const slot = slots.length > 0 ? slots[index % slots.length] : fallbackOptimalSlot(index)
   return nextOptimalDateTime(new Date(), slot)
 }
@@ -1606,12 +1668,12 @@ async function loadDraft(videoId: number) {
     if (upload.channelId != null) {
       channelForms[upload.channelId] = draft
       // A persisted override must stay independent when the common copy changes.
-      channelDraftDirty[upload.channelId] = true
+      channelDraftDirty[upload.channelId] = allDraftDirty()
     } else {
       // Legacy drafts did not persist a channel id. Keep them available until
       // the channel list arrives, then clone them into the matching accounts.
       pendingPlatformForms[upload.platform] = draft
-      pendingPlatformDirty[upload.platform] = true
+      pendingPlatformDirty[upload.platform] = allDraftDirty()
     }
   }
   draftLoaded.value = true
@@ -1641,7 +1703,11 @@ onMounted(async () => {
     }
   }
   const templateId = Number(route.query.templateId)
-  if ((!Number.isInteger(draftId) || draftId <= 0) && Number.isInteger(templateId) && templateId > 0) {
+  if (
+    (!Number.isInteger(draftId) || draftId <= 0) &&
+    Number.isInteger(templateId) &&
+    templateId > 0
+  ) {
     try {
       const template = await templatesApi.get(templateId)
       form.title = template.titleTemplate ?? ''
@@ -1658,7 +1724,10 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
   try {
     const settings = await settingsApi.getSettings()
-    if (!draftLoaded.value && ['PUBLIC', 'PRIVATE', 'UNLISTED'].includes(settings.defaultVisibility)) {
+    if (
+      !draftLoaded.value &&
+      ['PUBLIC', 'PRIVATE', 'UNLISTED'].includes(settings.defaultVisibility)
+    ) {
       form.visibility = settings.defaultVisibility as Visibility
     }
   } catch (error) {
@@ -1676,7 +1745,7 @@ onMounted(async () => {
         const legacy = pendingPlatformForms[channel.platform]
         if (legacy && !channelForms[channel.id]) {
           channelForms[channel.id] = reactive({ ...legacy })
-          channelDraftDirty[channel.id] = pendingPlatformDirty[channel.platform] ?? true
+          channelDraftDirty[channel.id] = cloneDraftDirty(pendingPlatformDirty[channel.platform])
         }
       }
       const savedChannelIds = new Set(Object.keys(channelForms).map(Number))

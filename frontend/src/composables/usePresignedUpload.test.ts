@@ -58,7 +58,13 @@ function item() {
     progress: 0,
     metadata: { title: '제목', description: '설명', tags: ['#ongo'], category: '교육' },
     platformConfigs: [
-      { platform: 'YOUTUBE', title: '제목', description: '설명', tags: ['#ongo'], visibility: 'PUBLIC' },
+      {
+        platform: 'YOUTUBE',
+        title: '제목',
+        description: '설명',
+        tags: ['#ongo'],
+        visibility: 'PUBLIC',
+      },
     ],
   }
 }
@@ -86,7 +92,10 @@ describe('usePresignedUpload', () => {
 
   it('runs init, direct PUT, completion, metadata, and publish in order', async () => {
     fetchMock
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { id: 55, uploadUrl: 'https://storage.test/put' } }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { id: 55, uploadUrl: 'https://storage.test/put' } }),
+      })
       .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({}) })
@@ -111,20 +120,39 @@ describe('usePresignedUpload', () => {
     xhr.complete()
 
     await expect(pending).resolves.toBe(55)
-    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/v1/videos/upload/init', expect.objectContaining({
-      method: 'POST',
-      headers: expect.objectContaining({ Authorization: 'Bearer access-token' }),
-    }))
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/v1/videos/55/upload/complete', expect.objectContaining({ method: 'POST' }))
-    expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/v1/videos/55', expect.objectContaining({ method: 'PUT' }))
-    expect(fetchMock).toHaveBeenNthCalledWith(4, '/api/v1/videos/55/publish', expect.objectContaining({ method: 'POST' }))
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      '/api/v1/videos/upload/init',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Authorization: 'Bearer access-token' }),
+      }),
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/videos/55/upload/complete',
+      expect.objectContaining({ method: 'POST' }),
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      '/api/v1/videos/55',
+      expect.objectContaining({ method: 'PUT' }),
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      '/api/v1/videos/55/publish',
+      expect.objectContaining({ method: 'POST' }),
+    )
     expect(onProgress).toHaveBeenLastCalledWith('upload-1', 100)
     expect(onComplete).toHaveBeenCalledWith('upload-1')
     expect(onSpeedUpdate).not.toHaveBeenCalled()
   })
 
   it('returns null for a paused upload and does not acknowledge or publish it', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ data: { id: 55, uploadUrl: 'https://storage.test/put' } }) })
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { id: 55, uploadUrl: 'https://storage.test/put' } }),
+    })
     const shouldContinue = vi.fn().mockReturnValue(false)
     const pending = usePresignedUpload({ ...options, shouldContinue }).upload(item())
     await flushAsync()
@@ -140,23 +168,90 @@ describe('usePresignedUpload', () => {
   })
 
   it('surfaces storage and backend failures with actionable messages', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false, status: 413, json: async () => ({ error: '파일이 너무 큽니다' }) })
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 413,
+      json: async () => ({ error: '파일이 너무 큽니다' }),
+    })
     await expect(usePresignedUpload(options).upload(item())).rejects.toThrow('파일이 너무 큽니다')
 
     fetchMock.mockReset()
     fetchMock
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: { id: 55, uploadUrl: 'https://storage.test/put' } }) })
-      .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({ message: '완료 확인 실패' }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { id: 55, uploadUrl: 'https://storage.test/put' } }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: async () => ({ message: '완료 확인 실패' }),
+      })
     const pending = usePresignedUpload(options).upload(item())
     await flushAsync()
     FakeXMLHttpRequest.instances[FakeXMLHttpRequest.instances.length - 1]?.complete()
     await expect(pending).rejects.toThrow('완료 확인 실패')
 
     fetchMock.mockReset()
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ data: { id: 55, uploadUrl: 'https://storage.test/put' } }) })
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { id: 55, uploadUrl: 'https://storage.test/put' } }),
+    })
     const storageFailure = usePresignedUpload(options).upload(item())
     await flushAsync()
     FakeXMLHttpRequest.instances[FakeXMLHttpRequest.instances.length - 1]?.fail()
     await expect(storageFailure).rejects.toThrow('네트워크 오류로 업로드 실패')
+  })
+
+  it('aborts backend confirmation and never reaches metadata or publish after storage PUT', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { id: 55, uploadUrl: 'https://storage.test/put' } }),
+    })
+
+    let rejectConfirmation: ((error: Error) => void) | undefined
+    fetchMock.mockImplementationOnce(
+      (_url: string, request: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          rejectConfirmation = reject
+          request.signal?.addEventListener('abort', () => reject(new Error('aborted by caller')), {
+            once: true,
+          })
+        }),
+    )
+
+    const uploader = usePresignedUpload(options)
+    const pending = uploader.upload(item())
+    await flushAsync()
+    FakeXMLHttpRequest.instances[FakeXMLHttpRequest.instances.length - 1]?.complete()
+    await flushAsync()
+
+    uploader.abort()
+    rejectConfirmation?.(new Error('confirmation cancelled'))
+
+    await expect(pending).rejects.toThrow('업로드가 취소되었습니다')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/v1/videos/55', expect.anything())
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/v1/videos/55/publish', expect.anything())
+  })
+
+  it('turns an aborted initialization request into a cancellation error', async () => {
+    let rejectInit: ((error: Error) => void) | undefined
+    fetchMock.mockImplementationOnce(
+      (_url: string, request: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          rejectInit = reject
+          request.signal?.addEventListener('abort', () => reject(new Error('aborted by caller')), {
+            once: true,
+          })
+        }),
+    )
+
+    const uploader = usePresignedUpload(options)
+    const pending = uploader.upload(item())
+    uploader.abort()
+    rejectInit?.(new Error('init cancelled'))
+
+    await expect(pending).rejects.toThrow('업로드가 취소되었습니다')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })
