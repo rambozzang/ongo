@@ -220,7 +220,7 @@ export function useNavigation() {
         ...subGroup,
         items: visibleItems(subGroup.items),
       })).filter((subGroup) => subGroup.items.length > 0),
-    }))
+    })).filter((group) => group.items.length > 0 || (group.subGroups?.length ?? 0) > 0)
   })
 
   const bottomNavItems = computed<NavItem[]>(() => {

@@ -51,6 +51,7 @@ describe('useNavigation', () => {
     const navigation = useNavigation()
     await vi.waitFor(() => expect(navigation.capabilityError.value).toBe('capability offline'))
     expect(paths(navigation)).toEqual([])
+    expect(navigation.navGroups.value).toEqual([])
 
     await navigation.retryCapabilities()
 

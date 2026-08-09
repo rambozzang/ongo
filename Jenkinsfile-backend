@@ -83,6 +83,15 @@ pipeline {
             }
         }
 
+        stage('Validate Deployment Scripts') {
+            steps {
+                // 배포 스크립트의 문법 오류는 애플리케이션 빌드가 성공해도
+                // 재기동 단계에서만 발견된다. 운영 파일을 건드리기 전에
+                // 셸 파싱을 CI에서 먼저 통과시킨다.
+                sh 'bash -n deploy/deploy.sh deploy/start.sh deploy/stop.sh deploy/required-env.sh'
+            }
+        }
+
         stage('Build Backend') {
             steps {
                 dir('backend') {
