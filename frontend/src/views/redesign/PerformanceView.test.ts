@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import PerformanceView from './PerformanceView.vue'
 import { analyticsApi } from '@/api/analytics'
+import { scheduleApi } from '@/api/schedule'
 import koMessages from '@/locales/ko/common.json'
 
 vi.mock('@/api/analytics', () => ({
@@ -16,6 +17,7 @@ vi.mock('@/api/analytics', () => ({
     subscriberConversion: vi.fn(),
   },
 }))
+vi.mock('@/api/schedule', () => ({ scheduleApi: { list: vi.fn() } }))
 
 async function renderPerformance() {
   const pinia = createPinia()
@@ -54,12 +56,14 @@ describe('PerformanceView', () => {
     vi.mocked(analyticsApi.topVideos).mockResolvedValue(topVideos() as never)
     vi.mocked(analyticsApi.avgViewDuration).mockResolvedValue({ period: '30일', avgDurationSeconds: 95, data: [] } as never)
     vi.mocked(analyticsApi.subscriberConversion).mockResolvedValue({ period: '30일', totalGained: 24, data: [] } as never)
+    vi.mocked(scheduleApi.list).mockResolvedValue([{ status: 'PUBLISHED' }, { status: 'FAILED' }] as never)
   })
 
   it('renders server analytics, top video and changes the requested period', async () => {
     const wrapper = await renderPerformance()
 
     expect(wrapper.text()).toContain('1.3만')
+    expect(wrapper.text()).toContain('1')
     expect(wrapper.text()).toContain('성과가 좋은 영상')
     expect(analyticsApi.dashboard).toHaveBeenCalledWith('30d')
     const sevenDays = wrapper.findAll('button').find((button) => button.text() === '7일')
@@ -75,6 +79,7 @@ describe('PerformanceView', () => {
     vi.mocked(analyticsApi.topVideos).mockRejectedValueOnce(new Error('analytics down'))
     vi.mocked(analyticsApi.avgViewDuration).mockRejectedValueOnce(new Error('analytics down'))
     vi.mocked(analyticsApi.subscriberConversion).mockRejectedValueOnce(new Error('analytics down'))
+    vi.mocked(scheduleApi.list).mockRejectedValueOnce(new Error('schedule down'))
     const wrapper = await renderPerformance()
 
     expect(wrapper.text()).toContain('영상을 게시하면 24시간 내에')

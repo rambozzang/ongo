@@ -25,7 +25,7 @@ vi.mock('@/api/analytics', () => ({
 
 const makeSchedule = (
   id: number,
-  status: 'SCHEDULED' | 'PROCESSING' | 'FAILED' | 'UNCONFIRMED' | 'PARTIALLY_PUBLISHED',
+  status: 'SCHEDULED' | 'PROCESSING' | 'PUBLISHED' | 'FAILED' | 'UNCONFIRMED' | 'PARTIALLY_PUBLISHED',
   scheduledAt: string,
 ) => ({
   id,

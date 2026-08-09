@@ -56,8 +56,8 @@
         />
         <KpiCard
           :label="t('action.publish')"
-          value="—"
-          :note="t('analyticsView.noData')"
+          :value="store.publishedCount === null ? '—' : formatNumber(store.publishedCount)"
+          :note="t('analyticsView.period.' + store.range)"
         />
       </section>
 

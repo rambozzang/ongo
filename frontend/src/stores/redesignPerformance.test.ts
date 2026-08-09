@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { analyticsApi } from '@/api/analytics'
+import { scheduleApi } from '@/api/schedule'
 import { useRedesignPerformanceStore } from './redesignPerformance'
 
 vi.mock('@/api/analytics', () => ({
@@ -13,10 +14,15 @@ vi.mock('@/api/analytics', () => ({
   },
 }))
 
+vi.mock('@/api/schedule', () => ({
+  scheduleApi: { list: vi.fn() },
+}))
+
 describe('redesign performance store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    vi.mocked(scheduleApi.list).mockResolvedValue([{ status: 'PUBLISHED' }, { status: 'FAILED' }] as never)
   })
 
   it('loads every server-backed performance panel for the selected range', async () => {
@@ -44,6 +50,7 @@ describe('redesign performance store', () => {
     expect(store.topVideos).toEqual(topVideos)
     expect(store.averageViewDuration).toEqual(duration)
     expect(store.subscriberConversion).toEqual(conversion)
+    expect(store.publishedCount).toBe(1)
     expect(store.hasError).toBe(false)
     expect(store.loading).toBe(false)
   })
@@ -54,6 +61,7 @@ describe('redesign performance store', () => {
     vi.mocked(analyticsApi.topVideos).mockResolvedValue([{ id: 1 }] as never)
     vi.mocked(analyticsApi.avgViewDuration).mockResolvedValue({ averageSeconds: 42 } as never)
     vi.mocked(analyticsApi.subscriberConversion).mockResolvedValue({ rate: 3.2 } as never)
+    vi.mocked(scheduleApi.list).mockResolvedValue([{ status: 'PUBLISHED' }] as never)
     const store = useRedesignPerformanceStore()
 
     await store.fetchPerformance('30d')
