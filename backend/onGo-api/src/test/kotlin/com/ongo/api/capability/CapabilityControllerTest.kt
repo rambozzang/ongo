@@ -13,6 +13,7 @@ class CapabilityControllerTest {
         assertTrue(response.success)
         assertEquals(true, response.data?.first { it.key == "compose" }?.enabled)
         assertTrue(response.data?.any { it.key == "ugc/shorts/runs" } == true)
-        assertEquals(30, response.data?.size)
+        assertTrue(response.data?.none { it.key == "keyword-research" || it.key == "trends" } == true)
+        assertEquals(28, response.data?.size)
     }
 }
