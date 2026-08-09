@@ -134,6 +134,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/api/auth'
 import OnGoLogo from '@/components/brand/OnGoLogo.vue'
+import { loginErrorMessage } from '@/utils/loginError'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -154,7 +155,7 @@ async function devLogin() {
   try {
     await authStore.devLogin()
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : t('loginView.devLoginError')
+    errorMessage.value = loginErrorMessage(e, t('loginView.devLoginError'))
     isLoading.value = false
   }
 }
@@ -183,7 +184,7 @@ async function loginWithGoogle() {
     })
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : t('loginView.oauthPrepareError')
+    errorMessage.value = loginErrorMessage(e, t('loginView.oauthPrepareError'))
     isLoading.value = false
   }
 }
@@ -205,7 +206,7 @@ async function loginWithKakao() {
     })
     window.location.href = `https://kauth.kakao.com/oauth/authorize?${params}`
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : t('loginView.oauthPrepareError')
+    errorMessage.value = loginErrorMessage(e, t('loginView.oauthPrepareError'))
     isLoading.value = false
   }
 }
@@ -240,7 +241,7 @@ async function handleOAuthCallback() {
       state: state ?? '',
     })
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : t('loginView.loginError')
+    errorMessage.value = loginErrorMessage(e, t('loginView.loginError'))
     isLoading.value = false
   }
 }
