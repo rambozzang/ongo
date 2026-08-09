@@ -110,6 +110,15 @@ subprojects {
     }
 }
 
+// Gradle's root `clean` task does not automatically invoke each subproject's
+// clean task. Without this aggregation, deleted Kotlin classes can survive in
+// onGo-api/build/classes and be packaged into a successful bootJar, causing a
+// production-only BeanCreationException. Make the command used by CI and
+// deploy scripts a genuine repository-wide clean.
+tasks.named("clean") {
+    dependsOn(subprojects.map { it.tasks.named("clean") })
+}
+
 // A single report is required for the roadmap's backend coverage target. Module
 // reports are useful for local ownership, but without an aggregate report a
 // lightly-tested API module can disappear behind a well-tested utility module.
