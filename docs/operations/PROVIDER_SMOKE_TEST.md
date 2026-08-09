@@ -33,7 +33,7 @@ export ONGO_METADATA_JSON='{
 ./scripts/provider-smoke.sh
 ```
 
-플랫폼별로 연결된 계정이 여러 개면 요청의 각 항목에 `channelId`를 명시합니다. 스크립트는 `202 Accepted`만으로 성공 처리하지 않으며, `/api/v1/videos/{id}`를 조회해 기대한 모든 플랫폼이 `PUBLISHED`이고 비어 있지 않은 `http(s)` URL을 가진 경우에만 성공합니다. `FAILED`, `REJECTED`, `UNCONFIRMED`가 하나라도 발생하면 즉시 실패합니다.
+플랫폼별로 연결된 계정이 여러 개면 요청의 각 항목에 `channelId`를 명시합니다. 스크립트는 `202 Accepted`만으로 성공 처리하지 않으며, 요청 payload에 기대한 플랫폼이 모두 들어 있는지 먼저 확인한 뒤 `/api/v1/videos/{id}`를 조회합니다. 기대한 모든 플랫폼이 `PUBLISHED`이고 비어 있지 않은 `http(s)` URL을 반환하면 각 URL에 실제 HTTP 요청을 보내 2xx/3xx 응답까지 확인해야 성공합니다. URL 확인 제한시간은 `ONGO_URL_CHECK_TIMEOUT_SECONDS`(기본 20초)로 조정할 수 있습니다. `FAILED`, `REJECTED`, `UNCONFIRMED`가 하나라도 발생하거나 게시 링크가 응답하지 않으면 즉시 실패합니다.
 
 ## 증거 보관
 
