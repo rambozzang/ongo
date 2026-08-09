@@ -23,10 +23,7 @@ const store = useNotificationCenterStore()
 
 const showSettings = ref(false)
 const notificationSettings = reactive<NotificationSettingsForm>({
-  uploadEmail: true,
   commentFrequency: 'realtime',
-  creditThreshold: 20,
-  scheduleReminderMinutes: 60,
 })
 const settingsLoading = ref(false)
 const settingsSaving = ref(false)
@@ -42,12 +39,7 @@ async function loadNotificationSettings() {
   settingsError.value = null
   try {
     const result = await settingsApi.getSettings()
-    notificationSettings.uploadEmail = result.notificationUpload
-    notificationSettings.commentFrequency = result.notificationComment.toLowerCase()
-    notificationSettings.creditThreshold = result.notificationCreditThreshold
-    notificationSettings.scheduleReminderMinutes = result.notificationScheduleReminder === 30
-      ? 30
-      : result.notificationScheduleReminder > 0 ? 60 : 0
+    notificationSettings.commentFrequency = result.notificationComment.toLowerCase() === 'realtime' ? 'realtime' : 'none'
   } catch (error) {
     settingsError.value = error instanceof Error ? error.message : '알림 설정을 불러오지 못했습니다'
   } finally {
@@ -74,12 +66,7 @@ async function saveNotificationSettings() {
   settingsError.value = null
   try {
     const result = await settingsApi.updateNotifications({ ...notificationSettings })
-    notificationSettings.uploadEmail = result.notificationUpload
-    notificationSettings.commentFrequency = result.notificationComment.toLowerCase()
-    notificationSettings.creditThreshold = result.notificationCreditThreshold
-    notificationSettings.scheduleReminderMinutes = result.notificationScheduleReminder === 30
-      ? 30
-      : result.notificationScheduleReminder > 0 ? 60 : 0
+    notificationSettings.commentFrequency = result.notificationComment.toLowerCase() === 'realtime' ? 'realtime' : 'none'
     settingsSaved.value = true
   } catch (error) {
     settingsError.value = error instanceof Error ? error.message : '알림 설정 저장에 실패했습니다'

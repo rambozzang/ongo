@@ -23,12 +23,12 @@ data class UpdateSettingsRequest(
 )
 
 data class UpdateNotificationsRequest(
-    val uploadEmail: Boolean = true,
-    val uploadPush: Boolean = true,
-    val commentFrequency: String = "realtime",
-    val creditThreshold: Int = 20,
-    val scheduleReminder1h: Boolean = true,
-    val scheduleReminder30m: Boolean = false,
+    val uploadEmail: Boolean? = null,
+    val uploadPush: Boolean? = null,
+    val commentFrequency: String? = null,
+    val creditThreshold: Int? = null,
+    val scheduleReminder1h: Boolean? = null,
+    val scheduleReminder30m: Boolean? = null,
 )
 
 data class UpdateDefaultsRequest(

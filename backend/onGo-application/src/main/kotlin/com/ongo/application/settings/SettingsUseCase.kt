@@ -59,19 +59,27 @@ class SettingsUseCase(
         val updated = if (existing != null) {
             userSettingsRepository.update(
                 existing.copy(
-                    notificationUpload = request.uploadEmail,
-                    notificationComment = request.commentFrequency,
-                    notificationCreditThreshold = request.creditThreshold,
-                    notificationScheduleReminder = if (request.scheduleReminder1h) 60 else if (request.scheduleReminder30m) 30 else 0,
+                    notificationUpload = request.uploadEmail ?: existing.notificationUpload,
+                    notificationComment = request.commentFrequency ?: existing.notificationComment,
+                    notificationCreditThreshold = request.creditThreshold ?: existing.notificationCreditThreshold,
+                    notificationScheduleReminder = request.scheduleReminder1h?.let { oneHour ->
+                        if (oneHour) 60 else if (request.scheduleReminder30m == true) 30 else 0
+                    } ?: request.scheduleReminder30m?.let { thirtyMinutes ->
+                        if (thirtyMinutes) 30 else 0
+                    } ?: existing.notificationScheduleReminder,
                 )
             )
         } else {
             val settings = UserSettings(
                 userId = userId,
-                notificationUpload = request.uploadEmail,
-                notificationComment = request.commentFrequency,
-                notificationCreditThreshold = request.creditThreshold,
-                notificationScheduleReminder = if (request.scheduleReminder1h) 60 else if (request.scheduleReminder30m) 30 else 0,
+                notificationUpload = request.uploadEmail ?: true,
+                notificationComment = request.commentFrequency ?: "realtime",
+                notificationCreditThreshold = request.creditThreshold ?: 20,
+                notificationScheduleReminder = request.scheduleReminder1h?.let { oneHour ->
+                    if (oneHour) 60 else if (request.scheduleReminder30m == true) 30 else 0
+                } ?: request.scheduleReminder30m?.let { thirtyMinutes ->
+                    if (thirtyMinutes) 30 else 0
+                } ?: 60,
             )
             userSettingsRepository.save(settings)
         }
