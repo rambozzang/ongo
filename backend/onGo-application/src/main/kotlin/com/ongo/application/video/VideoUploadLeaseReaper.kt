@@ -3,6 +3,7 @@ package com.ongo.application.video
 import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.domain.lock.DistributedLockPort
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -18,11 +19,21 @@ import java.time.LocalDateTime
 class VideoUploadLeaseReaper(
     private val videoUploadRepository: VideoUploadRepository,
     private val videoRepository: VideoRepository,
+    private val distributedLockPort: DistributedLockPort,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Scheduled(fixedDelayString = "\${upload.lease.reaper-delay-ms:60000}")
     fun recoverExpiredLeases() {
+        // 여러 API 인스턴스가 같은 만료 작업을 훑지 않도록 스케줄러 자체도
+        // 분산 락으로 직렬화한다. 행 조건부 갱신이 최종 안전망이지만, 락은
+        // 불필요한 조회·상태 재계산과 운영 로그 중복을 줄인다.
+        distributedLockPort.withLock(LEASE_REAPER_LOCK_ID) {
+            recoverExpiredLeasesOnce()
+        }
+    }
+
+    private fun recoverExpiredLeasesOnce() {
         val recovered = videoUploadRepository.recoverExpiredLeases(LocalDateTime.now())
         if (recovered.isEmpty()) return
 
@@ -55,5 +66,9 @@ class VideoUploadLeaseReaper(
             else -> UploadStatus.UPLOADING
         }
         videoRepository.update(video.copy(status = status))
+    }
+
+    companion object {
+        private val LEASE_REAPER_LOCK_ID = "ongo.video-upload-lease-reaper".hashCode().toLong()
     }
 }

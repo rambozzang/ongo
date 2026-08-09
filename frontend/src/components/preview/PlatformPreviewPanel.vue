@@ -79,7 +79,7 @@
               :title="getMetaForPlatform(platform).title"
               :description="getMetaForPlatform(platform).description"
               :thumbnail="thumbnail"
-              :channel-name="channelName"
+              :channel-name="getChannelNameForPlatform(platform)"
               :tags="getMetaForPlatform(platform).tags"
             />
           </div>
@@ -127,7 +127,7 @@
             :title="getMetaForPlatform(selectedPlatform).title"
             :description="getMetaForPlatform(selectedPlatform).description"
             :thumbnail="thumbnail"
-            :channel-name="channelName"
+            :channel-name="getChannelNameForPlatform(selectedPlatform)"
             :tags="getMetaForPlatform(selectedPlatform).tags"
           />
         </div>
@@ -207,6 +207,8 @@ interface Props {
   description?: string
   thumbnail?: string
   channelName?: string
+  /** 같은 플랫폼의 여러 계정을 선택했을 때 각 미리보기에 표시할 계정명 */
+  channelNames?: Partial<Record<Platform, string>>
   tags?: string[]
   platforms: Platform[]
   platformMetadata?: Partial<Record<Platform, PlatformMeta>>
@@ -219,6 +221,7 @@ const props = withDefaults(defineProps<Props>(), {
   description: '',
   thumbnail: '',
   channelName: '',
+  channelNames: undefined,
   tags: () => [],
   platforms: () => [],
   platformMetadata: undefined,
@@ -238,6 +241,10 @@ function getMetaForPlatform(platform: Platform): PlatformMeta {
     description: custom?.description || props.description || '',
     tags: custom?.tags || props.tags || [],
   }
+}
+
+function getChannelNameForPlatform(platform: Platform): string {
+  return props.channelNames?.[platform] || props.channelName || ''
 }
 
 // Map platform to preview component

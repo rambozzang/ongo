@@ -6,6 +6,7 @@ import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.domain.lock.DistributedLockPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -16,7 +17,8 @@ import org.junit.jupiter.api.Test
 class VideoUploadLeaseReaperTest {
     private val uploads = mockk<VideoUploadRepository>()
     private val videos = mockk<VideoRepository>()
-    private val reaper = VideoUploadLeaseReaper(uploads, videos)
+    private val lock = mockk<DistributedLockPort>()
+    private val reaper = VideoUploadLeaseReaper(uploads, videos, lock)
 
     @Test
     fun `expired upload without a poll token becomes unconfirmed instead of being resent`() {
@@ -31,6 +33,7 @@ class VideoUploadLeaseReaperTest {
         every { uploads.findByVideoId(7L) } returns listOf(recovered)
         every { videos.findById(7L) } returns Video(id = 7L, userId = 3L, title = "영상")
         every { videos.update(any()) } answers { firstArg() }
+        every { lock.withLock(any(), any<() -> Unit>()) } answers { secondArg<() -> Unit>()(); true }
 
         reaper.recoverExpiredLeases()
 
@@ -53,6 +56,7 @@ class VideoUploadLeaseReaperTest {
         every { uploads.findByVideoId(8L) } returns listOf(recovered)
         every { videos.findById(8L) } returns Video(id = 8L, userId = 3L, title = "영상")
         every { videos.update(any()) } answers { firstArg() }
+        every { lock.withLock(any(), any<() -> Unit>()) } answers { secondArg<() -> Unit>()(); true }
 
         reaper.recoverExpiredLeases()
 

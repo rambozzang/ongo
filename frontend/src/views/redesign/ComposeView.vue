@@ -323,7 +323,7 @@
           :platform-metadata="previewMetadata"
           :platform-limits="previewLimits"
           :thumbnail="file.thumbnailUrl || undefined"
-          :channel-name="selectedChannels[0]?.channelName"
+          :channel-names="previewChannelNames"
           :comparison-mode="selectedPreviewPlatforms.length > 1"
         />
       </div>
@@ -817,6 +817,21 @@ const previewMetadata = computed(() =>
       ]
     }),
   ),
+)
+/**
+ * 미리보기는 플랫폼별 문구와 계정명을 함께 보여줘야 한다.
+ * 같은 플랫폼 계정이 여러 개면 현재 편집 중인 계정을 우선하고,
+ * 다른 플랫폼은 해당 플랫폼에서 선택된 첫 계정을 사용한다.
+ */
+const previewChannelNames = computed<Partial<Record<Platform, string>>>(() =>
+  Object.fromEntries(
+    selectedPreviewPlatforms.value.map((platform) => {
+      const channel = activeChannel.value?.platform === platform
+        ? activeChannel.value
+        : selectedChannels.value.find((item) => item.platform === platform)
+      return [platform, channel?.channelName ?? '']
+    }),
+  ) as Partial<Record<Platform, string>>,
 )
 const previewLimits = computed(() =>
   Object.fromEntries(
