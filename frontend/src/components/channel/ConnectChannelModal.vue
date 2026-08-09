@@ -26,9 +26,9 @@
 
         <!-- Platform Cards Grid -->
         <div class="min-h-0 overflow-y-auto pr-1">
-          <div class="grid grid-cols-2 gap-2.5">
+          <div v-if="!platformsLoading && !platformsError" class="grid grid-cols-2 gap-2.5">
           <div
-            v-for="platform in SUPPORTED_PLATFORMS"
+            v-for="platform in availablePlatforms"
             :key="platform"
             class="relative rounded-lg border p-3 transition-all"
             :class="{
@@ -93,6 +93,15 @@
             </div>
           </div>
           </div>
+          <div v-if="platformsLoading" class="py-8 text-center text-body text-gray-500 dark:text-gray-400">
+            {{ $t('channels.loadingPlatforms') }}
+          </div>
+          <div v-else-if="platformsError" class="rounded-lg border border-error/30 bg-error-subtle px-3 py-3 text-body text-error-strong">
+            <p>{{ platformsError }}</p>
+            <button type="button" class="btn-secondary mt-2" @click="loadPlatforms">
+              {{ $t('common.retry') }}
+            </button>
+          </div>
         </div>
 
         <!-- Footer -->
@@ -107,12 +116,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { CheckIcon, LinkIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
-
-const SUPPORTED_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP', 'TWITTER', 'FACEBOOK', 'THREADS', 'PINTEREST', 'LINKEDIN', 'WORDPRESS', 'DAILYMOTION', 'VIMEO', 'TUMBLR']
+import { videoApi } from '@/api/video'
 
 const props = defineProps<{
   modelValue: boolean
@@ -127,6 +135,9 @@ const emit = defineEmits<{
 }>()
 
 const connectingPlatform = ref<Platform | null>(null)
+const availablePlatforms = ref<Platform[]>([])
+const platformsLoading = ref(false)
+const platformsError = ref('')
 
 const isAtLimit = computed(() => props.currentCount >= props.maxAllowed && props.maxAllowed > 0)
 
@@ -184,4 +195,29 @@ function handleConnect(platform: Platform) {
   // Initiate real OAuth flow — redirect to backend authorization endpoint
   emit('connect', platform)
 }
+
+async function loadPlatforms() {
+  if (platformsLoading.value) return
+  platformsLoading.value = true
+  platformsError.value = ''
+  try {
+    const capabilities = await videoApi.getUploadCapabilities()
+    availablePlatforms.value = capabilities
+      .filter((capability) => capability.directVideoUpload || capability.cloudVideoUpload)
+      .map((capability) => capability.platform)
+  } catch (error) {
+    availablePlatforms.value = []
+    platformsError.value = error instanceof Error ? error.message : '플랫폼 목록을 불러오지 못했습니다.'
+  } finally {
+    platformsLoading.value = false
+  }
+}
+
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (open) void loadPlatforms()
+  },
+  { immediate: true },
+)
 </script>

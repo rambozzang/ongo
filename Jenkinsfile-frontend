@@ -31,7 +31,9 @@ pipeline {
             steps {
                 script {
                     def sensitiveFiles = sh(
-                        script: "git ls-files | grep -E '(^|/)(ongo_backup_[^/]*\\.sql|.*backup[^/]*\\.sql)\$' || true",
+                        // 정규식의 `$`를 Groovy 보간으로 해석하지 않도록 셸 스크립트를
+                        // triple-single 문자열로 감싼다.
+                        script: '''git ls-files | grep -E '(^|/)(ongo_backup_[^/]*\\.sql|.*backup[^/]*\\.sql)$' || true''',
                         returnStdout: true,
                     ).trim()
                     if (sensitiveFiles) {

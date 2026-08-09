@@ -33,7 +33,10 @@ pipeline {
             steps {
                 script {
                     def sensitiveFiles = sh(
-                        script: "git ls-files | grep -E '(^|/)([^/]*(backup|dump)[^/]*\\.(sql|dump|bak))\$' || true",
+                        // Groovy GString 안에서 정규식의 끝 앵커 `$`를 쓰면 Jenkins
+                        // 파서가 변수 보간으로 오인한다. triple-single 문자열로
+                        // Groovy 보간 자체를 끄고, 셸에는 정규식을 그대로 전달한다.
+                        script: '''git ls-files | grep -E '(^|/)([^/]*(backup|dump)[^/]*\\.(sql|dump|bak))$' || true''',
                         returnStdout: true,
                     ).trim()
                     if (sensitiveFiles) {
@@ -42,7 +45,7 @@ pipeline {
 
                     // 재발 방지 규칙이 제거되면 즉시 알아채도록 .gitignore 가드를 확인한다.
                     def ignoreGuard = sh(
-                        script: "grep -qE '^\\*\\.sql\$' .gitignore && echo ok || true",
+                        script: '''grep -qE '^\\*\\.sql$' .gitignore && echo ok || true''',
                         returnStdout: true,
                     ).trim()
                     if (ignoreGuard != 'ok') {

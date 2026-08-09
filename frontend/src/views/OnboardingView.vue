@@ -135,6 +135,15 @@
             </div>
 
             <div class="space-y-3">
+              <div v-if="platformLoadError" class="rounded-xl border border-error/30 bg-error-subtle px-4 py-3 text-body text-error-strong">
+                {{ platformLoadError }}
+                <button type="button" class="btn-secondary mt-2" @click="loadPlatformCapabilities">
+                  {{ t('common.retry') }}
+                </button>
+              </div>
+              <div v-else-if="platforms.length === 0" class="rounded-xl border border-gray-200 bg-white px-4 py-6 text-center text-body text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                {{ t('onboarding.channels.loadingPlatforms') }}
+              </div>
               <div
                 v-for="platform in platforms"
                 :key="platform.key"
@@ -177,10 +186,11 @@
                 </div>
                 <button
                   v-if="connectedPlatforms.has(platform.key)"
+                  :disabled="disconnectingPlatform === platform.key"
                   class="rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-caption text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
                   @click="disconnectPlatform(platform.key)"
                 >
-                  {{ t('onboarding.channels.disconnect') }}
+                  {{ disconnectingPlatform === platform.key ? t('onboarding.channels.disconnecting') : t('onboarding.channels.disconnect') }}
                 </button>
                 <button
                   v-else
@@ -377,11 +387,13 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import type { CreatorCategory } from '@/types/user'
-import type { Platform } from '@/types/channel'
+import type { Channel, Platform } from '@/types/channel'
+import type { PlatformUploadCapability } from '@/types/video'
 import type { PlanType } from '@/types/subscription'
 import { authApi } from '@/api/auth'
 import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
+import { videoApi } from '@/api/video'
 import { subscriptionApi } from '@/api/subscription'
 import { buildOAuthUrl, generatePKCE } from '@/utils/oauth'
 import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
@@ -413,7 +425,11 @@ const categoryError = ref('')
 
 // Step 2: Channels
 const connectedPlatforms = ref<Set<Platform>>(new Set())
+const connectedChannelIds = ref<Partial<Record<Platform, number>>>({})
 const channelError = ref('')
+const platformCapabilities = ref<PlatformUploadCapability[]>([])
+const platformLoadError = ref('')
+const disconnectingPlatform = ref<Platform | null>(null)
 
 // Step 3: Plan Selection
 const selectedPlan = ref<PlanType>('FREE')
@@ -441,21 +457,42 @@ const categories = computed<{ value: CreatorCategory; label: string; icon: strin
   { value: 'MUSIC', label: t('settings.categories.music'), icon: '🎵' },
 ])
 
-const platforms = computed<{ key: Platform; label: string; description: string; bgColor: string }[]>(() => [
-  { key: 'YOUTUBE', label: 'YouTube', description: t('onboarding.channels.descriptions.youtube'), bgColor: '#FF0000' },
-  { key: 'TIKTOK', label: 'TikTok', description: t('onboarding.channels.descriptions.tiktok'), bgColor: '#000000' },
-  { key: 'INSTAGRAM', label: 'Instagram Reels', description: t('onboarding.channels.descriptions.instagram'), bgColor: '#E1306C' },
-  { key: 'NAVER_CLIP', label: 'Naver Clip', description: t('onboarding.channels.descriptions.naverClip'), bgColor: '#03C75A' },
-  { key: 'TWITTER', label: 'X (Twitter)', description: t('onboarding.channels.descriptions.twitter'), bgColor: '#000000' },
-  { key: 'FACEBOOK', label: 'Facebook', description: t('onboarding.channels.descriptions.facebook'), bgColor: '#1877F2' },
-  { key: 'THREADS', label: 'Threads', description: t('onboarding.channels.descriptions.threads'), bgColor: '#000000' },
-  { key: 'PINTEREST', label: 'Pinterest', description: t('onboarding.channels.descriptions.pinterest'), bgColor: '#E60023' },
-  { key: 'LINKEDIN', label: 'LinkedIn', description: t('onboarding.channels.descriptions.linkedin'), bgColor: '#0A66C2' },
-  { key: 'WORDPRESS', label: 'WordPress.com', description: t('onboarding.channels.descriptions.wordpress'), bgColor: '#21759B' },
-  { key: 'DAILYMOTION', label: 'Dailymotion', description: t('onboarding.channels.descriptions.dailymotion'), bgColor: '#00D2F3' },
-  { key: 'VIMEO', label: 'Vimeo', description: t('onboarding.channels.descriptions.vimeo'), bgColor: '#1AB7EA' },
-  { key: 'TUMBLR', label: 'Tumblr', description: t('onboarding.channels.descriptions.tumblr'), bgColor: '#36465D' },
-])
+const platformDescriptions: Record<Platform, string> = {
+  YOUTUBE: 'youtube',
+  TIKTOK: 'tiktok',
+  INSTAGRAM: 'instagram',
+  NAVER_CLIP: 'naverClip',
+  TWITTER: 'twitter',
+  FACEBOOK: 'facebook',
+  THREADS: 'threads',
+  PINTEREST: 'pinterest',
+  LINKEDIN: 'linkedin',
+  WORDPRESS: 'wordpress',
+  DAILYMOTION: 'dailymotion',
+  VIMEO: 'vimeo',
+  TUMBLR: 'tumblr',
+}
+
+const platforms = computed<{ key: Platform; label: string; description: string; bgColor: string }[]>(() =>
+  platformCapabilities.value
+    .filter((capability) => capability.directVideoUpload || capability.cloudVideoUpload)
+    .map((capability) => {
+      const key = capability.platform
+      const config = {
+        YOUTUBE: ['YouTube', '#FF0000'], TIKTOK: ['TikTok', '#000000'], INSTAGRAM: ['Instagram Reels', '#E1306C'],
+        NAVER_CLIP: ['Naver Clip', '#03C75A'], TWITTER: ['X (Twitter)', '#000000'], FACEBOOK: ['Facebook', '#1877F2'],
+        THREADS: ['Threads', '#000000'], PINTEREST: ['Pinterest', '#E60023'], LINKEDIN: ['LinkedIn', '#0A66C2'],
+        WORDPRESS: ['WordPress.com', '#21759B'], DAILYMOTION: ['Dailymotion', '#00D2F3'], VIMEO: ['Vimeo', '#1AB7EA'],
+        TUMBLR: ['Tumblr', '#36465D'],
+      } as Record<Platform, [string, string]>
+      return {
+        key,
+        label: config[key][0],
+        description: t(`onboarding.channels.descriptions.${platformDescriptions[key]}`),
+        bgColor: config[key][1],
+      }
+    }),
+)
 
 function startOnboarding() {
   currentStep.value = 1
@@ -551,7 +588,25 @@ async function connectPlatform(platform: Platform) {
 }
 
 function disconnectPlatform(platform: Platform) {
-  connectedPlatforms.value.delete(platform)
+  const channelId = connectedChannelIds.value[platform]
+  if (!channelId || disconnectingPlatform.value) return
+  disconnectingPlatform.value = platform
+  channelError.value = ''
+  void channelApi.disconnect(channelId)
+    .then(() => {
+      const nextPlatforms = new Set(connectedPlatforms.value)
+      nextPlatforms.delete(platform)
+      connectedPlatforms.value = nextPlatforms
+      const nextIds = { ...connectedChannelIds.value }
+      delete nextIds[platform]
+      connectedChannelIds.value = nextIds
+    })
+    .catch((error) => {
+      channelError.value = error instanceof Error ? error.message : t('onboarding.channels.disconnectFailed')
+    })
+    .finally(() => {
+      disconnectingPlatform.value = null
+    })
 }
 
 async function tryAiGeneration() {
@@ -608,14 +663,29 @@ function goToDashboard() {
 async function loadConnectedChannels() {
   try {
     const { channels } = await channelApi.list()
-    channels.forEach((ch) => connectedPlatforms.value.add(ch.platform))
+    const nextIds: Partial<Record<Platform, number>> = {}
+    channels.forEach((ch: Channel) => {
+      connectedPlatforms.value.add(ch.platform)
+      nextIds[ch.platform] = ch.id
+    })
+    connectedChannelIds.value = nextIds
   } catch {
     // No channels yet, that's fine
   }
 }
 
-// Load existing connected channels
-loadConnectedChannels()
+async function loadPlatformCapabilities() {
+  try {
+    platformCapabilities.value = await videoApi.getUploadCapabilities()
+    platformLoadError.value = ''
+  } catch (error) {
+    platformCapabilities.value = []
+    platformLoadError.value = error instanceof Error ? error.message : '플랫폼 목록을 불러오지 못했습니다.'
+  }
+}
+
+// 서버가 실제로 활성화한 플랫폼과 연결 상태를 함께 로드한다.
+void Promise.all([loadConnectedChannels(), loadPlatformCapabilities()])
 </script>
 
 <style scoped>

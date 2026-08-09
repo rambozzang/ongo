@@ -1316,6 +1316,9 @@
       "connected": "Connected",
       "disconnect": "Disconnect",
       "connect": "Connect",
+      "loadingPlatforms": "Loading available platforms...",
+      "disconnecting": "Disconnecting...",
+      "disconnectFailed": "Failed to disconnect the platform.",
       "required": "Please connect at least one platform.",
       "descriptions": {
         "youtube": "Videos and Shorts",
