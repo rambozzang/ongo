@@ -225,9 +225,7 @@ const newApiKeyToken = ref<string | null>(null)
 const navigation = computed(() => [
   { key: 'account', label: t('settings.tabs.account') },
   { key: 'automation', label: t('nav.automation') },
-  { key: 'notifications', label: t('settings.tabs.notifications') },
-  { key: 'team', label: t('nav.team') },
-  { key: 'billing', label: t('nav.subscription') },
+  { key: 'defaults', label: t('settings.defaults.title') },
   { key: 'security', label: t('settings.tabs.apiKeys') },
 ])
 
