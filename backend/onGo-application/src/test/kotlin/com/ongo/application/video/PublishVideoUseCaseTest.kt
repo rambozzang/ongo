@@ -289,6 +289,58 @@ class PublishVideoUseCaseTest {
     }
 
     @Test
+    fun `active upload for the selected channel is rejected before claiming the video`() {
+        val userId = 42L
+        val videoId = 904L
+        every { videoRepository.findById(videoId) } returns Video(
+            id = videoId,
+            userId = userId,
+            title = "이미 게시된 영상",
+            fileUrl = "https://storage.test/already-published.mp4",
+            status = UploadStatus.DRAFT,
+        )
+        every { channelRepository.findById(202L) } returns Channel(
+            id = 202L,
+            userId = userId,
+            platform = Platform.YOUTUBE,
+            platformChannelId = "selected-account",
+            channelName = "선택 계정",
+            accessToken = EncryptedToken("selected-token"),
+        )
+        every { videoUploadRepository.findByVideoIdAndChannelId(videoId, 202L) } returns VideoUpload(
+            id = 799L,
+            videoId = videoId,
+            platform = Platform.YOUTUBE,
+            channelId = 202L,
+            status = UploadStatus.PUBLISHED,
+            platformUrl = "https://youtube.com/watch?v=already-published",
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            useCase().publishVideo(
+                userId = userId,
+                videoId = videoId,
+                configs = listOf(
+                    PlatformUploadConfig(
+                        platform = Platform.YOUTUBE,
+                        channelId = 202L,
+                        videoUploadId = 0L,
+                        title = "중복 제목",
+                        description = "중복 설명",
+                        tags = emptyList(),
+                        visibility = Visibility.PUBLIC,
+                        thumbnailUrl = null,
+                        scheduledAt = null,
+                    ),
+                ),
+            )
+        }
+
+        verify(exactly = 0) { videoRepository.claimForPublish(any(), any()) }
+        verify(exactly = 0) { videoUploadRepository.save(any()) }
+    }
+
+    @Test
     fun `scheduled publish creates a calendar schedule linked to its durable upload`() {
         val videoId = 905L
         val scheduledAt = LocalDateTime.now().plusHours(2)

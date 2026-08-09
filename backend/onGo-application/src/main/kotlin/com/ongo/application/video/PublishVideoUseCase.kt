@@ -109,6 +109,17 @@ class PublishVideoUseCase(
             }
         }
 
+        // A public/API request identifies the exact connected account. Check its
+        // durable row before claiming the source video; otherwise a duplicate
+        // request can strand the video in UPLOADING before PostgreSQL rejects
+        // the unique (video_id, channel_id) target.
+        configs.filter { it.channelId != null }.forEach { config ->
+            val existing = videoUploadRepository.findByVideoIdAndChannelId(videoId, config.channelId!!)
+            require(existing == null || existing.status == UploadStatus.CANCELLED || existing.status == UploadStatus.DRAFT) {
+                "${config.platform.name} 채널에는 이미 게시 작업이 있습니다. 기존 게시 결과를 확인하거나 새 영상을 사용해주세요."
+            }
+        }
+
         // The status read above is only advisory. Reserve the row atomically so
         // concurrent clicks cannot both create durable platform upload rows.
         // Validation happens first so a rejected request never strands the video

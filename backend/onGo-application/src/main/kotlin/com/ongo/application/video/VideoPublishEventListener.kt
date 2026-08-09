@@ -122,85 +122,32 @@ class VideoPublishEventListener(
             return
         }
 
-        val fileUrl = storageService?.let { storage ->
-            runCatching { storage.getFileUrl(event.videoId, event.fileUrl) }.getOrNull()
-        } ?: event.fileUrl
+        val fileUrl = try {
+            storageService?.getFileUrl(event.videoId, event.fileUrl) ?: event.fileUrl
+        } catch (e: Exception) {
+            // Storage URL resolution happens before any provider request. It is a
+            // local/preparation failure, so marking it UNCONFIRMED would make a
+            // user investigate a publication that was never attempted.
+            val message = "게시 파일 준비 실패: ${e.message ?: "파일 URL을 확인하지 못했습니다."}"
+            updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, message, leaseOwner = leaseOwner)
+            fireCompletedEvent(event, config.platform, false, errorMessage = message)
+            log.error("영상 {} 파일 URL 준비 실패: platform={}", event.videoId, config.platform, e)
+            return
+        }
         if (fileUrl == null) {
             log.warn("영상 {} 에 fileUrl이 없어 플랫폼 업로드를 건너뜁니다 (스트리밍 업로드)", event.videoId)
-            updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, "파일 URL이 없습니다. 스트리밍 방식으로 업로드된 영상입니다.", leaseOwner = leaseOwner)
+            val message = "파일 URL이 없습니다. 스트리밍 방식으로 업로드된 영상입니다."
+            updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, message, leaseOwner = leaseOwner)
+            fireCompletedEvent(event, config.platform, false, errorMessage = message)
             return
         }
 
-        try {
+        val result = try {
             log.info("플랫폼 {} 업로드 시작: videoId={}", config.platform, event.videoId)
-            val result = service.upload(config, fileUrl, event.userId)
-
-            when (val outcome = result.toPublishOutcome()) {
-                is PublishOutcome.Published -> {
-                    updateUploadStatus(
-                        config.videoUploadId,
-                        UploadStatus.PUBLISHED,
-                        platformVideoId = outcome.platformVideoId,
-                        platformUrl = outcome.platformUrl,
-                        clearPollToken = true,
-                        leaseOwner = leaseOwner,
-                    )
-                    fireCompletedEvent(event, config.platform, true, platformUrl = outcome.platformUrl)
-                    log.info("플랫폼 {} 업로드 성공: videoId={}, platformUrl={}", config.platform, event.videoId, outcome.platformUrl)
-                }
-                is PublishOutcome.Accepted -> {
-                    updateUploadStatus(
-                        config.videoUploadId,
-                        UploadStatus.PROCESSING,
-                        platformVideoId = outcome.platformVideoId,
-                        platformUrl = result.platformUrl,
-                        pollToken = outcome.pollToken,
-                        nextRetryAt = LocalDateTime.now().plus(outcome.retryAfter),
-                        leaseOwner = leaseOwner,
-                    )
-                    log.info("플랫폼 {} 업로드 수락: videoId={}, 후속 상태 확인 예약", config.platform, event.videoId)
-                }
-                is PublishOutcome.Failed -> {
-                    val current = videoUploadRepository.findById(config.videoUploadId)
-                    val retryScheduled = outcome.retryable &&
-                        outcome.retryAfter != null &&
-                        current != null &&
-                        current.attemptCount < MAX_DURABLE_UPLOAD_ATTEMPTS
-                    if (retryScheduled) {
-                        updateUploadStatus(
-                            config.videoUploadId,
-                            UploadStatus.UPLOADING,
-                            outcome.message,
-                            nextRetryAt = LocalDateTime.now().plus(outcome.retryAfter!!),
-                            clearPollToken = true,
-                            leaseOwner = leaseOwner,
-                        )
-                        log.warn(
-                            "플랫폼 {} 일시 오류를 durable 재시도로 예약합니다: videoId={}, attempt={}, nextRetryAt={}",
-                            config.platform,
-                            event.videoId,
-                            current.attemptCount,
-                            LocalDateTime.now().plus(outcome.retryAfter),
-                        )
-                    } else {
-                        updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, outcome.message, clearPollToken = true, leaseOwner = leaseOwner)
-                        fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
-                        log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", config.platform, event.videoId, outcome.message)
-                    }
-                }
-                is PublishOutcome.Unconfirmed -> {
-                    updateUploadStatus(
-                        config.videoUploadId,
-                        UploadStatus.UNCONFIRMED,
-                        outcome.message,
-                        platformVideoId = outcome.platformVideoId,
-                        pollToken = outcome.pollToken,
-                        leaseOwner = leaseOwner,
-                    )
-                    fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
-                    log.warn("플랫폼 {} 게시 결과 확인 필요: videoId={}, error={}", config.platform, event.videoId, outcome.message)
-                }
-            }
+            // This is the external provider boundary. Only exceptions from this
+            // call may become UNCONFIRMED because the provider may have accepted
+            // bytes before the response was lost.
+            service.upload(config, fileUrl, event.userId)
         } catch (e: Exception) {
             log.error("플랫폼 {} 업로드 중 예외 발생: videoId={}", config.platform, event.videoId, e)
             // 외부 플랫폼 호출은 타임아웃 시 이미 게시가 완료됐을 가능성이 있다.
@@ -208,6 +155,74 @@ class VideoPublishEventListener(
             // 확인 불가 상태로 남기고, 후속 조회/운영 재검증 대상으로 보낸다.
             updateUploadStatus(config.videoUploadId, UploadStatus.UNCONFIRMED, e.message, leaseOwner = leaseOwner)
             fireCompletedEvent(event, config.platform, false, errorMessage = "게시 결과 확인 필요: ${e.message}")
+            return
+        }
+
+        when (val outcome = result.toPublishOutcome()) {
+            is PublishOutcome.Published -> {
+                updateUploadStatus(
+                    config.videoUploadId,
+                    UploadStatus.PUBLISHED,
+                    platformVideoId = outcome.platformVideoId,
+                    platformUrl = outcome.platformUrl,
+                    clearPollToken = true,
+                    leaseOwner = leaseOwner,
+                )
+                fireCompletedEvent(event, config.platform, true, platformUrl = outcome.platformUrl)
+                log.info("플랫폼 {} 업로드 성공: videoId={}, platformUrl={}", config.platform, event.videoId, outcome.platformUrl)
+            }
+            is PublishOutcome.Accepted -> {
+                updateUploadStatus(
+                    config.videoUploadId,
+                    UploadStatus.PROCESSING,
+                    platformVideoId = outcome.platformVideoId,
+                    platformUrl = result.platformUrl,
+                    pollToken = outcome.pollToken,
+                    nextRetryAt = LocalDateTime.now().plus(outcome.retryAfter),
+                    leaseOwner = leaseOwner,
+                )
+                log.info("플랫폼 {} 업로드 수락: videoId={}, 후속 상태 확인 예약", config.platform, event.videoId)
+            }
+            is PublishOutcome.Failed -> {
+                val current = videoUploadRepository.findById(config.videoUploadId)
+                val retryScheduled = outcome.retryable &&
+                    outcome.retryAfter != null &&
+                    current != null &&
+                    current.attemptCount < MAX_DURABLE_UPLOAD_ATTEMPTS
+                if (retryScheduled) {
+                    updateUploadStatus(
+                        config.videoUploadId,
+                        UploadStatus.UPLOADING,
+                        outcome.message,
+                        nextRetryAt = LocalDateTime.now().plus(outcome.retryAfter!!),
+                        clearPollToken = true,
+                        leaseOwner = leaseOwner,
+                    )
+                    log.warn(
+                        "플랫폼 {} 일시 오류를 durable 재시도로 예약합니다: videoId={}, attempt={}, nextRetryAt={}",
+                        config.platform,
+                        event.videoId,
+                        current.attemptCount,
+                        LocalDateTime.now().plus(outcome.retryAfter),
+                    )
+                } else {
+                    updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, outcome.message, clearPollToken = true, leaseOwner = leaseOwner)
+                    fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
+                    log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", config.platform, event.videoId, outcome.message)
+                }
+            }
+            is PublishOutcome.Unconfirmed -> {
+                updateUploadStatus(
+                    config.videoUploadId,
+                    UploadStatus.UNCONFIRMED,
+                    outcome.message,
+                    platformVideoId = outcome.platformVideoId,
+                    pollToken = outcome.pollToken,
+                    leaseOwner = leaseOwner,
+                )
+                fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
+                log.warn("플랫폼 {} 게시 결과 확인 필요: videoId={}, error={}", config.platform, event.videoId, outcome.message)
+            }
         }
     }
 

@@ -117,6 +117,8 @@ export default [
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', '*.d.ts'],
+    // Coverage is generated during CI before lint runs. It is not application
+    // source and must not inflate the warning count with generated directives.
+    ignores: ['dist/', 'coverage/', 'node_modules/', '*.d.ts'],
   },
 ]

@@ -280,6 +280,45 @@ class VideoPublishEventListenerTest {
     }
 
     @Test
+    fun `storage preparation failure is failed without marking an external attempt unconfirmed`() {
+        val ytService = createMockService(Platform.YOUTUBE)
+        platformUploadServices.add(ytService)
+        val storage = mockk<StorageService>()
+        every { storage.getFileUrl(1L, "https://storage/original.mp4") } throws
+            IllegalStateException("storage unavailable")
+
+        val upload = VideoUpload(
+            id = 10L,
+            videoId = 1L,
+            platform = Platform.YOUTUBE,
+            status = UploadStatus.UPLOADING,
+        )
+        val persisted = slot<VideoUpload>()
+        every { videoUploadRepository.claim(10L, any(), any(), any()) } returns upload
+        every { videoUploadRepository.findById(10L) } returns upload
+        every { videoUploadRepository.updateOwned(capture(persisted), any()) } returns true
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+
+        val storageAwareListener = VideoPublishEventListener(
+            platformUploadServices,
+            videoUploadRepository,
+            videoRepository,
+            eventPublisher,
+            storageService = storage,
+        )
+
+        storageAwareListener.handleVideoPublish(createEvent(configs = listOf(createConfig())))
+
+        assertEquals(UploadStatus.FAILED, persisted.captured.status)
+        verify(exactly = 0) { ytService.upload(any(), any(), any()) }
+        verify(exactly = 1) {
+            eventPublisher.publishEvent(match<UploadCompletedEvent> {
+                !it.success && it.errorMessage?.contains("파일 준비 실패") == true
+            })
+        }
+    }
+
+    @Test
     fun `does not call an external platform after a queued upload is cancelled`() {
         val ytService = createMockService(Platform.YOUTUBE)
         platformUploadServices.add(ytService)
