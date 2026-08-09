@@ -38,7 +38,7 @@ vi.mock('@/api/ugcShortsPipeline', () => ({
 vi.mock('@/api/video', () => ({
   videoApi: {
     getUploadCapabilities: vi.fn(), getImportAvailability: vi.fn(), update: vi.fn(), publish: vi.fn(),
-    create: vi.fn(), importUrl: vi.fn(),
+    create: vi.fn(), importUrl: vi.fn(), generate: vi.fn(),
   },
 }))
 vi.mock('@/api/settings', () => ({
@@ -123,6 +123,7 @@ describe('ComposeView', () => {
     vi.mocked(videoApi.update).mockResolvedValue(undefined as never)
     vi.mocked(videoApi.publish).mockResolvedValue(undefined as never)
     vi.mocked(recurringApi.create).mockResolvedValue(undefined as never)
+    vi.mocked(videoApi.generate).mockResolvedValue([{ id: '202', path: 'https://cdn.example/generated.mp4' }] as never)
   })
 
   it('keeps common and channel-specific metadata independently editable', async () => {
@@ -264,6 +265,27 @@ describe('ComposeView', () => {
 
     expect(videoApi.update).toHaveBeenCalledWith(101, expect.objectContaining({ title: '저장할 제목' }))
     expect(videoApi.create).not.toHaveBeenCalled()
+  })
+
+  it('creates a source video in the composer and keeps it in the publish path', async () => {
+    const { wrapper } = await renderCompose()
+    const createSource = wrapper.findAll('button').find((button) => button.text() === '새 영상 만들기')
+    expect(createSource).toBeDefined()
+    await createSource!.trigger('click')
+    await wrapper.get('#generate-video-prompt').setValue('아침 루틴을 소개하는 영상')
+
+    const generate = wrapper.findAll('button').find((button) => button.text() === '영상 만들기')
+    expect(generate).toBeDefined()
+    await generate!.trigger('click')
+    await flushPromises()
+
+    expect(videoApi.generate).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'image-text-slides',
+      output: 'vertical',
+      customParams: expect.objectContaining({ prompt: '아침 루틴을 소개하는 영상' }),
+    }))
+    expect(useUploadStore().videoId).toBe(202)
+    expect(aiApi.generateMeta).toHaveBeenCalledWith(expect.objectContaining({ videoId: 202 }))
   })
 
   it('does not allow saving while the server upload is still running', async () => {
