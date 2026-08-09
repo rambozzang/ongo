@@ -14,6 +14,7 @@ import com.ongo.domain.ugc.shorts.ShortsTemplateRepository
 import com.ongo.domain.ugc.shorts.VideoRenderer
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
+import com.ongo.domain.workspace.WorkspaceRepository
 import com.ongo.common.enums.UploadStatus
 import com.ongo.domain.ugc.shorts.ClipStatus
 import org.slf4j.LoggerFactory
@@ -52,6 +53,7 @@ class ShortsRenderUseCase(
     private val fileStoragePort: FileStoragePort,
     private val videoRepository: VideoRepository,
     private val renderSpecBuilder: ShortsRenderSpecBuilder,
+    private val workspaceRepository: WorkspaceRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -66,7 +68,8 @@ class ShortsRenderUseCase(
      * 같은 클립에 두 번 눌렀다고 두 번 인코딩하면 CPU 를 두 배로 쓰고 결과도 둘이 된다.
      * 멱등성은 [ShortsRenderJobStateService.enqueue] 가 보장한다.
      */
-    fun requestRender(workspaceId: Long, runId: Long, clipId: Long): ShortsRenderJob {
+    fun requestRender(userId: Long, workspaceId: Long, runId: Long, clipId: Long): ShortsRenderJob {
+        assertWorkspaceAccess(userId, workspaceId)
         // 다른 워크스페이스의 실행을 렌더하지 못하게 막는다. 경로에 runId 가 노출되므로
         // 소속을 확인하지 않으면 남의 클립을 인코딩시킬 수 있다.
         val run = runRepository.findById(runId) ?: throw NotFoundException("파이프라인 실행", runId)
@@ -86,13 +89,19 @@ class ShortsRenderUseCase(
         return job
     }
 
-    fun status(workspaceId: Long, runId: Long, clipId: Long): ShortsRenderJob {
+    fun status(userId: Long, workspaceId: Long, runId: Long, clipId: Long): ShortsRenderJob {
+        assertWorkspaceAccess(userId, workspaceId)
         val run = runRepository.findById(runId) ?: throw NotFoundException("파이프라인 실행", runId)
         require(run.workspaceId == workspaceId) { "실행이 이 워크스페이스에 속하지 않는다: runId=$runId" }
 
         val job = renderJobRepository.findByRunAndClip(runId, clipId)
             ?: throw NotFoundException("렌더 작업", clipId)
         return job
+    }
+
+    private fun assertWorkspaceAccess(userId: Long, workspaceId: Long) {
+        val accessible = workspaceRepository.findAccessibleByUserId(userId).any { it.id == workspaceId }
+        if (!accessible) throw NotFoundException("워크스페이스", workspaceId)
     }
 
     /**

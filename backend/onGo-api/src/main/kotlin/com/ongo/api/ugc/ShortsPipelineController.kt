@@ -109,7 +109,7 @@ class ShortsPipelineController(
 
     @Operation(
         summary = "렌더 완성 영상 연결",
-        description = "render.sh 로 만든 완성 영상을 업로드한 뒤 그 videoId 를 연결한다. 연결해야 게시 대상이 된다",
+        description = "서버 렌더를 사용할 수 없을 때 외부에서 만든 완성 영상을 연결하는 수동 보완 경로",
     )
     @PostMapping("/{runId}/clips/{clipId}/rendered-video")
     fun attachRenderedVideo(
@@ -140,7 +140,7 @@ class ShortsPipelineController(
 
     @Operation(
         summary = "렌더 산출물 묶음 다운로드",
-        description = "render-spec.json, clip-N.ass 자막, render.sh 를 zip 으로 내려준다. 실제 인코딩은 하지 않는다",
+        description = "서버 렌더를 직접 실행할 수 없는 환경에서 사용할 render-spec.json, clip-N.ass 자막, render.sh 묶음",
     )
     @GetMapping("/{runId}/render-bundle")
     fun downloadRenderBundle(
@@ -182,7 +182,7 @@ class ShortsPipelineController(
         @PathVariable runId: Long,
         @PathVariable clipId: Long,
     ): ResponseEntity<ResData<ShortsRenderJobResponse>> {
-        val job = renderUseCase.requestRender(workspaceId, runId, clipId)
+        val job = renderUseCase.requestRender(userId, workspaceId, runId, clipId)
         return ResponseEntity.accepted().body(ResData(data = ShortsRenderJobResponse.from(job)))
     }
 
@@ -194,5 +194,5 @@ class ShortsPipelineController(
         @PathVariable runId: Long,
         @PathVariable clipId: Long,
     ): ResponseEntity<ResData<ShortsRenderJobResponse>> =
-        ResData.success(ShortsRenderJobResponse.from(renderUseCase.status(workspaceId, runId, clipId)))
+        ResData.success(ShortsRenderJobResponse.from(renderUseCase.status(userId, workspaceId, runId, clipId)))
 }

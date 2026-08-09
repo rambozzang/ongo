@@ -219,11 +219,8 @@ class ShortsPipelineUseCase(
     }
 
     /**
-     * 렌더가 끝난 완성 영상을 클립에 연결한다.
-     *
-     * 우리 시스템은 인코딩을 하지 않으므로, 사용자가 render.sh 로 만든 영상을 업로드한 뒤
-     * 그 videoId 를 여기로 넘겨야 비로소 게시 대상이 된다. 이 연결이 없으면 SCHEDULE 단계가
-     * 해당 클립을 계속 SKIPPED 로 넘긴다.
+     * 서버 렌더를 사용할 수 없는 환경에서 외부에서 만든 완성 영상을 클립에 연결하는 보완 경로.
+     * 일반적인 Compose/쇼츠 실행 흐름은 서버 렌더가 만든 videoId를 자동으로 연결한다.
      */
     @Transactional
     fun attachRenderedVideo(

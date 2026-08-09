@@ -10,6 +10,7 @@ import { channelApi } from '@/api/channel'
 import { recurringApi } from '@/api/recurring'
 import { subtitleEditorApi } from '@/api/subtitleEditor'
 import { videoApi } from '@/api/video'
+import { ugcShortsPipelineApi } from '@/api/ugcShortsPipeline'
 import { useUploadStore } from '@/stores/upload'
 import koMessages from '@/locales/ko/common.json'
 
@@ -153,5 +154,24 @@ describe('ComposeView', () => {
       ]),
     }))
     expect(router.currentRoute.value.fullPath).toBe('/today')
+  })
+
+  it('does not publish the original when automatic Shorts rendering is unavailable', async () => {
+    vi.mocked(ugcShortsPipelineApi.getRenderAvailability).mockResolvedValue({
+      available: false,
+      reason: '서버 렌더러가 준비되지 않았습니다.',
+    })
+    const { wrapper } = await renderCompose()
+    const uploadStore = useUploadStore()
+    uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    uploadStore.videoId = 101
+
+    const schedule = wrapper.findAll('button').find((button) => button.text().includes('2개 채널 예약'))
+    expect(schedule).toBeDefined()
+    await schedule!.trigger('click')
+    await flushPromises()
+
+    expect(videoApi.publish).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('서버 렌더러가 준비되지 않았습니다.')
   })
 })

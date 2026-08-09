@@ -429,7 +429,7 @@
           "scheduledAt": "예약",
           "attachVideo": "완성 영상 연결",
           "attachTitle": "완성 영상 연결",
-          "attachEmpty": "업로드된 영상이 없습니다. render.sh로 만든 완성 영상을 먼저 업로드하세요.",
+          "attachEmpty": "수동 연결할 업로드 영상이 없습니다. 기본 흐름에서는 서버 렌더 버튼으로 완성 영상을 자동 생성합니다.",
           "attachSubmit": "연결",
           "attaching": "연결 중...",
           "attachCancel": "취소",

@@ -429,7 +429,7 @@
           "scheduledAt": "Scheduled",
           "attachVideo": "Attach rendered video",
           "attachTitle": "Attach rendered video",
-          "attachEmpty": "No uploaded videos. Upload the finished video made with render.sh first.",
+          "attachEmpty": "No video is available for manual attachment. The normal flow renders the finished video on the server.",
           "attachSubmit": "Attach",
           "attaching": "Attaching...",
           "attachCancel": "Cancel",
