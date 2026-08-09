@@ -12,6 +12,7 @@ import com.ongo.application.publicapi.PublicPostResponse
 import com.ongo.application.publicapi.PublicIntegrationSettingsResponse
 import com.ongo.application.publicapi.PublicIntegrationToolRequest
 import com.ongo.application.publicapi.PublicIntegrationToolResult
+import com.ongo.application.publicapi.UpdatePublicPostSettingsRequest
 import com.ongo.application.publicapi.PublicVideoFunctionRequest
 import com.ongo.application.publicapi.VideoFunctionUseCase
 import com.ongo.application.publicapi.PublicOAuthUseCase
@@ -351,6 +352,18 @@ class PublicApiController(
     ): ResponseEntity<Any> {
         requireApiKey(authentication)
         return raw(useCase.missingContent(userId, id))
+    }
+
+    @Operation(summary = "예약/초안 게시물 provider 설정 수정")
+    @PutMapping("/posts/{id}/settings")
+    fun updateSettings(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable id: Long,
+        @RequestBody request: UpdatePublicPostSettingsRequest,
+    ): ResponseEntity<Any> {
+        requireApiKey(authentication)
+        return raw(useCase.updateSettings(userId, id, request))
     }
 
     @Operation(summary = "외부 release id 연결")

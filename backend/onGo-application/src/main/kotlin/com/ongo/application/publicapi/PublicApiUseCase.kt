@@ -29,6 +29,7 @@ import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.contentsource.VideoSource
 import com.ongo.domain.workspace.Workspace
 import com.ongo.domain.workspace.WorkspaceRepository
@@ -56,6 +57,7 @@ class PublicApiUseCase(
     private val tokenEncryptionPort: TokenEncryptionPort,
     private val integrationToolPort: PlatformIntegrationToolPort,
     private val workspaceRepository: WorkspaceRepository,
+    private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
 ) {
 
     private companion object {
@@ -233,14 +235,58 @@ class PublicApiUseCase(
                 return toResponse(existing)
             }
         }
+        if (request.shortLink) {
+            throw BusinessException(
+                "PUBLIC_POST_SHORT_LINK_UNSUPPORTED",
+                "shortLink은 onGo에 연결된 링크 단축 서비스가 설정된 경우에만 사용할 수 있습니다.",
+            )
+        }
+        if (request.inter != null) {
+            throw BusinessException(
+                "PUBLIC_POST_RECURRING_UNSUPPORTED",
+                "inter 기반 반복 게시 일정은 공개 API에서 지원하지 않습니다. 반복 일정 메뉴를 사용해주세요.",
+            )
+        }
+        if (!request.order.isNullOrBlank()) {
+            throw BusinessException(
+                "PUBLIC_POST_ORDER_UNSUPPORTED",
+                "order는 이미지 캐러셀 순서용 옵션이며 영상 게시에서는 사용할 수 없습니다.",
+            )
+        }
         require(type == PublicApiPostType.DRAFT || request.posts.isNotEmpty()) {
             "now 또는 schedule 게시에는 posts가 하나 이상이어야 합니다"
+        }
+        val requestedValues = request.posts.flatMap { it.value }
+        if (requestedValues.any { it.delay != 0 } && type != PublicApiPostType.SCHEDULE) {
+            throw BusinessException(
+                "PUBLIC_POST_DELAY_REQUIRES_SCHEDULE",
+                "영상 대상별 delay는 예약 게시에서만 사용할 수 있습니다.",
+            )
+        }
+        require(requestedValues.all { it.delay in 0..86_400 }) {
+            "delay는 0~86400초 사이여야 합니다"
+        }
+        val sourcePostIds = request.posts.flatMap { it.value }.mapNotNull { it.id?.trim()?.takeIf(String::isNotBlank) }
+        if (sourcePostIds.isNotEmpty() && type != PublicApiPostType.DRAFT && type != PublicApiPostType.UPDATE) {
+            if (!request.republish) {
+                throw BusinessException(
+                    "PUBLIC_POST_REPUBLISH_CONFIRMATION_REQUIRED",
+                    "기존 게시물 id를 재사용하려면 republish=true가 필요합니다.",
+                )
+            }
+            throw BusinessException(
+                "PUBLIC_POST_REPUBLISH_UNSUPPORTED",
+                "onGo는 외부 게시물의 재게시를 지원하지 않습니다. 같은 영상을 새 게시물로 만들려면 새 영상 복사본을 사용해주세요.",
+            )
         }
         require(request.posts.size <= MAX_TARGETS) { "게시 대상은 최대 ${MAX_TARGETS}개까지 지정할 수 있습니다" }
         val integrationIds = request.posts.map { it.integration.id.trim() }
         require(integrationIds.all(String::isNotBlank)) { "모든 게시 대상에는 integration.id가 필요합니다" }
         require(integrationIds.distinct().size == integrationIds.size) {
             "같은 integration은 한 번의 게시 요청에 중복 지정할 수 없습니다"
+        }
+        if (type == PublicApiPostType.UPDATE) {
+            return updateExistingPost(userId, request, sourcePostIds)
         }
         val scheduledAt = request.date?.let(::parseDate)
         if (type == PublicApiPostType.SCHEDULE) {
@@ -315,6 +361,179 @@ class PublicApiUseCase(
 
     fun get(userId: Long, id: Long): PublicPostResponse =
         toResponse(load(userId, id))
+
+    /**
+     * Postiz's create DTO also exposes type=update. The public Postiz server
+     * updates an existing child post by value.id; onGo exposes one durable post
+     * id for a multi-channel request, so all supplied ids must resolve to that
+     * same owned post. Content and provider settings can be changed only before
+     * the durable worker starts an external call.
+     */
+    private fun updateExistingPost(
+        userId: Long,
+        request: CreatePublicPostRequest,
+        sourcePostIds: List<String>,
+    ): PublicPostResponse {
+        require(sourcePostIds.isNotEmpty()) { "type=update에는 value[].id가 필요합니다" }
+        val postId = sourcePostIds.distinct().singleOrNull()?.toLongOrNull()
+            ?: throw IllegalArgumentException("type=update의 value[].id는 onGo 게시물 ID여야 합니다")
+        val current = load(userId, postId)
+        val uploads = videoUploadRepository.findByVideoId(current.videoId)
+        val effectiveStatus = aggregateStatus(current, uploads)
+        require(effectiveStatus == PublicApiPostStatus.DRAFT || effectiveStatus == PublicApiPostStatus.SCHEDULED) {
+            "아직 게시되지 않은 초안 또는 예약 게시물만 update할 수 있습니다"
+        }
+        if (effectiveStatus == PublicApiPostStatus.SCHEDULED) {
+            val scheduledAt = current.scheduledAt
+            require(scheduledAt == null || scheduledAt.isAfter(LocalDateTime.now())) {
+                "게시 시간이 지난 예약 게시물은 update할 수 없습니다"
+            }
+        }
+        request.date?.let { requestedDate ->
+            require(parseDate(requestedDate) == current.scheduledAt) {
+                "type=update는 게시 시간을 변경하지 않습니다. 상태 API를 사용해주세요"
+            }
+        }
+        val existingPayload = runCatching {
+            objectMapper.readValue(current.payloadJson, CreatePublicPostRequest::class.java)
+        }.getOrElse { throw IllegalArgumentException("게시물 update 스냅샷을 읽을 수 없습니다") }
+        val requestedByIntegration = request.posts.associateBy { it.integration.id }
+        require(requestedByIntegration.size == request.posts.size) { "type=update 대상 integration이 중복되었습니다" }
+        require(requestedByIntegration.keys.all { id -> existingPayload.posts.any { it.integration.id == id } }) {
+            "type=update 대상 integration이 기존 게시물에 없습니다"
+        }
+
+        val updatedTargets = existingPayload.posts.map { existingTarget ->
+            val incoming = requestedByIntegration[existingTarget.integration.id] ?: return@map existingTarget
+            require(incoming.value.isNotEmpty()) { "type=update에는 value가 하나 이상 필요합니다" }
+            val channelId = existingTarget.integration.id.toLongOrNull()
+                ?: throw IllegalArgumentException("integration.id는 onGo 채널 ID여야 합니다")
+            val channel = channelRepository.findById(channelId)
+                ?.takeIf { it.userId == userId }
+                ?: throw NotFoundException("integration", existingTarget.integration.id)
+            val settings = incoming.settings?.let { mergeSettings(existingTarget.settings, it, channel.platform) }
+                ?: existingTarget.settings
+            existingTarget.copy(value = incoming.value, settings = settings)
+        }
+        val updatedPayload = existingPayload.copy(
+            type = current.type.name.lowercase(),
+            date = current.scheduledAt?.toString(),
+            videoId = current.videoId,
+            posts = updatedTargets,
+        )
+        val updated = postRepository.update(
+            current.copy(
+                payloadJson = objectMapper.writeValueAsString(updatedPayload),
+                errorMessage = null,
+            ),
+        )
+        updatedTargets.forEach { target ->
+            target.integration.id.toLongOrNull()?.let { channelId ->
+                syncPendingProviderMetadata(userId, updated, updatedPayload, channelId)
+            }
+        }
+        return toResponse(updated)
+    }
+
+    /** Postiz PUT /posts/:id/settings contract for drafts and not-yet-started schedules. */
+    @Transactional
+    fun updateSettings(
+        userId: Long,
+        id: Long,
+        request: UpdatePublicPostSettingsRequest,
+    ): PublicPostSettingsResponse {
+        val current = load(userId, id)
+        val uploads = videoUploadRepository.findByVideoId(current.videoId)
+        val effectiveStatus = aggregateStatus(current, uploads)
+        require(effectiveStatus == PublicApiPostStatus.DRAFT || effectiveStatus == PublicApiPostStatus.SCHEDULED) {
+            "아직 게시되지 않은 초안 또는 예약 게시물만 설정을 수정할 수 있습니다"
+        }
+        if (effectiveStatus == PublicApiPostStatus.SCHEDULED) {
+            val scheduledAt = current.scheduledAt
+            require(scheduledAt == null || scheduledAt.isAfter(LocalDateTime.now())) {
+                "게시 시간이 지난 예약 게시물은 수정할 수 없습니다"
+            }
+        }
+        require(request.settings.isObject) { "settings는 JSON object여야 합니다" }
+
+        val payload = runCatching {
+            objectMapper.readValue(current.payloadJson, CreatePublicPostRequest::class.java)
+        }.getOrElse { throw IllegalArgumentException("게시물 설정 스냅샷을 읽을 수 없습니다") }
+        require(payload.posts.isNotEmpty()) { "대상 integration이 없는 게시물은 설정을 수정할 수 없습니다" }
+        val selectedIndex = when (val integrationId = request.integrationId?.trim()?.takeIf(String::isNotBlank)) {
+            null -> {
+                require(payload.posts.size == 1) {
+                    "여러 integration을 대상으로 한 게시물은 integrationId를 지정해야 합니다"
+                }
+                0
+            }
+            else -> payload.posts.indexOfFirst { it.integration.id == integrationId }.also {
+                require(it >= 0) { "게시물에 없는 integration입니다: $integrationId" }
+            }
+        }
+        val target = payload.posts[selectedIndex]
+        val channelId = target.integration.id.toLongOrNull()
+            ?: throw IllegalArgumentException("integration.id는 onGo 채널 ID여야 합니다")
+        val channel = channelRepository.findById(channelId)
+            ?.takeIf { it.userId == userId }
+            ?: throw NotFoundException("integration", target.integration.id)
+        val mergedSettings = mergeSettings(target.settings, request.settings, channel.platform)
+        val updatedTarget = target.copy(settings = mergedSettings)
+        val updatedPayload = payload.copy(posts = payload.posts.toMutableList().also { it[selectedIndex] = updatedTarget })
+        val updated = postRepository.update(
+            current.copy(
+                payloadJson = objectMapper.writeValueAsString(updatedPayload),
+                errorMessage = null,
+            ),
+        )
+
+        syncPendingProviderMetadata(userId, updated, updatedPayload, channelId)
+        return PublicPostSettingsResponse(
+            postId = updated.id.toString(),
+            publishDate = updated.scheduledAt?.let(::formatDate),
+        )
+    }
+
+    private fun mergeSettings(existing: JsonNode?, incoming: JsonNode, platform: Platform): JsonNode {
+        val merged = objectMapper.createObjectNode()
+        if (existing?.isObject == true) {
+            existing.fields().forEachRemaining { (key, value) -> merged.set<JsonNode>(key, value.deepCopy()) }
+        }
+        incoming.fields().forEachRemaining { (key, value) -> merged.set<JsonNode>(key, value.deepCopy()) }
+        return normalizeSettings(merged, platform)
+    }
+
+    private fun syncPendingProviderMetadata(
+        userId: Long,
+        post: PublicApiPost,
+        payload: CreatePublicPostRequest,
+        channelId: Long,
+    ) {
+        val target = payload.posts.firstOrNull { it.integration.id.toLongOrNull() == channelId } ?: return
+        val config = buildConfigs(
+            userId = userId,
+            request = payload.copy(posts = listOf(target)),
+            videoId = post.videoId,
+            scheduledAt = post.scheduledAt,
+        ).single()
+        videoUploadRepository.findByVideoIdAndChannelId(post.videoId, channelId)
+            ?.takeIf { it.status == UploadStatus.UPLOADING || it.status == UploadStatus.DRAFT }
+            ?.id
+            ?.let { uploadId ->
+                videoPlatformMetaRepository.findByVideoUploadId(uploadId)?.let { meta ->
+                    videoPlatformMetaRepository.update(
+                        meta.copy(
+                            title = config.title,
+                            description = config.description,
+                            tags = config.tags,
+                            visibility = config.visibility,
+                            customThumbnailUrl = config.thumbnailUrl,
+                            customSettingsJson = config.customSettingsJson,
+                        ),
+                    )
+                }
+            }
+    }
 
     fun missingContent(userId: Long, id: Long): List<PublicMissingContentResponse> {
         val post = load(userId, id)
@@ -498,14 +717,19 @@ class PublicApiUseCase(
         val matchingUploadIds = uploads.asSequence()
             .filter { it.status == UploadStatus.UPLOADING && it.scheduledAt != null }
             .filter { upload ->
-                val sameOccurrence = post.scheduledAt == null || upload.scheduledAt == post.scheduledAt
                 val targetMatches = if (targetChannelIds.isNotEmpty()) {
                     upload.channelId != null && upload.channelId in targetChannelIds
                 } else {
                     // Legacy rows may not have integration IDs in their payload.
                     // Exact occurrence matching is the narrowest safe fallback.
-                    sameOccurrence
+                    post.scheduledAt == null || upload.scheduledAt == post.scheduledAt
                 }
+                // A target-level delay intentionally shifts the durable upload
+                // beyond the post's base scheduledAt. Exact channel ownership
+                // is the safe association for these rows; legacy payloads use
+                // the timestamp fallback above.
+                val sameOccurrence = targetChannelIds.isNotEmpty() ||
+                    post.scheduledAt == null || upload.scheduledAt == post.scheduledAt
                 sameOccurrence && targetMatches
             }
             .mapNotNull { it.id }
@@ -631,7 +855,7 @@ class PublicApiUseCase(
             // for a YouTube cover. Never treat the video media URL as a thumbnail.
             thumbnailUrl = firstText(settings?.path("thumbnail")),
             customSettingsJson = settings?.takeIf { it.isObject }?.toString(),
-            scheduledAt = scheduledAt,
+            scheduledAt = scheduledAt?.plusSeconds(value?.delay?.toLong() ?: 0L),
         )
     }
 
@@ -885,7 +1109,8 @@ class PublicApiUseCase(
         "now" -> PublicApiPostType.NOW
         "schedule", "scheduled" -> PublicApiPostType.SCHEDULE
         "draft" -> PublicApiPostType.DRAFT
-        else -> throw IllegalArgumentException("type은 now, schedule 또는 draft여야 합니다")
+        "update" -> PublicApiPostType.UPDATE
+        else -> throw IllegalArgumentException("type은 now, schedule, draft 또는 update여야 합니다")
     }
 
     private fun parseDate(value: String): LocalDateTime = runCatching {

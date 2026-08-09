@@ -24,9 +24,10 @@ import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.workspace.WorkspaceRepository
 import com.ongo.domain.workspace.Workspace
-import io.mockk.every
+import io.mockk.*
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
@@ -47,6 +48,7 @@ class PublicApiUseCaseTest {
     private val tokenEncryption = mockk<TokenEncryptionPort>()
     private val integrationTools = mockk<PlatformIntegrationToolPort>()
     private val workspaces = mockk<WorkspaceRepository>(relaxed = true)
+    private val videoPlatformMetas = mockk<VideoPlatformMetaRepository>(relaxed = true)
     private val useCase = PublicApiUseCase(
         channels,
         posts,
@@ -59,6 +61,7 @@ class PublicApiUseCaseTest {
         tokenEncryption,
         integrationTools,
         workspaces,
+        videoPlatformMetas,
     )
 
     private val channel = Channel(
@@ -145,6 +148,99 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `예약 게시물 설정 수정은 기존 설정을 병합하고 durable payload를 갱신한다`() {
+        val post = PublicApiPost(
+            id = 81,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
+            scheduledAt = LocalDateTime.now().plusHours(2),
+            payloadJson = """{"type":"schedule","date":"2026-08-20T10:00:00","posts":[{"integration":{"id":"7"},"settings":{"__type":"youtube","type":"public"},"value":[{"content":"hello"}]}]}""",
+        )
+        every { posts.findByIdAndUserId(81, 1) } returns post
+        every { uploads.findByVideoId(11) } returns emptyList()
+        every { uploads.findByVideoIdAndChannelId(11, 7) } returns null
+        every { channels.findById(7) } returns channel
+        every { posts.update(any()) } answers { firstArg() }
+
+        val result = useCase.updateSettings(
+            1,
+            81,
+            UpdatePublicPostSettingsRequest(
+                settings = jacksonObjectMapper().readTree("""{"type":"unlisted","title":"새 제목"}"""),
+            ),
+        )
+
+        assertEquals("81", result.postId)
+        val persisted = io.mockk.slot<PublicApiPost>()
+        verify { posts.update(capture(persisted)) }
+        val saved = jacksonObjectMapper().readTree(persisted.captured.payloadJson)
+        assertEquals("youtube", saved.path("posts")[0].path("settings").path("__type").asText())
+        assertEquals("unlisted", saved.path("posts")[0].path("settings").path("type").asText())
+    }
+
+    @Test
+    fun `게시된 공개 게시물의 settings 수정은 provider와 불일치하므로 거부한다`() {
+        val post = PublicApiPost(
+            id = 82,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.NOW,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.PUBLISHED,
+            payloadJson = """{"posts":[{"integration":{"id":"7"},"settings":{"__type":"youtube"},"value":[] }]}""",
+        )
+        every { posts.findByIdAndUserId(82, 1) } returns post
+        every { uploads.findByVideoId(11) } returns listOf(
+            VideoUpload(id = 91, videoId = 11, platform = Platform.YOUTUBE, channelId = 7, status = UploadStatus.PUBLISHED),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            useCase.updateSettings(
+                1,
+                82,
+                UpdatePublicPostSettingsRequest(jacksonObjectMapper().readTree("""{"title":"변경"}""")),
+            )
+        }
+        verify(exactly = 0) { posts.update(any()) }
+    }
+
+    @Test
+    fun `type update는 onGo 게시물 ID를 사용해 게시 전 콘텐츠와 설정을 갱신한다`() {
+        val post = PublicApiPost(
+            id = 83,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.DRAFT,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.DRAFT,
+            payloadJson = """{"type":"draft","posts":[{"integration":{"id":"7"},"settings":{"__type":"youtube","type":"public"},"value":[{"id":"83","content":"before"}]}]}""",
+        )
+        every { posts.findByIdAndUserId(83, 1) } returns post
+        every { uploads.findByVideoId(11) } returns emptyList()
+        every { uploads.findByVideoIdAndChannelId(11, 7) } returns null
+        every { channels.findById(7) } returns channel
+        every { posts.update(any()) } answers { firstArg() }
+
+        val result = useCase.create(
+            1,
+            CreatePublicPostRequest(
+                type = "update",
+                posts = listOf(
+                    PublicPostItem(
+                        integration = PublicIntegrationRef("7"),
+                        value = listOf(PublicPostValue(id = "83", content = "after")),
+                        settings = jacksonObjectMapper().readTree("""{"type":"unlisted"}"""),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals("83", result.id)
+        assertEquals("after", result.content)
+        verify(exactly = 1) { posts.update(any()) }
+    }
+
+    @Test
     fun `TikTok integration settings는 Postiz provider의 2000자 제한을 노출한다`() {
         every { channels.findById(7) } returns channel.copy(platform = Platform.TIKTOK)
         every { integrationTools.definitions(Platform.TIKTOK) } returns emptyList()
@@ -189,6 +285,17 @@ class PublicApiUseCaseTest {
                 ),
             )
         }
+    }
+
+    @Test
+    fun `지원하지 않는 Postiz 옵션은 게시를 시작하지 않고 명시적으로 거부한다`() {
+        assertFailsWith<com.ongo.common.exception.BusinessException> {
+            useCase.create(1, CreatePublicPostRequest(type = "draft", shortLink = true))
+        }
+        assertFailsWith<com.ongo.common.exception.BusinessException> {
+            useCase.create(1, CreatePublicPostRequest(type = "draft", inter = 7))
+        }
+        verify(exactly = 0) { publishVideo.publishVideo(any(), any(), any()) }
     }
 
     @Test

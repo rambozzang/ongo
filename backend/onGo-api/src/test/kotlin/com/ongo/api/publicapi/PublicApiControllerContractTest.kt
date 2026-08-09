@@ -15,6 +15,8 @@ import com.ongo.application.publicapi.PublicIntegrationSettingsResponse
 import com.ongo.application.publicapi.PublicPostResponse
 import com.ongo.application.publicapi.PublicPostTargetResponse
 import com.ongo.application.publicapi.PublicOAuthUseCase
+import com.ongo.application.publicapi.PublicPostSettingsResponse
+import com.ongo.application.publicapi.UpdatePublicPostSettingsRequest
 import com.ongo.application.publicapi.VideoFunctionUseCase
 import com.ongo.application.workspace.WorkspaceUseCase
 import io.mockk.every
@@ -164,5 +166,18 @@ class PublicApiControllerContractTest {
 
         assertEquals(200, response.statusCode.value())
         assertEquals(emptyList<Any>(), response.body)
+    }
+
+    @Test
+    fun `settings update returns Postiz postId and publishDate`() {
+        val request = UpdatePublicPostSettingsRequest(mockk(relaxed = true))
+        every { useCase.updateSettings(1L, 41L, request) } returns
+            PublicPostSettingsResponse("41", "2026-08-20T01:00:00Z")
+
+        val response = controller.updateSettings(1L, apiKeyAuthentication, 41L, request)
+
+        assertEquals(200, response.statusCode.value())
+        assertEquals(PublicPostSettingsResponse("41", "2026-08-20T01:00:00Z"), response.body)
+        verify { useCase.updateSettings(1L, 41L, request) }
     }
 }

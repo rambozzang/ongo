@@ -8,6 +8,8 @@ data class CreatePublicPostRequest(
     val type: String = "now",
     val date: String? = null,
     val shortLink: Boolean = false,
+    /** Postiz republishes an existing post when value.id is supplied. */
+    val republish: Boolean = false,
     val tags: List<JsonNode> = emptyList(),
     val order: String? = null,
     val inter: Int? = null,
@@ -29,7 +31,11 @@ data class PublicIntegrationRef(
 )
 
 data class PublicPostValue(
+    /** Postiz child-post identifier. onGo accepts it only for the settings/update contract. */
+    val id: String? = null,
     val content: String? = null,
+    /** Delay in seconds relative to the group publish time. */
+    val delay: Int = 0,
     val title: String? = null,
     val description: String? = null,
     val tags: List<String> = emptyList(),
@@ -38,6 +44,17 @@ data class PublicPostValue(
     val image: JsonNode? = null,
     /** onGo 확장 필드: 이미 업로드된 내부 영상 레코드를 직접 지정한다. */
     val videoId: Long? = null,
+)
+
+data class UpdatePublicPostSettingsRequest(
+    val settings: JsonNode,
+    /** Required when one onGo public post targets more than one channel. */
+    val integrationId: String? = null,
+)
+
+data class PublicPostSettingsResponse(
+    val postId: String,
+    val publishDate: String?,
 )
 
 data class ChangePublicPostStatusRequest(

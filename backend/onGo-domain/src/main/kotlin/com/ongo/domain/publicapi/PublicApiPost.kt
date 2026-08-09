@@ -27,6 +27,7 @@ enum class PublicApiPostType {
     NOW,
     SCHEDULE,
     DRAFT,
+    UPDATE,
 }
 
 enum class PublicApiPostStatus {
