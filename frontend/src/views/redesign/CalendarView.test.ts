@@ -9,7 +9,7 @@ import { recurringApi } from '@/api/recurring'
 import koMessages from '@/locales/ko/common.json'
 
 vi.mock('@/api/schedule', () => ({
-  scheduleApi: { list: vi.fn(), update: vi.fn() },
+  scheduleApi: { list: vi.fn(), update: vi.fn(), cancel: vi.fn() },
 }))
 
 vi.mock('@/api/recurring', () => ({
@@ -113,9 +113,26 @@ describe('CalendarView', () => {
     expect(wrapper.text()).toContain('매일 업로드')
     expect(scheduleApi.list).toHaveBeenCalledOnce()
 
-    await wrapper.find('[draggable="true"]').trigger('click')
+    await wrapper.find('.schedule-open').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/videos/101')
+  })
+
+  it('requires confirmation before cancelling an unstarted scheduled post', async () => {
+    const { wrapper } = await renderCalendar()
+    const cancel = wrapper.find('button[aria-label*="예약 영상 1"][aria-label*="취소"]')
+    expect(cancel.exists()).toBe(true)
+
+    await cancel.trigger('click')
+    expect(scheduleApi.cancel).not.toHaveBeenCalled()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+
+    vi.mocked(scheduleApi.cancel).mockResolvedValue(undefined as never)
+    wrapper.findComponent({ name: 'ConfirmModal' }).vm.$emit('confirm')
+    await flushPromises()
+
+    expect(scheduleApi.cancel).toHaveBeenCalledWith(1)
+    expect(wrapper.text()).not.toContain('예약 영상 1')
   })
 
   it('renders the server-confirmed status and published link', async () => {

@@ -80,6 +80,17 @@ export const useRedesignCalendarStore = defineStore('redesignCalendar', () => {
     }
   }
 
+  /** 아직 실행되지 않은 예약을 서버에서 취소하고 캘린더에서도 제거한다. */
+  async function cancelSchedule(id: number) {
+    moving.value = true
+    try {
+      await scheduleApi.cancel(id)
+      schedules.value = schedules.value.filter((schedule) => schedule.id !== id)
+    } finally {
+      moving.value = false
+    }
+  }
+
   /** 최적 시간 추천 개수 — 자동 배치 API는 아직 없어 추천 조회만 연결한다 */
   async function fetchOptimalRecommendations() {
     const res = await scheduleOptimizerApi.getRecommendations()
@@ -97,6 +108,7 @@ export const useRedesignCalendarStore = defineStore('redesignCalendar', () => {
     shiftWeek,
     goToday,
     moveSchedule,
+    cancelSchedule,
     fetchOptimalRecommendations,
   }
 })

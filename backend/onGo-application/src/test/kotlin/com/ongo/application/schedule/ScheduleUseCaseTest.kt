@@ -4,8 +4,10 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.enums.AuthProvider
 import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.ScheduleStatus
+import com.ongo.common.exception.AccountFrozenException
 import com.ongo.application.schedule.dto.CreateScheduleRequest
 import com.ongo.application.schedule.dto.PlatformScheduleConfig
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.user.User
 import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import io.mockk.verify
 
 class ScheduleUseCaseTest {
 
@@ -27,7 +30,20 @@ class ScheduleUseCaseTest {
     private val videos = mockk<VideoRepository>()
     private val videoUploads = mockk<VideoUploadRepository>()
     private val users = mockk<UserRepository>()
-    private val useCase = ScheduleUseCase(schedules, videos, videoUploads, users)
+    private val userWriteGuard = mockk<UserWriteGuard>(relaxed = true)
+    private val useCase = ScheduleUseCase(schedules, videos, videoUploads, users, userWriteGuard)
+
+    @Test
+    fun `동결된 계정은 예약 쓰기를 시작할 수 없다`() {
+        every { userWriteGuard.requireWritable(7L) } throws AccountFrozenException()
+
+        assertFailsWith<AccountFrozenException> {
+            useCase.createSchedule(7L, CreateScheduleRequest(22L, LocalDateTime.now(ScheduleUseCase.KST).plusDays(1), listOf(PlatformScheduleConfig(Platform.YOUTUBE))))
+        }
+
+        verify(exactly = 0) { users.findById(any()) }
+        verify(exactly = 0) { schedules.save(any()) }
+    }
 
     @Test
     fun `schedule response preserves each platform wall clock time`() {
@@ -140,5 +156,21 @@ class ScheduleUseCaseTest {
         assertFailsWith<IllegalArgumentException> {
             useCase.getSchedules(7L, null, null, "NOT_A_STATUS")
         }
+    }
+
+    @Test
+    fun `이미 실행 중인 예약은 취소된 것으로 덮어쓸 수 없다`() {
+        val processing = Schedule(
+            id = 31L,
+            videoId = 22L,
+            userId = 7L,
+            scheduledAt = LocalDateTime.now(ScheduleUseCase.KST).plusHours(1),
+            status = ScheduleStatus.PROCESSING,
+            platforms = mapOf(Platform.YOUTUBE.name to emptyMap<String, Any>()),
+        )
+        every { schedules.findById(31L) } returns processing
+
+        assertFailsWith<IllegalStateException> { useCase.cancelSchedule(7L, 31L) }
+        verify(exactly = 0) { schedules.update(any()) }
     }
 }

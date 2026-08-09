@@ -8,6 +8,7 @@ import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.common.util.safeValueOfOrThrow
+import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.user.UserRepository
@@ -24,7 +25,8 @@ class ScheduleUseCase(
     private val scheduleRepository: ScheduleRepository,
     private val videoRepository: VideoRepository,
     private val videoUploadRepository: VideoUploadRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val userWriteGuard: UserWriteGuard,
 ) {
     companion object {
         val KST: ZoneId = ZoneId.of("Asia/Seoul")
@@ -32,6 +34,7 @@ class ScheduleUseCase(
 
     @Transactional
     fun createSchedule(userId: Long, request: CreateScheduleRequest): ScheduleResponse {
+        userWriteGuard.requireWritable(userId)
         val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
         val video = videoRepository.findById(request.videoId) ?: throw NotFoundException("영상", request.videoId)
         if (video.userId != userId) throw ForbiddenException("해당 영상에 대한 권한이 없습니다")
@@ -99,6 +102,7 @@ class ScheduleUseCase(
 
     @Transactional
     fun updateSchedule(userId: Long, scheduleId: Long, request: UpdateScheduleRequest): ScheduleResponse {
+        userWriteGuard.requireWritable(userId)
         val schedule = scheduleRepository.findById(scheduleId) ?: throw NotFoundException("예약", scheduleId)
         if (schedule.userId != userId) throw ForbiddenException("해당 예약에 대한 권한이 없습니다")
         if (schedule.status != ScheduleStatus.SCHEDULED) throw IllegalStateException("수정 가능한 상태가 아닙니다")
@@ -133,8 +137,12 @@ class ScheduleUseCase(
 
     @Transactional
     fun cancelSchedule(userId: Long, scheduleId: Long) {
+        userWriteGuard.requireWritable(userId)
         val schedule = scheduleRepository.findById(scheduleId) ?: throw NotFoundException("예약", scheduleId)
         if (schedule.userId != userId) throw ForbiddenException("해당 예약에 대한 권한이 없습니다")
+        if (schedule.status != ScheduleStatus.SCHEDULED) {
+            throw IllegalStateException("아직 실행되지 않은 예약만 취소할 수 있습니다. 현재 상태: ${schedule.status}")
+        }
         scheduleRepository.update(schedule.copy(status = ScheduleStatus.CANCELLED))
     }
 

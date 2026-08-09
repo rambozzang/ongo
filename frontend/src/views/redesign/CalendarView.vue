@@ -7,9 +7,11 @@
       :confirm-text="
         pendingAction?.type === 'delete'
           ? t('redesign.calendar.recurringDelete')
-          : t('action.confirm')
+          : pendingAction?.type === 'cancel'
+            ? t('redesign.calendar.cancelScheduleAction')
+            : t('action.confirm')
       "
-      :danger="pendingAction?.type === 'delete'"
+      :danger="pendingAction?.type === 'delete' || pendingAction?.type === 'cancel'"
       @update:model-value="clearPendingAction"
       @confirm="confirmPendingAction"
     />
@@ -95,33 +97,46 @@
               v-for="s in schedulesOf(day)"
               :key="s.id"
               draggable="true"
-              role="button"
-              tabindex="0"
-              :aria-label="`${s.videoTitle}, ${timeOf(s.scheduledAt)}`"
               class="cursor-grab rounded-[8px] border border-line-control bg-surface-raised px-[9px] py-2 transition-[border-color] duration-[120ms] ease-out hover:border-accent"
               :class="store.moving ? 'opacity-60' : ''"
-              @click="openSchedule(s)"
-              @keydown.enter.prevent="openSchedule(s)"
-              @keydown.space.prevent="openSchedule(s)"
               @dragstart="onDragStart(s, $event)"
               @dragover.prevent.stop
               @drop.stop="onDropToBlock(day, s, $event)"
             >
-              <div class="flex items-center gap-[6px]">
-                <PlatformChip
-                  v-if="chipOf(firstPlatform(s))"
-                  :platform="chipOf(firstPlatform(s))!"
-                  size="sm"
-                />
-                <span class="font-mono text-[10px] text-content-secondary">{{
-                  timeOf(s.scheduledAt)
-                }}</span>
-                <StatusPill v-if="s.status !== 'SCHEDULED'" :variant="statusVariant(s.status)">
-                  {{ statusLabel(s.status) }}
-                </StatusPill>
-              </div>
-              <div class="mt-[6px] text-[11.5px] font-semibold leading-[1.35] text-content">
-                {{ s.videoTitle }}
+              <div class="flex items-start gap-[6px]">
+                <button
+                  type="button"
+                  class="schedule-open min-w-0 flex-1 text-left"
+                  :aria-label="`${s.videoTitle}, ${timeOf(s.scheduledAt)}`"
+                  @click="openSchedule(s)"
+                >
+                  <span class="flex items-center gap-[6px]">
+                    <PlatformChip
+                      v-if="chipOf(firstPlatform(s))"
+                      :platform="chipOf(firstPlatform(s))!"
+                      size="sm"
+                    />
+                    <span class="font-mono text-[10px] text-content-secondary">{{
+                      timeOf(s.scheduledAt)
+                    }}</span>
+                    <StatusPill v-if="s.status !== 'SCHEDULED'" :variant="statusVariant(s.status)">
+                      {{ statusLabel(s.status) }}
+                    </StatusPill>
+                  </span>
+                  <span class="mt-[6px] block text-[11.5px] font-semibold leading-[1.35] text-content">
+                    {{ s.videoTitle }}
+                  </span>
+                </button>
+                <button
+                  v-if="s.status === 'SCHEDULED'"
+                  type="button"
+                  class="shrink-0 rounded-md p-1 text-content-quaternary transition-colors hover:bg-error-subtle hover:text-error-strong"
+                  :aria-label="t('redesign.calendar.cancelSchedule', { title: s.videoTitle })"
+                  :disabled="store.moving"
+                  @click.stop="requestCancel(s)"
+                >
+                  ×
+                </button>
               </div>
               <a
                 v-if="firstPlatformUrl(s)"
@@ -267,6 +282,7 @@ const recurringBusyId = ref<number | null>(null)
 
 type PendingCalendarAction =
   | { type: 'move'; scheduleId: number; next: Date; title: string; time: string }
+  | { type: 'cancel'; schedule: Schedule }
   | { type: 'delete'; schedule: RecurringSchedule }
 
 const pendingAction = ref<PendingCalendarAction | null>(null)
@@ -298,15 +314,21 @@ const weekTitle = computed(() => {
 const confirmationTitle = computed(() =>
   pendingAction.value?.type === 'delete'
     ? t('redesign.calendar.recurringConfirmTitle')
-    : t('redesign.calendar.confirmMoveTitle'),
+    : pendingAction.value?.type === 'cancel'
+      ? t('redesign.calendar.cancelConfirmTitle')
+      : t('redesign.calendar.confirmMoveTitle'),
 )
 
 const confirmationMessage = computed(() => {
   const action = pendingAction.value
   if (!action) return ''
-  return action.type === 'delete'
-    ? t('redesign.calendar.recurringConfirmDelete', { name: action.schedule.name })
-    : t('redesign.calendar.confirmMove', { title: action.title, time: action.time })
+  if (action.type === 'delete') {
+    return t('redesign.calendar.recurringConfirmDelete', { name: action.schedule.name })
+  }
+  if (action.type === 'cancel') {
+    return t('redesign.calendar.cancelConfirm', { title: action.schedule.videoTitle })
+  }
+  return t('redesign.calendar.confirmMove', { title: action.title, time: action.time })
 })
 
 function chipOf(platform: string | null | undefined): ChipPlatform | null {
@@ -451,6 +473,10 @@ function removeRecurring(schedule: RecurringSchedule) {
   pendingAction.value = { type: 'delete', schedule }
 }
 
+function requestCancel(schedule: Schedule) {
+  pendingAction.value = { type: 'cancel', schedule }
+}
+
 function clearPendingAction() {
   pendingAction.value = null
 }
@@ -463,6 +489,9 @@ async function confirmPendingAction() {
   try {
     if (action.type === 'move') {
       await store.moveSchedule(action.scheduleId, action.next)
+    } else if (action.type === 'cancel') {
+      await store.cancelSchedule(action.schedule.id)
+      notify.success(t('redesign.calendar.scheduleCancelled'))
     } else {
       recurringBusyId.value = action.schedule.id
       await recurringApi.remove(action.schedule.id)
@@ -477,7 +506,9 @@ async function confirmPendingAction() {
         ? e.message
         : action.type === 'move'
           ? t('redesign.calendar.moveFailed')
-          : t('redesign.calendar.recurringActionFailed'),
+          : action.type === 'cancel'
+            ? t('redesign.calendar.cancelFailed')
+            : t('redesign.calendar.recurringActionFailed'),
     )
   } finally {
     if (action.type === 'delete') recurringBusyId.value = null
