@@ -201,6 +201,45 @@ class PublicApiUseCase(
         }
     }
 
+    /**
+     * 외부 플랫폼에서 이미 생성된 게시물 ID를 durable upload에 연결한다.
+     * 분석 API가 release id만 반환하는 경우에도 새 업로드를 시작하지 않고,
+     * 해당 게시물의 상태 조회 큐만 깨워 중복 게시를 방지한다.
+     */
+    @Transactional
+    fun connectReleaseId(userId: Long, id: Long, request: PublicReleaseIdRequest): PublicPostResponse {
+        val post = load(userId, id)
+        val releaseId = request.releaseId.trim()
+        require(releaseId.isNotBlank() && releaseId.length <= 255) { "releaseId가 유효하지 않습니다" }
+        val requestedChannelId = request.integrationId?.toLongOrNull()
+            ?: request.integrationId?.let { throw IllegalArgumentException("integrationId는 onGo 채널 ID여야 합니다") }
+        val candidates = videoUploadRepository.findByVideoId(post.videoId)
+            .filter { it.platformVideoId.isNullOrBlank() }
+            .filter { requestedChannelId == null || it.channelId == requestedChannelId }
+        require(candidates.size == 1) {
+            if (candidates.isEmpty()) "releaseId를 연결할 미확정 게시 대상이 없습니다"
+            else "여러 게시 대상이 있어 integrationId가 필요합니다"
+        }
+        val upload = candidates.single()
+        if (requestedChannelId != null) {
+            val channel = channelRepository.findById(requestedChannelId)
+            require(channel?.userId == userId && channel?.id == upload.channelId) {
+                "해당 integration에 대한 권한이 없습니다"
+            }
+        }
+        videoUploadRepository.update(
+            upload.copy(
+                platformVideoId = releaseId,
+                pollToken = releaseId,
+                status = UploadStatus.PROCESSING,
+                nextRetryAt = LocalDateTime.now(),
+                errorMessage = null,
+                lastError = null,
+            ),
+        )
+        return toResponse(post)
+    }
+
     @Transactional
     fun changeStatus(userId: Long, id: Long, request: ChangePublicPostStatusRequest): PublicPostResponse {
         val current = load(userId, id)

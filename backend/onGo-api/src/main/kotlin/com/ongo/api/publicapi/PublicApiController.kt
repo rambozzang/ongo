@@ -13,6 +13,8 @@ import com.ongo.application.publicapi.PublicIntegrationSettingsResponse
 import com.ongo.application.publicapi.PublicConnectionResponse
 import com.ongo.application.publicapi.PublicRemoteMediaUploadRequest
 import com.ongo.application.publicapi.PublicMissingContentResponse
+import com.ongo.application.publicapi.PublicReleaseIdRequest
+import com.ongo.application.channel.ChannelUseCase
 import com.ongo.common.ResData
 import com.ongo.common.exception.ForbiddenException
 import io.swagger.v3.oas.annotations.Operation
@@ -41,6 +43,7 @@ class PublicApiController(
     private val useCase: PublicApiUseCase,
     private val mediaUseCase: PublicApiMediaUseCase,
     private val analyticsUseCase: PublicApiAnalyticsUseCase,
+    private val channelUseCase: ChannelUseCase,
 ) {
 
     @Operation(summary = "연결된 integrations 조회")
@@ -74,6 +77,20 @@ class PublicApiController(
     ): ResponseEntity<ResData<PublicIntegrationSettingsResponse>> {
         requireApiKey(authentication)
         return ResData.success(useCase.integrationSettings(userId, integrationId))
+    }
+
+    @Operation(summary = "integration 연결 해제")
+    @DeleteMapping("/integrations/{integrationId}")
+    fun deleteIntegration(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable integrationId: String,
+    ): ResponseEntity<ResData<Nothing?>> {
+        requireApiKey(authentication)
+        val channelId = integrationId.toLongOrNull()
+            ?: throw IllegalArgumentException("integration id는 onGo 채널 ID여야 합니다")
+        channelUseCase.disconnectChannel(userId, channelId)
+        return ResData.success(null)
     }
 
     @Operation(summary = "미디어 업로드")
@@ -180,6 +197,18 @@ class PublicApiController(
     ): ResponseEntity<ResData<List<PublicMissingContentResponse>>> {
         requireApiKey(authentication)
         return ResData.success(useCase.missingContent(userId, id))
+    }
+
+    @Operation(summary = "외부 release id 연결")
+    @PutMapping("/posts/{id}/release-id")
+    fun connectReleaseId(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable id: Long,
+        @RequestBody request: PublicReleaseIdRequest,
+    ): ResponseEntity<ResData<PublicPostResponse>> {
+        requireApiKey(authentication)
+        return ResData.success(useCase.connectReleaseId(userId, id, request))
     }
 
     @Operation(summary = "초안 게시물 삭제")

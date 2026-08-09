@@ -111,3 +111,9 @@ data class PublicMissingContentResponse(
     val integration: String,
     val missing: List<String>,
 )
+
+data class PublicReleaseIdRequest(
+    val releaseId: String,
+    /** 여러 채널 게시에서 어떤 외부 integration을 연결할지 명시한다. */
+    val integrationId: String? = null,
+)

@@ -129,6 +129,43 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `release id 연결은 새 업로드 없이 durable 상태 조회를 깨운다`() {
+        val post = PublicApiPost(
+            id = 43,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.NOW,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.UNCONFIRMED,
+            payloadJson = "{\"posts\":[]}",
+        )
+        val upload = VideoUpload(
+            id = 91,
+            videoId = 11,
+            platform = Platform.YOUTUBE,
+            channelId = 7,
+            status = UploadStatus.UNCONFIRMED,
+        )
+        every { posts.findByIdAndUserId(43, 1) } returns post
+        every { channels.findById(7) } returns channel
+        every { uploads.findByVideoId(11) } returnsMany listOf(
+            listOf(upload),
+            listOf(upload.copy(platformVideoId = "yt-video-1", pollToken = "yt-video-1", status = UploadStatus.PROCESSING)),
+        )
+        every { uploads.update(any()) } answers { firstArg() }
+
+        val result = useCase.connectReleaseId(1, 43, PublicReleaseIdRequest("yt-video-1", "7"))
+
+        assertEquals("processing", result.status)
+        verify(exactly = 1) {
+            uploads.update(match {
+                it.platformVideoId == "yt-video-1" &&
+                    it.pollToken == "yt-video-1" &&
+                    it.status == UploadStatus.PROCESSING
+            })
+        }
+    }
+
+    @Test
     fun `now 게시가 내부 durable publisher를 호출하고 post id를 반환한다`() {
         every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
         every { channels.findById(7) } returns channel

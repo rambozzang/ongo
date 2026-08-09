@@ -1,0 +1,56 @@
+// onGo - Docker 전용 백엔드 통합 테스트 파이프라인
+//
+// 운영 배포 노드는 Docker를 사용하지 않는다. 이 파이프라인은 Testcontainers가
+// 제공되는 별도 Jenkins agent(label=docker)에서만 실행하며, 애플리케이션 배포는
+// 절대 수행하지 않는다.
+pipeline {
+    agent { label 'docker' }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        disableConcurrentBuilds()
+    }
+
+    triggers {
+        cron('H 2 * * *')
+    }
+
+    stages {
+        stage('Repository Security Check') {
+            steps {
+                script {
+                    def sensitiveFiles = sh(
+                        script: '''git ls-files | grep -E '(^|/)([^/]*(backup|dump)[^/]*\\.(sql|dump|bak))$' || true''',
+                        returnStdout: true,
+                    ).trim()
+                    if (sensitiveFiles) {
+                        error "Tracked database export detected:\n${sensitiveFiles}"
+                    }
+                }
+            }
+        }
+
+        stage('Run Testcontainers Integration Tests') {
+            steps {
+                dir('backend') {
+                    // skipIntegrationTests를 지정하지 않는다. 이 job의 목적은
+                    // PostgreSQL/Redis를 포함한 실제 컨테이너 계약을 검증하는 것이다.
+                    sh './gradlew :onGo-infrastructure:test --no-daemon --console=plain'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Backend integration tests completed successfully!'
+        }
+        failure {
+            echo 'Backend integration tests failed! Production deployment was not touched.'
+        }
+    }
+}
