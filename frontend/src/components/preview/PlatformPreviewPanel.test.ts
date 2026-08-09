@@ -43,4 +43,29 @@ describe('PlatformPreviewPanel', () => {
     expect(wrapper.text()).toContain('A 제목')
     expect(wrapper.text()).toContain('B 제목')
   })
+
+  it('shows the composed caption limit for caption-based platforms', () => {
+    const i18n = createI18n({ legacy: false, locale: 'ko', messages: { ko: koMessages } })
+    const wrapper = mount(PlatformPreviewPanel, {
+      props: {
+        platforms: ['TIKTOK'],
+        targets: [{
+          key: 'TIKTOK#11',
+          platform: 'TIKTOK',
+          metadata: { title: '제목', description: '설명', tags: ['태그'] },
+        }],
+        platformLimits: { TIKTOK: { caption: 3 } },
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          TikTokPreview: { template: '<div />' },
+        },
+      },
+    })
+
+    const badge = wrapper.find('[title*="캡션"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.text()).toContain('초과')
+  })
 })

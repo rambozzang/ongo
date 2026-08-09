@@ -1424,6 +1424,7 @@
     "titleCount": "Title {current}/{max}",
     "descCount": "Desc {current}/{max}",
     "tagCount": "Tags {current}/{max}",
+    "captionCount": "Caption {current}/{max}",
     "enterTitle": "Enter video title",
     "enterCaption": "Enter caption",
     "charExceeded": "Over {max} chars",

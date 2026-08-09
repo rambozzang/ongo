@@ -988,6 +988,7 @@ const previewLimits = computed(() =>
         title: capability.maxTitleLength,
         description: capability.maxDescriptionLength,
         tags: capability.maxTagCount,
+        caption: capability.maxCaptionLength ?? undefined,
       },
     ]),
   ),

@@ -227,7 +227,7 @@ interface Props {
   /** 채널별 프리뷰 대상. 없으면 기존 platforms 입력으로 하위 호환한다. */
   targets?: PreviewTarget[]
   platformMetadata?: Partial<Record<Platform, PlatformMeta>>
-  platformLimits?: Partial<Record<Platform, { title?: number; description?: number; tags?: number }>>
+  platformLimits?: Partial<Record<Platform, { title?: number; description?: number; tags?: number; caption?: number }>>
   comparisonMode?: boolean
 }
 

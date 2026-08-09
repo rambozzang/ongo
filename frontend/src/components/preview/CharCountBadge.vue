@@ -16,6 +16,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Platform } from '@/types/channel'
+import { composePublishCaption } from '@/utils/publishValidation'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -28,20 +29,26 @@ interface PlatformMeta {
 interface Props {
   platform: Platform
   meta: PlatformMeta
-  limits?: { title?: number; description?: number; tags?: number }
+  limits?: { title?: number; description?: number; tags?: number; caption?: number }
 }
 
 const props = defineProps<Props>()
 
-const CHAR_LIMITS: Partial<Record<Platform, { title?: number; description?: number; tags?: number }>> = {
+const CHAR_LIMITS: Partial<Record<Platform, { title?: number; description?: number; tags?: number; caption?: number }>> = {
   YOUTUBE: { title: 100, description: 5000, tags: 500 },
-  TIKTOK: { title: 2200, tags: 30 },
-  INSTAGRAM: { description: 2200, tags: 30 },
+  TIKTOK: { title: 2200, tags: 30, caption: 2200 },
+  INSTAGRAM: { description: 2200, tags: 30, caption: 2200 },
   NAVER_CLIP: { title: 100, description: 1000, tags: 30 },
-  THREADS: { title: 500, tags: 30 },
-  TWITTER: { title: 280, tags: 30 },
-  FACEBOOK: { title: 255, description: 5000, tags: 30 },
+  THREADS: { title: 500, tags: 30, caption: 500 },
+  TWITTER: { title: 280, tags: 30, caption: 280 },
+  FACEBOOK: { title: 255, description: 5000, tags: 30, caption: 5000 },
 }
+
+const composedCaption = computed(() => composePublishCaption(props.platform, {
+  title: props.meta.title,
+  description: props.meta.description,
+  hashtags: props.meta.tags.join(' '),
+}))
 
 const overflowDetail = computed(() => {
   const limits = props.limits ?? CHAR_LIMITS[props.platform]
@@ -56,6 +63,9 @@ const overflowDetail = computed(() => {
   if (limits.tags && props.meta.tags.length > limits.tags) {
     parts.push(t('preview.tagCount', { current: props.meta.tags.length, max: limits.tags }))
   }
+  if (limits.caption && composedCaption.value && composedCaption.value.length > limits.caption) {
+    parts.push(t('preview.captionCount', { current: composedCaption.value.length, max: limits.caption }))
+  }
   return parts.join(', ')
 })
 
@@ -65,6 +75,7 @@ const hasOverflow = computed(() => {
   if (limits.title && props.meta.title.length > limits.title) return true
   if (limits.description && props.meta.description.length > limits.description) return true
   if (limits.tags && props.meta.tags.length > limits.tags) return true
+  if (limits.caption && composedCaption.value && composedCaption.value.length > limits.caption) return true
   return false
 })
 </script>
