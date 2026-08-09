@@ -5,6 +5,8 @@ import com.ongo.application.ugc.dto.CampaignPostListResponse
 import com.ongo.application.ugc.dto.PublishRequest
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -25,6 +27,7 @@ class CampaignPublishingController(
 
     @Operation(summary = "제출물 게시", description = "승인된 제출물의 영상을 선택 플랫폼에 게시합니다. 재시도해도 중복 게시되지 않습니다.")
     @PostMapping("/submissions/{submissionId}/publish")
+    @RequiresPermission(Permission.CAMPAIGN_MANAGE)
     fun publish(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -35,6 +38,7 @@ class CampaignPublishingController(
 
     @Operation(summary = "캠페인 게시물 목록")
     @GetMapping("/campaigns/{campaignId}/posts")
+    @RequiresPermission(Permission.CAMPAIGN_VIEW)
     fun listPosts(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,

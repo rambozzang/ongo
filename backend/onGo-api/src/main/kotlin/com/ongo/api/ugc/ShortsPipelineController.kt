@@ -13,7 +13,9 @@ import com.ongo.application.ugc.shorts.dto.ScheduleConfirmRequest
 import com.ongo.application.ugc.shorts.dto.ShortsClipResponse
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
 import com.ongo.common.config.PageResponse
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -39,6 +41,7 @@ class ShortsPipelineController(
 
     @Operation(summary = "파이프라인 실행 생성 및 시작")
     @PostMapping
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun create(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -48,6 +51,7 @@ class ShortsPipelineController(
 
     @Operation(summary = "파이프라인 실행 목록 조회")
     @GetMapping
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun list(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -67,6 +71,7 @@ class ShortsPipelineController(
 
     @Operation(summary = "파이프라인 실행 상세 조회", description = "단계별 진행 상태와 클립·후킹을 함께 반환한다")
     @GetMapping("/{runId}")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun get(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -79,6 +84,7 @@ class ShortsPipelineController(
         description = "해당 단계와 그 이후 단계의 결과를 무효화하고 다시 실행한다. 프롬프트를 고친 뒤 사용한다",
     )
     @PostMapping("/{runId}/stages/{stage}/rerun")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun rerunStage(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -89,6 +95,7 @@ class ShortsPipelineController(
 
     @Operation(summary = "후킹 문구 일괄 선택", description = "클립별 A/B안 선택 또는 직접 입력. 제외할 클립은 discardClipIds 로 넘긴다")
     @PostMapping("/{runId}/hooks")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun selectHooks(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -99,6 +106,7 @@ class ShortsPipelineController(
 
     @Operation(summary = "예약 확정", description = "시작 일시부터 지정 간격으로 클립을 순차 예약한다")
     @PostMapping("/{runId}/schedule")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun confirmSchedule(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -112,6 +120,7 @@ class ShortsPipelineController(
         description = "서버 렌더를 사용할 수 없을 때 외부에서 만든 완성 영상을 연결하는 수동 보완 경로",
     )
     @PostMapping("/{runId}/clips/{clipId}/rendered-video")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun attachRenderedVideo(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -125,6 +134,7 @@ class ShortsPipelineController(
 
     @Operation(summary = "클립 렌더 지시서 다운로드", description = "render-spec.json 단일 파일")
     @GetMapping("/{runId}/clips/{clipId}/render-spec")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun downloadRenderSpec(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -143,6 +153,7 @@ class ShortsPipelineController(
         description = "서버 렌더를 직접 실행할 수 없는 환경에서 사용할 render-spec.json, clip-N.ass 자막, render.sh 묶음",
     )
     @GetMapping("/{runId}/render-bundle")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun downloadRenderBundle(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -157,6 +168,7 @@ class ShortsPipelineController(
 
     @Operation(summary = "파이프라인 실행 삭제")
     @DeleteMapping("/{runId}")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun delete(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -176,6 +188,7 @@ class ShortsPipelineController(
         ApiResponse(responseCode = "404", description = "실행 또는 클립 없음"),
     )
     @PostMapping("/{runId}/clips/{clipId}/render")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun requestRender(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -188,6 +201,7 @@ class ShortsPipelineController(
 
     @Operation(summary = "클립 렌더 상태 조회", description = "QUEUED / RUNNING / COMPLETED / FAILED")
     @GetMapping("/{runId}/clips/{clipId}/render")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun renderStatus(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,

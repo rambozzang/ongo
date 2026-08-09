@@ -4,6 +4,8 @@ import com.ongo.application.ugc.AuditUseCase
 import com.ongo.application.ugc.dto.AuditEventListResponse
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -23,6 +25,7 @@ class CampaignAuditController(
 
     @Operation(summary = "캠페인 감사 로그 조회")
     @GetMapping("/campaigns/{campaignId}/audit-events")
+    @RequiresPermission(Permission.CAMPAIGN_VIEW)
     fun list(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,

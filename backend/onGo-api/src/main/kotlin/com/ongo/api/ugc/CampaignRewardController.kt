@@ -6,6 +6,8 @@ import com.ongo.application.ugc.dto.ParticipantRewardResponse
 import com.ongo.application.ugc.dto.UpdateRewardRequest
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -29,6 +31,7 @@ class CampaignRewardController(
 
     @Operation(summary = "참여자 보상 목록", description = "참여자별 보상과 예산 대비 확정 총액을 반환합니다.")
     @GetMapping("/campaigns/{campaignId}/participants")
+    @RequiresPermission(Permission.CAMPAIGN_REWARD_MANAGE)
     fun participants(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -38,6 +41,7 @@ class CampaignRewardController(
 
     @Operation(summary = "보상 금액 수정 (DRAFT)")
     @PutMapping("/participants/{participantId}/reward")
+    @RequiresPermission(Permission.CAMPAIGN_REWARD_MANAGE)
     fun updateReward(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -48,6 +52,7 @@ class CampaignRewardController(
 
     @Operation(summary = "보상 확정", description = "확정 총액이 예산을 초과하면 차단됩니다.")
     @PostMapping("/participants/{participantId}/reward/confirm")
+    @RequiresPermission(Permission.CAMPAIGN_REWARD_MANAGE)
     fun confirmReward(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -57,6 +62,7 @@ class CampaignRewardController(
 
     @Operation(summary = "지급 완료 표시")
     @PostMapping("/participants/{participantId}/reward/mark-paid")
+    @RequiresPermission(Permission.CAMPAIGN_REWARD_MANAGE)
     fun markPaid(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -66,6 +72,7 @@ class CampaignRewardController(
 
     @Operation(summary = "지급 대상 CSV 내보내기")
     @GetMapping("/campaigns/{campaignId}/rewards.csv")
+    @RequiresPermission(Permission.CAMPAIGN_REWARD_MANAGE)
     fun exportCsv(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,

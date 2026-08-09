@@ -6,6 +6,8 @@ import com.ongo.application.ugc.dto.PostMetricResponse
 import com.ongo.application.ugc.dto.RecordMetricRequest
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -26,6 +28,7 @@ class CampaignAnalyticsController(
 
     @Operation(summary = "캠페인 성과 조회", description = "게시물별 최신 지표를 합산하고 마지막 동기화 시각을 반환합니다.")
     @GetMapping("/campaigns/{campaignId}/analytics")
+    @RequiresPermission(Permission.CAMPAIGN_VIEW)
     fun analytics(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -35,6 +38,7 @@ class CampaignAnalyticsController(
 
     @Operation(summary = "게시물 지표 기록/동기화", description = "지표 스냅샷을 기록합니다(동기화 스케줄러 진입점 대체).")
     @PostMapping("/campaign-posts/{campaignPostId}/metrics")
+    @RequiresPermission(Permission.CAMPAIGN_MANAGE)
     fun recordMetric(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,

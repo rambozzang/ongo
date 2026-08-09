@@ -5,6 +5,8 @@ import com.ongo.application.ugc.shorts.dto.ShortsTemplateRequest
 import com.ongo.application.ugc.shorts.dto.ShortsTemplateResponse
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -29,6 +31,7 @@ class ShortsTemplateController(
 
     @Operation(summary = "템플릿 목록 조회")
     @GetMapping
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun list(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -37,6 +40,7 @@ class ShortsTemplateController(
 
     @Operation(summary = "템플릿 생성")
     @PostMapping
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun create(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -46,6 +50,7 @@ class ShortsTemplateController(
 
     @Operation(summary = "템플릿 상세 조회")
     @GetMapping("/{templateId}")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun get(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -55,6 +60,7 @@ class ShortsTemplateController(
 
     @Operation(summary = "템플릿 수정")
     @PutMapping("/{templateId}")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun update(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -65,6 +71,7 @@ class ShortsTemplateController(
 
     @Operation(summary = "템플릿 삭제")
     @DeleteMapping("/{templateId}")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun delete(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -76,6 +83,7 @@ class ShortsTemplateController(
 
     @Operation(summary = "레퍼런스 이미지 업로드", description = "템플릿 레퍼런스 캡처를 업로드하고 URL을 반영합니다.")
     @PostMapping("/{templateId}/reference-image")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun uploadReferenceImage(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,

@@ -9,6 +9,8 @@ import com.ongo.application.ugc.dto.UpdateCampaignRequest
 import com.ongo.application.ugc.dto.UpsertPlaybookRequest
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -31,6 +33,7 @@ class CampaignController(
 ) {
 
     @Operation(summary = "캠페인 목록 조회")
+    @RequiresPermission(Permission.CAMPAIGN_VIEW)
     @GetMapping
     fun list(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -43,6 +46,7 @@ class CampaignController(
         ResData.success(campaignUseCase.listCampaigns(userId, workspaceId, status, query, page, size))
 
     @Operation(summary = "캠페인 상세 조회")
+    @RequiresPermission(Permission.CAMPAIGN_VIEW)
     @GetMapping("/{campaignId}")
     fun get(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -52,6 +56,7 @@ class CampaignController(
         ResData.success(campaignUseCase.getCampaign(userId, workspaceId, campaignId))
 
     @Operation(summary = "캠페인 생성")
+    @RequiresPermission(Permission.CAMPAIGN_MANAGE)
     @PostMapping
     fun create(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -61,6 +66,7 @@ class CampaignController(
         ResData.success(campaignUseCase.createCampaign(userId, workspaceId, request), "캠페인이 생성되었습니다")
 
     @Operation(summary = "캠페인 수정 (DRAFT 상태만)")
+    @RequiresPermission(Permission.CAMPAIGN_MANAGE)
     @PatchMapping("/{campaignId}")
     fun update(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -71,6 +77,7 @@ class CampaignController(
         ResData.success(campaignUseCase.updateCampaign(userId, workspaceId, campaignId, request))
 
     @Operation(summary = "캠페인 공개", description = "DRAFT → RECRUITING. 활성 플레이북과 기간이 필요합니다.")
+    @RequiresPermission(Permission.CAMPAIGN_MANAGE)
     @PostMapping("/{campaignId}/publish")
     fun publish(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -80,6 +87,7 @@ class CampaignController(
         ResData.success(campaignUseCase.publishCampaign(userId, workspaceId, campaignId), "캠페인이 공개되었습니다")
 
     @Operation(summary = "캠페인 일시중지")
+    @RequiresPermission(Permission.CAMPAIGN_MANAGE)
     @PostMapping("/{campaignId}/pause")
     fun pause(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -89,6 +97,7 @@ class CampaignController(
         ResData.success(campaignUseCase.pauseCampaign(userId, workspaceId, campaignId), "캠페인이 일시중지되었습니다")
 
     @Operation(summary = "캠페인 종료")
+    @RequiresPermission(Permission.CAMPAIGN_MANAGE)
     @PostMapping("/{campaignId}/complete")
     fun complete(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -98,6 +107,7 @@ class CampaignController(
         ResData.success(campaignUseCase.completeCampaign(userId, workspaceId, campaignId), "캠페인이 종료되었습니다")
 
     @Operation(summary = "플레이북 저장", description = "캠페인당 활성 플레이북 1개를 upsert합니다.")
+    @RequiresPermission(Permission.CAMPAIGN_MANAGE)
     @PutMapping("/{campaignId}/playbook")
     fun upsertPlaybook(
         @Parameter(hidden = true) @CurrentUser userId: Long,

@@ -4,6 +4,8 @@ import com.ongo.application.ugc.shorts.ShortsScheduleSheetService
 import com.ongo.application.ugc.shorts.dto.SheetPreviewResponse
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -27,6 +29,7 @@ class ShortsSheetController(
 
     @Operation(summary = "예약표 엑셀 다운로드", description = "클립별 제목·후킹·캡션·예약시각이 담긴 .xlsx 를 내보낸다")
     @GetMapping("/{runId}/sheet")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun downloadSheet(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -44,6 +47,7 @@ class ShortsSheetController(
         description = "수정한 .xlsx 를 올리면 변경 diff만 돌려준다. DB는 건드리지 않는다",
     )
     @PostMapping("/{runId}/sheet/preview", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun previewSheet(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -57,6 +61,7 @@ class ShortsSheetController(
         description = "미리보기에서 확인한 .xlsx 를 다시 올려 제목·후킹문구·캡션·예약시각 변경을 실제로 반영한다",
     )
     @PostMapping("/{runId}/sheet/apply", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun applySheet(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,

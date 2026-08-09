@@ -6,6 +6,8 @@ import com.ongo.application.ugc.shorts.dto.ShortsPromptRevisionResponse
 import com.ongo.application.ugc.shorts.dto.UpdateShortsPromptRequest
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -28,6 +30,7 @@ class ShortsPromptController(
 
     @Operation(summary = "프롬프트 목록 조회", description = "9단계 전체를 파이프라인 순서대로 반환합니다.")
     @GetMapping
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun list(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -36,6 +39,7 @@ class ShortsPromptController(
 
     @Operation(summary = "단계별 프롬프트 조회")
     @GetMapping("/{stage}")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun get(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -45,6 +49,7 @@ class ShortsPromptController(
 
     @Operation(summary = "프롬프트 편집", description = "워크스페이스 오버라이드를 생성/갱신하고 revision을 1 올립니다.")
     @PutMapping("/{stage}")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun update(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -55,6 +60,7 @@ class ShortsPromptController(
 
     @Operation(summary = "기본값으로 복원", description = "워크스페이스 오버라이드를 삭제해 시스템 기본값으로 되돌립니다.")
     @DeleteMapping("/{stage}")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun reset(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -64,6 +70,7 @@ class ShortsPromptController(
 
     @Operation(summary = "개정 이력 조회", description = "최신 개정부터 반환합니다.")
     @GetMapping("/{stage}/revisions")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
     fun revisions(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -73,6 +80,7 @@ class ShortsPromptController(
 
     @Operation(summary = "개정 롤백", description = "지정 개정의 내용으로 새 개정을 만듭니다.")
     @PostMapping("/{stage}/revisions/{revision}/restore")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
     fun restore(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,

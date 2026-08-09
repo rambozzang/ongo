@@ -7,6 +7,8 @@ import com.ongo.application.ugc.dto.CreateInviteRequest
 import com.ongo.application.ugc.dto.InviteResponse
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -28,6 +30,7 @@ class CampaignParticipationController(
 
     @Operation(summary = "초대 링크 생성")
     @PostMapping("/campaigns/{campaignId}/invites")
+    @RequiresPermission(Permission.CAMPAIGN_MANAGE)
     fun createInvite(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -41,6 +44,7 @@ class CampaignParticipationController(
 
     @Operation(summary = "지원자 목록 조회")
     @GetMapping("/campaigns/{campaignId}/applications")
+    @RequiresPermission(Permission.CAMPAIGN_REVIEW)
     fun listApplications(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -53,6 +57,7 @@ class CampaignParticipationController(
 
     @Operation(summary = "지원 수락", description = "지원을 수락하고 참여자를 생성합니다(원자적).")
     @PostMapping("/applications/{applicationId}/accept")
+    @RequiresPermission(Permission.CAMPAIGN_REVIEW)
     fun accept(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -62,6 +67,7 @@ class CampaignParticipationController(
 
     @Operation(summary = "지원 거절")
     @PostMapping("/applications/{applicationId}/reject")
+    @RequiresPermission(Permission.CAMPAIGN_REVIEW)
     fun reject(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,

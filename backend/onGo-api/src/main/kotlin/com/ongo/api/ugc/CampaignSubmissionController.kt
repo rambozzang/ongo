@@ -7,6 +7,8 @@ import com.ongo.application.ugc.dto.SubmissionListResponse
 import com.ongo.application.ugc.dto.SubmissionResponse
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -28,6 +30,7 @@ class CampaignSubmissionController(
 
     @Operation(summary = "제출물 목록 조회")
     @GetMapping("/campaigns/{campaignId}/submissions")
+    @RequiresPermission(Permission.CAMPAIGN_REVIEW)
     fun list(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -40,6 +43,7 @@ class CampaignSubmissionController(
 
     @Operation(summary = "제출물 상세 (검수 이력 포함)")
     @GetMapping("/submissions/{submissionId}")
+    @RequiresPermission(Permission.CAMPAIGN_REVIEW)
     fun detail(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -49,6 +53,7 @@ class CampaignSubmissionController(
 
     @Operation(summary = "수정 요청", description = "사유(comment)가 필수입니다.")
     @PostMapping("/submissions/{submissionId}/request-changes")
+    @RequiresPermission(Permission.CAMPAIGN_REVIEW)
     fun requestChanges(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,
@@ -59,6 +64,7 @@ class CampaignSubmissionController(
 
     @Operation(summary = "승인")
     @PostMapping("/submissions/{submissionId}/approve")
+    @RequiresPermission(Permission.CAMPAIGN_REVIEW)
     fun approve(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable workspaceId: Long,

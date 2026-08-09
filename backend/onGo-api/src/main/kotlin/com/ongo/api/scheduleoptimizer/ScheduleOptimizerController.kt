@@ -4,6 +4,8 @@ import com.ongo.application.scheduleoptimizer.ScheduleOptimizerUseCase
 import com.ongo.application.scheduleoptimizer.dto.*
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
+import com.ongo.common.annotation.RequiresPermission
+import com.ongo.common.enums.Permission
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -18,6 +20,7 @@ class ScheduleOptimizerController(
 ) {
 
     @Operation(summary = "AI 최적 시간대 생성")
+    @RequiresPermission(Permission.AI_USE)
     @PostMapping("/generate")
     fun generateSlots(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -28,6 +31,7 @@ class ScheduleOptimizerController(
     }
 
     @Operation(summary = "최적 시간대 조회")
+    @RequiresPermission(Permission.SCHEDULE_READ)
     @GetMapping("/slots")
     fun getSlots(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -38,6 +42,7 @@ class ScheduleOptimizerController(
     }
 
     @Operation(summary = "일정 추천 목록")
+    @RequiresPermission(Permission.SCHEDULE_READ)
     @GetMapping("/recommendations")
     fun getRecommendations(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -47,6 +52,7 @@ class ScheduleOptimizerController(
     }
 
     @Operation(summary = "추천 적용")
+    @RequiresPermission(Permission.SCHEDULE_UPDATE)
     @PostMapping("/recommendations/{id}/apply")
     fun applyRecommendation(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -57,6 +63,7 @@ class ScheduleOptimizerController(
     }
 
     @Operation(summary = "일정 최적화 요약")
+    @RequiresPermission(Permission.SCHEDULE_READ)
     @GetMapping("/summary")
     fun getSummary(
         @Parameter(hidden = true) @CurrentUser userId: Long,
