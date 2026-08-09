@@ -728,7 +728,12 @@ class StreamPublishUseCase(
             return
         }
 
-        val fileUrl = video.fileUrl
+        // Stored video.fileUrl may be a presigned URL that expired while the
+        // schedule was waiting. Reissue it from the durable object key at the
+        // moment the legacy schedule is recovered; retain the stored value as
+        // a compatibility fallback for old storage adapters.
+        val fileUrl = runCatching { storageService.getFileUrl(video.id!!) }.getOrNull()
+            ?: video.fileUrl
         if (fileUrl.isNullOrBlank()) {
             log.error("예약 업로드 실패 — fileUrl 없음 [scheduleId={}, videoId={}]", schedule.id, schedule.videoId)
             scheduleRepository.update(schedule.copy(status = ScheduleStatus.FAILED))

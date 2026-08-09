@@ -536,6 +536,7 @@ class StreamPublishUseCaseTest {
         val synchronization = slot<TransactionSynchronization>()
 
         every { videoRepository.findById(100L) } returns video
+        every { storageService.getFileUrl(100L) } returns "https://storage.test/fresh-scheduled-video.mp4"
         every { videoUploadRepository.findByVideoIdAndPlatform(100L, any()) } returns null
         every { videoUploadRepository.save(any()) } answers {
             val requested = firstArg<VideoUpload>()
@@ -563,6 +564,7 @@ class StreamPublishUseCaseTest {
 
         verify(exactly = 1) {
             eventPublisher.publishEvent(match<VideoPublishEvent> { event ->
+                event.fileUrl == "https://storage.test/fresh-scheduled-video.mp4" &&
                 event.platformConfigs.associate { it.platform to it.scheduledAt } == mapOf(
                     Platform.YOUTUBE to null,
                     Platform.INSTAGRAM to null,
