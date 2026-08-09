@@ -158,7 +158,10 @@ class TikTokStreamWriter(
             lastFailureReason = response.data?.failReason
             when (lastStatus) {
                 "PUBLISH_COMPLETE" -> {
-                    val publicVideoId = response.data?.publicPostId?.firstOrNull() ?: pid
+                    val publicVideoId = response.data?.publicPostId?.firstOrNull()
+                    if (publicVideoId.isNullOrBlank()) {
+                        return processingResult(pid, "TikTok 게시가 완료되었지만 공개 영상 ID를 아직 확인하지 못했습니다")
+                    }
                     return PlatformUploadResult(
                         success = true,
                         platformVideoId = publicVideoId,
@@ -189,7 +192,9 @@ class TikTokStreamWriter(
     private fun processingResult(pid: String, message: String) = PlatformUploadResult(
         success = true,
         platformVideoId = pid,
-        platformUrl = buildPlatformUrl(pid),
+        // pid is TikTok's publish_id until the publicPostId is returned. It is
+        // not safe to expose a share URL for it or persist it as a known URL.
+        platformUrl = null,
         errorMessage = message,
         published = false,
     )

@@ -83,4 +83,33 @@ class TikTokStreamWriterTest {
         assertThat(result.platformUrl).isEqualTo("https://www.tiktok.com/@creator_name/video/$publicVideoId")
         verify(exactly = 1) { tikTokApi.fetchPublishStatus("Bearer $accessToken", any()) }
     }
+
+    @Test
+    fun `PUBLISH_COMPLETE라도 공개 영상 ID가 없으면 공유 URL을 만들지 않는다`() {
+        every {
+            tikTokApi.fetchPublishStatus("Bearer $accessToken", any())
+        } returns TikTokPublishStatusResponse(
+            data = TikTokPublishStatusResponse.StatusData(
+                status = "PUBLISH_COMPLETE",
+                publicPostId = emptyList(),
+                failReason = null,
+            ),
+            error = null,
+        )
+
+        writer.initSession(
+            meta = VideoPlatformMeta(videoUploadId = 1L, title = "테스트", visibility = Visibility.PUBLIC),
+            accessToken = PlainToken(accessToken),
+            platformChannelId = "creator_name",
+            fileSize = 4,
+            scheduledAt = null,
+        )
+        writer.writeChunk("test".toByteArray(), 0, 4)
+
+        val result = writer.complete()
+
+        assertThat(result.published).isFalse()
+        assertThat(result.platformUrl).isNull()
+        assertThat(result.platformVideoId).isEqualTo(publishId)
+    }
 }

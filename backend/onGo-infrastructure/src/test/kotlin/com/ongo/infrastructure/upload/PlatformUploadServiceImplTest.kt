@@ -172,7 +172,38 @@ class PlatformUploadServiceImplTest {
         assertThat(result.success).isTrue()
         assertThat(result.published).isTrue()
         assertThat(result.platformVideoId).isEqualTo("video-1")
-        assertThat(result.platformUrl).isEqualTo("https://www.tiktok.com/video/video-1")
+        assertThat(result.platformUrl).isEqualTo("https://www.tiktok.com/@creator/video/video-1")
+    }
+
+    @Test
+    fun `TikTok publish_id만 있고 공개 영상 ID가 없으면 완료 URL을 추정하지 않는다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channelRepository = mockk<ChannelRepository>()
+        val tokenEncryptionPort = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+        every { factory.getClient(Platform.TIKTOK) } returns client
+        every { channelRepository.findByUserIdAndPlatform(7L, Platform.TIKTOK) } returns Channel(
+            id = 2L,
+            userId = 7L,
+            platform = Platform.TIKTOK,
+            platformChannelId = "creator",
+            channelName = "creator",
+            accessToken = EncryptedToken("encrypted-token"),
+            status = ChannelStatus.ACTIVE,
+        )
+        every { tokenEncryptionPort.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("plain-token")
+        every { client.getVideoStatus("publish-1", "plain-token") } returns com.ongo.infrastructure.external.platform.PlatformVideoStatus(
+            platformVideoId = "publish-1",
+            status = "PUBLISH_COMPLETE",
+        )
+
+        val service = PlatformUploadServiceImpl(factory, channelRepository, tokenEncryptionPort, emptyList())
+        val result = service.poll(Platform.TIKTOK, "publish-1", 7L)
+
+        assertThat(result.success).isFalse()
+        assertThat(result.published).isFalse()
+        assertThat(result.platformUrl).isNull()
+        assertThat(result.confirmation).isEqualTo(com.ongo.application.video.PublishConfirmation.UNKNOWN)
     }
 
     @Test

@@ -229,7 +229,12 @@ class PlatformUploadServiceImpl(
                 val videoId = status.platformVideoId.ifBlank { pollToken }
                 val url = status.platformUrl?.takeIf { it.isUsablePlatformUrl() }
                     ?: knownPlatformUrl?.takeIf { it.isUsablePlatformUrl() }
-                    ?: platformUrl(platform, videoId)
+                    ?: platformUrl(
+                        platform,
+                        videoId,
+                        channel.platformChannelId,
+                        isPublicId = videoId != pollToken,
+                    )
                 if (url == null) {
                     return PlatformUploadResult(
                         success = false,
@@ -261,9 +266,22 @@ class PlatformUploadServiceImpl(
         }
     }
 
-    private fun platformUrl(platform: Platform, videoId: String): String? = when (platform) {
+    private fun platformUrl(
+        platform: Platform,
+        videoId: String,
+        platformChannelId: String? = null,
+        isPublicId: Boolean = true,
+    ): String? = when (platform) {
         Platform.YOUTUBE -> "https://www.youtube.com/watch?v=$videoId"
-        Platform.TIKTOK -> "https://www.tiktok.com/video/$videoId"
+        // TikTok's publish_id is not a public video id. Only construct a URL
+        // after the status response contains the public id and the connected
+        // creator username is available. A generic /video/{publish_id} URL can
+        // look valid while pointing to nothing, which would falsely complete a
+        // publish in the UI.
+        Platform.TIKTOK -> platformChannelId
+            ?.takeIf { isPublicId }
+            ?.takeIf { it.isNotBlank() }
+            ?.let { "https://www.tiktok.com/@$it/video/$videoId" }
         // Instagram/Threads 상태 응답은 permalink를 반드시 반환해야 한다.
         // ID만으로 URL을 조립하면 실제 게시 링크인지 검증할 수 없다.
         Platform.INSTAGRAM, Platform.THREADS -> null
