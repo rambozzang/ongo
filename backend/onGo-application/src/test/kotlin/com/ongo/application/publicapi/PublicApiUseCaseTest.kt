@@ -24,6 +24,8 @@ import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.domain.workspace.WorkspaceRepository
+import com.ongo.domain.workspace.Workspace
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -44,6 +46,7 @@ class PublicApiUseCaseTest {
     private val publishVideo = mockk<PublishVideoUseCase>()
     private val tokenEncryption = mockk<TokenEncryptionPort>()
     private val integrationTools = mockk<PlatformIntegrationToolPort>()
+    private val workspaces = mockk<WorkspaceRepository>(relaxed = true)
     private val useCase = PublicApiUseCase(
         channels,
         posts,
@@ -55,6 +58,7 @@ class PublicApiUseCaseTest {
         jacksonObjectMapper(),
         tokenEncryption,
         integrationTools,
+        workspaces,
     )
 
     private val channel = Channel(
@@ -76,6 +80,20 @@ class PublicApiUseCaseTest {
         assertEquals("7", result.single().id)
         assertEquals("youtube", result.single().provider)
         assertEquals("youtube", result.single().identifier)
+    }
+
+    @Test
+    fun `integrations group은 접근 가능한 workspace에 속한 채널만 반환한다`() {
+        val workspace = Workspace(id = 22, ownerId = 1, name = "브랜드", slug = "brand")
+        every { workspaces.findAccessibleByUserId(1) } returns listOf(workspace)
+        every { channels.findByUserIdAndWorkspaceId(1, 22) } returns listOf(channel.copy(workspaceId = 22))
+        every { workspaces.findById(22) } returns workspace
+
+        val result = useCase.integrations(1, "brand")
+
+        assertEquals("22", result.single().customer?.id)
+        assertEquals("브랜드", result.single().customer?.name)
+        verify { channels.findByUserIdAndWorkspaceId(1, 22) }
     }
 
     @Test
@@ -167,6 +185,28 @@ class PublicApiUseCaseTest {
                 20,
             )
         }
+    }
+
+    @Test
+    fun `posts customer는 접근 가능한 workspace 게시물만 조회한다`() {
+        val workspace = Workspace(id = 22, ownerId = 1, name = "브랜드", slug = "brand")
+        val post = PublicApiPost(
+            id = 45,
+            userId = 1,
+            workspaceId = 22,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.DRAFT,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.DRAFT,
+            payloadJson = "{\"posts\":[]}",
+        )
+        every { workspaces.findAccessibleByUserId(1) } returns listOf(workspace)
+        every { posts.findByUserIdAndWorkspaceId(1, 22, 20) } returns listOf(post)
+        every { uploads.findByVideoId(11) } returns emptyList()
+
+        val result = useCase.list(1, 20, customer = "brand")
+
+        assertEquals(listOf("45"), result.map { it.id })
+        verify { posts.findByUserIdAndWorkspaceId(1, 22, 20) }
     }
 
     @Test

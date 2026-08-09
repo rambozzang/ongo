@@ -18,6 +18,7 @@ class PublicApiPostJooqRepository(
     override fun save(post: PublicApiPost): PublicApiPost {
         val id = dsl.insertInto(TABLE)
             .set(USER_ID, post.userId)
+            .set(WORKSPACE_ID, post.workspaceId)
             .set(VIDEO_ID, post.videoId)
             .set(POST_TYPE, post.type.name)
             .set(STATUS, post.status.name)
@@ -34,6 +35,7 @@ class PublicApiPostJooqRepository(
 
     override fun update(post: PublicApiPost): PublicApiPost {
         dsl.update(TABLE)
+            .set(WORKSPACE_ID, post.workspaceId)
             .set(VIDEO_ID, post.videoId)
             .set(POST_TYPE, post.type.name)
             .set(STATUS, post.status.name)
@@ -62,6 +64,16 @@ class PublicApiPostJooqRepository(
             .fetch()
             .map { it.toPost() }
 
+    override fun findByUserIdAndWorkspaceId(userId: Long, workspaceId: Long, limit: Int): List<PublicApiPost> =
+        dsl.select()
+            .from(TABLE)
+            .where(USER_ID.eq(userId))
+            .and(WORKSPACE_ID.eq(workspaceId))
+            .orderBy(CREATED_AT.desc())
+            .limit(limit.coerceIn(1, 100))
+            .fetch()
+            .map { it.toPost() }
+
     override fun findByUserIdAndDateRange(
         userId: Long,
         start: LocalDateTime,
@@ -71,6 +83,26 @@ class PublicApiPostJooqRepository(
         dsl.select()
             .from(TABLE)
             .where(USER_ID.eq(userId))
+            .and(
+                SCHEDULED_AT.between(start, end)
+                    .or(SCHEDULED_AT.isNull().and(CREATED_AT.between(start, end)))
+            )
+            .orderBy(CREATED_AT.desc())
+            .limit(limit.coerceIn(1, 100))
+            .fetch()
+            .map { it.toPost() }
+
+    override fun findByUserIdAndWorkspaceIdAndDateRange(
+        userId: Long,
+        workspaceId: Long,
+        start: LocalDateTime,
+        end: LocalDateTime,
+        limit: Int,
+    ): List<PublicApiPost> =
+        dsl.select()
+            .from(TABLE)
+            .where(USER_ID.eq(userId))
+            .and(WORKSPACE_ID.eq(workspaceId))
             .and(
                 SCHEDULED_AT.between(start, end)
                     .or(SCHEDULED_AT.isNull().and(CREATED_AT.between(start, end)))
@@ -90,6 +122,7 @@ class PublicApiPostJooqRepository(
     private fun Record.toPost() = PublicApiPost(
         id = get(ID)!!,
         userId = get(USER_ID)!!,
+        workspaceId = get(WORKSPACE_ID),
         videoId = get(VIDEO_ID)!!,
         type = PublicApiPostType.valueOf(get(POST_TYPE)!!),
         status = PublicApiPostStatus.valueOf(get(STATUS)!!),
@@ -104,6 +137,7 @@ class PublicApiPostJooqRepository(
         private val TABLE = DSL.table(DSL.name("public_api_posts"))
         private val ID = DSL.field(DSL.name("id"), Long::class.java)
         private val USER_ID = DSL.field(DSL.name("user_id"), Long::class.java)
+        private val WORKSPACE_ID = DSL.field(DSL.name("workspace_id"), Long::class.java)
         private val VIDEO_ID = DSL.field(DSL.name("video_id"), Long::class.java)
         private val POST_TYPE = DSL.field(DSL.name("post_type"), String::class.java)
         private val STATUS = DSL.field(DSL.name("status"), String::class.java)

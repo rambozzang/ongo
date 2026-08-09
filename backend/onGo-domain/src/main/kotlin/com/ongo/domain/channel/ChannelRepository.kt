@@ -6,6 +6,8 @@ interface ChannelRepository {
     fun findById(id: Long): Channel?
     fun findAllActive(): List<Channel>
     fun findByUserId(userId: Long): List<Channel>
+    fun findByUserIdAndWorkspaceId(userId: Long, workspaceId: Long): List<Channel> =
+        findByUserId(userId).filter { it.workspaceId == workspaceId }
     fun findByUserIdAndPlatform(userId: Long, platform: Platform): Channel?
     fun findByUserIdAndPlatformChannelId(userId: Long, platform: Platform, platformChannelId: String): Channel?
     fun save(channel: Channel): Channel

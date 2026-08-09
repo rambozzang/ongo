@@ -79,7 +79,7 @@ class PublicApiControllerContractTest {
 
     @Test
     fun `list posts returns documented posts wrapper and state fields`() {
-        every { useCase.list(1L, 50, null, null) } returns listOf(
+        every { useCase.list(1L, 50, null, null, null) } returns listOf(
             PublicPostResponse(
                 id = "41",
                 type = "schedule",
@@ -93,7 +93,7 @@ class PublicApiControllerContractTest {
             ),
         )
 
-        val body = controller.list(1L, apiKeyAuthentication, 50, null, null).body
+        val body = controller.list(1L, apiKeyAuthentication, 50, null, null, null).body
         val map = assertIs<Map<*, *>>(body)
         val posts = assertIs<List<*>>(map["posts"])
         val post = assertIs<com.ongo.application.publicapi.PublicPostListItem>(posts.single())
@@ -106,7 +106,7 @@ class PublicApiControllerContractTest {
 
     @Test
     fun `list maps uncertain or partial publishing to error instead of queue`() {
-        every { useCase.list(1L, 50, null, null) } returns listOf(
+        every { useCase.list(1L, 50, null, null, null) } returns listOf(
             PublicPostResponse(
                 id = "42",
                 type = "now",
@@ -119,7 +119,7 @@ class PublicApiControllerContractTest {
             ),
         )
 
-        val body = controller.list(1L, apiKeyAuthentication, 50, null, null).body
+        val body = controller.list(1L, apiKeyAuthentication, 50, null, null, null).body
         val post = assertIs<com.ongo.application.publicapi.PublicPostListItem>(
             assertIs<List<*>>(assertIs<Map<*, *>>(body)["posts"]).single(),
         )

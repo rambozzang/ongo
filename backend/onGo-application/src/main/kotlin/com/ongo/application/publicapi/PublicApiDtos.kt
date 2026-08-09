@@ -54,6 +54,12 @@ data class PublicIntegrationResponse(
     val disabled: Boolean,
     val profile: String?,
     val status: String,
+    val customer: PublicCustomerResponse? = null,
+)
+
+data class PublicCustomerResponse(
+    val id: String,
+    val name: String,
 )
 
 data class PublicPostTargetResponse(

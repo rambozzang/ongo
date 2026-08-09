@@ -82,9 +82,10 @@ class PublicApiController(
     fun integrations(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         authentication: Authentication,
+        @RequestParam(required = false) group: String?,
     ): ResponseEntity<Any> {
         requireApiKey(authentication)
-        return raw(useCase.integrations(userId))
+        return raw(useCase.integrations(userId, group))
     }
 
     @Operation(summary = "integration 연결 상태 조회")
@@ -275,10 +276,11 @@ class PublicApiController(
         @RequestParam(defaultValue = "50") limit: Int,
         @RequestParam(required = false) startDate: String?,
         @RequestParam(required = false) endDate: String?,
+        @RequestParam(required = false) customer: String?,
     ): ResponseEntity<Any> {
         requireApiKey(authentication)
         require(limit in 1..100) { "limit은 1~100 사이여야 합니다" }
-        val posts = useCase.list(userId, limit, startDate, endDate)
+        val posts = useCase.list(userId, limit, startDate, endDate, customer)
             .flatMap { post ->
                 post.posts.ifEmpty { listOf(null) }.map { target ->
                     PublicPostListItem(

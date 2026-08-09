@@ -29,6 +29,8 @@ import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import com.ongo.domain.contentsource.VideoSource
+import com.ongo.domain.workspace.Workspace
+import com.ongo.domain.workspace.WorkspaceRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
@@ -50,10 +52,12 @@ class PublicApiUseCase(
     private val objectMapper: ObjectMapper,
     private val tokenEncryptionPort: TokenEncryptionPort,
     private val integrationToolPort: PlatformIntegrationToolPort,
+    private val workspaceRepository: WorkspaceRepository,
 ) {
 
-    fun integrations(userId: Long): List<PublicIntegrationResponse> =
-        channelRepository.findByUserId(userId).map { channel ->
+    fun integrations(userId: Long, group: String? = null): List<PublicIntegrationResponse> =
+        channelsForScope(userId, group).map { channel ->
+            val workspace = channel.workspaceId?.let(workspaceRepository::findById)
             PublicIntegrationResponse(
                 id = requireNotNull(channel.id).toString(),
                 name = channel.channelName,
@@ -63,6 +67,7 @@ class PublicApiUseCase(
                 disabled = channel.status != com.ongo.domain.channel.ChannelStatus.ACTIVE,
                 profile = channel.platformChannelId,
                 status = channel.status.name,
+                customer = workspace?.let { PublicCustomerResponse(it.id.toString(), it.name) },
             )
         }
 
@@ -203,6 +208,7 @@ class PublicApiUseCase(
         if (type == PublicApiPostType.SCHEDULE) {
             require(scheduledAt != null) { "schedule 게시에는 date가 필요합니다" }
         }
+        val workspace = resolveRequestedWorkspace(userId, request.posts.mapNotNull { it.group }.distinct())
 
         val video = resolveVideo(userId, request)
         val normalized = request.copy(
@@ -219,6 +225,7 @@ class PublicApiUseCase(
         var post = postRepository.save(
             PublicApiPost(
                 userId = userId,
+                workspaceId = workspace?.id,
                 videoId = requireNotNull(video.id),
                 type = type,
                 status = if (type == PublicApiPostType.DRAFT) PublicApiPostStatus.DRAFT else PublicApiPostStatus.PROCESSING,
@@ -249,15 +256,19 @@ class PublicApiUseCase(
         limit: Int,
         startDate: String? = null,
         endDate: String? = null,
+        customer: String? = null,
     ): List<PublicPostResponse> {
+        val workspace = resolveWorkspace(userId, customer)
         val start = startDate?.let(::parseDate)
         val end = endDate?.let(::parseDate)
         require((start == null) == (end == null)) { "startDate와 endDate는 함께 지정해야 합니다" }
         require(start == null || !end!!.isBefore(start)) { "endDate는 startDate보다 빠를 수 없습니다" }
         val posts = if (start != null && end != null) {
-            postRepository.findByUserIdAndDateRange(userId, start, end, limit)
+            if (workspace == null) postRepository.findByUserIdAndDateRange(userId, start, end, limit)
+            else postRepository.findByUserIdAndWorkspaceIdAndDateRange(userId, workspace.id!!, start, end, limit)
         } else {
-            postRepository.findByUserId(userId, limit)
+            if (workspace == null) postRepository.findByUserId(userId, limit)
+            else postRepository.findByUserIdAndWorkspaceId(userId, workspace.id!!, limit)
         }
         return posts.map(::toResponse)
     }
@@ -478,6 +489,10 @@ class PublicApiUseCase(
         val channel = channelRepository.findById(channelId)
             ?.takeIf { it.userId == userId }
             ?: throw NotFoundException("integration", item.integration.id)
+        val requestedWorkspace = resolveRequestedWorkspace(userId, listOfNotNull(item.group))
+        require(requestedWorkspace == null || channel.workspaceId == requestedWorkspace.id) {
+            "integration은 요청한 group에 속하지 않습니다"
+        }
         val value = item.value.firstOrNull()
         val settings = item.settings
         val title = settings?.path("title")?.asText(null)
@@ -581,6 +596,27 @@ class PublicApiUseCase(
 
     private fun load(userId: Long, id: Long): PublicApiPost =
         postRepository.findByIdAndUserId(id, userId) ?: throw NotFoundException("공개 API 게시", id)
+
+    private fun channelsForScope(userId: Long, group: String?): List<Channel> {
+        val workspace = resolveWorkspace(userId, group)
+        return if (workspace == null) channelRepository.findByUserId(userId)
+        else channelRepository.findByUserIdAndWorkspaceId(userId, workspace.id!!)
+    }
+
+    private fun resolveRequestedWorkspace(userId: Long, groups: List<String>): Workspace? {
+        require(groups.size <= 1) { "한 번의 Postiz 요청에는 하나의 group만 사용할 수 있습니다" }
+        return resolveWorkspace(userId, groups.singleOrNull())
+    }
+
+    private fun resolveWorkspace(userId: Long, group: String?): Workspace? {
+        if (group.isNullOrBlank()) return null
+        val normalized = group.trim()
+        val workspace = workspaceRepository.findAccessibleByUserId(userId).firstOrNull {
+            it.id?.toString() == normalized || it.slug == normalized
+        }
+        if (workspace == null) throw NotFoundException("group", group)
+        return workspace
+    }
 
     private fun parseType(value: String): PublicApiPostType = when (value.trim().lowercase()) {
         "now" -> PublicApiPostType.NOW

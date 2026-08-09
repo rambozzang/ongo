@@ -55,6 +55,15 @@ class ChannelJooqRepository(
             .fetch()
             .map { it.toChannel() }
 
+    override fun findByUserIdAndWorkspaceId(userId: Long, workspaceId: Long): List<Channel> =
+        dsl.select()
+            .from(CHANNELS)
+            .where(USER_ID.eq(userId))
+            .and(DSL.field("workspace_id", Long::class.java).eq(workspaceId))
+            .orderBy(CONNECTED_AT.desc())
+            .fetch()
+            .map { it.toChannel() }
+
     override fun findByUserIdAndPlatform(userId: Long, platform: Platform): Channel? =
         dsl.select()
             .from(CHANNELS)
@@ -79,6 +88,7 @@ class ChannelJooqRepository(
     override fun save(channel: Channel): Channel {
         val id = dsl.insertInto(CHANNELS)
             .set(USER_ID, channel.userId)
+            .set(DSL.field("workspace_id", Long::class.java), channel.workspaceId)
             .set(PLATFORM, channel.platform.name)
             .set(PLATFORM_CHANNEL_ID, channel.platformChannelId)
             .set(CHANNEL_NAME, channel.channelName)
@@ -98,6 +108,7 @@ class ChannelJooqRepository(
 
     override fun update(channel: Channel): Channel {
         dsl.update(CHANNELS)
+            .set(DSL.field("workspace_id", Long::class.java), channel.workspaceId)
             .set(CHANNEL_NAME, channel.channelName)
             .set(CHANNEL_URL, channel.channelUrl)
             .set(SUBSCRIBER_COUNT, channel.subscriberCount)
@@ -130,6 +141,7 @@ class ChannelJooqRepository(
         return Channel(
             id = get(ID),
             userId = get(USER_ID),
+            workspaceId = get(DSL.field("workspace_id", Long::class.java)),
             platform = try { Platform.valueOf(platformStr) } catch (_: Exception) { Platform.YOUTUBE },
             platformChannelId = get(PLATFORM_CHANNEL_ID),
             channelName = get(CHANNEL_NAME),

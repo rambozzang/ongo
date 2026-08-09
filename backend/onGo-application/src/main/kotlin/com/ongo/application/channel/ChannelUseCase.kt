@@ -16,6 +16,7 @@ import com.ongo.domain.channel.TokenEncryptionPort
 import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.user.UserRepository
 import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.domain.workspace.WorkspaceRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -32,6 +33,7 @@ class ChannelUseCase(
     private val platformClientPort: PlatformClientPort,
     private val tokenEncryptionPort: TokenEncryptionPort,
     private val videoUploadRepository: VideoUploadRepository,
+    private val workspaceRepository: WorkspaceRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -110,6 +112,7 @@ class ChannelUseCase(
         // 신규 채널 저장
         val channel = Channel(
             userId = userId,
+            workspaceId = workspaceRepository.findAccessibleByUserId(userId).firstOrNull()?.id,
             platform = platform,
             platformChannelId = channelInfo.channelId,
             channelName = channelInfo.channelName,

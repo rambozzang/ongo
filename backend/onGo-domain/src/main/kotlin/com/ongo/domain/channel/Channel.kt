@@ -22,6 +22,8 @@ import java.time.LocalDateTime
 data class Channel(
     val id: Long? = null,
     val userId: Long,
+    /** Postiz customer/group scope. Null is retained for legacy rows. */
+    val workspaceId: Long? = null,
     val platform: Platform,
     val platformChannelId: String,
     val channelName: String,

@@ -6,6 +6,8 @@ import java.time.LocalDateTime
 data class PublicApiPost(
     val id: Long = 0,
     val userId: Long,
+    /** Postiz customer/group scope. Null is retained for legacy rows. */
+    val workspaceId: Long? = null,
     val videoId: Long,
     val type: PublicApiPostType,
     val status: PublicApiPostStatus,
@@ -41,6 +43,9 @@ interface PublicApiPostRepository {
     fun findByIdAndUserId(id: Long, userId: Long): PublicApiPost?
     fun findByUserId(userId: Long, limit: Int): List<PublicApiPost>
 
+    fun findByUserIdAndWorkspaceId(userId: Long, workspaceId: Long, limit: Int): List<PublicApiPost> =
+        findByUserId(userId, limit).filter { it.workspaceId == workspaceId }
+
     /** 외부 자동화 클라이언트의 calendar 범위 조회. */
     fun findByUserIdAndDateRange(
         userId: Long,
@@ -48,6 +53,14 @@ interface PublicApiPostRepository {
         end: LocalDateTime,
         limit: Int,
     ): List<PublicApiPost> = findByUserId(userId, limit)
+
+    fun findByUserIdAndWorkspaceIdAndDateRange(
+        userId: Long,
+        workspaceId: Long,
+        start: LocalDateTime,
+        end: LocalDateTime,
+        limit: Int,
+    ): List<PublicApiPost> = findByUserIdAndDateRange(userId, start, end, limit)
 
     fun deleteDraft(id: Long, userId: Long): Boolean
 }
