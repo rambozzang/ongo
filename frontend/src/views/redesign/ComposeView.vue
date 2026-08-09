@@ -558,7 +558,23 @@ const capabilities = ref<PlatformUploadCapability[]>([])
 const optimalSlots = ref<Partial<Record<Platform, OptimalTimeSlot[]>>>({})
 const optimalTimesError = ref('')
 const disabled = reactive<Record<number, boolean>>({})
-const activeTab = ref<'common' | 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP' | 'DM' | 'VI' | 'TU'>('common')
+type MetadataTab =
+  | 'common'
+  | 'YT'
+  | 'IG'
+  | 'TT'
+  | 'FB'
+  | 'NV'
+  | 'TH'
+  | 'TW'
+  | 'PI'
+  | 'LI'
+  | 'WP'
+  | 'DM'
+  | 'VI'
+  | 'TU'
+
+const activeTab = ref<MetadataTab>('common')
 const schedMode = ref<'now' | 'best' | 'fix'>('best')
 const fixedAt = ref('')
 const recurringEnabled = ref(false)
@@ -584,7 +600,23 @@ function selectSourceMode(mode: 'file' | 'url') {
   if (mode === 'file') importedVideoId.value = null
 }
 
-const tabs = [
+const TAB_PLATFORM: Record<Exclude<MetadataTab, 'common'>, Platform> = {
+  YT: 'YOUTUBE',
+  IG: 'INSTAGRAM',
+  TT: 'TIKTOK',
+  FB: 'FACEBOOK',
+  NV: 'NAVER_CLIP',
+  TH: 'THREADS',
+  TW: 'TWITTER',
+  PI: 'PINTEREST',
+  LI: 'LINKEDIN',
+  WP: 'WORDPRESS',
+  DM: 'DAILYMOTION',
+  VI: 'VIMEO',
+  TU: 'TUMBLR',
+}
+
+const allTabs = [
   { key: 'common' as const, label: t('redesign.compose.tabCommon') },
   { key: 'YT' as const, label: 'YouTube' },
   { key: 'IG' as const, label: 'Instagram' },
@@ -600,6 +632,13 @@ const tabs = [
   { key: 'VI' as const, label: 'Vimeo' },
   { key: 'TU' as const, label: 'Tumblr' },
 ]
+
+const tabs = computed(() => {
+  const selectedPlatforms = new Set(selectedChannels.value.map((channel) => channel.platform))
+  return allTabs.filter(
+    (tab) => tab.key === 'common' || selectedPlatforms.has(TAB_PLATFORM[tab.key]),
+  )
+})
 
 const scheduleOptions = computed(() => [
   { key: 'now' as const, label: t('redesign.compose.schedNow'), hint: '' },
@@ -648,26 +687,8 @@ const shortsPlatforms = computed(() =>
     ),
 )
 
-function platformForTab(tab: typeof activeTab.value): Platform | null {
-  return (
-    (
-      {
-        YT: 'YOUTUBE',
-        IG: 'INSTAGRAM',
-        TT: 'TIKTOK',
-        FB: 'FACEBOOK',
-        NV: 'NAVER_CLIP',
-        TH: 'THREADS',
-        TW: 'TWITTER',
-        PI: 'PINTEREST',
-        LI: 'LINKEDIN',
-        WP: 'WORDPRESS',
-        DM: 'DAILYMOTION',
-        VI: 'VIMEO',
-        TU: 'TUMBLR',
-      } as Record<string, Platform>
-    )[tab] ?? null
-  )
+function platformForTab(tab: MetadataTab): Platform | null {
+  return tab === 'common' ? null : TAB_PLATFORM[tab]
 }
 
 function draftFor(platform: Platform | null): FormDraft {
@@ -703,6 +724,14 @@ const activeDraft = computed(() => draftFor(platformForTab(activeTab.value)))
 const selectedPreviewPlatforms = computed(() => [
   ...new Set(selectedChannels.value.map((channel) => channel.platform)),
 ])
+
+watch(
+  tabs,
+  (visibleTabs) => {
+    if (!visibleTabs.some((tab) => tab.key === activeTab.value)) activeTab.value = 'common'
+  },
+  { immediate: true },
+)
 const previewMetadata = computed(() =>
   Object.fromEntries(
     selectedPreviewPlatforms.value.map((platform) => {
