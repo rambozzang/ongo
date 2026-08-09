@@ -23,6 +23,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.THUMBNAIL_URLS
 import com.ongo.infrastructure.persistence.jooq.Fields.TITLE
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.VIDEOS
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.JsonNode
@@ -113,9 +114,9 @@ class VideoJooqRepository(
             .set(FILE_SIZE_BYTES, video.fileSizeBytes)
             .set(ORIGINAL_FILENAME, video.originalFilename)
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
-            .set(MEDIA_TYPE, video.mediaType.name)
-            .set(STATUS, video.status.name)
-            .set(SOURCE, video.source.name)
+            .set(MEDIA_TYPE, enumValue("media_type", video.mediaType.name))
+            .set(STATUS, enumValue("video_status", video.status.name))
+            .set(SOURCE, enumValue("video_source", video.source.name))
             .set(DSL.field("source_reference", JSONB::class.java), sourceRefJson)
             .returningResult(ID)
             .fetchOne()!!
@@ -138,9 +139,9 @@ class VideoJooqRepository(
             .set(FILE_SIZE_BYTES, video.fileSizeBytes)
             .set(ORIGINAL_FILENAME, video.originalFilename)
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
-            .set(MEDIA_TYPE, video.mediaType.name)
-            .set(STATUS, video.status.name)
-            .set(SOURCE, video.source.name)
+            .set(MEDIA_TYPE, enumValue("media_type", video.mediaType.name))
+            .set(STATUS, enumValue("video_status", video.status.name))
+            .set(SOURCE, enumValue("video_source", video.source.name))
             .set(DSL.field("source_reference", JSONB::class.java), sourceRefJson)
             .where(ID.eq(video.id))
             .execute()
@@ -155,7 +156,7 @@ class VideoJooqRepository(
      */
     override fun claimForPublish(userId: Long, videoId: Long): Boolean =
         dsl.update(VIDEOS)
-            .set(STATUS, UploadStatus.UPLOADING.name)
+            .set(STATUS, enumValue("video_status", UploadStatus.UPLOADING.name))
             .where(ID.eq(videoId))
             .and(USER_ID.eq(userId))
             .and(STATUS_TEXT.eq(UploadStatus.DRAFT.name))

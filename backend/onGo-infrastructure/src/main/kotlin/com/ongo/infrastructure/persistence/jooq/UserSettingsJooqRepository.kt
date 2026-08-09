@@ -16,6 +16,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.NOTIFICATION_SCHEDULE_REM
 import com.ongo.infrastructure.persistence.jooq.Fields.NOTIFICATION_UPLOAD
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.USER_SETTINGS
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -50,7 +51,7 @@ class UserSettingsJooqRepository(
 
         val id = dsl.insertInto(USER_SETTINGS)
             .set(USER_ID, settings.userId)
-            .set(DEFAULT_VISIBILITY, settings.defaultVisibility.name)
+            .set(DEFAULT_VISIBILITY, enumValue("visibility_type", settings.defaultVisibility.name))
             .set(DSL.field("default_platforms", JSONB::class.java), platformsJson)
             .set(DEFAULT_AI_TONE, settings.defaultAiTone)
             .set(DEFAULT_AI_PROVIDER, settings.defaultAiProvider.name)
@@ -69,7 +70,7 @@ class UserSettingsJooqRepository(
         val platformsJson = JSONB.jsonb(objectMapper.writeValueAsString(settings.defaultPlatforms.map { it.name }))
 
         dsl.update(USER_SETTINGS)
-            .set(DEFAULT_VISIBILITY, settings.defaultVisibility.name)
+            .set(DEFAULT_VISIBILITY, enumValue("visibility_type", settings.defaultVisibility.name))
             .set(DSL.field("default_platforms", JSONB::class.java), platformsJson)
             .set(DEFAULT_AI_TONE, settings.defaultAiTone)
             .set(DEFAULT_AI_PROVIDER, settings.defaultAiProvider.name)

@@ -19,6 +19,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.PROVIDER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.PADDLE_CUSTOMER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.ROLE
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.USERS
 import org.jooq.Condition
 import org.jooq.DSLContext
@@ -146,6 +147,4 @@ class UserJooqRepository(
         updatedAt = localDateTime(UPDATED_AT),
     )
 
-    private fun enumValue(typeName: String, value: String) =
-        DSL.field("?::$typeName", String::class.java, value)
 }

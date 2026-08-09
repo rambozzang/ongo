@@ -20,6 +20,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.STATUS_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.DRIVE_IMPORT_JOBS
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -78,7 +79,7 @@ class DriveImportJobJooqRepository(
                 .set(DRIVE_FILE_NAME, job.driveFileName)
                 .set(FILE_SIZE_BYTES, job.fileSizeBytes)
                 .set(BYTES_TRANSFERRED, job.bytesTransferred)
-                .set(STATUS, job.status.name)
+                .set(STATUS, enumValue("drive_import_status", job.status.name))
                 .set(S3_KEY, job.s3Key)
                 .set(ERROR_MESSAGE, job.errorMessage)
                 .set(RETRY_COUNT, job.retryCount)
@@ -93,7 +94,7 @@ class DriveImportJobJooqRepository(
     override fun updateStatus(id: Long, status: DriveImportStatus, errorMessage: String?) {
         val now = LocalDateTime.now()
         val q = dsl.update(DRIVE_IMPORT_JOBS)
-            .set(STATUS, status.name)
+            .set(STATUS, enumValue("drive_import_status", status.name))
             .set(ERROR_MESSAGE, errorMessage)
             .set(UPDATED_AT, now)
         // DOWNLOADING 첫 진입 시 started_at
@@ -112,7 +113,7 @@ class DriveImportJobJooqRepository(
     override fun markCompleted(id: Long, s3Key: String) {
         val now = LocalDateTime.now()
         dsl.update(DRIVE_IMPORT_JOBS)
-            .set(STATUS, DriveImportStatus.COMPLETED.name)
+            .set(STATUS, enumValue("drive_import_status", DriveImportStatus.COMPLETED.name))
             .set(S3_KEY, s3Key)
             .set(COMPLETED_AT, now)
             .set(UPDATED_AT, now)

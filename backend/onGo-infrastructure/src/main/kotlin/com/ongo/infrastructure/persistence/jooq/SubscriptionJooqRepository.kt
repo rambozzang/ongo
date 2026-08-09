@@ -27,6 +27,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.TRIAL_PLAN_TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.TRIAL_START
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.SUBSCRIPTIONS
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -63,21 +64,21 @@ class SubscriptionJooqRepository(
     override fun save(subscription: Subscription): Subscription {
         val id = dsl.insertInto(SUBSCRIPTIONS)
             .set(USER_ID, subscription.userId)
-            .set(PLAN_TYPE, subscription.planType.name)
-            .set(STATUS, subscription.status.name)
+            .set(PLAN_TYPE, enumValue("plan_type", subscription.planType.name))
+            .set(STATUS, enumValue("subscription_status", subscription.status.name))
             .set(PRICE, subscription.price)
-            .set(BILLING_CYCLE, subscription.billingCycle.name)
+            .set(BILLING_CYCLE, enumValue("billing_cycle", subscription.billingCycle.name))
             .set(CURRENT_PERIOD_START, subscription.currentPeriodStart)
             .set(CURRENT_PERIOD_END, subscription.currentPeriodEnd)
             .set(NEXT_BILLING_DATE, subscription.nextBillingDate)
-            .set(PENDING_PLAN_TYPE, subscription.pendingPlanType?.name)
+            .set(PENDING_PLAN_TYPE, subscription.pendingPlanType?.name?.let { enumValue("plan_type", it) })
             .set(STORAGE_QUOTA_LIMIT_BYTES, subscription.storageQuotaLimitBytes)
             .set(PADDLE_SUBSCRIPTION_ID, subscription.paddleSubscriptionId)
             .set(PADDLE_CUSTOMER_ID, subscription.paddleCustomerId)
             .set(CANCELLED_AT, subscription.cancelledAt)
             .set(TRIAL_START, subscription.trialStart)
             .set(TRIAL_END, subscription.trialEnd)
-            .set(TRIAL_PLAN_TYPE, subscription.trialPlanType?.name)
+            .set(TRIAL_PLAN_TYPE, subscription.trialPlanType?.name?.let { enumValue("plan_type", it) })
             .set(PAUSED_AT, subscription.pausedAt)
             .set(RESUME_AT, subscription.resumeAt)
             .returningResult(ID)
@@ -89,21 +90,21 @@ class SubscriptionJooqRepository(
 
     override fun update(subscription: Subscription): Subscription {
         dsl.update(SUBSCRIPTIONS)
-            .set(PLAN_TYPE, subscription.planType.name)
-            .set(STATUS, subscription.status.name)
+            .set(PLAN_TYPE, enumValue("plan_type", subscription.planType.name))
+            .set(STATUS, enumValue("subscription_status", subscription.status.name))
             .set(PRICE, subscription.price)
-            .set(BILLING_CYCLE, subscription.billingCycle.name)
+            .set(BILLING_CYCLE, enumValue("billing_cycle", subscription.billingCycle.name))
             .set(CURRENT_PERIOD_START, subscription.currentPeriodStart)
             .set(CURRENT_PERIOD_END, subscription.currentPeriodEnd)
             .set(NEXT_BILLING_DATE, subscription.nextBillingDate)
-            .set(PENDING_PLAN_TYPE, subscription.pendingPlanType?.name)
+            .set(PENDING_PLAN_TYPE, subscription.pendingPlanType?.name?.let { enumValue("plan_type", it) })
             .set(STORAGE_QUOTA_LIMIT_BYTES, subscription.storageQuotaLimitBytes)
             .set(PADDLE_SUBSCRIPTION_ID, subscription.paddleSubscriptionId)
             .set(PADDLE_CUSTOMER_ID, subscription.paddleCustomerId)
             .set(CANCELLED_AT, subscription.cancelledAt)
             .set(TRIAL_START, subscription.trialStart)
             .set(TRIAL_END, subscription.trialEnd)
-            .set(TRIAL_PLAN_TYPE, subscription.trialPlanType?.name)
+            .set(TRIAL_PLAN_TYPE, subscription.trialPlanType?.name?.let { enumValue("plan_type", it) })
             .set(PAUSED_AT, subscription.pausedAt)
             .set(RESUME_AT, subscription.resumeAt)
             .where(ID.eq(subscription.id))

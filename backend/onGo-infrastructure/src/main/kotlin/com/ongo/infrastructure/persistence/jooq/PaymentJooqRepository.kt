@@ -18,6 +18,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.RECEIPT_URL
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.PAYMENTS
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -70,10 +71,10 @@ class PaymentJooqRepository(
     override fun save(payment: Payment): Payment {
         val id = dsl.insertInto(PAYMENTS)
             .set(USER_ID, payment.userId)
-            .set(TYPE, payment.type.name)
+            .set(TYPE, enumValue("payment_type", payment.type.name))
             .set(AMOUNT, payment.amount)
             .set(CURRENCY, payment.currency)
-            .set(STATUS, payment.status.name)
+            .set(STATUS, enumValue("payment_status", payment.status.name))
             .set(PG_PROVIDER, payment.pgProvider)
             .set(PG_TRANSACTION_ID, payment.pgTransactionId)
             .set(PAYMENT_METHOD, payment.paymentMethod)
@@ -90,7 +91,7 @@ class PaymentJooqRepository(
 
     override fun update(payment: Payment): Payment {
         dsl.update(PAYMENTS)
-            .set(STATUS, payment.status.name)
+            .set(STATUS, enumValue("payment_status", payment.status.name))
             .set(PG_PROVIDER, payment.pgProvider)
             .set(PG_TRANSACTION_ID, payment.pgTransactionId)
             .set(PAYMENT_METHOD, payment.paymentMethod)

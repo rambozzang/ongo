@@ -224,6 +224,14 @@ object Tables {
 }
 
 object Fields {
+    /**
+     * PostgreSQL enum columns reject a VARCHAR bind.  Keep the cast at the
+     * bind site instead of relying on an implicit server-side cast, which is
+     * disabled for prepared statements in production PostgreSQL.
+     */
+    fun enumValue(typeName: String, value: String) =
+        DSL.field("?::$typeName", String::class.java, value)
+
     // Common
     val ID = DSL.field("id", Long::class.java)
     val USER_ID = DSL.field("user_id", Long::class.java)

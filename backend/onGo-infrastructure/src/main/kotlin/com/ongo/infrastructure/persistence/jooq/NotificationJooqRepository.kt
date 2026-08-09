@@ -12,6 +12,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.REFERENCE_TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.TITLE
 import com.ongo.infrastructure.persistence.jooq.Fields.TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.NOTIFICATIONS
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -70,7 +71,7 @@ class NotificationJooqRepository(
     override fun save(notification: Notification): Notification {
         val id = dsl.insertInto(NOTIFICATIONS)
             .set(USER_ID, notification.userId)
-            .set(TYPE, notification.type.name)
+            .set(TYPE, enumValue("notification_type", notification.type.name))
             .set(TITLE, notification.title)
             .set(MESSAGE, notification.message)
             .set(IS_READ, notification.isRead)

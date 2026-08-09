@@ -1,5 +1,18 @@
 package com.ongo.infrastructure.persistence.jooq
 
+import com.ongo.common.enums.MediaType
+import com.ongo.common.enums.Platform
+import com.ongo.common.enums.UploadStatus
+import com.ongo.common.enums.Visibility
+import com.ongo.domain.channel.Channel
+import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.channel.EncryptedToken
+import com.ongo.domain.video.Video
+import com.ongo.domain.video.VideoPlatformMeta
+import com.ongo.domain.video.VideoUpload
+import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.domain.video.VideoPlatformMetaRepository
+import com.ongo.domain.video.VideoRepository
 import org.jooq.DSLContext
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,6 +40,10 @@ import org.testcontainers.junit.jupiter.Testcontainers
 class VideoUploadChannelTargetIT {
 
     @Autowired lateinit var dsl: DSLContext
+    @Autowired lateinit var channelRepository: ChannelRepository
+    @Autowired lateinit var videoUploadRepository: VideoUploadRepository
+    @Autowired lateinit var videoPlatformMetaRepository: VideoPlatformMetaRepository
+    @Autowired lateinit var videoRepository: VideoRepository
 
     companion object {
         @Container @JvmStatic
@@ -92,6 +109,56 @@ class VideoUploadChannelTargetIT {
             dsl.fetchOne("SELECT count(*) FROM video_uploads WHERE video_id = ?", videoId)!!
                 .get(0, Int::class.java),
         )
+    }
+
+    @Test
+    @DisplayName("게시 핵심 저장소는 PostgreSQL enum 컬럼에 안전하게 round-trip한다")
+    fun corePublishingRepositoriesRoundTripPostgresEnums() {
+        val userId = dsl.fetchOne(
+            """
+            INSERT INTO users (email, name, provider, provider_id, role, plan_type)
+            VALUES (?, 'enum-test', 'GOOGLE', 'video-upload-enum-it', 'USER', 'FREE')
+            RETURNING id
+            """.trimIndent(),
+            EMAIL,
+        )!!.get(0, Long::class.java)
+
+        val channel = channelRepository.save(
+            Channel(
+                userId = userId,
+                platform = Platform.YOUTUBE,
+                platformChannelId = "enum-channel",
+                channelName = "enum channel",
+                accessToken = EncryptedToken("encrypted-token"),
+            )
+        )
+        val video = Video(
+            userId = userId,
+            title = "enum video",
+            mediaType = MediaType.VIDEO,
+            status = UploadStatus.DRAFT,
+        )
+        val savedVideo = videoRepository.save(video).id!!
+        val upload = videoUploadRepository.save(
+            VideoUpload(
+                videoId = savedVideo,
+                platform = Platform.YOUTUBE,
+                channelId = channel.id,
+                status = UploadStatus.UPLOADING,
+            )
+        )
+        val meta = videoPlatformMetaRepository.save(
+            VideoPlatformMeta(
+                videoUploadId = upload.id!!,
+                title = video.title,
+                visibility = Visibility.PUBLIC,
+            )
+        )
+
+        assertEquals(Platform.YOUTUBE, channelRepository.findById(channel.id!!)!!.platform)
+        assertEquals(UploadStatus.UPLOADING, videoUploadRepository.findById(upload.id!!)!!.status)
+        assertEquals(Visibility.PUBLIC, videoPlatformMetaRepository.findByVideoUploadId(upload.id!!)!!.visibility)
+        assertEquals(meta.id, videoPlatformMetaRepository.findByVideoUploadId(upload.id!!)!!.id)
     }
 
     private fun insertChannel(userId: Long, platformChannelId: String, name: String): Long =

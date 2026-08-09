@@ -21,6 +21,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.SUBSCRIBER_COUNT
 import com.ongo.infrastructure.persistence.jooq.Fields.TOKEN_EXPIRES_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.CHANNELS
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -89,7 +90,7 @@ class ChannelJooqRepository(
         val id = dsl.insertInto(CHANNELS)
             .set(USER_ID, channel.userId)
             .set(DSL.field("workspace_id", Long::class.java), channel.workspaceId)
-            .set(PLATFORM, channel.platform.name)
+            .set(PLATFORM, enumValue("platform_type", channel.platform.name))
             .set(PLATFORM_CHANNEL_ID, channel.platformChannelId)
             .set(CHANNEL_NAME, channel.channelName)
             .set(CHANNEL_URL, channel.channelUrl)
@@ -98,7 +99,7 @@ class ChannelJooqRepository(
             .set(ACCESS_TOKEN, channel.accessToken.value)
             .set(REFRESH_TOKEN, channel.refreshToken?.value)
             .set(TOKEN_EXPIRES_AT, channel.tokenExpiresAt)
-            .set(STATUS, channel.status.name)
+            .set(STATUS, enumValue("channel_status", channel.status.name))
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -116,7 +117,7 @@ class ChannelJooqRepository(
             .set(ACCESS_TOKEN, channel.accessToken.value)
             .set(REFRESH_TOKEN, channel.refreshToken?.value)
             .set(TOKEN_EXPIRES_AT, channel.tokenExpiresAt)
-            .set(STATUS, channel.status.name)
+            .set(STATUS, enumValue("channel_status", channel.status.name))
             .set(UPDATED_AT, channel.updatedAt)
             .where(ID.eq(channel.id))
             .execute()

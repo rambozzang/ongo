@@ -13,6 +13,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.TITLE
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_UPLOAD_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.VISIBILITY
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.VIDEO_PLATFORM_META
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -56,7 +57,7 @@ class VideoPlatformMetaJooqRepository(
             .set(TITLE, meta.title)
             .set(DESCRIPTION, meta.description)
             .set(DSL.field("tags", Array<String>::class.java), tagsArray)
-            .set(VISIBILITY, meta.visibility.name)
+            .set(VISIBILITY, enumValue("visibility_type", meta.visibility.name))
             .set(CUSTOM_THUMBNAIL_URL, meta.customThumbnailUrl)
             .set(CUSTOM_SETTINGS_JSON, meta.customSettingsJson)
             .returningResult(ID)
@@ -73,7 +74,7 @@ class VideoPlatformMetaJooqRepository(
             .set(TITLE, meta.title)
             .set(DESCRIPTION, meta.description)
             .set(DSL.field("tags", Array<String>::class.java), tagsArray)
-            .set(VISIBILITY, meta.visibility.name)
+            .set(VISIBILITY, enumValue("visibility_type", meta.visibility.name))
             .set(CUSTOM_THUMBNAIL_URL, meta.customThumbnailUrl)
             .set(CUSTOM_SETTINGS_JSON, meta.customSettingsJson)
             .where(ID.eq(meta.id))

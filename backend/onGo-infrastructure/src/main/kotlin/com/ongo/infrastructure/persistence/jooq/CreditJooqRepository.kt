@@ -26,6 +26,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.TOTAL_CREDITS
 import com.ongo.infrastructure.persistence.jooq.Fields.TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.AI_CREDITS
 import com.ongo.infrastructure.persistence.jooq.Tables.AI_CREDIT_TRANSACTIONS
 import com.ongo.infrastructure.persistence.jooq.Tables.AI_PURCHASED_CREDITS
@@ -103,7 +104,7 @@ class CreditJooqRepository(
     override fun saveTransaction(transaction: AiCreditTransaction): AiCreditTransaction {
         val id = dsl.insertInto(AI_CREDIT_TRANSACTIONS)
             .set(USER_ID, transaction.userId)
-            .set(TYPE, transaction.type.name)
+            .set(TYPE, enumValue("credit_tx_type", transaction.type.name))
             .set(AMOUNT, transaction.amount)
             .set(BALANCE_AFTER, transaction.balanceAfter)
             .set(FEATURE, transaction.feature)
@@ -148,7 +149,7 @@ class CreditJooqRepository(
             .set(REMAINING, credit.remaining)
             .set(PRICE, credit.price)
             .set(EXPIRES_AT, credit.expiresAt)
-            .set(STATUS, credit.status)
+            .set(STATUS, enumValue("purchased_credit_status", credit.status))
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -163,7 +164,7 @@ class CreditJooqRepository(
     override fun updatePurchasedCredit(credit: AiPurchasedCredit): AiPurchasedCredit {
         dsl.update(AI_PURCHASED_CREDITS)
             .set(REMAINING, credit.remaining)
-            .set(STATUS, credit.status)
+            .set(STATUS, enumValue("purchased_credit_status", credit.status))
             .where(ID.eq(credit.id))
             .execute()
 
@@ -191,7 +192,7 @@ class CreditJooqRepository(
     override fun bulkExpirePurchasedCredits(): Int =
         dsl.update(AI_PURCHASED_CREDITS)
             .set(REMAINING, 0)
-            .set(STATUS, "EXPIRED")
+            .set(STATUS, enumValue("purchased_credit_status", "EXPIRED"))
             .where(STATUS_TEXT.eq("ACTIVE"))
             .and(EXPIRES_AT.lessOrEqual(LocalDateTime.now()))
             .execute()

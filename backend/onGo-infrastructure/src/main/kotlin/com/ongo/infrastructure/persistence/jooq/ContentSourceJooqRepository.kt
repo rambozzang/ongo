@@ -20,6 +20,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.TOKEN_EXPIRES_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.USER_CONTENT_SOURCES
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -55,7 +56,7 @@ class ContentSourceJooqRepository(
         val id = if (source.id == 0L) {
             dsl.insertInto(USER_CONTENT_SOURCES)
                 .set(USER_ID, source.userId)
-                .set(SOURCE_TYPE, source.sourceType.name)
+                .set(SOURCE_TYPE, enumValue("content_source_type", source.sourceType.name))
                 .set(EXTERNAL_ACCOUNT_ID, source.externalAccountId)
                 .set(ACCOUNT_EMAIL, source.accountEmail)
                 .set(ACCOUNT_DISPLAY_NAME, source.accountDisplayName)
@@ -63,7 +64,7 @@ class ContentSourceJooqRepository(
                 .set(REFRESH_TOKEN, source.refreshTokenEncrypted)
                 .set(TOKEN_EXPIRES_AT, expiresAtLdt)
                 .set(GRANTED_SCOPES, source.grantedScopes)
-                .set(STATUS, source.status.name)
+                .set(STATUS, enumValue("content_source_status", source.status.name))
                 .set(UPDATED_AT, now)
                 .returningResult(ID).fetchOne()!!.get(ID)
         } else {
@@ -75,7 +76,7 @@ class ContentSourceJooqRepository(
                 .set(REFRESH_TOKEN, source.refreshTokenEncrypted)
                 .set(TOKEN_EXPIRES_AT, expiresAtLdt)
                 .set(GRANTED_SCOPES, source.grantedScopes)
-                .set(STATUS, source.status.name)
+                .set(STATUS, enumValue("content_source_status", source.status.name))
                 .set(LAST_ERROR, source.lastError)
                 .set(UPDATED_AT, now)
                 .where(ID.eq(source.id)).execute()
@@ -86,7 +87,7 @@ class ContentSourceJooqRepository(
 
     override fun updateStatus(id: Long, status: ContentSourceStatus, lastError: String?) {
         dsl.update(USER_CONTENT_SOURCES)
-            .set(STATUS, status.name)
+            .set(STATUS, enumValue("content_source_status", status.name))
             .set(LAST_ERROR, lastError)
             .set(UPDATED_AT, LocalDateTime.now())
             .where(ID.eq(id)).execute()
@@ -97,7 +98,7 @@ class ContentSourceJooqRepository(
             .set(ACCESS_TOKEN, accessTokenEncrypted)
             .set(REFRESH_TOKEN, refreshTokenEncrypted)
             .set(TOKEN_EXPIRES_AT, expiresAt?.atZone(ZoneOffset.UTC)?.toLocalDateTime())
-            .set(STATUS, ContentSourceStatus.ACTIVE.name)
+            .set(STATUS, enumValue("content_source_status", ContentSourceStatus.ACTIVE.name))
             .set(LAST_ERROR, null as String?)
             .set(UPDATED_AT, LocalDateTime.now())
             .where(ID.eq(id)).execute()

@@ -12,6 +12,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.STATUS_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.SCHEDULES
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -68,7 +69,7 @@ class ScheduleJooqRepository(
 
     override fun claimDue(id: Long, now: LocalDateTime): Schedule? {
         val changed = dsl.update(SCHEDULES)
-            .set(STATUS, ScheduleStatus.PROCESSING.name)
+            .set(STATUS, enumValue("schedule_status", ScheduleStatus.PROCESSING.name))
             .where(ID.eq(id))
             .and(SCHEDULED_AT.lessOrEqual(now))
             // PROCESSING is already owned by the worker that started the durable
@@ -86,7 +87,7 @@ class ScheduleJooqRepository(
             .set(VIDEO_ID, schedule.videoId)
             .set(USER_ID, schedule.userId)
             .set(SCHEDULED_AT, schedule.scheduledAt)
-            .set(STATUS, schedule.status.name)
+            .set(STATUS, enumValue("schedule_status", schedule.status.name))
             .set(DSL.field("platforms", JSONB::class.java), platformsJson)
             .returningResult(ID)
             .fetchOne()!!
@@ -100,7 +101,7 @@ class ScheduleJooqRepository(
 
         dsl.update(SCHEDULES)
             .set(SCHEDULED_AT, schedule.scheduledAt)
-            .set(STATUS, schedule.status.name)
+            .set(STATUS, enumValue("schedule_status", schedule.status.name))
             .set(DSL.field("platforms", JSONB::class.java), platformsJson)
             .where(ID.eq(schedule.id))
             .execute()

@@ -25,6 +25,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.STATUS_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.PLATFORM_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_ID
+import com.ongo.infrastructure.persistence.jooq.Fields.enumValue
 import com.ongo.infrastructure.persistence.jooq.Tables.VIDEO_UPLOADS
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -119,7 +120,7 @@ class VideoUploadJooqRepository(
         val id = dsl.insertInto(VIDEO_UPLOADS)
             .set(VIDEO_ID, upload.videoId)
             .set(CHANNEL_ID, upload.channelId)
-            .set(PLATFORM, upload.platform.name)
+            .set(PLATFORM, enumValue("platform_type", upload.platform.name))
             .set(PLATFORM_VIDEO_ID, upload.platformVideoId)
             .set(STATUS, statusValue(upload.status))
             .set(ERROR_MESSAGE, upload.errorMessage?.take(MAX_ERROR_LENGTH))
