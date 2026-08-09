@@ -95,7 +95,10 @@ deploy_backend() {
     if [ "$SKIP_BUILD" = false ]; then
         info "Gradle 테스트 및 bootJar 빌드 중..."
         chmod +x gradlew
-        ./gradlew :onGo-common:test :onGo-domain:test :onGo-application:test :onGo-infrastructure:test :onGo-api:test :onGo-api:bootJar --no-daemon -PskipIntegrationTests=true 2>&1 | tail -5
+        # 반드시 clean을 먼저 수행한다. Jenkins workspace가 재사용되면
+        # 삭제된 Kotlin 클래스가 build/classes에 남아 bootJar에 다시 들어가
+        # 컴파일은 성공하지만 런타임에서 삭제된 Bean을 찾는 문제가 발생한다.
+        ./gradlew clean :onGo-common:test :onGo-domain:test :onGo-application:test :onGo-infrastructure:test :onGo-api:test :onGo-api:bootJar --no-daemon -PskipIntegrationTests=true 2>&1 | tail -5
     else
         info "Backend 빌드 건너뜀 (--skip-build)"
     fi
