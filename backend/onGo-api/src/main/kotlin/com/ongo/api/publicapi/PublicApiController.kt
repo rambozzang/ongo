@@ -261,7 +261,7 @@ class PublicApiController(
         return ResData.success(useCase.connectReleaseId(userId, id, request))
     }
 
-    @Operation(summary = "초안 게시물 삭제")
+    @Operation(summary = "게시물 삭제", description = "초안은 삭제하고, 아직 전송되지 않은 예약 게시물은 취소한다. 외부 게시가 진행 중이거나 완료된 게시물은 중복 게시 방지를 위해 거부한다.")
     @DeleteMapping("/posts/{id}")
     fun delete(
         @Parameter(hidden = true) @CurrentUser userId: Long,
@@ -269,7 +269,19 @@ class PublicApiController(
         @PathVariable id: Long,
     ): ResponseEntity<ResData<Nothing?>> {
         requireApiKey(authentication)
-        useCase.deleteDraft(userId, id)
+        useCase.delete(userId, id)
+        return ResData.success(null)
+    }
+
+    @Operation(summary = "그룹 게시물 삭제", description = "한 번의 다중 채널 생성 요청으로 묶인 게시물을 삭제/취소한다. onGo에서는 생성 응답의 postId가 그룹 ID다.")
+    @DeleteMapping("/posts/group/{group}")
+    fun deleteGroup(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        authentication: Authentication,
+        @PathVariable group: String,
+    ): ResponseEntity<ResData<Nothing?>> {
+        requireApiKey(authentication)
+        useCase.deleteGroup(userId, group)
         return ResData.success(null)
     }
 

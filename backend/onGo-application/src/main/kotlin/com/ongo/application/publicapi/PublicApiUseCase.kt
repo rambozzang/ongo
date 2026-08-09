@@ -13,6 +13,7 @@ import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.common.exception.BusinessException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.publicapi.PublicApiPost
@@ -281,11 +282,44 @@ class PublicApiUseCase(
         }
     }
 
+    /**
+     * Postiz의 delete post 계약을 안전한 durable 상태 전이로 매핑한다.
+     * 외부 게시가 이미 접수된 뒤 DB 행만 지우면 재시작 시 같은 게시를 다시
+     * 만들거나 외부 게시물을 추적하지 못하므로, 전송 전 초안만 실제 삭제한다.
+     */
     @Transactional
-    fun deleteDraft(userId: Long, id: Long) {
-        if (!postRepository.deleteDraft(id, userId)) {
-            throw IllegalStateException("draft 상태의 공개 API 게시만 삭제할 수 있습니다")
+    fun delete(userId: Long, id: Long) {
+        val current = load(userId, id)
+        val uploads = videoUploadRepository.findByVideoId(current.videoId)
+        if (uploads.any { it.status == UploadStatus.PUBLISHED || it.status == UploadStatus.UNCONFIRMED || it.status == UploadStatus.PROCESSING }) {
+            throw BusinessException(
+                "PUBLIC_POST_DELETE_UNSAFE",
+                "외부 게시가 이미 접수되었거나 완료된 게시물은 삭제할 수 없습니다. 플랫폼에서 직접 삭제한 뒤 onGo 기록을 보존해 주세요.",
+            )
         }
+
+        if (current.status == PublicApiPostStatus.DRAFT) {
+            if (!postRepository.deleteDraft(id, userId)) {
+                throw BusinessException("PUBLIC_POST_DELETE_CONFLICT", "게시물 상태가 변경되어 삭제할 수 없습니다")
+            }
+            return
+        }
+
+        if (current.status == PublicApiPostStatus.SCHEDULED) {
+            videoUploadRepository.cancelScheduledUploads(current.videoId, LocalDateTime.now())
+            scheduleRepository.findByUserId(userId)
+                .filter { it.videoId == current.videoId && it.status == ScheduleStatus.SCHEDULED }
+                .forEach { scheduleRepository.update(it.copy(status = ScheduleStatus.CANCELLED)) }
+        }
+        postRepository.update(current.copy(status = PublicApiPostStatus.CANCELLED, errorMessage = null))
+    }
+
+    /** Postiz의 group 삭제. onGo의 한 번의 다중 채널 요청은 하나의 post 행으로 저장된다. */
+    @Transactional
+    fun deleteGroup(userId: Long, group: String) {
+        val id = group.toLongOrNull()
+            ?: throw IllegalArgumentException("group은 onGo 공개 API postId여야 합니다")
+        delete(userId, id)
     }
 
     private fun resolveVideo(userId: Long, request: CreatePublicPostRequest): Video {

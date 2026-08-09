@@ -239,4 +239,52 @@ class PublicApiUseCaseTest {
         verify(exactly = 1) { uploads.cancelScheduledUploads(11, any()) }
         verify(exactly = 1) { schedules.update(match { it.status == ScheduleStatus.CANCELLED }) }
     }
+
+    @Test
+    fun `예약 게시물 삭제는 durable upload와 schedule을 취소하고 기록을 보존한다`() {
+        val scheduled = PublicApiPost(
+            id = 31,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.SCHEDULE,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.SCHEDULED,
+            scheduledAt = LocalDateTime.now().plusHours(2),
+            payloadJson = "{}",
+        )
+        every { posts.findByIdAndUserId(31, 1) } returns scheduled
+        every { posts.update(any()) } answers { firstArg() }
+        every { uploads.findByVideoId(11) } returns listOf(
+            VideoUpload(id = 92, videoId = 11, platform = Platform.YOUTUBE, channelId = 7, status = UploadStatus.UPLOADING, scheduledAt = scheduled.scheduledAt),
+        )
+        every { uploads.cancelScheduledUploads(11, any()) } returns 1
+        every { schedules.findByUserId(1) } returns listOf(
+            Schedule(id = 41, videoId = 11, userId = 1, scheduledAt = scheduled.scheduledAt!!),
+        )
+        every { schedules.update(any()) } answers { firstArg() }
+
+        useCase.deleteGroup(1, "31")
+
+        verify(exactly = 1) { uploads.cancelScheduledUploads(11, any()) }
+        verify(exactly = 1) { schedules.update(match { it.status == ScheduleStatus.CANCELLED }) }
+        verify(exactly = 1) { posts.update(match { it.status == com.ongo.domain.publicapi.PublicApiPostStatus.CANCELLED }) }
+    }
+
+    @Test
+    fun `외부 게시가 접수된 게시물 삭제는 중복 방지를 위해 거부한다`() {
+        val published = PublicApiPost(
+            id = 32,
+            userId = 1,
+            videoId = 11,
+            type = com.ongo.domain.publicapi.PublicApiPostType.NOW,
+            status = com.ongo.domain.publicapi.PublicApiPostStatus.PROCESSING,
+            payloadJson = "{}",
+        )
+        every { posts.findByIdAndUserId(32, 1) } returns published
+        every { uploads.findByVideoId(11) } returns listOf(
+            VideoUpload(id = 93, videoId = 11, platform = Platform.YOUTUBE, channelId = 7, status = UploadStatus.PROCESSING),
+        )
+
+        assertFailsWith<com.ongo.common.exception.BusinessException> { useCase.delete(1, 32) }
+        verify(exactly = 0) { posts.update(any()) }
+    }
 }
