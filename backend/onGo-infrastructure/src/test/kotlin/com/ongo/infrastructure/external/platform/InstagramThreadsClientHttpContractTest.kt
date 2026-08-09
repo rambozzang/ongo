@@ -115,6 +115,36 @@ class InstagramThreadsClientHttpContractTest {
         assertThat(publish.requestUrl?.queryParameter("creation_id")).isEqualTo("container-1")
     }
 
+    @Test
+    fun `Instagram story 설정은 실제 Graph API media type으로 전달되고 feed 공유를 보내지 않는다`() {
+        server.enqueue(json("""{"id":"container-story"}"""))
+        server.enqueue(json("""{"id":"container-story","status_code":"FINISHED"}"""))
+        server.enqueue(json("""{"id":"media-story"}"""))
+        server.enqueue(json("""{"id":"media-story","permalink":"https://instagram.test/story/media-story"}"""))
+
+        InstagramClient(
+            instagramApi = proxy<InstagramApi>(),
+            instagramOAuthApi = mockk(),
+            instagramConfig = mockk<InstagramConfig>(relaxed = true),
+        ).uploadVideo(
+            PlatformUploadRequest(
+                fileUrl = "https://cdn.test/story.mp4",
+                title = "스토리",
+                description = "설명",
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC.name,
+                thumbnailUrl = null,
+                accessToken = "instagram-token",
+                platformChannelId = "ig-user-1",
+                customSettingsJson = """{"__type":"instagram","post_type":"story"}""",
+            ),
+        )
+
+        val create = server.takeRequest()
+        assertThat(create.requestUrl?.queryParameter("media_type")).isEqualTo("STORIES")
+        assertThat(create.requestUrl?.queryParameter("share_to_feed")).isNull()
+    }
+
     private fun json(body: String) = MockResponse()
         .setHeader("Content-Type", "application/json")
         .setBody(body)

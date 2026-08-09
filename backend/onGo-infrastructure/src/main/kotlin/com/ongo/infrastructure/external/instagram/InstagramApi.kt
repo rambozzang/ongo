@@ -20,7 +20,7 @@ interface InstagramApi {
         @RequestParam("media_type") mediaType: String,
         @RequestParam("video_url") videoUrl: String,
         @RequestParam("caption") caption: String,
-        @RequestParam("share_to_feed") shareToFeed: Boolean,
+        @RequestParam("share_to_feed", required = false) shareToFeed: Boolean?,
         @RequestParam("access_token") accessToken: String,
     ): InstagramContainerResponse
 

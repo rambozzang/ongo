@@ -730,7 +730,7 @@ class PublicApiUseCase(
                 stringField("content_posting_method", values = listOf("DIRECT_POST", "UPLOAD"), isRequired = true)
             }
             Platform.INSTAGRAM -> {
-                stringField("post_type", values = listOf("REELS", "VIDEO"), isRequired = true)
+                stringField("post_type", values = listOf("post", "story"), isRequired = true)
                 arrayField("collaborators")
             }
             Platform.TWITTER -> {

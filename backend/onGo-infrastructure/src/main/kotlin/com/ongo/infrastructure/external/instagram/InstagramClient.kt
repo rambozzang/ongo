@@ -1,5 +1,7 @@
 package com.ongo.infrastructure.external.instagram
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
@@ -16,6 +18,7 @@ class InstagramClient(
     private val instagramApi: InstagramApi,
     private val instagramOAuthApi: InstagramOAuthApi,
     private val instagramConfig: InstagramConfig,
+    private val objectMapper: ObjectMapper = jacksonObjectMapper(),
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(InstagramClient::class.java)
@@ -54,9 +57,17 @@ class InstagramClient(
     }
 
     override fun uploadVideo(request: PlatformUploadRequest): PlatformUploadResult {
-        log.info("Instagram Reels 업로드 시작: title={}", request.title)
+        log.info("Instagram 영상 업로드 시작: title={}", request.title)
 
         val caption = buildCaption(request)
+        val settings = request.customSettingsJson
+            ?.let { runCatching { objectMapper.readTree(it) }.getOrNull() }
+        val postType = settings?.path("post_type")?.asText(null)?.lowercase() ?: "post"
+        val mediaType = when (postType) {
+            "story" -> "STORIES"
+            "post" -> "REELS"
+            else -> throw PlatformUploadException("Instagram", "지원하지 않는 Instagram post_type입니다: $postType")
+        }
 
         val igUserId = request.platformChannelId
             ?: throw PlatformUploadException("Instagram", "Instagram 사용자 ID(platformChannelId)가 필요합니다")
@@ -65,10 +76,10 @@ class InstagramClient(
             // Step 1: Create media container
             val containerResponse = instagramApi.createMediaContainer(
                 igUserId = igUserId,
-                mediaType = "REELS",
+                mediaType = mediaType,
                 videoUrl = request.fileUrl,
                 caption = caption,
-                shareToFeed = true,
+                shareToFeed = if (mediaType == "REELS") true else null,
                 accessToken = request.accessToken,
             )
 
