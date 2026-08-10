@@ -16,7 +16,7 @@
             isConnected(platform)
               ? getChannel(platform)?.tokenStatus === 'EXPIRED'
                 ? 'cursor-not-allowed border-error bg-error-subtle opacity-70'
-                : !canUploadVideo(platform) && mediaType === 'VIDEO'
+                : !canUploadMedia(platform)
                   ? 'cursor-not-allowed border-warning bg-warning-subtle opacity-70'
                   : isSelected(platform)
                     ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
@@ -47,8 +47,8 @@
               <p v-else-if="isConnected(platform) && getCapability(platform)?.cloudVideoUpload && !getCapability(platform)?.directVideoUpload && mediaType === 'VIDEO'" class="text-body-xs text-info-strong">
                 클라우드 경유 업로드
               </p>
-              <p v-else-if="isConnected(platform) && !canUploadVideo(platform) && mediaType === 'VIDEO'" class="text-body-xs text-warning-strong">
-                {{ getCapability(platform)?.unavailableReason || '영상 업로드 미지원' }}
+              <p v-else-if="isConnected(platform) && !canUploadMedia(platform)" class="text-body-xs text-warning-strong">
+                {{ getCapability(platform)?.unavailableReason || `${mediaType === 'IMAGE' ? '이미지' : '영상'} 업로드 미지원` }}
               </p>
               <p v-else-if="isConnected(platform)" class="text-body-xs text-success-strong">연동됨</p>
               <router-link
@@ -357,7 +357,7 @@ function getCapability(platform: Platform): PlatformUploadCapability | undefined
 function canSelect(platform: Platform): boolean {
   const channel = getChannel(platform)
   if (!channel || channel.tokenStatus === 'EXPIRED') return false
-  return props.mediaType !== 'VIDEO' || canUploadVideo(platform)
+  return canUploadMedia(platform)
 }
 
 function canUploadVideo(platform: Platform): boolean {
@@ -365,8 +365,19 @@ function canUploadVideo(platform: Platform): boolean {
   return capability?.directVideoUpload === true || capability?.cloudVideoUpload === true
 }
 
+function supportsMediaType(platform: Platform): boolean {
+  const accepted = getCapability(platform)?.acceptedMediaTypes
+  // Older capability payloads predate the explicit field. Fail closed for
+  // images while retaining the established video behavior during rollout.
+  return accepted ? accepted.includes(props.mediaType) : props.mediaType === 'VIDEO'
+}
+
+function canUploadMedia(platform: Platform): boolean {
+  return supportsMediaType(platform) && canUploadVideo(platform)
+}
+
 const allSelectedSupportScheduling = computed(() =>
-  props.mediaType !== 'VIDEO' || selectedPlatforms.value.every((platform) => getCapability(platform)?.scheduling === true),
+  selectedPlatforms.value.length > 0 && selectedPlatforms.value.every((platform) => canUploadMedia(platform)),
 )
 
 const validationIssues = computed(() => {
@@ -375,12 +386,11 @@ const validationIssues = computed(() => {
     const label = PLATFORM_CONFIG[platform].label
     const capability = getCapability(platform)
     const meta = platformMeta[platform]
-    if (props.mediaType === 'VIDEO' && !canUploadVideo(platform)) {
-      issues.push(`${label}: 영상 업로드를 지원하지 않습니다.`)
+    if (!canUploadMedia(platform)) {
+      issues.push(`${label}: ${props.mediaType === 'IMAGE' ? '이미지' : '영상'} 업로드를 지원하지 않습니다.`)
       continue
     }
     if (!meta?.title.trim()) issues.push(`${label}: 제목이 필요합니다.`)
-    if (props.mediaType !== 'VIDEO') continue
     if (props.file && capability) {
       const extension = props.file.name.split('.').pop()?.toLowerCase() || ''
       if (props.file.size > capability.maxFileSizeBytes) {
@@ -398,9 +408,6 @@ const validationIssues = computed(() => {
     }
     if (meta && capability && meta.tags.length > capability.maxTagCount) {
       issues.push(`${label}: 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다.`)
-    }
-    if (props.scheduledAt && capability && !capability.scheduling) {
-      issues.push(`${label}: API 예약 게시를 지원하지 않습니다.`)
     }
   }
   if (props.scheduledAt && new Date(props.scheduledAt).getTime() <= Date.now() + 5 * 60 * 1000) {
@@ -474,10 +481,6 @@ function togglePlatform(platform: Platform) {
       meta.tags = [...props.baseTags]
     }
     selectedPlatforms.value.push(platform)
-    if (!getCapability(platform)?.scheduling && scheduleMode.value) {
-      scheduleMode.value = false
-      emit('update:scheduledAt', undefined)
-    }
     if (!activeTab.value) activeTab.value = platform
   }
   emitUpdate()
@@ -515,7 +518,7 @@ function emitUpdate() {
       description: meta?.description || '',
       tags: meta?.tags || [],
       visibility: props.baseVisibility,
-      scheduledAt: props.mediaType !== 'VIDEO' || getCapability(p)?.scheduling ? props.scheduledAt : undefined,
+      scheduledAt: props.scheduledAt,
     }
   })
   emit('update:platforms', configs)

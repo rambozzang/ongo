@@ -130,6 +130,7 @@ export interface PlatformUploadCapability {
   maxTagCount: number
   maxCaptionLength?: number | null
   acceptedExtensions: string[]
+  acceptedMediaTypes?: MediaType[]
   unavailableReason: string | null
 }
 
