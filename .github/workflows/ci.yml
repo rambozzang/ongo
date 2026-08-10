@@ -39,6 +39,9 @@ jobs:
             exit 1
           fi
 
+      - name: Reject duplicate Flyway migration versions
+        run: bash scripts/check-flyway-versions.sh
+
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:

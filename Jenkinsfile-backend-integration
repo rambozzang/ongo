@@ -31,6 +31,12 @@ pipeline {
             }
         }
 
+        stage('Unique Flyway Migration Versions') {
+            steps {
+                sh 'bash scripts/check-flyway-versions.sh'
+            }
+        }
+
         stage('Run Testcontainers Integration Tests') {
             steps {
                 dir('backend') {

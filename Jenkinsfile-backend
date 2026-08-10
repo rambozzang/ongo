@@ -83,6 +83,12 @@ pipeline {
             }
         }
 
+        stage('Unique Flyway Migration Versions') {
+            steps {
+                sh 'bash scripts/check-flyway-versions.sh'
+            }
+        }
+
         stage('Validate Deployment Scripts') {
             steps {
                 // 배포 스크립트의 문법 오류는 애플리케이션 빌드가 성공해도
