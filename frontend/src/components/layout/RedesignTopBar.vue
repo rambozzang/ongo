@@ -17,11 +17,13 @@
       <div class="relative hidden flex-[0_1_240px] tablet:block" style="min-width: 92px">
         <input
           ref="searchInput"
-          v-model="query"
           type="search"
+          readonly
           :placeholder="t('redesign.topbar.searchPlaceholder')"
           class="w-full rounded-lg border border-line-soft bg-transparent py-[7px] pl-[10px] pr-8 text-[12px] text-content placeholder:text-content-tertiary focus:border-accent focus:outline-none"
           @keydown.escape="blurSearch"
+          @click="openSearch"
+          @focus="openSearch"
         />
         <kbd
           class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-line-soft px-1 font-mono text-[10px] text-content-tertiary"
@@ -30,8 +32,8 @@
         </kbd>
       </div>
 
-      <button type="button" class="btn-secondary hidden whitespace-nowrap !text-[12px] desktop:inline-flex" @click="emit('bulk-import')">
-        {{ t('redesign.topbar.bulkImport') }}
+      <button type="button" class="btn-secondary hidden whitespace-nowrap !text-[12px] desktop:inline-flex" @click="emit('open-import')">
+        {{ t('redesign.topbar.importUrl') }}
       </button>
 
       <router-link to="/compose" class="btn-primary whitespace-nowrap !text-[12px]">
@@ -56,10 +58,9 @@ defineProps<{
   subtitle?: string
 }>()
 
-const emit = defineEmits<{ 'bulk-import': [] }>()
+const emit = defineEmits<{ 'open-import': [] }>()
 
 const { t } = useLocale()
-const query = ref('')
 const searchInput = ref<HTMLInputElement | null>(null)
 
 function isTypingTarget(el: EventTarget | null): boolean {
@@ -76,6 +77,10 @@ function onKeydown(e: KeyboardEvent) {
 
 function blurSearch() {
   searchInput.value?.blur()
+}
+
+function openSearch() {
+  window.dispatchEvent(new CustomEvent('ongo:open-search'))
 }
 
 onMounted(() => window.addEventListener('keydown', onKeydown))

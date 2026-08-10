@@ -4,7 +4,11 @@
     <RedesignRail class="hidden tablet:flex" />
 
     <div class="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface">
-      <RedesignTopBar :title="title" :subtitle="subtitle" />
+      <RedesignTopBar
+        :title="title"
+        :subtitle="subtitle"
+        @open-import="openImport"
+      />
       <div
         v-if="capabilityError"
         class="mx-4 mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2 text-[11px] text-warning-strong tablet:mx-6"
@@ -36,7 +40,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useLocale } from '@/composables/useLocale'
 import MobileBottomNav from '@/components/layout/MobileBottomNav.vue'
 import RedesignRail from '@/components/layout/RedesignRail.vue'
@@ -51,9 +55,14 @@ import { useNavigation } from '@/composables/useNavigation'
  * 화면 제목이 아직 전용 키를 갖지 않은 경우 라우트 메타의 기존 제목을 사용한다.
  */
 const route = useRoute()
+const router = useRouter()
 const { t } = useLocale()
 const shell = useRedesignShellStore()
 const { capabilityError, retryCapabilities } = useNavigation()
+
+function openImport() {
+  void router.push({ path: '/compose', query: { source: 'url' } })
+}
 
 /** 전용 리디자인 화면은 자체 여백을 갖고, 기존 화면은 셸에서 동일한 본문 여백을 받는다. */
 const isRedesignScreen = computed(() => String(route.name ?? '').startsWith('redesign-'))

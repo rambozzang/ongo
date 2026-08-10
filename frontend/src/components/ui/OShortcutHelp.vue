@@ -167,7 +167,7 @@ const cmdKey = isMac ? '⌘' : 'Ctrl'
 const globalShortcuts = computed<Shortcut[]>(() => [
   {
     keys: [cmdKey, 'K'],
-    description: '명령 팔레트 열기',
+    description: '통합 검색 열기',
   },
   {
     keys: ['?'],

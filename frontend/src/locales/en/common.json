@@ -562,6 +562,7 @@
     "automation": "Automation",
     "revenue": "Revenue",
     "abtest": "A/B Test",
+    "videoCompare": "Video Comparison",
     "competitor": "Competitor Analysis",
     "trends": "Trends",
     "goals": "Goals",
@@ -609,6 +610,7 @@
     "subSubtitle": "Subtitles",
     "subScript": "Script/Writing",
     "subContentManage": "Content Management",
+    "subUgcShorts": "Shorts Production",
     "subRecycle": "Repurpose",
     "subHashtag": "Hashtags",
     "subCopyrightSafety": "Copyright/Safety",
@@ -4252,6 +4254,7 @@
     "topbar": {
       "searchPlaceholder": "Search",
       "bulkImport": "Bulk import",
+      "importUrl": "Import URL",
       "newUpload": "New upload"
     },
     "screen": {

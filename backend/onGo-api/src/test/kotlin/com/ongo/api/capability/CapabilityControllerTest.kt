@@ -14,6 +14,6 @@ class CapabilityControllerTest {
         assertEquals(true, response.data?.first { it.key == "compose" }?.enabled)
         assertTrue(response.data?.any { it.key == "ugc/shorts/runs" } == true)
         assertTrue(response.data?.none { it.key == "keyword-research" || it.key == "trends" } == true)
-        assertEquals(28, response.data?.size)
+        assertEquals(35, response.data?.size)
     }
 }

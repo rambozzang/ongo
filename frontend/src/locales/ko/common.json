@@ -562,6 +562,7 @@
     "automation": "자동화",
     "revenue": "수익",
     "abtest": "A/B 테스트",
+    "videoCompare": "영상 비교",
     "competitor": "경쟁사 분석",
     "trends": "트렌드",
     "goals": "목표",
@@ -609,6 +610,7 @@
     "subSubtitle": "자막",
     "subScript": "스크립트/글쓰기",
     "subContentManage": "콘텐츠 관리",
+    "subUgcShorts": "쇼츠 제작",
     "subRecycle": "재활용",
     "subHashtag": "해시태그",
     "subCopyrightSafety": "저작권/안전",
@@ -4242,6 +4244,7 @@
     "topbar": {
       "searchPlaceholder": "검색",
       "bulkImport": "일괄 가져오기",
+      "importUrl": "URL 가져오기",
       "newUpload": "새 업로드"
     },
     "screen": {

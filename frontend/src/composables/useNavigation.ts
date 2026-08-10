@@ -12,6 +12,7 @@ import {
   Cog6ToothIcon,
   BanknotesIcon,
   InboxIcon,
+  BellIcon,
   DocumentDuplicateIcon,
   SwatchIcon,
   BookOpenIcon,
@@ -158,6 +159,8 @@ export function useNavigation() {
             { to: '/templates', label: t('nav.templates'), icon: DocumentDuplicateIcon },
             { to: '/brandkit', label: t('nav.brandkit'), icon: SwatchIcon },
             { to: '/assets', label: t('nav.assets'), icon: PhotoIcon },
+            { to: '/subtitle-editor', label: t('nav.subtitleEditor'), icon: DocumentDuplicateIcon },
+            { to: '/recycling', label: t('nav.recycling'), icon: ArrowUpTrayIcon },
           ],
         },
       ],
@@ -176,8 +179,10 @@ export function useNavigation() {
       label: t('nav.groupAnalytics'),
       items: [
         { to: '/performance', label: t('redesign.nav.performance'), icon: ChartBarIcon },
+        { to: '/analytics/compare', label: t('nav.videoCompare'), icon: ChartBarIcon },
         { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
         { to: '/ab-tests', label: t('nav.abtest'), icon: BeakerIcon },
+        { to: '/goals', label: t('nav.goals'), icon: IdentificationIcon },
       ],
     },
     // ── 6. 소통: 게시 후 관계를 유지하는 핵심 기능 ──
@@ -186,22 +191,21 @@ export function useNavigation() {
       items: [
         { to: '/inbox-v2', label: t('redesign.nav.inbox'), icon: InboxIcon },
         { to: '/audience', label: t('nav.audience'), icon: IdentificationIcon },
+        { to: '/notifications', label: t('nav.notifications'), icon: BellIcon },
       ],
     },
-    // ── 7. 추가 기능 · 정리 검토: 사용 빈도와 유료 전환을 확인한 뒤 유지 여부 결정 ──
+    // ── 7. UGC: 브랜드 캠페인과 크리에이터 제출을 하나의 흐름으로 묶는다 ──
     {
-      label: t('nav.groupReview'),
-      items: [],
+      label: t('nav.groupUgc'),
+      items: [
+        { to: '/ugc/campaigns', label: t('nav.ugcCampaigns'), icon: MegaphoneIcon },
+        { to: '/creator/campaigns', label: t('nav.creatorCampaigns'), icon: HandRaisedIcon },
+      ],
       subGroups: [
         {
-          key: 'review-advanced',
-          label: t('nav.subReviewAdvanced'),
+          key: 'ugc-shorts',
+          label: t('nav.subUgcShorts'),
           items: [
-            { to: '/channel-audit', label: t('nav.channelAudit'), icon: ClipboardDocumentCheckIcon },
-            { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
-            { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
-            { to: '/ugc/campaigns', label: t('nav.ugcCampaigns'), icon: MegaphoneIcon },
-            { to: '/creator/campaigns', label: t('nav.creatorCampaigns'), icon: HandRaisedIcon },
             { to: '/ugc/shorts/prompts', label: t('nav.ugcShortsPrompts'), icon: DocumentDuplicateIcon },
             { to: '/ugc/shorts/templates', label: t('nav.ugcShortsTemplates'), icon: PhotoIcon },
             { to: '/ugc/shorts/runs', label: t('nav.ugcShortsRuns'), icon: BoltIcon },
@@ -209,11 +213,22 @@ export function useNavigation() {
         },
       ],
     },
-    // ── 8. 협업 ──
+    // ── 8. 비즈니스 ──
     {
-      label: t('nav.groupWorkspace'),
+      label: t('nav.groupBusiness'),
+      items: [
+        { to: '/channel-audit', label: t('nav.channelAudit'), icon: ClipboardDocumentCheckIcon },
+        { to: '/brand-deals', label: t('nav.brandDeals'), icon: BriefcaseIcon },
+        { to: '/linkbio', label: t('nav.linkbio'), icon: GlobeAltIcon },
+      ],
+    },
+    // ── 9. 협업·운영 ──
+    {
+      label: t('nav.groupOperations'),
       items: [
         { to: '/team', label: t('nav.team'), icon: UserGroupIcon },
+        { to: '/webhooks', label: t('nav.webhooks'), icon: BoltIcon },
+        { to: '/activity-log', label: t('nav.activityLog'), icon: ClipboardDocumentCheckIcon },
       ],
     },
     ]
