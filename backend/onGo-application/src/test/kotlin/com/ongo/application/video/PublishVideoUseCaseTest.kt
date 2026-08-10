@@ -3,6 +3,7 @@ package com.ongo.application.video
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.Visibility
 import com.ongo.common.enums.UploadStatus
+import com.ongo.common.enums.MediaType
 import com.ongo.common.exception.AccountFrozenException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.domain.channel.Channel
@@ -94,6 +95,57 @@ class PublishVideoUseCaseTest {
 
         verify(exactly = 0) { videoRepository.findById(any()) }
         verify(exactly = 0) { eventPublisher.publishEvent(any()) }
+    }
+
+    @Test
+    fun `이미지 영상은 기본 config여도 게시 이벤트를 이미지 타입으로 정규화한다`() {
+        val videoId = 901L
+        val video = Video(
+            id = videoId,
+            userId = 42L,
+            title = "이미지 게시",
+            fileUrl = "https://storage.test/image.jpg",
+            mediaType = MediaType.IMAGE,
+            status = UploadStatus.DRAFT,
+        )
+        val event = slot<VideoPublishEvent>()
+        every { videoRepository.findById(videoId) } returns video
+        every { videoRepository.claimForPublish(42L, videoId) } returns true
+        every { channelRepository.findByUserIdAndPlatform(42L, Platform.INSTAGRAM) } returns Channel(
+            id = 101L,
+            userId = 42L,
+            platform = Platform.INSTAGRAM,
+            platformChannelId = "ig-user",
+            channelName = "Instagram",
+            accessToken = EncryptedToken("token"),
+        )
+        every { videoUploadRepository.save(any()) } returns VideoUpload(
+            id = 1L,
+            videoId = videoId,
+            platform = Platform.INSTAGRAM,
+            status = UploadStatus.UPLOADING,
+        )
+        every { videoPlatformMetaRepository.save(any()) } answers { firstArg() }
+        every { eventPublisher.publishEvent(capture(event)) } just Runs
+
+        useCase().publishVideo(
+            userId = 42L,
+            videoId = videoId,
+            configs = listOf(
+                PlatformUploadConfig(
+                    platform = Platform.INSTAGRAM,
+                    videoUploadId = 0L,
+                    title = "이미지 게시",
+                    description = "설명",
+                    tags = emptyList(),
+                    visibility = Visibility.PUBLIC,
+                    thumbnailUrl = null,
+                    scheduledAt = null,
+                ),
+            ),
+        )
+
+        assertEquals(MediaType.IMAGE, event.captured.platformConfigs.single().mediaType)
     }
 
     @Test

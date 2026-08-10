@@ -221,6 +221,7 @@ class StreamPublishUseCase(
                                     customSettingsJson = ctx.meta.customSettingsJson,
                                     fileSize = fileSize,
                                     scheduledAt = ctx.scheduledAt,
+                                    mediaType = video.mediaType,
                                 )
                             },
                         )
@@ -854,6 +855,7 @@ class StreamPublishUseCase(
                     // The due scheduler is already at the requested time. Do
                     // not pass a past time to a provider's native scheduler.
                     scheduledAt = null,
+                    mediaType = video.mediaType,
                 )
             }
             val upload = videoUploadRepository.save(
@@ -890,6 +892,7 @@ class StreamPublishUseCase(
                 fileSize = fileSize,
                 // Keep the requested time on the durable row, but publish now.
                 scheduledAt = null,
+                mediaType = video.mediaType,
             )
         }
 

@@ -40,11 +40,15 @@ class PublishVideoUseCase(
         }
 
         require(configs.isNotEmpty()) { "게시할 플랫폼을 하나 이상 선택해주세요." }
-        val duplicateTargets = configs.groupingBy { it.channelId ?: it.platform }.eachCount().filterValues { it > 1 }.keys
+        // Callers that predate image publishing leave the config defaulted to
+        // VIDEO. The source record is authoritative; normalize here so every
+        // event, scheduled row and retry reaches the matching provider method.
+        val effectiveConfigs = configs.map { it.copy(mediaType = video.mediaType) }
+        val duplicateTargets = effectiveConfigs.groupingBy { it.channelId ?: it.platform }.eachCount().filterValues { it > 1 }.keys
         require(duplicateTargets.isEmpty()) { "같은 게시 계정을 중복 선택할 수 없습니다: ${duplicateTargets.joinToString()}" }
 
         require(video.fileUrl != null) { "업로드가 완료된 미디어 파일을 찾을 수 없습니다." }
-        configs.forEach { config ->
+        effectiveConfigs.forEach { config ->
             val capability = PlatformUploadCapabilities.get(config.platform)
                 ?: throw IllegalArgumentException("${video.mediaType.name.lowercase()} 게시를 지원하지 않는 플랫폼입니다: ${config.platform}")
             require(video.mediaType in capability.acceptedMediaTypes) {
@@ -92,7 +96,7 @@ class PublishVideoUseCase(
         }
 
         // 게시 전 채널 토큰 검증
-        configs.forEach { config ->
+        effectiveConfigs.forEach { config ->
             val channel = if (config.channelId != null) {
                 channelRepository.findById(config.channelId)
                     ?.takeIf { it.userId == userId && it.platform == config.platform }
@@ -113,7 +117,7 @@ class PublishVideoUseCase(
         // durable row before claiming the source video; otherwise a duplicate
         // request can strand the video in UPLOADING before PostgreSQL rejects
         // the unique (video_id, channel_id) target.
-        configs.filter { it.channelId != null }.forEach { config ->
+        effectiveConfigs.filter { it.channelId != null }.forEach { config ->
             val existing = videoUploadRepository.findByVideoIdAndChannelId(videoId, config.channelId!!)
             require(existing == null || existing.status == UploadStatus.CANCELLED || existing.status == UploadStatus.DRAFT) {
                 "${config.platform.name} 채널에는 이미 게시 작업이 있습니다. 기존 게시 결과를 확인하거나 새 영상을 사용해주세요."
@@ -129,7 +133,7 @@ class PublishVideoUseCase(
         }
 
         // 각 플랫폼별 VideoUpload + VideoPlatformMeta 생성
-        val platformConfigs = configs.map { config ->
+        val platformConfigs = effectiveConfigs.map { config ->
             val existing = if (config.channelId != null) {
                 videoUploadRepository.findByVideoIdAndChannelId(videoId, config.channelId)
             } else {
@@ -183,7 +187,7 @@ class PublishVideoUseCase(
             config.copy(videoUploadId = uploadId, channelId = upload.channelId ?: config.channelId)
         }
 
-        val scheduledConfigs = configs.filter { it.scheduledAt != null }
+        val scheduledConfigs = effectiveConfigs.filter { it.scheduledAt != null }
         if (scheduledConfigs.isNotEmpty()) {
             val earliest = scheduledConfigs.minOf { it.scheduledAt!! }
             scheduleRepository.save(

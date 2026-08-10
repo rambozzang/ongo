@@ -73,6 +73,7 @@ class RecycleVideoUseCase(
                     visibility = platform.visibility,
                     thumbnailUrl = platform.thumbnailUrl ?: source.thumbnailUrls.firstOrNull(),
                     scheduledAt = platform.scheduledAt,
+                    mediaType = source.mediaType,
                 )
             },
         )
