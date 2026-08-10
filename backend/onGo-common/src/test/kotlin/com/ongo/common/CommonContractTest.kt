@@ -91,6 +91,14 @@ class CommonContractTest {
             ByteArrayInputStream(byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)),
             "image/png",
         )
+        FileValidationUtil.validateAssetContent(
+            ByteArrayInputStream(byteArrayOf(0xD0.toByte(), 0xCF.toByte(), 0x11, 0xE0.toByte(), 0xA1.toByte(), 0xB1.toByte(), 0x1A, 0xE1.toByte())),
+            "application/msword",
+        )
+        FileValidationUtil.validateAssetContent(
+            ByteArrayInputStream(byteArrayOf(0x50, 0x4B, 0x03, 0x04, 0x14, 0x00)),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
         assertThrows<FileValidationException> {
             FileValidationUtil.validateVideoContent(ByteArrayInputStream("not a video".encodeToByteArray()), "video/mp4")
         }

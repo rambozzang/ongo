@@ -26,6 +26,7 @@ import com.ongo.application.publicapi.PublicPostListItem
 import com.ongo.application.publicapi.PublicReleaseIdRequest
 import com.ongo.application.publicapi.PublicGroupResponse
 import com.ongo.application.publicapi.PublicNotificationListResponse
+import com.ongo.application.publicapi.PublicApiRateLimiter
 import com.ongo.application.channel.ChannelUseCase
 import com.ongo.application.notification.NotificationUseCase
 import com.ongo.application.workspace.WorkspaceUseCase
@@ -65,6 +66,7 @@ class PublicApiController(
     private val generatedVideoUseCase: GeneratedVideoUseCase,
     private val videoFunctionUseCase: VideoFunctionUseCase,
     private val publicOAuthUseCase: PublicOAuthUseCase,
+    private val publicApiRateLimiter: PublicApiRateLimiter = PublicApiRateLimiter(),
 ) {
 
     @Operation(summary = "organization groups 조회")
@@ -265,6 +267,7 @@ class PublicApiController(
         @RequestBody request: CreatePublicPostRequest,
     ): ResponseEntity<Any> {
         requireApiKey(authentication)
+        publicApiRateLimiter.checkCreatePost(userId)
         val result = useCase.create(userId, request, idempotencyKey)
         return raw(result.posts.map { target ->
             PublicPostCreatedResponse(postId = result.id, integration = target.integrationId)

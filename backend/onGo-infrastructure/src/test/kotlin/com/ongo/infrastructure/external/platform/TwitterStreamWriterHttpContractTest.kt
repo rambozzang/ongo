@@ -98,17 +98,54 @@ class TwitterStreamWriterHttpContractTest {
             .contains("\"made_with_ai\":true")
     }
 
+    @Test
+    fun `Twitter creates Postiz text thread with reply chain`() {
+        uploadServer.enqueue(json("""{"media_id_string":"media-thread"}"""))
+        uploadServer.enqueue(MockResponse().setResponseCode(200))
+        uploadServer.enqueue(json("""{"media_id_string":"media-thread"}"""))
+        apiServer.enqueue(json("""{"data":{"id":"tweet-root","text":"root"}}"""))
+        apiServer.enqueue(json("""{"data":{"id":"tweet-reply","text":"reply"}}"""))
+
+        val config = mockk<TwitterConfig>()
+        every { config.getUploadBaseUrl() } returns uploadServer.url("/upload").toString().removeSuffix("/")
+        val writer = TwitterStreamWriter(
+            twitterApi = proxy(apiServer, TwitterApi::class.java),
+            twitterMediaApi = proxy(uploadServer, TwitterMediaApi::class.java),
+            twitterConfig = config,
+            fileTransferHelper = PlatformFileTransferHelper(ObjectMapper()),
+        )
+
+        writer.initSession(
+            meta(customSettingsJson = """{"__postiz_thread":[{"content":"후속 답글"}]}"""),
+            PlainToken("twitter-token"),
+            null,
+            4,
+            null,
+        )
+        writer.writeChunk("test".toByteArray(), 0, 4)
+        val result = writer.complete()
+
+        assertThat(result.published).isTrue()
+        assertThat(apiServer.takeRequest().body.readUtf8()).contains("테스트 영상")
+        val reply = apiServer.takeRequest()
+        assertThat(reply.path).isEqualTo("/2/tweets")
+        assertThat(reply.body.readUtf8())
+            .contains("후속 답글")
+            .contains("in_reply_to_tweet_id")
+            .contains("tweet-root")
+    }
+
     private fun json(body: String) = MockResponse()
         .setHeader("Content-Type", "application/json")
         .setBody(body)
 
-    private fun meta() = VideoPlatformMeta(
+    private fun meta(customSettingsJson: String? = """{"who_can_reply_post":"following","community":"community-1","made_with_ai":true}""") = VideoPlatformMeta(
         videoUploadId = 1L,
         title = "테스트 영상",
         description = "설명",
         tags = listOf("tag"),
         visibility = Visibility.PUBLIC,
-        customSettingsJson = """{"who_can_reply_post":"following","community":"community-1","made_with_ai":true}""",
+        customSettingsJson = customSettingsJson,
     )
 
     private inline fun <reified T : Any> proxy(server: MockWebServer, type: Class<T>): T {

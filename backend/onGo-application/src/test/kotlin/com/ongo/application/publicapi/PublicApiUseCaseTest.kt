@@ -2,6 +2,7 @@ package com.ongo.application.publicapi
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.video.PlatformUploadStatus
+import com.ongo.application.video.PlatformUploadConfig
 import com.ongo.application.video.PublishResult
 import com.ongo.application.video.PublishVideoUseCase
 import com.ongo.application.video.UploadVideoUseCase
@@ -811,6 +812,80 @@ class PublicApiUseCaseTest {
                     it.single().customSettingsJson?.contains("\"__type\":\"youtube\"") == true
             })
         }
+    }
+
+    @Test
+    fun `Postiz value 후속 항목은 X durable 설정에 순서대로 보존한다`() {
+        val twitterChannel = channel.copy(
+            platform = Platform.TWITTER,
+            platformChannelId = "x-7",
+        )
+        every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
+        every { channels.findById(7) } returns twitterChannel
+        every { posts.save(any()) } answers { firstArg<PublicApiPost>().copy(id = 22) }
+        every { posts.update(any()) } answers { firstArg() }
+        every { uploads.findByVideoId(11) } returns listOf(
+            VideoUpload(id = 92, videoId = 11, platform = Platform.TWITTER, channelId = 7, status = UploadStatus.UPLOADING),
+        )
+        every { publishVideo.publishVideo(any(), any(), any()) } returns
+            PublishResult(11, listOf(PlatformUploadStatus(Platform.TWITTER, UploadStatus.UPLOADING)))
+        val configs = slot<List<PlatformUploadConfig>>()
+
+        useCase.create(
+            1,
+            CreatePublicPostRequest(
+                type = "now",
+                videoId = 11,
+                posts = listOf(
+                    PublicPostItem(
+                        integration = PublicIntegrationRef("7"),
+                        value = listOf(
+                            PublicPostValue(content = "원문"),
+                            PublicPostValue(content = "첫 번째 답글"),
+                            PublicPostValue(content = "두 번째 답글"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        verify(exactly = 1) {
+            publishVideo.publishVideo(1, 11, capture(configs))
+        }
+        val thread = jacksonObjectMapper()
+            .readTree(requireNotNull(configs.captured.single().customSettingsJson))
+            .path("__postiz_thread")
+        assertEquals(2, thread.size())
+        assertEquals("첫 번째 답글", thread[0].path("content").asText())
+        assertEquals("두 번째 답글", thread[1].path("content").asText())
+    }
+
+    @Test
+    fun `후속 value를 지원하지 않는 플랫폼은 조용히 첫 항목만 게시하지 않는다`() {
+        every { videos.findById(11) } returns Video(id = 11, userId = 1, title = "원본", fileUrl = "https://cdn/video.mp4")
+        every { channels.findById(7) } returns channel
+
+        assertFailsWith<IllegalArgumentException> {
+            useCase.create(
+                1,
+                CreatePublicPostRequest(
+                    type = "now",
+                    videoId = 11,
+                    posts = listOf(
+                        PublicPostItem(
+                            integration = PublicIntegrationRef("7"),
+                            value = listOf(
+                                PublicPostValue(content = "원문"),
+                                PublicPostValue(content = "지원되지 않는 후속 항목"),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+        }
+
+        verify(exactly = 0) { posts.save(any()) }
+        verify(exactly = 0) { publishVideo.publishVideo(any(), any(), any()) }
     }
 
     @Test

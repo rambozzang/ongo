@@ -69,4 +69,83 @@ class PublicApiMediaUseCaseTest {
             Files.deleteIfExists(path)
         }
     }
+
+    @Test
+    fun `Postiz 문서 업로드는 허용된 시그니처를 확인한 뒤 파일 에셋으로 저장한다`() {
+        val path = Files.createTempFile("public-api-test-", ".pdf")
+        Files.write(path, "%PDF-1.7\n".encodeToByteArray())
+        try {
+            every { downloader.download("https://cdn.example/guide.pdf") } returns PublicDownloadedMedia(
+                path, "guide.pdf", "APPLICATION/PDF; charset=binary", Files.size(path),
+            )
+            every {
+                assets.createAsset(
+                    any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                )
+            } returns AssetResponse(
+                id = 9,
+                filename = "stored.pdf",
+                originalFilename = "guide.pdf",
+                fileUrl = "https://storage/guide.pdf",
+                fileType = "FILE",
+                fileSizeBytes = Files.size(path),
+                mimeType = "application/pdf",
+                tags = emptyList(),
+                folder = "public-api",
+                width = null,
+                height = null,
+                durationSeconds = null,
+                createdAt = LocalDateTime.now(),
+            )
+
+            val result = useCase.uploadFromUrl(1, "https://cdn.example/guide.pdf", null)
+
+            assertEquals("9", result.id)
+            assertEquals("application/pdf", result.mimeType)
+            assertEquals("guide.pdf", result.name)
+        } finally {
+            Files.deleteIfExists(path)
+        }
+    }
+
+    @Test
+    fun `Postiz DOCX 업로드는 ZIP 컨테이너 시그니처를 확인한다`() {
+        val path = Files.createTempFile("public-api-test-", ".docx")
+        Files.write(path, byteArrayOf(0x50, 0x4B, 0x03, 0x04, 0x14, 0x00))
+        try {
+            every { downloader.download("https://cdn.example/guide.docx") } returns PublicDownloadedMedia(
+                path,
+                "guide.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                Files.size(path),
+            )
+            every {
+                assets.createAsset(
+                    any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                )
+            } returns AssetResponse(
+                id = 10,
+                filename = "stored.docx",
+                originalFilename = "guide.docx",
+                fileUrl = "https://storage/guide.docx",
+                fileType = "FILE",
+                fileSizeBytes = Files.size(path),
+                mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                tags = emptyList(),
+                folder = "public-api",
+                width = null,
+                height = null,
+                durationSeconds = null,
+                createdAt = LocalDateTime.now(),
+            )
+
+            val result = useCase.uploadFromUrl(1, "https://cdn.example/guide.docx", null)
+
+            assertEquals("10", result.id)
+            assertEquals("application/vnd.openxmlformats-officedocument.wordprocessingml.document", result.mimeType)
+            assertEquals("guide.docx", result.name)
+        } finally {
+            Files.deleteIfExists(path)
+        }
+    }
 }

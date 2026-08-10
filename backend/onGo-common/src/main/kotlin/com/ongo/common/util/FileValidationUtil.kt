@@ -141,6 +141,12 @@ object FileValidationUtil {
                 .firstOrNull()?.toInt()?.toChar() in setOf('{', '[')
             mimeType == "application/pdf" -> hasPrefix(header, "%PDF-".encodeToByteArray())
             mimeType == "application/zip" -> hasPrefix(header, byteArrayOf(0x50, 0x4B, 0x03, 0x04))
+            mimeType == "application/msword" -> hasPrefix(
+                header,
+                byteArrayOf(0xD0.toByte(), 0xCF.toByte(), 0x11, 0xE0.toByte(), 0xA1.toByte(), 0xB1.toByte(), 0x1A, 0xE1.toByte()),
+            )
+            mimeType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ->
+                hasPrefix(header, byteArrayOf(0x50, 0x4B, 0x03, 0x04))
             mimeType.startsWith("video/") -> runCatching { validateVideoHeader(header, mimeType) }.getOrDefault(false)
             mimeType == "image/jpeg" -> hasPrefix(header, byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte()))
             mimeType == "image/png" -> hasPrefix(header, byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A))

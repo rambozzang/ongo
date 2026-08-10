@@ -593,6 +593,9 @@ class PublicApiUseCase(
             request = payload.copy(posts = listOf(target)),
             videoId = post.videoId,
             scheduledAt = post.scheduledAt,
+            mediaType = runCatching { videoRepository.findById(post.videoId)?.mediaType }
+                .getOrNull()
+                ?: MediaType.VIDEO,
         ).single()
         videoUploadRepository.findByVideoIdAndChannelId(post.videoId, channelId)
             ?.takeIf { it.status == UploadStatus.UPLOADING || it.status == UploadStatus.DRAFT }
@@ -954,8 +957,13 @@ class PublicApiUseCase(
             "integration은 요청한 group에 속하지 않습니다"
         }
         val value = item.value.firstOrNull()
-        val settings = normalizeSettings(item.settings, channel.platform)
-        val title = settings?.path("title")?.asText(null)
+        val settings = providerSettings(
+            settings = item.settings,
+            values = item.value,
+            platform = channel.platform,
+            mediaType = mediaType,
+        )
+        val title = settings.path("title").asText(null)
             ?.takeIf(String::isNotBlank)
             ?: value?.title
             ?: value?.content
@@ -969,7 +977,7 @@ class PublicApiUseCase(
             // against the real platform capability; silently truncating here
             // would make the public API publish different content than requested.
             title = title,
-            description = settings?.path("description")?.asText(null)
+            description = settings.path("description").asText(null)
                 ?.takeIf(String::isNotBlank)
                 ?: value?.description
                 ?: value?.content,
@@ -977,8 +985,8 @@ class PublicApiUseCase(
             visibility = settingsVisibility(settings),
             // Postiz uses value.image for the media itself and settings.thumbnail
             // for a YouTube cover. Never treat the video media URL as a thumbnail.
-            thumbnailUrl = firstText(settings?.path("thumbnail")),
-            customSettingsJson = settings?.takeIf { it.isObject }?.toString(),
+            thumbnailUrl = firstText(settings.path("thumbnail")),
+            customSettingsJson = settings.toString(),
             scheduledAt = scheduledAt?.plusSeconds(value?.delay?.toLong() ?: 0L),
             mediaType = mediaType,
         )
@@ -1004,6 +1012,58 @@ class PublicApiUseCase(
         }
         normalized.put("__type", expected)
         return normalized
+    }
+
+    /**
+     * Preserve Postiz's multi-value contract instead of silently publishing
+     * only value[0]. X supports a durable text thread through reply-to-tweet;
+     * providers without an implemented follow-up writer fail closed until the
+     * corresponding external workflow exists.
+     */
+    private fun providerSettings(
+        settings: JsonNode?,
+        values: List<PublicPostValue>,
+        platform: Platform,
+        mediaType: MediaType,
+    ): JsonNode {
+        val normalized = normalizeSettings(settings, platform).deepCopy<ObjectNode>()
+        val followUps = values.drop(1)
+        if (followUps.isEmpty()) return normalized
+
+        require(platform == Platform.TWITTER) {
+            "${platform.name}는 현재 Postiz 후속 댓글/스레드 게시를 지원하지 않습니다. value에는 본문 하나만 넣어주세요."
+        }
+        require(mediaType == MediaType.VIDEO) {
+            "X 스레드는 현재 동영상 게시에서만 지원됩니다. 이미지 스레드는 아직 지원하지 않습니다."
+        }
+        require(followUps.all { it.delay == 0 }) {
+            "X 스레드의 후속 댓글에는 delay를 지정할 수 없습니다."
+        }
+        require(followUps.all { !hasMedia(it.video) && !hasMedia(it.image) }) {
+            "X 스레드 후속 댓글의 미디어는 아직 지원하지 않습니다. 본문 텍스트만 사용해주세요."
+        }
+
+        val thread = normalized.putArray("__postiz_thread")
+        followUps.forEach { value ->
+            val content = value.content?.trim()
+                ?.takeIf(String::isNotBlank)
+                ?: listOf(value.title, value.description)
+                    .filterNotNull()
+                    .map(String::trim)
+                    .filter(String::isNotBlank)
+                    .joinToString("\n\n")
+            require(content.isNotBlank()) {
+                "X 스레드 후속 댓글에는 content 또는 title/description이 필요합니다."
+            }
+            thread.addObject().put("content", content)
+        }
+        return normalized
+    }
+
+    private fun hasMedia(node: JsonNode?): Boolean = when {
+        node == null || node.isNull -> false
+        node.isArray -> node.size() > 0
+        else -> true
     }
 
     /**
@@ -1087,7 +1147,10 @@ class PublicApiUseCase(
                 arrayField("collaborators")
             }
             Platform.TWITTER -> {
-                stringField("who_can_reply_post", values = listOf("everyone", "mentionedUsers", "following"))
+                stringField(
+                    "who_can_reply_post",
+                    values = listOf("everyone", "mentionedUsers", "following", "subscribers", "verified"),
+                )
                 stringField("community")
                 booleanField("made_with_ai")
             }

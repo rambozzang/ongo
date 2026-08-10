@@ -54,7 +54,11 @@ class AssetController(
         @RequestParam(required = false) tags: List<String>?,
     ): ResponseEntity<ResData<AssetResponse>> {
         val originalFilename = file.originalFilename?.trim().orEmpty()
-        val contentType = file.contentType?.trim().orEmpty()
+        val contentType = file.contentType
+            ?.lowercase()
+            ?.substringBefore(';')
+            ?.trim()
+            .orEmpty()
         if (originalFilename.isBlank() || originalFilename.contains("..") ||
             originalFilename.contains('/') || originalFilename.contains('\\')) {
             throw FileValidationException("파일 이름이 유효하지 않습니다")
@@ -65,14 +69,20 @@ class AssetController(
         val allowedContentType = contentType.startsWith("image/") ||
             contentType.startsWith("audio/") ||
             contentType.startsWith("video/") ||
-            contentType in setOf("application/json", "application/pdf", "application/zip")
+            contentType in setOf(
+                "application/json",
+                "application/pdf",
+                "application/zip",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
         if (!allowedContentType) {
             throw FileValidationException("지원하지 않는 에셋 MIME 타입입니다: $contentType")
         }
         file.inputStream.use { FileValidationUtil.validateAssetContent(it, contentType) }
 
         val filename = "${UUID.randomUUID()}_$originalFilename"
-        val fileType = resolveFileType(file.contentType)
+        val fileType = resolveFileType(contentType)
         val storageKey = "assets/$userId/$filename"
 
         val result = assetUseCase.createAsset(

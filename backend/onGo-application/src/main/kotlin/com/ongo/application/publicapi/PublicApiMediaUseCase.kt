@@ -22,13 +22,17 @@ class PublicApiMediaUseCase(
 ) {
     fun upload(userId: Long, file: MultipartFile): PublicMediaUploadResponse {
         val originalFilename = file.originalFilename?.trim().orEmpty()
-        val contentType = file.contentType?.trim().orEmpty()
+        val contentType = file.contentType
+            ?.lowercase()
+            ?.substringBefore(';')
+            ?.trim()
+            .orEmpty()
         requireSafeFilename(originalFilename)
         if (file.size <= 0 || file.size > MAX_FILE_SIZE) {
             throw FileValidationException("업로드 파일 크기는 0보다 크고 2GB 이하여야 합니다")
         }
         if (!isSupportedContentType(contentType)) {
-            throw FileValidationException("지원하지 않는 미디어 MIME 타입입니다: $contentType")
+            throw FileValidationException("지원하지 않는 파일/미디어 MIME 타입입니다: $contentType")
         }
 
         // MultipartFile은 inputStream을 다시 열 수 있으므로 저장 전에 시그니처를
@@ -74,7 +78,7 @@ class PublicApiMediaUseCase(
                 throw FileValidationException("URL 미디어 크기는 0보다 크고 2GB 이하여야 합니다")
             }
             if (!isSupportedContentType(contentType)) {
-                throw FileValidationException("지원하지 않는 미디어 MIME 타입입니다: $contentType")
+                throw FileValidationException("지원하지 않는 파일/미디어 MIME 타입입니다: $contentType")
             }
             Files.newInputStream(downloaded.path).use {
                 FileValidationUtil.validateAssetContent(it, contentType)
@@ -117,7 +121,10 @@ class PublicApiMediaUseCase(
     }
 
     private fun isSupportedContentType(contentType: String): Boolean =
-        contentType.startsWith("image/") || contentType.startsWith("audio/") || contentType.startsWith("video/")
+        contentType.startsWith("image/") ||
+            contentType.startsWith("audio/") ||
+            contentType.startsWith("video/") ||
+            contentType in DOCUMENT_CONTENT_TYPES
 
     private fun fileType(contentType: String): String = when {
         contentType.startsWith("image/") -> "IMAGE"
@@ -129,6 +136,13 @@ class PublicApiMediaUseCase(
     companion object {
         private const val MAX_FILE_SIZE = 2L * 1024 * 1024 * 1024
         private const val PUBLIC_API_FOLDER = "public-api"
+        private val DOCUMENT_CONTENT_TYPES = setOf(
+            "application/json",
+            "application/pdf",
+            "application/zip",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
     }
 }
 

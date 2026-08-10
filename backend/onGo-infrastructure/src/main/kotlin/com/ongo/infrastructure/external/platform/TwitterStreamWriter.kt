@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.video.PlatformStreamWriter
 import com.ongo.application.video.PlatformStreamWriterFactory
 import com.ongo.application.video.PlatformUploadResult
+import com.ongo.application.video.indeterminateUploadFailure
 import com.ongo.common.enums.Platform
 import com.ongo.domain.video.VideoPlatformMeta
 import com.ongo.domain.channel.PlainToken
@@ -47,6 +48,7 @@ class TwitterStreamWriter(
     private var replySettings: String? = null
     private var communityId: String? = null
     private var madeWithAi: Boolean? = null
+    private var threadTexts: List<String> = emptyList()
 
     companion object {
         private const val APPEND_CHUNK_SIZE = 5 * 1024 * 1024 // 5MB — Twitter 권장 청크 크기
@@ -76,9 +78,13 @@ class TwitterStreamWriter(
         val settings = meta.customSettingsJson
             ?.let { runCatching { jacksonObjectMapper().readTree(it) }.getOrNull() }
         replySettings = settings?.path("who_can_reply_post")?.asText(null)
-            ?.takeIf { it in setOf("everyone", "mentionedUsers", "following") }
+            ?.takeIf { it in setOf("everyone", "mentionedUsers", "following", "subscribers", "verified") }
         communityId = settings?.path("community")?.asText(null)?.takeIf(String::isNotBlank)
         madeWithAi = settings?.path("made_with_ai")?.takeIf { it.isBoolean }?.asBoolean()
+        threadTexts = settings?.path("__postiz_thread")
+            ?.takeIf { it.isArray }
+            ?.mapNotNull { it.path("content").asText(null)?.trim()?.takeIf(String::isNotBlank) }
+            .orEmpty()
 
         val initResponse = twitterMediaApi.initUpload(
             authorization = "Bearer ${accessToken.value}",
@@ -101,6 +107,7 @@ class TwitterStreamWriter(
         val currentMediaId = mediaId ?: throw IllegalStateException("initSession() 호출 필요")
         val token = accessTokenRef ?: throw IllegalStateException("initSession() 호출 필요")
         val file = buffer.finish()
+        var publishedTweetId: String? = null
 
         return try {
             // APPEND: 5MB 청크로 분할 전송
@@ -156,6 +163,25 @@ class TwitterStreamWriter(
 
             val tweetId = tweetResponse.data?.id
                 ?: throw IllegalStateException("Twitter 트윗 생성 응답에 ID가 없습니다")
+            publishedTweetId = tweetId
+
+            // Postiz represents an X thread as the main value followed by
+            // text-only values. Reply sequentially so every child points to
+            // the previously created tweet. A failure after the parent is
+            // visible is intentionally returned as UNKNOWN by the common
+            // failure mapper; automatic retry must never duplicate the thread.
+            var previousTweetId = tweetId
+            threadTexts.forEachIndexed { index, text ->
+                val replyResponse = twitterApi.createTweet(
+                    authorization = "Bearer $token",
+                    request = TwitterCreateTweetRequest(
+                        text = text,
+                        reply = TwitterCreateTweetRequest.ReplyPayload(previousTweetId),
+                    ),
+                )
+                previousTweetId = replyResponse.data?.id
+                    ?: throw IllegalStateException("Twitter 스레드 ${index + 1}번째 답글 응답에 ID가 없습니다")
+            }
 
             log.info("Twitter 스트리밍 업로드 완료: tweetId={}", tweetId)
             PlatformUploadResult(
@@ -167,7 +193,16 @@ class TwitterStreamWriter(
             )
         } catch (e: Exception) {
             log.error("Twitter 스트리밍 업로드 실패", e)
-            uploadFailureResult(e)
+            val failure = uploadFailureResult(e)
+            publishedTweetId?.let { id ->
+                indeterminateUploadFailure(
+                    "X 본문은 게시되었지만 스레드 후속 댓글을 모두 확인하지 못했습니다. 중복 게시 방지를 위해 자동 재시도하지 않습니다.",
+                ).copy(
+                    platformVideoId = id,
+                    platformUrl = "https://twitter.com/i/status/$id",
+                    httpStatus = failure.httpStatus,
+                )
+            } ?: failure
         } finally {
             buffer.cleanup()
         }

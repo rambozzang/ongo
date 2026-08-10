@@ -189,6 +189,90 @@ class TwitterStreamWriterTest {
     }
 
     @Test
+    fun `Postiz 후속 value를 X 답글 스레드로 순서대로 생성한다`() {
+        stubInitUpload()
+        stubFinalizeUpload(state = null)
+        stubAppendToTwitterMedia()
+        val requests = mutableListOf<TwitterCreateTweetRequest>()
+        every {
+            twitterApi.createTweet(
+                authorization = "Bearer $accessToken",
+                request = capture(requests),
+            )
+        } answers {
+            val id = when (requests.size) {
+                1 -> tweetId
+                2 -> "reply-1"
+                else -> "reply-2"
+            }
+            TwitterCreateTweetResponse(
+                data = TwitterCreateTweetResponse.TweetData(id = id, text = null),
+            )
+        }
+
+        writer.initSession(
+            meta = defaultMeta().copy(
+                customSettingsJson = """{"__postiz_thread":[{"content":"첫 번째 답글"},{"content":"두 번째 답글"}]}""",
+            ),
+            accessToken = plainToken,
+            platformChannelId = null,
+            fileSize = 1024L,
+            scheduledAt = null,
+        )
+        writer.writeChunk("hello".toByteArray(), 0L, 5L)
+
+        val result = writer.complete()
+
+        assertThat(result.published).isTrue()
+        assertThat(requests).hasSize(3)
+        assertThat(requests[0].text).isEqualTo("테스트 영상\n\n테스트 설명\n\n#태그1 #태그2")
+        assertThat(requests[1].text).isEqualTo("첫 번째 답글")
+        assertThat(requests[1].reply?.inReplyToTweetId).isEqualTo(tweetId)
+        assertThat(requests[2].text).isEqualTo("두 번째 답글")
+        assertThat(requests[2].reply?.inReplyToTweetId).isEqualTo("reply-1")
+    }
+
+    @Test
+    fun `X 본문 생성 후 후속 댓글 실패는 중복 방지를 위해 확인 불가로 남긴다`() {
+        stubInitUpload()
+        stubFinalizeUpload(state = null)
+        stubAppendToTwitterMedia()
+        every {
+            twitterApi.createTweet(
+                authorization = "Bearer $accessToken",
+                request = any(),
+            )
+        } answers {
+            val request = secondArg<TwitterCreateTweetRequest>()
+            if (request.reply != null) {
+                throw IllegalStateException("답글 API 실패")
+            }
+            TwitterCreateTweetResponse(
+                data = TwitterCreateTweetResponse.TweetData(id = tweetId, text = null),
+            )
+        }
+
+        writer.initSession(
+            meta = defaultMeta().copy(
+                customSettingsJson = """{"__postiz_thread":[{"content":"실패하는 답글"}]}""",
+            ),
+            accessToken = plainToken,
+            platformChannelId = null,
+            fileSize = 1024L,
+            scheduledAt = null,
+        )
+        writer.writeChunk("hello".toByteArray(), 0L, 5L)
+
+        val result = writer.complete()
+
+        assertThat(result.success).isFalse()
+        assertThat(result.confirmation).isEqualTo(com.ongo.application.video.PublishConfirmation.UNKNOWN)
+        assertThat(result.platformVideoId).isEqualTo(tweetId)
+        assertThat(result.platformUrl).isEqualTo("https://twitter.com/i/status/$tweetId")
+        assertThat(result.retryable).isFalse()
+    }
+
+    @Test
     fun `미디어 처리 대기 후 완료`() {
         // Given
         stubInitUpload()

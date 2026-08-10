@@ -8,6 +8,7 @@ import com.ongo.application.publicapi.GeneratedVideoUseCase
 import com.ongo.application.publicapi.PublicApiAnalyticsUseCase
 import com.ongo.application.publicapi.PublicApiMediaUseCase
 import com.ongo.application.publicapi.PublicApiUseCase
+import com.ongo.application.publicapi.PublicApiRateLimiter
 import com.ongo.application.publicapi.PublicConnectionResponse
 import com.ongo.application.publicapi.PublicFieldLimit
 import com.ongo.application.publicapi.PublicIntegrationSettingsOutput
@@ -41,6 +42,7 @@ class PublicApiControllerContractTest {
         generatedVideoUseCase = mockk<GeneratedVideoUseCase>(relaxed = true),
         videoFunctionUseCase = mockk<VideoFunctionUseCase>(relaxed = true),
         publicOAuthUseCase = mockk<PublicOAuthUseCase>(relaxed = true),
+        publicApiRateLimiter = mockk<PublicApiRateLimiter>(relaxed = true),
     )
     private val apiKeyAuthentication = TestingAuthenticationToken(
         1L,
