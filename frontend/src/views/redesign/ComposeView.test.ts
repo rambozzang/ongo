@@ -48,6 +48,7 @@ vi.mock('@/api/video', () => ({
     update: vi.fn(),
     publish: vi.fn(),
     create: vi.fn(),
+    uploadImages: vi.fn(),
     importUrl: vi.fn(),
     generate: vi.fn(),
   },
@@ -448,6 +449,38 @@ describe('ComposeView', () => {
     )
     expect(useUploadStore().videoId).toBe(202)
     expect(aiApi.generateMeta).toHaveBeenCalledWith(expect.objectContaining({ videoId: 202 }))
+  })
+
+  it('uploads an image through the content-image path and publishes it without video APIs', async () => {
+    vi.mocked(videoApi.getUploadCapabilities).mockResolvedValue([
+      { ...capabilities[0], acceptedMediaTypes: ['VIDEO'] },
+      { ...capabilities[1], acceptedMediaTypes: ['VIDEO', 'IMAGE'] },
+    ] as never)
+    vi.mocked(videoApi.create).mockResolvedValue({ id: 505 } as never)
+    vi.mocked(videoApi.uploadImages).mockResolvedValue([
+      { id: 1, imageUrl: 'https://cdn.example/cover.png', displayOrder: 0 },
+    ] as never)
+
+    const { wrapper } = await renderCompose()
+    const image = new File(['image'], 'cover.png', { type: 'image/png' })
+    const fileInput = wrapper.get<HTMLInputElement>('input[type="file"]')
+    Object.defineProperty(fileInput.element, 'files', { value: [image] })
+    await fileInput.trigger('change')
+    await flushPromises()
+
+    expect(videoApi.create).toHaveBeenCalledWith(expect.objectContaining({ mediaType: 'IMAGE' }))
+    expect(videoApi.uploadImages).toHaveBeenCalledWith(505, expect.any(Array))
+    expect(wrapper.find('input[type="file"]').exists()).toBe(true)
+    expect(wrapper.findAll('button').some((button) => button.text() === '자동 자막')).toBe(false)
+
+    const schedule = wrapper.findAll('button').find((button) => button.text().includes('1개 채널 예약'))
+    expect(schedule).toBeDefined()
+    await schedule!.trigger('click')
+    await flushPromises()
+
+    expect(videoApi.update).toHaveBeenCalledWith(505, expect.objectContaining({ mediaType: 'IMAGE' }))
+    expect(videoApi.publish).toHaveBeenCalledWith(505, expect.any(Object))
+    expect(ugcShortsPipelineApi.getRenderAvailability).not.toHaveBeenCalled()
   })
 
   it('keeps automatic captions available after importing a source URL', async () => {

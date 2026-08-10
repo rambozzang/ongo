@@ -68,7 +68,12 @@
             v-for="row in queue"
             :key="row.id"
             class="flex cursor-pointer items-center gap-3 border-b border-line-row px-[15px] py-[11px] transition-colors hover:bg-surface-raised tablet:grid tablet:[grid-template-columns:62px_84px_minmax(0,1fr)_auto]"
+            role="button"
+            tabindex="0"
+            :aria-label="row.title"
             @click="openItem(row)"
+            @keydown.enter.prevent="openItem(row)"
+            @keydown.space.prevent="openItem(row)"
           >
             <!-- 모바일에서는 시간이 제목 위로 올라가고 썸네일이 작아진다 -->
             <span class="hidden font-mono text-[13px] text-content tablet:inline">{{ row.time }}</span>

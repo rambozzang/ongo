@@ -104,6 +104,7 @@
           tabindex="0"
           @click="store.select(t.id)"
           @keydown.enter="store.select(t.id)"
+          @keydown.space.prevent="store.select(t.id)"
         >
           <div class="flex items-center gap-2">
             <input

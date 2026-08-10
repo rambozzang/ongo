@@ -426,7 +426,16 @@ class VideoQueryUseCase(
             )
         }
 
-        return contentImageRepository.saveAll(images).map { img ->
+        val savedImages = contentImageRepository.saveAll(images)
+        // Image posts use the same durable publish pipeline as videos. Keep
+        // the first stored image as the canonical media URL so scheduled and
+        // retry paths can resolve a real source without special-case state.
+        if (video.mediaType == MediaType.IMAGE && video.fileUrl.isNullOrBlank()) {
+            savedImages.firstOrNull()?.imageUrl?.let { imageUrl ->
+                videoRepository.update(video.copy(fileUrl = imageUrl))
+            }
+        }
+        return savedImages.map { img ->
             ContentImageResult(
                 id = img.id,
                 imageUrl = img.imageUrl,

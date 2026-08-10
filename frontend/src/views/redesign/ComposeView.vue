@@ -1,7 +1,7 @@
 <template>
-  <div class="grid h-full" style="grid-template-columns: minmax(0, 1fr) 372px">
+  <div class="grid h-full grid-cols-1 desktop:[grid-template-columns:minmax(0,1fr)_372px]">
     <!-- 좌: 입력 -->
-    <div class="overflow-y-auto border-r border-line px-5 pb-[120px] pt-[18px] scrollbar-dark">
+    <div class="overflow-y-auto px-5 pb-[120px] pt-[18px] scrollbar-dark desktop:border-r desktop:border-line">
       <!-- 입력 소스 -->
       <div
         class="mb-2.5 flex items-center gap-1 rounded-lg border border-line bg-surface-input p-1"
@@ -46,6 +46,7 @@
             {{ t('redesign.compose.replace') }}
           </button>
           <button
+            v-if="!uploadStore.isImage"
             type="button"
             class="btn-secondary !text-[11px]"
             :disabled="captioning || (!importedVideoId && !uploadStore.videoId)"
@@ -54,7 +55,7 @@
             {{ captioning ? t('redesign.compose.captioning') : t('redesign.compose.autoCaption') }}
           </button>
         </div>
-        <input ref="fileInput" type="file" accept="video/*" class="hidden" @change="onFileChosen" />
+        <input ref="fileInput" type="file" accept="video/*,image/*" class="hidden" @change="onFileChosen" />
       </div>
 
       <!-- 서버 영상 생성 -->
@@ -92,7 +93,7 @@
               }}
             </button>
             <button
-              v-if="importedVideoId"
+              v-if="importedVideoId && !uploadStore.isImage"
               type="button"
               class="btn-secondary !text-[11px]"
               :disabled="captioning"
@@ -204,6 +205,7 @@
           <input
             v-model="shortsEnabled"
             type="checkbox"
+            :disabled="uploadStore.isImage"
             class="mt-0.5 h-4 w-4 accent-[var(--accent-primary)]"
           />
           <span>
@@ -381,7 +383,7 @@
     </div>
 
     <!-- 우: 미리보기 + 예약 -->
-    <aside class="flex flex-col overflow-y-auto bg-surface-input px-4 py-[18px] scrollbar-dark">
+    <aside class="flex min-h-[620px] flex-col overflow-y-auto bg-surface-input px-4 py-[18px] scrollbar-dark desktop:min-h-0">
       <h2 class="text-[12px] font-bold text-content">{{ t('redesign.compose.preview') }}</h2>
 
       <div class="mt-2.5">
@@ -666,6 +668,7 @@ const uploadStore = useUploadStore()
 const workspaceStore = useWorkspaceStore()
 
 const fileInput = ref<HTMLInputElement | null>(null)
+const fileSelectionGeneration = ref(0)
 const sourceMode = ref<'file' | 'url' | 'generate'>('file')
 const importUrl = ref('')
 const importing = ref(false)
@@ -760,12 +763,14 @@ const importAvailable = computed(() => importAvailability.value?.available === t
 function selectSourceMode(mode: 'file' | 'url' | 'generate') {
   if (sourceMode.value === mode) return
   sourceMode.value = mode
+  fileSelectionGeneration.value += 1
   // A source switch starts a new source-selection flow. Keeping the previous
   // server video ID here could publish the old video when the new source has
   // not been imported or generated yet.
   importedVideoId.value = null
   uploadStore.resetUpload()
   file.name = ''
+  if (file.thumbnailUrl?.startsWith('blob:')) URL.revokeObjectURL(file.thumbnailUrl)
   file.thumbnailUrl = null
   file.meta = ''
   importUrl.value = ''
@@ -829,13 +834,20 @@ const bestTimeHint = computed(() => {
 })
 
 const platformOptions = computed(() =>
-  channels.value.map((ch) => ({
-    code: CHIP[ch.platform] ?? 'TH',
-    label: ch.channelName,
-    handle: '',
-    channel: ch,
-    supported: capabilities.value.some((capability) => capability.platform === ch.platform),
-  })),
+  channels.value.map((ch) => {
+    const capability = capabilities.value.find((item) => item.platform === ch.platform)
+    const acceptedMediaTypes = capability?.acceptedMediaTypes ?? ['VIDEO']
+    const hasUploadPath =
+      capability != null &&
+      (capability.directVideoUpload !== false || capability.cloudVideoUpload !== false)
+    return {
+      code: CHIP[ch.platform] ?? 'TH',
+      label: ch.channelName,
+      handle: '',
+      channel: ch,
+      supported: capability != null && hasUploadPath && acceptedMediaTypes.includes(uploadStore.mediaType),
+    }
+  }),
 )
 
 const isOn = (channelId: number) => !disabled[channelId]
@@ -1151,29 +1163,52 @@ function pickFile() {
 async function onFileChosen(e: Event) {
   const picked = (e.target as HTMLInputElement).files?.[0]
   if (!picked) return
+  const selectionGeneration = ++fileSelectionGeneration.value
   importedVideoId.value = null
   sourceMode.value = 'file'
   notice.value = ''
   await uploadStore.startUpload(picked)
   file.name = picked.name
   file.meta = `${formatBytes(picked.size)} · ${picked.type || 'video'}`
+  if (file.thumbnailUrl?.startsWith('blob:')) URL.revokeObjectURL(file.thumbnailUrl)
+  file.thumbnailUrl = picked.type.startsWith('image/') ? URL.createObjectURL(picked) : null
   if (!form.title) form.title = picked.name.replace(/\.[^.]+$/, '')
 
   try {
-    // 파일 선택 시 원본을 먼저 보관해 두어 자동 문구를 게시 전에 편집할 수 있게 한다.
-    const uploaded = await uploadStore.cloudPublish(
-      picked,
-      {
+    if (uploadStore.isImage) {
+      // Image posts use a content record plus the dedicated image endpoint;
+      // the video presigned endpoint intentionally accepts video bytes only.
+      const created = await videoApi.create({
         title: form.title,
-        description: form.description,
+        description: form.description || undefined,
         tags: parseHashtags(form.hashtags),
         category: 'general',
         visibility: form.visibility,
-        thumbnailUrl: '',
-      },
-      [],
-    )
-    await generateMetadataFor(uploaded.videoId)
+        mediaType: 'IMAGE',
+      })
+      if (selectionGeneration !== fileSelectionGeneration.value) return
+      importedVideoId.value = created.id
+      uploadStore.videoId = created.id
+      await uploadStore.uploadImagesToServer(created.id)
+      if (selectionGeneration !== fileSelectionGeneration.value) return
+      await generateMetadataFor(created.id)
+    } else {
+      // 파일 선택 시 원본을 먼저 보관해 두어 자동 문구를 게시 전에 편집할 수 있게 한다.
+      const uploaded = await uploadStore.cloudPublish(
+        picked,
+        {
+          title: form.title,
+          description: form.description,
+          tags: parseHashtags(form.hashtags),
+          category: 'general',
+          visibility: form.visibility,
+          thumbnailUrl: '',
+        },
+        [],
+      )
+      if (selectionGeneration !== fileSelectionGeneration.value) return
+      await generateMetadataFor(uploaded.videoId)
+    }
   } catch (error) {
     notice.value = error instanceof Error ? error.message : t('redesign.compose.scheduleFailed')
   }
@@ -1256,7 +1291,9 @@ async function generateMetadataFor(videoId: number) {
   const firstGeneration = metadataGeneratedPlatforms.value.length === 0
   metadataGenerating.value = true
   try {
-    const script = await transcriptFor(videoId)
+    const script = uploadStore.isImage
+      ? form.description || form.title
+      : await transcriptFor(videoId)
     const result = await aiApi.generateMeta({
       script: script || form.description || form.title,
       videoId,
@@ -1338,7 +1375,7 @@ async function saveDraft() {
       description: form.description || undefined,
       tags: parseHashtags(form.hashtags),
       visibility: form.visibility,
-      mediaType: 'VIDEO' as const,
+      mediaType: uploadStore.mediaType,
     }
     // Keep the exact per-platform copy in the same save operation. The
     // backend stores these as editable DRAFT rows and never publishes them.
@@ -1393,7 +1430,7 @@ async function submit() {
     // 쇼츠를 선택한 상태에서 렌더러가 내려가 있으면 원본만 먼저 게시하지 않는다.
     // 그래야 사용자가 한 번의 작업으로 원본과 쇼츠가 함께 처리될 것이라는 기대를
     // 어기고 부분 성공을 재전송하는 상황을 예방할 수 있다.
-    if (shortsEnabled.value && shortsPlatforms.value.length > 0) {
+    if (uploadStore.mediaType === 'VIDEO' && shortsEnabled.value && shortsPlatforms.value.length > 0) {
       const availability = await ugcShortsPipelineApi.getRenderAvailability()
       if (!availability.available) {
         throw new Error(availability.reason || t('redesign.compose.shortsUnavailable'))
@@ -1401,20 +1438,33 @@ async function submit() {
     }
     let sourceVideoId = importedVideoId.value ?? uploadStore.videoId
     if (!sourceVideoId && selected) {
-      // 원본을 보관해야 쇼츠 렌더와 재시도에서 같은 영상 ID를 계속 사용할 수 있다.
-      const uploaded = await uploadStore.cloudPublish(
-        selected,
-        {
+      if (uploadStore.isImage) {
+        const created = await videoApi.create({
           title: form.title || selected.name.replace(/\.[^.]+$/, ''),
-          description: form.description,
+          description: form.description || undefined,
           tags: parseHashtags(form.hashtags),
           category: 'general',
           visibility: form.visibility,
-          thumbnailUrl: '',
-        },
-        [],
-      )
-      sourceVideoId = uploaded.videoId
+          mediaType: 'IMAGE',
+        })
+        await uploadStore.uploadImagesToServer(created.id)
+        sourceVideoId = created.id
+      } else {
+        // 원본을 보관해야 쇼츠 렌더와 재시도에서 같은 영상 ID를 계속 사용할 수 있다.
+        const uploaded = await uploadStore.cloudPublish(
+          selected,
+          {
+            title: form.title || selected.name.replace(/\.[^.]+$/, ''),
+            description: form.description,
+            tags: parseHashtags(form.hashtags),
+            category: 'general',
+            visibility: form.visibility,
+            thumbnailUrl: '',
+          },
+          [],
+        )
+        sourceVideoId = uploaded.videoId
+      }
     }
     if (!sourceVideoId) throw new Error(t('redesign.compose.needFile'))
 
@@ -1431,7 +1481,7 @@ async function submit() {
       tags: parseHashtags(form.hashtags),
       category: 'general',
       visibility: form.visibility,
-      mediaType: 'VIDEO',
+      mediaType: uploadStore.mediaType,
       platforms: selectedChannels.value.map((channel) => {
         const draft = draftForChannel(channel)
         return {
@@ -1492,7 +1542,7 @@ async function submit() {
     }
     // Shorts is an optional follow-up. A Facebook/X-only post must still be
     // considered successful when no selected channel can host a vertical clip.
-    if (shortsEnabled.value && shortsPlatforms.value.length > 0) {
+    if (uploadStore.mediaType === 'VIDEO' && shortsEnabled.value && shortsPlatforms.value.length > 0) {
       try {
         await publishAutomaticShorts(sourceVideoId)
       } catch (error) {
@@ -1667,6 +1717,7 @@ async function loadDraft(videoId: number) {
   const video = await videoApi.get(videoId)
   importedVideoId.value = videoId
   uploadStore.videoId = videoId
+  uploadStore.mediaType = video.mediaType
   form.title = video.title
   form.description = video.description ?? ''
   form.hashtags = video.tags.join(' ')
@@ -1803,5 +1854,8 @@ onMounted(async () => {
   }
 })
 
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  if (file.thumbnailUrl?.startsWith('blob:')) URL.revokeObjectURL(file.thumbnailUrl)
+})
 </script>

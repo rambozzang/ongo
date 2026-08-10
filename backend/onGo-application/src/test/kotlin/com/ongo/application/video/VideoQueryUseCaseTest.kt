@@ -1,6 +1,7 @@
 package com.ongo.application.video
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.ForbiddenException
@@ -14,6 +15,7 @@ import com.ongo.domain.video.*
 import io.mockk.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.mock.web.MockMultipartFile
 import kotlin.test.assertFailsWith
 
 class VideoQueryUseCaseTest {
@@ -274,6 +276,32 @@ class VideoQueryUseCaseTest {
             )
         }
         verify(exactly = 0) { videoUploadRepository.findByVideoId(any()) }
+    }
+
+    @Test
+    fun `uploadContentImages records canonical URL for image posts`() {
+        val imageVideo = createVideo(fileUrl = null).copy(mediaType = MediaType.IMAGE)
+        val savedImage = ContentImage(
+            id = 41L,
+            videoId = imageVideo.id!!,
+            imageUrl = "https://storage.test/content/1/cover.png",
+            originalFilename = "cover.png",
+            contentType = "image/png",
+        )
+        every { videoRepository.findById(1L) } returns imageVideo
+        every { contentImageRepository.findByVideoId(1L) } returns emptyList()
+        every { storageService.uploadFile(any(), any(), "image/png", 3L) } returns savedImage.imageUrl
+        every { contentImageRepository.saveAll(any()) } returns listOf(savedImage)
+        every { videoRepository.update(any()) } returns imageVideo.copy(fileUrl = savedImage.imageUrl)
+
+        val result = useCase.uploadContentImages(
+            100L,
+            1L,
+            listOf(MockMultipartFile("files", "cover.png", "image/png", byteArrayOf(1, 2, 3))),
+        )
+
+        assert(result.single().imageUrl == savedImage.imageUrl)
+        verify { videoRepository.update(match { it.fileUrl == savedImage.imageUrl && it.mediaType == MediaType.IMAGE }) }
     }
 
     // ---- deleteVideo tests ----
