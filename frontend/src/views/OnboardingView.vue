@@ -212,6 +212,9 @@
             </div>
 
             <p v-if="channelError" class="mt-4 text-center text-body text-error-strong">{{ channelError }}</p>
+            <p v-else class="mt-4 text-center text-body-xs text-gray-500 dark:text-gray-400">
+              {{ t('onboarding.channels.optionalHint') }}
+            </p>
           </div>
 
           <!-- Step 3: Plan Selection -->
@@ -363,6 +366,13 @@
         <div v-else></div>
 
         <div class="flex items-center gap-3">
+          <button
+            v-if="currentStep === 2 && connectedPlatforms.size === 0"
+            class="rounded-xl px-5 py-2.5 text-body font-medium text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            @click="skipChannels"
+          >
+            {{ t('onboarding.channels.skip') }}
+          </button>
           <button
             v-if="currentStep === 4"
             class="rounded-xl px-5 py-2.5 text-body font-medium text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -526,12 +536,14 @@ function validateStep1(): boolean {
 }
 
 function validateStep2(): boolean {
-  if (connectedPlatforms.value.size === 0) {
-    channelError.value = t('onboarding.channels.required')
-    return false
-  }
   channelError.value = ''
   return true
+}
+
+function skipChannels() {
+  channelError.value = ''
+  transitionName.value = 'slide-left'
+  currentStep.value = 3
 }
 
 async function nextStep() {

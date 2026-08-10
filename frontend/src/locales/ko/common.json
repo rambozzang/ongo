@@ -1374,10 +1374,12 @@
     },
     "channels": {
       "title": "채널을 연동하세요",
-      "description": "최소 1개 이상의 플랫폼을 연동해야 합니다.",
+      "description": "채널은 지금 연결하지 않아도 됩니다. 게시하기 전에 언제든 연결할 수 있습니다.",
       "connected": "연동 완료",
       "disconnect": "연동 해제",
       "connect": "연동하기",
+      "skip": "나중에 연결",
+      "optionalHint": "채널 연결 없이도 가입을 완료할 수 있습니다. 채널 메뉴에서 나중에 연결하세요.",
       "loadingPlatforms": "연동 가능한 플랫폼을 불러오는 중...",
       "disconnecting": "해제 중...",
       "disconnectFailed": "플랫폼 연동 해제에 실패했습니다.",

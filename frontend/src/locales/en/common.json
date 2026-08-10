@@ -1374,10 +1374,12 @@
     },
     "channels": {
       "title": "Connect your channels",
-      "description": "You need to connect at least one platform.",
+      "description": "You can connect channels later, before you publish.",
       "connected": "Connected",
       "disconnect": "Disconnect",
       "connect": "Connect",
+      "skip": "Connect later",
+      "optionalHint": "You can finish signing up without connecting a channel. Connect one later from Channels.",
       "loadingPlatforms": "Loading available platforms...",
       "disconnecting": "Disconnecting...",
       "disconnectFailed": "Failed to disconnect the platform.",
