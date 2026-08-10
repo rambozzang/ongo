@@ -5,6 +5,13 @@ springdoc:
   swagger-ui:
     enabled: false
 
+# The production host keeps the pinned ARM64 ffmpeg build outside PATH.
+# Allow an explicit FFMPEG_PATH override, but make the deployed default match
+# the managed binary so server-side Shorts rendering is available by default.
+shorts:
+  render:
+    ffmpeg-path: ${FFMPEG_PATH:/data/ffmpeg/bin/ffmpeg}
+
 storage:
   type: s3
   bucket: ${R2_BUCKET}
