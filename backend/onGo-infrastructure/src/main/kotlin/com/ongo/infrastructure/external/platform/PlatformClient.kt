@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.external.platform
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.enums.MediaType
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.application.publicapi.PlatformToolDefinition
 import com.ongo.domain.channel.PlainToken
@@ -58,6 +59,13 @@ interface PlatformClient {
     val platform: Platform
 
     fun uploadVideo(request: PlatformUploadRequest): PlatformUploadResult
+    /**
+     * Publish a still image through the provider's native image endpoint.
+     * Video-only clients retain a safe default so capability validation can
+     * reject them before an external request is attempted.
+     */
+    fun uploadImage(request: PlatformUploadRequest): PlatformUploadResult =
+        throw UnsupportedOperationException("${platform.name} 이미지 게시를 지원하지 않습니다")
     fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus
     fun getVideoAnalytics(platformVideoId: String, accessToken: String, startDate: LocalDate, endDate: LocalDate): PlatformAnalytics
     fun getChannelInfo(accessToken: String): PlatformChannelInfo
@@ -153,6 +161,7 @@ data class PlatformUploadRequest(
     val scheduledAt: LocalDateTime? = null,
     /** Provider-specific Postiz settings preserved through the upload boundary. */
     val customSettingsJson: String? = null,
+    val mediaType: MediaType = MediaType.VIDEO,
 )
 
 data class PlatformUploadResult(

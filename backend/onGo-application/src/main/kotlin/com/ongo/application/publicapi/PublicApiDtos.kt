@@ -39,7 +39,7 @@ data class PublicPostValue(
     val title: String? = null,
     val description: String? = null,
     val tags: List<String> = emptyList(),
-    /** Postiz는 media를 배열로 전달한다. onGo는 첫 번째 HTTPS/HTTP 영상을 사용한다. */
+    /** Postiz는 media를 배열로 전달한다. onGo는 첫 번째 HTTPS/HTTP 미디어를 사용한다. */
     val video: JsonNode? = null,
     val image: JsonNode? = null,
     /** onGo 확장 필드: 이미 업로드된 내부 영상 레코드를 직접 지정한다. */
@@ -133,6 +133,8 @@ data class PublicIntegrationSettingsResponse(
     val maxFileSizeBytes: Long,
     val acceptedExtensions: Set<String>,
     val unavailableReason: String?,
+    /** Explicit media contract so API clients do not guess from file extensions. */
+    val acceptedMediaTypes: Set<String> = setOf("VIDEO"),
     /** Postiz-compatible discovery payload backed by the provider capability registry. */
     val output: PublicIntegrationSettingsOutput,
 )

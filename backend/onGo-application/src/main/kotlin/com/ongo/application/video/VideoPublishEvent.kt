@@ -2,6 +2,7 @@ package com.ongo.application.video
 
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.Visibility
+import com.ongo.common.enums.MediaType
 import java.time.LocalDateTime
 
 data class VideoPublishEvent(
@@ -26,6 +27,8 @@ data class PlatformUploadConfig(
     val scheduledAt: LocalDateTime?,
     /** 예약 디스패처가 외부 호출 전에 확보한 lease. 일반 게시 이벤트는 null이다. */
     val leaseOwner: String? = null,
+    /** The source media kind must survive retries and scheduled dispatch. */
+    val mediaType: MediaType = MediaType.VIDEO,
 )
 
 data class UploadCompletedEvent(

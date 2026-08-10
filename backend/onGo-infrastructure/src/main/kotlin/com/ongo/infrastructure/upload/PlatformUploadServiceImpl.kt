@@ -8,6 +8,7 @@ import com.ongo.application.video.PlatformUploadCapabilities
 import com.ongo.application.video.PublishConfirmation
 import com.ongo.application.video.isIndeterminateUploadFailure
 import com.ongo.common.enums.Platform
+import com.ongo.common.enums.MediaType
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.PlainToken
@@ -67,13 +68,15 @@ class PlatformUploadServiceImpl(
         for (attempt in 0 until MAX_RETRIES) {
             try {
                 val directFactory = streamWriterFactories.find { it.platform == config.platform }
-                    ?.takeIf { PlatformUploadCapabilities.get(config.platform)?.directVideoUpload == true }
+                    ?.takeIf {
+                        config.mediaType == MediaType.VIDEO &&
+                            PlatformUploadCapabilities.get(config.platform)?.directVideoUpload == true
+                    }
                 val result = if (directFactory != null) {
                     uploadFromCloudUrl(directFactory, config, fileUrl, accessToken, channel.platformChannelId)
                 } else {
                     val client = platformClientFactory.getClient(config.platform)
-                    val clientResult = client.uploadVideo(
-                    PlatformUploadRequest(
+                    val uploadRequest = PlatformUploadRequest(
                         fileUrl = fileUrl,
                         title = config.title,
                         description = config.description ?: "",
@@ -85,8 +88,13 @@ class PlatformUploadServiceImpl(
                         fileSize = config.fileSize,
                         scheduledAt = config.scheduledAt,
                         customSettingsJson = config.customSettingsJson,
+                        mediaType = config.mediaType,
                     )
-                    )
+                    val clientResult = if (config.mediaType == MediaType.IMAGE) {
+                        client.uploadImage(uploadRequest)
+                    } else {
+                        client.uploadVideo(uploadRequest)
+                    }
                     val normalizedStatus = clientResult.status.trim().uppercase()
                     val failed = normalizedStatus in FAILED_STATUSES
                     PlatformUploadResult(

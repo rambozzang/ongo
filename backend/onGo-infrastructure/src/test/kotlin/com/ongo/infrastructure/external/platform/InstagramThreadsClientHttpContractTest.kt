@@ -76,6 +76,37 @@ class InstagramThreadsClientHttpContractTest {
     }
 
     @Test
+    fun `Instagram 이미지 게시도 Graph API에 image_url만 전달한다`() {
+        server.enqueue(json("""{"id":"image-container-1"}"""))
+        server.enqueue(json("""{"id":"image-container-1","status_code":"FINISHED"}"""))
+        server.enqueue(json("""{"id":"image-1"}"""))
+        server.enqueue(json("""{"id":"image-1","permalink":"https://instagram.test/p/image-1"}"""))
+
+        val result = InstagramClient(
+            instagramApi = proxy<InstagramApi>(),
+            instagramOAuthApi = mockk(),
+            instagramConfig = mockk<InstagramConfig>(relaxed = true),
+        ).uploadImage(
+            PlatformUploadRequest(
+                fileUrl = "https://cdn.test/source.jpg",
+                title = "이미지 제목",
+                description = "설명",
+                tags = listOf("#태그"),
+                visibility = Visibility.PUBLIC.name,
+                thumbnailUrl = null,
+                accessToken = PlainToken("instagram-token"),
+                platformChannelId = "ig-user-1",
+            ),
+        )
+
+        assertThat(result.platformUrl).isEqualTo("https://instagram.test/p/image-1")
+        val create = server.takeRequest()
+        assertThat(create.requestUrl?.queryParameter("media_type")).isEqualTo("IMAGE")
+        assertThat(create.requestUrl?.queryParameter("image_url")).isEqualTo("https://cdn.test/source.jpg")
+        assertThat(create.requestUrl?.queryParameter("video_url")).isNull()
+    }
+
+    @Test
     fun `Threads 업로드는 실제 Graph API 요청에 영상 URL과 텍스트를 전달한다`() {
         server.enqueue(json("""{"id":"container-1"}"""))
         server.enqueue(json("""{"id":"container-1","status":"FINISHED"}"""))
@@ -114,6 +145,37 @@ class InstagramThreadsClientHttpContractTest {
         val publish = server.takeRequest()
         assertThat(publish.requestUrl?.encodedPath).isEqualTo("/threads-user-1/threads_publish")
         assertThat(publish.requestUrl?.queryParameter("creation_id")).isEqualTo("container-1")
+    }
+
+    @Test
+    fun `Threads 이미지 게시도 Graph API에 image_url만 전달한다`() {
+        server.enqueue(json("""{"id":"image-container-1"}"""))
+        server.enqueue(json("""{"id":"image-container-1","status":"FINISHED"}"""))
+        server.enqueue(json("""{"id":"thread-image-1"}"""))
+        server.enqueue(json("""{"id":"thread-image-1","permalink":"https://threads.test/post/thread-image-1"}"""))
+
+        val result = ThreadsClient(
+            threadsApi = proxy<ThreadsApi>(),
+            threadsOAuthApi = mockk(),
+            threadsConfig = mockk<ThreadsConfig>(relaxed = true),
+        ).uploadImage(
+            PlatformUploadRequest(
+                fileUrl = "https://cdn.test/source.jpg",
+                title = "이미지 제목",
+                description = "설명",
+                tags = listOf("#태그"),
+                visibility = Visibility.PUBLIC.name,
+                thumbnailUrl = null,
+                accessToken = PlainToken("threads-token"),
+                platformChannelId = "threads-user-1",
+            ),
+        )
+
+        assertThat(result.platformUrl).isEqualTo("https://threads.test/post/thread-image-1")
+        val create = server.takeRequest()
+        assertThat(create.requestUrl?.queryParameter("media_type")).isEqualTo("IMAGE")
+        assertThat(create.requestUrl?.queryParameter("image_url")).isEqualTo("https://cdn.test/source.jpg")
+        assertThat(create.requestUrl?.queryParameter("video_url")).isNull()
     }
 
     @Test

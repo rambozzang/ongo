@@ -99,6 +99,7 @@ class InstagramClient(
                 igUserId = igUserId,
                 mediaType = mediaType,
                 videoUrl = request.fileUrl,
+                imageUrl = null,
                 caption = caption,
                 shareToFeed = if (mediaType == "REELS") true else null,
                 collaborators = collaborators,
@@ -157,6 +158,67 @@ class InstagramClient(
             throw e
         } catch (e: Exception) {
             log.error("Instagram 업로드 실패: {}", e.message, e)
+            throw PlatformUploadException("Instagram", e.message ?: "알 수 없는 오류", e)
+        }
+    }
+
+    override fun uploadImage(request: PlatformUploadRequest): PlatformUploadResult {
+        log.info("Instagram 이미지 업로드 시작: title={}", request.title)
+
+        val settings = request.customSettingsJson
+            ?.let { runCatching { objectMapper.readTree(it) }.getOrNull() }
+        val postType = settings?.path("post_type")?.asText(null)?.lowercase() ?: "post"
+        val mediaType = when (postType) {
+            "story" -> "STORIES"
+            "post" -> "IMAGE"
+            else -> throw PlatformUploadException("Instagram", "지원하지 않는 Instagram post_type입니다: $postType")
+        }
+        val igUserId = request.platformChannelId
+            ?: throw PlatformUploadException("Instagram", "Instagram 사용자 ID(platformChannelId)가 필요합니다")
+
+        return try {
+            val containerResponse = instagramApi.createMediaContainer(
+                igUserId = igUserId,
+                mediaType = mediaType,
+                videoUrl = null,
+                imageUrl = request.fileUrl,
+                caption = buildCaption(request),
+                shareToFeed = null,
+                collaborators = null,
+                isTrialReel = null,
+                trialReelType = null,
+                accessToken = request.accessToken.value,
+            )
+            if (containerResponse.error != null) {
+                throw PlatformUploadException("Instagram", "이미지 컨테이너 생성 실패: ${containerResponse.error.message}")
+            }
+            val containerId = containerResponse.id
+                ?: throw PlatformUploadException("Instagram", "이미지 컨테이너 ID를 받지 못했습니다")
+            waitForContainerReady(containerId, request.accessToken.value)
+            val publishResponse = instagramApi.publishMedia(
+                igUserId = igUserId,
+                creationId = containerId,
+                accessToken = request.accessToken.value,
+            )
+            if (publishResponse.error != null) {
+                throw PlatformUploadException("Instagram", "이미지 게시 실패: ${publishResponse.error.message}")
+            }
+            val mediaId = publishResponse.id
+                ?: throw PlatformUploadException("Instagram", "이미지 게시 ID를 받지 못했습니다")
+            val mediaDetail = instagramApi.getMedia(
+                mediaId = mediaId,
+                fields = "id,permalink",
+                accessToken = request.accessToken.value,
+            )
+            PlatformUploadResult(
+                platformVideoId = mediaId,
+                platformUrl = mediaDetail.permalink ?: "",
+                status = "PUBLISHED",
+            )
+        } catch (e: PlatformUploadException) {
+            throw e
+        } catch (e: Exception) {
+            log.error("Instagram 이미지 업로드 실패: {}", e.message, e)
             throw PlatformUploadException("Instagram", e.message ?: "알 수 없는 오류", e)
         }
     }

@@ -18,7 +18,8 @@ interface InstagramApi {
     fun createMediaContainer(
         @PathVariable("igUserId") igUserId: String,
         @RequestParam("media_type") mediaType: String,
-        @RequestParam("video_url") videoUrl: String,
+        @RequestParam("video_url", required = false) videoUrl: String?,
+        @RequestParam("image_url", required = false) imageUrl: String? = null,
         @RequestParam("caption") caption: String,
         @RequestParam("share_to_feed", required = false) shareToFeed: Boolean?,
         @RequestParam("collaborators", required = false) collaborators: String?,

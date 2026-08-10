@@ -37,6 +37,7 @@ class ThreadsClient(
                 userId = userId,
                 mediaType = "VIDEO",
                 videoUrl = request.fileUrl,
+                imageUrl = null,
                 text = buildText(request),
                 accessToken = request.accessToken.value,
             )
@@ -67,6 +68,42 @@ class ThreadsClient(
             )
         } catch (e: Exception) {
             log.error("Threads 업로드 실패: {}", e.message, e)
+            throw PlatformUploadException("Threads", e.message ?: "알 수 없는 오류", e)
+        }
+    }
+
+    override fun uploadImage(request: PlatformUploadRequest): PlatformUploadResult {
+        log.info("Threads 이미지 업로드 시작: title={}", request.title)
+        val userId = request.platformChannelId
+            ?: throw PlatformUploadException("Threads", "사용자 ID가 필요합니다")
+
+        return try {
+            val container = threadsApi.createMediaContainer(
+                userId = userId,
+                mediaType = "IMAGE",
+                videoUrl = null,
+                imageUrl = request.fileUrl,
+                text = buildText(request),
+                accessToken = request.accessToken.value,
+            )
+            waitForContainerReady(container.id, request.accessToken.value)
+            val published = threadsApi.publishThread(
+                userId = userId,
+                creationId = container.id,
+                accessToken = request.accessToken.value,
+            )
+            val media = threadsApi.getThread(
+                threadId = published.id,
+                fields = "id,permalink",
+                accessToken = request.accessToken.value,
+            )
+            PlatformUploadResult(
+                platformVideoId = published.id,
+                platformUrl = media.permalink ?: "",
+                status = "PUBLISHED",
+            )
+        } catch (e: Exception) {
+            log.error("Threads 이미지 업로드 실패: {}", e.message, e)
             throw PlatformUploadException("Threads", e.message ?: "알 수 없는 오류", e)
         }
     }

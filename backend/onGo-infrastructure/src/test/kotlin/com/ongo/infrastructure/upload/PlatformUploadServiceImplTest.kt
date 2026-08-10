@@ -3,6 +3,7 @@ package com.ongo.infrastructure.upload
 import com.ongo.application.video.PlatformUploadConfig
 import com.ongo.application.video.toPublishOutcome
 import com.ongo.common.enums.Platform
+import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.Visibility
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
@@ -14,11 +15,7 @@ import com.ongo.infrastructure.external.platform.PlatformClient
 import com.ongo.infrastructure.external.platform.PlatformClientFactory
 import com.ongo.infrastructure.external.platform.PlatformTokenResult
 import com.ongo.infrastructure.external.platform.PlatformUploadResult as ClientUploadResult
-import io.mockk.every
-import io.mockk.Runs
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.slot
+import io.mockk.*
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
@@ -97,6 +94,53 @@ class PlatformUploadServiceImplTest {
         assertThat(result.success).isTrue()
         assertThat(result.published).isTrue()
         assertThat(result.platformUrl).isEqualTo("https://instagram.com/reel/media-1")
+    }
+
+    @Test
+    fun `이미지 게시 요청은 이미지 전용 클라이언트 메서드를 사용한다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val channelRepository = mockk<ChannelRepository>()
+        val tokenEncryptionPort = mockk<TokenEncryptionPort>()
+        val client = mockk<PlatformClient>()
+        val requestSlot = slot<com.ongo.infrastructure.external.platform.PlatformUploadRequest>()
+
+        every { factory.getClient(Platform.INSTAGRAM) } returns client
+        every { channelRepository.findByUserIdAndPlatform(7L, Platform.INSTAGRAM) } returns Channel(
+            id = 1L,
+            userId = 7L,
+            platform = Platform.INSTAGRAM,
+            platformChannelId = "ig-user",
+            channelName = "creator",
+            accessToken = EncryptedToken("encrypted-token"),
+            status = ChannelStatus.ACTIVE,
+        )
+        every { tokenEncryptionPort.decrypt(EncryptedToken("encrypted-token")) } returns PlainToken("plain-token")
+        every { client.uploadImage(capture(requestSlot)) } returns ClientUploadResult(
+            platformVideoId = "image-1",
+            platformUrl = "https://instagram.com/p/image-1",
+            status = "PUBLISHED",
+        )
+
+        val result = PlatformUploadServiceImpl(factory, channelRepository, tokenEncryptionPort, emptyList()).upload(
+            config = PlatformUploadConfig(
+                platform = Platform.INSTAGRAM,
+                videoUploadId = 10L,
+                title = "이미지",
+                description = "설명",
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC,
+                thumbnailUrl = null,
+                scheduledAt = null,
+                mediaType = MediaType.IMAGE,
+            ),
+            fileUrl = "https://storage.example/image.jpg",
+            userId = 7L,
+        )
+
+        assertThat(requestSlot.captured.mediaType).isEqualTo(MediaType.IMAGE)
+        assertThat(requestSlot.captured.fileUrl).isEqualTo("https://storage.example/image.jpg")
+        assertThat(result.published).isTrue()
+        verify(exactly = 0) { client.uploadVideo(any()) }
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.ongo.application.video
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.enums.MediaType
 
 data class PlatformUploadCapability(
     val platform: Platform,
@@ -17,12 +18,15 @@ data class PlatformUploadCapability(
     val unavailableReason: String? = null,
     /** Maximum length after fields are composed into the provider caption/text. */
     val maxCaptionLength: Int? = null,
+    /** Media types the provider can publish through the durable upload path. */
+    val acceptedMediaTypes: Set<MediaType> = setOf(MediaType.VIDEO),
 )
 
 object PlatformUploadCapabilities {
     private const val GB = 1024L * 1024 * 1024
     private const val MB = 1024L * 1024
     private val VIDEO_EXTENSIONS = setOf("mp4", "mov", "avi", "mkv", "webm")
+    private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp")
 
     private val capabilities = mapOf(
         Platform.YOUTUBE to PlatformUploadCapability(
@@ -40,14 +44,16 @@ object PlatformUploadCapabilities {
             maxCaptionLength = 280,
         ),
         Platform.INSTAGRAM to PlatformUploadCapability(
-            Platform.INSTAGRAM, true, true, false, 500 * MB, 2_200, 0, 30, setOf("mp4", "mov"),
+            Platform.INSTAGRAM, true, true, false, 500 * MB, 2_200, 0, 30, VIDEO_EXTENSIONS + IMAGE_EXTENSIONS,
             "Instagram은 임시 오브젝트 URL을 통해 Graph API로 업로드합니다.",
             maxCaptionLength = 2_200,
+            acceptedMediaTypes = setOf(MediaType.VIDEO, MediaType.IMAGE),
         ),
         Platform.THREADS to PlatformUploadCapability(
-            Platform.THREADS, true, true, false, 500 * MB, 500, 0, 30, setOf("mp4", "mov"),
+            Platform.THREADS, true, true, false, 500 * MB, 500, 0, 30, VIDEO_EXTENSIONS + IMAGE_EXTENSIONS,
             "Threads는 임시 오브젝트 URL을 통해 Graph API로 업로드합니다.",
             maxCaptionLength = 500,
+            acceptedMediaTypes = setOf(MediaType.VIDEO, MediaType.IMAGE),
         ),
         Platform.FACEBOOK to PlatformUploadCapability(
             Platform.FACEBOOK, false, true, false, 2 * GB, 255, 5_000, 30, setOf("mp4", "mov"),

@@ -1,6 +1,7 @@
 package com.ongo.application.video
 
 import com.ongo.common.enums.Platform
+import com.ongo.common.enums.MediaType
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -53,5 +54,17 @@ class PlatformUploadCapabilityTest {
         assertFalse(capabilities.getValue(Platform.THREADS).scheduling)
         assertFalse(capabilities.getValue(Platform.FACEBOOK).directVideoUpload)
         assertNotNull(capabilities.getValue(Platform.FACEBOOK).unavailableReason)
+        assertEquals(
+            setOf(MediaType.VIDEO, MediaType.IMAGE),
+            capabilities.getValue(Platform.INSTAGRAM).acceptedMediaTypes,
+        )
+        assertEquals(
+            setOf(MediaType.VIDEO, MediaType.IMAGE),
+            capabilities.getValue(Platform.THREADS).acceptedMediaTypes,
+        )
+        assertEquals(
+            setOf(MediaType.VIDEO),
+            capabilities.getValue(Platform.YOUTUBE).acceptedMediaTypes,
+        )
     }
 }

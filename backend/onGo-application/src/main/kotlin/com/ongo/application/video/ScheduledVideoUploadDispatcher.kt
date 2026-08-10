@@ -87,6 +87,7 @@ class ScheduledVideoUploadDispatcher(
                                 // 다시 전달하지 않는다. 여기부터는 즉시 게시 호출이다.
                                 scheduledAt = null,
                                 leaseOwner = leaseOwner,
+                                mediaType = video.mediaType,
                             )
                         ),
                     )

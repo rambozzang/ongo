@@ -579,6 +579,52 @@ class PublicApiUseCaseTest {
     }
 
     @Test
+    fun `Postiz upload image asset는 이미지 media type을 유지한다`() {
+        val asset = Asset(
+            id = 32,
+            userId = 1,
+            filename = "upload.jpg",
+            originalFilename = "원본.jpg",
+            fileUrl = "s3://private-bucket/public-api/1/upload.jpg",
+            fileType = "IMAGE",
+            fileSizeBytes = 4321,
+            mimeType = "image/jpeg",
+        )
+        val draft = Video(id = 13, userId = 1, title = "업로드 이미지")
+        every { assets.findById(32) } returns asset
+        every { uploadVideo.createVideo(1, any(), any(), any()) } returns draft
+        every { videos.update(any()) } answers { firstArg() }
+        every { channels.findById(7) } returns channel
+        every { posts.save(any()) } answers { firstArg<PublicApiPost>().copy(id = 48) }
+        every { uploads.findByVideoId(13) } returns emptyList()
+
+        useCase.create(
+            1,
+            CreatePublicPostRequest(
+                type = "draft",
+                posts = listOf(
+                    PublicPostItem(
+                        integration = PublicIntegrationRef("7"),
+                        value = listOf(
+                            PublicPostValue(
+                                image = jacksonObjectMapper().readTree("""{"id":"32","path":"https://internal.invalid/image.jpg"}"""),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        verify {
+            videos.update(match { updated ->
+                updated.mediaType == com.ongo.common.enums.MediaType.IMAGE &&
+                    updated.fileUrl == asset.fileUrl &&
+                    updated.originalFilename == asset.originalFilename
+            })
+        }
+    }
+
+    @Test
     fun `Postiz upload asset id가 다른 사용자의 것이면 영상 생성 전에 거부한다`() {
         every { channels.findById(7) } returns channel
         every { assets.findById(31) } returns Asset(

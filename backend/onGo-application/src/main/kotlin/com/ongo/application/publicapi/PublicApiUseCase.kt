@@ -126,6 +126,7 @@ class PublicApiUseCase(
             maxFileSizeBytes = capability.maxFileSizeBytes,
             acceptedExtensions = capability.acceptedExtensions,
             unavailableReason = capability.unavailableReason,
+            acceptedMediaTypes = capability.acceptedMediaTypes.map { it.name }.toSet(),
             output = PublicIntegrationSettingsOutput(
                 rules = buildSettingsRules(capability.scheduling, capability.directVideoUpload, capability.cloudVideoUpload),
                 maxLength = capability.maxTitleLength,
@@ -331,7 +332,13 @@ class PublicApiUseCase(
         val configs = if (type == PublicApiPostType.DRAFT) {
             emptyList()
         } else {
-            buildConfigs(userId, normalized, requireNotNull(video.id), scheduledAt)
+            buildConfigs(
+                userId = userId,
+                request = normalized,
+                videoId = requireNotNull(video.id),
+                scheduledAt = scheduledAt,
+                mediaType = video.mediaType,
+            )
         }
         val payloadJson = objectMapper.writeValueAsString(normalized)
         var post = postRepository.save(
@@ -723,7 +730,15 @@ class PublicApiUseCase(
         )
         return try {
             publishVideoUseCase.publishVideo(
-                userId, current.videoId, buildConfigs(userId, payload, current.videoId, date),
+                userId,
+                current.videoId,
+                buildConfigs(
+                    userId = userId,
+                    request = payload,
+                    videoId = current.videoId,
+                    scheduledAt = date,
+                    mediaType = videoRepository.findById(current.videoId)?.mediaType ?: MediaType.VIDEO,
+                ),
             )
             toResponse(postRepository.update(updated.copy(
                 status = if (type == PublicApiPostType.SCHEDULE) PublicApiPostStatus.SCHEDULED else PublicApiPostStatus.PROCESSING,
@@ -861,6 +876,7 @@ class PublicApiUseCase(
         }
 
         val value = request.posts.firstOrNull()?.value?.firstOrNull()
+        val isImage = value?.video == null && value?.image != null
         val mediaNode = value?.video ?: value?.image
         val mediaAssetId = firstMediaAssetId(mediaNode)
         if (mediaAssetId != null) {
@@ -869,9 +885,13 @@ class PublicApiUseCase(
             if (asset.userId != userId) {
                 throw ForbiddenException("해당 에셋에 대한 권한이 없습니다")
             }
-            require(asset.fileType.equals("VIDEO", ignoreCase = true) ||
-                asset.mimeType?.startsWith("video/", ignoreCase = true) == true) {
-                "공개 API 게시에는 동영상 에셋만 사용할 수 있습니다"
+            val isVideoAsset = asset.fileType.equals("VIDEO", ignoreCase = true) ||
+                asset.mimeType?.startsWith("video/", ignoreCase = true) == true
+            val isImageAsset = asset.fileType.equals("IMAGE", ignoreCase = true) ||
+                asset.mimeType?.startsWith("image/", ignoreCase = true) == true
+            require(if (isImage) isImageAsset else isVideoAsset) {
+                if (isImage) "공개 API 이미지 게시에는 이미지 에셋이 필요합니다"
+                else "공개 API 동영상 게시에는 동영상 에셋이 필요합니다"
             }
             val draft = uploadVideoUseCase.createVideo(
                 userId = userId,
@@ -884,7 +904,7 @@ class PublicApiUseCase(
                     fileUrl = asset.fileUrl,
                     fileSizeBytes = asset.fileSizeBytes,
                     originalFilename = asset.originalFilename ?: asset.filename,
-                    mediaType = MediaType.VIDEO,
+                    mediaType = if (isImage) MediaType.IMAGE else MediaType.VIDEO,
                     source = VideoSource.UPLOAD_PC,
                 ),
             )
@@ -909,7 +929,11 @@ class PublicApiUseCase(
             tags = value?.tags ?: emptyList(),
         )
         return videoRepository.update(
-            draft.copy(fileUrl = normalizedMediaUrl, mediaType = MediaType.VIDEO, source = VideoSource.URL_IMPORT),
+            draft.copy(
+                fileUrl = normalizedMediaUrl,
+                mediaType = if (isImage) MediaType.IMAGE else MediaType.VIDEO,
+                source = VideoSource.URL_IMPORT,
+            ),
         )
     }
 
@@ -918,6 +942,7 @@ class PublicApiUseCase(
         request: CreatePublicPostRequest,
         videoId: Long,
         scheduledAt: LocalDateTime?,
+        mediaType: MediaType = MediaType.VIDEO,
     ): List<PlatformUploadConfig> = request.posts.map { item ->
         val channelId = item.integration.id.toLongOrNull()
             ?: throw IllegalArgumentException("integration.id는 onGo 채널 ID여야 합니다")
@@ -955,6 +980,7 @@ class PublicApiUseCase(
             thumbnailUrl = firstText(settings?.path("thumbnail")),
             customSettingsJson = settings?.takeIf { it.isObject }?.toString(),
             scheduledAt = scheduledAt?.plusSeconds(value?.delay?.toLong() ?: 0L),
+            mediaType = mediaType,
         )
     }
 
@@ -1065,10 +1091,10 @@ class PublicApiUseCase(
                 stringField("community")
                 booleanField("made_with_ai")
             }
-            // The public API currently publishes videos only. Postiz fields
-            // for Facebook link posts and LinkedIn image carousels are not
-            // advertised here because these writers cannot apply them to a
-            // video request.
+            // Instagram and Threads also accept value.image through their
+            // native image container writers. Other provider-specific image
+            // formats remain undiscovered until their writers implement the
+            // corresponding external API contract.
             Platform.FACEBOOK,
             Platform.LINKEDIN -> Unit
             Platform.PINTEREST -> {

@@ -13,9 +13,10 @@ interface ThreadsApi {
     fun createMediaContainer(
         @org.springframework.web.bind.annotation.PathVariable("userId") userId: String,
         @RequestParam("media_type") mediaType: String,
-        @RequestParam("video_url") videoUrl: String,
+        @RequestParam("video_url", required = false) videoUrl: String?,
         @RequestParam("text") text: String,
         @RequestParam("access_token") accessToken: String,
+        @RequestParam("image_url", required = false) imageUrl: String? = null,
     ): ThreadsMediaContainerResponse
 
     @PostExchange("/{userId}/threads_publish")

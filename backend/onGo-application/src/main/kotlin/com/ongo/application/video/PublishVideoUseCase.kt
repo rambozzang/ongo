@@ -1,7 +1,6 @@
 package com.ongo.application.video
 
 import com.ongo.common.enums.UploadStatus
-import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
@@ -44,45 +43,46 @@ class PublishVideoUseCase(
         val duplicateTargets = configs.groupingBy { it.channelId ?: it.platform }.eachCount().filterValues { it > 1 }.keys
         require(duplicateTargets.isEmpty()) { "같은 게시 계정을 중복 선택할 수 없습니다: ${duplicateTargets.joinToString()}" }
 
-        if (video.mediaType == MediaType.VIDEO) {
-            require(video.fileUrl != null) { "업로드가 완료된 영상 파일을 찾을 수 없습니다." }
-            configs.forEach { config ->
-                val capability = PlatformUploadCapabilities.get(config.platform)
-                    ?: throw IllegalArgumentException("영상 게시를 지원하지 않는 플랫폼입니다: ${config.platform}")
-                require(capability.directVideoUpload || capability.cloudVideoUpload) {
-                    capability.unavailableReason ?: "${config.platform} 영상 게시를 지원하지 않습니다."
+        require(video.fileUrl != null) { "업로드가 완료된 미디어 파일을 찾을 수 없습니다." }
+        configs.forEach { config ->
+            val capability = PlatformUploadCapabilities.get(config.platform)
+                ?: throw IllegalArgumentException("${video.mediaType.name.lowercase()} 게시를 지원하지 않는 플랫폼입니다: ${config.platform}")
+            require(video.mediaType in capability.acceptedMediaTypes) {
+                "${config.platform}은(는) ${video.mediaType.name.lowercase()} 게시를 지원하지 않습니다."
+            }
+            require(capability.directVideoUpload || capability.cloudVideoUpload) {
+                capability.unavailableReason ?: "${config.platform} ${video.mediaType.name.lowercase()} 게시를 지원하지 않습니다."
+            }
+            // 예약은 플랫폼 native scheduler가 아니라 onGo durable queue가 처리한다.
+            // native scheduling=false인 채널도 같은 시각에 게시할 수 있다.
+            require(config.title.length <= capability.maxTitleLength) {
+                "${config.platform} 제목은 ${capability.maxTitleLength}자까지 입력할 수 있습니다."
+            }
+            require(config.title.isNotBlank()) {
+                "${config.platform} 제목을 입력해주세요."
+            }
+            val description = config.description.orEmpty()
+            if (capability.maxDescriptionLength > 0) {
+                require(description.length <= capability.maxDescriptionLength) {
+                    "${config.platform} 설명은 ${capability.maxDescriptionLength}자까지 입력할 수 있습니다."
                 }
-                // 예약은 플랫폼 native scheduler가 아니라 onGo durable queue가 처리한다.
-                // native scheduling=false인 채널도 같은 시각에 게시할 수 있다.
-                require(config.title.length <= capability.maxTitleLength) {
-                    "${config.platform} 제목은 ${capability.maxTitleLength}자까지 입력할 수 있습니다."
+            }
+            require(config.tags.size <= capability.maxTagCount) {
+                "${config.platform} 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다."
+            }
+            capability.maxCaptionLength?.let { limit ->
+                val caption = PlatformCaptionRules.compose(
+                    config.platform,
+                    config.title,
+                    description,
+                    config.tags,
+                ).orEmpty()
+                require(caption.length <= limit) {
+                    "${config.platform} 게시 문구는 ${limit}자까지 입력할 수 있습니다."
                 }
-                require(config.title.isNotBlank()) {
-                    "${config.platform} 제목을 입력해주세요."
-                }
-                val description = config.description.orEmpty()
-                if (capability.maxDescriptionLength > 0) {
-                    require(description.length <= capability.maxDescriptionLength) {
-                        "${config.platform} 설명은 ${capability.maxDescriptionLength}자까지 입력할 수 있습니다."
-                    }
-                }
-                require(config.tags.size <= capability.maxTagCount) {
-                    "${config.platform} 태그는 ${capability.maxTagCount}개까지 입력할 수 있습니다."
-                }
-                capability.maxCaptionLength?.let { limit ->
-                    val caption = PlatformCaptionRules.compose(
-                        config.platform,
-                        config.title,
-                        description,
-                        config.tags,
-                    ).orEmpty()
-                    require(caption.length <= limit) {
-                        "${config.platform} 게시 문구는 ${limit}자까지 입력할 수 있습니다."
-                    }
-                }
-                require(config.scheduledAt == null || config.scheduledAt.isAfter(LocalDateTime.now().plusMinutes(5))) {
-                    "예약 시간은 현재보다 최소 5분 이후여야 합니다."
-                }
+            }
+            require(config.scheduledAt == null || config.scheduledAt.isAfter(LocalDateTime.now().plusMinutes(5))) {
+                "예약 시간은 현재보다 최소 5분 이후여야 합니다."
             }
         }
 
@@ -286,6 +286,7 @@ class PublishVideoUseCase(
                         thumbnailUrl = meta?.customThumbnailUrl,
                         customSettingsJson = meta?.customSettingsJson,
                         scheduledAt = null,
+                        mediaType = video.mediaType,
                     )
                 ),
             )
