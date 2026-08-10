@@ -15,8 +15,8 @@ import java.time.LocalDateTime
 
 /**
  * UGC 캠페인 성과 조회. 게시물별 최신 지표 스냅샷을 합산하고 마지막 동기화 시각을 함께 반환한다.
- * 지표 기록(recordMetric)은 플랫폼 지표 동기화 스케줄러가 쓰는 진입점을 대신하며,
- * 실제 플랫폼 API 연동은 후속 작업이다.
+ * 지표 기록(recordMetric)은 수동 보정·백필을 위한 진입점이며,
+ * 외부 게시물의 최신 지표는 CampaignMetricsSyncScheduler가 플랫폼 API에서 동기화한다.
  */
 @Service
 class CampaignAnalyticsUseCase(

@@ -12,7 +12,10 @@ import { formatFileSize } from '@/utils/format'
 const MAX_FILES = 50
 const ACCEPTED_TYPES = 'video/*,image/*,audio/*'
 
-const ALL_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP']
+const ALL_PLATFORMS: Platform[] = [
+  'YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'FACEBOOK', 'NAVER_CLIP', 'TWITTER', 'THREADS',
+  'PINTEREST', 'LINKEDIN', 'WORDPRESS', 'TUMBLR', 'VIMEO', 'DAILYMOTION',
+]
 
 const emit = defineEmits<{
   addToQueue: [files: File[], platforms: string[]]

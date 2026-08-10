@@ -10,6 +10,15 @@ interface CampaignPublishPort {
      * 게시는 비동기이므로 즉시 상태는 보통 UPLOADING이며, 최종 결과는 이후 동기화된다.
      */
     fun publish(creatorId: Long, videoId: Long, platforms: List<String>): List<PlatformPublishOutcome>
+
+    /** UGC 제출물의 캡션을 게시 메타데이터로 전달하는 확장 경로. */
+    fun publishWithMetadata(
+        creatorId: Long,
+        videoId: Long,
+        platforms: List<String>,
+        title: String?,
+        description: String?,
+    ): List<PlatformPublishOutcome> = publish(creatorId, videoId, platforms)
 }
 
 data class PlatformPublishOutcome(
@@ -17,4 +26,5 @@ data class PlatformPublishOutcome(
     val videoUploadId: Long?,
     val status: String,
     val errorMessage: String? = null,
+    val platformPostId: String? = null,
 )

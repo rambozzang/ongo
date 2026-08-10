@@ -54,7 +54,18 @@ class CampaignPublishingUseCase(
         }
 
         if (newPlatforms.isNotEmpty()) {
-            val outcomes = campaignPublishPort.publish(submission.creatorId, videoId, newPlatforms)
+            val caption = submission.caption
+            val outcomes = if (caption.isNullOrBlank()) {
+                campaignPublishPort.publish(submission.creatorId, videoId, newPlatforms)
+            } else {
+                campaignPublishPort.publishWithMetadata(
+                    creatorId = submission.creatorId,
+                    videoId = videoId,
+                    platforms = newPlatforms,
+                    title = caption.lineSequence().firstOrNull()?.take(100),
+                    description = caption,
+                )
+            }
             outcomes.forEach { outcome ->
                 campaignPostRepository.save(
                     CampaignPost(
@@ -64,6 +75,7 @@ class CampaignPublishingUseCase(
                         platform = outcome.platform,
                         postType = PostType.DIRECT,
                         videoUploadId = outcome.videoUploadId,
+                        platformPostId = outcome.platformPostId,
                         status = if (outcome.status == "FAILED") PostStatus.FAILED else PostStatus.PUBLISHING,
                         idempotencyKey = idempotencyKey(submissionId, outcome.platform),
                         errorMessage = outcome.errorMessage,

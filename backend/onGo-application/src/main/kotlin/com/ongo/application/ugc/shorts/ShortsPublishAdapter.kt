@@ -74,6 +74,7 @@ class ShortsPublishAdapter(
                 videoUploadId = upload?.id,
                 status = uploadStatus.status.name,
                 errorMessage = uploadStatus.errorMessage,
+                platformPostId = upload?.platformVideoId,
             )
         }
     }

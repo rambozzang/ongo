@@ -23,6 +23,16 @@ class CampaignPublishAdapter(
 ) : CampaignPublishPort {
 
     override fun publish(creatorId: Long, videoId: Long, platforms: List<String>): List<PlatformPublishOutcome> {
+        return publishWithMetadata(creatorId, videoId, platforms, null, null)
+    }
+
+    override fun publishWithMetadata(
+        creatorId: Long,
+        videoId: Long,
+        platforms: List<String>,
+        title: String?,
+        description: String?,
+    ): List<PlatformPublishOutcome> {
         val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
 
         val targets = platforms.map { parseCampaignPublishTarget(it) }
@@ -31,8 +41,8 @@ class CampaignPublishAdapter(
                 platform = target.platform,
                 channelId = target.channelId,
                 videoUploadId = 0,
-                title = video.title,
-                description = null,
+                title = title?.ifBlank { null } ?: video.title,
+                description = description,
                 tags = emptyList(),
                 visibility = Visibility.PUBLIC,
                 thumbnailUrl = null,
@@ -54,6 +64,7 @@ class CampaignPublishAdapter(
                 videoUploadId = upload?.id,
                 status = uploadStatus.status.name,
                 errorMessage = uploadStatus.errorMessage,
+                platformPostId = upload?.platformVideoId,
             )
         }
     }

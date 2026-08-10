@@ -9,6 +9,7 @@ import com.ongo.application.ugc.dto.SubmissionListResponse
 import com.ongo.application.ugc.dto.SubmissionResponse
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.common.enums.MediaType
 import com.ongo.domain.ugc.campaign.Campaign
 import com.ongo.domain.ugc.campaign.CampaignRepository
 import com.ongo.domain.ugc.participation.ParticipantRepository
@@ -19,6 +20,7 @@ import com.ongo.domain.ugc.submission.SubmissionReview
 import com.ongo.domain.ugc.submission.SubmissionReviewRepository
 import com.ongo.domain.ugc.submission.SubmissionStatus
 import com.ongo.domain.workspace.WorkspaceRepository
+import com.ongo.domain.video.VideoRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -36,6 +38,7 @@ class SubmissionUseCase(
     private val participantRepository: ParticipantRepository,
     private val campaignRepository: CampaignRepository,
     private val workspaceRepository: WorkspaceRepository,
+    private val videoRepository: VideoRepository,
 ) {
 
     // ---- 크리에이터 ----
@@ -45,7 +48,7 @@ class SubmissionUseCase(
         if (!participantRepository.existsByCampaignIdAndCreatorId(campaignId, creatorId)) {
             throw ForbiddenException("수락된 참여자만 콘텐츠를 제출할 수 있습니다")
         }
-        val assets = request.assets.map { it.toDomain() }
+        val assets = request.assets.map { it.toDomain(creatorId) }
         val existing = submissionRepository.findByCampaignIdAndCreatorId(campaignId, creatorId)
 
         val result = if (existing == null) {
@@ -154,9 +157,20 @@ class SubmissionUseCase(
         return submission
     }
 
-    private fun SubmissionAssetDto.toDomain(): SubmissionAsset {
+    private fun SubmissionAssetDto.toDomain(creatorId: Long): SubmissionAsset {
         if (externalUrl != null && !externalUrl.startsWith("https://") && !externalUrl.startsWith("http://")) {
             throw IllegalArgumentException("외부 URL은 http(s) 스킴만 허용됩니다")
+        }
+        if (assetType == "VIDEO") {
+            val videoId = resourceId ?: throw IllegalArgumentException("영상 첨부에는 영상 ID가 필요합니다")
+            val video = videoRepository.findById(videoId)
+                ?: throw NotFoundException("영상", videoId)
+            if (video.userId != creatorId) {
+                throw ForbiddenException("본인이 업로드한 영상만 제출할 수 있습니다")
+            }
+            if (video.mediaType != MediaType.VIDEO || video.fileUrl.isNullOrBlank()) {
+                throw IllegalArgumentException("업로드가 완료된 영상만 제출할 수 있습니다")
+            }
         }
         return SubmissionAsset(assetType = assetType, resourceType = resourceType, resourceId = resourceId, externalUrl = externalUrl)
     }

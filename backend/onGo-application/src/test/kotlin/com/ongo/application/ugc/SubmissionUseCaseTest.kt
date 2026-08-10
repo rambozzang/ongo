@@ -16,6 +16,8 @@ import com.ongo.domain.ugc.submission.SubmissionReviewRepository
 import com.ongo.domain.ugc.submission.SubmissionStatus
 import com.ongo.domain.workspace.Workspace
 import com.ongo.domain.workspace.WorkspaceRepository
+import com.ongo.domain.video.Video
+import com.ongo.domain.video.VideoRepository
 import io.mockk.every
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -36,6 +38,7 @@ class SubmissionUseCaseTest {
     @MockK lateinit var participantRepository: ParticipantRepository
     @MockK lateinit var campaignRepository: CampaignRepository
     @MockK lateinit var workspaceRepository: WorkspaceRepository
+    @MockK lateinit var videoRepository: VideoRepository
 
     @InjectMockKs lateinit var useCase: SubmissionUseCase
 
@@ -69,6 +72,27 @@ class SubmissionUseCaseTest {
         every { participantRepository.existsByCampaignIdAndCreatorId(campaignId, creatorId) } returns false
         assertFailsWith<ForbiddenException> {
             useCase.createOrUpdateSubmission(creatorId, campaignId, CreateSubmissionRequest(caption = "c"))
+        }
+    }
+
+    @Test
+    fun `video asset cannot reference another creators video`() {
+        every { participantRepository.existsByCampaignIdAndCreatorId(campaignId, creatorId) } returns true
+        every { videoRepository.findById(700L) } returns Video(
+            id = 700L,
+            userId = 999L,
+            title = "타인 영상",
+            fileUrl = "https://storage.example/video.mp4",
+        )
+
+        assertFailsWith<ForbiddenException> {
+            useCase.createOrUpdateSubmission(
+                creatorId,
+                campaignId,
+                CreateSubmissionRequest(
+                    assets = listOf(SubmissionAssetDto(assetType = "VIDEO", resourceType = "VIDEO", resourceId = 700L)),
+                ),
+            )
         }
     }
 

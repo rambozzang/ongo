@@ -32,6 +32,11 @@ class JooqCampaignPostRepository(
     override fun findById(id: Long): CampaignPost? =
         dsl.select().from(UGC_CAMPAIGN_POSTS).where(ID.eq(id)).fetchOne()?.toPost()
 
+    override fun findAll(): List<CampaignPost> =
+        dsl.select().from(UGC_CAMPAIGN_POSTS)
+            .orderBy(CREATED_AT.desc())
+            .fetch().map { it.toPost() }
+
     override fun findByCampaignId(campaignId: Long): List<CampaignPost> =
         dsl.select().from(UGC_CAMPAIGN_POSTS)
             .where(CAMPAIGN_ID.eq(campaignId))

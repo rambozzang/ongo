@@ -33,6 +33,7 @@ import com.ongo.domain.ugc.submission.SubmissionRepository
 import com.ongo.domain.ugc.submission.SubmissionReviewRepository
 import com.ongo.domain.workspace.Workspace
 import com.ongo.domain.workspace.WorkspaceRepository
+import com.ongo.domain.video.VideoRepository
 import com.ongo.infrastructure.persistence.jooq.Tables.UGC_CAMPAIGNS
 import org.jooq.DSLContext
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -73,6 +74,7 @@ class UgcPilotE2EIT {
     @Autowired lateinit var rewardRepo: RewardRepository
     @Autowired lateinit var auditEventRepo: AuditEventRepository
     @Autowired lateinit var workspaceRepo: WorkspaceRepository
+    @Autowired lateinit var videoRepo: VideoRepository
     @Autowired lateinit var dsl: DSLContext
 
     companion object {
@@ -121,7 +123,7 @@ class UgcPilotE2EIT {
 
         campaignUseCase = CampaignUseCase(campaignRepo, playbookRepo, workspaceRepo)
         participationUseCase = ParticipationUseCase(applicationRepo, participantRepo, inviteRepo, campaignRepo, playbookRepo, workspaceRepo, inviteTokenService)
-        submissionUseCase = SubmissionUseCase(submissionRepo, reviewRepo, participantRepo, campaignRepo, workspaceRepo)
+        submissionUseCase = SubmissionUseCase(submissionRepo, reviewRepo, participantRepo, campaignRepo, workspaceRepo, videoRepo)
         publishingUseCase = CampaignPublishingUseCase(postRepo, submissionRepo, campaignRepo, workspaceRepo, noopPublishPort)
         analyticsUseCase = CampaignAnalyticsUseCase(postRepo, metricRepo, campaignRepo, workspaceRepo)
         rewardUseCase = RewardUseCase(rewardRepo, participantRepo, campaignRepo, workspaceRepo, AuditRecorder(auditEventRepo))

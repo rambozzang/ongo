@@ -295,7 +295,10 @@ import type { Visibility, PlatformPublishConfig } from '@/types/video'
 import type { MediaType, PlatformUploadCapability } from '@/types/video'
 import type { ScheduleSuggestion } from '@/types/ai'
 
-const ALL_PLATFORMS: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'FACEBOOK', 'NAVER_CLIP', 'TWITTER', 'THREADS']
+const ALL_PLATFORMS: Platform[] = [
+  'YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'FACEBOOK', 'NAVER_CLIP', 'TWITTER', 'THREADS',
+  'PINTEREST', 'LINKEDIN', 'WORDPRESS', 'TUMBLR', 'VIMEO', 'DAILYMOTION',
+]
 
 const PLATFORM_LIMITS: Partial<Record<Platform, { title: number; description: number }>> = {
   YOUTUBE: { title: 100, description: 5000 },
@@ -305,6 +308,12 @@ const PLATFORM_LIMITS: Partial<Record<Platform, { title: number; description: nu
   NAVER_CLIP: { title: 100, description: 1000 },
   TWITTER: { title: 280, description: 0 },
   THREADS: { title: 500, description: 0 },
+  PINTEREST: { title: 100, description: 800 },
+  LINKEDIN: { title: 3_000, description: 3_000 },
+  WORDPRESS: { title: 200, description: 5_000 },
+  TUMBLR: { title: 5_000, description: 5_000 },
+  VIMEO: { title: 128, description: 5_000 },
+  DAILYMOTION: { title: 255, description: 3_000 },
 }
 
 const props = defineProps<{
@@ -346,6 +355,12 @@ const platformMeta = reactive<Partial<Record<Platform, { title: string; descript
   NAVER_CLIP: { title: '', description: '', tags: [] },
   TWITTER: { title: '', description: '', tags: [] },
   THREADS: { title: '', description: '', tags: [] },
+  PINTEREST: { title: '', description: '', tags: [] },
+  LINKEDIN: { title: '', description: '', tags: [] },
+  WORDPRESS: { title: '', description: '', tags: [] },
+  TUMBLR: { title: '', description: '', tags: [] },
+  VIMEO: { title: '', description: '', tags: [] },
+  DAILYMOTION: { title: '', description: '', tags: [] },
 })
 
 const capabilityMap = computed(() => new Map(props.capabilities.map((item) => [item.platform, item])))
