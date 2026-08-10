@@ -104,9 +104,17 @@ class YouTubeClient(
             else -> null
         }
 
+        val uploadStatus = status?.uploadStatus?.uppercase() ?: "UNKNOWN"
+        val privacyStatus = status?.privacyStatus?.lowercase()
+        val publicStatus = when {
+            uploadStatus == "PROCESSED" && privacyStatus in setOf("public", "unlisted") -> "PUBLISHED"
+            uploadStatus == "FAILED" || uploadStatus == "REJECTED" -> uploadStatus
+            else -> "PROCESSING"
+        }
+
         return PlatformVideoStatus(
             platformVideoId = platformVideoId,
-            status = status?.uploadStatus ?: "unknown",
+            status = publicStatus,
             errorMessage = errorMessage,
         )
     }

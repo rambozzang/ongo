@@ -217,10 +217,13 @@ class TumblrClient(
         log.info("Tumblr 게시물 삭제: postId={}", platformVideoId)
 
         return try {
+            val parts = platformVideoId.split(":", limit = 2)
+            val blogName = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: return false
+            val postId = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: return false
             tumblrApi.deletePost(
-                blogName = "me",
+                blogName = blogName,
                 authorization = "Bearer $accessToken",
-                body = mapOf("id" to platformVideoId),
+                body = mapOf("id" to postId),
             )
             true
         } catch (e: Exception) {

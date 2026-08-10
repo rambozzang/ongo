@@ -54,7 +54,8 @@ class YouTubeStreamWriterHttpContractTest {
         writer.writeChunk("test".toByteArray(), 0, 4)
         val result = writer.complete()
 
-        assertThat(result.published).isTrue()
+        assertThat(result.published).isFalse()
+        assertThat(result.pollToken).isEqualTo("youtube-video-1")
         assertThat(result.platformVideoId).isEqualTo("youtube-video-1")
         assertThat(result.platformUrl).isEqualTo("https://www.youtube.com/watch?v=youtube-video-1")
 

@@ -603,12 +603,11 @@ const STAGE_ORDER: PipelineStage[] = [
   'SCHEDULE',
 ]
 
-const PLATFORM_OPTIONS = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'] as const
+const PLATFORM_OPTIONS = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM'] as const
 const platformLabels: Record<string, string> = {
   YOUTUBE: 'YouTube',
   TIKTOK: 'TikTok',
   INSTAGRAM: 'Instagram',
-  NAVER_CLIP: 'Naver Clip',
 }
 
 const POLL_INTERVAL_MS = 3000

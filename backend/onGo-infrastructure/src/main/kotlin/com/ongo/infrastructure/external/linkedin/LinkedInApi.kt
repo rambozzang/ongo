@@ -24,6 +24,12 @@ interface LinkedInApi {
         @RequestBody request: LinkedInUgcPostRequest,
     ): LinkedInUgcPostResponse
 
+    @GetExchange("/v2/ugcPosts/{postId}")
+    fun getUgcPost(
+        @org.springframework.web.bind.annotation.PathVariable("postId") postId: String,
+        @RequestHeader("Authorization") authorization: String,
+    ): LinkedInUgcPostResponse
+
     @GetExchange("/v2/me")
     fun getProfile(
         @RequestParam("projection", required = false) projection: String? = null,

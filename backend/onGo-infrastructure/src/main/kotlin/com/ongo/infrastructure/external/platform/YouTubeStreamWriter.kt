@@ -139,8 +139,11 @@ class YouTubeStreamWriter(
                 success = true,
                 platformVideoId = videoId,
                 platformUrl = "https://www.youtube.com/watch?v=$videoId",
-                // 업로드 세션이 videoId 를 돌려준 시점에 영상은 이미 시청 가능하다.
-                published = true,
+                // A resumable-upload response only proves that YouTube accepted
+                // the bytes. Processing, policy checks, and scheduled privacy
+                // changes still happen asynchronously.
+                published = false,
+                pollToken = videoId,
             )
         } catch (e: Exception) {
             log.error("YouTube 스트리밍 업로드 실패", e)

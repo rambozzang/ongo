@@ -612,7 +612,6 @@ type ChipCode =
   | 'IG'
   | 'TT'
   | 'FB'
-  | 'NV'
   | 'TH'
   | 'TW'
   | 'PI'
@@ -626,7 +625,6 @@ const CHIP: Partial<Record<Platform, ChipCode>> = {
   INSTAGRAM: 'IG',
   TIKTOK: 'TT',
   FACEBOOK: 'FB',
-  NAVER_CLIP: 'NV',
   THREADS: 'TH',
   TWITTER: 'TW',
   PINTEREST: 'PI',
@@ -642,7 +640,6 @@ const CHIP_VARS: Record<ChipCode, { bg: string; fg: string }> = {
   IG: { bg: 'var(--platform-ig-bg)', fg: 'var(--platform-ig-fg)' },
   TT: { bg: 'var(--platform-tt-bg)', fg: 'var(--platform-tt-fg)' },
   FB: { bg: 'var(--platform-fb-bg)', fg: 'var(--platform-fb-fg)' },
-  NV: { bg: 'var(--platform-nv-bg)', fg: 'var(--platform-nv-fg)' },
   TH: { bg: 'var(--platform-th-bg)', fg: 'var(--platform-th-fg)' },
   TW: { bg: 'var(--platform-x-bg, #111827)', fg: 'var(--platform-x-fg, #ffffff)' },
   PI: { bg: '#E60023', fg: '#ffffff' },
@@ -660,7 +657,6 @@ const TITLE_LIMIT: Record<string, number> = {
   IG: 2200,
   TT: 2200,
   FB: 255,
-  NV: 100,
   TH: 500,
 }
 const router = useRouter()
@@ -705,7 +701,6 @@ type MetadataTab =
   | 'IG'
   | 'TT'
   | 'FB'
-  | 'NV'
   | 'TH'
   | 'TW'
   | 'PI'
@@ -781,7 +776,6 @@ const TAB_PLATFORM: Record<Exclude<MetadataTab, 'common'>, Platform> = {
   IG: 'INSTAGRAM',
   TT: 'TIKTOK',
   FB: 'FACEBOOK',
-  NV: 'NAVER_CLIP',
   TH: 'THREADS',
   TW: 'TWITTER',
   PI: 'PINTEREST',
@@ -798,7 +792,6 @@ const allTabs = [
   { key: 'IG' as const, label: 'Instagram' },
   { key: 'TT' as const, label: 'TikTok' },
   { key: 'FB' as const, label: 'Facebook' },
-  { key: 'NV' as const, label: 'Naver' },
   { key: 'TH' as const, label: 'Threads' },
   { key: 'TW' as const, label: 'X (Twitter)' },
   { key: 'PI' as const, label: 'Pinterest' },
@@ -876,13 +869,13 @@ const shortsPlatforms = computed(() =>
   selectedChannels.value
     .map((channel) => channel.platform)
     .filter((platform): platform is Platform =>
-      ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'].includes(platform),
+      ['YOUTUBE', 'TIKTOK', 'INSTAGRAM'].includes(platform),
     ),
 )
 const shortsTargets = computed(() =>
   selectedChannels.value
     .filter((channel) =>
-      ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP'].includes(channel.platform),
+      ['YOUTUBE', 'TIKTOK', 'INSTAGRAM'].includes(channel.platform),
     )
     .map((channel) => `${channel.platform}#${channel.id}`),
 )

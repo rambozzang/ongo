@@ -29,27 +29,7 @@ class NaverClipClient(
     }
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
-        log.debug("Naver Clip 상태 조회: clipId={}", platformVideoId)
-
-        try {
-            val response = naverClipApi.getClipStatus(
-                clipId = platformVideoId,
-                authorization = "Bearer $accessToken",
-            )
-
-            if (response.error != null) {
-                throw PlatformApiException("Naver Clip", "영상 상태 조회 실패: ${response.error.message}")
-            }
-
-            return PlatformVideoStatus(
-                platformVideoId = platformVideoId,
-                status = response.status ?: "unknown",
-                errorMessage = response.errorMessage,
-            )
-        } catch (e: Exception) {
-            log.warn("Naver Clip 상태 조회 실패: {}", e.message)
-            throw PlatformApiException("Naver Clip", "영상 상태 조회 실패", e)
-        }
+        throw unsupported()
     }
 
     override fun getVideoAnalytics(
@@ -60,154 +40,36 @@ class NaverClipClient(
     ): PlatformAnalytics {
         log.debug("Naver Clip 분석 데이터 조회: clipId={}", platformVideoId)
 
-        try {
-            val response = naverClipApi.getClipStatistics(
-                clipId = platformVideoId,
-                startDate = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                endDate = endDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                authorization = "Bearer $accessToken",
-            )
-
-            if (response.error != null) {
-                log.warn("Naver Clip 분석 조회 실패: {}", response.error.message)
-                throw PlatformApiException("Naver Clip", "분석 데이터 조회 실패: ${response.error.message}")
-            }
-
-            return PlatformAnalytics(
-                views = response.viewCount ?: 0,
-                likes = response.likeCount ?: 0,
-                comments = response.commentCount ?: 0,
-                shares = response.shareCount ?: 0,
-                watchTimeSeconds = response.watchTimeSeconds ?: 0,
-                subscriberGained = 0,
-            )
-        } catch (e: Exception) {
-            log.warn("Naver Clip 분석 데이터 조회 실패: {}", e.message)
-            throw PlatformApiException("Naver Clip", "분석 데이터 조회 실패", e)
-        }
+        throw unsupported()
     }
 
     override fun getChannelInfo(accessToken: String): PlatformChannelInfo {
         log.debug("Naver Clip 채널 정보 조회")
 
-        val response = naverClipApi.getChannelInfo(
-            authorization = "Bearer $accessToken",
-        )
-
-        if (response.error != null) {
-            throw PlatformUploadException("Naver Clip", "채널 정보 조회 실패: ${response.error.message}")
-        }
-
-        return PlatformChannelInfo(
-            channelId = response.channelId ?: "",
-            channelName = response.channelName ?: "",
-            channelUrl = response.channelUrl ?: "",
-            subscriberCount = response.subscriberCount ?: 0,
-            profileImageUrl = response.profileImageUrl,
-        )
+        throw unsupported()
     }
 
     override fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String?): PlatformTokenResult {
-        log.debug("Naver OAuth 인가 코드 교환")
-
-        val response = naverOAuthApi.refreshToken(
-            mapOf(
-                "grant_type" to "authorization_code",
-                "client_id" to naverClipConfig.getClientId(),
-                "client_secret" to naverClipConfig.getClientSecret(),
-                "code" to authorizationCode,
-                "redirect_uri" to redirectUri,
-            ),
-        )
-
-        return PlatformTokenResult(
-            accessToken = response.accessToken,
-            refreshToken = response.refreshToken,
-            expiresIn = response.expiresIn,
-        )
+        throw unsupported()
     }
 
     override fun refreshToken(refreshToken: String): PlatformTokenResult {
-        log.debug("Naver OAuth 토큰 갱신")
-
-        val response = naverOAuthApi.refreshToken(
-            mapOf(
-                "grant_type" to "refresh_token",
-                "client_id" to naverClipConfig.getClientId(),
-                "client_secret" to naverClipConfig.getClientSecret(),
-                "refresh_token" to refreshToken,
-            ),
-        )
-
-        return PlatformTokenResult(
-            accessToken = response.accessToken,
-            refreshToken = response.refreshToken,
-            expiresIn = response.expiresIn,
-        )
+        throw unsupported()
     }
 
     override fun revokeToken(accessToken: String): Boolean {
         log.info("Naver OAuth 토큰 폐기")
-        return try {
-            naverOAuthApi.revokeToken(
-                grantType = "delete",
-                clientId = naverClipConfig.getClientId(),
-                clientSecret = naverClipConfig.getClientSecret(),
-                accessToken = accessToken,
-            )
-            true
-        } catch (e: Exception) {
-            log.warn("Naver 토큰 폐기 실패: {}", e.message)
-            false
-        }
+        return false
     }
 
     override fun deleteVideo(platformVideoId: String, accessToken: String): Boolean {
         log.info("Naver Clip 영상 삭제: clipId={}", platformVideoId)
 
-        return try {
-            naverClipApi.deleteClip(
-                clipId = platformVideoId,
-                authorization = "Bearer $accessToken",
-            )
-            true
-        } catch (e: Exception) {
-            log.error("Naver Clip 영상 삭제 실패: {}", e.message)
-            false
-        }
+        return false
     }
 
     override fun listVideos(accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedResult {
-        try {
-            val page = pageToken?.toIntOrNull() ?: 0
-            val response = naverClipApi.listClips(
-                authorization = "Bearer $accessToken",
-                page = page,
-                size = maxResults,
-            )
-            if (response.error != null) return PlatformFeedResult(emptyList())
-            val items = response.clips.map { clip ->
-                PlatformFeedItem(
-                    platformVideoId = clip.clipId,
-                    title = clip.title ?: "",
-                    thumbnailUrl = clip.thumbnailUrl,
-                    platformUrl = clip.clipUrl,
-                    viewCount = clip.viewCount ?: 0,
-                    likeCount = clip.likeCount ?: 0,
-                    commentCount = clip.commentCount ?: 0,
-                    publishedAt = clip.createdAt,
-                )
-            }
-            val nextPage = if (items.size == maxResults) (page + 1).toString() else null
-            return PlatformFeedResult(
-                items = items,
-                nextPageToken = nextPage,
-                totalCount = response.totalCount,
-            )
-        } catch (e: Exception) {
-            log.error("Naver Clip 목록 조회 실패: {}", e.message)
-            return PlatformFeedResult(emptyList())
-        }
+        throw unsupported()
     }
 
     // --- Comment API ---
@@ -215,5 +77,10 @@ class NaverClipClient(
 
     override fun getCommentCapabilities(): PlatformCommentCapabilities =
         PlatformCommentCapabilities()
+
+    private fun unsupported(): PlatformApiException = PlatformApiException(
+        "Naver Clip",
+        "Naver Clip은 공개 업로드·관리 API를 제공하지 않습니다.",
+    )
 
 }

@@ -85,7 +85,10 @@ class WordPressClient(
             log.info("WordPress 업로드 완료: postId={}", postResponse.id)
 
             return PlatformUploadResult(
-                platformVideoId = postResponse.id.toString(),
+                // Site-scoped IDs are required by every subsequent WordPress
+                // endpoint. Persist the site together with the post ID so
+                // polling, analytics, and deletion never fall back to `me`.
+                platformVideoId = "$siteId:${postResponse.id}",
                 platformUrl = postResponse.url ?: postResponse.shortUrl ?: "",
                 status = postResponse.status ?: "published",
             )
@@ -97,13 +100,14 @@ class WordPressClient(
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
         log.debug("WordPress 게시물 상태 조회: postId={}", platformVideoId)
+        val (siteId, postId) = parsePostId(platformVideoId)
         val response = wordPressApi.getPost(
-            siteId = "me",
-            postId = platformVideoId,
+            siteId = siteId,
+            postId = postId,
             authorization = "Bearer $accessToken",
         )
         return PlatformVideoStatus(
-            platformVideoId = response.id.toString(),
+            platformVideoId = "$siteId:${response.id}",
             status = response.status ?: "UNKNOWN",
             platformUrl = response.url ?: response.shortUrl,
         )
@@ -118,9 +122,10 @@ class WordPressClient(
         log.debug("WordPress 분석 데이터 조회: postId={}", platformVideoId)
 
         return try {
+            val (siteId, postId) = parsePostId(platformVideoId)
             val response = wordPressApi.getPostStats(
-                siteId = "me",
-                postId = platformVideoId,
+                siteId = siteId,
+                postId = postId,
                 authorization = "Bearer $accessToken",
             )
 
@@ -190,9 +195,10 @@ class WordPressClient(
         log.info("WordPress 게시물 삭제: postId={}", platformVideoId)
 
         return try {
+            val (siteId, postId) = parsePostId(platformVideoId)
             wordPressApi.deletePost(
-                siteId = "me",
-                postId = platformVideoId,
+                siteId = siteId,
+                postId = postId,
                 authorization = "Bearer $accessToken",
             )
             true
@@ -343,6 +349,17 @@ class WordPressClient(
         } catch (_: Exception) {
             null
         }
+
+    private fun parsePostId(value: String): Pair<String, String> {
+        val parts = value.split(":", limit = 2)
+        return if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
+            parts[0] to parts[1]
+        } else {
+            // Backward compatibility for rows written before site-scoped IDs
+            // were introduced.
+            "me" to value
+        }
+    }
 
     private fun mapVisibility(visibility: String): String =
         when (visibility.uppercase()) {

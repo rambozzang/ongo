@@ -149,17 +149,21 @@ class PublishVideoUseCaseTest {
     }
 
     @Test
-    fun `publishes one durable upload row for all seven supported video channels`() {
+    fun `publishes one durable upload row for every enabled video channel`() {
         val userId = 42L
         val videoId = 900L
         val platforms = listOf(
             Platform.YOUTUBE,
             Platform.TIKTOK,
-            Platform.NAVER_CLIP,
-            Platform.TWITTER,
             Platform.INSTAGRAM,
             Platform.THREADS,
             Platform.FACEBOOK,
+            Platform.PINTEREST,
+            Platform.LINKEDIN,
+            Platform.WORDPRESS,
+            Platform.DAILYMOTION,
+            Platform.VIMEO,
+            Platform.TUMBLR,
         )
         val video = Video(
             id = videoId,
@@ -209,7 +213,7 @@ class PublishVideoUseCaseTest {
                     videoUploadId = 0L,
                     title = "플랫폼별 제목",
                     description = "플랫폼별 설명",
-                    tags = listOf("#ongo"),
+                    tags = emptyList(),
                     visibility = Visibility.PUBLIC,
                     thumbnailUrl = null,
                     scheduledAt = null,
@@ -219,9 +223,9 @@ class PublishVideoUseCaseTest {
 
         assertEquals(platforms, result.uploads.map { it.platform })
         assertEquals(platforms, event.captured.platformConfigs.map { it.platform })
-        assertEquals(7, event.captured.platformConfigs.map { it.videoUploadId }.distinct().size)
-        verify(exactly = 7) { videoUploadRepository.save(any()) }
-        verify(exactly = 7) { videoPlatformMetaRepository.save(any()) }
+        assertEquals(platforms.size, event.captured.platformConfigs.map { it.videoUploadId }.distinct().size)
+        verify(exactly = platforms.size) { videoUploadRepository.save(any()) }
+        verify(exactly = platforms.size) { videoPlatformMetaRepository.save(any()) }
     }
 
     @Test

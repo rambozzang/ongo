@@ -815,7 +815,6 @@ const platforms: { value: Platform; label: string }[] = [
   { value: 'YOUTUBE', label: 'YouTube' },
   { value: 'TIKTOK', label: 'TikTok' },
   { value: 'INSTAGRAM', label: 'Instagram' },
-  { value: 'NAVER_CLIP', label: 'Naver Clip' },
 ]
 
 const categories = [

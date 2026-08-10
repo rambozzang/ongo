@@ -36,11 +36,9 @@ object PlatformUploadCapabilities {
             Platform.TIKTOK, true, true, false, 2 * GB, 2_000, 0, 30, setOf("mp4", "mov", "webm"),
             maxCaptionLength = 2_000,
         ),
-        Platform.NAVER_CLIP to PlatformUploadCapability(
-            Platform.NAVER_CLIP, true, true, true, 2 * GB, 100, 1_000, 30, setOf("mp4", "mov"),
-        ),
         Platform.TWITTER to PlatformUploadCapability(
-            Platform.TWITTER, true, true, false, 512 * MB, 280, 0, 30, setOf("mp4", "mov"),
+            Platform.TWITTER, false, false, false, 512 * MB, 280, 0, 30, setOf("mp4", "mov"),
+            "X 동영상 업로드는 현재 OAuth 2.0 계약만으로 확인할 수 없어 연결·텍스트 기능과 분리해 잠시 비활성화했습니다.",
             maxCaptionLength = 280,
         ),
         Platform.INSTAGRAM to PlatformUploadCapability(

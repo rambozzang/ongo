@@ -220,32 +220,32 @@ platform:
     client-key: ${TIKTOK_CLIENT_KEY:}
     client-secret: ${TIKTOK_CLIENT_SECRET:}
   twitter:
-    client-id: ${TWITTER_CLIENT_ID:dummy-twitter-id}
-    client-secret: ${TWITTER_CLIENT_SECRET:dummy-twitter-secret}
+    client-id: ${TWITTER_CLIENT_ID:}
+    client-secret: ${TWITTER_CLIENT_SECRET:}
   facebook:
-    app-id: ${FACEBOOK_APP_ID:dummy-fb-app}
-    app-secret: ${FACEBOOK_APP_SECRET:dummy-fb-secret}
+    app-id: ${FACEBOOK_APP_ID:}
+    app-secret: ${FACEBOOK_APP_SECRET:}
   threads:
-    app-id: ${THREADS_APP_ID:dummy-threads-app}
-    app-secret: ${THREADS_APP_SECRET:dummy-threads-secret}
+    app-id: ${THREADS_APP_ID:}
+    app-secret: ${THREADS_APP_SECRET:}
   pinterest:
-    app-id: ${PINTEREST_APP_ID:dummy-pinterest-app}
-    app-secret: ${PINTEREST_APP_SECRET:dummy-pinterest-secret}
+    app-id: ${PINTEREST_APP_ID:}
+    app-secret: ${PINTEREST_APP_SECRET:}
   linkedin:
-    client-id: ${LINKEDIN_CLIENT_ID:dummy-linkedin-id}
-    client-secret: ${LINKEDIN_CLIENT_SECRET:dummy-linkedin-secret}
+    client-id: ${LINKEDIN_CLIENT_ID:}
+    client-secret: ${LINKEDIN_CLIENT_SECRET:}
   wordpress:
-    client-id: ${WORDPRESS_CLIENT_ID:dummy-wp-id}
-    client-secret: ${WORDPRESS_CLIENT_SECRET:dummy-wp-secret}
+    client-id: ${WORDPRESS_CLIENT_ID:}
+    client-secret: ${WORDPRESS_CLIENT_SECRET:}
   tumblr:
-    consumer-key: ${TUMBLR_CONSUMER_KEY:dummy-tumblr-key}
-    consumer-secret: ${TUMBLR_CONSUMER_SECRET:dummy-tumblr-secret}
+    consumer-key: ${TUMBLR_CONSUMER_KEY:}
+    consumer-secret: ${TUMBLR_CONSUMER_SECRET:}
   vimeo:
-    client-id: ${VIMEO_CLIENT_ID:dummy-vimeo-id}
-    client-secret: ${VIMEO_CLIENT_SECRET:dummy-vimeo-secret}
+    client-id: ${VIMEO_CLIENT_ID:}
+    client-secret: ${VIMEO_CLIENT_SECRET:}
   dailymotion:
-    api-key: ${DAILYMOTION_API_KEY:dummy-dm-api}
-    api-secret: ${DAILYMOTION_API_SECRET:dummy-dm-secret}
+    api-key: ${DAILYMOTION_API_KEY:}
+    api-secret: ${DAILYMOTION_API_SECRET:}
 
 # onGo 기능별 설정
 ongo:

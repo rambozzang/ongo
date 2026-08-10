@@ -188,10 +188,21 @@ class LinkedInClient(
 
     override fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus {
         log.debug("LinkedIn 게시물 상태 조회: postId={}", platformVideoId)
-
+        val response = linkedInApi.getUgcPost(
+            postId = platformVideoId,
+            authorization = "Bearer $accessToken",
+        )
+        if (response.id.isBlank()) {
+            return PlatformVideoStatus(
+                platformVideoId = platformVideoId,
+                status = "NOT_FOUND",
+                errorMessage = "LinkedIn 게시물을 찾지 못했습니다.",
+            )
+        }
         return PlatformVideoStatus(
-            platformVideoId = platformVideoId,
-            status = "published",
+            platformVideoId = response.id,
+            status = "PUBLISHED",
+            platformUrl = "https://www.linkedin.com/feed/update/${response.id}",
         )
     }
 
@@ -202,6 +213,13 @@ class LinkedInClient(
         endDate: LocalDate,
     ): PlatformAnalytics {
         log.debug("LinkedIn 분석 데이터 조회: postId={}", platformVideoId)
+
+        if (platformVideoId.startsWith("urn:li:ugcPost:")) {
+            throw PlatformApiException(
+                "LinkedIn",
+                "개인 LinkedIn UGC 게시물은 현재 공개 분석 API가 제공되지 않습니다.",
+            )
+        }
 
         return try {
             val response = linkedInApi.getShareStatistics(

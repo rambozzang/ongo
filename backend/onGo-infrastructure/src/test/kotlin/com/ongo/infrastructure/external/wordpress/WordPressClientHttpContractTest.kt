@@ -63,7 +63,7 @@ class WordPressClientHttpContractTest {
             ),
         )
 
-        assertThat(result.platformVideoId).isEqualTo("99")
+        assertThat(result.platformVideoId).isEqualTo("site-1:99")
         assertThat(result.platformUrl).isEqualTo("https://creator.wordpress.com/2026/08/09/title/")
 
         val media = server.takeRequest()

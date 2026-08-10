@@ -103,4 +103,22 @@ class PublicOAuthUseCaseTest {
             useCase(clientId = "your-client-id").authorizationUrl(42, "youtube", null)
         }
     }
+
+    @Test
+    fun `Naver Clip OAuth는 가짜 로그인 URL을 만들지 않는다`() {
+        val error = assertFailsWith<com.ongo.common.exception.BusinessException> {
+            useCase().authorizationUrl(42, "naver_clip", null)
+        }
+
+        assertTrue(error.message?.contains("공개 업로드 API") == true)
+    }
+
+    @Test
+    fun `TikTok과 Instagram은 실제 게시 scope를 요청한다`() {
+        val tiktokUrl = useCase().authorizationUrl(42, "tiktok", null).url
+        val instagramUrl = useCase().authorizationUrl(42, "instagram", null).url
+
+        assertTrue(tiktokUrl.contains("video.publish"))
+        assertTrue(instagramUrl.contains("instagram_business_content_publish"))
+    }
 }

@@ -56,6 +56,7 @@ class PublicOAuthUseCase(
 
     fun authorizationUrl(userId: Long, integration: String, refresh: String?): PublicOAuthUrlResponse {
         val platform = parsePlatform(integration)
+        requireSupportedProvider(platform)
         refresh?.let { refreshChannelId ->
             val channelId = refreshChannelId.toLongOrNull()
                 ?: throw IllegalArgumentException("refresh는 onGo 채널 ID여야 합니다")
@@ -85,6 +86,7 @@ class PublicOAuthUseCase(
     fun complete(code: String, state: String): String {
         require(code.isNotBlank()) { "OAuth code가 없습니다" }
         val payload = verifyState(state)
+        requireSupportedProvider(payload.platform)
         channelUseCase.connectChannel(
             userId = payload.userId,
             platformStr = payload.platform.name,
@@ -108,6 +110,15 @@ class PublicOAuthUseCase(
         val normalized = value.trim().uppercase().replace('-', '_')
         return runCatching { Platform.valueOf(normalized) }
             .getOrElse { throw IllegalArgumentException("지원하지 않는 OAuth integration입니다: $value") }
+    }
+
+    private fun requireSupportedProvider(platform: Platform) {
+        if (platform == Platform.NAVER_CLIP) {
+            throw BusinessException(
+                "OAUTH_NOT_SUPPORTED",
+                "Naver Clip은 공개 업로드 API가 없어 현재 연동할 수 없습니다",
+            )
+        }
     }
 
     private fun requiredClientId(platform: Platform): String {
@@ -166,8 +177,11 @@ class PublicOAuthUseCase(
 
     private fun scopes(platform: Platform): String = when (platform) {
         Platform.YOUTUBE -> "https://www.googleapis.com/auth/youtube"
-        Platform.TIKTOK -> "video.upload,video.list"
-        Platform.INSTAGRAM -> "instagram_basic,instagram_content_publish"
+        // Direct Post requires video.publish; video.upload is kept for the
+        // draft/upload flow used by accounts that are not approved for direct
+        // posting yet.
+        Platform.TIKTOK -> "video.publish,video.upload,video.list"
+        Platform.INSTAGRAM -> "instagram_business_basic,instagram_business_content_publish"
         Platform.NAVER_CLIP -> ""
         Platform.TWITTER -> "tweet.read tweet.write users.read offline.access"
         Platform.FACEBOOK -> "pages_manage_posts,pages_read_engagement,pages_show_list"

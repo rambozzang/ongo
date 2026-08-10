@@ -296,7 +296,7 @@ import type { MediaType, PlatformUploadCapability } from '@/types/video'
 import type { ScheduleSuggestion } from '@/types/ai'
 
 const ALL_PLATFORMS: Platform[] = [
-  'YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'FACEBOOK', 'NAVER_CLIP', 'TWITTER', 'THREADS',
+  'YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'FACEBOOK', 'TWITTER', 'THREADS',
   'PINTEREST', 'LINKEDIN', 'WORDPRESS', 'TUMBLR', 'VIMEO', 'DAILYMOTION',
 ]
 
@@ -305,7 +305,6 @@ const PLATFORM_LIMITS: Partial<Record<Platform, { title: number; description: nu
   TIKTOK: { title: 2200, description: 0 },
   INSTAGRAM: { title: 2200, description: 0 },
   FACEBOOK: { title: 255, description: 5000 },
-  NAVER_CLIP: { title: 100, description: 1000 },
   TWITTER: { title: 280, description: 0 },
   THREADS: { title: 500, description: 0 },
   PINTEREST: { title: 100, description: 800 },
@@ -352,7 +351,6 @@ const platformMeta = reactive<Partial<Record<Platform, { title: string; descript
   TIKTOK: { title: '', description: '', tags: [] },
   INSTAGRAM: { title: '', description: '', tags: [] },
   FACEBOOK: { title: '', description: '', tags: [] },
-  NAVER_CLIP: { title: '', description: '', tags: [] },
   TWITTER: { title: '', description: '', tags: [] },
   THREADS: { title: '', description: '', tags: [] },
   PINTEREST: { title: '', description: '', tags: [] },

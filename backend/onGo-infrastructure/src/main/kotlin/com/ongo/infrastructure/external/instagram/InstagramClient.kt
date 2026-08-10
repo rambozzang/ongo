@@ -19,6 +19,7 @@ class InstagramClient(
     private val instagramOAuthApi: InstagramOAuthApi,
     private val instagramConfig: InstagramConfig,
     private val objectMapper: ObjectMapper = jacksonObjectMapper(),
+    private val instagramGraphOAuthApi: InstagramGraphOAuthApi? = null,
 ) : PlatformClient {
 
     private val log = LoggerFactory.getLogger(InstagramClient::class.java)
@@ -316,7 +317,10 @@ class InstagramClient(
         )
 
         // Step 2: Short-Lived → Long-Lived Token 교환 (60일 유효)
-        val longLivedResponse = instagramOAuthApi.exchangeLongLivedToken(
+        val longLivedResponse = (instagramGraphOAuthApi ?: throw PlatformUploadException(
+            "Instagram",
+            "Instagram Graph OAuth API가 구성되지 않았습니다",
+        )).exchangeLongLivedToken(
             grantType = "ig_exchange_token",
             clientSecret = instagramConfig.getAppSecret(),
             accessToken = shortLivedResponse.accessToken,
@@ -335,7 +339,10 @@ class InstagramClient(
         log.debug("Instagram 토큰 갱신 (Long-Lived Token)")
 
         // Instagram uses long-lived tokens refreshed via GET request
-        val response = instagramOAuthApi.refreshLongLivedToken(
+        val response = (instagramGraphOAuthApi ?: throw PlatformUploadException(
+            "Instagram",
+            "Instagram Graph OAuth API가 구성되지 않았습니다",
+        )).refreshLongLivedToken(
             grantType = "ig_refresh_token",
             accessToken = refreshToken,
         )

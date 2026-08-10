@@ -19,7 +19,6 @@ class PlatformUploadCapabilityTest {
                 Platform.TIKTOK,
                 Platform.INSTAGRAM,
                 Platform.FACEBOOK,
-                Platform.NAVER_CLIP,
                 Platform.THREADS,
                 Platform.TWITTER,
                 Platform.PINTEREST,
@@ -36,7 +35,10 @@ class PlatformUploadCapabilityTest {
             assertTrue(capability.maxTitleLength > 0)
             assertTrue(capability.maxTagCount >= 0)
             assertTrue(capability.acceptedExtensions.isNotEmpty())
-            assertTrue(capability.directVideoUpload || capability.cloudVideoUpload)
+            assertTrue(
+                capability.directVideoUpload || capability.cloudVideoUpload ||
+                    capability.unavailableReason != null,
+            )
         }
     }
 
@@ -45,11 +47,13 @@ class PlatformUploadCapabilityTest {
         val capabilities = PlatformUploadCapabilities.all().associateBy { it.platform }
 
         assertTrue(capabilities.getValue(Platform.YOUTUBE).scheduling)
-        assertTrue(capabilities.getValue(Platform.NAVER_CLIP).scheduling)
         assertEquals(2_000, capabilities.getValue(Platform.TIKTOK).maxTitleLength)
         assertEquals(2_000, capabilities.getValue(Platform.TIKTOK).maxCaptionLength)
         assertFalse(capabilities.getValue(Platform.TIKTOK).scheduling)
         assertFalse(capabilities.getValue(Platform.TWITTER).scheduling)
+        assertFalse(capabilities.getValue(Platform.TWITTER).directVideoUpload)
+        assertFalse(capabilities.getValue(Platform.TWITTER).cloudVideoUpload)
+        assertNotNull(capabilities.getValue(Platform.TWITTER).unavailableReason)
         assertFalse(capabilities.getValue(Platform.INSTAGRAM).scheduling)
         assertFalse(capabilities.getValue(Platform.THREADS).scheduling)
         assertFalse(capabilities.getValue(Platform.FACEBOOK).directVideoUpload)

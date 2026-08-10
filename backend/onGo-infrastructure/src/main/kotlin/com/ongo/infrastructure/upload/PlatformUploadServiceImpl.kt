@@ -302,7 +302,9 @@ class PlatformUploadServiceImpl(
         // ID만으로 URL을 조립하면 실제 게시 링크인지 검증할 수 없다.
         Platform.INSTAGRAM, Platform.THREADS -> null
         Platform.TWITTER -> "https://twitter.com/i/status/$videoId"
-        Platform.NAVER_CLIP -> "https://tv.naver.com/v/$videoId"
+        // Naver Clip has no public upload/status API. Keep the enum for legacy
+        // rows, but never manufacture a URL that looks like a confirmed post.
+        Platform.NAVER_CLIP -> null
         Platform.FACEBOOK -> "https://www.facebook.com/watch/?v=$videoId"
         Platform.PINTEREST -> "https://www.pinterest.com/pin/$videoId/"
         Platform.LINKEDIN -> "https://www.linkedin.com/feed/update/$videoId"

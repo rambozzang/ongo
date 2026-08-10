@@ -28,10 +28,6 @@
             <span class="inline-block h-3 w-3 rounded-full bg-instagram"></span>
             <span class="text-body">Instagram</span>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="inline-block h-3 w-3 rounded-full bg-naver"></span>
-            <span class="text-body">Naver Clip</span>
-          </div>
         </div>
       </div>
     </div>

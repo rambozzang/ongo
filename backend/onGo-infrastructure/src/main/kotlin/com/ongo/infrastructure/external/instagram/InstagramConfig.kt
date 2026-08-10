@@ -15,6 +15,11 @@ class InstagramConfig {
     @Value("\${platform.instagram.graph-api-base-url:https://graph.instagram.com/v21.0}")
     private lateinit var graphApiBaseUrl: String
 
+    // The authorization-code exchange lives on api.instagram.com while the
+    // long-lived-token and Graph operations live on graph.instagram.com.
+    @Value("\${platform.instagram.oauth-base-url:https://api.instagram.com}")
+    private lateinit var oauthBaseUrl: String
+
     @Value("\${platform.instagram.app-id:}")
     private lateinit var appId: String
 
@@ -34,13 +39,24 @@ class InstagramConfig {
 
     @Bean
     fun instagramOAuthApi(): InstagramOAuthApi {
-        val restClient = PlatformRestClientSupport.builder(graphApiBaseUrl)
+        val restClient = PlatformRestClientSupport.builder(oauthBaseUrl)
             .requestFactory(createRequestFactory())
             .build()
         val factory = HttpServiceProxyFactory
             .builderFor(RestClientAdapter.create(restClient))
             .build()
         return factory.createClient(InstagramOAuthApi::class.java)
+    }
+
+    @Bean
+    fun instagramGraphOAuthApi(): InstagramGraphOAuthApi {
+        val restClient = PlatformRestClientSupport.builder(graphApiBaseUrl)
+            .requestFactory(createRequestFactory())
+            .build()
+        val factory = HttpServiceProxyFactory
+            .builderFor(RestClientAdapter.create(restClient))
+            .build()
+        return factory.createClient(InstagramGraphOAuthApi::class.java)
     }
 
     fun getAppId(): String = appId

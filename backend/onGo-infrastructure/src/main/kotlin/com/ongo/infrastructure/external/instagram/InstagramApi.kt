@@ -115,7 +115,12 @@ interface InstagramOAuthApi {
         @RequestBody body: Map<String, String>,
     ): InstagramTokenResponse
 
-    /** Short-Lived Token → Long-Lived Token 교환 */
+}
+
+/** Graph API host for long-lived-token exchange and refresh. */
+@HttpExchange
+interface InstagramGraphOAuthApi {
+
     @GetExchange("/access_token")
     fun exchangeLongLivedToken(
         @RequestParam("grant_type") grantType: String,
