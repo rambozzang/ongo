@@ -168,7 +168,13 @@ class VideoPublishEventListener(
                     clearPollToken = true,
                     leaseOwner = leaseOwner,
                 )
-                fireCompletedEvent(event, config.platform, true, platformUrl = outcome.platformUrl)
+                fireCompletedEvent(
+                    event,
+                    config.platform,
+                    true,
+                    platformUrl = outcome.platformUrl,
+                    platformPostId = outcome.platformVideoId,
+                )
                 log.info("플랫폼 {} 업로드 성공: videoId={}, platformUrl={}", config.platform, event.videoId, outcome.platformUrl)
             }
             is PublishOutcome.Accepted -> {
@@ -220,7 +226,13 @@ class VideoPublishEventListener(
                     pollToken = outcome.pollToken,
                     leaseOwner = leaseOwner,
                 )
-                fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
+                fireCompletedEvent(
+                    event,
+                    config.platform,
+                    false,
+                    platformPostId = outcome.platformVideoId,
+                    errorMessage = outcome.message,
+                )
                 log.warn("플랫폼 {} 게시 결과 확인 필요: videoId={}, error={}", config.platform, event.videoId, outcome.message)
             }
         }
@@ -284,6 +296,7 @@ class VideoPublishEventListener(
         platform: Platform,
         success: Boolean,
         platformUrl: String? = null,
+        platformPostId: String? = null,
         errorMessage: String? = null,
     ) {
         eventPublisher.publishEvent(
@@ -293,7 +306,9 @@ class VideoPublishEventListener(
                 platform = platform,
                 success = success,
                 platformUrl = platformUrl,
+                platformPostId = platformPostId,
                 errorMessage = errorMessage,
+                videoUploadId = event.platformConfigs.firstOrNull { it.platform == platform }?.videoUploadId,
             )
         )
     }

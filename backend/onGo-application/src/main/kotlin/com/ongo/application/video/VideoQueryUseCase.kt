@@ -11,6 +11,7 @@ import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.analytics.AnalyticsRepository
 import com.ongo.domain.video.ContentImage
 import com.ongo.domain.video.ContentImageRepository
 import com.ongo.domain.video.Video
@@ -36,6 +37,7 @@ class VideoQueryUseCase(
     private val channelRepository: ChannelRepository,
     private val tokenEncryptionPort: TokenEncryptionPort,
     private val platformClientPort: PlatformClientPort,
+    private val analyticsRepository: AnalyticsRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(VideoQueryUseCase::class.java)
@@ -62,6 +64,10 @@ class VideoQueryUseCase(
         // Batch fetch all uploads for the video page (eliminates N+1)
         val videoIds = videos.mapNotNull { it.id }
         val uploadsByVideoId = videoUploadRepository.findByVideoIds(videoIds)
+        val uploadIds = uploadsByVideoId.values.flatten().mapNotNull { it.id }
+        val viewsByUploadId = analyticsRepository.findByVideoUploadIds(uploadIds)
+            .groupingBy { it.videoUploadId }
+            .fold(0L) { total, row -> total + row.views }
 
         val items = videos.map { video ->
             val vid = video.id!!
@@ -71,6 +77,7 @@ class VideoQueryUseCase(
             } else {
                 uploads
             }
+            val totalViews = filteredUploads.sumOf { viewsByUploadId[it.id] ?: 0L }
 
             VideoListResult(
                 id = vid,
@@ -85,6 +92,7 @@ class VideoQueryUseCase(
                         platformUrl = upload.platformUrl,
                     )
                 },
+                totalViews = totalViews,
                 createdAt = video.createdAt,
             )
         }
@@ -227,7 +235,7 @@ class VideoQueryUseCase(
                         }
                         if (channel != null && channel.status == ChannelStatus.ACTIVE) {
                             val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
-                            platformClientPort.updateVideoMetadata(
+                            val updatedRemotely = platformClientPort.updateVideoMetadata(
                                 upload.platform,
                                 platformVideoId,
                                 accessToken,
@@ -235,7 +243,11 @@ class VideoQueryUseCase(
                                 newDescription,
                                 newTags,
                             )
-                            log.info("플랫폼 영상 메타데이터 업데이트 완료: platform={}, videoId={}", upload.platform, platformVideoId)
+                            if (updatedRemotely) {
+                                log.info("플랫폼 영상 메타데이터 업데이트 완료: platform={}, videoId={}", upload.platform, platformVideoId)
+                            } else {
+                                log.info("플랫폼이 영상 메타데이터 업데이트를 지원하지 않아 로컬 정보만 저장했습니다: platform={}, videoId={}", upload.platform, platformVideoId)
+                            }
                         }
                     } catch (e: Exception) {
                         log.warn("플랫폼 영상 메타데이터 업데이트 실패 (계속 진행): platform={}, videoId={}, error={}", upload.platform, platformVideoId, e.message)
@@ -487,6 +499,7 @@ data class VideoListResult(
     val mediaType: MediaType = MediaType.VIDEO,
     val status: UploadStatus,
     val uploads: List<PlatformStatusResult>,
+    val totalViews: Long,
     val createdAt: java.time.LocalDateTime?,
 )
 

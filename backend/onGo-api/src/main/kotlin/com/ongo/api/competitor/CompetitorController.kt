@@ -84,12 +84,29 @@ class CompetitorController(
         return ResData.success(competitorUseCase.getBenchmark(userId))
     }
 
-    @Operation(summary = "경쟁자 데이터 수동 동기화")
+    @Operation(
+        summary = "경쟁자 데이터 수동 동기화",
+        description = "등록된 경쟁 채널을 제공자에서 다시 조회해 갱신하고, 건별 성공/미지원/실패 수를 돌려줍니다.",
+    )
     @PostMapping("/sync")
     fun syncCompetitors(
         @Parameter(hidden = true) @CurrentUser userId: Long,
-    ): ResponseEntity<ResData<CompetitorListResponse>> {
-        val competitors = competitorUseCase.listCompetitors(userId)
-        return ResData.success(competitors, "동기화가 완료되었습니다")
+    ): ResponseEntity<ResData<CompetitorSyncResponse>> {
+        val result = competitorUseCase.syncCompetitors(userId)
+        return ResData.success(result, syncMessage(result))
+    }
+
+    /**
+     * 실제 결과를 그대로 문장으로 만든다.
+     *
+     * 예전에는 무엇이 갱신됐는지와 무관하게 "동기화가 완료되었습니다"를 돌려줬다.
+     * 자동 조회를 지원하는 플랫폼이 YouTube 뿐이라, 나머지 채널만 등록한 사용자는
+     * 아무것도 갱신되지 않았는데도 성공 안내를 받았다.
+     */
+    private fun syncMessage(result: CompetitorSyncResponse): String = when {
+        result.requested == 0 -> "동기화할 경쟁 채널이 없습니다"
+        result.synced == 0 -> "갱신된 채널이 없습니다 (자동 조회 미지원 ${result.unsupported}건)"
+        result.unsupported == 0 && result.failed == 0 -> "${result.synced}건을 동기화했습니다"
+        else -> "${result.synced}건을 동기화했습니다 (미지원 ${result.unsupported}건, 실패 ${result.failed}건)"
     }
 }

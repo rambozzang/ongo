@@ -49,7 +49,7 @@ class PublicApiAnalyticsUseCase(
                 views = it.views.toLong(),
                 likes = it.likes.toLong(),
                 comments = it.comments.toLong(),
-                shares = 0,
+                shares = it.shares.toLong(),
             )
         })
 

@@ -2,19 +2,16 @@ package com.ongo.application.competitor
 
 import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.accountdeletion.canWrite
-import com.ongo.domain.competitor.ChannelLookupPort
-import com.ongo.domain.competitor.CompetitorAnalyticsDaily
 import com.ongo.domain.competitor.CompetitorRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Component
 class CompetitorSyncScheduler(
     private val competitorRepository: CompetitorRepository,
-    private val channelLookupPort: ChannelLookupPort,
+    private val refreshService: CompetitorRefreshService,
     private val userWriteGuard: UserWriteGuard,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -65,10 +62,10 @@ class CompetitorSyncScheduler(
                 return@forEach
             }
             try {
-                val result = channelLookupPort.lookupChannel(
-                    platform = competitor.platform,
-                    query = competitor.platformChannelId,
-                )
+                // 조회와 저장을 나눠 부르는 이유는 아래 게이트 재확인이 그 사이에
+                // 들어가야 하기 때문이다. CompetitorRefreshService.refresh() 는
+                // 둘을 합치므로 게이트를 이미 통과한 HTTP 경로에서만 쓴다.
+                val result = refreshService.lookup(competitor)
                 if (result.found) {
                     // 외부 호출이 끝났다. 쓰기 전에 게이트를 다시 본다.
                     if (!canWriteNow(competitor.userId)) {
@@ -76,24 +73,7 @@ class CompetitorSyncScheduler(
                         return@forEach
                     }
 
-                    // Update competitor snapshot
-                    competitorRepository.update(competitor.copy(
-                        subscriberCount = result.subscriberCount,
-                        totalViews = result.totalViews,
-                        videoCount = result.videoCount,
-                        avgViews = if (result.videoCount > 0) result.totalViews / result.videoCount else 0,
-                        lastSyncedAt = LocalDateTime.now(),
-                    ))
-
-                    // Save daily analytics
-                    competitorRepository.upsertAnalytics(CompetitorAnalyticsDaily(
-                        competitorId = competitor.id!!,
-                        date = today,
-                        subscriberCount = result.subscriberCount,
-                        videoCount = result.videoCount,
-                        avgViews = if (result.videoCount > 0) result.totalViews / result.videoCount else 0,
-                        totalViews = result.totalViews,
-                    ))
+                    refreshService.persist(competitor, result, today)
                     log.debug("경쟁자 동기화 완료: {} ({})", competitor.channelName, competitor.platform)
                 }
             } catch (e: Exception) {

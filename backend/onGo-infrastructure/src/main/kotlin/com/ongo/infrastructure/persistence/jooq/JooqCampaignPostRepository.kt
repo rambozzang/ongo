@@ -49,6 +49,12 @@ class JooqCampaignPostRepository(
             .orderBy(CREATED_AT.desc())
             .fetch().map { it.toPost() }
 
+    override fun findByVideoUploadId(videoUploadId: Long): List<CampaignPost> =
+        dsl.select().from(UGC_CAMPAIGN_POSTS)
+            .where(VIDEO_UPLOAD_ID.eq(videoUploadId))
+            .orderBy(CREATED_AT.desc())
+            .fetch().map { it.toPost() }
+
     override fun findByIdempotencyKey(idempotencyKey: String): CampaignPost? =
         dsl.select().from(UGC_CAMPAIGN_POSTS).where(IDEMPOTENCY_KEY.eq(idempotencyKey)).fetchOne()?.toPost()
 

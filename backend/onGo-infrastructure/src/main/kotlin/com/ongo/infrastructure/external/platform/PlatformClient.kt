@@ -91,10 +91,12 @@ interface PlatformClient {
         platformChannelId: String?,
         maxResults: Int = 20,
         pageToken: String? = null,
-    ): PlatformFeedResult = PlatformFeedResult(emptyList())
+    ): PlatformFeedResult = throw UnsupportedOperationException(
+        "${platform.name}은(는) 영상 목록 API를 구현하지 않았습니다",
+    )
 
-    /** 플랫폼 OAuth 토큰 폐기. 지원하지 않는 플랫폼은 true 반환 */
-    fun revokeToken(accessToken: String): Boolean = true
+    /** 플랫폼 OAuth 토큰 폐기. 미지원 플랫폼은 false를 반환한다. */
+    fun revokeToken(accessToken: String): Boolean = false
 
     /**
      * Operations exposed through the Postiz-compatible integration tool API.

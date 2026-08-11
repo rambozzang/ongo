@@ -37,7 +37,8 @@ data class DailyMetric(
     val date: LocalDate,
     val views: Int,
     val likes: Int,
-    val comments: Int
+    val comments: Int,
+    val shares: Int = 0,
 )
 
 data class VideoAnalyticsResponse(

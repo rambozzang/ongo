@@ -181,7 +181,9 @@ class VideoUploadPoller(
                     platform = upload.platform,
                     success = status == UploadStatus.PUBLISHED,
                     platformUrl = published?.platformUrl,
+                    platformPostId = published?.platformVideoId ?: upload.platformVideoId,
                     errorMessage = errorMessage,
+                    videoUploadId = upload.id,
                 )
             )
         }

@@ -11,6 +11,8 @@ import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.EncryptedToken
 import com.ongo.domain.channel.PlatformClientPort
 import com.ongo.domain.channel.TokenEncryptionPort
+import com.ongo.domain.analytics.AnalyticsRepository
+import com.ongo.domain.analytics.AnalyticsDaily
 import com.ongo.domain.video.*
 import io.mockk.*
 import org.junit.jupiter.api.BeforeEach
@@ -28,6 +30,7 @@ class VideoQueryUseCaseTest {
     private val channelRepository = mockk<ChannelRepository>(relaxed = true)
     private val tokenEncryptionPort = mockk<TokenEncryptionPort>(relaxed = true)
     private val platformClientPort = mockk<PlatformClientPort>(relaxed = true)
+    private val analyticsRepository = mockk<AnalyticsRepository>(relaxed = true)
 
     private lateinit var useCase: VideoQueryUseCase
 
@@ -38,6 +41,7 @@ class VideoQueryUseCaseTest {
             videoRepository, videoUploadRepository, videoPlatformMetaRepository,
             contentImageRepository, storageService,
             channelRepository, tokenEncryptionPort, platformClientPort,
+            analyticsRepository,
         )
     }
 
@@ -56,6 +60,23 @@ class VideoQueryUseCaseTest {
         fileSizeBytes = 50_000_000L,
         status = status,
     )
+
+    @Test
+    fun `listVideos exposes stored view totals instead of a hardcoded zero`() {
+        val video = createVideo(id = 1L, status = UploadStatus.PUBLISHED)
+        val upload = VideoUpload(id = 41L, videoId = 1L, platform = Platform.YOUTUBE)
+        every { videoRepository.findByUserId(100L, 0, 20, null) } returns listOf(video)
+        every { videoRepository.countByUserId(100L, null) } returns 1L
+        every { videoUploadRepository.findByVideoIds(listOf(1L)) } returns mapOf(1L to listOf(upload))
+        every { analyticsRepository.findByVideoUploadIds(listOf(41L)) } returns listOf(
+            AnalyticsDaily(videoUploadId = 41L, date = java.time.LocalDate.now(), views = 120),
+            AnalyticsDaily(videoUploadId = 41L, date = java.time.LocalDate.now().minusDays(1), views = 30),
+        )
+
+        val result = useCase.listVideos(100L, 0, 20, null, null, null)
+
+        assert(result.content.single().totalViews == 150L)
+    }
 
     // ---- getVideoDetail tests ----
 

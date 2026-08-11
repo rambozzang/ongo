@@ -1,25 +1,20 @@
 <template>
   <aside
     class="flex w-[216px] flex-none flex-col border-r border-line bg-surface-rail px-3 py-4"
-    role="navigation"
-    :aria-label="t('nav.mainNavigation')"
   >
     <!-- 워드마크 -->
     <router-link to="/today" class="mb-4 flex items-center px-1" @click="emit('navigate')">
       <OnGoLogo size="md" />
     </router-link>
 
-    <!-- 내비 -->
-    <nav class="min-h-0 flex-1 space-y-3 overflow-y-auto scrollbar-dark">
-      <section v-for="section in sections" :key="section.key" class="space-y-0.5">
-        <p
-          v-if="section.label"
-          class="px-[9px] pb-1 text-[9.5px] font-bold uppercase tracking-[0.12em] text-content-quaternary"
-        >
-          {{ section.label }}
+    <!-- 내비: 자주 쓰는 작업은 고정하고, 나머지는 필요할 때만 펼친다. -->
+    <nav class="min-h-0 flex-1 overflow-y-auto scrollbar-dark" :aria-label="t('nav.mainNavigation')">
+      <section class="space-y-0.5">
+        <p class="px-[9px] pb-1 text-[9.5px] font-bold uppercase tracking-[0.12em] text-content-quaternary">
+          {{ t('redesign.rail.coreTasks') }}
         </p>
         <router-link
-          v-for="item in section.items"
+          v-for="item in coreItems"
           :key="item.to"
           :to="item.to"
           class="flex items-center gap-2.5 rounded-lg px-[9px] py-2 text-[12.5px] transition-colors duration-150"
@@ -41,6 +36,64 @@
             {{ badgeFor(item.to) }}
           </span>
         </router-link>
+      </section>
+
+      <section class="mt-4 border-t border-line pt-3">
+        <button
+          type="button"
+          class="flex min-h-9 w-full items-center gap-2 rounded-lg px-[9px] py-2 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-content-secondary transition-colors hover:bg-surface-rail-raised hover:text-content"
+          :aria-expanded="toolsExpanded"
+          :aria-controls="toolsPanelId"
+          @click="toolsExpanded = !toolsExpanded"
+        >
+          <ChevronRightIcon
+            class="h-3.5 w-3.5 shrink-0 transition-transform duration-150"
+            :class="toolsExpanded ? 'rotate-90' : ''"
+            aria-hidden="true"
+          />
+          <span>{{ t('redesign.rail.allTools') }}</span>
+          <span class="ml-auto font-mono text-[10px] font-normal normal-case tracking-normal text-content-tertiary">
+            {{ secondaryItemCount }}
+          </span>
+        </button>
+
+        <div v-if="toolsExpanded" :id="toolsPanelId" class="mt-2 space-y-3">
+          <section v-for="section in secondarySections" :key="section.key" class="space-y-0.5">
+            <p
+              v-if="section.label"
+              class="px-[9px] pb-1 text-[9.5px] font-bold uppercase tracking-[0.12em] text-content-quaternary"
+            >
+              {{ section.label }}
+            </p>
+            <router-link
+              v-for="item in section.items"
+              :key="item.to"
+              :to="item.to"
+              class="flex items-center gap-2.5 rounded-lg px-[9px] py-2 text-[12.5px] transition-colors duration-150"
+              :class="
+                isActive(item.to)
+                  ? 'border border-line-control bg-accent-dim font-bold text-content'
+                  : 'font-medium text-content-secondary hover:bg-surface-rail-raised hover:text-content'
+              "
+              :aria-current="isActive(item.to) ? 'page' : undefined"
+              @click="emit('navigate')"
+            >
+              <component :is="item.icon" class="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span class="truncate">{{ item.label }}</span>
+              <span
+                v-if="badgeFor(item.to)"
+                class="ml-auto shrink-0 font-mono text-[10px]"
+                :class="item.to === '/channels-v2' && shell.badges.channels ? 'text-bad' : 'text-content-tertiary'"
+              >
+                {{ badgeFor(item.to) }}
+              </span>
+            </router-link>
+          </section>
+
+          <p class="px-[9px] text-[10.5px] leading-4 text-content-tertiary">
+            {{ t('redesign.rail.allToolsHint') }}
+          </p>
+        </div>
       </section>
     </nav>
 
@@ -76,7 +129,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
 import { useAuthStore } from '@/stores/auth'
 import { useRedesignShellStore } from '@/stores/redesignShell'
@@ -96,6 +151,10 @@ const { t } = useLocale()
 const authStore = useAuthStore()
 const shell = useRedesignShellStore()
 const { navGroups, bottomNavItems } = useNavigation()
+
+const CORE_PATHS = ['/today', '/compose', '/calendar-v2', '/inbox-v2', '/performance', '/channels-v2']
+const toolsPanelId = 'redesign-rail-tools'
+const toolsExpanded = ref(false)
 
 const sections = computed(() => {
   const grouped = navGroups.value.flatMap((group, groupIndex) => {
@@ -117,6 +176,26 @@ const sections = computed(() => {
 
   return [...grouped, { key: 'utility', label: undefined, items: bottomNavItems.value }]
 })
+
+const allItems = computed(() => sections.value.flatMap((section) => section.items))
+const coreItems = computed(() => CORE_PATHS
+  .map((path) => allItems.value.find((item) => item.to === path))
+  .filter((item): item is NonNullable<typeof item> => Boolean(item)))
+const secondarySections = computed(() => sections.value
+  .map((section) => ({ ...section, items: section.items.filter((item) => !CORE_PATHS.includes(item.to)) }))
+  .filter((section) => section.items.length > 0))
+const secondaryItemCount = computed(() => secondarySections.value.reduce((count, section) => count + section.items.length, 0))
+
+watch(
+  () => route.path,
+  (path) => {
+    // Deep links remain discoverable: entering a secondary feature opens the tools drawer.
+    if (!CORE_PATHS.includes(path) && !CORE_PATHS.some((corePath) => path.startsWith(`${corePath}/`))) {
+      toolsExpanded.value = true
+    }
+  },
+  { immediate: true },
+)
 
 function badgeFor(path: string): string {
   if (path === '/today') return shell.badges.today

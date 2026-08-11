@@ -103,6 +103,31 @@ class CampaignPublishingUseCaseTest {
     }
 
     @Test
+    fun `immediate provider completion is persisted as published`() {
+        grantAccess(workspaceId)
+        var currentSubmission = submission()
+        every { submissionRepository.findById(submissionId) } answers { currentSubmission }
+        every { campaignRepository.findById(campaignId) } returns campaign()
+        every { campaignPostRepository.findByIdempotencyKey(any()) } returns null
+        every { campaignPublishPort.publish(creatorId, videoId, listOf("YOUTUBE")) } returns
+            listOf(PlatformPublishOutcome("YOUTUBE", 111, "PUBLISHED"))
+        val saved = mutableListOf<CampaignPost>()
+        every { campaignPostRepository.save(any()) } answers {
+            firstArg<CampaignPost>().copy(id = 1L).also(saved::add)
+        }
+        every { campaignPostRepository.findBySubmissionId(submissionId) } answers { saved.toList() }
+        every { submissionRepository.updateStatus(any()) } answers {
+            currentSubmission = firstArg()
+            currentSubmission
+        }
+
+        useCase.publishSubmission(userId, workspaceId, submissionId, PublishRequest(listOf("YOUTUBE")))
+
+        assertEquals(PostStatus.PUBLISHED, saved.single().status)
+        assertEquals(SubmissionStatus.PUBLISHED, currentSubmission.status)
+    }
+
+    @Test
     fun `publish is idempotent - already-posted platforms are skipped`() {
         grantAccess(workspaceId)
         every { submissionRepository.findById(submissionId) } returns submission()

@@ -588,6 +588,7 @@ class AnalyticsJooqRepository(
 
     override fun findCrossPlatformDetailMetrics(userId: Long, days: Int): List<CrossPlatformDetailRaw> {
         val from = LocalDate.now().minusDays(days.toLong())
+        val to = LocalDate.now()
 
         val videoIdField = DSL.field("v.id", Long::class.java)
         val videoTitleField = DSL.field("v.title", String::class.java)
@@ -619,6 +620,7 @@ class AnalyticsJooqRepository(
             .on(DSL.field("ad.video_upload_id", Long::class.java).eq(vuIdField))
             .where(DSL.field("v.user_id", Long::class.java).eq(userId))
             .and(DSL.field("ad.date", LocalDate::class.java).greaterOrEqual(from))
+            .and(DSL.field("ad.date", LocalDate::class.java).lessOrEqual(to))
             .groupBy(videoIdField, videoTitleField, thumbnailField, videoCreatedField, platformField, vuIdField)
             .orderBy(videoIdField.asc(), platformField.asc())
             .fetch()

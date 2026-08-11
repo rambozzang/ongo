@@ -351,6 +351,15 @@
         </div>
       </Transition>
 
+      <!-- 온보딩 완료 저장 실패. 완료 화면으로 넘기지 않고 여기서 멈춰 재시도를 받는다. -->
+      <div
+        v-if="completeError"
+        role="alert"
+        class="mt-8 rounded-lg bg-error-subtle p-3 text-center text-body text-error-strong"
+      >
+        {{ completeError }}
+      </div>
+
       <!-- Navigation Buttons -->
       <div v-if="currentStep > 0 && currentStep <= 4" class="mt-8 flex items-center justify-between">
         <button
@@ -445,6 +454,8 @@ const categoryError = ref('')
 const connectedPlatforms = ref<Set<Platform>>(new Set())
 const connectedChannelIds = ref<Partial<Record<Platform, number>>>({})
 const channelError = ref('')
+/** 온보딩 완료 저장 실패 사유. 값이 있으면 완료 화면으로 넘어가지 않는다. */
+const completeError = ref('')
 const platformCapabilities = ref<PlatformUploadCapability[]>([])
 const platformLoadError = ref('')
 const disconnectingPlatform = ref<Platform | null>(null)
@@ -649,6 +660,7 @@ async function skipAiTrial() {
 
 async function completeOnboarding() {
   isSubmitting.value = true
+  completeError.value = ''
   try {
     await authApi.completeOnboarding()
     if (authStore.user) {
@@ -663,9 +675,16 @@ async function completeOnboarding() {
       }
     }
     currentStep.value = 5
-  } catch {
-    // Still proceed to completion screen
-    currentStep.value = 5
+  } catch (e: unknown) {
+    // 완료 화면으로 넘기지 않는다.
+    //
+    // 서버가 onboarding_completed 를 기록하지 못했는데 화면만 완료로 보이면,
+    // 사용자는 끝난 줄 알고 나가지만 다음 로그인에 온보딩으로 되돌아온다.
+    // 그때는 이유를 알 수 없어 서비스가 고장난 것처럼 보인다.
+    // 현재 단계에 머무르고 재시도할 수 있게 사유를 보여준다.
+    completeError.value = e instanceof Error && e.message
+      ? e.message
+      : t('onboarding.completeFailed')
   } finally {
     isSubmitting.value = false
   }

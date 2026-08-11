@@ -34,6 +34,14 @@ class ShortsClipPublicationJooqRepository(
             .fetchOne()
             ?.toPublication()
 
+    override fun findByVideoUploadId(videoUploadId: Long): List<ClipPublication> =
+        dsl.select()
+            .from(UGC_SHORTS_CLIP_PUBLICATIONS)
+            .where(VIDEO_UPLOAD_ID.eq(videoUploadId))
+            .orderBy(CREATED_AT.desc())
+            .fetch()
+            .map { it.toPublication() }
+
     override fun save(publication: ClipPublication): ClipPublication {
         val id = dsl.insertInto(UGC_SHORTS_CLIP_PUBLICATIONS)
             .set(CLIP_ID, publication.clipId)

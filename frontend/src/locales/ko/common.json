@@ -632,6 +632,7 @@
     "sidebarExpand": "사이드바 펼치기",
     "sidebarCollapse": "사이드바 접기",
     "mainNavigation": "주요 네비게이션",
+    "home": "onGo 홈",
     "admin": "관리자",
     "subtitleEditor": "자막 에디터",
     "competitorAnalysis": "경쟁사 심층 분석",
@@ -1428,7 +1429,8 @@
     "nav": {
       "skip": "건너뛰기",
       "finish": "완료"
-    }
+    },
+    "completeFailed": "온보딩을 완료하지 못했습니다. 잠시 후 다시 시도해주세요."
   },
   "preview": {
     "howItLooks": "이렇게 보여요",
@@ -1926,6 +1928,7 @@
     "sentimentPositive": "긍정",
     "sentimentNeutral": "중립",
     "sentimentNegative": "부정",
+    "sentimentUnanalyzed": "미분석",
     "sentimentTrend": "감정 트렌드",
     "faqTitle": "FAQ 자동 분류",
     "faqAiAnalyze": "AI 분석",
@@ -4075,7 +4078,8 @@
       "sentiment": {
         "positive": "긍정",
         "negative": "부정",
-        "neutral": "중립"
+        "neutral": "중립",
+        "unanalyzed": "미분석"
       },
       "delete": "삭제",
       "deleteConfirmTitle": "댓글을 삭제할까요?",
@@ -4238,7 +4242,10 @@
       "settings": "설정"
     },
     "rail": {
-      "monthlyUploads": "이번 달 업로드"
+      "monthlyUploads": "이번 달 업로드",
+      "coreTasks": "핵심 작업",
+      "allTools": "모든 도구",
+      "allToolsHint": "자주 쓰지 않는 기능은 여기에서 찾아보세요."
     },
     "shell": {
       "capabilitiesFailed": "기능 목록을 동기화하지 못했습니다. 메뉴를 숨겼습니다. 다시 시도해 주세요."
@@ -4280,6 +4287,20 @@
       }
     },
     "today": {
+      "workHeading": "오늘 처리할 작업",
+      "workSummary": "발행 상태와 확인이 필요한 일을 한 화면에서 정리합니다.",
+      "workStatus": "오늘 발행 {queue}건 · 확인 필요 {attention}건",
+      "pendingCount": "{count}건 대기",
+      "failedCount": "실패 {count}건",
+      "goalCount": "목표 {count}",
+      "remainingCount": "{count}편 남음",
+      "goalReached": "목표 달성",
+      "createContent": "콘텐츠 만들기",
+      "reviewAttention": "확인할 일 보기",
+      "connectChannel": "채널 연결하기",
+      "retryLoad": "데이터 다시 불러오기",
+      "emptyQueueAction": "첫 콘텐츠 예약하기",
+      "emptyChannelsAction": "채널 연결하기",
       "kpiScheduled": "오늘 예약",
       "kpiUnanswered": "미답변 댓글·DM",
       "kpiViews": "어제 조회",

@@ -250,7 +250,7 @@ class VideoController(
                             platformUrl = upload.platformUrl,
                         )
                     },
-                    totalViews = 0,
+                    totalViews = item.totalViews,
                     createdAt = item.createdAt,
                 )
             },

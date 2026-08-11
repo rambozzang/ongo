@@ -632,6 +632,7 @@
     "sidebarExpand": "Expand sidebar",
     "sidebarCollapse": "Collapse sidebar",
     "mainNavigation": "Main navigation",
+    "home": "onGo home",
     "admin": "Admin",
     "subtitleEditor": "Subtitle Editor",
     "competitorAnalysis": "Competitor Deep Analysis",
@@ -1428,7 +1429,8 @@
     "nav": {
       "skip": "Skip",
       "finish": "Finish"
-    }
+    },
+    "completeFailed": "We couldn't finish setting up your account. Please try again."
   },
   "preview": {
     "howItLooks": "Preview",
@@ -1926,6 +1928,7 @@
     "sentimentPositive": "Positive",
     "sentimentNeutral": "Neutral",
     "sentimentNegative": "Negative",
+    "sentimentUnanalyzed": "Not analyzed",
     "sentimentTrend": "Sentiment Trend",
     "faqTitle": "FAQ Auto-Classification",
     "faqAiAnalyze": "AI Analyze",
@@ -4085,7 +4088,8 @@
       "sentiment": {
         "positive": "Positive",
         "negative": "Negative",
-        "neutral": "Neutral"
+        "neutral": "Neutral",
+        "unanalyzed": "Not analyzed"
       },
       "delete": "Delete",
       "deleteConfirmTitle": "Delete this comment?",
@@ -4248,7 +4252,10 @@
       "settings": "Settings"
     },
     "rail": {
-      "monthlyUploads": "Uploads this month"
+      "monthlyUploads": "Uploads this month",
+      "coreTasks": "Core work",
+      "allTools": "All tools",
+      "allToolsHint": "Find less frequent features here."
     },
     "shell": {
       "capabilitiesFailed": "Feature availability could not be synced. The menu is hidden until you retry."
@@ -4290,6 +4297,20 @@
       }
     },
     "today": {
+      "workHeading": "Work to finish today",
+      "workSummary": "See publishing status and next actions in one place.",
+      "workStatus": "{queue} publishing today · {attention} need attention",
+      "pendingCount": "{count} pending",
+      "failedCount": "{count} failed",
+      "goalCount": "Goal {count}",
+      "remainingCount": "{count} left",
+      "goalReached": "Goal reached",
+      "createContent": "Create content",
+      "reviewAttention": "Review attention items",
+      "connectChannel": "Connect a channel",
+      "retryLoad": "Reload today's data",
+      "emptyQueueAction": "Schedule your first post",
+      "emptyChannelsAction": "Connect a channel",
       "kpiScheduled": "Scheduled today",
       "kpiUnanswered": "Unanswered",
       "kpiViews": "Views yesterday",

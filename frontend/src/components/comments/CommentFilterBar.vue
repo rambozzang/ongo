@@ -32,6 +32,7 @@
           <option value="positive">{{ $t('commentsView.sentimentPositive') }}</option>
           <option value="neutral">{{ $t('commentsView.sentimentNeutral') }}</option>
           <option value="negative">{{ $t('commentsView.sentimentNegative') }}</option>
+          <option value="unanalyzed">{{ $t('commentsView.sentimentUnanalyzed') }}</option>
         </select>
       </div>
 

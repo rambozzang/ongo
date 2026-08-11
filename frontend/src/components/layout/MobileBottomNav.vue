@@ -1,6 +1,6 @@
 <template>
   <nav
-    aria-label="모바일 하단 네비게이션"
+    :aria-label="t('nav.mainNavigation')"
     class="fixed bottom-0 left-0 right-0 z-30 border-t border-line bg-surface"
   >
     <div class="flex items-center justify-around">
@@ -52,6 +52,7 @@ import {
   SunIcon,
 } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
+import { useNavigation } from '@/composables/useNavigation'
 import MobileMenuSheet from '@/components/layout/MobileMenuSheet.vue'
 
 interface NavItem {
@@ -62,16 +63,33 @@ interface NavItem {
 }
 
 const { t } = useLocale()
+const { allNavItems } = useNavigation()
 const menuOpen = ref(false)
 
 /*
  * 리디자인 IA — 하루 작업 순서(오늘 → 응답 → 만들기 → 확인).
  * 성과·설정은 우측 전체 메뉴에서 진입한다(핸드오프 8절).
  */
-const navItems = computed<NavItem[]>(() => [
+const baseItems = computed<NavItem[]>(() => [
   { to: '/today', label: t('redesign.nav.today'), icon: SunIcon },
   { to: '/inbox-v2', label: t('redesign.nav.inbox'), icon: InboxIcon },
   { to: '/compose', label: t('redesign.nav.compose'), icon: PlusIcon, isCenter: true },
   { to: '/channels-v2', label: t('redesign.nav.channels'), icon: SignalIcon },
 ])
+
+/*
+ * 하단 바도 capability 게이팅을 따른다.
+ *
+ * useNavigation 은 서버가 활성 기능 목록을 주지 못하면 **fail-closed** 한다("비활성/WIP
+ * 기능을 장애 중에 잘못 열 수 있다"). 그런데 이 바만 정적 목록을 그대로 렌더해서,
+ * 레일과 전체 메뉴가 닫혀 있는 동안에도 모바일 주 내비게이션은 열려 있었다.
+ * 모바일에서 이게 사실상 유일한 상시 내비라 영향이 가장 큰 자리다.
+ *
+ * 규칙을 여기서 다시 쓰지 않는다. 이미 필터링된 allNavItems 에 있는지만 확인해
+ * 판정 로직이 갈라지지 않게 한다.
+ */
+const enabledPaths = computed(() => new Set(allNavItems.value.map((item) => item.to)))
+const navItems = computed<NavItem[]>(() =>
+  baseItems.value.filter((item) => enabledPaths.value.has(item.to)),
+)
 </script>

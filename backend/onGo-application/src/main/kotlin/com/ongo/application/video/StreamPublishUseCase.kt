@@ -467,6 +467,7 @@ class StreamPublishUseCase(
                                 userId,
                                 ctx.platform,
                                 false,
+                                videoUploadId = ctx.videoUploadId,
                                 errorMessage = "게시 결과 확인 필요: ${error.message}",
                             )
                         }
@@ -520,7 +521,15 @@ class StreamPublishUseCase(
                                         leaseOwner = owner,
                                     )
                                     log.info("플랫폼 {} 업로드 완료: videoId={}, platformUrl={}", ctx.platform, videoId, outcome.platformUrl)
-                                    fireCompletedEvent(videoId, userId, ctx.platform, true, platformUrl = outcome.platformUrl)
+                                    fireCompletedEvent(
+                                        videoId,
+                                        userId,
+                                        ctx.platform,
+                                        true,
+                                        videoUploadId = ctx.videoUploadId,
+                                        platformUrl = outcome.platformUrl,
+                                        platformPostId = outcome.platformVideoId,
+                                    )
                                 }
                                 is PublishOutcome.Accepted -> {
                                     updateUploadStatus(
@@ -544,7 +553,14 @@ class StreamPublishUseCase(
                                         leaseOwner = owner,
                                     )
                                     log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", ctx.platform, videoId, outcome.message)
-                                    fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = outcome.message)
+                                    fireCompletedEvent(
+                                        videoId,
+                                        userId,
+                                        ctx.platform,
+                                        false,
+                                        videoUploadId = ctx.videoUploadId,
+                                        errorMessage = outcome.message,
+                                    )
                                 }
                                 is PublishOutcome.Unconfirmed -> {
                                     updateUploadStatus(
@@ -555,7 +571,7 @@ class StreamPublishUseCase(
                                         pollToken = outcome.pollToken,
                                         leaseOwner = owner,
                                     )
-                                    fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = outcome.message)
+                                    fireCompletedEvent(videoId, userId, ctx.platform, false, videoUploadId = ctx.videoUploadId, errorMessage = outcome.message)
                                     log.warn("플랫폼 {} 게시 결과 확인 필요: videoId={}, error={}", ctx.platform, videoId, outcome.message)
                                 }
                             }
@@ -567,7 +583,7 @@ class StreamPublishUseCase(
                                 e.message,
                                 leaseOwner = leaseOwners[ctx.videoUploadId],
                             )
-                            fireCompletedEvent(videoId, userId, ctx.platform, false, errorMessage = e.message)
+                            fireCompletedEvent(videoId, userId, ctx.platform, false, videoUploadId = ctx.videoUploadId, errorMessage = e.message)
                         }
                     }
                 }
@@ -690,7 +706,9 @@ class StreamPublishUseCase(
         userId: Long,
         platform: Platform,
         success: Boolean,
+        videoUploadId: Long? = null,
         platformUrl: String? = null,
+        platformPostId: String? = null,
         errorMessage: String? = null,
     ) {
         try {
@@ -701,7 +719,9 @@ class StreamPublishUseCase(
                     platform = platform,
                     success = success,
                     platformUrl = platformUrl,
+                    platformPostId = platformPostId,
                     errorMessage = errorMessage,
+                    videoUploadId = videoUploadId,
                 )
             )
         } catch (e: Exception) {

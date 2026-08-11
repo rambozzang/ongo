@@ -157,8 +157,12 @@ class ChannelUseCase(
         // 플랫폼 OAuth 토큰 폐기
         try {
             val decryptedToken = tokenEncryptionPort.decrypt(channel.accessToken)
-            platformClientPort.revokeToken(channel.platform, decryptedToken)
-            log.info("플랫폼 토큰 폐기 완료: platform={}, channelId={}", channel.platform, channelId)
+            val revoked = platformClientPort.revokeToken(channel.platform, decryptedToken)
+            if (revoked) {
+                log.info("플랫폼 토큰 폐기 완료: platform={}, channelId={}", channel.platform, channelId)
+            } else {
+                log.info("플랫폼이 토큰 폐기를 지원하지 않아 로컬 연결만 해제합니다: platform={}, channelId={}", channel.platform, channelId)
+            }
         } catch (e: Exception) {
             log.warn("플랫폼 토큰 폐기 실패 (계속 진행): platform={}, error={}", channel.platform, e.message)
         }

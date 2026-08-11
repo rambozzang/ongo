@@ -244,6 +244,8 @@ const sentimentBadgeClass = computed(() => {
       return 'bg-success-subtle text-success-strong'
     case 'negative':
       return 'bg-error-subtle text-error-strong'
+    case 'unanalyzed':
+      return 'bg-warning-subtle text-warning-strong'
     default:
       return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
   }
@@ -255,6 +257,8 @@ const sentimentLabel = computed(() => {
       return t('comments.card.sentiment.positive')
     case 'negative':
       return t('comments.card.sentiment.negative')
+    case 'unanalyzed':
+      return t('comments.card.sentiment.unanalyzed')
     default:
       return t('comments.card.sentiment.neutral')
   }

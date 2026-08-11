@@ -14,16 +14,16 @@
         <!-- Sheet panel -->
         <div
           ref="panelRef"
-          class="glass-elevated relative flex max-h-[86vh] w-full flex-col rounded-t-2xl"
+          class="menu-sheet-panel relative flex max-h-[86vh] w-full flex-col rounded-t-2xl border border-b-0 border-line bg-surface-card"
         >
           <!-- Header -->
           <div class="flex shrink-0 items-center gap-2 border-b px-4 py-3" style="border-color: var(--border-default)">
-            <h2 :id="titleId" class="text-base font-semibold text-gray-900 dark:text-gray-100">
+            <h2 :id="titleId" class="text-base font-semibold text-content">
               {{ t('nav.allMenus') }}
             </h2>
             <button
               type="button"
-              class="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+              class="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg text-content-secondary transition-colors hover:bg-surface-tertiary"
               :aria-label="t('nav.closeMenu')"
               @click="close"
             >
@@ -39,7 +39,7 @@
           >
             <!-- Favorites -->
             <template v-if="favoriteItems.length > 0">
-              <p class="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500">
+              <p class="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-content-tertiary">
                 {{ t('nav.favorites') }}
               </p>
               <div v-for="item in favoriteItems" :key="`fav-${item.to}`" class="flex items-center gap-1">
@@ -64,7 +64,7 @@
             <div v-for="(group, groupIndex) in navGroups" :key="groupIndex" :class="groupIndex > 0 ? 'mt-3' : ''">
               <p
                 v-if="group.label"
-                class="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-gray-400 dark:text-gray-500"
+                class="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-content-tertiary"
               >
                 {{ group.label }}
               </p>
@@ -89,7 +89,7 @@
               <div v-for="sub in group.subGroups ?? []" :key="sub.key" class="mt-0.5">
                 <button
                   type="button"
-                  class="flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                  class="flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-content-secondary transition-colors hover:bg-surface-tertiary"
                   :aria-expanded="isSubGroupExpanded(sub.key)"
                   @click="toggleSubGroup(sub.key)"
                 >
@@ -99,9 +99,9 @@
                     aria-hidden="true"
                   />
                   <span>{{ sub.label }}</span>
-                  <span class="ml-auto text-[10px] text-gray-400 dark:text-gray-500">{{ sub.items.length }}</span>
+                  <span class="ml-auto text-[10px] text-content-tertiary">{{ sub.items.length }}</span>
                 </button>
-                <div v-if="isSubGroupExpanded(sub.key)" class="ml-2 border-l border-gray-200 pl-1 dark:border-gray-700">
+                <div v-if="isSubGroupExpanded(sub.key)" class="ml-2 border-l border-line pl-1">
                   <div v-for="item in sub.items" :key="item.to" class="flex items-center gap-1">
                     <router-link
                       :to="item.to"
@@ -183,8 +183,8 @@ const favoriteItems = computed<NavItem[]>(() =>
 
 function rowClass(to: string): string {
   return isCurrentRoute(to)
-    ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
+    ? 'bg-accent-dim font-semibold text-content'
+    : 'text-content-secondary hover:bg-surface-tertiary hover:text-content'
 }
 
 function close() {
@@ -237,21 +237,21 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
-.menu-sheet-enter-active .glass-elevated,
-.menu-sheet-leave-active .glass-elevated {
+.menu-sheet-enter-active .menu-sheet-panel,
+.menu-sheet-leave-active .menu-sheet-panel {
   transition: transform 200ms ease;
 }
 
-.menu-sheet-enter-from .glass-elevated,
-.menu-sheet-leave-to .glass-elevated {
+.menu-sheet-enter-from .menu-sheet-panel,
+.menu-sheet-leave-to .menu-sheet-panel {
   transform: translateY(100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .menu-sheet-enter-active,
   .menu-sheet-leave-active,
-  .menu-sheet-enter-active .glass-elevated,
-  .menu-sheet-leave-active .glass-elevated {
+  .menu-sheet-enter-active .menu-sheet-panel,
+  .menu-sheet-leave-active .menu-sheet-panel {
     transition: none;
   }
 }

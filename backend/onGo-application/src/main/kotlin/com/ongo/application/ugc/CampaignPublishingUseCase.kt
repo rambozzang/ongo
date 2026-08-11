@@ -68,7 +68,7 @@ class CampaignPublishingUseCase(
             }
             outcomes.forEach { outcome ->
                 campaignPostRepository.save(
-                    CampaignPost(
+                        CampaignPost(
                         campaignId = submission.campaignId,
                         submissionId = submissionId,
                         creatorId = submission.creatorId,
@@ -76,7 +76,11 @@ class CampaignPublishingUseCase(
                         postType = PostType.DIRECT,
                         videoUploadId = outcome.videoUploadId,
                         platformPostId = outcome.platformPostId,
-                        status = if (outcome.status == "FAILED") PostStatus.FAILED else PostStatus.PUBLISHING,
+                        status = when (outcome.status.uppercase()) {
+                            "PUBLISHED" -> PostStatus.PUBLISHED
+                            "FAILED" -> PostStatus.FAILED
+                            else -> PostStatus.PUBLISHING
+                        },
                         idempotencyKey = idempotencyKey(submissionId, outcome.platform),
                         errorMessage = outcome.errorMessage,
                     ),
@@ -85,9 +89,23 @@ class CampaignPublishingUseCase(
             if (submission.status == SubmissionStatus.APPROVED) {
                 submissionRepository.updateStatus(submission.markPublishing())
             }
+            reconcileImmediateCompletion(submissionId)
         }
 
         return CampaignPostListResponse(campaignPostRepository.findBySubmissionId(submissionId).map { it.toResponse() })
+    }
+
+    private fun reconcileImmediateCompletion(submissionId: Long) {
+        val current = submissionRepository.findById(submissionId) ?: return
+        if (current.status != SubmissionStatus.PUBLISHING) return
+        val posts = campaignPostRepository.findBySubmissionId(submissionId)
+            .filter { it.postType == PostType.DIRECT }
+        when {
+            posts.any { it.status == PostStatus.FAILED } ->
+                submissionRepository.updateStatus(current.markPublishFailed())
+            posts.isNotEmpty() && posts.all { it.status == PostStatus.PUBLISHED } ->
+                submissionRepository.updateStatus(current.markPublished())
+        }
     }
 
     @Transactional

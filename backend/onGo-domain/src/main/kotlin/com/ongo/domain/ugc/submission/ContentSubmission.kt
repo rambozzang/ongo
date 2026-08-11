@@ -46,6 +46,16 @@ data class ContentSubmission(
         return copy(status = SubmissionStatus.PUBLISHING)
     }
 
+    fun markPublished(): ContentSubmission {
+        requireTransition(SubmissionStatus.PUBLISHED)
+        return copy(status = SubmissionStatus.PUBLISHED)
+    }
+
+    fun markPublishFailed(): ContentSubmission {
+        requireTransition(SubmissionStatus.PUBLISH_FAILED)
+        return copy(status = SubmissionStatus.PUBLISH_FAILED)
+    }
+
     /** 크리에이터가 내용을 수정할 수 있는지(초안/수정요청). */
     fun assertEditable() {
         if (!status.isEditable()) {

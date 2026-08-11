@@ -125,4 +125,16 @@ describe('TodayView', () => {
     expect(wrapper.text()).toContain('오늘 예약된 발행이 없습니다')
     expect(wrapper.text()).toContain('연결된 채널이 없습니다')
   })
+
+  it('turns an empty day into an actionable first-post flow', async () => {
+    vi.mocked(scheduleApi.list).mockResolvedValue([] as never)
+    vi.mocked(channelApi.list).mockResolvedValue({ channels: [], maxAllowed: 7, currentCount: 0 } as never)
+
+    const { wrapper } = await renderToday()
+
+    expect(wrapper.text()).toContain('오늘 예약된 발행이 없습니다')
+    expect(wrapper.text()).toContain('첫 콘텐츠 예약하기')
+    expect(wrapper.text()).toContain('채널 연결하기')
+    expect(wrapper.text()).toContain('오늘 발행 0건 · 확인 필요 0건')
+  })
 })

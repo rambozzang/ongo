@@ -37,5 +37,9 @@ data class UploadCompletedEvent(
     val platform: Platform,
     val success: Boolean,
     val platformUrl: String? = null,
+    /** Provider post identifier, when the provider returned one. */
+    val platformPostId: String? = null,
     val errorMessage: String? = null,
+    /** The durable upload row that owns this provider result, when known. */
+    val videoUploadId: Long? = null,
 )

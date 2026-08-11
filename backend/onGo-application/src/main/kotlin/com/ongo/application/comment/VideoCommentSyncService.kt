@@ -118,10 +118,11 @@ class VideoCommentSyncService(
                 analyzeSentimentUseCase.analyzeBatch(userId, newComments.map { it.content })
             } catch (e: Exception) {
                 log.warn("감정분석 스킵: {}", e.message)
-                newComments.map { "NEUTRAL" }
+                // 분석 실패를 실제 중립 감정으로 저장하면 통계가 오염된다.
+                newComments.map { Comment.SENTIMENT_UNANALYZED }
             }
             val sentimentByPcId = newComments.mapIndexed { i, c ->
-                c.platformCommentId to sentiments.getOrElse(i) { "NEUTRAL" }
+                c.platformCommentId to sentiments.getOrElse(i) { Comment.SENTIMENT_UNANALYZED }
             }.toMap()
 
             allComments.map { comment ->

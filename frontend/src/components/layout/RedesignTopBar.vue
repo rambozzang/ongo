@@ -2,7 +2,7 @@
   <header
     class="flex h-14 flex-none items-center gap-3.5 border-b border-line bg-surface px-[18px]"
   >
-    <router-link to="/today" class="tablet:hidden" aria-label="ongo 홈">
+    <router-link to="/today" class="tablet:hidden" :aria-label="t('nav.home')">
       <OnGoLogo size="sm" />
     </router-link>
 

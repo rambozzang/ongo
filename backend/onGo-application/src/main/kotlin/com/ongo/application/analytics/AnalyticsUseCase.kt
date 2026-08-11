@@ -86,7 +86,7 @@ class AnalyticsUseCase(
                 likes = dailyData.sumOf { it.likes.toLong() },
                 comments = dailyData.sumOf { it.commentsCount.toLong() },
                 shares = dailyData.sumOf { it.shares.toLong() },
-                dailyData = dailyData.map { DailyMetric(it.date, it.views, it.likes, it.commentsCount) }
+                dailyData = dailyData.map { DailyMetric(it.date, it.views, it.likes, it.commentsCount, it.shares) }
             )
         }
 
@@ -105,15 +105,24 @@ class AnalyticsUseCase(
         val videoIds = topVideos.mapNotNull { it.id }
         val uploadsByVideoId = videoUploadRepository.findByVideoIds(videoIds)
 
+        // 조회 기간의 실제 집계를 붙인다. 예전에는 0 을 넣고 "populated from aggregate
+        // query" 주석만 남겨 둬서, 화면에는 조회수 0 인 인기 영상이 나열됐다.
+        // getVideoComparison 이 쓰는 것과 같은 배치 조회를 재사용한다(추가 쿼리 없음).
+        val from = LocalDate.now().minusDays(days.toLong())
+        val to = LocalDate.now()
+        val allUploadIds = uploadsByVideoId.values.flatten().mapNotNull { it.id }
+        val analyticsByUploadId = analyticsRepository.findByVideoUploadIdsAndDateRange(allUploadIds, from, to)
+
         val items = topVideos.map { video ->
             val videoId = video.id!!
             val uploads = uploadsByVideoId[videoId] ?: emptyList()
+            val rows = uploads.mapNotNull { it.id }.flatMap { analyticsByUploadId[it] ?: emptyList() }
             TopVideoItem(
                 id = videoId,
                 title = video.title,
                 thumbnailUrl = video.thumbnailUrls.firstOrNull(),
-                totalViews = 0, // populated from aggregate query
-                totalLikes = 0,
+                totalViews = rows.sumOf { it.views.toLong() },
+                totalLikes = rows.sumOf { it.likes.toLong() },
                 publishedAt = video.createdAt,
                 platforms = uploads.map { it.platform.name }
             )
@@ -407,15 +416,30 @@ class AnalyticsUseCase(
     }
 
     fun getPlatformComparison(userId: Long, days: Int): PlatformComparisonResponse {
-        val trendData = analyticsRepository.getTrendData(userId, days)
-        val byPlatform = trendData.filter { it.platform != null }.groupBy { it.platform!! }
-        val summaries = byPlatform.map { (platform, data) ->
-            PlatformSummary(
-                platform = platform,
-                views = data.sumOf { it.views },
-                likes = 0, comments = 0, shares = 0
-            )
-        }
+        // getTrendData 는 조회수만 집계해서, 예전에는 likes/comments/shares 를 0 으로
+        // 채워 내보냈다. 플랫폼별 참여도를 비교하는 화면인데 참여 지표가 전부 0 이라
+        // 비교 자체가 성립하지 않았다.
+        //
+        // findCrossPlatformDetailMetrics 는 같은 analytics_daily ⋈ video_uploads 를
+        // 같은 기간으로 훑으면서 네 지표를 모두 집계한다. 새 쿼리를 만들지 않는다.
+        val rows = analyticsRepository.findCrossPlatformDetailMetrics(userId, days)
+        if (rows.isEmpty()) return PlatformComparisonResponse(platforms = emptyList())
+
+        val summaries = rows
+            .groupBy { it.platform }
+            .mapNotNull { (platformName, data) ->
+                // 저장된 문자열이 현재 enum 에 없으면 건너뛴다. 알 수 없는 플랫폼을
+                // 0 으로 채워 넣으면 다시 같은 종류의 거짓 데이터가 된다.
+                val platform = runCatching { Platform.valueOf(platformName) }.getOrNull()
+                    ?: return@mapNotNull null
+                PlatformSummary(
+                    platform = platform,
+                    views = data.sumOf { it.views },
+                    likes = data.sumOf { it.likes },
+                    comments = data.sumOf { it.comments },
+                    shares = data.sumOf { it.shares },
+                )
+            }
         return PlatformComparisonResponse(platforms = summaries)
     }
 

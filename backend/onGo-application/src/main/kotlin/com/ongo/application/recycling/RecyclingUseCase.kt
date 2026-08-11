@@ -44,12 +44,12 @@ class RecyclingUseCase(
 
             // Determine suggestion type based on video age and characteristics
             val ageInDays = java.time.Duration.between(videoCreatedAt, LocalDateTime.now()).toDays()
-            val duration = 0
-
+            // Video does not persist a duration field, so do not pretend every duration is
+            // known to be zero. A CLIP suggestion needs real media metadata and is omitted
+            // until that data is available.
             val suggestionType = when {
                 ageInDays > 180 -> "REPOST"
                 ageInDays > 90 -> "UPDATE_METADATA"
-                duration > 600 -> "CLIP"
                 else -> "REMIX"
             }
 

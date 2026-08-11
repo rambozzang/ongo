@@ -1,6 +1,6 @@
 import type { Platform } from './channel'
 
-export type CommentSentiment = 'positive' | 'neutral' | 'negative'
+export type CommentSentiment = 'positive' | 'neutral' | 'negative' | 'unanalyzed'
 
 export interface Comment {
   id: number

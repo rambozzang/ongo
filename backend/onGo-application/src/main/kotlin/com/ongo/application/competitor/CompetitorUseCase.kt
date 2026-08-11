@@ -20,6 +20,7 @@ import java.time.LocalDate
 class CompetitorUseCase(
     private val competitorRepository: CompetitorRepository,
     private val channelLookupPort: ChannelLookupPort,
+    private val competitorRefreshService: CompetitorRefreshService,
     private val analyticsRepository: AnalyticsRepository,
     private val channelRepository: ChannelRepository,
     private val subscriptionRepository: SubscriptionRepository,
@@ -53,6 +54,67 @@ class CompetitorUseCase(
         return CompetitorListResponse(
             competitors = competitors.map { it.toResponse() },
             totalCount = competitors.size,
+        )
+    }
+
+    /**
+     * 사용자의 경쟁 채널을 실제로 제공자에서 다시 읽어 갱신한다.
+     *
+     * 스케줄러와 같은 CompetitorRefreshService 를 쓴다. 예전에는 이 자리에서 저장된
+     * 목록을 그대로 돌려주며 성공 메시지만 붙였다.
+     *
+     * @Transactional 을 붙이지 않는다. 갱신은 외부 HTTP 조회를 건별로 수행하므로
+     * 트랜잭션 안에 두면 커넥션을 외부 I/O 시간만큼 붙잡는다. 건별 쓰기는
+     * 리포지토리 수준에서 각각 커밋되며, 한 건이 실패해도 나머지는 살아 있는 편이 낫다.
+     *
+     * 계정 동결 가드는 HTTP 필터에서 이미 확인했으므로 여기서 다시 보지 않는다.
+     */
+    fun syncCompetitors(userId: Long): CompetitorSyncResponse {
+        val competitors = competitorRepository.findByUserId(userId)
+        if (competitors.isEmpty()) {
+            return CompetitorSyncResponse(
+                requested = 0,
+                synced = 0,
+                unsupported = 0,
+                failed = 0,
+                results = emptyList(),
+                competitors = emptyList(),
+                totalCount = 0,
+            )
+        }
+
+        val summary = competitorRefreshService.refreshAll(competitors)
+        log.info(
+            "경쟁자 수동 동기화: userId={}, 요청={}, 성공={}, 미지원={}, 실패={}",
+            userId, summary.requested, summary.synced, summary.unsupported, summary.failed,
+        )
+
+        // 한 건도 갱신하지 못했고 실패가 있었다면 오류다. 부분 성공은 오류로 보지 않는다 —
+        // 갱신된 건이 있으면 사용자에게 보여줄 새 데이터가 실제로 생겼기 때문이다.
+        if (summary.synced == 0 && summary.failed > 0) {
+            throw BusinessException(
+                "COMPETITOR_SYNC_FAILED",
+                "경쟁 채널 동기화에 실패했습니다. 잠시 후 다시 시도해주세요.",
+            )
+        }
+
+        val refreshed = competitorRepository.findByUserId(userId)
+        return CompetitorSyncResponse(
+            requested = summary.requested,
+            synced = summary.synced,
+            unsupported = summary.unsupported,
+            failed = summary.failed,
+            results = summary.outcomes.map {
+                CompetitorSyncItemResponse(
+                    competitorId = it.competitorId,
+                    channelName = it.channelName,
+                    platform = it.platform,
+                    status = it.status.name,
+                    message = it.message,
+                )
+            },
+            competitors = refreshed.map { it.toResponse() },
+            totalCount = refreshed.size,
         )
     }
 

@@ -29,4 +29,9 @@ data class Comment(
     val deletedAt: LocalDateTime? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
-)
+) {
+    companion object {
+        /** AI 분석을 수행하지 못한 댓글을 실제 중립 감정과 구분한다. */
+        const val SENTIMENT_UNANALYZED = "UNANALYZED"
+    }
+}

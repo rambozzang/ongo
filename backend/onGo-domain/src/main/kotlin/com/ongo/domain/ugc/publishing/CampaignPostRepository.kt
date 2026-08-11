@@ -9,6 +9,8 @@ interface CampaignPostRepository {
 
     fun findBySubmissionId(submissionId: Long): List<CampaignPost>
 
+    fun findByVideoUploadId(videoUploadId: Long): List<CampaignPost>
+
     fun findByIdempotencyKey(idempotencyKey: String): CampaignPost?
 
     fun save(post: CampaignPost): CampaignPost

@@ -22,6 +22,31 @@ data class CompetitorListResponse(
     val totalCount: Int,
 )
 
+/** 경쟁 채널 한 건의 동기화 결과. status 는 SYNCED / UNSUPPORTED / FAILED. */
+data class CompetitorSyncItemResponse(
+    val competitorId: Long?,
+    val channelName: String,
+    val platform: String,
+    val status: String,
+    val message: String? = null,
+)
+
+/**
+ * 수동 동기화 결과.
+ *
+ * 건수를 그대로 노출한다. 예전에는 저장된 목록을 그대로 돌려주면서 "동기화가
+ * 완료되었습니다"라고만 답해서, 실제로 아무것도 갱신되지 않아도 성공으로 보였다.
+ */
+data class CompetitorSyncResponse(
+    val requested: Int,
+    val synced: Int,
+    val unsupported: Int,
+    val failed: Int,
+    val results: List<CompetitorSyncItemResponse>,
+    val competitors: List<CompetitorResponse>,
+    val totalCount: Int,
+)
+
 data class CreateCompetitorRequest(
     val platform: String,
     val platformChannelId: String,

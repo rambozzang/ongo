@@ -24,8 +24,9 @@ class CompetitorSyncSchedulerFreezeTest {
     private val repository = mockk<CompetitorRepository>(relaxed = true)
     private val lookup = mockk<ChannelLookupPort>()
     private val guard = mockk<UserWriteGuard>()
+    private val refreshService = CompetitorRefreshService(repository, lookup)
 
-    private val scheduler = CompetitorSyncScheduler(repository, lookup, guard)
+    private val scheduler = CompetitorSyncScheduler(repository, refreshService, guard)
 
     private fun competitor(id: Long, userId: Long) = Competitor(
         id = id,
