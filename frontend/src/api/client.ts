@@ -36,6 +36,11 @@ function processQueue(error: unknown, token: string | null) {
   failedQueue = []
 }
 
+function isSessionEstablishingRequest(config: InternalAxiosRequestConfig): boolean {
+  const url = config.url ?? ''
+  return /\/auth\/(?:login|dev-login)(?:\/|$)/.test(url)
+}
+
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('accessToken')
@@ -59,7 +64,14 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config
     if (!originalRequest) return Promise.reject(error)
 
-    if (error.response?.status === 401 && !('_retry' in originalRequest)) {
+    // Login failures must reach the login UI as-is. Retrying them with a
+    // stale refresh token hides the provider's real error and can redirect
+    // users away from the sign-in flow before the message is shown.
+    if (
+      error.response?.status === 401 &&
+      !isSessionEstablishingRequest(originalRequest) &&
+      !('_retry' in originalRequest)
+    ) {
       if (isRefreshing) {
         return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject })

@@ -4264,7 +4264,8 @@
       "searchPlaceholder": "Search",
       "bulkImport": "Bulk import",
       "importUrl": "Import URL",
-      "newUpload": "New upload"
+      "newUpload": "New upload",
+      "profileMenu": "Profile menu"
     },
     "screen": {
       "redesign-today": {

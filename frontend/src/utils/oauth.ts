@@ -70,7 +70,9 @@ export function buildOAuthUrl(platform: Platform, returnPath: string, codeChalle
         client_key: import.meta.env.VITE_TIKTOK_CLIENT_KEY || '',
         redirect_uri: redirectUri,
         response_type: 'code',
-        scope: 'video.upload,video.list',
+        // Direct Post uses video.publish. Keep the upload/list scopes used by
+        // the draft flow as well so the browser request matches the backend.
+        scope: 'video.publish,video.upload,video.list',
         state,
       })}`
 

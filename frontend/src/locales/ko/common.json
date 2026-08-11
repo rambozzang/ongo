@@ -4254,7 +4254,8 @@
       "searchPlaceholder": "검색",
       "bulkImport": "일괄 가져오기",
       "importUrl": "URL 가져오기",
-      "newUpload": "새 업로드"
+      "newUpload": "새 업로드",
+      "profileMenu": "프로필 메뉴"
     },
     "screen": {
       "redesign-today": {

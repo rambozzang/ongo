@@ -38,6 +38,11 @@ describe('channel OAuth contracts', () => {
     expect(url.searchParams.get('scope')).toContain('video.read')
   })
 
+  it('requests TikTok Direct Post permission together with upload and list scopes', () => {
+    const url = new URL(buildOAuthUrl('TIKTOK', '/channels'))
+    expect(url.searchParams.get('scope')).toBe('video.publish,video.upload,video.list')
+  })
+
   it('requires PKCE for X and includes the verifier challenge', () => {
     expect(() => buildOAuthUrl('TWITTER', '/channels')).toThrow('PKCE')
     const url = new URL(buildOAuthUrl('TWITTER', '/channels', 'challenge'))
