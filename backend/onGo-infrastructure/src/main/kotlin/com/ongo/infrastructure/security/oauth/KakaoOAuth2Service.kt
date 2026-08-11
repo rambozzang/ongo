@@ -48,13 +48,23 @@ class KakaoOAuth2Service(
                 .body(Map::class.java)
         } ?: throw UnauthorizedException("Kakao 사용자 정보를 가져올 수 없습니다")
 
-        val id = userInfo["id"].toString()
+        val id = userInfo["id"]?.toString().orEmpty()
         val kakaoAccount = userInfo["kakao_account"] as? Map<String, Any> ?: emptyMap()
         val profile = kakaoAccount["profile"] as? Map<String, Any> ?: emptyMap()
 
         val email = kakaoAccount["email"] as? String ?: ""
         val nickname = profile["nickname"] as? String ?: "카카오 사용자"
         val profileImageUrl = profile["profile_image_url"] as? String
+
+        // 식별자나 이메일이 비면 계정을 만들지 않는다. email 은 users 테이블의
+        // UNIQUE 컬럼이므로 첫 번째 빈 값이 저장되면 이후 가입자가 중복 오류로
+        // 실패하고, 이미 만들어진 계정도 반쯤 망가진 상태로 남는다.
+        if (id.isBlank()) {
+            throw UnauthorizedException("Kakao 사용자 식별자를 받지 못했습니다")
+        }
+        if (email.isBlank()) {
+            throw UnauthorizedException("Kakao 계정 이메일을 받지 못했습니다")
+        }
 
         return OAuth2UserInfo(
             providerId = id,
