@@ -10,7 +10,7 @@
     <!-- 내비: 자주 쓰는 작업은 고정하고, 나머지는 필요할 때만 펼친다. -->
     <nav class="min-h-0 flex-1 overflow-y-auto scrollbar-dark" :aria-label="t('nav.mainNavigation')">
       <section class="space-y-0.5">
-        <p class="px-[9px] pb-1 text-[9.5px] font-bold uppercase tracking-[0.12em] text-content-quaternary">
+        <p class="px-[9px] pb-1 text-[9.5px] font-bold uppercase tracking-[0.12em] text-content-rail-quaternary">
           {{ t('redesign.rail.coreTasks') }}
         </p>
         <router-link
@@ -21,7 +21,7 @@
           :class="
             isActive(item.to)
               ? 'border border-line-control bg-accent-dim font-bold text-content'
-              : 'font-medium text-content-secondary hover:bg-surface-rail-raised hover:text-content'
+              : 'font-medium text-content-rail-secondary hover:bg-surface-rail-raised hover:text-content-rail'
           "
           :aria-current="isActive(item.to) ? 'page' : undefined"
           @click="emit('navigate')"
@@ -31,7 +31,7 @@
           <span
             v-if="badgeFor(item.to)"
             class="ml-auto shrink-0 font-mono text-[10px]"
-            :class="item.to === '/channels-v2' && shell.badges.channels ? 'text-bad' : 'text-content-tertiary'"
+            :class="item.to === '/channels-v2' && shell.badges.channels ? 'text-bad' : 'text-content-rail-tertiary'"
           >
             {{ badgeFor(item.to) }}
           </span>
@@ -41,7 +41,7 @@
       <section class="mt-4 border-t border-line pt-3">
         <button
           type="button"
-          class="flex min-h-9 w-full items-center gap-2 rounded-lg px-[9px] py-2 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-content-secondary transition-colors hover:bg-surface-rail-raised hover:text-content"
+          class="flex min-h-9 w-full items-center gap-2 rounded-lg px-[9px] py-2 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-content-rail-secondary transition-colors hover:bg-surface-rail-raised hover:text-content-rail"
           :aria-expanded="toolsExpanded"
           :aria-controls="toolsPanelId"
           @click="toolsExpanded = !toolsExpanded"
@@ -52,7 +52,7 @@
             aria-hidden="true"
           />
           <span>{{ t('redesign.rail.allTools') }}</span>
-          <span class="ml-auto font-mono text-[10px] font-normal normal-case tracking-normal text-content-tertiary">
+          <span class="ml-auto font-mono text-[10px] font-normal normal-case tracking-normal text-content-rail-tertiary">
             {{ secondaryItemCount }}
           </span>
         </button>
@@ -61,7 +61,7 @@
           <section v-for="section in secondarySections" :key="section.key" class="space-y-0.5">
             <p
               v-if="section.label"
-              class="px-[9px] pb-1 text-[9.5px] font-bold uppercase tracking-[0.12em] text-content-quaternary"
+              class="px-[9px] pb-1 text-[9.5px] font-bold uppercase tracking-[0.12em] text-content-rail-quaternary"
             >
               {{ section.label }}
             </p>
@@ -73,7 +73,7 @@
               :class="
                 isActive(item.to)
                   ? 'border border-line-control bg-accent-dim font-bold text-content'
-                  : 'font-medium text-content-secondary hover:bg-surface-rail-raised hover:text-content'
+                  : 'font-medium text-content-rail-secondary hover:bg-surface-rail-raised hover:text-content-rail'
               "
               :aria-current="isActive(item.to) ? 'page' : undefined"
               @click="emit('navigate')"
@@ -83,14 +83,14 @@
               <span
                 v-if="badgeFor(item.to)"
                 class="ml-auto shrink-0 font-mono text-[10px]"
-                :class="item.to === '/channels-v2' && shell.badges.channels ? 'text-bad' : 'text-content-tertiary'"
+                :class="item.to === '/channels-v2' && shell.badges.channels ? 'text-bad' : 'text-content-rail-tertiary'"
               >
                 {{ badgeFor(item.to) }}
               </span>
             </router-link>
           </section>
 
-          <p class="px-[9px] text-[10.5px] leading-4 text-content-tertiary">
+          <p class="px-[9px] text-[10.5px] leading-4 text-content-rail-tertiary">
             {{ t('redesign.rail.allToolsHint') }}
           </p>
         </div>
@@ -99,9 +99,9 @@
 
     <!-- 이번 달 업로드 진행 -->
     <div class="mt-4 px-1">
-      <div class="flex items-center justify-between text-[11px] text-content-tertiary">
+      <div class="flex items-center justify-between text-[11px] text-content-rail-tertiary">
         <span>{{ t('redesign.rail.monthlyUploads') }}</span>
-        <span class="font-mono text-content">{{ quota.used }}/{{ quota.limit }}</span>
+        <span class="font-mono text-content-rail">{{ quota.used }}/{{ quota.limit }}</span>
       </div>
       <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-line">
         <div class="h-full rounded-full bg-accent transition-[width] duration-300" :style="{ width: quotaPercent }" />
@@ -120,8 +120,8 @@
         {{ initial }}
       </span>
       <span class="min-w-0 flex-1">
-        <span class="block truncate text-[12px] font-semibold text-content">{{ displayName }}</span>
-        <span class="block truncate text-[10px] text-content-tertiary">{{ email }}</span>
+        <span class="block truncate text-[12px] font-semibold text-content-rail">{{ displayName }}</span>
+        <span class="block truncate text-[10px] text-content-rail-tertiary">{{ email }}</span>
       </span>
     </router-link>
   </aside>

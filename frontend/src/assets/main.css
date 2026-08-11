@@ -295,26 +295,35 @@
   }
 
   .nav-link {
-    color: #b1b5c6;
+    color: var(--text-rail-secondary);
   }
 
   .nav-link:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #f5f6fa;
+    background: var(--surface-sidebar-raised);
+    color: var(--text-rail-primary);
   }
 
   .nav-link-active {
     background: #30334a;
-    color: #ffffff;
-    box-shadow: inset 3px 0 0 #9da1ff;
+    color: var(--text-rail-primary);
+    box-shadow: inset 3px 0 0 var(--border-focus);
   }
 
   .sidebar-label {
-    color: #74798e;
+    color: var(--text-rail-tertiary);
+  }
+
+  .sidebar-control {
+    color: var(--text-rail-secondary);
+  }
+
+  .sidebar-control:hover {
+    background: var(--surface-sidebar-raised);
+    color: var(--text-rail-primary);
   }
 
   .sidebar-divider {
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-sidebar);
   }
 
   .glass {
@@ -324,7 +333,7 @@
 
   .glass-sidebar {
     background: var(--surface-sidebar);
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: 1px solid var(--border-sidebar);
   }
 
   .glass-elevated {

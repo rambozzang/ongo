@@ -82,6 +82,10 @@ export default {
           secondary: 'var(--text-secondary)',
           tertiary: 'var(--text-tertiary)',
           quaternary: 'var(--text-quaternary)',
+          rail: 'var(--text-rail-primary)',
+          'rail-secondary': 'var(--text-rail-secondary)',
+          'rail-tertiary': 'var(--text-rail-tertiary)',
+          'rail-quaternary': 'var(--text-rail-quaternary)',
         },
         accent: {
           DEFAULT: 'var(--accent-primary)',

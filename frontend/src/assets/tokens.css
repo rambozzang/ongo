@@ -10,11 +10,21 @@
   --surface-input: #ffffff;
 
   --text-primary: #181a27;
-  --text-secondary: #646979;
-  --text-tertiary: #9499a8;
-  --text-quaternary: #b0b5c2;
+  /*
+   * 본문 보조색은 장식용 회색이 아니라 실제로 읽는 정보에 사용된다.
+   * white / #f5f6fa 위에서 모두 WCAG AA(4.5:1) 이상을 유지한다.
+   */
+  --text-secondary: #4b5563;
+  --text-tertiary: #667085;
+  --text-quaternary: #637083;
   --text-inverse: #ffffff;
   --text-link: #5659d6;
+
+  /* 좌측 레일은 라이트 모드에서도 어두운 표면을 유지하므로 별도 대비 토큰을 쓴다. */
+  --text-rail-primary: #f5f6fa;
+  --text-rail-secondary: #b1b5c6;
+  --text-rail-tertiary: #a1a7bd;
+  --text-rail-quaternary: #9aa1bb;
 
   --border-default: #e1e3eb;
   --border-row: #edeff4;
@@ -22,6 +32,7 @@
   --border-control-soft: #e1e3eb;
   --border-hover: #c9cdd9;
   --border-focus: #696de8;
+  --border-sidebar: rgba(255, 255, 255, 0.12);
 
   --accent-primary: #5659d6;
   --accent-primary-hover: #4548bd;
@@ -110,10 +121,16 @@
   --surface-sidebar-raised: #1d2030; /* 레일 hover */
 
   --text-primary: #e8e9f2;
-  --text-secondary: #8f93b3;
-  --text-tertiary: #6c7093;
-  --text-quaternary: #575b7c; /* 축 라벨 등 최약 */
+  --text-secondary: #b8bdd0;
+  --text-tertiary: #a5abc3;
+  --text-quaternary: #8f95b0;
   --text-link: oklch(0.78 0.15 320);
+
+  /* dark 레일도 동일한 토큰으로 읽기 수준을 보장한다. */
+  --text-rail-primary: #f5f6fa;
+  --text-rail-secondary: #b1b5c6;
+  --text-rail-tertiary: #a1a7bd;
+  --text-rail-quaternary: #9aa1bb;
 
   --border-default: #23263c; /* 보더 (강) */
   --border-row: #202335; /* 행 구분선 */
@@ -121,6 +138,7 @@
   --border-control-soft: #262940; /* 보조 버튼 · 검색 */
   --border-hover: #3a3f61;
   --border-focus: oklch(0.78 0.15 320);
+  --border-sidebar: rgba(255, 255, 255, 0.12);
 
   /* accent — 핸드오프에서 사용자가 선택한 마젠타.
      대체 옵션: 158(민트) / 240(블루) / 62(앰버). hue 값만 바꾸면 전체가 따라온다. */

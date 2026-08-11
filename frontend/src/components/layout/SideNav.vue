@@ -12,7 +12,7 @@
         v-if="!collapsed"
         :aria-label="collapsed ? t('nav.sidebarExpand') : t('nav.sidebarCollapse')"
         :aria-expanded="!collapsed"
-        class="ml-auto hidden rounded-md p-1.5 text-gray-500 hover:bg-white/10 hover:text-white desktop:block"
+        class="sidebar-control ml-auto hidden rounded-md p-1.5 desktop:block"
         @click="emit('toggle')"
       >
         <ChevronLeftIcon class="h-5 w-5" />
@@ -21,7 +21,7 @@
         v-else
         :aria-label="collapsed ? t('nav.sidebarExpand') : t('nav.sidebarCollapse')"
         :aria-expanded="!collapsed"
-        class="ml-auto hidden rounded-md p-1.5 text-gray-500 hover:bg-white/10 hover:text-white desktop:block"
+        class="sidebar-control ml-auto hidden rounded-md p-1.5 desktop:block"
         @click="emit('toggle')"
       >
         <ChevronRightIcon class="h-5 w-5" />
