@@ -313,7 +313,7 @@ export const sectionsKo: ManualSection[] = [
     icon: LinkIcon,
     content: [
       {
-        text: 'onGo는 YouTube, TikTok, Instagram Reels, Naver Clip을 포함한 총 13개 플랫폼을 지원합니다. 각 플랫폼의 공식 OAuth 인증을 통해 안전하게 채널을 연동할 수 있습니다.',
+        text: 'onGo는 코드 기준 12개 플랫폼의 연동·게시 경로를 제공합니다. 실제로 연결할 수 있는 플랫폼은 운영 자격 증명과 각 플랫폼 심사 상태에 따라 달라지며, Naver Clip은 공개 업로드 API가 확인되기 전까지 지원하지 않습니다.',
         steps: [
           '사이드바에서 "채널 관리"를 클릭합니다.',
           '"채널 추가" 버튼을 클릭하고 연동할 플랫폼을 선택합니다.',
@@ -328,7 +328,7 @@ export const sectionsKo: ManualSection[] = [
           'YouTube: Google 계정 인증 후 YouTube 채널을 선택합니다.',
           'TikTok: TikTok 비즈니스 또는 크리에이터 계정이 필요합니다.',
           'Instagram Reels: Facebook/Meta 비즈니스 계정과 연결된 Instagram 계정이 필요합니다.',
-          'Naver Clip: 네이버 계정 인증 후 클립 채널을 연동합니다.',
+          'Naver Clip: 공개 업로드 API와 제휴 조건이 확인되지 않아 현재 연동·게시를 지원하지 않습니다.',
           'X (Twitter): Twitter/X 개발자 계정이 필요합니다. OAuth 2.0 PKCE를 사용합니다.',
           'Facebook: Facebook 페이지 관리자 권한이 필요합니다.',
           'Threads: Meta/Instagram 비즈니스 계정이 필요합니다.',
@@ -940,7 +940,7 @@ export const sectionsKo: ManualSection[] = [
         subtitle: 'AI 텍스트 생성',
         text: '학습된 보이스 프로필을 선택하고 주제를 입력하면 브랜드 톤에 맞는 텍스트를 생성합니다.',
         items: [
-          '플랫폼별 최적화 (YouTube, TikTok, Instagram, Naver Clip)를 지원합니다.',
+          '플랫폼별 최적화 (YouTube, TikTok, Instagram 등 운영 설정이 완료된 플랫폼)를 지원합니다.',
           '해시태그 자동 생성 옵션을 제공합니다.',
           '신뢰도 점수로 브랜드 일관성을 확인할 수 있습니다.',
         ],
@@ -1062,7 +1062,7 @@ export const sectionsKo: ManualSection[] = [
       },
       {
         subtitle: '플랫폼별 검증',
-        text: 'YouTube, TikTok, Instagram, Naver Clip 각 플랫폼의 정책에 맞춰 검증합니다.',
+        text: 'YouTube, TikTok, Instagram 등 연결된 플랫폼의 정책에 맞춰 검증합니다.',
         items: [
           '플랫폼별 통과/경고/차단 상태를 한눈에 확인할 수 있습니다.',
         ],
@@ -1190,7 +1190,7 @@ export const sectionsKo: ManualSection[] = [
         text: '',
         items: [
           '7x24 히트맵: 요일별, 시간대별 조회수/참여율/CTR 등 성과 지표를 색상 강도로 시각화합니다.',
-          '플랫폼별 필터: YouTube, TikTok, Instagram, Naver Clip 등 플랫폼별로 개별 히트맵을 확인할 수 있습니다.',
+          '플랫폼별 필터: YouTube, TikTok, Instagram 등 연결된 플랫폼별로 개별 히트맵을 확인할 수 있습니다.',
           '지표 전환: 조회수, 좋아요, 댓글, CTR, 참여율 등 원하는 지표를 선택하여 히트맵을 전환합니다.',
           '기간 설정: 최근 7일, 30일, 90일, 1년 등 분석 기간을 자유롭게 설정합니다.',
           '최적 시간 추천: AI가 데이터를 분석하여 최적의 업로드 시간 Top 5를 자동 추천합니다.',
@@ -1809,13 +1809,13 @@ export const sectionsKo: ManualSection[] = [
     content: [
       {
         subtitle: '개요',
-        text: '재생목록 관리는 YouTube, TikTok, Instagram, Naver Clip 등 여러 플랫폼의 재생목록을 한 곳에서 통합 관리하는 기능입니다. 재생목록 생성, 영상 추가/제거, 순서 변경, 플랫폼 동기화를 지원합니다.',
+        text: '재생목록 관리는 연결된 플랫폼의 재생목록을 한 곳에서 통합 관리하는 기능입니다. 재생목록 생성, 영상 추가/제거, 순서 변경, 플랫폼 동기화를 지원합니다.',
       },
       {
         subtitle: '주요 기능',
         text: '',
         items: [
-          '크로스 플랫폼: YouTube, TikTok, Instagram, Naver Clip 4개 플랫폼의 재생목록을 통합 관리합니다.',
+          '크로스 플랫폼: 연결된 플랫폼의 재생목록을 한 곳에서 통합 관리합니다.',
           '재생목록 동기화: 플랫폼의 실제 재생목록과 동기화하여 최신 상태를 유지합니다.',
           '영상 관리: 재생목록에 영상을 추가/제거하고 순서를 변경할 수 있습니다.',
           '통계 대시보드: 전체 재생목록 수, 총 영상 수, 총 조회수, 플랫폼별 분포를 확인합니다.',
@@ -2359,7 +2359,7 @@ export const sectionsKo: ManualSection[] = [
     content: [
       {
         subtitle: '개요',
-        text: '콘텐츠 리퍼포징은 긴 영상을 틱톡, 릴스, 네이버 클립 등 숏폼 플랫폼에 맞게 자동으로 변환하는 기능입니다.',
+        text: '콘텐츠 리퍼포징은 긴 영상을 TikTok, Reels 등 지원되는 숏폼 플랫폼에 맞게 자동으로 변환하는 기능입니다.',
       },
       {
         subtitle: '주요 기능',
@@ -3273,7 +3273,7 @@ export const sectionsEn: ManualSection[] = [
     icon: LinkIcon,
     content: [
       {
-        text: 'onGo supports 13 platforms including YouTube, TikTok, Instagram Reels, and Naver Clip. You can securely connect channels through each platform\'s official OAuth authentication.',
+        text: 'onGo provides connection and publishing paths for 12 platforms in code. Actual availability depends on deployment credentials and each platform’s review status. Naver Clip is not supported until a public upload API is confirmed.',
         steps: [
           'Click "Channels" in the sidebar.',
           'Click "Add Channel" and select the platform to connect.',
@@ -3288,7 +3288,7 @@ export const sectionsEn: ManualSection[] = [
           'YouTube: Select your YouTube channel after Google account authentication.',
           'TikTok: A TikTok Business or Creator account is required.',
           'Instagram Reels: An Instagram account linked to a Facebook/Meta Business account is required.',
-          'Naver Clip: Connect your Clip channel after Naver account authentication.',
+          'Naver Clip: Channel connection and publishing are not supported until a public upload API and partnership requirements are confirmed.',
           'X (Twitter): A Twitter/X developer account is required. Uses OAuth 2.0 PKCE.',
           'Facebook: Facebook Page admin permissions are required.',
           'Threads: A Meta/Instagram Business account is required.',
@@ -3901,7 +3901,7 @@ export const sectionsEn: ManualSection[] = [
         subtitle: 'AI Text Generation',
         text: 'Select a trained voice profile and enter a topic to generate text that matches your brand tone.',
         items: [
-          'Platform-specific optimization (YouTube, TikTok, Instagram, Naver Clip) is supported.',
+          'Platform-specific optimization for connected, configured platforms is supported.',
           'Automatic hashtag generation option is available.',
           'Verify brand consistency with a confidence score.',
         ],
@@ -4023,7 +4023,7 @@ export const sectionsEn: ManualSection[] = [
       },
       {
         subtitle: 'Platform-Specific Validation',
-        text: 'Validates against the policies of each platform — YouTube, TikTok, Instagram, and Naver Clip.',
+        text: 'Validates against the policies of each connected platform.',
         items: [
           'View pass/warning/blocked status for each platform at a glance.',
         ],
@@ -4151,7 +4151,7 @@ export const sectionsEn: ManualSection[] = [
         text: '',
         items: [
           '7x24 Heatmap: Visualizes performance metrics such as views, engagement rate, and CTR by day and time using color intensity.',
-          'Platform Filter: View individual heatmaps for each platform — YouTube, TikTok, Instagram, Naver Clip, and more.',
+          'Platform Filter: View individual heatmaps for each connected platform.',
           'Metric Switching: Switch the heatmap between views, likes, comments, CTR, engagement rate, and other metrics.',
           'Period Settings: Freely set the analysis period — last 7 days, 30 days, 90 days, 1 year, etc.',
           'Optimal Time Recommendations: AI analyzes the data and automatically recommends the top 5 optimal upload times.',
@@ -4776,13 +4776,13 @@ export const sectionsEn: ManualSection[] = [
     content: [
       {
         subtitle: 'Overview',
-        text: 'Playlist Manager lets you create, organize, and sync playlists across YouTube, TikTok, Instagram, and Naver Clip from a single interface. Manage video collections, track performance, and keep playlists synchronized.',
+        text: 'Playlist Manager lets you create, organize, and sync playlists across connected platforms from a single interface. Manage video collections, track performance, and keep playlists synchronized.',
       },
       {
         subtitle: 'Key Features',
         text: '',
         items: [
-          'Multi-Platform Support: Manage playlists for YouTube, TikTok, Instagram, and Naver Clip in one place.',
+          'Multi-Platform Support: Manage playlists across connected platforms in one place.',
           'Playlist Statistics: View total playlists, videos, views, and platform distribution with a donut chart.',
           'Platform Filtering: Filter playlists by platform to focus on specific channels.',
           'Sync Management: Sync individual playlists or all playlists at once to keep them up to date.',
@@ -5328,7 +5328,7 @@ export const sectionsEn: ManualSection[] = [
     content: [
       {
         subtitle: 'Overview',
-        text: 'Content Repurposer automatically converts long-form videos into short-form content optimized for TikTok, Reels, Naver Clip, and other platforms.',
+        text: 'Content Repurposer automatically converts long-form videos into short-form content optimized for TikTok, Reels, and other supported platforms.',
       },
       {
         subtitle: 'Key Features',

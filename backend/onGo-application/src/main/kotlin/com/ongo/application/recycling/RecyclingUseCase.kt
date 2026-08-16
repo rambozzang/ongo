@@ -62,7 +62,7 @@ class RecyclingUseCase(
             }
 
             val suggestedPlatforms = when (suggestionType) {
-                "CLIP" -> listOf("TIKTOK", "INSTAGRAM", "NAVER_CLIP")
+                "CLIP" -> listOf("TIKTOK", "INSTAGRAM")
                 "REPOST" -> listOf("YOUTUBE", "TIKTOK")
                 else -> listOf("YOUTUBE")
             }

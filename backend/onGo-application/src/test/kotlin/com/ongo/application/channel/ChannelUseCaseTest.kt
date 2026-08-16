@@ -2,6 +2,7 @@ package com.ongo.application.channel
 
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
+import com.ongo.common.enums.AuthProvider
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
@@ -12,6 +13,10 @@ import com.ongo.domain.user.UserRepository
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import com.ongo.domain.workspace.WorkspaceRepository
+import com.ongo.application.platform.PlatformConfigurationPort
+import com.ongo.application.platform.PlatformConfigurationStatus
+import com.ongo.application.channel.dto.ConnectChannelRequest
+import com.ongo.domain.user.User
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -61,5 +66,42 @@ class ChannelUseCaseTest {
         verify(exactly = 0) { encryption.decrypt(any()) }
         verify(exactly = 0) { clients.revokeToken(any(), any()) }
         verify(exactly = 0) { channels.delete(any()) }
+    }
+
+    @Test
+    fun `운영 설정이 없는 플랫폼은 OAuth 교환 전에 명시적으로 거부한다`() {
+        val configuration = mockk<PlatformConfigurationPort>()
+        val guardedUseCase = ChannelUseCase(
+            channels,
+            users,
+            oauth,
+            clients,
+            encryption,
+            videoUploads,
+            workspaces,
+            configuration,
+        )
+        every { users.findById(7L) } returns User(
+            id = 7L,
+            email = "creator@example.com",
+            name = "creator",
+            provider = AuthProvider.GOOGLE,
+            providerId = "google-7",
+        )
+        every { configuration.status(Platform.TIKTOK) } returns PlatformConfigurationStatus(
+            configured = false,
+            reason = "TikTok 플랫폼 연동 설정이 운영 서버에 구성되지 않았습니다.",
+        )
+
+        val error = assertFailsWith<BusinessException> {
+            guardedUseCase.connectChannel(
+                7L,
+                Platform.TIKTOK.name,
+                ConnectChannelRequest("oauth-code", "https://ongo.test/auth/channel-callback"),
+            )
+        }
+
+        kotlin.test.assertEquals("PLATFORM_NOT_CONFIGURED", error.code)
+        verify(exactly = 0) { oauth.exchangeCodeForTokens(any(), any(), any(), any()) }
     }
 }

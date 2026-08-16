@@ -117,7 +117,7 @@ const ko: Record<DocumentKind, LegalCopy> = {
       { heading: '1. 처리하는 정보', paragraphs: ['로그인 과정에서 이메일, 이름, 프로필 식별자와 인증 상태를 처리합니다. 사용자가 기능을 사용할 때 미디어·자막·제목·설명·해시태그·예약 정보, 연결한 채널 식별자와 게시 결과를 처리합니다. 결제 기능을 사용하면 결제 식별자와 구독 상태를 처리하며, 카드번호 등 결제수단 원문은 결제대행사가 처리합니다.'] },
       { heading: '2. 처리 목적', paragraphs: ['계정 생성·인증, 외부 채널 연결, 게시·예약·재시도, 자동 숏츠와 UGC 작업, 성과 분석, 결제·환불·고객지원, 보안 및 장애 대응을 위해 정보를 처리합니다. 광고 목적의 판매나 사용자가 요청하지 않은 외부 게시에는 사용하지 않습니다.'] },
       { heading: '3. 외부 서비스와 국외 이전', paragraphs: ['게시를 요청한 플랫폼, 인증 제공자, 저장소·AI·결제·모니터링 등 기능 제공에 필요한 처리자에게 필요한 범위의 정보를 전송할 수 있습니다. 외부 서비스의 국가, 보유 기간과 처리 방식은 해당 서비스의 정책을 함께 확인해야 하며, 온고는 채널 권한과 전송 목적을 최소화합니다.'] },
-      { heading: '4. 보관과 삭제', paragraphs: ['계정 삭제가 완료되면 서비스 운영에 불필요한 계정·채널 토큰·미디어와 작업 데이터를 삭제합니다. 결제·세무·분쟁 대응에 필요한 정보는 관련 법령에서 정한 기간 동안 별도로 보존할 수 있습니다. 외부 플랫폼에 이미 게시된 콘텐츠의 삭제는 각 플랫폼의 정책과 API 지원 범위에 따릅니다.'] },
+      { heading: '4. 보관과 삭제', paragraphs: ['정책으로 삭제가 승인된 계정은 서비스 운영에 불필요한 개인 데이터를 삭제합니다. 연결 채널·외부 토큰·미디어·결제·공유 데이터가 있는 계정은 현재 별도 정리 절차가 끝날 때까지 삭제 요청을 차단하며, 결제·세무·분쟁 대응에 필요한 정보는 관련 법령에서 정한 기간 동안 보존할 수 있습니다. 외부 플랫폼에 이미 게시된 콘텐츠의 삭제는 각 플랫폼의 정책과 API 지원 범위에 따릅니다.'] },
       { heading: '5. 쿠키와 로컬 저장소', paragraphs: ['로그인 토큰, 언어·테마·화면 설정 등 서비스 운영에 필요한 브라우저 저장소를 사용합니다. 브라우저 설정으로 저장소를 차단하면 로그인이나 일부 설정이 작동하지 않을 수 있습니다.'] },
       { heading: '6. 사용자 권리', paragraphs: ['사용자는 자신의 개인정보에 대해 열람·정정·삭제·처리정지를 요청할 수 있습니다. 요청은 본인 확인과 다른 사용자의 권리, 법정 보존 의무를 확인한 후 처리합니다.'] },
     ],
@@ -144,12 +144,12 @@ const ko: Record<DocumentKind, LegalCopy> = {
     lastUpdated: '최종 업데이트',
     backToLogin: '로그인으로 돌아가기',
     contactHeading: '삭제 요청이 막힌 경우',
-    contactBody: '삭제 전 결제·환불·법정 보존 또는 진행 중인 외부 게시 작업을 확인해야 할 수 있습니다. 화면에 표시된 지원 참조값과 함께 아래 이메일로 문의하면 필요한 확인 절차를 안내합니다.',
+    contactBody: '삭제 전 결제·환불·법정 보존 또는 진행 중인 외부 게시 작업을 확인해야 할 수 있습니다. 화면의 오류 코드와 발생 시각을 함께 아래 이메일로 보내면 필요한 확인 절차를 안내합니다.',
     sections: [
-      { heading: '1. 앱에서 확인하기', paragraphs: ['로그인 후 설정 → 계정에서 계정 삭제 가능 여부를 확인합니다. 현재는 연결된 데이터의 안전한 삭제 정책이 완성되기 전까지 앱의 삭제 요청이 차단될 수 있습니다. 차단되면 계정 데이터는 변경되지 않으며, 화면의 안내에 따라 고객지원에 문의해 주세요.'] },
-      { heading: '2. 외부 플랫폼 데이터', paragraphs: ['온고가 보관하는 외부 채널 토큰은 삭제 대상에 포함됩니다. 이미 YouTube, Instagram, TikTok 등 외부 플랫폼에 게시된 콘텐츠와 해당 플랫폼이 보유한 데이터의 삭제는 각 플랫폼의 계정 설정 또는 삭제 API를 통해 별도로 요청해야 합니다.'] },
+      { heading: '1. 앱에서 확인하기', paragraphs: ['로그인 후 설정 → 계정에서 삭제를 요청합니다. 정책으로 승인된 개인 데이터만 있는 계정은 요청이 접수된 뒤 비동기로 처리됩니다. 결제·공유·외부 연동 데이터가 있거나 정책 확인이 필요한 경우 요청이 차단될 수 있으며, 차단되면 계정 데이터는 변경되지 않습니다.'] },
+      { heading: '2. 외부 플랫폼 데이터', paragraphs: ['외부 채널 토큰·미디어·게시 이력이 있는 계정은 현재 외부 정리 절차가 완료되기 전까지 앱에서 삭제 요청이 차단될 수 있습니다. 이미 YouTube, Instagram, TikTok 등 외부 플랫폼에 게시된 콘텐츠와 해당 플랫폼이 보유한 데이터의 삭제는 각 플랫폼의 계정 설정 또는 삭제 API를 통해 별도로 요청해야 합니다.'] },
       { heading: '3. 보존 예외', paragraphs: ['결제·세무·분쟁·보안 감사와 같이 법령 또는 정당한 권리 보호를 위해 필요한 정보는 해당 목적과 기간 동안 제한적으로 보존할 수 있습니다. 보존 기간이 지나면 안전하게 삭제합니다.'] },
-      { heading: '4. 처리 확인', paragraphs: ['삭제 요청이 접수되면 요청 상태를 확인하고, 완료 또는 차단 사유를 안내합니다. 브라우저에서 로그아웃만 하는 것은 서버 데이터 삭제가 아니므로 삭제 가능 상태와 처리 결과를 확인해 주세요.'] },
+      { heading: '4. 처리 확인', paragraphs: ['정책 승인된 요청은 202 응답으로 접수되고 서버 워커가 비동기로 처리합니다. 현재 별도의 상태 조회 화면은 제공하지 않으므로, 차단·오류가 발생하면 화면의 오류 코드와 발생 시각을 고객지원에 보내 주세요. 브라우저에서 로그아웃만 하는 것은 서버 데이터 삭제가 아닙니다.'] },
     ],
   },
   support: {
@@ -185,7 +185,7 @@ const en: Record<DocumentKind, LegalCopy> = {
       { heading: '1. Information we process', paragraphs: ['We process email, name, profile identifiers, and authentication state. When you use features, we process media, subtitles, titles, descriptions, hashtags, schedules, channel identifiers, and publishing results. For payments, we process payment identifiers and subscription state; payment providers process the underlying payment details.'] },
       { heading: '2. Purposes', paragraphs: ['We use information for account authentication, channel connections, publishing and retries, automated shorts and UGC workflows, analytics, billing and refunds, support, security, and incident response. We do not sell it or publish externally without your request.'] },
       { heading: '3. Providers and international transfers', paragraphs: ['We may share the minimum information needed with requested platforms, identity providers, storage, AI, payment, and monitoring providers. Review those providers’ notices for their locations and retention practices; ongo minimizes permissions and transfer purposes.'] },
-      { heading: '4. Retention and deletion', paragraphs: ['After account deletion, we delete account, channel-token, media, and job data that is no longer needed. Payment, tax, dispute, and security records may be retained for the period required by law. Content already published to an external platform must be removed under that platform’s policies and API support.'] },
+      { heading: '4. Retention and deletion', paragraphs: ['Accounts are deleted only when the data is covered by the approved deletion policy. Accounts with connected channels, external tokens, media, billing, or shared data may be blocked until a separate cleanup policy is complete. Payment, tax, dispute, and security records may be retained for the period required by law. Content already published to an external platform must be removed under that platform’s policies and API support.'] },
       { heading: '5. Cookies and local storage', paragraphs: ['We use browser storage needed for tokens, language, theme, and screen preferences. Blocking storage may prevent sign-in or some settings from working.'] },
       { heading: '6. Your rights', paragraphs: ['You may request access, correction, deletion, or restriction of your personal information, subject to identity checks, other people’s rights, and legal retention duties.'] },
     ]
@@ -199,11 +199,11 @@ const en: Record<DocumentKind, LegalCopy> = {
     ]
   },
   'data-deletion': {
-    title: 'Account and Data Deletion', intro: 'Follow these steps to delete your ongo account and associated channels, media, and publishing jobs.', contact: 'Deletion contact', lastUpdated: 'Last updated', backToLogin: 'Back to login', contactHeading: 'If deletion is blocked', contactBody: 'Pending payment, refund, legal retention, or external publishing work may require review. Send the support reference shown in the product to the email below and we will explain the required steps.', sections: [
-      { heading: '1. Check it in the app', paragraphs: ['After signing in, open Settings → Account to check whether deletion is available. Until the safe deletion policy for all connected data is complete, the app may block the request. When blocked, no account data is changed; follow the on-screen instructions to contact support.'] },
-      { heading: '2. External platform data', paragraphs: ['Tokens held by ongo are included in deletion. Content already published to YouTube, Instagram, TikTok, or another platform must be removed through that platform’s settings or supported deletion API.'] },
+    title: 'Account and Data Deletion', intro: 'Follow these steps to delete your ongo account and associated channels, media, and publishing jobs.', contact: 'Deletion contact', lastUpdated: 'Last updated', backToLogin: 'Back to login', contactHeading: 'If deletion is blocked', contactBody: 'Pending payment, refund, legal retention, or external publishing work may require review. Send the error code and time shown by the product to the email below and we will explain the required steps.', sections: [
+      { heading: '1. Check it in the app', paragraphs: ['After signing in, open Settings → Account and request deletion. Accounts containing only policy-approved personal data are queued for asynchronous processing. Billing, shared, external-connection, or otherwise unclassified data may block the request; when blocked, no account data is changed.'] },
+      { heading: '2. External platform data', paragraphs: ['Accounts with external channel tokens, media, or publishing history may be blocked until the external cleanup procedure is complete. Content already published to YouTube, Instagram, TikTok, or another platform must be removed through that platform’s settings or supported deletion API.'] },
       { heading: '3. Retention exceptions', paragraphs: ['Payment, tax, dispute, and security records may be retained for the limited period required by law or legitimate rights protection, then securely deleted.'] },
-      { heading: '4. Confirmation', paragraphs: ['We show the request status and completion or blocking reason. Signing out of the browser is not server-side deletion; check the deletion status and result.'] },
+      { heading: '4. Confirmation', paragraphs: ['Approved requests return 202 and are processed asynchronously by a server worker. The current status, request number, and support reference are shown in Settings → Account while the session remains available. If the request is blocked or fails, send the support reference to support. Signing out of the browser is not server-side deletion.'] },
     ]
   },
   support: {

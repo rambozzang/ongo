@@ -38,7 +38,7 @@ class VideoSeoUseCase(
         creditService.validateAndDeduct(userId, AiFeature.VIDEO_SEO_SCORE)
 
         val tags = video.tags.joinToString(", ")
-        val platform = "YouTube, TikTok, Instagram, NAVER_CLIP"
+        val platform = "YouTube, TikTok, Instagram"
 
         val userPrompt = PromptTemplates.VIDEO_SEO_USER
             .replace("{platform}", platform)

@@ -19,6 +19,7 @@ import com.ongo.domain.channel.PlainToken
 import com.ongo.domain.user.UserRepository
 import com.ongo.domain.video.VideoUploadRepository
 import com.ongo.domain.workspace.WorkspaceRepository
+import com.ongo.application.platform.PlatformConfigurationPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -36,6 +37,7 @@ class ChannelUseCase(
     private val tokenEncryptionPort: TokenEncryptionPort,
     private val videoUploadRepository: VideoUploadRepository,
     private val workspaceRepository: WorkspaceRepository,
+    private val platformConfigurationPort: PlatformConfigurationPort? = null,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -62,6 +64,13 @@ class ChannelUseCase(
     fun connectChannel(userId: Long, platformStr: String, request: ConnectChannelRequest): ConnectChannelResponse {
         val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
         val platform = safeValueOfOrThrow<Platform>(platformStr)
+
+        platformConfigurationPort?.status(platform)?.takeUnless { it.configured }?.let { status ->
+            throw BusinessException(
+                "PLATFORM_NOT_CONFIGURED",
+                status.reason ?: "${platform.name} 플랫폼 연동 설정이 없어 연결할 수 없습니다.",
+            )
+        }
 
         // 기본은 기존 플랫폼 계정 재연결이다. addAsNew=true면 OAuth 후
         // 외부 채널 ID가 같은 경우만 갱신하고, 다른 계정은 새 integration으로 저장한다.

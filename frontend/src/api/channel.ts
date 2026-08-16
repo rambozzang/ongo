@@ -16,6 +16,18 @@ export const channelApi = {
       .then(unwrapResponse)
   },
 
+  authorizationUrl(
+    platform: Platform,
+    params: { redirectUri: string; state: string; codeChallenge?: string },
+  ) {
+    return apiClient
+      .get<ResData<{ authorizationUrl: string }>>(
+        `/channels/oauth/${platform.toLowerCase()}/authorization-url`,
+        { params },
+      )
+      .then(unwrapResponse)
+  },
+
   disconnect(id: number) {
     return apiClient.delete<ResData<void>>(`/channels/${id}`).then(unwrapResponse)
   },

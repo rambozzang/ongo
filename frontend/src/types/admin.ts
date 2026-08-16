@@ -92,6 +92,18 @@ export interface AdminPublishQueueSummary {
   items: AdminPublishQueueItem[]
 }
 
+export interface AdminAccountDeletionJob {
+  jobId: number
+  userId: number
+  status: string
+  attemptCount: number
+  requestedAt: string | null
+  updatedAt: string | null
+  completedAt: string | null
+  lastErrorCode: string | null
+  supportReference: string | null
+}
+
 export interface UpdateRoleRequest {
   role: string
 }

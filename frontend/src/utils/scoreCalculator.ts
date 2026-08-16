@@ -155,9 +155,16 @@ function calculateCoverageScore(video: Video): number {
     u => u.status === 'PUBLISHED' || u.status === 'PROCESSING'
   )
 
-  const platformCount = publishedUploads.length
+  // Several retries or channel variants for the same platform must not inflate
+  // the score. Naver Clip is retained in legacy rows but is not a supported
+  // publishing destination, so it cannot count toward current coverage.
+  const platformCount = new Set(
+    publishedUploads
+      .map(upload => upload.platform)
+      .filter(platform => platform !== 'NAVER_CLIP'),
+  ).size
 
-  // Max 4 platforms (YouTube, TikTok, Instagram, Naver Clip)
+  // The score caps at four distinct supported destinations.
   // 0 platforms: 0
   // 1 platform: 25
   // 2 platforms: 50

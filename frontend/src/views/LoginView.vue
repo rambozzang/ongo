@@ -156,67 +156,27 @@ async function devLogin() {
   }
 }
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-const KAKAO_CLIENT_ID = import.meta.env.VITE_KAKAO_CLIENT_ID
 const REDIRECT_URI = `${window.location.origin}/auth/callback`
 
-async function loginWithGoogle() {
+async function startSocialLogin(provider: 'google' | 'kakao') {
   isLoading.value = true
   errorMessage.value = ''
   try {
-    if (!GOOGLE_CLIENT_ID?.trim()) {
-      throw new Error(t('loginView.googleNotConfigured'))
-    }
-    const { state } = await authApi.getOAuthState('google')
-    sessionStorage.setItem('oauth_state:google', state)
-    const params = new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      redirect_uri: `${REDIRECT_URI}/google`,
-      response_type: 'code',
-      scope: 'openid email profile',
-      // prompt 를 보내지 않는다. 이미 동의한 세션이면 구글이 화면 없이 통과시켜
-      // 로그인이 클릭 한 번으로 끝난다. 계정이 여러 개 로그인돼 있으면 구글이
-      // 알아서 선택 화면을 띄우므로 따로 지정할 필요가 없다.
-      //
-      // prompt=consent 를 쓰지 않는 이유는 따로 있다. 로그인은 액세스 토큰으로
-      // userinfo 를 한 번 조회하고 끝이고 그 뒤로는 onGo 자체 JWT 를 쓴다.
-      // 구글 리프레시 토큰은 받지도 저장하지도 않는다(GoogleTokenResponse 에
-      // 필드 자체가 없다). 그런데 consent 를 강제하면 매 로그인마다 동의 화면이
-      // 다시 뜨고, 구글이 이를 "앱에 계정 접근 권한을 새로 부여함"으로 보아
-      // 사용자에게 보안 알림 메일을 보낸다. 얻는 것 없이 대가만 치르는 설정이다.
-      //
-      // 주의: 구글의 기본 계정으로 조용히 로그인될 수 있다. onGo 는 구글
-      // provider_id 로 계정을 식별하므로 다른 구글 계정 = 다른 onGo 계정이다.
-      // 계정을 바꾸려면 구글에서 계정을 전환한 뒤 다시 로그인해야 한다.
-      state,
-    })
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
+    const { authorizationUrl, state } = await authApi.authorizationUrl(provider, `${REDIRECT_URI}/${provider}`)
+    sessionStorage.setItem(`oauth_state:${provider}`, state)
+    window.location.href = authorizationUrl
   } catch (e: unknown) {
     errorMessage.value = loginErrorMessage(e, t('loginView.oauthPrepareError'))
     isLoading.value = false
   }
 }
 
-async function loginWithKakao() {
-  isLoading.value = true
-  errorMessage.value = ''
-  try {
-    if (!KAKAO_CLIENT_ID?.trim()) {
-      throw new Error(t('loginView.kakaoNotConfigured'))
-    }
-    const { state } = await authApi.getOAuthState('kakao')
-    sessionStorage.setItem('oauth_state:kakao', state)
-    const params = new URLSearchParams({
-      client_id: KAKAO_CLIENT_ID,
-      redirect_uri: `${REDIRECT_URI}/kakao`,
-      response_type: 'code',
-      state,
-    })
-    window.location.href = `https://kauth.kakao.com/oauth/authorize?${params}`
-  } catch (e: unknown) {
-    errorMessage.value = loginErrorMessage(e, t('loginView.oauthPrepareError'))
-    isLoading.value = false
-  }
+function loginWithGoogle() {
+  return startSocialLogin('google')
+}
+
+function loginWithKakao() {
+  return startSocialLogin('kakao')
 }
 
 // Handle OAuth callback if code is present in URL

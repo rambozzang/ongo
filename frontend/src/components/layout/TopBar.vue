@@ -66,7 +66,8 @@
           :aria-expanded="profileOpen"
           aria-haspopup="menu"
           class="flex items-center gap-2 rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
-          @click="profileOpen = !profileOpen"
+          ref="profileButton"
+          @click="toggleProfileMenu"
         >
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-body font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300" aria-hidden="true">
             {{ userInitial }}
@@ -77,10 +78,13 @@
         <!-- Profile dropdown -->
         <div
           v-if="profileOpen"
+          ref="profileMenu"
           role="menu"
+          tabindex="-1"
           aria-label="프로필 메뉴"
             class="absolute right-0 top-full z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border bg-white py-2 shadow-lg dark:bg-gray-800"
             style="border-color: var(--border-default)"
+          @keydown="handleProfileKeydown"
         >
           <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-700">
             <p class="text-body font-medium text-gray-900 dark:text-gray-100">{{ user?.nickname || user?.name }}</p>
@@ -91,7 +95,7 @@
             to="/settings-v2"
             role="menuitem"
             class="flex items-center px-4 py-2 text-body text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
-            @click="profileOpen = false"
+            @click="closeProfileMenu()"
           >
             <Cog6ToothIcon class="mr-3 h-4 w-4" aria-hidden="true" />
             설정
@@ -114,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import {
   Bars3Icon,
@@ -147,13 +151,15 @@ const searchOpen = ref(false)
 
 const notificationRef = ref<HTMLElement>()
 const profileRef = ref<HTMLElement>()
+const profileButton = ref<HTMLButtonElement | null>(null)
+const profileMenu = ref<HTMLElement | null>(null)
 
 onClickOutside(notificationRef, () => {
   notificationOpen.value = false
 })
 
 onClickOutside(profileRef, () => {
-  profileOpen.value = false
+  closeProfileMenu()
 })
 
 onMounted(() => {
@@ -161,8 +167,43 @@ onMounted(() => {
 })
 
 function handleLogout() {
-  profileOpen.value = false
+  closeProfileMenu()
   authStore.logout()
+}
+
+function toggleProfileMenu() {
+  if (profileOpen.value) {
+    closeProfileMenu(true)
+    return
+  }
+  profileOpen.value = true
+  void nextTick(() => profileMenu.value?.querySelector<HTMLElement>('[role="menuitem"]')?.focus())
+}
+
+function closeProfileMenu(restoreFocus = false) {
+  profileOpen.value = false
+  if (restoreFocus) {
+    const trigger = profileButton.value ?? profileRef.value?.querySelector<HTMLButtonElement>('button')
+    trigger?.focus()
+  }
+}
+
+function handleProfileKeydown(event: KeyboardEvent) {
+  const items = Array.from(profileMenu.value?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeProfileMenu(true)
+    return
+  }
+  if (!items.length || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+  event.preventDefault()
+  const current = items.indexOf(document.activeElement as HTMLElement)
+  const nextIndex = event.key === 'Home'
+    ? 0
+    : event.key === 'End'
+      ? items.length - 1
+      : (current + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length
+  items[nextIndex]?.focus()
 }
 
 function getNotificationButtonLabel(): string {

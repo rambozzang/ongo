@@ -84,6 +84,15 @@
             </div>
           </div>
           </div>
+          <div
+            v-if="!platformsLoading && unavailablePlatforms.length"
+            class="mt-3 rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2.5 text-[11px] text-warning-strong"
+            role="status"
+          >
+            <p class="font-semibold">{{ $t('channels.platformsUnavailableTitle') }}</p>
+            <p class="mt-1 leading-4">{{ $t('channels.platformsUnavailableDescription') }}</p>
+            <p class="mt-1 font-medium">{{ unavailablePlatformLabels }}</p>
+          </div>
           <div v-if="platformsLoading" class="py-8 text-center text-body text-gray-500 dark:text-gray-400">
             {{ $t('channels.loadingPlatforms') }}
           </div>
@@ -127,8 +136,13 @@ const emit = defineEmits<{
 
 const connectingPlatform = ref<Platform | null>(null)
 const availablePlatforms = ref<Platform[]>([])
+const unavailablePlatforms = ref<Platform[]>([])
 const platformsLoading = ref(false)
 const platformsError = ref('')
+
+const unavailablePlatformLabels = computed(() => unavailablePlatforms.value
+  .map((platform) => PLATFORM_CONFIG[platform]?.label ?? platform)
+  .join(', '))
 
 const isAtLimit = computed(() => props.currentCount >= props.maxAllowed && props.maxAllowed > 0)
 
@@ -193,11 +207,16 @@ async function loadPlatforms() {
   platformsError.value = ''
   try {
     const capabilities = await videoApi.getUploadCapabilities()
-    availablePlatforms.value = capabilities
-      .filter((capability) => capability.directVideoUpload || capability.cloudVideoUpload)
+    const uploadable = capabilities.filter((capability) => capability.directVideoUpload || capability.cloudVideoUpload)
+    availablePlatforms.value = uploadable
+      .filter((capability) => capability.configurationAvailable !== false)
+      .map((capability) => capability.platform)
+    unavailablePlatforms.value = uploadable
+      .filter((capability) => capability.configurationAvailable === false)
       .map((capability) => capability.platform)
   } catch (error) {
     availablePlatforms.value = []
+    unavailablePlatforms.value = []
     platformsError.value = error instanceof Error ? error.message : '플랫폼 목록을 불러오지 못했습니다.'
   } finally {
     platformsLoading.value = false

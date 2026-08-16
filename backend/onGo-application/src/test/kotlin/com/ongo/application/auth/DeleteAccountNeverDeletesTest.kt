@@ -1,6 +1,10 @@
 package com.ongo.application.auth
 
 import com.ongo.common.exception.AccountDeletionBlockedException
+import com.ongo.domain.accountdeletion.AccountDeletionJobRepository
+import com.ongo.domain.accountdeletion.AccountDeletionJob
+import com.ongo.domain.accountdeletion.AccountDeletionStatus
+import com.ongo.domain.accountdeletion.AccountDeletionState
 import com.ongo.domain.accountdeletion.UserFkKey
 import com.ongo.domain.accountdeletion.UserFkScanner
 import com.ongo.domain.auth.AuthTokenPort
@@ -10,8 +14,11 @@ import com.ongo.domain.auth.TokenBlacklistPort
 import com.ongo.domain.credit.CreditRepository
 import com.ongo.domain.settings.UserSettingsRepository
 import com.ongo.domain.subscription.SubscriptionRepository
+import com.ongo.domain.subscription.Subscription
 import com.ongo.domain.user.User
 import com.ongo.domain.user.UserRepository
+import com.ongo.common.enums.PlanType
+import com.ongo.common.enums.SubscriptionStatus
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -27,26 +34,32 @@ import org.junit.jupiter.api.assertThrows
  * `users` 를 `ON DELETE CASCADE` 로 참조하는 17개가 함께 사라졌고 거기에
  * `payments`, `subscriptions`, `ai_credit_transactions` 가 들어 있었다.
  *
- * 정책 엔진이 완성될 때까지 이 경로는 판정만 하고 막는다. 그 계약을 여기서 고정한다.
- * 누가 "일단 지우게 되돌리자"고 하면 여기서 걸린다.
+ * 정책으로 승인된 계정은 삭제 job 으로 넘기되, 이 경로에서 직접 삭제하지 않는 계약을 고정한다.
+ * 유료·공유·외부 데이터가 있는 계정은 여전히 차단되어야 한다.
  */
 class DeleteAccountNeverDeletesTest {
 
     private val userRepository = mockk<UserRepository>()
     private val refreshTokenPort = mockk<RefreshTokenPort>(relaxed = true)
     private val scanner = mockk<UserFkScanner>()
+    private val deletionJobs = mockk<AccountDeletionJobRepository>(relaxed = true)
+    private val subscriptions = mockk<SubscriptionRepository>(relaxed = true)
 
-    private fun useCase() = AuthUseCase(
-        userRepository = userRepository,
-        creditRepository = mockk<CreditRepository>(relaxed = true),
-        userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true),
-        subscriptionRepository = mockk<SubscriptionRepository>(relaxed = true),
-        authTokenPort = mockk<AuthTokenPort>(relaxed = true),
-        oAuth2Port = mockk<OAuth2Port>(relaxed = true),
-        refreshTokenPort = refreshTokenPort,
-        tokenBlacklistPort = mockk<TokenBlacklistPort>(relaxed = true),
-        userFkScanner = scanner,
-    )
+    private fun useCase(withDeletionJobs: Boolean = false): AuthUseCase {
+        every { subscriptions.findByUserId(any()) } returns null
+        return AuthUseCase(
+            userRepository = userRepository,
+            creditRepository = mockk<CreditRepository>(relaxed = true),
+            userSettingsRepository = mockk<UserSettingsRepository>(relaxed = true),
+            subscriptionRepository = subscriptions,
+            authTokenPort = mockk<AuthTokenPort>(relaxed = true),
+            oAuth2Port = mockk<OAuth2Port>(relaxed = true),
+            refreshTokenPort = refreshTokenPort,
+            tokenBlacklistPort = mockk<TokenBlacklistPort>(relaxed = true),
+            userFkScanner = scanner,
+            accountDeletionJobRepository = deletionJobs.takeIf { withDeletionJobs },
+        )
+    }
 
     private fun key(constraint: String, table: String, column: String = "user_id") =
         UserFkKey("public", constraint, table, listOf(column), listOf("id"))
@@ -64,6 +77,25 @@ class DeleteAccountNeverDeletesTest {
     private fun assertNothingDeleted() {
         verify(exactly = 0) { userRepository.delete(any()) }
         verify(exactly = 0) { refreshTokenPort.deleteByUserId(any()) }
+    }
+
+    @Test
+    @DisplayName("삭제 상태 조회는 게이트와 durable job 상태를 함께 반환한다")
+    fun deletionStatusReportsJobState() {
+        every { deletionJobs.findDeletionState(1L) } returns AccountDeletionState.DELETION_REQUESTED
+        every { deletionJobs.findLatestByUserId(1L) } returns AccountDeletionJob(
+            id = 19L,
+            userId = 1L,
+            status = AccountDeletionStatus.IN_PROGRESS,
+            idempotencyKey = "private-test-key",
+        )
+
+        val result = useCase(withDeletionJobs = true).getAccountDeletionStatus(1L)
+
+        assertEquals("DELETION_REQUESTED", result.state)
+        assertEquals("IN_PROGRESS", result.status)
+        assertEquals(19L, result.jobId)
+        assertEquals(false, result.retryable)
     }
 
     @Test
@@ -150,5 +182,60 @@ class DeleteAccountNeverDeletesTest {
         assert(thrown.supportReference?.contains("comments_user_id_fkey") == true) {
             "진단용 참조에는 제약 이름이 있어야 한다"
         }
+    }
+
+    @Test
+    @DisplayName("차단 결과는 사용자 동결 없이 내구성 있는 작업 기록으로 남긴다")
+    fun blockedResultIsRecordedWithoutFreezing() {
+        existingUser()
+        every { scanner.actualUserFks() } returns listOf(key("comments_user_id_fkey", "comments"))
+        every { scanner.countRowsFor(any(), 1L) } returns 1
+
+        assertThrows<AccountDeletionBlockedException> { useCase(withDeletionJobs = true).deleteAccount(1L) }
+
+        verify(exactly = 1) {
+            deletionJobs.recordBlocked(
+                userId = 1L,
+                idempotencyKey = match { it.startsWith("account-deletion:1:") },
+                errorCode = AccountDeletionBlockedException.CODE_POLICY_REVIEW,
+                supportReference = "review-block:1",
+            )
+        }
+        verify(exactly = 0) { deletionJobs.requestDeletion(any(), any()) }
+        assertNothingDeleted()
+    }
+
+    @Test
+    @DisplayName("정책 승인된 무료 계정은 삭제 job 으로 넘기고 이 요청에서 직접 지우지 않는다")
+    fun eligibleFreeUserIsQueuedForDeletion() {
+        existingUser()
+        every { scanner.actualUserFks() } returns listOf(key("goals_user_id_fkey", "goals"))
+        every { scanner.countRowsFor(any(), 1L) } returns 0
+        every { subscriptions.findByUserId(1L) } returns Subscription(
+            userId = 1L,
+            planType = PlanType.FREE,
+            status = SubscriptionStatus.FREE,
+        )
+        every { deletionJobs.requestDeletion(1L, any()) } returns AccountDeletionJob(
+            id = 42L,
+            userId = 1L,
+            idempotencyKey = "queued",
+        )
+
+        val target = useCase(withDeletionJobs = true)
+        every { subscriptions.findByUserId(1L) } returns Subscription(
+            userId = 1L,
+            planType = PlanType.FREE,
+            status = SubscriptionStatus.FREE,
+        )
+        target.deleteAccount(1L)
+
+        verify(exactly = 1) {
+            deletionJobs.requestDeletion(
+                userId = 1L,
+                idempotencyKey = match { it.startsWith("account-deletion-request:1:") },
+            )
+        }
+        assertNothingDeleted()
     }
 }

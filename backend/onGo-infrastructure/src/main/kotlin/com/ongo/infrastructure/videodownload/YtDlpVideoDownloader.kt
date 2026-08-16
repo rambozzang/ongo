@@ -6,6 +6,7 @@ import com.ongo.application.videodownload.DownloaderAvailability
 import com.ongo.application.videodownload.DownloadedVideo
 import com.ongo.application.videodownload.VideoSourceDownloader
 import com.ongo.domain.videodownload.VideoDownloadProvider
+import com.ongo.infrastructure.runtime.RuntimeExecutableResolver
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.time.Duration
@@ -29,6 +30,9 @@ class YtDlpVideoDownloader(
     private val timeoutSeconds: Long,
 ) : VideoSourceDownloader {
 
+    private val resolvedExecutable = RuntimeExecutableResolver.resolve(executable)
+    private val ffmpegLocation = RuntimeExecutableResolver.resolve("ffmpeg")
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val cached = AtomicReference<Pair<Instant, DownloaderAvailability>?>(null)
@@ -37,28 +41,34 @@ class YtDlpVideoDownloader(
         val directory = Files.createTempDirectory("ongo-video-download-")
         try {
             val metadataOutput = run(
-                listOf(executable, "--dump-single-json", "--no-download", "--no-playlist", "--no-warnings", url),
+                listOf(resolvedExecutable, "--dump-single-json", "--no-download", "--no-playlist", "--no-warnings", url),
                 directory,
                 60,
             )
             val metadata = objectMapper.readTree(metadataOutput)
             val title = metadata.path("title").asText("").take(200)
 
-            run(
-                listOf(
-                    executable,
-                    "--no-playlist",
-                    "--no-part",
-                    "--no-progress",
-                    "--no-warnings",
-                    "--format", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-                    "--merge-output-format", "mp4",
-                    "--output", directory.resolve("%(id)s.%(ext)s").toString(),
-                    url,
-                ),
-                directory,
-                timeoutSeconds,
-            )
+            val downloadCommand = buildList {
+                add(resolvedExecutable)
+                addAll(
+                    listOf(
+                        "--no-playlist",
+                        "--no-part",
+                        "--no-progress",
+                        "--no-warnings",
+                        "--format", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+                        "--merge-output-format", "mp4",
+                    ),
+                )
+                addAll(ffmpegLocationArgs())
+                addAll(
+                    listOf(
+                        "--output", directory.resolve("%(id)s.%(ext)s").toString(),
+                        url,
+                    ),
+                )
+            }
+            run(downloadCommand, directory, timeoutSeconds)
 
             val file = Files.list(directory).use { stream ->
                 stream.filter { Files.isRegularFile(it) }
@@ -111,7 +121,7 @@ class YtDlpVideoDownloader(
             // 임시 디렉터리에서 돌린다. 작업 디렉터리에 아무것도 만들지 않는다.
             val dir = Files.createTempDirectory("ongo-ytdlp-probe-")
             try {
-                run(listOf(executable, "--version"), dir, PROBE_TIMEOUT_SECONDS)
+                run(listOf(resolvedExecutable, "--version"), dir, PROBE_TIMEOUT_SECONDS)
                 DownloaderAvailability(available = true)
             } finally {
                 runCatching { Files.deleteIfExists(dir) }
@@ -119,7 +129,7 @@ class YtDlpVideoDownloader(
         } catch (e: Exception) {
             // 경로나 예외 메시지를 그대로 노출하지 않는다. 내부 구조가 새고,
             // 사용자가 그걸 보고 할 수 있는 일도 없다. 진단은 로그로 남긴다.
-            log.warn("영상 추출기를 사용할 수 없다. executable={} 원인={}", executable, e.message)
+            log.warn("영상 추출기를 사용할 수 없다. executable={} 원인={}", resolvedExecutable, e.message)
             DownloaderAvailability(
                 available = false,
                 reason = "영상 URL 가져오기를 지금 사용할 수 없습니다. 관리자에게 문의해 주세요.",
@@ -162,6 +172,11 @@ class YtDlpVideoDownloader(
         .trim('_')
         .take(100)
         .ifBlank { "imported-video" }
+
+    private fun ffmpegLocationArgs(): List<String> =
+        RuntimeExecutableResolver.directoryOf(ffmpegLocation)
+            ?.let { listOf("--ffmpeg-location", it) }
+            ?: emptyList()
 
     private fun deleteDirectory(directory: Path) {
         runCatching {

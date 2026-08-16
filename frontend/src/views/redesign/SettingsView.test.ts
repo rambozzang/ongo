@@ -9,6 +9,7 @@ import { automationApi } from '@/api/automation'
 import { subscriptionApi } from '@/api/subscription'
 import { workspaceApi } from '@/api/workspace'
 import { oauthApi } from '@/api/oauth'
+import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import koMessages from '@/locales/ko/common.json'
 
@@ -33,6 +34,10 @@ vi.mock('@/api/oauth', () => ({ oauthApi: {
   deleteApp: vi.fn(),
   listTokens: vi.fn(),
   revokeToken: vi.fn(),
+} }))
+vi.mock('@/api/auth', () => ({ authApi: {
+  deleteAccount: vi.fn(),
+  getAccountDeletionStatus: vi.fn(),
 } }))
 
 const rule = (active = true) => ({
@@ -112,6 +117,10 @@ describe('SettingsView', () => {
     vi.mocked(oauthApi.listApps).mockResolvedValue([] as never)
     vi.mocked(oauthApi.listTokens).mockResolvedValue([] as never)
     vi.mocked(oauthApi.revokeToken).mockResolvedValue(undefined as never)
+    vi.mocked(authApi.getAccountDeletionStatus).mockResolvedValue({
+      state: 'ACTIVE', status: null, jobId: null, requestedAt: null, updatedAt: null,
+      completedAt: null, lastErrorCode: null, supportReference: null, retryable: false,
+    })
   })
 
   it('loads automation and defaults from the server, then saves changed defaults', async () => {
@@ -192,5 +201,43 @@ describe('SettingsView', () => {
     await wrapper.get('[role="dialog"] button').trigger('click')
     await flushPromises()
     expect(oauthApi.revokeToken).toHaveBeenCalledWith(9)
+  })
+
+  it('queues account deletion only after confirmation, then logs the user out', async () => {
+    vi.mocked(authApi.deleteAccount).mockResolvedValue(undefined as never)
+    const wrapper = await renderSettings()
+    const auth = useAuthStore()
+    const logout = vi.spyOn(auth, 'logout').mockResolvedValue()
+
+    await wrapper.findAll('button').find((button) => button.text() === '계정')!.trigger('click')
+    await wrapper.findAll('button').find((button) => button.text() === '탈퇴하기')!.trigger('click')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+
+    await wrapper.get('[role="dialog"] button').trigger('click')
+    await flushPromises()
+
+    expect(authApi.deleteAccount).toHaveBeenCalledTimes(1)
+    expect(authApi.getAccountDeletionStatus).toHaveBeenCalledTimes(2)
+    expect(logout).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows a durable deletion status and support reference in the account section', async () => {
+    vi.mocked(authApi.getAccountDeletionStatus).mockResolvedValue({
+      state: 'DELETION_REQUESTED',
+      status: 'BLOCKED_POLICY',
+      jobId: 23,
+      requestedAt: '2026-08-15T01:00:00Z',
+      updatedAt: '2026-08-15T01:01:00Z',
+      completedAt: null,
+      lastErrorCode: 'POLICY_REVIEW',
+      supportReference: 'review-block:payment',
+      retryable: true,
+    })
+    const wrapper = await renderSettings()
+
+    await wrapper.findAll('button').find((button) => button.text() === '계정')!.trigger('click')
+    expect(wrapper.text()).toContain('계정 삭제 상태')
+    expect(wrapper.text()).toContain('#23')
+    expect(wrapper.text()).toContain('review-block:payment')
   })
 })

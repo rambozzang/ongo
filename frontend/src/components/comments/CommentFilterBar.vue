@@ -115,7 +115,6 @@ const platformOptions = [
   { value: 'VIMEO', label: 'Vimeo' },
   { value: 'DAILYMOTION', label: 'Dailymotion' },
   { value: 'TIKTOK', label: 'TikTok' },
-  { value: 'NAVER_CLIP', label: 'Naver Clip' },
   { value: 'PINTEREST', label: 'Pinterest' },
 ]
 

@@ -241,7 +241,6 @@ function formatNumber(num: number): string {
                   <option value="YOUTUBE">유튜브</option>
                   <option value="TIKTOK">틱톡</option>
                   <option value="INSTAGRAM">인스타그램</option>
-                  <option value="NAVER_CLIP">네이버 클립</option>
                 </select>
               </div>
 

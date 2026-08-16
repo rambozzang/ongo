@@ -149,8 +149,17 @@
                   {{ t('common.retry') }}
                 </button>
               </div>
-              <div v-else-if="platforms.length === 0" class="rounded-xl border border-gray-200 bg-white px-4 py-6 text-center text-body text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+              <div v-else-if="platforms.length === 0 && unavailablePlatforms.length === 0" class="rounded-xl border border-gray-200 bg-white px-4 py-6 text-center text-body text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
                 {{ t('onboarding.channels.loadingPlatforms') }}
+              </div>
+              <div
+                v-if="unavailablePlatforms.length"
+                class="rounded-xl border border-warning-subtle bg-warning-subtle px-4 py-3 text-body text-warning-strong"
+                role="status"
+              >
+                <p class="font-semibold">{{ t('onboarding.channels.unavailableTitle') }}</p>
+                <p class="mt-1 text-body-xs leading-5">{{ t('onboarding.channels.unavailableDescription') }}</p>
+                <p class="mt-1 text-body-xs font-medium">{{ unavailablePlatformLabels }}</p>
               </div>
               <div
                 v-for="platform in platforms"
@@ -422,7 +431,7 @@ import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
 import { videoApi } from '@/api/video'
 import { subscriptionApi } from '@/api/subscription'
-import { buildOAuthUrl, generateOAuthStateNonce, generatePKCE } from '@/utils/oauth'
+import { buildOAuthState, generateOAuthStateNonce, generatePKCE, getOAuthRedirectUri } from '@/utils/oauth'
 import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/outline'
 import OnboardingStepIndicator from '@/components/onboarding/OnboardingStepIndicator.vue'
 import PlanSelectionCard from '@/components/onboarding/PlanSelectionCard.vue'
@@ -502,9 +511,16 @@ const platformDescriptions: Record<Platform, string> = {
   TUMBLR: 'tumblr',
 }
 
+const platformLabels: Record<Platform, string> = {
+  YOUTUBE: 'YouTube', TIKTOK: 'TikTok', INSTAGRAM: 'Instagram', NAVER_CLIP: 'Naver Clip',
+  TWITTER: 'X', FACEBOOK: 'Facebook', THREADS: 'Threads', PINTEREST: 'Pinterest',
+  LINKEDIN: 'LinkedIn', WORDPRESS: 'WordPress.com', DAILYMOTION: 'Dailymotion',
+  VIMEO: 'Vimeo', TUMBLR: 'Tumblr',
+}
+
 const platforms = computed<{ key: Platform; label: string; description: string; bgColor: string }[]>(() =>
   platformCapabilities.value
-    .filter((capability) => capability.directVideoUpload || capability.cloudVideoUpload)
+    .filter((capability) => (capability.directVideoUpload || capability.cloudVideoUpload) && capability.configurationAvailable !== false)
     .map((capability) => {
       const key = capability.platform
       const config = {
@@ -522,6 +538,14 @@ const platforms = computed<{ key: Platform; label: string; description: string; 
       }
     }),
 )
+
+const unavailablePlatforms = computed(() => platformCapabilities.value
+  .filter((capability) => (capability.directVideoUpload || capability.cloudVideoUpload) && capability.configurationAvailable === false)
+  .map((capability) => capability.platform))
+
+const unavailablePlatformLabels = computed(() => unavailablePlatforms.value
+  .map((platform) => platformLabels[platform] ?? platform)
+  .join(', '))
 
 function startOnboarding() {
   currentStep.value = 1
@@ -611,7 +635,12 @@ async function connectPlatform(platform: Platform) {
     const challenge = platform === 'TWITTER'
       ? (await generatePKCE('twitter_code_verifier')).challenge
       : undefined
-    window.location.href = buildOAuthUrl(platform, '/onboarding', challenge, generateOAuthStateNonce())
+    const { authorizationUrl } = await channelApi.authorizationUrl(platform, {
+      redirectUri: getOAuthRedirectUri(),
+      state: buildOAuthState(platform, '/onboarding', generateOAuthStateNonce()),
+      codeChallenge: challenge,
+    })
+    window.location.href = authorizationUrl
   } catch (e) {
     isConnecting.value = false
     channelError.value = e instanceof Error ? e.message : t('onboarding.channels.connectFailed')

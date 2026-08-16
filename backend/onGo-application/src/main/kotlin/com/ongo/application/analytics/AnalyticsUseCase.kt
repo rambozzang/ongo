@@ -162,8 +162,27 @@ class AnalyticsUseCase(
             val totalShares = allAnalytics.sumOf { it.shares.toLong() }
             val totalWatchTime = allAnalytics.sumOf { it.watchTimeSeconds }
             val dayCount = allAnalytics.map { it.date }.distinct().size.coerceAtLeast(1)
+            val unavailableMetrics = uploads
+                .flatMap { upload -> PlatformMetricAvailability.forPlatform(upload.platform.name) }
+                .toSet()
+                .toMutableSet()
+            val measuredEngagement = uploads.sumOf { upload ->
+                val unavailableForPlatform = PlatformMetricAvailability.forPlatform(upload.platform.name)
+                (analyticsByUploadId[upload.id] ?: emptyList()).sumOf { daily ->
+                    (if (PlatformMetricAvailability.LIKES !in unavailableForPlatform) daily.likes.toLong() else 0L) +
+                        (if (PlatformMetricAvailability.COMMENTS !in unavailableForPlatform) daily.commentsCount.toLong() else 0L) +
+                        (if (PlatformMetricAvailability.SHARES !in unavailableForPlatform) daily.shares.toLong() else 0L)
+                }
+            }
+            if (unavailableMetrics.any {
+                    it == PlatformMetricAvailability.LIKES ||
+                        it == PlatformMetricAvailability.COMMENTS ||
+                        it == PlatformMetricAvailability.SHARES
+                }) {
+                unavailableMetrics += "engagementRate"
+            }
             val engagementRate = if (totalViews > 0) {
-                ((totalLikes + totalComments + totalShares).toDouble() / totalViews) * 100
+                (measuredEngagement.toDouble() / totalViews) * 100
             } else 0.0
 
             VideoCompareItem(
@@ -176,6 +195,7 @@ class AnalyticsUseCase(
                 totalWatchTimeSeconds = totalWatchTime,
                 avgDailyViews = totalViews / dayCount,
                 engagementRate = Math.round(engagementRate * 100) / 100.0,
+                unavailableMetrics = unavailableMetrics,
             )
         }
 
@@ -332,8 +352,15 @@ class AnalyticsUseCase(
         val byVideo = rawData.groupBy { it.videoId }
         val videos = byVideo.map { (videoId, items) ->
             val platforms = items.map { raw ->
+                val unavailableMetrics = PlatformMetricAvailability.forPlatform(raw.platform)
+                val measuredEngagement = listOf(
+                    "likes" to raw.likes,
+                    "comments" to raw.comments,
+                    "shares" to raw.shares,
+                ).filterNot { (metric, _) -> metric in unavailableMetrics }
+                    .sumOf { (_, value) -> value }
                 val engagementRate = if (raw.views > 0) {
-                    ((raw.likes + raw.comments + raw.shares).toDouble() / raw.views) * 100
+                    (measuredEngagement.toDouble() / raw.views) * 100
                 } else 0.0
 
                 PlatformMetrics(
@@ -346,6 +373,7 @@ class AnalyticsUseCase(
                     engagementRate = Math.round(engagementRate * 100) / 100.0,
                     avgViewDuration = raw.avgViewDurationSeconds,
                     revenueMicro = raw.revenueMicro,
+                    unavailableMetrics = unavailableMetrics,
                 )
             }
 

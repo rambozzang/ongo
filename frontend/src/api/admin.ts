@@ -7,6 +7,7 @@ import type {
   AdminChannelItem,
   AdminSubscriptionDetail,
   AdminPublishQueueSummary,
+  AdminAccountDeletionJob,
   StorageQuotaUpdateRequest,
   UpdateRoleRequest,
   PageResponse,
@@ -56,6 +57,18 @@ export const adminApi = {
   getPublishQueue() {
     return apiClient
       .get<ResData<AdminPublishQueueSummary>>('/admin/publish-queue')
+      .then(unwrapResponse)
+  },
+
+  getAccountDeletionJobs(limit = 100) {
+    return apiClient
+      .get<ResData<AdminAccountDeletionJob[]>>('/admin/account-deletion/jobs', { params: { limit } })
+      .then(unwrapResponse)
+  },
+
+  retryAccountDeletion(jobId: number) {
+    return apiClient
+      .post<ResData<AdminAccountDeletionJob>>(`/admin/account-deletion/jobs/${jobId}/retry`)
       .then(unwrapResponse)
   },
 

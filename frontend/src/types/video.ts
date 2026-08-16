@@ -109,6 +109,15 @@ export interface VideoDownloadAvailability {
   reason?: string | null
 }
 
+export interface VideoDeletionResult {
+  videoId: number
+  storageDeletionFailed: boolean
+  externalFailures: Array<{
+    platform: Platform
+    reason: string
+  }>
+}
+
 export interface PlatformPublishConfig {
   platform: Platform
   channelId?: number
@@ -132,6 +141,8 @@ export interface PlatformUploadCapability {
   acceptedExtensions: string[]
   acceptedMediaTypes?: MediaType[]
   unavailableReason: string | null
+  configurationAvailable?: boolean
+  configurationUnavailableReason?: string | null
 }
 
 export interface UploadProgress {

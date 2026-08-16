@@ -59,7 +59,6 @@ const platformOptions: Array<{ value: TemplatePlatform; label: string }> = [
   { value: 'YOUTUBE', label: '유튜브' },
   { value: 'TIKTOK', label: '틱톡' },
   { value: 'INSTAGRAM', label: '인스타그램' },
-  { value: 'NAVER_CLIP', label: '네이버 클립' },
 ]
 
 const showFields = computed(() => {

@@ -65,10 +65,11 @@ export const useVideoStore = defineStore('video', () => {
   }
 
   async function deleteVideo(id: number) {
-    await videoApi.delete(id)
+    const result = await videoApi.delete(id)
     if (videos.value) {
       videos.value.content = videos.value.content.filter((v) => v.id !== id)
     }
+    return result
   }
 
   function setFilter(f: VideoListFilter) {

@@ -38,6 +38,31 @@ class AccountDeletionJobJooqRepository(
         AccountDeletionStatus.EXTERNAL_CLEANUP_PENDING,
     ).map { it.name }
 
+    @Transactional
+    override fun claimNext(now: LocalDateTime, staleBefore: LocalDateTime): AccountDeletionJob? =
+        dsl.fetchOne(
+            """
+            WITH candidate AS (
+                SELECT id
+                FROM account_deletion_jobs
+                WHERE status = 'REQUESTED'
+                   OR (status = 'IN_PROGRESS' AND updated_at < ?)
+                ORDER BY requested_at, id
+                FOR UPDATE SKIP LOCKED
+                LIMIT 1
+            )
+            UPDATE account_deletion_jobs job
+               SET status = 'IN_PROGRESS',
+                   attempt_count = job.attempt_count + 1,
+                   updated_at = ?
+              FROM candidate
+             WHERE job.id = candidate.id
+            RETURNING job.*
+            """.trimIndent(),
+            staleBefore,
+            now,
+        )?.toJob()
+
     /**
      * 사용자 행을 잠근 뒤 게이트 전환과 job 생성을 **같은 트랜잭션**에서 처리한다.
      *
@@ -118,12 +143,126 @@ class AccountDeletionJobJooqRepository(
             .fetchOne()
             ?.toJob()
 
+    override fun findLatestByUserId(userId: Long): AccountDeletionJob? =
+        dsl.select()
+            .from(ACCOUNT_DELETION_JOBS)
+            .where(USER_ID.eq(userId))
+            .orderBy(REQUESTED_AT.desc(), ID.desc())
+            .limit(1)
+            .fetchOne()
+            ?.toJob()
+
     override fun findByIdempotencyKey(key: String): AccountDeletionJob? =
         dsl.select()
             .from(ACCOUNT_DELETION_JOBS)
             .where(IDEMPOTENCY_KEY.eq(key))
             .fetchOne()
             ?.toJob()
+
+    override fun findRecent(limit: Int): List<AccountDeletionJob> =
+        dsl.select()
+            .from(ACCOUNT_DELETION_JOBS)
+            .orderBy(UPDATED_AT.desc(), ID.desc())
+            .limit(limit.coerceIn(1, 500))
+            .fetch()
+            .map { it.toJob() }
+
+    @Transactional
+    override fun retry(jobId: Long): AccountDeletionJob? {
+        // 상태 확인과 전환 사이에 worker가 선점하지 못하도록 job 자체를 먼저 잠근다.
+        val job = dsl.select()
+            .from(ACCOUNT_DELETION_JOBS)
+            .where(ID.eq(jobId))
+            .forUpdate()
+            .fetchOne()
+            ?.toJob() ?: return null
+        if (job.status != AccountDeletionStatus.FAILED && job.status != AccountDeletionStatus.BLOCKED_POLICY) {
+            return null
+        }
+
+        // 재처리 전 사용자 행을 잠근다. 사용자가 이미 사라졌다면 재시도하지 않는다.
+        dsl.select(ID)
+            .from(USERS)
+            .where(ID.eq(job.userId))
+            .forUpdate()
+            .fetchOne() ?: return null
+
+        val now = LocalDateTime.now()
+        dsl.update(ACCOUNT_DELETION_JOBS)
+            .set(STATUS, AccountDeletionStatus.REQUESTED.name)
+            .set(LAST_ERROR_CODE, null as String?)
+            .set(SUPPORT_REFERENCE, null as String?)
+            .set(DB_COMMITTED_AT, null as LocalDateTime?)
+            .set(COMPLETED_AT, null as LocalDateTime?)
+            .set(UPDATED_AT, now)
+            .where(ID.eq(jobId))
+            .and(STATUS.`in`(AccountDeletionStatus.FAILED.name, AccountDeletionStatus.BLOCKED_POLICY.name))
+            .execute()
+        dsl.update(USERS)
+            .set(DELETION_STATE, AccountDeletionState.DELETION_REQUESTED.name)
+            .set(DELETION_REQUESTED_AT, now)
+            .where(ID.eq(job.userId))
+            .execute()
+        return findById(jobId)
+    }
+
+    @Transactional
+    override fun markBlocked(jobId: Long, errorCode: String, supportReference: String?): AccountDeletionJob? {
+        val userId = dsl.select(USER_ID)
+            .from(ACCOUNT_DELETION_JOBS)
+            .where(ID.eq(jobId))
+            .forUpdate()
+            .fetchOne()
+            ?.let { it.get(USER_ID) as Number }
+            ?.toLong()
+            ?: return null
+
+        val now = LocalDateTime.now()
+        dsl.update(ACCOUNT_DELETION_JOBS)
+            .set(STATUS, AccountDeletionStatus.BLOCKED_POLICY.name)
+            .set(LAST_ERROR_CODE, errorCode)
+            .set(SUPPORT_REFERENCE, supportReference)
+            .set(UPDATED_AT, now)
+            .where(ID.eq(jobId))
+            .execute()
+        reactivateUser(userId)
+        return findById(jobId)
+    }
+
+    @Transactional
+    override fun markCompleted(jobId: Long, completedAt: LocalDateTime): AccountDeletionJob? {
+        dsl.update(ACCOUNT_DELETION_JOBS)
+            .set(STATUS, AccountDeletionStatus.COMPLETED.name)
+            .set(DB_COMMITTED_AT, completedAt)
+            .set(COMPLETED_AT, completedAt)
+            .set(UPDATED_AT, completedAt)
+            .where(ID.eq(jobId))
+            .execute()
+        return findById(jobId)
+    }
+
+    @Transactional
+    override fun markFailed(jobId: Long, errorCode: String, supportReference: String?): AccountDeletionJob? {
+        val userId = dsl.select(USER_ID)
+            .from(ACCOUNT_DELETION_JOBS)
+            .where(ID.eq(jobId))
+            .forUpdate()
+            .fetchOne()
+            ?.let { it.get(USER_ID) as Number }
+            ?.toLong()
+            ?: return null
+
+        val now = LocalDateTime.now()
+        dsl.update(ACCOUNT_DELETION_JOBS)
+            .set(STATUS, AccountDeletionStatus.FAILED.name)
+            .set(LAST_ERROR_CODE, errorCode)
+            .set(SUPPORT_REFERENCE, supportReference)
+            .set(UPDATED_AT, now)
+            .execute()
+        // 실패한 삭제는 데이터가 롤백된 상태이므로 사용자가 다시 요청할 수 있어야 한다.
+        reactivateUser(userId)
+        return findById(jobId)
+    }
 
     override fun findDeletionState(userId: Long): AccountDeletionState? =
         dsl.select(DELETION_STATE)
@@ -133,16 +272,25 @@ class AccountDeletionJobJooqRepository(
             ?.get(DELETION_STATE)
             ?.let { AccountDeletionState.valueOf(it) }
 
-    private fun findById(id: Long): AccountDeletionJob? =
+    override fun findById(jobId: Long): AccountDeletionJob? =
         dsl.select()
             .from(ACCOUNT_DELETION_JOBS)
-            .where(ID.eq(id))
+            .where(ID.eq(jobId))
             .fetchOne()
             ?.toJob()
 
+    private fun reactivateUser(userId: Long) {
+        dsl.update(USERS)
+            .set(DELETION_STATE, AccountDeletionState.ACTIVE.name)
+            .set(DELETION_REQUESTED_AT, null as LocalDateTime?)
+            .where(ID.eq(userId))
+            .and(DELETION_STATE.eq(AccountDeletionState.DELETION_REQUESTED.name))
+            .execute()
+    }
+
     private fun Record.toJob() = AccountDeletionJob(
-        id = get(ID),
-        userId = get(USER_ID),
+        id = (get(ID) as Number).toLong(),
+        userId = (get(USER_ID) as Number).toLong(),
         status = AccountDeletionStatus.valueOf(get(STATUS)),
         idempotencyKey = get(IDEMPOTENCY_KEY),
         supportReference = get(SUPPORT_REFERENCE),

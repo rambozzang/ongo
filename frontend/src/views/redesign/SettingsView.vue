@@ -8,7 +8,7 @@
     @update:model-value="clearPendingConfirmation"
     @confirm="confirmPendingConfirmation"
   />
-  <div class="min-h-full bg-surface-base px-4 py-5 text-content tablet:px-[22px] tablet:py-6">
+  <div class="mx-auto min-h-full w-full max-w-[1480px] bg-surface-base px-4 py-5 text-content tablet:px-[22px] tablet:py-6">
     <header class="mb-[18px]">
       <p class="font-mono text-[10px] uppercase tracking-[0.16em] text-content-tertiary">{{ t('nav.settings') }}</p>
       <h1 class="mt-1 text-[26px] font-bold tracking-[-0.02em] text-content">{{ t('settings.title') }}</h1>
@@ -94,6 +94,30 @@
               <span class="text-[11px] text-content-tertiary">{{ t('settings.account.currentPlan') }}</span>
               <span class="font-mono text-[12px] text-content">{{ authStore.user.planType }}</span>
             </div>
+          </div>
+          <div v-if="deletionStatus && (deletionStatus.status || deletionStatus.state !== 'ACTIVE')" class="mt-5 rounded-[11px] border border-warning-subtle bg-warning-subtle p-4" role="status">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-[12px] font-bold text-warning-strong">{{ t('settings.account.deletionStatus') }}</h3>
+              <StatusPill variant="warning">{{ deletionStatusLabel(deletionStatus) }}</StatusPill>
+            </div>
+            <p class="mt-2 text-[11px] leading-5 text-warning-strong">{{ deletionStatusDescription(deletionStatus) }}</p>
+            <dl class="mt-3 grid gap-2 text-[11px] tablet:grid-cols-2">
+              <div v-if="deletionStatus.jobId" class="rounded-md border border-warning-subtle px-2.5 py-2">
+                <dt class="text-warning-strong/70">{{ t('settings.account.deletionJobId') }}</dt>
+                <dd class="mt-0.5 font-mono font-semibold text-warning-strong">#{{ deletionStatus.jobId }}</dd>
+              </div>
+              <div v-if="deletionStatus.supportReference" class="rounded-md border border-warning-subtle px-2.5 py-2">
+                <dt class="text-warning-strong/70">{{ t('settings.account.deletionSupportReference') }}</dt>
+                <dd class="mt-0.5 break-all font-mono font-semibold text-warning-strong">{{ deletionStatus.supportReference }}</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="mt-5 rounded-[11px] border border-error-subtle bg-error-subtle p-4">
+            <h3 class="text-[12px] font-bold text-error-strong">{{ t('settings.account.dangerZone') }}</h3>
+            <p class="mt-1 text-[11px] leading-5 text-error-strong">{{ t('settings.account.dangerDesc') }}</p>
+            <button type="button" class="btn-danger mt-3" @click="requestAccountDeletion">
+              {{ t('settings.account.deleteBtn') }}
+            </button>
           </div>
         </template>
 
@@ -300,10 +324,6 @@
             <p v-else class="text-[11.5px] text-content-tertiary">{{ t('subscription.noSubscriptionInfo') }}</p>
             <RouterLink to="/subscription" class="mt-3 inline-block text-[11px] font-semibold text-accent">{{ t('subscription.changePlan') }}</RouterLink>
           </SectionCard>
-          <SectionCard :title="t('settings.account.dangerZone')" body-class="border border-error-subtle bg-error-subtle p-[15px]">
-            <p class="text-[11.5px] leading-5 text-error-strong">{{ t('settings.account.deleteUnavailable') }}</p>
-            <p class="mt-2 text-[11px] leading-5 text-error-strong">{{ t('settings.account.deleteUnavailableDesc') }}</p>
-          </SectionCard>
         </div>
       </main>
     </div>
@@ -325,6 +345,7 @@ import { useAutomationStore } from '@/stores/automation'
 import { useSubscriptionStore } from '@/stores/subscription'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useNotificationStore } from '@/stores/notification'
+import { authApi, type AccountDeletionStatus } from '@/api/auth'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -337,6 +358,7 @@ const requestedTab = typeof route.query.tab === 'string' ? route.query.tab : ''
 const activeSection = ref(['account', 'automation', 'defaults', 'security', 'developer', 'workspaces'].includes(requestedTab) ? requestedTab : 'automation')
 const settingsData = ref<UserSettingsResponse | null>(null)
 const settingsLoadError = ref(false)
+const deletionStatus = ref<AccountDeletionStatus | null>(null)
 const savingDefaults = ref(false)
 const defaults = reactive({ visibility: '', defaultPlatforms: [] as string[], aiTone: '', aiProvider: '' })
 const apiKeys = ref<ApiKey[]>([])
@@ -362,6 +384,7 @@ type PendingConfirmation =
   | { type: 'deleteOAuthApp'; id: number }
   | { type: 'revokeOAuthToken'; id: number }
   | { type: 'removeWorkspace'; id: number }
+  | { type: 'deleteAccount' }
 const pendingConfirmation = ref<PendingConfirmation | null>(null)
 const navigation = computed(() => [
   { key: 'account', label: t('settings.tabs.account') },
@@ -389,6 +412,30 @@ function formatPrice(value: number): string {
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
+function deletionStatusLabel(status: AccountDeletionStatus): string {
+  switch (status.status) {
+    case 'REQUESTED': return t('settings.account.deletionStatusRequested')
+    case 'IN_PROGRESS':
+    case 'DB_COMMITTED':
+    case 'EXTERNAL_CLEANUP_PENDING': return t('settings.account.deletionStatusProcessing')
+    case 'BLOCKED_POLICY': return t('settings.account.deletionStatusBlocked')
+    case 'FAILED': return t('settings.account.deletionStatusFailed')
+    case 'COMPLETED': return t('settings.account.deletionStatusCompleted')
+    default: return status.state === 'DELETED'
+      ? t('settings.account.deletionStatusCompleted')
+      : t('settings.account.deletionStatusActive')
+  }
+}
+function deletionStatusDescription(status: AccountDeletionStatus): string {
+  switch (status.status) {
+    case 'BLOCKED_POLICY': return t('settings.account.deletionStatusBlockedDesc')
+    case 'FAILED': return t('settings.account.deletionStatusFailedDesc')
+    case 'COMPLETED': return t('settings.account.deletionStatusCompletedDesc')
+    default: return status.state === 'DELETED'
+      ? t('settings.account.deletionStatusCompletedDesc')
+      : t('settings.account.deletionStatusProcessingDesc')
+  }
+}
 const confirmationTitle = computed(() => t('settings.confirmationTitle'))
 const confirmationMessage = computed(() => {
   const pending = pendingConfirmation.value
@@ -404,6 +451,8 @@ const confirmationMessage = computed(() => {
       return t('settings.oauthApps.revokeTokenConfirm')
     case 'removeWorkspace':
       return t('workspace.deleteConfirm')
+    case 'deleteAccount':
+      return t('settings.account.deleteConfirm')
   }
   return t('settings.actionFailed')
 })
@@ -441,11 +490,28 @@ async function confirmPendingConfirmation() {
       case 'removeWorkspace':
         await workspaceStore.removeWorkspace(pending.id)
         break
+      case 'deleteAccount':
+        await authApi.deleteAccount()
+        await fetchDeletionStatus()
+        await authStore.logout()
+        break
     }
   } catch (error) {
     notificationStore.error(
       error instanceof Error ? error.message : t('settings.actionFailed'),
     )
+  }
+}
+
+function requestAccountDeletion() {
+  pendingConfirmation.value = { type: 'deleteAccount' }
+}
+
+async function fetchDeletionStatus() {
+  try {
+    deletionStatus.value = await authApi.getAccountDeletionStatus()
+  } catch {
+    // 계정 설정 전체를 막지 않는다. 삭제 상태는 보조 정보이며 재조회할 수 있다.
   }
 }
 
@@ -597,6 +663,7 @@ onMounted(async () => {
     subscriptionStore.fetchPlans(),
     fetchApiKeys(),
     workspaceStore.fetchWorkspaces(),
+    fetchDeletionStatus(),
   ])
   settingsLoadError.value = results.some((result) => result.status === 'rejected')
   if (!authStore.user) await authStore.fetchProfile()

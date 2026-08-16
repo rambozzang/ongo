@@ -36,7 +36,6 @@ class PublicOAuthUseCase(
     @param:Value("\${platform.google.client-id:}") private val googleClientId: String,
     @param:Value("\${platform.tiktok.client-key:}") private val tiktokClientId: String,
     @param:Value("\${platform.instagram.app-id:}") private val instagramClientId: String,
-    @param:Value("\${platform.naver.client-id:}") private val naverClientId: String,
     @param:Value("\${platform.twitter.client-id:}") private val twitterClientId: String,
     @param:Value("\${platform.facebook.app-id:}") private val facebookClientId: String,
     @param:Value("\${platform.threads.app-id:}") private val threadsClientId: String,
@@ -126,7 +125,10 @@ class PublicOAuthUseCase(
             Platform.YOUTUBE -> googleClientId
             Platform.TIKTOK -> tiktokClientId
             Platform.INSTAGRAM -> instagramClientId
-            Platform.NAVER_CLIP -> naverClientId
+            Platform.NAVER_CLIP -> throw BusinessException(
+                "OAUTH_NOT_SUPPORTED",
+                "Naver Clip은 공개 업로드 API가 없어 현재 연동할 수 없습니다",
+            )
             Platform.TWITTER -> twitterClientId
             Platform.FACEBOOK -> facebookClientId
             Platform.THREADS -> threadsClientId
@@ -148,7 +150,10 @@ class PublicOAuthUseCase(
             Platform.YOUTUBE -> "https://accounts.google.com/o/oauth2/v2/auth"
             Platform.TIKTOK -> "https://www.tiktok.com/v2/auth/authorize/"
             Platform.INSTAGRAM -> "https://api.instagram.com/oauth/authorize"
-            Platform.NAVER_CLIP -> "https://nid.naver.com/oauth2.0/authorize"
+            Platform.NAVER_CLIP -> throw BusinessException(
+                "OAUTH_NOT_SUPPORTED",
+                "Naver Clip은 공개 업로드 API가 없어 현재 연동할 수 없습니다",
+            )
             Platform.TWITTER -> "https://twitter.com/i/oauth2/authorize"
             Platform.FACEBOOK -> "https://www.facebook.com/v21.0/dialog/oauth"
             Platform.THREADS -> "https://threads.net/oauth/authorize"
@@ -182,7 +187,10 @@ class PublicOAuthUseCase(
         // posting yet.
         Platform.TIKTOK -> "video.publish,video.upload,video.list"
         Platform.INSTAGRAM -> "instagram_business_basic,instagram_business_content_publish"
-        Platform.NAVER_CLIP -> ""
+        Platform.NAVER_CLIP -> throw BusinessException(
+            "OAUTH_NOT_SUPPORTED",
+            "Naver Clip은 공개 업로드 API가 없어 현재 연동할 수 없습니다",
+        )
         Platform.TWITTER -> "tweet.read tweet.write users.read offline.access"
         Platform.FACEBOOK -> "pages_manage_posts,pages_read_engagement,pages_show_list"
         Platform.THREADS -> "threads_basic,threads_content_publish,threads_manage_insights"

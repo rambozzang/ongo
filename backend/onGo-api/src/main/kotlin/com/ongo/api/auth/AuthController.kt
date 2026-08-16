@@ -5,9 +5,11 @@ import com.ongo.api.auth.dto.RefreshTokenRequest
 import com.ongo.api.auth.dto.SocialLoginRequest
 import com.ongo.api.auth.dto.UserResponse
 import com.ongo.api.config.CurrentUser
+import com.ongo.application.auth.AuthOAuthAuthorizationUseCase
 import com.ongo.application.auth.AuthRateLimiter
 import com.ongo.application.auth.AuthUseCase
 import com.ongo.application.auth.dto.AuthResult
+import com.ongo.application.auth.dto.AccountDeletionStatusResponse
 import com.ongo.common.ResData
 import com.ongo.domain.auth.AuthTokenPort
 import com.ongo.infrastructure.external.googledrive.OAuthStateManager
@@ -19,6 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
@@ -33,6 +36,7 @@ class AuthController(
     private val authTokenPort: AuthTokenPort,
     private val authRateLimiter: AuthRateLimiter,
     private val oAuthStateManager: OAuthStateManager,
+    private val authOAuthAuthorizationUseCase: AuthOAuthAuthorizationUseCase,
 ) {
 
     @Operation(summary = "SSE 토큰 발급", description = "SSE(Server-Sent Events) 연결용 단기 토큰을 발급합니다 (5분 만료).")
@@ -51,6 +55,17 @@ class AuthController(
     ): ResponseEntity<ResData<Map<String, String>>> {
         val state = oAuthStateManager.issueAnonymous()
         return ResData.success(mapOf("state" to state))
+    }
+
+    @Operation(summary = "소셜 로그인 URL 생성", description = "서버 설정을 사용하는 Google/Kakao 로그인 URL을 발급합니다.")
+    @GetMapping("/{provider}/authorization-url")
+    fun authorizationUrl(
+        @Parameter(description = "OAuth 제공자 (google, kakao)") @PathVariable provider: String,
+        @RequestParam redirectUri: String,
+    ): ResponseEntity<ResData<Map<String, String>>> {
+        val state = oAuthStateManager.issueAnonymous()
+        val authorizationUrl = authOAuthAuthorizationUseCase.authorizationUrl(provider, redirectUri, state)
+        return ResData.success(mapOf("authorizationUrl" to authorizationUrl, "state" to state))
     }
 
     @Operation(
@@ -174,7 +189,14 @@ class AuthController(
     @DeleteMapping("/account")
     fun deleteAccount(@Parameter(hidden = true) @CurrentUser userId: Long): ResponseEntity<ResData<Nothing>> {
         authUseCase.deleteAccount(userId)
-        return ResponseEntity.ok(ResData(success = true, message = "계정이 삭제되었습니다"))
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+            .body(ResData(success = true, message = "계정 삭제 요청이 접수되었습니다. 처리가 완료되면 다시 로그인할 수 없습니다."))
+    }
+
+    @Operation(summary = "계정 삭제 상태", description = "현재 사용자의 최근 계정 삭제 요청 상태를 조회합니다.")
+    @GetMapping("/account/deletion-status")
+    fun getAccountDeletionStatus(@Parameter(hidden = true) @CurrentUser userId: Long): ResponseEntity<ResData<AccountDeletionStatusResponse>> {
+        return ResData.success(authUseCase.getAccountDeletionStatus(userId))
     }
 
     private fun toAuthResponse(result: AuthResult): AuthResponse {

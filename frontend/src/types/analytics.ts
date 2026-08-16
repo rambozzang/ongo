@@ -66,6 +66,7 @@ export interface VideoCompareItem {
   totalWatchTimeSeconds: number
   avgDailyViews: number
   engagementRate: number
+  unavailableMetrics: string[]
 }
 
 export interface VideoCompareResponse {
@@ -224,6 +225,8 @@ export interface PlatformMetrics {
   engagementRate: number
   avgViewDuration: number
   revenueMicro: number
+  /** Metrics whose numeric value is unavailable, rather than measured as zero. */
+  unavailableMetrics: string[]
 }
 
 export interface CrossPlatformComparisonResponse {

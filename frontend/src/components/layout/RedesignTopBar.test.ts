@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import RedesignTopBar from './RedesignTopBar.vue'
 
 const mocks = vi.hoisted(() => ({
@@ -22,6 +23,7 @@ describe('RedesignTopBar account menu', () => {
   it('exposes settings and logout from the active redesign shell', async () => {
     const wrapper = mount(RedesignTopBar, {
       props: { title: 'Today' },
+      attachTo: document.body,
       global: {
         stubs: {
           RouterLink: {
@@ -43,5 +45,31 @@ describe('RedesignTopBar account menu', () => {
     await wrapper.find('button[role="menuitem"]').trigger('click')
 
     expect(mocks.auth.logout).toHaveBeenCalledOnce()
+  })
+
+  it('closes the account menu with Escape and restores focus to the trigger', async () => {
+    const wrapper = mount(RedesignTopBar, {
+      props: { title: 'Today' },
+      attachTo: document.body,
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a :href="to"><slot /></a>',
+          },
+        },
+      },
+    })
+
+    const profileButton = wrapper.find('button[aria-haspopup="menu"]')
+    await profileButton.trigger('click')
+    const menu = wrapper.find('[role="menu"]')
+    expect(menu.exists()).toBe(true)
+
+    await menu.trigger('keydown', { key: 'Escape' })
+    await nextTick()
+
+    expect(wrapper.find('[role="menu"]').exists()).toBe(false)
+    expect(document.activeElement).toBe(profileButton.element)
   })
 })

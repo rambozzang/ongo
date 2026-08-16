@@ -14,7 +14,6 @@ object PromptTemplates {
         - YouTube: 제목 100자 이내, 설명 5000자 이내, SEO 최적화 키워드 포함
         - TikTok: 제목 150자 이내, 트렌디한 표현, 짧고 임팩트 있는 문구
         - Instagram: 캡션 2200자 이내, 이모지 활용, 스토리텔링 형식
-        - NAVER_CLIP: 제목 100자 이내, 네이버 검색 최적화, 한국어 키워드 중심
 
         각 플랫폼당 제목 후보 5개를 생성하세요.
         해시태그는 플랫폼별로 최대 30개를 생성하되, 트렌드 키워드와 롱테일 키워드를 혼합하세요.
@@ -46,7 +45,6 @@ object PromptTemplates {
         - YouTube: SEO 중심, 검색 노출 최적화
         - TikTok: 트렌드 해시태그, 챌린지 태그 포함
         - Instagram: 커뮤니티 태그, 위치 태그, 감성 태그 혼합
-        - NAVER_CLIP: 네이버 검색 키워드 중심, 한국 트렌드 반영
 
         각 플랫폼당 30개의 해시태그를 생성하세요.
         한국어로 작성하세요.
@@ -370,7 +368,7 @@ object PromptTemplates {
 
         제안 규칙:
         - 각 제안에는 제목, 설명, 추천 날짜, 추천 시간, 플랫폼, 콘텐츠 유형, 주제를 포함
-        - 플랫폼별 최적 게시 시간을 반영 (YouTube: 저녁 6~9시, TikTok: 밤 8~11시, Instagram: 점심/저녁, NAVER_CLIP: 오전/점심)
+        - 플랫폼별 최적 게시 시간을 반영 (YouTube: 저녁 6~9시, TikTok: 밤 8~11시, Instagram: 점심/저녁)
         - 콘텐츠 유형: LONG_FORM, SHORTS, REELS, LIVE, CLIP 등 플랫폼에 맞는 유형
         - 각 제안의 예상 참여율(expectedEngagement, 0~10 범위)과 신뢰도(confidence, 0~100)를 산정
         - 한국 크리에이터 시장 트렌드와 시즌성 반영
@@ -585,7 +583,7 @@ object PromptTemplates {
 
     val VIDEO_SEO_SYSTEM = """
         당신은 한국 크리에이터의 영상 메타데이터를 분석하여 SEO 점수를 매기는 전문가입니다.
-        YouTube, TikTok, Instagram, Naver Clip 각 플랫폼의 SEO 특성을 파악하여 점수화합니다.
+        YouTube, TikTok, Instagram 등 실제 연결된 플랫폼의 SEO 특성을 파악하여 점수화합니다.
 
         점수 기준:
         - 제목 점수 (titleScore, 0~25): 키워드 포함 여부, 클릭 유발 표현, 적절한 길이, 플랫폼 특성 반영

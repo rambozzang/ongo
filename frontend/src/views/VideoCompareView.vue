@@ -204,12 +204,27 @@
           :title="$t('videoCompare.comments')"
           :value-a="comparisonA?.totalComments ?? 0"
           :value-b="comparisonB?.totalComments ?? 0"
+          :unavailable-a="isMetricUnavailable(comparisonA, 'comments')"
+          :unavailable-b="isMetricUnavailable(comparisonB, 'comments')"
+          :unavailable-label="$t('videoCompare.metricUnavailable')"
           :icon="ChatBubbleLeftIcon"
+        />
+        <MetricDifferenceCard
+          :title="$t('videoCompare.shares')"
+          :value-a="comparisonA?.totalShares ?? 0"
+          :value-b="comparisonB?.totalShares ?? 0"
+          :unavailable-a="isMetricUnavailable(comparisonA, 'shares')"
+          :unavailable-b="isMetricUnavailable(comparisonB, 'shares')"
+          :unavailable-label="$t('videoCompare.metricUnavailable')"
+          :icon="ChartBarIcon"
         />
         <MetricDifferenceCard
           :title="$t('videoCompare.engagementRate')"
           :value-a="comparisonA?.engagementRate ?? 0"
           :value-b="comparisonB?.engagementRate ?? 0"
+          :unavailable-a="isMetricUnavailable(comparisonA, 'engagementRate')"
+          :unavailable-b="isMetricUnavailable(comparisonB, 'engagementRate')"
+          :unavailable-label="$t('videoCompare.metricUnavailable')"
           :icon="ChartBarIcon"
           is-percentage
         />
@@ -289,6 +304,10 @@ const comparisonLoading = ref(false)
 const comparisonError = ref(false)
 const comparisonA = computed(() => comparison.value.find((item) => item.videoId === selectedVideoA.value?.videoId) ?? null)
 const comparisonB = computed(() => comparison.value.find((item) => item.videoId === selectedVideoB.value?.videoId) ?? null)
+
+function isMetricUnavailable(item: VideoCompareItem | null, metric: string): boolean {
+  return item?.unavailableMetrics.includes(metric) ?? false
+}
 
 // Click outside directive
 interface ClickOutsideElement extends HTMLElement {

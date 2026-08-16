@@ -14,6 +14,7 @@ import com.ongo.application.video.RecycleVideoUseCase
 import com.ongo.application.video.UploadVideoUseCase
 import com.ongo.application.video.VideoFeedUseCase
 import com.ongo.application.video.VideoQueryUseCase
+import com.ongo.application.video.VideoDeletionResult
 import com.ongo.application.video.dto.AiOptimizationRequest
 import com.ongo.application.video.dto.AiOptimizationResponse
 import com.ongo.application.video.dto.OptimizationCheckRequest
@@ -100,7 +101,7 @@ class VideoControllerTest {
     fun `retry recheck delete and optimization endpoints delegate without changing semantics`() {
         justRun { publish.retryUpload(7L, 21L, "YOUTUBE") }
         justRun { publish.recheckUpload(7L, 21L, "TIKTOK") }
-        justRun { query.deleteVideo(7L, 21L) }
+        every { query.deleteVideo(7L, 21L) } returns VideoDeletionResult(21L)
         val request = OptimizationCheckRequest("제목", tags = listOf("one"))
         every { optimization.checkOptimization(request) } returns OptimizationCheckResponse(emptyList())
 

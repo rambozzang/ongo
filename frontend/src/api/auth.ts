@@ -2,10 +2,30 @@ import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
 import type { LoginRequest, LoginResponse, AuthTokens, User, CreatorCategory } from '@/types/user'
 
+export interface AccountDeletionStatus {
+  state: string
+  status: string | null
+  jobId: number | null
+  requestedAt: string | null
+  updatedAt: string | null
+  completedAt: string | null
+  lastErrorCode: string | null
+  supportReference: string | null
+  retryable: boolean
+}
+
 export const authApi = {
   getOAuthState(provider: 'google' | 'kakao') {
     return apiClient
       .get<ResData<{ state: string }>>(`/auth/${provider}/state`)
+      .then(unwrapResponse)
+  },
+
+  authorizationUrl(provider: 'google' | 'kakao', redirectUri: string) {
+    return apiClient
+      .get<ResData<{ authorizationUrl: string; state: string }>>(`/auth/${provider}/authorization-url`, {
+        params: { redirectUri },
+      })
       .then(unwrapResponse)
   },
 
@@ -51,6 +71,12 @@ export const authApi = {
   deleteAccount() {
     return apiClient
       .delete<ResData<void>>('/auth/account')
+      .then(unwrapResponse)
+  },
+
+  getAccountDeletionStatus() {
+    return apiClient
+      .get<ResData<AccountDeletionStatus>>('/auth/account/deletion-status')
       .then(unwrapResponse)
   },
 

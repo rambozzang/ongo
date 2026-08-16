@@ -54,7 +54,7 @@ class MetaRewriteUseCase(
             0.0
         }
 
-        val platforms = video.title.let { "YouTube, TikTok, Instagram, NAVER_CLIP" }
+        val platforms = video.title.let { "YouTube, TikTok, Instagram" }
         val originalTags = video.tags.joinToString(", ")
 
         val userPrompt = PromptTemplates.META_REWRITE_USER

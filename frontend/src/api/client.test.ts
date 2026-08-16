@@ -57,6 +57,20 @@ describe('API authentication retry policy', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['/auth/google/state', 'Google OAuth state request'],
+    ['/auth/kakao/state', 'Kakao OAuth state request'],
+    ['/auth/refresh', 'token refresh request'],
+  ])('does not recursively refresh a failed %s', async (path) => {
+    const refresh = vi.spyOn(axios, 'post')
+
+    await expect(apiClient.get(path)).rejects.toMatchObject({
+      response: { status: 401 },
+    })
+
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
   it('still refreshes a protected request after a 401 response', async () => {
     let attempts = 0
     apiClient.defaults.adapter = async (config) => {

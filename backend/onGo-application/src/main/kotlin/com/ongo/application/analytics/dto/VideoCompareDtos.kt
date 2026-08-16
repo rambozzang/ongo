@@ -14,4 +14,6 @@ data class VideoCompareItem(
     val totalWatchTimeSeconds: Long,
     val avgDailyViews: Long,
     val engagementRate: Double,
+    /** The aggregate is incomplete when one of its platform uploads cannot provide a metric. */
+    val unavailableMetrics: Set<String> = emptySet(),
 )

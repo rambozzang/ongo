@@ -40,7 +40,7 @@
     <template v-else>
       <!-- Video Preview + Basic Info -->
       <div class="page-grid page-grid--wide mb-6">
-        <!-- Video Preview (thumbnail placeholder) -->
+        <!-- Video preview; the thumbnail fallback is shown only when no image exists. -->
         <div class="desktop:col-span-1">
           <div class="card overflow-hidden p-0">
             <div class="relative aspect-video w-full bg-gray-900">
@@ -310,7 +310,7 @@
               v-if="currentAnalytics && currentAnalytics.dailyTrend.length > 0"
               class="relative h-64"
             >
-              <!-- Simple bar visualization as chart placeholder -->
+              <!-- Simple bar visualization backed by the API's daily trend data. -->
               <div class="flex h-full items-end gap-1">
                 <div
                   v-for="(point, idx) in currentAnalytics.dailyTrend"
@@ -752,7 +752,20 @@ function handleReUpload() {
 
 async function handleDelete() {
   try {
-    await videoStore.deleteVideo(Number(props.id))
+    const result = await videoStore.deleteVideo(Number(props.id))
+    if (result.externalFailures.length > 0 || result.storageDeletionFailed) {
+      const platforms = result.externalFailures.map(({ platform }) => platform).join(', ')
+      const externalMessage = platforms
+        ? `${platforms} 플랫폼의 외부 영상 삭제를 확인하지 못했습니다.`
+        : ''
+      const storageMessage = result.storageDeletionFailed
+        ? '스토리지 파일 정리를 확인하지 못했습니다.'
+        : ''
+      notificationStore.warning(
+        `내 라이브러리에서는 삭제했지만 ${[externalMessage, storageMessage].filter(Boolean).join(' ')} ${platforms ? '각 플랫폼에서 직접 확인해 주세요.' : '관리자 확인이 필요합니다.'}`,
+        platforms ? '외부 플랫폼 확인 필요' : '스토리지 확인 필요',
+      )
+    }
     router.push('/videos')
   } catch {
     // Error handled by API client interceptor

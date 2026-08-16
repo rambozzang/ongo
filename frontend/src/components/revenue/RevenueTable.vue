@@ -28,17 +28,12 @@
           <td class="whitespace-nowrap px-4 py-3 text-body text-gray-900 dark:text-gray-100">
             {{ formatPeriod(row.period) }}
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-body text-gray-700 dark:text-gray-300">
-            {{ formatCurrency(row.youtube) }}
-          </td>
-          <td class="whitespace-nowrap px-4 py-3 text-body text-gray-700 dark:text-gray-300">
-            {{ formatCurrency(row.tiktok) }}
-          </td>
-          <td class="whitespace-nowrap px-4 py-3 text-body text-gray-700 dark:text-gray-300">
-            {{ formatCurrency(row.instagram) }}
-          </td>
-          <td class="whitespace-nowrap px-4 py-3 text-body text-gray-700 dark:text-gray-300">
-            {{ formatCurrency(row.naverClip) }}
+          <td
+            v-for="column in platformColumns"
+            :key="column.key"
+            class="whitespace-nowrap px-4 py-3 text-body text-gray-700 dark:text-gray-300"
+          >
+            {{ formatCurrency(row.platforms[column.key] ?? 0) }}
           </td>
           <td class="whitespace-nowrap px-4 py-3 text-body font-semibold text-gray-900 dark:text-gray-100">
             {{ formatCurrency(row.total) }}
@@ -62,6 +57,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { RevenueData } from '@/stores/revenue'
+import { PLATFORM_CONFIG, type Platform } from '@/types/channel'
 
 interface Props {
   data: RevenueData[]
@@ -76,12 +72,19 @@ interface Column {
   label: string
 }
 
+const platformColumns = computed<Column[]>(() => {
+  const platforms = new Set(props.data.flatMap(item => Object.keys(item.platforms)))
+  return Array.from(platforms)
+    .filter(platform => platform !== 'NAVER_CLIP')
+    .map(platform => ({
+      key: platform,
+      label: PLATFORM_CONFIG[platform as Platform]?.label ?? platform,
+    }))
+})
+
 const columns = computed<Column[]>(() => [
   { key: 'period', label: t('revenue.table.period') },
-  { key: 'youtube', label: 'YouTube' },
-  { key: 'tiktok', label: 'TikTok' },
-  { key: 'instagram', label: 'Instagram' },
-  { key: 'naverClip', label: 'Naver Clip' },
+  ...platformColumns.value,
   { key: 'total', label: t('revenue.table.total') },
   { key: 'change', label: t('revenue.table.change') },
 ])
@@ -105,8 +108,8 @@ const sortedData = computed(() => {
   const data = [...dataWithChange.value]
 
   data.sort((a, b) => {
-    let aVal: string | number | null = a[sortKey.value as keyof typeof a] as string | number | null
-    let bVal: string | number | null = b[sortKey.value as keyof typeof b] as string | number | null
+    let aVal: string | number | null = sortValue(a, sortKey.value)
+    let bVal: string | number | null = sortValue(b, sortKey.value)
 
     // Handle null values for change column
     if (aVal === null) aVal = -Infinity
@@ -126,6 +129,13 @@ const sortedData = computed(() => {
 
   return data
 })
+
+function sortValue(row: RevenueData & { change: number | null }, key: string): string | number | null {
+  if (key === 'period') return row.period
+  if (key === 'total') return row.total
+  if (key === 'change') return row.change
+  return row.platforms[key] ?? 0
+}
 
 function sortBy(key: string) {
   if (sortKey.value === key) {

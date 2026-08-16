@@ -8,6 +8,7 @@ import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
 import com.ongo.common.exception.PlanLimitExceededException
+import com.ongo.common.exception.BusinessException
 import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.TokenEncryptionPort
@@ -26,6 +27,7 @@ import com.ongo.domain.video.VideoPlatformMetaRepository
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.application.platform.PlatformConfigurationPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -54,6 +56,7 @@ class StreamPublishUseCase(
     private val userWriteGuard: UserWriteGuard,
     private val distributedLockPort: DistributedLockPort? = null,
     private val platformClientPort: PlatformClientPort? = null,
+    private val platformConfigurationPort: PlatformConfigurationPort? = null,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -258,7 +261,17 @@ class StreamPublishUseCase(
         return StreamPublishResponse(videoId = videoId)
     }
 
-    fun getCapabilities(): List<PlatformUploadCapability> = PlatformUploadCapabilities.all()
+    fun getCapabilities(): List<PlatformUploadCapability> = PlatformUploadCapabilities.all().map { capability ->
+        val status = platformConfigurationPort?.status(capability.platform)
+        if (status == null || status.configured) {
+            capability
+        } else {
+            capability.copy(
+                configurationAvailable = false,
+                configurationUnavailableReason = status.reason,
+            )
+        }
+    }
 
     private fun validateRequest(file: MultipartFile, request: StreamPublishRequest) {
         val filename = file.originalFilename?.trim().orEmpty()
@@ -280,6 +293,12 @@ class StreamPublishUseCase(
         request.platforms.forEach { platformRequest ->
             val capability = PlatformUploadCapabilities.get(platformRequest.platform)
                 ?: throw IllegalArgumentException("영상 직접 업로드를 지원하지 않는 플랫폼입니다: ${platformRequest.platform}")
+            platformConfigurationPort?.status(platformRequest.platform)?.takeUnless { it.configured }?.let { status ->
+                throw BusinessException(
+                    "PLATFORM_NOT_CONFIGURED",
+                    status.reason ?: "${platformRequest.platform} 플랫폼 연동 설정이 없어 게시할 수 없습니다.",
+                )
+            }
             require(capability.directVideoUpload) {
                 capability.unavailableReason ?: "${platformRequest.platform} 영상 직접 업로드는 현재 지원하지 않습니다."
             }

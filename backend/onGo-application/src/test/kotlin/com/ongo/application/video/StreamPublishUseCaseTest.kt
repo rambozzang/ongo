@@ -26,6 +26,8 @@ import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.application.platform.PlatformConfigurationPort
+import com.ongo.application.platform.PlatformConfigurationStatus
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.just
@@ -99,6 +101,7 @@ class StreamPublishUseCaseTest {
     private fun createUseCase(
         factories: List<PlatformStreamWriterFactory>,
         platformClientPort: PlatformClientPort? = null,
+        platformConfigurationPort: PlatformConfigurationPort? = null,
     ) = StreamPublishUseCase(
             videoRepository = videoRepository,
             videoUploadRepository = videoUploadRepository,
@@ -112,6 +115,7 @@ class StreamPublishUseCaseTest {
             storageService = storageService,
             userWriteGuard = userWriteGuard,
             platformClientPort = platformClientPort,
+            platformConfigurationPort = platformConfigurationPort,
         )
 
     @AfterEach
@@ -199,6 +203,32 @@ class StreamPublishUseCaseTest {
     // ─────────────────────────────────────────────
     // 테스트 케이스
     // ─────────────────────────────────────────────
+
+    @Test
+    fun `운영 설정이 없는 플랫폼은 capability에서 사용 불가로 노출된다`() {
+        val configuration = object : PlatformConfigurationPort {
+            override fun status(platform: Platform) = if (platform == Platform.TIKTOK) {
+                PlatformConfigurationStatus(
+                    configured = false,
+                    reason = "TikTok 플랫폼 연동 설정이 운영 서버에 구성되지 않았습니다.",
+                )
+            } else {
+                PlatformConfigurationStatus(configured = true)
+            }
+        }
+
+        val capabilities = createUseCase(
+            defaultStreamWriterFactories,
+            platformConfigurationPort = configuration,
+        ).getCapabilities().associateBy { it.platform }
+
+        assertTrue(capabilities.getValue(Platform.YOUTUBE).configurationAvailable)
+        assertEquals(false, capabilities.getValue(Platform.TIKTOK).configurationAvailable)
+        assertEquals(
+            "TikTok 플랫폼 연동 설정이 운영 서버에 구성되지 않았습니다.",
+            capabilities.getValue(Platform.TIKTOK).configurationUnavailableReason,
+        )
+    }
 
     // 1. 플랜 한도 초과 시 PlanLimitExceededException 발생
     @Test

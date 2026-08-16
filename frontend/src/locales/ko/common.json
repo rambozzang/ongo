@@ -41,6 +41,22 @@
     "seeAll": "전체 보기",
     "prev": "이전"
   },
+  "a11y": {
+    "skipToContent": "본문으로 바로가기"
+  },
+  "searchOverlay": {
+    "placeholder": "영상, 채널 또는 메뉴 검색",
+    "inputLabel": "영상, 채널 또는 메뉴 검색",
+    "results": "검색 결과",
+    "noResults": "검색 결과가 없습니다.",
+    "clear": "검색어 지우기",
+    "recent": "최근 검색",
+    "clearRecent": "지우기",
+    "quickActions": "빠른 이동",
+    "move": "이동",
+    "select": "선택",
+    "close": "닫기"
+  },
   "ugc": {
     "title": "UGC 캠페인",
     "description": "브랜드 UGC 캠페인을 만들고 크리에이터를 모집·관리합니다.",
@@ -895,6 +911,14 @@
     "publishQueueTitle": "게시 대기열 운영 상태",
     "publishQueueDescription": "플랫폼 업로드의 활성 lease, 재시도 예정, 게시 여부 미확인 상태를 확인합니다.",
     "publishQueueLoadError": "게시 대기열을 불러오지 못했습니다.",
+    "accountDeletionTitle": "계정 삭제 운영",
+    "accountDeletionDescription": "삭제 작업의 durable 상태를 확인하고 실패·정책 차단 작업을 재처리합니다.",
+    "accountDeletionLoadError": "계정 삭제 작업을 불러오지 못했습니다.",
+    "accountDeletionEmpty": "확인할 계정 삭제 작업이 없습니다.",
+    "deletionJob": "작업",
+    "deletionUser": "사용자",
+    "retryDeletion": "재처리",
+    "retryDeletionMessage": "계정 삭제 작업 #{id}을(를) 다시 처리 대기열에 넣을까요?",
     "queuePending": "처리 대기",
     "queueLeases": "활성 lease",
     "queueRetries": "재시도 예정",
@@ -1134,14 +1158,26 @@
       "currentPlan": "현재 플랜",
       "joinDate": "가입일",
       "dangerZone": "위험 구역",
-      "dangerDesc": "안전한 데이터 및 외부 연동 정리 절차가 준비될 때까지 회원 탈퇴 요청은 보호를 위해 차단됩니다.",
+      "dangerDesc": "삭제 가능한 데이터와 외부 연동 상태를 확인한 뒤 비동기로 처리합니다. 진행 중인 결제·공유 데이터가 있으면 요청이 차단될 수 있습니다.",
       "deleteAccount": "회원 탈퇴",
-      "deleteConfirm": "모든 데이터가 삭제되며 복구할 수 없습니다. 정말로 탈퇴하시겠습니까?",
+      "deleteConfirm": "삭제 가능한 계정 데이터가 영구 삭제되고 삭제 요청이 접수됩니다. 진행 중인 결제·공유 데이터가 있으면 요청이 거절될 수 있습니다. 계속하시겠습니까?",
       "deleteBtn": "탈퇴하기",
-      "deleteUnavailable": "회원 탈퇴는 현재 사용할 수 없습니다.",
-      "deleteUnavailableDesc": "데이터와 외부 연동을 안전하게 정리하는 삭제 절차가 준비되면 다시 제공됩니다. 현재는 계정이 변경되지 않습니다.",
-      "deleteSuccess": "회원 탈퇴가 완료되었습니다.",
-      "deleteError": "회원 탈퇴에 실패했습니다. 다시 시도해주세요."
+      "deleteUnavailable": "회원 탈퇴 요청을 처리할 수 없습니다.",
+      "deleteUnavailableDesc": "진행 중인 결제·공유 데이터가 있으면 계정 보호를 위해 요청을 차단합니다.",
+      "deleteSuccess": "회원 탈퇴 요청이 접수되었습니다.",
+      "deleteError": "회원 탈퇴에 실패했습니다. 다시 시도해주세요.",
+      "deletionStatus": "계정 삭제 상태",
+      "deletionJobId": "요청 번호",
+      "deletionSupportReference": "지원 참조값",
+      "deletionStatusActive": "정상",
+      "deletionStatusRequested": "접수됨",
+      "deletionStatusProcessing": "처리 중",
+      "deletionStatusBlocked": "검토 필요",
+      "deletionStatusFailed": "재처리 필요",
+      "deletionStatusCompleted": "완료",
+      "deletionStatusProcessingDesc": "계정 삭제 요청이 접수되어 백그라운드에서 처리되고 있습니다.",
+      "deletionStatusBlockedDesc": "보관 또는 외부 연동 정책 확인이 필요합니다. 지원 참조값을 고객지원에 전달해 주세요.",
+      "deletionStatusFailedDesc": "처리 중 오류가 발생했습니다. 운영자가 확인 후 재처리할 수 있습니다."
     }
   },
   "brandDeal": {
@@ -1382,6 +1418,8 @@
       "skip": "나중에 연결",
       "optionalHint": "채널 연결 없이도 가입을 완료할 수 있습니다. 채널 메뉴에서 나중에 연결하세요.",
       "loadingPlatforms": "연동 가능한 플랫폼을 불러오는 중...",
+      "unavailableTitle": "현재 연결할 수 없는 플랫폼",
+      "unavailableDescription": "운영 서버 설정이 완료되면 연결 버튼이 표시됩니다.",
       "disconnecting": "해제 중...",
       "disconnectFailed": "플랫폼 연동 해제에 실패했습니다.",
       "required": "최소 1개 이상의 플랫폼을 연동해주세요.",
@@ -2139,14 +2177,14 @@
     "addChannel": "새 채널 연결",
     "pageGuideTitle": "채널 관리",
     "pageGuide": [
-      "새 채널 연결 버튼으로 YouTube·TikTok·Instagram·Naver Clip 등 플랫폼 계정을 OAuth로 연동하세요",
+      "새 채널 연결 버튼으로 현재 운영 설정이 가능한 플랫폼 계정을 OAuth로 연동하세요",
       "상단 요약 카드에서 총 채널 수, 정상·주의·오류 상태 채널 수를 한눈에 확인할 수 있습니다",
       "각 채널 카드의 토큰 상태가 주의(노란색) 또는 오류(빨간색)이면 재연결 버튼으로 토큰을 갱신하세요",
       "모두 동기화 버튼으로 전체 채널의 구독자·콘텐츠 정보를 최신 상태로 업데이트하세요",
       "채널 연동을 해제하면 해당 플랫폼으로의 업로드와 분석이 중단되니 주의하세요"
     ],
     "emptyTitle": "연동된 채널이 없어요",
-    "emptyDescription": "YouTube, TikTok, Instagram, Naver Clip 채널을 연결하면 영상 업로드와 분석을 시작할 수 있어요.",
+    "emptyDescription": "사용 가능한 플랫폼 채널을 연결하면 영상 업로드와 분석을 시작할 수 있어요.",
     "connectChannel": "채널 연동하기",
     "totalChannels": "총 채널",
     "healthy": "정상",
@@ -2171,8 +2209,12 @@
     "channelsConnected": "{current}/{max}개 연결됨",
     "connected": "연결됨",
     "connecting": "연결 중...",
+    "unsupported": "현재 미지원",
+    "unsupportedDescription": "네이버 클립은 공개 업로드·분석 API가 없어 동기화할 수 없습니다. 연결 해제를 권장합니다.",
     "connect": "연결하기",
     "loadingPlatforms": "연동 가능한 플랫폼을 불러오는 중...",
+    "platformsUnavailableTitle": "현재 연결할 수 없는 플랫폼",
+    "platformsUnavailableDescription": "운영 설정이 아직 구성되지 않아 아래 플랫폼은 연결 버튼을 열지 않았습니다.",
     "close": "닫기"
   },
   "videos": {
@@ -2207,7 +2249,7 @@
     "statusScheduled": "예약",
     "statusDraft": "임시",
     "emptyTitle": "아직 영상이 없어요",
-    "emptyDescription": "첫 영상을 업로드하고 YouTube, TikTok, Instagram, Naver Clip에 한 번에 게시해보세요.",
+    "emptyDescription": "첫 영상을 업로드하고 연결된 플랫폼에 한 번에 게시해보세요.",
     "emptyFilterTitle": "필터 조건에 맞는 영상이 없습니다",
     "emptyFilterDescription": "필터를 변경하거나 초기화해 보세요.",
     "firstUpload": "첫 영상 업로드하기",
@@ -3229,6 +3271,7 @@
     "comments": "댓글",
     "shares": "공유",
     "engagementRate": "참여율",
+    "metricUnavailable": "미지원",
     "detailedAnalysis": "상세 분석"
   },
   "prediction": {
@@ -4245,10 +4288,17 @@
       "monthlyUploads": "이번 달 업로드",
       "coreTasks": "핵심 작업",
       "allTools": "모든 도구",
-      "allToolsHint": "자주 쓰지 않는 기능은 여기에서 찾아보세요."
+      "allToolsHint": "자주 쓰지 않는 기능은 여기에서 찾아보세요.",
+      "loading": "기능 목록을 불러오는 중…"
     },
     "shell": {
       "capabilitiesFailed": "기능 목록을 동기화하지 못했습니다. 메뉴를 숨겼습니다. 다시 시도해 주세요."
+    },
+    "featureUnavailable": {
+      "title": "현재 사용할 수 없는 기능입니다",
+      "description": "이 기능은 현재 배포 설정이나 서버 상태에서 활성화되지 않았습니다. 잠시 후 다시 시도하거나 오늘 화면으로 돌아가세요.",
+      "reasonLabel": "현재 상태: ",
+      "backToToday": "오늘로 돌아가기"
     },
     "topbar": {
       "searchPlaceholder": "검색",
@@ -4365,6 +4415,13 @@
       "shortsNoClips": "자동으로 선택할 쇼츠 클립이 없습니다.",
       "targetsTitle": "발행 대상",
       "targetsHint": "끌 채널을 눌러 제외하세요",
+      "workflowLabel": "업로드 진행 단계",
+      "workflowSource": "원본",
+      "workflowTarget": "채널",
+      "workflowCopy": "문구",
+      "workflowSchedule": "예약",
+      "workflowCurrent": "다음 단계: {step}",
+      "workflowReady": "예약할 준비가 되었습니다.",
       "platformUnavailable": "이 채널은 현재 영상 게시 기능을 지원하지 않습니다.",
       "noChannels": "연결된 채널이 없습니다",
       "tabCommon": "공통",

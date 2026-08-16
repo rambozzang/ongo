@@ -42,7 +42,6 @@ const PLATFORM_OPTIONS = [
   { value: 'YOUTUBE', label: 'YouTube' },
   { value: 'TIKTOK', label: 'TikTok' },
   { value: 'INSTAGRAM', label: 'Instagram' },
-  { value: 'NAVER_CLIP', label: 'Naver Clip' },
 ]
 
 const FREQUENCY_OPTIONS: { value: RecyclingFrequency; label: string }[] = [

@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { capabilitiesApi } from '@/api/capabilities'
+import { requiredCapabilityForPath } from './capability'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -122,6 +124,12 @@ const routes: RouteRecordRaw[] = [
         name: 'redesign-settings',
         component: () => import('@/views/redesign/SettingsView.vue'),
         meta: { breadcrumb: '설정' },
+      },
+      {
+        path: 'feature-unavailable',
+        name: 'feature-unavailable',
+        component: () => import('@/views/FeatureUnavailableView.vue'),
+        meta: { breadcrumb: '기능 상태' },
       },
     ],
   },
@@ -482,6 +490,27 @@ router.beforeEach(async (to, _from, next) => {
     to.name !== 'channel-callback'
   ) {
     return next('/onboarding')
+  }
+
+  // Menus are not an authorization boundary. Enforce the same server-owned
+  // capability contract for direct URLs and old bookmarks as well.
+  const requiredCapability = authStore.isAuthenticated
+    ? requiredCapabilityForPath(to.path)
+    : null
+  if (requiredCapability && to.name !== 'feature-unavailable') {
+    try {
+      const capabilities = await capabilitiesApi.list()
+      const enabled = capabilities.some(
+        (capability) => capability.key === requiredCapability && capability.enabled,
+      )
+      if (!enabled) {
+        return next({ name: 'feature-unavailable', query: { from: to.fullPath } })
+      }
+    } catch {
+      // A failed capability sync must not expose a feature that the server
+      // has not confirmed as available.
+      return next({ name: 'feature-unavailable', query: { from: to.fullPath } })
+    }
   }
 
   if (to.meta.requiresAdmin && authStore.user?.role !== 'ADMIN') {

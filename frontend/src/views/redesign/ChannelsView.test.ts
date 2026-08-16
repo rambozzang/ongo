@@ -9,7 +9,7 @@ import { videoApi } from '@/api/video'
 import koMessages from '@/locales/ko/common.json'
 
 vi.mock('@/api/channel', () => ({
-  channelApi: { list: vi.fn(), sync: vi.fn(), disconnect: vi.fn(), connect: vi.fn() },
+  channelApi: { list: vi.fn(), sync: vi.fn(), disconnect: vi.fn(), connect: vi.fn(), authorizationUrl: vi.fn() },
 }))
 vi.mock('@/api/video', () => ({ videoApi: { getUploadCapabilities: vi.fn() } }))
 
@@ -106,6 +106,21 @@ describe('ChannelsView', () => {
     expect(channelApi.sync).toHaveBeenCalledWith(7)
   })
 
+  it('does not present a legacy Naver Clip row as healthy or syncable', async () => {
+    vi.mocked(channelApi.list).mockResolvedValue({
+      channels: [channel({ platform: 'NAVER_CLIP', channelName: '이전 네이버 채널' })],
+      maxAllowed: 7,
+      currentCount: 1,
+    } as never)
+    const wrapper = await renderChannels()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('현재 미지원')
+    expect(wrapper.text()).toContain('공개 업로드·분석 API가 없어')
+    expect(wrapper.find('article button').exists()).toBe(false)
+    expect(channelApi.sync).not.toHaveBeenCalled()
+  })
+
   it('opens the real OAuth channel picker from the primary add action', async () => {
     vi.mocked(channelApi.list).mockResolvedValue({ channels: [], maxAllowed: 7, currentCount: 0 } as never)
     vi.mocked(videoApi.getUploadCapabilities).mockResolvedValue([{
@@ -119,6 +134,19 @@ describe('ChannelsView', () => {
       maxTagCount: 30,
       acceptedExtensions: ['mp4'],
       unavailableReason: null,
+      configurationAvailable: true,
+    }, {
+      platform: 'TIKTOK',
+      directVideoUpload: true,
+      cloudVideoUpload: false,
+      scheduling: false,
+      maxFileSizeBytes: 2_000_000_000,
+      maxTitleLength: 150,
+      maxDescriptionLength: 2_200,
+      maxTagCount: 5,
+      acceptedExtensions: ['mp4'],
+      unavailableReason: null,
+      configurationAvailable: false,
     }] as never)
     const wrapper = await renderChannels()
     await flushPromises()
@@ -127,6 +155,10 @@ describe('ChannelsView', () => {
     expect(addButton).toBeDefined()
     await addButton!.trigger('click')
     await flushPromises()
-    expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain('YouTube')
+    const dialog = document.body.querySelector('[role="dialog"]')
+    expect(dialog?.textContent).toContain('YouTube')
+    expect(dialog?.textContent).toContain('현재 연결할 수 없는 플랫폼')
+    expect(dialog?.textContent).toContain('TikTok')
+    expect(Array.from(dialog?.querySelectorAll('button') ?? []).map((button) => button.textContent).join(' ')).not.toContain('TikTok')
   })
 })

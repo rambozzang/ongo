@@ -62,7 +62,7 @@ export const useCommentsStore = defineStore('comments', () => {
 
   const isPlanAccessError = (error: any) => {
     return error?.response?.status === 403 || error?.statusCode === 403 ||
-      error?.response?.data?.error?.code === 'PLAN_LIMIT_EXCEEDED'
+      error?.response?.data?.error === 'PLAN_LIMIT_EXCEEDED'
   }
 
   const handleRequestError = (error: any, fallback: string) => {

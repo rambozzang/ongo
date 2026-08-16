@@ -42,8 +42,11 @@ function goBack() {
 }
 
 onMounted(async () => {
-  const code = route.query.code as string | undefined
-  const state = route.query.state as string | undefined
+  // Vue Router query values can be arrays when a parameter is repeated. Do
+  // not cast those values to string and call string methods on attacker-
+  // controlled callback input.
+  const code = typeof route.query.code === 'string' ? route.query.code : undefined
+  const state = typeof route.query.state === 'string' ? route.query.state : undefined
 
   if (!code || !state) {
     errorMessage.value = t('channelCallbackView.invalidCallback')
@@ -57,7 +60,7 @@ onMounted(async () => {
   returnPath = pathPart && pathPart.startsWith('/') && !pathPart.startsWith('//') ? pathPart : '/channels'
 
   const supportedPlatforms: Platform[] = [
-    'YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP', 'TWITTER', 'FACEBOOK', 'THREADS',
+    'YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'TWITTER', 'FACEBOOK', 'THREADS',
     'PINTEREST', 'LINKEDIN', 'WORDPRESS', 'TUMBLR', 'VIMEO', 'DAILYMOTION',
   ]
   const expectedNonce = sessionStorage.getItem('channel_oauth_state_nonce')

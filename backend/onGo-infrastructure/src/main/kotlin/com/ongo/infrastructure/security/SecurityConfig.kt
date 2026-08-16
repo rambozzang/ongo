@@ -49,6 +49,7 @@ class SecurityConfig(
                     "/api/v1/auth/login/**",
                     // 소셜 로그인 CSRF용 state 발급 — 로그인 '전'에 호출되므로 인증을 요구하면 안 된다
                     "/api/v1/auth/*/state",
+                    "/api/v1/auth/*/authorization-url",
                     "/api/v1/auth/refresh",
                     "/swagger-ui/**",
                     "/swagger-ui.html",

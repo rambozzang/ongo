@@ -72,10 +72,12 @@ const expandedSubGroups = ref<Set<string>>(loadExpandedSubGroups())
 // never flashes the static menu before the server has confirmed it.
 const enabledCapabilityKeys = ref<Set<string>>(new Set())
 const capabilityError = ref<string | null>(null)
+const capabilityLoading = ref(false)
 let capabilityRequest: Promise<void> | null = null
 
 async function loadCapabilities() {
   if (capabilityRequest) return capabilityRequest
+  capabilityLoading.value = true
   capabilityRequest = capabilitiesApi.list()
     .then((items) => {
       enabledCapabilityKeys.value = new Set(items.filter((item) => item.enabled).map((item) => item.key))
@@ -89,6 +91,7 @@ async function loadCapabilities() {
       capabilityError.value = error instanceof Error ? error.message : 'capability request failed'
     })
     .finally(() => {
+      capabilityLoading.value = false
       capabilityRequest = null
     })
   return capabilityRequest
@@ -317,6 +320,7 @@ export function useNavigation() {
     isSubGroupExpanded,
     toggleSubGroup,
     capabilityError,
+    capabilityLoading,
     retryCapabilities: loadCapabilities,
   }
 }

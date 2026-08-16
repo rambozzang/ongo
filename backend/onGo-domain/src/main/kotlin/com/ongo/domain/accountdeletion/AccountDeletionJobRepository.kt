@@ -10,6 +10,14 @@ package com.ongo.domain.accountdeletion
 interface AccountDeletionJobRepository {
 
     /**
+     * 다음 작업을 원자적으로 선점한다.
+     *
+     * `IN_PROGRESS` 가 오래된 작업은 워커가 죽은 것으로 보고 다시 선점할 수 있어야 한다.
+     * 선점과 상태 변경은 하나의 트랜잭션이어야 여러 인스턴스가 같은 사용자를 지우지 않는다.
+     */
+    fun claimNext(now: java.time.LocalDateTime, staleBefore: java.time.LocalDateTime): AccountDeletionJob?
+
+    /**
      * 삭제를 요청한다. 사용자 행을 잠그고 게이트를 켜면서 job 을 만든다. 한 트랜잭션이다.
      *
      * 이미 진행 중인 job 이 있으면 **새로 만들지 않고 그것을 돌려준다.**
@@ -41,7 +49,27 @@ interface AccountDeletionJobRepository {
     /** 진행 중인 job. 없으면 null. */
     fun findActiveByUserId(userId: Long): AccountDeletionJob?
 
+    /** 사용자의 가장 최근 삭제 요청. 삭제가 끝난 뒤에도 감사 상태를 조회할 수 있어야 한다. */
+    fun findLatestByUserId(userId: Long): AccountDeletionJob?
+
     fun findByIdempotencyKey(key: String): AccountDeletionJob?
+
+    fun findById(jobId: Long): AccountDeletionJob?
+
+    /** 운영자가 확인할 수 있는 최근 삭제 작업 목록. */
+    fun findRecent(limit: Int = 100): List<AccountDeletionJob>
+
+    /** 실패/정책 차단 작업을 다시 요청 상태로 돌린다. */
+    fun retry(jobId: Long): AccountDeletionJob?
+
+    /** 정책 차단을 기록하고 사용자 쓰기 게이트를 다시 ACTIVE 로 돌린다. */
+    fun markBlocked(jobId: Long, errorCode: String, supportReference: String?): AccountDeletionJob?
+
+    /** DB 삭제 트랜잭션이 성공한 뒤 작업을 완료 상태로 전환한다. */
+    fun markCompleted(jobId: Long, completedAt: java.time.LocalDateTime = java.time.LocalDateTime.now()): AccountDeletionJob?
+
+    /** DB 삭제가 롤백된 뒤 재요청 가능 상태로 돌린다. */
+    fun markFailed(jobId: Long, errorCode: String, supportReference: String?): AccountDeletionJob?
 
     /** 사용자의 현재 게이트 상태. */
     fun findDeletionState(userId: Long): AccountDeletionState?

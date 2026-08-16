@@ -20,6 +20,10 @@ data class PlatformUploadCapability(
     val maxCaptionLength: Int? = null,
     /** Media types the provider can publish through the durable upload path. */
     val acceptedMediaTypes: Set<MediaType> = setOf(MediaType.VIDEO),
+    /** Whether this deployment has the provider credentials needed to use it. */
+    val configurationAvailable: Boolean = true,
+    /** Safe, user-facing explanation when deployment configuration is missing. */
+    val configurationUnavailableReason: String? = null,
 )
 
 object PlatformUploadCapabilities {

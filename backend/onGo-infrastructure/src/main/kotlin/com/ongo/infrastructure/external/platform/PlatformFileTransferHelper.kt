@@ -154,24 +154,6 @@ class PlatformFileTransferHelper(
     }
 
     /**
-     * Naver Clip: uploadUrl에 ByteArray 전체를 단일 PUT 업로드.
-     */
-    fun uploadToNaverClip(uploadUrl: String, file: File, authHeader: String) {
-        log.info("Naver Clip 파일 업로드: {} bytes", file.length())
-
-        transferClient.put()
-            .uri(uploadUrl)
-            .header(HttpHeaders.CONTENT_TYPE, "video/mp4")
-            .header(HttpHeaders.CONTENT_LENGTH, file.length().toString())
-            .header(HttpHeaders.AUTHORIZATION, authHeader)
-            .body(FileSystemResource(file))
-            .retrieve()
-            .toBodilessEntity()
-
-        log.info("Naver Clip 파일 업로드 완료")
-    }
-
-    /**
      * Pinterest: media registration 응답의 서명된 URL로 multipart 업로드.
      * Pinterest의 S3 업로드 URL에는 Pinterest Bearer 토큰을 전달하면 안 된다.
      */

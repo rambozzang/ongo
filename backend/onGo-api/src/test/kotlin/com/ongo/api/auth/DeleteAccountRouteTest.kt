@@ -2,11 +2,15 @@ package com.ongo.api.auth
 
 import com.ongo.api.config.CurrentUserArgumentResolver
 import com.ongo.api.config.GlobalExceptionHandler
+import com.ongo.application.auth.AuthOAuthAuthorizationUseCase
 import com.ongo.application.auth.AuthUseCase
+import com.ongo.application.auth.dto.AccountDeletionStatusResponse
 import com.ongo.common.exception.AccountDeletionBlockedException
 import com.ongo.domain.auth.AuthTokenPort
 import io.mockk.every
+import io.mockk.Runs
 import io.mockk.mockk
+import io.mockk.just
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -16,6 +20,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
@@ -52,6 +57,7 @@ class DeleteAccountRouteTest {
             authTokenPort = mockk<AuthTokenPort>(relaxed = true),
             authRateLimiter = mockk(relaxed = true),
             oAuthStateManager = mockk(relaxed = true),
+            authOAuthAuthorizationUseCase = mockk<AuthOAuthAuthorizationUseCase>(relaxed = true),
         )
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setCustomArgumentResolvers(CurrentUserArgumentResolver())
@@ -78,6 +84,19 @@ class DeleteAccountRouteTest {
             .andExpect(status().isConflict)
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error").value(AccountDeletionBlockedException.CODE_POLICY_REVIEW))
+
+        verify(exactly = 1) { authUseCase.deleteAccount(USER_ID) }
+    }
+
+    @Test
+    @DisplayName("정책 승인된 요청은 실제 삭제 완료가 아니라 202 접수로 응답한다")
+    fun acceptedDeletionReturnsAccepted() {
+        every { authUseCase.deleteAccount(USER_ID) } just Runs
+
+        mockMvc.perform(delete(PATH))
+            .andExpect(status().isAccepted)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("계정 삭제 요청이 접수되었습니다. 처리가 완료되면 다시 로그인할 수 없습니다."))
 
         verify(exactly = 1) { authUseCase.deleteAccount(USER_ID) }
     }
@@ -129,5 +148,30 @@ class DeleteAccountRouteTest {
         mockMvc.perform(delete(PATH))
             .andExpect(status().isConflict)
             .andExpect(jsonPath("$.error").value(AccountDeletionBlockedException.CODE_PREFLIGHT_FAILED))
+    }
+
+    @Test
+    @DisplayName("삭제 요청 상태 조회는 job 상태와 지원 참조값을 반환한다")
+    fun deletionStatusReturnsDurableState() {
+        every { authUseCase.getAccountDeletionStatus(USER_ID) } returns AccountDeletionStatusResponse(
+            state = "DELETION_REQUESTED",
+            status = "IN_PROGRESS",
+            jobId = 17L,
+            requestedAt = null,
+            updatedAt = null,
+            completedAt = null,
+            lastErrorCode = null,
+            supportReference = "request:17",
+            retryable = false,
+        )
+
+        mockMvc.perform(get("$PATH/deletion-status"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.state").value("DELETION_REQUESTED"))
+            .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
+            .andExpect(jsonPath("$.data.jobId").value(17))
+
+        verify(exactly = 1) { authUseCase.getAccountDeletionStatus(USER_ID) }
     }
 }

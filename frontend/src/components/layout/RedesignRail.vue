@@ -9,7 +9,13 @@
 
     <!-- 내비: 자주 쓰는 작업은 고정하고, 나머지는 필요할 때만 펼친다. -->
     <nav class="min-h-0 flex-1 overflow-y-auto scrollbar-dark" :aria-label="t('nav.mainNavigation')">
-      <section class="space-y-0.5">
+      <div v-if="capabilityLoading" class="space-y-2 px-1 py-2" aria-live="polite">
+        <div class="h-3 w-20 animate-pulse rounded bg-surface-rail-raised" />
+        <div v-for="row in 4" :key="row" class="h-9 animate-pulse rounded-lg bg-surface-rail-raised" />
+        <p class="pt-1 text-[10.5px] text-content-rail-tertiary">{{ t('redesign.rail.loading') }}</p>
+      </div>
+
+      <section v-else class="space-y-0.5">
         <p class="px-[9px] pb-1 text-[9.5px] font-bold uppercase tracking-[0.12em] text-content-rail-quaternary">
           {{ t('redesign.rail.coreTasks') }}
         </p>
@@ -38,7 +44,7 @@
         </router-link>
       </section>
 
-      <section class="mt-4 border-t border-line pt-3">
+      <section v-if="!capabilityLoading" class="mt-4 border-t border-line pt-3">
         <button
           type="button"
           class="flex min-h-9 w-full items-center gap-2 rounded-lg px-[9px] py-2 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-content-rail-secondary transition-colors hover:bg-surface-rail-raised hover:text-content-rail"
@@ -150,7 +156,7 @@ const route = useRoute()
 const { t } = useLocale()
 const authStore = useAuthStore()
 const shell = useRedesignShellStore()
-const { navGroups, bottomNavItems } = useNavigation()
+const { navGroups, bottomNavItems, capabilityLoading } = useNavigation()
 
 const CORE_PATHS = ['/today', '/compose', '/calendar-v2', '/inbox-v2', '/performance', '/channels-v2']
 const toolsPanelId = 'redesign-rail-tools'

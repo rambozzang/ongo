@@ -15,6 +15,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class AnalyticsUseCaseTest {
     private val analytics = mockk<AnalyticsRepository>(relaxed = true)
@@ -76,5 +77,61 @@ class AnalyticsUseCaseTest {
         assertEquals(12L, summary.likes)
         assertEquals(3L, summary.comments)
         assertEquals(4L, summary.shares)
+    }
+
+    @Test
+    fun `cross platform metrics distinguish unavailable values from measured zero`() {
+        every { analytics.findCrossPlatformMetrics(7L, 30) } returns listOf(
+            com.ongo.domain.analytics.CrossPlatformRaw(
+                videoId = 11L,
+                videoTitle = "영상",
+                platform = "FACEBOOK",
+                videoUploadId = 101L,
+                views = 100,
+                likes = 10,
+                comments = 5,
+                shares = 20,
+                watchTimeSeconds = 0,
+                revenueMicro = 0,
+                impressions = 0,
+                avgViewDurationSeconds = 0,
+            ),
+        )
+
+        val metric = useCase.getCrossPlatformComparison(7L, 30).videos.single().platforms.single()
+
+        assertTrue("shares" in metric.unavailableMetrics)
+        assertTrue("watchTimeSeconds" in metric.unavailableMetrics)
+        assertTrue("avgViewDuration" in metric.unavailableMetrics)
+        // Facebook shares are not fetched by the adapter, so they must not
+        // inflate the comparable engagement rate.
+        assertEquals(15.0, metric.engagementRate)
+    }
+
+    @Test
+    fun `video comparison marks an incomplete platform aggregate`() {
+        val video = Video(id = 11L, userId = 7L, title = "영상", status = UploadStatus.PUBLISHED)
+        every { videos.findByIds(listOf(11L)) } returns listOf(video)
+        every { uploads.findByVideoIds(listOf(11L)) } returns mapOf(
+            11L to listOf(VideoUpload(id = 101L, videoId = 11L, platform = Platform.FACEBOOK)),
+        )
+        every { analytics.findByVideoUploadIdsAndDateRange(any(), any(), any()) } returns mapOf(
+            101L to listOf(
+                AnalyticsDaily(
+                    videoUploadId = 101L,
+                    date = java.time.LocalDate.now(),
+                    views = 100,
+                    likes = 10,
+                    commentsCount = 5,
+                    shares = 20,
+                ),
+            ),
+        )
+
+        val item = useCase.getVideoComparison(7L, listOf(11L), 30).videos.single()
+
+        assertTrue("shares" in item.unavailableMetrics)
+        assertTrue("engagementRate" in item.unavailableMetrics)
+        assertEquals(15.0, item.engagementRate)
     }
 }

@@ -4,6 +4,7 @@ import com.ongo.application.video.GeneratedVideoFile
 import com.ongo.application.video.VideoGenerationPort
 import com.ongo.application.video.VideoGenerationSpec
 import com.ongo.application.video.TextToSpeechPort
+import com.ongo.infrastructure.runtime.RuntimeExecutableResolver
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -27,6 +28,7 @@ class FfmpegVideoGenerationAdapter(
 ) : VideoGenerationPort {
 
     private val log = LoggerFactory.getLogger(javaClass)
+    private val resolvedExecutable = RuntimeExecutableResolver.resolve(executable)
 
     override fun generate(request: VideoGenerationSpec): GeneratedVideoFile {
         val workDir = Files.createTempDirectory("ongo-video-generation-")
@@ -40,7 +42,7 @@ class FfmpegVideoGenerationAdapter(
             }
             val hasAudio = audio != null
             val command = listOf(
-                executable,
+                resolvedExecutable,
                 "-nostdin",
                 "-y",
                 "-f", "lavfi",

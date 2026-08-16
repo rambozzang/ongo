@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col gap-[14px] overflow-y-auto px-5 py-[18px]">
+  <div class="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-[14px] overflow-y-auto px-4 py-[18px] tablet:px-5">
     <ConfirmModal
       :model-value="pendingAction !== null"
       :title="confirmationTitle"

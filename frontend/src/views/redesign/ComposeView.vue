@@ -2,6 +2,41 @@
   <div class="grid h-full grid-cols-1 desktop:[grid-template-columns:minmax(0,1fr)_372px]">
     <!-- 좌: 입력 -->
     <div class="overflow-y-auto px-5 pb-[120px] pt-[18px] scrollbar-dark desktop:border-r desktop:border-line">
+      <nav
+        class="mb-4 overflow-x-auto rounded-lg border border-line bg-surface-card px-3 py-2.5"
+        :aria-label="t('redesign.compose.workflowLabel')"
+      >
+        <ol class="flex min-w-max items-center gap-2">
+          <li
+            v-for="(step, index) in workflowSteps"
+            :key="step.key"
+            class="flex items-center gap-2 text-[10.5px]"
+          >
+            <span
+              class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border font-mono text-[10px] font-bold"
+              :class="step.complete
+                ? 'border-success bg-success-subtle text-success-strong'
+                : step.current
+                  ? 'border-accent bg-accent-dim text-accent'
+                  : 'border-line-control text-content-tertiary'"
+            >
+              {{ step.complete ? '✓' : index + 1 }}
+            </span>
+            <span :class="step.current ? 'font-bold text-content' : 'text-content-secondary'">
+              {{ step.label }}
+            </span>
+            <span
+              v-if="index < workflowSteps.length - 1"
+              class="mx-0.5 text-content-quaternary"
+              aria-hidden="true"
+            >→</span>
+          </li>
+        </ol>
+        <p class="mt-2 text-[10.5px] text-content-tertiary">
+          {{ workflowStatusText }}
+        </p>
+      </nav>
+
       <!-- 입력 소스 -->
       <div
         class="mb-2.5 flex items-center gap-1 rounded-lg border border-line bg-surface-input p-1"
@@ -237,7 +272,7 @@
       </section>
 
       <!-- 문구 탭 -->
-      <section class="mt-[18px] overflow-hidden rounded-[11px] border border-line bg-surface-card">
+      <section id="compose-details" class="mt-[18px] overflow-hidden rounded-[11px] border border-line bg-surface-card">
         <div class="flex border-b border-line-row" role="tablist">
           <button
             v-for="tab in tabs"
@@ -518,7 +553,7 @@
       </div>
 
       <!-- 액션 -->
-      <div class="mt-auto pt-[18px]">
+      <div class="sticky bottom-0 z-10 mt-auto -mx-4 border-t border-line bg-surface-input px-4 pb-1 pt-3">
         <p
           v-if="dataLoadError"
           class="mb-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-[11px] text-error-strong"
@@ -526,8 +561,8 @@
         >
           {{ dataLoadError }}
         </p>
-        <p v-if="blockedReason" class="mb-2 text-[11px] text-error-strong">{{ blockedReason }}</p>
-        <p v-else-if="notice" class="mb-2 text-[11px] text-content-secondary">{{ notice }}</p>
+        <p v-if="blockedReason" class="mb-2 text-[11px] text-error-strong" role="alert">{{ blockedReason }}</p>
+        <p v-else-if="notice" class="mb-2 text-[11px] text-content-secondary" role="status" aria-live="polite">{{ notice }}</p>
         <div class="flex gap-2">
           <button
             type="button"
@@ -865,6 +900,41 @@ const activeChannel = computed(() => {
   return candidates.find((channel) => channel.id === activeChannelId.value) ?? candidates[0] ?? null
 })
 const selectedCount = computed(() => selectedChannels.value.length)
+const sourceReady = computed(() => Boolean(uploadStore.videoId || importedVideoId.value))
+const targetReady = computed(() => selectedCount.value > 0)
+const copyReady = computed(() => Boolean(form.title.trim() || form.description.trim() || form.hashtags.trim()))
+const workflowSteps = computed(() => [
+  {
+    key: 'source',
+    label: t('redesign.compose.workflowSource'),
+    complete: sourceReady.value,
+    current: !sourceReady.value,
+  },
+  {
+    key: 'target',
+    label: t('redesign.compose.workflowTarget'),
+    complete: targetReady.value,
+    current: sourceReady.value && !targetReady.value,
+  },
+  {
+    key: 'copy',
+    label: t('redesign.compose.workflowCopy'),
+    complete: copyReady.value,
+    current: sourceReady.value && targetReady.value && !copyReady.value,
+  },
+  {
+    key: 'schedule',
+    label: t('redesign.compose.workflowSchedule'),
+    complete: sourceReady.value && targetReady.value && copyReady.value,
+    current: sourceReady.value && targetReady.value && copyReady.value,
+  },
+])
+const workflowStatusText = computed(() => {
+  const current = workflowSteps.value.find((step) => step.current)
+  return current
+    ? t('redesign.compose.workflowCurrent', { step: current.label })
+    : t('redesign.compose.workflowReady')
+})
 const shortsPlatforms = computed(() =>
   selectedChannels.value
     .map((channel) => channel.platform)

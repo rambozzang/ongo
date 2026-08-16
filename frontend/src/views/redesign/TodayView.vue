@@ -1,5 +1,8 @@
 <template>
-  <div class="flex flex-col gap-[18px] px-[22px] pb-10 pt-5">
+  <div
+    class="mx-auto flex w-full max-w-[1480px] flex-col gap-[18px] px-4 pb-10 pt-5 tablet:px-6 desktop:px-[22px]"
+    :aria-busy="loading"
+  >
     <div
       v-if="store.loadError"
       class="flex flex-wrap items-center gap-2 rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2.5 text-[12px] text-warning-strong"
@@ -99,16 +102,13 @@
         </div>
 
         <template v-else>
-          <div
+          <button
             v-for="row in queue"
             :key="row.id"
-            class="flex cursor-pointer items-center gap-3 border-b border-line-row px-[15px] py-[11px] transition-colors hover:bg-surface-raised tablet:grid tablet:[grid-template-columns:62px_84px_minmax(0,1fr)_auto]"
-            role="button"
-            tabindex="0"
+            type="button"
+            class="flex w-full cursor-pointer items-center gap-3 border-b border-line-row px-[15px] py-[11px] text-left transition-colors hover:bg-surface-raised focus-visible:bg-surface-raised tablet:grid tablet:[grid-template-columns:62px_84px_minmax(0,1fr)_auto]"
             :aria-label="row.title"
             @click="openItem(row)"
-            @keydown.enter.prevent="openItem(row)"
-            @keydown.space.prevent="openItem(row)"
           >
             <!-- 모바일에서는 시간이 제목 위로 올라가고 썸네일이 작아진다 -->
             <span class="hidden font-mono text-[13px] text-content tablet:inline">{{ row.time }}</span>
@@ -135,7 +135,7 @@
               </div>
             </div>
             <StatusPill :variant="row.statusVariant">{{ row.statusLabel }}</StatusPill>
-          </div>
+          </button>
 
           <router-link
             to="/compose"

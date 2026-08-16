@@ -50,7 +50,7 @@ class SwaggerConfig {
         .tags(
             listOf(
                 Tag().name("인증").description("소셜 로그인 (Google/Kakao), 토큰 갱신, 로그아웃"),
-                Tag().name("채널 관리").description("플랫폼 채널 연동/해제/갱신 (YouTube, TikTok, Instagram, Naver Clip)"),
+                Tag().name("채널 관리").description("플랫폼 채널 연동/해제/갱신 (운영 자격 증명이 구성된 플랫폼)"),
                 Tag().name("영상 관리").description("영상 업로드 초기화, 멀티플랫폼 게시, 목록/상세 조회, 수정, 삭제"),
                 Tag().name("예약 관리").description("영상 예약 게시 등록/수정/취소, 캘린더 조회"),
                 Tag().name("분석").description("대시보드 KPI, 트렌드, 영상별 분석, 히트맵, 인기 영상, 플랫폼 비교"),

@@ -1,7 +1,7 @@
 <template>
   <nav
     :aria-label="t('nav.mainNavigation')"
-    class="fixed bottom-0 left-0 right-0 z-30 border-t border-line bg-surface"
+    class="fixed bottom-0 left-0 right-0 z-30 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]"
   >
     <div class="flex items-center justify-around">
       <router-link

@@ -2,19 +2,13 @@ package com.ongo.infrastructure.external.naverclip
 
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformApiException
-import com.ongo.common.exception.PlatformUploadException
 import com.ongo.infrastructure.external.platform.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Component
-class NaverClipClient(
-    private val naverClipApi: NaverClipApi,
-    private val naverOAuthApi: NaverOAuthApi,
-    private val naverClipConfig: NaverClipConfig,
-) : PlatformClient {
+class NaverClipClient : PlatformClient {
 
     private val log = LoggerFactory.getLogger(NaverClipClient::class.java)
 

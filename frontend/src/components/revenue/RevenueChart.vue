@@ -21,7 +21,7 @@ import {
   type ChartOptions,
 } from 'chart.js'
 import type { RevenueData } from '@/stores/revenue'
-import { PLATFORM_CONFIG } from '@/types/channel'
+import { PLATFORM_CONFIG, type Platform } from '@/types/channel'
 
 ChartJS.register(
   CategoryScale,
@@ -41,52 +41,38 @@ interface Props {
 
 const props = defineProps<Props>()
 
+function platformKeys(data: RevenueData[]): string[] {
+  return Array.from(new Set(data.flatMap(item => Object.keys(item.platforms))))
+    .filter(platform => platform !== 'NAVER_CLIP')
+}
+
+function platformMeta(platform: string) {
+  const config = PLATFORM_CONFIG[platform as Platform]
+  return config ?? { label: platform, color: '#6B7280' }
+}
+
 const chartData = computed<ChartData<'line'>>(() => {
   const labels = props.data.map(item => {
     const [, month] = item.period.split('-')
     return `${month}월`
   })
 
+  const platforms = platformKeys(props.data)
+
   return {
     labels,
-    datasets: [
-      {
-        label: 'YouTube',
-        data: props.data.map(item => item.youtube),
-        borderColor: PLATFORM_CONFIG.YOUTUBE.color,
-        backgroundColor: `${PLATFORM_CONFIG.YOUTUBE.color}20`,
+    datasets: platforms.map(platform => {
+      const meta = platformMeta(platform)
+      return {
+        label: meta.label,
+        data: props.data.map(item => item.platforms[platform] ?? 0),
+        borderColor: meta.color,
+        backgroundColor: `${meta.color}20`,
         borderWidth: 2,
         tension: 0.4,
         fill: false,
-      },
-      {
-        label: 'TikTok',
-        data: props.data.map(item => item.tiktok),
-        borderColor: '#000000',
-        backgroundColor: '#00000020',
-        borderWidth: 2,
-        tension: 0.4,
-        fill: false,
-      },
-      {
-        label: 'Instagram',
-        data: props.data.map(item => item.instagram),
-        borderColor: PLATFORM_CONFIG.INSTAGRAM.color,
-        backgroundColor: `${PLATFORM_CONFIG.INSTAGRAM.color}20`,
-        borderWidth: 2,
-        tension: 0.4,
-        fill: false,
-      },
-      {
-        label: 'Naver Clip',
-        data: props.data.map(item => item.naverClip),
-        borderColor: PLATFORM_CONFIG.NAVER_CLIP.color,
-        backgroundColor: `${PLATFORM_CONFIG.NAVER_CLIP.color}20`,
-        borderWidth: 2,
-        tension: 0.4,
-        fill: false,
-      },
-    ],
+      }
+    }),
   }
 })
 

@@ -99,6 +99,7 @@ class ApplicationContextSmokeIT {
             r.add("PLATFORM_TOKEN_ENCRYPTION_KEY") { "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=" }
             r.add("MINIO_ACCESS_KEY") { "smoke" }
             r.add("MINIO_SECRET_KEY") { "smoke-secret" }
+            r.add("ongo.scheduling.enabled") { "false" }
         }
     }
 

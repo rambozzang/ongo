@@ -1,6 +1,9 @@
 <template>
   <!-- 테마 스토어가 documentElement 에 적용한 라이트/다크 토큰을 그대로 사용한다. -->
-  <div class="redesign-app flex h-screen overflow-hidden bg-surface-base">
+  <div class="redesign-app flex h-[100dvh] min-w-0 overflow-hidden bg-surface-base">
+    <a href="#main-content" class="skip-link">
+      {{ t('a11y.skipToContent') }}
+    </a>
     <RedesignRail class="hidden tablet:flex" />
 
     <div class="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface">
@@ -25,8 +28,12 @@
       </div>
       <main
         id="main-content"
-        class="min-h-0 flex-1 overflow-y-auto scrollbar-dark"
-        :class="isRedesignScreen ? '' : 'px-4 pb-20 tablet:px-6 tablet:pb-8'"
+        tabindex="-1"
+        aria-labelledby="page-title"
+        class="min-h-0 min-w-0 flex-1 overflow-y-auto scrollbar-dark focus:outline-none"
+        :class="isRedesignScreen
+          ? 'pb-[calc(4.5rem+env(safe-area-inset-bottom))] tablet:pb-0'
+          : 'px-4 pb-20 tablet:px-6 tablet:pb-8'"
       >
         <router-view v-slot="{ Component }">
           <component :is="Component" />

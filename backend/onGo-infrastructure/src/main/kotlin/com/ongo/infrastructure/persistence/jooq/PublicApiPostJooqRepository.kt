@@ -147,17 +147,17 @@ class PublicApiPostJooqRepository(
             .execute() == 1
 
     private fun Record.toPost() = PublicApiPost(
-        id = get(ID)!!,
-        userId = get(USER_ID)!!,
-        workspaceId = get(WORKSPACE_ID),
-        videoId = get(VIDEO_ID)!!,
+        id = longValue(ID)!!,
+        userId = longValue(USER_ID)!!,
+        workspaceId = longValue(WORKSPACE_ID),
+        videoId = longValue(VIDEO_ID)!!,
         type = PublicApiPostType.valueOf(get(POST_TYPE)!!),
         status = PublicApiPostStatus.valueOf(get(STATUS)!!),
-        scheduledAt = get(SCHEDULED_AT),
+        scheduledAt = localDateTime(SCHEDULED_AT),
         errorMessage = get(ERROR_MESSAGE),
         payloadJson = get(PAYLOAD_JSON)!!,
-        createdAt = get(CREATED_AT),
-        updatedAt = get(UPDATED_AT),
+        createdAt = localDateTime(CREATED_AT),
+        updatedAt = localDateTime(UPDATED_AT),
         idempotencyKey = get(IDEMPOTENCY_KEY),
         requestHash = get(REQUEST_HASH),
     )

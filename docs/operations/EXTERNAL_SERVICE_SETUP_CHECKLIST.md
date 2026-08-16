@@ -1,17 +1,17 @@
 # ongo 외부 서비스 앱 등록·키 발급 체크리스트
 
-> 소스 확인일: 2026-07-18  
+> 소스 확인일: 2026-08-15
 > 운영 웹 도메인 가정: `https://ongo.codelabtiger.com`  
 > 목적: ongo를 실제 서비스로 운영하기 위해 외부 서비스에 가입하고 앱·API 키·OAuth·웹훅을 등록하는 순서
 
 ## 1. 먼저 알아둘 점
 
 - 비밀키는 채팅, 메신저, Git, 문서에 붙여 넣지 않는다.
-- 브라우저에 들어가는 `VITE_*_CLIENT_ID`, App ID, Client Key는 공개 식별자다. Client Secret은 절대 `VITE_*`에 넣지 않는다.
+- OAuth client ID·App ID·Client Key와 Client Secret은 모두 서버 환경변수로 관리한다. 현재 로그인·채널 연결은 백엔드가 authorization URL을 만들며, 브라우저 번들에 `VITE_*` provider credential을 넣지 않는다.
 - 발급한 비밀값은 서버의 secret manager 또는 Git에서 제외된 `.env.production`에 저장한다.
 - 개발용 앱과 운영용 앱은 가능하면 분리한다.
 - OAuth 검수를 신청하기 전에 서비스 홈페이지, 개인정보처리방침, 이용약관, 계정·데이터 삭제 안내 URL이 실제 접속 가능해야 한다.
-- 현재 프런트 OAuth callback은 모두 웹 프런트로 돌아온 뒤 백엔드에서 code를 교환하는 구조다.
+- 현재 OAuth callback은 웹 프런트로 돌아온 뒤 백엔드가 code를 교환한다. 프런트는 백엔드가 발급한 authorization URL과 일회성 state만 사용한다.
 
 ## 2. 등록 전에 확정할 URL
 
@@ -76,15 +76,12 @@ GOOGLE_CLIENT_SECRET=
 GOOGLE_API_KEY=
 GOOGLE_DRIVE_CLIENT_ID=
 GOOGLE_DRIVE_CLIENT_SECRET=
-
-# frontend build-time public value
-VITE_GOOGLE_CLIENT_ID=
 ```
 
 현재 소스 scope 확인:
 
 - 로그인: `openid email profile`
-- YouTube: 현재 프런트는 광범위한 `https://www.googleapis.com/auth/youtube`를 요청
+- YouTube: 서버 authorization adapter가 광범위한 `https://www.googleapis.com/auth/youtube`를 요청
 - Google Drive: `drive.readonly`
 
 운영 공개 전 Google OAuth verification이 필요할 수 있다. YouTube는 서비스 계정 방식이 일반 채널에 지원되지 않으므로 사용자 OAuth가 반드시 필요하다.
@@ -117,9 +114,6 @@ VITE_GOOGLE_CLIENT_ID=
 ```dotenv
 KAKAO_CLIENT_ID=        # REST API Key
 KAKAO_CLIENT_SECRET=    # 활성화한 Client secret
-
-# frontend build-time public value
-VITE_KAKAO_CLIENT_ID=   # REST API Key와 동일
 ```
 
 완료 체크:
@@ -153,10 +147,9 @@ VITE_KAKAO_CLIENT_ID=   # REST API Key와 동일
 ```dotenv
 TIKTOK_CLIENT_KEY=
 TIKTOK_CLIENT_SECRET=
-VITE_TIKTOK_CLIENT_KEY=
 ```
 
-중요: 현재 프런트는 `video.upload,video.list`만 요청하지만 백엔드는 Direct Post 형태다. 공개 직접 게시에는 `video.publish` 승인과 프런트 scope 수정이 필요하다. audit 전 직접 게시 콘텐츠는 비공개로 제한된다.
+중요: 프런트와 백엔드는 Direct Post 계약에 맞춰 `video.publish,video.upload,video.list`를 요청한다. 공개 직접 게시에는 `video.publish` 승인과 audit가 필요하며, audit 전 직접 게시 콘텐츠는 비공개로 제한된다.
 
 완료 체크:
 
@@ -208,13 +201,9 @@ FACEBOOK_APP_ID=
 FACEBOOK_APP_SECRET=
 THREADS_APP_ID=
 THREADS_APP_SECRET=
-
-VITE_FACEBOOK_APP_ID=
-VITE_INSTAGRAM_CLIENT_ID=  # 실제 Instagram OAuth client/app ID
-VITE_THREADS_APP_ID=
 ```
 
-현재 소스에서 Instagram 백엔드 Client는 `platform.facebook.app-id/app-secret`을 공유한다. 그런데 프런트에는 별도 `VITE_INSTAGRAM_CLIENT_ID`가 있다. 발급 후 실제 Meta 앱 구성에 맞춰 동일 App ID를 넣을지 Instagram 전용 ID를 넣을지 통합 테스트로 확정해야 한다.
+현재 소스는 Instagram을 포함한 Meta OAuth URL을 백엔드가 생성한다. Instagram은 `INSTAGRAM_APP_ID`/`INSTAGRAM_APP_SECRET`을 사용하며, 브라우저에 별도 `VITE_INSTAGRAM_CLIENT_ID`를 넣지 않는다.
 
 완료 체크:
 
@@ -225,24 +214,11 @@ VITE_THREADS_APP_ID=
 - [ ] 각 제품 App Review 제출
 - [ ] 데이터 삭제 callback/안내 등록
 
-### 3.5 Naver Developers — 현재 Naver Clip 연결 후보
+### 3.5 Naver Clip — 현재 미지원
 
 공식 포털: [NAVER Developers](https://developers.naver.com/main/)
 
-진행 순서:
-
-1. 애플리케이션 등록
-2. 사용 API로 네이버 로그인 선택
-3. 서비스 URL과 SNS 채널 연결 공통 callback 등록
-4. 제공 정보와 검수 요구사항 확인
-
-받아야 할 값:
-
-```dotenv
-VITE_NAVER_CLIENT_ID=
-```
-
-중요: 현재 `NaverClipClient`는 Naver OAuth endpoint를 사용하지만 `application.yml`에 Naver client ID/secret 서버 설정이 없다. 프런트 ID만 발급받아도 token exchange에 필요한 secret 매핑이 완성되지 않는다. 또한 Naver Clip의 일반 공개 업로드 API 사용 가능 여부와 제휴 조건을 Naver에 직접 확인해야 한다. 따라서 지금 앱은 등록하되 실제 Clip 게시 가능 판정을 받기 전 판매 기능으로 약속하지 않는다.
+현재 Naver Clip은 공개 업로드·분석 API 계약이 확인되지 않아 제품에서 지원하지 않는다. 소스와 UI는 해당 플랫폼을 명시적으로 미지원으로 처리하며, Naver client ID를 발급하거나 프런트 환경변수를 추가해 우회하지 않는다.
 
 문의 시 확인할 항목:
 
@@ -274,7 +250,6 @@ tweet.read tweet.write users.read offline.access
 ```dotenv
 TWITTER_CLIENT_ID=
 TWITTER_CLIENT_SECRET=
-VITE_TWITTER_CLIENT_ID=
 ```
 
 완료 체크:
@@ -333,8 +308,10 @@ PORTONE_WEBHOOK_SECRET=
 
 **`PORTONE_WEBHOOK_SECRET`이 비어 있으면 어떻게 되는가**
 
-서버는 정상 기동하고 프론트에서 시작한 결제도 성립한다(프론트가 `/portone/payments/{id}/complete`를
-직접 호출하기 때문). 그러나 **웹훅은 전량 400으로 거부**되고 `PortOneWebhookVerifier`가
+프로덕션 배포 게이트와 애플리케이션 기동 검증이 모두 실패한다. 기존 프로세스를 내리기 전에
+배포가 중단되므로, 이미 운영 중인 정상 프로세스는 보호된다. 이 값을 억지로 선택사항으로 두면
+프론트에서 시작한 결제는 성립할 수 있어도(프론트가 `/portone/payments/{id}/complete`를
+직접 호출하기 때문) **웹훅은 전량 400으로 거부**되고 `PortOneWebhookVerifier`가
 `"포트원 웹훅 시크릿이 설정되지 않아 서명을 검증할 수 없습니다"` error 로그만 남긴다.
 그 결과 다음이 반영되지 않는다.
 
@@ -416,7 +393,8 @@ yt-dlp --version && ffmpeg -version | head -1
 다른 경로에 설치했다면 환경변수로 재정의한다.
 
 ```dotenv
-# 선택. 기본값은 PATH 의 yt-dlp
+# 선택. 기본값은 PATH 의 yt-dlp다. 배포 스크립트는
+# /data/yt-dlp/bin/yt-dlp 및 /data/yt-dlp/yt-dlp도 자동 탐색한다.
 YT_DLP_PATH=
 
 # 쇼츠 서버 렌더용 ffmpeg. 운영 호스트는 PATH 에 없으므로 절대 경로가 필수다 (4.5.1 참조)
@@ -504,12 +482,12 @@ GEMINI_LOCATION=us-central1
 
 | 서비스 | 서버 환경변수 | 상태 |
 |---|---|---|
-| Pinterest | `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET` | OAuth·보드 연결·동영상 Pin 서버 계약 구현. `VITE_PINTEREST_APP_ID` 설정 후 실계정 검증 필요 |
-| LinkedIn | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | OAuth·최신 Videos API 파트 업로드·UGC 게시 구현. `VITE_LINKEDIN_CLIENT_ID` 설정 후 실계정 검증 필요 |
-| WordPress.com | `WORDPRESS_CLIENT_ID`, `WORDPRESS_CLIENT_SECRET` | OAuth·form 미디어 URL 업로드·video post 구현. `VITE_WORDPRESS_CLIENT_ID` 설정 후 실계정 검증 필요 |
-| Tumblr | `TUMBLR_CONSUMER_KEY`, `TUMBLR_CONSUMER_SECRET` | OAuth form 교환·NPF native video multipart 업로드 구현. `VITE_TUMBLR_CONSUMER_KEY` 설정 후 실계정 검증 필요 |
-| Vimeo | `VIMEO_CLIENT_ID`, `VIMEO_CLIENT_SECRET` | OAuth Basic 교환·pull 업로드(size 포함) 구현. `VITE_VIMEO_CLIENT_ID` 설정 후 실계정 검증 필요 |
-| Dailymotion | `DAILYMOTION_API_KEY`, `DAILYMOTION_API_SECRET` | OAuth·API v2 세션 multipart 업로드·프로필 영상 생성 구현. `VITE_DAILYMOTION_API_KEY` 설정 후 실계정 검증 필요 |
+| Pinterest | `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET` | OAuth·보드 연결·동영상 Pin 서버 계약 구현. 백엔드 설정 후 실계정 검증 필요 |
+| LinkedIn | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | OAuth·최신 Videos API 파트 업로드·UGC 게시 구현. 백엔드 설정 후 실계정 검증 필요 |
+| WordPress.com | `WORDPRESS_CLIENT_ID`, `WORDPRESS_CLIENT_SECRET` | OAuth·form 미디어 URL 업로드·video post 구현. 백엔드 설정 후 실계정 검증 필요 |
+| Tumblr | `TUMBLR_CONSUMER_KEY`, `TUMBLR_CONSUMER_SECRET` | OAuth form 교환·NPF native video multipart 업로드 구현. 백엔드 설정 후 실계정 검증 필요 |
+| Vimeo | `VIMEO_CLIENT_ID`, `VIMEO_CLIENT_SECRET` | OAuth Basic 교환·pull 업로드(size 포함) 구현. 백엔드 설정 후 실계정 검증 필요 |
+| Dailymotion | `DAILYMOTION_API_KEY`, `DAILYMOTION_API_SECRET` | OAuth·API v2 세션 multipart 업로드·프로필 영상 생성 구현. 백엔드 설정 후 실계정 검증 필요 |
 
 Tumblr는 OAuth 앱과 redirect URL을, Dailymotion은 API v2 Private API key와 callback URL을, Vimeo는 업로드 권한이 승인된 API 앱과 callback URL을 발급해야 한다.
 
@@ -612,24 +590,10 @@ PADDLE_PRICE_CREDIT_BUSINESS=
 TOSS_WEBHOOK_SECRET=
 ```
 
-프런트 빌드 환경:
+프런트 빌드 환경. OAuth provider credential은 포함하지 않는다:
 
 ```dotenv
 VITE_API_BASE_URL=/api/v1
-VITE_GOOGLE_CLIENT_ID=
-VITE_KAKAO_CLIENT_ID=
-VITE_TIKTOK_CLIENT_KEY=
-VITE_INSTAGRAM_CLIENT_ID=
-VITE_NAVER_CLIENT_ID=
-VITE_TWITTER_CLIENT_ID=
-VITE_FACEBOOK_APP_ID=
-VITE_THREADS_APP_ID=
-VITE_PINTEREST_APP_ID=
-VITE_LINKEDIN_CLIENT_ID=
-VITE_WORDPRESS_CLIENT_ID=
-VITE_DAILYMOTION_API_KEY=
-VITE_VIMEO_CLIENT_ID=
-VITE_TUMBLR_CONSUMER_KEY=
 ```
 
 ## 8. 권장 가입 순서
@@ -644,22 +608,16 @@ VITE_TUMBLR_CONSUMER_KEY=
 6. DashScope
 7. Paddle Sandbox
 8. X Developer
-9. Naver 앱 등록 및 Clip API 사용 가능 여부 문의
+9. Naver Clip은 공개 업로드·분석 API 계약이 확인될 때까지 미지원으로 유지
 
 각 단계에서 기록할 것은 `서비스`, `앱/프로젝트 ID`, `발급일`, `소유 계정`, `운영/개발 구분`, `승인 상태`, `secret 저장 위치`, `등록 callback`, `신청 scope`다. 실제 secret 값은 기록표에 적지 않고 secret manager의 항목명만 적는다.
 
-## 9. 소스에서 발견한 설정 보완 과제
+## 9. 현재 소스 기준 운영 전 확인사항
 
-키를 발급받은 뒤 Claude Code에 다음 수정 작업을 별도로 요청한다.
+다음 항목은 코드에 반영됐지만, 실제 판매 전 운영 환경과 외부 플랫폼에서 확인해야 한다.
 
-1. `backend/.env.example`과 `deploy/oracle/.env.production.example`에 누락된 SNS·Drive·Paddle price 변수를 추가
-2. `frontend/.env.example`을 새로 만들고 모든 공개 OAuth ID를 문서화
-3. 개발 API port `8070`/`8777` 불일치 해결
-4. Instagram App ID의 백엔드/프런트 매핑 통일
-5. Naver server-side client ID/secret 설정 추가 또는 지원 기능 숨김
-6. TikTok scope를 Direct Post 구현과 일치시키고 audit 전 비공개 제한 안내
-7. Paddle environment 허용값을 코드·배포 설정에서 통일
-8. OAuth state를 단순 `PLATFORM|returnPath` 문자열이 아닌 서버 검증 가능한 난수로 변경
-9. 운영 시작 시 dummy 기본값을 허용하지 않고 필수 키 누락이면 startup validation으로 실패 처리
-
-키 발급만으로 연동이 완성되는 것은 아니다. 위 보완 과제와 각 플랫폼의 테스트·심사를 통과해야 판매 가능한 상태가 된다.
+1. Google/Kakao 로그인과 모든 채널 OAuth URL은 서버가 생성한다. 프런트에는 `VITE_*` provider credential을 넣지 않는다.
+2. 운영 기동 검증은 JWT·토큰 암호화 키·R2·PortOne·Google/Kakao OAuth·OAuth state·AI 키를 실제 값으로 요구한다. 누락·placeholder·짧은 값이면 기동/배포를 중단한다.
+3. TikTok은 `video.publish` 승인과 Direct Post audit 전까지 공개 게시를 약속하지 않는다.
+4. Naver Clip은 공개 업로드·분석 API가 확인되기 전까지 지원 플랫폼으로 표시하지 않는다.
+5. 키 발급만으로 연동이 완성되는 것은 아니다. 각 플랫폼의 테스트 계정·scope·심사·실계정 게시와 지표 동기화를 통과해야 판매 가능한 상태다.

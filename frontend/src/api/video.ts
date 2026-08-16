@@ -12,6 +12,7 @@ import type {
   VideoFeedResponse,
   PlatformUploadCapability,
   VideoDownloadAvailability,
+  VideoDeletionResult,
 } from '@/types/video'
 
 export const videoApi = {
@@ -106,7 +107,7 @@ export const videoApi = {
   },
 
   delete(id: number) {
-    return apiClient.delete<ResData<void>>(`/videos/${id}`).then(unwrapResponse)
+    return apiClient.delete<ResData<VideoDeletionResult>>(`/videos/${id}`).then(unwrapResponse)
   },
 
   confirmUpload(videoId: number) {

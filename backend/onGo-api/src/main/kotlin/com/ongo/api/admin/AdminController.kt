@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*
 @PreAuthorize("hasRole('ADMIN')")
 class AdminController(
     private val adminUseCase: AdminUseCase,
+    private val accountDeletionAdminUseCase: com.ongo.application.admin.AccountDeletionAdminUseCase,
 ) {
 
     // ─── 사용자 관리 ─────────────────────────────────
@@ -83,6 +84,24 @@ class AdminController(
     @GetMapping("/publish-queue")
     fun getPublishQueue(): ResponseEntity<ResData<AdminPublishQueueSummary>> {
         return ResData.success(adminUseCase.getPublishQueue())
+    }
+
+    // ─── 계정 삭제 운영 ───────────────────────────────
+
+    @Operation(summary = "계정 삭제 작업 목록", description = "최근 계정 삭제 durable job의 상태와 실패 참조값을 조회합니다.")
+    @GetMapping("/account-deletion/jobs")
+    fun getAccountDeletionJobs(
+        @RequestParam(defaultValue = "100") limit: Int,
+    ): ResponseEntity<ResData<List<AccountDeletionAdminJobResponse>>> {
+        return ResData.success(accountDeletionAdminUseCase.listJobs(limit))
+    }
+
+    @Operation(summary = "계정 삭제 작업 재처리", description = "FAILED 또는 BLOCKED_POLICY 작업을 다시 요청 상태로 전환합니다.")
+    @PostMapping("/account-deletion/jobs/{jobId}/retry")
+    fun retryAccountDeletion(
+        @PathVariable jobId: Long,
+    ): ResponseEntity<ResData<AccountDeletionAdminJobResponse>> {
+        return ResData.success(accountDeletionAdminUseCase.retry(jobId), "계정 삭제 작업을 재처리 대기열에 넣었습니다")
     }
 
     // ─── 사용자 역할 및 상태 변경 ─────────────────────

@@ -23,7 +23,7 @@
             </h2>
             <button
               type="button"
-              class="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg text-content-secondary transition-colors hover:bg-surface-tertiary"
+              class="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg text-content-secondary transition-colors hover:bg-surface-raised"
               :aria-label="t('nav.closeMenu')"
               @click="close"
             >
@@ -37,6 +37,11 @@
             :aria-label="t('nav.mainNavigation')"
             class="min-h-0 flex-1 overflow-y-auto px-2 pb-6 pt-2"
           >
+            <div v-if="capabilityLoading" class="space-y-2 px-2 py-4" aria-live="polite">
+              <div v-for="row in 7" :key="row" class="h-11 animate-pulse rounded-lg bg-surface-raised" />
+              <p class="pt-1 text-center text-[11px] text-content-tertiary">{{ t('redesign.rail.loading') }}</p>
+            </div>
+            <template v-else>
             <!-- Favorites -->
             <template v-if="favoriteItems.length > 0">
               <p class="px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-content-tertiary">
@@ -89,7 +94,7 @@
               <div v-for="sub in group.subGroups ?? []" :key="sub.key" class="mt-0.5">
                 <button
                   type="button"
-                  class="flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-content-secondary transition-colors hover:bg-surface-tertiary"
+                  class="flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-content-secondary transition-colors hover:bg-surface-raised"
                   :aria-expanded="isSubGroupExpanded(sub.key)"
                   @click="toggleSubGroup(sub.key)"
                 >
@@ -139,7 +144,27 @@
               </router-link>
               <NavPinButton :path="item.to" :label="item.label" size="md" />
             </div>
+            </template>
           </nav>
+
+          <!-- 모바일에서는 상단 프로필 메뉴가 보이지 않으므로 계정·로그아웃을 시트에 둔다. -->
+          <div class="flex shrink-0 items-center gap-3 border-t border-line bg-surface-card px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-dim text-[12px] font-bold text-accent">
+              {{ userInitial }}
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-[12px] font-semibold text-content">{{ displayName }}</p>
+              <p class="truncate text-[11px] text-content-tertiary">{{ userEmail }}</p>
+            </div>
+            <button
+              type="button"
+              class="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-semibold text-content-secondary transition-colors hover:bg-error-subtle hover:text-error-strong"
+              @click="handleLogout"
+            >
+              <ArrowRightOnRectangleIcon class="h-4 w-4" aria-hidden="true" />
+              {{ t('nav.logout') }}
+            </button>
+          </div>
         </div>
       </div>
     </Transition>
@@ -148,11 +173,12 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, nextTick, onBeforeUnmount, useId } from 'vue'
-import { ChevronRightIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { ArrowRightOnRectangleIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { useFocusTrap } from '@/composables/useAccessibility'
 import { useLocale } from '@/composables/useLocale'
 import { useNavigation, type NavItem } from '@/composables/useNavigation'
 import { useNavFavoritesStore } from '@/stores/navFavorites'
+import { useAuthStore } from '@/stores/auth'
 import NavPinButton from '@/components/layout/NavPinButton.vue'
 
 const props = defineProps<{
@@ -167,8 +193,9 @@ const id = useId()
 const titleId = `menu-sheet-title-${id}`
 
 const { t } = useLocale()
-const { navGroups, bottomNavItems, allNavItems, isCurrentRoute, isSubGroupExpanded, toggleSubGroup } = useNavigation()
+const { navGroups, bottomNavItems, allNavItems, isCurrentRoute, isSubGroupExpanded, toggleSubGroup, capabilityLoading } = useNavigation()
 const navFavoritesStore = useNavFavoritesStore()
+const authStore = useAuthStore()
 
 const panelRef = ref<HTMLElement | null>(null)
 const previousActiveElement = ref<HTMLElement | null>(null)
@@ -181,14 +208,23 @@ const favoriteItems = computed<NavItem[]>(() =>
     .filter((item): item is NavItem => item !== undefined),
 )
 
+const displayName = computed(() => authStore.user?.nickname || authStore.user?.name || authStore.user?.email || '—')
+const userEmail = computed(() => authStore.user?.email || '')
+const userInitial = computed(() => displayName.value.charAt(0).toUpperCase())
+
 function rowClass(to: string): string {
   return isCurrentRoute(to)
     ? 'bg-accent-dim font-semibold text-content'
-    : 'text-content-secondary hover:bg-surface-tertiary hover:text-content'
+    : 'text-content-secondary hover:bg-surface-raised hover:text-content'
 }
 
 function close() {
   emit('update:modelValue', false)
+}
+
+function handleLogout() {
+  close()
+  void authStore.logout()
 }
 
 function handleKeydown(event: KeyboardEvent) {

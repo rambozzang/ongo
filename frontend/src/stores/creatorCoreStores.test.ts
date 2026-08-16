@@ -314,6 +314,24 @@ describe('creator-facing core stores', () => {
     expect(store.loadError).toBe(true)
   })
 
+  it('does not expose Infinity or NaN when revenue grows from a zero baseline', async () => {
+    const store = useRevenueStore()
+    vi.mocked(revenueApi.summary).mockResolvedValue({ totalRevenue: 100 } as never)
+    vi.mocked(revenueApi.trends).mockResolvedValue({ data: [
+      { date: '2026-08-01', platform: 'YOUTUBE', revenueKrw: 0 },
+      { date: '2026-08-02', platform: 'YOUTUBE', revenueKrw: 100 },
+    ] } as never)
+    vi.mocked(revenueApi.platformRevenue).mockResolvedValue({} as never)
+
+    await store.fetchRevenue()
+
+    expect(store.summary.monthlyGrowth).toBe(0)
+    expect(store.growthTrend).toEqual([
+      { period: '2026-08-01', growth: 0 },
+      { period: '2026-08-02', growth: 0 },
+    ])
+  })
+
   it('keeps template filtering and server-backed create/update/use/delete behavior', async () => {
     vi.mocked(templatesApi.list).mockResolvedValue({ templates: [
       { id: 1, name: '유튜브 교육', category: 'full', platform: 'YOUTUBE', tags: ['교육'], usageCount: 2, createdAt: '2026-08-01', updatedAt: '2026-08-02' },

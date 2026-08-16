@@ -93,7 +93,6 @@ const platforms = [
   { value: 'youtube', label: 'YouTube' },
   { value: 'tiktok', label: 'TikTok' },
   { value: 'instagram', label: 'Instagram' },
-  { value: 'naver_clip', label: 'Naver Clip' }
 ]
 
 const notificationChannels = [

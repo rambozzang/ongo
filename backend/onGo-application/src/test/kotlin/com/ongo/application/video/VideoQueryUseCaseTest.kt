@@ -345,6 +345,56 @@ class VideoQueryUseCaseTest {
     }
 
     @Test
+    fun `deleteVideo reports an external deletion failure but still removes local content`() {
+        val video = createVideo(id = 1L, userId = 100L)
+        val upload = VideoUpload(
+            id = 41L,
+            videoId = 1L,
+            platform = Platform.YOUTUBE,
+            channelId = 77L,
+            platformVideoId = "youtube-video-1",
+            status = UploadStatus.PUBLISHED,
+        )
+        val channel = Channel(
+            id = 77L,
+            userId = 100L,
+            platform = Platform.YOUTUBE,
+            platformChannelId = "channel-1",
+            channelName = "테스트 채널",
+            accessToken = EncryptedToken("encrypted-token"),
+        )
+
+        every { videoRepository.findById(1L) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } returns listOf(upload)
+        every { channelRepository.findById(77L) } returns channel
+        every { tokenEncryptionPort.decrypt(channel.accessToken) } returns com.ongo.domain.channel.PlainToken("access-token")
+        every { platformClientPort.deleteVideo(Platform.YOUTUBE, "youtube-video-1", any()) } returns false
+        every { contentImageRepository.deleteByVideoId(1L) } just runs
+        every { videoRepository.delete(1L) } just runs
+
+        val result = useCase.deleteVideo(100L, 1L)
+
+        assert(result.externalFailures.single().platform == Platform.YOUTUBE)
+        verify { videoRepository.delete(1L) }
+        verify { contentImageRepository.deleteByVideoId(1L) }
+    }
+
+    @Test
+    fun `deleteVideo reports storage cleanup failure instead of claiming a clean delete`() {
+        val video = createVideo(id = 1L, userId = 100L)
+        every { videoRepository.findById(1L) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+        every { storageService.deleteFile(1L) } throws IllegalStateException("storage unavailable")
+        every { contentImageRepository.deleteByVideoId(1L) } just runs
+        every { videoRepository.delete(1L) } just runs
+
+        val result = useCase.deleteVideo(100L, 1L)
+
+        assert(result.storageDeletionFailed)
+        verify { videoRepository.delete(1L) }
+    }
+
+    @Test
     fun `deleteVideo should throw NotFoundException for non-existent video`() {
         every { videoRepository.findById(999L) } returns null
 

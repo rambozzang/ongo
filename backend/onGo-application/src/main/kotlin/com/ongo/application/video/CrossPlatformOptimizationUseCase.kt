@@ -30,7 +30,15 @@ class CrossPlatformOptimizationUseCase(
             Platform.YOUTUBE -> checkYouTube(request, suggestions)
             Platform.TIKTOK -> checkTikTok(request, suggestions)
             Platform.INSTAGRAM -> checkInstagram(request, suggestions)
-            Platform.NAVER_CLIP -> checkNaverClip(request, suggestions)
+            Platform.NAVER_CLIP -> suggestions.add(
+                OptimizationSuggestion(
+                    "platform",
+                    OptimizationSeverity.WARNING,
+                    "네이버 클립은 공개 업로드 API가 없어 현재 최적화·게시를 지원하지 않습니다",
+                    "지원되지 않음",
+                    null,
+                ),
+            )
             Platform.TWITTER -> checkGenericShortForm(request, suggestions, "X (Twitter)", 280)
             Platform.FACEBOOK -> checkGenericLongForm(request, suggestions, "Facebook", 5000)
             Platform.THREADS -> checkGenericShortForm(request, suggestions, "Threads", 500)
@@ -231,38 +239,6 @@ class CrossPlatformOptimizationUseCase(
         }
     }
 
-    private fun checkNaverClip(req: OptimizationCheckRequest, suggestions: MutableList<OptimizationSuggestion>) {
-        // Title checks
-        when {
-            req.title.length > 100 -> suggestions.add(
-                OptimizationSuggestion("title", OptimizationSeverity.ERROR, "Naver Clip 제목은 100자 이내여야 합니다", "${req.title.length}자", "100자 이내")
-            )
-            req.title.length in 1..100 -> suggestions.add(
-                OptimizationSuggestion("title", OptimizationSeverity.GOOD, "제목 길이가 적절합니다", "${req.title.length}자", null)
-            )
-        }
-
-        // Korean keyword check
-        val hasKorean = req.title.any { it in '\uAC00'..'\uD7A3' } ||
-            req.tags.any { tag -> tag.any { it in '\uAC00'..'\uD7A3' } }
-        if (!hasKorean) {
-            suggestions.add(
-                OptimizationSuggestion("title", OptimizationSeverity.WARNING, "네이버 클립에서는 한국어 키워드가 필수입니다", "한국어 없음", "한국어 키워드 추가 권장")
-            )
-        } else {
-            suggestions.add(
-                OptimizationSuggestion("title", OptimizationSeverity.GOOD, "한국어 키워드가 포함되어 있습니다", null, null)
-            )
-        }
-
-        // Tags check
-        if (req.tags.isEmpty()) {
-            suggestions.add(
-                OptimizationSuggestion("tags", OptimizationSeverity.WARNING, "태그를 추가하면 네이버 검색 노출이 향상됩니다", "0개", "5개 이상 권장")
-            )
-        }
-    }
-
     /**
      * AI를 활용하여 각 플랫폼별로 콘텐츠를 최적화합니다.
      */
@@ -326,7 +302,7 @@ class CrossPlatformOptimizationUseCase(
             Platform.YOUTUBE -> "- 제목: 10-70자, 키워드 앞 배치\n- 설명: 200자 이상, 타임스탬프와 링크 포함\n- 태그: 3-15개"
             Platform.TIKTOK -> "- 제목: 짧고 임팩트 있게, 해시태그 중심\n- 설명: 링크 제거, #해시태그 5-8개\n- 트렌디하고 젊은 어조"
             Platform.INSTAGRAM -> "- 캡션: 첫 줄에 후킹 문장, 이모지 활용\n- 해시태그: 10-20개, 다양한 규모 혼합\n- 시각적 중심"
-            Platform.NAVER_CLIP -> "- 한국어 키워드 필수\n- 제목: 100자 이내\n- 태그: 5개 이상, 한국어 중심"
+            Platform.NAVER_CLIP -> "- 공개 업로드·분석 API가 없어 현재 지원하지 않음"
             Platform.TWITTER -> "- 제목: 280자 이내, 간결하게\n- 해시태그: 1-2개\n- 실시성과 참여 유도"
             else -> "- 제목: 간결하고 명확하게\n- 태그: 3-10개\n- 플랫폼 특성에 맞는 어조"
         }

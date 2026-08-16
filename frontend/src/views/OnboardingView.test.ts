@@ -18,7 +18,7 @@ vi.mock('@/api/auth', () => ({
   },
 }))
 vi.mock('@/api/ai', () => ({ aiApi: { demoGenerate: vi.fn() } }))
-vi.mock('@/api/channel', () => ({ channelApi: { list: vi.fn(), disconnect: vi.fn() } }))
+vi.mock('@/api/channel', () => ({ channelApi: { list: vi.fn(), disconnect: vi.fn(), authorizationUrl: vi.fn() } }))
 vi.mock('@/api/video', () => ({ videoApi: { getUploadCapabilities: vi.fn() } }))
 vi.mock('@/api/subscription', () => ({ subscriptionApi: { changePlan: vi.fn() } }))
 
@@ -145,5 +145,47 @@ describe('OnboardingView 완료 처리', () => {
     expect(authApi.completeOnboarding).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('환영합니다')
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('운영 설정이 없는 플랫폼은 연결 버튼 없이 사유를 보여준다', async () => {
+    vi.mocked(videoApi.getUploadCapabilities).mockResolvedValue([
+      {
+        platform: 'YOUTUBE',
+        directVideoUpload: true,
+        cloudVideoUpload: true,
+        scheduling: true,
+        maxFileSizeBytes: 2_000_000_000,
+        maxTitleLength: 100,
+        maxDescriptionLength: 5_000,
+        maxTagCount: 500,
+        acceptedExtensions: ['mp4'],
+        unavailableReason: null,
+        configurationAvailable: true,
+      },
+      {
+        platform: 'TIKTOK',
+        directVideoUpload: true,
+        cloudVideoUpload: false,
+        scheduling: false,
+        maxFileSizeBytes: 2_000_000_000,
+        maxTitleLength: 2_000,
+        maxDescriptionLength: 0,
+        maxTagCount: 30,
+        acceptedExtensions: ['mp4'],
+        unavailableReason: null,
+        configurationAvailable: false,
+      },
+    ] as never)
+
+    const wrapper = await renderOnboarding()
+    await buttonWith(wrapper, '시작하기').trigger('click')
+    await wrapper.find('#nickname').setValue('온고크리에이터')
+    await buttonWith(wrapper, '💻').trigger('click')
+    await buttonWith(wrapper, '다음').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('현재 연결할 수 없는 플랫폼')
+    expect(wrapper.text()).toContain('TikTok')
+    expect(wrapper.findAll('button').filter((button) => button.text().includes('연동하기'))).toHaveLength(1)
   })
 })

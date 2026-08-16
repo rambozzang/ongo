@@ -221,6 +221,27 @@ deploy_backend() {
         exit 1
     fi
 
+    INVALID_SHORT_VARS="$(
+        set +e
+        # shellcheck source=deploy/required-env.sh
+        source "$SRC_DIR/deploy/required-env.sh" || exit 10
+        ongo_load_env_file "$ENV_FILE" >/dev/null 2>&1 || exit $((20 + $?))
+        ongo_invalid_short_env_vars
+    )" || ENV_PREFLIGHT_RC=$?
+
+    if [ "$ENV_PREFLIGHT_RC" -ne 0 ]; then
+        error "환경변수 길이 선행 검증에 실패했습니다(rc=$ENV_PREFLIGHT_RC). 기존 서비스는 그대로 실행 중입니다."
+        exit 1
+    fi
+    if [ -n "$INVALID_SHORT_VARS" ]; then
+        error "운영 자격 증명이 너무 짧아 배포를 중단합니다. 기존 서비스는 그대로 실행 중입니다."
+        (
+            source "$SRC_DIR/deploy/required-env.sh"
+            ongo_report_invalid_short_env_vars "$INVALID_SHORT_VARS" "$ENV_FILE"
+        )
+        exit 1
+    fi
+
     # 서비스 재시작
     info "Backend 재시작..."
     bash "$SRC_DIR/deploy/stop.sh" || true
@@ -278,6 +299,18 @@ deploy_frontend() {
     # 배포
     mkdir -p "$WWW_DIR"
     cp -r dist/* "$WWW_DIR/"
+
+    # Keep the immediately previous release's hashed chunks for one deploy
+    # cycle. Tabs that are open during a deployment can finish loading their
+    # old module graph; current files always win because cp -n never
+    # overwrites the new build. The nginx /assets/ 404 rule remains the final
+    # fallback once older backups are retired.
+    PREVIOUS_ASSETS="$WWW_DIR.backup.$TIMESTAMP/assets"
+    if [ -d "$PREVIOUS_ASSETS" ]; then
+        mkdir -p "$WWW_DIR/assets"
+        cp -rn "$PREVIOUS_ASSETS"/. "$WWW_DIR/assets/"
+        info "이전 릴리스의 hashed assets를 한 사이클 유지했습니다."
+    fi
 
     # SELinux 컨텍스트 적용 (Nginx가 파일을 읽을 수 있도록)
     restorecon -Rv "$WWW_DIR" > /dev/null 2>&1 || true

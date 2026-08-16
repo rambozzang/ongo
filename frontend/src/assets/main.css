@@ -8,6 +8,7 @@
   html {
     @apply transition-colors duration-200;
     color-scheme: light;
+    scrollbar-gutter: stable;
   }
 
   html.dark {
@@ -19,6 +20,12 @@
     background: var(--surface-secondary);
     color: var(--text-primary);
     font-feature-settings: 'cv02' 1, 'cv03' 1, 'cv04' 1;
+    min-width: 320px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
   }
 
   ::selection {
@@ -43,6 +50,27 @@
 }
 
 @layer components {
+  .skip-link {
+    position: fixed;
+    left: 1rem;
+    top: 0.75rem;
+    z-index: 100;
+    transform: translateY(-180%);
+    border: 1px solid var(--border-focus);
+    border-radius: var(--radius-md);
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    padding: 0.65rem 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-md);
+    transition: transform var(--transition-fast);
+  }
+
+  .skip-link:focus-visible {
+    transform: translateY(0);
+  }
+
   .app-shell {
     background: var(--surface-secondary);
   }

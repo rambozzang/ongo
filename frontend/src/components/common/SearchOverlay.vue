@@ -6,33 +6,36 @@
         class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-4 pt-20 tablet:pt-32"
         role="dialog"
         aria-modal="true"
-        aria-label="검색"
+        aria-labelledby="search-overlay-title"
         @click.self="close"
       >
         <!-- Backdrop -->
         <div
-          class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+          class="fixed inset-0 bg-[var(--surface-overlay)] transition-opacity"
           @click="close"
         ></div>
 
         <!-- Search Modal -->
         <div
-          class="glass-elevated relative w-full max-w-xl rounded-xl p-0 transition-all"
+          ref="panelRef"
+          class="relative w-full max-w-xl overflow-hidden rounded-xl border border-line bg-surface-card shadow-lg transition-all"
           @click.stop
         >
+          <h2 id="search-overlay-title" class="sr-only">검색</h2>
           <!-- Search Input -->
-          <div class="flex items-center border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-            <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
+          <div class="flex items-center border-b border-line px-4 py-3">
+            <MagnifyingGlassIcon class="h-5 w-5 text-content-tertiary" aria-hidden="true" />
             <input
               ref="searchInputRef"
               v-model="search.query.value"
               type="text"
-              placeholder="검색어를 입력하세요..."
+              :placeholder="t('searchOverlay.placeholder')"
               role="combobox"
               aria-autocomplete="list"
-              aria-label="검색어 입력"
+              :aria-label="t('searchOverlay.inputLabel')"
               :aria-expanded="search.results.value.length > 0"
-              class="ml-3 flex-1 bg-transparent text-lg text-gray-900 placeholder-gray-400 focus:outline-none dark:text-gray-100 dark:placeholder-gray-500"
+              aria-controls="search-overlay-results"
+              class="ml-3 min-w-0 flex-1 bg-transparent text-lg text-content placeholder:text-content-tertiary focus:outline-none"
               @keydown.down.prevent="moveSelection(1)"
               @keydown.up.prevent="moveSelection(-1)"
               @keydown.enter.prevent="selectCurrent"
@@ -40,8 +43,8 @@
             />
             <button
               v-if="search.query.value"
-              class="ml-2 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-              aria-label="검색어 지우기"
+              class="ml-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-content-tertiary hover:bg-surface-raised hover:text-content"
+              :aria-label="t('searchOverlay.clear')"
               @click="search.query.value = ''"
             >
               <XMarkIcon class="h-4 w-4" />
@@ -49,17 +52,17 @@
           </div>
 
           <!-- Results Container -->
-          <div class="max-h-96 overflow-y-auto scrollbar-hide">
+          <div id="search-overlay-results" class="max-h-96 overflow-y-auto scrollbar-hide" role="region" :aria-label="t('searchOverlay.results')">
             <!-- Loading State -->
-            <div v-if="search.isLoading.value" class="flex items-center justify-center py-12">
-              <div class="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-primary-500 dark:border-gray-700"></div>
+            <div v-if="search.isLoading.value" class="flex items-center justify-center py-12" role="status" :aria-label="t('action.loading')">
+              <div class="h-8 w-8 animate-spin rounded-full border-4 border-line border-t-accent"></div>
             </div>
 
             <!-- Search Results -->
             <div v-else-if="search.query.value && search.results.value.length > 0" class="py-2">
               <template v-for="(categoryResults, category) in search.groupedResults.value" :key="category">
                 <div class="px-4 py-2">
-                  <h3 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                  <h3 class="text-xs font-semibold uppercase text-content-tertiary">
                     {{ category }}
                   </h3>
                 </div>
@@ -68,24 +71,24 @@
                     v-for="(result, index) in categoryResults"
                     :key="result.id"
                     :ref="(el) => setResultRef(el as HTMLElement, getCategoryIndex(category, index))"
-                    class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
+                    class="flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left transition-colors"
                     :class="selectedIndex === getCategoryIndex(category, index)
-                      ? 'bg-primary-50 dark:bg-primary-900/30'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-accent-dim'
+                      : 'hover:bg-surface-raised'
                     "
                     @click="handleResultClick(result)"
                     @mouseenter="selectedIndex = getCategoryIndex(category, index)"
                   >
-                    <component :is="result.icon" class="h-5 w-5 flex-shrink-0 text-gray-400" />
+                    <component :is="result.icon" class="h-5 w-5 flex-shrink-0 text-content-tertiary" aria-hidden="true" />
                     <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <p class="truncate text-sm font-medium text-content">
                         {{ result.title }}
                       </p>
-                      <p v-if="result.subtitle" class="truncate text-xs text-gray-500 dark:text-gray-400">
+                      <p v-if="result.subtitle" class="truncate text-xs text-content-tertiary">
                         {{ result.subtitle }}
                       </p>
                     </div>
-                    <ChevronRightIcon class="h-4 w-4 flex-shrink-0 text-gray-400" />
+                    <ChevronRightIcon class="h-4 w-4 flex-shrink-0 text-content-tertiary" aria-hidden="true" />
                   </button>
                 </div>
               </template>
@@ -93,9 +96,9 @@
 
             <!-- No Results -->
             <div v-else-if="search.query.value && search.results.value.length === 0 && !search.isLoading.value" class="py-12 text-center">
-              <MagnifyingGlassIcon class="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
-              <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                검색 결과가 없습니다
+              <MagnifyingGlassIcon class="mx-auto h-12 w-12 text-content-quaternary" aria-hidden="true" />
+              <p class="mt-3 text-sm text-content-secondary">
+                {{ t('searchOverlay.noResults') }}
               </p>
             </div>
 
@@ -104,14 +107,14 @@
               <!-- Recent Searches -->
               <div v-if="search.recentSearches.value.length > 0" class="mb-4">
                 <div class="flex items-center justify-between px-4 py-2">
-                  <h3 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                    최근 검색
+                  <h3 class="text-xs font-semibold uppercase text-content-tertiary">
+                    {{ t('searchOverlay.recent') }}
                   </h3>
                   <button
-                    class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    class="min-h-11 px-2 text-xs text-content-tertiary hover:text-content"
                     @click="search.clearRecentSearches()"
                   >
-                    지우기
+                    {{ t('searchOverlay.clearRecent') }}
                   </button>
                 </div>
                 <div>
@@ -119,16 +122,16 @@
                     v-for="(recentQuery, index) in search.recentSearches.value"
                     :key="index"
                     :ref="(el) => setResultRef(el as HTMLElement, index)"
-                    class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
+                    class="flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left transition-colors"
                     :class="selectedIndex === index
-                      ? 'bg-primary-50 dark:bg-primary-900/30'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-accent-dim'
+                      : 'hover:bg-surface-raised'
                     "
                     @click="handleRecentSearchClick(recentQuery)"
                     @mouseenter="selectedIndex = index"
                   >
-                    <ClockIcon class="h-5 w-5 flex-shrink-0 text-gray-400" />
-                    <p class="flex-1 truncate text-sm text-gray-900 dark:text-gray-100">
+                    <ClockIcon class="h-5 w-5 flex-shrink-0 text-content-tertiary" aria-hidden="true" />
+                    <p class="flex-1 truncate text-sm text-content">
                       {{ recentQuery }}
                     </p>
                   </button>
@@ -138,8 +141,8 @@
               <!-- Quick Actions -->
               <div>
                 <div class="px-4 py-2">
-                  <h3 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                    빠른 이동
+                  <h3 class="text-xs font-semibold uppercase text-content-tertiary">
+                    {{ t('searchOverlay.quickActions') }}
                   </h3>
                 </div>
                 <div>
@@ -147,19 +150,19 @@
                     v-for="(action, index) in search.quickActions"
                     :key="action.id"
                     :ref="(el) => setResultRef(el as HTMLElement, search.recentSearches.value.length + index)"
-                    class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
+                    class="flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left transition-colors"
                     :class="selectedIndex === search.recentSearches.value.length + index
-                      ? 'bg-primary-50 dark:bg-primary-900/30'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-accent-dim'
+                      : 'hover:bg-surface-raised'
                     "
                     @click="handleQuickActionClick(action)"
                     @mouseenter="selectedIndex = search.recentSearches.value.length + index"
                   >
-                    <component :is="action.icon" class="h-5 w-5 flex-shrink-0" :class="action.iconColor" />
-                    <p class="flex-1 text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <component :is="action.icon" class="h-5 w-5 flex-shrink-0" :class="action.iconColor" aria-hidden="true" />
+                    <p class="flex-1 text-sm font-medium text-content">
                       {{ action.title }}
                     </p>
-                    <ChevronRightIcon class="h-4 w-4 flex-shrink-0 text-gray-400" />
+                    <ChevronRightIcon class="h-4 w-4 flex-shrink-0 text-content-tertiary" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -167,18 +170,18 @@
           </div>
 
           <!-- Footer -->
-          <div class="flex items-center justify-end gap-4 border-t border-gray-200 px-4 py-3 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+          <div class="flex items-center justify-end gap-4 border-t border-line px-4 py-3 text-xs text-content-tertiary">
             <div class="flex items-center gap-1">
               <kbd class="kbd">↑↓</kbd>
-              <span>이동</span>
+              <span>{{ t('searchOverlay.move') }}</span>
             </div>
             <div class="flex items-center gap-1">
               <kbd class="kbd">↵</kbd>
-              <span>선택</span>
+              <span>{{ t('searchOverlay.select') }}</span>
             </div>
             <div class="flex items-center gap-1">
               <kbd class="kbd">esc</kbd>
-              <span>닫기</span>
+              <span>{{ t('searchOverlay.close') }}</span>
             </div>
           </div>
         </div>
@@ -196,6 +199,8 @@ import {
   ClockIcon,
 } from '@heroicons/vue/24/outline'
 import { useSearch, type SearchResult, type QuickAction } from '@/composables/useSearch'
+import { useFocusTrap } from '@/composables/useAccessibility'
+import { useLocale } from '@/composables/useLocale'
 
 const props = defineProps<{
   modelValue: boolean
@@ -206,7 +211,12 @@ const emit = defineEmits<{
 }>()
 
 const search = useSearch()
+const { t } = useLocale()
 const searchInputRef = ref<HTMLInputElement>()
+const panelRef = ref<HTMLElement | null>(null)
+const previousActiveElement = ref<HTMLElement | null>(null)
+const previousBodyOverflow = ref('')
+const { activate: activateFocusTrap, deactivate: deactivateFocusTrap, updateFocusableElements } = useFocusTrap(panelRef)
 const selectedIndex = ref(0)
 const resultRefs = ref<HTMLElement[]>([])
 
@@ -226,15 +236,27 @@ const close = () => {
 // Focus input when opened
 watch(() => props.modelValue, async (isOpen) => {
   if (isOpen) {
+    previousActiveElement.value = document.activeElement as HTMLElement
+    previousBodyOverflow.value = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     await nextTick()
     searchInputRef.value?.focus()
+    activateFocusTrap()
     selectedIndex.value = 0
+  } else {
+    deactivateFocusTrap()
+    document.body.style.overflow = previousBodyOverflow.value
+    previousActiveElement.value?.focus()
   }
 })
 
 // Reset selection when results change
-watch(() => search.results.value.length, () => {
+watch(() => [search.query.value, search.results.value.length, search.recentSearches.value.length], async () => {
   selectedIndex.value = 0
+  if (props.modelValue) {
+    await nextTick()
+    updateFocusableElements()
+  }
 })
 
 // Get total items count
@@ -328,6 +350,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
+  deactivateFocusTrap()
+  document.body.style.overflow = previousBodyOverflow.value
 })
 </script>
 
@@ -342,18 +366,18 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
-.search-overlay-enter-active .glass-elevated,
-.search-overlay-leave-active .glass-elevated {
+.search-overlay-enter-active .bg-surface-card,
+.search-overlay-leave-active .bg-surface-card {
   transition: transform 200ms ease, opacity 200ms ease;
 }
 
-.search-overlay-enter-from .glass-elevated,
-.search-overlay-leave-to .glass-elevated {
+.search-overlay-enter-from .bg-surface-card,
+.search-overlay-leave-to .bg-surface-card {
   transform: scale(0.95);
   opacity: 0;
 }
 
 .kbd {
-  @apply inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded border border-gray-300 bg-gray-100 px-1.5 font-mono text-[10px] font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300;
+  @apply inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded border border-line-control bg-surface-raised px-1.5 font-mono text-[10px] font-semibold text-content-secondary;
 }
 </style>

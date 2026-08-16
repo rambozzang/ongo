@@ -15,4 +15,13 @@ describe('admin operations contracts', () => {
 
     expect(get).toHaveBeenCalledWith('/admin/publish-queue')
   })
+
+  it('loads account deletion jobs and posts an explicit retry command', async () => {
+    await adminApi.getAccountDeletionJobs()
+    expect(get).toHaveBeenCalledWith('/admin/account-deletion/jobs', { params: { limit: 100 } })
+
+    const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: { success: true, data: {} } } as never)
+    await adminApi.retryAccountDeletion(7)
+    expect(post).toHaveBeenCalledWith('/admin/account-deletion/jobs/7/retry')
+  })
 })

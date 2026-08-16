@@ -111,7 +111,7 @@ const loadingSuggestions = ref(false)
 const loadError = ref('')
 
 function getMissingPlatforms(video: Video): Platform[] {
-  const allPlatforms: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM', 'NAVER_CLIP']
+  const allPlatforms: Platform[] = ['YOUTUBE', 'TIKTOK', 'INSTAGRAM']
   const uploadedPlatforms = video.uploads.map((u) => u.platform)
   return allPlatforms.filter((p) => !uploadedPlatforms.includes(p))
 }

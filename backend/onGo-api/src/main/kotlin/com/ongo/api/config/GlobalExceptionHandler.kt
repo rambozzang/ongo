@@ -59,7 +59,9 @@ class GlobalExceptionHandler {
     fun handleBusiness(e: BusinessException): ResponseEntity<ResData<Nothing>> {
         log.warn("Business exception [{}]: {}", e.code, e.message)
         return ResponseEntity.badRequest()
-            .body(ResData(success = false, error = e.message))
+            // `error` is the stable machine-readable code; `message` is user-facing copy.
+            // Keeping both prevents clients from guessing a code from translated text.
+            .body(ResData(success = false, message = e.message, error = e.code))
     }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)

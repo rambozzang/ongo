@@ -15,7 +15,7 @@
       <div class="flex items-center justify-between">
         <span class="text-body-xs text-gray-500 dark:text-gray-400">영상 A</span>
         <span class="font-semibold text-primary-600 dark:text-primary-400">
-          {{ formatValue(valueA) }}
+          {{ formatValue(valueA, unavailableA) }}
         </span>
       </div>
 
@@ -23,7 +23,7 @@
       <div class="flex items-center justify-between">
         <span class="text-body-xs text-gray-500 dark:text-gray-400">영상 B</span>
         <span class="font-semibold text-warning-strong">
-          {{ formatValue(valueB) }}
+          {{ formatValue(valueB, unavailableB) }}
         </span>
       </div>
 
@@ -32,14 +32,19 @@
         <div class="flex items-center justify-between">
           <span class="text-caption text-gray-600 dark:text-gray-400">차이</span>
           <div class="flex items-center gap-1">
-            <component
-              :is="differenceIcon"
-              class="h-4 w-4"
-              :class="differenceColorClass"
-            />
-            <span class="text-body font-bold" :class="differenceColorClass">
-              {{ Math.abs(percentageDifference).toFixed(1) }}%
+            <span v-if="differenceUnavailable" class="text-body font-semibold text-gray-500 dark:text-gray-400">
+              {{ unavailableLabel }}
             </span>
+            <template v-else>
+              <component
+                :is="differenceIcon"
+                class="h-4 w-4"
+                :class="differenceColorClass"
+              />
+              <span class="text-body font-bold" :class="differenceColorClass">
+                {{ Math.abs(percentageDifference).toFixed(1) }}%
+              </span>
+            </template>
           </div>
         </div>
       </div>
@@ -54,22 +59,35 @@ import type { Component } from 'vue'
 
 interface Props {
   title: string
-  valueA: number
-  valueB: number
+  valueA: number | null
+  valueB: number | null
   icon: Component
   isPercentage?: boolean
+  unavailableA?: boolean
+  unavailableB?: boolean
+  unavailableLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isPercentage: false,
+  unavailableA: false,
+  unavailableB: false,
+  unavailableLabel: 'Not available',
 })
+
+const differenceUnavailable = computed(() =>
+  Boolean(props.unavailableA || props.unavailableB || props.valueA === null || props.valueB === null),
+)
 
 // Calculate percentage difference (A compared to B)
 const percentageDifference = computed(() => {
-  if (props.valueB === 0) {
-    return props.valueA > 0 ? 100 : 0
+  if (differenceUnavailable.value) return 0
+  const valueA = props.valueA as number
+  const valueB = props.valueB as number
+  if (valueB === 0) {
+    return valueA > 0 ? 100 : 0
   }
-  return ((props.valueA - props.valueB) / props.valueB) * 100
+  return ((valueA - valueB) / valueB) * 100
 })
 
 // Determine icon and color
@@ -88,7 +106,8 @@ const differenceColorClass = computed(() => {
 })
 
 // Format value
-function formatValue(value: number): string {
+function formatValue(value: number | null, unavailable: boolean | undefined): string {
+  if (unavailable || value === null) return props.unavailableLabel
   if (props.isPercentage) {
     return `${value.toFixed(2)}%`
   }

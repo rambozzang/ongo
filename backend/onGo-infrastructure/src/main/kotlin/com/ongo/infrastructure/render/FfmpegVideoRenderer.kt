@@ -4,6 +4,7 @@ import com.ongo.domain.ugc.shorts.ClipRenderRequest
 import com.ongo.domain.ugc.shorts.RenderedClip
 import com.ongo.domain.ugc.shorts.RendererAvailability
 import com.ongo.domain.ugc.shorts.VideoRenderer
+import com.ongo.infrastructure.runtime.RuntimeExecutableResolver
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -43,6 +44,8 @@ class FfmpegVideoRenderer(
     @param:Value("\${shorts.render.preset:medium}")
     private val preset: String,
 ) : VideoRenderer {
+
+    private val resolvedExecutable = RuntimeExecutableResolver.resolve(executable)
 
     private val log = LoggerFactory.getLogger(javaClass)
     private val cachedAvailability = AtomicReference<Pair<Instant, RendererAvailability>?>(null)
@@ -123,13 +126,13 @@ class FfmpegVideoRenderer(
         try {
             val dir = Files.createTempDirectory("ongo-ffmpeg-probe-")
             try {
-                runProcess(listOf(executable, "-version"), dir, PROBE_TIMEOUT_SECONDS)
+            runProcess(listOf(resolvedExecutable, "-version"), dir, PROBE_TIMEOUT_SECONDS)
                 RendererAvailability(available = true)
             } finally {
                 deleteRecursively(dir)
             }
         } catch (e: Exception) {
-            log.warn("영상 인코더를 사용할 수 없다. executable={} 원인={}", executable, e.message)
+            log.warn("영상 인코더를 사용할 수 없다. executable={} 원인={}", resolvedExecutable, e.message)
             RendererAvailability(
                 available = false,
                 reason = "영상 렌더링을 지금 사용할 수 없습니다. 관리자에게 문의해 주세요.",

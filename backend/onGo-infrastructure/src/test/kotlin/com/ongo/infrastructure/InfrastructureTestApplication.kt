@@ -3,6 +3,8 @@ package com.ongo.infrastructure
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.FilterType
+import org.springframework.context.annotation.Import
+import com.ongo.infrastructure.security.TokenBlacklistConfig
 
 /**
  * Minimal Spring Boot application class used **ONLY** by @SpringBootTest in this module.
@@ -18,6 +20,7 @@ import org.springframework.context.annotation.FilterType
  * 요구하므로, 통합 테스트 부트스트랩을 복잡하게 만든다. 좁은 스캔으로 이를 회피한다.
  */
 @SpringBootApplication
+@Import(TokenBlacklistConfig::class)
 @ComponentScan(
     basePackages = [
         "com.ongo.infrastructure.persistence",

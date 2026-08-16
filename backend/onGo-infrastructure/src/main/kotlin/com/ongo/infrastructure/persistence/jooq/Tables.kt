@@ -31,6 +31,15 @@ fun Record.localDate(field: Field<LocalDate>): LocalDate? {
     }
 }
 
+/** PostgreSQL BIGSERIAL may be exposed as Integer by a custom jOOQ field. */
+fun Record.longValue(field: Field<Long>): Long? {
+    val value = get(field.name) ?: return null
+    return when (value) {
+        is Number -> value.toLong()
+        else -> throw IllegalStateException("Cannot convert ${value::class.java} to Long")
+    }
+}
+
 object Tables {
     val USERS = DSL.table("users")
     val CHANNELS = DSL.table("channels")

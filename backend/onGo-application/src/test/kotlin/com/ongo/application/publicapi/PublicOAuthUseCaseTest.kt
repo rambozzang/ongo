@@ -27,7 +27,6 @@ class PublicOAuthUseCaseTest {
         googleClientId = clientId,
         tiktokClientId = "tiktok-client-id",
         instagramClientId = "instagram-client-id",
-        naverClientId = "naver-client-id",
         twitterClientId = "twitter-client-id",
         facebookClientId = "facebook-client-id",
         threadsClientId = "threads-client-id",

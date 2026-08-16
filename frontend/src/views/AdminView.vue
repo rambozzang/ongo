@@ -77,6 +77,58 @@
       </AsyncState>
     </section>
 
+    <!-- Account deletion operations -->
+    <section class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800" aria-labelledby="account-deletion-title">
+      <div class="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 id="account-deletion-title" class="text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('admin.accountDeletionTitle') }}</h2>
+          <p class="mt-1 text-body text-gray-500 dark:text-gray-400">{{ t('admin.accountDeletionDescription') }}</p>
+        </div>
+        <button type="button" class="btn-secondary shrink-0" :disabled="deletionLoading" @click="fetchAccountDeletionJobs">
+          <ArrowPathIcon class="mr-1 inline h-4 w-4" :class="{ 'animate-spin': deletionLoading }" aria-hidden="true" />
+          {{ deletionLoading ? t('action.loading') : t('action.refresh') }}
+        </button>
+      </div>
+      <AsyncState :loading="deletionLoading" :error="deletionError" skeleton="card" :skeleton-count="2" retryable @retry="fetchAccountDeletionJobs">
+        <div v-if="deletionJobs.length" class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <table class="min-w-full divide-y divide-gray-200 text-body dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.deletionJob') }}</th>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.deletionUser') }}</th>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.queueStatus') }}</th>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.queueAttempts') }}</th>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.queueError') }}</th>
+                <th class="px-3 py-2 text-right text-caption uppercase tracking-wider text-gray-500">{{ t('admin.actions') }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-for="job in deletionJobs" :key="job.jobId">
+                <td class="whitespace-nowrap px-3 py-2 font-mono text-content">#{{ job.jobId }}</td>
+                <td class="whitespace-nowrap px-3 py-2 text-content">#{{ job.userId }}</td>
+                <td class="whitespace-nowrap px-3 py-2"><span :class="statusBadgeClass(job.status)">{{ job.status }}</span></td>
+                <td class="whitespace-nowrap px-3 py-2 text-muted-strong">{{ job.attemptCount }}</td>
+                <td class="max-w-xs truncate px-3 py-2 text-muted-strong" :title="job.supportReference || job.lastErrorCode || ''">{{ job.lastErrorCode || job.supportReference || '-' }}</td>
+                <td class="whitespace-nowrap px-3 py-2 text-right">
+                  <button
+                    v-if="job.status === 'FAILED' || job.status === 'BLOCKED_POLICY'"
+                    type="button"
+                    class="btn-secondary !min-h-8 text-body-xs"
+                    :disabled="actionLoading"
+                    @click="requestAccountDeletionRetry(job)"
+                  >
+                    {{ t('admin.retryDeletion') }}
+                  </button>
+                  <span v-else class="text-body-xs text-muted-strong">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-else class="rounded-lg border border-dashed border-gray-300 p-4 text-center text-body text-muted-strong dark:border-gray-600">{{ t('admin.accountDeletionEmpty') }}</p>
+      </AsyncState>
+    </section>
+
     <!-- Search -->
     <div class="mb-6 flex items-center gap-4">
       <div class="relative flex-1 max-w-md">
@@ -537,6 +589,7 @@ import type {
   AdminChannelItem,
   AdminSubscriptionDetail,
   AdminPublishQueueSummary,
+  AdminAccountDeletionJob,
 } from '@/types/admin'
 
 const { t, tm } = useLocale()
@@ -554,6 +607,39 @@ const pageSize = 20
 const queueSummary = ref<AdminPublishQueueSummary | null>(null)
 const queueLoading = ref(false)
 const queueError = ref<string | null>(null)
+
+// --- Account deletion operations ---
+const deletionJobs = ref<AdminAccountDeletionJob[]>([])
+const deletionLoading = ref(false)
+const deletionError = ref<string | null>(null)
+
+async function fetchAccountDeletionJobs() {
+  deletionLoading.value = true
+  deletionError.value = null
+  try {
+    deletionJobs.value = await adminApi.getAccountDeletionJobs()
+  } catch (error) {
+    deletionError.value = error instanceof Error ? error.message : t('admin.accountDeletionLoadError')
+  } finally {
+    deletionLoading.value = false
+  }
+}
+
+function requestAccountDeletionRetry(job: AdminAccountDeletionJob) {
+  confirmTitle.value = t('admin.retryDeletion')
+  confirmMessage.value = t('admin.retryDeletionMessage', { id: job.jobId })
+  confirmDanger.value = false
+  confirmAction = async () => {
+    actionLoading.value = true
+    try {
+      await adminApi.retryAccountDeletion(job.jobId)
+      await fetchAccountDeletionJobs()
+    } finally {
+      actionLoading.value = false
+    }
+  }
+  showConfirm.value = true
+}
 
 async function fetchPublishQueue() {
   queueLoading.value = true
@@ -926,6 +1012,7 @@ function subStatusClass(status: string): string {
 onMounted(() => {
   fetchUsers()
   fetchPublishQueue()
+  fetchAccountDeletionJobs()
 })
 
 onUnmounted(() => {

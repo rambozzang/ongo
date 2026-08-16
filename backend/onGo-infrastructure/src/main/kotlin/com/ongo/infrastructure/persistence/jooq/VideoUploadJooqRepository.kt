@@ -135,7 +135,8 @@ class VideoUploadJooqRepository(
             .set(PUBLISHED_AT, upload.publishedAt)
             .returningResult(ID)
             .fetchOne()!!
-            .get(ID)
+            .get(ID.name)
+            .let { (it as Number).toLong() }
 
         return findById(id)!!
     }
@@ -404,10 +405,10 @@ class VideoUploadJooqRepository(
         val platformStr = get(PLATFORM) ?: "YOUTUBE"
         val statusStr = get(STATUS) ?: "DRAFT"
         return VideoUpload(
-            id = get(ID),
-            videoId = get(VIDEO_ID),
+            id = longValue(ID),
+            videoId = longValue(VIDEO_ID)!!,
             platform = try { Platform.valueOf(platformStr) } catch (_: Exception) { Platform.YOUTUBE },
-            channelId = get(CHANNEL_ID),
+            channelId = longValue(CHANNEL_ID),
             platformVideoId = get(PLATFORM_VIDEO_ID),
             status = try { UploadStatus.valueOf(statusStr) } catch (_: Exception) { UploadStatus.DRAFT },
             errorMessage = get(ERROR_MESSAGE),

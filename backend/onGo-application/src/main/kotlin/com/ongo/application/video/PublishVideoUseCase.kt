@@ -4,6 +4,7 @@ import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.common.exception.BusinessException
 import com.ongo.common.util.safeValueOfOrThrow
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
@@ -11,6 +12,7 @@ import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.video.*
+import com.ongo.application.platform.PlatformConfigurationPort
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -26,6 +28,7 @@ class PublishVideoUseCase(
     private val videoUploadPoller: VideoUploadPoller,
     private val userWriteGuard: UserWriteGuard,
     private val scheduleRepository: ScheduleRepository,
+    private val platformConfigurationPort: PlatformConfigurationPort? = null,
 ) {
 
     @Transactional
@@ -49,6 +52,12 @@ class PublishVideoUseCase(
 
         require(video.fileUrl != null) { "업로드가 완료된 미디어 파일을 찾을 수 없습니다." }
         effectiveConfigs.forEach { config ->
+            platformConfigurationPort?.status(config.platform)?.takeUnless { it.configured }?.let { status ->
+                throw BusinessException(
+                    "PLATFORM_NOT_CONFIGURED",
+                    status.reason ?: "${config.platform} 플랫폼 연동 설정이 없어 게시할 수 없습니다.",
+                )
+            }
             val capability = PlatformUploadCapabilities.get(config.platform)
                 ?: throw IllegalArgumentException("${video.mediaType.name.lowercase()} 게시를 지원하지 않는 플랫폼입니다: ${config.platform}")
             require(video.mediaType in capability.acceptedMediaTypes) {

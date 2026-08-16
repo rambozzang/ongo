@@ -1,6 +1,6 @@
 <template>
   <div
-    class="card border-l-4 transition-all hover:shadow-md"
+    class="card group border-l-4 transition-all hover:shadow-md"
     :class="[
       sentimentBorderClass,
       comment.isHidden ? 'opacity-60' : '',
@@ -109,11 +109,10 @@
           </span>
         </div>
 
-        <!-- Actions (visible on hover) -->
+        <!-- Actions stay visible on touch devices and reveal on hover/focus on desktop. -->
         <div
           v-if="!isReplying"
-          class="flex flex-wrap gap-2 opacity-0 transition-opacity group-hover:opacity-100"
-          :class="showActions ? 'opacity-100' : ''"
+          class="flex flex-wrap gap-2 opacity-100 transition-opacity desktop:opacity-0 desktop:group-hover:opacity-100 desktop:group-focus-within:opacity-100"
         >
           <button
             v-if="platformCaps?.canReply && !comment.isReplied"
@@ -124,6 +123,7 @@
             {{ $t('comments.card.reply') }}
           </button>
           <button
+            v-if="platformCaps?.canHide"
             type="button"
             class="text-caption text-gray-600 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
             @click="emit('hide', comment.id)"
@@ -192,12 +192,13 @@ const emit = defineEmits<{
 
 const expanded = ref(false)
 const isReplying = ref(false)
-const showActions = ref(false)
 const showDeleteConfirm = ref(false)
 
 const platformCaps = computed(() => {
-  if (!props.capabilities) return { canReply: true, canDelete: true, canLike: false, canHide: true, canListComments: true }
-  return props.capabilities[props.comment.platform] ?? { canReply: false, canDelete: false, canLike: false, canHide: true, canListComments: false }
+  // Capabilities come from the server. During loading/error, hide actions
+  // that would call an unknown provider instead of failing open.
+  if (!props.capabilities) return { canReply: false, canDelete: false, canLike: false, canHide: false, canListComments: false }
+  return props.capabilities[props.comment.platform] ?? { canReply: false, canDelete: false, canLike: false, canHide: false, canListComments: false }
 })
 
 const relativeTime = computed(() => {

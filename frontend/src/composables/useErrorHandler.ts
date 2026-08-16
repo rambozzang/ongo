@@ -110,8 +110,8 @@ export function useErrorHandler() {
           // Try to extract error message from response
           const responseData = error.response?.data as { error?: string; message?: string }
           result.message =
-            responseData?.error ||
             responseData?.message ||
+            responseData?.error ||
             (context?.action
               ? `${context.action} 중 오류가 발생했습니다`
               : '알 수 없는 오류가 발생했습니다')

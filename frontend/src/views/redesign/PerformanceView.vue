@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-full bg-surface-base px-4 py-5 text-content tablet:px-[22px] tablet:py-6">
+  <div class="mx-auto min-h-full w-full max-w-[1480px] bg-surface-base px-4 py-5 text-content tablet:px-[22px] tablet:py-6">
     <header class="mb-[18px] flex flex-col gap-3 tablet:flex-row tablet:items-end tablet:justify-between">
       <div>
         <p class="font-mono text-[10px] uppercase tracking-[0.16em] text-content-tertiary">{{ t('nav.analytics') }}</p>

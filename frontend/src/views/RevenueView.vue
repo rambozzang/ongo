@@ -402,14 +402,12 @@ const filteredData = computed(() => {
 })
 
 const platformBarData = computed(() => {
-  const labels = ['YouTube', 'TikTok', 'Instagram', 'Naver Clip']
-  const data = revenueStore.platformBreakdown.map(p => p.revenue)
-  const colors = [
-    PLATFORM_CONFIG.YOUTUBE.color,
-    '#000000',
-    PLATFORM_CONFIG.INSTAGRAM.color,
-    PLATFORM_CONFIG.NAVER_CLIP.color,
-  ]
+  const breakdown = revenueStore.platformBreakdown
+  const labels = breakdown.map(item =>
+    PLATFORM_CONFIG[item.platform as keyof typeof PLATFORM_CONFIG]?.label ?? item.platform,
+  )
+  const data = breakdown.map(item => item.revenue)
+  const colors = breakdown.map(item => getPlatformColor(item.platform))
 
   return {
     labels,

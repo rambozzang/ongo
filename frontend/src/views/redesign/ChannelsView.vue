@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-full bg-surface-base px-4 py-5 text-content tablet:px-[22px] tablet:py-6">
+  <div class="mx-auto min-h-full w-full max-w-[1480px] bg-surface-base px-4 py-5 text-content tablet:px-[22px] tablet:py-6">
     <header class="mb-[18px] flex flex-col gap-3 tablet:flex-row tablet:items-end tablet:justify-between">
       <div>
         <p class="font-mono text-[10px] uppercase tracking-[0.16em] text-content-tertiary">{{ t('nav.channels') }}</p>
@@ -89,7 +89,10 @@
 
           <div class="mt-3 flex items-center gap-2 text-[11px] text-content-tertiary">
             <span class="flex-1 truncate">{{ syncNote(channel) }}</span>
-            <button type="button" class="shrink-0 text-content-secondary transition-colors duration-150 hover:text-accent disabled:opacity-50" :disabled="channelStore.isSyncingChannel" @click="syncChannel(channel.id)">
+            <span v-if="isUnsupportedPlatform(channel.platform)" class="shrink-0 text-content-quaternary">
+              {{ t('channels.unsupported') }}
+            </span>
+            <button v-else type="button" class="shrink-0 text-content-secondary transition-colors duration-150 hover:text-accent disabled:opacity-50" :disabled="channelStore.isSyncingChannel" @click="syncChannel(channel.id)">
               {{ channelStore.isSyncingChannel ? t('action.loading') : t('channels.syncAll') }}
             </button>
           </div>
@@ -127,6 +130,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotificationStore } from '@/stores/notification'
+import { channelApi } from '@/api/channel'
 import { AdjustmentsHorizontalIcon, ExclamationTriangleIcon, LinkIcon, PlusIcon } from '@heroicons/vue/24/outline'
 import type { Channel, Platform } from '@/types/channel'
 import PlatformChip from '@/components/redesign/PlatformChip.vue'
@@ -134,7 +138,7 @@ import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
 import { useChannelStore } from '@/stores/channel'
 import ConnectChannelModal from '@/components/channel/ConnectChannelModal.vue'
-import { buildOAuthUrl, generateOAuthStateNonce, generatePKCE } from '@/utils/oauth'
+import { buildOAuthState, generateOAuthStateNonce, generatePKCE, getOAuthRedirectUri } from '@/utils/oauth'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -153,20 +157,25 @@ const PLATFORM_CODES: Partial<Record<Platform, 'YT' | 'IG' | 'TT' | 'FB' | 'NV' 
   TWITTER: 'TW',
 }
 
-const expiredChannels = computed(() => channels.value.filter((channel) => ['EXPIRED', 'DISCONNECTED'].includes(channel.tokenStatus)))
-const warningCount = computed(() => channels.value.filter((channel) => channel.tokenStatus === 'EXPIRING_SOON').length)
-const healthyCount = computed(() => channels.value.filter((channel) => channel.tokenStatus === 'ACTIVE').length)
+const expiredChannels = computed(() => channels.value.filter((channel) => !isUnsupportedPlatform(channel.platform) && ['EXPIRED', 'DISCONNECTED'].includes(channel.tokenStatus)))
+const warningCount = computed(() => channels.value.filter((channel) => !isUnsupportedPlatform(channel.platform) && channel.tokenStatus === 'EXPIRING_SOON').length)
+const healthyCount = computed(() => channels.value.filter((channel) => !isUnsupportedPlatform(channel.platform) && channel.tokenStatus === 'ACTIVE').length)
 
 function toRedesignPlatform(platform: Platform) {
   return PLATFORM_CODES[platform]
 }
+function isUnsupportedPlatform(platform: Platform): boolean {
+  return platform === 'NAVER_CLIP'
+}
 function statusVariant(channel: Channel): 'success' | 'warning' | 'error' | 'muted' {
+  if (isUnsupportedPlatform(channel.platform)) return 'muted'
   if (channel.tokenStatus === 'ACTIVE') return 'success'
   if (channel.tokenStatus === 'EXPIRING_SOON') return 'warning'
   if (['EXPIRED', 'DISCONNECTED'].includes(channel.tokenStatus)) return 'error'
   return 'muted'
 }
 function statusLabel(channel: Channel): string {
+  if (isUnsupportedPlatform(channel.platform)) return t('channels.unsupported')
   if (channel.tokenStatus === 'ACTIVE') return t('channels.connected')
   if (channel.tokenStatus === 'EXPIRING_SOON') return t('channels.warning')
   return t('channels.error')
@@ -175,6 +184,7 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat(locale.value, { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 }
 function syncNote(channel: Channel): string {
+  if (isUnsupportedPlatform(channel.platform)) return t('channels.unsupportedDescription')
   if (!channel.lastSyncedAt) return t('channels.connecting')
   const date = new Date(channel.lastSyncedAt)
   if (Number.isNaN(date.getTime())) return channel.lastSyncedAt
@@ -191,7 +201,12 @@ async function connectChannel(platform: Platform, addAsNew = false) {
       ? (await generatePKCE('twitter_code_verifier')).challenge
       : undefined
     const stateNonce = generateOAuthStateNonce()
-    window.location.href = buildOAuthUrl(platform, '/channels-v2', challenge, stateNonce, addAsNew)
+    const { authorizationUrl } = await channelApi.authorizationUrl(platform, {
+      redirectUri: getOAuthRedirectUri(),
+      state: buildOAuthState(platform, '/channels-v2', stateNonce, addAsNew),
+      codeChallenge: challenge,
+    })
+    window.location.href = authorizationUrl
   } catch (error) {
     isConnectModalOpen.value = false
     notify.error(error instanceof Error ? error.message : t('channels.connectFailed'))

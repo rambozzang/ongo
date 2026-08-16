@@ -27,12 +27,36 @@ case $? in
        exit 1 ;;
 esac
 
+# The production host keeps ffmpeg outside PATH under /data/ffmpeg. Prefer an
+# explicit .env value, but make the known installation usable for manual starts
+# as well. The application still probes availability and will fail closed when
+# the binary is genuinely absent.
+if [ -z "${FFMPEG_PATH:-}" ] && [ -x "/data/ffmpeg/bin/ffmpeg" ]; then
+    export FFMPEG_PATH="/data/ffmpeg/bin/ffmpeg"
+fi
+
+# URL import is optional, but resolve the deployment-managed yt-dlp location
+# when it exists so the JVM does not depend on the service user's PATH.
+if [ -z "${YT_DLP_PATH:-}" ]; then
+    if [ -x "/data/yt-dlp/bin/yt-dlp" ]; then
+        export YT_DLP_PATH="/data/yt-dlp/bin/yt-dlp"
+    elif [ -x "/data/yt-dlp/yt-dlp" ]; then
+        export YT_DLP_PATH="/data/yt-dlp/yt-dlp"
+    fi
+fi
+
 # 필수 환경변수 검증.
 # 정상 배포 경로에서는 deploy.sh 가 서비스를 멈추기 전에 이미 같은 검사를 통과했다.
 # 여기 검증은 수동 기동 등 다른 경로를 위한 방어선이다.
 MISSING_VARS="$(ongo_missing_env_vars)"
 if [ -n "$MISSING_VARS" ]; then
     ongo_report_missing_env_vars "$MISSING_VARS" "$ENV_FILE"
+    exit 1
+fi
+
+INVALID_SHORT_VARS="$(ongo_invalid_short_env_vars)"
+if [ -n "$INVALID_SHORT_VARS" ]; then
+    ongo_report_invalid_short_env_vars "$INVALID_SHORT_VARS" "$ENV_FILE"
     exit 1
 fi
 

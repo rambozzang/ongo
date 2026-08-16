@@ -41,7 +41,7 @@ class ChannelController(
 
     @Operation(
         summary = "채널 연동",
-        description = "지정된 플랫폼의 채널을 OAuth 인가 코드를 사용하여 연동합니다. 지원 플랫폼: youtube, tiktok, instagram, naverclip, twitter, facebook, threads, pinterest, linkedin, wordpress, tumblr, vimeo, dailymotion"
+        description = "지정된 플랫폼의 채널을 OAuth 인가 코드를 사용하여 연동합니다. 지원 플랫폼: youtube, tiktok, instagram, twitter, facebook, threads, pinterest, linkedin, wordpress, tumblr, vimeo, dailymotion"
     )
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "채널 연동 성공"),
@@ -52,7 +52,7 @@ class ChannelController(
     @PostMapping("/connect/{platform}")
     fun connectChannel(
         @Parameter(hidden = true) @CurrentUser userId: Long,
-        @Parameter(description = "연동할 플랫폼 (youtube, tiktok, instagram, naverclip, twitter, facebook, threads, pinterest, linkedin, wordpress, tumblr, vimeo, dailymotion)") @PathVariable platform: String,
+        @Parameter(description = "연동할 플랫폼 (youtube, tiktok, instagram, twitter, facebook, threads, pinterest, linkedin, wordpress, tumblr, vimeo, dailymotion)") @PathVariable platform: String,
         @Valid @RequestBody request: ConnectChannelRequest
     ): ResponseEntity<ResData<ConnectChannelResponse>> {
         val result = channelUseCase.connectChannel(userId, platform, request)

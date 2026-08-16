@@ -365,7 +365,7 @@ class VideoQueryUseCase(
     }
 
     @Transactional
-    fun deleteVideo(userId: Long, videoId: Long) {
+    fun deleteVideo(userId: Long, videoId: Long): VideoDeletionResult {
         val video = videoRepository.findById(videoId)
             ?: throw NotFoundException("영상", videoId)
 
@@ -377,38 +377,70 @@ class VideoQueryUseCase(
 
         // 외부 플랫폼에서 영상 삭제
         val uploads = videoUploadRepository.findByVideoId(videoId)
-        uploads.forEach { upload ->
-            val platformVideoId = upload.platformVideoId
-            if (platformVideoId != null) {
-                try {
-                    val uploadChannelId = upload.channelId
-                    val channel = if (uploadChannelId != null) {
-                        channelRepository.findById(uploadChannelId)
-                            ?.takeIf { it.userId == userId && it.platform == upload.platform }
-                    } else {
-                        channelRepository.findByUserIdAndPlatform(userId, upload.platform)
+        val externalFailures = buildList {
+            uploads.forEach { upload ->
+                val platformVideoId = upload.platformVideoId
+                if (platformVideoId != null) {
+                    try {
+                        val uploadChannelId = upload.channelId
+                        val channel = if (uploadChannelId != null) {
+                            channelRepository.findById(uploadChannelId)
+                                ?.takeIf { it.userId == userId && it.platform == upload.platform }
+                        } else {
+                            channelRepository.findByUserIdAndPlatform(userId, upload.platform)
+                        }
+                        if (channel == null || channel.status != ChannelStatus.ACTIVE) {
+                            add(
+                                ExternalDeletionFailure(
+                                    platform = upload.platform,
+                                    reason = "연결된 활성 채널을 찾지 못해 외부 영상 삭제를 확인하지 못했습니다.",
+                                ),
+                            )
+                        } else {
+                            val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
+                            val deleted = platformClientPort.deleteVideo(upload.platform, platformVideoId, accessToken)
+                            if (deleted) {
+                                log.info("플랫폼 영상 삭제 완료: platform={}, videoId={}", upload.platform, platformVideoId)
+                            } else {
+                                add(
+                                    ExternalDeletionFailure(
+                                        platform = upload.platform,
+                                        reason = "플랫폼에서 삭제를 확인하지 못했습니다. 플랫폼에서 직접 확인해 주세요.",
+                                    ),
+                                )
+                            }
+                        }
+                    } catch (e: Exception) {
+                        log.warn("플랫폼 영상 삭제 실패 (계속 진행): platform={}, videoId={}, error={}", upload.platform, platformVideoId, e.message)
+                        add(
+                            ExternalDeletionFailure(
+                                platform = upload.platform,
+                                reason = "플랫폼 삭제 요청 중 오류가 발생했습니다. 플랫폼에서 직접 확인해 주세요.",
+                            ),
+                        )
                     }
-                    if (channel != null && channel.status == ChannelStatus.ACTIVE) {
-                        val accessToken = tokenEncryptionPort.decrypt(channel.accessToken)
-                        platformClientPort.deleteVideo(upload.platform, platformVideoId, accessToken)
-                        log.info("플랫폼 영상 삭제 완료: platform={}, videoId={}", upload.platform, platformVideoId)
-                    }
-                } catch (e: Exception) {
-                    log.warn("플랫폼 영상 삭제 실패 (계속 진행): platform={}, videoId={}, error={}", upload.platform, platformVideoId, e.message)
                 }
             }
         }
 
         // 스토리지에서 파일 삭제
-        try {
+        val storageDeletionFailed = try {
             storageService.deleteFile(videoId)
+            false
         } catch (_: Exception) {
-            // 파일이 없어도 DB 레코드 삭제는 계속 진행
+            // 파일이 없어도 DB 레코드 삭제는 계속 진행하되, 성공으로 숨기지 않는다.
+            true
         }
 
         // 관련 레코드 삭제
         contentImageRepository.deleteByVideoId(videoId)
         videoRepository.delete(videoId)
+
+        return VideoDeletionResult(
+            videoId = videoId,
+            externalFailures = externalFailures,
+            storageDeletionFailed = storageDeletionFailed,
+        )
     }
 
     @Transactional
@@ -501,6 +533,17 @@ data class VideoListResult(
     val uploads: List<PlatformStatusResult>,
     val totalViews: Long,
     val createdAt: java.time.LocalDateTime?,
+)
+
+data class VideoDeletionResult(
+    val videoId: Long,
+    val externalFailures: List<ExternalDeletionFailure> = emptyList(),
+    val storageDeletionFailed: Boolean = false,
+)
+
+data class ExternalDeletionFailure(
+    val platform: Platform,
+    val reason: String,
 )
 
 data class PlatformStatusResult(

@@ -19,7 +19,12 @@
 # installation does not need multiple frontends. Keeping both variables in the
 # required list made older production .env files fail before the application
 # could use the safe APP_BASE_URL fallback.
-ONGO_REQUIRED_ENV_VARS="JWT_SECRET DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET OAUTH_STATE_SECRET APP_BASE_URL R2_ACCOUNT_ID R2_BUCKET R2_ACCESS_KEY R2_SECRET_KEY PORTONE_STORE_ID PORTONE_CHANNEL_KEY PORTONE_API_SECRET"
+ONGO_REQUIRED_ENV_VARS="JWT_SECRET DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET OAUTH_STATE_SECRET APP_BASE_URL R2_ACCOUNT_ID R2_BUCKET R2_ACCESS_KEY R2_SECRET_KEY PORTONE_STORE_ID PORTONE_CHANNEL_KEY PORTONE_API_SECRET PORTONE_WEBHOOK_SECRET"
+
+# Presence alone is not enough for credentials. This smaller set contains
+# values that have a stable, non-trivial identifier shape across deployments;
+# it catches accidental values such as "12" before the service is stopped.
+ONGO_SANITY_ENV_VARS="JWT_SECRET DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET OAUTH_STATE_SECRET APP_BASE_URL R2_BUCKET R2_ACCOUNT_ID R2_ACCESS_KEY R2_SECRET_KEY PORTONE_STORE_ID PORTONE_CHANNEL_KEY PORTONE_API_SECRET PORTONE_WEBHOOK_SECRET"
 
 # 누락된 변수명을 공백 구분 문자열로 표준출력에 낸다. 전부 있으면 빈 문자열.
 ongo_missing_env_vars() {
@@ -31,6 +36,34 @@ ongo_missing_env_vars() {
         fi
     done
     echo "$missing"
+}
+
+# Returns names only; never print the values. The application performs the
+# authoritative provider-specific validation after startup, while this keeps
+# deploy.sh and manual start fail-safe before an existing process is stopped.
+ongo_invalid_short_env_vars() {
+    local invalid=""
+    local var
+    local value
+    for var in $ONGO_SANITY_ENV_VARS; do
+        value="${!var:-}"
+        if [ "${#value}" -gt 0 ] && [ "${#value}" -lt 8 ]; then
+            invalid="$invalid $var"
+        fi
+    done
+    echo "$invalid"
+}
+
+ongo_report_invalid_short_env_vars() {
+    local invalid="$1"
+    local env_file="$2"
+    local var
+
+    echo "[ERROR] 다음 환경변수는 값이 너무 짧아 운영 자격 증명으로 사용할 수 없습니다:"
+    for var in $invalid; do
+        echo "          - $var (최소 8자)"
+    done
+    echo "        ${env_file} 파일에 실제 발급값을 넣은 뒤 다시 배포해주세요. 값 자체는 출력하지 않습니다."
 }
 
 # 누락 변수를 사람이 읽을 형태로 출력한다. 값은 찍지 않는다.

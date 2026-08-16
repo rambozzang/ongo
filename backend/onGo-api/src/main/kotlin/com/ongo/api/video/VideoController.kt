@@ -336,9 +336,24 @@ class VideoController(
     fun deleteVideo(
         @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
         @Parameter(description = "삭제할 영상 ID") @PathVariable id: Long,
-    ): ResponseEntity<ResData<Nothing?>> {
-        videoQueryUseCase.deleteVideo(userId, id)
-        return ResData.success(null, "영상이 삭제되었습니다")
+    ): ResponseEntity<ResData<VideoDeletionResponse>> {
+        val result = videoQueryUseCase.deleteVideo(userId, id)
+        val hasCleanupWarning = result.externalFailures.isNotEmpty() || result.storageDeletionFailed
+        val message = if (!hasCleanupWarning) {
+            "영상이 삭제되었습니다"
+        } else {
+            "내 라이브러리에서는 삭제했지만 일부 정리 작업의 완료를 확인하지 못했습니다"
+        }
+        return ResData.success(
+            VideoDeletionResponse(
+                videoId = result.videoId,
+                storageDeletionFailed = result.storageDeletionFailed,
+                externalFailures = result.externalFailures.map {
+                    ExternalDeletionFailureResponse(platform = it.platform, reason = it.reason)
+                },
+            ),
+            message,
+        )
     }
 
     @Operation(
@@ -357,7 +372,7 @@ class VideoController(
     fun retryUpload(
         @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
         @Parameter(description = "재시도할 영상 ID") @PathVariable id: Long,
-        @Parameter(description = "재시도할 플랫폼 (youtube, tiktok, instagram, naverclip)") @PathVariable platform: String,
+        @Parameter(description = "재시도할 플랫폼 (youtube, tiktok, instagram)") @PathVariable platform: String,
     ): ResponseEntity<ResData<Nothing?>> {
         publishVideoUseCase.retryUpload(userId, id, platform)
         return ResData.success(null, "재업로드가 시작되었습니다")

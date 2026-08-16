@@ -120,7 +120,7 @@ class AnalyticsController(
 
     @Operation(
         summary = "플랫폼 비교 조회",
-        description = "각 플랫폼(YouTube, TikTok, Instagram, Naver Clip)별 성과를 비교 분석합니다. 조회수, 참여율 등의 지표가 플랫폼별로 제공됩니다."
+        description = "연결되어 실제 수집된 플랫폼별 성과를 비교 분석합니다. 조회수, 참여율 등의 지표가 플랫폼별로 제공됩니다."
     )
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "플랫폼 비교 조회 성공"),

@@ -102,7 +102,8 @@ class ChannelJooqRepository(
             .set(STATUS, enumValue("channel_status", channel.status.name))
             .returningResult(ID)
             .fetchOne()!!
-            .get(ID)
+            .get(ID.name)
+            .let { (it as Number).toLong() }
 
         return findById(id)!!
     }
@@ -140,14 +141,14 @@ class ChannelJooqRepository(
     private fun Record.toChannel(): Channel {
         val platformStr = get(PLATFORM) ?: "YOUTUBE"
         return Channel(
-            id = get(ID),
-            userId = get(USER_ID),
-            workspaceId = get(DSL.field("workspace_id", Long::class.java)),
+            id = longValue(ID),
+            userId = longValue(USER_ID)!!,
+            workspaceId = longValue(DSL.field("workspace_id", Long::class.java)),
             platform = try { Platform.valueOf(platformStr) } catch (_: Exception) { Platform.YOUTUBE },
             platformChannelId = get(PLATFORM_CHANNEL_ID),
             channelName = get(CHANNEL_NAME),
             channelUrl = get(CHANNEL_URL),
-            subscriberCount = get(SUBSCRIBER_COUNT) ?: 0,
+            subscriberCount = longValue(SUBSCRIBER_COUNT) ?: 0,
             profileImageUrl = get(PROFILE_IMAGE_URL),
             accessToken = EncryptedToken(get(ACCESS_TOKEN)),
             refreshToken = get(REFRESH_TOKEN)?.let(::EncryptedToken),

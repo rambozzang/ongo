@@ -18,6 +18,8 @@ data class PlatformMetrics(
     val engagementRate: Double,
     val avgViewDuration: Long,
     val revenueMicro: Long,
+    /** Numeric zero can mean "not provided"; expose that distinction to clients. */
+    val unavailableMetrics: Set<String> = emptySet(),
 )
 
 data class CrossPlatformSummaryResponse(

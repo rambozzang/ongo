@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef, computed } from 'vue'
 import type { Platform } from '@/types/channel'
+import { PLATFORM_CONFIG } from '@/types/channel'
 import type {
   RevenueSummary,
   PlatformRevenueData,
@@ -14,10 +15,8 @@ import { revenueApi } from '@/api/revenue'
 
 export interface RevenueData {
   period: string
-  youtube: number
-  tiktok: number
-  instagram: number
-  naverClip: number
+  /** API가 실제로 반환한 플랫폼별 수익. 하드코딩된 플랫폼 목록을 사용하지 않는다. */
+  platforms: Record<string, number>
   total: number
 }
 
@@ -27,6 +26,14 @@ export interface RevenueSummaryLocal {
   averageRPM: number
   topPlatform: Platform
   topPlatformRevenue: number
+}
+
+function percentageChange(current: number, previous: number): number {
+  // A zero baseline has no meaningful percentage denominator. Returning zero
+  // keeps the UI truthful and avoids rendering Infinity/NaN for a new revenue
+  // stream whose first non-zero period has just arrived.
+  if (previous === 0) return 0
+  return ((current - previous) / previous) * 100
 }
 
 export const useRevenueStore = defineStore('revenue', () => {
@@ -77,34 +84,31 @@ export const useRevenueStore = defineStore('revenue', () => {
     if (data.length >= 2) {
       const lastMonth = data[data.length - 1].total
       const previousMonth = data[data.length - 2].total
-      monthlyGrowth = ((lastMonth - previousMonth) / previousMonth) * 100
+      monthlyGrowth = percentageChange(lastMonth, previousMonth)
     }
 
     const averageRPM = Math.floor(totalRevenue / (data.length * 10000))
-    const platformTotals = {
-      youtube: data.reduce((sum, item) => sum + item.youtube, 0),
-      tiktok: data.reduce((sum, item) => sum + item.tiktok, 0),
-      instagram: data.reduce((sum, item) => sum + item.instagram, 0),
-      naverClip: data.reduce((sum, item) => sum + item.naverClip, 0),
-    }
+    const platformTotals = data.reduce<Record<string, number>>((totals, item) => {
+      for (const [platform, revenue] of Object.entries(item.platforms)) {
+        totals[platform] = (totals[platform] ?? 0) + revenue
+      }
+      return totals
+    }, {})
 
     const topPlatformEntry = Object.entries(platformTotals).reduce(
       (max, [platform, revenue]) => (revenue > max.revenue ? { platform, revenue } : max),
-      { platform: 'youtube', revenue: platformTotals.youtube },
+      { platform: 'YOUTUBE', revenue: 0 },
     )
 
-    const platformMap: Record<string, Platform> = {
-      youtube: 'YOUTUBE',
-      tiktok: 'TIKTOK',
-      instagram: 'INSTAGRAM',
-      naverClip: 'NAVER_CLIP',
-    }
+    const topPlatform = Object.prototype.hasOwnProperty.call(PLATFORM_CONFIG, topPlatformEntry.platform)
+      ? topPlatformEntry.platform as Platform
+      : 'YOUTUBE'
 
     return {
       totalRevenue,
       monthlyGrowth: Math.round(monthlyGrowth * 100) / 100,
       averageRPM,
-      topPlatform: platformMap[topPlatformEntry.platform],
+      topPlatform,
       topPlatformRevenue: topPlatformEntry.revenue,
     }
   }
@@ -117,12 +121,16 @@ export const useRevenueStore = defineStore('revenue', () => {
     const total = totalAnnualRevenue.value
     if (total === 0) return []
 
-    const platformTotals = {
-      YOUTUBE: monthlyRevenue.value.reduce((sum, item) => sum + item.youtube, 0),
-      TIKTOK: monthlyRevenue.value.reduce((sum, item) => sum + item.tiktok, 0),
-      INSTAGRAM: monthlyRevenue.value.reduce((sum, item) => sum + item.instagram, 0),
-      NAVER_CLIP: monthlyRevenue.value.reduce((sum, item) => sum + item.naverClip, 0),
-    }
+    const platformTotals = monthlyRevenue.value.reduce<Record<string, number>>((totals, item) => {
+      for (const [platform, revenue] of Object.entries(item.platforms)) {
+        // Naver Clip has no public upload/analytics API. Do not present legacy
+        // rows as a currently supported revenue source.
+        if (platform !== 'NAVER_CLIP') {
+          totals[platform] = (totals[platform] ?? 0) + revenue
+        }
+      }
+      return totals
+    }, {})
 
     return Object.entries(platformTotals).map(([platform, revenue]) => ({
       platform: platform as Platform,
@@ -138,7 +146,7 @@ export const useRevenueStore = defineStore('revenue', () => {
     return recent.map((item, index) => {
       if (index === 0) return { period: item.period, growth: 0 }
       const previous = recent[index - 1].total
-      const growth = ((item.total - previous) / previous) * 100
+      const growth = percentageChange(item.total, previous)
       return {
         period: item.period,
         growth: Math.round(growth * 100) / 100,
@@ -166,29 +174,18 @@ export const useRevenueStore = defineStore('revenue', () => {
           if (!trendsByDate.has(period)) {
             trendsByDate.set(period, {
               period,
-              youtube: 0,
-              tiktok: 0,
-              instagram: 0,
-              naverClip: 0,
+              platforms: {},
               total: 0,
             })
           }
           const entry = trendsByDate.get(period)!
           const amount = point.revenueKrw ?? 0
-          switch (point.platform?.toUpperCase()) {
-            case 'YOUTUBE':
-              entry.youtube += amount
-              break
-            case 'TIKTOK':
-              entry.tiktok += amount
-              break
-            case 'INSTAGRAM':
-              entry.instagram += amount
-              break
-            case 'NAVER_CLIP':
-              entry.naverClip += amount
-              break
-          }
+          const platform = point.platform?.toUpperCase() ?? 'UNKNOWN'
+          // Legacy Naver Clip rows must not be presented as a supported,
+          // provider-backed revenue source because no public analytics API is
+          // available for it.
+          if (platform === 'NAVER_CLIP') continue
+          entry.platforms[platform] = (entry.platforms[platform] ?? 0) + amount
           entry.total += amount
         }
         monthlyRevenue.value = Array.from(trendsByDate.values())

@@ -1,9 +1,10 @@
-# 계정 삭제 — FK 별 정책 표 (초안)
+# 계정 삭제 — FK 별 정책 및 구현 현황
 
-작성: 2026-08-07 · Claude 작성, codex 독립 리뷰 대기
+작성: 2026-08-07 · 구현 반영: 2026-08-15
 전제 문서: `schema-drift-audit.md` §5.1
 
-**이 표가 승인되기 전에는 코드를 고치지 않는다.** 합의된 순서다.
+이 문서는 정책 근거와 현재 구현 범위를 함께 기록한다. `DELETE` 로 확정하지 않은 FK는
+여전히 `REVIEW_BLOCK`으로 남기며, 외부 스토리지·플랫폼·결제 데이터가 있는 계정은 삭제하지 않는다.
 
 ## 0. 왜 표부터 만드는가
 
@@ -85,7 +86,7 @@ FK 정책이 constraint 단위여도, **한 행이 여러 사용자를 참조하
 
 | 항목 | 값 |
 |---|---:|
-| `users` 참조 FK 제약 | 122 |
+| `users` 참조 FK 제약 | 128 |
 | `CASCADE` | 17 |
 | `NO ACTION` | 105 |
 | 살아 있는 쓰기 경로가 있는 테이블 | 33 |
@@ -128,7 +129,7 @@ FK 정책이 constraint 단위여도, **한 행이 여러 사용자를 참조하
 **같은 테이블인데 어느 컬럼으로 엮였느냐에 따라 결과가 갈린다.**
 → 정책은 테이블이 아니라 **FK(테이블 + 컬럼) 단위**여야 한다.
 
-## 3. 전체 `users` 참조 관계 (122건)
+## 3. 전체 `users` 참조 관계 (128건)
 
 | 테이블 | FK 컬럼 | 삭제규칙 | 소유 | 쓰기경로 | 도달성(상한) | 외부 리소스 컬럼 |
 |---|---|---|---|---|---|---|
@@ -137,6 +138,29 @@ FK 정책이 constraint 단위여도, **한 행이 여러 사용자를 참조하
 | `activity_logs` | `user_id` | NO ACTION | 단독 | LIVE | API | — |
 | `agency_creators` | `user_id` | NO ACTION | **공유/관계** | 쓰기없음 | — | — |
 | `agency_workspaces` | `owner_user_id` | NO ACTION | **공유/관계** | 쓰기없음 | — | logo_url |
+
+### 2.3 최근 마이그레이션에서 추가된 참조
+
+V74·V77·V83·V88·V90에서 추가된 아래 6개 외래키도 레지스트리에 등록했다. 모두
+`REVIEW_BLOCK`으로 두었다. CASCADE 여부만으로 개인 소유라고 결론내리면 API 키·OAuth
+토큰·게시 이력이 외부 클라이언트나 감사 데이터와 함께 사라질 수 있기 때문이다. 실제 삭제
+워커가 외부 접근 폐기와 보존 기간을 처리하는 절차를 갖춘 뒤 개별 정책을 다시 승인한다.
+
+| 테이블 | FK 컬럼 | 현재 정책 | 보류 이유 |
+|---|---|---|---|
+| `api_keys` | `user_id` | `REVIEW_BLOCK` | 외부 자동화 클라이언트 접근 폐기 절차 필요 |
+| `public_api_posts` | `user_id` | `REVIEW_BLOCK` | 외부 게시 이력·예약 상태 보존/취소 정책 필요 |
+| `public_oauth_apps` | `owner_id` | `REVIEW_BLOCK` | 개발자 앱과 외부 클라이언트 접근 폐기 필요 |
+| `public_oauth_authorization_codes` | `user_id` | `REVIEW_BLOCK` | 승인 코드 만료·감사 보존 정책 필요 |
+| `public_oauth_tokens` | `user_id` | `REVIEW_BLOCK` | 외부 OAuth 토큰 전량 폐기 검증 필요 |
+| `video_favorites` | `user_id` | `REVIEW_BLOCK` | 원본 영상과의 삭제 순서·보존 정책 필요 |
+
+V94의 `ai_pipeline_jobs.user_id`는 AI 실행 상태와 결과를 담는 사용자 단독 작업 데이터다.
+크레딧 사용 이력 자체는 별도 `REVIEW_BLOCK` 정책을 유지하지만, 파이프라인 job의 상태 행은
+계정 삭제 시 함께 제거하도록 `DELETE`로 등록했다.
+
+V95의 `ai_batch_jobs.user_id`도 배치 실행 상태와 결과만 담는 사용자 단독 job이므로 같은
+기준으로 `DELETE` 처리한다.
 | `ai_content_calendars` | `user_id` | NO ACTION | 단독 | LIVE | 차단 | — |
 | `ai_credit_transactions` | `user_id` | CASCADE | 단독 | - | — | — |
 | `ai_credits` | `user_id` | CASCADE | 단독 | - | — | — |
@@ -255,9 +279,9 @@ FK 정책이 constraint 단위여도, **한 행이 여러 사용자를 참조하
 | `workflow_executions` | `user_id` | NO ACTION | 단독 | LIVE | API | — |
 | `workspaces` | `owner_id` | NO ACTION | **공유/관계** | LIVE | API | logo_url, slug |
 
-## 4. 정책 제안
+## 4. 정책 현황
 
-### 4.1 `DELETE` 제안 (16건)
+### 4.1 `DELETE` 구현 기준 (23건)
 
 DB 안에서 완결되고, 사용자 단독 소유이며, 외부 식별자·스토리지 참조 컬럼이 없다.
 컬럼명에 `url/path/file/image/storage/slug/external/platform_` 가 있는지 실제 스키마로 확인했다.
@@ -265,8 +289,13 @@ DB 안에서 완결되고, 사용자 단독 소유이며, 외부 식별자·스�
 `goals`, `templates`, `automation_rules`, `automation_workflows`, `workflow_executions`,
 `recurring_schedules`, `recycling_suggestions`, `audience_segments`, `live_alert_configs`,
 `live_dashboard_alerts`, `usage_alert_configs`, `keyword_research_history`,
-`ai_content_calendars`, `channel_audit_reports`, `channel_health_metrics`, `ab_tests`
+`ai_content_calendars`, `channel_audit_reports`, `channel_health_metrics`, `ab_tests`,
+`ai_credits`, `ai_pipeline_jobs`, `ai_batch_jobs`, `notifications`, `refresh_tokens`, `subscriptions`, `user_settings`
 — 전부 `user_id` 컬럼이다.
+
+`subscriptions` 는 무료 상태이고 외부 결제 식별자가 없는 계정만 워커가 통과시킨다. 유료·시험·결제
+식별자가 남은 계정은 별도 구독 가드에서 `REVIEW_BLOCK`으로 종료한다. `ai_credits`는 현재 잔액
+상태만 삭제하고 구매·사용 이력은 계속 `REVIEW_BLOCK`이다.
 
 `keyword_research_history` 는 자동 검사에서 `keyword` 가 걸렸으나 외부 식별자가 아니다.
 수동 확인 후 `DELETE` 로 뒀다.
@@ -274,7 +303,7 @@ DB 안에서 완결되고, 사용자 단독 소유이며, 외부 식별자·스�
 #### 하위 FK 폐쇄 그래프 실측 (codex 보완 2)
 
 `users` 직접 FK 만으로는 삭제 가능성을 보장할 수 없다. 부모를 지워도 **자식 행이
-`NO ACTION` 으로 남아 있으면 실패**한다. 16개 후보를 뿌리로 깊이 4까지 재귀 조회했다.
+`NO ACTION` 으로 남아 있으면 실패**한다. 23개 후보를 뿌리로 깊이 4까지 재귀 조회했다.
 
 ```
 ab_tests             -> ab_test_variants            [CASCADE]
@@ -297,8 +326,9 @@ codex 가 든 예(`ab_tests` → variants/results)도 `CASCADE` 라 막지 않�
 부모를 먼저 지우면 `CASCADE` 로 함께 사라진다. 엔진이 순서를 그래프에서 계산하면 되고
 목록에 중복으로 있어도 멱등하게 0행 삭제가 된다.
 
-**단, 이건 스키마 근거이지 실행 근거가 아니다.** 실제 `DELETE` 재현은 §8 의
-Testcontainers fixture 로 고정한다. 그 전까지 이 16건도 확정이 아니다.
+실제 `DELETE` 재현은 §8의 `AccountDeletionDataAdapterIT` Testcontainers fixture로 고정한다.
+정책 레지스트리 전체를 실제 PostgreSQL에서 실행한 뒤 사용자·자식 row 삭제와 `COMPLETED` 기록을
+확인한다.
 
 #### wip 상태와 정책을 분리해 기록한다 (codex 보완 3)
 
@@ -392,9 +422,10 @@ FK 단위인 이유는 §2.2 다. `approvals` 처럼 같은 테이블에서 컬�
 **삭제를 한 건이라도 실행하기 전**이어야 한다. 일부 지운 뒤 발견하면 되돌릴 수 없다
 (codex 보완 8). 따라서 job 의 첫 단계가 레지스트리 검증이고, 실패 시 `BLOCKED_POLICY` 로 끝난다.
 
-## 6. 삭제 엔진 설계 (C + A')
+## 6. 삭제 엔진 설계 및 현재 구현 (C + A')
 
-정책 표 승인 후 구현한다. 외부 계약은 C(비동기), 내부 엔진은 A'(정책 레지스트리).
+외부 계약은 C(비동기), 내부 엔진은 A'(정책 레지스트리)로 구현했다. 현재는 정책 승인된
+개인 row만 DB 트랜잭션으로 삭제하며, 외부 리소스·공유·결제 데이터가 있는 계정은 차단한다.
 
 ### 6.1 외부 계약
 
@@ -412,7 +443,11 @@ FK 위반이나 잔존 데이터가 남는다.
 - DB 핵심 삭제는 **한 트랜잭션**으로 묶어 부분 반영을 만들지 않는다
 - 실패 시 전체 롤백 후 재시도한다. 재시도 횟수와 종료 조건을 명시한다
 
-### 6.4 외부 리소스 — 이번 설계에 포함한다 (codex 보완 7)
+### 6.4 외부 리소스 — 아직 구현하지 않은 차단 범위 (codex 보완 7)
+
+현재 워커는 외부 리소스를 수집하거나 삭제하지 않는다. 그래서 `assets`, `channels`, `videos`,
+외부 OAuth·공개 API·웹훅 등 관련 FK는 `REVIEW_BLOCK`으로 남아 있다. 아래 설계는 후속 구현
+기준이며, 완료 전까지 제품이 외부 데이터까지 삭제한다고 약속하지 않는다.
 
 순서는 **"수집 → DB 트랜잭션 → 외부 정리"** 다. `assets` 행을 먼저 지우면 `file_url` 을
 잃어 파일을 못 지우기 때문이다.
@@ -498,6 +533,7 @@ Testcontainers 로 실제 PostgreSQL 에 고정한다.
 - 플랫폼 OAuth 토큰·연동 해제
 - 결제 데이터 보존/익명화
 - 법적 보존 의무 — 여기서 단정하지 않는다. 제품·법무 확인 항목이다
+- 삭제 job 상태 조회 API와 지원자용 재처리 화면
 
 ### 9.1 별건이지만 지금도 일어나는 데이터 유실 — `approvals.user_id` CASCADE
 

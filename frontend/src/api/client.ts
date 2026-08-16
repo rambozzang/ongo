@@ -38,7 +38,11 @@ function processQueue(error: unknown, token: string | null) {
 
 function isSessionEstablishingRequest(config: InternalAxiosRequestConfig): boolean {
   const url = config.url ?? ''
-  return /\/auth\/(?:login|dev-login)(?:\/|$)/.test(url)
+  // These endpoints establish or inspect the session itself. A 401 here is
+  // the response the caller needs to render; refreshing with the same stale
+  // session would recurse and hide the real authentication error.
+  return /\/auth\/(?:login|dev-login|refresh)(?:\/|$)/.test(url)
+    || /\/auth\/(?:google|kakao)\/state(?:\/|$)/.test(url)
 }
 
 apiClient.interceptors.request.use(
@@ -56,7 +60,7 @@ apiClient.interceptors.response.use(
   (response) => {
     const resData = response.data as ResData<unknown>
     if (resData.success === false) {
-      return Promise.reject(new ApiError(resData.error ?? 'Unknown error', response.status))
+      return Promise.reject(new ApiError(resData.message ?? resData.error ?? 'Unknown error', response.status))
     }
     return response
   },
@@ -135,7 +139,7 @@ export function unwrapResponse<T>(response: { data: ResData<T> }): T {
   if (response.data.success) {
     return response.data.data as T
   }
-  throw new ApiError(response.data.error ?? 'No data', 0)
+  throw new ApiError(response.data.message ?? response.data.error ?? 'No data', 0)
 }
 
 export default apiClient

@@ -42,6 +42,7 @@ import {
 } from 'chart.js'
 import type { Chart, Plugin, TooltipModel } from 'chart.js'
 import type { TrendDataPoint } from '@/types/analytics'
+import { PLATFORM_CONFIG, type Platform } from '@/types/channel'
 import { useThemeStore } from '@/stores/theme'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
@@ -64,6 +65,20 @@ const props = defineProps<{
   data: TrendDataPoint[]
   period: '7d' | '30d'
 }>()
+
+function platformKeys(data: TrendDataPoint[]): string[] {
+  return Array.from(new Set(data.flatMap(point => Object.keys(point.platformViews))))
+    .filter(key => key.toUpperCase().replace('-', '_') !== 'NAVER_CLIP')
+}
+
+function platformMeta(key: string) {
+  const platform = key.toUpperCase().replace('-', '_') as Platform
+  const config = PLATFORM_CONFIG[platform]
+  if (platform === 'TIKTOK') {
+    return { label: 'TikTok', color: themeStore.isDark ? '#E5E7EB' : '#000000' }
+  }
+  return config ?? { label: key, color: '#6B7280' }
+}
 
 defineEmits<{
   'update:period': [value: '7d' | '30d']
@@ -240,53 +255,20 @@ const chartData = computed(() => {
       const date = new Date(d.date)
       return `${date.getMonth() + 1}/${date.getDate()}`
     }),
-    datasets: [
-      {
-        label: 'YouTube',
-        data: props.data.map((d) => d.platformViews['youtube'] ?? 0),
-        borderColor: '#FF0000',
-        backgroundColor: ctx ? createGradient(ctx, '#FF0000', height) : 'rgba(255, 0, 0, 0.15)',
+    datasets: platformKeys(props.data).map(key => {
+      const meta = platformMeta(key)
+      return {
+        label: meta.label,
+        data: props.data.map(point => point.platformViews[key] ?? point.platformViews[key.toLowerCase()] ?? 0),
+        borderColor: meta.color,
+        backgroundColor: ctx ? createGradient(ctx, meta.color, height) : `${meta.color}26`,
         tension: 0.4,
         pointRadius: 0,
         pointHoverRadius: 6,
         borderWidth: 2.5,
         fill: true,
-      },
-      {
-        label: 'TikTok',
-        data: props.data.map((d) => d.platformViews['tiktok'] ?? 0),
-        borderColor: themeStore.isDark ? '#E5E7EB' : '#000000',
-        backgroundColor: ctx ? createGradient(ctx, themeStore.isDark ? '#E5E7EB' : '#000000', height) :
-          themeStore.isDark ? 'rgba(229, 231, 235, 0.15)' : 'rgba(0, 0, 0, 0.15)',
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-        borderWidth: 2.5,
-        fill: true,
-      },
-      {
-        label: 'Instagram',
-        data: props.data.map((d) => d.platformViews['instagram'] ?? 0),
-        borderColor: '#E1306C',
-        backgroundColor: ctx ? createGradient(ctx, '#E1306C', height) : 'rgba(225, 48, 108, 0.15)',
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-        borderWidth: 2.5,
-        fill: true,
-      },
-      {
-        label: 'Naver Clip',
-        data: props.data.map((d) => d.platformViews['naverClip'] ?? 0),
-        borderColor: '#03C75A',
-        backgroundColor: ctx ? createGradient(ctx, '#03C75A', height) : 'rgba(3, 199, 90, 0.15)',
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-        borderWidth: 2.5,
-        fill: true,
-      },
-    ],
+      }
+    }),
   }
 })
 

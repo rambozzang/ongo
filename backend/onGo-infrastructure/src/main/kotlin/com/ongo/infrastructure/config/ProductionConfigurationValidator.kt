@@ -28,6 +28,7 @@ class ProductionConfigurationValidator(
     @Value("\${payment.portone.store-id:}") private val portoneStoreId: String,
     @Value("\${payment.portone.channel-key:}") private val portoneChannelKey: String,
     @Value("\${payment.portone.api-secret:}") private val portoneApiSecret: String,
+    @Value("\${payment.portone.webhook-secret:}") private val portoneWebhookSecret: String,
     @Value("\${spring.security.oauth2.client.registration.google.client-id:}") private val googleClientId: String,
     @Value("\${spring.security.oauth2.client.registration.google.client-secret:}") private val googleClientSecret: String,
     @Value("\${spring.security.oauth2.client.registration.kakao.client-id:}") private val kakaoClientId: String,
@@ -36,6 +37,7 @@ class ProductionConfigurationValidator(
     @Value("\${public-api.oauth.callback-url:}") private val publicOAuthCallbackUrl: String,
     @Value("\${spring.ai.anthropic.api-key:}") private val anthropicApiKey: String,
     @Value("\${spring.ai.openai.api-key:}") private val openAiApiKey: String,
+    @Value("\${spring.ai.google.genai.api-key:}") private val geminiApiKey: String,
     @Value("\${dashscope.api-key:}") private val dashScopeApiKey: String,
 ) {
 
@@ -74,6 +76,10 @@ class ProductionConfigurationValidator(
         requireReal("payment.portone.store-id", portoneStoreId)
         requireReal("payment.portone.channel-key", portoneChannelKey)
         requireReal("payment.portone.api-secret", portoneApiSecret)
+        // A missing webhook secret makes every webhook unverifiable while the
+        // service still appears healthy. Fail startup before payments can get
+        // stuck in a pending state.
+        requireReal("payment.portone.webhook-secret", portoneWebhookSecret)
 
         requireReal("google OAuth client-id", googleClientId)
         requireReal("google OAuth client-secret", googleClientSecret)
@@ -88,7 +94,7 @@ class ProductionConfigurationValidator(
             "public-api.oauth.callback-url must use HTTPS in production"
         }
 
-        require(listOf(anthropicApiKey, openAiApiKey, dashScopeApiKey).any(::isRealValue)) {
+        require(listOf(anthropicApiKey, openAiApiKey, geminiApiKey, dashScopeApiKey).any(::isRealValue)) {
             "at least one production AI provider API key must be configured"
         }
     }
@@ -101,7 +107,15 @@ class ProductionConfigurationValidator(
 
     private fun isRealValue(value: String): Boolean {
         val normalized = value.trim().lowercase()
-        if (normalized.isBlank()) return false
+        if (normalized.length < MIN_REAL_VALUE_LENGTH) return false
         return listOf("dummy", "placeholder", "change-me", "your-", "localhost").none(normalized::contains)
+    }
+
+    companion object {
+        // A two-character value can pass a non-empty check while still being an
+        // obvious placeholder (the production .env had exactly this failure).
+        // This is intentionally a conservative sanity check, not provider
+        // validation; provider-specific formats remain the provider's concern.
+        private const val MIN_REAL_VALUE_LENGTH = 8
     }
 }

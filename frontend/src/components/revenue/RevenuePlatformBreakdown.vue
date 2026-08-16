@@ -41,7 +41,6 @@ const chartData = computed(() => {
     YOUTUBE: PLATFORM_CONFIG.YOUTUBE.color,
     TIKTOK: '#000000',
     INSTAGRAM: PLATFORM_CONFIG.INSTAGRAM.color,
-    NAVER_CLIP: PLATFORM_CONFIG.NAVER_CLIP.color,
   }
 
   return {

@@ -41,6 +41,22 @@
     "seeAll": "See all",
     "prev": "Previous"
   },
+  "a11y": {
+    "skipToContent": "Skip to content"
+  },
+  "searchOverlay": {
+    "placeholder": "Search videos, channels, or pages",
+    "inputLabel": "Search videos, channels, or pages",
+    "results": "Search results",
+    "noResults": "No results found.",
+    "clear": "Clear search",
+    "recent": "Recent searches",
+    "clearRecent": "Clear",
+    "quickActions": "Quick actions",
+    "move": "Move",
+    "select": "Select",
+    "close": "Close"
+  },
   "ugc": {
     "title": "UGC Campaigns",
     "description": "Create UGC campaigns and recruit and manage creators.",
@@ -895,6 +911,14 @@
     "publishQueueTitle": "Publish queue operations",
     "publishQueueDescription": "Inspect active leases, due retries, and unconfirmed platform uploads.",
     "publishQueueLoadError": "The publish queue could not be loaded.",
+    "accountDeletionTitle": "Account deletion operations",
+    "accountDeletionDescription": "Inspect durable deletion jobs and retry failed or policy-blocked requests.",
+    "accountDeletionLoadError": "Account deletion jobs could not be loaded.",
+    "accountDeletionEmpty": "No account deletion jobs require attention.",
+    "deletionJob": "Job",
+    "deletionUser": "User",
+    "retryDeletion": "Retry",
+    "retryDeletionMessage": "Put account deletion job #{id} back in the processing queue?",
     "queuePending": "Pending",
     "queueLeases": "Active leases",
     "queueRetries": "Due retries",
@@ -1134,14 +1158,26 @@
       "currentPlan": "Current Plan",
       "joinDate": "Joined",
       "dangerZone": "Danger Zone",
-      "dangerDesc": "Account deletion requests are protected until the safe cleanup flow for data and external connections is ready.",
+      "dangerDesc": "We check owned data and external connections before processing deletion asynchronously. Billing or shared data may block the request.",
       "deleteAccount": "Delete Account",
-      "deleteConfirm": "All data will be permanently deleted. Are you sure you want to delete your account?",
+      "deleteConfirm": "Eligible account data will be permanently deleted and the request will be queued. Billing or shared data may reject the request. Continue?",
       "deleteBtn": "Delete",
-      "deleteUnavailable": "Account deletion is currently unavailable.",
-      "deleteUnavailableDesc": "It will return once the safe cleanup flow for your data and external connections is ready. Your account has not been changed.",
-      "deleteSuccess": "Account has been deleted.",
-      "deleteError": "Failed to delete account. Please try again."
+      "deleteUnavailable": "Account deletion could not be requested.",
+      "deleteUnavailableDesc": "Billing or shared data can block deletion to protect the account.",
+      "deleteSuccess": "Account deletion has been requested.",
+      "deleteError": "Failed to delete account. Please try again.",
+      "deletionStatus": "Account deletion status",
+      "deletionJobId": "Request ID",
+      "deletionSupportReference": "Support reference",
+      "deletionStatusActive": "Active",
+      "deletionStatusRequested": "Requested",
+      "deletionStatusProcessing": "Processing",
+      "deletionStatusBlocked": "Review required",
+      "deletionStatusFailed": "Retry required",
+      "deletionStatusCompleted": "Completed",
+      "deletionStatusProcessingDesc": "Your deletion request was accepted and is being processed in the background.",
+      "deletionStatusBlockedDesc": "A retention or external-connection policy needs review. Share the support reference with support.",
+      "deletionStatusFailedDesc": "Processing failed. An operator can review and retry this request."
     }
   },
   "brandDeal": {
@@ -1382,6 +1418,8 @@
       "skip": "Connect later",
       "optionalHint": "You can finish signing up without connecting a channel. Connect one later from Channels.",
       "loadingPlatforms": "Loading available platforms...",
+      "unavailableTitle": "Platforms unavailable in this deployment",
+      "unavailableDescription": "Connect buttons will appear after the production provider settings are completed.",
       "disconnecting": "Disconnecting...",
       "disconnectFailed": "Failed to disconnect the platform.",
       "required": "Please connect at least one platform.",
@@ -2139,14 +2177,14 @@
     "addChannel": "Connect Channel",
     "pageGuideTitle": "Channel Management",
     "pageGuide": [
-      "Use the Connect Channel button to link your YouTube, TikTok, Instagram, and Naver Clip accounts via OAuth",
+      "Use the Connect Channel button to link platform accounts whose production settings are available",
       "View total channels, healthy, warning, and error status counts in the summary cards above",
       "If a channel token shows warning (yellow) or error (red), use the reconnect button to refresh the token",
       "Use the Sync All button to update subscriber and content info for all channels",
       "Disconnecting a channel will stop uploads and analytics for that platform"
     ],
     "emptyTitle": "No connected channels",
-    "emptyDescription": "Connect your YouTube, TikTok, Instagram, or Naver Clip channels to start uploading and analyzing videos.",
+    "emptyDescription": "Connect an available platform channel to start uploading and analyzing videos.",
     "connectChannel": "Connect Channel",
     "totalChannels": "Total Channels",
     "healthy": "Healthy",
@@ -2171,8 +2209,12 @@
     "channelsConnected": "{current}/{max} connected",
     "connected": "Connected",
     "connecting": "Connecting...",
+    "unsupported": "Currently unsupported",
+    "unsupportedDescription": "Naver Clip has no public upload or analytics API, so this legacy channel cannot sync. Disconnect it to clean up.",
     "connect": "Connect",
     "loadingPlatforms": "Loading available platforms...",
+    "platformsUnavailableTitle": "Platforms currently unavailable",
+    "platformsUnavailableDescription": "These platforms are hidden until their production OAuth settings are configured.",
     "close": "Close"
   },
   "videos": {
@@ -2207,7 +2249,7 @@
     "statusScheduled": "Scheduled",
     "statusDraft": "Draft",
     "emptyTitle": "No videos yet",
-    "emptyDescription": "Upload your first video and publish to YouTube, TikTok, Instagram, and Naver Clip all at once.",
+    "emptyDescription": "Upload your first video and publish to your connected platforms at once.",
     "emptyFilterTitle": "No videos match your filters",
     "emptyFilterDescription": "Try changing or clearing your filters.",
     "firstUpload": "Upload First Video",
@@ -3229,6 +3271,7 @@
     "comments": "Comments",
     "shares": "Shares",
     "engagementRate": "Engagement Rate",
+    "metricUnavailable": "Not available",
     "detailedAnalysis": "Detailed Analysis"
   },
   "prediction": {
@@ -4255,10 +4298,17 @@
       "monthlyUploads": "Uploads this month",
       "coreTasks": "Core work",
       "allTools": "All tools",
-      "allToolsHint": "Find less frequent features here."
+      "allToolsHint": "Find less frequent features here.",
+      "loading": "Loading available features…"
     },
     "shell": {
       "capabilitiesFailed": "Feature availability could not be synced. The menu is hidden until you retry."
+    },
+    "featureUnavailable": {
+      "title": "This feature is not available",
+      "description": "This feature is not enabled by the current deployment or server state. Try again later or return to Today.",
+      "reasonLabel": "Current status: ",
+      "backToToday": "Back to Today"
     },
     "topbar": {
       "searchPlaceholder": "Search",
@@ -4375,6 +4425,13 @@
       "shortsNoClips": "No Shorts clips could be selected automatically.",
       "targetsTitle": "Publish to",
       "targetsHint": "Click a channel to exclude it",
+      "workflowLabel": "Upload progress",
+      "workflowSource": "Source",
+      "workflowTarget": "Channels",
+      "workflowCopy": "Copy",
+      "workflowSchedule": "Schedule",
+      "workflowCurrent": "Next: {step}",
+      "workflowReady": "Ready to schedule.",
       "platformUnavailable": "Video publishing is not currently supported for this channel.",
       "noChannels": "No channels connected",
       "tabCommon": "Common",
