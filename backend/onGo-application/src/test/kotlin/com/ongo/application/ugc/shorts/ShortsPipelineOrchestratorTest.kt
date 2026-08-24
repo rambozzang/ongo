@@ -56,6 +56,19 @@ class ShortsPipelineOrchestratorTest {
         override fun save(run: PipelineRun) = run.also { current = it }
         override fun update(run: PipelineRun) = run.also { current = it }
         override fun findById(id: Long) = current.takeIf { it.id == id }
+
+        /** 실제 구현의 `WHERE started_at IS NULL` 과 같은 계약: 비어 있을 때만 쓴다. */
+        override fun markStartedIfAbsent(id: Long, startedAt: Instant): Boolean {
+            if (current.id != id || current.startedAt != null) return false
+            current = current.copy(startedAt = startedAt)
+            return true
+        }
+
+        override fun markDeliveredIfAbsent(id: Long, deliveredAt: Instant): Boolean {
+            if (current.id != id || current.deliveredAt != null) return false
+            current = current.copy(deliveredAt = deliveredAt)
+            return true
+        }
         override fun findByStatus(status: PipelineRunStatus, limit: Int) =
             listOf(current).filter { it.status == status }.take(limit)
         override fun findByWorkspace(workspaceId: Long, offset: Int, limit: Int) = listOf(current)
@@ -145,8 +158,16 @@ class ShortsPipelineOrchestratorTest {
     private val videoRepository = mockk<VideoRepository>()
     private val userSettingsRepository = mockk<UserSettingsRepository>()
 
-    private fun baseRun(status: PipelineRunStatus = PipelineRunStatus.PENDING) = PipelineRun(
+    /**
+     * @param sourceDurationMs 실행에 고정된 원본 길이. 기본값은 이 필드 도입 이전 실행과
+     *   같은 `null` 이라, 이 값을 지정하지 않은 기존 테스트는 종전 정액을 그대로 본다.
+     */
+    private fun baseRun(
+        status: PipelineRunStatus = PipelineRunStatus.PENDING,
+        sourceDurationMs: Long? = null,
+    ) = PipelineRun(
         id = 1L, workspaceId = workspaceId, userId = userId, sourceVideoId = videoId, status = status,
+        sourceDurationMs = sourceDurationMs,
     )
 
     private fun clip(
@@ -161,6 +182,25 @@ class ShortsPipelineOrchestratorTest {
         title = "클립 $seq", caption = "캡션 $seq",
         status = status, subtitleJson = subtitleJson, scheduledAt = scheduledAt,
     )
+
+    /**
+     * TRANSCRIBE~HOOK 실행기 한 벌. 오케스트레이터는 fromStage 이후 모든 단계를 돌리므로
+     * 중간 단계 실행기가 없으면 "단계 실행기가 없습니다"로 죽는다. 후킹 게이트에서 멈춘다.
+     */
+    private fun hookGateExecutors(): List<ShortsStageExecutor> {
+        val ok: (ShortsStageContext) -> ShortsStageOutput = { ShortsStageOutput(outputSnapshot = "{}") }
+        return listOf(
+            FakeStageExecutor(PipelineStage.TRANSCRIBE) {
+                ShortsStageOutput(outputSnapshot = """{"text":"t","segments":[]}""", transcriptText = "t")
+            },
+            FakeStageExecutor(PipelineStage.REFRAME, ok),
+            FakeStageExecutor(PipelineStage.SEGMENT) {
+                ShortsStageOutput(outputSnapshot = "{}", clipCandidates = listOf(ClipCandidate("t", "c", 0, 15000)))
+            },
+            FakeStageExecutor(PipelineStage.SUBTITLE, ok),
+            FakeStageExecutor(PipelineStage.HOOK, ok),
+        )
+    }
 
     private fun stubCommon(templates: List<ShortsTemplate> = emptyList()) {
         every { videoRepository.findById(videoId) } returns
@@ -188,6 +228,38 @@ class ShortsPipelineOrchestratorTest {
         userSettingsRepository = userSettingsRepository,
         executors = executors,
     )
+
+    // ---- 파일럿 측정: 최초 실행 시각 ----
+
+    /**
+     * 재실행·재개도 `run` 을 다시 지난다.
+     *
+     * 그때마다 시작 시각을 덮으면 며칠 걸린 납품이 방금 시작한 납품으로 보이고,
+     * 리드타임은 파일럿에서 납기를 판단하는 유일한 지표다.
+     */
+    @Test
+    fun `재개해도 최초 실행 시각은 처음 값을 유지한다`() {
+        stubCommon()
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+
+        val target = orchestrator(runRepo, stageRepo, clipRepo, hookRepo, emptyList())
+
+        /*
+         * SCHEDULE 부터 시작하고 예약 파라미터를 주지 않으면 루프가 즉시 멈춘다.
+         * 여기서 보려는 것은 단계 실행이 아니라 진입 시점의 시작 시각 기록이다.
+         */
+        target.run(1L, PipelineStage.SCHEDULE)
+        val first = runRepo.findById(1L)!!.startedAt
+        assertNotNull(first, "최초 실행에서 시작 시각이 기록되지 않았다")
+
+        // 같은 실행을 다시 돌린다(게이트 재개·재실행이 지나는 경로와 동일).
+        target.run(1L, PipelineStage.SCHEDULE)
+
+        assertEquals(first, runRepo.findById(1L)!!.startedAt, "재개가 최초 시작 시각을 덮어썼다")
+    }
 
     // ---- 0. REFRAME crop 영속성 (D1) ----
 
@@ -385,13 +457,14 @@ class ShortsPipelineOrchestratorTest {
 
         orchestrator(runRepo, stageRepo, clipRepo, hookRepo, executors).run(1L, PipelineStage.TRANSCRIBE)
 
-        // 단계 → 기능 매핑대로 차감된다 (TRANSCRIBE=STT, REFRAME/SEGMENT/SUBTITLE/HOOK)
-        verify { creditService.validateAndDeduct(userId, AiFeature.STT) }
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_REFRAME) }
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_SEGMENT) }
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_SUBTITLE) }
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_HOOK) }
-        verify(exactly = 5) { creditService.validateAndDeduct(userId, any<AiFeature>()) }
+        // 단계 → 기능 매핑대로 차감된다 (TRANSCRIBE=STT, REFRAME/SEGMENT/SUBTITLE/HOOK).
+        // 이 실행은 길이가 NULL 이라 전사도 종전 정액이다.
+        verify { creditService.validateAndDeduct(userId, AiFeature.STT.creditCost, "STT") }
+        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_REFRAME.creditCost, "SHORTS_REFRAME") }
+        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_SEGMENT.creditCost, "SHORTS_SEGMENT") }
+        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_SUBTITLE.creditCost, "SHORTS_SUBTITLE") }
+        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_HOOK.creditCost, "SHORTS_HOOK") }
+        verify(exactly = 5) { creditService.validateAndDeduct(userId, any<Int>(), any<String>()) }
         // 단계 기록에 기능별 비용과 AI 제공자가 남는다 (UserSettings 없으면 QWEN)
         val costByStage = stageRepo.records.associate { it.stage to it.creditCost }
         assertEquals(AiFeature.STT.creditCost, costByStage[PipelineStage.TRANSCRIBE])
@@ -446,9 +519,9 @@ class ShortsPipelineOrchestratorTest {
         assertEquals("선택된 후킹 1", spec.hookText)
         assertEquals(7, spec.templateId)
         // RENDER_SPEC은 AI 단계가 아니라 차감이 없다
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_TEMPLATE) }
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_VALIDATE) }
-        verify(exactly = 2) { creditService.validateAndDeduct(userId, any<AiFeature>()) }
+        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_TEMPLATE.creditCost, "SHORTS_TEMPLATE") }
+        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_VALIDATE.creditCost, "SHORTS_VALIDATE") }
+        verify(exactly = 2) { creditService.validateAndDeduct(userId, any<Int>(), any<String>()) }
         assertEquals(0, stageRepo.records.first { it.stage == PipelineStage.RENDER_SPEC }.creditCost)
         assertNull(stageRepo.records.first { it.stage == PipelineStage.RENDER_SPEC }.aiProvider)
     }
@@ -489,7 +562,7 @@ class ShortsPipelineOrchestratorTest {
         assertEquals(ClipStatus.DISCARDED, clip2.status)
         assertNull(clip2.scheduledAt)
         // SCHEDULE은 크레딧 차감이 없다
-        verify(exactly = 0) { creditService.validateAndDeduct(any(), any<AiFeature>()) }
+        verify(exactly = 0) { creditService.validateAndDeduct(any(), any<Int>(), any<String>()) }
         assertEquals(0, stageRepo.records.first { it.stage == PipelineStage.SCHEDULE }.creditCost)
     }
 
@@ -553,13 +626,123 @@ class ShortsPipelineOrchestratorTest {
         assertEquals(0, subtitle.callCount)
         assertEquals(0, hook.callCount)
         // 차감은 실패 단계까지 일어났고, 환불은 실패 단계분(SEGMENT=8)만 한 번
-        verify { creditService.validateAndDeduct(userId, AiFeature.STT) }
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_REFRAME) }
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_SEGMENT) }
+        verify { creditService.validateAndDeduct(userId, AiFeature.STT.creditCost, "STT") }
+        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_REFRAME.creditCost, "SHORTS_REFRAME") }
+        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_SEGMENT.creditCost, "SHORTS_SEGMENT") }
         verify(exactly = 1) {
             creditService.refundCredit(userId, AiFeature.SHORTS_SEGMENT.creditCost, "SHORTS_SEGMENT")
         }
         verify(exactly = 1) { creditService.refundCredit(any(), any(), any()) }
+    }
+
+    /*
+     * 전사 원가는 길이에 정비례한다(조각마다 모델을 부른다). 정액으로 매기면 긴 원본이
+     * 그대로 손실이 되므로, 실행에 고정된 길이에서 금액을 계산해야 한다.
+     */
+    @Test
+    fun `긴 원본의 전사는 길이에 비례해 차감하고 기록도 그 금액이다`() {
+        stubCommon()
+        val sixtyMinutes = 60L * 60 * 1000
+        val runRepo = InMemoryPipelineRunRepository(baseRun(sourceDurationMs = sixtyMinutes))
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, hookGateExecutors())
+            .run(1L, PipelineStage.TRANSCRIBE)
+
+        val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes)
+        verify(exactly = 1) { creditService.validateAndDeduct(userId, expected, "STT") }
+        assertEquals(expected, stageRepo.records.first { it.stage == PipelineStage.TRANSCRIBE }.creditCost)
+    }
+
+    /*
+     * 재실행도 같은 진입점을 지난다. 실행에 고정된 길이를 다시 읽으므로 첫 실행과 같은
+     * 금액이 나와야 한다 — 다시 재서 다른 금액이 나오면 인용한 적 없는 청구다.
+     */
+    @Test
+    fun `전사 재실행도 같은 고정 길이로 같은 금액을 차감한다`() {
+        stubCommon()
+        val sixtyMinutes = 60L * 60 * 1000
+        val runRepo = InMemoryPipelineRunRepository(baseRun(sourceDurationMs = sixtyMinutes))
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+        val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes)
+
+        repeat(2) {
+            orchestrator(runRepo, stageRepo, clipRepo, hookRepo, hookGateExecutors())
+                .run(1L, PipelineStage.TRANSCRIBE)
+        }
+
+        verify(exactly = 2) { creditService.validateAndDeduct(userId, expected, "STT") }
+    }
+
+    /*
+     * 환불이 단가로 고정돼 있으면 긴 원본에서 낸 것보다 적게 돌려받는다. 차감과 환불은
+     * 반드시 같은 값이어야 한다.
+     */
+    @Test
+    fun `긴 원본의 전사가 실패하면 차감한 만큼 그대로 환불한다`() {
+        stubCommon()
+        val sixtyMinutes = 60L * 60 * 1000
+        val runRepo = InMemoryPipelineRunRepository(baseRun(sourceDurationMs = sixtyMinutes))
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+        val transcribe = FakeStageExecutor(PipelineStage.TRANSCRIBE) {
+            throw RuntimeException("전사 실패")
+        }
+
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, listOf(transcribe)).run(1L, PipelineStage.TRANSCRIBE)
+
+        val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes)
+        verify(exactly = 1) { creditService.refundCredit(userId, expected, "STT") }
+        verify(exactly = 1) { creditService.refundCredit(any(), any(), any()) }
+    }
+
+    /*
+     * 길이에 비례하는 것은 전사뿐이다. 다른 단계까지 비례하면 원가와 무관한 곳에서
+     * 요금이 오른다.
+     */
+    @Test
+    fun `긴 원본이라도 전사 외 단계는 단가 그대로다`() {
+        stubCommon()
+        val sixtyMinutes = 60L * 60 * 1000
+        val runRepo = InMemoryPipelineRunRepository(baseRun(sourceDurationMs = sixtyMinutes))
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, hookGateExecutors())
+            .run(1L, PipelineStage.TRANSCRIBE)
+
+        verify(exactly = 1) {
+            creditService.validateAndDeduct(userId, AiFeature.SHORTS_REFRAME.creditCost, "SHORTS_REFRAME")
+        }
+        assertEquals(
+            AiFeature.SHORTS_REFRAME.creditCost,
+            stageRepo.records.first { it.stage == PipelineStage.REFRAME }.creditCost,
+        )
+    }
+
+    /* 이 필드 도입 이전 실행. 소급 측정하지 않고 종전 정액을 그대로 청구한다. */
+    @Test
+    fun `길이가 없는 기존 실행은 전사도 종전 정액이다`() {
+        stubCommon()
+        val runRepo = InMemoryPipelineRunRepository(baseRun(sourceDurationMs = null))
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, hookGateExecutors())
+            .run(1L, PipelineStage.TRANSCRIBE)
+
+        verify(exactly = 1) { creditService.validateAndDeduct(userId, AiFeature.STT.creditCost, "STT") }
+        assertEquals(
+            AiFeature.STT.creditCost,
+            stageRepo.records.first { it.stage == PipelineStage.TRANSCRIBE }.creditCost,
+        )
     }
 
     @Test
@@ -571,7 +754,9 @@ class ShortsPipelineOrchestratorTest {
         val hookRepo = InMemoryClipHookRepository()
 
         // 차감 자체가 실패 (크레딧 부족 등)
-        every { creditService.validateAndDeduct(userId, AiFeature.STT) } throws RuntimeException("크레딧 부족")
+        every {
+            creditService.validateAndDeduct(userId, AiFeature.STT.creditCost, "STT")
+        } throws RuntimeException("크레딧 부족")
         val transcribe = FakeStageExecutor(PipelineStage.TRANSCRIBE) { ShortsStageOutput(outputSnapshot = "{}") }
 
         orchestrator(runRepo, stageRepo, clipRepo, hookRepo, listOf(transcribe)).run(1L, PipelineStage.TRANSCRIBE)
@@ -598,6 +783,6 @@ class ShortsPipelineOrchestratorTest {
         assertEquals(PipelineRunStatus.CANCELLED, runRepo.findById(1L)!!.status)
         assertEquals(0, transcribe.callCount)
         assertTrue(stageRepo.records.isEmpty())
-        verify(exactly = 0) { creditService.validateAndDeduct(any(), any<AiFeature>()) }
+        verify(exactly = 0) { creditService.validateAndDeduct(any(), any<Int>(), any<String>()) }
     }
 }

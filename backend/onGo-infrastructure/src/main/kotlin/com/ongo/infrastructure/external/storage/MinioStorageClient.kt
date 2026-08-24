@@ -68,9 +68,26 @@ class MinioStorageClient(
         )
     }
 
-    override fun generatePresignedUploadUrl(key: String, contentType: String, expirationMinutes: Int): String {
+    /**
+     * MinIO 는 presigned URL 에 content-length 를 묶을 수 없다.
+     *
+     * `getPresignedObjectUrl` 에는 길이를 서명에 포함시키는 인자가 없어서, S3/R2 처럼 스토리지가
+     * 크기 불일치를 직접 거부하게 만들 수단이 없다. 그래서 로컬/개발 환경에서는 신고치와 다른
+     * 크기의 업로드가 스토리지 단계에서는 통과한다 — 이 차이를 숨기지 않고 남겨두고,
+     * 실제 차단은 두 환경 모두 confirm 의 메타데이터 대조가 담당한다.
+     */
+    override fun generatePresignedUploadUrl(
+        key: String,
+        contentType: String,
+        contentLength: Long,
+        expirationMinutes: Int,
+    ): String {
         validateStorageKey(key)
-        log.debug("MinIO presigned URL 생성: key={}, expiry={}분", key, expirationMinutes)
+        require(contentLength > 0) { "업로드 크기가 올바르지 않습니다." }
+        log.debug(
+            "MinIO presigned URL 생성(길이 서명 미지원): key={}, length={}, expiry={}분",
+            key, contentLength, expirationMinutes,
+        )
 
         ensureBucketExists()
 

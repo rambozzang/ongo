@@ -15,6 +15,22 @@
           </svg>
         </div>
         <p class="text-body text-error-strong">{{ errorMessage }}</p>
+
+        <!--
+          플랜 한도로 거절된 경우에만 업그레이드 경로를 연다.
+          사용자는 OAuth 동의까지 마치고 온 상태라, 사유만 보여주고 끝내면
+          다음에 무엇을 해야 하는지 알 방법이 없다.
+        -->
+        <div
+          v-if="isPlanLimit"
+          class="rounded-lg border border-warning bg-warning-subtle p-4 text-left"
+        >
+          <p class="text-body-sm text-warning-strong">{{ $t('channelCallbackView.planLimitHint') }}</p>
+          <router-link :to="PLAN_UPGRADE_PATH" class="btn-primary mt-3 inline-flex">
+            {{ $t('channelCallbackView.planLimitCta') }}
+          </router-link>
+        </div>
+
         <button class="btn-primary mt-4" @click="goBack">{{ $t('channelCallbackView.goBack') }}</button>
       </div>
     </div>
@@ -27,6 +43,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { channelApi } from '@/api/channel'
 import { getOAuthRedirectUri } from '@/utils/oauth'
+import { PLAN_LIMIT_EXCEEDED, PLAN_UPGRADE_PATH, matchesCode } from '@/composables/usePlanLimit'
 import type { Platform } from '@/types/channel'
 
 const { t } = useI18n()
@@ -35,6 +52,7 @@ const route = useRoute()
 
 const isProcessing = ref(true)
 const errorMessage = ref('')
+const isPlanLimit = ref(false)
 let returnPath = '/channels'
 
 function goBack() {
@@ -83,6 +101,9 @@ onMounted(async () => {
     await channelApi.connect(platform, request)
     router.replace(returnPath)
   } catch (error) {
+    // 이 화면의 안내 문구는 '채널을 더 연결하려면…' 이다. 저장 공간 같은 다른 한도까지
+    // 받아들이면 사유와 안내가 어긋나므로 채널 한도 코드만 본다.
+    isPlanLimit.value = matchesCode(error, PLAN_LIMIT_EXCEEDED)
     errorMessage.value = error instanceof Error && error.message
       ? error.message
       : t('channelCallbackView.connectError')

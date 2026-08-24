@@ -7,6 +7,8 @@ import com.ongo.common.enums.PaymentType
 import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.SubscriptionStatus
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.ongo.common.exception.BusinessException
+import com.ongo.common.exception.DuplicateSubscriptionPaymentException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.exception.UnauthorizedException
 import com.ongo.domain.payment.Payment
@@ -15,8 +17,10 @@ import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
 import com.ongo.domain.webhook.WebhookEvent
 import com.ongo.domain.webhook.WebhookEventRepository
+import com.ongo.application.payment.PaymentCompletedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.security.MessageDigest
@@ -33,6 +37,17 @@ class PortOnePaymentService(
     private val objectMapper: ObjectMapper,
     @Value("\${payment.portone.store-id:}") private val storeId: String,
     @Value("\${payment.portone.channel-key:}") private val channelKey: String,
+    /** 결제 설정 준비 여부. capability 응답과 같은 판정을 쓴다. */
+    private val readiness: PortOneReadiness,
+    /**
+     * 확정된 결제를 퍼널 측정으로 넘기는 통로.
+     *
+     * 여기서 활동 로그를 **직접 쓰지 않는다.** 이 클래스의 트랜잭션 안에서 기록하면
+     * 기록 실패가 결제를 롤백시킨다 — 포트원에서 이미 승인된 결제를 측정 때문에 깨는
+     * 셈이다. 이벤트만 발행하고, 커밋 뒤 기록은
+     * [com.ongo.application.payment.PaymentActivityListener] 가 별도 트랜잭션에서 맡는다.
+     */
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -214,9 +229,11 @@ class PortOnePaymentService(
         planTypeName: String,
         billingCycleName: String,
     ): PortOneCheckoutIntent {
+        assertPaymentReady()
         val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
         val plan = enumValue<PlanType>(planTypeName)
         require(plan != PlanType.FREE) { "무료 플랜은 결제가 필요하지 않습니다" }
+        rejectDuplicateSubscriptionPayment(userId, plan)
         val billingCycle = enumValue<BillingCycle>(billingCycleName)
         val amount = plan.priceFor(billingCycle)
         val payment = paymentRepository.save(
@@ -233,8 +250,39 @@ class PortOnePaymentService(
         return intent(payment, user.email, user.name, "${plan.displayName} ${billingCycle.displayName()} 구독")
     }
 
+    /**
+     * 이미 이용 중인 유료 구독과 같거나 더 낮은 등급의 결제 intent 생성을 막는다.
+     *
+     * 온보딩에서 결제를 끝낸 뒤 '이전'으로 3단계에 돌아가 '다음'을 누르면 같은 구독을 한 번 더
+     * 결제할 수 있었다. complete()의 멱등성은 paymentId 단위라 새 체크아웃은 별건으로 통과하고,
+     * 실제로 카드가 두 번 청구된다. 화면 상태만으로는 새로고침·직접 API 호출을 막지 못하므로
+     * 여기서 닫는다.
+     *
+     * 업그레이드 판정은 `SubscriptionUseCase`와 같은 가격 비교(`요청 플랜 가격 > 현재 플랜 가격`)를
+     * 쓴다. 상위 등급 결제는 통과시켜 구독 화면의 업그레이드 흐름을 그대로 둔다.
+     *
+     * 다음은 전부 정상적인 재결제라 막지 않는다.
+     * - ACTIVE 가 아닌 구독: PAST_DUE 재결제, CANCELLED 재가입, TRIALING 유료 전환, PAUSED/SUSPENDED
+     * - 현재 플랜이 FREE: 첫 유료 결제
+     * - 결제 기간이 이미 끝난 구독: 갱신
+     */
+    private fun rejectDuplicateSubscriptionPayment(userId: Long, requested: PlanType) {
+        val subscription = subscriptionRepository.findByUserId(userId) ?: return
+        if (subscription.status != SubscriptionStatus.ACTIVE) return
+        if (subscription.planType == PlanType.FREE) return
+
+        val periodEnd = subscription.currentPeriodEnd
+        if (periodEnd != null && !periodEnd.isAfter(LocalDateTime.now())) return
+
+        val isUpgrade = requested.price > subscription.planType.price
+        if (isUpgrade) return
+
+        throw DuplicateSubscriptionPaymentException(subscription.planType, requested)
+    }
+
     @Transactional
     fun createCreditCheckout(userId: Long, packageName: String): PortOneCheckoutIntent {
+        assertPaymentReady()
         val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
         val creditPackage = enumValue<CreditPackage>(packageName)
         val payment = paymentRepository.save(
@@ -285,10 +333,48 @@ class PortOnePaymentService(
             PaymentType.CREDIT -> completeCredit(payment)
             PaymentType.SUBSCRIPTION -> completeSubscription(payment)
         }
+
+        /*
+         * 여기까지 온 것은 PG 재조회 검증과 권한 반영이 **모두** 성공했다는 뜻이다.
+         *
+         * 발행 위치가 중요하다.
+         * - 위 `when` 이 던지면(예: 크레딧 패키지를 식별할 수 없음) 이 줄에 도달하지
+         *   못하므로, 권한이 반영되지 않은 결제가 완료로 기록되지 않는다.
+         * - 메서드 앞의 `status == COMPLETED` 조기 반환도 여기 오지 않는다. 재호출이나
+         *   중복 웹훅은 추가 이벤트를 만들지 않는다.
+         *
+         * 발행은 트랜잭션 안이지만 **소비는 커밋 뒤**다(AFTER_COMMIT). 즉 이 트랜잭션이
+         * 롤백되면 이벤트도 없던 일이 되고, 커밋되면 기록 실패가 결제에 닿지 못한다.
+         */
+        eventPublisher.publishEvent(
+            PaymentCompletedEvent(
+                userId = payment.userId,
+                paymentId = payment.id!!,
+                type = payment.type,
+            ),
+        )
         return completed.toResult()
     }
 
-    fun configured(): Boolean = storeId.isNotBlank() && channelKey.isNotBlank()
+    /**
+     * 결제 설정이 준비되지 않았으면 **행을 만들기 전에** 막는다.
+     *
+     * 두 체크아웃 메서드는 intent 를 만들기 전에 PENDING 결제 행을 먼저 저장한다. 설정이
+     * 비어 있으면 그 행은 남고 프론트는 빈 storeId 로 SDK 를 열어 원문 오류를 띄웠다.
+     * 고객은 원인을 알 수 없는 실패를 보고, DB 에는 아무도 정리하지 않는 고아 행이 쌓였다.
+     *
+     * 그래서 두 메서드의 **맨 처음**에서 판정한다. 여기서 던지면 저장도 SDK 호출도 없다.
+     *
+     * 어느 값이 빠졌는지 말하지 않는다. 사용자가 할 수 있는 일이 없고, 설정 상태를
+     * 알려줄 이유도 없다.
+     */
+    private fun assertPaymentReady() {
+        if (readiness.isReady()) return
+        throw BusinessException(
+            "PAYMENT_NOT_AVAILABLE",
+            "온라인 결제를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도하거나 고객지원에 문의해 주세요.",
+        )
+    }
 
     private fun completeCredit(payment: Payment) {
         val packageName = payment.description?.split('|')?.getOrNull(1)
@@ -325,6 +411,14 @@ class PortOnePaymentService(
         )
         val user = userRepository.findById(payment.userId) ?: throw NotFoundException("사용자", payment.userId)
         userRepository.update(user.copy(planType = plan))
+        /*
+         * 결제 직후 크레딧이 여전히 FREE 기준(30)이면, STARTER 를 산 사용자가 쇼츠 실행
+         * 한 번(37)조차 못 돌린다. 구독만 ACTIVE 로 바뀌고 쓸 수 있는 것은 그대로인 상태다.
+         *
+         * 이 메서드는 호출자의 트랜잭션 안에서 돈다 — 웹훅과 클라이언트 complete 양쪽 모두
+         * 결제 멱등 처리를 마친 뒤 한 번만 여기에 도달하므로, 크레딧도 그 횟수만큼만 적용된다.
+         */
+        creditService.applyPlanEntitlement(payment.userId, plan, reason = "SUBSCRIPTION_PAID")
     }
 
     private fun intent(payment: Payment, email: String, name: String, orderName: String) =

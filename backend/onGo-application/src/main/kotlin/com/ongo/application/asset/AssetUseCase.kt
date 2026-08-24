@@ -60,6 +60,8 @@ class AssetUseCase(
                 filename = filename,
                 originalFilename = originalFilename,
                 fileUrl = uploadedUrl,
+                // 탈퇴 정리가 추측 없이 지울 수 있도록 실제 업로드 키를 기록한다.
+                storageObjectKey = storageKey,
                 fileType = fileType,
                 fileSizeBytes = fileSizeBytes,
                 mimeType = mimeType,

@@ -438,7 +438,12 @@
           "submit": "Start run",
           "submitting": "Starting...",
           "created": "Pipeline run started.",
-          "createFailed": "Failed to create the run."
+          "createFailed": "Failed to create the run.",
+          "viewPlans": "View plans",
+          "startTrial": "Start the 7-day Starter trial",
+          "startingTrial": "Starting trial…",
+          "trialStarted": "Your free trial has started and you now have enough credit for one run. Press 'Start run' again below.",
+          "trialFailed": "Could not start the free trial."
         },
         "detail": {
           "back": "Back to list",
@@ -473,7 +478,26 @@
           "attachSuccess": "Rendered video attached to the clip.",
           "attachFailed": "Failed to attach the rendered video.",
           "renderedAttached": "Attached",
+          "partiallyPublished": "Some targets failed",
+          "preparePublish": "Prepare to publish",
+          "publishStatus": "Publishing status",
           "reattachVideo": "Re-link video"
+        },
+        "review": {
+          "show": "Preview before render",
+          "hide": "Hide preview",
+          "loading": "Loading preview…",
+          "loadFailed": "Could not load the preview.",
+          "cropTitle": "Vertical crop area",
+          "cropFullFrame": "Uses the full frame without cropping.",
+          "cropUnknownSize": "Source resolution is unknown, so the crop area cannot be shown.",
+          "sourceUnavailable": "The source video cannot be played, so the crop area cannot be shown.",
+          "retrySource": "Reload the source preview",
+          "cropMeasured": "Based on a {width}×{height} source.",
+          "cutTitle": "Segment",
+          "cutUnknown": "Segment information is unavailable.",
+          "subtitleTitle": "{count} subtitle lines",
+          "subtitleNone": "No subtitles."
         },
         "hooks": {
           "title": "Select hook text",
@@ -498,9 +522,12 @@
           "platforms": "Platforms",
           "platformRequired": "Select at least one platform.",
           "startAtRequired": "Enter a start date and time.",
+          "targetsLoading": "Loading your connected channels.",
+          "targetsLoadFailed": "Could not load your connected channels. Try again shortly, or check their status in Channels.",
+          "noConnectedTarget": "No channel is available to schedule to. Connect a YouTube, TikTok, or Instagram account in Channels, or reconnect an expired one.",
           "submit": "Confirm schedule",
           "submitting": "Confirming...",
-          "submitted": "Schedule confirmed.",
+          "submitted": "Schedule request received. Publishing results will appear on this screen shortly.",
           "submitFailed": "Failed to confirm the schedule."
         },
         "sheet": {
@@ -1448,8 +1475,12 @@
       "title": "Try out the AI features",
       "description": "Use your free credits to see how AI optimizes your content.",
       "demoTitle": "AI title & tag generation",
-      "demoDescription": "Using a sample video, AI generates titles and hashtags\noptimized for each platform.",
-      "creditCost": "Uses {count} credits",
+      "demoDescription": "Paste your own script and AI writes\nplatform-ready titles and hashtags.",
+      "creditCost": "{count} credits are charged when generation succeeds",
+      "scriptLabel": "Your script or topic",
+      "scriptPlaceholder": "e.g. Today I am making kimchi fried rice in five minutes, from prep to plating.",
+      "scriptRequired": "Enter a script so AI has something to work with.",
+      "failureHint": "You can retry or skip — onboarding still completes. Failed generations are not charged.",
       "generating": "Generating...",
       "tryIt": "Try AI",
       "resultTitle": "AI results",
@@ -1460,9 +1491,9 @@
     "complete": {
       "title": "Welcome, {nickname}!",
       "description": "Your onGo setup is complete.",
-      "hint": "Now upload a video and publish it everywhere at once.",
-      "goToUpload": "Upload your first video",
-      "goToDashboard": "Go to dashboard"
+      "hint": "Paste a script and AI writes your titles and hashtags. You can connect channels later.",
+      "goToDashboard": "Go to dashboard",
+      "goToFirstValue": "Create your first content with AI"
     },
     "nav": {
       "skip": "Skip",
@@ -3237,6 +3268,9 @@
     "paymentCompleted": "Completed",
     "paymentFailed": "Failed",
     "paymentRefunded": "Refunded",
+    "paymentPending": "Awaiting confirmation",
+    "paymentPendingNotice": "Some payments are still awaiting confirmation. Confirmation by the payment provider can take a while. This screen does not update on its own, so the latest status appears when you refresh or visit again. Please refresh to check the status before paying again.",
+    "paymentRefresh": "Refresh",
     "changePlanSuccess": "Plan has been changed successfully.",
     "changePlanError": "Failed to change plan.",
     "upgradeSuccess": "Plan has been upgraded successfully.",
@@ -4247,7 +4281,9 @@
     "connecting": "Connecting your channel…",
     "goBack": "Go back",
     "invalidCallback": "Invalid callback request. The authorization code or state parameter is missing.",
-    "connectError": "Failed to connect the channel. Please try again."
+    "connectError": "Failed to connect the channel. Please try again.",
+    "planLimitHint": "To connect more channels, upgrade your plan and then connect again.",
+    "planLimitCta": "Upgrade plan"
   },
   "videoDetail": {
     "title": "Video Details",

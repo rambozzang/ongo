@@ -140,14 +140,100 @@ class CreditService(
         )
     }
 
+    /**
+     * 플랜 전환에 맞춰 무료 크레딧 권한을 적용한다.
+     *
+     * ## 왜 필요한가
+     *
+     * 지금까지 `startTrial`·PortOne 결제 완료·트라이얼 만료 어디에서도 `ai_credits` 를
+     * 건드리지 않았다. 그래서 STARTER 를 결제해도 무료 크레딧은 FREE 기준(30)에 머물렀고,
+     * 쇼츠 실행 한 번(37)조차 완주할 수 없었다. 구독은 바뀌었는데 쓸 수 있는 것은 그대로인
+     * 상태가 결제 직후에 남는다.
+     *
+     * ## 잠금 순서
+     *
+     * `ai_credits` 를 먼저 `FOR UPDATE` 로 잡고 그 다음 활성 구매분을 잡는다. 이 순서는
+     * [revokeCredits] 와 같다 — 두 경로가 반대 순서로 잡으면 교착이 생긴다.
+     *
+     * ## 규칙
+     *
+     * - **유료 플랜 부여**(체험 시작·결제 활성화·상위 전환): `freeMonthly` 와 `freeRemaining`
+     *   을 모두 대상 플랜 값으로 **설정**한다. 결제한 달에 쓸 수 있는 양이 결제 이전 사용량에
+     *   따라 달라지면 "얼마를 산 것인지"를 설명할 수 없다.
+     * - **FREE 로 하향**(체험 만료·연체·취소·예약 하향): `freeMonthly` 는 FREE 값,
+     *   `freeRemaining` 은 **기존 값과의 min**. 상향과 대칭이 아닌 이유는, 하향에서 값을
+     *   올려주면 유료 권한이 무료 사용자에게 새어나가기 때문이다.
+     *
+     * 구매 크레딧은 어느 방향에서도 건드리지 않는다 — 플랜과 무관한 별도 원장이다.
+     * `freeResetDate` 도 보존한다. 전환이 리셋 주기를 바꾸면 주기를 당기려고 플랜을
+     * 오가는 경로가 생긴다.
+     *
+     * @param reason 감사 기록에 남길 전환 사유. 값이 아니라 **왜 바뀌었는지**가 나중에 필요하다.
+     */
+    @Transactional
+    fun applyPlanEntitlement(userId: Long, targetPlan: PlanType, reason: String) {
+        val credit = creditRepository.findByUserIdForUpdate(userId)
+            ?: throw CreditNotFoundException(userId)
+        val purchasedTotal = creditRepository.findActivePurchasedCreditsForUpdate(userId)
+            .sumOf { it.remaining }
+
+        val newFreeMonthly = targetPlan.freeCredits
+        val newFreeRemaining = if (targetPlan == PlanType.FREE) {
+            // 하향은 올려주지 않는다.
+            minOf(credit.freeRemaining, newFreeMonthly)
+        } else {
+            newFreeMonthly
+        }
+        // balance 의 정의 그대로 다시 센다. 증감분을 더하는 방식은 clamp 와 어긋난다.
+        val newBalance = newFreeRemaining + purchasedTotal
+        val delta = newFreeRemaining - credit.freeRemaining
+
+        creditRepository.update(
+            credit.copy(
+                freeMonthly = newFreeMonthly,
+                freeRemaining = newFreeRemaining,
+                balance = newBalance,
+                updatedAt = LocalDateTime.now(),
+            )
+        )
+
+        /*
+         * delta 가 0 이어도 기록한다. 전환이 일어났다는 사실 자체가 감사 대상이고,
+         * 나중에 "결제했는데 왜 크레딧이 그대로냐"를 확인할 근거가 이 행뿐이다.
+         *
+         * 기존 PG enum 을 재사용한다(FREE_RESET). 새 enum 값은 마이그레이션과 함께 넣지
+         * 않으면 삽입 시점에 깨진다 — REVOKE 가 정확히 그렇게 누락돼 있었다.
+         */
+        creditRepository.saveTransaction(
+            AiCreditTransaction(
+                userId = userId,
+                type = CreditTransactionType.FREE_RESET,
+                amount = delta,
+                balanceAfter = newBalance,
+                feature = "PLAN_ENTITLEMENT:$reason:${targetPlan.name}",
+            )
+        )
+    }
+
     @Transactional
     fun refundCredit(userId: Long, amount: Int, featureName: String) {
         val credit = creditRepository.findByUserIdForUpdate(userId)
             ?: throw CreditNotFoundException(userId)
 
         val newFreeRemaining = minOf(credit.freeRemaining + amount, credit.freeMonthly)
-        val refundedToFree = newFreeRemaining - credit.freeRemaining
-        val newBalance = credit.balance + amount
+
+        /*
+         * balance 는 더하지 않고 **다시 센다.**
+         *
+         * 예전에는 `credit.balance + amount` 였는데, 바로 위에서 freeRemaining 이 freeMonthly 로
+         * clamp 되면 실제로는 amount 보다 적게 복구된다. 그런데 balance 에는 amount 전부를
+         * 더하니, clamp 된 만큼이 어디에도 없는 잔액(phantom)으로 남아 있었다.
+         *
+         * balance 의 정의는 "freeRemaining + 활성 구매분"이다. 그 정의대로 계산하면
+         * 어긋날 여지가 없다.
+         */
+        val purchasedTotal = creditRepository.findActivePurchasedCredits(userId).sumOf { it.remaining }
+        val newBalance = newFreeRemaining + purchasedTotal
 
         creditRepository.update(
             credit.copy(

@@ -64,6 +64,18 @@ class ShortsPipelineOrchestrator(
         if (loaded.status == PipelineRunStatus.CANCELLED) return
 
         pipelineRunRepository.update(loaded.copy(status = PipelineRunStatus.RUNNING, errorMessage = null))
+
+        /*
+         * 리드타임의 시작점. 재실행·재개도 이 진입점을 지나므로 최초 한 번만 기록한다 —
+         * 덮어쓰면 "며칠 걸린 납품"이 "방금 시작한 납품"으로 보인다.
+         *
+         * 위 update **뒤**에 둔다. `loaded` 는 그 이전에 읽은 값이라, 먼저 기록하면
+         * 이어지는 update 가 방금 쓴 시작 시각을 되돌릴 수 있다.
+         *
+         * 측정 때문에 파이프라인이 실패하면 안 되므로 실패는 로그만 남긴다.
+         */
+        runCatching { pipelineRunRepository.markStartedIfAbsent(runId, Instant.now()) }
+            .onFailure { log.warn("쇼츠 실행 시작 시각 기록 실패: runId={}", runId, it) }
         val context = buildContext(runId, schedule)
 
         val stages = PipelineStage.entries
@@ -124,18 +136,28 @@ class ShortsPipelineOrchestrator(
         }
     }
 
-    /** 단계 하나를 실행한다. 실패하면 환불·FAILED 기록 후 null을 반환한다. */
+    /**
+     * 단계 하나를 실행한다. 실패하면 환불·FAILED 기록 후 null을 반환한다.
+     *
+     * ## 금액은 한 번만 계산한다
+     *
+     * 차감·환불·`RunStage.creditCost` 가 모두 [creditCostOf] 의 같은 반환값을 쓴다. 세 곳이
+     * 각자 계산하면 환불이 차감보다 적거나 기록이 실제와 다를 수 있고, 그 어긋남은 원장에만
+     * 남아 아무도 보지 않는다. TRANSCRIBE 는 길이에 비례하므로 특히 그렇다.
+     */
     private fun executeStage(run: PipelineRun, stage: PipelineStage, context: ShortsStageContext): ShortsStageOutput? {
         val feature = FEATURE_BY_STAGE[stage]
         val executor = executorsByStage[stage]
             ?: error("단계 실행기가 없습니다: $stage")
+
+        val creditCost = creditCostOf(stage, feature, run)
 
         var runStage: RunStage? = null
         var deducted = false
         try {
             if (feature != null) {
                 rateLimiter.checkRateLimit(run.userId)
-                creditService.validateAndDeduct(run.userId, feature)
+                creditService.validateAndDeduct(run.userId, creditCost, feature.name)
                 deducted = true
             }
 
@@ -155,7 +177,8 @@ class ShortsPipelineOrchestrator(
                 runStage.copy(
                     status = RunStageStatus.COMPLETED,
                     completedAt = Instant.now(),
-                    creditCost = feature?.creditCost ?: 0,
+                    // 실제로 차감한 금액이다. 단가가 아니라 청구액을 남긴다.
+                    creditCost = creditCost,
                     promptId = output.promptId,
                     promptRevision = output.promptRevision,
                     aiProvider = if (feature != null) resolveProviderName(run.userId) else null,
@@ -166,9 +189,10 @@ class ShortsPipelineOrchestrator(
             return output
         } catch (e: Exception) {
             log.error("쇼츠 파이프라인 단계 실패: runId={}, stage={}", run.id, stage, e)
-            // 단계 실패 시 그 단계분 크레딧만 환불한다 (차감이 실제로 일어났을 때만)
+            // 단계 실패 시 그 단계분 크레딧만 환불한다 (차감이 실제로 일어났을 때만).
+            // 차감과 **같은 값**을 돌려준다 — 단가를 쓰면 긴 원본에서 낸 것보다 적게 받는다.
             if (deducted && feature != null) {
-                runCatching { creditService.refundCredit(run.userId, feature.creditCost, feature.name) }
+                runCatching { creditService.refundCredit(run.userId, creditCost, feature.name) }
             }
             runStage?.let { saved ->
                 runCatching {
@@ -189,6 +213,24 @@ class ShortsPipelineOrchestrator(
             }
             return null
         }
+    }
+
+    /**
+     * 이 단계에서 실제로 청구할 크레딧.
+     *
+     * TRANSCRIBE 만 원본 길이에 비례한다 — 전사는 원본을 조각내 조각마다 모델을 부르므로
+     * 원가가 길이에 정비례하기 때문이다. 나머지 단계는 입력 길이와 무관하므로 종전 단가를
+     * 그대로 쓴다.
+     *
+     * 길이는 실행에 고정된 값을 읽는다. 여기서 다시 재지 않는다 — 재실행이 첫 견적과 다른
+     * 금액을 내면 사용자가 동의한 적 없는 청구가 된다. 이 필드 도입 이전 실행은 `null` 이라
+     * 헬퍼가 종전 정액을 돌려준다.
+     */
+    private fun creditCostOf(stage: PipelineStage, feature: AiFeature?, run: PipelineRun): Int = when {
+        feature == null -> 0
+        stage == PipelineStage.TRANSCRIBE ->
+            ShortsPipelineCreditRequirements.transcribeCredits(run.sourceDurationMs)
+        else -> feature.creditCost
     }
 
     /** 단계 출력을 컨텍스트와 DB에 반영한다. */
@@ -336,15 +378,13 @@ class ShortsPipelineOrchestrator(
         userSettingsRepository.findByUserId(userId)?.defaultAiProvider?.name ?: AiProvider.QWEN.name
 
     companion object {
-        /** AI(크레딧) 단계 ↔ AiFeature 매핑. RENDER_SPEC/SCHEDULE은 차감 없음. */
-        private val FEATURE_BY_STAGE: Map<PipelineStage, AiFeature> = mapOf(
-            PipelineStage.TRANSCRIBE to AiFeature.STT,
-            PipelineStage.REFRAME to AiFeature.SHORTS_REFRAME,
-            PipelineStage.SEGMENT to AiFeature.SHORTS_SEGMENT,
-            PipelineStage.SUBTITLE to AiFeature.SHORTS_SUBTITLE,
-            PipelineStage.HOOK to AiFeature.SHORTS_HOOK,
-            PipelineStage.TEMPLATE to AiFeature.SHORTS_TEMPLATE,
-            PipelineStage.VALIDATE to AiFeature.SHORTS_VALIDATE,
-        )
+        /**
+         * AI(크레딧) 단계 ↔ AiFeature 매핑. RENDER_SPEC/SCHEDULE 은 차감 없음.
+         *
+         * 정의는 [ShortsPipelineCreditRequirements] 한 곳에만 둔다. 생성 시점의 총액
+         * 선검사와 여기의 단계별 차감이 다른 목록을 보면, 통과시킨 실행이 중간에 죽는다.
+         */
+        private val FEATURE_BY_STAGE: Map<PipelineStage, AiFeature> =
+            ShortsPipelineCreditRequirements.FEATURE_BY_STAGE
     }
 }

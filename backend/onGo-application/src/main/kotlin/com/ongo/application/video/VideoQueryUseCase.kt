@@ -171,7 +171,7 @@ class VideoQueryUseCase(
             description = video.description,
             tags = video.tags,
             category = video.category,
-            fileUrl = video.fileUrl,
+            fileUrl = currentFileUrl(video),
             fileSize = video.fileSizeBytes,
             thumbnails = video.thumbnailUrls,
             mediaType = video.mediaType,
@@ -180,6 +180,26 @@ class VideoQueryUseCase(
             uploads = uploadDetails,
             createdAt = video.createdAt,
         )
+    }
+
+    /**
+     * 응답에만 담을 최신 파일 URL. DB 의 fileUrl 은 건드리지 않는다.
+     *
+     * S3StorageClient.uploadFile 이 7일짜리 presigned URL 을 돌려주고 그 값이 그대로 저장되기
+     * 때문에, 저장 시점에서 7일이 지나면 상세 화면의 프리뷰와 다운로드 링크가 죽는다. 납품이
+     * 곧 제품인 쇼츠 파일럿에서는 고객이 지난 결과물을 다시 받지 못한다는 뜻이라, 조회할 때마다
+     * 유효한 URL 을 새로 서명해 준다.
+     *
+     * 재서명이 실패하면 저장된 값을 그대로 돌려준다. 외부 remote URL 이거나 오브젝트가 지워졌거나
+     * 스토리지가 흔들릴 때 상세 조회 자체가 500 이 되면 안 되고, 그 경우들의 기존 동작도 그대로
+     * 유지돼야 한다. 게시 직전에 StreamPublishUseCase 가 쓰는 것과 같은 방식이다.
+     */
+    private fun currentFileUrl(video: Video): String? {
+        val stored = video.fileUrl
+        // 파일이 없는 영상은 스토리지를 부를 이유가 없다.
+        if (stored.isNullOrBlank()) return stored
+        val videoId = video.id ?: return stored
+        return runCatching { storageService.getFileUrl(videoId, stored) }.getOrNull() ?: stored
     }
 
     @Transactional

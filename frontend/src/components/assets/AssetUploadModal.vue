@@ -2,6 +2,12 @@
 import { ref, onUnmounted } from 'vue'
 import { useAssetsStore } from '@/stores/assets'
 import {
+  PLAN_LIMIT_EXCEEDED,
+  PLAN_UPGRADE_PATH,
+  STORAGE_QUOTA_EXCEEDED,
+  matchesCode,
+} from '@/composables/usePlanLimit'
+import {
   XMarkIcon,
   CloudArrowUpIcon,
   DocumentPlusIcon,
@@ -26,6 +32,8 @@ const tags = ref<string[]>([])
 const uploading = ref(false)
 const uploadProgress = ref(0)
 const uploadError = ref('')
+/** 업그레이드로 풀리는 거절일 때만 true. 안정 코드로만 판단한다. */
+const showUpgradeLink = ref(false)
 
 const acceptedTypes = 'video/*,image/*,audio/*,.psd,.aep,.prproj,.mogrt'
 
@@ -41,6 +49,7 @@ function resetForm() {
   uploading.value = false
   uploadProgress.value = 0
   uploadError.value = ''
+  showUpgradeLink.value = false
 }
 
 function onDragEnter(e: DragEvent) {
@@ -114,6 +123,7 @@ async function handleUpload() {
   uploading.value = true
   uploadProgress.value = 0
   uploadError.value = ''
+  showUpgradeLink.value = false
   uploadCancelled = false
 
   const files = [...selectedFiles.value]
@@ -126,6 +136,8 @@ async function handleUpload() {
       await assetsStore.uploadAsset(file, [...tags.value])
     } catch (cause) {
       uploadError.value = cause instanceof Error ? cause.message : '에셋 업로드에 실패했습니다'
+      // 업로드는 두 한도에 걸린다 — 플랜 한도와 저장 공간. 둘 다 업그레이드로 풀린다.
+      showUpgradeLink.value = matchesCode(cause, PLAN_LIMIT_EXCEEDED, STORAGE_QUOTA_EXCEEDED)
       selectedFiles.value = files.slice(i)
       break
     }
@@ -292,9 +304,20 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <p v-if="uploadError" class="mb-4 rounded-lg bg-error-subtle px-3 py-2 text-body text-error-strong">
-            {{ uploadError }}
-          </p>
+          <div v-if="uploadError" class="mb-4 rounded-lg bg-error-subtle px-3 py-2 text-body text-error-strong">
+            <p>{{ uploadError }}</p>
+            <!--
+              저장 공간 한도처럼 업그레이드로 풀리는 거절에만 결제 경로를 연다.
+              돈을 내도 풀리지 않는 오류(검증·인증·서버 장애)에 결제를 권하면 사용자를 오도한다.
+            -->
+            <router-link
+              v-if="showUpgradeLink"
+              :to="PLAN_UPGRADE_PATH"
+              class="mt-2 inline-flex text-body-sm font-semibold underline"
+            >
+              {{ $t('subscription.changePlan') }}
+            </router-link>
+          </div>
 
           <!-- Actions -->
           <div class="flex items-center justify-end gap-3">

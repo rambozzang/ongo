@@ -23,6 +23,10 @@ class SubscriptionUseCase(
     private val userRepository: UserRepository,
     private val videoRepository: VideoRepository,
     private val paddleGateway: PaddleGateway,
+    /** 체험 시작 시 플랜 크레딧 권한을 같은 트랜잭션에서 적용한다. */
+    private val creditService: com.ongo.application.credit.CreditService,
+    /** 전환 퍼널 측정. 체험이 실제로 시작된 뒤에만 기록한다. */
+    private val activityLogUseCase: com.ongo.application.activitylog.ActivityLogUseCase,
 ) {
 
     fun getCurrentSubscription(userId: Long): SubscriptionResponse {
@@ -132,6 +136,13 @@ class SubscriptionUseCase(
         val plan = safeValueOfOrThrow<PlanType>(targetPlan)
         val subscription = subscriptionRepository.findByUserId(userId)
             ?: throw NotFoundException("구독", userId)
+        /*
+         * 제품 CTA(SubscriptionView)는 STARTER 만 보낸다. 다른 플랜을 받으면 사용자가
+         * API 를 직접 불러 BUSINESS 체험을 여는 경로가 열리고, 그 크레딧(1,000)은
+         * 되돌릴 방법이 없다 — 체험은 1회성이라 두 번째 기회가 없다.
+         */
+        if (plan != PlanType.STARTER)
+            throw IllegalStateException("체험은 Starter 플랜만 가능합니다")
         if (subscription.planType != PlanType.FREE)
             throw IllegalStateException("무료 플랜 사용자만 트라이얼 시작 가능")
         if (subscription.trialStart != null)
@@ -149,6 +160,24 @@ class SubscriptionUseCase(
         )
         subscriptionRepository.update(updated)
         userRepository.update(userRepository.findById(userId)!!.copy(planType = plan))
+        /*
+         * 같은 @Transactional 안이라 구독·사용자 갱신과 함께 커밋되거나 함께 롤백된다.
+         * 나눠 두면 "구독은 TRIALING 인데 크레딧은 30" 인 상태가 남고, 사용자는 체험을
+         * 시작했는데 아무것도 못 하게 된다.
+         */
+        creditService.applyPlanEntitlement(userId, plan, reason = "TRIAL_START")
+        /*
+         * 구독·사용자·크레딧이 모두 반영된 **뒤에** 기록한다. 앞에 두면 뒤에서 실패해도
+         * 체험을 시작한 것처럼 남는다.
+         *
+         * 일반(트랜잭션 결속) 기록이다. 이 트랜잭션이 롤백되면 체험도 없으므로 흔적도
+         * 함께 사라져야 한다.
+         */
+        activityLogUseCase.logActivity(
+            userId = userId,
+            action = com.ongo.application.activitylog.ActivityLogActions.SUBSCRIPTION_TRIAL_STARTED,
+            entityType = com.ongo.application.activitylog.ActivityLogActions.ENTITY_SUBSCRIPTION,
+        )
         return updated.toResponse()
     }
 

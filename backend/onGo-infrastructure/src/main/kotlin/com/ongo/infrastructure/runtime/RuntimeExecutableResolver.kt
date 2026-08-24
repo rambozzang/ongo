@@ -11,7 +11,7 @@ import java.nio.file.Path
 object RuntimeExecutableResolver {
 
     fun resolve(configured: String): String {
-        if (configured !in setOf("ffmpeg", "yt-dlp")) return configured
+        if (configured !in setOf("ffmpeg", "ffprobe", "yt-dlp")) return configured
 
         return candidates(configured)
             .firstOrNull { Files.isRegularFile(it) && Files.isExecutable(it) }
@@ -29,6 +29,12 @@ object RuntimeExecutableResolver {
             Path.of("/data/ffmpeg/bin/ffmpeg"),
             Path.of("/data/ffmpeg/current/bin/ffmpeg"),
             Path.of("/usr/local/bin/ffmpeg"),
+        )
+        // ffprobe 는 ffmpeg 배포에 같이 들어 있어 경로가 나란하다.
+        "ffprobe" -> listOf(
+            Path.of("/data/ffmpeg/bin/ffprobe"),
+            Path.of("/data/ffmpeg/current/bin/ffprobe"),
+            Path.of("/usr/local/bin/ffprobe"),
         )
         "yt-dlp" -> listOf(
             Path.of("/data/yt-dlp/bin/yt-dlp"),

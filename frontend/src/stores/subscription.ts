@@ -131,21 +131,11 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     }
   }
 
-  async function validateCoupon(code: string) {
-    try {
-      return await subscriptionApi.validateCoupon(code)
-    } catch {
-      throw new Error('쿠폰 검증에 실패했습니다')
-    }
-  }
-
-  async function applyCoupon(code: string) {
-    try {
-      return await subscriptionApi.applyCoupon(code)
-    } catch {
-      throw new Error('쿠폰 적용에 실패했습니다')
-    }
-  }
+  /*
+   * validateCoupon / applyCoupon 은 제거했다.
+   * 쿠폰 할인을 반영하는 결제 경로가 없어 서버가 두 엔드포인트를 거절한다.
+   * 스토어에 남겨두면 다른 화면이 "이미 있는 기능"으로 믿고 다시 붙인다.
+   */
 
   return {
     subscription,
@@ -162,7 +152,5 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     startTrial,
     pauseSubscription,
     resumeSubscription,
-    validateCoupon,
-    applyCoupon,
   }
 })

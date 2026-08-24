@@ -1,0 +1,14 @@
+-- credit_tx_type 에 REVOKE 를 추가한다.
+--
+-- `CreditTransactionType.REVOKE` 는 Kotlin 에만 있고 PostgreSQL enum 에는 없었다.
+-- V1 이 DEDUCT/CHARGE/FREE_RESET 을, V2 가 REFUND 를 만들었고 REVOKE 는 어느 마이그레이션에도
+-- 없다. `CreditJooqRepository.saveTransaction` 은 타입 이름을 문자열로 enum 에 캐스트하므로
+-- (`enumValue("credit_tx_type", transaction.type.name)`), REVOKE 삽입은 DB 에서 실패한다.
+--
+-- 이 경로는 결제 취소·환불에서 실제로 호출된다:
+--   PortOnePaymentService.revokeCreditsFor / PaymentService / PaddleWebhookService
+-- 즉 구매 크레딧 회수가 마지막 단계에서 깨져 있었다.
+--
+-- ALTER TYPE ... ADD VALUE 는 트랜잭션 블록 안에서 제약이 있으므로 Flyway 가 이 스크립트를
+-- 단독으로 실행하도록 둔다. IF NOT EXISTS 라 재적용해도 안전하다.
+ALTER TYPE credit_tx_type ADD VALUE IF NOT EXISTS 'REVOKE';

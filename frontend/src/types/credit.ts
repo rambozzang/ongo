@@ -48,8 +48,3 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
   { key: 'PRO', name: '프로 팩', credits: 3000, price: 19900, pricePerCredit: 6.6, validDays: 90 },
   { key: 'BUSINESS', name: '비즈니스 팩', credits: 10000, price: 49900, pricePerCredit: 5.0, validDays: 180 },
 ]
-
-export interface PurchaseCreditRequest {
-  packageType: string
-  paymentMethod: string
-}

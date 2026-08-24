@@ -1,9 +1,6 @@
 package com.ongo.application.videodownload
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.ongo.application.storage.StorageQuotaUseCase
-import com.ongo.application.common.FileStoragePort
-import com.ongo.domain.video.VideoRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -24,10 +21,8 @@ class VideoDownloadAvailabilityTest {
     private val downloader = mockk<VideoSourceDownloader>()
 
     private fun useCase() = VideoDownloadUseCase(
-        videoRepository = mockk<VideoRepository>(relaxed = true),
         sourceDownloader = downloader,
-        fileStoragePort = mockk<FileStoragePort>(relaxed = true),
-        storageQuotaUseCase = mockk<StorageQuotaUseCase>(relaxed = true),
+        importedVideoPersister = mockk<ImportedVideoPersister>(relaxed = true),
         objectMapper = ObjectMapper(),
     )
 

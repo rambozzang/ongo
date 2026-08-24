@@ -64,14 +64,27 @@ class S3StorageClient(
         s3Client.deleteObject(deleteRequest)
     }
 
-    override fun generatePresignedUploadUrl(key: String, contentType: String, expirationMinutes: Int): String {
+    override fun generatePresignedUploadUrl(
+        key: String,
+        contentType: String,
+        contentLength: Long,
+        expirationMinutes: Int,
+    ): String {
         validateStorageKey(key)
-        log.debug("S3 presigned URL 생성: key={}, expiry={}분", key, expirationMinutes)
+        require(contentLength > 0) { "업로드 크기가 올바르지 않습니다." }
+        log.debug(
+            "S3 presigned URL 생성: key={}, length={}, expiry={}분",
+            key, contentLength, expirationMinutes,
+        )
 
+        // content-length 를 요청에 넣으면 presigner 가 서명 대상 헤더에 포함시킨다.
+        // 신고한 크기와 다른 PUT 은 스토리지가 서명 불일치로 거부하므로, 용량 우회가
+        // 서버까지 오지 않고 그 자리에서 막힌다.
         val putObjectRequest = PutObjectRequest.builder()
             .bucket(storageProperties.bucket)
             .key(key)
             .contentType(contentType)
+            .contentLength(contentLength)
             .build()
 
         val presignRequest = PutObjectPresignRequest.builder()

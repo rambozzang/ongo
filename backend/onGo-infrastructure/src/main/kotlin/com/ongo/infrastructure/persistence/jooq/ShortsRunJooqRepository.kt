@@ -10,10 +10,13 @@ import com.ongo.infrastructure.persistence.jooq.Fields.CURRENT_STAGE
 import com.ongo.infrastructure.persistence.jooq.Fields.ERROR_MESSAGE
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.IDEMPOTENCY_KEY
+import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE_DURATION_MS
 import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE_VIDEO_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.TEMPLATE_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.CROP_JSON
+import com.ongo.infrastructure.persistence.jooq.Fields.DELIVERED_AT
+import com.ongo.infrastructure.persistence.jooq.Fields.STARTED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.AUTO_SCHEDULE
 import com.ongo.infrastructure.persistence.jooq.Fields.AUTO_SCHEDULE_INTERVAL_HOURS
 import com.ongo.infrastructure.persistence.jooq.Fields.AUTO_SCHEDULE_PLATFORMS
@@ -48,6 +51,8 @@ class ShortsRunJooqRepository(
             .set(AUTO_SCHEDULE_PLATFORMS, run.autoSchedulePlatforms.takeIf { it.isNotEmpty() }?.joinToString("\n"))
             .set(IDEMPOTENCY_KEY, run.idempotencyKey)
             .set(REQUEST_HASH, run.requestHash)
+            // 견적은 삽입 시점에 한 번만 쓴다. update 에는 넣지 않는다 — 아래 update 주석 참조.
+            .set(SOURCE_DURATION_MS, run.sourceDurationMs)
             .set(STATUS, run.status.name)
             .set(CURRENT_STAGE, run.currentStage?.name)
             .set(TRANSCRIPT_TEXT, run.transcriptText)
@@ -75,6 +80,7 @@ class ShortsRunJooqRepository(
             .set(AUTO_SCHEDULE_PLATFORMS, run.autoSchedulePlatforms.takeIf { it.isNotEmpty() }?.joinToString("\n"))
             .set(IDEMPOTENCY_KEY, key)
             .set(REQUEST_HASH, run.requestHash)
+            .set(SOURCE_DURATION_MS, run.sourceDurationMs)
             .set(STATUS, run.status.name)
             .set(CURRENT_STAGE, run.currentStage?.name)
             .set(TRANSCRIPT_TEXT, run.transcriptText)
@@ -106,6 +112,13 @@ class ShortsRunJooqRepository(
             .fetchOne()
             ?.toPipelineRun()
 
+    /*
+     * SOURCE_DURATION_MS 는 의도적으로 갱신하지 않는다.
+     *
+     * 이 값은 실행이 만들어질 때 인용된 청구 근거다. update 가 건드릴 수 있으면 재실행마다
+     * 금액이 달라질 수 있고, 그건 사용자가 동의한 적 없는 청구다. 여기서 `.set` 하지
+     * 않으므로 기존 값이 그대로 보존된다.
+     */
     override fun update(run: PipelineRun): PipelineRun {
         // 낙관적 락: 로드 시점 version과 일치할 때만 갱신하고 version을 증가시킨다.
         val affected = dsl.update(UGC_SHORTS_PIPELINE_RUNS)
@@ -132,12 +145,46 @@ class ShortsRunJooqRepository(
         return findById(run.id)!!
     }
 
+    /*
+     * 조건을 SQL 에 둔다. 읽고-비교하고-쓰면 재개된 실행이 첫 시작 시각을 덮어써
+     * 리드타임이 실제보다 짧아진다. version 을 건드리지 않는 이유는 이 값이 낙관적 락의
+     * 대상인 업무 상태가 아니라 관측 기록이기 때문이다 — 진행 중인 update 를 깨뜨리면
+     * 측정 때문에 파이프라인이 실패한다.
+     */
+    override fun markStartedIfAbsent(id: Long, startedAt: java.time.Instant): Boolean =
+        dsl.update(UGC_SHORTS_PIPELINE_RUNS)
+            .set(STARTED_AT, localDateTime(startedAt))
+            .where(ID.eq(id))
+            .and(STARTED_AT.isNull)
+            .execute() > 0
+
+    /*
+     * 클립 여러 개가 병렬로 렌더를 끝내면 완료 콜백이 동시에 들어온다. `IS NULL` 조건이
+     * 없으면 나중 시각이 첫 납품 시각을 덮어써 리드타임이 실제보다 길어진다.
+     */
+    override fun markDeliveredIfAbsent(id: Long, deliveredAt: java.time.Instant): Boolean =
+        dsl.update(UGC_SHORTS_PIPELINE_RUNS)
+            .set(DELIVERED_AT, localDateTime(deliveredAt))
+            .where(ID.eq(id))
+            .and(DELIVERED_AT.isNull)
+            .execute() > 0
+
     override fun findById(id: Long): PipelineRun? =
         dsl.select()
             .from(UGC_SHORTS_PIPELINE_RUNS)
             .where(ID.eq(id))
             .fetchOne()
             ?.toPipelineRun()
+
+    /** 기본 구현의 반복 조회 대신 단일 IN 질의로 읽는다. */
+    override fun findByIds(ids: List<Long>): List<PipelineRun> {
+        if (ids.isEmpty()) return emptyList()
+        return dsl.select()
+            .from(UGC_SHORTS_PIPELINE_RUNS)
+            .where(ID.`in`(ids))
+            .fetch()
+            .map { it.toPipelineRun() }
+    }
 
     override fun findByStatus(status: PipelineRunStatus, limit: Int): List<PipelineRun> =
         dsl.select()
@@ -182,6 +229,8 @@ class ShortsRunJooqRepository(
             .orEmpty(),
         idempotencyKey = get(IDEMPOTENCY_KEY),
         requestHash = get(REQUEST_HASH),
+        // 이 컬럼 도입 이전 행은 NULL 이다. 그대로 NULL 로 읽어 정액 경로를 타게 둔다.
+        sourceDurationMs = get(SOURCE_DURATION_MS),
         status = PipelineRunStatus.valueOf(get(STATUS)),
         currentStage = get(CURRENT_STAGE)?.let { PipelineStage.valueOf(it) },
         transcriptText = get(TRANSCRIPT_TEXT),
@@ -190,6 +239,9 @@ class ShortsRunJooqRepository(
         errorMessage = get(ERROR_MESSAGE),
         createdAt = localDateTime(CREATED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
         updatedAt = localDateTime(UPDATED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
+        // 측정 시작 전에 만들어진 행은 NULL 이다. 소급 추정하지 않는다.
+        startedAt = localDateTime(STARTED_AT)?.atZone(ZoneOffset.UTC)?.toInstant(),
+        deliveredAt = localDateTime(DELIVERED_AT)?.atZone(ZoneOffset.UTC)?.toInstant(),
         version = get(VERSION),
     )
 

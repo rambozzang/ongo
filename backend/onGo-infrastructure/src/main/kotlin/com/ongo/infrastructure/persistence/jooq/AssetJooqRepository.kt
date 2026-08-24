@@ -7,6 +7,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.DURATION_SECONDS
 import com.ongo.infrastructure.persistence.jooq.Fields.FILE_SIZE_BYTES
 import com.ongo.infrastructure.persistence.jooq.Fields.FILE_TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.FILE_URL
+import com.ongo.infrastructure.persistence.jooq.Fields.STORAGE_OBJECT_KEY
 import com.ongo.infrastructure.persistence.jooq.Fields.FILENAME
 import com.ongo.infrastructure.persistence.jooq.Fields.FOLDER
 import com.ongo.infrastructure.persistence.jooq.Fields.HEIGHT
@@ -77,6 +78,7 @@ class AssetJooqRepository(
             .set(FILENAME, asset.filename)
             .set(ORIGINAL_FILENAME, asset.originalFilename)
             .set(FILE_URL, asset.fileUrl)
+            .set(STORAGE_OBJECT_KEY, asset.storageObjectKey)
             .set(FILE_TYPE, asset.fileType)
             .set(FILE_SIZE_BYTES, asset.fileSizeBytes)
             .set(MIME_TYPE, asset.mimeType)
@@ -123,6 +125,7 @@ class AssetJooqRepository(
             filename = get(FILENAME),
             originalFilename = get(ORIGINAL_FILENAME),
             fileUrl = get(FILE_URL),
+            storageObjectKey = get(STORAGE_OBJECT_KEY),
             fileType = get(FILE_TYPE),
             fileSizeBytes = get(FILE_SIZE_BYTES),
             mimeType = get(MIME_TYPE),

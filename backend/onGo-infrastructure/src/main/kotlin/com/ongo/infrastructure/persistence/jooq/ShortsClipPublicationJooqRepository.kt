@@ -34,6 +34,18 @@ class ShortsClipPublicationJooqRepository(
             .fetchOne()
             ?.toPublication()
 
+    override fun findByClipIds(clipIds: List<Long>): List<ClipPublication> {
+        // 빈 IN 절은 만들지 않는다.
+        if (clipIds.isEmpty()) return emptyList()
+        return dsl.select()
+            .from(UGC_SHORTS_CLIP_PUBLICATIONS)
+            .where(CLIP_ID.`in`(clipIds))
+            // 같은 클립의 대상들이 화면에서 매번 같은 순서로 보이게 한다.
+            .orderBy(CLIP_ID.asc(), PLATFORM.asc())
+            .fetch()
+            .map { it.toPublication() }
+    }
+
     override fun findByVideoUploadId(videoUploadId: Long): List<ClipPublication> =
         dsl.select()
             .from(UGC_SHORTS_CLIP_PUBLICATIONS)

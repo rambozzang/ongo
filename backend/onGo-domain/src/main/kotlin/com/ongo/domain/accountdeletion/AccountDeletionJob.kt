@@ -23,6 +23,13 @@ data class AccountDeletionJob(
     /** DB 삭제 트랜잭션이 커밋된 시각. 값이 있으면 DB 단계를 다시 하지 않는다. */
     val dbCommittedAt: LocalDateTime? = null,
     val completedAt: LocalDateTime? = null,
+    /**
+     * 객체 키를 확정할 수 없어 지우지 못한 행 수.
+     *
+     * 메모리에만 두면 커밋 직후 죽었을 때 사라지고, 다음 tick 이 "남은 일 없음"만 보고
+     * 완료로 올린다. 실제로는 버킷에 남아 있는데 지웠다고 기록하는 셈이라 영속화한다.
+     */
+    val unresolvedObjectRows: Int = 0,
 )
 
 /**

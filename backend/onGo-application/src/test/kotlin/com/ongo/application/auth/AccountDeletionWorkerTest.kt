@@ -17,13 +17,15 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 class AccountDeletionWorkerTest {
+    private val objectTasks = mockk<com.ongo.domain.accountdeletion.AccountDeletionObjectTaskRepository>(relaxed = true)
+    private val fileStoragePort = mockk<com.ongo.application.common.FileStoragePort>(relaxed = true)
 
     private val jobs = mockk<AccountDeletionJobRepository>(relaxed = true)
     private val scanner = mockk<UserFkScanner>()
     private val deletionData = mockk<AccountDeletionDataPort>(relaxed = true)
     private val subscriptions = mockk<SubscriptionRepository>(relaxed = true)
 
-    private val processor = AccountDeletionJobProcessor(jobs, scanner, deletionData, subscriptions)
+    private val processor = AccountDeletionJobProcessor(jobs, scanner, deletionData, subscriptions, objectTasks, fileStoragePort)
     private val job = AccountDeletionJob(id = 9L, userId = 1L, idempotencyKey = "worker-test")
 
     private fun key(constraint: String, table: String) =
@@ -44,7 +46,7 @@ class AccountDeletionWorkerTest {
         processor.process(job)
 
         verify(exactly = 1) {
-            deletionData.deleteUserDataAndComplete(
+            deletionData.snapshotObjectsAndDeleteUserData(
                 jobId = 9L,
                 userId = 1L,
                 policies = match { policies ->
@@ -71,7 +73,7 @@ class AccountDeletionWorkerTest {
                 supportReference = "review-block:1",
             )
         }
-        verify(exactly = 0) { deletionData.deleteUserDataAndComplete(any(), any(), any()) }
+        verify(exactly = 0) { deletionData.snapshotObjectsAndDeleteUserData(any<Long>(), any<Long>(), any()) }
     }
 
     @Test
@@ -96,6 +98,6 @@ class AccountDeletionWorkerTest {
                 supportReference = "subscription:active-or-billing",
             )
         }
-        verify(exactly = 0) { deletionData.deleteUserDataAndComplete(any(), any(), any()) }
+        verify(exactly = 0) { deletionData.snapshotObjectsAndDeleteUserData(any<Long>(), any<Long>(), any()) }
     }
 }

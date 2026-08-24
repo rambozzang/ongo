@@ -19,14 +19,30 @@ class VideoStorageService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun generateUploadUrl(videoId: Long, filename: String, contentType: String): String {
-        val safeFilename = filename.substringAfterLast('/').substringAfterLast('\\')
+    override fun generateUploadUrl(videoId: Long, filename: String, contentType: String, fileSize: Long): String {
+        val objectName = "videos/$videoId/${safeFilename(filename)}"
+        return storageClient.generatePresignedUploadUrl(objectName, contentType, fileSize, 60)
+    }
+
+    /**
+     * 업로드된 오브젝트의 실제 크기. 신고치가 아니라 스토리지가 보고하는 값이다.
+     *
+     * 오브젝트가 없거나(업로드 미완료) 메타데이터를 못 읽으면 null 을 돌려주고, 판단은 호출부가 한다.
+     */
+    override fun getUploadedSize(videoId: Long): Long? {
+        val key = getUploadedKey(videoId) ?: return null
+        return storageClient.getObjectMetadata(key)?.contentLength
+    }
+
+    /** 서버가 할당한 prefix 아래 실제로 올라온 객체의 키. */
+    override fun getUploadedKey(videoId: Long): String? =
+        storageClient.listObjects("videos/$videoId/").firstOrNull()
+
+    private fun safeFilename(filename: String): String =
+        filename.substringAfterLast('/').substringAfterLast('\\')
             .replace(Regex("[^a-zA-Z0-9._-]"), "_")
             .takeLast(180)
             .ifBlank { "upload.bin" }
-        val objectName = "videos/$videoId/$safeFilename"
-        return storageClient.generatePresignedUploadUrl(objectName, contentType, 60)
-    }
 
     override fun getTusEndpoint(videoId: Long): String {
         return "$tusBaseEndpoint/$videoId"

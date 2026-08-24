@@ -1,6 +1,6 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
-import type { Subscription, ChangePlanRequest, ChangePlanResponse, PlanInfo, PlanType, CouponValidation, UsageAlertConfig } from '@/types/subscription'
+import type { Subscription, ChangePlanRequest, ChangePlanResponse, PlanInfo, PlanType, UsageAlertConfig } from '@/types/subscription'
 
 export const subscriptionApi = {
   getCurrent() {
@@ -52,17 +52,11 @@ export const subscriptionApi = {
       .then(unwrapResponse)
   },
 
-  validateCoupon(code: string, targetPlan?: string, billingCycle?: string) {
-    return apiClient
-      .post<ResData<CouponValidation>>('/coupons/validate', { code, targetPlan, billingCycle })
-      .then(unwrapResponse)
-  },
-
-  applyCoupon(code: string, subscriptionId?: number) {
-    return apiClient
-      .post<ResData<CouponValidation>>('/coupons/apply', { code, subscriptionId })
-      .then(unwrapResponse)
-  },
+  /*
+   * validateCoupon / applyCoupon 은 제거했다.
+   * 서버의 /coupons/validate·/coupons/apply 는 항상 COUPON_NOT_APPLICABLE 로 실패한다 —
+   * 쿠폰 할인이 결제 금액에 반영되지 않기 때문이다.
+   */
 
   getUsageAlerts() {
     return apiClient

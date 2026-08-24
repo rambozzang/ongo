@@ -131,11 +131,24 @@
             <SparklesIcon class="mr-1.5 inline h-5 w-5 text-primary-600" />
             {{ $t('subscription.aiCredits') }}
           </h2>
-          <button class="btn-primary" @click="showCreditModal = true">
+          <button
+            class="btn-primary"
+            :disabled="!paymentEnabled"
+            :title="paymentEnabled ? undefined : paymentUnavailableCopy"
+            @click="showCreditModal = true"
+          >
             <PlusIcon class="mr-1.5 h-4 w-4" />
             {{ $t('subscription.chargeCredits') }}
           </button>
         </div>
+
+        <!--
+          결제를 열 수 없는 이유를 미리 알린다. 눌러서 실패를 보는 것보다,
+          누르기 전에 아는 편이 낫다.
+        -->
+        <p v-if="!paymentEnabled" class="mb-4 text-body-xs text-warning-strong" role="status">
+          {{ paymentUnavailableCopy }}
+        </p>
 
         <div v-if="creditBalance">
           <div class="mb-2 flex items-end justify-between">
@@ -264,33 +277,12 @@
         </div>
       </div>
 
-      <!-- Section 5: Coupon -->
-      <div class="rounded-[11px] border border-line bg-surface-card p-4 mb-6">
-        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">쿠폰</h2>
-        <div class="flex gap-2">
-          <input
-            v-model="couponCode"
-            type="text"
-            placeholder="쿠폰 코드를 입력하세요"
-            class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-body text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            @keyup.enter="handleValidateCoupon"
-          />
-          <button class="btn-secondary" :disabled="!couponCode.trim()" @click="handleValidateCoupon">
-            검증
-          </button>
-          <button class="btn-primary" :disabled="!couponValidation?.valid" @click="handleApplyCoupon">
-            적용
-          </button>
-        </div>
-        <div v-if="couponValidation" class="mt-3 rounded-lg px-3 py-2 text-body" :class="couponValidation.valid ? 'bg-success-subtle text-success-strong' : 'bg-error-subtle text-error-strong'">
-          <template v-if="couponValidation.valid">
-            쿠폰 유효: {{ couponValidation.discountType === 'PERCENTAGE' ? couponValidation.discountValue + '% 할인' : couponValidation.discountType === 'FIXED_AMOUNT' ? '₩' + couponValidation.discountValue?.toLocaleString() + ' 할인' : couponValidation.discountValue + '일 무료' }}
-          </template>
-          <template v-else>
-            {{ couponValidation.message }}
-          </template>
-        </div>
-      </div>
+      <!--
+        쿠폰 입력 섹션은 제거했다.
+        쿠폰 할인을 반영하는 결제 경로가 없어서, "쿠폰 유효: 20% 할인"을 보여주고
+        적용까지 누르게 한 뒤 정가로 청구되고 있었다. 결제에 연결되기 전까지는
+        입력란 자체가 지킬 수 없는 약속이다.
+      -->
 
       <!-- Section: Usage Alert Settings -->
       <div class="rounded-[11px] border border-line bg-surface-card p-4 mb-6">
@@ -359,6 +351,17 @@
         <p v-if="subscriptionError && storePlans.length === 0" class="mb-4 rounded-lg border border-error-subtle bg-error-subtle px-4 py-3 text-body text-error-strong">
           {{ subscriptionError }}
         </p>
+        <!--
+          유료 전환만 막는다. 무료 플랜 전환·다운그레이드는 결제를 거치지 않으므로
+          표는 그대로 두고, 왜 지금 결제할 수 없는지만 미리 알린다.
+        -->
+        <p
+          v-if="!paymentEnabled"
+          class="mb-4 rounded-lg border border-warning-strong/40 bg-warning-subtle p-3 text-body-xs text-warning-strong"
+          role="status"
+        >
+          {{ paymentUnavailableCopy }}
+        </p>
         <PlanComparisonTable
           :plans="storePlans"
           :current-plan="subscription?.planType"
@@ -369,7 +372,29 @@
 
       <!-- Section 6: Payment History -->
       <div class="card">
-        <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.paymentHistory') }}</h2>
+        <div class="mb-4 flex items-center justify-between gap-2">
+          <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.paymentHistory') }}</h2>
+          <button
+            type="button"
+            class="btn-secondary"
+            :disabled="subscriptionStore.loading"
+            @click="refreshPayments"
+          >
+            {{ $t('subscription.paymentRefresh') }}
+          </button>
+        </div>
+
+        <!--
+          미확정 결제가 있을 때만 나온다. 결제가 됐는지 안 됐는지 단정하지 않고,
+          확인이 아직 끝나지 않았다는 사실만 말한다.
+        -->
+        <p
+          v-if="hasPendingPayment"
+          class="mb-4 rounded-lg bg-gray-100 px-3 py-2 text-body-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+          role="status"
+        >
+          {{ $t('subscription.paymentPendingNotice') }}
+        </p>
 
         <div class="overflow-x-auto">
           <table v-if="paymentList && paymentList.content.length > 0" class="w-full text-body">
@@ -390,7 +415,7 @@
                 class="hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <td class="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-300">
-                  {{ formatDateTime(payment.paidAt) }}
+                  {{ formatDateTime(payment.createdAt) }}
                 </td>
                 <td class="px-4 py-3">
                   <span
@@ -503,6 +528,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { usePaymentAvailability } from '@/composables/usePaymentAvailability'
 import { storeToRefs } from 'pinia'
 import {
   CalendarIcon,
@@ -552,6 +578,13 @@ const showChangePlanModal = ref(false)
 const showCancelModal = ref(false)
 const showCreditModal = ref(false)
 const showPaymentModal = ref(false)
+/** 결제 가능 여부는 서버가 정한다. 클라이언트 상수로 판단하지 않는다. */
+const { paymentEnabled, paymentDisabledReason, loadPaymentAvailability } = usePaymentAvailability()
+/** 서버가 이유를 주면 그것을 쓰고, 없으면 같은 뜻의 기본 문구를 쓴다. */
+const paymentUnavailableCopy = computed(
+  () => paymentDisabledReason.value
+    ?? '온라인 결제를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도하거나 고객지원에 문의해 주세요.',
+)
 const targetPlan = ref<PlanType | null>(null)
 
 // Usage data from real API
@@ -562,10 +595,6 @@ const usageData = ref({
 const usageLoading = ref(false)
 const usageError = ref<string | null>(null)
 const usageAlertsError = ref<string | null>(null)
-
-// Coupon
-const couponCode = ref('')
-const couponValidation = ref<import('@/types/subscription').CouponValidation | null>(null)
 
 // Usage Alerts
 const usageAlerts = ref([
@@ -653,8 +682,17 @@ function formatDate(dateStr: string): string {
   })
 }
 
-function formatDateTime(dateStr: string): string {
+/**
+ * 값이 없거나 날짜로 읽히지 않으면 "Invalid Date" 대신 `-` 를 보여준다.
+ *
+ * 서버는 `createdAt` 을 nullable 로 보낸다. 예전에는 없는 필드를 읽어 모든 행이
+ * "Invalid Date" 였는데, 그 상태에서는 날짜가 비어 있는 것인지 값이 깨진 것인지
+ * 구분할 수 없었다.
+ */
+function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-'
   const date = new Date(dateStr)
+  if (Number.isNaN(date.getTime())) return '-'
   return date.toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: '2-digit',
@@ -699,6 +737,8 @@ function paymentStatusClass(status: string): string {
     COMPLETED: 'bg-success-subtle text-success-strong',
     FAILED: 'bg-error-subtle text-error-strong',
     REFUNDED: 'bg-warning-subtle text-warning-strong',
+    // 성공도 실패도 아니다. PG 확인 전에는 어느 쪽으로도 단정하지 않는다.
+    PENDING: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
   }
   return classes[status] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
 }
@@ -708,9 +748,31 @@ function paymentStatusLabel(status: string): string {
     COMPLETED: 'subscription.paymentCompleted',
     FAILED: 'subscription.paymentFailed',
     REFUNDED: 'subscription.paymentRefunded',
+    /*
+     * 체크아웃은 결제창을 열기 전에 PENDING 행을 만든다. 그래서 이 상태는
+     * "결제 진행 중"일 수도, "사용자가 취소함"일 수도, "웹훅 대기 중"일 수도 있다.
+     * 서버에는 셋을 구분할 근거가 없으므로 문구도 어느 쪽으로도 단정하지 않는다.
+     * 예전에는 매핑이 없어 영문 원문 "PENDING" 이 그대로 노출됐다.
+     */
+    PENDING: 'subscription.paymentPending',
   }
   const key = labelKeys[status]
   return key ? t(key) : status
+}
+
+/** 미확정 결제가 목록에 있는가. 안내 문구를 보일지 판단하는 데만 쓴다. */
+const hasPendingPayment = computed(
+  () => paymentList.value?.content.some((p) => p.status === 'PENDING') ?? false,
+)
+
+/**
+ * 결제 내역을 현재 페이지 그대로 다시 읽는다.
+ *
+ * 조회만 한다. PENDING 을 취소로 바꾸거나 PG 에 묻지 않는다 — 웹훅이 도착했다면
+ * 서버 상태가 이미 바뀌어 있고, 아직이라면 다시 읽어도 PENDING 그대로인 것이 정직하다.
+ */
+async function refreshPayments() {
+  await subscriptionStore.fetchPayments(paymentList.value?.page ?? 0, 20)
 }
 
 // Actions
@@ -729,7 +791,12 @@ function selectPlan(plan: PlanType) {
   const targetIdx = storePlans.value.findIndex((p) => p.type === plan)
 
   if (targetIdx > currentIdx) {
-    // Upgrade - show payment modal
+    /*
+     * 결제가 불가한 상태면 결제창을 열지 않는다. 열고 나서 실패를 보여주면 사용자는
+     * 원인을 알 수 없고, 서버에는 아무도 정리하지 않는 대기 결제가 남는다.
+     * FREE 전환·다운그레이드는 결제를 거치지 않으므로 아래 분기로 그대로 간다.
+     */
+    if (!paymentEnabled.value) return
     showPaymentModal.value = true
   } else {
     // Downgrade or same - show confirmation
@@ -775,14 +842,21 @@ async function confirmCancel() {
 
 async function handleCreditPurchase(_pkg: CreditPackage) {
   notification.success(t('subscription.creditChargeSuccess'))
-  // 결제 완료 직후 데이터 리페치
-  setTimeout(async () => {
-    await Promise.all([
-      creditStore.fetchBalance(),
-      creditStore.fetchTransactions(0, 20),
-      subscriptionStore.fetchPayments(0, 20),
-    ])
-  }, 1500)
+  /*
+   * 지연 없이 곧바로 다시 읽는다.
+   *
+   * 이 핸들러는 서버가 `complete` 로 결제를 검증하고 크레딧을 지급한 **뒤에** 불린다.
+   * 기다릴 비동기 작업이 남아 있지 않으므로 예전의 1.5 초 타이머는 오래된 잔액을 그만큼
+   * 더 오래 보여주기만 했다.
+   *
+   * await 해서 실패가 이 함수 밖으로 드러나게 둔다. 리페치가 실패하면 스토어의
+   * balanceError/transactionsError 가 화면에 "다시 시도" 버튼을 띄운다.
+   */
+  await Promise.all([
+    creditStore.fetchBalance(),
+    creditStore.fetchTransactions(0, 20),
+    subscriptionStore.fetchPayments(0, 20),
+  ])
 }
 
 async function handleStartTrial() {
@@ -809,27 +883,6 @@ async function handleResume() {
     notification.success('구독이 재개되었습니다')
   } catch (e: unknown) {
     notification.error(e instanceof Error ? e.message : '구독 재개에 실패했습니다')
-  }
-}
-
-async function handleValidateCoupon() {
-  if (!couponCode.value.trim()) return
-  try {
-    couponValidation.value = await subscriptionStore.validateCoupon(couponCode.value.trim())
-  } catch (e: unknown) {
-    notification.error(e instanceof Error ? e.message : '쿠폰 검증에 실패했습니다')
-  }
-}
-
-async function handleApplyCoupon() {
-  if (!couponValidation.value?.valid) return
-  try {
-    await subscriptionStore.applyCoupon(couponCode.value.trim())
-    notification.success('쿠폰이 적용되었습니다')
-    couponCode.value = ''
-    couponValidation.value = null
-  } catch (e: unknown) {
-    notification.error(e instanceof Error ? e.message : '쿠폰 적용에 실패했습니다')
   }
 }
 
@@ -911,6 +964,7 @@ onMounted(() => {
     subscriptionStore.fetchPayments(0, 20),
     channelStore.fetchChannels(),
     fetchUsage(),
+    loadPaymentAvailability(),
     fetchUsageAlerts(),
     initPortOne(),
   ])

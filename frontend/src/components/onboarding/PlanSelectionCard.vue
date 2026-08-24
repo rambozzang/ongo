@@ -1,11 +1,18 @@
 <template>
+  <!--
+    disabled 는 네이티브 button 속성을 그대로 쓴다. 클릭만 막는 커스텀 처리와 달리
+    탭 순서에서 빠지고 보조기술이 "사용할 수 없음"으로 읽어준다.
+  -->
   <button
     type="button"
+    :disabled="disabled"
     class="w-full rounded-2xl border-2 p-5 text-left transition-all duration-200"
     :class="[
-      isSelected
-        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-lg'
-        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md',
+      disabled
+        ? 'cursor-not-allowed border-gray-200 bg-gray-50 opacity-60 dark:border-gray-700 dark:bg-gray-800/50'
+        : isSelected
+          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-lg'
+          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md',
       isRecommended ? 'relative' : ''
     ]"
     @click="$emit('select', plan.type)"
@@ -97,6 +104,8 @@ interface Props {
   plan: Plan
   isSelected: boolean
   isRecommended?: boolean
+  /** 지금 고를 수 없는 플랜. 결제를 시작할 수 없을 때 유료 플랜에 쓴다. */
+  disabled?: boolean
 }
 
 defineProps<Props>()

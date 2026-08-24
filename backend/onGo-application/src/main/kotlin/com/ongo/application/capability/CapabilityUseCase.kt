@@ -23,6 +23,7 @@ class CapabilityUseCase(
      */
     private val chatClientRegistry: ChatClientRegistry? = null,
     private val videoRenderer: VideoRenderer? = null,
+    private val portOneReadiness: com.ongo.application.portone.PortOneReadiness? = null,
 ) {
     fun list(): List<AppCapability> {
         val disabled = disabledCapabilities
@@ -47,7 +48,31 @@ class CapabilityUseCase(
     private fun runtimeStatus(key: String): RuntimeStatus = when (key) {
         "ai" -> aiStatus()
         "ugc/shorts/runs" -> shortsStatus()
+        "payment" -> paymentStatus()
         else -> RuntimeStatus(enabled = true)
+    }
+
+    /**
+     * 온라인 결제 가능 여부.
+     *
+     * `subscription` 이 아니라 별도 키인 이유: `subscription` 을 끄면 구독 화면 자체가
+     * 메뉴에서 사라져 사용자가 자기 플랜과 크레딧 잔액도 볼 수 없게 된다. 막아야 하는 것은
+     * **결제 시작**이지 결제 정보 조회가 아니다.
+     *
+     * 이유 문구에 어느 설정이 빠졌는지 쓰지 않는다. 사용자가 할 수 있는 일이 없고,
+     * 설정 상태를 알려줄 이유도 없다.
+     */
+    private fun paymentStatus(): RuntimeStatus {
+        // null 은 인프라 빈 없이 도는 모듈 단위 테스트뿐이다. aiStatus 와 같은 관례를 따른다.
+        val readiness = portOneReadiness ?: return RuntimeStatus(enabled = true)
+        return if (readiness.isReady()) {
+            RuntimeStatus(enabled = true)
+        } else {
+            RuntimeStatus(
+                enabled = false,
+                reason = "온라인 결제를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도하거나 고객지원에 문의해 주세요.",
+            )
+        }
     }
 
     private fun aiStatus(): RuntimeStatus {
@@ -125,6 +150,8 @@ class CapabilityUseCase(
             AppCapability("activity-log"),
             AppCapability("manual"),
             AppCapability("subscription"),
+            // 메뉴 항목이 아니라 결제 시작 가능 여부 신호다. 구독 화면은 계속 보여야 한다.
+            AppCapability("payment"),
             AppCapability("settings-v2"),
             AppCapability("admin"),
         )

@@ -11,6 +11,10 @@ springdoc:
 shorts:
   render:
     ffmpeg-path: ${FFMPEG_PATH:/data/ffmpeg/bin/ffmpeg}
+  transcribe:
+    # ffprobe 는 같은 배포에 들어 있다. 길이 상한 검사가 이 실행 파일에 걸려 있고,
+    # 못 쓰면 쇼츠 실행 생성이 거절된다(모르는 채 진행하지 않는다).
+    ffprobe-path: ${FFPROBE_PATH:/data/ffmpeg/bin/ffprobe}
 
 storage:
   type: s3

@@ -23,7 +23,7 @@ vi.mock('@/api/notification', () => ({
 vi.mock('@/api/subscription', () => ({
   subscriptionApi: {
     getCurrent: vi.fn(), getPlans: vi.fn(), changePlan: vi.fn(), cancel: vi.fn(), startTrial: vi.fn(),
-    pauseSubscription: vi.fn(), resumeSubscription: vi.fn(), validateCoupon: vi.fn(), applyCoupon: vi.fn(),
+    pauseSubscription: vi.fn(), resumeSubscription: vi.fn(),
   },
 }))
 vi.mock('@/api/payment', () => ({ paymentApi: { getHistory: vi.fn() } }))
@@ -123,7 +123,7 @@ describe('operational stores', () => {
     expect(store.notifications).toHaveLength(1)
   })
 
-  it('maps subscription plans, billing actions, coupon actions, and payment history', async () => {
+  it('maps subscription plans, billing actions, and payment history', async () => {
     const subscription = { planType: 'PRO', status: 'ACTIVE' } as never
     vi.mocked(subscriptionApi.getCurrent).mockResolvedValue(subscription)
     vi.mocked(subscriptionApi.getPlans).mockResolvedValue({
@@ -136,8 +136,6 @@ describe('operational stores', () => {
     vi.mocked(subscriptionApi.startTrial).mockResolvedValue(subscription)
     vi.mocked(subscriptionApi.pauseSubscription).mockResolvedValue(subscription)
     vi.mocked(subscriptionApi.resumeSubscription).mockResolvedValue(subscription)
-    vi.mocked(subscriptionApi.validateCoupon).mockResolvedValue({ valid: true } as never)
-    vi.mocked(subscriptionApi.applyCoupon).mockResolvedValue({ valid: true } as never)
     const store = useSubscriptionStore()
 
     await store.fetchSubscription()
@@ -148,11 +146,23 @@ describe('operational stores', () => {
     await store.startTrial('PRO')
     await store.pauseSubscription()
     await store.resumeSubscription()
-    expect(await store.validateCoupon('WELCOME')).toMatchObject({ valid: true })
-    expect(await store.applyCoupon('WELCOME')).toMatchObject({ valid: true })
     expect(store.plans[0]).toMatchObject({ storageMb: 51200, support: '우선 이메일' })
     expect(store.currentPlan).toBe('PRO')
     expect(store.loading).toBe(false)
+  })
+
+  /*
+   * 쿠폰 할인을 반영하는 결제 경로가 없다. 스토어가 쿠폰 액션을 노출하면 어떤 화면이든
+   * 다시 붙일 수 있고, 그러면 "할인 약속 후 정가 청구"가 되돌아온다.
+   * API 계층에도 남아 있으면 안 된다 — 스토어만 지우는 것으로는 재발을 못 막는다.
+   */
+  it('exposes no coupon action on the subscription store or api', () => {
+    const store = useSubscriptionStore() as unknown as Record<string, unknown>
+
+    expect(store.validateCoupon).toBeUndefined()
+    expect(store.applyCoupon).toBeUndefined()
+    expect((subscriptionApi as unknown as Record<string, unknown>).validateCoupon).toBeUndefined()
+    expect((subscriptionApi as unknown as Record<string, unknown>).applyCoupon).toBeUndefined()
   })
 
   it('does not hide subscription failures behind stale loading state', async () => {

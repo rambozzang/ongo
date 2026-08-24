@@ -233,6 +233,18 @@
               <p class="mt-2 text-body text-gray-500 dark:text-gray-400">{{ t('onboarding.plan.description') }}</p>
             </div>
 
+            <!--
+              결제를 시작할 수 없으면 유료 플랜을 고를 수 없게 만든다. 고른 뒤 '다음'에서
+              막으면 사용자는 이미 결정을 내린 뒤에 되돌려지고, 왜인지도 모른다.
+            -->
+            <p
+              v-if="!paymentEnabled"
+              class="mb-4 rounded-lg border border-warning-strong/40 bg-warning-subtle p-3 text-body-xs text-warning-strong"
+              role="status"
+            >
+              {{ paymentUnavailableCopy }}
+            </p>
+
             <div class="space-y-4">
               <PlanSelectionCard
                 v-for="plan in displayPlans"
@@ -240,6 +252,7 @@
                 :plan="plan"
                 :is-selected="selectedPlan === plan.type"
                 :is-recommended="plan.type === 'STARTER'"
+                :disabled="isPlanUnavailable(plan.type)"
                 @select="selectedPlan = $event"
               />
             </div>
@@ -263,9 +276,27 @@
                   </svg>
                 </div>
                 <h3 class="mb-2 text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('onboarding.aiTrial.demoTitle') }}</h3>
-                <p class="mb-6 whitespace-pre-line text-body text-gray-500 dark:text-gray-400">
+                <p class="mb-4 whitespace-pre-line text-body text-gray-500 dark:text-gray-400">
                   {{ t('onboarding.aiTrial.demoDescription') }}
                 </p>
+
+                <!--
+                  샘플이 아니라 **사용자 자기 스크립트**를 받는다. 남의 영상으로 만든 제목은
+                  AI 가 돈다는 증명일 뿐이라, 첫 가치가 되지 못한다.
+                -->
+                <div class="mb-4 text-left">
+                  <label for="ai-trial-script" class="mb-1.5 block text-body font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('onboarding.aiTrial.scriptLabel') }}
+                  </label>
+                  <textarea
+                    id="ai-trial-script"
+                    v-model="aiTrialScript"
+                    rows="4"
+                    class="input-field w-full"
+                    :placeholder="t('onboarding.aiTrial.scriptPlaceholder')"
+                    :disabled="isAiLoading"
+                  />
+                </div>
                 <div class="mb-4 inline-flex items-center gap-1 rounded-full bg-warning-subtle px-3 py-1 text-body-xs text-warning-strong">
                   <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -274,7 +305,7 @@
                 </div>
                 <div>
                   <button
-                    :disabled="isAiLoading"
+                    :disabled="isAiLoading || !hasAiTrialScript"
                     class="btn-primary rounded-xl px-8 py-3 text-body disabled:opacity-50"
                     @click="tryAiGeneration"
                   >
@@ -285,7 +316,14 @@
                     <span v-else>{{ t('onboarding.aiTrial.tryIt') }}</span>
                   </button>
                 </div>
+                <!--
+                  실패는 사유 그대로 보여주고 다음 행동을 남긴다. AI 가 안 되는 것과 온보딩을
+                  못 끝내는 것은 다른 문제라, 여기서 막으면 안 된다.
+                -->
                 <p v-if="aiTrialError" class="mt-3 text-body text-error-strong">{{ aiTrialError }}</p>
+                <p v-if="aiTrialError" class="mt-1 text-body-xs text-gray-500 dark:text-gray-400">
+                  {{ t('onboarding.aiTrial.failureHint') }}
+                </p>
               </div>
 
               <!-- AI Result -->
@@ -343,9 +381,9 @@
             <div class="space-y-3">
               <button
                 class="btn-primary w-full tablet:w-auto px-10 py-3.5"
-                @click="goToUpload"
+                @click="goToFirstValue"
               >
-                {{ t('onboarding.complete.goToUpload') }}
+                {{ t('onboarding.complete.goToFirstValue') }}
               </button>
               <div>
                 <button
@@ -368,6 +406,15 @@
       >
         {{ completeError }}
       </div>
+
+      <!-- 유료 플랜은 온보딩 완료와 분리해, 실제 결제 검증이 끝난 뒤에만 다음 단계로 간다.
+           선택만으로 구독이 바뀌거나 결제 실패가 숨겨지면 가격표는 있어도 매출이 생기지 않는다. -->
+      <PaymentModal
+        v-model="showPaymentModal"
+        :target-plan="selectedPlan"
+        :price="selectedPlanInfo?.price ?? 0"
+        @confirm="handlePlanPaymentSuccess"
+      />
 
       <!-- Navigation Buttons -->
       <div v-if="currentStep > 0 && currentStep <= 4" class="mt-8 flex items-center justify-between">
@@ -418,7 +465,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { usePaymentAvailability } from '@/composables/usePaymentAvailability'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -430,11 +478,11 @@ import { authApi } from '@/api/auth'
 import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
 import { videoApi } from '@/api/video'
-import { subscriptionApi } from '@/api/subscription'
 import { buildOAuthState, generateOAuthStateNonce, generatePKCE, getOAuthRedirectUri } from '@/utils/oauth'
 import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/outline'
 import OnboardingStepIndicator from '@/components/onboarding/OnboardingStepIndicator.vue'
 import PlanSelectionCard from '@/components/onboarding/PlanSelectionCard.vue'
+import PaymentModal from '@/components/subscription/PaymentModal.vue'
 import { PLANS } from '@/types/subscription'
 import OnGoLogo from '@/components/brand/OnGoLogo.vue'
 
@@ -470,11 +518,69 @@ const platformLoadError = ref('')
 const disconnectingPlatform = ref<Platform | null>(null)
 
 // Step 3: Plan Selection
-const selectedPlan = ref<PlanType>('FREE')
+
+/**
+ * 이미 결제가 끝난 유료 플랜. 무료·미인증 상태에서는 null 이다.
+ *
+ * 온보딩을 끝내기 전에 새로고침하거나 이탈하면 라우터 가드가 다시 이 화면으로 돌려보내는데,
+ * 화면 상태는 전부 초기화된다. 그런데 결제는 서버에 이미 남아 있어, 같은 플랜을 다시 고르면
+ * 서버의 중복 결제 가드가 400 으로 막아 결제한 사용자가 진행하지 못했다.
+ * 그래서 인증 프로필의 planType 을 초기 상태의 정본으로 삼는다.
+ */
+function alreadyPaidPlan(): PlanType | null {
+  const planType = authStore.user?.planType
+  return planType && planType !== 'FREE' ? planType : null
+}
+
+const selectedPlan = ref<PlanType>(alreadyPaidPlan() ?? 'FREE')
 const displayPlans = computed(() => PLANS.slice(0, 3))
+const selectedPlanInfo = computed(() => PLANS.find((plan) => plan.type === selectedPlan.value))
+const showPaymentModal = ref(false)
+
+/*
+ * 결제를 마친 플랜. 4단계에서 '이전'으로 3단계에 돌아와 '다음'을 다시 누르면 같은 구독을
+ * 한 번 더 결제할 수 있었다(complete 의 멱등성은 paymentId 단위라 새 체크아웃은 별건으로
+ * 통과해 카드가 두 번 청구된다).
+ *
+ * 선택한 플랜을 바꾸면 다시 결제해야 하므로, 불리언이 아니라 **결제한 플랜**을 기억한다.
+ * 새로고침으로 이 값이 사라져도 프로필에서 복원되며, 서버의 중복 결제 가드가 최종 방어선이다.
+ */
+const paidPlan = ref<PlanType | null>(alreadyPaidPlan())
+
+/*
+ * 결제 가능 여부는 서버가 정한다. SubscriptionView 와 같은 계약을 쓴다 — 온보딩만 따로
+ * 판단하면 두 화면이 어긋나고, 결제 설정은 배포 환경에 있어 클라이언트가 볼 수 없다.
+ */
+const { paymentEnabled, paymentDisabledReason, loadPaymentAvailability } = usePaymentAvailability()
+
+/** 서버가 이유를 주면 그것을 쓰고, 없으면 같은 뜻의 기본 문구를 쓴다. */
+const paymentUnavailableCopy = computed(
+  () => paymentDisabledReason.value
+    ?? '온라인 결제를 일시적으로 사용할 수 없습니다. 지금은 무료 플랜으로 시작하고, 나중에 구독 화면에서 전환할 수 있습니다.',
+)
+
+/**
+ * 지금 고를 수 없는 플랜인지.
+ *
+ * 무료는 언제나 고를 수 있다 — 결제가 막혔다고 가입 자체를 막을 이유가 없다.
+ * 이미 결제한 플랜도 막지 않는다. 결제창을 다시 지나지 않으므로 깨질 흐름이 없다.
+ */
+function isPlanUnavailable(planType: PlanType): boolean {
+  if (planType === 'FREE') return false
+  if (paidPlan.value === planType) return false
+  return !paymentEnabled.value
+}
+
+onMounted(() => {
+  // 실패해도 온보딩은 계속되어야 한다. 조회 실패는 composable 이 사용 불가로 처리한다.
+  void loadPaymentAvailability()
+})
 
 // Step 4: AI trial
 const aiTrialResult = ref<{ titles: string[]; tags: string[] } | null>(null)
+const aiTrialScript = ref('')
+/** 공백만 있는 입력도 호출 대상이 아니다. */
+const hasAiTrialScript = computed(() => aiTrialScript.value.trim().length > 0)
 const aiTrialError = ref('')
 
 const steps = computed<{ number: number; label: string }[]>(() => [
@@ -609,6 +715,17 @@ async function nextStep() {
   }
 
   if (currentStep.value === 3) {
+    // 이미 결제한 플랜이면 결제창을 다시 열지 않는다.
+    if (selectedPlan.value !== 'FREE' && paidPlan.value !== selectedPlan.value) {
+      /*
+       * 결제를 시작할 수 없는 상태면 결제창을 열지 않는다. 카드는 이미 비활성이지만,
+       * 이전 단계에서 고른 값이 남아 있거나 상태가 바뀌었을 수 있어 여기서 한 번 더 막는다.
+       * 이미 결제한 플랜(위 조건에서 걸러짐)은 결제창을 지나지 않으므로 영향이 없다.
+       */
+      if (!paymentEnabled.value) return
+      showPaymentModal.value = true
+      return
+    }
     currentStep.value = 4
     return
   }
@@ -669,14 +786,43 @@ function disconnectPlatform(platform: Platform) {
     })
 }
 
+/**
+ * 사용자가 쓴 스크립트로 **정식 AI 경로**를 부른다.
+ *
+ * 예전에는 하드코딩된 샘플("크림파스타 레시피…")로 데모를 돌렸다. AI 가 돈다는 증명은 됐지만
+ * 사용자 자기 콘텐츠가 아니라 첫 가치가 되지 못했고, 인증 없는 공개 LLM 엔드포인트라
+ * 남용 표면이기도 했다.
+ *
+ * 정식 경로는 인증·분당 제한·크레딧 차감·실패 시 환불을 이미 갖추고 있어 여기서 다시 만들 게 없다.
+ */
 async function tryAiGeneration() {
+  // 빈 입력으로 호출하면 크레딧만 쓰고 의미 없는 결과가 나온다.
+  if (!hasAiTrialScript.value) {
+    aiTrialError.value = t('onboarding.aiTrial.scriptRequired')
+    return
+  }
+
   isAiLoading.value = true
   aiTrialError.value = ''
   try {
-    const result = await aiApi.demoGenerate(profile.category || 'DEFAULT')
-    aiTrialResult.value = result
+    const result = await aiApi.generateMeta({
+      script: aiTrialScript.value.trim(),
+      useStt: false,
+      // 온보딩 시점에는 연결된 채널이 없을 수 있다. 한 플랫폼 결과만으로 가치는 충분히 전달된다.
+      targetPlatforms: ['YOUTUBE'],
+      tone: 'FRIENDLY',
+      category: profile.category || 'DEFAULT',
+    })
+    const first = result.platforms?.[0]
+    aiTrialResult.value = {
+      titles: first?.titleCandidates ?? [],
+      tags: first?.hashtags ?? [],
+    }
   } catch (e: unknown) {
-    aiTrialError.value = e instanceof Error ? e.message : t('onboarding.aiTrial.error')
+    // 사유를 그대로 보여준다. 크레딧 부족·AI 장애·파싱 실패가 서로 다른 행동을 부르기 때문이다.
+    aiTrialError.value = e instanceof Error && e.message
+      ? e.message
+      : t('onboarding.aiTrial.error')
   } finally {
     isAiLoading.value = false
   }
@@ -687,6 +833,32 @@ async function skipAiTrial() {
   await completeOnboarding()
 }
 
+async function handlePlanPaymentSuccess() {
+  // PaymentModal emits this only after PortOne's server-side completion check.
+  // Keep the user on plan selection when the modal is closed or payment fails.
+  showPaymentModal.value = false
+  paidPlan.value = selectedPlan.value
+
+  /*
+   * 결제가 서버 검증까지 끝났으므로 authStore.user.planType 이 아직 FREE 다.
+   * planType 을 읽는 화면이 19곳이라, 갱신하지 않으면 방금 결제한 사용자가
+   * 세션 내내 무료 플랜으로 보인다.
+   *
+   * 다만 이 재조회는 **결제 성공의 후속 작업일 뿐**이다. 실패해도 되돌릴 결제가
+   * 아니므로 사용자를 결제 화면에 가두면 안 된다. fetchProfile 은 현재 내부에서
+   * 예외를 삼키지만(그리고 인증 실패 시 세션을 정리한다), 구현이 바뀌어 reject 하게
+   * 되더라도 unhandled rejection 으로 흐름이 끊기지 않도록 여기서도 막는다.
+   * 어느 경로든 다음 단계로는 반드시 진행한다.
+   */
+  try {
+    await authStore.fetchProfile()
+  } catch {
+    // 갱신 실패는 결제 결과에 영향을 주지 않는다. 다음 진입 시 다시 조회된다.
+  }
+
+  currentStep.value = 4
+}
+
 async function completeOnboarding() {
   isSubmitting.value = true
   completeError.value = ''
@@ -694,14 +866,6 @@ async function completeOnboarding() {
     await authApi.completeOnboarding()
     if (authStore.user) {
       authStore.user.onboardingCompleted = true
-    }
-    // 무료가 아닌 플랜 선택 시 구독 변경 (실패해도 온보딩 완료 진행)
-    if (selectedPlan.value !== 'FREE') {
-      try {
-        await subscriptionApi.changePlan({ targetPlan: selectedPlan.value })
-      } catch {
-        // 플랜 변경 실패 시 무시 - 나중에 구독 페이지에서 변경 가능
-      }
     }
     currentStep.value = 5
   } catch (e: unknown) {
@@ -719,8 +883,19 @@ async function completeOnboarding() {
   }
 }
 
-function goToUpload() {
-  router.push(authStore.consumePostLoginRedirect() ?? '/upload')
+/**
+ * 온보딩을 마친 사용자를 **오늘 실제로 동작하는 가치**로 데려간다.
+ *
+ * 기본값이 /upload(→ /compose)였는데, 방금 온보딩을 끝낸 사용자는 채널이 0개다. 채널 연결은
+ * 플랫폼 앱 심사에 묶여 있어 거기서 할 수 있는 일이 없다 — 첫 화면이 막다른 길이었다.
+ * AI 메타 생성은 스크립트를 붙여넣기만 하면 되고 영상·채널·플랫폼 승인이 전부 불필요해서,
+ * 가입 직후 바로 자기 콘텐츠로 결과를 볼 수 있는 유일한 경로다.
+ *
+ * 명시적으로 요청된 목적지(딥링크·보호된 경로에서 튕겨 온 경우)는 그대로 우선한다.
+ * 사용자가 가려던 곳을 우리 판단으로 덮어쓰면 안 된다.
+ */
+function goToFirstValue() {
+  router.push(authStore.consumePostLoginRedirect() ?? '/ai')
 }
 
 function goToDashboard() {

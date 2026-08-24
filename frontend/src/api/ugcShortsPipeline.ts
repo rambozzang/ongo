@@ -83,6 +83,30 @@ export interface ShortsClipResponse {
   hooks: ClipHookResponse[]
   subtitleCount: number
   hasRenderSpec: boolean
+  /**
+   * 이 클립에 연결된 완성 영상 id. 연결 전에는 null.
+   *
+   * 렌더 job 상태는 브라우저 세션에만 남아 새로고침하면 사라지지만, 이 값은 서버 응답에
+   * 있으므로 다시 방문해도 결과물 유무를 그릴 수 있다.
+   */
+  renderedVideoId: number | null
+  /**
+   * 대상별 게시 결과. 렌더 전이거나 게시를 요청한 적이 없으면 빈 배열이다.
+   *
+   * `status` 는 대상 **하나라도** 성공하면 SCHEDULED 가 되므로, 이 목록 없이는
+   * 일부만 성공한 클립과 전부 성공한 클립을 구분할 수 없다.
+   */
+  publications: ClipPublicationResponse[]
+}
+
+export interface ClipPublicationResponse {
+  /** `PLATFORM` 또는 `PLATFORM#channelId`. 같은 플랫폼의 계정을 구분하는 키다. */
+  platform: string
+  channelName?: string | null
+  status: string
+  errorMessage: string | null
+  scheduledAt: string | null
+  publishedAt: string | null
 }
 
 export interface PipelineRunDetailResponse {

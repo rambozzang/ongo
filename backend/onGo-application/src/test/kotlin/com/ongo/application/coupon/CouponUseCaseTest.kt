@@ -3,239 +3,83 @@ package com.ongo.application.coupon
 import com.ongo.application.coupon.dto.ApplyCouponRequest
 import com.ongo.application.coupon.dto.ValidateCouponRequest
 import com.ongo.common.exception.BusinessException
-import com.ongo.domain.coupon.Coupon
 import com.ongo.domain.coupon.CouponRepository
-import com.ongo.domain.coupon.CouponUsage
-import io.mockk.*
-import io.mockk.impl.annotations.InjectMockKs
-import io.mockk.impl.annotations.MockK
-import io.mockk.junit5.MockKExtension
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import java.time.LocalDateTime
+import io.mockk.confirmVerified
+import io.mockk.mockk
+import io.mockk.verify
+import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
-@ExtendWith(MockKExtension::class)
+/**
+ * 고객 쿠폰 경로가 **거절되고 아무 흔적도 남기지 않는지** 고정한다.
+ *
+ * 예전 구현은 "20% 할인"을 계산해 유효하다고 응답했고, 적용 시 `coupon_usages` 행을
+ * 만들고 `usedCount` 를 올렸다. 그런데 결제는 쿠폰을 읽지 않아 정가로 청구됐다.
+ * 할인은 약속만 되고 쿠폰은 소진되는, 기능이 없는 것보다 나쁜 상태였다.
+ */
 class CouponUseCaseTest {
 
-    @MockK
-    private lateinit var couponRepository: CouponRepository
+    // relaxed 가 아니다. 규정되지 않은 호출이 일어나면 그 자리에서 터진다.
+    private val couponRepository = mockk<CouponRepository>()
+    private val useCase = CouponUseCase(couponRepository)
 
-    @InjectMockKs
-    private lateinit var couponUseCase: CouponUseCase
-
-    private val userId = 1L
-    private val now = LocalDateTime.now()
-
-    private fun createValidCoupon(
-        id: Long = 10L,
-        code: String = "WELCOME20",
-        discountType: String = "PERCENTAGE",
-        discountValue: Int = 20,
-        applicablePlans: String? = null,
-        minBillingCycle: String? = null,
-        maxUses: Int? = 100,
-        usedCount: Int = 5,
-        active: Boolean = true,
-        validFrom: LocalDateTime = now.minusDays(10),
-        validUntil: LocalDateTime? = now.plusDays(30),
-    ) = Coupon(
-        id = id,
-        code = code,
-        description = "환영 할인 쿠폰",
-        discountType = discountType,
-        discountValue = discountValue,
-        applicablePlans = applicablePlans,
-        minBillingCycle = minBillingCycle,
-        maxUses = maxUses,
-        usedCount = usedCount,
-        active = active,
-        validFrom = validFrom,
-        validUntil = validUntil,
-    )
-
-    // ──────────────────────────────────────────────
-    // 1. 유효 쿠폰 검증 성공
-    // ──────────────────────────────────────────────
     @Test
-    fun `validateCoupon should return valid=true with discount info for valid coupon`() {
-        val coupon = createValidCoupon()
-        every { couponRepository.findByCode("WELCOME20") } returns coupon
-        every { couponRepository.findUsageByUserAndCoupon(userId, 10L) } returns null
-
-        val result = couponUseCase.validateCoupon(userId, ValidateCouponRequest(code = "WELCOME20"))
-
-        assertTrue(result.valid)
-        assertEquals("WELCOME20", result.code)
-        assertEquals("PERCENTAGE", result.discountType)
-        assertEquals(20, result.discountValue)
-        assertEquals(20, result.calculatedDiscount)
-        assertNull(result.message)
-    }
-
-    // ──────────────────────────────────────────────
-    // 2. 만료 쿠폰 거부
-    // ──────────────────────────────────────────────
-    @Test
-    fun `validateCoupon should return valid=false for expired coupon`() {
-        val coupon = createValidCoupon(validUntil = now.minusDays(1))
-        every { couponRepository.findByCode("WELCOME20") } returns coupon
-
-        val result = couponUseCase.validateCoupon(userId, ValidateCouponRequest(code = "WELCOME20"))
-
-        assertFalse(result.valid)
-        assertEquals("만료된 쿠폰입니다", result.message)
-    }
-
-    // ──────────────────────────────────────────────
-    // 3. 비활성 쿠폰 거부
-    // ──────────────────────────────────────────────
-    @Test
-    fun `validateCoupon should return valid=false for inactive coupon`() {
-        val coupon = createValidCoupon(active = false)
-        every { couponRepository.findByCode("WELCOME20") } returns coupon
-
-        val result = couponUseCase.validateCoupon(userId, ValidateCouponRequest(code = "WELCOME20"))
-
-        assertFalse(result.valid)
-        assertEquals("비활성화된 쿠폰입니다", result.message)
-    }
-
-    // ──────────────────────────────────────────────
-    // 4. 사용 횟수 초과 거부
-    // ──────────────────────────────────────────────
-    @Test
-    fun `validateCoupon should return valid=false when usedCount exceeds maxUses`() {
-        val coupon = createValidCoupon(maxUses = 100, usedCount = 100)
-        every { couponRepository.findByCode("WELCOME20") } returns coupon
-
-        val result = couponUseCase.validateCoupon(userId, ValidateCouponRequest(code = "WELCOME20"))
-
-        assertFalse(result.valid)
-        assertEquals("사용 횟수가 초과되었습니다", result.message)
-    }
-
-    // ──────────────────────────────────────────────
-    // 5. 이미 사용한 쿠폰 거부
-    // ──────────────────────────────────────────────
-    @Test
-    fun `validateCoupon should return valid=false when user already used coupon`() {
-        val coupon = createValidCoupon()
-        val existingUsage = CouponUsage(
-            id = 1L,
-            couponId = 10L,
-            userId = userId,
-            discountAmount = 20,
-        )
-        every { couponRepository.findByCode("WELCOME20") } returns coupon
-        every { couponRepository.findUsageByUserAndCoupon(userId, 10L) } returns existingUsage
-
-        val result = couponUseCase.validateCoupon(userId, ValidateCouponRequest(code = "WELCOME20"))
-
-        assertFalse(result.valid)
-        assertEquals("이미 사용한 쿠폰입니다", result.message)
-    }
-
-    // ──────────────────────────────────────────────
-    // 6. 적용 불가 플랜 거부
-    // ──────────────────────────────────────────────
-    @Test
-    fun `validateCoupon should return valid=false for non-applicable plan`() {
-        val coupon = createValidCoupon(applicablePlans = "PRO,BUSINESS")
-        every { couponRepository.findByCode("WELCOME20") } returns coupon
-        every { couponRepository.findUsageByUserAndCoupon(userId, 10L) } returns null
-
-        val result = couponUseCase.validateCoupon(
-            userId,
-            ValidateCouponRequest(code = "WELCOME20", targetPlan = "STARTER"),
-        )
-
-        assertFalse(result.valid)
-        assertEquals("해당 플랜에 적용할 수 없는 쿠폰입니다", result.message)
-    }
-
-    // ──────────────────────────────────────────────
-    // 7. 연간 결제 전용 쿠폰 거부
-    // ──────────────────────────────────────────────
-    @Test
-    fun `validateCoupon should return valid=false for yearly-only coupon with monthly billing`() {
-        val coupon = createValidCoupon(minBillingCycle = "YEARLY")
-        every { couponRepository.findByCode("WELCOME20") } returns coupon
-        every { couponRepository.findUsageByUserAndCoupon(userId, 10L) } returns null
-
-        val result = couponUseCase.validateCoupon(
-            userId,
-            ValidateCouponRequest(code = "WELCOME20", billingCycle = "MONTHLY"),
-        )
-
-        assertFalse(result.valid)
-        assertEquals("연간 결제에만 적용 가능한 쿠폰입니다", result.message)
-    }
-
-    // ──────────────────────────────────────────────
-    // 8. 쿠폰 적용 성공
-    // ──────────────────────────────────────────────
-    @Test
-    fun `applyCoupon should save usage and increment usedCount`() {
-        val coupon = createValidCoupon()
-        every { couponRepository.findByCode("WELCOME20") } returns coupon
-        every { couponRepository.findUsageByUserAndCoupon(userId, 10L) } returns null
-        every { couponRepository.saveUsage(any()) } answers { firstArg() }
-        every { couponRepository.update(any()) } just runs
-
-        val result = couponUseCase.applyCoupon(userId, ApplyCouponRequest(code = "WELCOME20", subscriptionId = 5L))
-
-        assertTrue(result.valid)
-        assertEquals("WELCOME20", result.code)
-        assertEquals(20, result.calculatedDiscount)
-
-        verify {
-            couponRepository.saveUsage(match<CouponUsage> {
-                it.couponId == 10L && it.userId == userId && it.discountAmount == 20 && it.subscriptionId == 5L
-            })
+    fun `쿠폰 검증은 항상 거절한다`() {
+        val ex = assertFailsWith<BusinessException> {
+            useCase.validateCoupon(1L, ValidateCouponRequest(code = "WELCOME20"))
         }
-        verify {
-            couponRepository.update(match<Coupon> {
-                it.id == 10L && it.usedCount == 6
-            })
+
+        assertEquals("COUPON_NOT_APPLICABLE", ex.code)
+    }
+
+    @Test
+    fun `쿠폰 적용은 항상 거절한다`() {
+        val ex = assertFailsWith<BusinessException> {
+            useCase.applyCoupon(1L, ApplyCouponRequest(code = "WELCOME20"))
         }
+
+        assertEquals("COUPON_NOT_APPLICABLE", ex.code)
     }
 
-    // ──────────────────────────────────────────────
-    // 9. PERCENTAGE 할인 계산
-    // ──────────────────────────────────────────────
+    /**
+     * 핵심 보장. 사용 이력도, `usedCount` 증가도, 조회조차 없어야 한다.
+     *
+     * 조회를 허용하면 "존재하지 않는 쿠폰입니다" 같은 응답으로 코드 존재 여부가 새고,
+     * 무엇보다 유효한 쿠폰에 대해 "유효합니다"를 말하고 싶어지는 경로가 다시 열린다.
+     */
     @Test
-    fun `validateCoupon should return discountValue as calculatedDiscount for PERCENTAGE type`() {
-        val coupon = createValidCoupon(discountType = "PERCENTAGE", discountValue = 15)
-        every { couponRepository.findByCode("WELCOME20") } returns coupon
-        every { couponRepository.findUsageByUserAndCoupon(userId, 10L) } returns null
+    fun `거절 경로는 쿠폰 저장소를 전혀 건드리지 않는다`() {
+        assertFailsWith<BusinessException> {
+            useCase.validateCoupon(1L, ValidateCouponRequest(code = "WELCOME20"))
+        }
+        assertFailsWith<BusinessException> {
+            useCase.applyCoupon(1L, ApplyCouponRequest(code = "WELCOME20", subscriptionId = 99))
+        }
 
-        val result = couponUseCase.validateCoupon(userId, ValidateCouponRequest(code = "WELCOME20"))
-
-        assertTrue(result.valid)
-        assertEquals("PERCENTAGE", result.discountType)
-        assertEquals(15, result.discountValue)
-        assertEquals(15, result.calculatedDiscount)
+        verify(exactly = 0) { couponRepository.saveUsage(any()) }
+        verify(exactly = 0) { couponRepository.update(any()) }
+        verify(exactly = 0) { couponRepository.findByCode(any()) }
+        verify(exactly = 0) { couponRepository.findUsageByUserAndCoupon(any(), any()) }
+        // 위에 적지 않은 어떤 호출도 없었음을 확인한다.
+        confirmVerified(couponRepository)
     }
 
-    // ──────────────────────────────────────────────
-    // 10. FIXED_AMOUNT 할인 계산
-    // ──────────────────────────────────────────────
+    /*
+     * 문구가 이유와 다음 행동을 담아야 한다. "사용할 수 없습니다"만으로는 쿠폰을 받은
+     * 사용자가 어디로 가야 할지 모른다. 그리고 성공을 시사하는 표현이 남으면 안 된다.
+     */
     @Test
-    fun `validateCoupon should return discountValue as calculatedDiscount for FIXED_AMOUNT type`() {
-        val coupon = createValidCoupon(discountType = "FIXED_AMOUNT", discountValue = 5000)
-        every { couponRepository.findByCode("WELCOME20") } returns coupon
-        every { couponRepository.findUsageByUserAndCoupon(userId, 10L) } returns null
+    fun `거절 안내는 이유와 문의 경로를 밝힌다`() {
+        val ex = assertFailsWith<BusinessException> {
+            useCase.validateCoupon(1L, ValidateCouponRequest(code = "WELCOME20"))
+        }
 
-        val result = couponUseCase.validateCoupon(userId, ValidateCouponRequest(code = "WELCOME20"))
-
-        assertTrue(result.valid)
-        assertEquals("FIXED_AMOUNT", result.discountType)
-        assertEquals(5000, result.discountValue)
-        assertEquals(5000, result.calculatedDiscount)
+        assertContains(ex.message!!, "결제에 반영되지 않아")
+        assertContains(ex.message!!, "고객지원")
+        assertFalse(ex.message!!.contains("적용되었"), "거절 문구가 적용 성공을 시사한다: ${ex.message}")
+        assertFalse(ex.message!!.contains("할인이 적용"), "거절 문구가 할인을 약속한다: ${ex.message}")
     }
 }

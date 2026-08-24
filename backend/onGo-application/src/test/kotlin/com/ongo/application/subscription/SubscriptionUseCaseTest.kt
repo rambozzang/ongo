@@ -29,13 +29,23 @@ class SubscriptionUseCaseTest {
     private val userRepository = mockk<UserRepository>()
     private val videoRepository = mockk<VideoRepository>()
     private val paddleGateway = mockk<PaddleGateway>()
+    private val creditService = mockk<com.ongo.application.credit.CreditService>(relaxUnitFun = true)
+    private val activityLogUseCase =
+        mockk<com.ongo.application.activitylog.ActivityLogUseCase>(relaxed = true)
 
     private lateinit var useCase: SubscriptionUseCase
 
     @BeforeEach
     fun setUp() {
         clearAllMocks()
-        useCase = SubscriptionUseCase(subscriptionRepository, userRepository, videoRepository, paddleGateway)
+        useCase = SubscriptionUseCase(
+            subscriptionRepository,
+            userRepository,
+            videoRepository,
+            paddleGateway,
+            creditService,
+            activityLogUseCase,
+        )
     }
 
     private fun createSubscription(
@@ -203,5 +213,105 @@ class SubscriptionUseCaseTest {
                     it.userId == 100L
             })
         }
+    }
+
+    // ──────────────────────────────────────────────
+    // startTrial — 체험 시작과 크레딧 권한
+    // ──────────────────────────────────────────────
+
+    private fun freeSubscription(trialStart: java.time.LocalDateTime? = null) = createSubscription(
+        planType = PlanType.FREE,
+        status = SubscriptionStatus.FREE,
+    ).copy(trialStart = trialStart)
+
+    /**
+     * 체험을 시작해도 크레딧이 FREE 기준(30)에 머물면 쇼츠 실행 한 번(37)도 못 돌린다.
+     * 체험의 목적이 완성된 결과를 보여주는 것인데 그게 불가능해진다.
+     */
+    @Test
+    fun `체험을 시작하면 같은 트랜잭션에서 Starter 크레딧 권한을 적용한다`() {
+        every { subscriptionRepository.findByUserId(100L) } returns freeSubscription()
+        every { subscriptionRepository.update(any()) } answers { firstArg() }
+        every { userRepository.findById(100L) } returns mockk(relaxed = true)
+        every { userRepository.update(any()) } answers { firstArg() }
+
+        useCase.startTrial(100L, "STARTER")
+
+        verify(exactly = 1) {
+            creditService.applyPlanEntitlement(100L, PlanType.STARTER, "TRIAL_START")
+        }
+        /*
+         * 퍼널의 분자다. 구독·사용자·크레딧이 모두 반영된 뒤에만 남으므로, 중간에 실패한
+         * 시도는 체험을 시작한 것으로 세지 않는다. 내용·IP·User-Agent 는 담지 않는다.
+         */
+        verify(exactly = 1) {
+            activityLogUseCase.logActivity(
+                userId = 100L,
+                action = com.ongo.application.activitylog.ActivityLogActions.SUBSCRIPTION_TRIAL_STARTED,
+                entityType = com.ongo.application.activitylog.ActivityLogActions.ENTITY_SUBSCRIPTION,
+                entityId = null,
+            )
+        }
+    }
+
+    @Test
+    fun `Starter 이외의 체험 거부는 체험 시작 사건을 남기지 않는다`() {
+        every { subscriptionRepository.findByUserId(100L) } returns freeSubscription()
+
+        assertFailsWith<IllegalStateException> { useCase.startTrial(100L, "BUSINESS") }
+
+        verify(exactly = 0) { activityLogUseCase.logActivity(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `이미 체험한 사용자의 재시도는 체험 시작 사건을 남기지 않는다`() {
+        every { subscriptionRepository.findByUserId(100L) } returns
+            freeSubscription(trialStart = java.time.LocalDateTime.now().minusDays(30))
+
+        assertFailsWith<IllegalStateException> { useCase.startTrial(100L, "STARTER") }
+
+        verify(exactly = 0) { activityLogUseCase.logActivity(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    /*
+     * 제품 CTA 는 STARTER 만 보낸다. 다른 플랜을 허용하면 API 를 직접 불러 BUSINESS
+     * 체험을 여는 경로가 생기고, 체험은 1회성이라 되돌릴 방법이 없다.
+     */
+    @Test
+    fun `Starter 이외의 체험은 거부하고 크레딧을 건드리지 않는다`() {
+        every { subscriptionRepository.findByUserId(100L) } returns freeSubscription()
+
+        listOf("PRO", "BUSINESS", "FREE").forEach { plan ->
+            assertFailsWith<IllegalStateException>("$plan 체험이 통과했다") {
+                useCase.startTrial(100L, plan)
+            }
+        }
+
+        verify(exactly = 0) { creditService.applyPlanEntitlement(any(), any(), any()) }
+        verify(exactly = 0) { subscriptionRepository.update(any()) }
+    }
+
+    @Test
+    fun `이미 체험한 사용자는 거부하고 크레딧을 건드리지 않는다`() {
+        every { subscriptionRepository.findByUserId(100L) } returns
+            freeSubscription(trialStart = java.time.LocalDateTime.now().minusDays(30))
+
+        assertFailsWith<IllegalStateException> { useCase.startTrial(100L, "STARTER") }
+
+        verify(exactly = 0) { creditService.applyPlanEntitlement(any(), any(), any()) }
+        verify(exactly = 0) { subscriptionRepository.update(any()) }
+    }
+
+    /*
+     * 구독 갱신이 실패했는데 크레딧만 남으면, 체험을 시작하지 않은 사용자가 Starter
+     * 크레딧을 들고 있게 된다. 같은 @Transactional 이라 함께 롤백되지만, 여기서는
+     * 예외가 호출자까지 전파되는지를 고정한다.
+     */
+    @Test
+    fun `구독 갱신이 실패하면 예외가 전파된다`() {
+        every { subscriptionRepository.findByUserId(100L) } returns freeSubscription()
+        every { subscriptionRepository.update(any()) } throws IllegalStateException("DB 장애")
+
+        assertFailsWith<IllegalStateException> { useCase.startTrial(100L, "STARTER") }
     }
 }

@@ -128,10 +128,4 @@ export const aiApi = {
       .post<ResData<RevenueReportResponse>>('/ai/revenue-report', request)
       .then(unwrapResponse)
   },
-
-  demoGenerate(category: string) {
-    return apiClient
-      .post<ResData<{ titles: string[]; tags: string[] }>>('/ai/demo/generate', { category })
-      .then(unwrapResponse)
-  },
 }

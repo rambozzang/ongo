@@ -65,7 +65,28 @@ interface AccountDeletionJobRepository {
     /** 정책 차단을 기록하고 사용자 쓰기 게이트를 다시 ACTIVE 로 돌린다. */
     fun markBlocked(jobId: Long, errorCode: String, supportReference: String?): AccountDeletionJob?
 
-    /** DB 삭제 트랜잭션이 성공한 뒤 작업을 완료 상태로 전환한다. */
+    /**
+     * DB 삭제와 정리 원장이 커밋된 뒤의 상태.
+     *
+     * **이 시점은 완료가 아니다.** 외부 스토리지 객체가 아직 남아 있고, 그걸 지우는 것은
+     * 커밋 이후에만 안전하다. 여기서 바로 COMPLETED 로 올리면 실제로는 남아 있는 파일을
+     * "다 지웠다"고 기록하게 된다 — 개인정보 관점에서 가장 나쁜 거짓말이다.
+     */
+    fun markExternalCleanupPending(
+        jobId: Long,
+        unresolvedObjectRows: Int,
+        dbCommittedAt: java.time.LocalDateTime = java.time.LocalDateTime.now(),
+    ): AccountDeletionJob?
+
+    /**
+     * 외부 정리 실패 시 다음 시도 시각을 민다.
+     *
+     * 값이 없으면(NULL) 다음 tick 이 바로 집는다. 실패했을 때만 채워, 영구 실패하는 job 하나가
+     * 매 tick 을 독차지해 다른 사용자의 탈퇴를 밀어내지 않게 한다.
+     */
+    fun scheduleCleanupRetry(jobId: Long, nextAttemptAt: java.time.LocalDateTime): AccountDeletionJob?
+
+    /** 외부 객체까지 전부 지워진 뒤에만 호출한다. */
     fun markCompleted(jobId: Long, completedAt: java.time.LocalDateTime = java.time.LocalDateTime.now()): AccountDeletionJob?
 
     /** DB 삭제가 롤백된 뒤 재요청 가능 상태로 돌린다. */

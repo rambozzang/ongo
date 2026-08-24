@@ -72,6 +72,41 @@ data class ShortsClipResponse(
     val hooks: List<ClipHookResponse>,
     val subtitleCount: Int,
     val hasRenderSpec: Boolean,
+    /**
+     * 이 클립에 연결된 완성 영상의 id. 연결 전에는 `null` 이다.
+     *
+     * 서버 렌더와 외부 완성본 연결 둘 다 이 값을 채운다. 화면은 이 값 하나로 "결과물이
+     * 있다"를 판정할 수 있어야 한다 — 렌더 job 상태는 브라우저 세션에 남는 진행 정보라
+     * 새로고침하면 사라지지만, 이 값은 서버 응답에 있으므로 다시 그릴 수 있다.
+     */
+    val renderedVideoId: Long?,
+    /**
+     * 이 클립의 **대상별 게시 결과**. 렌더 전이거나 게시를 요청한 적이 없으면 빈 배열이다.
+     *
+     * nullable 이 아니라 빈 배열인 이유: 화면이 "결과가 없다"와 "필드를 못 받았다"를
+     * 구분할 필요가 없다. 둘 다 보여줄 대상이 없다는 같은 뜻이다.
+     */
+    val publications: List<ClipPublicationResponse> = emptyList(),
+)
+
+/**
+ * 대상 하나의 게시 결과.
+ *
+ * 클립 상태(`SCHEDULED`)는 **대상 하나라도** 성공하면 붙는다. 그래서 이 목록 없이는
+ * 3개 중 1개만 성공한 클립과 3개 모두 성공한 클립을 구분할 수 없다.
+ *
+ * 외부 게시물 URL 은 담지 않는다. 저장하는 곳이 없어 만들어 내야 하는데, 그러면 열지도
+ * 못하는 링크를 "게시 완료"의 증거처럼 보여주게 된다.
+ */
+data class ClipPublicationResponse(
+    /** `PLATFORM` 또는 `PLATFORM#channelId`. 같은 플랫폼의 계정을 구분하는 키다. */
+    val platform: String,
+    /** 연결된 채널이 아직 사용자 소유로 남아 있을 때만 표시되는 이름. */
+    val channelName: String? = null,
+    val status: String,
+    val errorMessage: String?,
+    val scheduledAt: Instant?,
+    val publishedAt: Instant?,
 )
 
 /**

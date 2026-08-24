@@ -10,6 +10,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.DESCRIPTION
 import com.ongo.infrastructure.persistence.jooq.Fields.FILE_SIZE_BYTES
 import com.ongo.infrastructure.persistence.jooq.Fields.FILE_URL
+import com.ongo.infrastructure.persistence.jooq.Fields.STORAGE_OBJECT_KEY
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.ORIGINAL_FILENAME
 import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE
@@ -75,6 +76,24 @@ class VideoJooqRepository(
             .map { it.toVideo() }
     }
 
+    /**
+     * 방치된 업로드 회수 대상.
+     *
+     * 세 조건을 모두 만족해야 한다 — UPLOADING 상태, fileUrl 없음, 기준 시각 이전 생성.
+     * 하나라도 빠지면 정상 업로드나 남의 최신 업로드를 지울 수 있다. 오래된 것부터 처리한다.
+     */
+    override fun findStaleUploading(createdBefore: LocalDateTime, limit: Int): List<Video> {
+        return dsl.select()
+            .from(VIDEOS)
+            .where(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
+            .and(FILE_URL.isNull)
+            .and(CREATED_AT.lessThan(createdBefore))
+            .orderBy(CREATED_AT.asc())
+            .limit(limit)
+            .fetch()
+            .map { it.toVideo() }
+    }
+
     override fun countByUserId(userId: Long, status: UploadStatus?): Long {
         var condition = USER_ID.eq(userId)
         if (status != null) {
@@ -111,6 +130,7 @@ class VideoJooqRepository(
             .set(DSL.field("tags", Array<String>::class.java), tagsArray)
             .set(CATEGORY, video.category)
             .set(FILE_URL, video.fileUrl)
+            .set(STORAGE_OBJECT_KEY, video.storageObjectKey)
             .set(FILE_SIZE_BYTES, video.fileSizeBytes)
             .set(ORIGINAL_FILENAME, video.originalFilename)
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
@@ -136,6 +156,7 @@ class VideoJooqRepository(
             .set(DSL.field("tags", Array<String>::class.java), tagsArray)
             .set(CATEGORY, video.category)
             .set(FILE_URL, video.fileUrl)
+            .set(STORAGE_OBJECT_KEY, video.storageObjectKey)
             .set(FILE_SIZE_BYTES, video.fileSizeBytes)
             .set(ORIGINAL_FILENAME, video.originalFilename)
             .set(DSL.field("thumbnail_urls", JSONB::class.java), thumbnailJson)
@@ -214,6 +235,7 @@ class VideoJooqRepository(
             tags = tags,
             category = get(CATEGORY),
             fileUrl = get(FILE_URL),
+            storageObjectKey = get(STORAGE_OBJECT_KEY),
             fileSizeBytes = get(FILE_SIZE_BYTES),
             originalFilename = get(ORIGINAL_FILENAME),
             thumbnailUrls = thumbnailUrls,

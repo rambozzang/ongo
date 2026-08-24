@@ -186,6 +186,31 @@ function getPlanGradientClass(): string {
   return gradientMap[props.targetPlan]
 }
 
+/** Axios 가 붙이는 전송 계층 문구. 사용자에게 의미가 없다 (utils/loginError.ts 와 같은 판단). */
+const TRANSPORT_ERROR = /^Request failed with status code \d+$/
+
+/**
+ * 결제 실패 사유를 사용자용 문구로 바꾼다.
+ *
+ * 서버는 거절 사유를 ResData.message 에 한국어로 담아 보낸다(예: 중복 구독 결제 거부).
+ * 그런데 client.ts 의 응답 인터셉터는 401 만 가로채고 나머지는 원본 AxiosError 를 그대로
+ * reject 하므로, 400 은 `Request failed with status code 400` 이라는 문구로만 도착했다.
+ * 결제를 마친 사용자가 온보딩에서 이 화면에 막혔을 때 원인을 알 수 없던 이유다.
+ *
+ * 그래서 응답 본문의 message 를 먼저 쓰고, 없을 때만 예외 메시지를 쓴다.
+ * 전역 인터셉터는 건드리지 않는다 — 다른 화면의 에러 처리까지 바꾸지 않기 위해서다.
+ */
+function paymentErrorMessage(e: unknown): string {
+  const serverMessage = (e as { response?: { data?: { message?: unknown } } })?.response?.data?.message
+  if (typeof serverMessage === 'string' && serverMessage.trim()) return serverMessage.trim()
+
+  if (e instanceof Error) {
+    const message = e.message.trim()
+    if (message && message !== 'Network Error' && !TRANSPORT_ERROR.test(message)) return message
+  }
+  return '결제 준비에 실패했습니다. 다시 시도해주세요.'
+}
+
 async function startPayment() {
   paymentError.value = ''
   try {
@@ -204,7 +229,7 @@ async function startPayment() {
       },
     }, props.billingCycle)
   } catch (e: unknown) {
-    paymentError.value = e instanceof Error ? e.message : '결제 준비에 실패했습니다. 다시 시도해주세요.'
+    paymentError.value = paymentErrorMessage(e)
   }
 }
 
@@ -225,6 +250,16 @@ function handleKeydown(event: KeyboardEvent) {
 
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
+    /*
+     * 열릴 때마다 직전 결제의 흔적을 지운다.
+     *
+     * 상태를 되돌리는 곳이 close() 뿐이었는데, 부모가 v-model 을 직접 내리는 경로
+     * (온보딩·구독 화면의 결제 성공 처리)에서는 close() 가 호출되지 않는다. 그래서 다음에
+     * 열면 완료 화면이 그대로 떠 결제 버튼이 없고, 정상적인 상위 플랜 업그레이드가 막혔다.
+     */
+    processing.value = false
+    paymentComplete.value = false
+    paymentError.value = ''
     document.addEventListener('keydown', handleKeydown)
     document.body.style.overflow = 'hidden'
   } else {

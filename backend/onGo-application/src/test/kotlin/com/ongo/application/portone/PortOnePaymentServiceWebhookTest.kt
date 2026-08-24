@@ -5,16 +5,19 @@ import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.CreditPackage
 import com.ongo.common.enums.PaymentStatus
 import com.ongo.common.enums.PaymentType
+import com.ongo.common.enums.PlanType
 import com.ongo.common.exception.UnauthorizedException
 import com.ongo.domain.payment.Payment
 import com.ongo.domain.payment.PaymentRepository
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
+import com.ongo.application.payment.PaymentCompletedEvent
 import com.ongo.domain.webhook.WebhookEvent
 import com.ongo.domain.webhook.WebhookEventRepository
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.mockk
 import io.mockk.junit5.MockKExtension
 import io.mockk.just
 import io.mockk.runs
@@ -28,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.context.ApplicationEventPublisher
 
 /**
  * 포트원 웹훅 처리 테스트.
@@ -57,6 +61,9 @@ class PortOnePaymentServiceWebhookTest {
     @MockK
     private lateinit var webhookEventRepository: WebhookEventRepository
 
+    /** 확정 결제 퍼널 이벤트 통로. 중복 웹훅이 추가 발행을 만들지 않는지 여기서 본다. */
+    private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
+
     private lateinit var service: PortOnePaymentService
 
     private val webhookId = "webhook-1"
@@ -79,6 +86,14 @@ class PortOnePaymentServiceWebhookTest {
             objectMapper = ObjectMapper(),
             storeId = "store-test",
             channelKey = "channel-test",
+            // 웹훅 처리는 준비 검사를 지나지 않지만 생성자에 필요하다.
+            readiness = PortOneReadiness(
+                storeId = "store-abc12345",
+                channelKey = "channel-abc12345",
+                apiSecret = "apisecret-abc12345",
+                webhookSecret = "webhook-abc12345",
+            ),
+            eventPublisher = eventPublisher,
         )
     }
 
@@ -132,6 +147,92 @@ class PortOnePaymentServiceWebhookTest {
         service.handleWebhook(body("Transaction.Paid"), webhookId, signature, timestamp)
 
         verify(exactly = 1) { creditService.addPurchasedCredits(7, CreditPackage.BASIC, 42) }
+    }
+
+    /**
+     * 지급은 `description` 을 `CREDIT|<패키지>` 로 파싱해 패키지를 정한다. 폐기된 레거시
+     * 경로(`POST /credits/purchase`)는 `스타터 팩 (500 크레딧)` 형식을 썼다.
+     *
+     * 그 형식의 결제 행이 어떤 경로로든 다시 생겨 PG 검증까지 통과하더라도, 패키지를
+     * 정할 수 없으므로 **지급이 일어나서는 안 된다.** 임의 패키지로 추정해 지급하면
+     * 결제 금액과 무관한 크레딧이 나간다.
+     */
+    @Test
+    @DisplayName("CREDIT| 형식이 아닌 결제는 검증을 통과해도 크레딧을 지급하지 않는다")
+    fun legacyDescriptionNeverGrants() {
+        allowSignature()
+        val payment = Payment(
+            id = 42,
+            userId = 7,
+            type = PaymentType.CREDIT,
+            amount = CreditPackage.STARTER.price,
+            currency = "KRW",
+            status = PaymentStatus.PENDING,
+            pgProvider = "portone",
+            // 폐기된 CreditPurchaseUseCase 가 쓰던 형식. 구분자가 없다.
+            description = "스타터 팩 (500 크레딧)",
+        )
+        every { paymentRepository.findByIdForUpdate(42) } returns payment
+        every { paymentRepository.update(any()) } returns payment
+        every { gateway.getPayment("ongo-42") } returns PortOnePayment(
+            paymentId = "ongo-42",
+            status = "PAID",
+            amount = CreditPackage.STARTER.price,
+            currency = "KRW",
+            transactionId = "tx-1",
+            paymentMethod = "CARD",
+            receiptUrl = "https://receipt",
+        )
+
+        assertThrows(IllegalStateException::class.java) {
+            service.handleWebhook(body("Transaction.Paid"), webhookId, signature, timestamp)
+        }
+
+        verify(exactly = 0) { creditService.addPurchasedCredits(any(), any(), any()) }
+    }
+
+    /**
+     * 구독 결제 직후 크레딧이 FREE 기준(30)에 머물면 STARTER 를 산 사용자가 쇼츠 실행
+     * 한 번(37)도 못 돌린다. 구독만 ACTIVE 로 바뀌고 쓸 수 있는 것은 그대로인 상태다.
+     */
+    @Test
+    @DisplayName("구독 결제 완료는 플랜 크레딧 권한을 적용한다")
+    fun subscriptionPaidAppliesPlanEntitlement() {
+        allowSignature()
+        val payment = Payment(
+            id = 43,
+            userId = 7,
+            type = PaymentType.SUBSCRIPTION,
+            amount = PlanType.STARTER.price,
+            currency = "KRW",
+            status = PaymentStatus.PENDING,
+            pgProvider = "portone",
+            description = "SUBSCRIPTION|STARTER|MONTHLY",
+        )
+        every { paymentRepository.findByIdForUpdate(43) } returns payment
+        every { paymentRepository.update(any()) } returns payment
+        every { gateway.getPayment("ongo-43") } returns PortOnePayment(
+            paymentId = "ongo-43",
+            status = "PAID",
+            amount = PlanType.STARTER.price,
+            currency = "KRW",
+            transactionId = "tx-2",
+            paymentMethod = "CARD",
+            receiptUrl = "https://receipt",
+        )
+        every { subscriptionRepository.findByUserId(7) } returns mockk(relaxed = true)
+        every { subscriptionRepository.update(any()) } answers { firstArg() }
+        every { userRepository.findById(7) } returns mockk(relaxed = true)
+        every { userRepository.update(any()) } answers { firstArg() }
+        every { creditService.applyPlanEntitlement(any(), any(), any()) } just runs
+
+        service.handleWebhook(body("Transaction.Paid", paymentId = "ongo-43"), webhookId, signature, timestamp)
+
+        verify(exactly = 1) {
+            creditService.applyPlanEntitlement(7, PlanType.STARTER, "SUBSCRIPTION_PAID")
+        }
+        // 구독 결제는 구매 크레딧 팩과 무관하다.
+        verify(exactly = 0) { creditService.addPurchasedCredits(any(), any(), any()) }
     }
 
     @Test
@@ -189,6 +290,12 @@ class PortOnePaymentServiceWebhookTest {
         verify(exactly = 0) { paymentRepository.update(any()) }
         // 잠금 조회로 이미 COMPLETED를 확인했으므로 포트원 재조회조차 필요 없다
         verify(exactly = 0) { gateway.getPayment(any()) }
+        /*
+         * 퍼널 로그도 늘지 않는다. 포트원은 2xx가 아니면 최대 5회 재전송하므로 중복 웹훅은
+         * 예외가 아니라 정상 상황이다. 여기서 이벤트가 한 번 더 나가면 활동 로그에 결제
+         * 한 건이 여러 번 남아 "실제로 결제한 사람 수"가 부풀려진다.
+         */
+        verify(exactly = 0) { eventPublisher.publishEvent(any<PaymentCompletedEvent>()) }
     }
 
     @Test

@@ -120,8 +120,22 @@ export interface Payment {
   type: 'SUBSCRIPTION' | 'CREDIT'
   amount: number
   description: string
-  status: 'COMPLETED' | 'FAILED' | 'REFUNDED'
-  paidAt: string
+  /**
+   * 서버 `PaymentStatus` 를 그대로 옮긴다.
+   *
+   * PENDING 이 빠져 있었는데, 체크아웃은 결제창을 열기 **전에** PENDING 행을 만들므로
+   * 사용자가 결제를 취소하거나 브라우저를 닫으면 그 상태로 남아 목록에 그대로 나온다.
+   * 타입에 없다고 값이 안 오는 것은 아니다.
+   */
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED'
+  /**
+   * 서버가 보내는 필드명은 `createdAt` 이다(`PaymentItem`).
+   *
+   * 예전에는 `paidAt` 으로 읽어서 항상 undefined 였고, 화면의 날짜 칸은 모든 행에서
+   * "Invalid Date" 였다. 결제 시각이 아니라 **결제 행이 만들어진 시각**이라는 점도
+   * 이름 그대로 두는 편이 정확하다 — PENDING 행에는 결제 시각이 아직 없다.
+   */
+  createdAt: string | null
   receiptUrl: string | null
 }
 
@@ -152,14 +166,10 @@ export interface Coupon {
   validUntil: string | null
 }
 
-export interface CouponValidation {
-  valid: boolean
-  code: string
-  discountType: string | null
-  discountValue: number | null
-  calculatedDiscount: number | null
-  message: string | null
-}
+/*
+ * CouponValidation 은 제거했다. 고객 쿠폰 엔드포인트가 항상 실패하므로 이 응답을 받는
+ * 클라이언트가 없다. 남겨두면 "할인 응답 계약이 이미 있다"고 읽힌다.
+ */
 
 export interface UsageAlertConfig {
   id: number

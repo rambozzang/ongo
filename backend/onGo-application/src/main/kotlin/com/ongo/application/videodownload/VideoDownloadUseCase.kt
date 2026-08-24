@@ -1,14 +1,7 @@
 package com.ongo.application.videodownload
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.ongo.application.common.FileStoragePort
-import com.ongo.application.storage.StorageQuotaUseCase
-import com.ongo.common.enums.MediaType
-import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.BusinessException
-import com.ongo.domain.contentsource.VideoSource
-import com.ongo.domain.video.Video
-import com.ongo.domain.video.VideoRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.nio.file.Files
@@ -16,10 +9,8 @@ import java.util.UUID
 
 @Service
 class VideoDownloadUseCase(
-    private val videoRepository: VideoRepository,
     private val sourceDownloader: VideoSourceDownloader,
-    private val fileStoragePort: FileStoragePort,
-    private val storageQuotaUseCase: StorageQuotaUseCase,
+    private val importedVideoPersister: ImportedVideoPersister,
     private val objectMapper: ObjectMapper,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -43,22 +34,11 @@ class VideoDownloadUseCase(
             throw BusinessException("VIDEO_DOWNLOAD_FAILED", "소스 영상을 가져오지 못했습니다.")
         }
 
-        var uploadedKey: String? = null
         try {
             validateDownloadedVideo(downloaded)
-            storageQuotaUseCase.checkQuota(userId, downloaded.size)
 
             val extension = extensionOf(downloaded.originalFilename)
             val key = "videos/$userId/imports/${UUID.randomUUID()}.$extension"
-            val fileUrl = Files.newInputStream(downloaded.path).use { input ->
-                uploadedKey = key
-                try {
-                    fileStoragePort.uploadByKey(key, input, downloaded.contentType, downloaded.size)
-                } catch (e: Exception) {
-                    runCatching { fileStoragePort.deleteByKey(key) }
-                    throw BusinessException("VIDEO_STORAGE_UPLOAD_FAILED", "영상 저장에 실패했습니다.")
-                }
-            }
 
             val title = request.title?.trim()?.takeIf { it.isNotBlank() }
                 ?: downloaded.title.trim().takeIf { it.isNotBlank() }
@@ -67,25 +47,21 @@ class VideoDownloadUseCase(
                 put("provider", source.provider.name)
                 put("url", source.original)
             }
-            val video = try {
-                videoRepository.save(
-                    Video(
-                        userId = userId,
-                        title = title.take(MAX_TITLE_LENGTH),
-                        fileUrl = fileUrl,
-                        fileSizeBytes = downloaded.size,
-                        originalFilename = downloaded.originalFilename.take(MAX_FILENAME_LENGTH),
-                        mediaType = MediaType.VIDEO,
-                        status = UploadStatus.DRAFT,
-                        source = VideoSource.URL_IMPORT,
-                        sourceReference = sourceReference,
-                    )
-                )
-            } catch (e: Exception) {
-                // Do not leave an object behind when the database write fails.
-                uploadedKey?.let { fileStoragePort.deleteByKey(it) }
-                throw e
-            }
+
+            /*
+             * 여기부터가 트랜잭션이다. 다운로드는 이미 끝났고, 한도 판정·업로드·행 저장만
+             * 한 트랜잭션에 묶여 사용자 행 잠금이 확정 시점까지 유지된다. 다운로드까지 감싸면
+             * 2GB 를 받는 몇 분 동안 잠금과 커넥션을 붙들게 되므로 경계를 여기에 둔다.
+             */
+            val video = importedVideoPersister.persist(
+                userId = userId,
+                downloaded = downloaded,
+                objectKey = key,
+                title = title.take(MAX_TITLE_LENGTH),
+                originalFilename = downloaded.originalFilename.take(MAX_FILENAME_LENGTH),
+                sourceReference = sourceReference,
+                openStream = { Files.newInputStream(downloaded.path) },
+            )
 
             return VideoDownloadResult(
                 videoId = requireNotNull(video.id) { "가져온 영상 레코드 생성에 실패했습니다." },

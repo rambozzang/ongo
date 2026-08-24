@@ -1,6 +1,10 @@
 package com.ongo.infrastructure.accountdeletion
 
 import com.ongo.domain.accountdeletion.AccountDeletionDataPort
+import com.ongo.domain.accountdeletion.AccountDeletionObjectTask
+import com.ongo.domain.accountdeletion.AccountDeletionObjectTaskRepository
+import com.ongo.domain.accountdeletion.UserObjectSnapshot
+import com.ongo.domain.accountdeletion.UserObjectSnapshotPort
 import com.ongo.domain.accountdeletion.AccountDeletionJobRepository
 import com.ongo.domain.accountdeletion.FkPolicy
 import com.ongo.domain.accountdeletion.UserFkPolicy
@@ -22,17 +26,28 @@ import org.springframework.transaction.annotation.Transactional
 class AccountDeletionDataAdapter(
     private val dsl: DSLContext,
     private val jobs: AccountDeletionJobRepository,
+    private val objectSnapshot: UserObjectSnapshotPort,
+    private val objectTasks: AccountDeletionObjectTaskRepository,
 ) : AccountDeletionDataPort {
 
     @Transactional
-    override fun deleteUserDataAndComplete(
+    override fun snapshotObjectsAndDeleteUserData(
         jobId: Long,
         userId: Long,
         policies: List<UserFkPolicy>,
-    ) {
+    ): UserObjectSnapshot {
         require(policies.all { it.policy == FkPolicy.DELETE && it.key.localColumns == listOf("user_id") }) {
             "계정 삭제 DB 단계에 승인되지 않은 외래키 정책이 포함되어 있다"
         }
+
+        /*
+         * 지울 키를 **먼저** 모은다. 행을 지운 뒤에는 무엇을 지워야 했는지 알 방법이 없다.
+         * 이 기록과 아래 DB 삭제가 같은 트랜잭션이라 함께 커밋되거나 함께 사라진다.
+         */
+        val snapshot = objectSnapshot.snapshot(userId)
+        objectTasks.saveAllIgnoringDuplicates(
+            snapshot.deletableKeys.map { AccountDeletionObjectTask(jobId = jobId, objectKey = it) },
+        )
 
         orderedPolicies(policies).forEach { policy ->
             val table = DSL.table(DSL.name(policy.key.schema, policy.key.table))
@@ -47,9 +62,14 @@ class AccountDeletionDataAdapter(
             .where(ID.eq(userId))
             .execute()
 
-        check(jobs.markCompleted(jobId) != null) {
-            "계정 삭제 완료 job 을 찾을 수 없다: $jobId"
+        /*
+         * 완료가 아니라 "외부 정리 대기"다. 버킷 객체가 아직 남아 있고, 그걸 지우는 것은
+         * 이 트랜잭션이 커밋된 뒤에만 안전하다. 완료 판정은 워커가 실제로 다 지운 뒤에 한다.
+         */
+        check(jobs.markExternalCleanupPending(jobId, snapshot.unresolvedRowCount) != null) {
+            "계정 삭제 job 을 찾을 수 없다: $jobId"
         }
+        return snapshot
     }
 
     /**

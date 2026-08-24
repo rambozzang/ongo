@@ -35,10 +35,15 @@
     <!-- Right: Login Form -->
     <div class="flex flex-1 items-center justify-center bg-white dark:bg-gray-800 p-8">
       <div class="w-full max-w-sm">
-        <!-- Mobile logo -->
-        <div class="mb-10 text-center tablet:hidden">
+        <!-- Mobile logo.
+             좌측 히어로가 tablet 미만에서 렌더되지 않으므로, 가치 제안을 여기서
+             한 번 더 말한다. 이게 없으면 모바일 방문자가 보는 설명은 한 줄뿐이다. -->
+        <div class="mb-8 text-center tablet:hidden">
           <OnGoLogo size="lg" />
           <p class="mt-2 text-body text-gray-500 dark:text-gray-400">{{ $t('app.description') }}</p>
+          <p class="mt-3 whitespace-pre-line text-body-sm leading-relaxed text-gray-500 dark:text-gray-400">
+            {{ $t('loginView.heroSubtitle') }}
+          </p>
         </div>
 
         <div class="mb-2 hidden tablet:block">
@@ -105,6 +110,38 @@
           <span class="text-body-xs text-gray-400 dark:text-gray-500">{{ $t('loginView.devLoginHint') }}</span>
         </div>
 
+        <!-- 공개 요금 안내.
+             로그인 전에는 가격을 볼 수 있는 화면이 없어, 방문자가 얼마인지 모르는 채
+             소셜 계정 접근 권한을 먼저 내줘야 했다. CTA **아래**에 두어 초기 화면에서
+             로그인 버튼이 접히지 않게 하고, 개인 크리에이터가 실제로 고르는 3개만 보여준다.
+             금액은 PLANS 상수를 그대로 쓴다(별도 하드코딩 금지). -->
+        <section
+          :aria-label="$t('subscription.planComparison')"
+          class="mt-8 border-t border-gray-200 pt-6 dark:border-gray-700"
+        >
+          <h3 class="mb-3 text-body-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+            {{ $t('subscription.planComparison') }}
+          </h3>
+          <ul class="grid grid-cols-3 gap-2">
+            <li
+              v-for="plan in publicPlans"
+              :key="plan.type"
+              class="rounded-lg border border-gray-200 p-2.5 dark:border-gray-700"
+            >
+              <p class="text-body-xs font-semibold text-gray-900 dark:text-gray-100">{{ plan.name }}</p>
+              <p class="mt-0.5 text-body-xs font-bold text-primary-600 dark:text-primary-400">
+                {{ priceLabel(plan) }}
+              </p>
+              <p class="mt-1.5 text-[11px] leading-tight text-gray-500 dark:text-gray-400">
+                {{ $t('subscription.connectedChannels') }} {{ plan.maxPlatforms }}
+              </p>
+              <p class="text-[11px] leading-tight text-gray-500 dark:text-gray-400">
+                {{ $t('subscription.monthlyUploads') }} {{ plan.maxUploadsPerMonth }}
+              </p>
+            </li>
+          </ul>
+        </section>
+
         <!-- Terms -->
         <i18n-t
           keypath="loginView.terms"
@@ -125,14 +162,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/api/auth'
 import OnGoLogo from '@/components/brand/OnGoLogo.vue'
 import { loginErrorMessage } from '@/utils/loginError'
+import { PLANS, type Plan, type PlanType } from '@/types/subscription'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+/**
+ * 로그인 전 공개 요금 안내에 쓸 플랜.
+ *
+ * Business 는 제외한다. 로그인 화면의 대상은 개인 크리에이터이고, 4개를 나열하면
+ * max-w-sm 컬럼에서 카드가 읽을 수 없을 만큼 좁아진다.
+ */
+const PUBLIC_PLAN_TYPES: PlanType[] = ['FREE', 'STARTER', 'PRO']
+const publicPlans = computed(() => PLANS.filter((plan) => PUBLIC_PLAN_TYPES.includes(plan.type)))
+
+/**
+ * 통화 표기는 Intl 에 맡긴다. 로케일 파일을 건드리지 않고도 ko/en 양쪽에서
+ * ₩9,900 형태가 나오며, 금액 자체는 PLANS 를 그대로 쓴다.
+ */
+function priceLabel(plan: Plan): string {
+  if (plan.price === 0) return t('subscription.statusFree')
+  const amount = new Intl.NumberFormat(locale.value, {
+    style: 'currency',
+    currency: 'KRW',
+    maximumFractionDigits: 0,
+  }).format(plan.price)
+  return `${amount}${t('subscription.perMonth')}`
+}
 const authStore = useAuthStore()
 const isLoading = ref(false)
 const errorMessage = ref('')

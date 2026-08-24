@@ -12,9 +12,11 @@ import com.ongo.infrastructure.persistence.jooq.Fields.DELETION_STATE
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.IDEMPOTENCY_KEY
 import com.ongo.infrastructure.persistence.jooq.Fields.LAST_ERROR_CODE
+import com.ongo.infrastructure.persistence.jooq.Fields.NEXT_ATTEMPT_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.REQUESTED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.SUPPORT_REFERENCE
+import com.ongo.infrastructure.persistence.jooq.Fields.UNRESOLVED_OBJECT_ROWS
 import com.ongo.infrastructure.persistence.jooq.Fields.UPDATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.ACCOUNT_DELETION_JOBS
@@ -47,6 +49,13 @@ class AccountDeletionJobJooqRepository(
                 FROM account_deletion_jobs
                 WHERE status = 'REQUESTED'
                    OR (status = 'IN_PROGRESS' AND updated_at < ?)
+                   -- 외부 정리가 남은 job. DB 는 이미 커밋됐으므로 다시 시도해도 안전하고,
+                   -- 그래서 stale 을 기다리지 않고 **다음 tick 에 바로** 집는다.
+                   -- next_attempt_at 은 실패했을 때만 채워져 폭주와 기아를 막는다.
+                   OR (
+                        status = 'EXTERNAL_CLEANUP_PENDING'
+                        AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
+                      )
                 ORDER BY requested_at, id
                 FOR UPDATE SKIP LOCKED
                 LIMIT 1
@@ -60,6 +69,7 @@ class AccountDeletionJobJooqRepository(
             RETURNING job.*
             """.trimIndent(),
             staleBefore,
+            now,
             now,
         )?.toJob()
 
@@ -230,6 +240,41 @@ class AccountDeletionJobJooqRepository(
     }
 
     @Transactional
+    override fun markExternalCleanupPending(
+        jobId: Long,
+        unresolvedObjectRows: Int,
+        dbCommittedAt: LocalDateTime,
+    ): AccountDeletionJob? {
+        dsl.update(ACCOUNT_DELETION_JOBS)
+            .set(STATUS, AccountDeletionStatus.EXTERNAL_CLEANUP_PENDING.name)
+            // 커밋과 함께 남긴다. 크래시 뒤에도 "아직 못 지운 게 있다"는 사실이 살아남아야 한다.
+            .set(UNRESOLVED_OBJECT_ROWS, unresolvedObjectRows)
+            // DB 단계가 끝났다는 표시. 이 값이 있으면 재개 시 DB 단계를 다시 돌지 않는다.
+            .set(DB_COMMITTED_AT, dbCommittedAt)
+            .set(UPDATED_AT, dbCommittedAt)
+            .where(ID.eq(jobId))
+            .execute()
+        return findById(jobId)
+    }
+
+    /**
+     * 외부 정리가 실패했을 때 상태와 다음 시도 시각을 **함께** 되돌린다.
+     *
+     * claimNext 가 job 을 집으면서 IN_PROGRESS 로 바꿔 놓았기 때문에, next_attempt_at 만
+     * 갱신하면 다음 claim 이 EXTERNAL_CLEANUP_PENDING 분기가 아니라 IN_PROGRESS stale(30분)
+     * 분기로 빠진다. 그러면 backoff 가 통째로 무의미해지고 재시도가 30분씩 밀린다.
+     * 둘을 같은 UPDATE 로 묶어야 다음 tick 이 의도한 간격에 집는다.
+     */
+    override fun scheduleCleanupRetry(jobId: Long, nextAttemptAt: LocalDateTime): AccountDeletionJob? {
+        dsl.update(ACCOUNT_DELETION_JOBS)
+            .set(STATUS, AccountDeletionStatus.EXTERNAL_CLEANUP_PENDING.name)
+            .set(NEXT_ATTEMPT_AT, nextAttemptAt)
+            .set(UPDATED_AT, LocalDateTime.now())
+            .where(ID.eq(jobId))
+            .execute()
+        return findById(jobId)
+    }
+
     override fun markCompleted(jobId: Long, completedAt: LocalDateTime): AccountDeletionJob? {
         dsl.update(ACCOUNT_DELETION_JOBS)
             .set(STATUS, AccountDeletionStatus.COMPLETED.name)

@@ -1,9 +1,11 @@
 package com.ongo.application.credit
 
 import com.ongo.common.enums.CreditTransactionType
+import com.ongo.common.enums.SubscriptionStatus
 import com.ongo.domain.credit.AiCreditTransaction
 import com.ongo.domain.credit.CreditRepository
 import com.ongo.domain.lock.DistributedLockPort
+import com.ongo.domain.subscription.SubscriptionRepository
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.annotation.Scheduled
@@ -20,6 +22,8 @@ class CreditScheduler(
     private val creditRepository: CreditRepository,
     private val eventPublisher: ApplicationEventPublisher,
     private val distributedLock: DistributedLockPort,
+    /** 월간 리셋에서 체험 중인 사용자를 가려내기 위해서만 읽는다. 구독을 바꾸지 않는다. */
+    private val subscriptionRepository: SubscriptionRepository,
     transactionManager: PlatformTransactionManager,
 ) {
 
@@ -79,8 +83,42 @@ class CreditScheduler(
         reportBatchResult("freeCreditReset", successCount, userIds.size, failed)
     }
 
-    /** 사용자 1건의 DB 작업 전체. [perItemTx] 안에서만 호출한다. */
+    /**
+     * 사용자 1건의 DB 작업 전체. [perItemTx] 안에서만 호출한다.
+     *
+     * ## 체험 중이면 아무것도 하지 않는다
+     *
+     * 리셋은 `freeRemaining` 을 `freeMonthly` 로 되돌린다. 체험 중에는 그 값이 체험 플랜
+     * 기준(STARTER=100)이라, 월이 바뀌는 순간 체험 크레딧이 **한 번 더** 채워진다.
+     * 말일에 체험을 시작하면 7일 체험에 100 이 아니라 200 을 받는다. 무작위 시작으로도
+     * 약 7/30 확률로 걸리고, 날짜를 고르면 확정이다.
+     *
+     * `applyPlanEntitlement` 가 `freeResetDate` 를 일부러 보존하는 것과 맞물려 생긴다.
+     * 그 보존은 옳다 — 전환이 리셋 주기를 당기면 주기를 앞당기려고 플랜을 오가는 경로가
+     * 생긴다. 그래서 고칠 곳은 리셋 쪽이다.
+     *
+     * ## 왜 `trialEnd` 를 보지 않는가
+     *
+     * 만료 처리는 `BillingScheduler` 가 매일 02:00 에 하고, 이 리셋은 1일 00:00 에 돈다.
+     * 즉 `trialEnd` 는 지났는데 상태가 아직 `TRIALING` 인 구간이 매달 최소 두 시간 있다.
+     * 그 구간의 `freeMonthly` 는 여전히 체험 플랜 값이므로, "체험이 끝났으니 리셋해도
+     * 된다"고 판단하면 같은 이중 지급이 그대로 일어난다.
+     *
+     * 상태가 `TRIALING` 인 동안은 권한이 아직 정산되지 않은 것으로 보고 건너뛴다.
+     * `BillingScheduler` 가 FREE 로 내리고 나면(24시간 내) 다음 1일부터 정상 리셋된다.
+     *
+     * ## 건너뛴 사용자는 손해를 보지 않는다
+     *
+     * `freeResetDate` 를 앞당기지 않으므로 다음 달 배치가 다시 대상으로 잡는다
+     * (`findUsersForFreeReset` 은 `free_reset_date <= today`). 체험이 끝난 뒤 FREE/ACTIVE
+     * 로 돌아오면 그때 정상 리셋을 받는다.
+     */
     private fun resetFreeCreditsFor(userId: Long, today: LocalDate) {
+        if (isTrialing(userId)) {
+            log.info("체험 중이라 무료 크레딧 리셋을 건너뛴다. job=freeCreditReset userId={}", userId)
+            return
+        }
+
         val credit = creditRepository.findByUserIdForUpdate(userId) ?: return
         val resetAmount = credit.freeMonthly
         val purchasedTotal = creditRepository.findActivePurchasedCredits(userId).sumOf { it.remaining }
@@ -105,6 +143,15 @@ class CreditScheduler(
             )
         )
     }
+
+    /**
+     * 구독이 체험 상태인가.
+     *
+     * 구독 행이 없으면 체험일 수 없으므로 false 다. 리셋을 막는 판단이라 확실할 때만
+     * 막는다 — 여기서 fail-closed 로 기울면 정상 사용자의 월간 크레딧이 사라진다.
+     */
+    private fun isTrialing(userId: Long): Boolean =
+        subscriptionRepository.findByUserId(userId)?.status == SubscriptionStatus.TRIALING
 
     /**
      * 매일 01:00 만료된 구매 크레딧 처리

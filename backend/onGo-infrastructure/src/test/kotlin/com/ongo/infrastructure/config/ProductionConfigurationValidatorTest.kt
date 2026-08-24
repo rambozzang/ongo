@@ -30,20 +30,47 @@ class ProductionConfigurationValidatorTest {
     }
 
     @Test
-    fun `Gemini 키만 설정된 운영 환경도 AI 기동 검증을 통과한다`() {
+    fun `일반 AI 기능은 Gemini 키만으로도 기동 검증을 통과한다`() {
         validator(
             anthropicApiKey = "",
-            openAiApiKey = "",
             geminiApiKey = "gemini-api-key",
             dashScopeApiKey = "",
         ).validate()
+    }
+
+    /*
+     * 쇼츠 TRANSCRIBE 는 OpenAiAudioTranscriptionModel 로 고정돼 있다.
+     * "AI 키 1개 이상" 규칙은 DashScope 하나로도 만족되므로, 그 규칙만으로는
+     * 전사 키가 빠진 배포가 정상 기동한 뒤 모든 실행이 1단계에서 죽는다.
+     */
+    @Test
+    fun `DashScope 만 있고 OpenAI 키가 없으면 기동 검증에서 거부한다`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            validator(
+                anthropicApiKey = "",
+                openAiApiKey = "",
+                geminiApiKey = "",
+                dashScopeApiKey = "dashscope-api-key",
+            ).validate()
+        }
+
+        kotlin.test.assertTrue(error.message.orEmpty().contains("spring.ai.openai.api-key"))
+    }
+
+    @Test
+    fun `OpenAI 키가 dummy placeholder 면 기동 검증에서 거부한다`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            validator(openAiApiKey = "dummy-openai-key").validate()
+        }
+
+        kotlin.test.assertTrue(error.message.orEmpty().contains("spring.ai.openai.api-key"))
     }
 
     private fun validator(
         portoneWebhookSecret: String = "d2Vic2l0ZS13ZWJob29rLXNlY3JldA==",
         portoneStoreId: String = "store-123",
         anthropicApiKey: String = "anthropic-api-key",
-        openAiApiKey: String = "",
+        openAiApiKey: String = "openai-api-key",
         geminiApiKey: String = "",
         dashScopeApiKey: String = "",
     ) = ProductionConfigurationValidator(

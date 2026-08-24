@@ -223,10 +223,12 @@ object Tables {
     val UGC_SHORTS_CLIPS = DSL.table("ugc_shorts_clips")
     val UGC_SHORTS_CLIP_HOOKS = DSL.table("ugc_shorts_clip_hooks")
     val UGC_SHORTS_CLIP_PUBLICATIONS = DSL.table("ugc_shorts_clip_publications")
+    val UGC_SHORTS_PILOT_EVENTS = DSL.table("ugc_shorts_pilot_events")
     val UGC_SHORTS_VALIDATIONS = DSL.table("ugc_shorts_validations")
 
     // 계정 삭제 — users 를 외래키로 참조하지 않는다(삭제 후에도 남는 감사 기록).
     val ACCOUNT_DELETION_JOBS = DSL.table("account_deletion_jobs")
+    val ACCOUNT_DELETION_OBJECT_TASKS = DSL.table("account_deletion_object_tasks")
 
     // Personal automation credentials
     val API_KEYS = DSL.table("api_keys")
@@ -1048,6 +1050,11 @@ object Fields {
 
     // UGC 감사 로그 (V52) — 재사용: WORKSPACE_ID, CAMPAIGN_ID, ACTION, RESOURCE_TYPE, RESOURCE_ID, CREATED_AT
     val ACTOR_ID = DSL.field("actor_id", Long::class.java)
+    val ACTOR_TYPE = DSL.field("actor_type", String::class.java)
+    val ATTEMPT_NO = DSL.field("attempt_no", Int::class.java)
+    val OPERATOR_MINUTES = DSL.field("operator_minutes", Int::class.java)
+    val AMOUNT_KRW = DSL.field("amount_krw", Long::class.java)
+    val DELIVERED_AT = DSL.field("delivered_at", java.time.LocalDateTime::class.java)
     val DETAIL = DSL.field("detail", String::class.java)
 
     // UGC 쇼츠 프롬프트 (V55) — 재사용: ID, WORKSPACE_ID, NAME, DESCRIPTION, REVISION,
@@ -1098,6 +1105,8 @@ object Fields {
     val RENDER_SPEC = DSL.field("render_spec", String::class.java)
     val DEDUP_KEY = DSL.field("dedup_key", String::class.java)
     val RENDERED_VIDEO_ID = DSL.field("rendered_video_id", Long::class.java)
+    /** 실행 생성 시 수락한 원본 길이. 전사 크레딧 산정의 근거이며 생성 후 바뀌지 않는다. */
+    val SOURCE_DURATION_MS = DSL.field("source_duration_ms", Long::class.java)
     val AUTO_SCHEDULE = DSL.field("auto_schedule", Boolean::class.java)
     val AUTO_SCHEDULE_START_AT = DSL.field("auto_schedule_start_at", java.time.LocalDateTime::class.java)
     val AUTO_SCHEDULE_INTERVAL_HOURS = DSL.field("auto_schedule_interval_hours", Int::class.java)
@@ -1113,6 +1122,14 @@ object Fields {
     val SUPPORT_REFERENCE = DSL.field("support_reference", String::class.java)
     val ACCOUNT_ATTEMPT_COUNT = DSL.field("attempt_count", Int::class.java)
     val LAST_ERROR_CODE = DSL.field("last_error_code", String::class.java)
+
+    // 탈퇴 객체 정리 원장 (V96)
+    val OBJECT_KEY = DSL.field("object_key", String::class.java)
+    val STORAGE_OBJECT_KEY = DSL.field("storage_object_key", String::class.java)
+    val CLEANUP_TASK_STATUS = DSL.field("status", String::class.java)
+    val UNRESOLVED_OBJECT_ROWS = DSL.field("unresolved_object_rows", Int::class.java)
+    val NEXT_ATTEMPT_AT = DSL.field("next_attempt_at", java.time.LocalDateTime::class.java)
+    val CLEANUP_ATTEMPT_COUNT = DSL.field("attempt_count", Int::class.java)
     val DB_COMMITTED_AT = DSL.field("db_committed_at", java.time.LocalDateTime::class.java)
     val DELETION_STATE = DSL.field("deletion_state", String::class.java)
     val DELETION_REQUESTED_AT = DSL.field("deletion_requested_at", java.time.LocalDateTime::class.java)

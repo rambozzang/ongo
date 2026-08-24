@@ -85,30 +85,27 @@ class CreditController(
 
     @Operation(
         summary = "크레딧 충전",
-        description = "크레딧 패키지를 선택하여 크레딧을 구매합니다. 결제 수단과 패키지 유형을 지정해야 합니다."
+        description = "지원하지 않는 경로입니다. 크레딧 결제는 " +
+            "POST /api/v1/portone/checkout/credit 으로 결제를 시작하고, PortOne 결제 완료 후 " +
+            "POST /api/v1/portone/payments/{paymentId}/complete 가 PG 재조회로 검증한 뒤 지급합니다. " +
+            "이 엔드포인트는 항상 실패하며 결제 행도 만들지 않습니다."
     )
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "크레딧 충전 성공"),
-        ApiResponse(responseCode = "400", description = "잘못된 요청 (패키지 또는 결제 수단 오류)"),
-        ApiResponse(responseCode = "401", description = "인증 실패"),
-        ApiResponse(responseCode = "500", description = "서버 오류 (결제 처리 실패)")
+        ApiResponse(responseCode = "400", description = "지원하지 않는 결제 경로 (CREDIT_PURCHASE_PATH_UNSUPPORTED)"),
+        ApiResponse(responseCode = "401", description = "인증 실패")
     )
+    @Deprecated("PortOne 체크아웃(POST /api/v1/portone/checkout/credit)을 사용한다")
     @PostMapping("/purchase")
     fun purchaseCredits(
         @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody req: PurchaseCreditRequest,
-    ): ResponseEntity<ResData<PurchaseResultResponse>> {
-        val result = creditPurchaseUseCase.purchaseCredits(userId, req.packageType, req.paymentMethod)
-        return ResData.success(
-            PurchaseResultResponse(
-                transactionId = result.transactionId,
-                creditsAdded = result.creditsAdded,
-                newBalance = result.newBalance,
-                expiresAt = result.expiresAt,
-            ),
-            "크레딧 충전이 완료되었습니다",
-        )
-    }
+    ): ResponseEntity<ResData<PurchaseResultResponse>> =
+        /*
+         * 항상 던진다(반환 타입은 Nothing). 성공 응답을 만들 수 있는 코드가 남아 있으면
+         * 언젠가 그 경로로 돌아간다. 요청 본문은 계속 받는다 — 오래된 클라이언트가
+         * 400 과 함께 이유를 읽을 수 있어야 하고, 404 는 "일시적 장애"로 오해된다.
+         */
+        creditPurchaseUseCase.rejectLegacyPurchase()
 
     @Operation(
         summary = "크레딧 패키지 목록",

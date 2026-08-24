@@ -12,6 +12,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
 import java.nio.file.Files
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -31,11 +32,10 @@ class VideoDownloadUseCaseTest {
 
     @BeforeEach
     fun setUp() {
+        // 확정 구간은 실제 구현을 조립한다 — 다운로드부터 저장까지의 기존 계약을 그대로 검증하기 위해서다.
         useCase = VideoDownloadUseCase(
-            videoRepository,
             sourceDownloader,
-            fileStoragePort,
-            storageQuotaUseCase,
+            ImportedVideoPersister(videoRepository, fileStoragePort, storageQuotaUseCase),
             objectMapper,
         )
     }
@@ -115,5 +115,49 @@ class VideoDownloadUseCaseTest {
         Files.writeString(path, content)
         temporaryFiles.add(path)
         return path
+    }
+
+    /*
+     * 다운로드는 트랜잭션 밖에서 끝나야 한다. 2GB 를 몇 분에 걸쳐 받는 동안 사용자 행 잠금과
+     * DB 커넥션을 붙들면 같은 사용자의 다른 요청이 전부 막히고 커넥션 풀이 마른다.
+     * 확정(persist)은 다운로드가 끝난 **뒤에** 한 번만 불려야 한다.
+     */
+    @Test
+    fun `downloads outside the transaction and persists only after the download completes`() {
+        val persister = mockk<ImportedVideoPersister>()
+        val useCaseWithMockPersister = VideoDownloadUseCase(sourceDownloader, persister, objectMapper)
+        val path = Files.createTempFile("ongo-video-download-", ".mp4").also { temporaryFiles.add(it) }
+        Files.write(path, ByteArray(10))
+        every { sourceDownloader.download(any(), any()) } returns DownloadedVideo(
+            path = path, title = "제목", originalFilename = "a.mp4", contentType = "video/mp4", size = 10L,
+        )
+        every { persister.persist(any(), any(), any(), any(), any(), any(), any()) } returns
+            Video(id = 3L, userId = 100L, title = "제목", fileUrl = "https://storage/a.mp4")
+
+        val result = useCaseWithMockPersister.importVideo(
+            100L, VideoDownloadRequest(url = "https://www.youtube.com/watch?v=abcdefghijk"),
+        )
+
+        assertEquals(3L, result.videoId)
+        verifyOrder {
+            sourceDownloader.download(any(), any())
+            persister.persist(any(), any(), any(), any(), any(), any(), any())
+        }
+        verify(exactly = 1) { persister.persist(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `never reaches the transaction when the download fails`() {
+        val persister = mockk<ImportedVideoPersister>()
+        val useCaseWithMockPersister = VideoDownloadUseCase(sourceDownloader, persister, objectMapper)
+        every { sourceDownloader.download(any(), any()) } throws IllegalStateException("추출기 실패")
+
+        assertFailsWith<com.ongo.common.exception.BusinessException> {
+            useCaseWithMockPersister.importVideo(
+                100L, VideoDownloadRequest(url = "https://www.youtube.com/watch?v=abcdefghijk"),
+            )
+        }
+
+        verify(exactly = 0) { persister.persist(any(), any(), any(), any(), any(), any(), any()) }
     }
 }

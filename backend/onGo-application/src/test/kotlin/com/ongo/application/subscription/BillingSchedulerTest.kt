@@ -44,6 +44,9 @@ class BillingSchedulerTest {
     @MockK
     private lateinit var creditRepository: CreditRepository
 
+    @MockK(relaxUnitFun = true)
+    private lateinit var creditService: com.ongo.application.credit.CreditService
+
     @MockK
     private lateinit var distributedLockPort: DistributedLockPort
 
@@ -65,6 +68,7 @@ class BillingSchedulerTest {
             notificationRepository,
             creditRepository,
             distributedLockPort,
+            creditService,
         )
     }
 
@@ -147,6 +151,11 @@ class BillingSchedulerTest {
         val userSlot = slot<User>()
         verify { userRepository.update(capture(userSlot)) }
         assertEquals(PlanType.FREE, userSlot.captured.planType)
+
+        // 체험으로 받은 유료 크레딧이 만료 후에도 남으면 권한이 새어나간다.
+        verify(exactly = 1) {
+            creditService.applyPlanEntitlement(1L, PlanType.FREE, "TRIAL_EXPIRED")
+        }
 
         val notifSlot = slot<Notification>()
         verify { notificationRepository.save(capture(notifSlot)) }
@@ -367,9 +376,15 @@ class BillingSchedulerTest {
         verify { userRepository.update(capture(userSlot)) }
         assertEquals(PlanType.STARTER, userSlot.captured.planType)
 
-        val creditSlot = slot<AiCredit>()
-        verify { creditRepository.update(capture(creditSlot)) }
-        assertEquals(PlanType.STARTER.freeCredits, creditSlot.captured.freeMonthly)
+        /*
+         * 예전에는 freeMonthly 만 직접 갱신해서, 하향 후에도 freeRemaining·balance 가
+         * BUSINESS 기준으로 남아 상위 플랜만큼 쓸 수 있었다. 이제 entitlement API 가
+         * 세 값을 한 번에 맞춘다.
+         */
+        verify(exactly = 1) {
+            creditService.applyPlanEntitlement(7L, PlanType.STARTER, "PENDING_PLAN_CHANGE")
+        }
+        verify(exactly = 0) { creditRepository.update(any()) }
 
         val notifSlot = slot<Notification>()
         verify { notificationRepository.save(capture(notifSlot)) }

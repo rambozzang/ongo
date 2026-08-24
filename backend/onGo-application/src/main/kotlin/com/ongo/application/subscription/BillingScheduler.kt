@@ -23,6 +23,8 @@ class BillingScheduler(
     private val notificationRepository: NotificationRepository,
     private val creditRepository: CreditRepository,
     private val distributedLockPort: DistributedLockPort,
+    /** 플랜 전환 시 무료 크레딧 권한을 한 곳에서 맞춘다. */
+    private val creditService: com.ongo.application.credit.CreditService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -54,6 +56,8 @@ class BillingScheduler(
             if (user != null) {
                 userRepository.update(user.copy(planType = PlanType.FREE))
             }
+            // 체험으로 받은 유료 크레딧이 만료 후에도 남으면 권한이 새어나간다.
+            creditService.applyPlanEntitlement(sub.userId, PlanType.FREE, reason = "TRIAL_EXPIRED")
             notificationRepository.save(Notification(
                 userId = sub.userId,
                 type = NotificationType.SYSTEM,
@@ -106,6 +110,7 @@ class BillingScheduler(
             if (user != null) {
                 userRepository.update(user.copy(planType = PlanType.FREE))
             }
+            creditService.applyPlanEntitlement(sub.userId, PlanType.FREE, reason = "PAST_DUE")
             notificationRepository.save(Notification(
                 userId = sub.userId,
                 type = NotificationType.SYSTEM,
@@ -129,6 +134,7 @@ class BillingScheduler(
             if (user != null) {
                 userRepository.update(user.copy(planType = PlanType.FREE))
             }
+            creditService.applyPlanEntitlement(sub.userId, PlanType.FREE, reason = "SUBSCRIPTION_CANCELLED")
         }
 
         // 다운그레이드 예약 적용: pendingPlanType 설정 + 기간 만료된 구독
@@ -147,14 +153,15 @@ class BillingScheduler(
             if (user != null) {
                 userRepository.update(user.copy(planType = newPlan))
             }
-            // 크레딧 월간 한도 조정
-            val credit = creditRepository.findByUserId(sub.userId)
-            if (credit != null) {
-                creditRepository.update(credit.copy(
-                    freeMonthly = newPlan.freeCredits,
-                    updatedAt = java.time.LocalDateTime.now()
-                ))
-            }
+            /*
+             * 예전에는 freeMonthly 만 바꿨다. 그러면 다음 달 리셋 전까지 freeRemaining 과
+             * balance 가 이전 플랜 기준으로 남아, 하향했는데도 상위 플랜만큼 쓸 수 있었다.
+             * 상향(paid→paid)에서는 반대로 한도만 오르고 실제 잔여는 그대로였다.
+             *
+             * entitlement API 는 freeMonthly·freeRemaining·balance 를 한 번에 맞추고,
+             * 대상이 FREE 면 잔여를 내리고 유료면 올린다.
+             */
+            creditService.applyPlanEntitlement(sub.userId, newPlan, reason = "PENDING_PLAN_CHANGE")
             notificationRepository.save(Notification(
                 userId = sub.userId,
                 type = NotificationType.SYSTEM,

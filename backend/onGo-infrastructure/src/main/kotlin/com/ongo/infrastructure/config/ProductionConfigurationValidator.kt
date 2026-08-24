@@ -97,6 +97,17 @@ class ProductionConfigurationValidator(
         require(listOf(anthropicApiKey, openAiApiKey, geminiApiKey, dashScopeApiKey).any(::isRealValue)) {
             "at least one production AI provider API key must be configured"
         }
+
+        /*
+         * OpenAI is not interchangeable with the other providers.
+         *
+         * The Shorts pipeline's first stage transcribes through
+         * OpenAiAudioTranscriptionModel specifically, so the "any one provider"
+         * rule above can be satisfied by DashScope alone while every pipeline
+         * run still dies at TRANSCRIBE with a provider auth error. That failure
+         * surfaces minutes into a paid run, long after the user committed.
+         */
+        requireReal("spring.ai.openai.api-key (Shorts transcription)", openAiApiKey)
     }
 
     private fun requireReal(name: String, value: String) {

@@ -94,6 +94,94 @@ class VideoQueryUseCaseTest {
         assert(result.id == 1L)
     }
 
+    /*
+     * 저장된 fileUrl 은 업로드 시점에 발급된 7일짜리 presigned URL 이다. 그대로 돌려주면
+     * 7일 뒤 상세 화면의 프리뷰·다운로드가 죽고, 납품이 곧 제품인 쇼츠 파일럿에서는 고객이
+     * 지난 결과물을 다시 받지 못한다. 조회할 때마다 새로 서명해 주되 DB 는 건드리지 않는다.
+     */
+    @Test
+    fun `getVideoDetail returns a freshly signed url without writing it back`() {
+        val expired = "https://storage/videos/1/video.mp4?X-Amz-Expires=1"
+        val video = createVideo(fileUrl = expired)
+        every { videoRepository.findById(1L) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+        every { videoPlatformMetaRepository.findByVideoUploadIds(any()) } returns emptyMap()
+        every { storageService.getFileUrl(1L, expired) } returns "https://storage/videos/1/video.mp4?fresh=1"
+
+        val result = useCase.getVideoDetail(100L, 1L)
+
+        assert(result.fileUrl == "https://storage/videos/1/video.mp4?fresh=1")
+        verify(exactly = 1) { storageService.getFileUrl(1L, expired) }
+        // 응답에만 담아야 한다. DB 를 갱신하면 조회가 쓰기 경로가 되고 만료 시각도 흩어진다.
+        verify(exactly = 0) { videoRepository.update(any()) }
+    }
+
+    @Test
+    fun `getVideoDetail keeps every other field while refreshing the url`() {
+        val video = createVideo(fileUrl = "https://storage/videos/1/video.mp4")
+        every { videoRepository.findById(1L) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+        every { videoPlatformMetaRepository.findByVideoUploadIds(any()) } returns emptyMap()
+        every { storageService.getFileUrl(any(), any()) } returns "https://storage/fresh.mp4"
+
+        val result = useCase.getVideoDetail(100L, 1L)
+
+        assert(result.id == video.id)
+        assert(result.title == video.title)
+        assert(result.description == video.description)
+        assert(result.tags == video.tags)
+        assert(result.fileSize == video.fileSizeBytes)
+        assert(result.status == video.status)
+        assert(result.mediaType == video.mediaType)
+        assert(result.createdAt == video.createdAt)
+    }
+
+    /*
+     * VideoStorageService.getFileUrl 은 저장 URL 을 오브젝트 키로 풀지 못하면 예외를 던진다.
+     * 외부 remote URL·레거시 키·스토리지 일시 장애에서 상세 조회가 500 이 되면 안 되므로,
+     * 재서명 실패는 저장된 값으로 조용히 되돌아간다.
+     */
+    @Test
+    fun `getVideoDetail falls back to the stored url when re-signing throws`() {
+        val stored = "https://cdn.example.com/external/video.mp4"
+        val video = createVideo(fileUrl = stored)
+        every { videoRepository.findById(1L) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+        every { videoPlatformMetaRepository.findByVideoUploadIds(any()) } returns emptyMap()
+        every { storageService.getFileUrl(1L, stored) } throws IllegalStateException("업로드된 파일을 찾을 수 없습니다")
+
+        val result = useCase.getVideoDetail(100L, 1L)
+
+        assert(result.fileUrl == stored)
+        verify(exactly = 0) { videoRepository.update(any()) }
+    }
+
+    @Test
+    fun `getVideoDetail does not touch storage when the video has no file`() {
+        val video = createVideo(fileUrl = null)
+        every { videoRepository.findById(1L) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+        every { videoPlatformMetaRepository.findByVideoUploadIds(any()) } returns emptyMap()
+
+        val result = useCase.getVideoDetail(100L, 1L)
+
+        assert(result.fileUrl == null)
+        verify(exactly = 0) { storageService.getFileUrl(any(), any()) }
+    }
+
+    @Test
+    fun `getVideoDetail does not touch storage when the stored url is blank`() {
+        val video = createVideo(fileUrl = "   ")
+        every { videoRepository.findById(1L) } returns video
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+        every { videoPlatformMetaRepository.findByVideoUploadIds(any()) } returns emptyMap()
+
+        val result = useCase.getVideoDetail(100L, 1L)
+
+        assert(result.fileUrl == "   ")
+        verify(exactly = 0) { storageService.getFileUrl(any(), any()) }
+    }
+
     @Test
     fun `getVideoDetail should throw NotFoundException for non-existent video`() {
         every { videoRepository.findById(999L) } returns null

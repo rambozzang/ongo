@@ -57,7 +57,6 @@ class SecurityConfig(
                     "/api-docs/**",
                     "/actuator/health",
                     "/ws/**",
-                    "/api/v1/ai/demo/**",
                     "/api/v1/portone/webhook",
                     // Postiz-compatible developer OAuth token exchange is unauthenticated;
                     // client_id/client_secret and the one-time code authenticate it.

@@ -15,6 +15,7 @@ import type {
 import type { Platform } from '@/types/channel'
 import { commentsApi } from '@/api/comments'
 import { useNotificationStore } from '@/stores/notification'
+import { PLAN_LIMIT_EXCEEDED, matchesCode } from '@/composables/usePlanLimit'
 
 interface CommentFilters {
   platform: Platform | 'ALL'
@@ -61,8 +62,9 @@ export const useCommentsStore = defineStore('comments', () => {
   })
 
   const isPlanAccessError = (error: any) => {
+    // 403 은 이 기능이 플랜에 없다는 뜻이라 그대로 두고, 한도 코드 판별만 공통으로 옮겼다.
     return error?.response?.status === 403 || error?.statusCode === 403 ||
-      error?.response?.data?.error === 'PLAN_LIMIT_EXCEEDED'
+      matchesCode(error, PLAN_LIMIT_EXCEEDED)
   }
 
   const handleRequestError = (error: any, fallback: string) => {

@@ -206,15 +206,21 @@ async function startPayment() {
     // 표시명이 아니라 enum 키를 보낸다. 서버는 STARTER/BASIC/PRO/BUSINESS 만 인식하며,
     // 한글 표시명을 보내면 가격 ID 조회가 실패해 결제창 자체가 열리지 않는다.
     await openCreditCheckout(selectedPackage.value.key, {
+      /*
+       * onSuccess 는 `complete` 응답을 받은 **뒤에** 불린다(usePortOne.completeResult 가
+       * await 한다). 서버는 그 호출 안에서 PG 에 재조회해 검증하고 크레딧까지 지급한다.
+       * 즉 이 시점의 잔액은 이미 확정이다.
+       *
+       * 예전에는 여기서 1.5 초를 기다렸다. 기다릴 대상이 없는 지연이라 오래된 잔액을
+       * 더 오래 보여줄 뿐이었고, 그 사이 배경 클릭으로 모달을 닫으면 타이머가 나중에
+       * paymentComplete 를 되살려 다음에 열 때 이전 결제의 "충전 완료!"가 떴다.
+       */
       onSuccess: () => {
-        processing.value = true
-        setTimeout(() => {
-          paymentComplete.value = true
-          processing.value = false
-          if (selectedPackage.value) {
-            emit('purchase', selectedPackage.value)
-          }
-        }, 1500)
+        processing.value = false
+        paymentComplete.value = true
+        if (selectedPackage.value) {
+          emit('purchase', selectedPackage.value)
+        }
       },
       onClose: () => {
         processing.value = false

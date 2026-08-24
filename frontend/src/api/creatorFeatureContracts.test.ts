@@ -47,7 +47,6 @@ describe('creator and UGC server contracts', () => {
     await aiApi.getBatchStatus('batch-1')
     await aiApi.strategyCoach(anyRequest)
     await aiApi.revenueReport(anyRequest)
-    await aiApi.demoGenerate('education')
 
     expect(post).toHaveBeenCalledWith('/ai/generate-hashtags', anyRequest)
     expect(post).toHaveBeenCalledWith('/ai/stt', anyRequest)

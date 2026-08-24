@@ -420,20 +420,42 @@ FFMPEG_PATH=/data/ffmpeg/bin/ffmpeg
 
 ```bash
 FFMPEG_PATH=/data/ffmpeg/bin/ffmpeg
+FFPROBE_PATH=/data/ffmpeg/bin/ffprobe
 ```
 
-빠뜨리면 렌더가 전부 실패한다. 다만 **서비스가 죽지는 않는다** — 가용성 조회가
-`available=false` 를 돌려주고 화면이 렌더 버튼을 감춘다. 그래서 필수 환경변수 목록
-(`deploy/required-env.sh`)에는 넣지 않았다. 넣으면 값이 없을 때 배포 자체가 막힌다.
+`application-prod.yml` 이 두 값의 기본값으로 위 절대 경로를 주므로, 표준 위치에 설치돼
+있으면 환경변수를 따로 넣지 않아도 된다. 다만 **다른 경로에 설치했다면 두 개를 각각**
+지정해야 한다 — 한쪽만 맞추면 나머지 한쪽이 조용히 어긋난다.
+
+**두 바이너리는 서로 다른 단계를 막으므로 따로 점검한다.**
+
+| 바이너리 | 없을 때 | 사용자에게 보이는 것 |
+|---|---|---|
+| `ffmpeg` | 쇼츠 메뉴 자체가 사라짐 | 오류가 아니라 **기능이 없는 것처럼** 보인다 |
+| `ffprobe` | 쇼츠 **실행 생성이 전부 거절** | `SHORTS_SOURCE_DURATION_UNKNOWN` |
+
+`ffmpeg` 를 빠뜨려도 **서비스가 죽지는 않는다** — 가용성 조회가 `available=false` 를
+돌려주고 화면이 쇼츠 메뉴를 감춘다. 그래서 필수 환경변수 목록(`deploy/required-env.sh`)에는
+넣지 않았다. 넣으면 값이 없을 때 배포 자체가 막힌다.
 
 **설정이 맞는지 확인하는 법**
 
+서버에 들어가지 않고 확인할 수 있다. 둘 다 **인증된 세션**으로 호출한다.
+
 ```
 GET /api/v1/ugc/shorts/render/availability
+GET /api/v1/capabilities
 ```
 
-`{ "available": true }` 면 정상이고, `false` 면 경로가 틀렸거나 실행 권한이 없다.
-배포 직후 한 번 호출해 보면 된다. **서버에 직접 들어가지 않고 확인할 수 있는 수단이다.**
+| 관측값 | 뜻 |
+|---|---|
+| `availability` 가 `{ "available": true }` | ffmpeg 경로·실행 권한 정상 |
+| `availability` 가 `available=false` | 경로가 틀렸거나 실행 권한이 없다. 렌더 불가 |
+| `capabilities` 에 `ugc/shorts/runs` 가 `enabled=true` | 화면에 쇼츠 메뉴가 뜬다 |
+| `capabilities` 에 `ugc/shorts/runs` 가 `enabled=false` | 메뉴가 숨겨진다. 원인은 위 `availability` 로 좁힌다 |
+
+**이 두 호출은 ffprobe 를 확인하지 못한다.** ffprobe 는 실행 생성 시점에만 쓰이므로
+아래 4.5.2 의 점검이나 8절 스모크 체크리스트로 따로 확인해야 한다.
 
 **선택 설정**
 
@@ -444,7 +466,47 @@ GET /api/v1/ugc/shorts/render/availability
 | `SHORTS_RENDER_CRF` | 20 | 낮을수록 고화질·큰 용량 |
 | `SHORTS_RENDER_PRESET` | medium | 느릴수록 압축률이 좋다 |
 
-`ffprobe` 는 지금 쓰지 않는다. 설치돼 있으므로 나중에 산출물 길이·해상도 검증에 쓸 수 있다.
+
+### 4.5.2 호스트 바이너리 — ffprobe (쇼츠 **실행 생성**에 필요)
+
+> 이전 문서는 "ffprobe 는 지금 쓰지 않는다"고 적었다. **더 이상 사실이 아니다.**
+> 지금은 실행 생성을 막는 하드 블로커다. 이 문장을 믿고 설치를 건너뛰면 쇼츠가 아예
+> 시작되지 않는다.
+
+쇼츠 실행을 만들 때 원본 영상의 **재생 길이를 잰다**. 바이트 크기로는 길이를 알 수 없어서
+(저화질 롱폼은 작고 길다) `ffprobe` 로 직접 측정한다. 길이 상한을 넘으면 실행을 만들기
+전에 거절하고, 그래야 사용자가 크레딧이 걸린 뒤에 실패를 보지 않는다.
+
+**fail-closed 다.** 프로브를 못 쓰거나 출력이 길이로 읽히지 않으면 통과시키지 않고 거절한다.
+"모르니 일단 진행"은 돈이 걸린 작업을 한참 뒤에 죽이는 선택이기 때문이다.
+
+| 상황 | 사용자에게 보이는 오류 코드 |
+|---|---|
+| ffprobe 부재·실행 불가·출력 파싱 실패 | `SHORTS_SOURCE_DURATION_UNKNOWN` |
+| 길이가 상한 초과 | `SHORTS_SOURCE_VIDEO_TOO_LONG` |
+
+**운영 전 점검 (서버에서, 비밀값을 출력하지 않는다)**
+
+```bash
+test -x /data/ffmpeg/bin/ffmpeg  && echo "ffmpeg OK"  || echo "ffmpeg MISSING"
+test -x /data/ffmpeg/bin/ffprobe && echo "ffprobe OK" || echo "ffprobe MISSING"
+/data/ffmpeg/bin/ffmpeg  -version | head -1
+/data/ffmpeg/bin/ffprobe -version | head -1
+```
+
+네 줄이 모두 정상 출력이어야 한다. `MISSING` 이 하나라도 나오면 위 표의 해당 증상이
+그대로 재현된다. `-version` 첫 줄만 찍는 이유는 배너 뒤에 붙는 빌드 경로·설정 문자열을
+로그에 남기지 않기 위해서다.
+
+**선택 설정**
+
+| 환경변수 | 기본값 | 용도 |
+|---|---|---|
+| `SHORTS_TRANSCRIBE_MAX_SOURCE_DURATION_MS` | 10800000 (3시간) | 이 길이를 넘는 원본은 실행 생성 단계에서 거절 |
+| `SHORTS_TRANSCRIBE_MAX_SOURCE_BYTES` | 2147483648 (2GiB) | 크기 상한. 길이 측정보다 먼저 걸린다 |
+| `SHORTS_TRANSCRIBE_PROBE_TIMEOUT_SECONDS` | 30 | 길이 측정 상한. 길면 실행 생성 API 가 같이 느려진다 |
+
+두 상한은 **우리가 정한 값**이지 외부 API 한도가 아니다.
 
 
 ### 4.6 Alibaba Cloud Model Studio — 현재 기본 AI 제공자
@@ -612,7 +674,56 @@ VITE_API_BASE_URL=/api/v1
 
 각 단계에서 기록할 것은 `서비스`, `앱/프로젝트 ID`, `발급일`, `소유 계정`, `운영/개발 구분`, `승인 상태`, `secret 저장 위치`, `등록 callback`, `신청 scope`다. 실제 secret 값은 기록표에 적지 않고 secret manager의 항목명만 적는다.
 
-## 9. 현재 소스 기준 운영 전 확인사항
+## 9. 유료 파일럿 스모크 체크리스트
+
+파일럿을 받기 전에 **한 건을 끝까지** 통과시켜 본다. 각 단계에 참/거짓으로 판정되는
+관측값이 하나씩 있고, 하나라도 거짓이면 그 자리에서 멈춘다.
+
+키 값은 어디에서도 출력하지 않는다. R2·OpenAI 등의 자격증명은 **기동 검증**이
+이미 확인한다(7절) — 값이 없거나 placeholder 면 서비스가 기동하지 않으므로, 서비스가
+떠 있다는 사실 자체가 그 확인을 대신한다. 값·길이·형태를 눈으로 볼 이유가 없다.
+
+**0. 사전 (서버)**
+
+| 확인 | 통과 |
+|---|---|
+| 4.5.2 의 `test -x` · `-version` 네 줄 | 전부 정상 출력 |
+| `GET /api/v1/ugc/shorts/render/availability` | `available=true` |
+| `GET /api/v1/capabilities` | `ugc/shorts/runs` 가 `enabled=true` |
+
+**1~6. 흐름 (화면에서, 인증된 사용자로)**
+
+| # | 액션 | 통과 관측값 | 실패 시 |
+|---|---|---|---|
+| 1 | 원본 확보 — 파일 업로드 **또는** URL 임포트 | 영상 목록에 새 항목이 뜨고 재생된다 | URL 임포트는 https + 지원 호스트만 받는다(4.5) |
+| 2 | 쇼츠 실행 생성 | 실행 상세 화면으로 이동하고 `runId` 가 생긴다 | 오류 코드가 원인을 특정한다 — 아래 표 참고 |
+| 3 | 훅 선택 대기 | 실행 상태가 `AWAITING_HOOK_SELECTION` | 이전 단계에서 멈췄다면 실행 상세의 단계별 오류를 본다 |
+| 4 | 훅 선택 | 실행이 다시 진행되고 결국 `AWAITING_SCHEDULE` | — |
+| 5 | 렌더 전 검수 → 렌더 시작 | 렌더 작업이 `QUEUED → RUNNING → COMPLETED` | `FAILED` 면 실행 상세에 사유가 남는다 |
+| 6 | 결과 다운로드 | mp4 파일이 실제로 내려받아지고 재생된다 | — |
+
+**2단계에서 생성이 거절될 때 오류 코드가 어디를 볼지 알려준다**
+
+| 코드 | 원인 |
+|---|---|
+| `SHORTS_SOURCE_VIDEO_TOO_LARGE` | 원본 크기 상한 초과 |
+| `SHORTS_SOURCE_DURATION_UNKNOWN` | **원본 길이를 측정하지 못함** — ffprobe 경로/실행, 원본 접근, 손상/메타데이터를 확인 |
+| `SHORTS_SOURCE_VIDEO_TOO_LONG` | 원본 길이 상한 초과 |
+| `SHORTS_INSUFFICIENT_CREDIT_FOR_RUN` | 완주에 필요한 크레딧보다 잔여가 적다 |
+
+`SHORTS_SOURCE_DURATION_UNKNOWN` 은 원인이 하나가 아니다. **먼저 4.5.2 의 바이너리 점검을
+돌리고, 그게 정상이면 그 원본을 화면에서 재생해 접근·재생이 되는지 확인한다.**
+
+**이 체크리스트가 증명하지 않는 것**
+
+- **플랫폼 자동 게시**를 확인하지 않는다. 이 흐름의 납품물은 mp4 파일이고, 플랫폼 게시는
+  별도 연동(3절)이며 심사 상태에 따라 불가할 수 있다.
+- **성과·조회수·전환율**을 확인하지 않는다. 이 흐름에는 그런 지표가 없다.
+- 한 건 통과가 **성공률**을 뜻하지 않는다. 동시 렌더 수·원본 길이에 따라 소요와 실패는
+  달라지며, 실측치는 실제 파일럿을 돌려야 생긴다.
+
+
+## 10. 현재 소스 기준 운영 전 확인사항
 
 다음 항목은 코드에 반영됐지만, 실제 판매 전 운영 환경과 외부 플랫폼에서 확인해야 한다.
 

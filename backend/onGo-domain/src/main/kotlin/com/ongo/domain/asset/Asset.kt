@@ -8,6 +8,8 @@ data class Asset(
     val filename: String,
     val originalFilename: String? = null,
     val fileUrl: String,
+    /** 우리 버킷의 정확한 객체 키. 탈퇴 정리의 유일한 근거다. */
+    val storageObjectKey: String? = null,
     val fileType: String,
     val fileSizeBytes: Long? = null,
     val mimeType: String? = null,

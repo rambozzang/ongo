@@ -16,6 +16,7 @@ import com.ongo.domain.user.UserRepository
 import com.ongo.domain.webhook.WebhookEventRepository
 import io.mockk.MockKAnnotations
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.just
@@ -84,6 +85,14 @@ class PortOnePaymentServiceCancelTest {
             objectMapper = ObjectMapper(),
             storeId = "store-test",
             channelKey = "channel-test",
+            // 취소·환불 경로는 준비 검사를 지나지 않지만 생성자에 필요하다.
+            readiness = PortOneReadiness(
+                storeId = "store-abc12345",
+                channelKey = "channel-abc12345",
+                apiSecret = "apisecret-abc12345",
+                webhookSecret = "webhook-abc12345",
+            ),
+            eventPublisher = mockk(relaxed = true),
         )
     }
 
