@@ -1006,7 +1006,75 @@
       "Search users, change roles, and manage user status",
       "Click a user to view details including videos, channels, and subscription info",
       "Adjust individual storage quotas or reset to plan defaults"
-    ]
+    ],
+    "shortsPilot": {
+      "title": "Shorts paid pilot",
+      "description": "Record pilot operations data and review revenue, external costs, and operator time.",
+      "tabs": {
+        "summary": "Summary",
+        "runs": "Runs"
+      },
+      "enroll": {
+        "title": "Enroll a run",
+        "runIdLabel": "Run ID",
+        "runIdPlaceholder": "Enter the run ID to enroll",
+        "submit": "Enroll in pilot",
+        "success": "The run was enrolled in the pilot.",
+        "alreadyEnrolled": "This run is already enrolled in the pilot.",
+        "failed": "The run could not be enrolled in the pilot."
+      },
+      "summary": {
+        "enrolledRunCount": "Enrolled runs",
+        "startedRunCount": "Started runs",
+        "deliveredRunCount": "Delivered runs",
+        "totalStageReruns": "Total stage reruns",
+        "totalRenderAttemptFailures": "Total render attempt failures",
+        "totalOperatorMinutes": "Operator time",
+        "totalRevenue": "Operator-reported revenue",
+        "totalExternalCost": "Operator-reported external cost",
+        "totalContribution": "Contribution (before labor costs)",
+        "contributionBasis": "Based on {count} runs with both revenue and cost recorded",
+        "leadTime": "Lead time",
+        "leadTimeBasis": "Based on {count} observed runs"
+      },
+      "table": {
+        "runId": "Run ID",
+        "createdAt": "Created at",
+        "leadTime": "Lead time",
+        "reruns": "Reruns",
+        "renderFailures": "Render failures",
+        "operatorMinutes": "Operator time",
+        "revenue": "Revenue",
+        "externalCost": "External cost",
+        "contribution": "Contribution",
+        "contributionPerHour": "Contribution per operator hour",
+        "actions": "Actions"
+      },
+      "log": {
+        "revenue": "Record revenue",
+        "externalCost": "Record external cost",
+        "operatorTime": "Record operator time",
+        "amountLabel": "Amount (KRW)",
+        "minutesLabel": "Time (minutes)",
+        "confirmTitle": "Confirm record",
+        "confirmBody": "Record this value in the pilot ledger?",
+        "irreversibleWarning": "Recorded values cannot be changed or deleted. Check the amount again.",
+        "submit": "Record",
+        "success": "The value was recorded.",
+        "failed": "The value could not be recorded."
+      },
+      "notRecorded": "Not recorded",
+      "noData": "No pilot data yet",
+      "noDataDescription": "Pilot operating metrics will appear here after you enroll a run.",
+      "limitations": {
+        "title": "Report limitations",
+        "PAYMENT_NOT_ATTRIBUTED": "This report alone cannot tell whether a payment amount is attributed to an individual run.",
+        "REPEAT_PURCHASE_NOT_MEASURED": "This report does not measure whether repeat purchases occurred or the revenue from them.",
+        "ACTUAL_INFRASTRUCTURE_COST_NOT_AVAILABLE": "Actual infrastructure costs cannot be verified in this report.",
+        "REVENUE_AND_COST_ARE_OPERATOR_REPORTED": "Revenue and external costs are values entered manually by an operator and are not reconciled with payment or billing systems.",
+        "LABOR_COST_NOT_INCLUDED_IN_CONTRIBUTION": "Contribution does not include operator labor costs, so it does not answer what the actual profit is."
+      }
+    }
   },
   "settings": {
     "confirmationTitle": "Confirm this action",

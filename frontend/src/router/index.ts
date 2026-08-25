@@ -419,6 +419,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/AdminView.vue'),
         meta: { breadcrumb: '관리자', requiresAdmin: true },
       },
+      {
+        path: 'admin/shorts-pilot',
+        name: 'admin-shorts-pilot',
+        component: () => import('@/views/admin/ShortsPilotView.vue'),
+        meta: { breadcrumb: '쇼츠 파일럿 측정', requiresAdmin: true },
+      },
     ],
   },
   {

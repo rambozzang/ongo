@@ -253,6 +253,17 @@ export function useNavigation() {
     ]
     if (isAdmin.value) {
       items.push({ to: '/admin', label: t('nav.admin'), icon: ShieldCheckIcon })
+      /*
+       * capabilityKey 를 명시한다. 생략하면 경로에서 'admin/shorts-pilot' 이 파생되는데
+       * 서버 능력 목록에 그런 키가 없어 메뉴가 조용히 사라진다. 이 화면은 admin 능력에
+       * 딸린 하위 화면이므로 같은 키를 쓴다.
+       */
+      items.push({
+        to: '/admin/shorts-pilot',
+        label: t('admin.shortsPilot.title'),
+        icon: ChartBarIcon,
+        capabilityKey: 'admin',
+      })
     }
     return visibleItems(items)
   })
