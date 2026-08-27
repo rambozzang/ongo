@@ -1,9 +1,12 @@
 package com.ongo.api.admin
 
+import com.ongo.application.ugc.shorts.ShortsPilotEntryUseCase
 import com.ongo.application.ugc.shorts.ShortsPilotFinanceUseCase
 import com.ongo.application.ugc.shorts.ShortsPilotOperatorTimeUseCase
 import com.ongo.application.ugc.shorts.ShortsPilotReportUseCase
+import com.ongo.application.ugc.shorts.dto.ShortsPilotEntryListResponse
 import com.ongo.application.ugc.shorts.dto.ShortsPilotReport
+import com.ongo.application.ugc.shorts.dto.ShortsPilotReversalResponse
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
 import io.swagger.v3.oas.annotations.Operation
@@ -44,6 +47,7 @@ class ShortsPilotMeasurementController(
     private val reportUseCase: ShortsPilotReportUseCase,
     private val operatorTimeUseCase: ShortsPilotOperatorTimeUseCase,
     private val financeUseCase: ShortsPilotFinanceUseCase,
+    private val entryUseCase: ShortsPilotEntryUseCase,
 ) {
 
     /**
@@ -108,6 +112,35 @@ class ShortsPilotMeasurementController(
         financeUseCase.logExternalCost(actorUserId = userId, runId = runId, amountKrw = request.amountKrw)
         return ResData.success(Unit)
     }
+
+    @Operation(
+        summary = "실행의 수기 기록 목록",
+        description = "이 실행에 운영자가 직접 입력한 매출·외부원가·투입시간 기록을 시간순으로 돌려준다. " +
+            "취소된 기록도 목록에는 남으며 isReversed=true 로 표시된다 — 무엇을 잘못 적었었는지가 " +
+            "사라지면 감사가 불가능하다. 취소된 기록은 보고서 합계에서만 빠진다. " +
+            "누가 입력했는지(actorId)는 응답에 담지 않는다.",
+    )
+    @GetMapping("/runs/{runId}/entries")
+    fun entries(
+        @PathVariable runId: Long,
+    ): ResponseEntity<ResData<ShortsPilotEntryListResponse>> =
+        ResData.success(entryUseCase.entries(runId))
+
+    @Operation(
+        summary = "수기 기록 취소(역분개)",
+        description = "잘못 입력한 기록 하나를 무효화한다. 원본 행은 지우거나 고치지 않고, 취소 사실을 " +
+            "새 행으로 남긴다. 보고서 합계에서만 원본이 빠진다. " +
+            "이미 취소된 기록도 성공(alreadyReversed=true)이다. " +
+            "매출·외부원가·투입시간 기록만 취소할 수 있으며, 취소 이벤트 자체나 자동 기록(재실행·렌더 실패)은 " +
+            "취소할 수 없다 — 자동 기록은 사람이 적은 값이 아니라 일어난 사실이다.",
+    )
+    @PostMapping("/runs/{runId}/entries/{entryId}/reversal")
+    fun reverseEntry(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable runId: Long,
+        @PathVariable entryId: Long,
+    ): ResponseEntity<ResData<ShortsPilotReversalResponse>> =
+        ResData.success(entryUseCase.reverse(actorUserId = userId, runId = runId, entryId = entryId))
 
     @Operation(
         summary = "운영자 투입 시간 기록",

@@ -12,6 +12,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.EVENT_TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.OPERATOR_MINUTES
+import com.ongo.infrastructure.persistence.jooq.Fields.REVERSES_EVENT_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.RUN_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.UGC_SHORTS_PILOT_EVENTS
 import org.jooq.DSLContext
@@ -31,6 +32,18 @@ class ShortsPilotEventJooqRepository(
     private val dsl: DSLContext,
 ) : ShortsPilotEventRepository {
 
+    /**
+     * 도메인 필드를 **빠짐없이** 저장한다.
+     *
+     * [REVERSES_EVENT_ID] 도 여기서 쓴다. 매퍼(`toEvent`)가 읽어 오는 필드를 저장 경로가
+     * 빠뜨리면 라운드트립에서 값이 조용히 사라져, 도메인과 영속 계약이 갈라진다.
+     *
+     * **이것이 역분개의 우회 경로가 되지는 않는다.** `ck_shorts_pilot_events_reverses` 가
+     * 참조를 `OPERATOR_ENTRY_REVERSED` 행에만 허용하고, `uq_shorts_pilot_events_reversal`
+     * 이 원본당 하나만 남긴다. 즉 이 경로로 취소를 넣으면 DB 가 거절한다 —
+     * [insertReversalIfAbsent] 가 주는 멱등(중복 시 조용히 0행)도 얻지 못한다.
+     * 역분개는 그 전용 경로로만 만든다.
+     */
     override fun save(event: ShortsPilotEvent): ShortsPilotEvent {
         val id = dsl.insertInto(UGC_SHORTS_PILOT_EVENTS)
             .set(RUN_ID, event.runId)
@@ -40,6 +53,7 @@ class ShortsPilotEventJooqRepository(
             .set(ATTEMPT_NO, event.attemptNo)
             .set(OPERATOR_MINUTES, event.operatorMinutes)
             .set(AMOUNT_KRW, event.amountKrw)
+            .set(REVERSES_EVENT_ID, event.reversesEventId)
             .set(CREATED_AT, LocalDateTime.ofInstant(event.createdAt, ZoneOffset.UTC))
             .returningResult(ID)
             .fetchOne()!!
@@ -72,6 +86,28 @@ class ShortsPilotEventJooqRepository(
             .set(CREATED_AT, LocalDateTime.ofInstant(event.createdAt, ZoneOffset.UTC))
             .onConflict(RUN_ID)
             .where(EVENT_TYPE.eq(ShortsPilotEventType.PILOT_ENROLLED.name))
+            .doNothing()
+            .execute() > 0
+
+    /**
+     * `INSERT ... ON CONFLICT (reverses_event_id) WHERE event_type = 'OPERATOR_ENTRY_REVERSED' DO NOTHING`.
+     *
+     * 판정자 조건은 `uq_shorts_pilot_events_reversal` 의 조건식을 그대로 옮긴 것이다.
+     * 부분 유니크 인덱스는 조건을 다시 적어야 PostgreSQL 이 충돌 판정자로 인식한다 —
+     * 빼면 `reverses_event_id` 만으로 걸 유니크 인덱스가 없어 실행 시점에 실패한다.
+     *
+     * 금액·시간은 넣지 않는다. 취소는 "이 기록을 빼라"는 지시일 뿐 새 값이 아니다.
+     */
+    override fun insertReversalIfAbsent(event: ShortsPilotEvent): Boolean =
+        dsl.insertInto(UGC_SHORTS_PILOT_EVENTS)
+            .set(RUN_ID, event.runId)
+            .set(EVENT_TYPE, ShortsPilotEventType.OPERATOR_ENTRY_REVERSED.name)
+            .set(ACTOR_TYPE, event.actorType.name)
+            .set(ACTOR_ID, event.actorId)
+            .set(REVERSES_EVENT_ID, event.reversesEventId)
+            .set(CREATED_AT, LocalDateTime.ofInstant(event.createdAt, ZoneOffset.UTC))
+            .onConflict(REVERSES_EVENT_ID)
+            .where(EVENT_TYPE.eq(ShortsPilotEventType.OPERATOR_ENTRY_REVERSED.name))
             .doNothing()
             .execute() > 0
 
@@ -117,6 +153,7 @@ class ShortsPilotEventJooqRepository(
         attemptNo = get(ATTEMPT_NO),
         operatorMinutes = get(OPERATOR_MINUTES),
         amountKrw = get(AMOUNT_KRW),
+        reversesEventId = get(REVERSES_EVENT_ID),
         createdAt = get(CREATED_AT).atZone(ZoneOffset.UTC).toInstant(),
     )
 }

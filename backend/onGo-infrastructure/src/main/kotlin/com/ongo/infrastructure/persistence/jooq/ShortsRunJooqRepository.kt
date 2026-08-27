@@ -27,6 +27,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.VERSION
 import com.ongo.infrastructure.persistence.jooq.Fields.WORKSPACE_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.UGC_SHORTS_PIPELINE_RUNS
+import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Record
 import org.jooq.impl.DSL
@@ -207,6 +208,36 @@ class ShortsRunJooqRepository(
 
     override fun countByWorkspace(workspaceId: Long): Long =
         dsl.fetchCount(UGC_SHORTS_PIPELINE_RUNS, WORKSPACE_ID.eq(workspaceId)).toLong()
+
+    /*
+     * 제외 조건을 목록·총수 두 질의가 **같은 함수로** 만든다. 한쪽만 고치면 총수와 실제
+     * 행 수가 어긋나 마지막 페이지가 비어 보인다.
+     *
+     * 빈 목록일 때 `ID.notIn(emptyList())` 를 쓰지 않는 이유: jOOQ 가 `id not in ()` 를
+     * 만들면 SQL 에서 참이 되지 않아 전 행이 사라지는 방언이 있다. 조건 자체를 빼는 편이
+     * 의도("제외할 것이 없다")와 정확히 같다.
+     */
+    private fun excludingCondition(excludedIds: Collection<Long>): Condition =
+        if (excludedIds.isEmpty()) DSL.noCondition() else ID.notIn(excludedIds)
+
+    override fun findRecentExcluding(
+        excludedIds: Collection<Long>,
+        offset: Int,
+        limit: Int,
+    ): List<PipelineRun> =
+        dsl.select()
+            .from(UGC_SHORTS_PIPELINE_RUNS)
+            .where(excludingCondition(excludedIds))
+            // 정렬에 ID 를 덧붙인다. created_at 이 같은 행이 있으면 순서가 페이지마다
+            // 달라져 같은 실행이 두 페이지에 보이거나 아예 빠진다.
+            .orderBy(CREATED_AT.desc(), ID.desc())
+            .offset(maxOf(offset, 0))
+            .limit(limit.coerceIn(1, 200))
+            .fetch()
+            .map { it.toPipelineRun() }
+
+    override fun countRecentExcluding(excludedIds: Collection<Long>): Long =
+        dsl.fetchCount(UGC_SHORTS_PIPELINE_RUNS, excludingCondition(excludedIds)).toLong()
 
     override fun delete(id: Long): Boolean =
         dsl.deleteFrom(UGC_SHORTS_PIPELINE_RUNS)

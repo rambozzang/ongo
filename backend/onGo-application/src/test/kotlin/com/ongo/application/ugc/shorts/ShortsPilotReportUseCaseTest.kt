@@ -2,6 +2,8 @@ package com.ongo.application.ugc.shorts
 
 import com.ongo.application.ugc.shorts.dto.ShortsPilotLimitation
 import com.ongo.application.ugc.shorts.dto.ShortsPilotReportState
+import com.ongo.application.ugc.shorts.dto.ShortsPilotReportSummary
+import com.ongo.application.ugc.shorts.dto.ShortsPilotRunRow
 import com.ongo.domain.ugc.shorts.PipelineRun
 import com.ongo.domain.ugc.shorts.PipelineRunRepository
 import com.ongo.domain.ugc.shorts.ShortsPilotActorType
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import java.time.Instant
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -38,10 +41,15 @@ class ShortsPilotReportUseCaseTest {
 
     private val t0 = Instant.parse("2026-08-01T00:00:00Z")
 
-    private fun run(id: Long, startedAt: Instant? = null, deliveredAt: Instant? = null) = PipelineRun(
+    private fun run(
+        id: Long,
+        startedAt: Instant? = null,
+        deliveredAt: Instant? = null,
+        userId: Long = 3L,
+    ) = PipelineRun(
         id = id,
         workspaceId = 5L,
-        userId = 3L,
+        userId = userId,
         sourceVideoId = 99L,
         createdAt = t0,
         startedAt = startedAt,
@@ -53,12 +61,23 @@ class ShortsPilotReportUseCaseTest {
         type: ShortsPilotEventType,
         minutes: Int? = null,
         amountKrw: Long? = null,
+        id: Long = 0,
     ) = ShortsPilotEvent(
+        id = id,
         runId = runId,
         eventType = type,
         actorType = ShortsPilotActorType.SYSTEM,
         operatorMinutes = minutes,
         amountKrw = amountKrw,
+    )
+
+    /** 원본 하나를 무효화하는 취소 행. 원본은 지우지 않는다. */
+    private fun reversal(runId: Long, target: Long, id: Long = 0) = ShortsPilotEvent(
+        id = id,
+        runId = runId,
+        eventType = ShortsPilotEventType.OPERATOR_ENTRY_REVERSED,
+        actorType = ShortsPilotActorType.ADMIN,
+        reversesEventId = target,
     )
 
     // ---- 단위경제: 운영자가 확인한 매출·외부원가 ----
@@ -315,5 +334,249 @@ class ShortsPilotReportUseCaseTest {
 
         assertEquals(listOf(1L), report.runs.map { it.runId })
         assertEquals(1, assertNotNull(report.summary).enrolledRunCount)
+    }
+
+    /* ---- 표본 왜곡: 실행 수와 고객 수는 다른 것이다 ---- */
+
+    /**
+     * 실행 10건이 고객 1명에게서 나온 표본과 10명에게서 나온 표본은 단위경제 근거로서
+     * 값이 전혀 다른데, 지금까지 응답으로는 구분되지 않았다.
+     */
+    @Test
+    fun `같은 고객의 실행 2건은 고객 1명 반복 1명으로 세고 두 행 모두 반복으로 표시한다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L, 2L)
+        every { pilotEventRepository.findByRunIds(any()) } returns emptyList()
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(
+            run(1L, userId = 3L),
+            run(2L, userId = 3L),
+        )
+
+        val report = useCase.report()
+        val summary = assertNotNull(report.summary)
+
+        assertEquals(2, summary.enrolledRunCount)
+        assertEquals(1, summary.enrolledCustomerCount)
+        assertEquals(1, summary.repeatCustomerCount)
+        assertTrue(report.runs.all { it.isRepeatCustomer }, "두 행 모두 반복 고객이어야 한다")
+    }
+
+    @Test
+    fun `서로 다른 고객의 실행 2건은 고객 2명 반복 0명이고 두 행 모두 반복이 아니다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L, 2L)
+        every { pilotEventRepository.findByRunIds(any()) } returns emptyList()
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(
+            run(1L, userId = 3L),
+            run(2L, userId = 4L),
+        )
+
+        val report = useCase.report()
+        val summary = assertNotNull(report.summary)
+
+        assertEquals(2, summary.enrolledRunCount)
+        assertEquals(2, summary.enrolledCustomerCount)
+        assertEquals(0, summary.repeatCustomerCount)
+        assertTrue(report.runs.none { it.isRepeatCustomer }, "반복 고객이 없어야 한다")
+    }
+
+    /**
+     * 실행 행이 사라진 등록을 세면 반복 고객 수가 실제보다 커진다. 없는 실행으로는 그
+     * 고객이 몇 번 썼는지 판정할 수 없다.
+     */
+    @Test
+    fun `실행 행이 없는 등록은 고객 수와 반복 수에서 제외한다`() {
+        // 2L 은 등록돼 있지만 실행 행이 없다. 남은 것은 고객 3L 의 실행 1건뿐이다.
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L, 2L)
+        every { pilotEventRepository.findByRunIds(any()) } returns emptyList()
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(run(1L, userId = 3L))
+
+        val report = useCase.report()
+        val summary = assertNotNull(report.summary)
+
+        assertEquals(1, summary.enrolledCustomerCount)
+        assertEquals(0, summary.repeatCustomerCount)
+        assertFalse(report.runs.single().isRepeatCustomer)
+    }
+
+    /** 고객이 셋 이상 섞여도 반복 판정이 고객별로 나뉘어야 한다. */
+    @Test
+    fun `반복 고객과 단발 고객이 섞이면 행마다 다르게 표시한다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L, 2L, 3L)
+        every { pilotEventRepository.findByRunIds(any()) } returns emptyList()
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(
+            run(1L, userId = 3L),
+            run(2L, userId = 3L),
+            run(3L, userId = 9L),
+        )
+
+        val report = useCase.report()
+        val summary = assertNotNull(report.summary)
+
+        assertEquals(2, summary.enrolledCustomerCount)
+        assertEquals(1, summary.repeatCustomerCount)
+        assertEquals(
+            mapOf(1L to true, 2L to true, 3L to false),
+            report.runs.associate { it.runId to it.isRepeatCustomer },
+        )
+    }
+
+    /**
+     * 고객 축을 더하면서 조회가 늘면 목록 화면에서 조용히 자란다. 이 값들은 이미 읽어 온
+     * runsById 로만 계산해야 한다.
+     */
+    @Test
+    fun `고객 집계를 더해도 조회 횟수는 그대로다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L, 2L)
+        every { pilotEventRepository.findByRunIds(any()) } returns emptyList()
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(
+            run(1L, userId = 3L),
+            run(2L, userId = 3L),
+        )
+
+        useCase.report()
+
+        verify(exactly = 1) { pilotEventRepository.findEnrolledRunIds() }
+        verify(exactly = 1) { pilotEventRepository.findByRunIds(listOf(1L, 2L)) }
+        verify(exactly = 1) { pipelineRunRepository.findByIds(listOf(1L, 2L)) }
+        verify(exactly = 0) { pipelineRunRepository.findById(any()) }
+    }
+
+    /* ---- 역분개: 취소된 수기 기록은 합계에서 빠진다 ---- */
+
+    /**
+     * 오입력을 되돌리는 유일한 경로다. 원본 행은 남아 있고 **합계에서만** 빠져야 한다.
+     */
+    @Test
+    fun `취소된 매출은 합계에서 빠진다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L)
+        every { pilotEventRepository.findByRunIds(any()) } returns listOf(
+            // 3,000,000 을 잘못 넣고 취소한 뒤 300,000 을 다시 넣었다.
+            event(1L, ShortsPilotEventType.OPERATOR_REVENUE_LOGGED, amountKrw = 3_000_000, id = 11L),
+            reversal(1L, target = 11L, id = 12L),
+            event(1L, ShortsPilotEventType.OPERATOR_REVENUE_LOGGED, amountKrw = 300_000, id = 13L),
+            event(1L, ShortsPilotEventType.OPERATOR_EXTERNAL_COST_LOGGED, amountKrw = 50_000, id = 14L),
+        )
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(run(1L))
+
+        val row = useCase.report().runs.single()
+
+        assertEquals(300_000L, row.operatorReportedRevenueKrw)
+        assertEquals(50_000L, row.operatorReportedExternalCostKrw)
+        assertEquals(250_000L, row.contributionExcludingExternalCostKrw)
+    }
+
+    @Test
+    fun `취소된 투입 시간은 합계에서 빠진다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L)
+        every { pilotEventRepository.findByRunIds(any()) } returns listOf(
+            event(1L, ShortsPilotEventType.OPERATOR_TIME_LOGGED, minutes = 600, id = 21L),
+            reversal(1L, target = 21L, id = 22L),
+            event(1L, ShortsPilotEventType.OPERATOR_TIME_LOGGED, minutes = 60, id = 23L),
+        )
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(run(1L))
+
+        assertEquals(60, useCase.report().runs.single().operatorMinutes)
+    }
+
+    /**
+     * 하나뿐인 기록을 취소하면 0 이 아니라 **미기록**으로 돌아가야 한다. 0 으로 내리면
+     * "무상 제공"이나 "원가 0"으로 읽힌다 — 이 모듈이 일관되게 피해 온 오독이다.
+     */
+    @Test
+    fun `유일한 기록을 취소하면 0 이 아니라 미기록이 된다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L)
+        every { pilotEventRepository.findByRunIds(any()) } returns listOf(
+            event(1L, ShortsPilotEventType.OPERATOR_REVENUE_LOGGED, amountKrw = 300_000, id = 31L),
+            reversal(1L, target = 31L, id = 32L),
+        )
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(run(1L))
+
+        val row = useCase.report().runs.single()
+
+        assertNull(row.operatorReportedRevenueKrw)
+        assertNull(row.contributionExcludingExternalCostKrw)
+    }
+
+    /** 취소는 대상 실행에만 미쳐야 한다. 다른 실행 합계가 흔들리면 원장을 믿을 수 없다. */
+    @Test
+    fun `취소는 다른 실행의 합계를 바꾸지 않는다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L, 2L)
+        every { pilotEventRepository.findByRunIds(any()) } returns listOf(
+            event(1L, ShortsPilotEventType.OPERATOR_REVENUE_LOGGED, amountKrw = 300_000, id = 41L),
+            reversal(1L, target = 41L, id = 42L),
+            // 실행 2 는 id 만 다를 뿐 같은 금액이다. 취소가 id 로만 걸리는지 본다.
+            event(2L, ShortsPilotEventType.OPERATOR_REVENUE_LOGGED, amountKrw = 300_000, id = 43L),
+        )
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(run(1L), run(2L))
+
+        val byRun = useCase.report().runs.associateBy { it.runId }
+
+        assertNull(byRun.getValue(1L).operatorReportedRevenueKrw)
+        assertEquals(300_000L, byRun.getValue(2L).operatorReportedRevenueKrw)
+    }
+
+    /** 자동 이벤트는 취소 대상이 아니므로 취소 행이 있어도 회차가 줄면 안 된다. */
+    @Test
+    fun `취소 행이 있어도 자동 이벤트 집계는 그대로다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L)
+        every { pilotEventRepository.findByRunIds(any()) } returns listOf(
+            event(1L, ShortsPilotEventType.STAGE_RERUN, id = 51L),
+            event(1L, ShortsPilotEventType.RENDER_ATTEMPT_FAILED, id = 52L),
+            event(1L, ShortsPilotEventType.OPERATOR_REVENUE_LOGGED, amountKrw = 300_000, id = 53L),
+            reversal(1L, target = 53L, id = 54L),
+        )
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(run(1L))
+
+        val row = useCase.report().runs.single()
+
+        assertEquals(1, row.stageRerunCount)
+        assertEquals(1, row.renderAttemptFailureCount)
+    }
+
+    /** 취소를 더해도 조회는 늘지 않아야 한다. 이미 가져온 이벤트로만 판정한다. */
+    @Test
+    fun `역분개 처리가 조회를 늘리지 않는다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L)
+        every { pilotEventRepository.findByRunIds(any()) } returns listOf(
+            event(1L, ShortsPilotEventType.OPERATOR_REVENUE_LOGGED, amountKrw = 300_000, id = 61L),
+            reversal(1L, target = 61L, id = 62L),
+        )
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(run(1L))
+
+        useCase.report()
+
+        verify(exactly = 1) { pilotEventRepository.findEnrolledRunIds() }
+        verify(exactly = 1) { pilotEventRepository.findByRunIds(listOf(1L)) }
+        verify(exactly = 1) { pipelineRunRepository.findByIds(listOf(1L)) }
+        verify(exactly = 0) { pilotEventRepository.findByRunId(any()) }
+    }
+
+    /** 한계 문구는 역분개와 무관하다. 정정 수단이 생겨도 수기 입력이라는 사실은 그대로다. */
+    @Test
+    fun `역분개가 있어도 한계 목록은 그대로다`() {
+        every { pilotEventRepository.findEnrolledRunIds() } returns listOf(1L)
+        every { pilotEventRepository.findByRunIds(any()) } returns listOf(
+            event(1L, ShortsPilotEventType.OPERATOR_REVENUE_LOGGED, amountKrw = 300_000, id = 71L),
+            reversal(1L, target = 71L, id = 72L),
+        )
+        every { pipelineRunRepository.findByIds(any()) } returns listOf(run(1L))
+
+        assertTrue(
+            ShortsPilotLimitation.REVENUE_AND_COST_ARE_OPERATOR_REPORTED in useCase.report().limitations,
+        )
+    }
+
+    /**
+     * 응답 어디에도 식별자가 실리면 안 된다. 반복 여부는 참·거짓 하나이며, 그것만으로는
+     * 어느 실행들이 같은 고객인지 되짚을 수 없어야 한다.
+     */
+    @Test
+    fun `응답 DTO 에 고객 식별자 필드가 없다`() {
+        val rowFields = ShortsPilotRunRow::class.members.map { it.name }.toSet()
+        val summaryFields = ShortsPilotReportSummary::class.members.map { it.name }.toSet()
+
+        for (forbidden in listOf("userId", "customerId", "email", "workspaceId")) {
+            assertFalse(forbidden in rowFields, "행에 식별자가 새어 나왔다: $forbidden")
+            assertFalse(forbidden in summaryFields, "요약에 식별자가 새어 나왔다: $forbidden")
+        }
     }
 }

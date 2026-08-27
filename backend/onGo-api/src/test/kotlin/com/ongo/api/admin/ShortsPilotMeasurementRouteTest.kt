@@ -46,15 +46,48 @@ class ShortsPilotMeasurementRouteTest {
     }
 
     @Test
-    fun `보고 조회와 운영자 입력 세 경로만 연다`() {
+    fun `승인된 경로 외에는 열지 않는다`() {
         // 결제 연결·고객 조회는 이 표면에 없다. 곁다리로 열리면 권한 검토 없이 넓어진다.
+        // entries/reverseEntry 는 수기 기록의 열람과 역분개를 위해 이번에 더했다.
         val routes = controller.declaredFunctions
             .filter { fn -> fn.annotations.any { it.annotationClass.simpleName?.endsWith("Mapping") == true } }
 
         assertEquals(
-            setOf("report", "logOperatorTime", "logRevenue", "logExternalCost"),
+            setOf("report", "logOperatorTime", "logRevenue", "logExternalCost", "entries", "reverseEntry"),
             routes.map { it.name }.toSet(),
             "예상하지 못한 라우트가 있다: ${routes.map { it.name }}",
+        )
+    }
+
+    /** 기록 열람은 읽기다. GET 이 아니면 새로고침이 쓰기로 오해될 여지가 생긴다. */
+    @Test
+    fun `기록 열람은 GET 이고 취소는 POST 다`() {
+        val entries = controller.declaredFunctions.single { it.name == "entries" }
+        val reverse = controller.declaredFunctions.single { it.name == "reverseEntry" }
+
+        assertTrue(
+            entries.annotations.any { it.annotationClass.simpleName == "GetMapping" },
+            "기록 열람이 GET 이 아니다",
+        )
+        assertTrue(
+            reverse.annotations.any { it.annotationClass.simpleName == "PostMapping" },
+            "취소가 POST 가 아니다",
+        )
+    }
+
+    /**
+     * 취소는 요청 본문을 받지 않는다. 사유·메모 같은 자유 텍스트가 들어오면 저작물과
+     * 발화 내용이 측정 테이블로 새고, 계정 삭제 시 지울 대상만 늘어난다.
+     */
+    @Test
+    fun `취소 요청은 본문을 받지 않는다`() {
+        val reverse = controller.declaredFunctions.single { it.name == "reverseEntry" }
+
+        assertTrue(
+            reverse.parameters.none { param ->
+                param.annotations.any { it.annotationClass.simpleName == "RequestBody" }
+            },
+            "취소 경로에 요청 본문이 생겼다: ${reverse.parameters.map { it.name }}",
         )
     }
 

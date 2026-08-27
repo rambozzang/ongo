@@ -399,7 +399,14 @@ class PortOnePaymentService(
                 billingCycle = cycle,
                 currentPeriodStart = now,
                 currentPeriodEnd = end,
-                nextBillingDate = null,
+                /*
+                 * 다음 청구일은 이번 주기의 끝이다.
+                 *
+                 * 예전에는 null 이었다. findDueForBilling 이 `next_billing_date <= now` 로
+                 * 거르므로 null 은 영원히 걸리지 않고, 결제한 고객이 한 번 내고 유료 플랜을
+                 * 계속 쓰게 된다. 갱신 스케줄러가 이 값을 보고 주기를 판정한다.
+                 */
+                nextBillingDate = end,
                 pendingPlanType = null,
                 storageQuotaLimitBytes = plan.storageBytes,
                 paddleSubscriptionId = null,

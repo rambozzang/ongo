@@ -57,13 +57,40 @@ class ShortsPilotReportUseCase(
         val eventsByRun = pilotEventRepository.findByRunIds(enrolledRunIds).groupBy { it.runId }
         val runsById = pipelineRunRepository.findByIds(enrolledRunIds).associateBy { it.id }
 
+        /*
+         * 고객 축은 **이미 읽어 온 runsById 로만** 만든다. 조회를 더하지 않는다.
+         *
+         * 실행 행이 사라진 등록은 빼고 센다. 없는 실행으로는 그 고객이 몇 번 썼는지
+         * 판정할 수 없고, 포함하면 반복 고객 수가 실제보다 커진다.
+         *
+         * userId 는 여기서 세는 데만 쓰고 응답에는 넣지 않는다. 나가는 것은 개수와
+         * 참·거짓뿐이다.
+         */
+        val runCountByCustomer = enrolledRunIds
+            .mapNotNull { runsById[it] }
+            .groupingBy { it.userId }
+            .eachCount()
+        val repeatCustomerIds = runCountByCustomer.filterValues { it >= REPEAT_THRESHOLD }.keys
+
         val rows = enrolledRunIds.mapNotNull { runId ->
             // 등록 이벤트는 있는데 실행 행이 사라진 경우(삭제 등). 없는 것을 지어내지 않는다.
             val run = runsById[runId] ?: return@mapNotNull null
             val events = eventsByRun[runId].orEmpty()
+            /*
+             * 취소된 수기 기록을 뺀 목록. 저장소에서 지우는 게 아니라 **집계에서만**
+             * 제외한다 — 원본 행은 그대로 남아 무엇을 잘못 적었었는지 확인할 수 있다.
+             *
+             * 이미 가져온 events 로만 계산하므로 조회가 늘지 않는다. 취소 행은 원본과
+             * 같은 run 에 달리므로 이 목록 안에 함께 들어 있다.
+             *
+             * 자동 이벤트(재실행·렌더 실패)는 raw events 로 센다. 사람이 적은 값이
+             * 아니라 일어난 사실이고, 취소 대상도 아니다.
+             */
+            val effectiveEvents = events.withoutReversedEntries()
 
             ShortsPilotRunRow(
                 runId = runId,
+                isRepeatCustomer = run.userId in repeatCustomerIds,
                 createdAt = run.createdAt,
                 startedAt = run.startedAt,
                 deliveredAt = run.deliveredAt,
@@ -72,18 +99,23 @@ class ShortsPilotReportUseCase(
                 stageRerunCount = events.count { it.eventType == ShortsPilotEventType.STAGE_RERUN },
                 renderAttemptFailureCount =
                     events.count { it.eventType == ShortsPilotEventType.RENDER_ATTEMPT_FAILED },
-                operatorMinutes = operatorMinutes(events),
-                operatorReportedRevenueKrw = amountSum(events, ShortsPilotEventType.OPERATOR_REVENUE_LOGGED),
+                operatorMinutes = operatorMinutes(effectiveEvents),
+                operatorReportedRevenueKrw =
+                    amountSum(effectiveEvents, ShortsPilotEventType.OPERATOR_REVENUE_LOGGED),
                 operatorReportedExternalCostKrw =
-                    amountSum(events, ShortsPilotEventType.OPERATOR_EXTERNAL_COST_LOGGED),
-                contributionExcludingExternalCostKrw = contribution(events),
-                contributionPerOperatorHourKrw = contributionPerHour(events),
+                    amountSum(effectiveEvents, ShortsPilotEventType.OPERATOR_EXTERNAL_COST_LOGGED),
+                contributionExcludingExternalCostKrw = contribution(effectiveEvents),
+                contributionPerOperatorHourKrw = contributionPerHour(effectiveEvents),
             )
         }
 
         return ShortsPilotReport(
             state = ShortsPilotReportState.OK,
-            summary = summarize(rows),
+            summary = summarize(
+                rows = rows,
+                enrolledCustomerCount = runCountByCustomer.size,
+                repeatCustomerCount = repeatCustomerIds.size,
+            ),
             runs = rows,
             limitations = LIMITATIONS,
         )
@@ -140,13 +172,19 @@ class ShortsPilotReportUseCase(
         return contribution * 60 / minutes
     }
 
-    private fun summarize(rows: List<ShortsPilotRunRow>): ShortsPilotReportSummary {
+    private fun summarize(
+        rows: List<ShortsPilotRunRow>,
+        enrolledCustomerCount: Int,
+        repeatCustomerCount: Int,
+    ): ShortsPilotReportSummary {
         val observedLeadTimes = rows.mapNotNull { it.leadTimeMs }
         val loggedMinutes = rows.mapNotNull { it.operatorMinutes }
         val observedContributions = rows.mapNotNull { it.contributionExcludingExternalCostKrw }
 
         return ShortsPilotReportSummary(
             enrolledRunCount = rows.size,
+            enrolledCustomerCount = enrolledCustomerCount,
+            repeatCustomerCount = repeatCustomerCount,
             startedRunCount = rows.count { it.startedAt != null },
             deliveredRunCount = rows.count { it.deliveredAt != null },
             totalStageReruns = rows.sumOf { it.stageRerunCount },
@@ -174,6 +212,9 @@ class ShortsPilotReportUseCase(
     }
 
     private companion object {
+        /** 이 수 이상 등록된 고객을 "반복"으로 본다. 두 번째 실행이 재사용의 첫 증거다. */
+        const val REPEAT_THRESHOLD = 2
+
         /** 등록이 있든 없든 같은 목록을 낸다 — 모르는 것은 데이터 양과 무관하다. */
         val LIMITATIONS = listOf(
             ShortsPilotLimitation.PAYMENT_NOT_ATTRIBUTED,

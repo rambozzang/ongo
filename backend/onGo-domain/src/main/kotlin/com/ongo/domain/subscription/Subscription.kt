@@ -16,6 +16,13 @@ data class Subscription(
     val currentPeriodEnd: LocalDateTime? = null,
     val nextBillingDate: LocalDateTime? = null,
     val pendingPlanType: PlanType? = null,
+    /**
+     * PortOne 빌링키(AES-256 암호화). 없으면 정기 청구를 시도할 수 없다.
+     *
+     * 응답 DTO·로그에 절대 싣지 않는다 — 이 값 하나로 고객에게 반복 청구가 가능해
+     * 유출 시 피해가 액세스 토큰보다 크다.
+     */
+    val billingKeyEncrypted: String? = null,
     val storageQuotaLimitBytes: Long? = null,
     val paddleSubscriptionId: String? = null,
     val paddleCustomerId: String? = null,

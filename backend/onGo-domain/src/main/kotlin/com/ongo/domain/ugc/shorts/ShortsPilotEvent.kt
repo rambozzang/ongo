@@ -40,6 +40,12 @@ data class ShortsPilotEvent(
      * 값이 붙으면 합계가 조용히 부풀어 오르므로 DB CHECK 도 같은 제약을 건다.
      */
     val amountKrw: Long? = null,
+    /**
+     * [ShortsPilotEventType.OPERATOR_ENTRY_REVERSED] 가 무효화하는 원본 이벤트 id. 그 외에는 null.
+     *
+     * 원본은 지우지 않는다. 무엇을 잘못 적었었는지가 남아야 감사가 가능하다.
+     */
+    val reversesEventId: Long? = null,
     val createdAt: Instant = Instant.now(),
 )
 
@@ -76,7 +82,27 @@ enum class ShortsPilotEventType {
      * 리포트에서도 기여이익과 시간을 분리해 보여준다.
      */
     OPERATOR_EXTERNAL_COST_LOGGED,
+
+    /**
+     * 운영자가 앞서 적은 수기 기록 하나를 무효화했다.
+     *
+     * 원본을 지우거나 고치지 않는다. 이 행이 [ShortsPilotEvent.reversesEventId] 로 원본을
+     * 가리키고, 보고서가 합계에서만 원본을 뺀다. 오입력을 되돌리는 유일한 경로이며,
+     * 음수 금액을 일반 입력으로 허용하는 것보다 안전하다 — 음수를 열면 합계를 임의로
+     * 조작할 수 있고 그 원장으로는 단위경제를 주장할 수 없다.
+     *
+     * 취소 대상은 운영자 수기 3종뿐이다. 자동 이벤트(재실행·렌더 실패)는 사람이 적은
+     * 값이 아니라 일어난 사실이라 취소할 대상이 아니다.
+     */
+    OPERATOR_ENTRY_REVERSED,
 }
+
+/** 취소할 수 있는 수기 기록 3종. 자동 이벤트는 여기 없다. */
+val REVERSIBLE_PILOT_EVENT_TYPES = setOf(
+    ShortsPilotEventType.OPERATOR_REVENUE_LOGGED,
+    ShortsPilotEventType.OPERATOR_EXTERNAL_COST_LOGGED,
+    ShortsPilotEventType.OPERATOR_TIME_LOGGED,
+)
 
 enum class ShortsPilotActorType {
     ADMIN,
@@ -119,6 +145,18 @@ interface ShortsPilotEventRepository {
      * 등록 여부의 근거는 [insertEnrollmentIfAbsent] 가 만든 `PILOT_ENROLLED` 행 하나뿐이다.
      * 다른 곳에 코호트 목록을 따로 두면 두 진실이 갈라진다.
      */
+    /**
+     * 수기 기록 하나를 무효화하는 취소 행을 **단일 SQL 로** 만든다.
+     *
+     * 조회 후 삽입은 동시 요청 둘이 모두 "아직 취소 안 됨"을 보고 통과한다. 그러면 같은
+     * 원본에 취소 행이 두 개 생겨 감사 추적에 설명할 수 없는 중복이 남는다. 부분 유니크
+     * 인덱스를 판정자로 삼아 검사와 삽입을 한 문장에 둔다.
+     *
+     * @return 이번 호출이 행을 만들었으면 true. 이미 취소돼 있어 아무것도 하지 않았으면
+     *   false. **충돌은 예외가 아니다** — 호출자는 false 를 정상 응답으로 다룬다.
+     */
+    fun insertReversalIfAbsent(event: ShortsPilotEvent): Boolean
+
     fun findEnrolledRunIds(): List<Long>
 
     /**

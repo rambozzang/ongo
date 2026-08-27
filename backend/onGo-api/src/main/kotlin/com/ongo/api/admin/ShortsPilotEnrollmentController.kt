@@ -1,6 +1,8 @@
 package com.ongo.api.admin
 
+import com.ongo.application.ugc.shorts.ShortsPilotCandidateUseCase
 import com.ongo.application.ugc.shorts.ShortsPilotEnrollmentUseCase
+import com.ongo.application.ugc.shorts.dto.ShortsPilotCandidatePage
 import com.ongo.common.ResData
 import com.ongo.common.annotation.CurrentUser
 import io.swagger.v3.oas.annotations.Operation
@@ -8,9 +10,11 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -34,7 +38,21 @@ import org.springframework.web.bind.annotation.RestController
 @PreAuthorize("hasRole('ADMIN')")
 class ShortsPilotEnrollmentController(
     private val enrollmentUseCase: ShortsPilotEnrollmentUseCase,
+    private val candidateUseCase: ShortsPilotCandidateUseCase,
 ) {
+
+    @Operation(
+        summary = "파일럿 미등록 실행 후보 조회",
+        description = "아직 코호트에 없는 최근 실행을 최신순으로 돌려준다. 이미 등록된 실행은 " +
+            "서버에서 제외하므로 목록에 나타나지 않는다. 응답에는 runId·상태·생성 시각·원본 제목만 " +
+            "담기며 고객 정보·영상 URL·자막은 포함하지 않는다. 제목은 영상이 지워졌거나 비어 있으면 null 이다.",
+    )
+    @GetMapping("/runs/candidates")
+    fun candidates(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ResponseEntity<ResData<ShortsPilotCandidatePage>> =
+        ResData.success(candidateUseCase.candidates(page = page, size = size))
 
     data class EnrollmentResponse(
         val runId: Long,

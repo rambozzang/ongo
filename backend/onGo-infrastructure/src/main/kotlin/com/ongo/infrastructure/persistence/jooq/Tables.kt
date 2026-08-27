@@ -54,6 +54,7 @@ object Tables {
     val AI_CREDIT_TRANSACTIONS = DSL.table("ai_credit_transactions")
     val AI_PURCHASED_CREDITS = DSL.table("ai_purchased_credits")
     val SUBSCRIPTIONS = DSL.table("subscriptions")
+    val SUBSCRIPTION_RENEWAL_ATTEMPTS = DSL.table("subscription_renewal_attempts")
     val PAYMENTS = DSL.table("payments")
     val NOTIFICATIONS = DSL.table("notifications")
     val USER_SETTINGS = DSL.table("user_settings")
@@ -911,6 +912,9 @@ object Fields {
     val APPLIED_AT = DSL.field("applied_at", java.time.LocalDateTime::class.java)
     val DISCOUNT_AMOUNT = DSL.field("discount_amount", Int::class.java)
     val SUBSCRIPTION_ID = DSL.field("subscription_id", Long::class.java)
+    val BILLING_KEY_ENCRYPTED = DSL.field("billing_key_encrypted", String::class.java)
+    val PERIOD_START = DSL.field("period_start", java.time.LocalDateTime::class.java)
+    val OUTCOME = DSL.field("outcome", String::class.java)
 
     // usage_alert_configs
     val THRESHOLD_PERCENT = DSL.field("threshold_percent", Int::class.java)
@@ -1054,6 +1058,7 @@ object Fields {
     val ATTEMPT_NO = DSL.field("attempt_no", Int::class.java)
     val OPERATOR_MINUTES = DSL.field("operator_minutes", Int::class.java)
     val AMOUNT_KRW = DSL.field("amount_krw", Long::class.java)
+    val REVERSES_EVENT_ID = DSL.field("reverses_event_id", Long::class.java)
     val DELIVERED_AT = DSL.field("delivered_at", java.time.LocalDateTime::class.java)
     val DETAIL = DSL.field("detail", String::class.java)
 

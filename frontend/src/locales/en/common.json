@@ -1023,8 +1023,22 @@
         "alreadyEnrolled": "This run is already enrolled in the pilot.",
         "failed": "The run could not be enrolled in the pilot."
       },
+      "candidates": {
+        "title": "Pick a run to enroll",
+        "description": "Recent runs that are not enrolled in the pilot yet. Runs you already enrolled do not appear here.",
+        "sourceVideoTitle": "Source video",
+        "status": "Status",
+        "untitled": "Untitled",
+        "empty": "No runs available to enroll",
+        "emptyDescription": "There are no recent runs, or you already enrolled all of them in the pilot.",
+        "loadFailed": "The candidate list could not be loaded.",
+        "pageInfo": "{from}–{to} of {total}"
+      },
       "summary": {
         "enrolledRunCount": "Enrolled runs",
+        "enrolledCustomerCount": "Unique customers",
+        "repeatCustomerCount": "Repeat customers",
+        "customerCountHint": "When the run count and the customer count differ, per-run figures can be influenced by repeat customers.",
         "startedRunCount": "Started runs",
         "deliveredRunCount": "Delivered runs",
         "totalStageReruns": "Total stage reruns",
@@ -1048,7 +1062,28 @@
         "externalCost": "External cost",
         "contribution": "Contribution",
         "contributionPerHour": "Contribution per operator hour",
-        "actions": "Actions"
+        "actions": "Actions",
+        "repeatCustomer": "Repeat customer",
+        "viewEntries": "View entries"
+      },
+      "entries": {
+        "title": "Manual entries for run {runId}",
+        "type": "Item",
+        "value": "Value",
+        "recordedAt": "Recorded at",
+        "revenue": "Revenue",
+        "externalCost": "External cost",
+        "operatorTime": "Operator time",
+        "reversed": "Reversed",
+        "reverse": "Reverse",
+        "empty": "No entries recorded yet",
+        "emptyDescription": "Revenue, external cost, and operator time you record will appear here.",
+        "loadFailed": "The entries could not be loaded.",
+        "confirmTitle": "Reverse this entry?",
+        "confirmMessage": "The original entry stays in this list but is excluded from report totals. Reversing cannot be undone.",
+        "reverseSuccess": "The entry was reversed.",
+        "alreadyReversed": "This entry was already reversed.",
+        "reverseFailed": "The entry could not be reversed."
       },
       "log": {
         "revenue": "Record revenue",

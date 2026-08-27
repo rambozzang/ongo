@@ -24,6 +24,72 @@ import java.time.Instant
  *
  * 기록이 없는 값은 전부 null 이다. 0 으로 내리면 "무상 제공"이나 "원가 0" 으로 읽힌다.
  */
+/**
+ * 아직 파일럿에 등록되지 않은 실행 한 건. **후보 목록 전용**이다.
+ *
+ * 운영자가 등록 대상을 고르는 데 필요한 것은 "어느 실행인지"뿐이다. 고객 이메일·영상
+ * URL·자막·후킹 문구는 담지 않는다 — 등록 화면은 콘텐츠 열람 화면이 아니고, 여기에
+ * 실어 보내는 순간 운영자 화면이 곧 유출 경로가 된다.
+ */
+data class ShortsPilotCandidateRow(
+    val runId: Long,
+    val status: String,
+    val createdAt: Instant,
+    /** 원본 영상이 지워졌거나 제목이 비어 있으면 null. 빈 문자열로 바꾸지 않는다. */
+    val sourceVideoTitle: String?,
+)
+
+/**
+ * 후보 목록 한 페이지.
+ *
+ * [total] 은 **제외를 적용한 뒤의** 총수다. 전체 실행 수를 내려보내면 마지막 페이지가
+ * 비어 보이고 운영자는 "왜 안 나오지"를 확인하느라 시간을 쓴다.
+ */
+data class ShortsPilotCandidatePage(
+    val candidates: List<ShortsPilotCandidateRow>,
+    val total: Long,
+    val page: Int,
+    val size: Int,
+)
+
+/**
+ * 운영자가 손으로 적은 기록 한 건.
+ *
+ * 오입력을 되돌리려면 **어느 행이 잘못됐는지**를 먼저 봐야 한다. 지금까지 화면에는
+ * 실행별 합계만 있어서, 3,000,000 이 한 번 잘못 들어간 것인지 300,000 이 열 번 쌓인
+ * 것인지 구분할 수 없었다.
+ *
+ * `actorId`·`userId`·이메일은 담지 않는다. 취소 판단에 필요한 것은 무엇이 언제 얼마로
+ * 적혔는가이지 누가 적었는가가 아니며, 그건 이벤트 행에만 남는다.
+ */
+data class ShortsPilotEntryRow(
+    val entryId: Long,
+    /** `OPERATOR_REVENUE_LOGGED` / `OPERATOR_EXTERNAL_COST_LOGGED` / `OPERATOR_TIME_LOGGED`. */
+    val type: String,
+    /** 금액 기록이면 원 단위, 시간 기록이면 null. */
+    val amountKrw: Long?,
+    /** 시간 기록이면 분 단위, 금액 기록이면 null. */
+    val operatorMinutes: Int?,
+    val recordedAt: Instant,
+    /**
+     * 취소된 기록이면 true. **행은 그대로 남는다** — 무엇을 잘못 적었었는지가 사라지면
+     * 감사가 불가능하다. 보고서 합계에서만 빠진다.
+     */
+    val isReversed: Boolean,
+)
+
+/** 실행 하나의 수기 기록 목록. 자동 이벤트(재실행·렌더 실패)는 담지 않는다. */
+data class ShortsPilotEntryListResponse(
+    val entries: List<ShortsPilotEntryRow>,
+)
+
+/** 취소 결과. 이미 취소돼 있었는지를 호출자가 응답에 반영한다. */
+data class ShortsPilotReversalResponse(
+    val entryId: Long,
+    /** 이미 취소돼 있었으면 true. 두 경우 모두 성공이다. */
+    val alreadyReversed: Boolean,
+)
+
 data class ShortsPilotReport(
     val state: ShortsPilotReportState,
     /** [ShortsPilotReportState.NO_DATA] 이면 null. 0 으로 채우지 않는다. */
@@ -41,11 +107,25 @@ enum class ShortsPilotReportState {
 /**
  * 실행 한 건.
  *
- * 고객 ID·영상·자막·후킹 문구는 담지 않는다. 운영자가 판단에 쓰는 것은 시각과 횟수이며,
- * 콘텐츠를 실어 나르면 보고서가 곧 유출 경로가 된다.
+ * 고객 ID·이메일·영상 URL·자막·후킹 문구는 담지 않는다. 운영자가 판단에 쓰는 것은 시각과
+ * 횟수이며, 콘텐츠를 실어 나르면 보고서가 곧 유출 경로가 된다.
+ *
+ * **[isRepeatCustomer] 는 이 원칙의 예외가 아니다.** 식별자가 아니라 참·거짓 하나이며,
+ * 이 값만으로는 어느 실행들이 같은 고객인지 되짚을 수 없다 — true 인 행이 여럿이어도
+ * 그것이 한 고객인지 여러 고객인지 알 수 없다. 고객을 세는 일은 [ShortsPilotReportSummary]
+ * 의 집계 수치가 맡는다.
  */
 data class ShortsPilotRunRow(
     val runId: Long,
+    /**
+     * 이 실행의 고객이 파일럿에 **2건 이상** 등록돼 있으면 true.
+     *
+     * 표본 왜곡을 드러내려고 둔다. 10건이 고객 1명에게서 나온 표본과 10명에게서 나온
+     * 표본은 단위경제 근거로서 값이 전혀 다른데, 행만 봐서는 구분되지 않았다.
+     *
+     * 실행 행이 사라진 등록은 세지 않는다 — 없는 실행으로 반복 여부를 판정할 수 없다.
+     */
+    val isRepeatCustomer: Boolean,
     val createdAt: Instant,
     /** 아직 시작 전이면 null. */
     val startedAt: Instant?,
@@ -85,6 +165,17 @@ data class ShortsPilotRunRow(
 
 data class ShortsPilotReportSummary(
     val enrolledRunCount: Int,
+    /**
+     * 등록된 실행을 가진 **고유 고객 수**.
+     *
+     * [enrolledRunCount] 와 이 값이 갈라지는 순간이 단위경제 판단이 바뀌는 지점이다.
+     * 실행 10건이 고객 1명에게서 나왔다면 "건당 기여이익"은 한 사람의 사정일 뿐이다.
+     *
+     * 수만 낸다. 어느 고객인지는 담지 않으며, 실행 행이 사라진 등록은 세지 않는다.
+     */
+    val enrolledCustomerCount: Int,
+    /** 등록된 실행이 2건 이상인 고유 고객 수. 0 이면 아직 아무도 다시 쓰지 않았다는 뜻이다. */
+    val repeatCustomerCount: Int,
     val startedRunCount: Int,
     val deliveredRunCount: Int,
     val totalStageReruns: Int,

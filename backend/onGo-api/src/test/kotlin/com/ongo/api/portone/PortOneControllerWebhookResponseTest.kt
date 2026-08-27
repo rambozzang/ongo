@@ -25,7 +25,9 @@ import org.junit.jupiter.api.Test
 class PortOneControllerWebhookResponseTest {
 
     private val service = mockk<PortOnePaymentService>()
-    private val controller = PortOneController(service)
+
+    // 웹훅 경로는 빌링키 등록과 무관하다. 이 테스트에서는 호출되지 않는다.
+    private val controller = PortOneController(service, mockk())
 
     private val body = """{"type":"Transaction.Paid","data":{"paymentId":"ongo-42"}}"""
     private val webhookId = "webhook-1"

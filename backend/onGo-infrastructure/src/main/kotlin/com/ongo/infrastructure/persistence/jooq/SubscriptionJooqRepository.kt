@@ -11,6 +11,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.PADDLE_CUSTOMER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.PADDLE_SUBSCRIPTION_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.PAUSED_AT
+import com.ongo.infrastructure.persistence.jooq.Fields.BILLING_KEY_ENCRYPTED
 import com.ongo.infrastructure.persistence.jooq.Fields.PENDING_PLAN_TYPE
 import com.ongo.infrastructure.persistence.jooq.Fields.CURRENT_PERIOD_END
 import com.ongo.infrastructure.persistence.jooq.Fields.CURRENT_PERIOD_START
@@ -73,6 +74,7 @@ class SubscriptionJooqRepository(
             .set(CURRENT_PERIOD_END, subscription.currentPeriodEnd)
             .set(NEXT_BILLING_DATE, subscription.nextBillingDate)
             .set(PENDING_PLAN_TYPE, subscription.pendingPlanType?.name?.let { enumValue("plan_type", it) })
+            .set(BILLING_KEY_ENCRYPTED, subscription.billingKeyEncrypted)
             .set(STORAGE_QUOTA_LIMIT_BYTES, subscription.storageQuotaLimitBytes)
             .set(PADDLE_SUBSCRIPTION_ID, subscription.paddleSubscriptionId)
             .set(PADDLE_CUSTOMER_ID, subscription.paddleCustomerId)
@@ -99,6 +101,7 @@ class SubscriptionJooqRepository(
             .set(CURRENT_PERIOD_END, subscription.currentPeriodEnd)
             .set(NEXT_BILLING_DATE, subscription.nextBillingDate)
             .set(PENDING_PLAN_TYPE, subscription.pendingPlanType?.name?.let { enumValue("plan_type", it) })
+            .set(BILLING_KEY_ENCRYPTED, subscription.billingKeyEncrypted)
             .set(STORAGE_QUOTA_LIMIT_BYTES, subscription.storageQuotaLimitBytes)
             .set(PADDLE_SUBSCRIPTION_ID, subscription.paddleSubscriptionId)
             .set(PADDLE_CUSTOMER_ID, subscription.paddleCustomerId)
@@ -209,6 +212,7 @@ class SubscriptionJooqRepository(
             currentPeriodEnd = localDateTime(CURRENT_PERIOD_END),
             nextBillingDate = localDateTime(NEXT_BILLING_DATE),
             pendingPlanType = pendingPlanTypeStr?.let { try { PlanType.valueOf(it) } catch (_: Exception) { null } },
+            billingKeyEncrypted = get(BILLING_KEY_ENCRYPTED),
             storageQuotaLimitBytes = get(STORAGE_QUOTA_LIMIT_BYTES),
             paddleSubscriptionId = get(PADDLE_SUBSCRIPTION_ID),
             paddleCustomerId = get(PADDLE_CUSTOMER_ID),

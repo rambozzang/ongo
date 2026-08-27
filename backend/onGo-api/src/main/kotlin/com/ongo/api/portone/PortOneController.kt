@@ -4,6 +4,7 @@ import com.ongo.api.config.CurrentUser
 import com.ongo.application.portone.PortOneCheckoutIntent
 import com.ongo.application.portone.PortOnePaymentResult
 import com.ongo.application.portone.PortOnePaymentService
+import com.ongo.application.subscription.SubscriptionBillingKeyUseCase
 import com.ongo.application.portone.PortOneWebhookFormatException
 import com.ongo.common.ResData
 import com.ongo.common.exception.UnauthorizedException
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/portone")
 class PortOneController(
     private val service: PortOnePaymentService,
+    private val billingKeyUseCase: SubscriptionBillingKeyUseCase,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -30,6 +32,30 @@ class PortOneController(
         @CurrentUser userId: Long,
         @RequestBody request: CreditCheckoutRequest,
     ): ResData<PortOneCheckoutIntent> = ResData(data = service.createCreditCheckout(userId, request.packageName))
+
+    /**
+     * 브라우저가 발급받은 정기결제 수단을 등록한다.
+     *
+     * ## 왜 POST 본문인가
+     *
+     * 빌링키가 경로나 쿼리에 들어가면 접근 로그·리퍼러·브라우저 기록에 평문으로 남는다.
+     * 이 값 하나로 고객에게 반복 청구가 가능하므로 본문으로만 받는다.
+     *
+     * ## 어느 구독을 고치는가
+     *
+     * `@CurrentUser` 의 구독뿐이다. 요청에 subscriptionId 나 userId 를 받지 않아,
+     * 남의 구독을 지정할 경로 자체가 없다.
+     *
+     * 응답은 비어 있다. 방금 보낸 값을 되돌려 줄 이유가 없고, 그러면 응답 로그에 남는다.
+     */
+    @PostMapping("/billing-key")
+    fun registerBillingKey(
+        @CurrentUser userId: Long,
+        @RequestBody request: RegisterBillingKeyRequest,
+    ): ResData<Unit> {
+        billingKeyUseCase.register(userId, request.billingKey)
+        return ResData(data = Unit)
+    }
 
     @PostMapping("/payments/{paymentId}/complete")
     fun complete(
@@ -81,4 +107,12 @@ object PortOneWebhookHeaders {
 }
 
 data class SubscriptionCheckoutRequest(val planType: String, val billingCycle: String = "MONTHLY")
+
+/**
+ * 정기결제 수단 등록 요청.
+ *
+ * 빌링키 하나만 받는다. userId·subscriptionId 를 받지 않는 것이 이 DTO 의 계약이다 —
+ * 받는 순간 남의 구독을 지정할 수 있게 된다. 대상은 언제나 인증된 사용자의 구독이다.
+ */
+data class RegisterBillingKeyRequest(val billingKey: String)
 data class CreditCheckoutRequest(val packageName: String)

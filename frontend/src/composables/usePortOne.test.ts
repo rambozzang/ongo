@@ -7,11 +7,16 @@ import * as PortOne from '@portone/browser-sdk/v2'
 import { portoneApi } from '@/api/portone'
 import { isPortOnePaymentError, usePortOne } from './usePortOne'
 
-vi.mock('@portone/browser-sdk/v2', () => ({ requestPayment: vi.fn() }))
+// 구독 결제는 빌링키 발급을 먼저 지난다. 그 계약은 usePortOneBillingKey.test.ts 가 본다.
+vi.mock('@portone/browser-sdk/v2', () => ({
+  requestPayment: vi.fn(),
+  requestIssueBillingKey: vi.fn(),
+}))
 vi.mock('@/api/portone', () => ({
   portoneApi: {
     createSubscriptionCheckout: vi.fn(),
     createCreditCheckout: vi.fn(),
+    registerBillingKey: vi.fn(),
     complete: vi.fn(),
   },
 }))
@@ -70,6 +75,12 @@ describe('usePortOne 결제 결과 처리 계약', () => {
     vi.mocked(portoneApi.createSubscriptionCheckout).mockResolvedValue(INTENT as never)
     vi.mocked(portoneApi.createCreditCheckout).mockResolvedValue(INTENT as never)
     vi.mocked(portoneApi.complete).mockResolvedValue({ id: 1, status: 'PAID' } as never)
+    // 빌링키 발급·저장은 통과시키고, 이 파일은 그 뒤 결제 결과 처리만 본다.
+    vi.mocked(PortOne.requestIssueBillingKey).mockResolvedValue({
+      transactionType: 'ISSUE_BILLING_KEY',
+      billingKey: 'bk_test',
+    } as never)
+    vi.mocked(portoneApi.registerBillingKey).mockResolvedValue(undefined as never)
   })
 
   describe('결제창을 닫은 경우', () => {

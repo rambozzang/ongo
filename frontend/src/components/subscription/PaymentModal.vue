@@ -107,6 +107,28 @@
           </div>
         </div>
 
+        <!--
+          정기결제 동의. 유료 플랜에만 뜬다 — 무료 플랜은 결제 자체가 없다.
+
+          결제 전에 카드 등록 창이 한 번 더 뜬다는 사실을 미리 알린다. 예고 없이 창이
+          두 번 뜨면 사용자는 결제가 두 번 되는 줄 안다.
+        -->
+        <label
+          v-if="requiresBillingConsent && !processing && !paymentComplete"
+          class="mt-6 flex items-start gap-2 text-body text-gray-600 dark:text-gray-400"
+        >
+          <input
+            v-model="billingConsent"
+            type="checkbox"
+            class="mt-1"
+            data-testid="billing-consent"
+          />
+          <span>
+            매월 자동으로 결제되는 데 동의합니다. 결제 진행 시 카드 등록 창이 먼저 열리며,
+            등록한 수단은 다음 결제일에 자동으로 청구됩니다. 구독 화면에서 언제든 해지할 수 있습니다.
+          </span>
+        </label>
+
         <!-- Navigation Buttons -->
         <div class="mt-8 flex justify-end gap-3">
           <button
@@ -119,7 +141,7 @@
           <button
             v-if="!processing && !paymentComplete"
             class="btn-primary"
-            :disabled="portoneLoading"
+            :disabled="portoneLoading || (requiresBillingConsent && !billingConsent)"
             @click="startPayment"
           >
             {{ portoneLoading ? '준비 중...' : '결제하기' }}
@@ -211,8 +233,15 @@ function paymentErrorMessage(e: unknown): string {
   return '결제 준비에 실패했습니다. 다시 시도해주세요.'
 }
 
+/** 유료 플랜만 정기결제 수단이 필요하다. 무료 전환은 결제 자체가 없다. */
+const requiresBillingConsent = computed(() => props.price > 0)
+
+const billingConsent = ref(false)
+
 async function startPayment() {
   paymentError.value = ''
+  // 버튼도 잠기지만, 여기서 한 번 더 막는다 — 동의 없이 카드 등록 창을 열지 않는다.
+  if (requiresBillingConsent.value && !billingConsent.value) return
   try {
     await openSubscriptionCheckout(props.targetPlan, {
       onSuccess: () => {

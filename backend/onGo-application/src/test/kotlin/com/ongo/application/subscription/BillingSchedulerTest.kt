@@ -50,6 +50,9 @@ class BillingSchedulerTest {
     @MockK
     private lateinit var distributedLockPort: DistributedLockPort
 
+    @MockK
+    private lateinit var renewalService: SubscriptionRenewalService
+
     private lateinit var billingScheduler: BillingScheduler
 
     private val now = LocalDateTime.now()
@@ -62,6 +65,9 @@ class BillingSchedulerTest {
             secondArg<() -> Unit>().invoke()
             true
         }
+        // 갱신 대상이 없는 것이 이 테스트들의 기본 전제다. 갱신 경로는
+        // SubscriptionRenewalServiceTest / BillingSchedulerRenewalTest 가 따로 본다.
+        every { subscriptionRepository.findDueForBilling(any()) } returns emptyList()
         billingScheduler = BillingScheduler(
             subscriptionRepository,
             userRepository,
@@ -69,6 +75,12 @@ class BillingSchedulerTest {
             creditRepository,
             distributedLockPort,
             creditService,
+            renewalService,
+            // 건별 트랜잭션은 콜백을 그대로 실행한다. 트랜잭션 경계 자체는 통합 테스트 몫이다.
+            DummyTransactionManagerForTest(),
+            // 이 파일은 갱신이 아닌 기존 처리(체험·유예·취소·다운그레이드)를 본다.
+            // 갱신 토글 계약은 BillingSchedulerRenewalTest 가 따로 고정한다.
+            renewalEnabled = false,
         )
     }
 

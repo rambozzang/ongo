@@ -11,9 +11,11 @@ import com.ongo.domain.lock.DistributedLockPort
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDateTime
 
 @Component
@@ -25,20 +27,105 @@ class BillingScheduler(
     private val distributedLockPort: DistributedLockPort,
     /** 플랜 전환 시 무료 크레딧 권한을 한 곳에서 맞춘다. */
     private val creditService: com.ongo.application.credit.CreditService,
+    /**
+     * 건별 갱신.
+     *
+     * 별도 빈인 이유는 둘이다. 같은 클래스 메서드를 부르면 프록시를 지나지 않아 전파
+     * 설정이 무시되고, 갱신은 **한 호출 안에서 커밋이 두 번** 일어나야 해서 애노테이션으로
+     * 표현할 수 없다.
+     */
+    private val renewalService: SubscriptionRenewalService,
+    transactionManager: PlatformTransactionManager,
+    /**
+     * 정기 청구 실행 여부. **기본값은 꺼짐이다.**
+     *
+     * 켜는 순간 스케줄러가 고객 카드에 실제로 청구하고, 실패한 구독을 PAST_DUE 로 내려
+     * 7일 뒤 Free 로 강등한다. 되돌리기 가장 비싼 동작이라 배포만으로 시작되면 안 된다.
+     *
+     * 특히 지금 운영 데이터에는 기간·금액이 비어 있는 구독이 있고 아무도 빌링키를
+     * 등록한 적이 없다. 그대로 켜면 전원이 BILLING_KEY_MISSING 으로 PAST_DUE 가 된다.
+     *
+     * 켜기 전 전제는 `docs/operations/SUBSCRIPTION_RENEWAL_ROLLOUT.md` 에 있다.
+     */
+    @param:Value("\${subscription.renewal.enabled:false}")
+    private val renewalEnabled: Boolean,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val lockId = javaClass.name.hashCode().toLong()
 
+    /**
+     * 갱신을 제외한 기존 처리(체험 만료·유예·취소·다운그레이드)를 감싸는 경계.
+     *
+     * 예전 `@Transactional processBilling` 이 하던 역할을 그대로 옮긴 것이다. 애노테이션을
+     * 그대로 두면 PG 호출까지 그 트랜잭션에 들어가므로 범위를 좁혀 여기로 내렸다.
+     */
+    private val legacyTx = TransactionTemplate(transactionManager)
+
     @Scheduled(cron = "0 0 2 * * *") // 매일 새벽 2시
-    @Transactional
+    /**
+     * **의도적으로 `@Transactional` 이 없다.**
+     *
+     * 예전에는 이 메서드 전체가 한 트랜잭션이었다. 갱신이 붙으면서 그 안에서 PortOne 을
+     * 부르게 되는데, 그러면 PG 응답을 기다리는 내내 DB 커넥션과 트랜잭션이 잡혀 있다.
+     * 갱신 대상이 수십 건이면 커넥션 풀이 외부 지연에 통째로 묶인다.
+     *
+     * 그래서 갱신은 트랜잭션 **밖에서** 돌리고(경계는 [SubscriptionRenewalService] 가 직접
+     * 잡는다), 기존 처리(체험 만료·유예·취소·다운그레이드)는 예전처럼 한 트랜잭션으로
+     * 묶어 [legacyTx] 로 감싼다.
+     */
     fun processBilling() {
         // tryLock/releaseLock 은 획득과 해제가 다른 커넥션에서 일어나 락이 누수된다.
         // PostgreSQL 자문 락은 세션 범위라 다른 커넥션에서 해제해도 풀리지 않는다.
-        val ran = distributedLockPort.withLock(lockId) { processDueSubscriptions() }
+        val ran = distributedLockPort.withLock(lockId) {
+            val now = LocalDateTime.now()
+            /*
+             * 갱신을 **가장 먼저, 트랜잭션 밖에서** 돌린다.
+             *
+             * 먼저인 이유: 실패한 갱신이 만든 PAST_DUE 를 같은 실행의 유예 블록이 봐야
+             * 3일 알림·7일 Free 전환이 하루 늦지 않는다.
+             * 트랜잭션 밖인 이유: 여기서 PortOne 을 부르므로, 감싸면 외부 지연만큼
+             * 커넥션이 잠기고 청구 성공 후 롤백이 선점 기록을 지울 수 있다.
+             */
+            processRenewals(now)
+            legacyTx.execute { processDueSubscriptions() }
+        }
         if (!ran) log.debug("다른 인스턴스에서 빌링 처리 실행 중, 스킵")
     }
 
+    /**
+     * 주기가 지난 ACTIVE 구독을 갱신한다.
+     *
+     * **여기서 트랜잭션을 열지 않는다.** 갱신은 선점 커밋 → 외부 청구 → 정산 커밋으로
+     * 나뉘고, 그 경계는 [SubscriptionRenewalService] 가 직접 잡는다. 여기서 한 번 더
+     * 감싸면 외부 청구가 그 트랜잭션 안에 들어가, 청구 성공 후 DB 갱신이 실패할 때 선점
+     * 기록까지 롤백되어 다음 실행이 같은 주기를 재청구한다 — 돈이 두 번 빠져나간다.
+     *
+     * 건별 예외는 삼킨다. 한 건이 나머지 전부를 막으면 안 된다.
+     */
+    private fun processRenewals(now: LocalDateTime) {
+        /*
+         * 꺼져 있으면 **조회조차 하지 않는다.**
+         *
+         * findDueForBilling 만 돌려도 부작용은 없지만, 꺼진 기능이 매일 질의를 날리면
+         * 로그와 지표에 "갱신이 돌고 있다"는 흔적이 남아 켜졌는지 여부를 헷갈리게 한다.
+         */
+        if (!renewalEnabled) {
+            log.info("구독 자동 갱신이 꺼져 있어 건너뛴다. subscription.renewal.enabled=false")
+            return
+        }
+
+        val due = subscriptionRepository.findDueForBilling(now)
+        if (due.isEmpty()) return
+
+        log.info("구독 갱신 대상 {}건", due.size)
+        due.forEach { subscription ->
+            runCatching { renewalService.renew(subscription, now) }
+                .onFailure { log.error("구독 갱신 처리 실패. subscriptionId={}", subscription.id, it) }
+        }
+    }
+
+    /** 갱신을 제외한 기존 처리. 예전처럼 한 트랜잭션 안에서 돈다. */
     private fun processDueSubscriptions() {
         log.info("빌링 처리 시작")
         val now = LocalDateTime.now()

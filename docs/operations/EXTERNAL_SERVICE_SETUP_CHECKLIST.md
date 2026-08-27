@@ -306,6 +306,26 @@ PORTONE_API_SECRET=
 PORTONE_WEBHOOK_SECRET=
 ```
 
+선택 설정(기본값이 있어 비워 두면 그대로 동작한다):
+
+```dotenv
+# 구독 자동 갱신(정기 청구). 기본 false.
+# true 로 켜면 매일 02시에 고객 카드로 실제 청구하고, 실패한 구독을 PAST_DUE 로 내려
+# 7일 뒤 Free 로 강등한다. 배포만으로 시작되면 안 되므로 기본값이 꺼짐이다.
+# 켜기 전 전제는 docs/operations/SUBSCRIPTION_RENEWAL_ROLLOUT.md 를 반드시 확인할 것.
+SUBSCRIPTION_RENEWAL_ENABLED=false
+
+# PortOne API 주소. 기본값이 운영 주소이며 테스트 외에는 바꾸지 않는다.
+PORTONE_API_BASE_URL=https://api.portone.io
+```
+
+**`SUBSCRIPTION_RENEWAL_ENABLED` 를 켜기 전 반드시 확인할 것**
+
+이 토글은 정기 청구 **실행**만 막는다. 새 코드가 요구하는
+`subscriptions.billing_key_encrypted` 컬럼 접근은 **구독을 읽는 모든 경로**에 있어,
+V103 이 적용되지 않은 DB 에서는 토글을 꺼도 구독 조회·저장이 실패한다.
+`deploy/preflight-schema.sh` 가 배포 시 이를 읽기 전용으로 확인하고 중단시킨다.
+
 **`PORTONE_WEBHOOK_SECRET`이 비어 있으면 어떻게 되는가**
 
 프로덕션 배포 게이트와 애플리케이션 기동 검증이 모두 실패한다. 기존 프로세스를 내리기 전에

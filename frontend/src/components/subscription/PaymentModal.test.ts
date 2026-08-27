@@ -24,7 +24,15 @@ function renderModal() {
   })
 }
 
+/** 유료 플랜은 정기결제 동의 없이는 결제 버튼이 잠긴다. */
+async function consent(wrapper: ReturnType<typeof renderModal>) {
+  const box = wrapper.find('[data-testid="billing-consent"]')
+  if (!box.exists()) throw new Error('정기결제 동의 체크박스를 찾지 못했습니다')
+  await box.setValue(true)
+}
+
 async function pay(wrapper: ReturnType<typeof renderModal>) {
+  await consent(wrapper)
   const button = wrapper.findAll('button').find((b) => b.text().includes('결제하기'))
   if (!button) throw new Error('"결제하기" 버튼을 찾지 못했습니다')
   await button.trigger('click')
@@ -202,5 +210,64 @@ describe('PaymentModal 결제 완료 신호', () => {
     const [plan, , billingCycle] = portone.openSubscriptionCheckout.mock.calls[0]
     expect(plan).toBe('STARTER')
     expect(billingCycle).toBe('MONTHLY')
+  })
+})
+
+/*
+ * 결제 진행 시 카드 등록 창이 한 번 더 뜬다. 예고 없이 창이 두 번 열리면 사용자는 결제가
+ * 두 번 되는 줄 알고, 자동 청구에 동의한 적도 없게 된다.
+ */
+describe('PaymentModal 정기결제 동의', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('유료 플랜은 동의 전에 결제 버튼이 잠겨 있다', () => {
+    const wrapper = renderModal()
+
+    const button = wrapper.findAll('button').find((b) => b.text().includes('결제하기'))!
+    expect(button.attributes('disabled')).toBeDefined()
+  })
+
+  it('동의하면 결제 버튼이 풀린다', async () => {
+    const wrapper = renderModal()
+    await consent(wrapper)
+
+    const button = wrapper.findAll('button').find((b) => b.text().includes('결제하기'))!
+    expect(button.attributes('disabled')).toBeUndefined()
+  })
+
+  it('동의 없이는 결제를 시작하지 않는다', async () => {
+    const wrapper = renderModal()
+
+    const button = wrapper.findAll('button').find((b) => b.text().includes('결제하기'))!
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(portone.openSubscriptionCheckout).not.toHaveBeenCalled()
+  })
+
+  /** 자동 청구가 일어난다는 사실과 해지 방법이 문구에 있어야 한다. */
+  it('동의 문구가 자동 청구와 해지 방법을 알린다', () => {
+    const text = renderModal().text()
+
+    expect(text).toContain('자동으로 결제')
+    expect(text).toContain('카드 등록 창')
+    expect(text).toContain('해지')
+  })
+
+  /** 무료 플랜은 결제 자체가 없다. 동의를 요구하면 기존 흐름이 막힌다. */
+  it('무료 플랜에는 동의 체크박스를 띄우지 않는다', () => {
+    const wrapper = mount(PaymentModal, {
+      props: { modelValue: true, targetPlan: 'FREE' as const, price: 0 },
+      global: { stubs: { teleport: true, LoadingSpinner: true } },
+    })
+
+    expect(wrapper.find('[data-testid="billing-consent"]').exists()).toBe(false)
   })
 })

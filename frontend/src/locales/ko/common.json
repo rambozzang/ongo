@@ -1023,8 +1023,22 @@
         "alreadyEnrolled": "이 실행은 이미 파일럿에 등록되어 있습니다.",
         "failed": "실행을 파일럿에 등록하지 못했습니다."
       },
+      "candidates": {
+        "title": "등록할 실행 고르기",
+        "description": "아직 파일럿에 등록되지 않은 최근 실행입니다. 이미 등록한 실행은 여기에 나타나지 않습니다.",
+        "sourceVideoTitle": "원본 영상",
+        "status": "상태",
+        "untitled": "제목 없음",
+        "empty": "등록할 수 있는 실행이 없습니다",
+        "emptyDescription": "최근 실행이 없거나, 이미 모두 파일럿에 등록했습니다.",
+        "loadFailed": "후보 목록을 불러오지 못했습니다.",
+        "pageInfo": "{total}건 중 {from}~{to}"
+      },
       "summary": {
         "enrolledRunCount": "등록된 실행",
+        "enrolledCustomerCount": "고유 고객",
+        "repeatCustomerCount": "반복 고객",
+        "customerCountHint": "실행 수와 고객 수가 다르면 건당 수치는 반복 이용 고객의 영향을 받을 수 있습니다.",
         "startedRunCount": "시작된 실행",
         "deliveredRunCount": "전달 완료 실행",
         "totalStageReruns": "단계 재실행 합계",
@@ -1048,7 +1062,28 @@
         "externalCost": "외부원가",
         "contribution": "기여이익",
         "contributionPerHour": "운영시간당 기여이익",
-        "actions": "작업"
+        "actions": "작업",
+        "repeatCustomer": "반복 고객",
+        "viewEntries": "기록 보기"
+      },
+      "entries": {
+        "title": "실행 {runId}의 수기 기록",
+        "type": "항목",
+        "value": "값",
+        "recordedAt": "입력 시각",
+        "revenue": "매출",
+        "externalCost": "외부원가",
+        "operatorTime": "투입 시간",
+        "reversed": "무효화됨",
+        "reverse": "무효화",
+        "empty": "아직 입력한 기록이 없습니다",
+        "emptyDescription": "매출·외부원가·투입 시간을 기록하면 여기에 표시됩니다.",
+        "loadFailed": "기록을 불러오지 못했습니다.",
+        "confirmTitle": "이 기록을 무효화할까요?",
+        "confirmMessage": "원본 기록은 지워지지 않고 목록에 남지만, 보고서 합계에서는 빠집니다. 무효화는 되돌릴 수 없습니다.",
+        "reverseSuccess": "기록을 무효화했습니다.",
+        "alreadyReversed": "이미 무효화된 기록입니다.",
+        "reverseFailed": "기록을 무효화하지 못했습니다."
       },
       "log": {
         "revenue": "매출 기록",

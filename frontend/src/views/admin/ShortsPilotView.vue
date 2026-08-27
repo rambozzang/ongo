@@ -24,7 +24,13 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import OTabs from '@/components/ui/OTabs.vue'
 import { useNotificationStore } from '@/stores/notification'
 import { adminShortsPilotApi } from '@/api/adminShortsPilot'
-import type { ShortsPilotReport, ShortsPilotRunRow } from '@/types/adminShortsPilot'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import type {
+  ShortsPilotCandidate,
+  ShortsPilotEntry,
+  ShortsPilotReport,
+  ShortsPilotRunRow,
+} from '@/types/adminShortsPilot'
 
 const { t, locale } = useI18n()
 const notify = useNotificationStore()
@@ -114,23 +120,180 @@ const enrollDisabled = computed(() => {
 
 async function submitEnroll() {
   if (enrollDisabled.value) return
+  await enroll(Number(enrollRunId.value), () => {
+    enrollRunId.value = ''
+  })
+}
+
+/**
+ * 등록 공통 경로. 직접 입력과 후보 목록이 같은 함수를 쓴다 — 두 곳에 나눠 두면
+ * 한쪽만 고쳐져 "목록에서 등록하면 사라지는데 직접 입력하면 안 사라진다" 같은 차이가 생긴다.
+ */
+async function enroll(runId: number, onSuccess?: () => void) {
   enrolling.value = true
   try {
-    const result = await adminShortsPilotApi.enroll(Number(enrollRunId.value))
+    const result = await adminShortsPilotApi.enroll(runId)
     // 이미 등록된 실행도 성공이지만 같은 문구로 알리면 운영자가 두 번 등록했는지 모른다.
     notify.success(
       result.alreadyEnrolled
         ? t('admin.shortsPilot.enroll.alreadyEnrolled')
         : t('admin.shortsPilot.enroll.success'),
     )
-    enrollRunId.value = ''
-    await loadReport()
+    onSuccess?.()
+    /*
+     * 서버가 이미 등록된 실행을 제외해 보내지만, 목록을 다시 받기 전까지는 방금 등록한
+     * 행이 화면에 남아 있다. 운영자는 그걸 보고 또 누른다. 그래서 응답을 기다리지 않고
+     * 먼저 지운다 — 등록은 성공했으므로 이 제거는 서버 상태와 어긋나지 않는다.
+     */
+    candidates.value = candidates.value.filter((c) => c.runId !== runId)
+    candidateTotal.value = Math.max(0, candidateTotal.value - 1)
+
+    await Promise.all([loadReport(), loadCandidates()])
   } catch (e) {
     notify.error(e instanceof Error ? e.message : t('admin.shortsPilot.enroll.failed'))
   } finally {
     enrolling.value = false
   }
 }
+
+// ---- 수기 기록 열람·취소 ----
+
+const entriesOpen = ref(false)
+const entriesRunId = ref<number | null>(null)
+const entries = ref<ShortsPilotEntry[]>([])
+const entriesLoading = ref(false)
+/** 오류는 토스트로 흘리지 않고 목록 자리에 남긴다 — 다시 시도할 곳이 필요하다. */
+const entriesError = ref(false)
+
+const reverseConfirmOpen = ref(false)
+const reverseTargetId = ref<number | null>(null)
+const reversing = ref(false)
+
+const entryTypeLabels: Record<string, string> = {
+  OPERATOR_REVENUE_LOGGED: 'admin.shortsPilot.entries.revenue',
+  OPERATOR_EXTERNAL_COST_LOGGED: 'admin.shortsPilot.entries.externalCost',
+  OPERATOR_TIME_LOGGED: 'admin.shortsPilot.entries.operatorTime',
+}
+
+function entryTypeLabel(type: string): string {
+  const key = entryTypeLabels[type]
+  // 모르는 타입이면 서버가 준 원문을 그대로 보인다. 지어내지 않는다.
+  return key ? t(key) : type
+}
+
+/** 금액 기록이면 원, 시간 기록이면 분. 둘 다 없으면 미입력이다. */
+function entryValue(entry: ShortsPilotEntry): string {
+  if (entry.amountKrw != null) return krw.value.format(entry.amountKrw)
+  if (entry.operatorMinutes != null) return minuteFmt.value.format(entry.operatorMinutes)
+  return notRecorded.value
+}
+
+async function loadEntries() {
+  const runId = entriesRunId.value
+  if (runId === null) return
+  entriesLoading.value = true
+  entriesError.value = false
+  try {
+    entries.value = (await adminShortsPilotApi.getEntries(runId)).entries
+  } catch {
+    entriesError.value = true
+    entries.value = []
+  } finally {
+    entriesLoading.value = false
+  }
+}
+
+async function openEntries(runId: number) {
+  entriesRunId.value = runId
+  entries.value = []
+  entriesOpen.value = true
+  await loadEntries()
+}
+
+/** 취소는 되돌릴 수 없다. 확인 없이 바로 보내지 않는다. */
+function askReverse(entryId: number) {
+  reverseTargetId.value = entryId
+  reverseConfirmOpen.value = true
+}
+
+async function confirmReverse() {
+  const runId = entriesRunId.value
+  const entryId = reverseTargetId.value
+  if (runId === null || entryId === null) return
+
+  reversing.value = true
+  try {
+    const result = await adminShortsPilotApi.reverseEntry(runId, entryId)
+    // 이미 취소된 건도 성공이지만 같은 문구로 알리면 운영자가 두 번 눌렀는지 모른다.
+    notify.success(
+      result.alreadyReversed
+        ? t('admin.shortsPilot.entries.alreadyReversed')
+        : t('admin.shortsPilot.entries.reverseSuccess'),
+    )
+    // 합계가 바뀌므로 보고서도 함께 다시 읽는다.
+    await Promise.all([loadEntries(), loadReport()])
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : t('admin.shortsPilot.entries.reverseFailed'))
+  } finally {
+    reversing.value = false
+    reverseTargetId.value = null
+  }
+}
+
+// ---- 등록 후보 목록 ----
+
+const CANDIDATE_PAGE_SIZE = 20
+
+const candidates = ref<ShortsPilotCandidate[]>([])
+const candidateTotal = ref(0)
+const candidatePage = ref(0)
+const candidatesLoading = ref(false)
+/** 오류는 토스트로 흘리지 않고 목록 자리에 남긴다 — 다시 시도할 곳이 필요하다. */
+const candidatesError = ref(false)
+
+const candidateTotalPages = computed(() =>
+  Math.max(1, Math.ceil(candidateTotal.value / CANDIDATE_PAGE_SIZE)),
+)
+const hasPrevCandidatePage = computed(() => candidatePage.value > 0)
+const hasNextCandidatePage = computed(() => candidatePage.value + 1 < candidateTotalPages.value)
+
+const candidateRange = computed(() => {
+  if (candidateTotal.value === 0) return { from: 0, to: 0 }
+  const from = candidatePage.value * CANDIDATE_PAGE_SIZE + 1
+  return { from, to: Math.min(from + candidates.value.length - 1, candidateTotal.value) }
+})
+
+async function loadCandidates() {
+  candidatesLoading.value = true
+  candidatesError.value = false
+  try {
+    const page = await adminShortsPilotApi.getCandidates(candidatePage.value, CANDIDATE_PAGE_SIZE)
+    candidates.value = page.candidates
+    candidateTotal.value = page.total
+    /*
+     * 마지막 페이지의 유일한 항목을 등록하면 그 페이지가 비어 버린다. 빈 화면을 보여주는
+     * 대신 한 페이지 앞으로 물러나 다시 읽는다.
+     */
+    if (page.candidates.length === 0 && candidatePage.value > 0) {
+      candidatePage.value -= 1
+      await loadCandidates()
+    }
+  } catch {
+    candidatesError.value = true
+    candidates.value = []
+  } finally {
+    candidatesLoading.value = false
+  }
+}
+
+async function goToCandidatePage(delta: number) {
+  const next = candidatePage.value + delta
+  if (next < 0 || next >= candidateTotalPages.value) return
+  candidatePage.value = next
+  await loadCandidates()
+}
+
+onMounted(loadCandidates)
 
 // ---- 기록 입력 ----
 
@@ -257,6 +420,112 @@ async function submitLog() {
       </div>
     </SectionCard>
 
+    <!--
+      실행 ID 를 DB 나 고객에게 물어 알아내던 과정을 없앤다. 엉뚱한 실행을 코호트에
+      넣으면 지표가 조용히 오염되고, 등록 이벤트는 append-only 라 되돌릴 수 없다.
+    -->
+    <SectionCard :title="$t('admin.shortsPilot.candidates.title')" class="mb-4">
+      <p class="mb-3 text-body text-gray-500 dark:text-gray-400">
+        {{ $t('admin.shortsPilot.candidates.description') }}
+      </p>
+
+      <LoadingSpinner v-if="candidatesLoading && candidates.length === 0" />
+
+      <div
+        v-else-if="candidatesError"
+        class="flex flex-col items-start gap-3"
+        role="alert"
+      >
+        <p class="text-body text-error-strong">
+          {{ $t('admin.shortsPilot.candidates.loadFailed') }}
+        </p>
+        <button type="button" class="btn-secondary" @click="loadCandidates">
+          {{ $t('action.retry') }}
+        </button>
+      </div>
+
+      <EmptyState
+        v-else-if="candidates.length === 0"
+        :title="$t('admin.shortsPilot.candidates.empty')"
+        :description="$t('admin.shortsPilot.candidates.emptyDescription')"
+        variant="compact"
+      />
+
+      <template v-else>
+        <div class="overflow-x-auto">
+          <table class="w-full text-body">
+            <thead>
+              <tr class="border-b border-gray-200 text-left dark:border-gray-700">
+                <th class="p-2">{{ $t('admin.shortsPilot.table.runId') }}</th>
+                <th class="p-2">{{ $t('admin.shortsPilot.candidates.sourceVideoTitle') }}</th>
+                <th class="p-2">{{ $t('admin.shortsPilot.table.createdAt') }}</th>
+                <th class="p-2">{{ $t('admin.shortsPilot.candidates.status') }}</th>
+                <th class="p-2">{{ $t('admin.shortsPilot.table.actions') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="candidate in candidates"
+                :key="candidate.runId"
+                class="border-b border-gray-100 dark:border-gray-800"
+              >
+                <td class="p-2 font-medium">{{ candidate.runId }}</td>
+                <!-- 제목이 없으면 지어내지 않고 "제목 없음"이라고 적는다. -->
+                <td class="p-2">
+                  {{ candidate.sourceVideoTitle ?? $t('admin.shortsPilot.candidates.untitled') }}
+                </td>
+                <td class="p-2">{{ showDate(candidate.createdAt) }}</td>
+                <td class="p-2">{{ candidate.status }}</td>
+                <td class="p-2">
+                  <button
+                    type="button"
+                    class="btn-primary"
+                    :disabled="enrolling"
+                    @click="enroll(candidate.runId)"
+                  >
+                    {{ $t('admin.shortsPilot.enroll.submit') }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          v-if="candidateTotalPages > 1"
+          class="mt-3 flex items-center justify-between gap-3"
+        >
+          <p class="text-caption text-gray-500 dark:text-gray-400">
+            {{
+              $t('admin.shortsPilot.candidates.pageInfo', {
+                total: candidateTotal,
+                from: candidateRange.from,
+                to: candidateRange.to,
+              })
+            }}
+          </p>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="btn-secondary"
+              :disabled="!hasPrevCandidatePage || candidatesLoading"
+              @click="goToCandidatePage(-1)"
+            >
+              {{ $t('action.prev') }}
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              :disabled="!hasNextCandidatePage || candidatesLoading"
+              @click="goToCandidatePage(1)"
+            >
+              {{ $t('action.next') }}
+            </button>
+          </div>
+        </div>
+      </template>
+    </SectionCard>
+
     <LoadingSpinner v-if="loading && !report" />
 
     <EmptyState
@@ -274,6 +543,29 @@ async function submitLog() {
           <StatCard
             :label="$t('admin.shortsPilot.summary.enrolledRunCount')"
             :value="summary.enrolledRunCount"
+          />
+          <!--
+            실행 수와 고객 수를 나란히 둔다. 둘이 갈라지면 아래 건당 수치가 반복 이용
+            고객의 영향을 받을 수 있고, 그 가능성이 단위경제 해석을 바꾼다.
+          -->
+          <StatCard
+            :label="$t('admin.shortsPilot.summary.enrolledCustomerCount')"
+            :value="summary.enrolledCustomerCount"
+          >
+            <!--
+              두 수가 같으면 표본이 고객당 1건씩이라 경고할 것이 없다. 늘 띄우면
+              문구가 배경이 되어, 정작 갈라졌을 때도 눈에 들어오지 않는다.
+            -->
+            <p
+              v-if="summary.enrolledRunCount !== summary.enrolledCustomerCount"
+              class="mt-1 text-caption text-gray-500 dark:text-gray-400"
+            >
+              {{ $t('admin.shortsPilot.summary.customerCountHint') }}
+            </p>
+          </StatCard>
+          <StatCard
+            :label="$t('admin.shortsPilot.summary.repeatCustomerCount')"
+            :value="summary.repeatCustomerCount"
           />
           <StatCard
             :label="$t('admin.shortsPilot.summary.startedRunCount')"
@@ -355,7 +647,18 @@ async function submitLog() {
               :key="row.runId"
               class="border-b border-gray-100 dark:border-gray-800"
             >
-              <td class="p-2 font-medium">{{ row.runId }}</td>
+              <td class="p-2 font-medium">
+                <span class="flex flex-wrap items-center gap-2">
+                  {{ row.runId }}
+                  <!-- 같은 고객의 실행이 여럿 섞여 있음을 행에서 바로 보이게 한다. -->
+                  <span
+                    v-if="row.isRepeatCustomer"
+                    class="rounded px-2 py-0.5 text-caption font-medium bg-warning-subtle text-warning-strong"
+                  >
+                    {{ $t('admin.shortsPilot.table.repeatCustomer') }}
+                  </span>
+                </span>
+              </td>
               <td class="p-2">{{ showDate(row.createdAt) }}</td>
               <td class="p-2">{{ showLeadTime(row.leadTimeMs) }}</td>
               <td class="p-2">{{ showCount(row.stageRerunCount) }}</td>
@@ -388,6 +691,10 @@ async function submitLog() {
                   >
                     {{ $t('admin.shortsPilot.log.operatorTime') }}
                   </button>
+                  <!-- 합계만으로는 어느 행이 잘못됐는지 알 수 없다. -->
+                  <button type="button" class="btn-secondary" @click="openEntries(row.runId)">
+                    {{ $t('admin.shortsPilot.table.viewEntries') }}
+                  </button>
                 </div>
               </td>
             </tr>
@@ -407,6 +714,90 @@ async function submitLog() {
         </li>
       </ul>
     </SectionCard>
+
+    <BaseModal
+      v-model="entriesOpen"
+      :title="$t('admin.shortsPilot.entries.title', { runId: entriesRunId ?? '' })"
+      max-width="xl"
+    >
+      <LoadingSpinner v-if="entriesLoading && entries.length === 0" />
+
+      <div v-else-if="entriesError" class="flex flex-col items-start gap-3" role="alert">
+        <p class="text-body text-error-strong">
+          {{ $t('admin.shortsPilot.entries.loadFailed') }}
+        </p>
+        <button type="button" class="btn-secondary" @click="loadEntries">
+          {{ $t('action.retry') }}
+        </button>
+      </div>
+
+      <EmptyState
+        v-else-if="entries.length === 0"
+        :title="$t('admin.shortsPilot.entries.empty')"
+        :description="$t('admin.shortsPilot.entries.emptyDescription')"
+        variant="compact"
+      />
+
+      <table v-else class="w-full text-body">
+        <thead>
+          <tr class="border-b border-gray-200 text-left dark:border-gray-700">
+            <th class="p-2">{{ $t('admin.shortsPilot.entries.type') }}</th>
+            <th class="p-2">{{ $t('admin.shortsPilot.entries.value') }}</th>
+            <th class="p-2">{{ $t('admin.shortsPilot.entries.recordedAt') }}</th>
+            <th class="p-2">{{ $t('admin.shortsPilot.table.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!--
+            취소된 기록도 지우지 않고 남긴다. 무엇을 잘못 적었었는지가 사라지면
+            감사가 불가능하다. 합계에서만 빠진다.
+          -->
+          <tr
+            v-for="entry in entries"
+            :key="entry.entryId"
+            class="border-b border-gray-100 dark:border-gray-800"
+            :class="entry.isReversed ? 'text-gray-400 line-through dark:text-gray-500' : ''"
+          >
+            <td class="p-2">{{ entryTypeLabel(entry.type) }}</td>
+            <td class="p-2">{{ entryValue(entry) }}</td>
+            <td class="p-2">{{ showDate(entry.recordedAt) }}</td>
+            <td class="p-2">
+              <span
+                v-if="entry.isReversed"
+                class="rounded bg-warning-subtle px-2 py-0.5 text-caption font-medium text-warning-strong no-underline"
+              >
+                {{ $t('admin.shortsPilot.entries.reversed') }}
+              </span>
+              <button
+                v-else
+                type="button"
+                class="btn-danger"
+                :disabled="reversing"
+                @click="askReverse(entry.entryId)"
+              >
+                {{ $t('admin.shortsPilot.entries.reverse') }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <template #footer>
+        <button type="button" class="btn-secondary" @click="entriesOpen = false">
+          {{ $t('action.close') }}
+        </button>
+      </template>
+    </BaseModal>
+
+    <ConfirmModal
+      v-model="reverseConfirmOpen"
+      :title="$t('admin.shortsPilot.entries.confirmTitle')"
+      :message="$t('admin.shortsPilot.entries.confirmMessage')"
+      :confirm-text="$t('admin.shortsPilot.entries.reverse')"
+      :cancel-text="$t('action.cancel')"
+      danger
+      @confirm="confirmReverse"
+    />
 
     <BaseModal v-model="logOpen" :title="logTitle">
       <div v-if="logPhase === 'input'" class="flex flex-col gap-3">

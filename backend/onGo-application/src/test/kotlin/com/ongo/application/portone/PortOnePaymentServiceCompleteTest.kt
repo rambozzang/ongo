@@ -265,6 +265,42 @@ class PortOnePaymentServiceCompleteTest {
         }
     }
 
+    /**
+     * 등록된 정기결제 수단이 결제 확정으로 지워지면, 다음 달 갱신이 BILLING_KEY_MISSING 이
+     * 되어 방금 결제한 고객이 PAST_DUE 로 내려간다. 첫 달만 받고 자동 갱신이 끊긴다.
+     */
+    @Test
+    @DisplayName("구독 결제 확정이 등록된 빌링키를 지우지 않는다")
+    fun subscriptionCompletionPreservesBillingKey() {
+        val subscriptionPayment = Payment(
+            id = internalPaymentId, userId = userId, type = PaymentType.SUBSCRIPTION,
+            amount = PlanType.STARTER.price, currency = "KRW",
+            status = PaymentStatus.PENDING, pgProvider = "portone",
+            description = "SUBSCRIPTION|STARTER|MONTHLY",
+        )
+        every { paymentRepository.findByIdForUpdate(internalPaymentId) } returns subscriptionPayment
+        every { paymentRepository.update(any()) } answers { firstArg() }
+        every { gateway.getPayment(portonePaymentId) } returns
+            paidAtGateway(amount = PlanType.STARTER.price)
+        every { subscriptionRepository.findByUserId(userId) } returns
+            Subscription(
+                id = 1, userId = userId, planType = PlanType.FREE,
+                billingKeyEncrypted = "enc:already-registered",
+            )
+        val saved = slot<Subscription>()
+        every { subscriptionRepository.update(capture(saved)) } answers { saved.captured }
+        every { userRepository.findById(userId) } returns
+            User(id = userId, email = "a@b.c", name = "t", provider = AuthProvider.GOOGLE, providerId = "g-1")
+        every { userRepository.update(any()) } answers { firstArg() }
+        every { creditService.applyPlanEntitlement(any(), any(), any()) } just runs
+
+        service.complete(userId, portonePaymentId)
+
+        assertEquals("enc:already-registered", saved.captured.billingKeyEncrypted)
+        // 다음 청구일도 함께 채워져야 갱신 스케줄러가 이 구독을 찾는다.
+        assertEquals(saved.captured.currentPeriodEnd, saved.captured.nextBillingDate)
+    }
+
     /** 재완료는 조기 반환한다 — 추가 이벤트가 나가면 결제 한 건이 여러 번 세어진다. */
     @Test
     @DisplayName("이미 완료된 결제를 다시 완료해도 이벤트는 추가로 나가지 않는다")

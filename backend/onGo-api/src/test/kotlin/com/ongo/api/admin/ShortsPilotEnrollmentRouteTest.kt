@@ -47,13 +47,33 @@ class ShortsPilotEnrollmentRouteTest {
     }
 
     @Test
-    fun `등록 외의 경로를 추가로 열지 않는다`() {
-        // 리포트·운영자 시간 입력·결제 연결은 다음 작업이다. 이번에 곁다리로 열리면
-        // 권한 검토 없이 표면이 넓어진다.
+    fun `승인된 경로 외에는 열지 않는다`() {
+        /*
+         * 목록은 이름으로 고정한다. 개수만 세면 라우트를 하나 지우고 하나 더한 변경이
+         * 그대로 통과해, 권한 검토를 거치지 않은 경로가 조용히 들어온다.
+         *
+         * 후보 조회(candidates)는 등록 화면이 runId 를 스스로 찾게 하려고 이번에 더했다.
+         * 리포트·투입시간·매출은 측정 컨트롤러 몫이며 여기서는 열지 않는다.
+         */
         val routes = controller.declaredFunctions
             .filter { fn -> fn.annotations.any { it.annotationClass.simpleName?.endsWith("Mapping") == true } }
+            .map { it.name }
+            .toSet()
 
-        assertEquals(1, routes.size, "예상하지 못한 라우트가 있다: ${routes.map { it.name }}")
-        assertEquals("enroll", routes.single().name)
+        assertEquals(setOf("enroll", "candidates"), routes, "예상하지 못한 라우트가 있다: $routes")
+    }
+
+    /**
+     * 후보 조회는 **읽기**다. GET 이 아니면 CSRF·캐시·재시도 취급이 달라지고, 운영자가
+     * 새로고침할 때마다 쓰기로 오해될 여지가 생긴다.
+     */
+    @Test
+    fun `후보 조회는 GET 이다`() {
+        val candidates = controller.declaredFunctions.single { it.name == "candidates" }
+
+        assertTrue(
+            candidates.annotations.any { it.annotationClass.simpleName == "GetMapping" },
+            "후보 조회가 GET 이 아니다: ${candidates.annotations.map { it.annotationClass.simpleName }}",
+        )
     }
 }
