@@ -1,5 +1,12 @@
 <template>
-  <div class="relative">
+  <!--
+    수익 데이터가 없으면 **도넛을 그리지 않는다.**
+
+    예전에는 `data = []` 여도 빈 링과 가운데 **"₩0"** 을 그렸다. 그 화면은 "측정했더니
+    0원"으로 읽힌다 — 아직 아무것도 수집되지 않은 상태와 구분되지 않는다. 게다가 합계가
+    0 이면 범례·툴팁의 퍼센트 계산이 `0/0` 이라 `NaN%` 가 된다.
+  -->
+  <div v-if="hasRevenue" class="relative">
     <Doughnut :data="chartData" :options="chartOptions" />
     <div
       class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center"
@@ -10,6 +17,13 @@
       </div>
     </div>
   </div>
+  <p
+    v-else
+    data-testid="platform-breakdown-empty"
+    class="flex min-h-[220px] items-center justify-center rounded-lg border border-dashed border-gray-300 p-4 text-center text-body text-muted-strong dark:border-gray-600"
+  >
+    {{ $t('revenue.noRevenueData') }}
+  </p>
 </template>
 
 <script setup lang="ts">
@@ -35,6 +49,14 @@ const props = defineProps<Props>()
 const totalRevenue = computed(() =>
   props.data.reduce((sum, item) => sum + item.revenue, 0)
 )
+
+/**
+ * 도넛을 그릴 수 있는가.
+ *
+ * 행이 없거나 합계가 0 이면 그릴 조각이 없다. 그때 차트를 그리면 빈 링과 "₩0" 만 남아
+ * **측정된 0원처럼** 보이고, 퍼센트는 `0/0` 이라 `NaN%` 가 된다.
+ */
+const hasRevenue = computed(() => props.data.length > 0 && totalRevenue.value > 0)
 
 const chartData = computed(() => {
   const platformColors = {

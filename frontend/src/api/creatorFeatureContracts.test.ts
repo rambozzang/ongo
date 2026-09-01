@@ -33,6 +33,7 @@ describe('creator and UGC server contracts', () => {
   })
 
   it('keeps every AI metadata and creator-assistance action server-backed', async () => {
+    await aiApi.getFeatures()
     await aiApi.generateHashtags(anyRequest)
     await aiApi.stt(anyRequest)
     await aiApi.analyzeScript(anyRequest)
@@ -49,6 +50,7 @@ describe('creator and UGC server contracts', () => {
     await aiApi.revenueReport(anyRequest)
 
     expect(post).toHaveBeenCalledWith('/ai/generate-hashtags', anyRequest)
+    expect(get).toHaveBeenCalledWith('/ai/features')
     expect(post).toHaveBeenCalledWith('/ai/stt', anyRequest)
     expect(post).toHaveBeenCalledWith('/ai/analyze-script', anyRequest)
     expect(post).toHaveBeenCalledWith('/ai/batch', anyRequest)

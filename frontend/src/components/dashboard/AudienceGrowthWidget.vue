@@ -8,9 +8,10 @@
       <UsersIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
     </div>
     <p class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
-      {{ totalSubscribers.toLocaleString() }}
+      {{ totalSubscribers === null ? $t('analyticsView.notMeasured') : totalSubscribers.toLocaleString() }}
     </p>
-    <div v-if="change !== undefined" class="mt-1 flex items-center gap-1 text-body">
+    <!-- `!== undefined` 만 검사하면 `null` 이 통과해 `Math.abs(null) === 0` 이 된다. -->
+    <div v-if="change != null" class="mt-1 flex items-center gap-1 text-body">
       <span :class="changeColor">
         {{ changeIcon }}{{ Math.abs(change) }}
       </span>
@@ -42,18 +43,23 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler)
 const themeStore = useThemeStore()
 
 const props = defineProps<{
-  totalSubscribers: number
-  change?: number
+  /**
+   * 신규 구독 증가 수. **수집하는 플랫폼이 없으면 `null`.**
+   *
+   * `?? 0` 으로 채우면 실제로 0명이 늘어난 경우와 구분되지 않는다.
+   */
+  totalSubscribers: number | null
+  change?: number | null
   trendData: TrendDataPoint[]
 }>()
 
 const changeIcon = computed(() => {
-  if (props.change === undefined) return ''
+  if (props.change === undefined || props.change === null) return ''
   return props.change >= 0 ? '+' : ''
 })
 
 const changeColor = computed(() => {
-  if (props.change === undefined) return ''
+  if (props.change === undefined || props.change === null) return ''
   return props.change >= 0 ? 'text-success-strong' : 'text-error-strong'
 })
 

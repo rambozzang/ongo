@@ -27,6 +27,7 @@
     "filter": "필터",
     "reset": "초기화",
     "retry": "다시 시도",
+    "refresh": "새로고침",
     "upload": "업로드",
     "download": "다운로드",
     "create": "만들기",
@@ -432,6 +433,12 @@
           "sourceVideo": "원본 영상",
           "selectVideo": "영상을 선택하세요",
           "noVideos": "업로드된 영상이 없습니다. 먼저 영상을 업로드하세요.",
+          "creditMeasuring": "영상 길이를 확인하는 중입니다…",
+          "creditEstimate": "예상 크레딧 약 {credits}개 (약 {minutes}분 기준)",
+          "creditRule": "완주에는 최소 {min}개가 들며, 전사는 {window}분 구간마다 {perWindow}개가 추가됩니다. 이 영상의 길이를 확인하지 못해 정확한 예상치는 표시하지 못했습니다.",
+          "creditBalance": "현재 잔여 크레딧 {balance}개",
+          "creditShortfall": "{shortfall}개가 부족합니다.",
+          "creditServerDecides": "실제 차감 금액은 서버가 영상 길이를 측정해 최종 판정합니다.",
           "template": "템플릿",
           "defaultTemplate": "기본 템플릿",
           "videoRequired": "원본 영상을 선택하세요.",
@@ -442,7 +449,11 @@
           "viewPlans": "요금제 보기",
           "startTrial": "Starter 7일 무료 체험 시작",
           "startingTrial": "체험 시작 중...",
-          "trialStarted": "무료 체험이 시작되어 지금 실행 한 번을 만들 수 있습니다. 아래 '실행 시작'을 다시 눌러 주세요.",
+          "trialStarted": "무료 체험이 시작됐습니다. 아래 '실행 시작'을 다시 눌러 주세요. 실제 차감 금액은 서버가 최종 판정합니다.",
+          "trialStartedStillShort": "무료 체험이 시작됐지만 선택한 영상에는 크레딧 {shortfall}개가 더 필요합니다. 더 짧은 영상을 고르거나 크레딧을 충전해 주세요.",
+          "trialNotEnough": "이 영상은 약 {credits}개가 필요한데 무료 체험은 {trialCredits}개입니다. 체험은 한 번뿐이라 지금 쓰면 완주하지 못한 채 사라집니다.",
+          "trialCoversUpTo": "체험으로는 약 {minutes}분 이하 영상까지 완주할 수 있습니다.",
+          "pickShorterVideo": "더 짧은 영상 고르기",
           "trialFailed": "무료 체험을 시작하지 못했습니다."
         },
         "detail": {
@@ -573,7 +584,8 @@
           "download": "완성 영상 남겨받기"
         }
       }
-    }
+    },
+    "metricUnavailable": "측정 불가"
   },
   "status": {
     "success": "성공",
@@ -938,6 +950,17 @@
     "publishQueueTitle": "게시 대기열 운영 상태",
     "publishQueueDescription": "플랫폼 업로드의 활성 lease, 재시도 예정, 게시 여부 미확인 상태를 확인합니다.",
     "publishQueueLoadError": "게시 대기열을 불러오지 못했습니다.",
+    "deadLetterTitle": "결제 웹훅 복구",
+    "deadLetterDescription": "재시도를 모두 소진해 아무도 다시 처리하지 않는 결제 웹훅입니다. 원인을 확인한 뒤 재시도 대기열에 넣으세요.",
+    "deadLetterLoadError": "웹훅 목록을 불러오지 못했습니다.",
+    "deadLetterEmpty": "복구할 웹훅이 없습니다.",
+    "deadLetterProvider": "결제사",
+    "deadLetterEventType": "이벤트",
+    "deadLetterEventId": "이벤트 키",
+    "deadLetterReceivedAt": "수신",
+    "deadLetterUnknownProvider": "재처리할 수 없는 이벤트입니다.",
+    "requeueWebhook": "재시도 대기열에 넣기",
+    "requeueWebhookMessage": "웹훅 {id}을(를) 재시도 대기열에 넣을까요? 다시 한 번만 시도하며, 실제 반영 여부는 결제사 재조회가 결정합니다.",
     "accountDeletionTitle": "계정 삭제 운영",
     "accountDeletionDescription": "삭제 작업의 durable 상태를 확인하고 실패·정책 차단 작업을 재처리합니다.",
     "accountDeletionLoadError": "계정 삭제 작업을 불러오지 못했습니다.",
@@ -1580,6 +1603,7 @@
       "demoTitle": "AI 제목/태그 자동 생성",
       "demoDescription": "직접 쓴 스크립트를 붙여넣으면 AI가 플랫폼에 맞는\n제목 후보와 해시태그를 만들어 줍니다.",
       "creditCost": "생성에 성공하면 {count} 크레딧이 차감됩니다",
+      "creditChecking": "차감 비용을 확인하는 중입니다",
       "scriptLabel": "영상 스크립트나 주제",
       "scriptPlaceholder": "예: 오늘은 자취방에서 5분 만에 만드는 김치볶음밥을 소개합니다. 재료 손질부터 불 조절까지 알려드릴게요.",
       "scriptRequired": "스크립트를 입력해야 AI가 결과를 만들 수 있습니다.",
@@ -1752,6 +1776,10 @@
     "totalSubscribers": "총 구독자",
     "totalLikes": "총 좋아요",
     "aiCredits": "AI 크레딧",
+    "contentGap": {
+      "creditBlocked": "크레딧이 부족하여 콘텐츠 갭 분석을 실행할 수 없습니다.",
+      "chargeCredits": "크레딧 충전하기"
+    },
     "recentUploads": "최근 업로드",
     "viewAll": "전체 보기 →",
     "viewsTrend": "조회수 트렌드",
@@ -1892,6 +1920,14 @@
     "credits": "크레딧",
     "creditsUsed": "크레딧 소모",
     "useButton": "사용하기",
+    "unsupported": {
+      "badge": "지원 예정",
+      "button": "지금은 사용할 수 없음",
+      "revenueReason": "현재 연결된 플랫폼에서는 광고 수익을 자동 수집하지 않아 수익 분석 리포트를 만들 수 없습니다."
+    },
+    "pricing": {
+      "loading": "AI 기능 비용을 확인하는 중입니다. 잠시만 기다려 주세요."
+    },
     "form": {
       "script": "스크립트",
       "scriptPlaceholder": "영상 스크립트를 입력하세요...",
@@ -1965,7 +2001,12 @@
       "validDays": "{days}일 유효",
       "purchase": "구매하기",
       "needCredits": "이 기능에는 {credits} 크레딧이 필요합니다.",
-      "currencyUnit": "원"
+      "currencyUnit": "원",
+      "loadingPackages": "패키지 정보를 불러오는 중…",
+      "packagesError": "패키지 정보를 불러오지 못했습니다.",
+      "retry": "다시 시도",
+      "insufficientMessage": "크레딧이 부족하여 생성을 완료하지 못했습니다.",
+      "ctaText": "크레딧 충전하기"
     },
     "videoTitle": "영상 제목",
     "videoTitlePlaceholder": "영상 제목을 입력하세요",
@@ -1985,6 +2026,7 @@
   },
   "analyticsView": {
     "title": "통합 분석",
+    "changeUnavailable": "이전 기간 데이터가 없어 비교할 수 없습니다",
     "videoComparison": "영상 비교",
     "tabs": {
       "overview": "개요",
@@ -2009,7 +2051,10 @@
       "title": "시청자 리텐션 커브",
       "description": "영상의 시청자 리텐션을 분석합니다. 채널 평균과 비교하여 이탈 구간을 파악할 수 있습니다.",
       "selectVideo": "분석할 영상 선택",
-      "button": "리텐션"
+      "button": "리텐션",
+      "emptySelect": "리텐션 분석할 영상을 선택해주세요",
+      "emptyNoData": "리텐션 데이터가 없습니다",
+      "unsupportedTitle": "구간별 시청 데이터가 연결되지 않았습니다"
     },
     "emptyData": "분석할 데이터를 수집 중이에요",
     "emptyDataDescription": "영상을 게시하면 24시간 내에 조회수, 좋아요, 댓글 등의 분석 데이터가 나타납니다.",
@@ -2084,7 +2129,10 @@
       "instagramViews": "Instagram 조회수",
       "naverClipViews": "Naver Clip 조회수",
       "totalViews": "총 조회수"
-    }
+    },
+    "notMeasured": "측정 불가",
+    "optimalTimesEmptyTitle": "추천할 게시 시간이 없습니다",
+    "optimalTimesEmptyDescription": "게시 시각이 확인된 성과 데이터가 쌓이면 추천이 표시됩니다."
   },
   "commentsView": {
     "title": "댓글 관리",
@@ -2094,6 +2142,10 @@
     "lastSync": "마지막 동기화: {time}",
     "aiBatchReply": "AI 답변 ({count})",
     "aiBatchGenerating": "AI 생성 중...",
+    "batchCreditBlocked": "크레딧이 부족하여 AI 답변 초안을 생성할 수 없습니다.",
+    "batchChargeCredits": "크레딧 충전하기",
+    "faqCreditBlocked": "크레딧이 부족하여 FAQ 분석을 생성할 수 없습니다.",
+    "faqChargeCredits": "크레딧 충전하기",
     "syncComments": "댓글 동기화",
     "syncing": "동기화 중...",
     "sentimentSummary": "감정 분석 요약",
@@ -2343,6 +2395,7 @@
     "channelsConnected": "{current}/{max}개 연결됨",
     "connected": "연결됨",
     "connecting": "연결 중...",
+    "subscribers": "구독자",
     "unsupported": "현재 미지원",
     "unsupportedDescription": "네이버 클립은 공개 업로드·분석 API가 없어 동기화할 수 없습니다. 연결 해제를 권장합니다.",
     "connect": "연결하기",
@@ -2452,7 +2505,9 @@
       "original": "원본",
       "suggestions": "AI 제안",
       "run": "AI 최적화 실행",
-      "creditsUsed": "{count} 크레딧 소모됨"
+      "creditsUsed": "{count} 크레딧 소모됨",
+      "creditBlocked": "크레딧이 부족하여 AI 리라이트를 생성할 수 없습니다.",
+      "chargeCredits": "크레딧 충전하기"
     },
     "repurpose": {
       "button": "숏폼 추출",
@@ -2462,7 +2517,9 @@
       "creditNotice": "AI 크레딧이 소모됩니다",
       "analyzing": "AI가 영상을 분석 중입니다...",
       "run": "AI 분석 실행",
-      "clipsFound": "클립 후보 {count}개를 찾았습니다"
+      "clipsFound": "클립 후보 {count}개를 찾았습니다",
+      "creditBlocked": "AI 크레딧이 부족합니다. 충전 후 다시 시도하세요.",
+      "chargeCredits": "크레딧 충전하기"
     },
     "aiTools": {
       "button": "AI 도구"
@@ -2475,7 +2532,9 @@
       "run": "SEO 분석 실행",
       "analyzing": "AI가 분석 중입니다...",
       "suggestions": "개선 제안",
-      "creditsUsed": "{count} 크레딧 소모됨"
+      "creditsUsed": "{count} 크레딧 소모됨",
+      "creditBlocked": "SEO 분석을 위한 AI 크레딧이 부족합니다.",
+      "chargeCredits": "크레딧 충전"
     },
     "publishChecklist": {
       "button": "게시 점검",
@@ -2824,19 +2883,25 @@
     "bulkDeleteMessage": "테스트 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
     "bulkDeleteRunningMessage": "테스트 {count}개가 삭제됩니다. 이 중 {running}개는 진행 중이며, 지금까지 수집된 성과 데이터도 함께 사라집니다. 이 작업은 되돌릴 수 없습니다.",
     "bulkDeleteDone": "테스트 {count}개를 삭제했습니다",
-    "deleteFailed": "테스트 삭제에 실패했습니다"
+    "deleteFailed": "테스트 삭제에 실패했습니다",
+    "improvementUnavailable": "측정 데이터 없음",
+    "applyWinnerDone": "우승 변형을 적용했습니다",
+    "applyWinnerFailed": "우승을 적용하지 못했습니다",
+    "metricUnavailable": "측정 불가"
   },
   "competitor": {
     "title": "경쟁사 분석",
     "description": "경쟁 채널을 벤치마크하고 전략적 인사이트를 확보하세요",
     "refresh": "새로고침",
+    "sync": "동기화",
+    "syncing": "동기화 중...",
     "addChannel": "채널 추가",
     "pageGuideTitle": "경쟁사 분석",
     "pageGuide": [
       "경쟁사 추가 버튼으로 벤치마크 대상 채널을 등록하고, 추적 토글로 모니터링을 시작하세요",
       "목록 탭에서 추적 중인 경쟁 채널의 구독자·조회수·콘텐츠 수를 확인하세요",
-      "비교 탭에서 여러 경쟁 채널을 선택하여 주요 지표를 나란히 비교하고, 내 채널과의 차이를 분석하세요",
-      "트렌딩 탭에서 경쟁사의 인기 영상과 시장 트렌드를 파악하여 콘텐츠 전략에 반영하세요",
+      "비교 탭에서 경쟁 채널을 선택하여 주요 지표를 나란히 비교하고, 내 채널과의 차이를 분석하세요",
+      "AI 인사이트 탭에서 실제 벤치마크 데이터에 기반한 강점·약점·기회를 확인하세요",
       "새로고침 버튼으로 경쟁사 데이터를 최신 상태로 업데이트할 수 있습니다"
     ],
     "trackedChannels": "추적 중인 채널",
@@ -2877,7 +2942,25 @@
     "bulkDeleteMessage": "경쟁 채널 {count}개가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
     "bulkDeleteDone": "경쟁 채널 {count}개를 삭제했습니다",
     "bulkDeleteFailed": "경쟁 채널 삭제에 실패했습니다",
-    "emptyListDescription": "비교할 채널을 등록하면 구독자·조회수 추이를 나란히 볼 수 있습니다."
+    "emptyListDescription": "비교할 채널을 등록하면 구독자·조회수 추이를 나란히 볼 수 있습니다.",
+    "dataStatus": "현재 등록된 채널 기준",
+    "measuredOnly": "측정된 값만 집계",
+    "rankingNote": "측정 가능한 채널 기준",
+    "notMeasured": "측정 불가",
+    "syncSummary": "동기화 결과: {synced}건 갱신 · {unsupported}건 미지원 · {failed}건 실패",
+    "syncEmpty": "동기화할 경쟁 채널이 없습니다",
+    "syncNoUpdate": "갱신된 채널이 없습니다 (자동 조회 미지원 {unsupported}건)",
+    "syncDone": "{synced}건을 동기화했습니다",
+    "syncFailed": "경쟁사 데이터를 동기화하지 못했습니다.",
+    "loadFailed": "경쟁 채널 목록을 불러오지 못했습니다.",
+    "added": "경쟁 채널을 추가했습니다.",
+    "addFailed": "경쟁 채널을 추가하지 못했습니다.",
+    "removed": "경쟁 채널을 삭제했습니다.",
+    "removeFailed": "경쟁 채널을 삭제하지 못했습니다.",
+    "creditBlocked": "AI 인사이트를 생성하려면 크레딧이 필요합니다.",
+    "chargeCredits": "크레딧 충전하기",
+    "insightFailed": "AI 인사이트를 생성하지 못했습니다.",
+    "noInsightData": "경쟁 채널을 하나 이상 등록한 뒤 AI 인사이트를 생성할 수 있습니다."
   },
   "automation": {
     "title": "자동화 규칙",
@@ -2933,6 +3016,8 @@
   },
   "revenue": {
     "loadFailed": "수익 데이터를 불러오지 못했습니다. 마지막 정상 데이터만 표시 중입니다.",
+    "platformRevenueUnavailable": "현재 연결된 플랫폼에서는 광고 수익을 자동 수집하지 않습니다. 브랜드딜 수익은 브랜드딜 탭에서 확인할 수 있습니다.",
+    "reconnectChannel": "채널 다시 연결",
     "title": "수익 분석",
     "description": "플랫폼별 수익 현황을 분석하고 성장 기회를 파악하세요",
     "pageGuideTitle": "수익 분석",
@@ -2945,11 +3030,18 @@
     "totalRevenue": "총 수익",
     "monthlyGrowth": "월간 성장률",
     "avgRpm": "평균 RPM",
+    "avgRpmUnavailableShort": "측정 불가",
+    "avgRpmNoViewSample": "조회수가 집계된 플랫폼이 없어 계산할 수 없습니다",
+    "avgRpmLoadFailed": "조회수 데이터를 불러오지 못했습니다",
+    "avgRpmViewBased": "조회수 기준 · 조회 1,000회당",
+    "topPlatformUnavailableShort": "측정 불가",
+    "topPlatformUnavailable": "집계된 수익 플랫폼이 없습니다",
     "topPlatform": "최고 수익 플랫폼",
     "revenueTrend": "수익 추이",
     "platformBreakdown": {
       "totalRevenue": "총 수익"
     },
+    "platformBreakdownTitle": "플랫폼별 수익 분해",
     "platformComparison": "플랫폼 비교",
     "monthlyRevenueTable": "월별 수익 내역",
     "loading": "로딩 중...",
@@ -2961,9 +3053,20 @@
     "period3Months": "최근 3개월",
     "period6Months": "최근 6개월",
     "period1Year": "1년",
+    "period30Days": "최근 30일",
+    "period90Days": "최근 90일",
+    "period180Days": "최근 180일",
+    "period365Days": "최근 365일",
+    "dailyGranularity": "일별",
+    "monthlyAggregateNote": "{period}의 일별 수익을 월 단위로 합산했습니다.",
+    "noRevenueData": "표시할 수익 데이터가 없습니다",
+    "periodGrowth": "{period} 성장률",
+    "growthUnavailable": "이전 기간 수익이 없어 비교할 수 없습니다",
+    "growthUnavailableShort": "비교 불가",
     "cpmRpmTitle": "플랫폼별 CPM / RPM",
     "cpmRpmDesc": "CPM = 1,000회 노출당 수익 · RPM = 1,000회 조회당 수익",
     "thPlatform": "플랫폼",
+    "unitPriceUnavailable": "측정 불가",
     "thCpm": "CPM (₩)",
     "thRpm": "RPM (₩)",
     "thImpressions": "노출수",
@@ -2987,12 +3090,14 @@
     "statusCancelled": "취소",
     "insights": {
       "title": "AI 수익 인사이트",
-      "description": "AI가 수익 데이터를 분석하여 맞춤형 인사이트를 제공합니다",
-      "generate": "AI 인사이트 생성",
-      "generateHint": "5 크레딧 차감",
+      "description": "AI가 최근 30일 수익 데이터를 분석해 맞춤형 인사이트를 제공합니다",
+      "fixedPeriodNotice": "위에서 고른 기간과 무관하게 항상 최근 30일을 분석합니다.",
+      "generate": "AI 인사이트 생성 (최근 30일)",
+      "generateHint": "5 크레딧 차감 · 최근 30일 기준",
       "generating": "분석 중...",
       "empty": "아직 생성된 인사이트가 없습니다",
-      "emptyHint": "AI 인사이트 생성 버튼을 눌러 분석을 시작하세요",
+      "emptyHint": "AI 인사이트 생성 버튼을 눌러 최근 30일 분석을 시작하세요",
+      "unavailable": "현재 연결된 플랫폼의 광고 수익 데이터가 없어 AI 인사이트를 생성할 수 없습니다. 브랜드딜 수익은 브랜드딜 탭에서 확인하세요.",
       "confidence": {
         "HIGH": "높음",
         "MEDIUM": "중간",
@@ -3005,7 +3110,9 @@
         "OPPORTUNITY": "성장 기회",
         "FORECAST": "수익 예측"
       },
-      "generateFailed": "인사이트 생성에 실패했습니다"
+      "generateFailed": "인사이트 생성에 실패했습니다",
+      "creditBlocked": "크레딧이 부족하여 수익 인사이트를 생성할 수 없습니다.",
+      "chargeCredits": "크레딧 충전하기"
     },
     "alerts": {
       "title": "수익 알림 설정",
@@ -3363,7 +3470,7 @@
     "statusPastDue": "결제 지연",
     "free": "무료",
     "changePlanSimple": "{plan} 플랜으로 변경하시겠습니까?",
-    "upgradeMessage": "{current} 플랜에서 {target} 플랜({price}/월)으로 업그레이드하시겠습니까? 차액은 일할 계산되어 청구됩니다.",
+    "upgradeMessage": "{current} 플랜에서 {target} 플랜({price}{period})으로 업그레이드하시겠습니까? 결제 완료 후 즉시 적용됩니다.",
     "downgradeMessage": "{current} 플랜에서 {target} 플랜({price})으로 다운그레이드하시겠습니까? 현재 결제 기간 종료 후 적용됩니다.",
     "creditTypeDeduct": "사용",
     "creditTypeCharge": "충전",
@@ -4271,7 +4378,10 @@
       "aiGenerating": "AI 생성 중...",
       "aiReply": "AI 답글",
       "submitting": "답글 작성 중...",
-      "submit": "답글 달기"
+      "submit": "답글 달기",
+      "creditBlocked": "크레딧이 부족하여 AI 답글을 생성할 수 없습니다.",
+      "chargeCredits": "크레딧 충전하기",
+      "aiFailed": "AI 답글 생성에 실패했습니다. 다시 시도해 주세요."
     }
   },
   "channelAudit": {
@@ -4291,7 +4401,9 @@
     "strengths": "강점",
     "weaknesses": "약점",
     "actionItems": "개선 액션 아이템",
-    "outlierVideos": "아웃라이어 영상"
+    "outlierVideos": "아웃라이어 영상",
+    "creditBlocked": "크레딧이 부족하여 채널 진단을 생성할 수 없습니다.",
+    "chargeCredits": "크레딧 충전하기"
   },
   "keywordResearch": {
     "title": "키워드 리서치",
@@ -4323,6 +4435,7 @@
     "collapse": "접기"
   },
   "assets": {
+    "title": "에셋 라이브러리",
     "deleteTitle": "에셋을 삭제할까요?",
     "deleteMessage": "삭제한 에셋은 되돌릴 수 없습니다.",
     "bulkDeleteTitle": "선택한 에셋을 삭제할까요?",
@@ -4378,6 +4491,16 @@
     "planLimitHint": "채널을 더 연결하려면 플랜을 업그레이드한 뒤 다시 연결해 주세요.",
     "planLimitCta": "플랜 업그레이드하기"
   },
+  "paymentRedirect": {
+    "verifying": "결제 결과를 확인하고 있습니다…",
+    "success": "결제가 정상적으로 완료되었습니다.",
+    "goToSubscription": "구독 화면으로",
+    "missingPaymentId": "결제 정보를 확인할 수 없습니다. 결제가 완료되었는지 구독 화면에서 확인해 주세요.",
+    "pending": "결제 상태가 아직 확정되지 않았습니다.",
+    "pendingHint": "결제가 승인되었다면 잠시 후 자동으로 반영됩니다. 반영되지 않으면 결제 내역을 확인해 주세요.",
+    "failed": "결제가 취소되었거나 실패했습니다.",
+    "verifyFailed": "결제 상태를 확인하지 못했습니다. 결제 내역을 확인해 주세요."
+  },
   "videoDetail": {
     "title": "영상 상세",
     "pageGuideTitle": "영상 상세",
@@ -4398,7 +4521,24 @@
     "notEnoughData": "데이터가 충분하지 않습니다",
     "platformComparison": "플랫폼 간 비교",
     "analyticsLoadFailed": "성과 데이터를 불러오지 못했습니다. 기존 데이터가 있다면 그대로 표시합니다.",
+    "analyticsStaleNotice": "아래 수치는 마지막으로 불러온 값이며 최신이 아닐 수 있습니다.",
+    "metricLoading": "불러오는 중",
+    "metricUnavailableError": "불러오지 못함",
+    "metricNoData": "미측정",
+    "analyticsRefresh": "새로고침",
+    "analyticsRefreshAria": "성과 데이터 새로고침",
     "noAnalyticsData": "분석 데이터가 없습니다",
+    "comparisonExcludesUncollected": "{platforms}은(는) 아직 수집된 성과가 없어 비교에서 제외했습니다.",
+    "selfScoreTitle": "성과 점수",
+    "selfScoreBasis": "이 영상의 조회·참여·게시 범위로 계산한 자체 점수입니다.",
+    "aiScoreBasis": "채널의 다른 영상과 비교한 상대 점수입니다.",
+    "aiScoreEmptyNoUploads": "아직 게시된 플랫폼이 없습니다",
+    "aiScoreEmptyNoAnalytics": "아직 수집된 성과가 없습니다",
+    "aiScoreEmptyDefault": "성과 데이터가 없습니다",
+    "percentileUnavailable": "비교할 영상이 부족합니다",
+    "scoreUnavailable": "측정 불가",
+    "trendUnavailable": "추세 판단 불가",
+    "selfScoreUnavailable": "아직 수집된 성과가 없어 점수를 계산할 수 없습니다. 플랫폼에서 지표가 수집되면 표시됩니다.",
     "commentsPhase2": "댓글 통합 관리 기능은 Phase 2에서 제공됩니다.",
     "commentsPhase2Hint": "플랫폼별 댓글 조회 및 답글 작성이 가능해집니다.",
     "noUploadsTitle": "아직 플랫폼에 업로드되지 않았습니다",
@@ -4505,7 +4645,22 @@
       "emptyAttention": "확인이 필요한 항목이 없습니다",
       "emptyChannels": "연결된 채널이 없습니다",
       "loadFailed": "오늘 데이터를 불러오지 못했습니다.",
-      "loadPartial": "일부 오늘 데이터만 불러왔습니다. 최신 상태를 다시 확인해 주세요."
+      "loadPartial": "일부 오늘 데이터만 불러왔습니다. 최신 상태를 다시 확인해 주세요.",
+      "weeklyDigest": {
+        "title": "AI 주간 다이제스트",
+        "viewAll": "전체 보기",
+        "upgradeTitle": "매주 성과를 정리해 드립니다",
+        "upgradeDescription": "Pro/Business 플랜에서는 매주 월요일 채널 성과와 다음 실행 항목을 자동으로 받아볼 수 있습니다.",
+        "upgradeAction": "플랜 살펴보기",
+        "waitingTitle": "이번 주 다이제스트를 준비 중입니다",
+        "waitingDescription": "Pro/Business 다이제스트는 매주 월요일 자동 생성됩니다. 데이터가 준비되면 이곳에 표시됩니다.",
+        "loadFailed": "다이제스트를 불러오지 못했습니다.",
+        "summary": "요약",
+        "topVideos": "상위 영상",
+        "anomalies": "주목할 변화",
+        "actionItems": "실행 항목",
+        "generatedAt": "{date} 생성"
+      }
     },
     "compose": {
       "noFile": "파일을 선택하세요",
@@ -4538,6 +4693,8 @@
       "metadataGenerating": "자막을 읽고 메타데이터를 만드는 중…",
       "metadataGenerated": "제목·설명·해시태그를 자동 생성했습니다. 각 플랫폼 탭에서 수정할 수 있습니다.",
       "metadataFailed": "메타데이터 자동 생성에 실패했습니다. 직접 입력한 뒤 다시 시도해 주세요.",
+      "creditBlocked": "AI 크레딧이 부족합니다. 충전 후 다시 시도하세요.",
+      "chargeCredits": "크레딧 충전하기",
       "applyCommon": "공통 문구 적용",
       "commonApplied": "공통 문구를 선택한 채널에 적용했습니다.",
       "autoShorts": "원본에서 쇼츠도 자동 제작·게시",
@@ -4611,6 +4768,10 @@
       "scheduling": "예약 중…",
       "scheduled": "예약을 걸었습니다",
       "scheduleFailed": "예약에 실패했습니다",
+      "planLimitHint": "게시 한도에 도달했습니다. 플랜을 업그레이드하면 더 많은 영상을 예약하고 게시할 수 있습니다.",
+      "planLimitCta": "플랜 업그레이드하기",
+      "storageQuotaHint": "저장 공간을 모두 사용했습니다. 플랜을 업그레이드하면 더 많은 영상을 저장하고 업로드할 수 있습니다.",
+      "storageQuotaCta": "플랜 업그레이드하기",
       "uploading": "업로드 중 {percent}%"
     },
     "inbox": {

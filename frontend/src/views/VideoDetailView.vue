@@ -188,9 +188,28 @@
         </div>
       </div>
 
-      <!-- Performance Score Section -->
+      <!--
+        자체 성과 점수.
+
+        **집계가 하나라도 있을 때만 계산한다.** `calculateVideoScore` 의 커버리지 항목은
+        업로드 개수만으로 점수가 나오므로(플랫폼 수 × 25), 아직 아무것도 수집되지 않은
+        영상도 0 이 아닌 총점을 받는다. 예: 2개 플랫폼 게시 → 커버리지 50 → 총점 8점.
+        조회·참여·성장은 전부 0 인데 "8점"만 보이면 성과가 나빴다는 뜻으로 읽힌다.
+      -->
       <div v-if="video.uploads.length > 0" class="mb-6">
-        <PerformanceScore :video="video" :analytics="analyticsData" />
+        <PerformanceScore
+          v-if="hasCollectedAnalytics"
+          :video="video"
+          :analytics="analyticsData"
+        />
+        <div v-else class="card" data-testid="local-score-unavailable">
+          <h3 class="mb-2 text-title font-semibold text-gray-900 dark:text-gray-100">
+            {{ $t('videoDetail.selfScoreTitle') }}
+          </h3>
+          <p class="text-body text-gray-500 dark:text-gray-400">
+            {{ $t('videoDetail.selfScoreUnavailable') }}
+          </p>
+        </div>
       </div>
 
       <!-- AI Performance Score Card -->
@@ -210,7 +229,16 @@
           class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2.5 text-body text-error-strong"
           role="alert"
         >
-          <span class="flex-1">{{ analyticsError }}</span>
+          <span class="flex-1">
+            {{ analyticsError }}
+            <!--
+              숫자를 보존하는 대신 신선도는 속이지 않는다. 이 문구가 없으면 오류 배너와
+              함께 뜬 수치가 방금 조회된 값처럼 보인다.
+            -->
+            <span v-if="showsStaleAnalytics" data-testid="stale-analytics-notice">
+              {{ $t('videoDetail.analyticsStaleNotice') }}
+            </span>
+          </span>
           <button
             type="button"
             class="btn-secondary min-h-11"
@@ -218,6 +246,24 @@
             @click="video && fetchAnalytics(video.id)"
           >
             {{ analyticsLoading ? $t('action.loading') : $t('action.retry') }}
+          </button>
+        </div>
+
+        <!--
+          성공한 뒤에도 다시 불러올 수 있어야 한다. 오류 배너 안의 재시도 버튼은 오류일
+          때만 보이므로, 그것만으로는 "성공 → 재조회 실패" 상태에 도달할 수 없었다.
+          중복 요청은 analyticsLoading 으로 막는다.
+        -->
+        <div class="mb-3 flex justify-end">
+          <button
+            type="button"
+            class="btn-secondary min-h-11"
+            :disabled="analyticsLoading"
+            :aria-label="$t('videoDetail.analyticsRefreshAria')"
+            data-testid="analytics-refresh"
+            @click="video && fetchAnalytics(video.id)"
+          >
+            {{ analyticsLoading ? $t('videoDetail.metricLoading') : $t('videoDetail.analyticsRefresh') }}
           </button>
         </div>
 
@@ -249,7 +295,7 @@
             <EyeIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
             <p class="text-caption text-gray-500 dark:text-gray-400">{{ $t('videos.views') }}</p>
             <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
-              {{ formatCompactNumber(currentAnalytics?.views ?? 0) }}
+              {{ metricText(currentAnalytics?.views) }}
             </p>
             <div
               v-if="currentAnalytics?.viewsChange != null"
@@ -267,7 +313,7 @@
             <HeartIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
             <p class="text-caption text-gray-500 dark:text-gray-400">{{ $t('videos.likes') }}</p>
             <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
-              {{ formatCompactNumber(currentAnalytics?.likes ?? 0) }}
+              {{ metricText(currentAnalytics?.likes) }}
             </p>
             <div
               v-if="currentAnalytics?.likesChange != null"
@@ -285,7 +331,7 @@
             <ChatBubbleLeftEllipsisIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
             <p class="text-caption text-gray-500 dark:text-gray-400">{{ $t('videos.comments') }}</p>
             <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
-              {{ formatCompactNumber(currentAnalytics?.comments ?? 0) }}
+              {{ metricText(currentAnalytics?.comments) }}
             </p>
           </div>
 
@@ -294,14 +340,17 @@
             <ShareIcon class="mx-auto mb-2 h-6 w-6 text-gray-400 dark:text-gray-500" />
             <p class="text-caption text-gray-500 dark:text-gray-400">{{ $t('videos.shares') }}</p>
             <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
-              {{ formatCompactNumber(currentAnalytics?.shares ?? 0) }}
+              {{ metricText(currentAnalytics?.shares) }}
             </p>
           </div>
         </div>
 
         <!-- Charts Row -->
         <div class="page-grid page-grid--split mb-6">
-          <!-- Daily Views Trend Line Chart Placeholder -->
+          <!--
+            일별 조회수 추이 — API 의 dailyTrend 로 그리는 막대 그래프.
+            데이터가 없으면 아래 v-else 가 미수집 안내를 보여 준다.
+          -->
           <div class="card">
             <h3 class="mb-4 text-h3 text-gray-900 dark:text-gray-100">
               {{ $t('videoDetail.dailyViewsTrend') }}
@@ -364,12 +413,16 @@
             </div>
           </div>
 
-          <!-- Platform Comparison Grouped Bar Chart Placeholder -->
+          <!--
+            플랫폼 비교 — API 의 플랫폼별 합계로 그리는 막대 그래프.
+            수집된 적 없는 플랫폼은 제외한다(comparablePlatforms). 포함하면 합계 0 이
+            "조회수 0회"처럼 보인다.
+          -->
           <div class="card">
             <h3 class="mb-4 text-h3 text-gray-900 dark:text-gray-100">
               {{ $t('videoDetail.platformComparison') }}
             </h3>
-            <div v-if="analyticsData.length > 0" class="h-64 space-y-4 overflow-y-auto">
+            <div v-if="comparablePlatforms.length > 0" class="h-64 space-y-4 overflow-y-auto">
               <!-- Views comparison -->
               <div>
                 <p class="mb-1 text-caption text-gray-500 dark:text-gray-400">
@@ -377,15 +430,18 @@
                 </p>
                 <div class="space-y-1">
                   <div
-                    v-for="a in analyticsData"
+                    v-for="a in comparablePlatforms"
                     :key="`views-${a.platform}`"
+                    :data-testid="`comparison-row-${a.platform}`"
                     class="flex items-center gap-2"
                   >
                     <span class="w-20 text-body-xs text-gray-600 dark:text-gray-300">
                       {{ PLATFORM_CONFIG[a.platform].label }}
                     </span>
                     <div class="h-4 flex-1 rounded-full bg-gray-100 dark:bg-gray-800">
+                      <!-- 미수집 지표는 막대를 그리지 않는다. 폭 0 은 "0 을 기록했다" 로 보인다. -->
                       <div
+                        v-if="a.views !== null"
                         class="h-full rounded-full transition-all"
                         :style="{
                           width: `${comparisonBarWidth(a.views, maxViews)}%`,
@@ -394,7 +450,7 @@
                       />
                     </div>
                     <span class="w-14 text-right text-caption text-gray-700 dark:text-gray-300">
-                      {{ formatCompactNumber(a.views) }}
+                      {{ a.views === null ? $t('analyticsView.notMeasured') : formatCompactNumber(a.views) }}
                     </span>
                   </div>
                 </div>
@@ -406,7 +462,7 @@
                 </p>
                 <div class="space-y-1">
                   <div
-                    v-for="a in analyticsData"
+                    v-for="a in comparablePlatforms"
                     :key="`likes-${a.platform}`"
                     class="flex items-center gap-2"
                   >
@@ -414,7 +470,9 @@
                       {{ PLATFORM_CONFIG[a.platform].label }}
                     </span>
                     <div class="h-4 flex-1 rounded-full bg-gray-100 dark:bg-gray-800">
+                      <!-- 미수집 지표는 막대를 그리지 않는다. 폭 0 은 "0 을 기록했다" 로 보인다. -->
                       <div
+                        v-if="a.likes !== null"
                         class="h-full rounded-full transition-all"
                         :style="{
                           width: `${comparisonBarWidth(a.likes, maxLikes)}%`,
@@ -423,7 +481,7 @@
                       />
                     </div>
                     <span class="w-14 text-right text-caption text-gray-700 dark:text-gray-300">
-                      {{ formatCompactNumber(a.likes) }}
+                      {{ a.likes === null ? $t('analyticsView.notMeasured') : formatCompactNumber(a.likes) }}
                     </span>
                   </div>
                 </div>
@@ -435,7 +493,7 @@
                 </p>
                 <div class="space-y-1">
                   <div
-                    v-for="a in analyticsData"
+                    v-for="a in comparablePlatforms"
                     :key="`comments-${a.platform}`"
                     class="flex items-center gap-2"
                   >
@@ -443,7 +501,9 @@
                       {{ PLATFORM_CONFIG[a.platform].label }}
                     </span>
                     <div class="h-4 flex-1 rounded-full bg-gray-100 dark:bg-gray-800">
+                      <!-- 미수집 지표는 막대를 그리지 않는다. 폭 0 은 "0 을 기록했다" 로 보인다. -->
                       <div
+                        v-if="a.comments !== null"
                         class="h-full rounded-full transition-all"
                         :style="{
                           width: `${comparisonBarWidth(a.comments, maxComments)}%`,
@@ -452,7 +512,7 @@
                       />
                     </div>
                     <span class="w-14 text-right text-caption text-gray-700 dark:text-gray-300">
-                      {{ formatCompactNumber(a.comments) }}
+                      {{ a.comments === null ? $t('analyticsView.notMeasured') : formatCompactNumber(a.comments) }}
                     </span>
                   </div>
                 </div>
@@ -464,7 +524,7 @@
                 </p>
                 <div class="space-y-1">
                   <div
-                    v-for="a in analyticsData"
+                    v-for="a in comparablePlatforms"
                     :key="`shares-${a.platform}`"
                     class="flex items-center gap-2"
                   >
@@ -472,7 +532,9 @@
                       {{ PLATFORM_CONFIG[a.platform].label }}
                     </span>
                     <div class="h-4 flex-1 rounded-full bg-gray-100 dark:bg-gray-800">
+                      <!-- 미수집 지표는 막대를 그리지 않는다. 폭 0 은 "0 을 기록했다" 로 보인다. -->
                       <div
+                        v-if="a.shares !== null"
                         class="h-full rounded-full transition-all"
                         :style="{
                           width: `${comparisonBarWidth(a.shares, maxShares)}%`,
@@ -481,7 +543,7 @@
                       />
                     </div>
                     <span class="w-14 text-right text-caption text-gray-700 dark:text-gray-300">
-                      {{ formatCompactNumber(a.shares) }}
+                      {{ a.shares === null ? $t('analyticsView.notMeasured') : formatCompactNumber(a.shares) }}
                     </span>
                   </div>
                 </div>
@@ -495,6 +557,22 @@
                 </p>
               </div>
             </div>
+            <!--
+              비교에서 뺀 플랫폼을 밝힌다. 조용히 빼면 "그 플랫폼에 안 올렸나?" 로 읽힌다.
+              올리긴 했고 아직 수집되지 않았다는 사실을 그대로 말한다.
+            -->
+            <p
+              v-if="uncollectedPlatforms.length > 0"
+              class="mt-3 text-caption text-gray-500 dark:text-gray-400"
+            >
+              {{
+                $t('videoDetail.comparisonExcludesUncollected', {
+                  platforms: uncollectedPlatforms
+                    .map((a) => PLATFORM_CONFIG[a.platform].label)
+                    .join(', '),
+                })
+              }}
+            </p>
           </div>
         </div>
 
@@ -587,6 +665,7 @@ import type { VideoAnalytics } from '@/types/analytics'
 import type { VideoUpload } from '@/types/video'
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
+import { resolveMetricDisplay, shouldWarnStaleMetrics } from '@/utils/metricDisplay'
 
 // ---- Props ----
 
@@ -622,11 +701,52 @@ const currentAnalytics = computed(() => {
   return analyticsData.value.find((a) => a.platform === selectedPlatform.value) ?? null
 })
 
-/** Max metric values for scaling comparison bar widths */
-const maxViews = computed(() => Math.max(...analyticsData.value.map((a) => a.views), 1))
-const maxLikes = computed(() => Math.max(...analyticsData.value.map((a) => a.likes), 1))
-const maxComments = computed(() => Math.max(...analyticsData.value.map((a) => a.comments), 1))
-const maxShares = computed(() => Math.max(...analyticsData.value.map((a) => a.shares), 1))
+/**
+ * 플랫폼 비교에 실제로 그릴 수 있는 플랫폼.
+ *
+ * **서버는 수집이 없는 업로드에도 합계 0 인 행을 만든다**(`AnalyticsUseCase` 가 업로드마다
+ * `dailyData = []` 로 행을 채운다). 그래서 `analyticsData` 는 한 번도 수집되지 않은
+ * 플랫폼까지 담고 있고, 그대로 그리면 막대 0 과 숫자 "0" 이 나온다. 크리에이터는 그것을
+ * **"조회수가 0회"** 로 읽는다 — 아직 아무것도 수집되지 않았다는 사실과 구분되지 않는다.
+ *
+ * 바로 위 KPI 칸은 이미 `hasData` 로 이 둘을 구분하고 있다(`metricText`). 비교 차트만
+ * 예외로 두면 같은 화면이 서로 다른 답을 준다.
+ *
+ * `hasData` 가 `undefined` 인 것은 **판단 불가**(필드가 없는 옛 응답)라 숨기지 않는다.
+ * 숨기면 실제 데이터를 감출 수 있고, 그건 가짜 0 보다 나쁘다.
+ */
+const comparablePlatforms = computed(() =>
+  analyticsData.value.filter((a) => a.hasData !== false),
+)
+
+/**
+ * 집계가 하나라도 수집된 플랫폼이 있는가.
+ *
+ * 자체 성과 점수는 이것이 참일 때만 계산한다. 커버리지 항목이 업로드 개수만으로 점수를
+ * 내기 때문에, 이 조건 없이는 **한 번도 측정되지 않은 영상이 0 이 아닌 총점**을 받는다.
+ *
+ * `hasData` 가 `undefined` 인 옛 응답은 판단 불가라 있는 것으로 본다 — 숨겨서 실제 점수를
+ * 감추는 쪽이 더 나쁘다.
+ */
+const hasCollectedAnalytics = computed(() =>
+  analyticsData.value.some((a) => a.hasData !== false),
+)
+
+/** 아직 수집된 적이 없어 비교에서 뺀 플랫폼. 사라진 것처럼 보이지 않게 아래에 알린다. */
+const uncollectedPlatforms = computed(() =>
+  analyticsData.value.filter((a) => a.hasData === false),
+)
+
+/**
+ * Max metric values for scaling comparison bar widths.
+ *
+ * 그리는 대상과 같은 집합에서 구한다. 전체에서 구하면 숨긴 플랫폼이 축을 늘려 보이는
+ * 막대가 실제보다 짧아진다.
+ */
+const maxViews = computed(() => Math.max(...comparablePlatforms.value.map((a) => a.views).filter((v): v is number => v !== null), 1))
+const maxLikes = computed(() => Math.max(...comparablePlatforms.value.map((a) => a.likes).filter((v): v is number => v !== null), 1))
+const maxComments = computed(() => Math.max(...comparablePlatforms.value.map((a) => a.comments).filter((v): v is number => v !== null), 1))
+const maxShares = computed(() => Math.max(...comparablePlatforms.value.map((a) => a.shares).filter((v): v is number => v !== null), 1))
 
 /** Max daily trend value for scaling bar heights */
 const maxTrendValue = computed(() => {
@@ -677,6 +797,40 @@ function formatCompactNumber(n: number): string {
   return compactNumberFormat.value.format(n)
 }
 
+/** 로딩·오류·미집계를 0 으로 뭉개지 않는다. 판정은 [resolveMetricDisplay] 가 한다. */
+const metricContext = computed(() => ({
+  loading: analyticsLoading.value,
+  hasError: analyticsError.value != null,
+  // 서버는 수집이 없는 업로드에도 합계 0 인 행을 만든다. 일별 데이터 유무로만
+  // "실제 0회"와 "미수집"을 가를 수 있다.
+  hasData: currentAnalytics.value?.hasData,
+}))
+
+function metricText(value: number | null | undefined): string {
+  const display = resolveMetricDisplay(value, metricContext.value)
+  switch (display.kind) {
+    case 'value':
+      return formatCompactNumber(display.value)
+    case 'loading':
+      return t('videoDetail.metricLoading')
+    case 'unavailable':
+      return display.reason === 'error'
+        ? t('videoDetail.metricUnavailableError')
+        : t('videoDetail.metricNoData')
+  }
+}
+
+/**
+ * 오류인데 이전 데이터가 남아 있는 경우. 화면의 숫자가 **최신이 아닐 수 있다**는 것을
+ * 따로 알린다 — 숫자는 보존하되 신선도는 속이지 않는다.
+ */
+const showsStaleAnalytics = computed(() =>
+  shouldWarnStaleMetrics({
+    hasError: analyticsError.value != null,
+    hasLoadedValue: currentAnalytics.value != null,
+  }),
+)
+
 /** Format a change percentage with sign */
 function formatChange(value: number): string {
   if (value === 0) return '0%'
@@ -697,8 +851,14 @@ function trendBarHeight(value: number): number {
 }
 
 /** Calculate bar width percentage for comparison chart */
-function comparisonBarWidth(value: number, max: number): number {
-  if (max === 0) return 0
+/**
+ * 비교 막대의 폭. **미수집 지표(`null`)는 0 폭이다.**
+ *
+ * 호출부는 `v-if` 로 막대 자체를 그리지 않으므로 이 0 이 화면에 나오지는 않는다.
+ * `?? 0` 을 값 쪽에 쓰면 "0 을 기록했다" 로 읽히므로 여기서 명시적으로 판정한다.
+ */
+function comparisonBarWidth(value: number | null, max: number): number {
+  if (value === null || max === 0) return 0
   return Math.max((value / max) * 100, 2)
 }
 
@@ -778,6 +938,8 @@ async function fetchAnalytics(videoId: number) {
   try {
     analyticsData.value = await analyticsApi.videoAnalytics(videoId)
   } catch {
+    // 이전에 성공한 값은 지우지 않는다. 이미 확인한 숫자를 오류 하나로 지우면
+    // 사용자는 성과가 사라진 줄 안다. 최신이 아닐 수 있다는 사실은 배너가 알린다.
     analyticsError.value = t('videoDetail.analyticsLoadFailed')
   } finally {
     analyticsLoading.value = false

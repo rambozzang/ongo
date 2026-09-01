@@ -48,7 +48,8 @@ export interface AdminChannelItem {
   platform: string
   channelName: string
   channelUrl: string | null
-  subscriberCount: number
+  /** 구독자 수. **조회하지 않는 플랫폼이면 `null`** — `Channel.subscriberCount` 와 같은 계약. */
+  subscriberCount: number | null
   status: string
   tokenExpiresAt: string | null
   connectedAt: string | null
@@ -63,6 +64,7 @@ export interface AdminSubscriptionDetail {
   currentPeriodEnd: string | null
   nextBillingDate: string | null
   pendingPlanType: string | null
+  pendingBillingCycle: string | null
   storageQuotaOverride: number | null
   cancelledAt: string | null
   createdAt: string | null
@@ -102,6 +104,32 @@ export interface AdminAccountDeletionJob {
   completedAt: string | null
   lastErrorCode: string | null
   supportReference: string | null
+}
+
+/**
+ * 재시도를 모두 소진한 결제 웹훅.
+ *
+ * 서버가 원문 본문·서명을 내려주지 않고 멱등 키도 마스킹한다. 여기에 `payload` 같은 필드를
+ * 추가하면 결제 식별자·고객 정보가 화면과 스크린샷으로 퍼진다.
+ */
+export interface AdminDeadLetterWebhook {
+  /** 재큐잉 대상 지정용 대리 키. 멱등 키를 노출하지 않기 위해 이것을 쓴다. */
+  id: number
+  provider: string
+  eventType: string
+  maskedEventId: string
+  retryCount: number
+  maxRetries: number
+  nextRetryAt: string | null
+  errorMessage: string | null
+  createdAt: string | null
+  processedAt: string | null
+}
+
+export interface AdminDeadLetterRequeueResult {
+  id: number
+  status: string
+  nextRetryAt: string
 }
 
 export interface UpdateRoleRequest {

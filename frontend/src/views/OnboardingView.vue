@@ -245,6 +245,29 @@
               {{ paymentUnavailableCopy }}
             </p>
 
+            <!--
+              조회 실패를 빈 화면으로 두지 않는다. 카드가 없는 이유를 말해 주지 않으면
+              사용자는 플랜이 사라진 줄 안다. 무료로 계속 갈 수 있다는 점까지 같이 알린다.
+            -->
+            <p
+              v-if="isLoadingPlans"
+              class="mb-4 text-body-xs text-gray-500 dark:text-gray-400"
+              role="status"
+            >
+              플랜 정보를 불러오는 중…
+            </p>
+            <div
+              v-else-if="plansError"
+              class="mb-4 rounded-lg border border-warning-strong/40 bg-warning-subtle p-3 text-body-xs text-warning-strong"
+              role="status"
+              data-testid="onboarding-plans-error"
+            >
+              <p>{{ plansError }} 무료 플랜으로 계속 진행할 수 있습니다.</p>
+              <button type="button" class="btn-secondary mt-2 text-body-xs" @click="loadPlans">
+                다시 시도
+              </button>
+            </div>
+
             <div class="space-y-4">
               <PlanSelectionCard
                 v-for="plan in displayPlans"
@@ -301,11 +324,20 @@
                   <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {{ t('onboarding.aiTrial.creditCost', { count: AI_TRIAL_CREDIT_COST }) }}
+                  <span v-if="aiTrialCreditCost != null">
+                    {{ t('onboarding.aiTrial.creditCost', { count: aiTrialCreditCost }) }}
+                  </span>
+                  <span v-else>{{ t('onboarding.aiTrial.creditChecking') }}</span>
                 </div>
+                <p v-if="aiTrialPricingError" class="mb-4 text-body-xs text-error-strong" role="alert">
+                  {{ aiTrialPricingError }}
+                  <button type="button" class="ml-1 underline" @click="loadAiFeaturePricing">
+                    {{ t('common.retry') }}
+                  </button>
+                </p>
                 <div>
                   <button
-                    :disabled="isAiLoading || !hasAiTrialScript"
+                    :disabled="isAiLoading || !hasAiTrialScript || aiTrialCreditCost == null"
                     class="btn-primary rounded-xl px-8 py-3 text-body disabled:opacity-50"
                     @click="tryAiGeneration"
                   >
@@ -413,6 +445,7 @@
         v-model="showPaymentModal"
         :target-plan="selectedPlan"
         :price="selectedPlanInfo?.price ?? 0"
+        :plan="selectedPlanInfo ?? null"
         @confirm="handlePlanPaymentSuccess"
       />
 
@@ -467,6 +500,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { usePaymentAvailability } from '@/composables/usePaymentAvailability'
+import { useAiFeaturePricing } from '@/composables/useAiFeaturePricing'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -478,20 +512,17 @@ import { authApi } from '@/api/auth'
 import { aiApi } from '@/api/ai'
 import { channelApi } from '@/api/channel'
 import { videoApi } from '@/api/video'
-import { buildOAuthState, generateOAuthStateNonce, generatePKCE, getOAuthRedirectUri } from '@/utils/oauth'
+import { buildOAuthState, generateOAuthStateNonce, generatePKCE, getOAuthRedirectUri, storeChannelOAuthContext } from '@/utils/oauth'
 import { ArrowUpTrayIcon, SparklesIcon, ChartBarIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/outline'
 import OnboardingStepIndicator from '@/components/onboarding/OnboardingStepIndicator.vue'
 import PlanSelectionCard from '@/components/onboarding/PlanSelectionCard.vue'
 import PaymentModal from '@/components/subscription/PaymentModal.vue'
-import { PLANS } from '@/types/subscription'
+import { useSubscriptionStore } from '@/stores/subscription'
 import OnGoLogo from '@/components/brand/OnGoLogo.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const { t } = useI18n({ useScope: 'global' })
-
-/** AI 체험 1회당 차감되는 크레딧 */
-const AI_TRIAL_CREDIT_COST = 5
 
 const currentStep = ref(0)
 const isSubmitting = ref(false)
@@ -533,8 +564,21 @@ function alreadyPaidPlan(): PlanType | null {
 }
 
 const selectedPlan = ref<PlanType>(alreadyPaidPlan() ?? 'FREE')
-const displayPlans = computed(() => PLANS.slice(0, 3))
-const selectedPlanInfo = computed(() => PLANS.find((plan) => plan.type === selectedPlan.value))
+/*
+ * 플랜 목록은 **서버가 준다.** 가격과 한도는 서버가 결제 기준으로 삼는 값이라, 화면이
+ * 자기 상수를 그리면 사용자가 본 금액과 청구액이 갈릴 수 있다.
+ *
+ * 노출 범위(앞 세 개)는 종전과 같다. 어떤 플랜을 온보딩에 보여줄지는 별도 판단이라
+ * 이번에 바꾸지 않는다.
+ *
+ * 조회 전·실패 시에는 빈 목록이다 — 오래된 숫자를 대신 그리지 않는다. 무료 플랜은
+ * 기본 선택으로 남아 있어 온보딩 자체는 계속 진행할 수 있다.
+ */
+const subscriptionStore = useSubscriptionStore()
+const displayPlans = computed(() => subscriptionStore.plans.slice(0, 3))
+const selectedPlanInfo = computed(() =>
+  subscriptionStore.plans.find((plan) => plan.type === selectedPlan.value),
+)
 const showPaymentModal = ref(false)
 
 /*
@@ -552,6 +596,12 @@ const paidPlan = ref<PlanType | null>(alreadyPaidPlan())
  * 판단하면 두 화면이 어긋나고, 결제 설정은 배포 환경에 있어 클라이언트가 볼 수 없다.
  */
 const { paymentEnabled, paymentDisabledReason, loadPaymentAvailability } = usePaymentAvailability()
+const {
+  error: aiTrialPricingError,
+  load: loadAiFeaturePricing,
+  costOf: aiFeatureCostOf,
+} = useAiFeaturePricing()
+const aiTrialCreditCost = computed(() => aiFeatureCostOf('META_GENERATION'))
 
 /** 서버가 이유를 주면 그것을 쓰고, 없으면 같은 뜻의 기본 문구를 쓴다. */
 const paymentUnavailableCopy = computed(
@@ -571,9 +621,37 @@ function isPlanUnavailable(planType: PlanType): boolean {
   return !paymentEnabled.value
 }
 
+/*
+ * 플랜 조회 상태는 이 화면이 따로 들고 있다. 스토어의 `error` 는 구독·결제 조회와
+ * 공유하는 자리라, 그것으로 판단하면 다른 실패를 플랜 실패로 그리게 된다.
+ */
+const isLoadingPlans = ref(false)
+const plansError = ref<string | null>(null)
+
+/** 실패해도 온보딩은 계속되어야 한다 — 무료 플랜 기본 선택은 그대로 남는다. */
+async function loadPlans() {
+  isLoadingPlans.value = true
+  plansError.value = null
+  try {
+    await subscriptionStore.fetchPlans()
+  } catch (cause) {
+    // 오래된 가격을 대신 그리지 않는다. 못 불러왔다는 사실 자체를 보여 준다.
+    plansError.value = cause instanceof Error ? cause.message : '플랜 정보를 불러오지 못했습니다.'
+  } finally {
+    isLoadingPlans.value = false
+  }
+}
+
 onMounted(() => {
   // 실패해도 온보딩은 계속되어야 한다. 조회 실패는 composable 이 사용 불가로 처리한다.
   void loadPaymentAvailability()
+  // 체험 비용도 서버 정본에서 읽는다. 비용을 모르면 체험 버튼만 닫고 온보딩은 계속한다.
+  void loadAiFeaturePricing()
+  /*
+   * 플랜 목록도 서버에서 받는다. 스토어가 실패 시 목록을 비우므로 화면은 빈 상태가 되고,
+   * 무료 플랜 기본 선택으로 온보딩은 계속된다 — 오래된 가격을 보여 주지 않는다.
+   */
+  void loadPlans()
 })
 
 // Step 4: AI trial
@@ -752,11 +830,13 @@ async function connectPlatform(platform: Platform) {
     const challenge = platform === 'TWITTER'
       ? (await generatePKCE('twitter_code_verifier')).challenge
       : undefined
+    const clientState = buildOAuthState(platform, '/onboarding', generateOAuthStateNonce())
     const { authorizationUrl } = await channelApi.authorizationUrl(platform, {
       redirectUri: getOAuthRedirectUri(),
-      state: buildOAuthState(platform, '/onboarding', generateOAuthStateNonce()),
+      state: clientState,
       codeChallenge: challenge,
     })
+    storeChannelOAuthContext(clientState)
     window.location.href = authorizationUrl
   } catch (e) {
     isConnecting.value = false
@@ -796,6 +876,10 @@ function disconnectPlatform(platform: Platform) {
  * 정식 경로는 인증·분당 제한·크레딧 차감·실패 시 환불을 이미 갖추고 있어 여기서 다시 만들 게 없다.
  */
 async function tryAiGeneration() {
+  if (aiTrialCreditCost.value == null) {
+    aiTrialPricingError.value = 'AI 기능 비용을 확인한 뒤 다시 시도해 주세요.'
+    return
+  }
   // 빈 입력으로 호출하면 크레딧만 쓰고 의미 없는 결과가 나온다.
   if (!hasAiTrialScript.value) {
     aiTrialError.value = t('onboarding.aiTrial.scriptRequired')

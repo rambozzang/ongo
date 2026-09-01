@@ -92,13 +92,27 @@ const columns = computed<Column[]>(() => [
 const sortKey = ref<string>('period')
 const sortOrder = ref<'asc' | 'desc'>('asc')
 
+/**
+ * 기준 수익이 0이면 성장률은 정의되지 않는다.
+ *
+ * 예전에는 그대로 나눠 `Infinity`/`NaN`을 만들었다. 첫 수익이 발생한 달을
+ * "무한대 성장"으로 보여 주는 것은 측정값이 아니라 계산 오류이고, 스토어의
+ * `percentageChange` 정책(null = 비교 불가)과도 달랐다. 수익 화면 전체가 같은
+ * 의미를 쓰도록 0 기준은 명시적으로 비교 불가로 둔다.
+ */
+function percentageChange(current: number, previous: number): number | null {
+  if (previous === 0) return null
+  const change = ((current - previous) / previous) * 100
+  return Number.isFinite(change) ? change : null
+}
+
 // Calculate change percentages
 const dataWithChange = computed(() => {
   return props.data.map((item, index) => {
     let change: number | null = null
     if (index > 0) {
       const previous = props.data[index - 1].total
-      change = ((item.total - previous) / previous) * 100
+      change = percentageChange(item.total, previous)
     }
     return { ...item, change }
   })

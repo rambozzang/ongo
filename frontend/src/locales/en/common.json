@@ -27,6 +27,7 @@
     "filter": "Filter",
     "reset": "Reset",
     "retry": "Retry",
+    "refresh": "Refresh",
     "upload": "Upload",
     "download": "Download",
     "create": "Create",
@@ -432,6 +433,12 @@
           "sourceVideo": "Source video",
           "selectVideo": "Select a video",
           "noVideos": "No uploaded videos. Upload a video first.",
+          "creditMeasuring": "Checking the video length…",
+          "creditEstimate": "Estimated {credits} credits (based on about {minutes} min)",
+          "creditRule": "A full run costs at least {min} credits, and transcription adds {perWindow} credits for every {window} minutes. We could not read this video's length, so no exact estimate is shown.",
+          "creditBalance": "You have {balance} credits left",
+          "creditShortfall": "{shortfall} credits short.",
+          "creditServerDecides": "The server measures the video length and makes the final decision on what is charged.",
           "template": "Template",
           "defaultTemplate": "Default template",
           "videoRequired": "Select a source video.",
@@ -442,7 +449,11 @@
           "viewPlans": "View plans",
           "startTrial": "Start the 7-day Starter trial",
           "startingTrial": "Starting trial…",
-          "trialStarted": "Your free trial has started and you now have enough credit for one run. Press 'Start run' again below.",
+          "trialStarted": "Your free trial has started. Press 'Start run' again below — the server makes the final decision on what is charged.",
+          "trialStartedStillShort": "Your free trial has started, but this video still needs {shortfall} more credits. Pick a shorter video or top up your credits.",
+          "trialNotEnough": "This video needs about {credits} credits but the free trial gives {trialCredits}. The trial is one-time only, so using it here would spend it without finishing a run.",
+          "trialCoversUpTo": "The trial covers videos up to about {minutes} minutes.",
+          "pickShorterVideo": "Pick a shorter video",
           "trialFailed": "Could not start the free trial."
         },
         "detail": {
@@ -573,7 +584,8 @@
           "download": "Download rendered video"
         }
       }
-    }
+    },
+    "metricUnavailable": "Not measured"
   },
   "status": {
     "success": "Success",
@@ -938,6 +950,17 @@
     "publishQueueTitle": "Publish queue operations",
     "publishQueueDescription": "Inspect active leases, due retries, and unconfirmed platform uploads.",
     "publishQueueLoadError": "The publish queue could not be loaded.",
+    "deadLetterTitle": "Payment webhook recovery",
+    "deadLetterDescription": "Payment webhooks that exhausted every retry, so nothing will process them again. Confirm the cause, then put them back in the retry queue.",
+    "deadLetterLoadError": "Webhooks could not be loaded.",
+    "deadLetterEmpty": "No webhooks need recovery.",
+    "deadLetterProvider": "Provider",
+    "deadLetterEventType": "Event",
+    "deadLetterEventId": "Event key",
+    "deadLetterReceivedAt": "Received",
+    "deadLetterUnknownProvider": "This event cannot be reprocessed.",
+    "requeueWebhook": "Put back in retry queue",
+    "requeueWebhookMessage": "Put webhook {id} back in the retry queue? It gets exactly one more attempt, and the provider lookup decides what is actually applied.",
     "accountDeletionTitle": "Account deletion operations",
     "accountDeletionDescription": "Inspect durable deletion jobs and retry failed or policy-blocked requests.",
     "accountDeletionLoadError": "Account deletion jobs could not be loaded.",
@@ -1580,6 +1603,7 @@
       "demoTitle": "AI title & tag generation",
       "demoDescription": "Paste your own script and AI writes\nplatform-ready titles and hashtags.",
       "creditCost": "{count} credits are charged when generation succeeds",
+      "creditChecking": "Checking the credit cost",
       "scriptLabel": "Your script or topic",
       "scriptPlaceholder": "e.g. Today I am making kimchi fried rice in five minutes, from prep to plating.",
       "scriptRequired": "Enter a script so AI has something to work with.",
@@ -1752,6 +1776,10 @@
     "totalSubscribers": "Total Subscribers",
     "totalLikes": "Total Likes",
     "aiCredits": "AI Credits",
+    "contentGap": {
+      "creditBlocked": "Not enough credits to run content gap analysis.",
+      "chargeCredits": "Charge credits"
+    },
     "recentUploads": "Recent Uploads",
     "viewAll": "View all →",
     "viewsTrend": "Views Trend",
@@ -1892,6 +1920,14 @@
     "credits": "credits",
     "creditsUsed": "credits used",
     "useButton": "Use",
+    "unsupported": {
+      "badge": "Coming soon",
+      "button": "Not available yet",
+      "revenueReason": "Your connected platforms do not report ad revenue yet, so a revenue analysis report cannot be generated."
+    },
+    "pricing": {
+      "loading": "Checking AI feature costs. Please wait a moment."
+    },
     "form": {
       "script": "Script",
       "scriptPlaceholder": "Enter your video script...",
@@ -1965,7 +2001,12 @@
       "validDays": "Valid for {days} days",
       "purchase": "Purchase",
       "needCredits": "This feature requires {credits} credits.",
-      "currencyUnit": "KRW"
+      "currencyUnit": "KRW",
+      "loadingPackages": "Loading packages…",
+      "packagesError": "Could not load credit packages.",
+      "retry": "Retry",
+      "insufficientMessage": "Not enough credits to complete generation.",
+      "ctaText": "Charge credits"
     },
     "videoTitle": "Video Title",
     "videoTitlePlaceholder": "Enter video title",
@@ -1985,6 +2026,7 @@
   },
   "analyticsView": {
     "title": "Unified Analytics",
+    "changeUnavailable": "No previous-period data to compare against",
     "videoComparison": "Compare Videos",
     "tabs": {
       "overview": "Overview",
@@ -2009,7 +2051,10 @@
       "title": "Audience Retention Curve",
       "description": "Analyze viewer retention for videos. Compare with channel average to identify drop-off points.",
       "selectVideo": "Select a video to analyze",
-      "button": "Retention"
+      "button": "Retention",
+      "emptySelect": "Select a video to analyze retention",
+      "emptyNoData": "No retention data yet",
+      "unsupportedTitle": "Second-by-second retention is not connected"
     },
     "emptyData": "Collecting analytics data",
     "emptyDataDescription": "Analytics data including views, likes, and comments will appear within 24 hours after publishing videos.",
@@ -2084,7 +2129,10 @@
       "instagramViews": "Instagram Views",
       "naverClipViews": "Naver Clip Views",
       "totalViews": "Total Views"
-    }
+    },
+    "notMeasured": "Not measured",
+    "optimalTimesEmptyTitle": "No recommended publish times",
+    "optimalTimesEmptyDescription": "Recommendations appear once performance data with confirmed publish times accumulates."
   },
   "commentsView": {
     "title": "Comment Management",
@@ -2094,6 +2142,10 @@
     "lastSync": "Last sync: {time}",
     "aiBatchReply": "AI Reply ({count})",
     "aiBatchGenerating": "Generating...",
+    "batchCreditBlocked": "Not enough credits to generate AI reply drafts.",
+    "batchChargeCredits": "Charge credits",
+    "faqCreditBlocked": "Not enough credits to generate FAQ analysis.",
+    "faqChargeCredits": "Charge credits",
     "syncComments": "Sync Comments",
     "syncing": "Syncing...",
     "sentimentSummary": "Sentiment Summary",
@@ -2343,6 +2395,7 @@
     "channelsConnected": "{current}/{max} connected",
     "connected": "Connected",
     "connecting": "Connecting...",
+    "subscribers": "Subscribers",
     "unsupported": "Currently unsupported",
     "unsupportedDescription": "Naver Clip has no public upload or analytics API, so this legacy channel cannot sync. Disconnect it to clean up.",
     "connect": "Connect",
@@ -2452,7 +2505,9 @@
       "original": "Original",
       "suggestions": "AI Suggestions",
       "run": "Run AI Optimization",
-      "creditsUsed": "{count} credits used"
+      "creditsUsed": "{count} credits used",
+      "creditBlocked": "Not enough credits to generate an AI rewrite.",
+      "chargeCredits": "Charge credits"
     },
     "repurpose": {
       "button": "Short Clips",
@@ -2462,7 +2517,9 @@
       "creditNotice": "AI credits will be consumed",
       "analyzing": "AI is analyzing the video...",
       "run": "Run AI Analysis",
-      "clipsFound": "Found {count} clip candidates"
+      "clipsFound": "Found {count} clip candidates",
+      "creditBlocked": "Insufficient AI credits. Charge and try again.",
+      "chargeCredits": "Charge credits"
     },
     "aiTools": {
       "button": "AI Tools"
@@ -2475,7 +2532,9 @@
       "run": "Run SEO analysis",
       "analyzing": "AI is analyzing...",
       "suggestions": "Suggestions",
-      "creditsUsed": "{count} credits used"
+      "creditsUsed": "{count} credits used",
+      "creditBlocked": "Not enough AI credits to run SEO analysis.",
+      "chargeCredits": "Charge credits"
     },
     "publishChecklist": {
       "button": "Publish Check",
@@ -2824,19 +2883,25 @@
     "bulkDeleteMessage": "{count} tests will be deleted. This cannot be undone.",
     "bulkDeleteRunningMessage": "{count} tests will be deleted. {running} of them are still running, and their collected performance data will be lost. This cannot be undone.",
     "bulkDeleteDone": "Deleted {count} tests",
-    "deleteFailed": "Failed to delete tests"
+    "deleteFailed": "Failed to delete tests",
+    "improvementUnavailable": "No measurement data",
+    "applyWinnerDone": "Winner variant applied",
+    "applyWinnerFailed": "Could not apply the winner",
+    "metricUnavailable": "Not measured"
   },
   "competitor": {
     "title": "Competitor Analysis",
     "description": "Benchmark competing channels and gain strategic insights",
     "refresh": "Refresh",
+    "sync": "Sync",
+    "syncing": "Syncing...",
     "addChannel": "Add Channel",
     "pageGuideTitle": "Competitor Analysis",
     "pageGuide": [
       "Use the Add Channel button to register benchmark channels and start monitoring with the tracking toggle",
       "View subscribers, views, and content count of tracked competing channels in the List tab",
-      "Select multiple competing channels in the Comparison tab to compare key metrics side by side",
-      "Identify competitor trending videos and market trends in the Trending tab to inform your content strategy",
+      "Select a competing channel in the Comparison tab to compare key metrics side by side",
+      "Use the AI Insights tab to review strengths, weaknesses, and opportunities from confirmed benchmark data",
       "Use the Refresh button to update competitor data to the latest"
     ],
     "trackedChannels": "Tracked Channels",
@@ -2877,7 +2942,25 @@
     "bulkDeleteMessage": "{count} competitors will be removed. This cannot be undone.",
     "bulkDeleteDone": "Removed {count} competitors",
     "bulkDeleteFailed": "Failed to remove competitors",
-    "emptyListDescription": "Add channels to compare subscriber and view trends side by side."
+    "emptyListDescription": "Add channels to compare subscriber and view trends side by side.",
+    "dataStatus": "Based on currently tracked channels",
+    "measuredOnly": "Measured values only",
+    "rankingNote": "Among measurable channels",
+    "notMeasured": "Not measured",
+    "syncSummary": "Sync result: {synced} updated · {unsupported} unsupported · {failed} failed",
+    "syncEmpty": "No competitor channels to sync",
+    "syncNoUpdate": "No channels were updated ({unsupported} unsupported)",
+    "syncDone": "{synced} channels synced",
+    "syncFailed": "Could not sync competitor data.",
+    "loadFailed": "Could not load competing channels.",
+    "added": "Competitor channel added.",
+    "addFailed": "Could not add the competitor channel.",
+    "removed": "Competitor channel removed.",
+    "removeFailed": "Could not remove the competitor channel.",
+    "creditBlocked": "Credits are required to generate AI insights.",
+    "chargeCredits": "Charge credits",
+    "insightFailed": "Could not generate AI insights.",
+    "noInsightData": "Add at least one competitor channel before generating AI insights."
   },
   "automation": {
     "title": "Automation Rules",
@@ -2933,6 +3016,8 @@
   },
   "revenue": {
     "loadFailed": "We couldn't load revenue data. The last successful data is still shown.",
+    "platformRevenueUnavailable": "Connected platform adapters do not currently collect ad revenue automatically. Brand deal revenue is available in the Brand Deals tab.",
+    "reconnectChannel": "Reconnect channel",
     "title": "Revenue Analysis",
     "description": "Analyze revenue by platform and identify growth opportunities",
     "pageGuideTitle": "Revenue Analysis",
@@ -2945,11 +3030,18 @@
     "totalRevenue": "Total Revenue",
     "monthlyGrowth": "Monthly Growth",
     "avgRpm": "Average RPM",
+    "avgRpmUnavailableShort": "Not measurable",
+    "avgRpmNoViewSample": "No platform reported views, so this cannot be calculated",
+    "avgRpmLoadFailed": "Could not load view data",
+    "avgRpmViewBased": "View-based · per 1,000 views",
+    "topPlatformUnavailableShort": "Not measurable",
+    "topPlatformUnavailable": "No platform revenue has been recorded",
     "topPlatform": "Top Revenue Platform",
     "revenueTrend": "Revenue Trend",
     "platformBreakdown": {
       "totalRevenue": "Total Revenue"
     },
+    "platformBreakdownTitle": "Revenue by Platform",
     "platformComparison": "Platform Comparison",
     "monthlyRevenueTable": "Monthly Revenue Details",
     "loading": "Loading...",
@@ -2961,9 +3053,20 @@
     "period3Months": "Last 3 Months",
     "period6Months": "Last 6 Months",
     "period1Year": "1 Year",
+    "period30Days": "Last 30 days",
+    "period90Days": "Last 90 days",
+    "period180Days": "Last 180 days",
+    "period365Days": "Last 365 days",
+    "dailyGranularity": "Daily",
+    "monthlyAggregateNote": "Daily revenue for {period}, summed by month.",
+    "noRevenueData": "No revenue data to show",
+    "periodGrowth": "{period} growth",
+    "growthUnavailable": "No revenue in the previous period to compare against",
+    "growthUnavailableShort": "Not comparable",
     "cpmRpmTitle": "CPM / RPM by Platform",
     "cpmRpmDesc": "CPM = Revenue per 1,000 impressions · RPM = Revenue per 1,000 views",
     "thPlatform": "Platform",
+    "unitPriceUnavailable": "Not measurable",
     "thCpm": "CPM (₩)",
     "thRpm": "RPM (₩)",
     "thImpressions": "Impressions",
@@ -2987,12 +3090,14 @@
     "statusCancelled": "Cancelled",
     "insights": {
       "title": "AI Revenue Insights",
-      "description": "AI analyzes your revenue data to provide personalized insights",
-      "generate": "Generate AI Insights",
-      "generateHint": "5 credits",
+      "description": "AI analyzes your last 30 days of revenue to provide personalized insights",
+      "fixedPeriodNotice": "Always analyzes the last 30 days, regardless of the period selected above.",
+      "generate": "Generate AI Insights (last 30 days)",
+      "generateHint": "5 credits · based on the last 30 days",
       "generating": "Analyzing...",
       "empty": "No insights generated yet",
-      "emptyHint": "Click the Generate AI Insights button to start analysis",
+      "emptyHint": "Click Generate AI Insights to analyze the last 30 days",
+      "unavailable": "AI insights are unavailable because connected platforms do not provide ad revenue data yet. Check brand deal revenue in the Brand Deals tab.",
       "confidence": {
         "HIGH": "High",
         "MEDIUM": "Medium",
@@ -3005,7 +3110,9 @@
         "OPPORTUNITY": "Growth Opportunity",
         "FORECAST": "Revenue Forecast"
       },
-      "generateFailed": "Failed to generate insights"
+      "generateFailed": "Failed to generate insights",
+      "creditBlocked": "Not enough credits to generate revenue insights.",
+      "chargeCredits": "Charge credits"
     },
     "alerts": {
       "title": "Revenue Alert Settings",
@@ -3363,7 +3470,7 @@
     "statusPastDue": "Past Due",
     "free": "Free",
     "changePlanSimple": "Would you like to change to the {plan} plan?",
-    "upgradeMessage": "Would you like to upgrade from {current} to {target} plan ({price}/mo)? The difference will be prorated.",
+    "upgradeMessage": "Would you like to upgrade from {current} to {target} plan ({price}{period})? It takes effect after payment is completed.",
     "downgradeMessage": "Would you like to downgrade from {current} to {target} plan ({price})? This will take effect after the current billing period.",
     "creditTypeDeduct": "Used",
     "creditTypeCharge": "Charged",
@@ -4281,7 +4388,10 @@
       "aiGenerating": "Generating...",
       "aiReply": "AI Reply",
       "submitting": "Submitting...",
-      "submit": "Reply"
+      "submit": "Reply",
+      "creditBlocked": "Not enough credits to generate AI replies.",
+      "chargeCredits": "Charge credits",
+      "aiFailed": "Failed to generate AI reply. Please try again."
     }
   },
   "channelAudit": {
@@ -4301,7 +4411,9 @@
     "strengths": "Strengths",
     "weaknesses": "Weaknesses",
     "actionItems": "Action Items",
-    "outlierVideos": "Outlier Videos"
+    "outlierVideos": "Outlier Videos",
+    "creditBlocked": "Not enough credits to generate a channel audit.",
+    "chargeCredits": "Charge credits"
   },
   "keywordResearch": {
     "title": "Keyword Research",
@@ -4333,6 +4445,7 @@
     "collapse": "Collapse"
   },
   "assets": {
+    "title": "Asset library",
     "deleteTitle": "Delete this asset?",
     "deleteMessage": "This asset cannot be restored.",
     "bulkDeleteTitle": "Delete selected assets?",
@@ -4388,6 +4501,16 @@
     "planLimitHint": "To connect more channels, upgrade your plan and then connect again.",
     "planLimitCta": "Upgrade plan"
   },
+  "paymentRedirect": {
+    "verifying": "Verifying your payment…",
+    "success": "Your payment completed successfully.",
+    "goToSubscription": "Go to subscription",
+    "missingPaymentId": "We could not identify this payment. Please check your subscription page to confirm whether it went through.",
+    "pending": "This payment has not been confirmed yet.",
+    "pendingHint": "If the payment was approved it will be applied shortly. If it is not, please check your payment history.",
+    "failed": "The payment was cancelled or failed.",
+    "verifyFailed": "We could not verify the payment status. Please check your payment history."
+  },
   "videoDetail": {
     "title": "Video Details",
     "pageGuideTitle": "Video Details",
@@ -4408,7 +4531,24 @@
     "notEnoughData": "Not enough data yet",
     "platformComparison": "Platform comparison",
     "analyticsLoadFailed": "Performance data could not be loaded. Existing data is still shown when available.",
+    "analyticsStaleNotice": "The numbers below are from the last successful load and may be out of date.",
+    "metricLoading": "Loading",
+    "metricUnavailableError": "Unavailable",
+    "metricNoData": "Not measured",
+    "analyticsRefresh": "Refresh",
+    "analyticsRefreshAria": "Refresh performance data",
     "noAnalyticsData": "No analytics data",
+    "comparisonExcludesUncollected": "{platforms} has no collected performance yet, so it is excluded from the comparison.",
+    "selfScoreTitle": "Performance score",
+    "selfScoreBasis": "Our own score from this video's views, engagement, and publishing reach.",
+    "aiScoreBasis": "A relative score compared with the other videos on your channel.",
+    "aiScoreEmptyNoUploads": "Not published to any platform yet",
+    "aiScoreEmptyNoAnalytics": "No performance collected yet",
+    "aiScoreEmptyDefault": "No performance data",
+    "percentileUnavailable": "Not enough videos to compare",
+    "scoreUnavailable": "Not measurable",
+    "trendUnavailable": "Trend not determinable",
+    "selfScoreUnavailable": "No performance has been collected yet, so a score cannot be calculated. It appears once platform metrics arrive.",
     "commentsPhase2": "Unified comment management arrives in Phase 2.",
     "commentsPhase2Hint": "You'll be able to view and reply to comments on each platform.",
     "noUploadsTitle": "Not published to any platform yet",
@@ -4515,7 +4655,22 @@
       "emptyAttention": "Nothing needs your attention",
       "emptyChannels": "No channels connected",
       "loadFailed": "Today's data could not be loaded.",
-      "loadPartial": "Only some of today's data loaded. Check again for the latest status."
+      "loadPartial": "Only some of today's data loaded. Check again for the latest status.",
+      "weeklyDigest": {
+        "title": "AI weekly digest",
+        "viewAll": "View all",
+        "upgradeTitle": "Get a performance brief every week",
+        "upgradeDescription": "Pro and Business plans automatically deliver channel performance and next actions every Monday.",
+        "upgradeAction": "Explore plans",
+        "waitingTitle": "This week's digest is being prepared",
+        "waitingDescription": "Pro and Business digests are generated every Monday. It will appear here when the data is ready.",
+        "loadFailed": "The digest could not be loaded.",
+        "summary": "Summary",
+        "topVideos": "Top videos",
+        "anomalies": "Notable changes",
+        "actionItems": "Next actions",
+        "generatedAt": "Generated {date}"
+      }
     },
     "compose": {
       "noFile": "Choose a file",
@@ -4548,6 +4703,8 @@
       "metadataGenerating": "Reading captions and generating metadata…",
       "metadataGenerated": "Title, description, and hashtags are ready. Edit them per platform tab.",
       "metadataFailed": "Could not generate metadata. Enter it manually and try again.",
+      "creditBlocked": "Insufficient AI credits. Charge and try again.",
+      "chargeCredits": "Charge credits",
       "applyCommon": "Apply common copy",
       "commonApplied": "Common copy applied to the selected channels.",
       "autoShorts": "Automatically make and publish Shorts",
@@ -4621,6 +4778,10 @@
       "scheduling": "Scheduling…",
       "scheduled": "Scheduled",
       "scheduleFailed": "Scheduling failed",
+      "planLimitHint": "You've reached your publishing limit. Upgrade your plan to schedule and publish more videos.",
+      "planLimitCta": "Upgrade plan",
+      "storageQuotaHint": "You've used all your storage. Upgrade your plan for more space to upload videos.",
+      "storageQuotaCta": "Upgrade plan",
       "uploading": "Uploading {percent}%"
     },
     "inbox": {

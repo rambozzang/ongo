@@ -8,6 +8,7 @@ import {
   DocumentIcon,
   EyeIcon,
   TrashIcon,
+  PencilSquareIcon,
 } from '@heroicons/vue/24/outline'
 
 const props = defineProps<{
@@ -20,7 +21,16 @@ const emit = defineEmits<{
   (e: 'select', id: number): void
   (e: 'preview', asset: Asset): void
   (e: 'delete', id: number): void
+  (e: 'use', id: number): void
 }>()
+
+/**
+ * 영상 에셋만 콘텐츠로 만들 수 있다.
+ *
+ * 서버가 `fileType != VIDEO` 를 거절하므로(`AssetToVideoUseCase`), 이미지·오디오·템플릿에
+ * 버튼을 보여 주면 눌러 봐야 실패하는 자리를 만드는 셈이다. 화면과 서버가 같은 조건을 쓴다.
+ */
+const canBecomeContent = computed(() => props.asset.type === 'VIDEO')
 
 const typeConfig = computed(() => {
   const configs: Record<string, { label: string; color: string; bgColor: string }> = {
@@ -147,6 +157,14 @@ function formatDuration(seconds: number): string {
           <EyeIcon class="h-5 w-5" />
         </button>
         <button
+          v-if="canBecomeContent"
+          class="rounded-full bg-white/90 p-2 text-primary-600 shadow-md transition-transform hover:scale-110 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800"
+          title="콘텐츠 만들기"
+          @click="emit('use', asset.id)"
+        >
+          <PencilSquareIcon class="h-5 w-5" />
+        </button>
+        <button
           class="rounded-full bg-white/90 p-2 text-error-strong shadow-md transition-transform hover:scale-110 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800"
           title="삭제"
           @click="emit('delete', asset.id)"
@@ -257,6 +275,14 @@ function formatDuration(seconds: number): string {
     </td>
     <td class="px-4 py-3" @click.stop>
       <div class="flex items-center gap-1">
+        <button
+          v-if="canBecomeContent"
+          class="rounded-full p-1.5 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/30"
+          title="콘텐츠 만들기"
+          @click="emit('use', asset.id)"
+        >
+          <PencilSquareIcon class="h-4 w-4" />
+        </button>
         <button
           class="rounded-full p-1.5 text-gray-400 hover:bg-error-subtle hover:text-error-strong"
           title="삭제"

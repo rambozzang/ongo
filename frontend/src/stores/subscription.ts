@@ -5,6 +5,19 @@ import type { PageResponse } from '@/types/api'
 import { subscriptionApi } from '@/api/subscription'
 import { paymentApi } from '@/api/payment'
 
+/**
+ * 백엔드의 `Int.MAX_VALUE` 무제한 표기를 화면 계약의 `-1`로 바꾼다.
+ *
+ * 서버 플랜 enum은 Kotlin Int 로 무제한을 표현하고, 프론트의 플랜 컴포넌트는 `-1`을
+ * 무제한으로 표시한다. 변환하지 않으면 Business가 "월 2,147,483,647회"로 보여서
+ * 상품 정보가 가짜처럼 보이고, 결제 전환 화면의 신뢰를 해친다.
+ */
+const JAVA_INT_MAX = 2_147_483_647
+
+function normalizeUnlimitedLimit(value: number): number {
+  return value === JAVA_INT_MAX ? -1 : value
+}
+
 export const useSubscriptionStore = defineStore('subscription', () => {
   const subscription = ref<Subscription | null>(null)
   const payments = ref<PageResponse<Payment> | null>(null)
@@ -36,11 +49,13 @@ export const useSubscriptionStore = defineStore('subscription', () => {
         price: p.price,
         yearlyPrice: p.yearlyPrice ?? p.price * 10,
         maxPlatforms: p.features.maxPlatforms,
-        maxUploadsPerMonth: p.features.monthlyUploads,
+        maxUploadsPerMonth: normalizeUnlimitedLimit(p.features.monthlyUploads),
         maxScheduleDays: p.features.scheduleDays,
-        analyticsPeriodDays: p.features.analyticsDays,
+        analyticsPeriodDays: normalizeUnlimitedLimit(p.features.analyticsDays),
         storageMb: p.features.storageGB * 1024,
-        commentManagement: p.features.scheduleDays > 0,
+        // 댓글 관리 API는 서버에서 PRO/BUSINESS만 허용한다. 예약 게시 기간이 있다고
+        // 댓글 관리 권한이 생기는 것은 아니므로 서로 다른 서버 게이트를 섞지 않는다.
+        commentManagement: ['PRO', 'BUSINESS'].includes(p.planType),
         teamMembers: p.features.maxTeamMembers,
         freeAiCredits: p.features.freeCredits,
         support: getSupportLevel(p.planType),

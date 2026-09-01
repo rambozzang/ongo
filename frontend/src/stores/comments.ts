@@ -15,7 +15,7 @@ import type {
 import type { Platform } from '@/types/channel'
 import { commentsApi } from '@/api/comments'
 import { useNotificationStore } from '@/stores/notification'
-import { PLAN_LIMIT_EXCEEDED, matchesCode } from '@/composables/usePlanLimit'
+import { PLAN_LIMIT_EXCEEDED, CREDIT_INSUFFICIENT, matchesCode } from '@/composables/usePlanLimit'
 
 interface CommentFilters {
   platform: Platform | 'ALL'
@@ -39,8 +39,10 @@ export const useCommentsStore = defineStore('comments', () => {
   const sentimentTrendLoading = ref(false)
   const faqData = ref<FaqClusterResponse | null>(null)
   const faqLoading = ref(false)
+  const faqCreditBlocked = ref(false)
   const batchDrafts = ref<AiDraftItem[]>([])
   const batchDraftLoading = ref(false)
+  const batchDraftCreditBlocked = ref(false)
 
   // 신규: AI 개별 답변, 위기 감지, 키워드 클라우드, 일괄 선택
   const aiReplies = ref<Record<number, AiReplyGenerateResponse>>({})
@@ -79,6 +81,10 @@ export const useCommentsStore = defineStore('comments', () => {
   // Actions
   const fetchComments = async (resetPage = true) => {
     loading.value = true
+    // 업그레이드 후 댓글 화면으로 돌아오면 Pinia store가 살아 있을 수 있다.
+    // 재조회가 성공했는데도 이전 차단 플래그가 남으면 유료 기능을 계속 숨기므로,
+    // 새 요청은 최신 서버 권한으로 판정하도록 시작 시 초기화한다.
+    featureUnavailable.value = false
     if (resetPage) page.value = 0
 
     try {
@@ -201,9 +207,19 @@ export const useCommentsStore = defineStore('comments', () => {
 
   const fetchFaqClusters = async () => {
     faqLoading.value = true
+    // 매 호출마다 차단 상태를 초기화한다. 이전에 막혔더라도 새 시도는 깨끗하게 시작한다.
+    faqCreditBlocked.value = false
     try {
       faqData.value = await commentsApi.faqClusters()
     } catch (error: any) {
+      // 크레딧 잔액 부족은 안정 코드로만 판단한다. 기존 조회/오류 상태를 CTA 에 맞게 비운다.
+      if (matchesCode(error, CREDIT_INSUFFICIENT)) {
+        faqCreditBlocked.value = true
+        faqData.value = null
+        return
+      }
+      // PLAN_LIMIT_EXCEEDED·403·검증·네트워크 오류 등은 크레딧 부족으로 오인하지 않는다.
+      // 일반 오류는 기존 handleRequestError 의미(토스트/플랜 차단)를 유지한다.
       handleRequestError(error, 'FAQ 분석에 실패했습니다.')
       faqData.value = null
     } finally {
@@ -213,11 +229,21 @@ export const useCommentsStore = defineStore('comments', () => {
 
   const generateBatchDrafts = async (commentIds: number[], tone = 'FRIENDLY') => {
     batchDraftLoading.value = true
+    // 매 호출마다 차단 상태를 초기화한다. 이전에 막혔더라도 새 시도는 깨끗하게 시작한다.
+    batchDraftCreditBlocked.value = false
     try {
       const response = await commentsApi.batchAiDraft(commentIds, tone)
       batchDrafts.value = response.drafts
       return response
     } catch (error: any) {
+      // 크레딧 잔액 부족은 안정 코드로만 판단한다. 토스트를 띄우지 않고 차단 블록만 연다.
+      if (matchesCode(error, CREDIT_INSUFFICIENT)) {
+        batchDraftCreditBlocked.value = true
+        batchDrafts.value = []
+        return null
+      }
+      // PLAN_LIMIT_EXCEEDED/403 은 isPlanAccessError 경로(handleRequestError)로 가며
+      // featureUnavailable 을 켠다. 크레딧 CTA 와 혼동하지 않도록 여기서 건드리지 않는다.
       handleRequestError(error, 'AI 답변 초안 생성에 실패했습니다.')
       batchDrafts.value = []
       return null
@@ -357,8 +383,10 @@ export const useCommentsStore = defineStore('comments', () => {
     sentimentTrendLoading,
     faqData,
     faqLoading,
+    faqCreditBlocked,
     batchDrafts,
     batchDraftLoading,
+    batchDraftCreditBlocked,
     fetchComments,
     syncComments,
     hideComment,

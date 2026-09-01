@@ -563,6 +563,35 @@
         </p>
         <p v-if="blockedReason" class="mb-2 text-[11px] text-error-strong" role="alert">{{ blockedReason }}</p>
         <p v-else-if="notice" class="mb-2 text-[11px] text-content-secondary" role="status" aria-live="polite">{{ notice }}</p>
+        <div v-if="showPlanUpgrade" class="mb-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2">
+          <p class="text-[11px] leading-5 text-warning-strong">{{ t('redesign.compose.planLimitHint') }}</p>
+          <router-link
+            :to="PLAN_UPGRADE_PATH"
+            class="btn-primary mt-2 inline-flex w-full justify-center !text-[12px]"
+          >
+            {{ t('redesign.compose.planLimitCta') }}
+          </router-link>
+        </div>
+        <div v-if="showStorageUpgrade" class="mb-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2">
+          <p class="text-[11px] leading-5 text-warning-strong">{{ t('redesign.compose.storageQuotaHint') }}</p>
+          <router-link
+            :to="PLAN_UPGRADE_PATH"
+            class="btn-primary mt-2 inline-flex w-full justify-center !text-[12px]"
+          >
+            {{ t('redesign.compose.storageQuotaCta') }}
+          </router-link>
+        </div>
+        <div v-if="metaCreditBlocked || sttCreditBlocked" class="mb-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2">
+          <p class="text-[11px] leading-5 text-warning-strong">{{ t('redesign.compose.creditBlocked') }}</p>
+          <button
+            type="button"
+            data-testid="compose-credit-cta"
+            class="btn-primary mt-2 inline-flex w-full justify-center !text-[12px]"
+            @click="showCreditModal = true"
+          >
+            {{ t('redesign.compose.chargeCredits') }}
+          </button>
+        </div>
         <div class="flex gap-2">
           <button
             type="button"
@@ -594,12 +623,14 @@
       </div>
     </aside>
   </div>
+  <CreditPurchaseModal v-model="showCreditModal" @purchase="onCreditPurchase" />
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useLocale } from '@/composables/useLocale'
+import { PLAN_LIMIT_EXCEEDED, STORAGE_QUOTA_EXCEEDED, PLAN_UPGRADE_PATH, matchesCode, CREDIT_INSUFFICIENT } from '@/composables/usePlanLimit'
 import ThumbPlaceholder from '@/components/redesign/ThumbPlaceholder.vue'
 import { aiApi } from '@/api/ai'
 import { analyticsApi } from '@/api/analytics'
@@ -617,7 +648,9 @@ import { templatesApi } from '@/api/templates'
 import { ugcShortsPipelineApi, type PipelineRunDetailResponse } from '@/api/ugcShortsPipeline'
 import { recurringApi, type RecurringFrequency } from '@/api/recurring'
 import PlatformPreviewPanel from '@/components/preview/PlatformPreviewPanel.vue'
+import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
 import { useUploadStore } from '@/stores/upload'
+import { useCreditStore } from '@/stores/credit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Channel, Platform } from '@/types/channel'
 import type { PlatformPublishConfig, PlatformUploadCapability, Visibility } from '@/types/video'
@@ -712,6 +745,20 @@ const submitting = ref(false)
 const saving = ref(false)
 const captioning = ref(false)
 const metadataGenerating = ref(false)
+
+/** 크레딧 부족(CREDIT_INSUFFICIENT)으로 막혔을 때만 충전 CTA 를 보여준다. */
+const metaCreditBlocked = ref(false)
+const sttCreditBlocked = ref(false)
+
+/** 실제 크레딧 구매 모달. 안정 코드로만 열린다. */
+const showCreditModal = ref(false)
+const creditStore = useCreditStore()
+
+/** 새 소스를 시작할 때 이전 크레딧 차단 상태를 지워 CTA 가 남지 않게 한다. */
+function resetCreditBlockState() {
+  metaCreditBlocked.value = false
+  sttCreditBlocked.value = false
+}
 const metadataGeneratedForVideoId = ref<number | null>(null)
 const metadataGeneratedPlatforms = ref<Platform[]>([])
 const draftLoaded = ref(false)
@@ -724,6 +771,8 @@ const shortsStatus = ref('')
 const shortsIdempotencyKey = ref<string | null>(null)
 /** 사용자에게 보여줄 한 줄 안내(성공·실패 공용). */
 const notice = ref('')
+const showPlanUpgrade = ref(false)
+const showStorageUpgrade = ref(false)
 
 const channels = ref<Channel[]>([])
 const capabilities = ref<PlatformUploadCapability[]>([])
@@ -793,6 +842,7 @@ const importAvailable = computed(() => importAvailability.value?.available === t
 function selectSourceMode(mode: 'file' | 'url' | 'generate') {
   if (sourceMode.value === mode) return
   sourceMode.value = mode
+  resetCreditBlockState()
   fileSelectionGeneration.value += 1
   // A source switch starts a new source-selection flow. Keeping the previous
   // server video ID here could publish the old video when the new source has
@@ -1230,7 +1280,17 @@ async function onFileChosen(e: Event) {
   importedVideoId.value = null
   sourceMode.value = 'file'
   notice.value = ''
-  await uploadStore.startUpload(picked)
+  showPlanUpgrade.value = false
+  showStorageUpgrade.value = false
+  resetCreditBlockState()
+  try {
+    await uploadStore.startUpload(picked)
+  } catch (error) {
+    if (matchesCode(error, STORAGE_QUOTA_EXCEEDED)) showStorageUpgrade.value = true
+    else if (matchesCode(error, PLAN_LIMIT_EXCEEDED)) showPlanUpgrade.value = true
+    notice.value = error instanceof Error ? error.message : t('redesign.compose.scheduleFailed')
+    return
+  }
   file.name = picked.name
   file.meta = `${formatBytes(picked.size)} · ${picked.type || 'video'}`
   if (file.thumbnailUrl?.startsWith('blob:')) URL.revokeObjectURL(file.thumbnailUrl)
@@ -1273,6 +1333,8 @@ async function onFileChosen(e: Event) {
       await generateMetadataFor(uploaded.videoId)
     }
   } catch (error) {
+    if (matchesCode(error, STORAGE_QUOTA_EXCEEDED)) showStorageUpgrade.value = true
+    else if (matchesCode(error, PLAN_LIMIT_EXCEEDED)) showPlanUpgrade.value = true
     notice.value = error instanceof Error ? error.message : t('redesign.compose.scheduleFailed')
   }
 }
@@ -1290,16 +1352,30 @@ async function requestCaptions() {
   }
   captioning.value = true
   notice.value = ''
+  resetCreditBlockState()
   try {
     const res = await aiApi.stt({ videoId: sourceId })
     await saveSubtitleTrack(sourceId, res.text, res.segments)
     if (res?.text && !form.description) form.description = res.text
     notice.value = t('redesign.compose.captionsDone')
-  } catch {
-    notice.value = t('redesign.compose.captionsFailed')
+  } catch (e) {
+    // 잔액 부족은 안정 코드로만 판단한다. 문구/상태코드/일반 Error 문자열로는 충전 CTA 를 띄우지 않는다.
+    if (matchesCode(e, CREDIT_INSUFFICIENT)) sttCreditBlocked.value = true
+    else notice.value = t('redesign.compose.captionsFailed')
   } finally {
     captioning.value = false
   }
+}
+
+/**
+ * CreditPurchaseModal 이 서버 검증 완료(purchase) 후 호출한다.
+ * 잔액을 서버에서 새로 받아 차단된 흐름의 재시도를 가능하게 한다.
+ * 작업을 자동 재실행하지 않는다 — 중복 과금 방지. 사용자가 원래 버튼을 다시 누른다.
+ */
+function onCreditPurchase() {
+  void creditStore.fetchBalance()
+  metaCreditBlocked.value = false
+  sttCreditBlocked.value = false
 }
 
 /** 기존 트랙은 보존하고, 트랙이 없을 때만 STT 결과를 시간축 자막으로 저장한다. */
@@ -1353,6 +1429,7 @@ async function generateMetadataFor(videoId: number) {
   if (metadataGenerating.value) return
   const firstGeneration = metadataGeneratedPlatforms.value.length === 0
   metadataGenerating.value = true
+  resetCreditBlockState()
   try {
     const script = uploadStore.isImage
       ? form.description || form.title
@@ -1415,6 +1492,11 @@ async function generateMetadataFor(videoId: number) {
       ...new Set([...metadataGeneratedPlatforms.value, ...missingPlatforms]),
     ]
     notice.value = t('redesign.compose.metadataGenerated')
+  } catch (e) {
+    // 잔액 부족은 안정 코드로만 판단한다(메타 생성 자체 또는 사전 transcriptFor STT 모두 해당).
+    // 문구/상태코드/일반 Error 로는 충전 CTA 를 띄우지 않는다. 호출부 안내는 그대로 둔다.
+    if (matchesCode(e, CREDIT_INSUFFICIENT)) metaCreditBlocked.value = true
+    throw e
   } finally {
     metadataGenerating.value = false
   }
@@ -1486,6 +1568,8 @@ async function submit() {
 
   submitting.value = true
   notice.value = ''
+  showPlanUpgrade.value = false
+  showStorageUpgrade.value = false
   let publishCompleted = false
   let recurringFailure = ''
   let shortsFailure = ''
@@ -1601,6 +1685,7 @@ async function submit() {
         // 원본 게시 성공을 실패로 오인하게 만들거나 재전송을 유도하지 않는다.
         recurringFailure =
           error instanceof Error ? error.message : t('redesign.compose.recurringFailed')
+        if (matchesCode(error, PLAN_LIMIT_EXCEEDED)) showPlanUpgrade.value = true
       }
     }
     // Shorts is an optional follow-up. A Facebook/X-only post must still be
@@ -1628,6 +1713,8 @@ async function submit() {
       e instanceof Error
         ? e.message
         : uploadStore.uploadError || t('redesign.compose.scheduleFailed')
+    showStorageUpgrade.value = matchesCode(e, STORAGE_QUOTA_EXCEEDED)
+    showPlanUpgrade.value = matchesCode(e, PLAN_LIMIT_EXCEEDED)
     notice.value = publishCompleted
       ? t('redesign.compose.partialActionFailed', { error: detail })
       : detail
@@ -1718,6 +1805,7 @@ async function importFromUrl() {
   if (!importUrl.value || !importAvailable.value || importing.value) return
   importing.value = true
   notice.value = ''
+  resetCreditBlockState()
   try {
     const result = await videoApi.importUrl({
       url: importUrl.value,
@@ -1745,6 +1833,7 @@ async function generateVideo() {
   if (!prompt || generating.value) return
   generating.value = true
   notice.value = ''
+  resetCreditBlockState()
   try {
     const result = await videoApi.generate({
       type: 'image-text-slides',

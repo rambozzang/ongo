@@ -1,6 +1,6 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData, PageRequest, PageResponse } from '@/types/api'
-import type { CreditBalance, CreditTransaction } from '@/types/credit'
+import type { CreditBalance, CreditPackageResponse, CreditTransaction } from '@/types/credit'
 
 /**
  * 크레딧 조회 전용.
@@ -16,6 +16,18 @@ import type { CreditBalance, CreditTransaction } from '@/types/credit'
 export const creditApi = {
   getBalance() {
     return apiClient.get<ResData<CreditBalance>>('/credits').then(unwrapResponse)
+  },
+
+  /**
+   * 구매 가능한 크레딧 패키지. **가격·수량의 authoritative source 다.**
+   *
+   * 결제 금액은 서버가 `CreditPackage` enum 에서 계산하므로, 화면이 다른 숫자를 들고 있으면
+   * 사용자가 본 금액과 청구액이 갈린다. 상수를 복제하지 않고 여기서 받는다.
+   */
+  getPackages() {
+    return apiClient
+      .get<ResData<CreditPackageResponse[]>>('/credits/packages')
+      .then(unwrapResponse)
   },
 
   getTransactions(params: PageRequest) {

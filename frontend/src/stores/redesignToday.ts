@@ -232,7 +232,16 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
             id: ch.id,
             platform: toChip(ch.platform),
             name: ch.channelName,
-            sub: ch.subscriberCount ? `구독자 ${new Intl.NumberFormat('ko-KR').format(ch.subscriberCount)}` : '',
+            /*
+             * **재지 않은 것과 0 명을 구분한다.**
+             *
+             * 예전에는 `ch.subscriberCount ? ... : ''` 였다. falsy 검사라 구독자가 실제로
+             * 0 명인 채널도 빈 문자열이 됐고, Threads·LinkedIn 처럼 팔로워 수를 조회조차
+             * 하지 않는 채널과 똑같이 보였다.
+             */
+            sub: ch.subscriberCount === null
+              ? ''
+              : `구독자 ${new Intl.NumberFormat('ko-KR').format(ch.subscriberCount)}`,
             statusLabel: status.label,
             statusVariant: status.variant,
           }
@@ -245,10 +254,18 @@ export const useRedesignTodayStore = defineStore('redesignToday', () => {
 
       if (analyticsRes.status === 'fulfilled') {
         const { totalViews, viewsChangePercent } = analyticsRes.value
-        const delta = Number.isFinite(viewsChangePercent)
+        // 서버는 이전 기간 데이터가 없으면 `null`(비교 불가)을 준다. `Number.isFinite(null)`
+        // 은 이미 false 라 런타임은 안전했지만, 타입 좁히기가 되지 않아 명시적으로 검사한다.
+        const delta = typeof viewsChangePercent === 'number' && Number.isFinite(viewsChangePercent)
           ? `${viewsChangePercent >= 0 ? '+' : ''}${viewsChangePercent.toFixed(1)}%`
           : ''
-        kpi.value = { ...kpi.value, viewsLabel: compactNumber(totalViews), viewsDelta: delta }
+        /*
+         * 조회수를 수집하는 플랫폼이 없으면 서버가 `null` 을 준다.
+         * `Intl.NumberFormat.format(null)` 은 **문자열 `"0"`** 을 만들어, 재지 않은 것이
+         * "0 회" 라는 관측으로 화면에 뜬다. 기본값 `—` 를 그대로 둔다.
+         */
+        const viewsLabel = totalViews == null ? '—' : compactNumber(totalViews)
+        kpi.value = { ...kpi.value, viewsLabel, viewsDelta: delta }
       }
 
       if (weeklyScheduleRes.status === 'fulfilled') {

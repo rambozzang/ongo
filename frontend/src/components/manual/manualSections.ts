@@ -110,6 +110,7 @@ const RELEASED_MANUAL_SECTION_CAPABILITIES: Record<string, string> = {
   scheduling: 'calendar-v2',
   'ai-tools': 'ai',
   analytics: 'performance',
+  competitors: 'competitors',
   team: 'team',
   subscription: 'subscription',
   settings: 'settings-v2',
@@ -498,15 +499,34 @@ export const sectionsKo: ManualSection[] = [
       },
       {
         subtitle: '수익 분석',
-        text: '플랫폼별 수익 현황과 추이를 확인할 수 있습니다.',
+        text: '플랫폼별 수익 현황과 추이를 확인할 수 있습니다. 다만 현재 플랫폼 분석 연동은 광고 수익을 자동 수집하지 않아 광고 수익은 0으로 표시되며, 수익 분석 리포트 등 광고 수익 기반 AI 기능은 사용할 수 없습니다. 실제로 집계되는 수익은 직접 입력한 브랜드딜 수익입니다.',
       },
       {
         subtitle: 'A/B 테스트',
         text: '같은 영상에 대해 다른 썸네일이나 제목을 테스트하여 최적의 조합을 찾을 수 있습니다.',
       },
+    ],
+  },
+  {
+    id: 'competitors',
+    title: '경쟁사 분석',
+    icon: BenchmarkIcon,
+    content: [
       {
-        subtitle: '경쟁사 분석',
-        text: '경쟁 채널의 성과를 모니터링하고, 자신의 채널과 비교 분석할 수 있습니다.',
+        subtitle: '경쟁 채널 등록',
+        text: '"채널 추가"로 벤치마크할 채널을 등록합니다. 채널 주소를 입력하면 이름과 지표를 조회해 채워 넣습니다.',
+      },
+      {
+        subtitle: '비교 분석',
+        text: '비교할 채널을 고르면 내 채널과 구독자·조회수·콘텐츠 수를 나란히 놓고 차이를 볼 수 있습니다.',
+      },
+      {
+        subtitle: 'AI 벤치마킹 인사이트',
+        text: '등록한 경쟁 채널의 실제 지표를 근거로 강점·약점·기회·추천 행동을 정리해 줍니다. AI 크레딧을 사용하며, 버튼에 소모량이 표시됩니다.',
+      },
+      {
+        subtitle: '측정할 수 없는 값',
+        text: '자동 조회를 지원하지 않는 플랫폼의 채널은 동기화 결과에 "미지원"으로 집계되고, 해당 지표는 0이 아니라 "측정 불가"로 표시됩니다. 평균과 순위도 측정된 채널만으로 계산합니다 — 값이 없는 채널을 0으로 넣으면 내 순위가 실제보다 높게 보이기 때문입니다.',
       },
     ],
   },
@@ -3459,15 +3479,34 @@ export const sectionsEn: ManualSection[] = [
       },
       {
         subtitle: 'Revenue Analytics',
-        text: 'Check revenue status and trends by platform.',
+        text: 'Check revenue status and trends by platform. Note that the current platform analytics integrations do not collect ad revenue automatically, so ad revenue shows as zero and AI features built on it — such as the revenue analysis report — are unavailable. The revenue actually tracked today is the brand-deal revenue you enter yourself.',
       },
       {
         subtitle: 'A/B Testing',
         text: 'Test different thumbnails or titles for the same video to find the optimal combination.',
       },
+    ],
+  },
+  {
+    id: 'competitors',
+    title: 'Competitor Analysis',
+    icon: BenchmarkIcon,
+    content: [
       {
-        subtitle: 'Competitor Analysis',
-        text: 'Monitor competitor channel performance and compare it with your own channel.',
+        subtitle: 'Adding a competitor channel',
+        text: 'Use "Add channel" to register a channel to benchmark against. Enter the channel URL and onGo looks up its name and metrics for you.',
+      },
+      {
+        subtitle: 'Side-by-side comparison',
+        text: 'Pick a channel to compare and see its subscribers, views, and content count next to your own.',
+      },
+      {
+        subtitle: 'AI benchmarking insight',
+        text: 'Turns the actual metrics of your registered competitors into strengths, weaknesses, opportunities, and recommended actions. This uses AI credits; the button shows how many.',
+      },
+      {
+        subtitle: 'What cannot be measured',
+        text: 'Channels on platforms without automatic lookup are counted as "unsupported" in the sync result, and their metrics read "not measured" rather than zero. Averages and rankings are computed from measured channels only — counting a missing value as zero would place your channel higher than it really is.',
       },
     ],
   },

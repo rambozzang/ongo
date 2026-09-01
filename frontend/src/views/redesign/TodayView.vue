@@ -200,6 +200,9 @@
         </SectionCard>
       </div>
     </div>
+
+    <!-- 반복 방문을 만드는 Pro/Business 주간 가치. 모바일에서도 숨기지 않는다. -->
+    <WeeklyDigestCard />
   </div>
 </template>
 
@@ -213,6 +216,7 @@ import PlatformChip from '@/components/redesign/PlatformChip.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
 import ThumbPlaceholder from '@/components/redesign/ThumbPlaceholder.vue'
+import WeeklyDigestCard from '@/components/dashboard/WeeklyDigestCard.vue'
 import { useRedesignTodayStore } from '@/stores/redesignToday'
 
 /**

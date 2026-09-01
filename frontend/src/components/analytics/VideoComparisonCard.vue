@@ -42,7 +42,7 @@
         <div>
           <p class="mb-1 text-gray-500 dark:text-gray-400">조회수</p>
           <p class="font-semibold text-gray-900 dark:text-gray-100">
-            {{ formatNumber(video.totalViews) }}
+            {{ video.totalViews === null ? $t('analyticsView.notMeasured') : formatNumber(video.totalViews) }}
           </p>
           <!-- Relative bar for views -->
           <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
@@ -57,7 +57,7 @@
         <div>
           <p class="mb-1 text-gray-500 dark:text-gray-400">좋아요</p>
           <p class="font-semibold text-gray-900 dark:text-gray-100">
-            {{ formatNumber(video.totalLikes) }}
+            {{ video.totalLikes === null ? $t('analyticsView.notMeasured') : formatNumber(video.totalLikes) }}
           </p>
           <!-- Relative bar for likes -->
           <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
@@ -74,7 +74,7 @@
       <div class="border-t border-gray-100 dark:border-gray-700 pt-3">
         <p class="text-xs text-gray-500 dark:text-gray-400">참여율</p>
         <p class="mt-1 text-lg font-bold" :class="textClass">
-          {{ engagementRate }}%
+          {{ engagementRate === null ? $t('analyticsView.notMeasured') : `${engagementRate}%` }}
         </p>
       </div>
     </div>
@@ -116,9 +116,17 @@ const textClass = computed(() => {
 })
 
 // Engagement rate
-const engagementRate = computed(() => {
-  if (props.video.totalViews === 0) return '0.00'
-  return ((props.video.totalLikes / props.video.totalViews) * 100).toFixed(2)
+/**
+ * 참여율. **분모나 분자가 미수집이면 계산하지 않는다.**
+ *
+ * 예전에는 조회수가 0 일 때 `'0.00'` 을 돌려줬다. 분모가 없으면 비율이 정의되지 않는데
+ * "참여율 0%" 라는 관측이 된다. 이제 서버가 미수집을 `null` 로 주므로 그것도 함께 막는다.
+ */
+const engagementRate = computed<string | null>(() => {
+  const views = props.video.totalViews
+  const likes = props.video.totalLikes
+  if (views === null || likes === null || views === 0) return null
+  return ((likes / views) * 100).toFixed(2)
 })
 
 // Bar widths (100% for this card's own max value)
@@ -127,8 +135,11 @@ const viewsBarWidth = computed(() => {
 })
 
 const likesBarWidth = computed(() => {
-  if (props.video.totalViews === 0) return 0
-  return (props.video.totalLikes / props.video.totalViews) * 100
+  const views = props.video.totalViews
+  const likes = props.video.totalLikes
+  // 미수집이면 막대를 그릴 근거가 없다. 호출부가 0 폭으로 숨긴다.
+  if (views === null || likes === null || views === 0) return 0
+  return (likes / views) * 100
 })
 
 // Formatters

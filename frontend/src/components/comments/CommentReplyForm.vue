@@ -24,12 +24,38 @@
       </div>
     </div>
 
+    <!-- 크레딧 부족 안내 + 실제 충전 CTA -->
+    <div
+      v-if="creditBlocked"
+      class="mb-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2"
+    >
+      <p class="text-[11px] leading-5 text-warning-strong">{{ $t('comments.replyForm.creditBlocked') }}</p>
+      <button
+        type="button"
+        data-testid="reply-credit-cta"
+        class="btn-primary mt-2 inline-flex w-full justify-center !text-[12px]"
+        @click="showCreditModal = true"
+      >
+        {{ $t('comments.replyForm.chargeCredits') }}
+      </button>
+    </div>
+
+    <!-- 일반 오류 안내 (조용한 무시 금지) -->
+    <p
+      v-else-if="error"
+      data-testid="reply-error"
+      class="text-[11px] leading-5 text-error-strong"
+    >
+      {{ error }}
+    </p>
+
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ replyText.length }}/500</span>
         <button
           v-if="commentContent"
           type="button"
+          data-testid="reply-ai-button"
           class="inline-flex items-center gap-1 rounded-lg border border-primary-200 px-2.5 py-1 text-caption text-primary-600 transition-colors hover:bg-primary-50 disabled:opacity-50 dark:border-primary-800 dark:text-primary-400 dark:hover:bg-primary-900"
           :disabled="generatingAi || submitting"
           @click="generateAiReply"
@@ -63,12 +89,18 @@
         </button>
       </div>
     </div>
+
+    <CreditPurchaseModal v-model="showCreditModal" @purchase="onCreditPurchase" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { aiApi } from '@/api/ai'
+import { CREDIT_INSUFFICIENT, matchesCode } from '@/composables/usePlanLimit'
+import { useCreditStore } from '@/stores/credit'
+import { useI18n } from 'vue-i18n'
+import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
 
 const props = defineProps<{
   commentContent?: string
@@ -80,11 +112,17 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+const { t } = useI18n({ useScope: 'global' })
+const creditStore = useCreditStore()
+
 const replyText = ref('')
 const submitting = ref(false)
 const generatingAi = ref(false)
 const aiSuggestions = ref<{ tone: string; reply: string }[]>([])
 const showAiSuggestions = ref(false)
+const creditBlocked = ref(false)
+const error = ref('')
+const showCreditModal = ref(false)
 
 const toneLabel = (tone: string) => {
   const labels: Record<string, string> = {
@@ -98,6 +136,8 @@ const toneLabel = (tone: string) => {
 const generateAiReply = async () => {
   if (!props.commentContent) return
   generatingAi.value = true
+  error.value = ''
+  creditBlocked.value = false
   try {
     const result = await aiApi.generateReply({
       comment: props.commentContent,
@@ -105,8 +145,10 @@ const generateAiReply = async () => {
     })
     aiSuggestions.value = result.replies
     showAiSuggestions.value = true
-  } catch {
-    // 크레딧 부족 등 에러 시 무시
+  } catch (e) {
+    // 잔액 부족은 안정 코드로만 판단한다. 문구/상태코드/일반 Error 문자열로는 충전 CTA 를 띄우지 않는다.
+    if (matchesCode(e, CREDIT_INSUFFICIENT)) creditBlocked.value = true
+    else error.value = t('comments.replyForm.aiFailed')
   } finally {
     generatingAi.value = false
   }
@@ -129,5 +171,11 @@ const handleSubmit = async () => {
   } finally {
     submitting.value = false
   }
+}
+
+function onCreditPurchase() {
+  void creditStore.fetchBalance()
+  creditBlocked.value = false
+  // 자동 재실행 금지: 사용자가 AI 답글 버튼을 다시 눌러 재시도한다.
 }
 </script>

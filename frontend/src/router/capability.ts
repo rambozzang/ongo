@@ -2,14 +2,19 @@
  * Maps every authenticated feature route to the server capability that owns
  * it. Keeping this table centralized prevents a hidden menu from remaining
  * reachable through an old bookmark or a manually typed URL.
+ *
+ * Each prefix appears exactly once: lookup takes the first match, so a repeat
+ * entry is either a dead line or a gate silently pinned to whichever row came
+ * first. Exported so the test can hold that invariant.
  */
-const ROUTE_CAPABILITIES: ReadonlyArray<readonly [string, string]> = [
+export const ROUTE_CAPABILITIES: ReadonlyArray<readonly [string, string]> = [
   ['/ugc/shorts/runs', 'ugc/shorts/runs'],
   ['/ugc/shorts/templates', 'ugc/shorts/templates'],
   ['/ugc/shorts/prompts', 'ugc/shorts/prompts'],
   ['/ugc/campaigns', 'ugc/campaigns'],
   ['/creator/campaigns', 'creator/campaigns'],
   ['/analytics/compare', 'analytics/compare'],
+  ['/competitors', 'competitors'],
   ['/channel-audit', 'channel-audit'],
   ['/brand-deals', 'brand-deals'],
   ['/activity-log', 'activity-log'],

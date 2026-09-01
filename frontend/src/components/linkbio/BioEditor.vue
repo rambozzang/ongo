@@ -5,11 +5,21 @@
       <h3 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">프로필</h3>
       <div class="space-y-4">
         <div class="flex items-center gap-4">
+          <!-- 프로필 이미지가 없으면 img 대신 로컬 아이콘. 빈 src 는 쓰지 않는다. -->
           <img
+            v-if="page.avatarUrl"
             :src="page.avatarUrl"
             :alt="page.displayName"
             class="h-16 w-16 rounded-full border-2 border-gray-200 dark:border-gray-600"
           />
+          <span
+            v-else
+            role="img"
+            :aria-label="page.displayName"
+            class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-100 dark:border-gray-600 dark:bg-gray-700"
+          >
+            <UserCircleIcon class="h-12 w-12 text-gray-400 dark:text-gray-500" />
+          </span>
           <div class="flex-1">
             <label class="mb-1 block text-body font-medium text-gray-700 dark:text-gray-300">
               표시 이름
@@ -105,6 +115,14 @@
 
       <!-- Block Type Selector -->
       <div v-if="showBlockSelector" class="mb-4">
+        <!--
+          지금 무엇을 만들 수 있는지 화면이 직접 말한다. 선택기에 종류가 하나뿐인 것은
+          아직 서버가 링크 블록만 저장하기 때문이지 오류가 아니다.
+        -->
+        <p class="mb-3 rounded-md bg-gray-50 px-3 py-2 text-body-xs text-gray-600 dark:bg-gray-700/50 dark:text-gray-300">
+          현재 저장·공개되는 블록은 <strong>링크</strong> 하나입니다. 다른 종류는 준비 중이라
+          추가할 수 없습니다.
+        </p>
         <BlockTypeSelector
           @select="handleAddBlock"
         />
@@ -133,7 +151,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { PlusIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
 import type { BioPage, ThemeStyle, BlockType, BioBlock } from '@/types/linkbio'
 import ThemeSelector from './ThemeSelector.vue'
 import BlockTypeSelector from './BlockTypeSelector.vue'

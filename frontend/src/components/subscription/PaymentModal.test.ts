@@ -3,13 +3,16 @@ import { flushPromises, mount } from '@vue/test-utils'
 import PaymentModal from './PaymentModal.vue'
 
 /** usePortOne 은 별도 파일에서 계약을 검증한다. 여기서는 모달이 그 결과를 어떻게 쓰는지만 본다. */
-const portone = vi.hoisted(() => ({ openSubscriptionCheckout: vi.fn() }))
+const portone = vi.hoisted(() => ({
+  openSubscriptionCheckout: vi.fn(),
+  // Vue 템플릿이 실제 Ref처럼 언랩하도록 최소한의 Ref 계약을 유지한다.
+  loading: { value: false, __v_isRef: true },
+}))
 
 vi.mock('@/composables/usePortOne', async () => {
-  const { ref } = await import('vue')
   return {
     usePortOne: () => ({
-      loading: ref(false),
+      loading: portone.loading,
       openSubscriptionCheckout: portone.openSubscriptionCheckout,
     }),
   }
@@ -17,9 +20,35 @@ vi.mock('@/composables/usePortOne', async () => {
 
 type Callbacks = { onSuccess?: () => void; onClose?: () => void }
 
-function renderModal() {
+/**
+ * 플랜 정보는 **부모가 서버 값을 내려준다.** 이 컴포넌트는 상수를 뒤지지 않으므로
+ * 테스트도 부모처럼 넘겨 준다 — 서버 응답과 같은 모양이면 충분하다.
+ */
+const STARTER_PLAN = {
+  type: 'STARTER' as const,
+  name: 'STARTER',
+  price: 9900,
+  yearlyPrice: 99000,
+  maxPlatforms: 3,
+  maxUploadsPerMonth: 30,
+  maxScheduleDays: 7,
+  analyticsPeriodDays: 30,
+  storageMb: 10240,
+  commentManagement: true,
+  teamMembers: 0,
+  freeAiCredits: 100,
+  support: '이메일',
+}
+
+function renderModal(overrides: Record<string, unknown> = {}) {
   return mount(PaymentModal, {
-    props: { modelValue: true, targetPlan: 'STARTER' as const, price: 9900 },
+    props: {
+      modelValue: true,
+      targetPlan: 'STARTER' as const,
+      price: 9900,
+      plan: STARTER_PLAN,
+      ...overrides,
+    },
     global: { stubs: { teleport: true, LoadingSpinner: true } },
   })
 }
@@ -47,6 +76,7 @@ async function pay(wrapper: ReturnType<typeof renderModal>) {
 describe('PaymentModal 결제 완료 신호', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    portone.loading.value = false
     vi.useFakeTimers()
   })
 
@@ -147,6 +177,47 @@ describe('PaymentModal 결제 완료 신호', () => {
     expect(wrapper.text()).toContain('결제 처리 중')
   })
 
+  it('결제 처리 중 배경을 눌러도 모달을 닫거나 성공 신호를 잃지 않는다', async () => {
+    portone.openSubscriptionCheckout.mockImplementation(
+      async (_plan: string, cb: Callbacks) => cb.onSuccess?.(),
+    )
+
+    const wrapper = renderModal()
+    await pay(wrapper)
+    await wrapper.find('.fixed.inset-0[aria-hidden="true"]').trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    vi.advanceTimersByTime(1500)
+    await flushPromises()
+    expect(wrapper.emitted('confirm')).toHaveLength(1)
+  })
+
+  it('PortOne 호출 중에는 닫기 버튼과 Escape로 결제 흐름을 끊지 않는다', async () => {
+    portone.loading.value = true
+    const wrapper = renderModal()
+
+    await wrapper.find('button[aria-label="모달 닫기"]').trigger('click')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await wrapper.find('.fixed.inset-0[aria-hidden="true"]').trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.find('button[aria-label="모달 닫기"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('부모가 처리 중 모달을 제거하면 지연 완료 타이머가 성공 신호를 보내지 않는다', async () => {
+    portone.openSubscriptionCheckout.mockImplementation(
+      async (_plan: string, cb: Callbacks) => cb.onSuccess?.(),
+    )
+
+    const wrapper = renderModal()
+    await pay(wrapper)
+    await wrapper.setProps({ modelValue: false })
+    vi.advanceTimersByTime(5000)
+    await flushPromises()
+
+    expect(wrapper.emitted('confirm')).toBeUndefined()
+  })
+
   it('동기화 대기가 끝나면 confirm 을 정확히 한 번 보낸다', async () => {
     portone.openSubscriptionCheckout.mockImplementation(
       async (_plan: string, cb: Callbacks) => cb.onSuccess?.(),
@@ -198,6 +269,16 @@ describe('PaymentModal 결제 완료 신호', () => {
     expect(wrapper.text()).not.toContain('카드 한도를 초과했습니다')
   })
 
+  it('대화상자에 제목과 설명이 연결되어 있다', () => {
+    const wrapper = renderModal()
+    const dialog = wrapper.find('[role="dialog"]')
+    const panel = wrapper.find('[role="dialog"] > div[aria-describedby]')
+
+    expect(dialog.attributes('aria-labelledby')).toBeTruthy()
+    expect(panel.attributes('aria-describedby')).toBeTruthy()
+    expect(wrapper.find(`#${panel.attributes('aria-describedby')}`).exists()).toBe(true)
+  })
+
   it('결제 주기를 지정하지 않으면 월간으로 결제한다', async () => {
     // 모달이 보여주는 가격은 월 요금이다. 기본값이 어긋나면 표시가와 청구액이 달라진다.
     portone.openSubscriptionCheckout.mockImplementation(
@@ -211,6 +292,14 @@ describe('PaymentModal 결제 완료 신호', () => {
     expect(plan).toBe('STARTER')
     expect(billingCycle).toBe('MONTHLY')
   })
+
+  it('연간 결제는 연간 금액과 연간 단위를 표시한다', () => {
+    const wrapper = renderModal({ billingCycle: 'YEARLY', price: 99000 })
+
+    expect(wrapper.text()).toContain('₩99,000')
+    expect(wrapper.text()).toContain('/년')
+    expect(wrapper.text()).not.toContain('월 결제 금액')
+  })
 })
 
 /*
@@ -220,6 +309,7 @@ describe('PaymentModal 결제 완료 신호', () => {
 describe('PaymentModal 정기결제 동의', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    portone.loading.value = false
     vi.useFakeTimers()
   })
 
@@ -264,7 +354,12 @@ describe('PaymentModal 정기결제 동의', () => {
   /** 무료 플랜은 결제 자체가 없다. 동의를 요구하면 기존 흐름이 막힌다. */
   it('무료 플랜에는 동의 체크박스를 띄우지 않는다', () => {
     const wrapper = mount(PaymentModal, {
-      props: { modelValue: true, targetPlan: 'FREE' as const, price: 0 },
+      props: {
+        modelValue: true,
+        targetPlan: 'FREE' as const,
+        price: 0,
+        plan: { ...STARTER_PLAN, type: 'FREE' as const, name: 'FREE', price: 0, yearlyPrice: 0 },
+      },
       global: { stubs: { teleport: true, LoadingSpinner: true } },
     })
 

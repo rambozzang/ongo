@@ -9,6 +9,7 @@ import { authApi } from '@/api/auth'
 import { channelApi } from '@/api/channel'
 import { videoApi } from '@/api/video'
 import { capabilitiesApi } from '@/api/capabilities'
+import { subscriptionApi } from '@/api/subscription'
 import { useAuthStore } from '@/stores/auth'
 import koMessages from '@/locales/ko/common.json'
 
@@ -20,12 +21,44 @@ vi.mock('@/api/auth', () => ({
     getProfile: vi.fn(),
   },
 }))
-vi.mock('@/api/ai', () => ({ aiApi: { generateMeta: vi.fn() } }))
+vi.mock('@/api/ai', () => ({ aiApi: { generateMeta: vi.fn(), getFeatures: vi.fn() } }))
 vi.mock('@/api/channel', () => ({ channelApi: { list: vi.fn(), disconnect: vi.fn(), authorizationUrl: vi.fn() } }))
 vi.mock('@/api/video', () => ({ videoApi: { getUploadCapabilities: vi.fn() } }))
 vi.mock('@/api/capabilities', () => ({
   capabilitiesApi: { list: vi.fn(), clearCache: vi.fn() },
 }))
+/*
+ * 온보딩 플랜 카드는 **서버가 준 목록**으로 그린다. 클라이언트 상수를 쓰면 결제 금액은
+ * 서버 값인데 옆의 가격·한도는 상수가 되어, 같은 화면에서 두 숫자가 갈린다.
+ * 그래서 테스트도 서버 응답을 세워 준다.
+ */
+vi.mock('@/api/subscription', () => ({
+  subscriptionApi: { getPlans: vi.fn() },
+}))
+
+function planInfo(planType: string, price: number) {
+  return {
+    planType,
+    price,
+    yearlyPrice: price * 10,
+    recommended: planType === 'STARTER',
+    features: {
+      maxPlatforms: 3,
+      monthlyUploads: 30,
+      scheduleDays: 7,
+      analyticsDays: 30,
+      storageGB: 10,
+      freeCredits: 100,
+      maxTeamMembers: 0,
+    },
+  }
+}
+
+/** 서버가 실제로 돌려주는 네 플랜. 온보딩은 이 중 앞 세 개만 보여 준다. */
+const SERVER_PLANS = {
+  plans: [planInfo('FREE', 0), planInfo('STARTER', 9900), planInfo('PRO', 19900), planInfo('BUSINESS', 49900)],
+  currentPlan: 'FREE' as const,
+}
 
 const COMPLETE_FAILED = koMessages.onboarding.completeFailed
 
@@ -139,6 +172,10 @@ describe('OnboardingView 완료 처리', () => {
     vi.mocked(authApi.updateProfile).mockResolvedValue(undefined as never)
     // 유료 흐름은 서버가 결제 가능이라고 알려줄 때만 열린다. 기본은 준비된 상태.
     paymentCapability({ enabled: true })
+    vi.mocked(subscriptionApi.getPlans).mockResolvedValue(SERVER_PLANS as never)
+    vi.mocked(aiApi.getFeatures).mockResolvedValue([
+      { key: 'META_GENERATION', displayName: '제목/설명 생성', creditCost: 5 },
+    ] as never)
   })
 
   it('완료 API가 실패하면 완료 화면으로 넘어가지 않고 사유를 보여준다', async () => {
@@ -225,6 +262,59 @@ describe('OnboardingView 완료 처리', () => {
     expect(wrapper.text()).toContain('현재 연결할 수 없는 플랫폼')
     expect(wrapper.text()).toContain('TikTok')
     expect(wrapper.findAll('button').filter((button) => button.text().includes('연동하기'))).toHaveLength(1)
+  })
+
+  /*
+   * 플랜 카드의 가격·한도는 **서버가 준 값이다.** 상수로 그리면 서버에서 요금을 바꾼 날
+   * 온보딩만 옛 가격을 광고하고, 결제는 서버 값으로 된다.
+   */
+  it('플랜 카드를 서버 응답으로 그린다', async () => {
+    const wrapper = await renderOnboarding()
+    await advanceToPlanSelection(wrapper)
+
+    expect(subscriptionApi.getPlans).toHaveBeenCalled()
+    // 노출 범위(앞 세 개)는 종전과 같다. BUSINESS 추가 여부는 별도 판단이라 바꾸지 않는다.
+    expect(wrapper.findAll('[data-plan]').map((c) => c.attributes('data-plan')))
+      .toEqual(['FREE', 'STARTER', 'PRO'])
+  })
+
+  /** **핵심.** 못 받았으면 그리지 않는다 — 오래된 가격을 대신 보여 주지 않는다. */
+  it('플랜 조회에 실패하면 가격 카드를 그리지 않고 사유를 알린다', async () => {
+    vi.mocked(subscriptionApi.getPlans).mockRejectedValue(new Error('플랜 서버가 응답하지 않습니다'))
+
+    const wrapper = await renderOnboarding()
+    await advanceToPlanSelection(wrapper)
+
+    expect(wrapper.findAll('[data-plan]')).toHaveLength(0)
+    expect(wrapper.find('[data-testid="onboarding-plans-error"]').text())
+      .toContain('플랜 서버가 응답하지 않습니다')
+  })
+
+  /** 조회 실패로 온보딩 자체가 막히면 안 된다 — 무료 가입은 계속 가능해야 한다. */
+  it('플랜 조회에 실패해도 무료로 온보딩을 마칠 수 있다', async () => {
+    vi.mocked(subscriptionApi.getPlans).mockRejectedValue(new Error('플랜 서버가 응답하지 않습니다'))
+    vi.mocked(authApi.completeOnboarding).mockResolvedValue(undefined as never)
+
+    const wrapper = await renderOnboarding()
+    await advanceToFinalStep(wrapper)
+    await buttonWith(wrapper, '완료').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('환영합니다')
+  })
+
+  /** 재시도로 성공하면 사유가 사라지고 서버 카드가 나타난다. */
+  it('다시 시도하면 서버 목록을 다시 받는다', async () => {
+    vi.mocked(subscriptionApi.getPlans).mockRejectedValue(new Error('플랜 서버가 응답하지 않습니다'))
+    const wrapper = await renderOnboarding()
+    await advanceToPlanSelection(wrapper)
+
+    vi.mocked(subscriptionApi.getPlans).mockResolvedValue(SERVER_PLANS as never)
+    await buttonWith(wrapper, '다시 시도').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="onboarding-plans-error"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-plan]')).toHaveLength(3)
   })
 
   it('유료 플랜은 선택만으로 완료하지 않고 결제 확인 뒤 다음 단계로 진행한다', async () => {

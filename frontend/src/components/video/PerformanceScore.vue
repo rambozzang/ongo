@@ -1,12 +1,19 @@
 <template>
   <div class="card">
-    <h3 class="mb-6 text-title font-semibold text-gray-900 dark:text-gray-100">성과 점수</h3>
+    <!--
+      아래 'AI 성과 점수' 카드와 계산 근거가 다르다. 제목만으로는 두 숫자가 왜 다른지
+      알 수 없어 부제로 근거를 밝힌다.
+    -->
+    <h3 class="mb-1 text-title font-semibold text-gray-900 dark:text-gray-100">성과 점수</h3>
+    <p class="mb-6 text-caption text-gray-500 dark:text-gray-400">
+      {{ $t('videoDetail.selfScoreBasis') }}
+    </p>
 
     <div class="mb-8 grid gap-6 desktop:grid-cols-2">
       <!-- Overall Score Circle -->
       <div class="flex items-center justify-center">
         <div class="relative">
-          <svg class="h-48 w-48 -rotate-90 transform">
+          <svg v-if="scoreResult.overall !== null" class="h-48 w-48 -rotate-90 transform">
             <!-- Background circle -->
             <circle
               cx="96"
@@ -34,8 +41,11 @@
           </svg>
           <!-- Score text -->
           <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span class="text-5xl font-bold text-gray-900 dark:text-gray-100">
+            <span v-if="scoreResult.overall !== null" class="text-5xl font-bold text-gray-900 dark:text-gray-100">
               {{ displayOverallScore }}
+            </span>
+            <span v-else data-testid="overall-score-unavailable" class="px-4 text-center text-body font-semibold text-gray-500 dark:text-gray-400">
+              {{ $t('videoDetail.scoreUnavailable') }}
             </span>
             <span class="text-body font-medium text-gray-500 dark:text-gray-400">성과 점수</span>
           </div>
@@ -46,7 +56,7 @@
       <div class="grid grid-cols-2 gap-4">
         <!-- Reach Score -->
         <div class="flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4">
-          <svg class="h-20 w-20 -rotate-90 transform">
+          <svg v-if="scoreResult.reach !== null" class="h-20 w-20 -rotate-90 transform">
             <circle
               cx="40"
               cy="40"
@@ -69,15 +79,18 @@
               stroke-linecap="round"
             />
           </svg>
-          <span class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
+          <span v-if="scoreResult.reach !== null" class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ displayReachScore }}
+          </span>
+          <span v-else data-testid="reach-score-unavailable" class="mt-2 text-body font-semibold text-gray-500 dark:text-gray-400">
+            {{ $t('videoDetail.scoreUnavailable') }}
           </span>
           <span class="text-caption text-gray-500 dark:text-gray-400">도달률</span>
         </div>
 
         <!-- Engagement Score -->
         <div class="flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4">
-          <svg class="h-20 w-20 -rotate-90 transform">
+          <svg v-if="scoreResult.engagement !== null" class="h-20 w-20 -rotate-90 transform">
             <circle
               cx="40"
               cy="40"
@@ -100,15 +113,18 @@
               stroke-linecap="round"
             />
           </svg>
-          <span class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
+          <span v-if="scoreResult.engagement !== null" class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ displayEngagementScore }}
+          </span>
+          <span v-else data-testid="engagement-score-unavailable" class="mt-2 text-body font-semibold text-gray-500 dark:text-gray-400">
+            {{ $t('videoDetail.scoreUnavailable') }}
           </span>
           <span class="text-caption text-gray-500 dark:text-gray-400">참여율</span>
         </div>
 
         <!-- Growth Score -->
         <div class="flex flex-col items-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4">
-          <svg class="h-20 w-20 -rotate-90 transform">
+          <svg v-if="scoreResult.growth !== null" class="h-20 w-20 -rotate-90 transform">
             <circle
               cx="40"
               cy="40"
@@ -131,8 +147,11 @@
               stroke-linecap="round"
             />
           </svg>
-          <span class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
+          <span v-if="scoreResult.growth !== null" class="mt-2 text-h1 font-bold text-gray-900 dark:text-gray-100">
             {{ displayGrowthScore }}
+          </span>
+          <span v-else data-testid="growth-score-unavailable" class="mt-2 text-body font-semibold text-gray-500 dark:text-gray-400">
+            {{ $t('videoDetail.scoreUnavailable') }}
           </span>
           <span class="text-caption text-gray-500 dark:text-gray-400">성장세</span>
         </div>
@@ -333,11 +352,16 @@ function animateScores(): void {
   const duration = 1500 // 1.5 seconds
   const fps = 60
   const frames = (duration / 1000) * fps
-  const overallIncrement = scoreResult.value.overall / frames
-  const reachIncrement = scoreResult.value.reach / frames
-  const engagementIncrement = scoreResult.value.engagement / frames
-  const growthIncrement = scoreResult.value.growth / frames
-  const coverageIncrement = scoreResult.value.coverage / frames
+  const overallTarget = scoreResult.value.overall ?? 0
+  const reachTarget = scoreResult.value.reach ?? 0
+  const engagementTarget = scoreResult.value.engagement ?? 0
+  const growthTarget = scoreResult.value.growth ?? 0
+  const coverageTarget = scoreResult.value.coverage
+  const overallIncrement = overallTarget / frames
+  const reachIncrement = reachTarget / frames
+  const engagementIncrement = engagementTarget / frames
+  const growthIncrement = growthTarget / frames
+  const coverageIncrement = coverageTarget / frames
 
   let currentFrame = 0
 
@@ -345,34 +369,34 @@ function animateScores(): void {
     currentFrame++
 
     displayOverallScore.value = Math.min(
-      scoreResult.value.overall,
+      overallTarget,
       Math.round(overallIncrement * currentFrame)
     )
     displayReachScore.value = Math.min(
-      scoreResult.value.reach,
+      reachTarget,
       Math.round(reachIncrement * currentFrame)
     )
     displayEngagementScore.value = Math.min(
-      scoreResult.value.engagement,
+      engagementTarget,
       Math.round(engagementIncrement * currentFrame)
     )
     displayGrowthScore.value = Math.min(
-      scoreResult.value.growth,
+      growthTarget,
       Math.round(growthIncrement * currentFrame)
     )
     displayCoverageScore.value = Math.min(
-      scoreResult.value.coverage,
+      coverageTarget,
       Math.round(coverageIncrement * currentFrame)
     )
 
     if (currentFrame >= frames) {
       clearInterval(animationInterval!)
       // Ensure final values are exact
-      displayOverallScore.value = scoreResult.value.overall
-      displayReachScore.value = scoreResult.value.reach
-      displayEngagementScore.value = scoreResult.value.engagement
-      displayGrowthScore.value = scoreResult.value.growth
-      displayCoverageScore.value = scoreResult.value.coverage
+      displayOverallScore.value = overallTarget
+      displayReachScore.value = reachTarget
+      displayEngagementScore.value = engagementTarget
+      displayGrowthScore.value = growthTarget
+      displayCoverageScore.value = coverageTarget
     }
   }, 1000 / fps)
 }

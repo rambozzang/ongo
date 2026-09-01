@@ -7,11 +7,18 @@ export interface AbTestVariant {
   label: VariantLabel
   value: string
   thumbnailUrl?: string
-  impressions: number
-  clicks: number
-  ctr: number
-  views: number
+  /**
+   * 노출 수. **`null` 은 측정되지 않았다는 뜻**이며 0 이 아니다.
+   *
+   * 노출이 없으면 클릭·CTR 도 존재할 수 없다. 세 값은 함께 `null` 이 된다.
+   */
+  impressions: number | null
+  clicks: number | null
+  ctr: number | null
+  views: number | null
   avgWatchTime?: number
+  /** 세 지표가 `null` 인 이유. 서버가 내려주는 문장. */
+  metricsUnavailableReason?: string
   isWinner: boolean
 }
 
@@ -25,7 +32,8 @@ export interface AbTest {
   startedAt?: string
   endedAt?: string
   durationHours?: number
-  totalImpressions: number
+  /** 측정된 변형들의 노출 합. **측정된 변형이 없으면 `null`** — 0 이 아니다. */
+  totalImpressions: number | null
   confidenceLevel?: number
   winnerId?: string
   createdAt: string
@@ -52,7 +60,12 @@ export interface AbTestSummary {
   totalTests: number
   activeTests: number
   completedTests: number
-  avgCtrImprovement: number
+  /**
+   * 평균 CTR 개선율(%). **`null` 은 측정된 실험이 없다는 뜻**이며 0 이 아니다.
+   *
+   * 노출·클릭이 수집되지 않은 실험을 0% 로 세면 화면에 "+0.0%" 라는 성과가 생긴다.
+   */
+  avgCtrImprovement: number | null
   bestPerformingType?: AbTestType
 }
 

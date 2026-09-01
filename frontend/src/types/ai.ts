@@ -2,6 +2,13 @@ import type { Platform } from './channel'
 
 export type AiTone = 'FRIENDLY' | 'PROFESSIONAL' | 'HUMOROUS'
 
+/** 서버 `AiFeature` enum에서 내려주는 AI 기능별 실제 차감 단가. */
+export interface AiFeaturePricing {
+  key: string
+  displayName: string
+  creditCost: number
+}
+
 export interface GenerateMetaRequest {
   script?: string
   videoId?: number

@@ -16,11 +16,24 @@
         <div class="px-6 py-8 pb-12">
           <!-- Profile Section -->
           <div class="mb-6 flex flex-col items-center text-center">
+            <!--
+              프로필 이미지가 없으면 img 를 그리지 않는다. 빈 src 는 브라우저가 현재
+              페이지를 다시 요청하게 만든다. 대신 로컬 아이콘을 그린다.
+            -->
             <img
+              v-if="page.avatarUrl"
               :src="page.avatarUrl"
               :alt="page.displayName"
               class="mb-4 h-24 w-24 rounded-full border-4 border-white shadow-lg dark:border-gray-700"
             />
+            <span
+              v-else
+              role="img"
+              :aria-label="page.displayName"
+              class="mb-4 flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-gray-200 shadow-lg dark:border-gray-700 dark:bg-gray-700"
+            >
+              <UserCircleIcon class="h-20 w-20 text-gray-400 dark:text-gray-500" />
+            </span>
             <h1 class="mb-2 text-xl font-bold">{{ page.displayName }}</h1>
             <p class="text-sm opacity-80">{{ page.bio }}</p>
           </div>
@@ -28,22 +41,42 @@
           <!-- Blocks -->
           <div class="space-y-3">
             <template v-for="block in visibleBlocks" :key="block.id">
-              <!-- Link Block -->
-              <a
-                v-if="block.type === 'link'"
-                :href="block.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="flex items-center justify-center gap-2 py-3 text-center font-medium transition-all"
-                :class="getButtonClasses()"
-                :style="{
-                  backgroundColor: page.buttonColor,
-                  color: page.buttonTextColor,
-                }"
-              >
-                <span v-if="block.icon">{{ block.icon }}</span>
-                <span>{{ block.title }}</span>
-              </a>
+              <!--
+                주소가 아직 없거나 유효하지 않으면 앵커를 만들지 않는다. 빈 href 는 현재
+                페이지로 이동하고, `https://` 같은 값은 아무 데도 아닌 곳으로 보낸다.
+                미리보기이므로 "주소 미입력" 을 그대로 보여주는 편이 정확하다.
+              -->
+              <template v-if="block.type === 'link'">
+                <a
+                  v-if="isValidLinkUrl(block.url)"
+                  :href="block.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex items-center justify-center gap-2 py-3 text-center font-medium transition-all"
+                  :class="getButtonClasses()"
+                  :style="{
+                    backgroundColor: page.buttonColor,
+                    color: page.buttonTextColor,
+                  }"
+                >
+                  <span v-if="block.icon">{{ block.icon }}</span>
+                  <span>{{ block.title }}</span>
+                </a>
+                <div
+                  v-else
+                  aria-disabled="true"
+                  class="flex items-center justify-center gap-2 py-3 text-center font-medium opacity-50"
+                  :class="getButtonClasses()"
+                  :style="{
+                    backgroundColor: page.buttonColor,
+                    color: page.buttonTextColor,
+                  }"
+                >
+                  <span v-if="block.icon">{{ block.icon }}</span>
+                  <span>{{ block.title }}</span>
+                  <span class="text-xs">(주소 미입력)</span>
+                </div>
+              </template>
 
               <!-- Header Block -->
               <div
@@ -77,16 +110,33 @@
                 v-else-if="block.type === 'video'"
                 class="overflow-hidden rounded-xl shadow-md"
               >
-                <a :href="block.videoUrl" target="_blank" rel="noopener noreferrer">
+                <!--
+                  영상 링크가 아직 없으면 앵커를 만들지 않는다. 빈 href 는 현재 페이지로
+                  이동한다. 썸네일도 없으면 로컬 placeholder 를 그린다 — 근거는
+                  VideoBlock 타입 주석 참고.
+                -->
+                <component
+                  :is="block.videoUrl ? 'a' : 'div'"
+                  v-bind="block.videoUrl ? { href: block.videoUrl, target: '_blank', rel: 'noopener noreferrer' } : {}"
+                >
                   <img
+                    v-if="block.thumbnailUrl"
                     :src="block.thumbnailUrl"
                     :alt="block.title"
                     class="aspect-video w-full object-cover"
                   />
+                  <div
+                    v-else
+                    role="img"
+                    :aria-label="block.title"
+                    class="flex aspect-video w-full items-center justify-center bg-gray-200 dark:bg-gray-700"
+                  >
+                    <PhotoIcon class="h-10 w-10 text-gray-400 dark:text-gray-500" />
+                  </div>
                   <div class="p-3" :style="{ backgroundColor: page.buttonColor, color: page.buttonTextColor }">
                     <div class="text-sm font-medium">{{ block.title }}</div>
                   </div>
-                </a>
+                </component>
               </div>
 
               <!-- Divider Block -->
@@ -113,6 +163,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { PhotoIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
+import { isValidLinkUrl } from '@/types/linkbio'
 import type { BioPage } from '@/types/linkbio'
 
 const props = defineProps<{

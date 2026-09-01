@@ -18,6 +18,16 @@ export const PLAN_LIMIT_EXCEEDED = 'PLAN_LIMIT_EXCEEDED'
 export const STORAGE_QUOTA_EXCEEDED = 'STORAGE_QUOTA_EXCEEDED'
 
 /**
+ * 크레딧 잔액이 부족해 작업을 진행할 수 없는 경우.
+ *
+ * `RepurposeUseCase`/`CreditService.validateAndDeduct` 가 `InsufficientCreditException`(
+ * 안정 코드 `CREDIT_INSUFFICIENT`) 을 던진다. 이 코드를 받은 화면만 크레딧 충전 CTA 를 연다.
+ * `SHORTS_INSUFFICIENT_CREDIT_FOR_RUN` 과는 다르다 — 그쪽은 "시작 전 완주 불가" 판정이고,
+ * 이쪽은 작업 도중 언제든 날 수 있는 일반 잔액 부족이다. 분기 의미를 섞지 않는다.
+ */
+export const CREDIT_INSUFFICIENT = 'CREDIT_INSUFFICIENT'
+
+/**
  * 쇼츠 실행을 **시작하기도 전에** 완주 크레딧이 모자란 경우.
  *
  * 일반 `CREDIT_INSUFFICIENT` 와 구분되는 코드다. 그쪽은 작업 도중 어느 시점에서든 날 수
@@ -25,6 +35,15 @@ export const STORAGE_QUOTA_EXCEEDED = 'STORAGE_QUOTA_EXCEEDED'
  * 잔액으로 절대 완주할 수 없다"고 생성 전에 판정한 경우다. 그때는 업그레이드가 실제 해법이다.
  */
 export const SHORTS_INSUFFICIENT_CREDIT_FOR_RUN = 'SHORTS_INSUFFICIENT_CREDIT_FOR_RUN'
+
+/**
+ * 로그인·토큰 갱신 요청이 **상한에 걸려** 거절된 경우.
+ *
+ * 다른 코드와 성격이 다르다. 이것은 자격이 없다는 뜻도, 세션이 끝났다는 뜻도 아니고
+ * **지금은 안 되니 조금 뒤에 다시 하라**는 뜻이다. 그래서 인증 실패와 절대 같이 다루면
+ * 안 된다 — 같이 다루면 잠깐 막힌 사용자의 멀쩡한 세션을 지우게 된다.
+ */
+export const AUTH_RATE_LIMIT_EXCEEDED = 'AUTH_RATE_LIMIT_EXCEEDED'
 
 /** 서버가 내려준 안정 코드. 없거나 형태가 다르면 null. */
 export function readStableCode(error: unknown): string | null {

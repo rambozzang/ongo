@@ -15,11 +15,14 @@ interface Emits {
     channelUrl: string
     platform: CompetitorPlatform
     avatarUrl: string
-    subscriberCount: number
-    videoCount: number
-    avgViews: number
-    avgEngagement: number
-    growthRate: number
+    subscriberCount: number | null
+    /** 영상 수를 모르면 `null` — 0 은 "영상이 없다" 는 관측이다. */
+    videoCount: number | null
+    /** 영상 수를 모르거나 0 이면 평균의 분모가 없다 → `null`. */
+    avgViews: number | null
+    avgEngagement: number | null
+    /** 추가 시점에는 관측된 두 시점이 없다 → 항상 `null`. */
+    growthRate: number | null
     lastVideoAt: string
     isTracking: boolean
   }): void
@@ -35,18 +38,56 @@ const errorMessage = ref('')
 const previewData = ref<{
   name: string
   avatarUrl: string
-  subscriberCount: number
-  videoCount: number
+  /** 조회가 구독자 수를 주지 못했으면 `null` — 미리보기가 0 을 그리면 안 된다. */
+  subscriberCount: number | null
+  /** 조회가 영상 수를 주지 못했으면 `null`. */
+  videoCount: number | null
   platformChannelId: string
   channelUrl: string
-  totalViews: number
+  /** 조회가 총 조회수를 주지 못했으면 `null` — 평균의 분자가 없다는 뜻이다. */
+  totalViews: number | null
 } | null>(null)
 
 // Manual input mode for non-YouTube platforms
 const isManualInput = ref(false)
 const manualName = ref('')
-const manualSubscriberCount = ref<number>(0)
-const manualVideoCount = ref<number>(0)
+/**
+ * 수동 입력 구독자 수. **문자열로 들고 있는다 — 빈 값이 "모른다" 이기 때문이다.**
+ *
+ * 예전에는 `ref<number>(0)` 이라 입력칸이 `0` 으로 채워진 채 열렸고, 구독자 수를 모르는
+ * 크리에이터가 그대로 저장하면 **실제로 0 명인 채널과 구분되지 않는 0** 이 저장됐다.
+ * 그 0 은 순위·평균·비교표에 관측값처럼 섞인다.
+ *
+ * 타입이 `string | number` 인 이유: `<input type="number">` 의 `v-model` 은 Vue 가 값을
+ * 자동으로 숫자로 바꾸지만, **비어 있으면 숫자로 바꿀 수 없어 빈 문자열이 그대로 남는다.**
+ * 그 빈 문자열이 곧 "모른다" 이므로 [parseManualCount] 가 두 형태를 모두 받는다.
+ */
+const manualSubscriberCount = ref<string | number>('')
+/**
+ * 수동 입력 영상 수. **구독자 수와 같은 계약** — 빈 값은 "모른다" 이지 0 이 아니다.
+ *
+ * 예전에는 `ref<number>(0)` 이라 입력칸이 0 으로 채워진 채 열렸고, 모르는 사람이 그대로
+ * 저장하면 **영상이 실제로 0 개인 채널과 구분되지 않는 0** 이 저장됐다. 이 값은 평균
+ * 조회수의 분모라서, 0 이 되면 평균까지 "계산할 수 없음" 으로 바뀐다.
+ */
+const manualVideoCount = ref<string | number>('')
+
+/**
+ * 수동 입력값을 측정값으로 읽는다. **빈 값은 `null`(모른다) 이지 0 이 아니다.**
+ *
+ * 사용자가 직접 `0` 을 적었으면 그것은 "구독자가 없다" 는 **주장**이므로 `0` 으로 남긴다.
+ * 숫자가 아니거나 음수인 값은 구독자 수가 될 수 없으므로 모르는 것으로 본다.
+ */
+function parseManualCount(raw: string | number): number | null {
+  if (typeof raw === 'number') {
+    return Number.isFinite(raw) && raw >= 0 ? raw : null
+  }
+  const trimmed = raw.trim()
+  if (trimmed.length === 0) return null
+  const parsed = Number(trimmed)
+  if (!Number.isFinite(parsed) || parsed < 0) return null
+  return parsed
+}
 
 const detectedPlatform = computed(() => {
   const url = channelUrl.value.toLowerCase()
@@ -118,11 +159,26 @@ function handleAdd() {
       avatarUrl: previewData.value.avatarUrl,
       subscriberCount: previewData.value.subscriberCount,
       videoCount: previewData.value.videoCount,
-      avgViews: previewData.value.subscriberCount > 0
-        ? Math.floor(previewData.value.totalViews / Math.max(previewData.value.videoCount, 1))
-        : 0,
-      avgEngagement: 0,
-      growthRate: 0,
+      /*
+       * **`Math.max(videoCount, 1)` 은 없는 분모를 지어낸다.**
+       *
+       * 영상이 0 건이면 총 조회수를 1 로 나눠 "평균 = 총 조회수" 가 됐고, 조회수까지
+       * 0 이면 "평균 0회" 라는 관측이 됐다. 영상이 있을 때만 실제 분모로 나눈다.
+       */
+      /*
+       * **분자(총 조회수)와 분모(영상 수)가 모두 있어야 평균이 성립한다.**
+       *
+       * 조회 응답에 `viewCount` 가 없으면 예전에는 0 으로 채워져 "평균 0회" 가 됐다.
+       * 서버 응답 DTO 의 `avgViews` 계약과 같은 규칙이다.
+       */
+      avgViews: previewData.value.videoCount !== null
+        && previewData.value.videoCount > 0
+        && previewData.value.totalViews !== null
+        ? Math.floor(previewData.value.totalViews / previewData.value.videoCount)
+        : null,
+      avgEngagement: null,
+      // 추가하는 시점에는 비교할 이전 관측이 없다. 0 은 "정체 중" 이라는 관측이 된다.
+      growthRate: null,
       lastVideoAt: new Date().toISOString(),
       isTracking: true,
     })
@@ -133,11 +189,13 @@ function handleAdd() {
       channelUrl: channelUrl.value.trim(),
       platform: selectedPlatform.value,
       avatarUrl: '',
-      subscriberCount: manualSubscriberCount.value,
-      videoCount: manualVideoCount.value,
-      avgViews: 0,
-      avgEngagement: 0,
-      growthRate: 0,
+      // 비워 두면 `null`(모른다). 직접 적은 0 은 사용자의 주장이므로 0 으로 남는다.
+      subscriberCount: parseManualCount(manualSubscriberCount.value),
+      videoCount: parseManualCount(manualVideoCount.value),
+      // 수동 입력에는 총 조회수 항목이 없다 — 평균을 낼 근거가 아예 없다.
+      avgViews: null,
+      avgEngagement: null,
+      growthRate: null,
       lastVideoAt: new Date().toISOString(),
       isTracking: true,
     })
@@ -152,8 +210,8 @@ function handleClose() {
   errorMessage.value = ''
   isManualInput.value = false
   manualName.value = ''
-  manualSubscriberCount.value = 0
-  manualVideoCount.value = 0
+  manualSubscriberCount.value = ''
+  manualVideoCount.value = ''
   emit('close')
 }
 
@@ -291,25 +349,26 @@ function formatNumber(num: number): string {
                   <div class="grid grid-cols-2 gap-3">
                     <div>
                       <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        구독자 수
+                        구독자 수 <span class="text-gray-500 dark:text-gray-400">(선택)</span>
                       </label>
+                      <!-- 기본값을 0 으로 채우면 "모른다" 와 "0 명" 이 같은 저장이 된다. -->
                       <input
-                        v-model.number="manualSubscriberCount"
+                        v-model="manualSubscriberCount"
                         type="number"
                         min="0"
-                        placeholder="0"
+                        placeholder="모르면 비워 두세요"
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
                     <div>
                       <label class="block text-body font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        영상 수
+                        영상 수 <span class="text-gray-500 dark:text-gray-400">(선택)</span>
                       </label>
                       <input
-                        v-model.number="manualVideoCount"
+                        v-model="manualVideoCount"
                         type="number"
                         min="0"
-                        placeholder="0"
+                        placeholder="모르면 비워 두세요"
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
@@ -358,13 +417,13 @@ function formatNumber(num: number): string {
                     <div>
                       <span class="text-gray-600 dark:text-gray-400">구독자</span>
                       <p class="font-semibold text-gray-900 dark:text-white">
-                        {{ formatNumber(previewData.subscriberCount) }}
+                        {{ previewData.subscriberCount === null ? $t('analyticsView.notMeasured') : formatNumber(previewData.subscriberCount) }}
                       </p>
                     </div>
                     <div>
                       <span class="text-gray-600 dark:text-gray-400">영상 수</span>
                       <p class="font-semibold text-gray-900 dark:text-white">
-                        {{ previewData.videoCount }}
+                        {{ previewData.videoCount === null ? $t('analyticsView.notMeasured') : previewData.videoCount }}
                       </p>
                     </div>
                   </div>

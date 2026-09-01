@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { capabilitiesApi } from '@/api/capabilities'
+import { ROUTE_CAPABILITIES } from '@/router/capability'
 import { useNavigation } from './useNavigation'
 
 const mocks = vi.hoisted(() => ({
@@ -76,5 +77,30 @@ describe('useNavigation', () => {
 
     expect(paths(navigation)).toEqual(['/today'])
     expect(navigation.capabilityError.value).toBeNull()
+  })
+
+  /*
+   * A menu entry added twice renders twice — the sidebar shows the same
+   * destination on two rows and the user has to guess whether they differ.
+   * Nothing downstream dedupes: the capability filter maps over the list and
+   * keeps both. `/competitors` shipped duplicated inside the analytics group,
+   * so hold every destination to a single row.
+   *
+   * Enabling every capability the route table knows about keeps this honest
+   * when a new menu item lands — a narrower fixture would just hide it.
+   */
+  it('never lists the same destination twice', async () => {
+    const everyCapability = [...new Set(ROUTE_CAPABILITIES.map(([, key]) => key))]
+    vi.mocked(capabilitiesApi.list).mockResolvedValue(
+      everyCapability.map((key) => ({ key, enabled: true })),
+    )
+
+    const navigation = useNavigation()
+    await vi.waitFor(() => expect(paths(navigation).length).toBeGreaterThan(0))
+
+    const destinations = paths(navigation)
+    const duplicated = [...new Set(destinations.filter((to, i) => destinations.indexOf(to) !== i))]
+
+    expect(duplicated).toEqual([])
   })
 })

@@ -188,22 +188,32 @@
 
       <!-- Performance Difference Cards -->
       <div class="page-grid page-grid--metrics mb-6">
+        <!--
+          조회수·좋아요도 미수집일 수 있다. Tumblr 의 `views` 는 노트 총합이라 서버가
+          수집하지 않는다고 알려 주고, Naver Clip 은 분석 API 자체가 없다.
+        -->
         <MetricDifferenceCard
           :title="$t('videoCompare.views')"
           :value-a="selectedVideoA.totalViews"
           :value-b="selectedVideoB.totalViews"
+          :unavailable-a="isMetricUnavailable(comparisonA, 'views')"
+          :unavailable-b="isMetricUnavailable(comparisonB, 'views')"
+          :unavailable-label="$t('videoCompare.metricUnavailable')"
           :icon="EyeIcon"
         />
         <MetricDifferenceCard
           :title="$t('videoCompare.likes')"
           :value-a="selectedVideoA.totalLikes"
           :value-b="selectedVideoB.totalLikes"
+          :unavailable-a="isMetricUnavailable(comparisonA, 'likes')"
+          :unavailable-b="isMetricUnavailable(comparisonB, 'likes')"
+          :unavailable-label="$t('videoCompare.metricUnavailable')"
           :icon="HeartIcon"
         />
         <MetricDifferenceCard
           :title="$t('videoCompare.comments')"
-          :value-a="comparisonA?.totalComments ?? 0"
-          :value-b="comparisonB?.totalComments ?? 0"
+          :value-a="comparisonA?.totalComments ?? null"
+          :value-b="comparisonB?.totalComments ?? null"
           :unavailable-a="isMetricUnavailable(comparisonA, 'comments')"
           :unavailable-b="isMetricUnavailable(comparisonB, 'comments')"
           :unavailable-label="$t('videoCompare.metricUnavailable')"
@@ -211,8 +221,8 @@
         />
         <MetricDifferenceCard
           :title="$t('videoCompare.shares')"
-          :value-a="comparisonA?.totalShares ?? 0"
-          :value-b="comparisonB?.totalShares ?? 0"
+          :value-a="comparisonA?.totalShares ?? null"
+          :value-b="comparisonB?.totalShares ?? null"
           :unavailable-a="isMetricUnavailable(comparisonA, 'shares')"
           :unavailable-b="isMetricUnavailable(comparisonB, 'shares')"
           :unavailable-label="$t('videoCompare.metricUnavailable')"
@@ -220,8 +230,8 @@
         />
         <MetricDifferenceCard
           :title="$t('videoCompare.engagementRate')"
-          :value-a="comparisonA?.engagementRate ?? 0"
-          :value-b="comparisonB?.engagementRate ?? 0"
+          :value-a="comparisonA?.engagementRate ?? null"
+          :value-b="comparisonB?.engagementRate ?? null"
           :unavailable-a="isMetricUnavailable(comparisonA, 'engagementRate')"
           :unavailable-b="isMetricUnavailable(comparisonB, 'engagementRate')"
           :unavailable-label="$t('videoCompare.metricUnavailable')"
@@ -438,9 +448,19 @@ const chartOptions = computed(() => {
         borderColor: gridColor,
         borderWidth: 1,
         callbacks: {
+          /*
+           * **미수집 값을 0 으로 읽지 않는다.**
+           *
+           * 차트 데이터에 `null` 이 들어가면 Chart.js 는 막대를 그리지 않는다. 그런데
+           * 툴팁이 `?? 0` 을 하면 그 빈 자리에 마우스를 올렸을 때 "0" 이 떠서, 막대가
+           * 없는 이유가 "0 을 기록했다" 로 읽힌다.
+           */
           label: (context: TooltipItem<'bar'>) => {
             const label = context.dataset.label || ''
-            const value = (context.parsed.y ?? 0).toLocaleString()
+            const raw = context.parsed.y
+            const value = typeof raw === 'number' && Number.isFinite(raw)
+              ? raw.toLocaleString()
+              : t('videoCompare.metricUnavailable')
             return `${label}: ${value}`
           },
         },
@@ -478,29 +498,44 @@ const comparisonInsights = computed(() => {
   if (!selectedVideoA.value || !selectedVideoB.value || !comparisonA.value || !comparisonB.value) return []
 
   const insights = []
-  const viewsDiff = comparisonB.value.totalViews === 0
-    ? (comparisonA.value.totalViews > 0 ? 100 : 0)
-    : ((comparisonA.value.totalViews - comparisonB.value.totalViews) / comparisonB.value.totalViews) * 100
-  const likesDiff = comparisonB.value.totalLikes === 0
-    ? (comparisonA.value.totalLikes > 0 ? 100 : 0)
-    : ((comparisonA.value.totalLikes - comparisonB.value.totalLikes) / comparisonB.value.totalLikes) * 100
-  const engagementDiff = comparisonA.value.engagementRate - comparisonB.value.engagementRate
+
+  /*
+   * **양쪽 모두 측정된 지표만 비교한다.**
+   *
+   * 서버는 그 플랫폼이 수집하지 않는 지표를 `null` 로 준다. `?? 0` 을 하면 "영상 A는
+   * 영상 B보다 조회수가 100% 더 높습니다" 같은 문장이 **재지 않은 값을 근거로** 만들어진다.
+   * 비교할 수 없으면 그 문장을 아예 만들지 않는다.
+   */
+  function relativeDiff(a: number | null, b: number | null): number | null {
+    if (a === null || b === null) return null
+    // 기준이 0 이면 비율이 정의되지 않는다. 늘었다는 사실만 방향으로 전한다.
+    if (b === 0) return a > 0 ? 100 : 0
+    return ((a - b) / b) * 100
+  }
+
+  const viewsDiff = relativeDiff(comparisonA.value.totalViews, comparisonB.value.totalViews)
+  const likesDiff = relativeDiff(comparisonA.value.totalLikes, comparisonB.value.totalLikes)
+  const rateA = comparisonA.value.engagementRate
+  const rateB = comparisonB.value.engagementRate
+  const engagementDiff = rateA !== null && rateB !== null ? rateA - rateB : null
 
   // Views comparison
-  if (Math.abs(viewsDiff) > 5) {
-    insights.push({
-      text: `영상 A는 영상 B보다 조회수가 ${Math.abs(viewsDiff).toFixed(1)}% ${viewsDiff > 0 ? '더 높습니다' : '더 낮습니다'}`,
-      isPositive: viewsDiff > 0,
-    })
-  } else {
-    insights.push({
-      text: '두 영상의 조회수는 비슷한 수준입니다',
-      isPositive: null,
-    })
+  if (viewsDiff !== null) {
+    if (Math.abs(viewsDiff) > 5) {
+      insights.push({
+        text: `영상 A는 영상 B보다 조회수가 ${Math.abs(viewsDiff).toFixed(1)}% ${viewsDiff > 0 ? '더 높습니다' : '더 낮습니다'}`,
+        isPositive: viewsDiff > 0,
+      })
+    } else {
+      insights.push({
+        text: '두 영상의 조회수는 비슷한 수준입니다',
+        isPositive: null,
+      })
+    }
   }
 
   // Likes comparison
-  if (Math.abs(likesDiff) > 5) {
+  if (likesDiff !== null && Math.abs(likesDiff) > 5) {
     insights.push({
       text: `영상 A는 영상 B보다 좋아요가 ${Math.abs(likesDiff).toFixed(1)}% ${likesDiff > 0 ? '더 많습니다' : '더 적습니다'}`,
       isPositive: likesDiff > 0,
@@ -508,9 +543,9 @@ const comparisonInsights = computed(() => {
   }
 
   // Engagement rate comparison
-  if (Math.abs(engagementDiff) > 0.1) {
+  if (engagementDiff !== null && Math.abs(engagementDiff) > 0.1) {
     insights.push({
-      text: `영상 A의 참여율(${comparisonA.value.engagementRate}%)이 영상 B(${comparisonB.value.engagementRate}%)보다 ${engagementDiff > 0 ? '높습니다' : '낮습니다'}`,
+      text: `영상 A의 참여율(${rateA}%)이 영상 B(${rateB}%)보다 ${engagementDiff > 0 ? '높습니다' : '낮습니다'}`,
       isPositive: engagementDiff > 0,
     })
   }

@@ -9,6 +9,9 @@ import AssetPreviewModal from '@/components/assets/AssetPreviewModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
 import { useLocale } from '@/composables/useLocale'
+import { useRouter } from 'vue-router'
+import { useNotification } from '@/composables/useNotification'
+import { videoApi } from '@/api/video'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import {
   PlusIcon,
@@ -22,6 +25,8 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const assetsStore = useAssetsStore()
+const router = useRouter()
+const notify = useNotification()
 const { t } = useLocale()
 const {
   filteredAssets,
@@ -30,7 +35,15 @@ const {
   filter: _filter,
   storageUsed,
   storageLimit,
+  storageUsageLoading,
+  storageUsageError,
   loadError,
+  page,
+  pageSize,
+  totalCount,
+  totalPages,
+  hasNextPage,
+  hasPrevPage,
 } = storeToRefs(assetsStore)
 
 // Search
@@ -107,10 +120,29 @@ function runPendingAction() {
   action?.()
 }
 
+/**
+ * 삭제 결과를 사용자에게 알린다.
+ *
+ * 서버는 지울 수 없는 이유를 문장으로 내려 준다 — 브랜드 키트가 쓰고 있으면
+ * `ASSET_IN_USE` 와 함께 **어느 키트인지**까지 담아 온다(`AssetUseCase.AssetInUseException`).
+ * `client.ts` 가 그 문장을 `error.message` 로 올려 주므로 그대로 보여 주면 된다.
+ *
+ * 예전에는 `assetsStore.deleteAsset(id)` 를 `await` 없이 불렀다. 거절되면 처리되지 않은
+ * 프라미스가 되고, 화면에는 **아무것도 남지 않았다** — 모달은 닫히고 에셋은 그대로라
+ * 사용자는 눌렀는지조차 알 수 없었다.
+ */
+async function runDelete(remove: () => Promise<unknown>, fallbackMessage: string) {
+  try {
+    await remove()
+  } catch (error) {
+    notify.error(error instanceof Error ? error.message : fallbackMessage)
+  }
+}
+
 // Single delete
 function handleDelete(id: number) {
   askConfirm(t('assets.deleteTitle'), t('assets.deleteMessage'), () => {
-    assetsStore.deleteAsset(id)
+    void runDelete(() => assetsStore.deleteAsset(id), '에셋을 삭제하지 못했습니다.')
   })
 }
 
@@ -139,13 +171,37 @@ function handleBulkDelete() {
   const count = selectedAssets.value.size
   const ids = [...selectedAssets.value]
   askConfirm(t('assets.bulkDeleteTitle'), t('assets.bulkDeleteMessage', { count }), () => {
-    assetsStore.bulkDelete(ids)
+    void runDelete(() => assetsStore.bulkDelete(ids), '에셋을 삭제하지 못했습니다.')
   })
+}
+
+/**
+ * 라이브러리의 영상 에셋으로 콘텐츠 초안을 만들고 작성 화면으로 넘긴다.
+ *
+ * 서버가 오브젝트를 새 영상 전용 경로로 복사해 DRAFT 행을 만들어 준다. 여기서 로컬 File 을
+ * 지어내 업로드 흐름을 흉내내지 않는다 — 이미 스토리지에 있는 파일을 한 번 더 올리는
+ * 일이고, 사용자 회선과 쿼터를 두 번 쓴다.
+ *
+ * 실패하면 **이동하지 않는다.** 초안이 없는데 작성 화면으로 보내면 빈 화면에서 원인을
+ * 알 수 없다.
+ */
+const promoting = ref<number | null>(null)
+async function handleUseAsContent(assetId: number) {
+  if (promoting.value !== null) return
+  promoting.value = assetId
+  try {
+    const { videoId } = await videoApi.createFromAsset(assetId)
+    await router.push({ path: '/compose', query: { videoId: String(videoId) } })
+  } catch (error) {
+    notify.error(error instanceof Error ? error.message : '콘텐츠를 만들지 못했습니다.')
+  } finally {
+    promoting.value = null
+  }
 }
 
 // Storage
 const storagePercentage = computed(() => {
-  if (storageLimit.value === 0) return 0
+  if (storageUsed.value == null || storageLimit.value == null || storageLimit.value <= 0) return null
   return Math.min(100, Math.round((storageUsed.value / storageLimit.value) * 100))
 })
 
@@ -194,7 +250,7 @@ onUnmounted(() => {
       </div>
       <div class="flex items-center gap-3">
         <!-- Storage Usage -->
-        <div class="hidden items-center gap-2 sm:flex">
+        <div v-if="storageUsed != null && storageLimit != null" class="hidden items-center gap-2 sm:flex">
           <div class="w-32">
             <div class="mb-0.5 flex items-center justify-between text-body-xs text-gray-500 dark:text-gray-400">
               <span>저장 공간</span>
@@ -204,13 +260,13 @@ onUnmounted(() => {
               <div
                 class="h-full rounded-full transition-all"
                 :class="
-                  storagePercentage > 90
+                  storagePercentage != null && storagePercentage > 90
                     ? 'bg-error'
-                    : storagePercentage > 70
+                    : storagePercentage != null && storagePercentage > 70
                       ? 'bg-warning'
                       : 'bg-primary-600'
                 "
-                :style="{ width: storagePercentage + '%' }"
+                :style="{ width: (storagePercentage ?? 0) + '%' }"
               />
             </div>
             <p class="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">
@@ -218,6 +274,12 @@ onUnmounted(() => {
             </p>
           </div>
         </div>
+        <span v-else-if="storageUsageLoading" class="hidden text-body-xs text-content-tertiary sm:inline">
+          저장공간 확인 중…
+        </span>
+        <span v-else-if="storageUsageError" class="hidden text-body-xs text-warning-strong sm:inline" role="status">
+          저장공간을 확인할 수 없습니다
+        </span>
 
         <!-- Upload Button -->
         <button
@@ -402,6 +464,7 @@ title="에셋 라이브러리" :items="[
             @select="assetsStore.toggleSelection"
             @preview="openPreview"
             @delete="handleDelete"
+            @use="handleUseAsContent"
           />
         </div>
 
@@ -439,19 +502,43 @@ title="에셋 라이브러리" :items="[
                   @select="assetsStore.toggleSelection"
                   @preview="openPreview"
                   @delete="handleDelete"
+                  @use="handleUseAsContent"
                 />
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- Result count -->
-        <p
-          v-if="filteredAssets.length > 0"
-          class="mt-3 text-center text-body-xs text-gray-400 dark:text-gray-500"
-        >
-          총 {{ filteredAssets.length }}개 에셋
-        </p>
+        <!--
+          Result count + Pagination
+
+          예전에는 `filteredAssets.length` 를 "총 N개"로 보여 줬다. 페이지네이션이 붙은
+          지금 그 값은 **이 페이지의 건수**라, 그대로 두면 24개를 보여 주면서 "총 24개"라고
+          말한다. 총계는 서버가 조건과 함께 센 값을 쓴다.
+        -->
+        <div v-if="totalCount > 0" class="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p class="text-body-xs text-gray-500 dark:text-gray-400">
+            {{ page * pageSize + 1 }}–{{ Math.min((page + 1) * pageSize, totalCount) }} / 총 {{ totalCount }}개
+          </p>
+          <div v-if="totalPages > 1" class="flex gap-2">
+            <button
+              type="button"
+              class="btn-secondary text-body"
+              :disabled="!hasPrevPage || assetsStore.loading"
+              @click="assetsStore.prevPage()"
+            >
+              이전
+            </button>
+            <button
+              type="button"
+              class="btn-secondary text-body"
+              :disabled="!hasNextPage || assetsStore.loading"
+              @click="assetsStore.nextPage()"
+            >
+              다음
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 

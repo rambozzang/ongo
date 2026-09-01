@@ -208,9 +208,16 @@ const expiryProgress = computed(() => {
   return (days / totalDays) * 100
 })
 
-// Subscriber Count Formatting
+/**
+ * 구독자 수 표시. **서버가 `null` 을 주면 숫자를 만들지 않는다.**
+ *
+ * Threads·LinkedIn 어댑터는 팔로워 수를 묻지도 않고 `0` 을 저장한다. 조회하는 플랫폼의
+ * `0` 은 관측이므로 그대로 "0" 으로 그린다.
+ */
 const formattedSubscriberCount = computed(() => {
   const count = props.channel.subscriberCount
+  // 이 파일은 i18n 없이 한국어 문자열을 직접 쓴다(`lastSyncText` 의 '없음' 과 같다).
+  if (count === null) return '측정 불가'
   if (count >= 100_000_000) {
     const value = count / 100_000_000
     return value % 1 === 0 ? `${value}억` : `${value.toFixed(1)}억`

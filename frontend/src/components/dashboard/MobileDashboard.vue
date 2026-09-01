@@ -34,11 +34,20 @@
         >
           <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalViews') }}</p>
           <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
-            {{ formatCompact(kpi?.totalViews ?? 0) }}
+            <!--
+              `?? 0` 을 하지 않는다. 조회수를 수집하는 플랫폼이 없으면 서버가 `null` 을
+              주는데(Tumblr 는 노트 총합을 `views` 에 넣어 제외된다), 0 으로 채우면
+              실제로 0 회였던 경우와 구분되지 않는다.
+            -->
+            {{ kpi?.totalViews == null ? $t('analyticsView.notMeasured') : formatCompact(kpi.totalViews) }}
           </p>
-          <div v-if="kpi?.viewsChangePercent !== undefined" class="mt-1 flex items-center gap-1 text-body-xs">
-            <span :class="changeColor(kpi.viewsChangePercent)">
-              {{ changeIcon(kpi.viewsChangePercent) }}{{ Math.abs(kpi.viewsChangePercent) }}%
+          <!--
+            `!== undefined` 만 검사하면 서버가 주는 `null`(비교 불가)이 통과해
+            `Math.abs(null) === 0` → "↑0%" 라는 없는 사실이 뜬다.
+          -->
+          <div v-if="hasChange(kpi?.viewsChangePercent)" class="mt-1 flex items-center gap-1 text-body-xs">
+            <span :class="changeColor(kpi!.viewsChangePercent!)">
+              {{ changeIcon(kpi!.viewsChangePercent!) }}{{ Math.abs(kpi!.viewsChangePercent!) }}%
             </span>
           </div>
         </div>
@@ -52,9 +61,14 @@
         >
           <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalSubscribers') }}</p>
           <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
-            {{ formatCompact(kpi?.totalSubscribers ?? 0) }}
+            <!--
+              `?? 0` 을 하지 않는다. 구독 증가를 수집하는 플랫폼이 없으면 서버가 `null` 을
+              주는데, 0 으로 채우면 실제로 0명이 늘어난 경우와 구분되지 않는다.
+            -->
+            {{ kpi?.totalSubscribers == null ? $t('analyticsView.notMeasured') : formatCompact(kpi.totalSubscribers) }}
           </p>
-          <div v-if="kpi?.subscribersChange !== undefined" class="mt-1 flex items-center gap-1 text-body-xs">
+          <!-- `!== undefined` 만 검사하면 `null` 이 통과해 `Math.abs(null) === 0` 이 된다. -->
+          <div v-if="kpi?.subscribersChange != null" class="mt-1 flex items-center gap-1 text-body-xs">
             <span :class="changeColor(kpi.subscribersChange)">
               {{ changeIcon(kpi.subscribersChange) }}{{ Math.abs(kpi.subscribersChange) }}
             </span>
@@ -70,11 +84,12 @@
         >
           <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('dashboard.totalLikes') }}</p>
           <p class="mt-1 text-h1 font-bold text-gray-900 dark:text-gray-100">
-            {{ formatCompact(kpi?.totalLikes ?? 0) }}
+            <!-- Pinterest 는 저장 수를 `likes` 에 넣어 제외된다. `?? 0` 은 그 미수집을 감춘다. -->
+            {{ kpi?.totalLikes == null ? $t('analyticsView.notMeasured') : formatCompact(kpi.totalLikes) }}
           </p>
-          <div v-if="kpi?.likesChangePercent !== undefined" class="mt-1 flex items-center gap-1 text-body-xs">
-            <span :class="changeColor(kpi.likesChangePercent)">
-              {{ changeIcon(kpi.likesChangePercent) }}{{ Math.abs(kpi.likesChangePercent) }}%
+          <div v-if="hasChange(kpi?.likesChangePercent)" class="mt-1 flex items-center gap-1 text-body-xs">
+            <span :class="changeColor(kpi!.likesChangePercent!)">
+              {{ changeIcon(kpi!.likesChangePercent!) }}{{ Math.abs(kpi!.likesChangePercent!) }}%
             </span>
           </div>
         </div>
@@ -299,6 +314,16 @@ function formatCompact(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
   if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`
   return value.toLocaleString()
+}
+
+/**
+ * 증감을 표시할 수 있는가.
+ *
+ * 서버는 이전 기간 데이터가 없으면 `null` 을 준다(비교 불가). `null` 과 `undefined` 를
+ * 함께 걸러야 `Math.abs(null) === 0` 으로 인한 "↑0%" 오표시를 막는다.
+ */
+function hasChange(change: number | null | undefined): boolean {
+  return typeof change === 'number' && Number.isFinite(change)
 }
 
 function changeIcon(change: number): string {

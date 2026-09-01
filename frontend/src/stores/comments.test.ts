@@ -32,4 +32,20 @@ describe('comments store plan access handling', () => {
 
     expect(store.featureUnavailable).toBe(true)
   })
+
+  it('clears the stale upgrade state when a later fetch succeeds', async () => {
+    vi.mocked(commentsApi.list).mockResolvedValue({
+      comments: [],
+      totalCount: 0,
+      stats: { total: 0, positive: 0, neutral: 0, negative: 0 },
+      capabilities: {},
+    })
+
+    const store = useCommentsStore()
+    store.featureUnavailable = true
+
+    await store.fetchComments()
+
+    expect(store.featureUnavailable).toBe(false)
+  })
 })

@@ -36,22 +36,30 @@
     </div>
     <div v-else class="space-y-[14px]">
       <section class="grid gap-2.5 tablet:grid-cols-2 desktop:grid-cols-4">
+        <!--
+          조회수를 수집하는 플랫폼이 없으면 서버가 `null` 을 준다. `formatNumber(null)` 은
+          "0" 을 만들어 재지 않은 것이 관측처럼 보인다. 다른 카드와 같은 문구를 쓴다.
+        -->
         <KpiCard
           :label="t('analyticsView.metrics.views')"
-          :value="store.kpi ? formatNumber(store.kpi.totalViews) : '—'"
-          :delta="store.kpi ? formatDelta(store.kpi.viewsChangePercent, '%') : undefined"
-          :delta-variant="store.kpi && store.kpi.viewsChangePercent < 0 ? 'error' : 'success'"
-          :note="t('analyticsView.period.' + store.range)"
+          :value="store.kpi?.totalViews != null ? formatNumber(store.kpi.totalViews) : t('analyticsView.notMeasured')"
+          :delta="formatDelta(store.kpi?.viewsChangePercent, '%')"
+          :delta-variant="hasComparablePercent(store.kpi?.viewsChangePercent) && store.kpi!.viewsChangePercent! < 0 ? 'error' : 'success'"
+          :note="
+            store.kpi && !hasComparablePercent(store.kpi.viewsChangePercent)
+              ? t('analyticsView.changeUnavailable')
+              : t('analyticsView.period.' + store.range)
+          "
         />
         <KpiCard
           :label="t('analyticsView.table.watchTime')"
-          :value="store.averageViewDuration ? formatDuration(store.averageViewDuration.avgDurationSeconds) : '—'"
-          :note="store.averageViewDuration ? store.averageViewDuration.period : t('analyticsView.noData')"
+          :value="store.averageViewDuration?.avgDurationSeconds != null ? formatDuration(store.averageViewDuration.avgDurationSeconds) : t('analyticsView.notMeasured')"
+          :note="store.averageViewDuration?.avgDurationSeconds != null ? store.averageViewDuration.period : (store.averageViewDuration?.unavailableReason ?? t('analyticsView.noData'))"
         />
         <KpiCard
           :label="t('analyticsView.subscriberTrend')"
-          :value="store.subscriberConversion ? formatNumber(store.subscriberConversion.totalGained) : '—'"
-          :delta="store.subscriberConversion && store.subscriberConversion.totalGained > 0 ? t('status.success') : undefined"
+          :value="store.subscriberConversion?.totalGained != null ? formatNumber(store.subscriberConversion.totalGained) : '—'"
+          :delta="(store.subscriberConversion?.totalGained ?? 0) > 0 ? t('status.success') : undefined"
           :note="t('analyticsView.subscriberTrend')"
         />
         <KpiCard
@@ -96,7 +104,7 @@
                 <ThumbPlaceholder :src="video.thumbnailUrl" :width="52" :height="30" />
                 <span class="truncate text-[12px] font-semibold text-content">{{ video.title }}</span>
               </div>
-              <span class="text-right font-mono text-[11px] text-content">{{ formatNumber(video.totalViews) }}</span>
+              <span class="text-right font-mono text-[11px] text-content">{{ video.totalViews === null ? $t('analyticsView.notMeasured') : formatNumber(video.totalViews) }}</span>
               <span class="text-right font-mono text-[11px] text-content-secondary">—</span>
               <div class="flex justify-end gap-1">
                 <PlatformChip v-for="platform in video.platforms.filter(isRedesignPlatform)" :key="platform" :platform="toRedesignPlatform(platform)" size="sm" />
@@ -160,7 +168,9 @@ const insights = computed(() => {
     {
       tag: t('analyticsView.topVideos'),
       title: first?.title ?? t('analyticsView.noTopVideos'),
-      body: first ? `${formatNumber(first.totalViews)} · ${t('analyticsView.table.views')}` : t('analyticsView.emptyDataDescription'),
+      body: first?.totalViews != null
+        ? `${formatNumber(first.totalViews)} · ${t('analyticsView.table.views')}`
+        : t('analyticsView.emptyDataDescription'),
     },
     {
       tag: t('analyticsView.viewsTrend'),
@@ -190,7 +200,8 @@ const bestPlatform = computed(() => {
   for (const video of store.topVideos) {
     for (const platform of video.platforms) {
       const code = PLATFORM_CODES[platform]
-      if (code) counts.set(code, (counts.get(code) ?? 0) + video.totalViews)
+      // 조회수를 수집하지 않는 플랫폼(`null`)은 합계에 넣지 않는다.
+      if (code && video.totalViews !== null) counts.set(code, (counts.get(code) ?? 0) + video.totalViews)
     }
   }
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
@@ -198,7 +209,9 @@ const bestPlatform = computed(() => {
 const bestPlatformCount = computed(() => {
   if (!bestPlatform.value) return 0
   return store.topVideos.reduce((total, video) =>
-    video.platforms.some((platform) => PLATFORM_CODES[platform] === bestPlatform.value) ? total + video.totalViews : total,
+    video.platforms.some((platform) => PLATFORM_CODES[platform] === bestPlatform.value) && video.totalViews !== null
+      ? total + video.totalViews
+      : total,
   0)
 })
 function isRedesignPlatform(platform: Platform): platform is Platform & keyof typeof PLATFORM_CODES {
@@ -221,8 +234,20 @@ function platformLabel(platform: RedesignPlatform): string {
 function formatNumber(value: number): string {
   return new Intl.NumberFormat(locale.value, { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 }
-function formatDelta(value: number, suffix: string): string {
+/**
+ * 증감 문자열. **비교 불가면 `undefined`** 를 돌려 카드가 델타를 감춘다.
+ *
+ * 예전에는 `value: number` 였는데 서버가 `null` 을 줄 수 있다. `null >= 0` 은 `true` 라
+ * 그대로 통과해 **`"+null%"`** 이 화면에 찍힌다.
+ */
+function formatDelta(value: number | null | undefined, suffix: string): string | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
   return `${value >= 0 ? '+' : ''}${value}${suffix}`
+}
+
+/** 증감을 비교할 수 있는가. 이전 기간 데이터가 없으면 서버가 `null` 을 준다. */
+function hasComparablePercent(value: number | null | undefined): boolean {
+  return typeof value === 'number' && Number.isFinite(value)
 }
 function formatDuration(seconds: number): string {
   if (!Number.isFinite(seconds)) return '—'
@@ -233,13 +258,27 @@ function shortDate(date: string): string {
   const parsed = new Date(date)
   return Number.isNaN(parsed.getTime()) ? date.slice(5, 10) : new Intl.DateTimeFormat(locale.value, { month: 'numeric', day: 'numeric' }).format(parsed)
 }
+/**
+ * 내보내기 셀 하나.
+ *
+ * **`String(null)` 은 문자열 `"null"` 을 만든다.** 인기 영상의 `totalViews` 는 그 지표를
+ * 주는 업로드가 없거나 기간에 집계 행이 없으면 `null` 인데, 예전에는 CSV 에 `"null"` 이
+ * 그대로 찍혔다. 스프레드시트에서 그 열을 합계 내면 조용히 빠지거나 오류가 된다.
+ *
+ * `?? 0` 도 안 된다 — 재지 않은 것이 "0회" 라는 관측이 되어 실측 0 과 같아진다.
+ * 화면과 같은 문구를 쓴다.
+ */
+function exportCell(value: number | null | undefined): string {
+  return value == null ? t('analyticsView.notMeasured') : String(value)
+}
+
 function exportCsv() {
   const rows = [
     [t('analyticsView.export.date'), t('analyticsView.export.totalViews')],
-    ...store.trends.map((point) => [point.date, String(point.totalViews)]),
+    ...store.trends.map((point) => [point.date, exportCell(point.totalViews)]),
     [],
     [t('analyticsView.table.video'), t('analyticsView.export.totalViews')],
-    ...store.topVideos.map((video) => [video.title, String(video.totalViews)]),
+    ...store.topVideos.map((video) => [video.title, exportCell(video.totalViews)]),
   ]
   const csv = rows.map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })

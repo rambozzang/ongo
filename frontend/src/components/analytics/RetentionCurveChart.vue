@@ -19,11 +19,14 @@ import {
   ChartBarIcon,
   FilmIcon,
 } from '@heroicons/vue/24/outline'
+import { useI18n } from 'vue-i18n'
 import { analyticsApi } from '@/api/analytics'
 import type { RetentionCurveResponse } from '@/types/analytics'
 import AsyncState from '@/components/common/AsyncState.vue'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
+
+const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps<{
   videoId?: number
@@ -65,8 +68,25 @@ const isEmpty = computed(
     retentionData.value.retentionPoints.length === 0,
 )
 
-const emptyTitle = computed(() =>
-  selectedVideoId.value ? '리텐션 데이터가 없습니다' : '리텐션 분석할 영상을 선택해주세요',
+/**
+ * 구간별 유지율 연동이 아예 없는 상태인지.
+ *
+ * 서버가 `available: false` 와 사유를 함께 내려준다. 값이 없는 것(기다리면 쌓임)과
+ * 기능이 없는 것(기다려도 안 생김)은 사용자가 할 일이 다르므로 문구를 나눈다.
+ * 필드가 없는 옛 응답은 기존 "데이터 없음" 문구를 그대로 쓴다.
+ */
+const isUnsupported = computed(
+  () => retentionData.value?.available === false && !!retentionData.value?.unavailableReason,
+)
+
+const emptyTitle = computed(() => {
+  if (!selectedVideoId.value) return t('analyticsView.retention.emptySelect')
+  if (isUnsupported.value) return t('analyticsView.retention.unsupportedTitle')
+  return t('analyticsView.retention.emptyNoData')
+})
+
+const emptyDescription = computed(() =>
+  isUnsupported.value ? (retentionData.value?.unavailableReason ?? '') : '',
 )
 
 function formatTimestamp(seconds: number): string {
@@ -203,6 +223,7 @@ const chartOptions = computed(() => ({
       full-page
       :empty-icon="selectedVideoId ? ChartBarIcon : FilmIcon"
       :empty-title="emptyTitle"
+      :empty-description="emptyDescription"
     >
       <div class="relative h-72 w-full">
         <Line :data="chartData" :options="chartOptions" />

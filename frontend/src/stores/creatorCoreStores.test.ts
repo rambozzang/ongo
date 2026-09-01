@@ -297,38 +297,77 @@ describe('creator-facing core stores', () => {
     expect(store.error).toBeNull()
   })
 
-  it('maps revenue trends into platform breakdown and preserves partial results', async () => {
+  /**
+   * 예전에는 이 테스트가 **부분 반영**을 고정했다(`platformRevenue` 실패해도 trends 는
+   * 반영). 그 동작은 "라벨은 새 기간, 데이터는 이전 기간"을 만든다 — 기간 계약을
+   * 고치면서 없앤 불일치가 부분 반영으로 되살아나는 경로다. 이제 스냅샷은 원자적이며,
+   * 하나라도 실패하면 **이전 스냅샷 전체를 그대로 둔다.**
+   */
+  it('maps revenue trends into platform breakdown and keeps the last complete snapshot on failure', async () => {
     const store = useRevenueStore()
-    vi.mocked(revenueApi.summary).mockResolvedValue({ totalRevenue: 3000 } as never)
+    // 실제 응답 형태를 쓴다. `platformBreakdown` 이 빠진 픽스처는 스토어가 그것을
+    // 집계하다 예외를 내므로, 예전 테스트는 "부분 반영"이 아니라 **예외 경로**를
+    // 통과하고 있었다.
+    vi.mocked(revenueApi.summary).mockResolvedValue({
+      totalRevenueKrw: 3000,
+      growthPercent: 0,
+      platformBreakdown: [
+        { platform: 'YOUTUBE', revenueKrw: 1000 },
+        { platform: 'TIKTOK', revenueKrw: 2000 },
+      ],
+    } as never)
     vi.mocked(revenueApi.trends).mockResolvedValue({ data: [
       { date: '2026-08-01', platform: 'YOUTUBE', revenueKrw: 1000 },
       { date: '2026-08-02', platform: 'TIKTOK', revenueKrw: 2000 },
     ] } as never)
-    vi.mocked(revenueApi.platformRevenue).mockRejectedValueOnce(new Error('수익 API 장애'))
+    vi.mocked(revenueApi.platformRevenue).mockResolvedValue({ platforms: [] } as never)
+
     await store.fetchRevenue()
+
     expect(store.totalAnnualRevenue).toBe(3000)
     expect(store.platformBreakdown).toEqual(expect.arrayContaining([
       expect.objectContaining({ platform: 'YOUTUBE', revenue: 1000 }),
       expect.objectContaining({ platform: 'TIKTOK', revenue: 2000 }),
     ]))
+    expect(store.loadError).toBe(false)
+
+    // 한 호출만 실패해도 반쯤 갱신하지 않는다. 직전 완전한 스냅샷이 그대로 남는다.
+    vi.mocked(revenueApi.platformRevenue).mockRejectedValueOnce(new Error('수익 API 장애'))
+
+    await store.fetchRevenue()
+
     expect(store.loadError).toBe(true)
+    expect(store.totalAnnualRevenue).toBe(3000)
   })
 
+  /**
+   * 예전에는 0 기준선에서 성장률이 `0` 이라고 단언했다. `Infinity`/`NaN` 을 막는다는
+   * 의도는 옳았지만, `0` 은 **"변화 없음"이라는 측정한 적 없는 사실**을 주장한다.
+   * 이제 비교 불가는 `null` 이며, 그것이 Infinity/NaN 을 막는 더 정직한 방법이다.
+   */
   it('does not expose Infinity or NaN when revenue grows from a zero baseline', async () => {
     const store = useRevenueStore()
-    vi.mocked(revenueApi.summary).mockResolvedValue({ totalRevenue: 100 } as never)
+    vi.mocked(revenueApi.summary).mockResolvedValue({
+      totalRevenueKrw: 100,
+      // 이전 기간 수익이 0 이면 서버도 null 을 준다(RevenueUseCase).
+      growthPercent: null,
+      platformBreakdown: [{ platform: 'YOUTUBE', revenueKrw: 100 }],
+    } as never)
     vi.mocked(revenueApi.trends).mockResolvedValue({ data: [
       { date: '2026-08-01', platform: 'YOUTUBE', revenueKrw: 0 },
       { date: '2026-08-02', platform: 'YOUTUBE', revenueKrw: 100 },
     ] } as never)
-    vi.mocked(revenueApi.platformRevenue).mockResolvedValue({} as never)
+    vi.mocked(revenueApi.platformRevenue).mockResolvedValue({ platforms: [] } as never)
 
     await store.fetchRevenue()
 
-    expect(store.summary.monthlyGrowth).toBe(0)
+    expect(store.summary.monthlyGrowth).toBeNull()
+    expect(Number.isFinite(store.summary.monthlyGrowth as number)).toBe(false)
+    // 첫 행은 비교할 앞 행이 없고, 둘째 행은 기준선이 0 이다. 둘 다 비교 불가다.
+    // 예전 값 `0` 은 첫 수익 발생을 "0% 변화"로 위장했다.
     expect(store.growthTrend).toEqual([
-      { period: '2026-08-01', growth: 0 },
-      { period: '2026-08-02', growth: 0 },
+      { period: '2026-08-01', growth: null },
+      { period: '2026-08-02', growth: null },
     ])
   })
 

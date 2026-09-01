@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { StarIcon, TrashIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/vue/24/outline'
+import { StarIcon, TrashIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
 import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
 import type { Competitor } from '@/types/competitor'
 
@@ -48,7 +48,8 @@ const platformLabel = computed(() => {
   }
 })
 
-const isGrowing = computed(() => props.competitor.growthRate > 0)
+/** 성장률을 재지 못했으면 좋고 나쁨을 색으로 주장하지 않는다. */
+const isGrowing = computed(() => (props.competitor.growthRate ?? 0) > 0)
 
 function formatNumber(num: number): string {
   if (num >= 1000000) {
@@ -74,11 +75,21 @@ function formatNumber(num: number): string {
     <!-- Header -->
     <div class="flex items-start justify-between mb-3">
       <div class="flex items-center space-x-3">
+        <!-- 프로필 이미지가 없으면 로컬 아이콘을 그린다. 근거는 Competitor.avatarUrl 참고. -->
         <img
+          v-if="competitor.avatarUrl"
           :src="competitor.avatarUrl"
           :alt="competitor.name"
           class="w-12 h-12 rounded-full"
         />
+        <span
+          v-else
+          role="img"
+          :aria-label="competitor.name"
+          class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700"
+        >
+          <UserCircleIcon class="h-10 w-10 text-gray-400 dark:text-gray-500" />
+        </span>
         <div>
           <h3 class="font-semibold text-gray-900 dark:text-white">
             {{ competitor.name }}
@@ -122,27 +133,53 @@ function formatNumber(num: number): string {
       <div class="flex items-center justify-between">
         <span class="text-body text-gray-600 dark:text-gray-400">구독자</span>
         <span class="font-semibold text-gray-900 dark:text-white">
-          {{ formatNumber(competitor.subscriberCount) }}
+          {{ competitor.subscriberCount === null ? $t('analyticsView.notMeasured') : formatNumber(competitor.subscriberCount) }}
         </span>
       </div>
 
+      <!--
+        영상이 0 건이면 평균의 분모가 없다. 서버가 `null` 을 주는데 `?? 0` 으로 채우면
+        "평균 0회" 라는 관측이 되어, 영상이 있고 조회수가 실제 0 인 채널과 같아진다.
+      -->
       <div class="flex items-center justify-between">
         <span class="text-body text-gray-600 dark:text-gray-400">평균 조회수</span>
         <span class="font-semibold text-gray-900 dark:text-white">
-          {{ formatNumber(competitor.avgViews) }}
+          {{ competitor.avgViews === null ? $t('analyticsView.notMeasured') : formatNumber(competitor.avgViews) }}
         </span>
       </div>
 
+      <!--
+        참여율은 공개 API 로 경쟁 채널의 좋아요·댓글을 얻을 수 없어 산출되지 않는다.
+        예전에는 null 자리의 0 이 "0%" 로 그려져 측정 결과처럼 보였다.
+      -->
       <div class="flex items-center justify-between">
         <span class="text-body text-gray-600 dark:text-gray-400">참여율</span>
-        <span class="font-semibold text-gray-900 dark:text-white">
+        <span
+          v-if="competitor.avgEngagement !== null"
+          data-testid="competitor-engagement"
+          class="font-semibold text-gray-900 dark:text-white"
+        >
           {{ competitor.avgEngagement }}%
+        </span>
+        <span
+          v-else
+          data-testid="competitor-engagement-unavailable"
+          class="text-body text-gray-500 dark:text-gray-400"
+        >
+          측정 불가
         </span>
       </div>
 
       <div class="flex items-center justify-between">
         <span class="text-body text-gray-600 dark:text-gray-400">월간 성장률</span>
-        <div class="flex items-center space-x-1">
+        <!--
+          성장률을 재지 못했으면 화살표도 색도 그리지 않는다. `?? 0` 을 하면 수집 이력이
+          없는 경쟁사가 "0% · 하락(빨강)" 으로 보인다 — 관측한 적 없는 판정이다.
+        -->
+        <div v-if="competitor.growthRate === null" class="text-body text-gray-400 dark:text-gray-500">
+          {{ $t('analyticsView.notMeasured') }}
+        </div>
+        <div v-else class="flex items-center space-x-1">
           <component
             :is="isGrowing ? ArrowTrendingUpIcon : ArrowTrendingDownIcon"
             :class="[
@@ -169,7 +206,7 @@ function formatNumber(num: number): string {
     <!-- Video count -->
     <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
       <span class="text-body-xs text-gray-500 dark:text-gray-400">
-        총 {{ competitor.videoCount }}개 영상
+        총 {{ competitor.videoCount === null ? $t('analyticsView.notMeasured') : `${competitor.videoCount}개` }} 영상
       </span>
     </div>
   </div>

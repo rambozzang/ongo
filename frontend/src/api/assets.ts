@@ -3,7 +3,14 @@ import type { ResData } from '@/types/api'
 import type { AssetListResponse, AssetResponse, UpdateAssetRequest } from '@/types/asset'
 
 export const assetsApi = {
-  list(params?: { fileType?: string; folder?: string; page?: number; size?: number }) {
+  list(params?: {
+    fileType?: string
+    folder?: string
+    search?: string
+    tag?: string
+    page?: number
+    size?: number
+  }) {
     return apiClient
       .get<ResData<AssetListResponse>>('/assets', { params })
       .then(unwrapResponse)

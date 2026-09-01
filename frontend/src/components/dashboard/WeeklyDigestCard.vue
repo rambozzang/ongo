@@ -1,85 +1,83 @@
 <template>
-  <div class="card overflow-hidden">
-    <!-- Header -->
-    <div class="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
-      <div class="flex items-center gap-2">
-        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30">
-          <SparklesIcon class="h-4 w-4 text-primary-600 dark:text-primary-400" />
-        </div>
-        <div>
-          <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">AI 주간 다이제스트</h3>
-          <p v-if="digest" class="text-body-xs text-gray-500 dark:text-gray-400">{{ digest.weekRange }}</p>
-        </div>
-      </div>
+  <SectionCard :title="t('redesign.today.weeklyDigest.title')" :meta="digest?.weekRange">
+    <template #action>
       <button
         v-if="digest"
-        class="text-body-xs text-primary-600 hover:underline dark:text-primary-400"
+        type="button"
+        class="rounded-md px-2 py-1 text-[11px] font-semibold text-accent transition-colors hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         @click="showDetail = true"
       >
-        전체 보기
+        {{ t('redesign.today.weeklyDigest.viewAll') }}
+      </button>
+    </template>
+
+    <div v-if="loading" class="space-y-3 px-[15px] py-8" role="status" :aria-label="t('action.loading')">
+      <div class="h-3 w-3/4 animate-pulse rounded bg-surface-raised" />
+      <div class="h-3 w-1/2 animate-pulse rounded bg-surface-raised" />
+      <div class="h-3 w-2/3 animate-pulse rounded bg-surface-raised" />
+    </div>
+
+    <div v-else-if="loadError" class="px-[15px] py-8 text-center" role="alert">
+      <p class="text-[12px] text-bad">{{ t('redesign.today.weeklyDigest.loadFailed') }}</p>
+      <button type="button" class="mt-3 btn-secondary !text-[11px]" @click="loadDigest">
+        {{ t('action.retry') }}
       </button>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="space-y-3 p-4">
-      <div class="h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
-      <div class="h-4 w-1/2 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
-      <div class="h-4 w-2/3 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
-    </div>
-
-    <!-- No Data State -->
-    <div v-else-if="!digest" class="py-8 text-center">
-      <SparklesIcon class="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600" />
-      <p class="mt-2 text-body text-gray-500 dark:text-gray-400">아직 다이제스트가 없습니다</p>
-      <p class="mt-1 text-body-xs text-gray-400 dark:text-gray-500">Pro/Business 플랜에서 매주 월요일 자동 생성됩니다</p>
-    </div>
-
-    <!-- Digest Content -->
-    <div v-else class="space-y-3 p-4">
-      <!-- Summary -->
-      <p class="text-body leading-relaxed text-gray-700 dark:text-gray-300">
-        {{ truncatedSummary }}
-      </p>
-
-      <!-- Top Video Highlight -->
-      <div v-if="digest.topVideos.length > 0" class="rounded-lg bg-info-subtle p-3">
-        <p class="text-caption text-info-strong">
-          Top 영상
-        </p>
-        <p class="mt-1 text-body-xs text-info-strong">
-          {{ digest.topVideos[0] }}
-        </p>
-      </div>
-
-      <!-- Anomalies -->
-      <div v-if="digest.anomalies.length > 0" class="rounded-lg bg-warning-subtle p-3">
-        <p class="text-caption text-warning-strong">
-          주목할 변화
-        </p>
-        <p class="mt-1 text-body-xs text-warning-strong">
-          {{ digest.anomalies[0] }}
-        </p>
-      </div>
-
-      <!-- Action Items (Checklist) -->
-      <div v-if="digest.actionItems.length > 0">
-        <p class="mb-2 text-caption text-gray-500 dark:text-gray-400">실행 항목</p>
-        <div class="space-y-1.5">
-          <label
-            v-for="(item, idx) in digest.actionItems.slice(0, 3)"
-            :key="idx"
-            class="flex items-start gap-2 cursor-pointer group"
+    <div v-else-if="!digest" class="px-[15px] py-8">
+      <div class="flex items-start gap-3">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-dim">
+          <SparklesIcon class="h-4 w-4 text-accent" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-[12.5px] font-semibold text-content">
+            {{ showUpgrade ? t('redesign.today.weeklyDigest.upgradeTitle') : t('redesign.today.weeklyDigest.waitingTitle') }}
+          </p>
+          <p class="mt-1 text-[11.5px] leading-5 text-content-tertiary">
+            {{ showUpgrade ? t('redesign.today.weeklyDigest.upgradeDescription') : t('redesign.today.weeklyDigest.waitingDescription') }}
+          </p>
+          <router-link
+            v-if="showUpgrade"
+            to="/subscription"
+            data-testid="weekly-digest-upgrade"
+            class="mt-3 inline-flex btn-primary !text-[11px]"
           >
+            {{ t('redesign.today.weeklyDigest.upgradeAction') }}
+          </router-link>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="space-y-3 px-[15px] py-3.5">
+      <p class="text-[12.5px] leading-5 text-content">{{ truncatedSummary }}</p>
+
+      <div v-if="digest.topVideos.length > 0" class="rounded-lg bg-info-subtle px-3 py-2.5">
+        <p class="text-[10px] font-bold uppercase tracking-[0.08em] text-info-strong">
+          {{ t('redesign.today.weeklyDigest.topVideos') }}
+        </p>
+        <p class="mt-1 text-[11.5px] leading-5 text-info-strong">{{ digest.topVideos[0] }}</p>
+      </div>
+
+      <div v-if="digest.anomalies.length > 0" class="rounded-lg bg-warning-subtle px-3 py-2.5">
+        <p class="text-[10px] font-bold uppercase tracking-[0.08em] text-warning-strong">
+          {{ t('redesign.today.weeklyDigest.anomalies') }}
+        </p>
+        <p class="mt-1 text-[11.5px] leading-5 text-warning-strong">{{ digest.anomalies[0] }}</p>
+      </div>
+
+      <div v-if="digest.actionItems.length > 0">
+        <p class="mb-2 text-[10px] font-bold uppercase tracking-[0.08em] text-content-tertiary">
+          {{ t('redesign.today.weeklyDigest.actionItems') }}
+        </p>
+        <div class="space-y-1.5">
+          <label v-for="(item, idx) in digest.actionItems.slice(0, 3)" :key="idx" class="flex cursor-pointer items-start gap-2">
             <input
               type="checkbox"
-              class="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600"
+              class="mt-0.5 h-3.5 w-3.5 rounded border-line-control text-accent focus:ring-accent"
               :checked="checkedItems.has(idx)"
               @change="toggleItem(idx)"
             />
-            <span
-              class="text-body-xs text-gray-600 dark:text-gray-400 transition-all"
-              :class="{ 'line-through text-gray-400 dark:text-gray-500': checkedItems.has(idx) }"
-            >
+            <span class="text-[11.5px] leading-5 text-content-secondary" :class="{ 'line-through text-content-quaternary': checkedItems.has(idx) }">
               {{ item }}
             </span>
           </label>
@@ -87,129 +85,132 @@
       </div>
     </div>
 
-    <!-- Detail Modal -->
     <Teleport to="body">
       <div
         v-if="showDetail && digest"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="t('redesign.today.weeklyDigest.title')"
         @click.self="showDetail = false"
       >
-        <div class="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800">
+        <div class="relative max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-xl border border-line bg-surface-card p-5 shadow-2xl">
           <button
-            class="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            type="button"
+            class="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-md text-content-tertiary transition-colors hover:bg-surface-raised hover:text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            :aria-label="t('action.close')"
             @click="showDetail = false"
           >
             <XMarkIcon class="h-5 w-5" />
           </button>
 
-          <div class="flex items-center gap-2">
-            <SparklesIcon class="h-5 w-5 text-primary-600 dark:text-primary-400" />
-            <h2 class="text-title font-bold text-gray-900 dark:text-gray-100">주간 다이제스트</h2>
+          <div class="pr-10">
+            <h2 class="text-[15px] font-bold text-content">{{ t('redesign.today.weeklyDigest.title') }}</h2>
+            <p class="mt-1 text-[11px] text-content-tertiary">{{ digest.weekRange }}</p>
           </div>
-          <p class="mt-1 text-body text-gray-500 dark:text-gray-400">{{ digest.weekRange }}</p>
 
-          <div class="mt-4 space-y-4">
+          <div class="mt-5 space-y-4">
             <div>
-              <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">요약</h3>
-              <p class="mt-1 text-body leading-relaxed text-gray-700 dark:text-gray-300">{{ digest.summary }}</p>
+              <h3 class="text-[12.5px] font-semibold text-content">{{ t('redesign.today.weeklyDigest.summary') }}</h3>
+              <p class="mt-1 text-[12px] leading-5 text-content-secondary">{{ digest.summary }}</p>
             </div>
-
             <div v-if="digest.topVideos.length > 0">
-              <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">상위 영상</h3>
+              <h3 class="text-[12.5px] font-semibold text-content">{{ t('redesign.today.weeklyDigest.topVideos') }}</h3>
               <ul class="mt-1 space-y-1">
-                <li
-                  v-for="(video, idx) in digest.topVideos"
-                  :key="idx"
-                  class="flex items-start gap-2 text-body text-gray-700 dark:text-gray-300"
-                >
-                  <span class="flex-shrink-0 text-info-strong">{{ idx + 1 }}.</span>
-                  {{ video }}
+                <li v-for="(video, idx) in digest.topVideos" :key="idx" class="flex items-start gap-2 text-[12px] leading-5 text-content-secondary">
+                  <span class="shrink-0 font-mono text-info-strong">{{ idx + 1 }}.</span>{{ video }}
                 </li>
               </ul>
             </div>
-
             <div v-if="digest.anomalies.length > 0">
-              <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">주목할 변화</h3>
+              <h3 class="text-[12.5px] font-semibold text-content">{{ t('redesign.today.weeklyDigest.anomalies') }}</h3>
               <ul class="mt-1 space-y-1">
-                <li
-                  v-for="(anomaly, idx) in digest.anomalies"
-                  :key="idx"
-                  class="text-body text-gray-700 dark:text-gray-300"
-                >
-                  {{ anomaly }}
-                </li>
+                <li v-for="(anomaly, idx) in digest.anomalies" :key="idx" class="text-[12px] leading-5 text-content-secondary">{{ anomaly }}</li>
               </ul>
             </div>
-
             <div v-if="digest.actionItems.length > 0">
-              <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">실행 항목</h3>
-              <div class="mt-1 space-y-2">
-                <label
-                  v-for="(item, idx) in digest.actionItems"
-                  :key="idx"
-                  class="flex items-start gap-2 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    class="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600"
-                    :checked="checkedItems.has(idx)"
-                    @change="toggleItem(idx)"
-                  />
-                  <span
-                    class="text-body text-gray-700 dark:text-gray-300 transition-all"
-                    :class="{ 'line-through text-gray-400 dark:text-gray-500': checkedItems.has(idx) }"
-                  >
-                    {{ item }}
-                  </span>
-                </label>
-              </div>
+              <h3 class="text-[12.5px] font-semibold text-content">{{ t('redesign.today.weeklyDigest.actionItems') }}</h3>
+              <ul class="mt-1 space-y-1">
+                <li v-for="(item, idx) in digest.actionItems" :key="idx" class="flex items-start gap-2 text-[12px] leading-5 text-content-secondary">
+                  <span class="shrink-0 font-mono text-content-tertiary">{{ idx + 1 }}.</span>{{ item }}
+                </li>
+              </ul>
             </div>
           </div>
 
-          <p class="mt-4 text-body-xs text-gray-400 dark:text-gray-500">
-            {{ dayjs(digest.generatedAt).format('YYYY.MM.DD HH:mm') }} 생성
+          <p class="mt-5 text-[10.5px] text-content-quaternary">
+            {{ t('redesign.today.weeklyDigest.generatedAt', { date: dayjs(digest.generatedAt).format('YYYY.MM.DD HH:mm') }) }}
           </p>
         </div>
       </div>
     </Teleport>
-  </div>
+  </SectionCard>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { SparklesIcon, XMarkIcon } from '@heroicons/vue/24/outline'
-import { aiApi } from '@/api/ai'
-import type { WeeklyDigestResponse } from '@/types/ai'
 import dayjs from 'dayjs'
+import SectionCard from '@/components/redesign/SectionCard.vue'
+import { aiApi } from '@/api/ai'
+import { useAuthStore } from '@/stores/auth'
+import type { WeeklyDigestResponse } from '@/types/ai'
+import { useLocale } from '@/composables/useLocale'
 
+const { t } = useLocale()
+const authStore = useAuthStore()
 const digest = ref<WeeklyDigestResponse | null>(null)
 const loading = ref(true)
+const loadError = ref(false)
+const accessDenied = ref(false)
 const showDetail = ref(false)
 const checkedItems = ref(new Set<number>())
 
+const isPremiumPlan = computed(() => {
+  const plan = authStore.user?.planType
+  return plan === 'PRO' || plan === 'BUSINESS'
+})
+const showUpgrade = computed(() => accessDenied.value || !isPremiumPlan.value)
+
 const truncatedSummary = computed(() => {
   if (!digest.value) return ''
-  const summary = digest.value.summary
-  return summary.length > 120 ? summary.slice(0, 120) + '...' : summary
+  return digest.value.summary.length > 160 ? `${digest.value.summary.slice(0, 160)}…` : digest.value.summary
 })
 
-function toggleItem(idx: number) {
-  const newSet = new Set(checkedItems.value)
-  if (newSet.has(idx)) {
-    newSet.delete(idx)
-  } else {
-    newSet.add(idx)
-  }
-  checkedItems.value = newSet
+function isExpectedUnavailable(error: unknown): boolean {
+  const status = responseStatus(error)
+  return status === 403 || status === 404
 }
 
-onMounted(async () => {
+function responseStatus(error: unknown): number | undefined {
+  return (error as { response?: { status?: number }; statusCode?: number })?.response?.status
+    ?? (error as { statusCode?: number })?.statusCode
+}
+
+async function loadDigest() {
+  loading.value = true
+  loadError.value = false
+  accessDenied.value = false
   try {
     digest.value = await aiApi.getLatestWeeklyDigest()
-  } catch {
-    // No digest available
+  } catch (error) {
+    // 403(유료 플랜 아님)·404(아직 생성 전)는 빈 상태로 안내하고, 그 외 오류는 재시도한다.
+    if (isExpectedUnavailable(error)) {
+      accessDenied.value = responseStatus(error) === 403
+      digest.value = null
+    }
+    else loadError.value = true
   } finally {
     loading.value = false
   }
-})
+}
+
+function toggleItem(idx: number) {
+  const next = new Set(checkedItems.value)
+  if (next.has(idx)) next.delete(idx)
+  else next.add(idx)
+  checkedItems.value = next
+}
+
+onMounted(loadDigest)
 </script>

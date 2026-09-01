@@ -5,6 +5,7 @@ import type {
   ChannelLookupResponse,
   CompetitorListResponse,
   CompetitorResponse,
+  CompetitorSyncResponse,
   CompetitorTrendResponse,
   BenchmarkResponse,
   CompetitorInsightResult,
@@ -52,6 +53,16 @@ export const competitorApi = {
   benchmark() {
     return apiClient
       .get<ResData<BenchmarkResponse>>('/competitors/benchmark')
+      .then(unwrapResponse)
+  },
+
+  // 백엔드 CompetitorController.POST /competitors/sync 와 1:1 계약.
+  // unwrapResponse 로 실제 동기화 결과(CompetitorSyncResponse)를 그대로 돌려준다.
+  // 응답의 message(안내 문구)는 서버가 수치로 만드므로, 화면은 lastSync 수치로
+  // 동일한 문구를 구성한다 — 성공을 무조건 "완료"로 치지 않는다.
+  sync() {
+    return apiClient
+      .post<ResData<CompetitorSyncResponse>>('/competitors/sync')
       .then(unwrapResponse)
   },
 

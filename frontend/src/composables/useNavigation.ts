@@ -183,6 +183,7 @@ export function useNavigation() {
       items: [
         { to: '/performance', label: t('redesign.nav.performance'), icon: ChartBarIcon },
         { to: '/analytics/compare', label: t('nav.videoCompare'), icon: ChartBarIcon },
+        { to: '/competitors', label: t('nav.competitor'), icon: UserGroupIcon },
         { to: '/revenue', label: t('nav.revenue'), icon: BanknotesIcon },
         { to: '/ab-tests', label: t('nav.abtest'), icon: BeakerIcon },
         { to: '/goals', label: t('nav.goals'), icon: IdentificationIcon },

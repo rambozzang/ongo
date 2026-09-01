@@ -26,9 +26,16 @@ import type {
   StrategyCoachResponse,
   RevenueReportRequest,
   RevenueReportResponse,
+  AiFeaturePricing,
 } from '@/types/ai'
 
 export const aiApi = {
+  getFeatures() {
+    return apiClient
+      .get<ResData<AiFeaturePricing[]>>('/ai/features')
+      .then(unwrapResponse)
+  },
+
   generateMeta(request: GenerateMetaRequest) {
     return apiClient
       .post<ResData<GenerateMetaResponse>>('/ai/generate-meta', request)

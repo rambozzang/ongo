@@ -46,7 +46,20 @@
         </div>
         <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
           <div class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('abTest.avgCtrImprovement') }}</div>
-          <div class="mt-1 text-h2 font-bold text-success-strong">+{{ (summary?.avgCtrImprovement ?? 0).toFixed(1) }}%</div>
+          <!--
+            측정된 실험이 없으면 숫자를 만들지 않는다. 초록색 "+0.0%" 는 아무것도 재지
+            않았는데 성과가 있었다는 주장이 된다.
+          -->
+          <div
+            v-if="summary?.avgCtrImprovement != null"
+            data-testid="ab-avg-improvement"
+            class="mt-1 text-h2 font-bold text-success-strong"
+          >+{{ summary.avgCtrImprovement.toFixed(1) }}%</div>
+          <div
+            v-else
+            data-testid="ab-avg-improvement-unavailable"
+            class="mt-1 text-body text-gray-500 dark:text-gray-400"
+          >{{ $t('abTest.improvementUnavailable') }}</div>
         </div>
       </div>
     </template>
@@ -117,8 +130,9 @@
           <div class="flex items-center justify-between">
             <div>
               <div class="mb-1 text-body text-gray-600 dark:text-gray-400">{{ $t('abTest.avgCtrImprovement') }}</div>
-              <div class="text-display font-bold text-success-strong">
-                +{{ (summary?.avgCtrImprovement ?? 0).toFixed(1) }}%
+              <div v-if="summary?.avgCtrImprovement == null" data-testid="ab-avg-improvement-detail-unavailable" class="text-body text-gray-500 dark:text-gray-400">{{ $t('abTest.improvementUnavailable') }}</div>
+              <div v-else data-testid="ab-avg-improvement-detail" class="text-h2 font-bold text-success-strong">
+                +{{ summary.avgCtrImprovement.toFixed(1) }}%
               </div>
             </div>
             <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-success-subtle">
@@ -605,7 +619,19 @@ async function handlePauseTest(testId: number) {
 }
 
 async function handleApplyWinner(testId: number) {
-  await store.applyWinner(testId)
+  /*
+   * 실패를 조용히 넘기지 않는다. 서버는 노출이 측정된 변형이 2개 미만이면 거절하는데,
+   * 그 사유를 보여주지 않으면 버튼이 아무 반응 없이 끝나 사용자가 적용된 줄 안다.
+   * 기존 삭제 경로와 같은 알림 방식을 쓴다.
+   */
+  const applied = await store.applyWinner(testId)
+  if (applied) {
+    notification.success(t('abTest.applyWinnerDone'))
+    await store.fetchTests()
+    await store.fetchSummary()
+  } else {
+    notification.error(store.error ?? t('abTest.applyWinnerFailed'))
+  }
 }
 
 async function handleCreateTest(data: {

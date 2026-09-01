@@ -113,11 +113,23 @@ export const useAbTestStore = defineStore('abTest', () => {
     }
   }
 
-  async function applyWinner(testId: number) {
+  /**
+   * 우승 변형을 적용한다.
+   *
+   * **성공 여부를 돌려준다.** 서버는 노출이 측정된 변형이 2개 미만이면
+   * `AB_TEST_NO_MEASUREMENT` 로 거절한다(비교가 성립하지 않는다). 예전처럼 실패를
+   * `error` 에만 적고 끝내면, 화면이 그 값을 그리지 않으므로 **버튼이 아무 반응 없이**
+   * 끝난다. 사용자는 적용된 줄 알거나 계속 누른다.
+   *
+   * @returns 서버가 우승을 확정했으면 true. 거절했으면 false 이며 [error] 에 사유가 담긴다.
+   */
+  async function applyWinner(testId: number): Promise<boolean> {
     try {
       await abTestApi.applyWinner(testId)
+      return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to apply winner'
+      return false
     }
   }
 

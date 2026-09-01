@@ -606,4 +606,122 @@ describe('ComposeView', () => {
     expect(ugcShortsPipelineApi.create).toHaveBeenCalledOnce()
     expect(wrapper.text()).toContain('반복 게시 서버 장애')
   })
+
+  it('shows an upgrade CTA when publish fails with PLAN_LIMIT_EXCEEDED', async () => {
+    const { wrapper } = await renderCompose()
+    const uploadStore = useUploadStore()
+    uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    uploadStore.videoId = 101
+    await wrapper.get('#compose-title').setValue('제목')
+    await wrapper.findAll('input[type="checkbox"]')[0].setValue(false)
+
+    const planLimitError = new Error('플랜 한도를 초과했습니다')
+    ;(planLimitError as unknown as { response: { data: { error: string } } }).response = {
+      data: { error: 'PLAN_LIMIT_EXCEEDED' },
+    }
+    vi.mocked(videoApi.publish).mockRejectedValueOnce(planLimitError)
+
+    const schedule = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
+    await schedule!.trigger('click')
+    await flushPromises()
+
+    const cta = wrapper.find('a[href="/subscription"]')
+    expect(cta.exists()).toBe(true)
+    expect(cta.text()).toContain('플랜 업그레이드하기')
+  })
+
+  it('shows an upgrade CTA when recurring scheduling fails with PLAN_LIMIT_EXCEEDED', async () => {
+    const { wrapper } = await renderCompose()
+    const uploadStore = useUploadStore()
+    uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    uploadStore.videoId = 101
+    const workspaceStore = useWorkspaceStore()
+    workspaceStore.workspaces = [{ id: 7 } as never]
+    workspaceStore.activeWorkspaceId = 7
+
+    const planLimitError = new Error('예약 기간을 초과했습니다')
+    ;(planLimitError as unknown as { response: { data: { error: string } } }).response = {
+      data: { error: 'PLAN_LIMIT_EXCEEDED' },
+    }
+    vi.mocked(recurringApi.create).mockRejectedValueOnce(planLimitError)
+
+    const checkboxes = wrapper.findAll('input[type="checkbox"]')
+    await checkboxes[checkboxes.length - 1]!.setValue(true)
+    const submit = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
+    await submit!.trigger('click')
+    await flushPromises()
+
+    expect(recurringApi.create).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain('예약 기간을 초과했습니다')
+    const cta = wrapper.find('a[href="/subscription"]')
+    expect(cta.exists()).toBe(true)
+    expect(cta.text()).toContain('플랜 업그레이드하기')
+  })
+
+  it('does not show an upgrade CTA for a generic publish failure', async () => {
+    const { wrapper } = await renderCompose()
+    const uploadStore = useUploadStore()
+    uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    uploadStore.videoId = 101
+    await wrapper.get('#compose-title').setValue('제목')
+    await wrapper.findAll('input[type="checkbox"]')[0].setValue(false)
+
+    vi.mocked(videoApi.publish).mockRejectedValueOnce(new Error('일시적인 서버 오류'))
+
+    const schedule = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
+    await schedule!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('a[href="/subscription"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('일시적인 서버 오류')
+  })
+
+  it('shows a storage upgrade CTA when submit() upload is rejected with STORAGE_QUOTA_EXCEEDED', async () => {
+    const { wrapper } = await renderCompose()
+    const uploadStore = useUploadStore()
+    // 파일만 선택하고 videoId 를 비워야 submit() 이 cloudPublish 업로드 경로로 진입한다.
+    uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    await wrapper.get('#compose-title').setValue('제목')
+
+    const storageError = new Error('저장 공간을 초과했습니다')
+    ;(storageError as unknown as { response: { data: { error: string } } }).response = {
+      data: { error: 'STORAGE_QUOTA_EXCEEDED' },
+    }
+    vi.spyOn(uploadStore, 'cloudPublish').mockRejectedValue(storageError)
+
+    const schedule = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
+    await schedule!.trigger('click')
+    await flushPromises()
+
+    const cta = wrapper.find('a[href="/subscription"]')
+    expect(cta.exists()).toBe(true)
+    expect(cta.text()).toContain('플랜 업그레이드하기')
+    expect(wrapper.text()).toContain('저장 공간을 모두 사용했습니다')
+  })
+
+  it('does not show an upgrade CTA for a generic upload failure via submit()', async () => {
+    const { wrapper } = await renderCompose()
+    const uploadStore = useUploadStore()
+    uploadStore.file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+    await wrapper.get('#compose-title').setValue('제목')
+
+    vi.spyOn(uploadStore, 'cloudPublish').mockRejectedValue(new Error('일시적인 서버 오류'))
+
+    const schedule = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))
+    await schedule!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('a[href="/subscription"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('일시적인 서버 오류')
+  })
 })

@@ -11,7 +11,16 @@ export interface Channel {
   channelName: string
   channelUrl: string | null
   profileImageUrl: string | null
-  subscriberCount: number
+  /**
+   * 구독자(팔로워) 수. **그 플랫폼이 조회하지 않으면 `null`.**
+   *
+   * Threads·LinkedIn 어댑터는 팔로워 수를 묻지도 않고 `0` 을 저장하고, Naver Clip 은
+   * 채널 조회 자체가 없다. 서버가 이제 그 자리를 `null` 로 준다 — `?? 0` 으로 채우면
+   * 화면이 **"구독자 0명"** 을 측정 결과로 그린다.
+   *
+   * 조회하는 플랫폼의 `0` 은 관측이므로 숫자 `0` 으로 그린다.
+   */
+  subscriberCount: number | null
   status: string
   tokenStatus: TokenStatus
   connectedAt: string
@@ -22,6 +31,8 @@ export interface Channel {
 export interface ChannelConnectRequest {
   authorizationCode: string
   redirectUri: string
+  /** 서버가 사용자·플랫폼·redirect URI에 바인딩한 OAuth state */
+  state: string
   /** Twitter OAuth 2.0 PKCE code_verifier (Twitter 연동 시 필수) */
   codeVerifier?: string
   /** 같은 플랫폼의 다른 계정을 추가 연결할 때 사용 */

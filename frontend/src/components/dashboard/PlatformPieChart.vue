@@ -23,10 +23,15 @@
           <span class="text-xs font-medium text-gray-600 dark:text-gray-400">{{ platformLabel(item.platform) }}</span>
         </div>
         <div class="flex items-baseline justify-between">
+          <!--
+            조회수를 수집하지 않는 플랫폼은 숫자도 비중도 그리지 않는다. Tumblr 의
+            `views` 자리에는 노트 총합이 들어 있었고, 그것을 조회 비중으로 그리면
+            도넛 전체의 분모가 오염된다.
+          -->
           <span class="text-base font-semibold text-gray-900 dark:text-gray-100">
-            {{ item.views.toLocaleString('ko-KR') }}
+            {{ item.views === null ? $t('analyticsView.notMeasured') : item.views.toLocaleString('ko-KR') }}
           </span>
-          <span class="text-xs text-gray-500 dark:text-gray-500">
+          <span v-if="item.views !== null" class="text-xs text-gray-500 dark:text-gray-500">
             {{ calculatePercentage(item.views) }}
           </span>
         </div>
@@ -63,8 +68,18 @@ const props = defineProps<{
 
 const hasData = computed(() => props.data.length > 0)
 
+/**
+ * 도넛에 그릴 수 있는 플랫폼. **조회수가 측정된 것만.**
+ *
+ * 조각 하나는 "전체 조회 중 이만큼" 이라는 주장이다. 측정되지 않은 플랫폼에 조각을 주면
+ * 그 주장을 지어내는 것이고, 분모(`totalViews`)까지 오염된다.
+ */
+const measuredData = computed(() =>
+  props.data.filter((item): item is PlatformComparison & { views: number } => item.views !== null),
+)
+
 const totalViews = computed(() =>
-  props.data.reduce((sum, item) => sum + item.views, 0)
+  measuredData.value.reduce((sum, item) => sum + item.views, 0)
 )
 
 function platformColor(platform: Platform): string {
@@ -121,11 +136,11 @@ const centerTextPlugin: Plugin<'doughnut'> = {
 const chartPlugins = [centerTextPlugin]
 
 const chartData = computed(() => ({
-  labels: props.data.map((d) => platformLabel(d.platform)),
+  labels: measuredData.value.map((d) => platformLabel(d.platform)),
   datasets: [
     {
-      data: props.data.map((d) => d.views),
-      backgroundColor: props.data.map((d) => platformColor(d.platform)),
+      data: measuredData.value.map((d) => d.views),
+      backgroundColor: measuredData.value.map((d) => platformColor(d.platform)),
       borderWidth: 3,
       borderColor: themeStore.isDark ? '#1f2937' : '#ffffff',
       hoverOffset: 8,

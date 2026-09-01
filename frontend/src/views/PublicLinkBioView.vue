@@ -13,18 +13,33 @@
     </section>
 
     <section v-else-if="page" class="w-full max-w-md text-center">
+      <!-- 이미 img 는 조건부였다. 없을 때 자리가 비어 있던 것을 편집·전화 미리보기와 같은 로컬 아이콘으로 맞춘다. -->
       <img
         v-if="page.avatarUrl"
         :src="page.avatarUrl"
         :alt="page.title || page.slug"
         class="mx-auto mb-4 h-20 w-20 rounded-full object-cover shadow-sm"
       />
+      <span
+        v-else
+        role="img"
+        :aria-label="page.title || page.slug"
+        class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-200 shadow-sm dark:bg-gray-700"
+      >
+        <UserCircleIcon class="h-16 w-16 text-gray-400 dark:text-gray-500" />
+      </span>
       <h1 class="text-2xl font-bold">{{ page.title || page.slug }}</h1>
       <p v-if="page.bio" class="mt-2 whitespace-pre-line text-sm opacity-80">{{ page.bio }}</p>
 
+      <!--
+        **서버 데이터라 방어적으로 본다.** 백엔드는 URL 을 검증하지 않고, 이번 수정 전에
+        저장된 행에는 `https://` 같은 값이 남아 있을 수 있다. 그런 링크를 그리면 방문자를
+        아무 데도 아닌 곳으로 보내고, 클릭 집계에도 실제 방문이 아닌 수치가 쌓인다.
+        주소가 유효한 링크만 보여준다.
+      -->
       <div class="mt-8 space-y-3">
         <a
-          v-for="link in page.links"
+          v-for="link in validLinks"
           :key="link.id"
           :href="link.url"
           target="_blank"
@@ -41,15 +56,24 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { UserCircleIcon } from '@heroicons/vue/24/outline'
 import { linkBioApi, type LinkBioPublicResponse } from '@/api/linkbio'
+import { isValidLinkUrl } from '@/types/linkbio'
 
 const route = useRoute()
 const page = ref<LinkBioPublicResponse | null>(null)
 const loading = ref(true)
 const error = ref(false)
 const slug = String(route.params.slug)
+
+/**
+ * 실제로 걸 수 있는 링크만. 검증 없이 저장된 옛 행을 그대로 그리지 않는다.
+ *
+ * 클릭 집계는 이 목록에서만 일어나므로, 유효한 링크의 기존 집계 동작은 그대로다.
+ */
+const validLinks = computed(() => (page.value?.links ?? []).filter(link => isValidLinkUrl(link.url)))
 
 async function recordClick(linkId: number) {
   await linkBioApi.recordClick(slug, linkId).catch(() => undefined)

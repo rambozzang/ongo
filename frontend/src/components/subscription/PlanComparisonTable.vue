@@ -70,23 +70,13 @@
           </td>
         </tr>
 
-        <!-- 동시 업로드 -->
+        <!-- 분석 데이터 보관 기간 -->
         <tr>
           <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-            동시 업로드
-          </td>
-          <td v-for="plan in displayPlans" :key="`concurrent-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
-            <span class="font-medium">{{ getConcurrentUploads(plan.type) }}개</span>
-          </td>
-        </tr>
-
-        <!-- 분석 기능 -->
-        <tr>
-          <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-            분석 기능
+            분석 데이터 보관
           </td>
           <td v-for="plan in displayPlans" :key="`analytics-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
-            <span class="font-medium">{{ getAnalyticsLevel(plan.type) }}</span>
+            <span class="font-medium">{{ formatAnalyticsPeriod(plan.analyticsPeriodDays) }}</span>
           </td>
         </tr>
 
@@ -111,28 +101,6 @@
           </td>
         </tr>
 
-        <!-- 우선 지원 -->
-        <tr>
-          <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-            우선 지원
-          </td>
-          <td v-for="plan in displayPlans" :key="`priority-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
-            <CheckIcon v-if="['PRO', 'BUSINESS'].includes(plan.type)" class="mx-auto h-6 w-6 text-success-strong" />
-            <XMarkIcon v-else class="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
-          </td>
-        </tr>
-
-        <!-- API 접근 -->
-        <tr>
-          <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
-            API 접근
-          </td>
-          <td v-for="plan in displayPlans" :key="`api-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
-            <CheckIcon v-if="plan.type === 'BUSINESS'" class="mx-auto h-6 w-6 text-success-strong" />
-            <XMarkIcon v-else class="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
-          </td>
-        </tr>
-
         <!-- Action Buttons -->
         <tr class="bg-gray-50 dark:bg-gray-800/50">
           <td class="sticky left-0 z-10 bg-gray-50 dark:bg-gray-800/50 px-4 py-4 border-r border-gray-200 dark:border-gray-700" />
@@ -140,7 +108,12 @@
             <button
               v-if="plan.type !== currentPlan"
               class="w-full rounded-lg px-4 py-2 text-body font-medium transition-colors"
-              :class="getActionButtonClass(plan.type)"
+              :class="[
+                getActionButtonClass(plan.type),
+                isPaymentBlocked(plan) ? 'cursor-not-allowed opacity-60' : '',
+              ]"
+              :disabled="isPaymentBlocked(plan)"
+              :title="isPaymentBlocked(plan) ? paymentDisabledReason : undefined"
               @click="$emit('select-plan', plan.type)"
             >
               {{ getActionButtonLabel(plan.type) }}
@@ -158,21 +131,36 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline'
-import { PLANS, type PlanType, type Plan } from '@/types/subscription'
+import { type PlanType, type Plan } from '@/types/subscription'
 
 interface Props {
   currentPlan?: PlanType
   plans?: Plan[]
   billingCycle?: 'MONTHLY' | 'YEARLY'
+  /** 서버가 결제를 열 수 있다고 확인했는지. 모르면 유료 업그레이드를 막는다. */
+  paymentEnabled?: boolean
+  /** 잠긴 유료 업그레이드에 마우스·보조기술로 전달할 설명 */
+  paymentDisabledReason?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   currentPlan: undefined,
   plans: undefined,
   billingCycle: 'MONTHLY',
+  // 결제 capability를 모르면 유료 전환을 열지 않는다. 서버 판정이 빠진 재사용 경로가
+  // 실수로 PG 결제창을 여는 fail-open을 막고, 부모가 명시적으로 true를 전달할 때만 연다.
+  paymentEnabled: false,
+  paymentDisabledReason: '온라인 결제를 사용할 수 없어 유료 플랜으로 업그레이드할 수 없습니다.',
 })
 
-const displayPlans = computed(() => props.plans ?? PLANS)
+/*
+ * **서버가 준 플랜만 그린다.**
+ *
+ * 예전에는 `props.plans ?? PLANS` 로 클라이언트 상수를 대신 썼다. 가격과 한도는 서버가
+ * 결제 기준으로 삼는 값이라, 상수가 뒤처지면 사용자가 본 금액과 청구액이 갈린다.
+ * 목록이 없으면 표를 그리지 않는다 — 오래된 숫자를 보여 주는 것이 빈 표보다 나쁘다.
+ */
+const displayPlans = computed<Plan[]>(() => props.plans ?? [])
 
 function getDisplayPrice(plan: Plan): { amount: number; label: string } {
   if (props.billingCycle === 'YEARLY' && plan.yearlyPrice > 0) {
@@ -190,24 +178,10 @@ function formatStorage(mb: number): string {
   return mb + 'MB'
 }
 
-function getConcurrentUploads(planType: PlanType): number {
-  const map: Record<PlanType, number> = {
-    FREE: 1,
-    STARTER: 3,
-    PRO: 5,
-    BUSINESS: 10,
-  }
-  return map[planType]
-}
-
-function getAnalyticsLevel(planType: PlanType): string {
-  const map: Record<PlanType, string> = {
-    FREE: '기본',
-    STARTER: '상세',
-    PRO: '고급',
-    BUSINESS: '프리미엄',
-  }
-  return map[planType]
+function formatAnalyticsPeriod(days: number): string {
+  if (days < 0) return '무제한'
+  if (days === 0) return '미지원'
+  return `${days}일`
 }
 
 function getPlanHeaderClass(planType: PlanType): string {
@@ -278,6 +252,22 @@ function getActionButtonLabel(planType: PlanType): string {
   const targetIdx = displayPlans.value.findIndex((p) => p.type === planType)
   if (targetIdx > currentIdx) return '업그레이드'
   return '다운그레이드'
+}
+
+/**
+ * 결제 준비가 안 된 동안에는 실제 결제가 필요한 업그레이드만 잠근다.
+ *
+ * Free 전환·다운그레이드는 결제 없이 서버가 처리하므로 같이 막으면 안 된다. 부모의
+ * `selectPlan` 과 같은 플랜 순서를 사용해, 버튼이 활성인데 클릭 후 무반응이 되는 상태를
+ * 없애고 서버가 비활성인 이유도 버튼 자체에 남긴다.
+ */
+function isPaymentBlocked(plan: Plan): boolean {
+  if (props.paymentEnabled || plan.price === 0) return false
+  if (!props.currentPlan) return true
+
+  const currentIdx = displayPlans.value.findIndex((item) => item.type === props.currentPlan)
+  const targetIdx = displayPlans.value.findIndex((item) => item.type === plan.type)
+  return targetIdx > currentIdx
 }
 
 function getActionButtonClass(planType: PlanType): string {

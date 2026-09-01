@@ -25,7 +25,7 @@ class="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full text-
             {{ video.title }}
           </p>
           <p class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
-            조회수 {{ formatViews(video.totalViews) }}
+            조회수 {{ video.totalViews === null ? $t('analyticsView.notMeasured') : formatViews(video.totalViews) }}
           </p>
         </div>
       </div>

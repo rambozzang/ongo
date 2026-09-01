@@ -139,24 +139,25 @@
                   </div>
                 </div>
               </td>
-              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ formatCount(item.viewCount) }}</td>
-              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ formatCount(item.likeCount) }}</td>
-              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ formatCount(item.commentCount) }}</td>
-              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ formatCount(item.shareCount) }}</td>
+              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ item.viewCount === null ? $t('analyticsView.notMeasured') : formatCount(item.viewCount) }}</td>
+              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ item.likeCount === null ? $t('analyticsView.notMeasured') : formatCount(item.likeCount) }}</td>
+              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ item.commentCount === null ? $t('analyticsView.notMeasured') : formatCount(item.commentCount) }}</td>
+              <td class="px-4 py-3 text-center font-mono text-[11px] text-content-secondary">{{ item.shareCount === null ? $t('analyticsView.notMeasured') : formatCount(item.shareCount) }}</td>
               <td class="px-4 py-3 text-body-sm text-content-tertiary">{{ formatDate(item.publishedAt) }}</td>
               <td class="px-4 py-3 text-center" @click.stop>
                 <!-- AI 도구 드롭다운 -->
                 <div :ref="(el) => setDropdownRef(el, `${item.platform}-${item.platformVideoId}`)" class="relative inline-block">
-                  <button
-                    class="inline-flex items-center gap-1 rounded-md border border-line-control bg-accent-dim px-2 py-1 text-body-xs font-semibold text-accent hover:border-accent"
-                    @click.stop="toggleDropdown(`${item.platform}-${item.platformVideoId}`)"
+                    <button
+                      v-if="hasLocalVideo(item)"
+                      class="inline-flex items-center gap-1 rounded-md border border-line-control bg-accent-dim px-2 py-1 text-body-xs font-semibold text-accent hover:border-accent"
+                      @click.stop="toggleDropdown(`${item.platform}-${item.platformVideoId}`)"
                   >
                     <SparklesIcon class="h-3.5 w-3.5" />
                     {{ $t('videosView.aiTools.button') }}
                     <ChevronDownIcon class="h-3 w-3" />
                   </button>
                   <div
-                    v-if="openDropdownKey === `${item.platform}-${item.platformVideoId}`"
+                    v-if="hasLocalVideo(item) && openDropdownKey === `${item.platform}-${item.platformVideoId}`"
                     class="absolute right-0 z-50 mt-1 w-40 rounded-lg border border-line-control bg-surface-card shadow-lg"
                   >
                     <button
@@ -227,15 +228,15 @@
             <div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-body-xs text-content-tertiary">
               <span>
                 <EyeIcon class="inline h-3.5 w-3.5 mr-0.5" />
-                {{ formatCount(item.viewCount) }}
+                {{ item.viewCount === null ? $t('analyticsView.notMeasured') : formatCount(item.viewCount) }}
               </span>
               <span>
                 <HeartIcon class="inline h-3.5 w-3.5 mr-0.5" />
-                {{ formatCount(item.likeCount) }}
+                {{ item.likeCount === null ? $t('analyticsView.notMeasured') : formatCount(item.likeCount) }}
               </span>
               <span>
                 <ChatBubbleLeftIcon class="inline h-3.5 w-3.5 mr-0.5" />
-                {{ formatCount(item.commentCount) }}
+                {{ item.commentCount === null ? $t('analyticsView.notMeasured') : formatCount(item.commentCount) }}
               </span>
             </div>
             <!-- AI Tools (mobile) -->
@@ -362,6 +363,19 @@
           <p class="mt-3 text-body-xs text-gray-400 dark:text-gray-500">
             {{ $t('videosView.seoScore.creditsUsed', { count: seoModal.result.creditsUsed }) }}
           </p>
+        </div>
+        <div
+          v-else-if="seoCreditBlocked"
+          class="rounded-lg border border-warning bg-warning-subtle p-4 text-body text-warning-strong space-y-3"
+        >
+          <p>{{ $t('videosView.seoScore.creditBlocked') }}</p>
+          <button
+            data-testid="seo-credit-cta"
+            class="btn-primary inline-flex items-center gap-2"
+            @click="creditModalContext = 'seo'; showCreditModal = true"
+          >
+            {{ $t('videosView.seoScore.chargeCredits') }}
+          </button>
         </div>
         <div v-else class="space-y-2">
           <p class="text-body text-gray-600 dark:text-gray-400">
@@ -600,6 +614,19 @@
             </div>
           </div>
         </div>
+        <div
+          v-else-if="repurposeCreditBlocked"
+          class="rounded-lg border border-warning bg-warning-subtle p-4 text-body text-warning-strong space-y-3"
+        >
+          <p>{{ $t('videosView.repurpose.creditBlocked') }}</p>
+          <button
+            data-testid="repurpose-credit-cta"
+            class="btn-primary inline-flex items-center gap-2"
+            @click="creditModalContext = 'repurpose'; showCreditModal = true"
+          >
+            {{ $t('videosView.repurpose.chargeCredits') }}
+          </button>
+        </div>
         <div v-else class="space-y-2">
           <p class="text-body text-gray-600 dark:text-gray-400">
             {{ $t('videosView.repurpose.prompt', { title: repurposeModal.item?.title }) }}
@@ -622,6 +649,8 @@
       </template>
     </BaseModal>
 
+    <CreditPurchaseModal v-model="showCreditModal" @purchase="onCreditPurchase" />
+
     <!-- AI Rewrite Modal -->
     <BaseModal
       v-model="rewriteModal.open"
@@ -631,6 +660,19 @@
         <div v-if="rewriteModal.loading" class="flex flex-col items-center py-8 gap-3">
           <LoadingSpinner />
           <p class="text-body text-gray-500 dark:text-gray-400">{{ $t('videosView.aiRewrite.analyzing') }}</p>
+        </div>
+        <div
+          v-else-if="rewriteCreditBlocked"
+          class="rounded-lg border border-warning bg-warning-subtle p-4 text-body text-warning-strong space-y-3"
+        >
+          <p>{{ $t('videosView.aiRewrite.creditBlocked') }}</p>
+          <button
+            data-testid="rewrite-credit-cta"
+            class="btn-primary inline-flex items-center gap-2"
+            @click="creditModalContext = 'rewrite'; showCreditModal = true"
+          >
+            {{ $t('videosView.aiRewrite.chargeCredits') }}
+          </button>
         </div>
         <div v-else-if="rewriteModal.error" class="rounded-lg border border-error bg-error-subtle p-4 text-body text-error-strong">
           {{ rewriteModal.error }}
@@ -650,7 +692,7 @@
               {{ $t('videosView.aiRewrite.suggestions') }}
             </h4>
             <div
-              v-for="(suggestion, idx) in rewriteModal.result.suggestions"
+              v-for="(suggestion, idx) in rewriteSuggestions"
               :key="idx"
               class="cursor-pointer rounded-lg border p-4 transition-colors"
               :class="rewriteModal.selectedIdx === idx
@@ -679,8 +721,11 @@
               </div>
             </div>
           </div>
-          <p class="mt-3 text-body-xs text-gray-400 dark:text-gray-500">
-            {{ $t('videosView.aiRewrite.creditsUsed', { count: rewriteModal.result.creditsUsed }) }}
+          <p v-if="rewriteModal.result.reasoning" class="mt-3 text-body-xs text-content-tertiary">
+            {{ rewriteModal.result.reasoning }}
+          </p>
+          <p class="mt-1 text-body-xs text-content-tertiary">
+            예상 영향: {{ rewriteModal.result.expectedImpactPercent }}%
           </p>
         </div>
         <div v-else class="space-y-3">
@@ -737,11 +782,13 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
+import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
 import VideoDetailPanel from '@/components/video/VideoDetailPanel.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import ThumbPlaceholder from '@/components/redesign/ThumbPlaceholder.vue'
 import PlatformChip from '@/components/redesign/PlatformChip.vue'
 import { useVideoStore } from '@/stores/video'
+import { useCreditStore } from '@/stores/credit'
 import { storeToRefs } from 'pinia'
 import { formatCount, formatDate } from '@/utils/format'
 import { metaRewriteApi, type MetaRewriteResponse } from '@/api/metaRewrite'
@@ -750,9 +797,12 @@ import type { RepurposeClip } from '@/types/repurpose'
 import { videoSeoApi, type SeoScoreResponse } from '@/api/videoSeo'
 import { viewsPredictionApi, type ViewsPredictionResponse } from '@/api/viewsPrediction'
 import { publishChecklistApi, type PublishChecklistResponse } from '@/api/publishChecklist'
+import { CREDIT_INSUFFICIENT, matchesCode } from '@/composables/usePlanLimit'
 
 const videoStore = useVideoStore()
 const { feedItems, feedPlatforms, feedErrors, feedLoadError, isFeedLoading: loading } = storeToRefs(videoStore)
+
+const creditStore = useCreditStore()
 
 const selectedPlatform = ref<Platform | undefined>()
 const sortBy = ref('recent')
@@ -760,9 +810,17 @@ const selectedItem = ref<VideoFeedItem | null>(null)
 
 const availablePlatforms = computed(() => feedPlatforms.value || [])
 
-// Top 3 by viewCount for AI rewrite eligibility
+/*
+ * 조회수 상위 3편(AI 재작성 대상 표시).
+ *
+ * **조회수를 모르는 영상은 후보에서 뺀다.** 예전에는 `null` 이 없어 0 으로 정렬됐지만,
+ * 이제 모르는 값을 0 으로 취급하면 "성과 상위" 를 잘못 고르게 된다.
+ */
 const topViewedIds = computed(() => {
-  const sorted = [...feedItems.value].sort((a, b) => b.viewCount - a.viewCount)
+  const measured = feedItems.value.filter(
+    (i): i is VideoFeedItem & { viewCount: number } => i.viewCount !== null,
+  )
+  const sorted = [...measured].sort((a, b) => b.viewCount - a.viewCount)
   return new Set(sorted.slice(0, 3).map(i => `${i.platform}-${i.platformVideoId}`))
 })
 
@@ -772,6 +830,10 @@ function isHighPerforming(item: VideoFeedItem) {
 
 function isDraft(item: VideoFeedItem) {
   return (item as unknown as { status?: string }).status === 'DRAFT'
+}
+
+function hasLocalVideo(item: VideoFeedItem) {
+  return item.videoId != null
 }
 
 type RedesignPlatform = 'YT' | 'IG' | 'TT' | 'FB' | 'NV' | 'TH'
@@ -832,23 +894,30 @@ const seoModal = ref<{
 
 function openSeoModal(item: VideoFeedItem) {
   openDropdownKey.value = null
+  seoCreditBlocked.value = false
   seoModal.value = { open: true, loading: false, error: null, item, result: null }
 }
 
 async function runSeoAnalysis() {
   const item = seoModal.value.item
   if (!item) return
-  const videoIdNum = parseInt(item.platformVideoId, 10)
-  if (isNaN(videoIdNum)) {
+  const videoIdNum = item.videoId
+  if (videoIdNum == null) {
     seoModal.value.error = 'SEO 분석은 내부 업로드 영상에서만 가능합니다'
     return
   }
   seoModal.value.loading = true
   seoModal.value.error = null
+  seoCreditBlocked.value = false
   try {
     seoModal.value.result = await videoSeoApi.analyze(videoIdNum)
   } catch (e) {
-    seoModal.value.error = e instanceof Error ? e.message : 'SEO 분석 실패'
+    // 잔액 부족은 안정 코드로만 판단한다. 문구/상태코드/일반 Error 문자열로는 충전 CTA 를 띄우지 않는다.
+    if (matchesCode(e, CREDIT_INSUFFICIENT)) {
+      seoCreditBlocked.value = true
+    } else {
+      seoModal.value.error = e instanceof Error ? e.message : 'SEO 분석 실패'
+    }
   } finally {
     seoModal.value.loading = false
   }
@@ -877,8 +946,8 @@ function openPredictModal(item: VideoFeedItem) {
 async function runPrediction() {
   const item = predictModal.value.item
   if (!item) return
-  const videoIdNum = parseInt(item.platformVideoId, 10)
-  if (isNaN(videoIdNum)) {
+  const videoIdNum = item.videoId
+  if (videoIdNum == null) {
     predictModal.value.error = '조회수 예측은 내부 업로드 영상에서만 가능합니다'
     return
   }
@@ -910,8 +979,8 @@ function openChecklistModal(item: VideoFeedItem) {
 async function runChecklist() {
   const item = checklistModal.value.item
   if (!item) return
-  const videoIdNum = parseInt(item.platformVideoId, 10)
-  if (isNaN(videoIdNum)) {
+  const videoIdNum = item.videoId
+  if (videoIdNum == null) {
     checklistModal.value.error = '게시 체크는 내부 업로드 영상에서만 가능합니다'
     return
   }
@@ -936,8 +1005,16 @@ const rewriteModal = ref<{
   selectedIdx: number | null
 }>({ open: false, loading: false, error: null, item: null, result: null, selectedIdx: null })
 
+const rewriteSuggestions = computed(() => {
+  const result = rewriteModal.value.result
+  return result
+    ? [{ title: result.suggestedTitle, description: result.suggestedDescription, tags: result.suggestedTags }]
+    : []
+})
+
 function openRewriteModal(item: VideoFeedItem) {
   openDropdownKey.value = null
+  rewriteCreditBlocked.value = false
   rewriteModal.value = { open: true, loading: false, error: null, item, result: null, selectedIdx: null }
 }
 
@@ -951,16 +1028,20 @@ async function runRewrite() {
   rewriteModal.value.loading = true
   rewriteModal.value.error = null
   try {
-    const result = await metaRewriteApi.rewriteByPlatform({
-      platform: item.platform,
-      platformVideoId: item.platformVideoId,
-      title: item.title,
-      description: item.description,
-    })
+    if (item.videoId == null) {
+      rewriteModal.value.error = 'onGo 라이브러리에 등록된 영상에서만 AI 리라이트를 사용할 수 있습니다'
+      return
+    }
+    const result = await metaRewriteApi.rewrite(item.videoId)
     rewriteModal.value.result = result
     rewriteModal.value.selectedIdx = 0
   } catch (e) {
-    rewriteModal.value.error = e instanceof Error ? e.message : 'AI 리라이트 실패'
+    // 잔액 부족은 안정 코드로만 판단한다. 문구/상태코드/일반 Error 문자열로는 충전 CTA 를 띄우지 않는다.
+    if (matchesCode(e, CREDIT_INSUFFICIENT)) {
+      rewriteCreditBlocked.value = true
+    } else {
+      rewriteModal.value.error = e instanceof Error ? e.message : 'AI 리라이트 실패'
+    }
   } finally {
     rewriteModal.value.loading = false
   }
@@ -975,8 +1056,25 @@ const repurposeModal = ref<{
   clips: RepurposeClip[]
 }>({ open: false, loading: false, error: null, item: null, clips: [] })
 
+/** 크레딧 부족(CREDIT_INSUFFICIENT)으로 막혔을 때만 충전 CTA 를 보여준다. */
+const repurposeCreditBlocked = ref(false)
+
+/** 실제 크레딧 구매 모달. 안정 코드로만 열린다. */
+const showCreditModal = ref(false)
+
+/** SEO 점수 분석에서 크레딧 부족(CREDIT_INSUFFICIENT)으로 막혔을 때만 충전 CTA 를 보여준다. */
+const seoCreditBlocked = ref(false)
+
+/** AI 리라이트(META_REWRITE)에서 크레딧 부족(CREDIT_INSUFFICIENT)으로 막혔을 때만 충전 CTA 를 보여준다. */
+const rewriteCreditBlocked = ref(false)
+
+/** 크레딧 모달을 연 차단 흐름. 리퍼포즈/SEO/리라이트가 같은 모달을 공유하되 상태를 혼동하지 않게 한다. */
+type CreditContext = 'repurpose' | 'seo' | 'rewrite'
+const creditModalContext = ref<CreditContext | null>(null)
+
 function openRepurposeModal(item: VideoFeedItem) {
   openDropdownKey.value = null
+  repurposeCreditBlocked.value = false
   repurposeModal.value = { open: true, loading: false, error: null, item, clips: [] }
 }
 
@@ -985,17 +1083,43 @@ async function runRepurpose() {
   if (!item) return
   repurposeModal.value.loading = true
   repurposeModal.value.error = null
+  repurposeCreditBlocked.value = false
   try {
-    const videoIdNum = parseInt(item.platformVideoId, 10)
-    if (isNaN(videoIdNum)) {
+    const videoIdNum = item.videoId
+    if (videoIdNum == null) {
       throw new Error('숏폼 추출은 내부 업로드 영상에서만 가능합니다')
     }
     const job = await repurposeApi.analyzeForRepurpose(videoIdNum)
     repurposeModal.value.clips = job.clips
   } catch (e) {
-    repurposeModal.value.error = e instanceof Error ? e.message : '숏폼 추출 실패'
+    // 잔액 부족은 안정 코드로만 판단한다. 문구/상태코드/일반 Error 문자열로는 충전 CTA 를 띄우지 않는다.
+    if (matchesCode(e, CREDIT_INSUFFICIENT)) {
+      repurposeCreditBlocked.value = true
+    } else {
+      repurposeModal.value.error = e instanceof Error ? e.message : '숏폼 추출 실패'
+    }
   } finally {
     repurposeModal.value.loading = false
+  }
+}
+
+/**
+ * CreditPurchaseModal 이 서버 검증 완료(purchase) 후 호출한다.
+ * 잔액을 서버에서 새로 받아 차단된 흐름의 재시도를 가능하게 한다.
+ * 작업을 자동 재실행하지 않는다 — 중복 과금 방지. 사용자가 직접 "AI 분석 실행"/"분석"을 누른다.
+ * creditModalContext 로 리퍼포즈/SEO 상태를 구분해 혼동하지 않는다.
+ */
+function onCreditPurchase() {
+  void creditStore.fetchBalance()
+  if (creditModalContext.value === 'seo') {
+    seoCreditBlocked.value = false
+    seoModal.value.error = null
+  } else if (creditModalContext.value === 'rewrite') {
+    rewriteCreditBlocked.value = false
+    rewriteModal.value.error = null
+  } else {
+    repurposeCreditBlocked.value = false
+    repurposeModal.value.error = null
   }
 }
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { linkBioApi } from '@/api/linkbio'
 import { useNotificationStore } from '@/stores/notification'
+import { isPersistedBlockType, isValidLinkUrl } from '@/types/linkbio'
 import type { BioPage, BioBlock, ThemeStyle, BlockType, LinkBlock } from '@/types/linkbio'
 
 export const useLinkBioStore = defineStore('linkbio', () => {
@@ -78,65 +79,46 @@ export const useLinkBioStore = defineStore('linkbio', () => {
 
   const addBlock = (type: BlockType) => {
     if (!bioPage.value) return
+
+    /*
+     * **저장되지 않는 블록은 아예 만들지 않는다.**
+     *
+     * `savePage()` 는 링크 블록만 서버로 보내고(`b.type === 'link'`), 서버에도 나머지
+     * 타입의 개념이 없다. 예전에는 여기서 블록을 만들어 화면에 붙였고, 저장 버튼도
+     * 성공했다 — 그런데 새로고침하면 사라졌다. **되는 것처럼 보이는 기능**이었다.
+     *
+     * 만들기 전에 막고 이유를 알린다. 조용히 무시하면(예전 `image` 타입처럼 `default:
+     * return`) 사용자는 버튼이 고장 난 것으로 읽는다.
+     */
+    if (!isPersistedBlockType(type)) {
+      useNotificationStore().error(
+        '이 블록 종류는 아직 저장할 수 없어 추가하지 않았습니다. 지금은 링크 블록만 지원합니다.',
+      )
+      return
+    }
+
     const newId = Math.max(0, ...bioPage.value.blocks.map(b => b.id)) + 1
 
-    let newBlock: BioBlock
-
-    switch (type) {
-      case 'link':
-        newBlock = {
-          id: newId,
-          type: 'link',
-          title: '새 링크',
-          url: 'https://',
-          isVisible: true,
-          clickCount: 0,
-        }
-        break
-      case 'header':
-        newBlock = {
-          id: newId,
-          type: 'header',
-          text: '새 헤더',
-          isVisible: true,
-        }
-        break
-      case 'social':
-        newBlock = {
-          id: newId,
-          type: 'social',
-          platform: 'instagram',
-          url: 'https://instagram.com/',
-          isVisible: true,
-        }
-        break
-      case 'video':
-        newBlock = {
-          id: newId,
-          type: 'video',
-          title: '새 영상',
-          videoUrl: 'https://',
-          thumbnailUrl: 'https://picsum.photos/400/225',
-          isVisible: true,
-        }
-        break
-      case 'divider':
-        newBlock = {
-          id: newId,
-          type: 'divider',
-          isVisible: true,
-        }
-        break
-      case 'text':
-        newBlock = {
-          id: newId,
-          type: 'text',
-          content: '새 텍스트',
-          isVisible: true,
-        }
-        break
-      default:
-        return
+    /*
+     * 위 가드가 `type` 을 `'link'` 로 좁히므로 여기서 만들 수 있는 블록은 하나뿐이다
+     * (TypeScript 가 그것을 증명한다). 서버가 다른 종류를 저장하게 되면
+     * `PERSISTED_BLOCK_TYPES` 를 늘리고 그때 분기를 추가한다.
+     *
+     * 저장되지 않는 종류의 생성 코드를 미리 남겨 두지 않는다 — 가드가 느슨해지는 순간
+     * "저장된 것처럼 보이다 사라지는" 흐름이 조용히 되살아난다.
+     */
+    const newBlock: BioBlock = {
+      id: newId,
+      type: 'link',
+      title: '새 링크',
+      /*
+       * **비어 있는 상태로 시작한다.** 예전 기본값 `'https://'` 는 프로토콜 문자열일
+       * 뿐 어디도 가리키지 않는데, 백엔드가 URL 을 검증하지 않아 그대로 저장됐고
+       * 공개 페이지가 그것을 링크로 그렸다. 입력 필드는 빈 문자열이 곧 미입력이다.
+       */
+      url: '',
+      isVisible: true,
+      clickCount: 0,
     }
 
     bioPage.value.blocks.push(newBlock)
@@ -230,8 +212,28 @@ export const useLinkBioStore = defineStore('linkbio', () => {
 
   const savePage = async () => {
     if (!bioPage.value) return
+
+    const linkBlocks = bioPage.value.blocks.filter((b): b is LinkBlock => b.type === 'link')
+
+    /*
+     * **유효하지 않은 링크는 저장하지 않는다.**
+     *
+     * 백엔드는 `url: String` 을 그대로 받아 저장한다 — 검증이 없다. 그래서 미입력
+     * 상태나 `'https://'` 같은 값이 그대로 공개 페이지의 `<a href>` 가 됐다.
+     *
+     * 어느 링크가 문제인지 제목으로 짚어 준다. "저장 실패" 만 알리면 링크가 여러 개일 때
+     * 사용자가 어디를 고쳐야 할지 알 수 없다.
+     */
+    const invalid = linkBlocks.filter(b => !isValidLinkUrl(b.url))
+    if (invalid.length > 0) {
+      const names = invalid.map(b => `'${b.title}'`).join(', ')
+      useNotificationStore().error(
+        `${names} 링크의 주소를 확인해주세요. http:// 또는 https:// 로 시작하는 주소가 필요합니다.`,
+      )
+      throw new Error('INVALID_LINK_URL')
+    }
+
     try {
-      const linkBlocks = bioPage.value.blocks.filter((b): b is LinkBlock => b.type === 'link')
       await linkBioApi.updatePage({
         slug: bioPage.value.username,
         title: bioPage.value.displayName,

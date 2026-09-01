@@ -7,11 +7,27 @@
       </h3>
       <button
         class="btn-secondary inline-flex items-center gap-1.5 text-xs"
-        :disabled="loading"
+        data-testid="faq-analyze-button"
+        :disabled="loading || faqCreditBlocked"
         @click="emit('analyze')"
       >
         <SparklesIcon class="h-3.5 w-3.5" />
         {{ loading ? $t('commentsView.faqAnalyzing') : $t('commentsView.faqAiAnalyze') }}
+      </button>
+    </div>
+    <div
+      v-if="faqCreditBlocked"
+      class="mt-4 flex flex-col gap-2 rounded-lg border border-warning bg-warning-subtle px-4 py-3"
+      role="alert"
+    >
+      <p class="text-body text-warning-strong">{{ $t('commentsView.faqCreditBlocked') }}</p>
+      <button
+        type="button"
+        data-testid="faq-credit-cta"
+        class="btn-primary inline-flex w-full items-center justify-center gap-2"
+        @click="emit('credit')"
+      >
+        {{ $t('commentsView.faqChargeCredits') }}
       </button>
     </div>
     <AsyncState
@@ -65,9 +81,11 @@ import AsyncState from '@/components/common/AsyncState.vue'
 defineProps<{
   data: FaqClusterResponse | null
   loading: boolean
+  faqCreditBlocked: boolean
 }>()
 
 const emit = defineEmits<{
   analyze: []
+  credit: []
 }>()
 </script>

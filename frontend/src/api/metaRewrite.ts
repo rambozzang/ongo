@@ -1,32 +1,21 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
 
-export interface MetaRewriteByPlatformRequest {
-  platform: string
-  platformVideoId: string
-  title: string
-  description?: string | null
-}
-
-export interface MetaRewriteVariant {
-  title: string
-  description: string
-  tags: string[]
-}
-
 export interface MetaRewriteResponse {
   originalTitle: string
-  originalDescription: string
-  originalTags: string[]
-  suggestions: MetaRewriteVariant[]
-  creditsUsed: number
-  creditsRemaining: number
+  originalDescription: string | null
+  suggestedTitle: string
+  suggestedDescription: string
+  suggestedTags: string[]
+  reasoning: string
+  expectedImpactPercent: number
+  createdAt: string
 }
 
 export const metaRewriteApi = {
-  rewriteByPlatform(request: MetaRewriteByPlatformRequest) {
+  rewrite(videoId: number) {
     return apiClient
-      .post<ResData<MetaRewriteResponse>>('/videos/rewrite-meta', request)
+      .post<ResData<MetaRewriteResponse>>(`/videos/${videoId}/rewrite-meta`)
       .then(unwrapResponse)
   },
 }

@@ -25,30 +25,69 @@
 
     <div class="mt-6">
     <SectionCard :title="$t('aiView.tabs.tools')" :meta="`${aiTools.length}`" body-class="p-4">
-      <div class="page-grid page-grid--cards">
+      <div
+        v-if="aiFeatureCosts"
+        class="page-grid page-grid--cards"
+      >
         <article
           v-for="tool in aiTools"
           :key="tool.id"
-          class="card-interactive group cursor-pointer"
-          role="button"
-          tabindex="0"
+          class="card-interactive group"
+          :class="isToolUnavailable(tool) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'"
+          :role="isToolUnavailable(tool) ? undefined : 'button'"
+          :tabindex="isToolUnavailable(tool) ? undefined : 0"
+          :aria-disabled="isToolUnavailable(tool) ? 'true' : undefined"
+          :data-testid="`ai-tool-${tool.id}`"
           @click="handleToolClick(tool)"
           @keydown.enter="handleToolClick(tool)"
+          @keydown.space.prevent="handleToolClick(tool)"
         >
           <div class="mb-3 flex items-start justify-between">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-dim">
               <component :is="tool.icon" class="h-5 w-5 text-accent" />
             </div>
-            <span class="badge-blue">{{ tool.credits }} {{ $t('aiView.credits') }}</span>
+            <span v-if="isToolUnavailable(tool)" class="badge-gray">{{ $t('aiView.unsupported.badge') }}</span>
+            <span v-else class="badge-blue">{{ tool.credits }} {{ $t('aiView.credits') }}</span>
           </div>
-          <h3 class="mb-1 text-h3 text-content transition-colors group-hover:text-accent">
+          <h3
+            class="mb-1 text-h3 text-content transition-colors"
+            :class="isToolUnavailable(tool) ? '' : 'group-hover:text-accent'"
+          >
             {{ tool.name }}
           </h3>
           <p class="mb-4 text-body-sm leading-relaxed text-content-secondary">{{ tool.description }}</p>
-          <button class="btn-primary w-full" @click.stop="handleToolClick(tool)">
-            {{ $t('aiView.useButton') }}
+          <p
+            v-if="isToolUnavailable(tool)"
+            class="mb-4 rounded-lg border border-warning-subtle bg-warning-subtle px-3 py-2 text-body-sm text-warning-strong"
+            role="status"
+          >
+            {{ toolUnavailableReason(tool) }}
+          </p>
+          <button
+            class="btn-primary w-full"
+            :disabled="isToolUnavailable(tool)"
+            @click.stop="handleToolClick(tool)"
+          >
+            {{ isToolUnavailable(tool) ? $t('aiView.unsupported.button') : $t('aiView.useButton') }}
           </button>
         </article>
+      </div>
+      <div
+        v-else
+        class="rounded-xl border border-warning-subtle bg-warning-subtle px-4 py-5 text-body text-warning-strong"
+        role="status"
+        aria-live="polite"
+        data-testid="ai-feature-pricing-status"
+      >
+        <p>{{ aiFeaturePricingError ?? $t('aiView.pricing.loading') }}</p>
+        <button
+          v-if="aiFeaturePricingError"
+          type="button"
+          class="btn-secondary mt-3 text-body-sm"
+          @click="loadAiFeaturePricing"
+        >
+          {{ $t('common.retry') }}
+        </button>
       </div>
     </SectionCard>
       </div>
@@ -82,9 +121,26 @@
 
           <!-- Modal Body -->
           <div class="p-6">
-            <!-- Error message -->
+            <!-- 크레딧 부족 CTA: 실제 API 가 차감 단계에서 CREDIT_INSUFFICIENT 를 돌려줄 때만 노출 -->
             <div
-              v-if="aiStore.error"
+              v-if="aiStore.creditBlocked"
+              class="mb-4 flex flex-col gap-2 rounded-lg border border-warning bg-warning-subtle px-4 py-3"
+              role="alert"
+            >
+              <p class="text-body text-warning-strong">{{ $t('aiView.creditModal.insufficientMessage') }}</p>
+              <button
+                type="button"
+                data-testid="ai-credit-cta"
+                class="btn-primary inline-flex w-full items-center justify-center gap-2"
+                @click="openCreditModal(selectedTool?.credits ?? 0)"
+              >
+                {{ $t('aiView.creditModal.ctaText') }}
+              </button>
+            </div>
+
+            <!-- 일반 오류 문구 (크레딧 부족 CTA 와 분리) -->
+            <div
+              v-else-if="aiStore.error"
               class="mb-4 rounded-lg border border-error bg-error-subtle px-4 py-3 text-body text-error-strong"
             >
               {{ aiStore.error }}
@@ -228,7 +284,7 @@
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
                   <p class="text-body-xs text-gray-500 dark:text-gray-400">
-                    {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.metaResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.metaResult.creditsRemaining }}
+                    {{ $t('aiView.creditsUsedLabel') }}: {{ resultCreditsUsed(aiStore.metaResult.creditsUsed) }} / {{ $t('aiView.remainingLabel') }}: {{ resultCreditsRemaining(aiStore.metaResult.creditsRemaining) }}
                   </p>
                   <div class="flex gap-3">
                     <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
@@ -328,7 +384,7 @@
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
                   <p class="text-body-xs text-gray-500 dark:text-gray-400">
-                    {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.hashtagResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.hashtagResult.creditsRemaining }}
+                    {{ $t('aiView.creditsUsedLabel') }}: {{ resultCreditsUsed(aiStore.hashtagResult.creditsUsed) }} / {{ $t('aiView.remainingLabel') }}: {{ resultCreditsRemaining(aiStore.hashtagResult.creditsRemaining) }}
                   </p>
                   <div class="flex gap-3">
                     <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
@@ -389,7 +445,7 @@
 
                 <div class="flex items-center justify-between border-t dark:border-gray-700 pt-4">
                   <p class="text-body-xs text-gray-500 dark:text-gray-400">
-                    {{ $t('aiView.creditsUsedLabel') }}: {{ aiStore.reportResult.creditsUsed }} / {{ $t('aiView.remainingLabel') }}: {{ aiStore.reportResult.creditsRemaining }}
+                    {{ $t('aiView.creditsUsedLabel') }}: {{ resultCreditsUsed(aiStore.reportResult.creditsUsed) }} / {{ $t('aiView.remainingLabel') }}: {{ resultCreditsRemaining(aiStore.reportResult.creditsRemaining) }}
                   </p>
                   <div class="flex gap-3">
                     <button class="btn-secondary" @click="resetAndClose">{{ $t('aiView.results.close') }}</button>
@@ -637,76 +693,13 @@
       </div>
     </Teleport>
 
-    <!-- Insufficient Credit Modal -->
-    <Teleport to="body">
-      <div v-if="showCreditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="크레딧 부족">
-        <div class="fixed inset-0 bg-black/50" @click="showCreditModal = false" />
-        <div class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white dark:bg-gray-800 shadow-xl">
-          <div class="flex items-center justify-between border-b dark:border-gray-700 px-6 py-4">
-            <div>
-              <h2 class="text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('aiView.creditModal.title') }}</h2>
-              <p class="mt-0.5 text-body text-gray-500 dark:text-gray-400">
-                {{ $t('aiView.creditModal.needCredits', { credits: requiredCredits }) }}
-                ({{ $t('aiView.remainingLabel') }}: {{ balance.toLocaleString() }})
-              </p>
-            </div>
-            <button
-              class="rounded-lg p-2 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
-              @click="showCreditModal = false"
-            >
-              <XMarkIcon class="h-5 w-5" />
-            </button>
-          </div>
-
-          <div class="p-6">
-            <div class="grid gap-3 tablet:grid-cols-2">
-              <div
-                v-for="pkg in creditPackages"
-                :key="pkg.name"
-                class="cursor-pointer rounded-lg border-2 p-4 transition-all"
-                :class="selectedPackage === pkg.name
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
-                @click="selectedPackage = pkg.name"
-              >
-                <h4 class="mb-1 font-semibold text-gray-900 dark:text-gray-100">{{ pkg.name }}</h4>
-                <div class="mb-2 flex items-baseline gap-1">
-                  <span class="text-h1 font-bold text-primary-600">
-                    {{ pkg.price.toLocaleString() }}
-                  </span>
-                  <span class="text-body text-gray-500 dark:text-gray-400">{{ $t('aiView.creditModal.currencyUnit') }}</span>
-                </div>
-                <ul class="space-y-1 text-body-xs text-gray-600 dark:text-gray-300">
-                  <li class="flex items-center gap-1.5">
-                    <SparklesIcon class="h-3.5 w-3.5 text-primary-500" />
-                    {{ pkg.credits.toLocaleString() }} {{ $t('aiView.credits') }}
-                  </li>
-                  <li class="flex items-center gap-1.5">
-                    <span class="inline-block h-3.5 w-3.5 text-center text-primary-500">~</span>
-                    {{ $t('aiView.creditModal.perCredit', { price: pkg.pricePerCredit }) }}
-                  </li>
-                  <li class="flex items-center gap-1.5">
-                    <ClockIcon class="h-3.5 w-3.5 text-primary-500" />
-                    {{ $t('aiView.creditModal.validDays', { days: pkg.validDays }) }}
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="mt-6 flex justify-end gap-3">
-              <button class="btn-secondary" @click="showCreditModal = false">{{ $t('aiView.form.cancel') }}</button>
-              <button
-                class="btn-primary"
-                :disabled="!selectedPackage"
-                @click="handlePurchase"
-              >
-                {{ $t('aiView.creditModal.purchase') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <!-- AI 도구에서 여는 결제도 구독 화면과 같은 실제 PortOne 흐름을 사용한다. -->
+    <CreditPurchaseModal
+      v-model="showCreditModal"
+      :required-credits="requiredCredits"
+      :current-balance="balance"
+      @purchase="handleCreditPurchase"
+    />
   </div>
 </template>
 
@@ -714,12 +707,10 @@
 import { escapeHtml } from '@/utils/html'
 import { ref, computed, onMounted, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import {
   SparklesIcon,
   DocumentTextIcon,
   HashtagIcon,
-  ClockIcon,
   ChartBarIcon,
   XMarkIcon,
   RocketLaunchIcon,
@@ -732,16 +723,19 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import { useAiStore } from '@/stores/ai'
 import { useCredit } from '@/composables/useCredit'
-import { CREDIT_PACKAGES } from '@/types/credit'
+import { useAiFeaturePricing } from '@/composables/useAiFeaturePricing'
+import { useRevenueDataAvailability } from '@/composables/useRevenueDataAvailability'
+import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
 import type { Platform } from '@/types/channel'
 import { PLATFORM_CONFIG } from '@/types/channel'
 import type { AiTone } from '@/types/ai'
 
 // --- Stores & Composables ---
 const { t } = useI18n({ useScope: 'global' })
-const router = useRouter()
 const aiStore = useAiStore()
 const { balance, isLow, usedToday, checkAndUse, fetchBalance, fetchTransactions } = useCredit()
+const { revenueDataAvailable, revenueDataUnavailableReason, loadRevenueDataAvailability } =
+  useRevenueDataAvailability()
 
 // Common hashtags across all platforms
 const commonHashtags = computed(() => {
@@ -753,20 +747,27 @@ const commonHashtags = computed(() => {
 // --- Types ---
 interface AiTool {
   id: string
+  featureKey: string
   name: string
   credits: number
   description: string
   icon: Component
   iconBg: string
   iconColor: string
+  /**
+   * 플랫폼 광고 수익 실측치가 있어야 동작하는 도구. 서버가 수익을 수집하지 않는 동안
+   * 이 도구들은 `REVENUE_DATA_UNAVAILABLE` 로 항상 거절되므로 열지 않는다.
+   */
+  requiresPlatformRevenue?: boolean
 }
 
 // --- AI Tools definition ---
-const aiTools: AiTool[] = [
+// 비용은 여기서 복제하지 않는다. 실제 차감 단가는 서버 `AiFeature`에서 받는다.
+const aiToolDefinitions: Omit<AiTool, 'credits'>[] = [
   {
     id: 'meta',
+    featureKey: 'META_GENERATION',
     name: '제목/설명 생성',
-    credits: 5,
     description: '영상 스크립트로 플랫폼별 최적 제목 5안 + 설명 + 태그 자동 생성',
     icon: DocumentTextIcon,
     iconBg: 'bg-blue-100 dark:bg-blue-900/30',
@@ -774,8 +775,8 @@ const aiTools: AiTool[] = [
   },
   {
     id: 'hashtags',
+    featureKey: 'HASHTAG_RECOMMENDATION',
     name: '해시태그 추천',
-    credits: 3,
     description: '트렌드 기반 플랫폼별 해시태그 30개 추천',
     icon: HashtagIcon,
     iconBg: 'bg-purple-100 dark:bg-purple-900/30',
@@ -783,8 +784,8 @@ const aiTools: AiTool[] = [
   },
   {
     id: 'report',
+    featureKey: 'PERFORMANCE_REPORT',
     name: '성과 리포트',
-    credits: 8,
     description: '주간/월간 성과 AI 인사이트 리포트 생성',
     icon: ChartBarIcon,
     iconBg: 'bg-primary-100 dark:bg-primary-900/30',
@@ -792,8 +793,8 @@ const aiTools: AiTool[] = [
   },
   {
     id: 'strategy-coach',
+    featureKey: 'STRATEGY_COACH',
     name: 'AI 전략 코치',
-    credits: 10,
     description: '채널 성과·경쟁자 분석 기반 맞춤형 성장 전략 제안',
     icon: RocketLaunchIcon,
     iconBg: 'bg-rose-100 dark:bg-rose-900/30',
@@ -801,12 +802,13 @@ const aiTools: AiTool[] = [
   },
   {
     id: 'revenue-report',
+    featureKey: 'REVENUE_REPORT',
     name: '수익 분석 리포트',
-    credits: 8,
     description: '수익 트렌드·플랫폼별 비교·최적화 전략 리포트',
     icon: CurrencyDollarIcon,
     iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
     iconColor: 'text-emerald-600 dark:text-emerald-400',
+    requiresPlatformRevenue: true,
   },
 ]
 
@@ -846,8 +848,17 @@ const reportPeriods = [
 const selectedTool = ref<AiTool | null>(null)
 const showCreditModal = ref(false)
 const requiredCredits = ref(0)
-const selectedPackage = ref<string | null>(null)
-const creditPackages = CREDIT_PACKAGES
+const {
+  costs: aiFeatureCosts,
+  error: aiFeaturePricingError,
+  load: loadAiFeaturePricing,
+  costOf: aiFeatureCostOf,
+} = useAiFeaturePricing()
+
+const aiTools = computed<AiTool[]>(() => aiToolDefinitions.map((definition) => ({
+  ...definition,
+  credits: aiFeatureCostOf(definition.featureKey) ?? 0,
+})))
 
 // --- Computed ---
 const creditsUsedToday = usedToday
@@ -883,6 +894,8 @@ const revenueReportForm = ref({
 onMounted(() => {
   fetchBalance()
   fetchTransactions(0, 100)
+  loadRevenueDataAvailability()
+  void loadAiFeaturePricing()
 })
 
 // --- Helpers ---
@@ -913,11 +926,29 @@ async function copyToClipboard(text: string) {
 }
 
 // --- Tool interaction ---
+/**
+ * UI 만 막지 않는다. 카드 전체가 클릭 대상이고 키보드 진입도 있어서, 여기서 한 번 더
+ * 막지 않으면 비활성 표시와 실제 동작이 어긋난다.
+ */
+function isToolUnavailable(tool: AiTool): boolean {
+  return aiFeatureCostOf(tool.featureKey) == null
+    || (tool.requiresPlatformRevenue === true && !revenueDataAvailable.value)
+}
+
+function toolUnavailableReason(tool: AiTool): string {
+  if (aiFeatureCostOf(tool.featureKey) == null) {
+    return aiFeaturePricingError.value || t('aiView.pricing.loading')
+  }
+  if (!isToolUnavailable(tool)) return ''
+  return revenueDataUnavailableReason.value || t('aiView.unsupported.revenueReason')
+}
+
 function handleToolClick(tool: AiTool) {
+  if (isToolUnavailable(tool)) return
+
   // Check credit balance before opening tool
   if (!checkCreditBalance(tool.credits)) {
     requiredCredits.value = tool.credits
-    selectedPackage.value = null
     showCreditModal.value = true
     return
   }
@@ -928,6 +959,16 @@ function handleToolClick(tool: AiTool) {
 
 function checkCreditBalance(credits: number): boolean {
   return balance.value >= credits
+}
+
+/**
+ * 크레딧 부족 모달을 엽니다. 사전 부족(handleToolClick/submit*) 과 서버 측
+ * CREDIT_INSUFFICIENT(aiStore.creditBlocked CTA) 이 두 경로에서 동일하게 사용한다.
+ * 실제 결제는 공통 CreditPurchaseModal 이 처리한다.
+ */
+function openCreditModal(credits: number) {
+  requiredCredits.value = credits
+  showCreditModal.value = true
 }
 
 function closeTool() {
@@ -954,13 +995,31 @@ function resetForms() {
   revenueReportForm.value = { period: '30d' }
 }
 
+function toolCost(featureKey: string): number | null {
+  return aiFeatureCostOf(featureKey)
+}
+
+/**
+ * 일부 구버전 AI 응답에는 사용량 필드가 없다. 그 경우에도 결과 화면에 `undefined`를
+ * 그리지 않는다. 사용 단가는 같은 화면에서 서버 `/ai/features`로 받은 값이고 잔액은
+ * 요청 직후 서버에서 다시 조회한 값이다. 새 응답이 필드를 제공하면 그 실측값을 우선한다.
+ */
+function resultCreditsUsed(value?: number): number {
+  return value ?? selectedTool.value?.credits ?? 0
+}
+
+function resultCreditsRemaining(value?: number): number {
+  return value ?? balance.value
+}
+
 // --- Submit handlers ---
 async function submitMeta() {
-  const canUse = await checkAndUse(5, '제목/설명 생성')
+  const credits = toolCost('META_GENERATION')
+  if (credits == null) return
+  const canUse = await checkAndUse(credits, '제목/설명 생성')
   if (!canUse) {
     selectedTool.value = null
-    requiredCredits.value = 5
-    selectedPackage.value = null
+    requiredCredits.value = credits
     showCreditModal.value = true
     return
   }
@@ -982,11 +1041,12 @@ async function submitMeta() {
 }
 
 async function submitHashtags() {
-  const canUse = await checkAndUse(3, '해시태그 추천')
+  const credits = toolCost('HASHTAG_RECOMMENDATION')
+  if (credits == null) return
+  const canUse = await checkAndUse(credits, '해시태그 추천')
   if (!canUse) {
     selectedTool.value = null
-    requiredCredits.value = 3
-    selectedPackage.value = null
+    requiredCredits.value = credits
     showCreditModal.value = true
     return
   }
@@ -1006,11 +1066,12 @@ async function submitHashtags() {
 }
 
 async function submitReport() {
-  const canUse = await checkAndUse(8, '성과 리포트')
+  const credits = toolCost('PERFORMANCE_REPORT')
+  if (credits == null) return
+  const canUse = await checkAndUse(credits, '성과 리포트')
   if (!canUse) {
     selectedTool.value = null
-    requiredCredits.value = 8
-    selectedPackage.value = null
+    requiredCredits.value = credits
     showCreditModal.value = true
     return
   }
@@ -1026,11 +1087,12 @@ async function submitReport() {
 }
 
 async function submitStrategyCoach() {
-  const canUse = await checkAndUse(10, 'AI 전략 코치')
+  const credits = toolCost('STRATEGY_COACH')
+  if (credits == null) return
+  const canUse = await checkAndUse(credits, 'AI 전략 코치')
   if (!canUse) {
     selectedTool.value = null
-    requiredCredits.value = 10
-    selectedPackage.value = null
+    requiredCredits.value = credits
     showCreditModal.value = true
     return
   }
@@ -1049,11 +1111,12 @@ async function submitStrategyCoach() {
 }
 
 async function submitRevenueReport() {
-  const canUse = await checkAndUse(8, '수익 분석 리포트')
+  const credits = toolCost('REVENUE_REPORT')
+  if (credits == null) return
+  const canUse = await checkAndUse(credits, '수익 분석 리포트')
   if (!canUse) {
     selectedTool.value = null
-    requiredCredits.value = 8
-    selectedPackage.value = null
+    requiredCredits.value = credits
     showCreditModal.value = true
     return
   }
@@ -1069,11 +1132,10 @@ async function submitRevenueReport() {
   }
 }
 
-function handlePurchase() {
-  if (!selectedPackage.value) return
-  showCreditModal.value = false
-  // Navigate to subscription/payment page with the selected package
-  router.push({ path: '/subscription', query: { package: selectedPackage.value } })
+async function handleCreditPurchase() {
+  // 공통 모달은 서버 검증·크레딧 지급이 끝난 뒤 이 이벤트를 발생시킨다.
+  await fetchBalance()
+  aiStore.clearResults()
 }
 </script>
 

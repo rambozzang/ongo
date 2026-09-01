@@ -48,4 +48,11 @@ describe('calculateVideoScore', () => {
 
     expect(result.coverage).toBe(100)
   })
+
+  it('does not count an unconfirmed processing upload as published coverage', () => {
+    const video = videoWithUploads(['YOUTUBE'])
+    video.uploads[0].status = 'PROCESSING'
+
+    expect(calculateVideoScore(video).coverage).toBe(0)
+  })
 })

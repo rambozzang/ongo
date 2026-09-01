@@ -34,10 +34,14 @@
         <input
           v-model="localUrl"
           type="url"
-          placeholder="https://"
+          placeholder="https://example.com/내-페이지"
           class="w-full border-0 bg-transparent p-0 text-body-xs text-gray-500 placeholder-gray-400 focus:ring-0 dark:text-gray-400"
           @blur="updateBlock"
         />
+        <!-- 저장하기 전에 어디를 고쳐야 하는지 그 자리에서 알려준다. -->
+        <div v-if="!isValidLinkUrl(localUrl)" class="text-body-xs text-error-strong">
+          주소를 입력해주세요. 저장하려면 http:// 또는 https:// 로 시작해야 합니다.
+        </div>
         <div class="text-body-xs text-gray-400 dark:text-gray-500">클릭 {{ block.clickCount }}회</div>
       </div>
 
@@ -137,6 +141,7 @@
 import { ref, watch } from 'vue'
 import { Bars3Icon, EyeIcon, EyeSlashIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { isValidLinkUrl } from '@/types/linkbio'
 import type { BioBlock } from '@/types/linkbio'
 
 const props = defineProps<{

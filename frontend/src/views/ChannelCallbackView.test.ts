@@ -20,6 +20,8 @@ import koMessages from '@/locales/ko/common.json'
  */
 
 const STATE_NONCE = 'nonce-1'
+const SERVER_STATE = 'server-signed-state'
+const CLIENT_CONTEXT = `YOUTUBE|/channels|${STATE_NONCE}`
 
 function rejectWith(status: number, data: unknown) {
   return async (config: InternalAxiosRequestConfig): Promise<AxiosResponse> => {
@@ -45,7 +47,7 @@ async function renderCallback() {
   })
   await router.push({
     path: '/auth/channel-callback',
-    query: { code: 'auth-code', state: `YOUTUBE|/channels|${STATE_NONCE}` },
+    query: { code: 'auth-code', state: SERVER_STATE },
   })
   await router.isReady()
 
@@ -80,6 +82,7 @@ describe('ChannelCallbackView 플랜 한도 거절', () => {
   beforeEach(() => {
     originalAdapter = apiClient.defaults.adapter
     sessionStorage.setItem('channel_oauth_state_nonce', STATE_NONCE)
+    sessionStorage.setItem('channel_oauth_context', CLIENT_CONTEXT)
   })
 
   afterEach(() => {
@@ -167,6 +170,25 @@ describe('ChannelCallbackView 플랜 한도 거절', () => {
 
     // 401 은 client.ts 가 보강하지 않고, 여기서도 결제를 권할 자리가 아니다.
     expect(cta(wrapper)).toBeUndefined()
+  })
+
+  it('콜백의 opaque 서버 state를 연동 요청에 그대로 전달한다', async () => {
+    let requestBody: Record<string, unknown> | undefined
+    apiClient.defaults.adapter = async (config) => {
+      requestBody = typeof config.data === 'string' ? JSON.parse(config.data) : config.data
+      return {
+        data: { success: true, data: { channel: {} }, message: 'ok', error: null },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      }
+    }
+
+    await renderCallback()
+
+    expect(requestBody?.state).toBe(SERVER_STATE)
+    expect(requestBody?.addAsNew).toBe(false)
   })
 
   it('응답 없는 네트워크 오류에는 CTA 를 보여주지 않는다', async () => {

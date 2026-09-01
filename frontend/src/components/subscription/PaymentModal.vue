@@ -1,12 +1,24 @@
 <template>
   <Teleport to="body">
-    <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
+    <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" :aria-labelledby="titleId">
       <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true" @click="close" />
-      <div class="relative w-full max-w-2xl rounded-2xl bg-white/95 dark:bg-gray-800/95 p-8 shadow-2xl border border-gray-200 dark:border-gray-700">
+      <div
+        ref="modalRef"
+        class="relative w-full max-w-2xl rounded-2xl bg-white/95 dark:bg-gray-800/95 p-8 shadow-2xl border border-gray-200 dark:border-gray-700"
+        :aria-describedby="descriptionId"
+        :aria-busy="processing ? 'true' : undefined"
+      >
+        <p :id="descriptionId" class="sr-only">플랜 변경 및 결제 확인 창</p>
         <!-- Header -->
         <div class="mb-6 flex items-center justify-between">
-          <h3 id="payment-modal-title" class="text-h1 font-bold text-gray-900 dark:text-gray-100">플랜 변경</h3>
-          <button class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" aria-label="모달 닫기" @click="close">
+          <h3 :id="titleId" class="text-h1 font-bold text-gray-900 dark:text-gray-100">플랜 변경</h3>
+          <button
+            type="button"
+            class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="모달 닫기"
+            :disabled="portoneLoading || processing"
+            @click="close"
+          >
             <XMarkIcon class="h-6 w-6" />
           </button>
         </div>
@@ -22,7 +34,9 @@
                   <p class="text-display font-bold">
                     {{ price === 0 ? '무료' : '₩' + price.toLocaleString() }}
                   </p>
-                  <span v-if="price > 0" class="text-body-lg font-normal opacity-80">/월</span>
+                  <span v-if="price > 0" class="text-body-lg font-normal opacity-80">
+                    {{ billingCycle === 'YEARLY' ? '/년' : '/월' }}
+                  </span>
                 </div>
               </div>
               <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
@@ -67,18 +81,18 @@
               <div class="text-body text-info-strong">
                 <p class="font-medium mb-1">결제 안내</p>
                 <p>• 포트원 결제 창이 열리며 안전하게 결제됩니다.</p>
-                <p>• 업그레이드 시 차액은 일할 계산됩니다.</p>
+                <p>• 선택한 플랜의 결제 금액이 승인되면 즉시 적용됩니다.</p>
               </div>
             </div>
           </div>
 
-          <div v-if="paymentError" class="rounded-lg bg-error-subtle p-4">
+          <div v-if="paymentError" class="rounded-lg bg-error-subtle p-4" role="alert">
             <p class="text-body text-error-strong">{{ paymentError }}</p>
           </div>
         </div>
 
         <!-- Processing -->
-        <div v-else-if="processing && !paymentComplete" class="flex flex-col items-center justify-center py-12">
+        <div v-else-if="processing && !paymentComplete" class="flex flex-col items-center justify-center py-12" role="status" aria-live="polite">
           <LoadingSpinner size="lg" class="mb-6" />
           <p class="text-title font-medium text-gray-700 dark:text-gray-300">결제 처리 중...</p>
           <p class="mt-2 text-body text-gray-500 dark:text-gray-400">잠시만 기다려주세요</p>
@@ -99,7 +113,9 @@
               <span class="font-medium text-gray-900 dark:text-gray-100">{{ targetPlanInfo?.name }}</span>
             </div>
             <div class="mt-2 flex items-center justify-between text-body">
-              <span class="text-gray-600 dark:text-gray-400">월 결제 금액</span>
+              <span class="text-gray-600 dark:text-gray-400">
+                {{ billingCycle === 'YEARLY' ? '연 결제 금액' : '월 결제 금액' }}
+              </span>
               <span class="font-bold text-gray-900 dark:text-gray-100">
                 {{ price === 0 ? '무료' : '₩' + price.toLocaleString() }}
               </span>
@@ -133,6 +149,7 @@
         <div class="mt-8 flex justify-end gap-3">
           <button
             v-if="!processing && !paymentComplete"
+            type="button"
             class="btn-secondary"
             @click="close"
           >
@@ -140,6 +157,7 @@
           </button>
           <button
             v-if="!processing && !paymentComplete"
+            type="button"
             class="btn-primary"
             :disabled="portoneLoading || (requiresBillingConsent && !billingConsent)"
             @click="startPayment"
@@ -148,6 +166,7 @@
           </button>
           <button
             v-if="paymentComplete"
+            type="button"
             class="btn-primary"
             @click="close"
           >
@@ -160,11 +179,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted, nextTick, useId } from 'vue'
 import { XMarkIcon, SparklesIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/vue/24/outline'
-import { PLANS, type PlanType } from '@/types/subscription'
+import { type Plan, type PlanType } from '@/types/subscription'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { usePortOne } from '@/composables/usePortOne'
+import { useFocusTrap } from '@/composables/useAccessibility'
 
 interface Props {
   modelValue: boolean
@@ -172,10 +192,19 @@ interface Props {
   price: number
   /** 화면에서 고른 결제 주기. 넘기지 않으면 월간으로 결제된다. */
   billingCycle?: 'MONTHLY' | 'YEARLY'
+  /**
+   * 표시할 플랜 정보. **서버가 준 값을 부모가 내려준다.**
+   *
+   * `price` 와 같은 출처여야 한다. 이 컴포넌트가 클라이언트 상수에서 한도·용량을 직접
+   * 찾으면 같은 화면 안에서 금액은 서버 값, 옆의 숫자는 상수가 되어 두 출처가 섞인다.
+   * 없으면 `null` 이고, 화면은 그 자리를 비운다 — 오래된 숫자를 대신 그리지 않는다.
+   */
+  plan?: Plan | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   billingCycle: 'MONTHLY',
+  plan: null,
 })
 
 const emit = defineEmits<{
@@ -186,12 +215,18 @@ const emit = defineEmits<{
 const processing = ref(false)
 const paymentComplete = ref(false)
 const paymentError = ref('')
+const id = useId()
+const titleId = `payment-modal-title-${id}`
+const descriptionId = `payment-modal-description-${id}`
+const modalRef = ref<HTMLElement | null>(null)
+const previousActiveElement = ref<HTMLElement | null>(null)
+const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap(modalRef)
+let completionTimer: ReturnType<typeof setTimeout> | null = null
 
 const { loading: portoneLoading, openSubscriptionCheckout } = usePortOne()
 
-const targetPlanInfo = computed(() => {
-  return PLANS.find((p) => p.type === props.targetPlan) ?? null
-})
+/** 부모가 내려준 서버 플랜. 여기서 상수를 뒤지지 않는다 — 위 `plan` prop 문서 참고. */
+const targetPlanInfo = computed(() => props.plan)
 
 function formatStorage(mb: number): string {
   if (mb >= 1024) return (mb / 1024) + 'GB'
@@ -247,10 +282,12 @@ async function startPayment() {
       onSuccess: () => {
         processing.value = true
         // 웹훅이 DB를 동기화할 시간을 줌
-        setTimeout(() => {
+        clearCompletionTimer()
+        completionTimer = setTimeout(() => {
           paymentComplete.value = true
           processing.value = false
           emit('confirm')
+          completionTimer = null
         }, 1500)
       },
       onClose: () => {
@@ -263,21 +300,35 @@ async function startPayment() {
 }
 
 function close() {
+  // 결제 검증 중에는 배경·Escape로 닫지 않는다. 닫힌 뒤 성공 신호가 도착하면 사용자는
+  // 결과를 보지 못하고, 같은 결제를 다시 시작해 중복 결제를 시도할 수 있다.
+  // PortOne 호출 중에도 같은 문제가 생긴다. `processing`은 서버 검증 콜백 뒤에만 켜진다.
+  if (processing.value || portoneLoading.value) return
+  clearCompletionTimer()
   emit('update:modelValue', false)
-  setTimeout(() => {
-    processing.value = false
-    paymentComplete.value = false
-    paymentError.value = ''
-  }, 300)
+  resetState()
+}
+
+function clearCompletionTimer() {
+  if (completionTimer) {
+    clearTimeout(completionTimer)
+    completionTimer = null
+  }
+}
+
+function resetState() {
+  processing.value = false
+  paymentComplete.value = false
+  paymentError.value = ''
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && !paymentComplete.value && !processing.value) {
+  if (event.key === 'Escape' && !paymentComplete.value && !processing.value && !portoneLoading.value) {
     close()
   }
 }
 
-watch(() => props.modelValue, (isOpen) => {
+watch(() => props.modelValue, async (isOpen) => {
   if (isOpen) {
     /*
      * 열릴 때마다 직전 결제의 흔적을 지운다.
@@ -286,19 +337,29 @@ watch(() => props.modelValue, (isOpen) => {
      * (온보딩·구독 화면의 결제 성공 처리)에서는 close() 가 호출되지 않는다. 그래서 다음에
      * 열면 완료 화면이 그대로 떠 결제 버튼이 없고, 정상적인 상위 플랜 업그레이드가 막혔다.
      */
-    processing.value = false
-    paymentComplete.value = false
-    paymentError.value = ''
+    clearCompletionTimer()
+    resetState()
+    previousActiveElement.value = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
     document.addEventListener('keydown', handleKeydown)
     document.body.style.overflow = 'hidden'
+    await nextTick()
+    // 부모가 nextTick 전에 닫았으면 포커스 트랩을 다시 켜지 않는다.
+    if (props.modelValue) activateFocusTrap()
   } else {
+    clearCompletionTimer()
     document.removeEventListener('keydown', handleKeydown)
+    deactivateFocusTrap()
     document.body.style.overflow = ''
+    if (previousActiveElement.value?.isConnected) previousActiveElement.value.focus()
   }
-})
+}, { immediate: true })
 
 onUnmounted(() => {
+  clearCompletionTimer()
   document.removeEventListener('keydown', handleKeydown)
+  deactivateFocusTrap()
   document.body.style.overflow = ''
 })
 </script>

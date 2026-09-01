@@ -30,7 +30,7 @@ export const subscriptionApi = {
 
   getUsage() {
     return apiClient
-      .get<ResData<{ uploadsThisMonth: number; storageUsedMb: number }>>('/subscriptions/usage')
+      .get<ResData<{ uploadsThisMonth: number; storageUsedMb: number; storageLimitBytes: number }>>('/subscriptions/usage')
       .then(unwrapResponse)
   },
 

@@ -67,6 +67,13 @@ async function handleFileSelected(event: Event) {
     emit('add', {
       name: response.filename || file.name,
       type: 'logo',
+      /*
+       * **원본 에셋 id 를 함께 넘긴다.**
+       *
+       * URL 문자열만 복사해 두면 7 일 뒤 서명이 만료돼 로고가 깨진다. id 가 있으면 서버가
+       * 조회할 때마다 소유권을 확인하고 저장 키로 URL 을 새로 발급한다.
+       */
+      assetId: response.id,
       url: response.fileUrl,
       format: file.name.split('.').pop()?.toUpperCase() || 'PNG',
       size: formatFileSize(file.size),

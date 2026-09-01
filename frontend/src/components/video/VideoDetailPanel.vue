@@ -53,19 +53,19 @@
       <div class="grid grid-cols-2 gap-3">
         <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
           <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('videos.views') }}</p>
-          <p class="text-xl font-bold tabular-nums text-gray-900 dark:text-white">{{ formatCount(item.viewCount) }}</p>
+          <p class="text-xl font-bold tabular-nums text-gray-900 dark:text-white">{{ item.viewCount === null ? $t('analyticsView.notMeasured') : formatCount(item.viewCount) }}</p>
         </div>
         <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
           <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('videos.likes') }}</p>
-          <p class="text-xl font-bold tabular-nums text-gray-900 dark:text-white">{{ formatCount(item.likeCount) }}</p>
+          <p class="text-xl font-bold tabular-nums text-gray-900 dark:text-white">{{ item.likeCount === null ? $t('analyticsView.notMeasured') : formatCount(item.likeCount) }}</p>
         </div>
         <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
           <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('videos.comments') }}</p>
-          <p class="text-xl font-bold tabular-nums text-gray-900 dark:text-white">{{ formatCount(item.commentCount) }}</p>
+          <p class="text-xl font-bold tabular-nums text-gray-900 dark:text-white">{{ item.commentCount === null ? $t('analyticsView.notMeasured') : formatCount(item.commentCount) }}</p>
         </div>
         <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
           <p class="text-xs text-gray-500 dark:text-gray-400">{{ $t('videos.shares') }}</p>
-          <p class="text-xl font-bold tabular-nums text-gray-900 dark:text-white">{{ formatCount(item.shareCount) }}</p>
+          <p class="text-xl font-bold tabular-nums text-gray-900 dark:text-white">{{ item.shareCount === null ? $t('analyticsView.notMeasured') : formatCount(item.shareCount) }}</p>
         </div>
       </div>
 

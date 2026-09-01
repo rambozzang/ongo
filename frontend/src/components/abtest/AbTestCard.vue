@@ -122,7 +122,8 @@ const confidenceBarWidth = computed(() => `${Math.min(props.test.confidenceLevel
     <div class="mt-4 grid grid-cols-2 gap-3">
       <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-700/50">
         <div class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('abTest.totalImpressions') }}</div>
-        <div class="text-body font-semibold text-gray-900 dark:text-white">{{ test.totalImpressions.toLocaleString() }}</div>
+        <div v-if="test.totalImpressions != null" data-testid="ab-total-impressions" class="text-body font-semibold text-gray-900 dark:text-white">{{ test.totalImpressions.toLocaleString() }}</div>
+        <div v-else data-testid="ab-total-impressions-unavailable" class="text-body text-gray-500 dark:text-gray-400">{{ $t('abTest.metricUnavailable') }}</div>
       </div>
       <div class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-700/50">
         <div class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('abTest.variants') }}</div>

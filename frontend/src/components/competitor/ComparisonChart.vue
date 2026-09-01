@@ -13,7 +13,10 @@ withDefaults(defineProps<Props>(), {
   competitorName: '경쟁 채널',
 })
 
-function formatValue(value: number, metric: string): string {
+function formatValue(value: number | null, metric: string): string {
+  // 측정 불가를 0 으로 그리면 막대가 바닥에 붙어 "가장 낮음" 으로 읽힌다.
+  if (value === null) return '측정 불가'
+
   if (metric === '참여율' || metric === '성장률') {
     return `${value.toFixed(1)}%`
   }
@@ -27,13 +30,13 @@ function formatValue(value: number, metric: string): string {
   return value.toString()
 }
 
-function getPercentage(value: number, maxValue: number): number {
-  if (maxValue === 0) return 0
+function getPercentage(value: number | null, maxValue: number): number {
+  if (value === null || maxValue === 0) return 0
   return (value / maxValue) * 100
 }
 
 function getMaxValue(comparison: CompetitorComparison): number {
-  return Math.max(comparison.myValue, comparison.competitorValue)
+  return Math.max(comparison.myValue ?? 0, comparison.competitorValue ?? 0)
 }
 </script>
 
@@ -49,8 +52,13 @@ function getMaxValue(comparison: CompetitorComparison): number {
         <h4 class="font-medium text-gray-900 dark:text-white">
           {{ comparison.metric }}
         </h4>
-        <div class="flex items-center space-x-2 text-body">
+        <!--
+          비교 불가일 때는 증감 배지를 그리지 않는다. 색(초록/빨강)은 그 자체로
+          우열을 주장하는데, 측정하지 않은 지표에 대해 그런 주장을 할 수 없다.
+        -->
+        <div v-if="comparison.comparable && comparison.differencePercent !== null" class="flex items-center space-x-2 text-body">
           <span
+            data-testid="comparison-diff"
             :class="[
               'font-semibold',
               comparison.differencePercent > 0
@@ -65,8 +73,17 @@ function getMaxValue(comparison: CompetitorComparison): number {
         </div>
       </div>
 
+      <!-- 비교할 수 없는 지표는 막대를 그리지 않는다. 0 폭 막대는 "가장 낮음" 이다. -->
+      <p
+        v-if="!comparison.comparable"
+        data-testid="comparison-unavailable"
+        class="text-body text-gray-500 dark:text-gray-400"
+      >
+        {{ comparison.unavailableReason ?? '측정할 수 없어 비교할 수 없습니다' }}
+      </p>
+
       <!-- My channel bar -->
-      <div class="space-y-1">
+      <div v-if="comparison.comparable" class="space-y-1">
         <div class="flex items-center justify-between text-body">
           <span class="text-gray-600 dark:text-gray-400">{{ myName }}</span>
           <span class="font-medium text-gray-900 dark:text-white">
@@ -84,7 +101,7 @@ function getMaxValue(comparison: CompetitorComparison): number {
       </div>
 
       <!-- Competitor bar -->
-      <div class="space-y-1">
+      <div v-if="comparison.comparable" class="space-y-1">
         <div class="flex items-center justify-between text-body">
           <span class="text-gray-600 dark:text-gray-400">{{ competitorName }}</span>
           <span class="font-medium text-gray-900 dark:text-white">

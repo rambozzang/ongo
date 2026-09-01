@@ -259,7 +259,20 @@ const chartData = computed(() => {
       const meta = platformMeta(key)
       return {
         label: meta.label,
-        data: props.data.map(point => point.platformViews[key] ?? point.platformViews[key.toLowerCase()] ?? 0),
+        /*
+         * **없는 날은 `null` 로 둔다 — `?? 0` 을 하지 않는다.**
+         *
+         * 서버(`AnalyticsUseCase.getTrends`)는 그 날 조회수를 실제로 수집한 플랫폼만
+         * `platformViews` 에 담는다. 키가 없다는 것은 **그 날 그 플랫폼의 수집 행이 없었다**
+         * 는 뜻이지 조회수가 0 이었다는 뜻이 아니다.
+         *
+         * 0 으로 채우면 토큰 만료·동기화 실패로 하루치가 비었을 때 선이 바닥까지 떨어져
+         * **"조회수가 0 으로 폭락했다"** 는 없는 사건을 그린다. `null` 이면 Chart.js 가
+         * 선을 끊어 비어 있음을 그대로 보여준다.
+         *
+         * 분모가 양수인 실제 0 은 서버가 값 `0` 으로 내려주므로 그대로 그려진다.
+         */
+        data: props.data.map(point => point.platformViews[key] ?? point.platformViews[key.toLowerCase()] ?? null),
         borderColor: meta.color,
         backgroundColor: ctx ? createGradient(ctx, meta.color, height) : `${meta.color}26`,
         tension: 0.4,

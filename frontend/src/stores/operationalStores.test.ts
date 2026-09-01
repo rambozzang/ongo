@@ -147,8 +147,64 @@ describe('operational stores', () => {
     await store.pauseSubscription()
     await store.resumeSubscription()
     expect(store.plans[0]).toMatchObject({ storageMb: 51200, support: '우선 이메일' })
+    expect(store.plans[0].commentManagement).toBe(true)
     expect(store.currentPlan).toBe('PRO')
     expect(store.loading).toBe(false)
+  })
+
+  it('maps the backend unlimited sentinel to the display contract', async () => {
+    vi.mocked(subscriptionApi.getPlans).mockResolvedValue({
+      currentPlan: 'FREE',
+      plans: [{
+        planType: 'BUSINESS',
+        price: 49900,
+        yearlyPrice: 499000,
+        recommended: false,
+        features: {
+          maxPlatforms: 4,
+          monthlyUploads: 2_147_483_647,
+          scheduleDays: 90,
+          analyticsDays: 2_147_483_647,
+          storageGB: 200,
+          freeCredits: 1000,
+          maxTeamMembers: 10,
+        },
+      }],
+    } as never)
+    const store = useSubscriptionStore()
+
+    await store.fetchPlans()
+
+    expect(store.plans[0]).toMatchObject({
+      maxUploadsPerMonth: -1,
+      analyticsPeriodDays: -1,
+    })
+  })
+
+  it('does not infer comment management from the unrelated scheduling limit', async () => {
+    vi.mocked(subscriptionApi.getPlans).mockResolvedValue({
+      currentPlan: 'STARTER',
+      plans: [{
+        planType: 'STARTER',
+        price: 9900,
+        yearlyPrice: 99000,
+        recommended: false,
+        features: {
+          maxPlatforms: 3,
+          monthlyUploads: 30,
+          scheduleDays: 7,
+          analyticsDays: 30,
+          storageGB: 10,
+          freeCredits: 100,
+          maxTeamMembers: 0,
+        },
+      }],
+    } as never)
+    const store = useSubscriptionStore()
+
+    await store.fetchPlans()
+
+    expect(store.plans[0].commentManagement).toBe(false)
   })
 
   /*

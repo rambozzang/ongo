@@ -137,6 +137,44 @@ describe('redesign today store', () => {
     expect(store.loading).toBe(false)
   })
 
+  /**
+   * 조회수를 수집하는 플랫폼이 없으면 서버가 `totalViews = null` 을 준다.
+   * `Intl.NumberFormat.format(null)` 은 **문자열 `"0"`** 을 만들어, 재지 않은 것이
+   * "0 회" 라는 관측으로 화면에 뜬다.
+   */
+  it('measures nothing when the server reports no view-collecting platform', async () => {
+    vi.mocked(scheduleApi.list).mockResolvedValue([] as never)
+    vi.mocked(channelApi.list).mockResolvedValue({ channels: [] } as never)
+    vi.mocked(inboxApi.getUnreadCount).mockResolvedValue({ count: 0 } as never)
+    vi.mocked(analyticsApi.dashboard).mockResolvedValue({
+      totalViews: null,
+      viewsChangePercent: null,
+    } as never)
+    const store = useRedesignTodayStore()
+
+    await store.load()
+
+    expect(store.kpi.viewsLabel).toBe('—')
+    expect(store.kpi.viewsLabel).not.toBe('0')
+    expect(store.kpi.viewsDelta).toBe('')
+  })
+
+  /** **측정된 0 은 관측이다.** 미측정과 같은 문구로 감추면 실제 관찰을 잃는다. */
+  it('keeps a measured zero as a number', async () => {
+    vi.mocked(scheduleApi.list).mockResolvedValue([] as never)
+    vi.mocked(channelApi.list).mockResolvedValue({ channels: [] } as never)
+    vi.mocked(inboxApi.getUnreadCount).mockResolvedValue({ count: 0 } as never)
+    vi.mocked(analyticsApi.dashboard).mockResolvedValue({
+      totalViews: 0,
+      viewsChangePercent: null,
+    } as never)
+    const store = useRedesignTodayStore()
+
+    await store.load()
+
+    expect(store.kpi.viewsLabel).toBe('0')
+  })
+
   it('marks a complete outage without erasing confirmed data', async () => {
     const confirmed = makeSchedule(1, 'SCHEDULED', '2026-08-09T09:00')
     vi.mocked(scheduleApi.list)
@@ -155,5 +193,43 @@ describe('redesign today store', () => {
     expect(store.queue[0].id).toBe(1)
     expect(store.channels[0].id).toBe(7)
     expect(store.loadError).toBe('loadFailed')
+  })
+
+  /*
+   * ── 구독자 수 미측정 ──────────────────────────────────────────────────
+   *
+   * 예전에는 `ch.subscriberCount ? ... : ''` 였다. falsy 검사라 **구독자가 실제로
+   * 0 명인 채널**도 빈 문자열이 됐고, Threads·LinkedIn 처럼 팔로워 수를 조회조차
+   * 하지 않아 서버가 `null` 을 주는 채널과 똑같이 보였다.
+   */
+
+  async function loadWithSubscribers(subscriberCount: number | null) {
+    vi.mocked(scheduleApi.list).mockResolvedValue([] as never)
+    vi.mocked(channelApi.list).mockResolvedValue({
+      channels: [{ ...(channel as object), subscriberCount }],
+    } as never)
+    vi.mocked(inboxApi.getUnreadCount).mockResolvedValue({ count: 0 } as never)
+    const store = useRedesignTodayStore()
+    await store.load()
+    return store
+  }
+
+  it('구독자 수가 미측정이면 구독자 문구를 만들지 않는다', async () => {
+    const store = await loadWithSubscribers(null)
+
+    expect(store.channels[0].sub).toBe('')
+  })
+
+  /** **측정된 0 은 관측이다** — 빈 문자열로 감추면 미측정과 구분되지 않는다. */
+  it('측정된 0 구독자는 0 으로 표시한다', async () => {
+    const store = await loadWithSubscribers(0)
+
+    expect(store.channels[0].sub).toBe('구독자 0')
+  })
+
+  it('측정된 구독자 수는 그대로 표시한다', async () => {
+    const store = await loadWithSubscribers(1234)
+
+    expect(store.channels[0].sub).toBe('구독자 1,234')
   })
 })

@@ -33,13 +33,22 @@
               <p class="text-h1 font-bold text-primary-600">
                 {{ currentPlanInfo?.name ?? subscription.planType }}
                 <span class="text-body-lg font-normal text-gray-500 dark:text-gray-400">
-                  {{ currentPlanInfo ? formatPrice(currentPlanInfo.price) : '' }}
-                  <template v-if="currentPlanInfo && currentPlanInfo.price > 0">{{ $t('subscription.perMonth') }}</template>
+                  {{ currentPlanInfo ? formatPrice(subscription.billingCycle === 'YEARLY' ? currentPlanInfo.yearlyPrice : currentPlanInfo.price) : '' }}
+                  <template v-if="currentPlanInfo && currentPlanInfo.price > 0">
+                    {{ subscription.billingCycle === 'YEARLY' ? '/년' : $t('subscription.perMonth') }}
+                  </template>
                 </span>
               </p>
               <p v-if="subscription.nextBillingDate" class="text-body text-gray-500 dark:text-gray-400">
                 <CalendarIcon class="mr-1 inline h-4 w-4" />
                 {{ $t('subscription.nextBillingDate') }}: {{ formatDate(subscription.nextBillingDate) }}
+              </p>
+              <p v-if="pendingPlanInfo && subscription.pendingPlanType" class="text-body text-warning-strong" role="status">
+                다음 결제일에 {{ pendingPlanInfo.name }} 플랜
+                <span v-if="subscription.pendingBillingCycle">
+                  ({{ subscription.pendingBillingCycle === 'YEARLY' ? '연간' : '월간' }})
+                </span>
+                으로 변경됩니다.
               </p>
               <p v-if="subscription.status === 'TRIALING' && subscription.trialEnd" class="text-body text-info-strong">
                 트라이얼 종료: {{ formatDate(subscription.trialEnd) }}
@@ -98,23 +107,39 @@
         <h2 class="mb-4 text-title font-semibold text-gray-900 dark:text-gray-100">{{ $t('subscription.usageStatus') }}</h2>
 
         <div class="space-y-4">
-          <!-- Monthly Uploads Usage -->
-          <UsageProgressBar
-            :label="$t('subscription.monthlyUploads')"
-            :current="usageData.uploadsThisMonth"
-            :max="currentPlanInfo.maxUploadsPerMonth"
-            :unit="$t('subscription.unitTimes')"
-          />
+          <!--
+            서버가 잰 값이 도착했을 때만 막대를 그린다. 재는 중이거나 재지 못했는데
+            0으로 그리면, 아무것도 안 쓴 사용자와 구분되지 않는 거짓 측정이 된다.
+          -->
+          <template v-if="usageData">
+            <!-- Monthly Uploads Usage -->
+            <UsageProgressBar
+              :label="$t('subscription.monthlyUploads')"
+              :current="usageData.uploadsThisMonth"
+              :max="currentPlanInfo.maxUploadsPerMonth"
+              :unit="$t('subscription.unitTimes')"
+            />
 
-          <!-- Storage Usage -->
-          <UsageProgressBar
-            :label="$t('subscription.storage')"
-            :current="formatStorageValue(usageData.storageUsedMb, currentPlanInfo.storageMb)"
-            :max="formatStorageValue(currentPlanInfo.storageMb, currentPlanInfo.storageMb)"
-            :unit="formatStorageUnit(currentPlanInfo.storageMb)"
-          />
+            <!-- Storage Usage — 한도는 서버가 준 실효값(관리자 오버라이드 포함) -->
+            <UsageProgressBar
+              v-if="storageUsage"
+              :label="$t('subscription.storage')"
+              :current="storageUsage.current"
+              :max="storageUsage.max"
+              :unit="storageUsage.unit"
+            />
+            <p v-else class="text-body-xs text-content-tertiary" role="status">
+              저장공간 한도를 확인할 수 없습니다
+            </p>
+          </template>
+          <p v-else-if="usageLoading" class="text-body-xs text-content-tertiary" role="status">
+            사용량을 불러오는 중…
+          </p>
+          <p v-else class="text-body-xs text-warning-strong" role="status">
+            사용량을 확인할 수 없습니다
+          </p>
 
-          <!-- Connected Platforms -->
+          <!-- Connected Platforms — 채널 목록에서 직접 세므로 usage 응답과 무관하다 -->
           <UsageProgressBar
             :label="$t('subscription.connectedChannels')"
             :current="connectedPlatformCount"
@@ -144,11 +169,17 @@
 
         <!--
           결제를 열 수 없는 이유를 미리 알린다. 눌러서 실패를 보는 것보다,
-          누르기 전에 아는 편이 낫다.
+          누르기 전에 아는 편이 낫다. 운영자가 방금 설정을 켰을 수도 있으므로
+          다시 확인할 수단을 같이 준다 — 캐시 때문에 이 탭만 옛 답을 들고 있을 수 있다.
         -->
-        <p v-if="!paymentEnabled" class="mb-4 text-body-xs text-warning-strong" role="status">
-          {{ paymentUnavailableCopy }}
-        </p>
+        <PaymentUnavailableNotice
+          v-if="!paymentEnabled"
+          class="mb-4"
+          :reason="paymentDisabledReason"
+          :checking="paymentChecking"
+          :check-failed="paymentCheckFailed"
+          @recheck="recheckPaymentAvailability"
+        />
 
         <div v-if="creditBalance">
           <div class="mb-2 flex items-end justify-between">
@@ -355,17 +386,20 @@
           유료 전환만 막는다. 무료 플랜 전환·다운그레이드는 결제를 거치지 않으므로
           표는 그대로 두고, 왜 지금 결제할 수 없는지만 미리 알린다.
         -->
-        <p
+        <PaymentUnavailableNotice
           v-if="!paymentEnabled"
-          class="mb-4 rounded-lg border border-warning-strong/40 bg-warning-subtle p-3 text-body-xs text-warning-strong"
-          role="status"
-        >
-          {{ paymentUnavailableCopy }}
-        </p>
+          class="mb-4"
+          :reason="paymentDisabledReason"
+          :checking="paymentChecking"
+          :check-failed="paymentCheckFailed"
+          @recheck="recheckPaymentAvailability"
+        />
         <PlanComparisonTable
           :plans="storePlans"
           :current-plan="subscription?.planType"
           :billing-cycle="billingCycle"
+          :payment-enabled="paymentEnabled"
+          :payment-disabled-reason="paymentUnavailableCopy"
           @select-plan="selectPlan"
         />
       </div>
@@ -519,15 +553,16 @@
     <PaymentModal
       v-model="showPaymentModal"
       :target-plan="targetPlan ?? 'FREE'"
-      :price="targetPlanInfo?.price ?? 0"
+      :price="targetCheckoutPrice"
       :billing-cycle="billingCycle"
+      :plan="targetPlanInfo"
       @confirm="handlePaymentConfirm"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { usePaymentAvailability } from '@/composables/usePaymentAvailability'
 import { storeToRefs } from 'pinia'
 import {
@@ -543,6 +578,8 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import UsageProgressBar from '@/components/subscription/UsageProgressBar.vue'
 import PlanComparisonTable from '@/components/subscription/PlanComparisonTable.vue'
+import PaymentUnavailableNotice from '@/components/subscription/PaymentUnavailableNotice.vue'
+import { paymentUnavailableCopy as paymentUnavailableCopyFor } from '@/components/subscription/paymentAvailabilityCopy'
 import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
 import PaymentModal from '@/components/subscription/PaymentModal.vue'
 import PageGuide from '@/components/common/PageGuide.vue'
@@ -556,6 +593,7 @@ import type { CreditPackage } from '@/types/credit'
 import { subscriptionApi } from '@/api/subscription'
 import { useLocale } from '@/composables/useLocale'
 import { usePortOne } from '@/composables/usePortOne'
+import { useAuthStore } from '@/stores/auth'
 
 const subscriptionStore = useSubscriptionStore()
 const creditStore = useCreditStore()
@@ -563,6 +601,7 @@ const channelStore = useChannelStore()
 const notification = useNotificationStore()
 const { t } = useLocale()
 const { ensureInitialized: initPortOne } = usePortOne()
+const authStore = useAuthStore()
 
 const { subscription } = storeToRefs(subscriptionStore)
 const { error: subscriptionError } = storeToRefs(subscriptionStore)
@@ -579,19 +618,32 @@ const showCancelModal = ref(false)
 const showCreditModal = ref(false)
 const showPaymentModal = ref(false)
 /** 결제 가능 여부는 서버가 정한다. 클라이언트 상수로 판단하지 않는다. */
-const { paymentEnabled, paymentDisabledReason, loadPaymentAvailability } = usePaymentAvailability()
-/** 서버가 이유를 주면 그것을 쓰고, 없으면 같은 뜻의 기본 문구를 쓴다. */
+const {
+  paymentEnabled,
+  paymentDisabledReason,
+  paymentChecking,
+  paymentCheckFailed,
+  recheckPaymentAvailability,
+} = usePaymentAvailability()
+/** 잠긴 버튼의 툴팁. 옆의 안내와 **같은 문구를 공유한다.** */
 const paymentUnavailableCopy = computed(
-  () => paymentDisabledReason.value
-    ?? '온라인 결제를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도하거나 고객지원에 문의해 주세요.',
+  () => paymentUnavailableCopyFor(paymentDisabledReason.value, paymentCheckFailed.value),
 )
 const targetPlan = ref<PlanType | null>(null)
 
-// Usage data from real API
-const usageData = ref({
-  uploadsThisMonth: 0,
-  storageUsedMb: 0,
-})
+/**
+ * 서버가 잰 사용량. **측정 전과 실패는 `null`이다.**
+ *
+ * 예전에는 `{ uploadsThisMonth: 0, storageUsedMb: 0 }`으로 시작했다. 그러면 응답이
+ * 오기 전과 요청이 실패한 뒤에 막대가 "0 / 50 GB, 0%"로 그려진다 — 아무것도 안 쓴
+ * 사용자와 **완전히 같은 모양**이라 결제 페이지에서 업그레이드가 불필요하다고
+ * 판단하게 만든다. 재지 못한 것은 0이 아니다.
+ *
+ * 타입은 API 응답에서 직접 끌어온다. 여기서 따로 선언하면 서버가 필드를 바꿔도
+ * 화면만 옛 모양을 유지한 채 조용히 어긋난다.
+ */
+type UsageMeasurement = Awaited<ReturnType<typeof subscriptionApi.getUsage>>
+const usageData = ref<UsageMeasurement | null>(null)
 const usageLoading = ref(false)
 const usageError = ref<string | null>(null)
 const usageAlertsError = ref<string | null>(null)
@@ -614,9 +666,26 @@ const currentPlanInfo = computed(() => {
   return storePlans.value.find((p) => p.type === subscription.value!.planType) ?? null
 })
 
+const pendingPlanInfo = computed(() => {
+  if (!subscription.value?.pendingPlanType) return null
+  return storePlans.value.find((p) => p.type === subscription.value!.pendingPlanType) ?? null
+})
+
+// 기존 구독의 실제 주기와 비교표·체크아웃 기본값을 맞춘다. 연간 구독자가 페이지를
+// 열자마자 월간 가격을 보고 잘못된 상품을 선택하는 것을 막는다.
+watch(() => subscription.value?.billingCycle, (cycle) => {
+  if (cycle) billingCycle.value = cycle
+}, { immediate: true })
+
 const targetPlanInfo = computed(() => {
   if (!targetPlan.value) return null
   return storePlans.value.find((p) => p.type === targetPlan.value) ?? null
+})
+
+/** 결제 모달과 서버 intent가 같은 주기의 금액을 보여주게 한다. */
+const targetCheckoutPrice = computed(() => {
+  if (!targetPlanInfo.value) return 0
+  return billingCycle.value === 'YEARLY' ? targetPlanInfo.value.yearlyPrice : targetPlanInfo.value.price
 })
 
 const creditPercentage = computed(() => {
@@ -660,10 +729,17 @@ const changePlanMessage = computed(() => {
   const current = currentPlanInfo.value
   if (!current) return t('subscription.changePlanSimple', { plan: target.name })
 
+  const targetAmount = billingCycle.value === 'YEARLY' ? target.yearlyPrice : target.price
+  const targetPeriod = billingCycle.value === 'YEARLY' ? '/년' : t('subscription.perMonth')
   if (target.price > current.price) {
-    return t('subscription.upgradeMessage', { current: current.name, target: target.name, price: formatPrice(target.price) })
+    return t('subscription.upgradeMessage', {
+      current: current.name,
+      target: target.name,
+      price: formatPrice(targetAmount),
+      period: targetPeriod,
+    })
   }
-  const targetPrice = target.price === 0 ? t('subscription.free') : formatPrice(target.price) + t('subscription.perMonth')
+  const targetPrice = targetAmount === 0 ? t('subscription.free') : formatPrice(targetAmount) + targetPeriod
   return t('subscription.downgradeMessage', { current: current.name, target: target.name, price: targetPrice })
 })
 
@@ -712,6 +788,32 @@ function formatStorageValue(valueMb: number, maxMb: number): number {
   if (maxMb >= 1024) return Math.round((valueMb / 1024) * 10) / 10
   return valueMb
 }
+
+/**
+ * 저장공간 막대에 쓸 값. **한도는 서버가 준 것만 쓴다.**
+ *
+ * 예전에는 최대값을 `currentPlanInfo.storageMb`(플랜 상수표)에서 가져왔다. 그런데 실제
+ * 한도는 `StorageQuotaUseCase.getEffectiveLimit`이 정하고, 관리자가 올려 준 사용자는
+ * `subscription.storage_quota_limit_bytes`가 플랜 기본값보다 크다. 상수표를 쓰면 그
+ * 사용자는 **에셋 화면에서는 200GB, 이 화면에서는 50GB**를 본다 — 같은 사용자에게
+ * 두 개의 한도를 보여주는 셈이고, 결제 판단이 일어나는 화면이 틀린 쪽이었다.
+ *
+ * 아래 비교표(`PlanComparisonTable`)는 "이 플랜을 사면 무엇을 받는지"를 말하므로 오버라이드가
+ * 아니라 상품 사양이 맞다. 그 사양도 이제 상수가 아니라 서버가 준 `storePlans` 다.
+ *
+ * 한도가 0 이하면 `null`이다. 0으로 나누면 `UsageProgressBar`가 100%를 그려서 멀쩡한
+ * 사용자에게 "가득 찼다"고 말한다.
+ */
+const storageUsage = computed(() => {
+  const usage = usageData.value
+  if (!usage || usage.storageLimitBytes <= 0) return null
+  const limitMb = usage.storageLimitBytes / (1024 * 1024)
+  return {
+    current: formatStorageValue(usage.storageUsedMb, limitMb),
+    max: formatStorageValue(limitMb, limitMb),
+    unit: formatStorageUnit(limitMb),
+  }
+})
 
 function creditTransactionTypeClass(type: string): string {
   const classes: Record<string, string> = {
@@ -785,12 +887,32 @@ function showPlanComparison() {
 
 function selectPlan(plan: PlanType) {
   targetPlan.value = plan
-  // For FREE plan or downgrades, show confirmation modal
-  // For upgrades, show payment modal
   const currentIdx = storePlans.value.findIndex((p) => p.type === subscription.value?.planType)
   const targetIdx = storePlans.value.findIndex((p) => p.type === plan)
+  const target = storePlans.value.find((p) => p.type === plan)
+  const isPlanUpgrade = targetIdx > currentIdx
+  const blocksAnnualToMonthlyUpgrade = Boolean(
+    subscription.value &&
+      isPlanUpgrade &&
+      subscription.value.billingCycle === 'YEARLY' &&
+      billingCycle.value === 'MONTHLY',
+  )
+  if (blocksAnnualToMonthlyUpgrade) {
+    targetPlan.value = null
+    notification.warning('연간 구독의 업그레이드는 연간 결제 주기로 진행해 주세요.')
+    return
+  }
+  const changesPaidBillingCycle = Boolean(
+    subscription.value &&
+      target &&
+      target.price > 0 &&
+      targetIdx >= currentIdx &&
+      subscription.value.billingCycle === 'MONTHLY' &&
+      billingCycle.value === 'YEARLY',
+  )
 
-  if (targetIdx > currentIdx) {
+  // 플랜 상향뿐 아니라 유료 플랜의 결제 주기 변경도 결제 모달을 거친다.
+  if (isPlanUpgrade || changesPaidBillingCycle) {
     /*
      * 결제가 불가한 상태면 결제창을 열지 않는다. 열고 나서 실패를 보여주면 사용자는
      * 원인을 알 수 없고, 서버에는 아무도 정리하지 않는 대기 결제가 남는다.
@@ -799,7 +921,7 @@ function selectPlan(plan: PlanType) {
     if (!paymentEnabled.value) return
     showPaymentModal.value = true
   } else {
-    // Downgrade or same - show confirmation
+    // 무료 전환·같은 결제 주기의 다운그레이드는 다음 기간 적용을 확인한다.
     showChangePlanModal.value = true
   }
 }
@@ -827,6 +949,18 @@ async function handlePaymentConfirm() {
       subscriptionStore.fetchSubscription(),
       creditStore.fetchBalance(),
       subscriptionStore.fetchPayments(0, 20),
+      /*
+       * **프로필도 함께 읽는다.**
+       *
+       * 결제가 끝나면 서버는 구독과 `users.plan_type` 을 함께 올리는데, 이 화면은 결제
+       * 전에 로드된 세션을 들고 있어 `authStore.user.planType` 이 아직 이전 플랜이다.
+       * 구독 스토어만 갱신하면 이 화면은 맞아 보이지만 **상단바는 세션 내내 옛 플랜**을
+       * 보여준다 — 방금 결제한 사용자에게 "반영이 안 됐다" 는 신호가 된다.
+       *
+       * `fetchProfile` 은 내부에서 실패를 삼키므로 결제 결과에 영향을 주지 않는다.
+       * 같은 이유로 `OnboardingView.handlePlanPaymentSuccess` 가 이미 이렇게 한다.
+       */
+      authStore.fetchProfile(),
     ])
   }, 1500)
 }
@@ -942,12 +1076,11 @@ async function fetchUsage() {
   usageLoading.value = true
   usageError.value = null
   try {
-    const data = await subscriptionApi.getUsage()
-    usageData.value = {
-      uploadsThisMonth: data.uploadsThisMonth ?? 0,
-      storageUsedMb: data.storageUsedMb ?? 0,
-    }
+    // `?? 0`을 하지 않는다. 서버가 값을 주지 않았다면 그건 0이 아니라 모르는 것이다.
+    usageData.value = await subscriptionApi.getUsage()
   } catch (error) {
+    // 실패한 갱신이 직전 측정치를 "현재 값"으로 남겨 두게 하지 않는다.
+    usageData.value = null
     usageError.value = error instanceof Error ? error.message : '사용량을 불러오지 못했습니다.'
   } finally {
     usageLoading.value = false
@@ -964,7 +1097,7 @@ onMounted(() => {
     subscriptionStore.fetchPayments(0, 20),
     channelStore.fetchChannels(),
     fetchUsage(),
-    loadPaymentAvailability(),
+    recheckPaymentAvailability(),
     fetchUsageAlerts(),
     initPortOne(),
   ])

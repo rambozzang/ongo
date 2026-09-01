@@ -22,10 +22,58 @@
           <span class="text-body-xs text-gray-400">{{ $t('ugc.lastSynced') }}: {{ analytics?.lastSyncedAt?.slice(0, 16)?.replace('T', ' ') || '-' }}</span>
         </div>
         <div class="grid grid-cols-2 gap-4 mobile:grid-cols-4">
-          <div><p class="text-body-xs text-gray-400">{{ $t('ugc.views') }}</p><p class="mt-0.5 text-title font-semibold text-gray-900 dark:text-gray-100">{{ (analytics?.totalViews ?? 0).toLocaleString() }}</p></div>
-          <div><p class="text-body-xs text-gray-400">{{ $t('ugc.likes') }}</p><p class="mt-0.5 text-title font-semibold text-gray-900 dark:text-gray-100">{{ (analytics?.totalLikes ?? 0).toLocaleString() }}</p></div>
-          <div><p class="text-body-xs text-gray-400">{{ $t('ugc.comments') }}</p><p class="mt-0.5 text-title font-semibold text-gray-900 dark:text-gray-100">{{ (analytics?.totalComments ?? 0).toLocaleString() }}</p></div>
-          <div><p class="text-body-xs text-gray-400">{{ $t('ugc.shares') }}</p><p class="mt-0.5 text-title font-semibold text-gray-900 dark:text-gray-100">{{ (analytics?.totalShares ?? 0).toLocaleString() }}</p></div>
+          <div>
+            <p class="text-body-xs text-gray-400">{{ $t('ugc.views') }}</p>
+            <p
+              v-if="analytics?.totalViews != null"
+              :data-testid="'ugc-metric-views'"
+              class="mt-0.5 text-title font-semibold text-gray-900 dark:text-gray-100"
+            >{{ analytics.totalViews.toLocaleString() }}</p>
+            <p
+              v-else
+              :data-testid="'ugc-metric-views-unavailable'"
+              class="mt-0.5 text-body text-gray-500 dark:text-gray-400"
+            >{{ $t('ugc.metricUnavailable') }}</p>
+          </div>
+          <div>
+            <p class="text-body-xs text-gray-400">{{ $t('ugc.likes') }}</p>
+            <p
+              v-if="analytics?.totalLikes != null"
+              :data-testid="'ugc-metric-likes'"
+              class="mt-0.5 text-title font-semibold text-gray-900 dark:text-gray-100"
+            >{{ analytics.totalLikes.toLocaleString() }}</p>
+            <p
+              v-else
+              :data-testid="'ugc-metric-likes-unavailable'"
+              class="mt-0.5 text-body text-gray-500 dark:text-gray-400"
+            >{{ $t('ugc.metricUnavailable') }}</p>
+          </div>
+          <div>
+            <p class="text-body-xs text-gray-400">{{ $t('ugc.comments') }}</p>
+            <p
+              v-if="analytics?.totalComments != null"
+              :data-testid="'ugc-metric-comments'"
+              class="mt-0.5 text-title font-semibold text-gray-900 dark:text-gray-100"
+            >{{ analytics.totalComments.toLocaleString() }}</p>
+            <p
+              v-else
+              :data-testid="'ugc-metric-comments-unavailable'"
+              class="mt-0.5 text-body text-gray-500 dark:text-gray-400"
+            >{{ $t('ugc.metricUnavailable') }}</p>
+          </div>
+          <div>
+            <p class="text-body-xs text-gray-400">{{ $t('ugc.shares') }}</p>
+            <p
+              v-if="analytics?.totalShares != null"
+              :data-testid="'ugc-metric-shares'"
+              class="mt-0.5 text-title font-semibold text-gray-900 dark:text-gray-100"
+            >{{ analytics.totalShares.toLocaleString() }}</p>
+            <p
+              v-else
+              :data-testid="'ugc-metric-shares-unavailable'"
+              class="mt-0.5 text-body text-gray-500 dark:text-gray-400"
+            >{{ $t('ugc.metricUnavailable') }}</p>
+          </div>
         </div>
       </div>
 

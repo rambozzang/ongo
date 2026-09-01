@@ -25,11 +25,11 @@
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500 dark:text-gray-400">평균 조회수:</span>
-            <span class="font-medium">{{ formatNumber(tag.avgViews) }}</span>
+            <span class="font-medium">{{ tag.avgViews === null ? $t('analyticsView.notMeasured') : formatNumber(tag.avgViews) }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500 dark:text-gray-400">참여율:</span>
-            <span class="font-medium">{{ tag.avgEngagement.toFixed(1) }}%</span>
+            <span class="font-medium">{{ tag.avgEngagement === null ? $t('analyticsView.notMeasured') : `${tag.avgEngagement.toFixed(1)}%` }}</span>
           </div>
         </div>
       </div>
@@ -70,17 +70,25 @@ const minVideoCount = computed(() => {
   return Math.min(...props.tags.map((t) => t.videoCount), 1)
 })
 
+/*
+ * 백분위는 **측정된 참여율만** 놓고 낸다. `null` 을 0 으로 보면 미수집 태그가 하위 25%
+ * 를 채워 실제 하위 태그가 중간으로 올라간다.
+ */
 const performancePercentiles = computed(() => {
-  const sorted = [...props.tags].sort((a, b) => a.avgEngagement - b.avgEngagement)
+  const sorted = props.tags
+    .map((t) => t.avgEngagement)
+    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+    .sort((a, b) => a - b)
   const count = sorted.length
   if (count === 0) return { top25: 0, bottom25: 0 }
 
   const top25Index = Math.floor(count * 0.75)
   const bottom25Index = Math.floor(count * 0.25)
 
+  // sorted 는 이제 숫자 배열이다.
   return {
-    top25: sorted[top25Index]?.avgEngagement ?? 0,
-    bottom25: sorted[bottom25Index]?.avgEngagement ?? 0,
+    top25: sorted[top25Index] ?? 0,
+    bottom25: sorted[bottom25Index] ?? 0,
   }
 })
 
@@ -97,6 +105,8 @@ function getTagSize(tag: TagPerformance): number {
 
 function getTagColor(tag: TagPerformance): string {
   const percentiles = performancePercentiles.value
+  // 참여율을 재지 못한 태그에 좋고 나쁨 색을 칠하지 않는다.
+  if (tag.avgEngagement === null) return '#9ca3af'
 
   if (tag.avgEngagement >= percentiles.top25) {
     return '#16a34a'

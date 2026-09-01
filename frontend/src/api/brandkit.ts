@@ -55,7 +55,23 @@ export interface UpdateBrandKitRequest {
 
 export interface BrandKitColor { id: number; name: string; hex: string; usage: string }
 export interface BrandKitFont { id: number; name: string; family: string; weight: string; usage: string; sampleText: string }
-export interface BrandKitAsset { id: number; name: string; type: string; url: string; format: string; size: string; uploadedAt: string }
+/**
+ * 브랜드킷이 참조하는 파일.
+ *
+ * `assetId` 가 있으면 서버가 조회할 때마다 소유권을 확인하고 저장 키로 `url` 을 새로
+ * 발급한다. 없으면 이 필드가 생기기 전에 저장된 항목이고, 그 `url` 은 업로드 당시의
+ * 7 일짜리 서명이라 **이미 만료됐을 수 있다.**
+ */
+export interface BrandKitAsset {
+  id: number
+  name: string
+  type: string
+  url: string
+  format: string
+  size: string
+  uploadedAt: string
+  assetId?: number | null
+}
 
 export const brandKitApi = {
   list() {

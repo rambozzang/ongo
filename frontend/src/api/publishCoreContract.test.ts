@@ -11,6 +11,7 @@ import { ugcCampaignApi } from './ugcCampaign'
 import { ugcPublishingApi } from './ugcPublishing'
 import { ugcShortsPipelineApi } from './ugcShortsPipeline'
 import { settingsApi } from './settings'
+import { metaRewriteApi } from './metaRewrite'
 
 const response = (data: unknown = {}) => ({ data: { success: true, data } })
 
@@ -99,16 +100,25 @@ describe('publish core API contracts', () => {
     await videoApi.list({ page: 0, size: 20, sort: 'createdAt,desc' })
     expect(get).toHaveBeenCalledWith('/videos', { params: { page: 0, size: 20, sort: 'createdAt,desc' } })
     await videoApi.get(8)
-    await videoApi.feed({ platform: 'YOUTUBE', page: 1, size: 10 })
+    // 피드는 숫자 페이지가 아니라 채널별 커서로 이어본다 — 서버가 page>0 을 거절한다.
+    await videoApi.feed({ platform: 'YOUTUBE', size: 10, channelToken: ['7:OPAQUE'] })
     await videoApi.getTranslations(8)
     await videoApi.requestTranslation(8, ['en'])
     await videoApi.updateTranslation(8, 2, { title: 'English title' })
     await videoApi.deleteTranslation(8, 2)
     expect(get).toHaveBeenCalledWith('/videos/8')
-    expect(get).toHaveBeenCalledWith('/videos/feed', { params: { platform: 'YOUTUBE', page: 1, size: 10 } })
+    expect(get).toHaveBeenCalledWith('/videos/feed', {
+      params: { platform: 'YOUTUBE', size: 10, channelToken: ['7:OPAQUE'] },
+    })
     expect(post).toHaveBeenCalledWith('/videos/8/translations', { languages: ['en'] })
     expect(put).toHaveBeenCalledWith('/videos/8/translations/2', { title: 'English title' })
     expect(del).toHaveBeenCalledWith('/videos/8/translations/2')
+  })
+
+  it('calls the real internal-video metadata rewrite endpoint', async () => {
+    await metaRewriteApi.rewrite(42)
+
+    expect(post).toHaveBeenCalledWith('/videos/42/rewrite-meta')
   })
 
   it('maps schedule ranges to inclusive LocalDateTime and persists actions', async () => {

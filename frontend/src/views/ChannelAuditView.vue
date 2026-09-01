@@ -3,7 +3,8 @@
     <PageHeader :title="$t('channelAudit.title')" :description="$t('channelAudit.description')">
       <template #actions>
         <button
-          :disabled="store.generating"
+          data-testid="channel-audit-generate-header"
+          :disabled="store.generating || store.creditBlocked"
           class="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
           @click="handleGenerate"
         >
@@ -17,6 +18,23 @@
       <span class="min-w-0 flex-1">{{ store.generationError || store.loadError }}</span>
       <button v-if="store.loadError" type="button" class="rounded-md border border-error-strong px-2 py-1 text-body-xs font-semibold" :disabled="store.loading" @click="store.fetchReports()">
         다시 시도
+      </button>
+    </div>
+
+    <!-- 크레딧 부족 차단 블록: 생성 실패(잔액 부족) 시에만 노출 -->
+    <div
+      v-if="store.creditBlocked"
+      class="mb-4 flex flex-col gap-2 rounded-lg border border-warning bg-warning-subtle px-4 py-3"
+      role="alert"
+    >
+      <p class="text-body text-warning-strong">{{ $t('channelAudit.creditBlocked') }}</p>
+      <button
+        type="button"
+        data-testid="channel-audit-credit-cta"
+        class="btn-primary inline-flex w-full items-center justify-center gap-2"
+        @click="showCreditModal = true"
+      >
+        {{ $t('channelAudit.chargeCredits') }}
       </button>
     </div>
 
@@ -41,7 +59,8 @@
     >
       <template #action>
         <button
-          :disabled="store.generating"
+          data-testid="channel-audit-generate-empty"
+          :disabled="store.generating || store.creditBlocked"
           class="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
           @click="handleGenerate"
         >
@@ -204,6 +223,8 @@
         </button>
       </template>
     </BaseModal>
+
+    <CreditPurchaseModal v-model="showCreditModal" @purchase="onCreditPurchase" />
   </div>
 </template>
 
@@ -216,14 +237,18 @@ import {
   ExclamationCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { useChannelAuditStore } from '@/stores/channelAudit'
+import { useCreditStore } from '@/stores/credit'
 import type { ChannelAuditReport } from '@/types/channelAudit'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
+import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
 
 const store = useChannelAuditStore()
+const creditStore = useCreditStore()
 const detailModalOpen = ref(false)
+const showCreditModal = ref(false)
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
@@ -236,10 +261,20 @@ function openDetail(report: ChannelAuditReport) {
 }
 
 async function handleGenerate() {
+  // 차단 상태에서는 반복 요청을 막는다. 사용자가 충전 CTA 로 잔액을 채운 뒤
+  // 직접 다시 눌러야만 재시도된다 (auto re-run 금지).
+  if (store.creditBlocked) return
   const report = await store.generateAudit()
   if (report) {
     detailModalOpen.value = true
   }
+}
+
+async function onCreditPurchase() {
+  await creditStore.fetchBalance()
+  // 차단/에러 상태만 해제하고 채널 진단은 자동 재실행하지 않는다.
+  store.creditBlocked = false
+  store.generationError = null
 }
 
 onMounted(() => {

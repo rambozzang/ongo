@@ -1,7 +1,12 @@
 <template>
   <div class="space-y-3">
+    <!--
+      **문구는 실제 값과 같아야 한다.** 서버가 주는 값은 참여율이 아니라 그 시간대에
+      게시한 영상들의 **조회수 합계**(`getHeatmapData`)다. "평균 참여율" 이라고 쓰면
+      화면이 재지도 않은 지표를 주장하게 된다.
+    -->
     <p class="text-body-xs text-gray-400 dark:text-gray-500">
-      요일별/시간대별 평균 참여율 - 색이 진할수록 참여율이 높습니다
+      게시 요일/시간대별 조회수 합계 - 색이 진할수록 조회수가 많습니다
     </p>
     <div class="overflow-x-auto">
       <div class="min-w-[640px]">
@@ -163,12 +168,22 @@ function getLegendColor(level: number): string {
   }
 }
 
-// Get tooltip text
+/**
+ * 칸 설명.
+ *
+ * 예전에는 `평균 참여율: X%` 였는데, 그 `X` 는 참여율이 아니라 **최대값 대비 비율**을
+ * 백분율로 찍은 것이었다. 참여율을 잰 적이 없는데 화면은 참여율을 말했다.
+ * 측정된 값(조회수 합계)을 그대로 보여준다.
+ *
+ * 데이터가 없는 칸과 **실제로 0 회였던 칸**은 다르다. 앞은 "게시 기록 없음", 뒤는 0 이다.
+ */
 function getCellTooltip(dayIndex: number, hour: number): string {
-  const value = getCellValue(dayIndex, hour)
   const dayLabel = dayLabels[dayIndex]
-  const percentage = maxValue.value > 0 ? ((value / maxValue.value) * 100).toFixed(1) : '0.0'
-  return `${dayLabel}요일 ${hour}시 - 평균 참여율: ${percentage}%`
+  const measured = dataLookup.value.get(`${dayIndex}-${hour}`)
+  if (measured === undefined) {
+    return `${dayLabel}요일 ${hour}시 - 게시 기록 없음`
+  }
+  return `${dayLabel}요일 ${hour}시 - 조회수 ${measured.toLocaleString()}회`
 }
 
 // Check if this is the best time

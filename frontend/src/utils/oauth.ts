@@ -1,6 +1,7 @@
 import type { Platform } from '@/types/channel'
 
 const REDIRECT_URI_PATH = '/auth/channel-callback'
+export const CHANNEL_OAUTH_CONTEXT_KEY = 'channel_oauth_context'
 
 function base64URLEncode(buffer: Uint8Array): string {
   return btoa(String.fromCharCode(...buffer))
@@ -47,6 +48,19 @@ export function buildOAuthState(
   addAsNew = false,
 ): string {
   return `${platform}|${returnPath}${stateNonce ? `|${stateNonce}` : ''}${addAsNew ? '|new' : ''}`
+}
+
+/** The server state is opaque; keep only the local navigation context here. */
+export function storeChannelOAuthContext(state: string): void {
+  sessionStorage.setItem(CHANNEL_OAUTH_CONTEXT_KEY, state)
+}
+
+export function getChannelOAuthContext(): string | null {
+  return sessionStorage.getItem(CHANNEL_OAUTH_CONTEXT_KEY)
+}
+
+export function clearChannelOAuthContext(): void {
+  sessionStorage.removeItem(CHANNEL_OAUTH_CONTEXT_KEY)
 }
 
 /** The redirect URI sent to the server for token exchange. */

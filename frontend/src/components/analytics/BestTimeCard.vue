@@ -27,8 +27,8 @@
       skeleton="list"
       :skeleton-count="3"
       :empty-icon="ClockIcon"
-      empty-title="분석 데이터가 부족합니다"
-      empty-description="영상을 업로드한 후 데이터가 쌓이면 추천이 표시됩니다."
+      :empty-title="t('analyticsView.optimalTimesEmptyTitle')"
+      :empty-description="optimalUnavailableReason ?? t('analyticsView.optimalTimesEmptyDescription')"
       empty-variant="compact"
     >
       <div class="space-y-4">
@@ -81,7 +81,14 @@
             <!-- Details -->
             <div class="mb-2 flex gap-4 text-body-xs text-gray-600 dark:text-gray-400">
               <span>예상 조회수: <strong class="text-gray-900 dark:text-gray-100">{{ formatNumber(rec.expectedViews) }}</strong></span>
-              <span>참여율: <strong class="text-gray-900 dark:text-gray-100">{{ rec.engagementRate }}%</strong></span>
+              <!--
+                `?? 0` 을 하지 않는다. 참여 지표를 보고하지 않는 플랫폼의 슬롯은 서버가
+                `null` 을 주는데, 0 으로 채우면 "참여가 없던 시간대" 라는 관측이 된다.
+                단위(`%`)도 값이 있을 때만 붙인다 — 밖에 두면 "측정 불가%" 가 된다.
+              -->
+              <span>참여율: <strong class="text-gray-900 dark:text-gray-100">{{
+                rec.engagementRate == null ? $t('analyticsView.notMeasured') : `${rec.engagementRate}%`
+              }}</strong></span>
               <span>신뢰도: <strong class="text-gray-900 dark:text-gray-100">{{ rec.confidenceScore }}%</strong></span>
             </div>
 
@@ -102,6 +109,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ClockIcon } from '@heroicons/vue/24/outline'
 import type { Platform } from '@/types/channel'
 import type { HeatmapData, OptimalTimeSlot } from '@/types/analytics'
@@ -112,7 +120,8 @@ interface Props {
   data: HeatmapData[]
 }
 
-const props = defineProps<Props>()
+// 히트맵 폴백을 없애면서 `data` 를 읽는 곳이 사라졌다. prop 자체는 부모 계약이라 남긴다.
+defineProps<Props>()
 
 type PlatformFilter = 'all' | Platform
 
@@ -125,7 +134,11 @@ const platformFilters = [
 
 const selectedPlatform = ref<PlatformFilter>('all')
 const loadingOptimal = ref(false)
+const { t } = useI18n({ useScope: 'global' })
+
 const optimalSlots = ref<OptimalTimeSlot[]>([])
+/** 서버가 추천을 못 만든 이유. 화면이 그대로 보여준다. */
+const optimalUnavailableReason = ref<string | null>(null)
 
 async function fetchOptimalTimes() {
   loadingOptimal.value = true
@@ -133,8 +146,10 @@ async function fetchOptimalTimes() {
     const platform = selectedPlatform.value === 'all' ? undefined : selectedPlatform.value
     const result = await analyticsApi.getOptimalTimes(platform)
     optimalSlots.value = result.slots
+    optimalUnavailableReason.value = result.unavailableReason ?? null
   } catch {
     optimalSlots.value = []
+    optimalUnavailableReason.value = null
   } finally {
     loadingOptimal.value = false
   }
@@ -148,26 +163,20 @@ watch(selectedPlatform, () => {
   fetchOptimalTimes()
 })
 
-// Use optimal slots from API, fall back to heatmap-based when API returns empty
-const displaySlots = computed<OptimalTimeSlot[]>(() => {
-  if (optimalSlots.value.length > 0) return optimalSlots.value
-
-  // Fallback: derive from heatmap data
-  if (props.data.length === 0) return []
-  const dayLabels = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
-  const sorted = [...props.data].sort((a, b) => b.value - a.value).slice(0, 5)
-  const maxValue = sorted[0]?.value ?? 1
-  return sorted.map((item) => ({
-    dayOfWeek: item.dayOfWeek,
-    dayLabel: dayLabels[item.dayOfWeek],
-    hour: item.hour,
-    timeLabel: `${String(item.hour).padStart(2, '0')}:00`,
-    expectedViews: item.value,
-    engagementRate: 0,
-    confidenceScore: 0,
-    score: Math.round((item.value / maxValue) * 100),
-  }))
-})
+/*
+ * **히트맵 폴백을 제거했다.**
+ *
+ * 예전에는 API 가 빈 결과를 주면 히트맵에서 상위 5개를 뽑아 슬롯을 만들고
+ * `engagementRate: 0, confidenceScore: 0` 을 채웠다. 화면은 그것을
+ * `참여율 0% / 신뢰도 0%` 로 **측정값처럼** 보여줬다 — 재지 않았을 뿐인데
+ * "참여가 없는 시간대" 라는 관측이 된다.
+ *
+ * 게다가 그 히트맵 슬롯은 서버가 게시 시각을 확인하지 못해 추천을 만들지 못한
+ * 상황에서 나온다. 근거가 없어서 못 만든 자리를 다른 근거 없는 숫자로 채우는 셈이다.
+ *
+ * 이제 서버 슬롯만 쓴다. 없으면 빈 상태와 사유를 보여준다.
+ */
+const displaySlots = computed<OptimalTimeSlot[]>(() => optimalSlots.value)
 
 function normalizedScore(slot: OptimalTimeSlot): number {
   if (displaySlots.value.length === 0) return 0

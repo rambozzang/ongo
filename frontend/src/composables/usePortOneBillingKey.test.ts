@@ -23,6 +23,7 @@ vi.mock('@/api/portone', () => ({
     createCreditCheckout: vi.fn(),
     registerBillingKey: vi.fn(),
     complete: vi.fn(),
+    reconcile: vi.fn(),
   },
 }))
 
@@ -47,6 +48,7 @@ describe('usePortOne 정기결제 수단 등록', () => {
     vi.mocked(portoneApi.createCreditCheckout).mockResolvedValue(intent as never)
     vi.mocked(portoneApi.registerBillingKey).mockResolvedValue(undefined as never)
     vi.mocked(portoneApi.complete).mockResolvedValue({ id: 1, status: 'COMPLETED' } as never)
+    vi.mocked(portoneApi.reconcile).mockResolvedValue({ id: 1, status: 'FAILED' } as never)
     vi.mocked(PortOne.requestIssueBillingKey).mockResolvedValue(issued as never)
     vi.mocked(PortOne.requestPayment).mockResolvedValue(paid as never)
   })
@@ -102,6 +104,7 @@ describe('usePortOne 정기결제 수단 등록', () => {
 
     expect(PortOne.requestPayment).not.toHaveBeenCalled()
     expect(portoneApi.registerBillingKey).not.toHaveBeenCalled()
+    expect(portoneApi.reconcile).toHaveBeenCalledExactlyOnceWith(intent.paymentId)
     expect(onClose).toHaveBeenCalled()
     expect(onSuccess).not.toHaveBeenCalled()
   })
@@ -117,6 +120,7 @@ describe('usePortOne 정기결제 수단 등록', () => {
     await expect(usePortOne().openSubscriptionCheckout('PRO')).rejects.toThrow('카드 인증에 실패했습니다.')
     expect(PortOne.requestPayment).not.toHaveBeenCalled()
     expect(portoneApi.registerBillingKey).not.toHaveBeenCalled()
+    expect(portoneApi.reconcile).toHaveBeenCalledExactlyOnceWith(intent.paymentId)
   })
 
   /**
@@ -138,6 +142,7 @@ describe('usePortOne 정기결제 수단 등록', () => {
     )
     expect(portoneApi.registerBillingKey).not.toHaveBeenCalled()
     expect(PortOne.requestPayment).not.toHaveBeenCalled()
+    expect(portoneApi.reconcile).toHaveBeenCalledExactlyOnceWith(intent.paymentId)
   })
 
   /**
@@ -150,6 +155,76 @@ describe('usePortOne 정기결제 수단 등록', () => {
     await expect(usePortOne().openSubscriptionCheckout('PRO')).rejects.toThrow('저장 실패')
     expect(PortOne.requestPayment).not.toHaveBeenCalled()
     expect(portoneApi.complete).not.toHaveBeenCalled()
+    expect(portoneApi.reconcile).toHaveBeenCalledExactlyOnceWith(intent.paymentId)
+  })
+
+  /* ---- 결제만 확정되고 수단이 없는 상태 ---- */
+
+  /**
+   * **구독에서 "성공"은 결제만으로 성립하지 않는다.**
+   *
+   * 중단 분기는 결제창을 열기 전에 PG 를 재조회해 고아 PENDING 을 닫는다. 그 재조회가
+   * `COMPLETED` 를 돌려주면 예전에는 성공 콜백이 그대로 발화됐다 — **빌링키가 등록되지
+   * 않은 채로.** 화면은 구독 완료를 보여주지만 갱신 수단이 없어, 한 달 뒤 아무 안내 없이
+   * PAST_DUE 로 내려간다. 그때는 원인을 되짚기 어렵다.
+   *
+   * 현재 서버 구현에서는 `requestPayment` 전이라 재조회가 `COMPLETED` 를 줄 수 없다.
+   * 그래도 고정하는 이유는, 그 보장이 **이 파일 밖(백엔드 reconcile)** 에만 있고 여기서는
+   * 아무것도 막지 않았기 때문이다. 서버가 바뀌면 조용히 무너진다.
+   */
+  describe('빌링키 없이 결제만 확정된 경우', () => {
+    const MISSING_METHOD = /정기결제 수단이 등록되지 않았습니다/
+
+    beforeEach(() => {
+      vi.mocked(portoneApi.reconcile).mockResolvedValue({ id: 1, status: 'COMPLETED' } as never)
+    })
+
+    /** 발급 자체가 실패한 경우(IFRAME 미지원 등). */
+    it('발급 실패 + 재조회 COMPLETED 면 성공을 알리지 않고 오류를 던진다', async () => {
+      vi.mocked(PortOne.requestIssueBillingKey).mockResolvedValue({
+        transactionType: 'ISSUE_BILLING_KEY',
+        billingKey: '',
+        code: 'WINDOW_TYPE_NOT_SUPPORTED',
+        message: 'not supported',
+      } as never)
+      const onSuccess = vi.fn()
+      const onClose = vi.fn()
+
+      await expect(
+        usePortOne().openSubscriptionCheckout('PRO', { onSuccess, onClose }),
+      ).rejects.toThrow(MISSING_METHOD)
+
+      expect(onSuccess).not.toHaveBeenCalled()
+      expect(portoneApi.registerBillingKey).not.toHaveBeenCalled()
+      expect(PortOne.requestPayment).not.toHaveBeenCalled()
+    })
+
+    /** 발급은 됐지만 서버 저장이 실패한 경우 — 우리 쪽에 수단이 없다. */
+    it('서버 등록 실패 + 재조회 COMPLETED 면 성공을 알리지 않고 오류를 던진다', async () => {
+      vi.mocked(portoneApi.registerBillingKey).mockRejectedValue(new Error('저장 실패'))
+      const onSuccess = vi.fn()
+
+      await expect(usePortOne().openSubscriptionCheckout('PRO', { onSuccess })).rejects.toThrow(
+        MISSING_METHOD,
+      )
+
+      expect(onSuccess).not.toHaveBeenCalled()
+      expect(PortOne.requestPayment).not.toHaveBeenCalled()
+    })
+
+    /** 사용자가 발급창을 닫은 경우. 오류는 아니지만 수단이 없는 것은 같다. */
+    it('발급창을 닫음 + 재조회 COMPLETED 면 성공을 알리지 않고 오류를 던진다', async () => {
+      vi.mocked(PortOne.requestIssueBillingKey).mockResolvedValue(undefined as never)
+      const onSuccess = vi.fn()
+
+      await expect(usePortOne().openSubscriptionCheckout('PRO', { onSuccess })).rejects.toThrow(
+        MISSING_METHOD,
+      )
+
+      expect(onSuccess).not.toHaveBeenCalled()
+      expect(portoneApi.registerBillingKey).not.toHaveBeenCalled()
+      expect(PortOne.requestPayment).not.toHaveBeenCalled()
+    })
   })
 
   /* ---- 크레딧 결제는 그대로 ---- */

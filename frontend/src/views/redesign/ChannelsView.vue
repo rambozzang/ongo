@@ -74,8 +74,12 @@
 
           <div class="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-line bg-line">
             <div class="bg-surface-input px-2 py-2.5">
-              <p class="text-[10px] text-content-tertiary">{{ t('channels.connected') }}</p>
-              <p class="mt-1 font-mono text-[13px] text-content">{{ formatNumber(channel.subscriberCount) }}</p>
+              <!-- 이 칸의 값은 구독자 수다. 예전 라벨은 '연결됨'(channels.connected)이라 숫자와 뜻이 맞지 않았다. -->
+              <p class="text-[10px] text-content-tertiary">{{ t('channels.subscribers') }}</p>
+              <p
+                class="mt-1 font-mono text-[13px]"
+                :class="channel.subscriberCount === null ? 'text-content-tertiary' : 'text-content'"
+              >{{ subscriberText(channel) }}</p>
             </div>
             <div class="bg-surface-input px-2 py-2.5">
               <p class="text-[10px] text-content-tertiary">{{ t('analyticsView.table.views') }}</p>
@@ -138,7 +142,7 @@ import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
 import { useChannelStore } from '@/stores/channel'
 import ConnectChannelModal from '@/components/channel/ConnectChannelModal.vue'
-import { buildOAuthState, generateOAuthStateNonce, generatePKCE, getOAuthRedirectUri } from '@/utils/oauth'
+import { buildOAuthState, generateOAuthStateNonce, generatePKCE, getOAuthRedirectUri, storeChannelOAuthContext } from '@/utils/oauth'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -183,6 +187,19 @@ function statusLabel(channel: Channel): string {
 function formatNumber(value: number): string {
   return new Intl.NumberFormat(locale.value, { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 }
+/**
+ * 구독자 수 표시. **서버가 `null` 을 주면 숫자를 만들지 않는다.**
+ *
+ * Threads·LinkedIn 어댑터는 팔로워 수를 묻지도 않고 `0` 을 저장하고, Naver Clip 은 채널
+ * 조회 자체가 없다. 예전에는 그 `0` 이 "0" 으로 그려져 **구독자가 정말 없는 채널과
+ * 구분되지 않았다.**
+ *
+ * 조회하는 플랫폼의 `0` 은 관측이므로 그대로 "0" 으로 그린다.
+ */
+function subscriberText(channel: Channel): string {
+  if (channel.subscriberCount === null) return t('analyticsView.notMeasured')
+  return formatNumber(channel.subscriberCount)
+}
 function syncNote(channel: Channel): string {
   if (isUnsupportedPlatform(channel.platform)) return t('channels.unsupportedDescription')
   if (!channel.lastSyncedAt) return t('channels.connecting')
@@ -201,11 +218,13 @@ async function connectChannel(platform: Platform, addAsNew = false) {
       ? (await generatePKCE('twitter_code_verifier')).challenge
       : undefined
     const stateNonce = generateOAuthStateNonce()
+    const clientState = buildOAuthState(platform, '/channels-v2', stateNonce, addAsNew)
     const { authorizationUrl } = await channelApi.authorizationUrl(platform, {
       redirectUri: getOAuthRedirectUri(),
-      state: buildOAuthState(platform, '/channels-v2', stateNonce, addAsNew),
+      state: clientState,
       codeChallenge: challenge,
     })
+    storeChannelOAuthContext(clientState)
     window.location.href = authorizationUrl
   } catch (error) {
     isConnectModalOpen.value = false

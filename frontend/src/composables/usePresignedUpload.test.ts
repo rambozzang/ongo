@@ -202,6 +202,41 @@ describe('usePresignedUpload', () => {
     await expect(storageFailure).rejects.toThrow('네트워크 오류로 업로드 실패')
   })
 
+  it('preserves the stable STORAGE_QUOTA_EXCEEDED code from a server JSON error', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 402,
+      json: async () => ({ error: 'STORAGE_QUOTA_EXCEEDED', message: '저장 공간을 초과했습니다' }),
+    })
+    let caught: unknown
+    try {
+      await usePresignedUpload(options).upload(item())
+    } catch (e) {
+      caught = e
+    }
+    expect(caught).toBeInstanceOf(Error)
+    expect((caught as Error).message).toBe('저장 공간을 초과했습니다')
+    const code = (caught as { response?: { data?: { error?: string } } })?.response?.data?.error
+    expect(code).toBe('STORAGE_QUOTA_EXCEEDED')
+  })
+
+  it('keeps human-readable 413 messages without inventing a stable code', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 413,
+      json: async () => ({ error: '파일이 너무 큽니다' }),
+    })
+    let caught: unknown
+    try {
+      await usePresignedUpload(options).upload(item())
+    } catch (e) {
+      caught = e
+    }
+    expect((caught as Error).message).toBe('파일이 너무 큽니다')
+    const code = (caught as { response?: { data?: { error?: string } } })?.response?.data?.error
+    expect(code).toBeUndefined()
+  })
+
   it('aborts backend confirmation and never reaches metadata or publish after storage PUT', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,

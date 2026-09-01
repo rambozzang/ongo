@@ -1,25 +1,39 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
 
+/**
+ * 게시물 한 건의 지표. **`null` 은 측정하지 않았다는 뜻이며 0 이 아니다.**
+ *
+ * Facebook·WordPress·Vimeo 는 공유 수를, Pinterest 는 댓글 수를 API 로 주지 않는다.
+ * 스냅샷이 아직 없는 경우도 `null` 이다. 0 으로 채우면 "공유 0회" 라는 성과 보고가 되고,
+ * 그 위에서 보상 판단이 이뤄진다.
+ */
 export interface PostMetricResponse {
   campaignPostId: number
   platform: string
   postStatus: string
-  views: number
-  likes: number
-  comments: number
-  shares: number
+  views: number | null
+  likes: number | null
+  comments: number | null
+  shares: number | null
   capturedAt: string | null
+  /** 이 게시물에서 측정하지 못한 지표 이름들. */
+  unavailableMetrics: string[]
 }
 
+/**
+ * 캠페인 합계. 합계가 `null` 이면 **그 지표를 측정한 게시물이 하나도 없다.**
+ */
 export interface CampaignAnalyticsResponse {
   campaignId: number
-  totalViews: number
-  totalLikes: number
-  totalComments: number
-  totalShares: number
+  totalViews: number | null
+  totalLikes: number | null
+  totalComments: number | null
+  totalShares: number | null
   lastSyncedAt: string | null
   posts: PostMetricResponse[]
+  /** 지표별로 합계에 실제로 들어간 게시물 수. 표본 크기를 함께 봐야 한다. */
+  measuredPostCounts: Record<string, number>
 }
 
 export interface ParticipantRewardResponse {

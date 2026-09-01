@@ -62,13 +62,13 @@
               {{ tag.videoCount }}
             </td>
             <td class="hidden whitespace-nowrap px-3 py-3 text-right text-gray-700 tablet:table-cell dark:text-gray-300">
-              {{ formatNumber(tag.totalViews) }}
+              {{ tag.totalViews === null ? $t('analyticsView.notMeasured') : formatNumber(tag.totalViews) }}
             </td>
             <td class="whitespace-nowrap px-3 py-3 text-right text-gray-700 dark:text-gray-300">
-              {{ formatNumber(tag.avgViews) }}
+              {{ tag.avgViews === null ? $t('analyticsView.notMeasured') : formatNumber(tag.avgViews) }}
             </td>
             <td class="hidden whitespace-nowrap px-3 py-3 text-right text-gray-700 tablet:table-cell dark:text-gray-300">
-              {{ tag.avgEngagement.toFixed(1) }}%
+              {{ tag.avgEngagement === null ? $t('analyticsView.notMeasured') : `${tag.avgEngagement.toFixed(1)}%` }}
             </td>
             <td class="whitespace-nowrap px-3 py-3 text-center">
               <span

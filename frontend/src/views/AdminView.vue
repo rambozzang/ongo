@@ -129,6 +129,62 @@
       </AsyncState>
     </section>
 
+    <!-- Dead-letter webhook recovery -->
+    <section class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800" aria-labelledby="dead-letter-title">
+      <div class="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 id="dead-letter-title" class="text-title font-semibold text-gray-900 dark:text-gray-100">{{ t('admin.deadLetterTitle') }}</h2>
+          <p class="mt-1 text-body text-gray-500 dark:text-gray-400">{{ t('admin.deadLetterDescription') }}</p>
+        </div>
+        <button type="button" class="btn-secondary shrink-0" :disabled="deadLetterLoading" @click="fetchDeadLetterWebhooks">
+          <ArrowPathIcon class="mr-1 inline h-4 w-4" :class="{ 'animate-spin': deadLetterLoading }" aria-hidden="true" />
+          {{ deadLetterLoading ? t('action.loading') : t('action.refresh') }}
+        </button>
+      </div>
+      <AsyncState :loading="deadLetterLoading" :error="deadLetterError" skeleton="card" :skeleton-count="2" retryable @retry="fetchDeadLetterWebhooks">
+        <div v-if="deadLetterWebhooks.length" class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <table class="min-w-full divide-y divide-gray-200 text-body dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.deadLetterProvider') }}</th>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.deadLetterEventType') }}</th>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.deadLetterEventId') }}</th>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.queueAttempts') }}</th>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.deadLetterReceivedAt') }}</th>
+                <th class="px-3 py-2 text-left text-caption uppercase tracking-wider text-gray-500">{{ t('admin.queueError') }}</th>
+                <th class="px-3 py-2 text-right text-caption uppercase tracking-wider text-gray-500">{{ t('admin.actions') }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-for="event in deadLetterWebhooks" :key="event.id">
+                <td class="whitespace-nowrap px-3 py-2 text-content">{{ event.provider }}</td>
+                <td class="whitespace-nowrap px-3 py-2 text-content">{{ event.eventType }}</td>
+                <!-- 마스킹된 키다. 원문 멱등 키는 서버가 내려주지 않는다. -->
+                <td class="whitespace-nowrap px-3 py-2 font-mono text-muted-strong">{{ event.maskedEventId }}</td>
+                <td class="whitespace-nowrap px-3 py-2 text-muted-strong">{{ event.retryCount }} / {{ event.maxRetries }}</td>
+                <td class="whitespace-nowrap px-3 py-2 text-muted-strong">{{ formatDeadLetterDate(event.createdAt) }}</td>
+                <td class="max-w-xs truncate px-3 py-2 text-muted-strong" :title="event.errorMessage || ''">{{ event.errorMessage || '-' }}</td>
+                <td class="whitespace-nowrap px-3 py-2 text-right">
+                  <button
+                    v-if="event.provider !== 'UNKNOWN'"
+                    type="button"
+                    class="btn-secondary !min-h-8 text-body-xs"
+                    :disabled="actionLoading"
+                    @click="requestWebhookRequeue(event)"
+                  >
+                    {{ t('admin.requeueWebhook') }}
+                  </button>
+                  <!-- 우리가 재처리할 수 없는 이벤트다. 서버도 거부하므로 버튼을 주지 않는다. -->
+                  <span v-else class="text-body-xs text-muted-strong" :title="t('admin.deadLetterUnknownProvider')">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-else class="rounded-lg border border-dashed border-gray-300 p-4 text-center text-body text-muted-strong dark:border-gray-600">{{ t('admin.deadLetterEmpty') }}</p>
+      </AsyncState>
+    </section>
+
     <!-- Search -->
     <div class="mb-6 flex items-center gap-4">
       <div class="relative flex-1 max-w-md">
@@ -415,7 +471,8 @@
                           <p class="font-medium text-gray-900 dark:text-gray-100">{{ channel.channelName }}</p>
                         </div>
                         <div class="mt-1 flex items-center gap-3 text-body-xs text-gray-500 dark:text-gray-400">
-                          <span>{{ t('admin.subscribers') }}: {{ channel.subscriberCount.toLocaleString() }}</span>
+                          <!-- null 은 그 플랫폼이 구독자 수를 조회하지 않는다는 뜻이다. 0 으로 그리면 실제 문제 채널과 구분되지 않는다. -->
+                          <span>{{ t('admin.subscribers') }}: {{ channel.subscriberCount === null ? t('analyticsView.notMeasured') : channel.subscriberCount.toLocaleString() }}</span>
                           <span :class="channel.status === 'CONNECTED' ? 'text-success-strong' : 'text-warning-strong'">
                             {{ channel.status }}
                           </span>
@@ -481,7 +538,10 @@
                       </div>
                       <div v-if="subscriptionDetail.pendingPlanType">
                         <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subPendingPlan') }}</span>
-                        <p class="mt-1 font-medium text-warning-strong">{{ subscriptionDetail.pendingPlanType }}</p>
+                        <p class="mt-1 font-medium text-warning-strong">
+                          {{ subscriptionDetail.pendingPlanType }}
+                          <span v-if="subscriptionDetail.pendingBillingCycle"> / {{ subscriptionDetail.pendingBillingCycle }}</span>
+                        </p>
                       </div>
                       <div v-if="subscriptionDetail.cancelledAt">
                         <span class="text-gray-500 dark:text-gray-400">{{ t('admin.subCancelledAt') }}</span>
@@ -590,6 +650,7 @@ import type {
   AdminSubscriptionDetail,
   AdminPublishQueueSummary,
   AdminAccountDeletionJob,
+  AdminDeadLetterWebhook,
 } from '@/types/admin'
 
 const { t, tm } = useLocale()
@@ -623,6 +684,51 @@ async function fetchAccountDeletionJobs() {
   } finally {
     deletionLoading.value = false
   }
+}
+
+// --- Dead-letter webhook recovery ---
+const deadLetterWebhooks = ref<AdminDeadLetterWebhook[]>([])
+const deadLetterLoading = ref(false)
+const deadLetterError = ref<string | null>(null)
+
+async function fetchDeadLetterWebhooks() {
+  deadLetterLoading.value = true
+  deadLetterError.value = null
+  try {
+    deadLetterWebhooks.value = await adminApi.getDeadLetterWebhooks()
+  } catch (error) {
+    deadLetterError.value = error instanceof Error ? error.message : t('admin.deadLetterLoadError')
+  } finally {
+    deadLetterLoading.value = false
+  }
+}
+
+function formatDeadLetterDate(value: string | null) {
+  if (!value) return '-'
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? '-' : parsed.toLocaleString()
+}
+
+/**
+ * 재큐잉은 결제 반영을 다시 돌린다. 확인 모달을 반드시 거친다.
+ *
+ * 목록은 재큐잉 뒤에 **다시 불러온다.** 응답으로 행 상태를 지어내 화면에 채우면 서버가
+ * 실제로 무엇을 바꿨는지와 어긋날 수 있다.
+ */
+function requestWebhookRequeue(event: AdminDeadLetterWebhook) {
+  confirmTitle.value = t('admin.requeueWebhook')
+  confirmMessage.value = t('admin.requeueWebhookMessage', { id: event.maskedEventId })
+  confirmDanger.value = false
+  confirmAction = async () => {
+    actionLoading.value = true
+    try {
+      await adminApi.requeueDeadLetterWebhook(event.id)
+      await fetchDeadLetterWebhooks()
+    } finally {
+      actionLoading.value = false
+    }
+  }
+  showConfirm.value = true
 }
 
 function requestAccountDeletionRetry(job: AdminAccountDeletionJob) {
@@ -1013,6 +1119,7 @@ onMounted(() => {
   fetchUsers()
   fetchPublishQueue()
   fetchAccountDeletionJobs()
+  fetchDeadLetterWebhooks()
 })
 
 onUnmounted(() => {

@@ -8,7 +8,11 @@
         </div>
         <div>
           <h3 class="text-body font-semibold text-gray-900 dark:text-gray-100">콘텐츠 갭 분석</h3>
-          <p class="text-body-xs text-gray-500 dark:text-gray-400">10 크레딧</p>
+          <p class="text-body-xs text-gray-500 dark:text-gray-400">
+            <span v-if="creditCost != null">{{ creditCost }} 크레딧</span>
+            <span v-else-if="pricingLoading">비용 확인 중...</span>
+            <span v-else>비용을 확인할 수 없습니다</span>
+          </p>
         </div>
       </div>
     </div>
@@ -22,16 +26,41 @@
       class="p-4"
       @retry="analyze"
     >
+      <!-- 크레딧 부족 안내 + 실제 충전 CTA (result 유무와 무관하게 최우선) -->
+      <div
+        v-if="creditBlocked"
+        class="mb-3 rounded-lg border border-warning bg-warning-subtle px-3 py-2"
+      >
+        <p class="text-[11px] leading-5 text-warning-strong">{{ $t('dashboard.contentGap.creditBlocked') }}</p>
+        <button
+          type="button"
+          data-testid="contentgap-credit-cta"
+          class="btn-primary mt-2 inline-flex w-full justify-center !text-[12px]"
+          @click="showCreditModal = true"
+        >
+          {{ $t('dashboard.contentGap.chargeCredits') }}
+        </button>
+      </div>
+
       <!-- Initial State (Not Analyzed) -->
       <div v-if="!result" class="text-center">
         <LightBulbIcon class="mx-auto h-8 w-8 text-gray-300 dark:text-gray-600" />
         <p class="mt-2 text-body text-gray-500 dark:text-gray-400">콘텐츠 기회를 발견하세요</p>
+        <p v-if="pricingError" class="mt-2 text-body-xs text-error-strong">{{ pricingError }}</p>
+        <p v-else-if="pricingLoading" class="mt-2 text-body-xs text-gray-500 dark:text-gray-400">
+          분석 비용을 확인하는 중입니다.
+        </p>
         <button
+          v-if="!creditBlocked"
+          type="button"
+          :disabled="pricingLoading || (creditCost == null && !pricingError)"
           class="btn-primary btn-press mt-3 inline-flex items-center gap-1.5 text-body"
-          @click="analyze"
+          @click="pricingError ? retryPricing() : analyze()"
         >
           <SparklesIcon class="h-4 w-4" />
-          분석 시작
+          <span v-if="pricingLoading">비용 확인 중...</span>
+          <span v-else-if="pricingError">비용 다시 확인</span>
+          <span v-else>분석 시작</span>
         </button>
       </div>
 
@@ -77,26 +106,49 @@
 
         <!-- Re-analyze button -->
         <button
+          v-if="!creditBlocked"
+          type="button"
+          :disabled="pricingLoading || (creditCost == null && !pricingError)"
           class="w-full rounded-lg border border-gray-200 py-2 text-body-xs text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-          @click="analyze"
+          @click="pricingError ? retryPricing() : analyze()"
         >
           다시 분석
         </button>
       </div>
     </AsyncState>
+    <CreditPurchaseModal v-model="showCreditModal" @purchase="onCreditPurchase" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { LightBulbIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import { aiApi } from '@/api/ai'
 import type { ContentGapResponse } from '@/types/ai'
 import AsyncState from '@/components/common/AsyncState.vue'
+import { CREDIT_INSUFFICIENT, matchesCode } from '@/composables/usePlanLimit'
+import { useCreditStore } from '@/stores/credit'
+import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
+import { useAiFeaturePricing } from '@/composables/useAiFeaturePricing'
 
 const result = ref<ContentGapResponse | null>(null)
 const loading = ref(false)
 const error = ref('')
+const creditBlocked = ref(false)
+const showCreditModal = ref(false)
+const creditStore = useCreditStore()
+const {
+  loading: pricingLoading,
+  error: pricingError,
+  load: loadPricing,
+  costOf,
+} = useAiFeaturePricing()
+
+const creditCost = computed(() => costOf('CONTENT_GAP_ANALYSIS'))
+
+onMounted(() => {
+  void loadPricing()
+})
 
 function demandBadge(demand: string) {
   switch (demand) {
@@ -112,14 +164,34 @@ function demandBadge(demand: string) {
 }
 
 async function analyze() {
+  // 실제 차감 단가를 모르면 잘못된 비용 안내 상태에서 유료 요청을 열지 않는다.
+  if (creditCost.value == null) return
   loading.value = true
   error.value = ''
+  creditBlocked.value = false
   try {
     result.value = await aiApi.contentGapAnalysis({ includeCompetitors: true })
   } catch (e: unknown) {
-    error.value = e instanceof Error ? e.message : '분석에 실패했습니다'
+    // 잔액 부족은 안정 코드로만 판단한다. 문구/상태코드/일반 Error 문자열로는 충전 CTA 를 띄우지 않는다.
+    // credit 차단 시에는 error 를 비워 AsyncState 의 에러 슬롯(중복 표시)이 뜨지 않게 한다.
+    if (matchesCode(e, CREDIT_INSUFFICIENT)) {
+      creditBlocked.value = true
+    } else {
+      error.value = e instanceof Error ? e.message : '분석에 실패했습니다'
+    }
   } finally {
     loading.value = false
   }
+}
+
+function onCreditPurchase() {
+  void creditStore.fetchBalance()
+  creditBlocked.value = false
+  error.value = ''
+  // 자동 재실행 금지: 사용자가 분석 시작/다시 분석 버튼을 다시 누른다.
+}
+
+function retryPricing() {
+  void loadPricing()
 }
 </script>

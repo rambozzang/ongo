@@ -192,6 +192,31 @@
 
         <!-- Footer -->
         <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+          <!--
+            접수가 거절된 플랫폼. 모달을 닫지 않고 여기에 남겨 사용자가 대상을 고쳐
+            다시 시도할 수 있게 한다. 닫아 버리면 무엇이 빠졌는지 알 방법이 없다.
+          -->
+          <div
+            v-if="rejectedUploads.length > 0"
+            class="mb-3 rounded-lg border border-error-subtle bg-error-subtle p-3 text-body-xs text-error-strong"
+            role="alert"
+            data-testid="recycle-rejected"
+          >
+            <p class="font-semibold">다음 플랫폼은 재게시를 접수하지 못했습니다.</p>
+            <ul class="mt-1 space-y-0.5">
+              <li v-for="upload in rejectedUploads" :key="upload.platform">
+                {{ rejectedLabel(upload) }}<template v-if="upload.errorMessage">: {{ upload.errorMessage }}</template>
+              </li>
+            </ul>
+          </div>
+          <p
+            v-if="submitError"
+            class="mb-3 rounded-lg border border-error-subtle bg-error-subtle p-3 text-body-xs text-error-strong"
+            role="alert"
+            data-testid="recycle-error"
+          >
+            {{ submitError }}
+          </p>
           <div class="flex justify-end gap-3">
             <button type="button" class="btn-secondary" @click="cancel">취소</button>
             <button
@@ -221,6 +246,7 @@ import {
 import type { Video } from '@/types/video'
 import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import { useRecycleStore } from '@/stores/recycle'
+import type { RecycleResult, RecycleUploadOutcome } from '@/stores/recycle'
 import { useNotification } from '@/composables/useNotification'
 import { channelApi } from '@/api/channel'
 import type { Channel, Platform } from '@/types/channel'
@@ -292,21 +318,95 @@ function removeTag(index: number) {
   formData.value.tags.splice(index, 1)
 }
 
+/**
+ * 서버가 접수를 거절한 상태.
+ *
+ * 백엔드 `UploadStatus` 값 그대로다(`types/video.ts`). 임의로 만들지 않는다 — 여기 없는
+ * 상태를 실패로 취급하면 정상 접수를 실패로 보여 주고, 반대면 거절을 성공으로 보여 준다.
+ */
+const REJECTED_UPLOAD_STATUSES = new Set(['FAILED', 'REJECTED'])
+
+/** 접수 결과 중 거절된 플랫폼. 비어 있으면 전부 큐에 들어갔다는 뜻이다. */
+const rejectedUploads = ref<RecycleUploadOutcome[]>([])
+const submitError = ref('')
+
+/**
+ * 재게시를 접수한다.
+ *
+ * ## "완료" 라고 말하지 않는 이유
+ *
+ * 서버 응답은 **접수 확인**이지 게시 완료가 아니다. `PublishVideoUseCase` 는 모든 플랫폼을
+ * `UPLOADING` 으로 돌려주고 실제 전송은 `VideoPublishEvent` 로 비동기 처리된다. 예전에는
+ * 이 시점에 "성공적으로 재게시되었습니다" 라고 과거형으로 단언하고 모달을 닫았다 —
+ * 나중에 플랫폼이 거절해도 사용자는 그 사실을 알 방법이 없었다.
+ *
+ * 그래서 지금은 **일어난 일만** 말한다: 시작했거나, 예약했거나, 거절됐거나.
+ */
 async function handleSubmit() {
   if (!isFormValid.value) return
+  submitError.value = ''
+  rejectedUploads.value = []
 
-  await recycleStore.recycleVideo(props.video.id, {
-    title: formData.value.title,
-    description: formData.value.description,
-    tags: formData.value.tags,
-    category: formData.value.category,
-    platforms: formData.value.platforms,
-    scheduledAt: formData.value.scheduledAt || undefined,
-  })
+  let result: RecycleResult
+  try {
+    result = await recycleStore.recycleVideo(props.video.id, {
+      title: formData.value.title,
+      description: formData.value.description,
+      tags: formData.value.tags,
+      category: formData.value.category,
+      platforms: formData.value.platforms,
+      scheduledAt: formData.value.scheduledAt || undefined,
+    })
+  } catch (error) {
+    /*
+     * 스토어가 이미 오류 토스트를 띄우고 다시 던진다. 여기서 잡지 않으면 unhandled
+     * rejection 이 되고 모달은 아무 설명 없이 열린 채 남는다. 성공 토스트도 닫기도 없다.
+     */
+    submitError.value = error instanceof Error
+      ? error.message
+      : '재게시를 접수하지 못했습니다. 잠시 후 다시 시도해 주세요.'
+    return
+  }
 
-  success('콘텐츠가 성공적으로 재게시되었습니다')
+  /*
+   * 일부 플랫폼이 거절되면 **닫지 않는다.** 닫으면 사용자는 무엇이 빠졌는지 모른 채
+   * 끝나고, 고칠 기회도 사라진다. 어떤 플랫폼이 왜 막혔는지 보여 주고 그대로 둔다.
+   */
+  const rejected = (result?.uploads ?? []).filter((upload) =>
+    REJECTED_UPLOAD_STATUSES.has(String(upload.status).trim().toUpperCase()),
+  )
+  if (rejected.length > 0) {
+    rejectedUploads.value = rejected
+    return
+  }
+
+  // 여기까지 왔으면 전부 큐에 들어갔다. 완료가 아니라 **접수**를 알린다.
+  success(acceptedMessage())
   emit('confirm')
   emit('update:modelValue', false)
+}
+
+/** 예약이면 시각을, 즉시 게시면 어디서 확인할 수 있는지 말한다. */
+function acceptedMessage(): string {
+  const scheduledAt = formData.value.scheduledAt
+  if (scheduledAt) {
+    return `${formatScheduledAt(scheduledAt)}에 게시하도록 예약했습니다.`
+  }
+  return '재게시를 시작했습니다. 진행 상황은 영상 상세에서 확인할 수 있습니다.'
+}
+
+function formatScheduledAt(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('ko-KR', {
+    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+}
+
+/** 플랫폼 이름은 화면의 다른 곳과 같은 라벨을 쓴다. */
+function rejectedLabel(upload: RecycleUploadOutcome): string {
+  const platform = upload.platform.split('#', 1)[0] as Platform
+  return PLATFORM_LABELS[platform] ?? upload.platform
 }
 
 function cancel() {

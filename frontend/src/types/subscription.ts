@@ -18,7 +18,7 @@ export interface Subscription {
   planType: PlanType
   status: SubscriptionStatus
   price: number
-  billingCycle: string
+  billingCycle: 'MONTHLY' | 'YEARLY'
   currentPeriodEnd: string | null
   nextBillingDate: string | null
   features: PlanFeatures | string[]
@@ -27,6 +27,8 @@ export interface Subscription {
   trialEnd?: string | null
   pausedAt?: string | null
   resumeAt?: string | null
+  pendingPlanType?: PlanType | null
+  pendingBillingCycle?: 'MONTHLY' | 'YEARLY' | null
 }
 
 export interface ChangePlanResponse {
@@ -51,6 +53,16 @@ export interface Plan {
   support: string
 }
 
+/**
+ * 로그인 전 가격 안내 전용 상수.
+ *
+ * **로그인 후 화면에서는 쓰지 않는다.** 가격과 한도는 서버가 결제 기준으로 삼는 값이고,
+ * 인증된 `GET /subscriptions/plans` 가 그 값을 내려준다. 화면이 상수를 대신 그리면
+ * 한쪽이 뒤처졌을 때 사용자가 본 금액과 청구액이 갈린다.
+ *
+ * `LoginView` 만 예외다 — 인증 전이라 그 API 를 부를 수 없다. 그 화면의 숫자가 서버와
+ * 어긋나지 않도록 `planPricingContract.test.ts` 가 두 값을 맞춰 본다.
+ */
 export const PLANS: Plan[] = [
   {
     type: 'FREE',

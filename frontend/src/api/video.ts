@@ -169,7 +169,26 @@ export const videoApi = {
       .then(unwrapResponse)
   },
 
-  feed(params: { platform?: string; page?: number; size?: number; sort?: string }) {
+  /**
+   * 라이브러리의 영상 에셋으로 **편집 가능한 영상 초안**을 만든다.
+   *
+   * 서버가 오브젝트를 새 영상 전용 경로로 복사하므로 원본 에셋은 그대로 남는다 —
+   * 나중에 에셋을 정리해도 이 초안은 깨지지 않는다.
+   */
+  createFromAsset(assetId: number) {
+    return apiClient
+      .post<ResData<{ videoId: number }>>(`/videos/from-asset/${assetId}`)
+      .then(unwrapResponse)
+  },
+
+  /**
+   * 플랫폼 피드.
+   *
+   * **숫자 페이지 이동은 서버가 지원하지 않는다.** 각 플랫폼 커서가 독립적이라 "N 번째
+   * 페이지" 를 만들 수 없다. 이어보려면 이전 응답의 `nextPageTokens` 를
+   * `channelToken=<채널ID>:<토큰>` 형태로 돌려준다.
+   */
+  feed(params: { platform?: string; size?: number; sort?: string; channelToken?: string[] }) {
     return apiClient
       .get<ResData<VideoFeedResponse>>('/videos/feed', { params })
       .then(unwrapResponse)

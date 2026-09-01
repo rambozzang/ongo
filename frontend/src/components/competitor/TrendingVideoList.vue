@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { PlayIcon, HeartIcon, ChatBubbleLeftIcon } from '@heroicons/vue/24/outline'
+import { PlayIcon, HeartIcon, ChatBubbleLeftIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
 import type { CompetitorVideo, Competitor } from '@/types/competitor'
 
 interface Props {
@@ -48,9 +48,16 @@ function getCompetitorName(competitorId: number): string {
   return competitor?.name || '알 수 없음'
 }
 
-function getCompetitorAvatar(competitorId: number): string {
+/**
+ * 채널 프로필 이미지 URL. **없으면 `null`** — 지어내지 않는다.
+ *
+ * 예전에는 외부 아바타 서비스의 고정 URL을 돌려줬다. 그것은 **무작위 인물
+ * 사진**이라 화면에서 실제 채널 이미지와 구분되지 않았고, 프로필이 없는 모든 경쟁
+ * 채널이 **똑같은 남의 얼굴**로 보였다. `null` 이면 로컬 아이콘을 그린다.
+ */
+function getCompetitorAvatar(competitorId: number): string | null {
   const competitor = props.competitors.find(c => c.id === competitorId)
-  return competitor?.avatarUrl || 'https://i.pravatar.cc/150'
+  return competitor?.avatarUrl ?? null
 }
 
 function formatNumber(num: number): string {
@@ -147,11 +154,21 @@ function formatDate(dateString: string): string {
 
           <!-- Channel -->
           <div class="flex items-center space-x-2 mb-2">
+            <!-- 프로필 이미지가 없으면 로컬 아이콘. 근거는 getCompetitorAvatar 참고. -->
             <img
-              :src="getCompetitorAvatar(video.competitorId)"
+              v-if="getCompetitorAvatar(video.competitorId)"
+              :src="getCompetitorAvatar(video.competitorId)!"
               :alt="getCompetitorName(video.competitorId)"
               class="w-6 h-6 rounded-full"
             />
+            <span
+              v-else
+              role="img"
+              :aria-label="getCompetitorName(video.competitorId)"
+              class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700"
+            >
+              <UserCircleIcon class="h-5 w-5 text-gray-400 dark:text-gray-500" />
+            </span>
             <span class="text-body text-gray-600 dark:text-gray-400">
               {{ getCompetitorName(video.competitorId) }}
             </span>

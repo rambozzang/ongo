@@ -87,6 +87,75 @@ describe('PerformanceView', () => {
     expect(wrapper.text()).toContain('인기 영상 데이터가 없습니다')
   })
 
+  /**
+   * **`String(null)` 은 문자열 `"null"` 을 만든다.**
+   *
+   * 서버는 그 지표를 주는 업로드가 없거나 기간에 집계 행이 없으면 `totalViews = null` 을
+   * 준다. 예전 내보내기는 그 자리에 `"null"` 을 찍었고, 스프레드시트에서 그 열을 합계
+   * 내면 조용히 빠지거나 오류가 됐다. `?? 0` 도 안 된다 — 재지 않은 것이 "0회" 가 된다.
+   */
+  it('내보내기에 null 을 문자열 null 이나 0 으로 쓰지 않는다', async () => {
+    vi.mocked(analyticsApi.topVideos).mockResolvedValue([
+      { ...topVideos()[0], totalViews: null },
+    ] as never)
+    const blobs: Blob[] = []
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: (blob: Blob) => {
+        blobs.push(blob)
+        return 'blob:performance'
+      },
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+    const wrapper = await renderPerformance()
+
+    await wrapper.findAll('button').find((button) => button.text().includes('CSV'))!.trigger('click')
+    const csv = await blobs[0].text()
+
+    expect(csv).toContain(koMessages.analyticsView.notMeasured)
+    expect(csv).not.toContain('null')
+    // 영상 행이 `"제목","0"` 으로 나가면 실측 0 과 구분되지 않는다.
+    expect(csv).not.toContain('"성과가 좋은 영상","0"')
+    click.mockRestore()
+  })
+
+  /** **측정된 0 은 관측이다.** 내보내기에서도 숫자 0 으로 남아야 한다. */
+  it('내보내기에서 실측 0 은 0 으로 남는다', async () => {
+    vi.mocked(analyticsApi.topVideos).mockResolvedValue([
+      { ...topVideos()[0], totalViews: 0 },
+    ] as never)
+    const blobs: Blob[] = []
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: (blob: Blob) => {
+        blobs.push(blob)
+        return 'blob:performance'
+      },
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+    const wrapper = await renderPerformance()
+
+    await wrapper.findAll('button').find((button) => button.text().includes('CSV'))!.trigger('click')
+    const csv = await blobs[0].text()
+
+    expect(csv).toContain('"성과가 좋은 영상","0"')
+    expect(csv).not.toContain(koMessages.analyticsView.notMeasured)
+    click.mockRestore()
+  })
+
+  /** 화면에서도 미측정은 0 이 아니라 문구다. */
+  it('미측정 조회수를 표에서 0 으로 그리지 않는다', async () => {
+    vi.mocked(analyticsApi.topVideos).mockResolvedValue([
+      { ...topVideos()[0], totalViews: null },
+    ] as never)
+
+    const wrapper = await renderPerformance()
+
+    expect(wrapper.text()).toContain(koMessages.analyticsView.notMeasured)
+  })
+
   it('exports the loaded trend and top-video data as a CSV action', async () => {
     const createObjectUrl = vi.fn().mockReturnValue('blob:performance')
     Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: createObjectUrl })

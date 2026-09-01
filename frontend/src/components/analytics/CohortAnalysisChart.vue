@@ -16,6 +16,9 @@ import { ChartBarSquareIcon } from '@heroicons/vue/24/outline'
 import { analyticsApi } from '@/api/analytics'
 import type { CohortAnalysisResponse, CohortGroupData } from '@/types/analytics'
 import AsyncState from '@/components/common/AsyncState.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n({ useScope: 'global' })
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -153,6 +156,20 @@ const topCohorts = computed<CohortGroupData[]>(() => {
   return cohortData.value.cohorts.slice(0, 5)
 })
 
+/**
+ * 그 구간의 유지율 표시. **정규화 기준이 없으면 숫자를 그리지 않는다.**
+ *
+ * 서버는 코호트 전체 조회수가 0 이면 `normalizedPercent = null` 을 준다. 기준이 없어
+ * 비율이 성립하지 않는다는 뜻이다. 기준이 있는 상태의 `0.0` 은 "그 구간까지 조회가
+ * 없었다" 는 실제 관측이므로 그대로 `0.0%` 로 보여준다.
+ */
+function retentionAt(cohort: CohortGroupData, day: number): string {
+  const point = cohort.cumulativeViewCurve.find((p) => p.day === day)
+  const value = point?.normalizedPercent
+  if (typeof value !== 'number' || !Number.isFinite(value)) return t('analyticsView.notMeasured')
+  return `${value.toFixed(1)}%`
+}
+
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
@@ -245,21 +262,18 @@ function formatNumber(n: number): string {
                 {{ cohort.videoCount }}
               </td>
               <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-300">
-                {{ formatNumber(cohort.avgViews) }}
+                {{ cohort.avgViews === null ? $t('analyticsView.notMeasured') : formatNumber(cohort.avgViews) }}
               </td>
-              <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-300">
-                {{
-                  (
-                    cohort.cumulativeViewCurve.find((p) => p.day === 7)?.normalizedPercent ?? 0
-                  ).toFixed(1)
-                }}%
+              <!--
+                `?? 0` 을 하지 않는다. 정규화 기준이 없어 `null` 인 구간을 0 으로 그리면
+                "그 시점까지 아무도 안 봤다" 는 관측이 된다. 기준이 있는 상태의 0.0 은
+                실제 관측이므로 그대로 보여준다.
+              -->
+              <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-300" data-testid="cohort-day7">
+                {{ retentionAt(cohort, 7) }}
               </td>
-              <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-300">
-                {{
-                  (
-                    cohort.cumulativeViewCurve.find((p) => p.day === 30)?.normalizedPercent ?? 0
-                  ).toFixed(1)
-                }}%
+              <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-300" data-testid="cohort-day30">
+                {{ retentionAt(cohort, 30) }}
               </td>
             </tr>
           </tbody>

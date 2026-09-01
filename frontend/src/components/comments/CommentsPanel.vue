@@ -14,7 +14,8 @@
       <div class="flex flex-wrap items-center gap-2">
         <button
           class="btn-secondary inline-flex items-center gap-2"
-          :disabled="batchDraftLoading || selectedCommentIds.length === 0"
+          data-testid="batch-ai-draft-button"
+          :disabled="batchDraftLoading || batchDraftCreditBlocked || selectedCommentIds.length === 0"
           @click="handleBatchAiDraft"
         >
           <SparklesIcon class="h-4 w-4" />
@@ -32,6 +33,23 @@
     </div>
 
     <CommentCrisisBanner :status="crisisStatus" />
+
+    <!-- 크레딧 부족 차단 블록: 일괄 생성 실패 시에만 노출 -->
+    <div
+      v-if="batchDraftCreditBlocked"
+      class="flex flex-col gap-2 rounded-lg border border-warning bg-warning-subtle px-4 py-3"
+      role="alert"
+    >
+      <p class="text-body text-warning-strong">{{ $t('commentsView.batchCreditBlocked') }}</p>
+      <button
+        type="button"
+        data-testid="batch-credit-cta"
+        class="btn-primary inline-flex w-full items-center justify-center gap-2"
+        @click="openBatchCreditModal"
+      >
+        {{ $t('commentsView.batchChargeCredits') }}
+      </button>
+    </div>
 
     <CommentSentimentPanel
       :stats="commentStats"
@@ -51,7 +69,9 @@
     <CommentFaqSection
       :data="faqData"
       :loading="faqLoading"
+      :faq-credit-blocked="commentsStore.faqCreditBlocked"
       @analyze="commentsStore.fetchFaqClusters()"
+      @credit="openFaqCreditModal"
     />
 
     <CommentBatchDraftList
@@ -104,6 +124,8 @@
       @hide="commentsStore.batchHide(selectedCommentIds)"
       @clear="commentsStore.clearSelection()"
     />
+
+    <CreditPurchaseModal v-model="showCreditModal" @purchase="onCreditPurchase" />
   </div>
 </template>
 
@@ -114,6 +136,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ArrowPathIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import { useCommentsStore } from '@/stores/comments'
+import { useCreditStore } from '@/stores/credit'
 import type { CommentSentiment } from '@/types/comment'
 import type { Platform } from '@/types/channel'
 import CommentCrisisBanner from './CommentCrisisBanner.vue'
@@ -125,6 +148,7 @@ import CommentList from './CommentList.vue'
 import CommentPagination from './CommentPagination.vue'
 import CommentBatchBar from './CommentBatchBar.vue'
 import KeywordCloudSection from './KeywordCloudSection.vue'
+import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 
 const props = withDefaults(
@@ -139,6 +163,7 @@ const { t } = useI18n({ useScope: 'global' })
 const route = useRoute()
 const router = useRouter()
 const commentsStore = useCommentsStore()
+const creditStore = useCreditStore()
 
 const {
   filters,
@@ -160,6 +185,7 @@ const {
   faqLoading,
   batchDrafts,
   batchDraftLoading,
+  batchDraftCreditBlocked,
   selectedCommentIds,
   crisisStatus,
   keywordCloud,
@@ -170,6 +196,8 @@ const {
 
 const sortBy = ref<CommentSortBy>('recent')
 const trendDays = ref(30)
+  const showCreditModal = ref(false)
+  const creditModalContext = ref<'batch' | 'faq' | null>(null)
 
 const sortedComments = computed(() => {
   const list = [...filteredComments.value]
@@ -222,7 +250,34 @@ const handleReply = async (id: number, text: string) => {
 
 const handleBatchAiDraft = async () => {
   if (selectedCommentIds.value.length === 0) return
+  // 차단 상태에서는 반복 요청을 막는다. 사용자가 충전 CTA 로 잔액을 채운 뒤
+  // 직접 다시 눌러야만 재시도된다 (auto re-run 금지).
+  if (batchDraftCreditBlocked.value) return
   await commentsStore.generateBatchDrafts(selectedCommentIds.value)
+}
+
+const openBatchCreditModal = () => {
+  // 배치 CTA 에서 연 모달은 구매 시 일괄 생성 차단만 해제한다.
+  creditModalContext.value = 'batch'
+  showCreditModal.value = true
+}
+
+const openFaqCreditModal = () => {
+  // FAQ CTA 에서 연 모달은 구매 시 FAQ 차단만 해제한다.
+  creditModalContext.value = 'faq'
+  showCreditModal.value = true
+}
+
+const onCreditPurchase = async () => {
+  await creditStore.fetchBalance()
+  // whichever CTA opened the modal, release only that blocked state. No auto re-run of
+  // batch generation or FAQ clustering.
+  if (creditModalContext.value === 'batch') {
+    commentsStore.batchDraftCreditBlocked = false
+  } else if (creditModalContext.value === 'faq') {
+    commentsStore.faqCreditBlocked = false
+  }
+  creditModalContext.value = null
 }
 
 const handleKeywordFilter = (keyword: string) => {

@@ -14,9 +14,10 @@ interface BackendVariant {
   title?: string | null
   description?: string | null
   thumbnailUrl?: string | null
-  views: number
-  clicks: number
-  engagementRate: number
+  views: number | null
+  clicks: number | null
+  engagementRate: number | null
+  metricsUnavailableReason?: string | null
 }
 
 interface BackendTest {
@@ -53,7 +54,8 @@ interface BackendSummary {
   totalTests: number
   activeTests: number
   completedTests: number
-  averageImprovement: number
+  /** 측정된 실험이 하나도 없으면 `null`. 0 은 "개선이 없었다" 는 관측 결과다. */
+  averageImprovement: number | null
 }
 
 function variantLabel(name: string, index: number): 'A' | 'B' | 'C' | 'D' {
@@ -77,17 +79,30 @@ function mapTest(test: BackendTest): AbTest {
       label: variantLabel(variant.variantName, index),
       value: variant.title ?? variant.description ?? '',
       thumbnailUrl: variant.thumbnailUrl ?? undefined,
+      /*
+       * 서버가 `null` 로 준 것은 **측정하지 않았다** 는 뜻이다. 0 으로 바꾸면 결과 차트가
+       * "0.0% · 노출 0 · 클릭 0" 을 정상 측정값처럼 그린다.
+       *
+       * 예전에는 `ctr: variant.views > 0 ? ... : 0` 이라 미측정 변형이 전부 CTR 0% 로
+       * 내려갔다. 노출을 수집하는 경로가 없으므로 **모든 변형이 항상 0.0%** 였다.
+       */
       impressions: variant.views,
       clicks: variant.clicks,
-      ctr: variant.views > 0 ? (variant.clicks / variant.views) * 100 : 0,
+      ctr: variant.views != null && variant.clicks != null && variant.views > 0
+        ? (variant.clicks / variant.views) * 100
+        : null,
       views: variant.views,
+      metricsUnavailableReason: variant.metricsUnavailableReason ?? undefined,
       avgWatchTime: undefined,
       isWinner: test.winnerVariantId === variant.id,
     })),
     startedAt: test.startedAt ?? undefined,
     endedAt: test.endedAt ?? undefined,
     durationHours: test.durationHours ?? undefined,
-    totalImpressions: test.variants.reduce((sum, variant) => sum + variant.views, 0),
+    // 측정된 변형만 더한다. 하나도 없으면 합계는 null 이다 — "총 노출 0" 은 관측 주장이다.
+    totalImpressions: test.variants.some(v => v.views != null)
+      ? test.variants.reduce((sum, variant) => sum + (variant.views ?? 0), 0)
+      : null,
     confidenceLevel: undefined,
     winnerId: test.winnerVariantId == null ? undefined : String(test.winnerVariantId),
     createdAt: test.createdAt ?? new Date().toISOString(),

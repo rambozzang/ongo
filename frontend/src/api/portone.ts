@@ -47,4 +47,10 @@ export const portoneApi = {
       .post<ResData<PortOnePaymentResult>>(`/portone/payments/${encodeURIComponent(paymentId)}/complete`)
       .then(unwrapResponse)
   },
+
+  reconcile(paymentId: string) {
+    return apiClient
+      .post<ResData<PortOnePaymentResult>>(`/portone/payments/${encodeURIComponent(paymentId)}/reconcile`)
+      .then(unwrapResponse)
+  },
 }

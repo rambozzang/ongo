@@ -65,6 +65,30 @@ export function usePresignedUpload(options: PresignedUploadOptions = {}) {
     return localStorage.getItem('accessToken') || ''
   }
 
+  // 서버 JSON 오류에서 **안정 코드**(STORAGE_QUOTA_EXCEEDED 등)를 보존한다.
+  // fetch 는 axios 와 달리 실패를 일반 Error 로만 던지므로, 안정 코드를 잃으면
+  // 화면이 업그레이드 경로를 판별하지 못한다. 다만 사람이 읽을 문장(한국어 메시지)을
+  // 안정 코드로 오인하지 않도록, 코드 형태(`^[A-Z][A-Z0-9_]*$`)일 때만 response 에 보관한다.
+  // abort/network/413(HTML 본문) 같은 일반 오류는 이 헬퍼를 거치지 않아 기존 동작을 유지한다.
+  const STABLE_CODE = /^[A-Z][A-Z0-9_]*$/
+
+  function toServerError(response: Response, body: unknown): Error {
+    const data = (body ?? null) as { error?: unknown; message?: unknown } | null
+    const rawError = typeof data?.error === 'string' ? data.error : undefined
+    const rawMessage = typeof data?.message === 'string' ? data.message : undefined
+    const isStableCode = rawError != null && STABLE_CODE.test(rawError)
+    const message = rawMessage ?? (isStableCode ? rawError! : (rawError ?? `업로드 실패: ${response.status}`))
+    const error = new Error(message)
+    if (isStableCode) {
+      ;(error as unknown as { response: { status: number; data: { error: string; message: string | null } } }).response =
+        {
+          status: response.status,
+          data: { error: rawError!, message: rawMessage ?? null },
+        }
+    }
+    return error
+  }
+
   async function upload(item: PresignedUploadItem): Promise<number | null> {
     const baseUrl = getBaseUrl()
     const token = getToken()
@@ -100,9 +124,7 @@ export function usePresignedUpload(options: PresignedUploadOptions = {}) {
 
       if (!initResponse.ok) {
         const errorBody = await initResponse.json().catch(() => null)
-        const message =
-          errorBody?.error || errorBody?.message || `업로드 초기화 실패: ${initResponse.status}`
-        throw new Error(message)
+        throw toServerError(initResponse, errorBody)
       }
 
       const initData = await initResponse.json()
@@ -196,11 +218,7 @@ export function usePresignedUpload(options: PresignedUploadOptions = {}) {
 
       if (!confirmResponse.ok) {
         const errorBody = await confirmResponse.json().catch(() => null)
-        const message =
-          errorBody?.error ||
-          errorBody?.message ||
-          `업로드 완료 확인 실패: ${confirmResponse.status}`
-        throw new Error(message)
+        throw toServerError(confirmResponse, errorBody)
       }
 
       if (item.metadata) {
@@ -212,7 +230,7 @@ export function usePresignedUpload(options: PresignedUploadOptions = {}) {
         })
         if (!updateResponse.ok) {
           const body = await updateResponse.json().catch(() => null)
-          throw new Error(body?.error || body?.message || '콘텐츠 정보 저장에 실패했습니다.')
+          throw toServerError(updateResponse, body)
         }
       }
 
@@ -225,7 +243,7 @@ export function usePresignedUpload(options: PresignedUploadOptions = {}) {
         })
         if (!publishResponse.ok) {
           const body = await publishResponse.json().catch(() => null)
-          throw new Error(body?.error || body?.message || '멀티 플랫폼 게시 요청에 실패했습니다.')
+          throw toServerError(publishResponse, body)
         }
       }
 

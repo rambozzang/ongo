@@ -83,13 +83,19 @@ export const useVideoStore = defineStore('video', () => {
     fetchVideos()
   }
 
-  async function fetchFeed(page = 0, size = 20) {
+  /**
+   * 플랫폼 피드를 불러온다.
+   *
+   * **페이지 번호를 받지 않는다.** 서버는 숫자 페이지 이동을 지원하지 않는다 — 플랫폼마다
+   * 커서가 독립적이라 "N 번째 페이지" 가 성립하지 않기 때문이다. 이어보기가 필요해지면
+   * 이전 응답의 `nextPageTokens` 를 `channelToken` 으로 넘기는 방식으로 확장한다.
+   */
+  async function fetchFeed(size = 20) {
     isFeedLoading.value = true
     feedLoadError.value = false
     try {
       const result = await videoApi.feed({
         platform: feedFilter.value.platform,
-        page,
         size,
         sort: feedFilter.value.sort,
       })

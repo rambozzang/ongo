@@ -63,9 +63,14 @@
           <template v-for="widget in visibleWidgets" :key="widget.id">
             <!-- Summary Cards Widget -->
             <div v-if="widget.id === 'summary'" class="page-grid page-grid--metrics">
+              <!--
+                `?? 0` 을 하지 않는다. 조회수를 수집하는 플랫폼이 없으면 서버가 `null` 을
+                주는데, 0 으로 채우면 실제로 0 회였던 경우와 구분되지 않는다.
+                `SummaryCard` 는 `null` 을 "측정 불가" 문구로 그린다.
+              -->
               <SummaryCard
                 :title="$t('dashboard.totalViews')"
-                :value="kpi?.totalViews ?? 0"
+                :value="kpi?.totalViews ?? null"
                 :change="kpi?.viewsChangePercent"
                 change-type="percent"
                 :icon="EyeIcon"
@@ -74,7 +79,7 @@
               />
               <SummaryCard
                 :title="$t('dashboard.totalSubscribers')"
-                :value="kpi?.totalSubscribers ?? 0"
+                :value="kpi?.totalSubscribers ?? null"
                 :change="kpi?.subscribersChange"
                 change-type="number"
                 :icon="UsersIcon"
@@ -83,7 +88,7 @@
               />
               <SummaryCard
                 :title="$t('dashboard.totalLikes')"
-                :value="kpi?.totalLikes ?? 0"
+                :value="kpi?.totalLikes ?? null"
                 :change="kpi?.likesChangePercent"
                 change-type="percent"
                 :icon="HeartIcon"
@@ -138,7 +143,7 @@
             <!-- Mini Widgets Grid -->
             <div v-else-if="widget.id === 'miniWidgets'" class="page-grid page-grid--metrics">
               <AudienceGrowthWidget
-                :total-subscribers="kpi?.totalSubscribers ?? 0"
+                :total-subscribers="kpi?.totalSubscribers ?? null"
                 :change="kpi?.subscribersChange"
                 :trend-data="trendData"
               />

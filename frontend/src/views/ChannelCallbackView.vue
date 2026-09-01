@@ -42,7 +42,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { channelApi } from '@/api/channel'
-import { getOAuthRedirectUri } from '@/utils/oauth'
+import { clearChannelOAuthContext, getChannelOAuthContext, getOAuthRedirectUri } from '@/utils/oauth'
 import { PLAN_LIMIT_EXCEEDED, PLAN_UPGRADE_PATH, matchesCode } from '@/composables/usePlanLimit'
 import type { Platform } from '@/types/channel'
 
@@ -72,8 +72,10 @@ onMounted(async () => {
     return
   }
 
-  // Parse state: "PLATFORM|/return/path|nonce". The nonce prevents forged callbacks.
-  const [platformStr, pathPart, nonce, mode] = state.split('|')
+  // Provider state is an opaque, server-signed value. Navigation context is
+  // kept separately so the browser cannot make the server trust client state.
+  const clientState = getChannelOAuthContext()
+  const [platformStr, pathPart, nonce, mode] = clientState?.split('|') ?? []
   const platform = platformStr as Platform
   returnPath = pathPart && pathPart.startsWith('/') && !pathPart.startsWith('//') ? pathPart : '/channels'
 
@@ -86,6 +88,7 @@ onMounted(async () => {
     errorMessage.value = t('channelCallbackView.invalidCallback')
     isProcessing.value = false
     sessionStorage.removeItem('channel_oauth_state_nonce')
+    clearChannelOAuthContext()
     return
   }
 
@@ -93,6 +96,7 @@ onMounted(async () => {
     const request: import('@/types/channel').ChannelConnectRequest = {
       authorizationCode: code,
       redirectUri: getOAuthRedirectUri(),
+      state,
       addAsNew: mode === 'new',
     }
     if (platform === 'TWITTER') {
@@ -111,6 +115,7 @@ onMounted(async () => {
   } finally {
     sessionStorage.removeItem('twitter_code_verifier')
     sessionStorage.removeItem('channel_oauth_state_nonce')
+    clearChannelOAuthContext()
   }
 })
 </script>

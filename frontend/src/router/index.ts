@@ -68,6 +68,15 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    // PortOne 모바일 결제가 PG 에서 돌아오는 지점. 인증은 필요하다 — 결제 확정은
+    // 서버가 사용자 토큰으로 검증한다. 세션이 끊겼다면 가드가 fullPath(= paymentId
+    // 쿼리 포함)를 보존해 로그인 뒤 이 화면으로 되돌린다.
+    path: '/payment-redirect',
+    name: 'payment-redirect',
+    component: () => import('@/views/PaymentRedirectView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     // Third-party apps return users here for the Postiz-compatible consent step.
     path: '/oauth/authorize',
     name: 'oauth-authorize',
@@ -168,7 +177,11 @@ const routes: RouteRecordRaw[] = [
         path: 'revenue',
         name: 'revenue',
         component: () => import('@/views/RevenueView.vue'),
-        meta: { requiresAuth: true, breadcrumb: '수익 분석' },
+      },
+      {
+        path: 'competitors',
+        name: 'competitors',
+        component: () => import('@/views/CompetitorView.vue'),
       },
       {
         path: 'videos',
@@ -193,6 +206,12 @@ const routes: RouteRecordRaw[] = [
         name: 'video-compare',
         component: () => import('@/views/VideoCompareView.vue'),
         meta: { breadcrumb: '영상 비교' },
+      },
+      {
+        path: 'competitors',
+        name: 'competitors',
+        component: () => import('@/views/CompetitorView.vue'),
+        meta: { breadcrumb: '경쟁사 분석' },
       },
       {
         // 댓글 관리는 소통 허브(인박스)의 '댓글' 탭으로 통합됨 — 기존 북마크 URL 유지
@@ -493,7 +512,10 @@ router.beforeEach(async (to, _from, next) => {
     authStore.user &&
     !authStore.user.onboardingCompleted &&
     to.name !== 'onboarding' &&
-    to.name !== 'channel-callback'
+    to.name !== 'channel-callback' &&
+    // 결제 복귀는 온보딩보다 먼저다. 여기서 /onboarding 으로 튕기면 paymentId 가 사라져
+    // 승인된 결제를 확정할 방법이 없어진다 — 돈은 빠졌는데 PENDING 만 남는다.
+    to.name !== 'payment-redirect'
   ) {
     return next('/onboarding')
   }
