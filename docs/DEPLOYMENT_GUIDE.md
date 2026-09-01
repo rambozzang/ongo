@@ -16,24 +16,25 @@ This document describes how to deploy the OnGo application in two scenarios:
 1. **Clone Repository**:
 
     ```bash
-    mkdir -p ~/app
-    cd ~/app
-    git clone <repository_url> ongo
-    cd ongo
+    sudo mkdir -p /data/ongo
+    sudo git clone <repository_url> /data/ongo/src
+    cd /data/ongo/src
     ```
 
 2. **Environment Configuration**:
     - Copy the production environment template:
 
         ```bash
-        sudo mkdir -p /opt/ongo
-        sudo cp deploy/oracle/.env.production /opt/ongo/.env
-        sudo nano /opt/ongo/.env
+        sudo mkdir -p /data/ongo
+        sudo cp deploy/oracle/.env.production.example /data/ongo/.env
+        sudo nano /data/ongo/.env
         # Edit DB credentials, JWT_SECRET, etc.
         ```
 
 3. **Run Setup Script**:
-    - Configures Firewall, creates DB/User, installs MinIO (missing component).
+    - Configures the host firewall and creates the PostgreSQL role/database when PostgreSQL is already installed.
+    - Direct Oracle deployment uses Cloudflare R2 for object storage; MinIO is only used by the air-gapped Docker profile below.
+    - Installs and enables `ongo-backend.service` for reboot/crash recovery. It intentionally does not start the backend before credentials and schema checks pass.
 
         ```bash
         sudo bash deploy/oracle/setup-server.sh
@@ -43,12 +44,20 @@ This document describes how to deploy the OnGo application in two scenarios:
 
 1. **Systemd Services**:
 
+    `setup-server.sh` installs and enables this unit automatically. On an already-provisioned host, or when verifying the installation manually:
+
     ```bash
-    sudo cp deploy/oracle/ongo-backend.service /etc/systemd/system/
-    sudo cp deploy/oracle/ongo-minio.service /etc/systemd/system/
+    sudo cp deploy/ongo-backend.service /etc/systemd/system/
     sudo systemctl daemon-reload
-    sudo systemctl enable ongo-backend ongo-minio
+    sudo systemctl enable ongo-backend.service
+    sudo systemctl is-enabled ongo-backend.service
     ```
+
+    Do not run `java -jar` or `deploy/start.sh` separately after the unit is installed; deployment must restart the unit so the JVM remains in systemd's cgroup.
+
+    `deploy.sh` refuses to replace the JAR when the unit is missing. This protects the running service from an unmanaged deployment; only an explicit emergency override (`ALLOW_UNMANAGED_BACKEND=true`) bypasses the gate and it does not provide reboot recovery.
+
+    If an older Jenkins/manual JVM is still running during the first systemd deployment, the unit's managed-start mode stops that exact `ongo-api.jar` process and starts a new one inside systemd. The deploy health gate then requires the new PID and an `UP` response.
 
 2. **Nginx Configuration**:
 
@@ -64,12 +73,14 @@ This document describes how to deploy the OnGo application in two scenarios:
 
 1. **Run Deploy Script**:
     - Builds Backend (Gradle) and Frontend (NPM).
-    - Copies artifacts to `/opt/ongo/backend` and `/var/www/ongo`.
-    - Restarts services.
+    - Copies the backend JAR to `/data/ongo/jar` and the frontend to `/data/ongo/www`.
+    - Applies the database migration/schema gate before restarting the backend.
+    - Declares success only after a new backend PID is running and
+      `/actuator/health` reports `UP`; a PID file alone is not sufficient.
 
         ```bash
-        chmod +x deploy/oracle/deploy.sh
-        ./deploy/oracle/deploy.sh
+        chmod +x deploy/deploy.sh
+        ./deploy/deploy.sh all
         ```
 
 ---

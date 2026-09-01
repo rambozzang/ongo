@@ -1,0 +1,86 @@
+[Unit]
+# onGo Backend 감시자.
+#
+# ## 왜 필요한가
+#
+# 지금 운영은 `setsid java &` 와 PID 파일이 전부다(deploy/start.sh:84,94). 감시자가 없어서
+#   - OOM·크래시로 죽으면 아무도 되살리지 않는다 (`-XX:+CrashOnOutOfMemoryError` 가 즉시 죽인다)
+#   - 서버가 재부팅되면 서비스가 돌아오지 않는다 (@reboot cron 도, 유닛도 없었다)
+#
+# ## 왜 java 를 직접 실행하지 않는가
+#
+# `ExecStart=java -jar ...` 로 바꾸면 start.sh 가 하던 것들을 전부 잃는다.
+#   - 필수 env 게이트 (start.sh:51-60) — 누락·자리표시자를 기동 전에 잡는다
+#   - FFMPEG_PATH / YT_DLP_PATH export (start.sh:35,42-44) — PATH 밖의 운영 전용 배치
+#   - 기동 검증 (start.sh:96-136) — 로그·포트로 실제로 떴는지 확인
+#
+# EnvironmentFile= 로 .env 를 직접 읽는 방법도 쓰지 않는다. 지금 .env 는 따옴표·변수참조·
+# export 가 없어 systemd 파싱과 결과가 같지만, 나중에 누가 그중 하나라도 넣으면 셸 `source`
+# 와 조용히 갈라진다. 그때 드러나는 곳은 기동 실패가 아니라 **런타임의 잘못된 값**이다.
+#
+# 그래서 이 유닛은 start.sh/stop.sh 를 **감싸기만** 한다. 스크립트는 유닛 없이도 그대로
+# 동작하므로 수동 경로가 보존된다.
+Description=onGo Backend (Spring Boot)
+Documentation=file:///data/ongo/src/deploy/start.sh
+After=network-online.target
+Wants=network-online.target
+
+# 재시작 상한은 **[Unit] 섹션 키다.** systemd v230 에서 [Service] 로부터 옮겨 왔다.
+#
+# 처음에 이 두 줄을 [Service] 에 두었더니 `systemd-analyze verify` 가
+# "Unknown key name 'StartLimitIntervalSec' in section 'Service', ignoring" 을 냈다.
+# StartLimitBurst 는 레거시 별칭으로 조용히 수용되지만 IntervalSec 은 무시되므로,
+# 간격이 기본값 10 초로 떨어진다. RestartSec=15s 라 재시작 간격이 15 초 > 10 초이니
+# "10 초 안에 3 회" 가 영원히 성립하지 않는다 — **상한이 사실상 사라진다.**
+#
+# 그 상태로 켜면 설정 오류(필수 env 누락 등)로 못 뜨는 서비스를 15 초마다 영원히
+# 재시도하며 장애를 감춘다. 경고 한 줄이 곧 안전장치 무력화였다.
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+# start.sh 는 setsid 로 java 를 백그라운드로 띄우고 PID 를 파일에 쓴 뒤 종료한다.
+# 그 계약이 정확히 Type=forking + PIDFile 이다. setsid 는 세션만 바꾸고 cgroup 은
+# 유지되므로 systemd 가 계속 추적한다.
+Type=forking
+PIDFile=/data/ongo/app.pid
+
+# 현재 운영 JVM 과 **같은 주체**다 (ps: jenkins/jenkins, uid 983 / gid 984).
+# /data/ongo, /data/ongo/jar, app.pid 가 모두 jenkins 소유라 권한 변화가 없다.
+User=jenkins
+Group=jenkins
+
+# java 는 /usr/lib/jvm/java-21-openjdk-... 이며 /bin/java 심볼릭으로 노출돼 있다.
+# start.sh 가 `java` 를 이름으로 부르므로 PATH 에 /bin 이 있으면 된다. 절대경로를
+# 여기에 박지 않는 이유: JDK 를 올릴 때 유닛까지 고쳐야 하는 결합을 만들지 않는다.
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# start.sh가 첫 systemd 전환 때 기존 수동/Jenkins JVM을 안전하게 교체하도록 한다.
+Environment=ONGO_SYSTEMD_MANAGED=true
+
+WorkingDirectory=/data/ongo
+ExecStart=/bin/bash /data/ongo/src/deploy/start.sh
+ExecStop=/bin/bash /data/ongo/src/deploy/stop.sh
+
+# start.sh 의 기동 대기가 최대 90 초다(MAX_RETRY=90). 그보다 넉넉해야 정상 기동을
+# 타임아웃으로 오인하지 않는다.
+TimeoutStartSec=180
+# stop.sh 는 SIGTERM 후 30 초를 기다렸다가 SIGKILL 한다. 그 뒤 systemd 가 정리할 여유를 준다.
+TimeoutStopSec=90
+
+# 크래시는 되살린다. **다만 무한히는 아니다.**
+#
+# 설정 오류(필수 env 누락 등)로 start.sh 가 exit 1 하면 Restart=always 는 15 초마다
+# 영원히 재시도하며 장애를 감춘다. 실제로 지금 운영은 필수 env 가 미충족이라 상한이
+# 없으면 루프에 빠진다. 상한(5 분에 3 회)은 [Unit] 섹션의 StartLimit* 이 정한다 —
+# 그 두 줄을 여기 두면 조용히 무시되니 옮기지 말 것.
+Restart=on-failure
+RestartSec=15s
+
+# 애플리케이션 로그는 start.sh 가 /data/ongo/log/backend.log 로 리다이렉트한다(start.sh:92).
+# journal 에 같은 내용을 또 쌓지 않는다. 유닛 자체의 실패 사유만 journal 에 남긴다.
+StandardOutput=null
+StandardError=journal
+SyslogIdentifier=ongo-backend
+
+[Install]
+WantedBy=multi-user.target

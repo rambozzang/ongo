@@ -1,7 +1,11 @@
 #!/bin/bash
 set -e
 
-ENV_FILE="${ONGO_ENV_FILE:-/opt/ongo/.env}"
+# The direct-install deployment scripts use /data/ongo as their single runtime
+# root. Keep first-time provisioning on the same path; otherwise this script
+# can read a password from /opt while deploy.sh/start.sh later read /data and
+# fail with a misleading missing-credential error.
+ENV_FILE="${ONGO_ENV_FILE:-/data/ongo/.env}"
 if [ -f "$ENV_FILE" ]; then
     set -a
     # shellcheck disable=SC1090
@@ -14,6 +18,15 @@ DB_NAME="${DB_NAME:-ongo}"
 
 # OracleCloud(Oracle Linux 9 / ARM) Setup Script
 # Run as root (sudo bash setup-server.sh)
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "ERROR: setup-server.sh must run as root (sudo bash deploy/oracle/setup-server.sh)." >&2
+    exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SYSTEMD_UNIT_SOURCE="$SCRIPT_DIR/../ongo-backend.service"
+SYSTEMD_UNIT_TARGET="/etc/systemd/system/ongo-backend.service"
 
 echo ">>> System Update..."
 dnf update -y
@@ -49,7 +62,7 @@ if systemctl list-units --type=service | grep -q "postgres"; then
     
     # Configure the role/database from the deployment secret; never embed a password here.
     echo "Creating DB User and Database if not exist..."
-    : "${DB_PASSWORD:?DB_PASSWORD must be set in /opt/ongo/.env (or ONGO_ENV_FILE)}"
+    : "${DB_PASSWORD:?DB_PASSWORD must be set in ${ENV_FILE} (or ONGO_ENV_FILE)}"
     sudo -u postgres psql -v ON_ERROR_STOP=1 \
         --set=db_user="$DB_USERNAME" \
         --set=db_password="$DB_PASSWORD" \
@@ -73,7 +86,27 @@ else
     echo "Warning: PostgreSQL service not found running."
 fi
 
-# 4. Nginx Configuration
+# 4. Backend systemd service
+#
+# 배포 호스트에서 start.sh 를 수동 실행하면 JVM이 systemd 감시 밖에 남는다. 실제 운영에서
+# 재부팅 뒤 복구가 보장되지 않았던 원인이므로, 초기 설정 단계에서 저장소의 유닛을 설치하고
+# enable만 한다. start는 하지 않는다 — 아직 .env/DB/외부 자격증명을 검증하지 않은 상태에서
+# 서비스를 자동 기동하면 설정 오류를 숨긴 채 재시작 루프에 들어갈 수 있다.
+echo ">>> Installing onGo backend systemd unit..."
+if [ ! -f "$SYSTEMD_UNIT_SOURCE" ]; then
+    echo "ERROR: systemd unit source not found: $SYSTEMD_UNIT_SOURCE" >&2
+    exit 1
+fi
+if ! getent passwd jenkins >/dev/null 2>&1; then
+    echo "ERROR: required service user 'jenkins' does not exist. Create the deployment user before setup." >&2
+    exit 1
+fi
+install -o root -g root -m 0644 "$SYSTEMD_UNIT_SOURCE" "$SYSTEMD_UNIT_TARGET"
+systemctl daemon-reload
+systemctl enable ongo-backend.service
+echo "Backend unit installed and enabled (not started). Run deploy/deploy.sh after credentials and schema checks."
+
+# 5. Nginx Configuration
 echo ">>> Configuring Nginx..."
 if command -v nginx &> /dev/null; then
     echo "Nginx is installed."
@@ -82,7 +115,7 @@ else
     echo "Warning: Nginx not found."
 fi
 
-# 5. Firewall Configuration
+# 6. Firewall Configuration
 echo ">>> Configuring Firewall..."
 firewall-cmd --permanent --add-service=http
 firewall-cmd --permanent --add-service=https

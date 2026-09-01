@@ -322,8 +322,9 @@ PORTONE_API_BASE_URL=https://api.portone.io
 **`SUBSCRIPTION_RENEWAL_ENABLED` 를 켜기 전 반드시 확인할 것**
 
 이 토글은 정기 청구 **실행**만 막는다. 새 코드가 요구하는
-`subscriptions.billing_key_encrypted` 컬럼 접근은 **구독을 읽는 모든 경로**에 있어,
-V103 이 적용되지 않은 DB 에서는 토글을 꺼도 구독 조회·저장이 실패한다.
+`subscriptions.billing_key_encrypted` 및 `subscriptions.pending_billing_cycle` 컬럼 접근은
+**구독을 읽는 모든 경로**에 있어, V105 가 적용되지 않은 DB 에서는 토글을 꺼도 구독
+조회·저장이 실패한다.
 `deploy/preflight-schema.sh` 가 배포 시 이를 읽기 전용으로 확인하고 중단시킨다.
 
 **`PORTONE_WEBHOOK_SECRET`이 비어 있으면 어떻게 되는가**

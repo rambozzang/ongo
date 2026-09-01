@@ -71,8 +71,20 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] $APP_NAME 시작..."
 if [ -f "$PID_FILE" ]; then
     PID=$(cat "$PID_FILE")
     if ps -p $PID > /dev/null 2>&1; then
-        echo "$APP_NAME (PID: $PID)이 이미 실행 중입니다."
-        exit 0
+        if [ "${ONGO_SYSTEMD_MANAGED:-false}" = "true" ]; then
+            # 첫 systemd 전환 때는 이전 Jenkins cgroup의 JVM이 남아 있을 수 있다.
+            # 그대로 0으로 끝내면 systemd가 새 JAR을 실행하지 않았는데도 배포가
+            # 성공한 것처럼 보인다. PID 파일과 명령행을 stop.sh가 다시 확인한 뒤
+            # 종료하고, 아래에서 새 JVM을 기동하게 한다.
+            echo "$APP_NAME (PID: $PID)이 systemd 밖에 남아 있어 전환을 위해 중지합니다."
+            if ! bash "$SCRIPT_DIR/stop.sh"; then
+                echo "[ERROR] 기존 $APP_NAME 프로세스를 systemd 관리로 전환하지 못했습니다." >&2
+                exit 1
+            fi
+        else
+            echo "$APP_NAME (PID: $PID)이 이미 실행 중입니다."
+            exit 0
+        fi
     fi
     rm -f "$PID_FILE"
 fi
