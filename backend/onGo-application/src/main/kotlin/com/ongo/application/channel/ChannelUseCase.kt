@@ -1,5 +1,6 @@
 package com.ongo.application.channel
 
+import com.ongo.application.analytics.ChannelSubscriberTotal
 import com.ongo.application.channel.dto.*
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.PlanType
@@ -37,9 +38,36 @@ class ChannelUseCase(
     private val tokenEncryptionPort: TokenEncryptionPort,
     private val videoUploadRepository: VideoUploadRepository,
     private val workspaceRepository: WorkspaceRepository,
+    private val channelOAuthStateManager: ChannelOAuthStateManager,
+    /**
+     * 플랫폼 연동 설정 조회 통로. 인프라 어댑터 없이 이 모듈만 테스트할 수 있도록 nullable 이다.
+     *
+     * **null 은 "확인할 수 없음" 이지 "설정됨" 이 아니다.** 예전에는 `?.` 로 검사를 건너뛰어
+     * 어댑터가 없으면 자격증명이 없는 플랫폼에도 채널을 연결할 수 있었고, 그 채널은 게시
+     * 시점에야 실패했다. 잘못된 배포는 연결이 막히는 쪽으로 틀려야 한다.
+     */
     private val platformConfigurationPort: PlatformConfigurationPort? = null,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * 이 배포가 해당 플랫폼을 연결할 수 있는지 확인한다. 아니면 연결 전에 끊는다.
+     *
+     * 조회 통로가 없으면 확인할 방법이 없다는 뜻이므로 통과시키지 않는다.
+     */
+    private fun requirePlatformConfigured(platform: Platform) {
+        val port = platformConfigurationPort
+            ?: throw BusinessException(
+                "PLATFORM_NOT_CONFIGURED",
+                "${platform.name} 플랫폼 연동 설정을 확인할 수 없어 연결할 수 없습니다.",
+            )
+        port.status(platform).takeUnless { it.configured }?.let { status ->
+            throw BusinessException(
+                "PLATFORM_NOT_CONFIGURED",
+                status.reason ?: "${platform.name} 플랫폼 연동 설정이 없어 연결할 수 없습니다.",
+            )
+        }
+    }
 
     /**
      * 사용자가 연동한 채널 목록을 조회합니다.
@@ -62,15 +90,39 @@ class ChannelUseCase(
      */
     @Transactional
     fun connectChannel(userId: Long, platformStr: String, request: ConnectChannelRequest): ConnectChannelResponse {
-        val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
         val platform = safeValueOfOrThrow<Platform>(platformStr)
+        channelOAuthStateManager.verifyAndConsume(
+            state = request.state,
+            expectedUserId = userId,
+            expectedPlatform = platform,
+            expectedRedirectUri = request.redirectUri,
+        )
+        return connectChannelInternal(userId, platform, request)
+    }
 
-        platformConfigurationPort?.status(platform)?.takeUnless { it.configured }?.let { status ->
-            throw BusinessException(
-                "PLATFORM_NOT_CONFIGURED",
-                status.reason ?: "${platform.name} 플랫폼 연동 설정이 없어 연결할 수 없습니다.",
-            )
-        }
+    /**
+     * Public API OAuth has already verified its own signed state, whose format
+     * is intentionally different because its callback is unauthenticated.
+     * Keep that trusted path explicit instead of allowing an HTTP caller to
+     * omit the authenticated channel state.
+     */
+    @Transactional
+    internal fun connectChannelFromTrustedAuthorization(
+        userId: Long,
+        platformStr: String,
+        request: ConnectChannelRequest,
+    ): ConnectChannelResponse {
+        return connectChannelInternal(userId, safeValueOfOrThrow(platformStr), request)
+    }
+
+    private fun connectChannelInternal(
+        userId: Long,
+        platform: Platform,
+        request: ConnectChannelRequest,
+    ): ConnectChannelResponse {
+        val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+
+        requirePlatformConfigured(platform)
 
         // 기본은 기존 플랫폼 계정 재연결이다. addAsNew=true면 OAuth 후
         // 외부 채널 ID가 같은 경우만 갱신하고, 다른 계정은 새 integration으로 저장한다.
@@ -89,7 +141,13 @@ class ChannelUseCase(
 
         // 토큰 암호화
         val encryptedToken = tokenEncryptionPort.encrypt(PlainToken(tokenResult.accessToken))
-        val encryptedRefresh = tokenResult.refreshToken?.let { rt: String -> tokenEncryptionPort.encrypt(PlainToken(rt)) }
+        // Google은 재동의 화면을 거쳐도 refresh_token을 생략할 수 있다. 빈 응답을
+        // 그대로 저장하면 기존의 정상 refresh token을 지워 액세스 토큰 만료 후
+        // 백그라운드 동기화가 영구히 멈춘다. 신규 토큰이 있을 때만 교체하고,
+        // 기존 채널 갱신에서는 없으면 저장된 토큰을 보존한다.
+        val encryptedRefresh = tokenResult.refreshToken
+            ?.takeIf(String::isNotBlank)
+            ?.let { rt: String -> tokenEncryptionPort.encrypt(PlainToken(rt)) }
         val expiresAt = LocalDateTime.now().plusSeconds(tokenResult.expiresIn)
 
         val existing = channelRepository.findByUserIdAndPlatformChannelId(userId, platform, channelInfo.channelId)
@@ -111,7 +169,7 @@ class ChannelUseCase(
                 subscriberCount = channelInfo.subscriberCount,
                 profileImageUrl = channelInfo.profileImageUrl,
                 accessToken = encryptedToken,
-                refreshToken = encryptedRefresh,
+                refreshToken = encryptedRefresh ?: existing.refreshToken,
                 tokenExpiresAt = expiresAt,
                 status = ChannelStatus.ACTIVE,
                 updatedAt = LocalDateTime.now()
@@ -213,7 +271,8 @@ class ChannelUseCase(
             platform = platform,
             channelName = channelName,
             channelUrl = channelUrl,
-            subscriberCount = subscriberCount,
+            // 그 플랫폼이 구독자 수를 조회하지 않으면 저장된 0 은 측정값이 아니다.
+            subscriberCount = ChannelSubscriberTotal.measured(this),
             profileImageUrl = profileImageUrl,
             status = status,
             tokenStatus = tokenStatus,

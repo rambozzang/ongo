@@ -17,6 +17,9 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.time.Duration
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class VideoPublishEventListenerTest {
 
@@ -375,6 +378,46 @@ class VideoPublishEventListenerTest {
 
         verify(exactly = 0) { ytService.upload(any(), any(), any()) }
         verify(exactly = 0) { videoUploadRepository.claim(any(), any(), any(), any()) }
+    }
+
+    /**
+     * 게시 게이트가 생기기 전에 만들어진 업로드 행이 이벤트로 되살아나는 경우다.
+     *
+     * 게시 경로가 없는 플랫폼은 외부 호출도, lease 확보도 하지 않고 **사용자가 읽을 수 있는
+     * 이유**로 FAILED 여야 한다. 예전에는 "지원되지 않는 플랫폼: NAVER_CLIP" 이라 왜 안 되는지
+     * 알 수 없었고, supports 가 true 로 새면 클라이언트의 미구현 분기 문구가 그대로 나갔다.
+     */
+    @Test
+    fun `게시 경로가 없는 플랫폼은 외부 호출 없이 정직한 사유로 FAILED 처리한다`() {
+        val ytService = createMockService(Platform.YOUTUBE)
+        platformUploadServices.add(ytService)
+
+        val config = createConfig(platform = Platform.NAVER_CLIP, videoUploadId = 42L)
+        every { videoUploadRepository.findById(42L) } returns VideoUpload(
+            id = 42L, videoId = 1L, platform = Platform.NAVER_CLIP,
+        )
+        every { videoUploadRepository.findByVideoId(1L) } returns emptyList()
+        every { videoRepository.findById(1L) } returns null
+
+        listener.handleVideoPublish(createEvent(configs = listOf(config)))
+
+        val saved = slot<VideoUpload>()
+        verify { videoUploadRepository.update(capture(saved)) }
+        assertEquals(UploadStatus.FAILED, saved.captured.status)
+        val reason = saved.captured.errorMessage
+        assertNotNull(reason)
+        assertTrue(reason.contains("Naver Clip"), "실패 사유에 플랫폼 설명이 없다: $reason")
+        assertFalse(reason.contains("StreamPublishUseCase"), "내부 문구가 노출됐다: $reason")
+        assertFalse(reason.contains("uploadVideo"), "내부 문구가 노출됐다: $reason")
+
+        // 외부 경계에 닿지 않고, lease 도 잡지 않는다.
+        verify(exactly = 0) { ytService.upload(any(), any(), any()) }
+        verify(exactly = 0) { videoUploadRepository.claim(any(), any(), any(), any()) }
+        verify {
+            eventPublisher.publishEvent(
+                match<UploadCompletedEvent> { it.platform == Platform.NAVER_CLIP && !it.success },
+            )
+        }
     }
 
     private class NeverAcquiresDistributedLock : DistributedLockPort {

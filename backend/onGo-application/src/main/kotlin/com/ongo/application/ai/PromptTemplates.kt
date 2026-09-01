@@ -163,8 +163,8 @@ object PromptTemplates {
 
     val PERFORMANCE_REPORT_USER = """
         분석 기간: 최근 {days}일
-        총 조회수: {totalViews} (변화율: {viewsChange}%)
-        총 좋아요: {totalLikes} (변화율: {likesChange}%)
+        총 조회수: {totalViews} (변화율: {viewsChange})
+        총 좋아요: {totalLikes} (변화율: {likesChange})
         총 댓글: {totalComments}
         총 구독자 변화: {subscriberChange}
         상위 영상:
@@ -188,10 +188,15 @@ object PromptTemplates {
         $INJECTION_GUARD
     """.trimIndent()
 
+    /**
+     * `{viewsChange}` / `{likesChange}` 는 **단위(`%`)를 값이 직접 들고 온다**
+     * ([com.ongo.domain.analytics.MetricChange.describePercent]). 여기에 `%` 를 다시 붙이면
+     * 비교 불가일 때 `비교 불가(이전 기간 데이터 없음)%` 라는 문장이 AI 에게 간다.
+     */
     val WEEKLY_DIGEST_USER = """
         분석 기간: {weekStart} ~ {weekEnd}
-        총 조회수: {totalViews} (전주 대비 변화율: {viewsChange}%)
-        총 좋아요: {totalLikes} (전주 대비 변화율: {likesChange}%)
+        총 조회수: {totalViews} (전주 대비 변화율: {viewsChange})
+        총 좋아요: {totalLikes} (전주 대비 변화율: {likesChange})
         총 댓글: {totalComments}
         구독자 변화: {subscriberChange}
         상위 영상:
@@ -266,8 +271,8 @@ object PromptTemplates {
 
     val STRATEGY_COACH_USER = """
         채널 성과 데이터 (최근 30일):
-        총 조회수: {totalViews} (변화율: {viewsChange}%)
-        총 좋아요: {totalLikes} (변화율: {likesChange}%)
+        총 조회수: {totalViews} (변화율: {viewsChange})
+        총 좋아요: {totalLikes} (변화율: {likesChange})
         구독자 변화: {subscriberChange}
 
         최근 영상 이력:
@@ -439,7 +444,7 @@ object PromptTemplates {
     val REVENUE_INSIGHT_USER = """
         최근 {days}일 수익 현황:
         - 총 수익: {totalRevenue}원
-        - 전기 대비 성장률: {growthPercent}%
+        - 전기 대비 성장률: {growthPercent}
         - 플랫폼별 수익: {platformBreakdown}
 
         위 수익 데이터를 분석하여 가장 중요한 인사이트 하나를 생성해주세요.
@@ -471,7 +476,7 @@ object PromptTemplates {
         - 원본 설명: <user_input>{originalDescription}</user_input>
         - 원본 태그: <user_input>{originalTags}</user_input>
         - 총 조회수: {totalViews}
-        - 참여율(좋아요+댓글/조회수): {engagementRate}%
+        - 참여율(좋아요+댓글/조회수): {engagementRate}
 
         위 고성과 영상의 메타데이터를 현재 트렌드에 맞게 리라이트해주세요.
     """.trimIndent()
@@ -638,7 +643,7 @@ object PromptTemplates {
         - 평균 조회수: {avgViews}
         - 평균 좋아요: {avgLikes}
         - 평균 댓글: {avgComments}
-        - 전체 참여율: {engagementRate}%
+        - 전체 참여율: {engagementRate}
 
         위 데이터를 바탕으로 업계 카테고리 평균과 비교하여 참여율 벤치마크 분석을 수행해주세요.
     """.trimIndent()

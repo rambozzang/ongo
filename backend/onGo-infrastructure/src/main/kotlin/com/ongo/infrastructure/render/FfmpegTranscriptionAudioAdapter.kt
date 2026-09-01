@@ -58,6 +58,9 @@ class FfmpegTranscriptionAudioAdapter(
     private val probeTimeoutSeconds: Long,
     @param:Value("\${shorts.transcribe.audio-bitrate:64k}")
     private val audioBitrate: String,
+    /** 테스트에서는 격리된 디렉터리를 주입하고, 운영에서는 OS 임시 디렉터리를 사용한다. */
+    @param:Value("\${shorts.transcribe.temp-dir:}")
+    private val tempDirectory: String,
 ) : TranscriptionAudioPort {
 
     /**
@@ -66,12 +69,18 @@ class FfmpegTranscriptionAudioAdapter(
      */
     private val resolvedExecutable = RuntimeExecutableResolver.resolve(executable)
     private val resolvedProbeExecutable = RuntimeExecutableResolver.resolve(probeExecutable)
+    private val resolvedTempDirectory = tempDirectory.trim().takeIf { it.isNotEmpty() }
+        ?.let(Path::of)
+        ?: Path.of(System.getProperty("java.io.tmpdir"))
 
     private val log = LoggerFactory.getLogger(javaClass)
     private val cachedAvailability = AtomicReference<Pair<Instant, Boolean>?>(null)
 
     init {
         require(partSeconds > 0) { "shorts.transcribe.part-seconds must be positive" }
+        require(Files.isDirectory(resolvedTempDirectory) && Files.isWritable(resolvedTempDirectory)) {
+            "shorts.transcribe.temp-dir must be an existing writable directory: $resolvedTempDirectory"
+        }
     }
 
     override fun isAvailable(): Boolean {
@@ -85,7 +94,7 @@ class FfmpegTranscriptionAudioAdapter(
 
     private fun probe(): Boolean =
         try {
-            val dir = Files.createTempDirectory("ongo-stt-probe-")
+            val dir = Files.createTempDirectory(resolvedTempDirectory, "ongo-stt-probe-")
             try {
                 runProcess(listOf(resolvedExecutable, "-version"), dir, PROBE_TIMEOUT_SECONDS)
                 true
@@ -107,7 +116,7 @@ class FfmpegTranscriptionAudioAdapter(
      * 판단해 통과시킨다. 프로브가 없다는 사실이 원본이 짧다는 증거가 될 수는 없다.
      */
     override fun probeDurationMs(sourceUrl: String): Long {
-        val dir = Files.createTempDirectory("ongo-stt-duration-")
+        val dir = Files.createTempDirectory(resolvedTempDirectory, "ongo-stt-duration-")
         val output = try {
             runProcess(
                 listOf(
@@ -146,7 +155,7 @@ class FfmpegTranscriptionAudioAdapter(
     }
 
     override fun prepare(sourceUrl: String): PreparedAudio {
-        val workDir = Files.createTempDirectory("ongo-stt-audio-")
+        val workDir = Files.createTempDirectory(resolvedTempDirectory, "ongo-stt-audio-")
         try {
             val listFile = workDir.resolve(SEGMENT_LIST_NAME)
             runProcess(buildCommand(sourceUrl), workDir, timeoutSeconds)

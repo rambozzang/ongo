@@ -52,7 +52,14 @@ data class AdminChannelItem(
     val platform: Platform,
     val channelName: String,
     val channelUrl: String?,
-    val subscriberCount: Long,
+    /**
+     * 구독자(팔로워) 수. **그 플랫폼이 조회하지 않으면 `null`** —
+     * [com.ongo.application.channel.dto.ChannelResponse.subscriberCount] 와 같은 계약이다.
+     *
+     * 운영자가 사용자 채널을 확인하는 화면이라, 재지 않은 값을 "구독자 0명" 으로 보이면
+     * 실제 문제가 있는 채널과 구분되지 않는다.
+     */
+    val subscriberCount: Long?,
     val status: ChannelStatus,
     val tokenExpiresAt: String?,
     val connectedAt: String?,
@@ -67,6 +74,7 @@ data class AdminSubscriptionDetail(
     val currentPeriodEnd: String?,
     val nextBillingDate: String?,
     val pendingPlanType: String?,
+    val pendingBillingCycle: String?,
     val storageQuotaOverride: Long?,
     val cancelledAt: String?,
     val createdAt: String?,

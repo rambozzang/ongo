@@ -2,6 +2,7 @@ package com.ongo.application.ugc
 
 import com.ongo.application.ugc.dto.PublishRequest
 import com.ongo.application.ugc.dto.RegisterExternalPostRequest
+import com.ongo.common.enums.Platform
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.ugc.campaign.Campaign
 import com.ongo.domain.ugc.campaign.CampaignRepository
@@ -23,6 +24,8 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.verify
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -182,6 +185,17 @@ class CampaignPublishingUseCaseTest {
     }
 
     @Test
+    fun `external post rejects insecure http even for an allowed host`() {
+        every { submissionRepository.findById(submissionId) } returns submission()
+        assertFailsWith<IllegalArgumentException> {
+            useCase.registerExternalPost(
+                creatorId, submissionId,
+                RegisterExternalPostRequest("YOUTUBE", "http://www.youtube.com/watch?v=x"),
+            )
+        }
+    }
+
+    @Test
     fun `external post is registered for an allowed url`() {
         every { submissionRepository.findById(submissionId) } returns submission()
         every { campaignPostRepository.save(any()) } answers { firstArg<CampaignPost>().copy(id = 1) }
@@ -193,6 +207,32 @@ class CampaignPublishingUseCaseTest {
 
         assertEquals("EXTERNAL", result.postType)
         assertEquals("YOUTUBE", result.platform)
+    }
+
+    @Test
+    fun `external post is registered for an allowed Pinterest url`() {
+        every { submissionRepository.findById(submissionId) } returns submission()
+        every { campaignPostRepository.save(any()) } answers { firstArg<CampaignPost>().copy(id = 1) }
+
+        val result = useCase.registerExternalPost(
+            creatorId, submissionId,
+            RegisterExternalPostRequest("PINTEREST", "https://www.pinterest.com/pin/123"),
+        )
+
+        assertEquals("PINTEREST", result.platform)
+    }
+
+    @ParameterizedTest
+    @EnumSource(Platform::class)
+    fun `external post rejects an untrusted host for every platform`(platform: Platform) {
+        every { submissionRepository.findById(submissionId) } returns submission()
+
+        assertFailsWith<IllegalArgumentException> {
+            useCase.registerExternalPost(
+                creatorId, submissionId,
+                RegisterExternalPostRequest(platform.name, "https://evil.example/post"),
+            )
+        }
     }
 
     @Test

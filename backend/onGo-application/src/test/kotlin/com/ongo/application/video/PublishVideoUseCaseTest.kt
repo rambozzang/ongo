@@ -4,7 +4,10 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.enums.Visibility
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.MediaType
+import com.ongo.application.platform.PlatformConfigurationPort
+import com.ongo.application.platform.PlatformConfigurationStatus
 import com.ongo.common.exception.AccountFrozenException
+import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
@@ -202,6 +205,7 @@ class PublishVideoUseCaseTest {
             videoUploadPoller = videoUploadPoller,
             userWriteGuard = userWriteGuard,
             scheduleRepository = scheduleRepository,
+            platformConfigurationPort = allPlatformsConfigured,
         )
 
         val result = useCase.publishVideo(
@@ -586,5 +590,88 @@ class PublishVideoUseCaseTest {
         videoUploadPoller = videoUploadPoller,
         userWriteGuard = userWriteGuard,
         scheduleRepository = scheduleRepository,
+        platformConfigurationPort = allPlatformsConfigured,
     )
+
+    /**
+     * 이 배포에 모든 플랫폼 자격증명이 있는 상태. 대부분의 테스트는 게시 로직을 보므로
+     * 설정은 갖춰졌다고 두고, 설정 자체를 다루는 테스트만 아래에서 따로 바꾼다.
+     */
+    private val allPlatformsConfigured = object : PlatformConfigurationPort {
+        override fun status(platform: Platform) = PlatformConfigurationStatus(configured = true)
+    }
+
+    /* ---- 플랫폼 설정 확인 ---- */
+
+    /**
+     * **설정을 확인할 수 없는 것은 설정된 것이 아니다.**
+     *
+     * 예전에는 조회 통로가 null 이면 `?.` 로 검사 전체를 건너뛰어, 어댑터가 빠진 배포에서
+     * 자격증명 없는 플랫폼으로도 게시가 통과했다. 사용자는 "게시 요청됨" 을 본 뒤 외부
+     * 호출 단계에서 조용히 실패했다. 잘못된 배포는 게시가 막히는 쪽으로 틀려야 한다.
+     */
+    private fun configuredVideo() = Video(
+        id = 700L,
+        userId = 7L,
+        title = "게시할 영상",
+        fileUrl = "https://storage.test/original.mp4",
+        status = UploadStatus.DRAFT,
+    )
+
+    private fun youtubeConfig() = PlatformUploadConfig(
+        platform = Platform.YOUTUBE,
+        videoUploadId = 0L,
+        title = "게시 시도",
+        description = null,
+        tags = emptyList(),
+        visibility = Visibility.PUBLIC,
+        thumbnailUrl = null,
+        scheduledAt = null,
+    )
+
+    private fun useCaseWith(port: PlatformConfigurationPort?) = PublishVideoUseCase(
+        videoRepository = videoRepository,
+        videoUploadRepository = videoUploadRepository,
+        videoPlatformMetaRepository = videoPlatformMetaRepository,
+        eventPublisher = eventPublisher,
+        channelRepository = channelRepository,
+        videoUploadPoller = videoUploadPoller,
+        userWriteGuard = userWriteGuard,
+        scheduleRepository = scheduleRepository,
+        platformConfigurationPort = port,
+    )
+
+    @Test
+    fun `설정 조회 통로가 없으면 게시를 거부한다`() {
+        every { videoRepository.findById(700L) } returns configuredVideo()
+
+        // 인프라 어댑터가 없는 배포 — 확인할 방법이 없으면 통과시키지 않는다.
+        val error = assertFailsWith<BusinessException> {
+            useCaseWith(null).publishVideo(7L, 700L, listOf(youtubeConfig()))
+        }
+
+        assertEquals("PLATFORM_NOT_CONFIGURED", error.code)
+        // 외부 게시 이벤트도, 업로드 행도 만들지 않는다.
+        verify(exactly = 0) { eventPublisher.publishEvent(any()) }
+        verify(exactly = 0) { videoUploadRepository.save(any()) }
+    }
+
+    @Test
+    fun `플랫폼이 미설정이면 게시를 거부한다`() {
+        every { videoRepository.findById(700L) } returns configuredVideo()
+        val unconfigured = object : PlatformConfigurationPort {
+            override fun status(platform: Platform) = PlatformConfigurationStatus(
+                configured = false,
+                reason = "YouTube 연동 설정이 없습니다.",
+            )
+        }
+
+        val error = assertFailsWith<BusinessException> {
+            useCaseWith(unconfigured).publishVideo(7L, 700L, listOf(youtubeConfig()))
+        }
+
+        assertEquals("PLATFORM_NOT_CONFIGURED", error.code)
+        assertEquals("YouTube 연동 설정이 없습니다.", error.message)
+        verify(exactly = 0) { eventPublisher.publishEvent(any()) }
+    }
 }

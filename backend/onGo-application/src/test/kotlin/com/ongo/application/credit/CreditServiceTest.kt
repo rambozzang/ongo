@@ -16,9 +16,17 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import com.ongo.application.subscription.DummyTransactionManagerForTest
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
+import org.springframework.transaction.TransactionStatus
+import org.springframework.transaction.support.SimpleTransactionStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlin.reflect.jvm.kotlinFunction
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
@@ -30,6 +38,12 @@ class CreditServiceTest {
 
     @MockK(relaxed = true)
     private lateinit var eventPublisher: ApplicationEventPublisher
+
+    /**
+     * `withCredits` 의 커밋 경계용. 콜백을 그대로 실행하므로 이 테스트가 보는 것은
+     * **어떤 순서로 무엇이 호출되는가**이며, 실제 커밋·롤백은 통합 테스트의 몫이다.
+     */
+    private val transactionManager: PlatformTransactionManager = DummyTransactionManagerForTest()
 
     @InjectMockKs
     private lateinit var creditService: CreditService
@@ -279,94 +293,82 @@ class CreditServiceTest {
     }
 
     // ──────────────────────────────────────────────
-    // 3. refundCredit 정상 복구
+    // 3~4. 출처 불명 환불(refundCredit)은 비활성이다
     // ──────────────────────────────────────────────
+    //
+    // 예전에는 이 메서드가 실제로 동작했고, 아래 네 개의 테스트가 그 동작을 고정했다 —
+    // "무료분을 freeMonthly 로 clamp 해서 늘린다", "balance 를 다시 센다" 같은 것들이다.
+    // 그 계산 자체는 맞았지만 **전제가 틀렸다.** 차감이 구매 패키지에서 나갔어도 언제나
+    // 무료분에 얹었기 때문에, 만료 없는 구매 크레딧이 월말에 사라지는 무료 크레딧으로
+    // 바뀌고 clamp 에 걸린 몫은 그대로 증발했다.
+    //
+    // 그래서 계산을 검증하는 대신 **그 경로가 아예 실행되지 않는다**를 검증한다.
+    // 운영 호출자는 전부 refundAllocation 으로 옮겼고, 이 심볼은 fail-closed 다.
+
+    /**
+     * **부르면 던진다.** 조용히 잘못 환불하는 것보다 시끄럽게 실패하는 편이 낫다.
+     *
+     * `@Deprecated(level = ERROR)` 가 Kotlin 호출부를 컴파일 단계에서 막지만, Java 나
+     * 리플렉션 경로는 그것을 우회한다. 런타임 방어가 함께 필요한 이유다.
+     */
     @Test
-    fun `refundCredit should increase balance and freeRemaining capped at freeMonthly`() {
-        // balance 는 저장값을 더하는 대신 freeRemaining + 활성 구매분으로 다시 센다.
-        val credit = createCredit(balance = 20, freeMonthly = 30, freeRemaining = 18)
-        every { creditRepository.findByUserIdForUpdate(userId) } returns credit
-        every { creditRepository.findActivePurchasedCredits(userId) } returns emptyList()
-        every { creditRepository.update(any()) } answers { firstArg() }
-        every { creditRepository.saveTransaction(any()) } answers { firstArg() }
-
-        creditService.refundCredit(userId, 5, "META_GENERATION")
-
-        verify {
-            creditRepository.update(match<AiCredit> {
-                it.balance == 23 && it.freeRemaining == 23
-            })
-        }
-        verify {
-            creditRepository.saveTransaction(match<AiCreditTransaction> {
-                it.type == CreditTransactionType.REFUND &&
-                    it.amount == 5 &&
-                    it.balanceAfter == 23
-            })
-        }
-    }
-
-    // ──────────────────────────────────────────────
-    // 4. refundCredit freeMonthly 초과 방지
-    // ──────────────────────────────────────────────
-    @Test
-    fun `refundCredit should not exceed freeMonthly for freeRemaining`() {
-        val credit = createCredit(balance = 25, freeMonthly = 30, freeRemaining = 28)
-        every { creditRepository.findByUserIdForUpdate(userId) } returns credit
-        every { creditRepository.findActivePurchasedCredits(userId) } returns emptyList()
-        every { creditRepository.update(any()) } answers { firstArg() }
-        every { creditRepository.saveTransaction(any()) } answers { firstArg() }
-
-        creditService.refundCredit(userId, 5, "META_GENERATION")
-
-        verify {
-            creditRepository.update(match<AiCredit> {
-                it.freeRemaining == 30 && it.balance == 30
-            })
-        }
+    fun `출처 불명 환불은 호출 즉시 실패한다`() {
+        assertFailsWith<UnsupportedOperationException> { invokeLegacyRefund(userId, 5, "META_GENERATION") }
     }
 
     /**
-     * clamp 로 잘린 만큼이 balance 에 남는 phantom 잔액.
-     *
-     * 예전에는 `balance + amount` 였다. freeRemaining 은 freeMonthly 로 잘려 2 만 늘어나는데
-     * balance 에는 10 을 다 더해서, 어디에도 없는 8 이 잔액으로 남았다. 그 잔액으로는
-     * 차감이 되지만 실제 무료·구매분 어느 쪽에서도 뺄 것이 없다.
+     * **아무것도 쓰지 않아야 한다.** 던지기 전에 행을 건드리면 잔액만 어긋난 채 실패한다.
      */
     @Test
-    fun `refundCredit 은 clamp 후에도 balance 가 freeRemaining 과 구매분 합과 같다`() {
-        val credit = createCredit(balance = 28, freeMonthly = 30, freeRemaining = 28)
-        every { creditRepository.findByUserIdForUpdate(userId) } returns credit
-        every { creditRepository.findActivePurchasedCredits(userId) } returns emptyList()
-        every { creditRepository.update(any()) } answers { firstArg() }
-        every { creditRepository.saveTransaction(any()) } answers { firstArg() }
+    fun `출처 불명 환불은 크레딧 행도 원장도 건드리지 않는다`() {
+        assertFailsWith<UnsupportedOperationException> { invokeLegacyRefund(userId, 5, "META_GENERATION") }
 
-        creditService.refundCredit(userId, 10, "META_GENERATION")
-
-        verify {
-            creditRepository.update(match<AiCredit> {
-                // 28+10=38 이 아니라 clamp 된 30. 구매분이 없으므로 balance 도 30.
-                it.freeRemaining == 30 && it.balance == 30
-            })
-        }
+        verify(exactly = 0) { creditRepository.findByUserIdForUpdate(any()) }
+        verify(exactly = 0) { creditRepository.update(any()) }
+        verify(exactly = 0) { creditRepository.updatePurchasedCredit(any()) }
+        verify(exactly = 0) { creditRepository.saveTransaction(any()) }
     }
 
-    /** 구매 크레딧이 있으면 balance 는 무료 잔여와 구매 잔여의 합이다. */
+    /** 예외 메시지가 대체 수단을 알려주지 않으면 다음 사람이 또 우회로를 찾는다. */
     @Test
-    fun `refundCredit 은 구매 크레딧을 balance 합계에 포함한다`() {
-        val credit = createCredit(balance = 118, freeMonthly = 30, freeRemaining = 18)
-        every { creditRepository.findByUserIdForUpdate(userId) } returns credit
-        every { creditRepository.findActivePurchasedCredits(userId) } returns
-            listOf(purchased(remaining = 100))
-        every { creditRepository.update(any()) } answers { firstArg() }
-        every { creditRepository.saveTransaction(any()) } answers { firstArg() }
+    fun `출처 불명 환불 예외는 대체 API 를 안내한다`() {
+        val error = assertFailsWith<UnsupportedOperationException> {
+            invokeLegacyRefund(userId, 5, "META_GENERATION")
+        }
 
-        creditService.refundCredit(userId, 5, "META_GENERATION")
+        assertTrue(
+            error.message!!.contains("refundAllocation"),
+            "대체 수단 안내가 없다: ${error.message}",
+        )
+    }
 
-        verify {
-            creditRepository.update(match<AiCredit> {
-                it.freeRemaining == 23 && it.balance == 123
-            })
+    /**
+     * Kotlin 호출부는 컴파일되지 않아야 한다. 그것이 가장 강한 방어다 —
+     * 런타임 예외는 배포 후에야 드러나지만 컴파일 오류는 그 전에 막는다.
+     */
+    @Test
+    fun `출처 불명 환불은 DeprecationLevel ERROR 로 막혀 있다`() {
+        val method = CreditService::class.java.methods.single { it.name == "refundCredit" }
+        val deprecated = method.kotlinFunction?.annotations?.filterIsInstance<Deprecated>()?.singleOrNull()
+
+        assertNotNull(deprecated, "@Deprecated 가 없다 — 호출부가 경고 없이 컴파일된다")
+        assertEquals(
+            DeprecationLevel.ERROR,
+            deprecated.level,
+            "WARNING 은 무시하기 쉽다. 호출 자체를 컴파일 오류로 막아야 한다",
+        )
+    }
+
+    /**
+     * `@Deprecated(level = ERROR)` 때문에 Kotlin 에서 직접 부를 수 없다. 런타임 동작을
+     * 검증하려면 리플렉션으로 우회해야 한다 — Java·리플렉션 호출자가 실제로 겪는 경로다.
+     */
+    private fun invokeLegacyRefund(userId: Long, amount: Int, featureName: String) {
+        val method = CreditService::class.java.methods.single { it.name == "refundCredit" }
+        try {
+            method.invoke(creditService, userId, amount, featureName)
+        } catch (e: java.lang.reflect.InvocationTargetException) {
+            throw e.cause ?: e
         }
     }
 
@@ -388,5 +390,189 @@ class CreditServiceTest {
 
         verify(exactly = 0) { creditRepository.update(any()) }
         verify(exactly = 0) { creditRepository.saveTransaction(any()) }
+    }
+
+    // ──────────────────────────────────────────────
+    // withCredits — 차감 확정 후 외부 호출, 실패 시 환불
+    // ──────────────────────────────────────────────
+
+    /**
+     * 유료 AI 유스케이스가 통째로 `@Transactional` 이던 시절에는 예외가 나면 바깥 롤백이
+     * 차감을 지웠고, catch 안의 `refundCredit` 은 함께 롤백되는 **죽은 코드**였다.
+     * 차감을 먼저 커밋하는 지금은 환불이 실제로 일어나야 한다 — 그러지 않으면 고객이
+     * 받지 못한 결과에 크레딧을 낸다.
+     */
+    private fun stubCreditRow(freeRemaining: Int = 20, purchasedRemaining: Int = 100) {
+        val credit = createCredit(freeRemaining = freeRemaining)
+        every { creditRepository.findByUserIdForUpdate(userId) } returns credit
+        every { creditRepository.findActivePurchasedCreditsForUpdate(userId) } returns
+            listOf(purchased(purchasedRemaining))
+        every { creditRepository.findActivePurchasedCredits(userId) } returns
+            listOf(purchased(purchasedRemaining))
+        every { creditRepository.update(any()) } answers { firstArg() }
+        every { creditRepository.updatePurchasedCredit(any()) } answers { firstArg() }
+        every { creditRepository.saveTransaction(any()) } answers { firstArg() }
+        // 환불은 차감 영수증에 적힌 패키지 id 로 행을 잠근다. 소진된 패키지도 되돌려야
+        // 하므로 status 로 거르는 findActive* 로는 찾을 수 없다.
+        every { creditRepository.findPurchasedCreditsByIdsForUpdate(userId, any()) } answers {
+            val ids = secondArg<Collection<Long>>()
+            listOf(purchased(purchasedRemaining)).filter { it.id in ids }
+        }
+    }
+
+    @Test
+    fun `withCredits 는 블록 실행 전에 차감한다`() {
+        stubCreditRow()
+        val order = mutableListOf<String>()
+        every { creditRepository.saveTransaction(any()) } answers { order += "credit"; firstArg() }
+
+        val result = creditService.withCredits(userId, 5, "TEST_FEATURE") {
+            order += "call"
+            "ok"
+        }
+
+        assertEquals("ok", result)
+        // 차감이 외부 호출보다 먼저다. 순서가 뒤집히면 잔액 없는 사용자도 모델을 부른다.
+        assertEquals(listOf("credit", "call"), order)
+    }
+
+    @Test
+    fun `withCredits 는 블록이 실패하면 환불하고 원래 예외를 그대로 올린다`() {
+        stubCreditRow()
+        val transactions = mutableListOf<CreditTransactionType>()
+        every { creditRepository.saveTransaction(any()) } answers {
+            transactions += firstArg<AiCreditTransaction>().type
+            firstArg()
+        }
+
+        val error = assertFailsWith<IllegalStateException> {
+            creditService.withCredits(userId, 5, "TEST_FEATURE") {
+                throw IllegalStateException("모델 호출 실패")
+            }
+        }
+
+        assertEquals("모델 호출 실패", error.message)
+        // 차감과 환불이 각각 원장에 남아야 대사가 가능하다.
+        assertEquals(listOf(CreditTransactionType.DEDUCT, CreditTransactionType.REFUND), transactions)
+    }
+
+    /** 잔액이 없으면 모델을 부르지 않는다. 부르면 돈은 나가고 크레딧은 못 받는다. */
+    @Test
+    fun `withCredits 는 잔액이 부족하면 블록을 실행하지 않는다`() {
+        val credit = createCredit(freeRemaining = 1)
+        every { creditRepository.findByUserIdForUpdate(userId) } returns credit
+        every { creditRepository.findActivePurchasedCreditsForUpdate(userId) } returns emptyList()
+        every { creditRepository.findActivePurchasedCredits(userId) } returns emptyList()
+        var called = false
+
+        assertFailsWith<InsufficientCreditException> {
+            creditService.withCredits(userId, 5, "TEST_FEATURE") { called = true }
+        }
+
+        assertEquals(false, called)
+        verify(exactly = 0) { creditRepository.update(any()) }
+    }
+
+    /** 환불 자체가 실패해도 사용자가 보는 것은 원래 오류여야 한다. */
+    @Test
+    fun `withCredits 는 환불 실패가 원래 오류를 가리지 않는다`() {
+        stubCreditRow()
+        every { creditRepository.update(any()) } answers { firstArg() } andThenThrows
+            IllegalStateException("환불 저장 실패")
+
+        val error = assertFailsWith<IllegalStateException> {
+            creditService.withCredits(userId, 5, "TEST_FEATURE") {
+                throw IllegalStateException("모델 호출 실패")
+            }
+        }
+
+        assertEquals("모델 호출 실패", error.message)
+    }
+
+    // ──────────────────────────────────────────────
+    // withCredits — 트랜잭션 경계 자체
+    // ──────────────────────────────────────────────
+
+    /**
+     * 요청한 전파 방식과 커밋 시점을 기록하는 매니저.
+     *
+     * `DummyTransactionManagerForTest` 는 commit/rollback 을 무시하므로 "경계를 요청했는가"
+     * 를 증명하지 못한다. 여기서는 그 요청 자체를 관찰한다 — 실제 DB 가 정말 새 트랜잭션을
+     * 열었는지는 Testcontainers 통합 테스트의 몫이고, 이 테스트가 그것을 대체한다고
+     * 주장하지 않는다.
+     */
+    private class RecordingTransactionManager : PlatformTransactionManager {
+        val events = mutableListOf<String>()
+        val propagations = mutableListOf<Int>()
+
+        override fun getTransaction(definition: TransactionDefinition?): TransactionStatus {
+            propagations += definition?.propagationBehavior ?: -1
+            events += "begin"
+            return SimpleTransactionStatus()
+        }
+
+        override fun commit(status: TransactionStatus) {
+            events += "commit"
+        }
+
+        override fun rollback(status: TransactionStatus) {
+            events += "rollback"
+        }
+    }
+
+    private fun serviceWith(manager: PlatformTransactionManager) =
+        CreditService(creditRepository, eventPublisher, manager)
+
+    /**
+     * **차감은 호출자의 트랜잭션에 참여하면 안 된다.**
+     *
+     * 참여하면 그 트랜잭션이 끝날 때까지 커밋되지 않아, "차감을 먼저 확정한다" 는 전제가
+     * 무너지고 `ai_credits` 잠금이 LLM 응답 시간만큼 유지된다.
+     */
+    @Test
+    fun `withCredits 는 차감과 환불 모두 REQUIRES_NEW 경계를 요청한다`() {
+        stubCreditRow()
+        val manager = RecordingTransactionManager()
+
+        assertFailsWith<IllegalStateException> {
+            serviceWith(manager).withCredits(userId, 5, "TEST_FEATURE") {
+                throw IllegalStateException("모델 호출 실패")
+            }
+        }
+
+        // 차감 1회 + 환불 1회
+        assertEquals(2, manager.propagations.size, "경계가 두 번 열려야 한다: ${manager.propagations}")
+        manager.propagations.forEach {
+            assertEquals(TransactionDefinition.PROPAGATION_REQUIRES_NEW, it)
+        }
+    }
+
+    /** 차감 트랜잭션은 블록 실행 **전에** 닫혀야 한다. */
+    @Test
+    fun `withCredits 는 블록 실행 전에 차감 트랜잭션을 커밋한다`() {
+        stubCreditRow()
+        val manager = RecordingTransactionManager()
+
+        serviceWith(manager).withCredits(userId, 5, "TEST_FEATURE") {
+            manager.events += "call"
+        }
+
+        assertEquals(listOf("begin", "commit", "call"), manager.events)
+    }
+
+    /** 실패 경로에서는 차감 커밋 뒤에 환불 경계가 따로 열린다. */
+    @Test
+    fun `withCredits 실패 시 차감 커밋 뒤에 환불 경계를 연다`() {
+        stubCreditRow()
+        val manager = RecordingTransactionManager()
+
+        assertFailsWith<IllegalStateException> {
+            serviceWith(manager).withCredits(userId, 5, "TEST_FEATURE") {
+                manager.events += "call"
+                throw IllegalStateException("모델 호출 실패")
+            }
+        }
+
+        assertEquals(listOf("begin", "commit", "call", "begin", "commit"), manager.events)
     }
 }

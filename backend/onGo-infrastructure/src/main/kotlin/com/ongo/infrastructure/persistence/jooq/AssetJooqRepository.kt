@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.persistence.jooq
 
 import com.ongo.domain.asset.Asset
+import com.ongo.domain.asset.AssetQuery
 import com.ongo.domain.asset.AssetRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.DURATION_SECONDS
@@ -18,8 +19,10 @@ import com.ongo.infrastructure.persistence.jooq.Fields.TAGS
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.WIDTH
 import com.ongo.infrastructure.persistence.jooq.Tables.ASSETS
+import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Record
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -34,43 +37,53 @@ class AssetJooqRepository(
             .fetchOne()
             ?.toAsset()
 
-    override fun findByUserId(userId: Long, page: Int, size: Int): List<Asset> =
+    override fun findByUserId(userId: Long, query: AssetQuery, page: Int, size: Int): List<Asset> =
         dsl.select()
             .from(ASSETS)
-            .where(USER_ID.eq(userId))
-            .orderBy(CREATED_AT.desc())
+            .where(conditions(userId, query))
+            .orderBy(CREATED_AT.desc(), ID.desc())
             .limit(size)
-            .offset(page * size)
+            .offset(page.toLong() * size)
             .fetch()
             .map { it.toAsset() }
 
-    override fun findByUserIdAndFileType(userId: Long, fileType: String, page: Int, size: Int): List<Asset> =
-        dsl.select()
-            .from(ASSETS)
-            .where(USER_ID.eq(userId))
-            .and(FILE_TYPE.eq(fileType))
-            .orderBy(CREATED_AT.desc())
-            .limit(size)
-            .offset(page * size)
-            .fetch()
-            .map { it.toAsset() }
-
-    override fun findByUserIdAndFolder(userId: Long, folder: String, page: Int, size: Int): List<Asset> =
-        dsl.select()
-            .from(ASSETS)
-            .where(USER_ID.eq(userId))
-            .and(FOLDER.eq(folder))
-            .orderBy(CREATED_AT.desc())
-            .limit(size)
-            .offset(page * size)
-            .fetch()
-            .map { it.toAsset() }
-
-    override fun countByUserId(userId: Long): Int =
+    override fun count(userId: Long, query: AssetQuery): Int =
         dsl.selectCount()
             .from(ASSETS)
-            .where(USER_ID.eq(userId))
+            .where(conditions(userId, query))
             .fetchOne(0, Int::class.java) ?: 0
+
+    /**
+     * 목록과 총계가 **같은 조건**을 쓰도록 한 곳에서 만든다.
+     *
+     * 조건을 두 질의에 따로 적으면 하나만 고쳤을 때 총계가 조용히 어긋나고, 화면은
+     * 존재하지 않는 페이지로 넘어간다. 그런 어긋남은 눈으로 보고 알기 어렵다.
+     */
+    private fun conditions(userId: Long, query: AssetQuery): Condition {
+        var condition: Condition = USER_ID.eq(userId)
+        query.fileType?.takeIf { it.isNotBlank() }?.let { condition = condition.and(FILE_TYPE.eq(it)) }
+        query.folder?.takeIf { it.isNotBlank() }?.let { condition = condition.and(FOLDER.eq(it)) }
+        // 태그는 배열 컬럼이다. 포함 여부를 SQL 로 물어야 다른 페이지의 태그도 걸린다.
+        query.tag?.takeIf { it.isNotBlank() }?.let {
+            condition = condition.and(DSL.condition("{0} = ANY({1})", DSL.`val`(it), TAGS))
+        }
+        /*
+         * 검색은 **저장 파일명·원본 파일명·태그**를 함께 본다. 화면이 이전에 클라이언트에서
+         * 하던 것과 같은 범위이되, 이제 전체 라이브러리를 대상으로 한다 — 한 페이지만
+         * 뒤지는 검색은 "없다"와 "이 페이지에 없다"를 구분하지 못한다.
+         *
+         * `%`·`_` 는 이스케이프한다. 이스케이프하지 않으면 사용자가 친 `%` 하나가 전체 조회가 된다.
+         */
+        query.search?.trim()?.takeIf { it.isNotEmpty() }?.let { raw ->
+            val pattern = "%" + raw.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"
+            condition = condition.and(
+                FILENAME.likeIgnoreCase(pattern, '!')
+                    .or(ORIGINAL_FILENAME.likeIgnoreCase(pattern, '!'))
+                    .or(DSL.condition("EXISTS (SELECT 1 FROM unnest({0}) AS t(tag) WHERE t.tag ILIKE {1} ESCAPE '!')", TAGS, DSL.`val`(pattern))),
+            )
+        }
+        return condition
+    }
 
     override fun save(asset: Asset): Asset {
         val id = dsl.insertInto(ASSETS)

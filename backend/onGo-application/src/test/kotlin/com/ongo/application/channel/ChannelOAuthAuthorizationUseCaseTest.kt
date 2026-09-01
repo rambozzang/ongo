@@ -7,6 +7,7 @@ import com.ongo.common.exception.BusinessException
 import com.ongo.domain.channel.PlatformOAuthAuthorizationPort
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -20,22 +21,25 @@ class ChannelOAuthAuthorizationUseCaseTest {
     private fun useCase() = ChannelOAuthAuthorizationUseCase(
         authorizationPort = authorizationPort,
         platformConfigurationPort = configurationPort,
+        stateManager = ChannelOAuthStateManager("test-oauth-state-secret-that-is-at-least-32-chars"),
         allowedOrigins = "https://ongo.example.com,http://localhost:5173",
     )
 
     @Test
     fun `configured platform returns server-built authorization URL`() {
         every { configurationPort.status(Platform.YOUTUBE) } returns PlatformConfigurationStatus(configured = true)
+        val forwardedState = slot<String>()
         every {
             authorizationPort.buildAuthorizationUrl(
                 Platform.YOUTUBE,
                 "https://ongo.example.com/auth/channel-callback",
-                "state-123",
+                capture(forwardedState),
                 null,
             )
         } returns "https://accounts.google.com/o/oauth2/v2/auth?client_id=server-owned"
 
         val result = useCase().authorizationUrl(
+            userId = 42L,
             platformValue = "youtube",
             redirectUri = "https://ongo.example.com/auth/channel-callback",
             state = "state-123",
@@ -43,11 +47,13 @@ class ChannelOAuthAuthorizationUseCaseTest {
         )
 
         assertEquals("https://accounts.google.com/o/oauth2/v2/auth?client_id=server-owned", result.authorizationUrl)
+        assertTrue(forwardedState.captured != "state-123")
+        assertTrue(forwardedState.captured.contains('.'))
         verify(exactly = 1) {
             authorizationPort.buildAuthorizationUrl(
                 Platform.YOUTUBE,
                 "https://ongo.example.com/auth/channel-callback",
-                "state-123",
+                capture(forwardedState),
                 null,
             )
         }
@@ -61,6 +67,7 @@ class ChannelOAuthAuthorizationUseCaseTest {
 
         val error = assertFailsWith<BusinessException> {
             useCase().authorizationUrl(
+                userId = 42L,
                 platformValue = "tiktok",
                 redirectUri = "https://ongo.example.com/auth/channel-callback",
                 state = "state-123",
@@ -79,6 +86,7 @@ class ChannelOAuthAuthorizationUseCaseTest {
 
         assertFailsWith<IllegalArgumentException> {
             useCase().authorizationUrl(
+                userId = 42L,
                 platformValue = "youtube",
                 redirectUri = "https://evil.example.com/auth/channel-callback",
                 state = "state-123",
@@ -99,7 +107,7 @@ class ChannelOAuthAuthorizationUseCaseTest {
             "https://ongo.example.com/other-callback",
         ).forEach { redirectUri ->
             assertFailsWith<IllegalArgumentException> {
-                useCase().authorizationUrl("youtube", redirectUri, "state-123", null)
+            useCase().authorizationUrl(42L, "youtube", redirectUri, "state-123", null)
             }
         }
         verify(exactly = 0) { authorizationPort.buildAuthorizationUrl(any(), any(), any(), any()) }
@@ -111,10 +119,11 @@ class ChannelOAuthAuthorizationUseCaseTest {
 
         assertFailsWith<IllegalArgumentException> {
             useCase().authorizationUrl(
-                "youtube",
-                "https://ongo.example.com/auth/channel-callback",
-                "x".repeat(1025),
-                null,
+                userId = 42L,
+                platformValue = "youtube",
+                redirectUri = "https://ongo.example.com/auth/channel-callback",
+                state = "x".repeat(1025),
+                codeChallenge = null,
             )
         }
         verify(exactly = 0) { authorizationPort.buildAuthorizationUrl(any(), any(), any(), any()) }
@@ -128,10 +137,11 @@ class ChannelOAuthAuthorizationUseCaseTest {
 
         val error = assertFailsWith<BusinessException> {
             useCase().authorizationUrl(
-                "naver_clip",
-                "https://ongo.example.com/auth/channel-callback",
-                "state-123",
-                null,
+                userId = 42L,
+                platformValue = "naver_clip",
+                redirectUri = "https://ongo.example.com/auth/channel-callback",
+                state = "state-123",
+                codeChallenge = null,
             )
         }
 
@@ -145,6 +155,7 @@ class ChannelOAuthAuthorizationUseCaseTest {
 
         assertFailsWith<IllegalArgumentException> {
             useCase().authorizationUrl(
+                userId = 42L,
                 platformValue = "twitter",
                 redirectUri = "http://localhost:5173/auth/channel-callback",
                 state = "state-123",

@@ -125,11 +125,23 @@ class TumblrClient(
                 authorization = "Bearer $accessToken",
             )
 
+            /*
+             * **노트 목록이 없으면 세지 못한 것이지 "0 건" 이 아니다.**
+             *
+             * 목록이 실제로 비어 있으면(빈 배열) 그 0 은 관측이므로 그대로 센다. 목록
+             * 자체가 오지 않았다면 좋아요·답글·리블로그를 잴 근거가 없다.
+             *
+             * 주의: 이 집계는 **응답에 담긴 노트만** 센다. 페이지네이션은 이번 범위 밖이며
+             * 별도 위험으로 보고한다.
+             */
+            val notes = response.response?.notes
+                .requireMetric("Tumblr", "response.notes")
+
             var likes = 0L
             var reblogs = 0L
             var replies = 0L
 
-            response.response?.notes?.forEach { note ->
+            notes.forEach { note ->
                 when (note.type) {
                     "like" -> likes++
                     "reblog" -> reblogs++
@@ -138,6 +150,8 @@ class TumblrClient(
             }
 
             PlatformAnalytics(
+                // total_notes 는 조회수가 아니다(노트 총합) — availability 가 VIEWS 를
+                // 미수집으로 선언하므로 검증 대상이 아니다.
                 views = response.response?.totalNotes ?: 0,
                 likes = likes,
                 comments = replies,
@@ -145,6 +159,10 @@ class TumblrClient(
                 watchTimeSeconds = 0,
                 subscriberGained = 0,
             )
+        } catch (e: PlatformApiException) {
+            // 어떤 지표가 빠졌는지 담은 메시지를 그대로 올려 보낸다. 일반 메시지로 덮으면
+            // 스케줄러 경고 로그에서 원인 지표를 알 수 없다.
+            throw e
         } catch (e: Exception) {
             log.warn("Tumblr 분석 데이터 조회 실패: {}", e.message)
             throw PlatformApiException("Tumblr", "분석 데이터 조회 실패", e)
@@ -169,7 +187,7 @@ class TumblrClient(
             channelId = primaryBlog.name ?: "",
             channelName = primaryBlog.title ?: primaryBlog.name ?: "",
             channelUrl = primaryBlog.url ?: "",
-            subscriberCount = primaryBlog.followers ?: 0,
+            subscriberCount = primaryBlog.followers,
             profileImageUrl = avatar,
         )
     }

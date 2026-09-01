@@ -23,6 +23,9 @@ data class ConnectChannelRequest(
     @field:jakarta.validation.constraints.NotBlank(message = "리다이렉트 URI는 필수입니다")
     @field:jakarta.validation.constraints.Size(max = 2048, message = "리다이렉트 URI는 최대 2048자까지 입력할 수 있습니다")
     val redirectUri: String,
+    @field:jakarta.validation.constraints.NotBlank(message = "OAuth state는 필수입니다")
+    @field:jakarta.validation.constraints.Size(max = 4096, message = "OAuth state는 최대 4096자까지 입력할 수 있습니다")
+    val state: String,
     /** Twitter OAuth 2.0 PKCE code_verifier (Twitter 연동 시 필수) */
     @field:jakarta.validation.constraints.Size(max = 2048, message = "code_verifier는 최대 2048자까지 입력할 수 있습니다")
     val codeVerifier: String? = null,

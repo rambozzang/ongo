@@ -91,18 +91,28 @@ class PortOneClient(
             restClient.post()
                 .uri("/payments/{paymentId}/billing-key", request.paymentId)
                 .body(
-                    mapOf(
-                        "billingKey" to request.billingKey,
-                        "orderName" to request.orderName,
-                        "customer" to mapOf("id" to request.customerId),
-                        "amount" to mapOf("total" to request.amount),
-                        "currency" to request.currency,
-                    ),
+                    buildMap<String, Any> {
+                        request.storeId?.takeIf { it.isNotBlank() }?.let { put("storeId", it) }
+                        put("billingKey", request.billingKey)
+                        request.channelKey?.takeIf { it.isNotBlank() }?.let { put("channelKey", it) }
+                        put("orderName", request.orderName)
+                        put("customer", mapOf("id" to request.customerId))
+                        put("amount", mapOf("total" to request.amount))
+                        put("currency", request.currency)
+                    },
                 )
                 .retrieve()
                 .body(String::class.java)
-        } catch (e: RestClientException) {
-            throw PortOneBillingChargeException("포트원 빌링키 결제 요청이 실패했습니다", e)
+        } catch (_: RestClientException) {
+            /*
+             * **cause 를 붙이지 않는다.**
+             *
+             * 빌링키는 요청 본문에 들어가며, PG 오류 응답이나 HTTP 예외 구현이 요청
+             * 정보를 포함할 수 있다. 이 예외가 스케줄러 로그에 그대로 찍히면 빌링키가
+             * 유출되어 반복 청구에 악용될 수 있다. 재조회로 확인할 수 있는 paymentId 는
+             * 별도 로그 문맥으로 남기므로 원인 체인을 보존할 이유도 없다.
+             */
+            throw PortOneBillingChargeException("포트원 빌링키 결제 요청이 실패했습니다")
         }
 
         // 청구 결과는 요청 응답이 아니라 재조회로 확정한다.

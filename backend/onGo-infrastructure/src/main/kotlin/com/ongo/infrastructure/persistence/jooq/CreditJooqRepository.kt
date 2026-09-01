@@ -141,6 +141,22 @@ class CreditJooqRepository(
             .fetch()
             .map { it.toAiPurchasedCredit() }
 
+    override fun findPurchasedCreditsByIdsForUpdate(
+        userId: Long,
+        ids: Collection<Long>,
+    ): List<AiPurchasedCredit> {
+        if (ids.isEmpty()) return emptyList()
+        return dsl.select()
+            .from(AI_PURCHASED_CREDITS)
+            .where(USER_ID.eq(userId))
+            .and(ID.`in`(ids))
+            // 상태·만료로 거르지 않는다. 되돌릴 대상은 방금 EXHAUSTED 가 된 행일 수 있다.
+            .orderBy(EXPIRES_AT.asc())
+            .forUpdate()
+            .fetch()
+            .map { it.toAiPurchasedCredit() }
+    }
+
     override fun savePurchasedCredit(credit: AiPurchasedCredit): AiPurchasedCredit {
         val id = dsl.insertInto(AI_PURCHASED_CREDITS)
             .set(USER_ID, credit.userId)

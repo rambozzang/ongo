@@ -5,6 +5,7 @@ import com.ongo.domain.webhook.WebhookEventRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.EVENT_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.WEBHOOK_EVENTS
 import org.jooq.DSLContext
+import org.jooq.impl.DSL
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -63,6 +64,23 @@ class SpringTransactionParticipationIT {
         dsl.deleteFrom(WEBHOOK_EVENTS).execute()
     }
 
+    /**
+     * 제약 위반을 **일부러** 일으키기 위한 평범한 INSERT.
+     *
+     * 저장소에는 이런 삽입이 없다. `saveIfAbsent` 는 `ON CONFLICT DO NOTHING` 이라 충돌을
+     * 삼키는 것이 목적이라(멱등 게이트) 유니크 위반을 만들지 못한다. 이 테스트들이 보려는
+     * 것은 "트랜잭션 안에서 DB 오류가 나면 그 뒤가 어떻게 되는가"이므로 **던지는 삽입**이
+     * 반드시 필요하다.
+     */
+    private fun insertRaw(event: WebhookEvent) {
+        dsl.insertInto(WEBHOOK_EVENTS)
+            .set(EVENT_ID, event.eventId)
+            .set(Fields.EVENT_TYPE, event.eventType)
+            .set(DSL.field("payload", String::class.java), event.payload)
+            .set(Fields.STATUS, event.status)
+            .execute()
+    }
+
     private fun event(eventId: String) = WebhookEvent(
         eventId = eventId,
         eventType = "Transaction.Paid",
@@ -102,11 +120,11 @@ class SpringTransactionParticipationIT {
     @DisplayName("트랜잭션 안에서 DB 예외를 삼키면 이후 쿼리가 전부 실패한다 — catch 후 계속 진행 패턴의 함정")
     fun swallowingDbExceptionPoisonsRestOfTransaction() {
         val existing = event("portone:poison-seed")
-        repo.save(existing)
+        insertRaw(existing)
 
         val secondInsertFailed = tx.execute {
             // 1) 제약 위반을 일으키고 예외를 삼킨다. 배치 루프에서 흔한 "이 건만 건너뛰고 계속" 패턴이다.
-            runCatching { repo.save(existing) }
+            runCatching { insertRaw(existing) }
 
             // 2) 같은 트랜잭션에서 다음 작업을 이어간다.
             runCatching { repo.saveIfAbsent(event("portone:poison-next")) }.isFailure
@@ -146,7 +164,7 @@ class SpringTransactionParticipationIT {
             propagationBehavior = TransactionDefinition.PROPAGATION_REQUIRES_NEW
         }
         val duplicate = event("portone:item-2")
-        repo.save(duplicate) // 2번 항목이 반드시 실패하도록 미리 심는다
+        insertRaw(duplicate) // 2번 항목이 반드시 실패하도록 미리 심는다
 
         val processed = mutableListOf<String>()
         val failed = mutableListOf<String>()
@@ -157,7 +175,7 @@ class SpringTransactionParticipationIT {
                 perItem.executeWithoutResult {
                     // 항목마다 두 번 쓴다. 실패 시 앞의 쓰기까지 롤백되는지 보기 위함이다.
                     repo.saveIfAbsent(event("$id-marker"))
-                    if (n == 2) repo.save(duplicate) // UNIQUE 위반
+                    if (n == 2) insertRaw(duplicate) // UNIQUE 위반
                 }
                 processed += id
             } catch (e: Exception) {

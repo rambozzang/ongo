@@ -168,13 +168,17 @@ class TwitterClient(
 
             val metrics = response.data?.publicMetrics
             PlatformAnalytics(
-                views = metrics?.impressionCount ?: 0,
-                likes = metrics?.likeCount ?: 0,
-                comments = metrics?.replyCount ?: 0,
-                shares = metrics?.retweetCount ?: 0,
+                views = metrics?.impressionCount.requireMetric("Twitter", "impression_count"),
+                likes = metrics?.likeCount.requireMetric("Twitter", "like_count"),
+                comments = metrics?.replyCount.requireMetric("Twitter", "reply_count"),
+                shares = metrics?.retweetCount.requireMetric("Twitter", "retweet_count"),
                 watchTimeSeconds = 0,
                 subscriberGained = 0,
             )
+        } catch (e: PlatformApiException) {
+            // 어떤 지표가 빠졌는지 담은 메시지를 그대로 올려 보낸다. 일반 메시지로 덮으면
+            // 스케줄러 경고 로그에서 원인 지표를 알 수 없다.
+            throw e
         } catch (e: Exception) {
             log.warn("Twitter 분석 데이터 조회 실패: {}", e.message)
             throw PlatformApiException("Twitter", "분석 데이터 조회 실패", e)
@@ -196,7 +200,7 @@ class TwitterClient(
             channelId = user.id,
             channelName = user.name ?: user.username ?: "",
             channelUrl = user.username?.let { "https://twitter.com/$it" } ?: "",
-            subscriberCount = user.publicMetrics?.followersCount ?: 0,
+            subscriberCount = user.publicMetrics?.followersCount,
             profileImageUrl = user.profileImageUrl,
         )
     }
@@ -280,7 +284,10 @@ class TwitterClient(
                     userFields = "id",
                     authorization = "Bearer $accessToken",
                 )
-                me.data?.id ?: return PlatformFeedResult(emptyList())
+                me.data?.id ?: return PlatformFeedResult(
+                    items = emptyList(),
+                    errorMessage = "X 계정 식별자를 확인하지 못했습니다.",
+                )
             }
             val response = twitterApi.listUserTweets(
                 userId = userId,
@@ -299,10 +306,11 @@ class TwitterClient(
                     title = tweet.text?.take(100) ?: "",
                     description = tweet.text,
                     platformUrl = "https://twitter.com/i/status/${tweet.id}",
-                    viewCount = tweet.publicMetrics?.impressionCount ?: 0,
-                    likeCount = tweet.publicMetrics?.likeCount ?: 0,
-                    commentCount = tweet.publicMetrics?.replyCount ?: 0,
-                    shareCount = tweet.publicMetrics?.retweetCount ?: 0,
+                    // public_metrics 가 없으면(권한·삭제) 미측정이다.
+                    viewCount = tweet.publicMetrics?.impressionCount,
+                    likeCount = tweet.publicMetrics?.likeCount,
+                    commentCount = tweet.publicMetrics?.replyCount,
+                    shareCount = tweet.publicMetrics?.retweetCount,
                     publishedAt = tweet.createdAt,
                 )
             }
@@ -312,7 +320,10 @@ class TwitterClient(
             )
         } catch (e: Exception) {
             log.error("Twitter 트윗 목록 조회 실패: {}", e.message)
-            return PlatformFeedResult(emptyList())
+            return PlatformFeedResult(
+                items = emptyList(),
+                errorMessage = "X 콘텐츠 목록을 불러오지 못했습니다.",
+            )
         }
     }
 

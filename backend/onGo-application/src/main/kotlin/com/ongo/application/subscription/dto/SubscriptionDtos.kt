@@ -16,6 +16,8 @@ data class SubscriptionResponse(
     val trialEnd: LocalDateTime? = null,
     val pausedAt: LocalDateTime? = null,
     val resumeAt: LocalDateTime? = null,
+    val pendingPlanType: PlanType? = null,
+    val pendingBillingCycle: BillingCycle? = null,
 )
 
 data class PlanFeatures(
@@ -59,4 +61,6 @@ data class StartTrialRequest(
 data class UsageResponse(
     val uploadsThisMonth: Int,
     val storageUsedMb: Long,
+    /** 서버가 계산한 현재 사용자의 실제 저장 한도. 화면에서 임의의 기본값을 만들지 않는다. */
+    val storageLimitBytes: Long,
 )

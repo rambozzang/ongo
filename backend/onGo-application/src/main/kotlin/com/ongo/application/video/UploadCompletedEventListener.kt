@@ -58,7 +58,20 @@ class UploadCompletedEventListener(
             referenceId = event.videoId,
         )
         notificationRepository.save(notification)
-        webSocketNotificationService.sendToUser(event.userId, type.name, mapOf("videoId" to event.videoId))
+        // The notification center consumes the same fields as the persisted notification.
+        // Keep videoId for older clients, but also send the canonical notification fields
+        // so a live upload result is readable and links to the affected video immediately.
+        webSocketNotificationService.sendToUser(
+            event.userId,
+            type.name,
+            mapOf(
+                "title" to title,
+                "message" to message,
+                "referenceType" to "video",
+                "referenceId" to event.videoId,
+                "videoId" to event.videoId,
+            ),
+        )
 
         log.info("업로드 완료 알림 전송. userId: {}, platform: {}, success: {}", event.userId, event.platform, event.success)
     }

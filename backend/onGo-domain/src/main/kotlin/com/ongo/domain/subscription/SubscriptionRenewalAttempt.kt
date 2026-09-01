@@ -14,6 +14,13 @@ data class SubscriptionRenewalAttempt(
     /** 처리한 주기의 시작 시각. 만료된 주기의 끝을 그대로 쓴다. */
     val periodStart: LocalDateTime,
     val outcome: SubscriptionRenewalOutcome,
+    /**
+     * 이 주기의 내부 결제 원장 id. 외부 결제 id 는 `ongo-{paymentId}` 다.
+     *
+     * V103 이전에 만들어진 행은 null 이다. 그 주기는 내부 원장 없이 청구됐으므로
+     * **재청구하지 않고** 운영 확인 대상으로 둔다.
+     */
+    val paymentId: Long? = null,
     val createdAt: LocalDateTime = LocalDateTime.now(),
 )
 
@@ -94,4 +101,43 @@ interface SubscriptionRenewalAttemptRepository {
      * 전자는 건너뛰고, 후자는 **재청구가 아니라 재조회**로 결말을 짓는다.
      */
     fun findByPeriod(subscriptionId: Long, periodStart: LocalDateTime): SubscriptionRenewalAttempt?
+
+    /** 단건 조회. 운영자 재확인이 대상 주기를 특정할 때만 쓴다. */
+    fun findById(id: Long): SubscriptionRenewalAttempt?
+
+    /**
+     * 결과별 조회. [SubscriptionRenewalOutcome.NEEDS_REVIEW] 목록을 보기 위한 것이다.
+     *
+     * 사람이 봐야 한다고 적어 두고 볼 방법이 없으면 그 원장은 없는 것과 같다.
+     */
+    fun findByOutcome(
+        outcome: SubscriptionRenewalOutcome,
+        limit: Int,
+        offset: Int,
+    ): List<SubscriptionRenewalAttempt>
+
+    fun countByOutcome(outcome: SubscriptionRenewalOutcome): Long
+
+    /**
+     * **NEEDS_REVIEW 인 행만** 다른 결과로 확정한다.
+     *
+     * [completeOutcome] 은 ATTEMPTED 만 채우므로 확인 대상 행에는 쓸 수 없다. 그렇다고
+     * 조건 없는 갱신을 열면 확정된 결과를 나중에 덮는 경로가 생긴다. 방향을 뒤집은 조건을
+     * WHERE 에 두어, 확인 대상에서 나가는 전이 **한 방향만** 허용한다.
+     *
+     * 예외를 던지지 않는다. 운영자 둘이 같은 건을 동시에 눌렀을 때 진 쪽은 "이미 처리됨"
+     * 이지 오류가 아니다. **경쟁의 승자는 이 조건부 갱신이 정한다.**
+     *
+     * @return 이번 호출이 전이시켰으면 true. 이미 다른 결과면 false.
+     */
+    fun resolveReviewOutcome(attemptId: Long, to: SubscriptionRenewalOutcome): Boolean
+
+    /**
+     * 선점 행에 결제 원장을 연결한다. [claimPeriod] 와 **같은 트랜잭션**에서 부른다.
+     *
+     * 선점이 먼저이고 결제 생성이 나중인 순서를 지켜야 한다. 결제를 먼저 만들면 선점에
+     * 실패했을 때 아무도 가리키지 않는 PENDING 결제가 남고, 그건 결제 내역에 유령 행으로
+     * 보인다.
+     */
+    fun linkPayment(attemptId: Long, paymentId: Long)
 }

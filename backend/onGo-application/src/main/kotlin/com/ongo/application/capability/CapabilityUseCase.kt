@@ -17,9 +17,15 @@ class CapabilityUseCase(
     @param:Value("\${capabilities.disabled:}")
     private val disabledCapabilities: String = "",
     /**
-     * Nullable only so the application module can be tested without loading the
-     * infrastructure adapters. In the running API these beans are present and
-     * capability state is therefore fail-closed on missing runtime dependencies.
+     * 런타임 의존성. 인프라 어댑터 없이 이 모듈만 테스트할 수 있도록 nullable 이다.
+     *
+     * **null 은 "판단 불가" 이지 "사용 가능" 이 아니다.** 예전에는 null 이면 활성으로
+     * 떨어뜨리고 "단위 테스트뿐" 이라고 주석에 적어 두었는데, 그것을 강제하는 장치가 없었다.
+     * 빈 등록이 조건부로 빠지거나 프로필이 잘못 잡히면 프런트는 AI·UGC·결제를 정상으로
+     * 표시하고, 사용자는 클릭한 뒤에야 실패를 본다. 유료 기능에서 그 순서는 최악이다.
+     *
+     * 이제 null 은 각 기능을 **비활성**으로 만든다. 잘못된 배포는 기능이 잠기는 쪽으로
+     * 틀려야 한다.
      */
     private val chatClientRegistry: ChatClientRegistry? = null,
     private val videoRenderer: VideoRenderer? = null,
@@ -63,8 +69,7 @@ class CapabilityUseCase(
      * 설정 상태를 알려줄 이유도 없다.
      */
     private fun paymentStatus(): RuntimeStatus {
-        // null 은 인프라 빈 없이 도는 모듈 단위 테스트뿐이다. aiStatus 와 같은 관례를 따른다.
-        val readiness = portOneReadiness ?: return RuntimeStatus(enabled = true)
+        val readiness = portOneReadiness ?: return MISSING_DEPENDENCY_PAYMENT
         return if (readiness.isReady()) {
             RuntimeStatus(enabled = true)
         } else {
@@ -76,10 +81,7 @@ class CapabilityUseCase(
     }
 
     private fun aiStatus(): RuntimeStatus {
-        // A null registry means this is an isolated application-module test. The
-        // infrastructure bean is mandatory in the running API, so do not make
-        // unit construction imply that production has an AI provider.
-        val registry = chatClientRegistry ?: return RuntimeStatus(enabled = true)
+        val registry = chatClientRegistry ?: return MISSING_DEPENDENCY_AI
         val available = runCatching {
             AiProvider.entries.any(registry::isProviderAvailable)
         }.getOrDefault(false)
@@ -94,9 +96,7 @@ class CapabilityUseCase(
     }
 
     private fun shortsStatus(): RuntimeStatus {
-        // See aiStatus(): null is only for lightweight tests, while the API bean
-        // receives the real ffmpeg-backed renderer.
-        val renderer = videoRenderer ?: return RuntimeStatus(enabled = true)
+        val renderer = videoRenderer ?: return MISSING_DEPENDENCY_SHORTS
         return runCatching { renderer.checkAvailability() }
             .fold(
                 onSuccess = { availability ->
@@ -116,6 +116,26 @@ class CapabilityUseCase(
     }
 
     companion object {
+        /*
+         * 의존성이 없을 때의 문구.
+         *
+         * 어느 빈이 빠졌는지 쓰지 않는다. 사용자가 할 수 있는 일이 없고, 배포 구성을
+         * 알려 줄 이유도 없다. 이유가 있는 비활성(키 미설정·ffmpeg 없음)과 문구를 맞춰
+         * 둔 것도 의도다 — 사용자에게는 같은 사실이다.
+         */
+        private val MISSING_DEPENDENCY_AI = RuntimeStatus(
+            enabled = false,
+            reason = "AI 기능을 지금 사용할 수 없습니다. 관리자에게 문의해 주세요.",
+        )
+        private val MISSING_DEPENDENCY_SHORTS = RuntimeStatus(
+            enabled = false,
+            reason = "영상 렌더링을 지금 사용할 수 없습니다. 관리자에게 문의해 주세요.",
+        )
+        private val MISSING_DEPENDENCY_PAYMENT = RuntimeStatus(
+            enabled = false,
+            reason = "온라인 결제를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도하거나 고객지원에 문의해 주세요.",
+        )
+
         private val ACTIVE_CAPABILITIES = listOf(
             AppCapability("today"),
             AppCapability("compose"),
@@ -133,6 +153,7 @@ class CapabilityUseCase(
             AppCapability("revenue"),
             AppCapability("ab-tests"),
             AppCapability("analytics/compare"),
+            AppCapability("competitors"),
             AppCapability("goals"),
             AppCapability("inbox-v2"),
             AppCapability("audience"),

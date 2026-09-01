@@ -58,14 +58,40 @@ class ShortsAutoScheduleWorker(
 
         clips.filter { it.renderedVideoId == null }.forEach { clip ->
             val existing = renderJobRepository.findByRunAndClip(run.id, clip.id)
-            if (existing?.status == ShortsRenderJobStatus.FAILED) {
-                fail(run, existing.failureReason ?: "쇼츠 렌더링에 실패했습니다")
-                return
-            }
-            // QUEUED/RUNNING은 requestRender가 같은 job을 반환하므로 재시작·재호출에도
-            // 새 작업을 만들지 않는다. 완료됐지만 clip 연결만 늦은 경우도 다음 tick에서 확인한다.
-            if (existing?.status != ShortsRenderJobStatus.COMPLETED) {
-                renderUseCase.requestRender(run.userId, run.workspaceId, run.id, clip.id)
+            when (existing?.status) {
+                ShortsRenderJobStatus.FAILED -> {
+                    fail(run, existing.failureReason ?: "쇼츠 렌더링에 실패했습니다")
+                    return
+                }
+                ShortsRenderJobStatus.COMPLETED -> {
+                    /*
+                     * 정상 경로에서는 영상 레코드·클립 연결·job 완료 표시가 한 트랜잭션이다.
+                     * 그래도 과거 데이터 복구나 수동 운영 조치로 job만 COMPLETED인 행이 남을
+                     * 수 있다. 이 상태를 단순히 "다음 tick에서 확인"하면 영원히
+                     * renderedVideoId가 채워지지 않아 예약 게시가 멈춘다.
+                     *
+                     * 완료 job이 가진 videoId만 신뢰해 누락된 연결을 복구한다. videoId가
+                     * 없으면 게시할 대상을 특정할 수 없으므로 재렌더/중복 게시를 시도하지 않고
+                     * 명확히 실패시킨다.
+                     */
+                    val renderedVideoId = existing.videoId
+                    if (renderedVideoId == null) {
+                        fail(run, "완료된 쇼츠 렌더 결과의 영상 식별자가 없습니다")
+                        return
+                    }
+                    shortsClipRepository.update(
+                        clip.copy(renderedVideoId = renderedVideoId, status = ClipStatus.RENDERED),
+                    )
+                }
+                ShortsRenderJobStatus.QUEUED,
+                ShortsRenderJobStatus.RUNNING,
+                null -> {
+                    // QUEUED/RUNNING은 requestRender가 같은 job을 반환하므로 재시작·재호출에도
+                    // 새 작업을 만들지 않는다. 아직 job이 없을 때만 실제 렌더를 시작한다.
+                    if (existing == null) {
+                        renderUseCase.requestRender(run.userId, run.workspaceId, run.id, clip.id)
+                    }
+                }
             }
         }
 

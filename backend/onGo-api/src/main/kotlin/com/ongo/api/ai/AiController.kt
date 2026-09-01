@@ -5,6 +5,7 @@ import com.ongo.application.ai.*
 import com.ongo.common.ResData
 import com.ongo.common.annotation.RequiresPermission
 import com.ongo.common.enums.Permission
+import com.ongo.common.enums.AiFeature
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.ai.AiPipeline
 import com.ongo.domain.ai.AiPipelineStep
@@ -39,7 +40,30 @@ class AiController(
 ) {
 
     @Operation(
-        summary = "AI 메타데이터 생성 (5크레딧)",
+        summary = "AI 기능별 크레딧 비용 조회",
+        description = "현재 서버가 적용하는 AI 기능별 크레딧 차감 비용을 조회합니다.",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "조회 성공"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+    )
+    @RequiresPermission(Permission.AI_USE)
+    @GetMapping("/features")
+    fun getFeaturePricing(): ResponseEntity<ResData<List<AiFeaturePricingResponse>>> =
+        ResData.success(
+            AiFeature.entries.map { feature ->
+                AiFeaturePricingResponse(
+                    key = feature.name,
+                    displayName = feature.displayName,
+                    creditCost = feature.creditCost,
+                )
+            },
+        )
+
+    @Operation(
+        // 비용은 AiFeature에서 관리하고 /features로 노출한다. OpenAPI 설명에 숫자를
+        // 복제하면 단가 변경 뒤 문서가 실제 차감액과 달라진다.
+        summary = "AI 메타데이터 생성",
         description = "대본 기반으로 플랫폼별 제목/설명/해시태그를 자동 생성합니다. 대상 플랫폼, 톤, 카테고리를 지정할 수 있습니다."
     )
     @ApiResponses(
@@ -79,7 +103,7 @@ class AiController(
     }
 
     @Operation(
-        summary = "AI 해시태그 생성 (3크레딧)",
+        summary = "AI 해시태그 생성",
         description = "제목과 카테고리를 기반으로 플랫폼별 최적 해시태그를 추천합니다."
     )
     @ApiResponses(
@@ -113,7 +137,7 @@ class AiController(
     }
 
     @Operation(
-        summary = "음성 텍스트 변환 (10크레딧)",
+        summary = "음성 텍스트 변환",
         description = "영상의 음성을 텍스트로 변환합니다 (OpenAI Whisper 기반). 타임스탬프별 세그먼트가 포함됩니다."
     )
     @ApiResponses(
@@ -145,7 +169,7 @@ class AiController(
     }
 
     @Operation(
-        summary = "AI 대본 분석 (5크레딧)",
+        summary = "AI 대본 분석",
         description = "대본을 분석하여 키워드 추출, 타겟 오디언스 식별, 카테고리 추천 및 요약을 제공합니다."
     )
     @ApiResponses(
@@ -172,7 +196,7 @@ class AiController(
     }
 
     @Operation(
-        summary = "AI 댓글 답변 생성 (2크레딧)",
+        summary = "AI 댓글 답변 생성",
         description = "댓글에 대한 톤별(친근한, 전문적, 유머러스 등) 답변을 자동 생성합니다."
     )
     @ApiResponses(
@@ -206,7 +230,7 @@ class AiController(
     }
 
     @Operation(
-        summary = "AI 업로드 시간 추천 (3크레딧)",
+        summary = "AI 업로드 시간 추천",
         description = "채널 분석 데이터를 기반으로 최적의 업로드 요일/시간대를 추천합니다. 예상 성과 향상률이 포함됩니다."
     )
     @ApiResponses(
@@ -238,7 +262,7 @@ class AiController(
     }
 
     @Operation(
-        summary = "AI 주간 리포트 생성 (8크레딧)",
+        summary = "AI 주간 리포트 생성",
         description = "채널 성과를 분석하여 하이라이트, 개선 방안, 다음 주 제안사항이 포함된 마크다운 리포트를 생성합니다."
     )
     @ApiResponses(
@@ -304,7 +328,7 @@ class AiController(
     // ─── Content Gap Analysis endpoint ────────────────────────────
 
     @Operation(
-        summary = "AI 콘텐츠 갭 분석 (10크레딧)",
+        summary = "AI 콘텐츠 갭 분석",
         description = "사용자 콘텐츠와 경쟁자 데이터를 분석하여 미개척 주제 기회와 과포화 주제를 식별합니다."
     )
     @ApiResponses(
@@ -348,7 +372,7 @@ class AiController(
     // ─── Competitor Insight endpoint ─────────────────────────────────
 
     @Operation(
-        summary = "경쟁자 벤치마킹 AI 인사이트 (8크레딧)",
+        summary = "경쟁자 벤치마킹 AI 인사이트",
         description = "내 채널과 경쟁자 데이터를 AI로 분석하여 강점, 약점, 기회, 추천 행동을 제공합니다."
     )
     @ApiResponses(
@@ -369,7 +393,7 @@ class AiController(
     // ─── Strategy Coach endpoint ──────────────────────────────────
 
     @Operation(
-        summary = "AI 전략 코치 (10크레딧)",
+        summary = "AI 전략 코치",
         description = "채널 성과, 영상 이력, 경쟁자 데이터를 종합 분석하여 맞춤형 콘텐츠 전략과 성장 방향을 제안합니다."
     )
     @ApiResponses(
@@ -422,7 +446,7 @@ class AiController(
     // ─── Revenue Report endpoint ──────────────────────────────────
 
     @Operation(
-        summary = "AI 수익 분석 리포트 (8크레딧)",
+        summary = "AI 수익 분석 리포트",
         description = "수익 데이터를 분석하여 수익 트렌드, 플랫폼별 수익 비교, 수익 최적화 전략이 포함된 리포트를 생성합니다."
     )
     @ApiResponses(

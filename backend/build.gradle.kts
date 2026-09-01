@@ -77,7 +77,12 @@ subprojects {
         // Testcontainers 기반 통합 테스트는 Docker가 있는 로컬/전용 CI에서 실행한다.
         // 배포 Jenkins처럼 Docker를 제공하지 않는 환경에서는 단위 테스트만 돌릴 수 있게
         // 명시적인 스위치를 둔다. 기본값은 false라 로컬 전체 테스트 동작은 유지된다.
-        if (project.findProperty("skipIntegrationTests") == "true") {
+        val skipIntegrationTests = project.findProperty("skipIntegrationTests") == "true"
+        // 이 값을 task input으로 선언하지 않으면, 전체 테스트 직후 skip 모드가
+        // `UP-TO-DATE`로 이전 결과(XML 포함)를 재사용할 수 있다. 그러면 통합 테스트를
+        // 실제로 제외했는지 결과 파일만 보고는 확인할 수 없다.
+        inputs.property("skipIntegrationTests", skipIntegrationTests)
+        if (skipIntegrationTests) {
             exclude("**/*IT.class")
         }
     }

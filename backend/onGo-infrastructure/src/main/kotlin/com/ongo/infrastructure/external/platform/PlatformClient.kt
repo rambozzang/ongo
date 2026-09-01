@@ -4,6 +4,7 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.enums.MediaType
 import com.ongo.common.exception.PlatformUploadException
 import com.ongo.application.publicapi.PlatformToolDefinition
+import com.ongo.domain.analytics.RevenueReport
 import com.ongo.domain.channel.PlainToken
 import org.springframework.web.client.RestClient
 import java.time.LocalDate
@@ -68,6 +69,22 @@ interface PlatformClient {
         throw UnsupportedOperationException("${platform.name} 이미지 게시를 지원하지 않습니다")
     fun getVideoStatus(platformVideoId: String, accessToken: String): PlatformVideoStatus
     fun getVideoAnalytics(platformVideoId: String, accessToken: String, startDate: LocalDate, endDate: LocalDate): PlatformAnalytics
+
+    /**
+     * 기간별 일별 광고 수익.
+     *
+     * **[getVideoAnalytics] 와 분리된 호출이다.** 금전 지표는 별도 OAuth scope 를 요구해
+     * 실패 확률이 다르다. 여기서 실패해도 일반 분석 수집은 영향을 받지 않아야 한다.
+     *
+     * 기본값은 [RevenueReport.UNSUPPORTED] — 수익을 수집하지 않는 플랫폼은 아무것도
+     * 구현하지 않아도 정직하게 "미지원"으로 남는다. 0 원을 지어내지 않는다.
+     */
+    fun getVideoRevenue(
+        platformVideoId: String,
+        accessToken: String,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): RevenueReport = RevenueReport.UNSUPPORTED
     fun getChannelInfo(accessToken: String): PlatformChannelInfo
     fun refreshToken(refreshToken: String): PlatformTokenResult
     fun exchangeCodeForTokens(authorizationCode: String, redirectUri: String, codeVerifier: String? = null): PlatformTokenResult
@@ -206,10 +223,20 @@ data class PlatformFeedItem(
     val description: String? = null,
     val thumbnailUrl: String? = null,
     val platformUrl: String? = null,
-    val viewCount: Long = 0,
-    val likeCount: Long = 0,
-    val commentCount: Long = 0,
-    val shareCount: Long = 0,
+    /**
+     * 피드 지표. **플랫폼이 주지 않거나 응답에 없으면 `null`** — `0` 이 아니다.
+     *
+     * 이 값은 어디에도 저장되지 않고 `/videos/feed` 응답으로 화면에 바로 나간다. 그래서
+     * `analytics_daily`(`NOT NULL DEFAULT 0`) 와 달리 **`null` 을 그대로 실어 보낼 수 있다.**
+     *
+     * 예전에는 `?: 0` 이었다. Instagram 미디어 목록은 조회수를 주지 않는데 그 자리가 `0` 이
+     * 되어, 목록 화면이 "조회수 0" 을 그리고 **조회수 정렬에서 모든 Instagram 영상이 맨
+     * 아래로 밀렸다.** 응답이 실제로 0 을 주면 그 0 은 관측이므로 그대로 둔다.
+     */
+    val viewCount: Long? = null,
+    val likeCount: Long? = null,
+    val commentCount: Long? = null,
+    val shareCount: Long? = null,
     val publishedAt: String? = null,
 )
 
@@ -217,13 +244,24 @@ data class PlatformFeedResult(
     val items: List<PlatformFeedItem>,
     val nextPageToken: String? = null,
     val totalCount: Int? = null,
+    /** 외부 목록 조회 실패를 빈 성공 목록과 구분하기 위한 사용자 안전 메시지. */
+    val errorMessage: String? = null,
 )
 
 data class PlatformChannelInfo(
     val channelId: String,
     val channelName: String,
     val channelUrl: String,
-    val subscriberCount: Long,
+    /**
+     * 구독자(팔로워) 수. **응답에 그 필드가 없거나 요청하지 않았으면 `null`.**
+     *
+     * 예전에는 어댑터마다 `?: 0` 을 붙였고 Threads·LinkedIn 은 `0` 을 그대로 박아 넣었다.
+     * 그 `0` 은 `channels.subscriber_count` 에 저장돼 **"구독자 0명"** 이라는 관측처럼
+     * 흘러다녔다 — 실제로는 물어본 적이 없을 뿐이다.
+     *
+     * 응답이 실제로 0 을 주면 그것은 관측이므로 `0` 이다.
+     */
+    val subscriberCount: Long?,
     val profileImageUrl: String?,
 )
 

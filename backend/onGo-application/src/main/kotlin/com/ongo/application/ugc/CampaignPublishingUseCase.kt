@@ -154,13 +154,17 @@ class CampaignPublishingUseCase(
     private fun idempotencyKey(submissionId: Long, platform: String) = "sub:$submissionId:plat:$platform"
 
     private fun isAllowedExternalUrl(platform: Platform, url: String): Boolean {
-        if (!url.startsWith("https://") && !url.startsWith("http://")) return false
         val host = try {
-            URI(url).host?.lowercase() ?: return false
+            URI(url).takeIf { it.scheme.equals("https", ignoreCase = true) }
+                ?.host
+                ?.lowercase()
+                ?: return false
         } catch (_: Exception) {
             return false
         }
-        val allowed = ALLOWED_HOSTS[platform] ?: return true
+        // 플랫폼 매핑이 빠진 경우에도 임의의 URL을 외부 게시물로 저장하면 안 된다.
+        // 매핑 누락은 설정/구현 누락이지 검증을 우회할 이유가 아니므로 fail-closed 한다.
+        val allowed = ALLOWED_HOSTS[platform] ?: return false
         return allowed.any { host == it || host.endsWith(".$it") }
     }
 
@@ -211,6 +215,14 @@ class CampaignPublishingUseCase(
             Platform.TWITTER to listOf("twitter.com", "x.com"),
             Platform.FACEBOOK to listOf("facebook.com", "fb.watch"),
             Platform.THREADS to listOf("threads.net"),
+            Platform.PINTEREST to listOf("pinterest.com"),
+            Platform.LINKEDIN to listOf("linkedin.com"),
+            // MVP 외부 게시물 등록은 WordPress.com 주소만 허용한다.
+            // self-hosted WordPress는 URL만으로 소유 플랫폼을 검증할 수 없어 별도 검증 없이는 허용하지 않는다.
+            Platform.WORDPRESS to listOf("wordpress.com"),
+            Platform.TUMBLR to listOf("tumblr.com"),
+            Platform.VIMEO to listOf("vimeo.com"),
+            Platform.DAILYMOTION to listOf("dailymotion.com"),
         )
     }
 }

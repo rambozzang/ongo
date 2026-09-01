@@ -28,8 +28,35 @@ class PublishVideoUseCase(
     private val videoUploadPoller: VideoUploadPoller,
     private val userWriteGuard: UserWriteGuard,
     private val scheduleRepository: ScheduleRepository,
+    /**
+     * 플랫폼 연동 설정 조회 통로. 인프라 어댑터 없이 이 모듈만 테스트할 수 있도록 nullable 이다.
+     *
+     * **null 은 "확인할 수 없음" 이지 "설정됨" 이 아니다.** 예전에는 `?.` 로 검사 전체를
+     * 건너뛰어, 어댑터가 없으면 미설정 플랫폼으로도 게시가 통과했다. 사용자는 "게시
+     * 요청됨" 을 보고 외부 호출 단계에서 조용히 실패했다. 잘못된 배포는 게시가 막히는
+     * 쪽으로 틀려야 한다.
+     */
     private val platformConfigurationPort: PlatformConfigurationPort? = null,
 ) {
+
+    /**
+     * 이 배포가 해당 플랫폼에 게시할 수 있는지 확인한다. 아니면 게시 전에 끊는다.
+     *
+     * 조회 통로가 없으면 확인할 방법이 없다는 뜻이므로 통과시키지 않는다.
+     */
+    private fun requirePlatformConfigured(platform: com.ongo.common.enums.Platform) {
+        val port = platformConfigurationPort
+            ?: throw BusinessException(
+                "PLATFORM_NOT_CONFIGURED",
+                "$platform 플랫폼 연동 설정을 확인할 수 없어 게시할 수 없습니다.",
+            )
+        port.status(platform).takeUnless { it.configured }?.let { status ->
+            throw BusinessException(
+                "PLATFORM_NOT_CONFIGURED",
+                status.reason ?: "$platform 플랫폼 연동 설정이 없어 게시할 수 없습니다.",
+            )
+        }
+    }
 
     @Transactional
     fun publishVideo(userId: Long, videoId: Long, configs: List<PlatformUploadConfig>): PublishResult {
@@ -52,12 +79,7 @@ class PublishVideoUseCase(
 
         require(video.fileUrl != null) { "업로드가 완료된 미디어 파일을 찾을 수 없습니다." }
         effectiveConfigs.forEach { config ->
-            platformConfigurationPort?.status(config.platform)?.takeUnless { it.configured }?.let { status ->
-                throw BusinessException(
-                    "PLATFORM_NOT_CONFIGURED",
-                    status.reason ?: "${config.platform} 플랫폼 연동 설정이 없어 게시할 수 없습니다.",
-                )
-            }
+            requirePlatformConfigured(config.platform)
             val capability = PlatformUploadCapabilities.get(config.platform)
                 ?: throw IllegalArgumentException("${video.mediaType.name.lowercase()} 게시를 지원하지 않는 플랫폼입니다: ${config.platform}")
             require(video.mediaType in capability.acceptedMediaTypes) {

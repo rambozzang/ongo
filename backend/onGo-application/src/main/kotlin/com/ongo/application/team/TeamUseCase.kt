@@ -5,6 +5,7 @@ import com.ongo.common.enums.Permission
 import com.ongo.common.exception.DuplicateResourceException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.team.RolePermissions
 import com.ongo.domain.team.TeamMember
 import com.ongo.domain.team.TeamMemberRepository
@@ -62,9 +63,64 @@ class TeamUseCase(
             throw com.ongo.common.exception.BusinessException("INVALID_TEAM_ROLE", "초대할 수 없는 팀 역할입니다: $role")
         }
 
+        /*
+         * **소유자 행을 잠근 뒤에 판정한다.**
+         *
+         * 아래 두 검사는 모두 "읽어 보고 없으면 넣는" 모양이라, 잠그지 않으면
+         * READ COMMITTED 에서 동시에 들어온 요청이 **커밋 전 같은 상태**를 읽고 둘 다
+         * 통과한다. 가상의 경합이 아니다 — 초대 화면은 쉼표로 나눈 이메일을
+         * `Promise.all` 로 **동시에** 보낸다(`InviteMemberModal.vue`).
+         *
+         * 잠그지 않았을 때 실제로 새던 것:
+         *  - 좌석 한도: Pro(2석)에 이메일 3개를 한 번에 넣으면 3석이 만들어진다.
+         *  - 중복 초대: 같은 이메일 두 요청이 둘 다 "없음" 을 보고 두 행을 만든다.
+         *    `team_members` 에는 이를 막을 UNIQUE 제약이 없다(`V5__collab_tables.sql`).
+         *
+         * 잠글 대상은 **소유자당 정확히 하나 있는 행**이어야 한다. `users` 행이 그것이고,
+         * 어차피 플랜을 읽으려고 이미 조회하던 행이라 질의가 늘지 않는다. 같은 소유자의
+         * 초대만 직렬화되므로 다른 사용자에게는 영향이 없다.
+         *
+         * 인스턴스 수와 무관하다. 이 경합은 같은 JVM 의 두 요청 스레드 사이에서 일어나므로
+         * 단일 인스턴스에서도 성립한다. 그래서 인메모리 락이 아니라 **행 잠금**이어야 한다.
+         *
+         * 이 트랜잭션에서 잠그는 행은 이것 하나뿐이라 잠금 순서로 인한 교착은 생기지 않는다.
+         */
+        val user = userRepository.findByIdForUpdate(userId) ?: throw NotFoundException("사용자", userId)
+
+        /*
+         * 판정 순서는 잠금 도입 전과 같다 — **중복이 한도보다 먼저**다.
+         *
+         * 이미 초대한 이메일을 다시 초대하는 것은 좌석을 늘리지 않으므로 "한도 초과" 가
+         * 아니라 "중복" 이라고 말해야 사용자가 무엇을 해야 할지 안다. 순서를 뒤집으면
+         * 좌석이 꽉 찬 팀에서 재초대가 "업그레이드하세요" 로 안내된다.
+         */
         val existing = teamMemberRepository.findByUserIdAndEmail(userId, email)
         if (existing != null) {
             throw DuplicateResourceException("팀 멤버", email)
+        }
+
+        /*
+         * **좌석 한도는 서버가 강제한다.**
+         *
+         * `PlanType.maxTeamMembers` 는 요금제 비교 API(`SubscriptionUseCase.toPlanLimits`)로
+         * 사용자에게 그대로 광고된다 — Free·Starter 0명, Pro 2명, Business 10명. 그런데 이
+         * 값을 **읽어서 막는 곳이 한 군데도 없었다.** 초대 경로에는 이메일 형식·역할·중복
+         * 검사만 있고, `AppCapability("team")` 은 조건 없이 켜져 있으며 컨트롤러에도 게이트가
+         * 없다. 그래서 Free 사용자가 팀원을 **무제한으로** 초대할 수 있었다.
+         *
+         * 협업은 Pro 이상에서만 파는 기능이다. 광고한 한도를 강제하지 않으면 그 값은 가격표의
+         * 장식일 뿐이고, 상위 플랜을 살 이유가 사라진다.
+         *
+         * ## 무엇을 한 좌석으로 세는가
+         *
+         * `findByUserId` 가 돌려주는 **모든 행**이다. 수락 전(INVITED)이라도 좌석을 차지한다.
+         * 수락한 것만 세면 대기 중인 초대를 무제한으로 쌓아 두고 한꺼번에 수락시켜 한도를
+         * 그대로 넘길 수 있다. 만료된 초대도 행이 남아 있는 동안은 좌석을 차지하며,
+         * 소유자가 [removeMember] 로 지우면 즉시 비워진다.
+         */
+        val seatLimit = user.planType.maxTeamMembers
+        if (teamMemberRepository.findByUserId(userId).size >= seatLimit) {
+            throw PlanLimitExceededException("팀 멤버", seatLimit)
         }
 
         val member = TeamMember(

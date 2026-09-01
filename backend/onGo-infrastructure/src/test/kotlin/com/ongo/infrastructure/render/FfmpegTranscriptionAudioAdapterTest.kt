@@ -52,6 +52,7 @@ class FfmpegTranscriptionAudioAdapterTest {
         executable: String = "/nonexistent/ongo-test-ffmpeg",
         probeExecutable: String = "/nonexistent/ongo-test-ffprobe",
         partSeconds: Long = 600,
+        tempDirectory: String = fixtureDir.toString(),
     ) = FfmpegTranscriptionAudioAdapter(
         executable = executable,
         probeExecutable = probeExecutable,
@@ -59,6 +60,7 @@ class FfmpegTranscriptionAudioAdapterTest {
         timeoutSeconds = 5,
         probeTimeoutSeconds = 5,
         audioBitrate = "64k",
+        tempDirectory = tempDirectory,
     )
 
     /** 임시 디렉터리에 실행 가능한 POSIX 스크립트를 만든다. */
@@ -197,12 +199,12 @@ class FfmpegTranscriptionAudioAdapterTest {
 
     @Test
     fun `길이 프로브는 임시 디렉터리를 남기지 않는다`() {
-        val before = sttTempDirs()
+        val before = sttTempDirs(fixtureDir)
         val probe = script("fake-ffprobe2", "echo 12.000000")
 
         adapter(probeExecutable = probe).probeDurationMs("https://storage.test/s.mp4")
 
-        assertEquals(before, sttTempDirs())
+        assertEquals(before, sttTempDirs(fixtureDir))
     }
 
     // ---- 실패 경로 ----
@@ -226,13 +228,13 @@ class FfmpegTranscriptionAudioAdapterTest {
     /* 실패 경로에서는 호출자가 close 할 대상을 못 받는다. 우리가 치우지 않으면 아무도 안 치운다. */
     @Test
     fun `추출에 실패하면 임시 디렉터리를 남기지 않는다`() {
-        val before = sttTempDirs()
+        val before = sttTempDirs(fixtureDir)
 
         assertFailsWith<AudioPreparationException> {
             adapter().prepare("https://storage.test/source.mp4")
         }
 
-        assertEquals(before, sttTempDirs())
+        assertEquals(before, sttTempDirs(fixtureDir))
     }
 
     @Test
@@ -241,8 +243,14 @@ class FfmpegTranscriptionAudioAdapterTest {
         assertFailsWith<IllegalArgumentException> { adapter(partSeconds = 0) }
     }
 
-    private fun sttTempDirs(): Set<String> {
-        val tmp = Path.of(System.getProperty("java.io.tmpdir"))
+    @Test
+    fun `임시 디렉터리가 없으면 생성 시점에 거부한다`() {
+        assertFailsWith<IllegalArgumentException> {
+            adapter(tempDirectory = fixtureDir.resolve("missing").toString())
+        }
+    }
+
+    private fun sttTempDirs(tmp: Path): Set<String> {
         if (!Files.isDirectory(tmp)) return emptySet()
         return Files.list(tmp).use { stream ->
             stream.filter { it.name.startsWith("ongo-stt-") }.map { it.name }.toList().toSet()

@@ -28,6 +28,7 @@ import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.video.VideoUpload
 import com.ongo.domain.video.VideoUploadRepository
 import com.ongo.application.platform.PlatformConfigurationPort
+import com.ongo.application.platform.PlatformConfigurationStatus
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -56,10 +57,36 @@ class StreamPublishUseCase(
     private val userWriteGuard: UserWriteGuard,
     private val distributedLockPort: DistributedLockPort? = null,
     private val platformClientPort: PlatformClientPort? = null,
+    /**
+     * 플랫폼 연동 설정 조회 통로. 인프라 어댑터 없이 이 모듈만 테스트할 수 있도록 nullable 이다.
+     *
+     * **null 은 "확인할 수 없음" 이지 "설정됨" 이 아니다.** 예전에는 `?.` 로 검사를 건너뛰어
+     * 어댑터가 없으면 미설정 플랫폼으로도 업로드가 시작됐고, 사용자는 바이트를 다 올린 뒤에야
+     * 실패했다. 잘못된 배포는 게시가 막히는 쪽으로 틀려야 한다.
+     */
     private val platformConfigurationPort: PlatformConfigurationPort? = null,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * 이 배포가 해당 플랫폼에 게시할 수 있는지 확인한다. 아니면 업로드를 시작하기 전에 끊는다.
+     *
+     * 조회 통로가 없으면 확인할 방법이 없다는 뜻이므로 통과시키지 않는다.
+     */
+    private fun requirePlatformConfigured(platform: Platform) {
+        val port = platformConfigurationPort
+            ?: throw BusinessException(
+                "PLATFORM_NOT_CONFIGURED",
+                "$platform 플랫폼 연동 설정을 확인할 수 없어 게시할 수 없습니다.",
+            )
+        port.status(platform).takeUnless { it.configured }?.let { status ->
+            throw BusinessException(
+                "PLATFORM_NOT_CONFIGURED",
+                status.reason ?: "$platform 플랫폼 연동 설정이 없어 게시할 수 없습니다.",
+            )
+        }
+    }
 
     companion object {
         private const val CHUNK_SIZE = 256 * 1024 // 256KB
@@ -262,8 +289,17 @@ class StreamPublishUseCase(
     }
 
     fun getCapabilities(): List<PlatformUploadCapability> = PlatformUploadCapabilities.all().map { capability ->
+        /*
+         * 조회 통로가 없으면 **설정됨으로 보지 않는다.** 예전에는 null 을 정상으로 읽어
+         * 프런트가 미설정 플랫폼을 선택 가능한 것처럼 보여줬고, 사용자는 고른 뒤에야
+         * 실패했다.
+         */
         val status = platformConfigurationPort?.status(capability.platform)
-        if (status == null || status.configured) {
+            ?: PlatformConfigurationStatus(
+                configured = false,
+                reason = "${capability.platform} 플랫폼 연동 설정을 확인할 수 없습니다.",
+            )
+        if (status.configured) {
             capability
         } else {
             capability.copy(
@@ -293,12 +329,7 @@ class StreamPublishUseCase(
         request.platforms.forEach { platformRequest ->
             val capability = PlatformUploadCapabilities.get(platformRequest.platform)
                 ?: throw IllegalArgumentException("영상 직접 업로드를 지원하지 않는 플랫폼입니다: ${platformRequest.platform}")
-            platformConfigurationPort?.status(platformRequest.platform)?.takeUnless { it.configured }?.let { status ->
-                throw BusinessException(
-                    "PLATFORM_NOT_CONFIGURED",
-                    status.reason ?: "${platformRequest.platform} 플랫폼 연동 설정이 없어 게시할 수 없습니다.",
-                )
-            }
+            requirePlatformConfigured(platformRequest.platform)
             require(capability.directVideoUpload) {
                 capability.unavailableReason ?: "${platformRequest.platform} 영상 직접 업로드는 현재 지원하지 않습니다."
             }

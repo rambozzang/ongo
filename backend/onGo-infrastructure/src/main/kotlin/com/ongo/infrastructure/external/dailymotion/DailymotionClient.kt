@@ -115,13 +115,17 @@ class DailymotionClient(
             )
 
             PlatformAnalytics(
-                views = response.viewsTotal ?: 0,
-                likes = response.likesTotal ?: 0,
-                comments = response.commentsTotal ?: 0,
+                views = response.viewsTotal.requireMetric("Dailymotion", "views_total"),
+                likes = response.likesTotal.requireMetric("Dailymotion", "likes_total"),
+                comments = response.commentsTotal.requireMetric("Dailymotion", "comments_total"),
                 shares = response.bookmarksTotal ?: 0,
                 watchTimeSeconds = 0,
                 subscriberGained = 0,
             )
+        } catch (e: PlatformApiException) {
+            // 어떤 지표가 빠졌는지 담은 메시지를 그대로 올려 보낸다. 일반 메시지로 덮으면
+            // 스케줄러 경고 로그에서 원인 지표를 알 수 없다.
+            throw e
         } catch (e: Exception) {
             log.warn("Dailymotion 분석 데이터 조회 실패: {}", e.message)
             throw PlatformApiException("Dailymotion", "분석 데이터 조회 실패", e)
@@ -142,7 +146,7 @@ class DailymotionClient(
             channelId = profileId,
             channelName = response.displayName ?: response.screenname ?: "",
             channelUrl = response.url ?: "https://www.dailymotion.com/$profileId",
-            subscriberCount = response.followersTotal ?: 0,
+            subscriberCount = response.followersTotal,
             profileImageUrl = response.avatarUrl,
         )
     }

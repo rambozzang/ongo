@@ -10,9 +10,12 @@ import io.mockk.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
+import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class VideoUploadPollerTest {
@@ -101,6 +104,81 @@ class VideoUploadPollerTest {
     }
 
     @Test
+    fun `Accepted 상태가 상한 미만이면 provider retryAfter를 보존하고 PROCESSING을 유지한다`() {
+        val beforePoll = LocalDateTime.now()
+        val due = VideoUpload(
+            id = 24L,
+            videoId = 14L,
+            platform = Platform.TIKTOK,
+            platformVideoId = "accepted-24",
+            pollToken = "accepted-24",
+            status = UploadStatus.PROCESSING,
+        )
+        val claimed = due.copy(attemptCount = 119, leaseOwner = "poll-owner")
+        every { uploads.findDueProcessingUploads(any()) } returns listOf(due)
+        every { uploads.claimForStatusCheck(eq(24L), any(), any(), any()) } returns claimed
+        every { videos.findById(14L) } returns Video(id = 14L, userId = 21L, title = "처리 중 영상")
+        every { service.supports(Platform.TIKTOK) } returns true
+        every { service.poll(Platform.TIKTOK, "accepted-24", 21L, any(), any()) } returns PlatformUploadResult(
+            success = true,
+            platformVideoId = "accepted-24",
+            pollToken = "accepted-24",
+            published = false,
+            retryAfter = Duration.ofMinutes(5),
+        )
+        every { uploads.updateOwned(any(), any()) } returns true
+        every { uploads.findByVideoId(14L) } returns listOf(due)
+
+        poller.pollDueUploads()
+
+        val saved = slot<VideoUpload>()
+        verify { uploads.updateOwned(capture(saved), match { it.startsWith("poll:24:") }) }
+        assertEquals(UploadStatus.PROCESSING, saved.captured.status)
+        assertEquals("accepted-24", saved.captured.pollToken)
+        assertTrue(saved.captured.nextRetryAt?.isAfter(beforePoll.plusMinutes(4)) == true)
+        verify(exactly = 0) { events.publishEvent(any<UploadCompletedEvent>()) }
+    }
+
+    @Test
+    fun `Accepted 상태가 polling 상한에 도달하면 UNCONFIRMED와 실패 알림으로 종료한다`() {
+        val due = VideoUpload(
+            id = 23L,
+            videoId = 7L,
+            platform = Platform.TIKTOK,
+            platformVideoId = "accepted-23",
+            pollToken = "accepted-23",
+            status = UploadStatus.PROCESSING,
+        )
+        val claimed = due.copy(attemptCount = 120, leaseOwner = "poll-owner")
+        every { uploads.findDueProcessingUploads(any()) } returns listOf(due)
+        every { uploads.claimForStatusCheck(eq(23L), any(), any(), any()) } returns claimed
+        every { videos.findById(7L) } returns Video(id = 7L, userId = 20L, title = "확인 불가 영상")
+        every { service.supports(Platform.TIKTOK) } returns true
+        every { service.poll(Platform.TIKTOK, "accepted-23", 20L, any(), any()) } returns PlatformUploadResult(
+            success = true,
+            platformVideoId = "accepted-23",
+            pollToken = "accepted-23",
+            published = false,
+            retryAfter = Duration.ofMinutes(5),
+        )
+        every { uploads.updateOwned(any(), any()) } returns true
+        every { uploads.findByVideoId(7L) } returns listOf(due.copy(status = UploadStatus.UNCONFIRMED))
+
+        poller.pollDueUploads()
+
+        verify { uploads.updateOwned(match {
+            it.status == UploadStatus.UNCONFIRMED &&
+                it.errorMessage == "플랫폼이 게시 결과를 확정하지 않았습니다. 게시 여부를 직접 확인해 주세요." &&
+                it.pollToken == null &&
+                it.nextRetryAt == null
+        }, match { it.startsWith("poll:23:") }) }
+        verify(exactly = 1) { events.publishEvent(match<UploadCompletedEvent> {
+            it.videoId == 7L && it.userId == 20L && it.platform == Platform.TIKTOK && !it.success
+        }) }
+        verify(exactly = 0) { service.upload(any(), any(), any()) }
+    }
+
+    @Test
     fun `확인 불가 상태 재확인은 새 업로드 없이 상태 조회만 한다`() {
         val upload = VideoUpload(
             id = 12L,
@@ -159,12 +237,26 @@ class VideoUploadPollerTest {
         )
         every { uploads.findDueProcessingUploads(any()) } returns listOf(due)
         every { videos.findById(5L) } returns Video(id = 5L, userId = 11L, title = "영상")
+        /*
+         * 운영의 PlatformUploadServiceImpl 도 같은 값을 돌려준다. 예전에는 클라이언트 빈
+         * 존재만 보고 true 였고, 이 stub 만 false 라 테스트는 통과하면서 실제 경로는
+         * 보호되지 않았다. 그 대응은 PlatformUploadServiceImplTest 가 고정한다.
+         */
         every { service.supports(Platform.NAVER_CLIP) } returns false
         every { uploads.findByVideoId(5L) } returns listOf(due.copy(status = UploadStatus.FAILED))
 
         poller.pollDueUploads()
 
-        verify { uploads.update(match { it.id == 14L && it.status == UploadStatus.FAILED }) }
+        val saved = slot<VideoUpload>()
+        verify { uploads.update(capture(saved)) }
+        assertEquals(14L, saved.captured.id)
+        assertEquals(UploadStatus.FAILED, saved.captured.status)
+        // 사용자가 읽을 이유여야 한다. 내부 마이그레이션 안내가 실패 사유가 되면 안 된다.
+        val reason = saved.captured.errorMessage
+        assertNotNull(reason)
+        assertTrue(reason.contains("Naver Clip"), "실패 사유에 플랫폼 설명이 없다: $reason")
+        assertFalse(reason.contains("StreamPublishUseCase"), "내부 문구가 노출됐다: $reason")
+
         verify { events.publishEvent(match<UploadCompletedEvent> {
             it.platform == Platform.NAVER_CLIP && !it.success
         }) }
@@ -385,5 +477,37 @@ class VideoUploadPollerTest {
 
         verify(exactly = 0) { service.poll(any(), any(), any(), any(), any()) }
         verify(exactly = 0) { uploads.updateOwned(any(), any()) }
+    }
+
+    @Test
+    fun `상태 반영 전에 lease를 잃으면 오래된 완료 알림을 발행하지 않는다`() {
+        val due = VideoUpload(
+            id = 25L,
+            videoId = 15L,
+            platform = Platform.YOUTUBE,
+            platformVideoId = "video-25",
+            pollToken = "video-25",
+            status = UploadStatus.PROCESSING,
+        )
+        val claimed = due.copy(attemptCount = 2, leaseOwner = "poll-owner")
+        every { uploads.findDueProcessingUploads(any()) } returns listOf(due)
+        every { uploads.claimForStatusCheck(eq(25L), any(), any(), any()) } returns claimed
+        every { videos.findById(15L) } returns Video(id = 15L, userId = 22L, title = "lease 경쟁 영상")
+        every { service.supports(Platform.YOUTUBE) } returns true
+        every { service.poll(Platform.YOUTUBE, "video-25", 22L, any(), any()) } returns
+            PlatformUploadResult(
+                success = true,
+                platformVideoId = "published-25",
+                platformUrl = "https://www.youtube.com/watch?v=published-25",
+                published = true,
+            )
+        // 다른 작업자가 먼저 lease를 갱신했으므로 이 작업자의 상태 저장은 반영되지 않는다.
+        every { uploads.updateOwned(any(), any()) } returns false
+
+        poller.pollDueUploads()
+
+        verify(exactly = 1) { uploads.updateOwned(any(), any()) }
+        verify(exactly = 0) { events.publishEvent(any<UploadCompletedEvent>()) }
+        verify(exactly = 0) { videos.update(any()) }
     }
 }

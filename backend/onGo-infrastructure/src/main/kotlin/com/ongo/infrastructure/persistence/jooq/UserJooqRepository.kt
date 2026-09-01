@@ -40,6 +40,14 @@ class UserJooqRepository(
             .fetchOne()
             ?.toUser()
 
+    override fun findByIdForUpdate(id: Long): User? =
+        dsl.select()
+            .from(USERS)
+            .where(ID.eq(id))
+            .forUpdate()
+            .fetchOne()
+            ?.toUser()
+
     override fun findByEmail(email: String): User? =
         dsl.select()
             .from(USERS)

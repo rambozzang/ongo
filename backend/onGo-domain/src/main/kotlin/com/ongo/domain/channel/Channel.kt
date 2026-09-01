@@ -28,7 +28,15 @@ data class Channel(
     val platformChannelId: String,
     val channelName: String,
     val channelUrl: String? = null,
-    val subscriberCount: Long = 0,
+    /**
+     * 구독자(팔로워) 수. **재지 않았으면 `null`** — `0` 은 실제로 0 명이라는 관측이다.
+     *
+     * `channels.subscriber_count` 는 `NOT NULL` 이 아니고 기본값만 `0` 이다
+     * (`V1__init_schema.sql:67`). 예전에는 어댑터가 `?: 0` 으로 채우고 저장소가 읽을 때
+     * 다시 `?: 0` 을 붙여, **묻지 않아서 비어 있는 자리**와 구독자가 정말 없는 채널을
+     * 구분할 수 없었다.
+     */
+    val subscriberCount: Long? = null,
     val profileImageUrl: String? = null,
     val accessToken: EncryptedToken,
     val refreshToken: EncryptedToken? = null,

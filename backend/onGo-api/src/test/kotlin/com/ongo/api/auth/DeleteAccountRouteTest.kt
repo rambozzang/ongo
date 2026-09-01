@@ -1,5 +1,6 @@
 package com.ongo.api.auth
 
+import com.ongo.api.config.ClientAddressResolver
 import com.ongo.api.config.CurrentUserArgumentResolver
 import com.ongo.api.config.GlobalExceptionHandler
 import com.ongo.application.auth.AuthOAuthAuthorizationUseCase
@@ -58,6 +59,8 @@ class DeleteAccountRouteTest {
             authRateLimiter = mockk(relaxed = true),
             oAuthStateManager = mockk(relaxed = true),
             authOAuthAuthorizationUseCase = mockk<AuthOAuthAuthorizationUseCase>(relaxed = true),
+            // 이 경로는 상한을 지나지 않지만 컨트롤러가 요구하므로 실제 구현을 넣는다.
+            clientAddressResolver = ClientAddressResolver(),
         )
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setCustomArgumentResolvers(CurrentUserArgumentResolver())

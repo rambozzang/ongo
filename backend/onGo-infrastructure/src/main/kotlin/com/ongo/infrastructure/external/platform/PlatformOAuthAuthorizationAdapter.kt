@@ -3,6 +3,7 @@ package com.ongo.infrastructure.external.platform
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.channel.PlatformOAuthAuthorizationPort
+import com.ongo.domain.channel.PlatformOAuthScopes
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.springframework.web.util.UriComponentsBuilder
@@ -87,7 +88,7 @@ class PlatformOAuthAuthorizationAdapter(
     }
 
     private fun scopes(platform: Platform): String = when (platform) {
-        Platform.YOUTUBE -> "https://www.googleapis.com/auth/youtube"
+        Platform.YOUTUBE -> PlatformOAuthScopes.YOUTUBE
         Platform.TIKTOK -> "video.publish,video.upload,video.list"
         Platform.INSTAGRAM -> "instagram_business_basic,instagram_business_content_publish"
         Platform.NAVER_CLIP -> throw unsupportedNaver()

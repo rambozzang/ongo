@@ -27,6 +27,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.VERSION
 import com.ongo.infrastructure.persistence.jooq.Fields.WORKSPACE_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.UGC_SHORTS_PIPELINE_RUNS
+import com.ongo.infrastructure.persistence.jooq.Tables.UGC_SHORTS_RUN_STAGES
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -34,6 +35,12 @@ import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+
+/** 단계 테이블 컬럼. 바깥 실행 테이블과 이름이 겹치므로 반드시 한정한다. */
+private val STAGE_RUN_ID = DSL.field(DSL.name("ugc_shorts_run_stages", "run_id"), Long::class.java)
+private val STAGE_STATUS = DSL.field(DSL.name("ugc_shorts_run_stages", "status"), String::class.java)
+private val STAGE_REFUNDED_CREDITS = DSL.field(DSL.name("ugc_shorts_run_stages", "refunded_credits"), Int::class.java)
+private val STAGE_CREDIT_COST = DSL.field(DSL.name("ugc_shorts_run_stages", "credit_cost"), Int::class.java)
 
 @Repository
 class ShortsRunJooqRepository(
@@ -152,6 +159,55 @@ class ShortsRunJooqRepository(
      * 대상인 업무 상태가 아니라 관측 기록이기 때문이다 — 진행 중인 update 를 깨뜨리면
      * 측정 때문에 파이프라인이 실패한다.
      */
+    /*
+     * 조건을 SQL 에 둔다. 읽고-비교하고-쓰면 동시에 도착한 두 실행 이벤트가 모두 통과해
+     * 같은 실행이 두 번 돌고, 모든 AI 단계가 두 번 청구된다. 계약은 인터페이스에 있다.
+     *
+     * `error_message` 도 함께 비운다 — 종전 `update(status = RUNNING, errorMessage = null)`
+     * 이 하던 일과 같아야 재실행이 지난 실패 사유를 남기지 않는다.
+     */
+    override fun claimRunning(id: Long): Boolean =
+        dsl.update(UGC_SHORTS_PIPELINE_RUNS)
+            .set(STATUS, PipelineRunStatus.RUNNING.name)
+            .set(ERROR_MESSAGE, null as String?)
+            /*
+             * **확보도 진척이다.** 같은 문장 안에서 version 을 올리고 updated_at 을 갱신한다.
+             *
+             * 이 두 값이 그대로면, 확보 직후 오케스트레이터가 `activeRunIds` 에 등록하기 전
+             * 창에서 고착 복구기가 **확보 이전에 읽은 version 그대로** CAS 에 성공한다.
+             * 방금 시작한 실행이 FAILED 로 바뀌는데도 단계는 계속 돌고, 그 사이 사용자가
+             * 재실행을 누르면 같은 작업이 두 번 청구된다.
+             *
+             * `version + 1` 을 SQL 에서 계산한다. 읽어서 더하면 그 사이의 갱신을 덮어쓴다.
+             * updated_at 도 함께 옮겨야 stale 판정이 "확보 시점" 부터 세어진다 — 그러지 않으면
+             * 무장 시각 기준으로 남아, 무장과 확보 사이가 길었던 실행이 시작하자마자 고착으로
+             * 오인된다.
+             */
+            .set(VERSION, VERSION.plus(1L))
+            .set(UPDATED_AT, LocalDateTime.now())
+            .where(ID.eq(id))
+            // 정상 이벤트는 발행 직전에 반드시 PENDING 으로 무장된다. 계약은 인터페이스에 있다.
+            .and(STATUS.eq(PipelineRunStatus.PENDING.name))
+            .execute() > 0
+
+    /*
+     * 관측한 version 과 RUNNING 을 함께 조건에 둔다. 살아 있는 작업이 단계를 하나라도
+     * 넘겼다면 version 이 올라가 0행이 되고 복구는 일어나지 않는다. 계약은 인터페이스에 있다.
+     *
+     * PENDING 이 아니라 FAILED 로 되돌린다 — FAILED 는 claimRunning 의 조건이 아니므로
+     * 이 복구가 어떤 작업도 다시 실행시키지 않는다.
+     */
+    override fun failStale(id: Long, expectedVersion: Long, reason: String): Boolean =
+        dsl.update(UGC_SHORTS_PIPELINE_RUNS)
+            .set(STATUS, PipelineRunStatus.FAILED.name)
+            .set(ERROR_MESSAGE, reason)
+            .set(VERSION, expectedVersion + 1)
+            .set(UPDATED_AT, LocalDateTime.now())
+            .where(ID.eq(id))
+            .and(STATUS.eq(PipelineRunStatus.RUNNING.name))
+            .and(VERSION.eq(expectedVersion))
+            .execute() > 0
+
     override fun markStartedIfAbsent(id: Long, startedAt: java.time.Instant): Boolean =
         dsl.update(UGC_SHORTS_PIPELINE_RUNS)
             .set(STARTED_AT, localDateTime(startedAt))
@@ -192,6 +248,32 @@ class ShortsRunJooqRepository(
             .from(UGC_SHORTS_PIPELINE_RUNS)
             .where(STATUS.eq(status.name))
             .orderBy(UPDATED_AT.asc())
+            .limit(limit.coerceIn(1, 200))
+            .fetch()
+            .map { it.toPipelineRun() }
+
+    /**
+     * 미정산 단계가 **실제로 남아 있는** 실패 실행만 고른다. 조건을 애플리케이션이 아니라
+     * 질의에 두어야 후보 목록이 처리량에 따라 줄어든다 — 자세한 이유는 인터페이스 문서 참고.
+     *
+     * 상관 서브질의의 컬럼은 전부 테이블명으로 한정한다. 두 테이블 모두 `status` 를 갖고 있어
+     * 한정하지 않으면 바깥 테이블의 `status` 로 해석돼 조건이 조용히 뒤집힌다.
+     */
+    override fun findFailedWithUnsettledStages(limit: Int): List<PipelineRun> =
+        dsl.select()
+            .from(UGC_SHORTS_PIPELINE_RUNS)
+            .where(STATUS.eq(PipelineRunStatus.FAILED.name))
+            .and(
+                DSL.exists(
+                    DSL.selectOne()
+                        .from(UGC_SHORTS_RUN_STAGES)
+                        .where(STAGE_RUN_ID.eq(DSL.field(DSL.name("ugc_shorts_pipeline_runs", "id"), Long::class.java)))
+                        .and(STAGE_STATUS.eq("RUNNING"))
+                        .and(STAGE_REFUNDED_CREDITS.eq(0))
+                        .and(STAGE_CREDIT_COST.gt(0)),
+                ),
+            )
+            .orderBy(UPDATED_AT.desc())
             .limit(limit.coerceIn(1, 200))
             .fetch()
             .map { it.toPipelineRun() }

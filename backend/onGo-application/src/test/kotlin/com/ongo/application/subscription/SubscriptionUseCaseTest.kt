@@ -1,11 +1,13 @@
 package com.ongo.application.subscription
 
 import com.ongo.application.paddle.PaddleGateway
+import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.application.subscription.dto.ChangePlanRequest
 import com.ongo.common.enums.AuthProvider
 import com.ongo.common.enums.BillingCycle
 import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.SubscriptionStatus
+import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.subscription.Subscription
 import com.ongo.domain.subscription.SubscriptionRepository
@@ -29,6 +31,7 @@ class SubscriptionUseCaseTest {
     private val userRepository = mockk<UserRepository>()
     private val videoRepository = mockk<VideoRepository>()
     private val paddleGateway = mockk<PaddleGateway>()
+    private val storageQuotaUseCase = mockk<StorageQuotaUseCase>()
     private val creditService = mockk<com.ongo.application.credit.CreditService>(relaxUnitFun = true)
     private val activityLogUseCase =
         mockk<com.ongo.application.activitylog.ActivityLogUseCase>(relaxed = true)
@@ -43,6 +46,7 @@ class SubscriptionUseCaseTest {
             userRepository,
             videoRepository,
             paddleGateway,
+            storageQuotaUseCase,
             creditService,
             activityLogUseCase,
         )
@@ -102,8 +106,15 @@ class SubscriptionUseCaseTest {
         }
     }
 
+    /**
+     * 예전에는 이 경로가 **결제 없이** planType·price 를 즉시 갱신했다. proratedAmount 를
+     * 계산해 응답에 담기만 했을 뿐 Payment 생성도 PG 호출도 없어서, STARTER 고객이 이 API
+     * 한 번으로 PRO 를 얻었다.
+     *
+     * 상향은 결제가 확정된 뒤 completeSubscription 한 곳에서만 적용돼야 한다.
+     */
     @Test
-    fun `changePlan upgrade should apply immediately with prorated amount`() {
+    fun `changePlan upgrade without payment is rejected and nothing is updated`() {
         val subscription = createSubscription(
             planType = PlanType.STARTER,
             currentPeriodEnd = LocalDateTime.now().plusDays(15),
@@ -113,18 +124,155 @@ class SubscriptionUseCaseTest {
 
         every { subscriptionRepository.findByUserId(100L) } returns subscription
         every { userRepository.findById(100L) } returns user
+
+        val e = assertFailsWith<BusinessException> { useCase.changePlan(100L, request) }
+
+        assertEquals("PAYMENT_REQUIRED", e.code)
+        verify(exactly = 0) { subscriptionRepository.update(any()) }
+        verify(exactly = 0) { userRepository.update(any()) }
+    }
+
+    /**
+     * 예전에는 아무것도 하지 않고 **성공 응답**을 돌려줬다. 호출자는 요청이 받아들여진 줄
+     * 알고, 프런트가 체크아웃을 여는 분기를 놓치면 사용자는 플랜이 바뀐 줄 안다.
+     */
+    @Test
+    fun `changePlan from FREE to paid is rejected with PAYMENT_REQUIRED`() {
+        val subscription = createSubscription(planType = PlanType.FREE, price = 0)
+        val user = createUser(planType = PlanType.FREE)
+        val request = ChangePlanRequest(targetPlan = "STARTER", billingCycle = "MONTHLY")
+
+        every { subscriptionRepository.findByUserId(100L) } returns subscription
+        every { userRepository.findById(100L) } returns user
+
+        val e = assertFailsWith<BusinessException> { useCase.changePlan(100L, request) }
+
+        assertEquals("PAYMENT_REQUIRED", e.code)
+        verify(exactly = 0) { subscriptionRepository.update(any()) }
+        verify(exactly = 0) { userRepository.update(any()) }
+    }
+
+    @Test
+    fun `changePlan billing cycle without payment is rejected`() {
+        val subscription = createSubscription(
+            planType = PlanType.STARTER,
+            billingCycle = BillingCycle.MONTHLY,
+        )
+        val user = createUser(planType = PlanType.STARTER)
+        val request = ChangePlanRequest(targetPlan = "STARTER", billingCycle = "YEARLY")
+
+        every { subscriptionRepository.findByUserId(100L) } returns subscription
+        every { userRepository.findById(100L) } returns user
+
+        val e = assertFailsWith<BusinessException> { useCase.changePlan(100L, request) }
+
+        assertEquals("PAYMENT_REQUIRED", e.code)
+        verify(exactly = 0) { subscriptionRepository.update(any()) }
+        verify(exactly = 0) { userRepository.update(any()) }
+    }
+
+    @Test
+    fun `changePlan downgrade with a different billing cycle is scheduled together`() {
+        val subscription = createSubscription(
+            planType = PlanType.PRO,
+            billingCycle = BillingCycle.MONTHLY,
+        )
+        val user = createUser(planType = PlanType.PRO)
+        val request = ChangePlanRequest(targetPlan = "STARTER", billingCycle = "YEARLY")
+
+        every { subscriptionRepository.findByUserId(100L) } returns subscription
+        every { userRepository.findById(100L) } returns user
         every { subscriptionRepository.update(any()) } answers { firstArg() }
-        every { userRepository.update(any()) } answers { firstArg() }
+
+        useCase.changePlan(100L, request)
+
+        verify {
+            subscriptionRepository.update(match {
+                it.pendingPlanType == PlanType.STARTER &&
+                    it.pendingBillingCycle == BillingCycle.YEARLY &&
+                    it.billingCycle == BillingCycle.MONTHLY
+            })
+        }
+    }
+
+    @Test
+    fun `changePlan from annual to monthly for the same plan is scheduled without payment`() {
+        val subscription = createSubscription(
+            planType = PlanType.STARTER,
+            billingCycle = BillingCycle.YEARLY,
+            price = PlanType.STARTER.yearlyPrice,
+        )
+        val user = createUser(planType = PlanType.STARTER)
+        val request = ChangePlanRequest(targetPlan = "STARTER", billingCycle = "MONTHLY")
+
+        every { subscriptionRepository.findByUserId(100L) } returns subscription
+        every { userRepository.findById(100L) } returns user
+        every { subscriptionRepository.update(any()) } answers { firstArg() }
+
+        useCase.changePlan(100L, request)
+
+        verify {
+            subscriptionRepository.update(match {
+                it.pendingPlanType == PlanType.STARTER &&
+                    it.pendingBillingCycle == BillingCycle.MONTHLY &&
+                    it.billingCycle == BillingCycle.YEARLY
+            })
+        }
+    }
+
+    /**
+     * 체험은 planType 이 유료인데 결제가 없다. 상향이든 하향이든 이 API 로는 바꿀 수 없다 —
+     * 상향은 결제를 거쳐야 하고, 해지는 취소 API 의 몫이다.
+     */
+    @Test
+    fun `changePlan during trial is rejected with PAYMENT_REQUIRED`() {
+        val subscription = createSubscription(
+            planType = PlanType.STARTER,
+            status = SubscriptionStatus.TRIALING,
+            currentPeriodEnd = LocalDateTime.now().plusDays(5),
+        )
+        val user = createUser(planType = PlanType.STARTER)
+
+        every { subscriptionRepository.findByUserId(100L) } returns subscription
+        every { userRepository.findById(100L) } returns user
+
+        for (target in listOf("PRO", "FREE")) {
+            val e = assertFailsWith<BusinessException> {
+                useCase.changePlan(100L, ChangePlanRequest(targetPlan = target, billingCycle = "MONTHLY"))
+            }
+            assertEquals("PAYMENT_REQUIRED", e.code)
+        }
+        verify(exactly = 0) { subscriptionRepository.update(any()) }
+        verify(exactly = 0) { userRepository.update(any()) }
+    }
+
+    /**
+     * Paddle 구독은 결제 수단이 이미 연결돼 있고 Paddle 이 일할 청구를 처리한다.
+     * 레거시지만 기존 계약을 깨지 않는다.
+     */
+    @Test
+    fun `changePlan upgrade through Paddle still delegates to the gateway`() {
+        val subscription = createSubscription(
+            planType = PlanType.STARTER,
+            currentPeriodEnd = LocalDateTime.now().plusDays(15),
+        ).copy(paddleSubscriptionId = "sub_paddle_1")
+        val user = createUser(planType = PlanType.STARTER)
+        val request = ChangePlanRequest(targetPlan = "PRO", billingCycle = "MONTHLY")
+
+        every { subscriptionRepository.findByUserId(100L) } returns subscription
+        every { userRepository.findById(100L) } returns user
+        every { paddleGateway.getPriceIdForPlan("PRO", "MONTHLY") } returns "pri_pro"
+        every { paddleGateway.updateSubscription(any(), any(), any()) } returns Unit
 
         val response = useCase.changePlan(100L, request)
 
-        assertEquals(PlanType.PRO, response.subscription.planType)
-        assertEquals(SubscriptionStatus.ACTIVE, response.subscription.status)
-        assertNotNull(response.proratedAmount)
-        assert(response.proratedAmount!! >= 0)
-
-        verify { subscriptionRepository.update(match { it.planType == PlanType.PRO }) }
-        verify { userRepository.update(match { it.planType == PlanType.PRO }) }
+        assertNull(response.proratedAmount)
+        verify(exactly = 1) {
+            paddleGateway.updateSubscription("sub_paddle_1", "pri_pro", "prorated_immediately")
+        }
+        // Paddle 이 웹훅으로 동기화한다. 여기서 직접 갱신하면 두 진실이 갈라진다.
+        verify(exactly = 0) { subscriptionRepository.update(any()) }
+        verify(exactly = 0) { userRepository.update(any()) }
     }
 
     @Test
@@ -149,6 +297,21 @@ class SubscriptionUseCaseTest {
     }
 
     @Test
+    fun `changePlan with the current plan and cycle is a no-op`() {
+        val subscription = createSubscription(planType = PlanType.STARTER, billingCycle = BillingCycle.MONTHLY)
+        val user = createUser(planType = PlanType.STARTER)
+        val request = ChangePlanRequest(targetPlan = "STARTER", billingCycle = "MONTHLY")
+
+        every { subscriptionRepository.findByUserId(100L) } returns subscription
+        every { userRepository.findById(100L) } returns user
+
+        val response = useCase.changePlan(100L, request)
+
+        assertEquals(PlanType.STARTER, response.subscription.planType)
+        verify(exactly = 0) { subscriptionRepository.update(any()) }
+    }
+
+    @Test
     fun `cancelSubscription should set CANCELLED status and cancelledAt`() {
         val subscription = createSubscription()
 
@@ -160,7 +323,9 @@ class SubscriptionUseCaseTest {
         assertEquals(SubscriptionStatus.CANCELLED, response.status)
         verify {
             subscriptionRepository.update(match {
-                it.status == SubscriptionStatus.CANCELLED && it.cancelledAt != null
+                it.status == SubscriptionStatus.CANCELLED &&
+                    it.cancelledAt != null &&
+                    it.pendingPlanType == null
             })
         }
     }
@@ -180,18 +345,17 @@ class SubscriptionUseCaseTest {
 
     @Test
     fun `getUsage should calculate uploads and storage correctly`() {
-        val videos = listOf(
-            Video(id = 1L, userId = 100L, title = "v1", fileSizeBytes = 10 * 1024 * 1024L),
-            Video(id = 2L, userId = 100L, title = "v2", fileSizeBytes = 20 * 1024 * 1024L),
-        )
-
         every { videoRepository.countByUserIdAndMonth(100L, any<YearMonth>()) } returns 5L
-        every { videoRepository.findByUserId(100L, page = 0, size = 10000) } returns videos
+        every { storageQuotaUseCase.getCurrentUsage(100L) } returns 30L * 1024 * 1024
+        every { storageQuotaUseCase.getEffectiveLimit(100L) } returns 50L * 1024 * 1024 * 1024
 
         val response = useCase.getUsage(100L)
 
         assertEquals(5, response.uploadsThisMonth)
         assertEquals(30L, response.storageUsedMb)
+        assertEquals(50L * 1024 * 1024 * 1024, response.storageLimitBytes)
+        verify(exactly = 1) { storageQuotaUseCase.getCurrentUsage(100L) }
+        verify(exactly = 1) { storageQuotaUseCase.getEffectiveLimit(100L) }
     }
 
     @Test

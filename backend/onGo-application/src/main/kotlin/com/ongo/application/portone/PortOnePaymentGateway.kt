@@ -84,6 +84,10 @@ data class PortOneBillingChargeRequest(
     val customerId: String,
     val amount: Int,
     val currency: String = "KRW",
+    /** 기본 상점에 의존하지 않도록 결제 설정의 상점을 명시한다. */
+    val storeId: String? = null,
+    /** 빌링키가 발급된 결제 채널을 명시한다. */
+    val channelKey: String? = null,
 )
 
 /** 빌링키 청구 실패. 사유 문자열에 빌링키를 넣지 않는다. */

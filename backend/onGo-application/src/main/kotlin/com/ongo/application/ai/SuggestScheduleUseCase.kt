@@ -38,7 +38,8 @@ class SuggestScheduleUseCase(
         val userPrompt = PromptTemplates.SCHEDULE_SUGGESTION_USER
             .replace("{channelId}", channelId.toString())
             .replace("{platform}", channel.platform.name)
-            .replace("{category}", "일반")
+            // 채널 엔티티에는 카테고리가 없으므로 임의의 "일반"으로 꾸미지 않는다.
+            .replace("{category}", "미지정")
             .replace("{analyticsData}", analyticsDataStr)
 
         val result = chatClientResolver.resolve(userId).prompt()
@@ -51,6 +52,13 @@ class SuggestScheduleUseCase(
             ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
     }
 
+    /**
+     * 차감·환불은 [CreditService.withCredits] 한 곳에서 처리한다. `AI_PARSE_ERROR` 도
+     * 환불 대상이다.
+     *
+     * [executeInternal] 은 파이프라인이 이미 예약한 크레딧으로 도는 경로라 차감하지
+     * 않는다. 여기서만 과금한다.
+     */
     fun execute(userId: Long, channelId: Long): ScheduleSuggestionResult {
         rateLimiter.checkRateLimit(userId)
 
@@ -61,8 +69,6 @@ class SuggestScheduleUseCase(
             throw ForbiddenException("해당 채널에 접근 권한이 없습니다")
         }
 
-        creditService.validateAndDeduct(userId, AiFeature.SCHEDULE_SUGGESTION)
-
         val heatmapData = analyticsRepository.getHeatmapData(userId)
         val analyticsDataStr = heatmapData.entries.joinToString("\n") { (day, hours) ->
             "$day: ${hours.entries.sortedByDescending { it.value }.take(5).joinToString(", ") { "${it.key}시=${it.value}조회" }}"
@@ -71,24 +77,23 @@ class SuggestScheduleUseCase(
         val userPrompt = PromptTemplates.SCHEDULE_SUGGESTION_USER
             .replace("{channelId}", channelId.toString())
             .replace("{platform}", channel.platform.name)
-            .replace("{category}", "일반")
+            .replace("{category}", "미지정")
             .replace("{analyticsData}", analyticsDataStr)
 
-        try {
-            val result = chatClientResolver.resolve(userId).prompt()
-                .system(PromptTemplates.SCHEDULE_SUGGESTION_SYSTEM)
-                .user(userPrompt)
-                .call()
-                .entity(ScheduleSuggestionResult::class.java)
-
-            return result
-                ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
-        } catch (e: BusinessException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("AI 스케줄 추천 실패, 크레딧 환불 처리: userId={}", userId, e)
-            creditService.refundCredit(userId, AiFeature.SCHEDULE_SUGGESTION.creditCost, AiFeature.SCHEDULE_SUGGESTION.name)
-            throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+        return creditService.withCredits(userId, AiFeature.SCHEDULE_SUGGESTION) {
+            try {
+                chatClientResolver.resolve(userId).prompt()
+                    .system(PromptTemplates.SCHEDULE_SUGGESTION_SYSTEM)
+                    .user(userPrompt)
+                    .call()
+                    .entity(ScheduleSuggestionResult::class.java)
+                    ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+            } catch (e: BusinessException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("AI 스케줄 추천 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.ongo.application.admin
 
 import com.ongo.application.admin.dto.*
+import com.ongo.application.analytics.ChannelSubscriberTotal
 import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.common.config.PageResponse
 import com.ongo.common.exception.BusinessException
@@ -130,7 +131,8 @@ class AdminUseCase(
                 platform = channel.platform,
                 channelName = channel.channelName,
                 channelUrl = channel.channelUrl,
-                subscriberCount = channel.subscriberCount,
+                // 그 플랫폼이 구독자 수를 조회하지 않으면 저장된 0 은 측정값이 아니다.
+                subscriberCount = ChannelSubscriberTotal.measured(channel),
                 status = channel.status,
                 tokenExpiresAt = channel.tokenExpiresAt?.toString(),
                 connectedAt = channel.connectedAt?.toString(),
@@ -152,6 +154,7 @@ class AdminUseCase(
             currentPeriodEnd = subscription.currentPeriodEnd?.toString(),
             nextBillingDate = subscription.nextBillingDate?.toString(),
             pendingPlanType = subscription.pendingPlanType?.name,
+            pendingBillingCycle = subscription.pendingBillingCycle?.name,
             storageQuotaOverride = subscription.storageQuotaLimitBytes,
             cancelledAt = subscription.cancelledAt?.toString(),
             createdAt = subscription.createdAt?.toString(),
@@ -239,6 +242,26 @@ class AdminUseCase(
 
         val subscription = subscriptionRepository.findByUserId(targetUserId)
         if (subscription != null && subscription.status == com.ongo.common.enums.SubscriptionStatus.SUSPENDED) {
+            /*
+             * **기간 없는 유료 구독을 ACTIVE 로 되살리지 않는다.**
+             *
+             * 이 경로는 결제를 거치지 않고 상태만 바꾼다. 청구창이 비어 있는 채로 ACTIVE 가
+             * 되면 그 구독은 어떤 만료·갱신 조회에도 걸리지 않아, 결제 없이 유료 권한이
+             * 무기한 유지된다(Subscription.missingPaidBillingWindow 참고).
+             *
+             * 조용히 건너뛰지 않고 예외로 알린다 — 관리자는 활성화가 됐다고 생각하는데
+             * 실제로는 SUSPENDED 로 남는 것이 더 나쁘다. FREE 구독은 종전 그대로다.
+             */
+            val missing = subscription.missingPaidBillingWindow()
+            if (missing.isNotEmpty()) {
+                throw BusinessException(
+                    "SUBSCRIPTION_BILLING_WINDOW_MISSING",
+                    "청구 기간이 없는 유료 구독은 활성화할 수 없습니다. " +
+                        "비어 있는 값: ${missing.joinToString()} " +
+                        "(subscriptionId=${subscription.id}, plan=${subscription.planType.name}). " +
+                        "결제 기간을 먼저 확정하세요.",
+                )
+            }
             subscriptionRepository.update(
                 subscription.copy(status = com.ongo.common.enums.SubscriptionStatus.ACTIVE)
             )

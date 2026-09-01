@@ -92,26 +92,39 @@ class FacebookClient(
                 accessToken = accessToken,
             )
 
-            var views = 0L
-            var likes = 0L
-            var comments = 0L
+            /*
+             * **`0L` 로 시작하면 "응답에 그 지표가 없었다" 가 실측 0 과 같아진다.**
+             *
+             * 세 지표 모두 위 `metric` 목록으로 요청했으므로 응답에 빠진 것은 미지원이
+             * 아니라 응답 이상이다. 엔트리가 `0` 을 주면 그 0 은 그대로 관측이다.
+             */
+            var views: Long? = null
+            var likes: Long? = null
+            var comments: Long? = null
 
             response.data.forEach { entry ->
+                val value = entry.values?.firstOrNull()?.value
                 when (entry.name) {
-                    "total_video_views" -> views = entry.values?.firstOrNull()?.value ?: 0
-                    "total_video_reactions_by_type_total" -> likes = entry.values?.firstOrNull()?.value ?: 0
-                    "total_video_comments" -> comments = entry.values?.firstOrNull()?.value ?: 0
+                    "total_video_views" -> views = value
+                    "total_video_reactions_by_type_total" -> likes = value
+                    "total_video_comments" -> comments = value
                 }
             }
 
             PlatformAnalytics(
-                views = views,
-                likes = likes,
-                comments = comments,
+                views = views.requireMetric("Facebook", "total_video_views"),
+                // 반응 합계를 좋아요로 쓴다 — availability 주석 참조. 값의 존재 여부만 검증한다.
+                likes = likes.requireMetric("Facebook", "total_video_reactions_by_type_total"),
+                comments = comments.requireMetric("Facebook", "total_video_comments"),
+                // 공유는 이 엔드포인트가 주지 않는다 — availability 가 미수집으로 선언한다.
                 shares = 0,
                 watchTimeSeconds = 0,
                 subscriberGained = 0,
             )
+        } catch (e: PlatformApiException) {
+            // 어떤 지표가 빠졌는지 담은 메시지를 그대로 올려 보낸다. 일반 메시지로 덮으면
+            // 스케줄러 경고 로그에서 원인 지표를 알 수 없다.
+            throw e
         } catch (e: Exception) {
             log.warn("Facebook 분석 데이터 조회 실패: {}", e.message)
             throw PlatformApiException("Facebook", "분석 데이터 조회 실패", e)
@@ -133,7 +146,7 @@ class FacebookClient(
             channelId = page.id,
             channelName = page.name ?: "",
             channelUrl = page.link ?: "https://www.facebook.com/${page.id}",
-            subscriberCount = page.followersCount ?: 0,
+            subscriberCount = page.followersCount,
             profileImageUrl = page.picture?.data?.url,
         )
     }

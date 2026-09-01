@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -88,8 +89,19 @@ class AnalyticsUseCaseAggregateTest {
         assertEquals(listOf("YOUTUBE", "TIKTOK"), item.platforms)
     }
 
+    /**
+     * **이 케이스가 동기화 전 영상을 "조회수 0회" 로 내보내던 자리다.**
+     *
+     * 예전 계약은 여기서 `0` 이었다 — `rowsOf(...).sumOf { .. }` 가 빈 목록에서 `0` 을
+     * 냈기 때문이다. 그 `0` 은 실측이 아니라 **아직 수집되지 않은 상태**이고, 실제로 0 회인
+     * 영상과 완전히 같은 모양이었다.
+     *
+     * 영상 자체는 그대로 보여준다(제목·플랫폼은 사실이다). 값만 `null` 이다.
+     * "그 지표를 주는 플랫폼이 없다" 와는 `unavailableMetrics` 로 갈린다 — 이 영상은
+     * YouTube 업로드가 있으므로 그 집합은 **비어 있어야 한다**.
+     */
     @Test
-    @DisplayName("집계 행이 없으면 0 으로 두되 영상 자체는 그대로 보여준다")
+    @DisplayName("집계 행이 없으면 0 이 아니라 null 이고 영상 자체는 그대로 보여준다")
     fun topVideosKeepEmptyStateSemantics() {
         every { analyticsRepository.getTopVideos(7L, 7, 3) } returns listOf(video(2L, "지표 없는 영상"))
         every { videoUploadRepository.findByVideoIds(listOf(2L)) } returns mapOf(
@@ -101,8 +113,10 @@ class AnalyticsUseCaseAggregateTest {
 
         val item = result.videos.single()
         assertEquals("지표 없는 영상", item.title)
-        assertEquals(0L, item.totalViews)
-        assertEquals(0L, item.totalLikes)
+        assertNull(item.totalViews, "수집 전 상태를 조회수 0 회로 위장했다")
+        assertNull(item.totalLikes)
+        // 플랫폼은 조회수·좋아요를 준다 — "측정 불가" 가 아니라 "수집 대기" 다.
+        assertTrue(item.unavailableMetrics.isEmpty(), "수집 대기를 플랫폼 미지원으로 알렸다")
     }
 
     @Test

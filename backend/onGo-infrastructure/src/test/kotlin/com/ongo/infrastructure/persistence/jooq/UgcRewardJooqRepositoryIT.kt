@@ -2,6 +2,7 @@ package com.ongo.infrastructure.persistence.jooq
 
 import com.ongo.domain.ugc.analytics.MetricSnapshot
 import com.ongo.domain.ugc.analytics.MetricSnapshotRepository
+import com.ongo.domain.ugc.analytics.MetricSnapshotSource
 import com.ongo.domain.ugc.campaign.Campaign
 import com.ongo.domain.ugc.campaign.CampaignRepository
 import com.ongo.domain.ugc.campaign.CampaignStatus
@@ -21,6 +22,8 @@ import com.ongo.infrastructure.persistence.jooq.Tables.UGC_CAMPAIGNS
 import org.jooq.DSLContext
 import org.springframework.dao.DuplicateKeyException
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -117,5 +120,60 @@ class UgcRewardJooqRepositoryIT {
         assertThrows(DuplicateKeyException::class.java) {
             metricRepo.save(MetricSnapshot(campaignPostId = postId, capturedAt = LocalDateTime.of(2026, 8, 11, 0, 0), views = 999))
         }
+
+        /*
+         * **출처와 미측정 목록이 DB 를 왕복해야 한다.**
+         *
+         * 이 값이 살아 돌아오지 않으면 캠페인 분석은 미수집 0 을 다시 측정값으로 합산한다.
+         * 도메인만 고치고 컬럼 매핑을 빠뜨리면 화면에서만 조용히 되돌아간다.
+         */
+        val synced = metricRepo.save(
+            MetricSnapshot(
+                campaignPostId = postId,
+                capturedAt = LocalDateTime.of(2026, 8, 12, 0, 0),
+                views = 300, likes = 20, comments = 5, shares = 0,
+                source = MetricSnapshotSource.PLATFORM_SYNC,
+                unavailableMetrics = setOf(MetricSnapshot.SHARES),
+            ),
+        )
+        assertEquals(MetricSnapshotSource.PLATFORM_SYNC, synced.source)
+        assertEquals(setOf(MetricSnapshot.SHARES), synced.unavailableMetrics)
+        assertEquals(300, synced.measuredValue(MetricSnapshot.VIEWS))
+        // 미수집 공유는 값이 아니라 null 로 읽혀야 한다.
+        assertNull(synced.measuredValue(MetricSnapshot.SHARES))
+
+        val reloaded = metricRepo.findLatestByCampaignPostId(postId)!!
+        assertEquals(MetricSnapshotSource.PLATFORM_SYNC, reloaded.source)
+        assertEquals(setOf(MetricSnapshot.SHARES), reloaded.unavailableMetrics)
+
+        /*
+         * 수동 백필은 플랫폼이 안 주는 지표여도 측정값이다. 사람이 확인해 넣었기 때문이다.
+         */
+        val manual = metricRepo.save(
+            MetricSnapshot(
+                campaignPostId = postId,
+                capturedAt = LocalDateTime.of(2026, 8, 13, 0, 0),
+                views = 310, likes = 21, comments = 6, shares = 42,
+                source = MetricSnapshotSource.MANUAL,
+            ),
+        )
+        assertEquals(MetricSnapshotSource.MANUAL, manual.source)
+        assertTrue(manual.unavailableMetrics.isEmpty())
+        assertEquals(42, manual.measuredValue(MetricSnapshot.SHARES))
+
+        /*
+         * V110 이전 행은 source 가 NULL 이다. UNKNOWN 으로 읽고 **0 만** 버린다 —
+         * 0 이 아닌 값은 누군가 실제로 관측한 것이므로 살린다.
+         */
+        dsl.execute(
+            "INSERT INTO ugc_post_metric_snapshots (campaign_post_id, captured_at, views, likes, comments, shares) " +
+                "VALUES (?, ?, 500, 30, 4, 0)",
+            postId,
+            LocalDateTime.of(2026, 8, 14, 0, 0),
+        )
+        val legacy = metricRepo.findLatestByCampaignPostId(postId)!!
+        assertEquals(MetricSnapshotSource.UNKNOWN, legacy.source)
+        assertEquals(500, legacy.measuredValue(MetricSnapshot.VIEWS))
+        assertNull(legacy.measuredValue(MetricSnapshot.SHARES))
     }
 }

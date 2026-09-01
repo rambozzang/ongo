@@ -7,7 +7,6 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.exception.BusinessException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 @Service
 class GenerateHashtagsUseCase(
@@ -34,31 +33,33 @@ class GenerateHashtagsUseCase(
             ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
     }
 
-    @Transactional
+    /**
+     * **트랜잭션을 열지 않는다.** LLM 호출을 `@Transactional` 안에 두면 `ai_credits` 행
+     * 잠금과 DB 커넥션이 모델 응답 시간만큼 묶인다. 차감·환불의 커밋 경계는
+     * [CreditService.withCredits] 가 잡는다.
+     */
     fun execute(userId: Long, title: String, category: String, targetPlatforms: List<Platform>): HashtagGenerationResult {
         rateLimiter.checkRateLimit(userId)
-        creditService.validateAndDeduct(userId, AiFeature.HASHTAG_RECOMMENDATION)
 
         val userPrompt = PromptTemplates.HASHTAG_GENERATION_USER
             .replace("{title}", InputSanitizer.sanitize(title))
             .replace("{category}", InputSanitizer.sanitize(category))
             .replace("{platforms}", targetPlatforms.joinToString(", ") { it.name })
 
-        try {
-            val result = chatClientResolver.resolve(userId).prompt()
-                .system(PromptTemplates.HASHTAG_GENERATION_SYSTEM)
-                .user(userPrompt)
-                .call()
-                .entity(HashtagGenerationResult::class.java)
-
-            return result
-                ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
-        } catch (e: BusinessException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("AI 해시태그 생성 실패, 크레딧 환불 처리: userId={}", userId, e)
-            creditService.refundCredit(userId, AiFeature.HASHTAG_RECOMMENDATION.creditCost, AiFeature.HASHTAG_RECOMMENDATION.name)
-            throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+        return creditService.withCredits(userId, AiFeature.HASHTAG_RECOMMENDATION) {
+            try {
+                chatClientResolver.resolve(userId).prompt()
+                    .system(PromptTemplates.HASHTAG_GENERATION_SYSTEM)
+                    .user(userPrompt)
+                    .call()
+                    .entity(HashtagGenerationResult::class.java)
+                    ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+            } catch (e: BusinessException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("AI 해시태그 생성 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+            }
         }
     }
 }

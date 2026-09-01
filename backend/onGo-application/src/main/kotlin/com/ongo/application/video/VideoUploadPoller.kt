@@ -75,7 +75,15 @@ class VideoUploadPoller(
         val video = videoRepository.findById(upload.videoId) ?: return
         val service = platformUploadServices.find { it.supports(upload.platform) }
         if (service == null) {
-            finish(upload, video.userId, UploadStatus.FAILED, "지원되지 않는 플랫폼: ${upload.platform}", null, null)
+            // 리스너와 같은 문장을 쓴다. 같은 원인을 두 화면에서 다르게 설명하지 않는다.
+            finish(
+                upload,
+                video.userId,
+                UploadStatus.FAILED,
+                PlatformUploadCapabilities.unsupportedReason(upload.platform),
+                null,
+                null,
+            )
             return
         }
 
@@ -106,16 +114,34 @@ class VideoUploadPoller(
                     outcome,
                     owner,
                 )
-                is PublishOutcome.Accepted -> updateOwned(
-                    claimed,
-                    owner,
-                    status = UploadStatus.PROCESSING,
-                    errorMessage = null,
-                    platformVideoId = outcome.platformVideoId,
-                    platformUrl = result.platformUrl,
-                    pollToken = outcome.pollToken,
-                    nextRetryAt = now.plus(outcome.retryAfter),
-                )
+                is PublishOutcome.Accepted -> {
+                    if (claimed.attemptCount >= MAX_ACCEPTED_POLL_ATTEMPTS) {
+                        // Accepted is not a terminal success. This bounded path prevents a
+                        // provider that never returns a known terminal state from leaving the
+                        // upload in PROCESSING forever.
+                        // Keep this UNCONFIRMED so the user is notified and can recheck;
+                        // treating it as PUBLISHED would falsely claim a successful post.
+                        finish(
+                            claimed,
+                            video.userId,
+                            UploadStatus.UNCONFIRMED,
+                            "플랫폼이 게시 결과를 확정하지 않았습니다. 게시 여부를 직접 확인해 주세요.",
+                            null,
+                            owner,
+                        )
+                    } else {
+                        updateOwned(
+                            claimed,
+                            owner,
+                            status = UploadStatus.PROCESSING,
+                            errorMessage = null,
+                            platformVideoId = outcome.platformVideoId,
+                            platformUrl = result.platformUrl,
+                            pollToken = outcome.pollToken,
+                            nextRetryAt = now.plus(outcome.retryAfter),
+                        )
+                    }
+                }
                 is PublishOutcome.Failed -> finish(
                     claimed,
                     video.userId,
@@ -135,7 +161,7 @@ class VideoUploadPoller(
             }
         } catch (e: Exception) {
             val message = e.message ?: "플랫폼 상태 확인 중 오류가 발생했습니다."
-            if (tokenOverride != null || claimed.attemptCount >= MAX_POLL_ATTEMPTS) {
+            if (tokenOverride != null || claimed.attemptCount >= MAX_STATUS_CHECK_FAILURE_ATTEMPTS) {
                 finish(claimed, video.userId, UploadStatus.UNCONFIRMED, "게시 결과 확인 실패: $message", null, owner)
             } else {
                 updateOwned(
@@ -161,7 +187,7 @@ class VideoUploadPoller(
         published: PublishOutcome.Published?,
         owner: String? = null,
     ) {
-        updateOwned(
+        val persisted = updateOwned(
             upload,
             owner,
             status = status,
@@ -172,7 +198,12 @@ class VideoUploadPoller(
             nextRetryAt = null,
             clearPollToken = true,
         )
-        updateOverallVideoStatus(upload.videoId)
+        if (!persisted) {
+            // lease를 잃은 작업자는 오래된 외부 응답을 저장하거나 완료 알림을
+            // 발행하면 안 된다. 저장이 반영된 경우에만 현재 상태를 사용자에게 알린다.
+            log.info("게시 상태 반영을 건너뜀: lease가 만료되었거나 다른 작업자가 소유함 (uploadId={})", upload.id)
+            return
+        }
         if (status == UploadStatus.PUBLISHED || status == UploadStatus.FAILED || status == UploadStatus.UNCONFIRMED) {
             eventPublisher.publishEvent(
                 UploadCompletedEvent(
@@ -199,7 +230,7 @@ class VideoUploadPoller(
         pollToken: String?,
         nextRetryAt: LocalDateTime?,
         clearPollToken: Boolean = false,
-    ) {
+    ): Boolean {
         val updated = upload.copy(
             status = status,
             errorMessage = errorMessage,
@@ -219,6 +250,7 @@ class VideoUploadPoller(
             videoUploadRepository.updateOwned(updated, owner)
         }
         if (changed) updateOverallVideoStatus(upload.videoId)
+        return changed
     }
 
     private fun updateOverallVideoStatus(videoId: Long) {
@@ -240,7 +272,17 @@ class VideoUploadPoller(
     }
 
     companion object {
-        private const val MAX_POLL_ATTEMPTS = 12
+        /**
+         * Accepted means the provider is still processing. The normal retry delay is
+         * provider-controlled and falls back to 30 seconds, so allow about one hour
+         * of status polling before telling the user that the result is unconfirmed.
+         * This is intentionally separate from the shorter exception retry budget below:
+         * a slow transcode should not be treated like twelve immediate network failures.
+         */
+        private const val MAX_ACCEPTED_POLL_ATTEMPTS = 120
+
+        /** Consecutive status-check failures should fail closed sooner than slow polling. */
+        private const val MAX_STATUS_CHECK_FAILURE_ATTEMPTS = 12
         private const val POLL_RETRY_SECONDS = 60L
     }
 }

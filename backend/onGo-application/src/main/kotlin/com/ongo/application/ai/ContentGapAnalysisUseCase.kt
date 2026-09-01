@@ -11,7 +11,6 @@ import com.ongo.domain.competitor.CompetitorRepository
 import com.ongo.domain.video.VideoRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
@@ -25,10 +24,13 @@ class ContentGapAnalysisUseCase(
 
     private val log = LoggerFactory.getLogger(ContentGapAnalysisUseCase::class.java)
 
-    @Transactional
+    /**
+     * **트랜잭션을 열지 않는다.** LLM 호출을 `@Transactional` 안에 두면 `ai_credits` 행
+     * 잠금과 DB 커넥션이 모델 응답 시간만큼 묶인다. 차감·환불의 커밋 경계는
+     * [CreditService.withCredits] 가 잡는다.
+     */
     fun execute(userId: Long, includeCompetitors: Boolean): ContentGapResponse {
         rateLimiter.checkRateLimit(userId)
-        creditService.validateAndDeduct(userId, AiFeature.CONTENT_GAP_ANALYSIS)
 
         val videos = videoRepository.findByUserId(userId, page = 0, size = 100)
         val userVideosStr = videos.take(20).mapIndexed { i, v ->
@@ -48,15 +50,22 @@ class ContentGapAnalysisUseCase(
             .replace("{userVideos}", InputSanitizer.sanitize(userVideosStr))
             .replace("{competitorData}", InputSanitizer.sanitize(competitorStr))
 
-        try {
-            val result = chatClientResolver.resolve(userId).prompt()
-                .system(PromptTemplates.CONTENT_GAP_SYSTEM)
-                .user(userPrompt)
-                .call()
-                .entity(ContentGapResult::class.java)
-                ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+        return creditService.withCredits(userId, AiFeature.CONTENT_GAP_ANALYSIS) {
+            val result = try {
+                chatClientResolver.resolve(userId).prompt()
+                    .system(PromptTemplates.CONTENT_GAP_SYSTEM)
+                    .user(userPrompt)
+                    .call()
+                    .entity(ContentGapResult::class.java)
+                    ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+            } catch (e: BusinessException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("콘텐츠 갭 분석 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+            }
 
-            return ContentGapResponse(
+            ContentGapResponse(
                 opportunities = result.opportunities.map {
                     ContentOpportunity(
                         topic = it.topic,
@@ -75,12 +84,6 @@ class ContentGapAnalysisUseCase(
                 },
                 analyzedAt = LocalDateTime.now().toString(),
             )
-        } catch (e: BusinessException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("콘텐츠 갭 분석 실패, 크레딧 환불 처리: userId={}", userId, e)
-            creditService.refundCredit(userId, AiFeature.CONTENT_GAP_ANALYSIS.creditCost, AiFeature.CONTENT_GAP_ANALYSIS.name)
-            throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
         }
     }
 }

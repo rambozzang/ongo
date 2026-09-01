@@ -166,25 +166,34 @@ class ThreadsClient(
             accessToken = accessToken,
         )
 
-        var views = 0L
-        var likes = 0L
-        var replies = 0L
-        var reposts = 0L
+        /*
+         * **`0L` 로 시작하면 "응답에 그 지표가 없었다" 가 실측 0 과 같아진다.**
+         *
+         * 네 지표 모두 위 `metric` 목록으로 요청했고 availability 도 수집한다고 선언하므로,
+         * 응답에 빠진 것은 미지원이 아니라 응답 이상이다. `null` 로 시작해 엔트리가 실제로
+         * 왔을 때만 채운다 — 엔트리가 `0` 을 주면 그 0 은 그대로 관측이다.
+         */
+        var views: Long? = null
+        var likes: Long? = null
+        var replies: Long? = null
+        var reposts: Long? = null
 
         response.data.forEach { entry ->
+            val value = entry.values?.firstOrNull()?.value
             when (entry.name) {
-                "views" -> views = entry.values?.firstOrNull()?.value ?: 0
-                "likes" -> likes = entry.values?.firstOrNull()?.value ?: 0
-                "replies" -> replies = entry.values?.firstOrNull()?.value ?: 0
-                "reposts" -> reposts = entry.values?.firstOrNull()?.value ?: 0
+                "views" -> views = value
+                "likes" -> likes = value
+                "replies" -> replies = value
+                "reposts" -> reposts = value
             }
         }
 
         return PlatformAnalytics(
-            views = views,
-            likes = likes,
-            comments = replies,
-            shares = reposts,
+            views = views.requireMetric("Threads", "views"),
+            likes = likes.requireMetric("Threads", "likes"),
+            comments = replies.requireMetric("Threads", "replies"),
+            shares = reposts.requireMetric("Threads", "reposts"),
+            // 시청 시간·구독 증가는 Threads insights 가 주지 않는다 — availability 가 미수집으로 선언한다.
             watchTimeSeconds = 0,
             subscriberGained = 0,
         )
@@ -202,7 +211,8 @@ class ThreadsClient(
             channelId = response.id,
             channelName = response.name ?: response.username ?: "",
             channelUrl = response.username?.let { "https://www.threads.net/@$it" } ?: "",
-            subscriberCount = 0,
+            // 위 요청 필드에 팔로워 수가 없다 — 조회한 적이 없으므로 0 이 아니라 null 이다.
+            subscriberCount = null,
             profileImageUrl = response.profilePictureUrl,
         )
     }

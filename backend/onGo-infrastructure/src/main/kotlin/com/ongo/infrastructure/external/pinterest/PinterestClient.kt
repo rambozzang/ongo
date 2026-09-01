@@ -154,13 +154,19 @@ class PinterestClient(
             val metrics = response.all?.lifetime_metrics ?: emptyMap()
 
             PlatformAnalytics(
-                views = metrics["IMPRESSION"] ?: 0,
+                // IMPRESSION 만 조회수로 선언돼 있다. 나머지 칸은 아래 주석대로
+                // availability 가 미수집으로 선언하므로 검증 대상이 아니다.
+                views = metrics["IMPRESSION"].requireMetric("Pinterest", "IMPRESSION"),
                 likes = metrics["SAVE"] ?: 0,
                 comments = 0,
                 shares = metrics["PIN_CLICK"] ?: 0,
                 watchTimeSeconds = 0,
                 subscriberGained = 0,
             )
+        } catch (e: PlatformApiException) {
+            // 어떤 지표가 빠졌는지 담은 메시지를 그대로 올려 보낸다. 일반 메시지로 덮으면
+            // 스케줄러 경고 로그에서 원인 지표를 알 수 없다.
+            throw e
         } catch (e: Exception) {
             log.warn("Pinterest 분석 데이터 조회 실패: {}", e.message)
             throw PlatformApiException("Pinterest", "분석 데이터 조회 실패", e)
@@ -185,7 +191,7 @@ class PinterestClient(
             channelId = board.id,
             channelName = listOfNotNull(response.username, board.name).joinToString(" · "),
             channelUrl = board.url ?: response.username?.let { "https://www.pinterest.com/$it/" } ?: "",
-            subscriberCount = response.followerCount ?: 0,
+            subscriberCount = response.followerCount,
             profileImageUrl = response.profileImage,
         )
     }

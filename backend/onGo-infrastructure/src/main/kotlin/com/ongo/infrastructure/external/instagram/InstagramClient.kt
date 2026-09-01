@@ -267,15 +267,20 @@ class InstagramClient(
         insightsResponse.error?.let {
             throw PlatformApiException("Instagram", "분석 데이터 조회 실패: ${it.message}")
         }
-        val metrics = insightsResponse.data?.associate {
-            (it.name ?: "") to (it.values?.firstOrNull()?.value ?: 0L)
+        /*
+         * **맵을 만들 때 `?: 0L` 을 붙이면 "값이 없는 엔트리" 가 실측 0 과 같아진다.**
+         *
+         * 값을 그대로(`null` 포함) 담아 두고, 아래에서 존재 여부로 판정한다.
+         */
+        val metrics: Map<String, Long?> = insightsResponse.data?.associate {
+            (it.name ?: "") to it.values?.firstOrNull()?.value
         } ?: emptyMap()
 
         return PlatformAnalytics(
-            views = metrics["plays"] ?: 0,
-            likes = metrics["likes"] ?: 0,
-            comments = metrics["comments"] ?: 0,
-            shares = metrics["shares"] ?: 0,
+            views = metrics["plays"].requireMetric("Instagram", "plays"),
+            likes = metrics["likes"].requireMetric("Instagram", "likes"),
+            comments = metrics["comments"].requireMetric("Instagram", "comments"),
+            shares = metrics["shares"].requireMetric("Instagram", "shares"),
             watchTimeSeconds = 0, // Instagram insights don't directly expose watch time
             subscriberGained = 0,
         )
@@ -297,7 +302,7 @@ class InstagramClient(
             channelId = response.id ?: "",
             channelName = response.name ?: response.username ?: "",
             channelUrl = response.username?.let { "https://www.instagram.com/$it" } ?: "",
-            subscriberCount = response.followersCount ?: 0,
+            subscriberCount = response.followersCount,
             profileImageUrl = response.profilePictureUrl,
         )
     }
@@ -374,7 +379,10 @@ class InstagramClient(
 
     override fun listVideos(accessToken: String, platformChannelId: String?, maxResults: Int, pageToken: String?): PlatformFeedResult {
         try {
-            val userId = platformChannelId ?: return PlatformFeedResult(emptyList())
+            val userId = platformChannelId ?: return PlatformFeedResult(
+                items = emptyList(),
+                errorMessage = "Instagram 사용자 식별자를 확인하지 못했습니다.",
+            )
             val response = instagramApi.listMedia(
                 userId = userId,
                 fields = "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count",
@@ -391,8 +399,11 @@ class InstagramClient(
                         description = media.caption,
                         thumbnailUrl = media.thumbnailUrl ?: media.mediaUrl,
                         platformUrl = media.permalink,
-                        likeCount = media.likeCount?.toLong() ?: 0,
-                        commentCount = media.commentsCount?.toLong() ?: 0,
+                        // 미디어 목록 엔드포인트는 조회수·공유를 주지 않는다 — 그 두 칸은
+                        // 기본값 null 로 남는다. 예전에는 0 이라 조회수 정렬에서 Instagram
+                        // 영상이 전부 맨 아래로 밀렸다.
+                        likeCount = media.likeCount?.toLong(),
+                        commentCount = media.commentsCount?.toLong(),
                         publishedAt = media.timestamp,
                     )
                 }
@@ -402,7 +413,10 @@ class InstagramClient(
             )
         } catch (e: Exception) {
             log.error("Instagram 미디어 목록 조회 실패: {}", e.message)
-            return PlatformFeedResult(emptyList())
+            return PlatformFeedResult(
+                items = emptyList(),
+                errorMessage = "Instagram 콘텐츠 목록을 불러오지 못했습니다.",
+            )
         }
     }
 

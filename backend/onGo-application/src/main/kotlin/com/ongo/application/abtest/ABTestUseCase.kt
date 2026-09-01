@@ -1,6 +1,7 @@
 package com.ongo.application.abtest
 
 import com.ongo.application.abtest.dto.*
+import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.abtest.ABTest
@@ -178,10 +179,44 @@ class ABTestUseCase(
         val variants = variantRepository.findByTestId(testId)
         if (variants.isEmpty()) throw NotFoundException("A/B 테스트 변형", testId)
 
-        // 가장 높은 클릭률의 variant를 승자로 선정
-        val winner = variants.maxByOrNull {
-            if (it.views > 0) it.clicks.toDouble() / it.views else 0.0
-        } ?: throw NotFoundException("A/B 테스트 변형", testId)
+        /*
+         * **측정하지 않은 실험에 우승을 정하지 않는다.**
+         *
+         * 예전에는 `maxByOrNull { if (views > 0) clicks/views else 0.0 }` 였다. 모든 변형의
+         * 노출이 0 이면 비교값이 전부 0 이라 `maxByOrNull` 은 **목록의 첫 변형**을 돌려주고,
+         * 그것이 `winnerVariantId` 로 저장되며 테스트가 COMPLETED 가 됐다. 화면은 그 변형에
+         * "우승" 배지를 붙이고 "우승 적용" 버튼을 보여준다.
+         *
+         * 사용자는 실험 결과라고 믿고 썸네일·제목을 바꾼다. 실제로는 순서상 첫 번째다.
+         *
+         * 지금 `views`/`clicks` 를 채우는 경로는 코드 어디에도 없다 — 변형 생성 시 기본값
+         * 0 이고 갱신하는 스케줄러·엔드포인트·동기화가 없다. onGo 는 썸네일을 직접 서빙하지
+         * 않으므로 노출·클릭을 관측할 수단 자체가 없다. 그래서 이 경로는 사실상 **항상**
+         * 첫 변형을 우승으로 만들고 있었다.
+         *
+         * [ABTestStatisticsService] 와 [ABTestEvaluator] 는 이미 fail-closed 다 —
+         * 0/0 이면 `isSignificant = false` 라 자동 종료하지 않는다. 수동 버튼만 뚫려 있었다.
+         */
+        /*
+         * **비교는 최소 두 개가 측정돼야 성립한다.**
+         *
+         * 0 개만 막으면 부족하다. 측정된 변형이 **하나뿐**일 때도 `maxByOrNull` 은 그것을
+         * 돌려주고 우승으로 저장한다. 겨룬 상대가 없는데 "이겼다" 가 되는 것이고,
+         * 미측정 변형들은 겨루지도 않은 채 패배 처리된다. 결과는 0 개일 때와 같다 —
+         * 실험하지 않은 결론을 실험 결과로 제시한다.
+         */
+        val measured = variants.filter { it.views > 0 }
+        if (measured.size < MIN_MEASURED_VARIANTS) {
+            throw BusinessException(
+                "AB_TEST_NO_MEASUREMENT",
+                "노출이 측정된 변형이 ${measured.size}개뿐이라 우승을 정할 수 없습니다. " +
+                    "비교하려면 최소 ${MIN_MEASURED_VARIANTS}개 변형에 노출 데이터가 있어야 합니다.",
+            )
+        }
+
+        // 측정된 변형끼리만 비교한다. 미측정 변형을 0% 로 섞으면 자동으로 패배 처리된다.
+        val winner = measured.maxByOrNull { it.clicks.toDouble() / it.views }
+            ?: throw NotFoundException("A/B 테스트 변형", testId)
 
         val updated = test.copy(
             winnerVariantId = winner.id,
@@ -196,27 +231,35 @@ class ABTestUseCase(
         val activeTests = tests.count { it.status == "RUNNING" || it.status == "PAUSED" }
         val completedTests = tests.count { it.status == "COMPLETED" }
 
-        // 완료된 테스트에서 평균 개선율 계산
-        val avgImprovement = if (completedTests > 0) {
-            val improvements = tests.filter { it.status == "COMPLETED" && it.winnerVariantId != null }.mapNotNull { test ->
-                val variants = variantRepository.findByTestId(test.id!!)
-                if (variants.size >= 2) {
-                    val rates = variants.map {
-                        if (it.views > 0) it.clicks.toDouble() / it.views * 100 else 0.0
-                    }
-                    val maxRate = rates.maxOrNull() ?: 0.0
-                    val minRate = rates.minOrNull() ?: 0.0
-                    if (minRate > 0) (maxRate - minRate) / minRate * 100 else 0.0
-                } else null
+        /*
+         * **개선율은 측정된 실험에서만 나온다.**
+         *
+         * 예전에는 노출이 0 인 변형의 클릭률을 `0.0` 으로 두고, 기준값이 0 이면 개선율도
+         * `0.0` 으로 채운 뒤 그것들을 평균에 넣었다. 화면은 그 값을 초록색으로
+         * **"평균 CTR 개선율 +0.0%"** 라고 보여준다 — 아무것도 측정하지 않았는데 성과 지표가
+         * 생긴다.
+         *
+         * 측정된 변형이 2 개 이상이고 기준 클릭률이 0 보다 큰 실험만 센다. 그런 실험이
+         * 하나도 없으면 평균은 **`null`** 이다. 0 은 "개선이 없었다" 는 관측 결과다.
+         */
+        val improvements = tests
+            .filter { it.status == "COMPLETED" && it.winnerVariantId != null }
+            .mapNotNull { test ->
+                val measuredVariants = variantRepository.findByTestId(test.id!!).filter { it.views > 0 }
+                if (measuredVariants.size < 2) return@mapNotNull null
+                val rates = measuredVariants.map { it.clicks.toDouble() / it.views * 100 }
+                val maxRate = rates.max()
+                val minRate = rates.min()
+                // 기준이 0 이면 비율의 분모가 없다. 0% 로 채우면 "차이 없음" 이 된다.
+                if (minRate > 0) (maxRate - minRate) / minRate * 100 else null
             }
-            if (improvements.isNotEmpty()) improvements.average() else 0.0
-        } else 0.0
+        val avgImprovement = improvements.takeIf { it.isNotEmpty() }?.average()
 
         return ABTestSummaryResponse(
             totalTests = tests.size,
             activeTests = activeTests,
             completedTests = completedTests,
-            averageImprovement = Math.round(avgImprovement * 100) / 100.0,
+            averageImprovement = avgImprovement?.let { Math.round(it * 100) / 100.0 },
         )
     }
 
@@ -234,21 +277,49 @@ class ABTestUseCase(
         variants = variants.map { it.toResponse() },
     )
 
-    private fun ABTestVariant.toResponse() = ABTestVariantResponse(
+    private fun ABTestVariant.toResponse(): ABTestVariantResponse {
+        // 노출이 있어야 클릭도 CTR 도 존재할 수 있다. 그것이 측정 여부의 유일한 기준이다.
+        val measured = views > 0
+        return ABTestVariantResponse(
         id = id!!,
         variantName = variantName,
         title = title,
         description = description,
         thumbnailUrl = thumbnailUrl,
-        views = views,
-        clicks = clicks,
-        engagementRate = engagementRate,
-    )
+        /*
+         * 노출이 0 이면 세 지표 모두 측정된 적이 없다. 도메인 기본값 0 을 그대로 내보내면
+         * 결과 차트가 "0.0% 성과" 를 그린다 — 재지 않은 것과 성과가 없는 것은 다르다.
+         *
+         * `views > 0` 인 변형은 그대로 보존한다. 그때의 클릭 0 은 측정된 사실이다.
+         */
+        views = views.takeIf { measured },
+        clicks = clicks.takeIf { measured },
+        engagementRate = engagementRate.takeIf { measured },
+        metricsUnavailableReason = if (measured) null else VARIANT_METRICS_UNAVAILABLE,
+        )
+    }
 
-    private companion object {
-        val ALLOWED_METRICS = setOf(
+    companion object {
+        private val ALLOWED_METRICS = setOf(
             "CTR", "VIEWS", "ENGAGEMENT",
             "THUMBNAIL", "TITLE", "DESCRIPTION", "TAGS",
         )
+
+        /**
+         * 우승을 정하려면 **실제로 노출이 측정된** 변형이 이만큼 있어야 한다.
+         *
+         * 하나로는 비교가 성립하지 않는다 — 겨룬 상대가 없는데 "이겼다" 가 되고,
+         * 미측정 변형들은 겨루지도 않은 채 패배 처리된다.
+         */
+        const val MIN_MEASURED_VARIANTS = 2
+
+        /**
+         * 변형 지표를 낼 수 없을 때의 사유. 화면이 그대로 보여준다.
+         *
+         * 숫자가 아니라 **문장**이어야 한다. 0 을 넣으면 "노출 0회" 라는 관측 결과가 된다.
+         */
+        const val VARIANT_METRICS_UNAVAILABLE =
+            "노출이 수집되지 않아 이 변형의 성과를 측정할 수 없습니다"
     }
+
 }

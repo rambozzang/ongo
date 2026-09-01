@@ -21,9 +21,11 @@ import java.net.URI
 class ChannelOAuthAuthorizationUseCase(
     private val authorizationPort: PlatformOAuthAuthorizationPort,
     private val platformConfigurationPort: PlatformConfigurationPort,
+    private val stateManager: ChannelOAuthStateManager,
     @param:Value("\${cors.allowed-origins:}") private val allowedOrigins: String,
 ) {
     fun authorizationUrl(
+        userId: Long,
         platformValue: String,
         redirectUri: String,
         state: String,
@@ -46,8 +48,9 @@ class ChannelOAuthAuthorizationUseCase(
                 "Twitter OAuth에는 PKCE code_challenge가 필요합니다"
             }
         }
+        val serverState = stateManager.issue(userId, platform, redirectUri, state)
         return ChannelOAuthAuthorizationResponse(
-            authorizationPort.buildAuthorizationUrl(platform, redirectUri, state, codeChallenge),
+            authorizationPort.buildAuthorizationUrl(platform, redirectUri, serverState, codeChallenge),
         )
     }
 

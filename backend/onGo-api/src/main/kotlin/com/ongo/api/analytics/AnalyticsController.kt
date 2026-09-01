@@ -249,11 +249,20 @@ class AnalyticsController(
     }
 
     @Operation(
-        summary = "시청자 리텐션 커브",
-        description = "특정 영상의 시청자 리텐션 커브를 조회합니다. 채널 평균 대비 비교 및 이탈 구간 분석이 포함됩니다."
+        summary = "시청자 리텐션 커브 (현재 미지원)",
+        description = "특정 영상의 구간별 시청 유지율을 조회합니다.\n\n" +
+            "**현재 어떤 플랫폼 분석 연동도 구간별 유지율을 제공하지 않습니다.** " +
+            "따라서 이 엔드포인트는 200 을 반환하지만 `available=false` 와 `unavailableReason` 을 담고 " +
+            "`retentionPoints`·`avgRetention`·`dropOffPoints` 는 항상 빈 배열입니다. " +
+            "값을 추정해 채우지 않습니다 — 영상 길이도, 구간별 유지율도, 이탈 지점도 관측 가능한 데이터가 아닙니다.\n\n" +
+            "소비자는 `available` 을 먼저 확인하고, false 면 `unavailableReason` 을 그대로 안내하십시오. " +
+            "두 필드는 하위 호환을 위해 선택 필드이며 기본값은 각각 false 와 null 입니다."
     )
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "리텐션 커브 조회 성공"),
+        ApiResponse(
+            responseCode = "200",
+            description = "조회 성공. available=false 이면 플랫폼이 구간별 데이터를 제공하지 않는 상태이며 배열은 비어 있습니다.",
+        ),
         ApiResponse(responseCode = "401", description = "인증 실패"),
         ApiResponse(responseCode = "404", description = "영상을 찾을 수 없음"),
         ApiResponse(responseCode = "500", description = "서버 내부 오류")

@@ -8,6 +8,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS_TEXT
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Tables.ASSETS
+import com.ongo.infrastructure.persistence.jooq.Tables.CONTENT_IMAGES
 import com.ongo.infrastructure.persistence.jooq.Tables.USERS
 import com.ongo.infrastructure.persistence.jooq.Tables.VIDEOS
 import org.jooq.DSLContext
@@ -68,6 +69,31 @@ class StorageQuotaPortAdapter(
             .where(USER_ID.eq(userId))
             .fetchOne(0, Long::class.java) ?: 0L
 
-        return videoSize + assetSize + inFlightSize
+        /*
+         * 게시 이미지. **이것이 빠져 있어서 이미지 게시가 요금제 한도를 통째로 우회했다.**
+         *
+         * `content_images` 에는 소유자가 없으므로 `videos` 로 이어 붙여 찾는다. 두 테이블
+         * 모두 `id`·`file_size_bytes`·`created_at` 을 가지고 있어 컬럼을 전부 한정한다 —
+         * 한정을 빼면 어느 쪽 크기를 더하는지 SQL 이 정하고, 합계가 조용히 달라진다.
+         *
+         * `excludeVideoId` 는 적용하지 않는다. 그 인자는 **확정 중인 자기 예약분**을 두 번
+         * 세지 않기 위한 것이고, 예약(`UPLOADING` + `file_url IS NULL`)인 영상에는 이미지가
+         * 달릴 수 없다. 여기서 빼면 실제로 차지하고 있는 용량을 놓친다.
+         */
+        val contentImageSize = dsl.select(DSL.coalesce(DSL.sum(CONTENT_IMAGE_FILE_SIZE), 0L))
+            .from(CONTENT_IMAGES)
+            .join(VIDEOS).on(CONTENT_IMAGE_VIDEO_ID.eq(VIDEO_ROW_ID))
+            .where(VIDEO_OWNER_ID.eq(userId))
+            .fetchOne(0, Long::class.java) ?: 0L
+
+        return videoSize + assetSize + inFlightSize + contentImageSize
+    }
+
+    private companion object {
+        /** 두 테이블이 같은 컬럼명을 가지므로 반드시 한정한다. */
+        val CONTENT_IMAGE_FILE_SIZE = DSL.field(DSL.name("content_images", "file_size_bytes"), Long::class.java)
+        val CONTENT_IMAGE_VIDEO_ID = DSL.field(DSL.name("content_images", "video_id"), Long::class.java)
+        val VIDEO_ROW_ID = DSL.field(DSL.name("videos", "id"), Long::class.java)
+        val VIDEO_OWNER_ID = DSL.field(DSL.name("videos", "user_id"), Long::class.java)
     }
 }

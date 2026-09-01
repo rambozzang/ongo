@@ -156,9 +156,11 @@ class CompetitorJooqRepository(
         platformChannelId = get(PLATFORM_CHANNEL_ID),
         channelName = get(CHANNEL_NAME),
         channelUrl = get(CHANNEL_URL),
-        subscriberCount = get(SUBSCRIBER_COUNT) ?: 0,
-        totalViews = get(TOTAL_VIEWS) ?: 0,
-        videoCount = get(VIDEO_COUNT) ?: 0,
+        // `?: 0` 을 붙이지 않는다. 컬럼이 NULL 인 행은 **재지 못한 것**이고,
+        // 여기서 0 으로 되살리면 저장된 사실이 조회 시점에 바뀐다.
+        subscriberCount = get(SUBSCRIBER_COUNT),
+        totalViews = get(TOTAL_VIEWS),
+        videoCount = get(VIDEO_COUNT),
         avgViews = get(AVG_VIEWS) ?: 0,
         profileImageUrl = get(PROFILE_IMAGE_URL),
         lastSyncedAt = localDateTime(LAST_SYNCED_AT),
@@ -170,12 +172,13 @@ class CompetitorJooqRepository(
         id = get(ID),
         competitorId = get(COMPETITOR_ID),
         date = localDate(DATE)!!,
-        subscriberCount = get(SUBSCRIBER_COUNT) ?: 0,
-        videoCount = get(VIDEO_COUNT) ?: 0,
+        // 스냅샷도 같은 계약이다. 0 으로 되살리면 성장률이 -100% 폭락을 지어낸다.
+        subscriberCount = get(SUBSCRIBER_COUNT),
+        videoCount = get(VIDEO_COUNT),
         avgViews = get(AVG_VIEWS) ?: 0,
         avgLikes = get(AVG_LIKES) ?: 0,
         avgComments = get(AVG_COMMENTS) ?: 0,
-        totalViews = get(TOTAL_VIEWS) ?: 0,
+        totalViews = get(TOTAL_VIEWS),
         createdAt = localDateTime(CREATED_AT),
     )
 }

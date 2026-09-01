@@ -22,9 +22,18 @@ class FaqClusteringUseCase(
 
     private val log = LoggerFactory.getLogger(FaqClusteringUseCase::class.java)
 
+    /**
+     * ## 차감을 댓글 조회 **뒤로** 옮긴 이유
+     *
+     * 예전에는 조회 전에 차감했다. 그래서 분석할 댓글이 하나도 없을 때도 크레딧이 나갔고,
+     * 그 경로는 빈 응답을 반환하며 끝나 환불조차 하지 않았다. **AI 를 부르지 않은 요청에
+     * 과금하면 안 된다.**
+     *
+     * 차감·환불은 [CreditService.withCredits] 한 곳에서 처리한다. `AI_PARSE_ERROR` 도
+     * 환불 대상이다.
+     */
     fun execute(userId: Long): FaqClusterResponse {
         rateLimiter.checkRateLimit(userId)
-        creditService.validateAndDeduct(userId, AiFeature.FAQ_CLUSTERING)
 
         // 최근 200개 댓글 수집
         val comments = commentRepository.findByUserId(userId, 0, 200)
@@ -42,15 +51,22 @@ class FaqClusteringUseCase(
         val userPrompt = PromptTemplates.FAQ_CLUSTERING_USER
             .replace("{comments}", commentsText)
 
-        try {
-            val result = chatClientResolver.resolve(userId).prompt()
-                .system(PromptTemplates.FAQ_CLUSTERING_SYSTEM)
-                .user(userPrompt)
-                .call()
-                .entity(FaqClusterResult::class.java)
-                ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+        return creditService.withCredits(userId, AiFeature.FAQ_CLUSTERING) {
+            val result = try {
+                chatClientResolver.resolve(userId).prompt()
+                    .system(PromptTemplates.FAQ_CLUSTERING_SYSTEM)
+                    .user(userPrompt)
+                    .call()
+                    .entity(FaqClusterResult::class.java)
+                    ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+            } catch (e: BusinessException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("FAQ 클러스터링 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+            }
 
-            return FaqClusterResponse(
+            FaqClusterResponse(
                 clusters = result.clusters.map { cluster ->
                     FaqCluster(
                         topic = cluster.topic,
@@ -61,12 +77,6 @@ class FaqClusteringUseCase(
                 },
                 generatedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
             )
-        } catch (e: BusinessException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("FAQ 클러스터링 실패, 크레딧 환불 처리: userId={}", userId, e)
-            creditService.refundCredit(userId, AiFeature.FAQ_CLUSTERING.creditCost, AiFeature.FAQ_CLUSTERING.name)
-            throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
         }
     }
 }

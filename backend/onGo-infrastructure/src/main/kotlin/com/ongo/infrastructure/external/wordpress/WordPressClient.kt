@@ -130,13 +130,18 @@ class WordPressClient(
             )
 
             PlatformAnalytics(
-                views = response.views ?: 0,
-                likes = response.likes ?: 0,
-                comments = response.comments ?: 0,
+                views = response.views.requireMetric("WordPress", "views"),
+                likes = response.likes.requireMetric("WordPress", "likes"),
+                comments = response.comments.requireMetric("WordPress", "comments"),
+                // 공유는 WordPress 통계 API 가 주지 않는다 — availability 가 미수집으로 선언한다.
                 shares = 0,
                 watchTimeSeconds = 0,
                 subscriberGained = 0,
             )
+        } catch (e: PlatformApiException) {
+            // 어떤 지표가 빠졌는지 담은 메시지를 그대로 올려 보낸다. 일반 메시지로 덮으면
+            // 스케줄러 경고 로그에서 원인 지표를 알 수 없다.
+            throw e
         } catch (e: Exception) {
             log.warn("WordPress 분석 데이터 조회 실패: {}", e.message)
             throw PlatformApiException("WordPress", "분석 데이터 조회 실패", e)
@@ -156,7 +161,7 @@ class WordPressClient(
             channelId = (blog?.id ?: response.id).toString(),
             channelName = blog?.name ?: response.displayName ?: "",
             channelUrl = blog?.url ?: response.primaryBlogUrl ?: "",
-            subscriberCount = blog?.subscribers_count ?: 0,
+            subscriberCount = blog?.subscribers_count,
             profileImageUrl = response.avatarUrl,
         )
     }

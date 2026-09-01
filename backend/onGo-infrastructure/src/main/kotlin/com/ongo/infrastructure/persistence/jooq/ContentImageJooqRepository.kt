@@ -10,6 +10,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.HEIGHT
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.IMAGE_URL_CI
 import com.ongo.infrastructure.persistence.jooq.Fields.ORIGINAL_FILENAME
+import com.ongo.infrastructure.persistence.jooq.Fields.STORAGE_OBJECT_KEY
 import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.WIDTH
 import com.ongo.infrastructure.persistence.jooq.Tables.CONTENT_IMAGES
@@ -32,6 +33,7 @@ class ContentImageJooqRepository(
             .set(FILE_SIZE_BYTES, image.fileSizeBytes)
             .set(ORIGINAL_FILENAME, image.originalFilename)
             .set(CONTENT_TYPE, image.contentType)
+            .set(STORAGE_OBJECT_KEY, image.storageObjectKey)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -52,6 +54,7 @@ class ContentImageJooqRepository(
                 .set(FILE_SIZE_BYTES, image.fileSizeBytes)
                 .set(ORIGINAL_FILENAME, image.originalFilename)
                 .set(CONTENT_TYPE, image.contentType)
+            .set(STORAGE_OBJECT_KEY, image.storageObjectKey)
                 .returningResult(ID)
                 .fetchOne()!!
                 .get(ID)
@@ -107,6 +110,7 @@ class ContentImageJooqRepository(
             fileSizeBytes = get(FILE_SIZE_BYTES),
             originalFilename = get(ORIGINAL_FILENAME),
             contentType = get(CONTENT_TYPE),
+            storageObjectKey = get(STORAGE_OBJECT_KEY),
             createdAt = localDateTime(CREATED_AT),
         )
 }

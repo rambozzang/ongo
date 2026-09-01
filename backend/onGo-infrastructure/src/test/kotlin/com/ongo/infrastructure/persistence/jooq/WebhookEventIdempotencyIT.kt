@@ -1,5 +1,6 @@
 package com.ongo.infrastructure.persistence.jooq
 
+import com.ongo.application.paddle.PaddleWebhookService
 import com.ongo.domain.webhook.WebhookEvent
 import com.ongo.domain.webhook.WebhookEventRepository
 import com.ongo.infrastructure.persistence.jooq.Fields.EVENT_ID
@@ -171,5 +172,94 @@ class WebhookEventIdempotencyIT {
     @DisplayName("markProcessed는 없는 event_id에 대해 false를 반환한다")
     fun markProcessedReturnsFalseForMissingRow() {
         assertEquals(false, repo.markProcessed("portone:never-inserted", LocalDateTime.now()))
+    }
+
+    /**
+     * 재시도 대기열의 **소유권 격리**를 실제 DB에서 확인한다.
+     *
+     * `webhook_events` 는 Paddle 과 포트원이 공유한다. `findRetryable` 이 상태만으로 고르면
+     * 포트원의 FAILED 행이 Paddle 재처리기(`reprocessWebhookEvent`)로 넘어간다. 포트원
+     * 페이로드에는 `event_type` 키가 없어 조용히 no-op 하고, 호출자인 스케줄러는 그것을
+     * 성공으로 보고 **PROCESSED 로 찍는다.** 처리된 적 없는 결제 웹훅이 완료로 남는다.
+     *
+     * 단위 테스트는 `event_type in (...)` SQL 을 발행한다는 것까지만 증명한다. 그 조건이
+     * 실제로 남의 행을 걸러내는지는 DB 가 있어야 알 수 있다.
+     */
+    @Test
+    @DisplayName("포트원 FAILED 이벤트는 Paddle 재시도 대상에 절대 포함되지 않는다")
+    fun findRetryableExcludesOtherProvidersFailedEvents() {
+        val due = LocalDateTime.now().minusMinutes(10)
+
+        // 포트원 행 — 만료된 재시도 시각까지 갖춰 상태 조건만으로는 반드시 걸리는 상태로 둔다.
+        repo.saveIfAbsent(
+            WebhookEvent(
+                eventId = "portone:failed-1",
+                eventType = "Transaction.Paid",
+                payload = """{"type":"Transaction.Paid","data":{"paymentId":"pay_1"}}""",
+                status = "FAILED",
+                retryCount = 1,
+                nextRetryAt = due,
+            ),
+        )
+        // Paddle 행 — 대조군. 격리 조건이 정상 대상까지 삼키면 안 된다.
+        repo.saveIfAbsent(
+            WebhookEvent(
+                eventId = "evt_paddle-1",
+                eventType = "transaction.completed",
+                payload = """{"event_type":"transaction.completed","data":{"id":"txn_1"}}""",
+                status = "FAILED",
+                retryCount = 1,
+                nextRetryAt = due,
+            ),
+        )
+
+        val retryable = repo.findRetryable(LocalDateTime.now(), PaddleWebhookService.REPROCESSABLE_EVENT_TYPES)
+
+        assertEquals(
+            listOf("evt_paddle-1"),
+            retryable.map { it.eventId },
+            "포트원 FAILED 행이 Paddle 재처리 대기열에 들어왔다",
+        )
+    }
+
+    @Test
+    @DisplayName("되살리기도 포트원 PENDING 은 건드리지 않는다")
+    fun recoverStalePendingExcludesOtherProviders() {
+        repo.saveIfAbsent(
+            WebhookEvent(
+                eventId = "portone:pending-1",
+                eventType = "Transaction.Paid",
+                payload = """{"type":"Transaction.Paid"}""",
+                status = "PENDING",
+            ),
+        )
+        repo.saveIfAbsent(
+            WebhookEvent(
+                eventId = "evt_paddle-2",
+                eventType = "transaction.completed",
+                payload = """{"event_type":"transaction.completed","data":{"id":"txn_2"}}""",
+                status = "PENDING",
+            ),
+        )
+
+        // created_at 은 DB 기본값(NOW())이라 미래 기준으로 "충분히 오래된" 상태를 만든다.
+        val recovered = repo.recoverStalePending(
+            olderThan = LocalDateTime.now().plusMinutes(1),
+            retryAt = LocalDateTime.now(),
+            eventTypes = PaddleWebhookService.REPROCESSABLE_EVENT_TYPES,
+            limit = 50,
+        )
+
+        assertEquals(1, recovered, "되살린 행 수가 다르다")
+        assertEquals(
+            "PENDING",
+            dsl.select().from(WEBHOOK_EVENTS).where(EVENT_ID.eq("portone:pending-1")).fetchOne()!!.get(STATUS),
+            "포트원 PENDING 을 Paddle 재시도 대상으로 바꿨다",
+        )
+        assertEquals(
+            "FAILED",
+            dsl.select().from(WEBHOOK_EVENTS).where(EVENT_ID.eq("evt_paddle-2")).fetchOne()!!.get(STATUS),
+            "Paddle PENDING 이 되살아나지 않았다",
+        )
     }
 }

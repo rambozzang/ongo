@@ -2,6 +2,7 @@ package com.ongo.api.video
 
 import com.ongo.api.video.dto.*
 import com.ongo.application.video.CrossPlatformOptimizationUseCase
+import com.ongo.application.video.AssetToVideoUseCase
 import com.ongo.application.video.PublishVideoUseCase
 import com.ongo.application.video.PlatformUploadConfig
 import com.ongo.application.video.RecyclePlatformConfig
@@ -19,6 +20,7 @@ import com.ongo.common.ResData
 import com.ongo.common.annotation.RequiresPermission
 import com.ongo.common.config.PageResponse
 import com.ongo.common.enums.Permission
+import com.ongo.common.exception.BusinessException
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.util.safeValueOfOrThrow
@@ -40,6 +42,7 @@ import org.springframework.web.multipart.MultipartFile
 class VideoController(
     private val uploadVideoUseCase: UploadVideoUseCase,
     private val publishVideoUseCase: PublishVideoUseCase,
+    private val assetToVideoUseCase: AssetToVideoUseCase,
     private val recycleVideoUseCase: RecycleVideoUseCase,
     private val videoQueryUseCase: VideoQueryUseCase,
     private val videoFeedUseCase: VideoFeedUseCase,
@@ -66,6 +69,28 @@ class VideoController(
     ): ResponseEntity<ResData<Nothing?>> {
         uploadVideoUseCase.confirmPresignedUpload(userId, id)
         return ResData.success(null, "업로드가 확인되었습니다")
+    }
+
+    @Operation(
+        summary = "에셋으로 콘텐츠 만들기",
+        description = "에셋 라이브러리의 영상 에셋을 복사해 편집 가능한 영상 초안(DRAFT)을 만듭니다. " +
+            "원본 에셋은 그대로 남고, 사본은 새 영상 전용 경로에 저장되어 서로의 삭제에 영향을 받지 않습니다.",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "승격 성공 (새 영상 ID 반환)"),
+        ApiResponse(responseCode = "400", description = "영상 에셋이 아니거나 저장 위치를 확인할 수 없음"),
+        ApiResponse(responseCode = "401", description = "인증 실패"),
+        ApiResponse(responseCode = "403", description = "본인 소유 에셋이 아님"),
+        ApiResponse(responseCode = "404", description = "에셋을 찾을 수 없음"),
+    )
+    @RequiresPermission(Permission.VIDEO_CREATE)
+    @PostMapping("/from-asset/{assetId}")
+    fun createFromAsset(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Parameter(description = "사용할 에셋 ID") @PathVariable assetId: Long,
+    ): ResponseEntity<ResData<FromAssetResponse>> {
+        val result = assetToVideoUseCase.promote(userId, assetId)
+        return ResData.success(FromAssetResponse(videoId = result.videoId), "콘텐츠 초안을 만들었습니다")
     }
 
     @Operation(
@@ -205,9 +230,43 @@ class VideoController(
         @Parameter(description = "페이지 번호") @RequestParam(defaultValue = "0") page: Int,
         @Parameter(description = "페이지당 항목 수") @RequestParam(defaultValue = "20") size: Int,
         @Parameter(description = "정렬 기준 (recent, views, likes, comments)") @RequestParam(defaultValue = "recent") sort: String,
+        @Parameter(
+            description = "다음 페이지 커서. 응답의 nextPageTokens 를 `채널ID:토큰` 형태로 반복 전달한다.",
+        )
+        @RequestParam(required = false) channelToken: List<String>?,
     ): ResponseEntity<ResData<VideoFeedResponse>> {
-        val result = videoFeedUseCase.getFeed(userId, platform, page, size.coerceIn(1, 50), sort)
+        val result = videoFeedUseCase.getFeed(
+            userId,
+            platform,
+            page,
+            size.coerceIn(1, 50),
+            sort,
+            parseChannelTokens(channelToken),
+        )
         return ResData.success(result)
+    }
+
+    /**
+     * `채널ID:토큰` 목록을 파싱한다.
+     *
+     * 플랫폼 토큰은 **불투명한 문자열**이라 `:` 이 들어갈 수 있으므로 첫 번째 `:` 에서만
+     * 자른다. 형식이 맞지 않는 항목은 조용히 버리지 않고 거절한다 — 잘못된 커서를 무시하면
+     * 사용자는 "다음 페이지" 를 눌렀는데 첫 페이지가 다시 나오는 것을 보게 된다.
+     */
+    private fun parseChannelTokens(raw: List<String>?): Map<Long, String> {
+        if (raw.isNullOrEmpty()) return emptyMap()
+        return raw.associate { entry ->
+            val separator = entry.indexOf(':')
+            val channelId = entry.take(maxOf(separator, 0)).toLongOrNull()
+            val token = if (separator >= 0) entry.substring(separator + 1) else ""
+            if (separator < 0 || channelId == null || token.isEmpty()) {
+                throw BusinessException(
+                    "INVALID_FEED_CURSOR",
+                    "페이지 커서 형식이 올바르지 않습니다: $entry",
+                )
+            }
+            channelId to token
+        }
     }
 
     @Operation(
@@ -251,6 +310,9 @@ class VideoController(
                         )
                     },
                     totalViews = item.totalViews,
+                    // 합계에 포함되지 않은 미수집 업로드 수. 빠뜨리면 화면이 부분 합계를
+                    // 전체 합계로 읽는다.
+                    pendingViewUploads = item.pendingViewUploads,
                     createdAt = item.createdAt,
                 )
             },
@@ -469,14 +531,14 @@ class VideoController(
     }
 
     @Operation(
-        summary = "AI 크로스 플랫폼 콘텐츠 최적화",
-        description = "AI를 활용하여 원본 콘텐츠를 각 플랫폼 특성에 맞게 최적화합니다. 플랫폼별 최적화된 제목, 설명, 태그를 반환합니다."
+        summary = "AI 크로스 플랫폼 콘텐츠 최적화 (현재 제공하지 않음)",
+        description = "요금이 정해지지 않아 비활성 상태입니다. 항상 FEATURE_NOT_AVAILABLE 로 실패합니다. " +
+            "같은 목적은 메타데이터 리라이트(POST /meta-rewrite/{videoId}, META_REWRITE 3크레딧)를 사용하세요.",
+        deprecated = true,
     )
     @ApiResponses(
-        ApiResponse(responseCode = "200", description = "AI 최적화 성공"),
-        ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        ApiResponse(responseCode = "400", description = "FEATURE_NOT_AVAILABLE — 기능 비활성"),
         ApiResponse(responseCode = "401", description = "인증 실패"),
-        ApiResponse(responseCode = "500", description = "AI 서비스 오류"),
     )
     @RequiresPermission(Permission.VIDEO_CREATE)
     @PostMapping("/optimize")

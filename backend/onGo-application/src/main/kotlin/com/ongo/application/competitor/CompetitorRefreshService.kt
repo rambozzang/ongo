@@ -65,7 +65,20 @@ class CompetitorRefreshService(
 
     /** 조회 결과를 저장한다. 외부 I/O 가 없어 호출자의 가드 재확인 직후에 두기 안전하다. */
     fun persist(competitor: Competitor, result: ChannelLookupResult, today: LocalDate = LocalDate.now()) {
-        val avgViews = if (result.videoCount > 0) result.totalViews / result.videoCount else 0
+        /*
+         * **분모를 모르면 평균을 만들 수 없다.**
+         *
+         * 저장 컬럼(`avg_views`)은 non-null 이라 계산하지 못한 자리에 0 이 남지만,
+         * 응답 경계의 `measuredAvgViews` 가 `videoCount` 를 근거로 그 0 을 걸러낸다.
+         * 그래서 여기서는 계산 가능할 때만 실제 평균을 넣는다.
+         */
+        val videoCount = result.videoCount
+        val totalViews = result.totalViews
+        val avgViews = if (videoCount != null && videoCount > 0 && totalViews != null) {
+            totalViews / videoCount
+        } else {
+            0
+        }
 
         competitorRepository.update(
             competitor.copy(

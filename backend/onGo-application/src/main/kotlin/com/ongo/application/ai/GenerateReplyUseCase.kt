@@ -21,30 +21,32 @@ class GenerateReplyUseCase(
 
     private val log = LoggerFactory.getLogger(GenerateReplyUseCase::class.java)
 
+    /**
+     * 차감·환불은 [CreditService.withCredits] 한 곳에서 처리한다. `AI_PARSE_ERROR` 도
+     * 환불 대상이다 — 예전에는 그 분기가 환불 없이 그대로 올라갔다.
+     */
     fun execute(userId: Long, comment: String, channelTone: String, context: String?): CommentReplyResult {
         rateLimiter.checkRateLimit(userId)
-        creditService.validateAndDeduct(userId, AiFeature.COMMENT_REPLY)
 
         val userPrompt = PromptTemplates.COMMENT_REPLY_USER
             .replace("{comment}", InputSanitizer.sanitize(comment))
             .replace("{channelTone}", InputSanitizer.sanitize(channelTone))
             .replace("{context}", InputSanitizer.sanitize(context ?: "없음"))
 
-        try {
-            val result = chatClientResolver.resolve(userId).prompt()
-                .system(PromptTemplates.COMMENT_REPLY_SYSTEM)
-                .user(userPrompt)
-                .call()
-                .entity(CommentReplyResult::class.java)
-
-            return result
-                ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
-        } catch (e: BusinessException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("AI 댓글 답변 생성 실패, 크레딧 환불 처리: userId={}", userId, e)
-            creditService.refundCredit(userId, AiFeature.COMMENT_REPLY.creditCost, AiFeature.COMMENT_REPLY.name)
-            throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+        return creditService.withCredits(userId, AiFeature.COMMENT_REPLY) {
+            try {
+                chatClientResolver.resolve(userId).prompt()
+                    .system(PromptTemplates.COMMENT_REPLY_SYSTEM)
+                    .user(userPrompt)
+                    .call()
+                    .entity(CommentReplyResult::class.java)
+                    ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+            } catch (e: BusinessException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("AI 댓글 답변 생성 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+            }
         }
     }
 
@@ -57,7 +59,6 @@ class GenerateReplyUseCase(
         }
 
         val totalCost = AiFeature.BATCH_REPLY_DRAFT.creditCost * comments.size
-        creditService.validateAndDeduct(userId, totalCost, AiFeature.BATCH_REPLY_DRAFT.name)
 
         val commentsText = comments.mapIndexed { index, comment ->
             "[$index] ${InputSanitizer.sanitize(comment.content)}"
@@ -74,13 +75,20 @@ class GenerateReplyUseCase(
             .replace("{tone}", InputSanitizer.sanitize(toneLabel))
             .replace("{comments}", commentsText)
 
-        try {
-            val result = chatClientResolver.resolve(userId).prompt()
-                .system(PromptTemplates.BATCH_REPLY_SYSTEM)
-                .user(userPrompt)
-                .call()
-                .entity(BatchReplyDraftResult::class.java)
-                ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+        return creditService.withCredits(userId, totalCost, AiFeature.BATCH_REPLY_DRAFT.name) {
+            val result = try {
+                chatClientResolver.resolve(userId).prompt()
+                    .system(PromptTemplates.BATCH_REPLY_SYSTEM)
+                    .user(userPrompt)
+                    .call()
+                    .entity(BatchReplyDraftResult::class.java)
+                    ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+            } catch (e: BusinessException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("배치 답변 초안 생성 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+            }
 
             val drafts = result.drafts.mapNotNull { draft ->
                 val comment = comments.getOrNull(draft.commentIndex) ?: return@mapNotNull null
@@ -92,16 +100,10 @@ class GenerateReplyUseCase(
                 )
             }
 
-            return BatchAiDraftResponse(
+            BatchAiDraftResponse(
                 drafts = drafts,
                 totalCreditsUsed = totalCost,
             )
-        } catch (e: BusinessException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("배치 답변 초안 생성 실패, 크레딧 환불 처리: userId={}", userId, e)
-            creditService.refundCredit(userId, totalCost, AiFeature.BATCH_REPLY_DRAFT.name)
-            throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
         }
     }
 }

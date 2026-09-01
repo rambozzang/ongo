@@ -111,13 +111,17 @@ class TikTokClient(
                 ?: throw PlatformApiException("TikTok", "영상 분석 응답에 영상이 없습니다.")
 
             return PlatformAnalytics(
-                views = video.viewCount ?: 0,
-                likes = video.likeCount ?: 0,
-                comments = video.commentCount ?: 0,
-                shares = video.shareCount ?: 0,
+                views = video.viewCount.requireMetric("TikTok", "view_count"),
+                likes = video.likeCount.requireMetric("TikTok", "like_count"),
+                comments = video.commentCount.requireMetric("TikTok", "comment_count"),
+                shares = video.shareCount.requireMetric("TikTok", "share_count"),
                 watchTimeSeconds = 0, // TikTok doesn't expose watch time via this endpoint
                 subscriberGained = 0,
             )
+        } catch (e: PlatformApiException) {
+            // 어떤 지표가 빠졌는지 담은 메시지를 그대로 올려 보낸다. 일반 메시지로 덮으면
+            // 스케줄러 경고 로그에서 원인 지표를 알 수 없다.
+            throw e
         } catch (e: Exception) {
             log.warn("TikTok 분석 데이터 조회 실패: {}", e.message)
             throw PlatformApiException("TikTok", "분석 데이터 조회 실패", e)
@@ -142,7 +146,7 @@ class TikTokClient(
             channelId = data.creatorUsername ?: "",
             channelName = data.creatorNickname ?: data.creatorUsername ?: "",
             channelUrl = data.creatorUsername?.let { "https://www.tiktok.com/@$it" } ?: "",
-            subscriberCount = data.followerCount ?: 0,
+            subscriberCount = data.followerCount,
             profileImageUrl = data.creatorAvatarUrl,
         )
     }
@@ -201,16 +205,26 @@ class TikTokClient(
                 authorization = "Bearer $accessToken",
                 request = TikTokVideoListRequest(maxCount = maxResults, cursor = cursor),
             )
-            val data = response.data ?: return PlatformFeedResult(emptyList())
+            if (response.error != null) {
+                return PlatformFeedResult(
+                    items = emptyList(),
+                    errorMessage = "TikTok 영상 목록을 불러오지 못했습니다.",
+                )
+            }
+            val data = response.data ?: return PlatformFeedResult(
+                items = emptyList(),
+                errorMessage = "TikTok 영상 목록 응답이 없습니다.",
+            )
             val items = data.videos.map { video ->
                 PlatformFeedItem(
                     platformVideoId = video.id,
                     title = video.title ?: "",
                     thumbnailUrl = video.coverImageUrl,
-                    viewCount = video.viewCount ?: 0,
-                    likeCount = video.likeCount ?: 0,
-                    commentCount = video.commentCount ?: 0,
-                    shareCount = video.shareCount ?: 0,
+                    // 응답이 값을 주지 않으면 미측정이다. 0 을 주면 그 0 은 관측이다.
+                    viewCount = video.viewCount,
+                    likeCount = video.likeCount,
+                    commentCount = video.commentCount,
+                    shareCount = video.shareCount,
                     publishedAt = video.createTime?.let {
                         java.time.Instant.ofEpochSecond(it).toString()
                     },
@@ -222,7 +236,10 @@ class TikTokClient(
             )
         } catch (e: Exception) {
             log.error("TikTok 영상 목록 조회 실패: {}", e.message)
-            return PlatformFeedResult(emptyList())
+            return PlatformFeedResult(
+                items = emptyList(),
+                errorMessage = "TikTok 영상 목록을 불러오지 못했습니다.",
+            )
         }
     }
 

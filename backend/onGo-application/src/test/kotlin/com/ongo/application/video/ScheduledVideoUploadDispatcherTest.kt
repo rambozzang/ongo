@@ -58,7 +58,7 @@ class ScheduledVideoUploadDispatcherTest {
     fun `frozen account cannot be published by the independent due dispatcher`() {
         every { uploads.findDueScheduledUploads(any()) } returns listOf(upload)
         every { videos.findById(101L) } returns video
-        every { storage.getFileUrl(101L) } returns video.fileUrl!!
+        every { storage.getFileUrl(101L, video.fileUrl) } returns video.fileUrl!!
         every { guard.requireWritable(7L, any(), any()) } throws AccountFrozenException()
 
         dispatcher().dispatchDueUploads()
@@ -71,7 +71,7 @@ class ScheduledVideoUploadDispatcherTest {
     fun `active account emits an immediate event for a due upload`() {
         every { uploads.findDueScheduledUploads(any()) } returns listOf(upload)
         every { videos.findById(101L) } returns video
-        every { storage.getFileUrl(101L) } returns video.fileUrl!!
+        every { storage.getFileUrl(101L, video.fileUrl) } returns video.fileUrl!!
         every { guard.requireWritable(7L, any(), any()) } returns Unit
         every { uploads.claim(201L, any(), any(), any()) } returns upload.copy(
             leaseOwner = "scheduled:201:worker",
@@ -95,7 +95,7 @@ class ScheduledVideoUploadDispatcherTest {
     fun `another instance winning the lease does not emit a duplicate event`() {
         every { uploads.findDueScheduledUploads(any()) } returns listOf(upload)
         every { videos.findById(101L) } returns video
-        every { storage.getFileUrl(101L) } returns video.fileUrl!!
+        every { storage.getFileUrl(101L, video.fileUrl) } returns video.fileUrl!!
         every { guard.requireWritable(7L, any(), any()) } returns Unit
         every { uploads.claim(201L, any(), any(), any()) } returns null
 
@@ -113,7 +113,7 @@ class ScheduledVideoUploadDispatcherTest {
         every { uploads.findDueScheduledUploads(any()) } returns emptyList()
         every { uploads.findDueRetryUploads(any()) } returns listOf(retry)
         every { videos.findById(101L) } returns video
-        every { storage.getFileUrl(101L) } returns video.fileUrl!!
+        every { storage.getFileUrl(101L, video.fileUrl) } returns video.fileUrl!!
         every { guard.requireWritable(7L, any(), any()) } returns Unit
         every { uploads.claim(201L, any(), any(), any()) } returns retry.copy(
             leaseOwner = "scheduled:201:worker",
@@ -131,7 +131,7 @@ class ScheduledVideoUploadDispatcherTest {
     fun `metadata failure after claim becomes unconfirmed without publishing`() {
         every { uploads.findDueScheduledUploads(any()) } returns listOf(upload)
         every { videos.findById(101L) } returns video
-        every { storage.getFileUrl(101L) } returns video.fileUrl!!
+        every { storage.getFileUrl(101L, video.fileUrl) } returns video.fileUrl!!
         every { guard.requireWritable(7L, any(), any()) } returns Unit
         every { uploads.claim(201L, any(), any(), any()) } returns upload.copy(
             leaseOwner = "scheduled:201:worker",
@@ -146,5 +146,19 @@ class ScheduledVideoUploadDispatcherTest {
         verify {
             uploads.updateOwned(match { it.status == UploadStatus.UNCONFIRMED }, any())
         }
+    }
+
+    @Test
+    fun `URL 재발급 실패 시 만료된 URL로 게시하지 않고 다음 주기에 남긴다`() {
+        every { uploads.findDueScheduledUploads(any()) } returns listOf(upload)
+        every { videos.findById(101L) } returns video
+        every { storage.getFileUrl(101L, video.fileUrl) } throws IllegalStateException("object unavailable")
+        every { guard.requireWritable(7L, any(), any()) } returns Unit
+
+        dispatcher().dispatchDueUploads()
+
+        verify(exactly = 0) { uploads.claim(any(), any(), any(), any()) }
+        verify(exactly = 0) { publisher.publishEvent(any()) }
+        verify(exactly = 0) { uploads.updateOwned(any(), any()) }
     }
 }

@@ -613,4 +613,78 @@ class PlatformUploadServiceImplTest {
             server.shutdown()
         }
     }
+
+    /**
+     * Naver Clip 은 연동 조회용 클라이언트 빈이 **등록돼 있다.** 예전 `supports` 는 그
+     * 사실만 보고 true 를 돌려줬고, 그래서 호출자(리스너·폴러)의 "지원되지 않는 플랫폼"
+     * 안전망이 비껴갔다. 그 뒤 upload 가 NaverClipClient.uploadVideo() 까지 내려가
+     * "StreamPublishUseCase를 사용하세요" 라는 개발자용 문구를 고객 실패 사유로 남겼다.
+     *
+     * 빈이 있어도 게시 경로가 없으면 false 여야 한다.
+     */
+    @Test
+    fun `업로드 API가 없는 플랫폼은 클라이언트 빈이 있어도 supports가 false다`() {
+        val factory = mockk<PlatformClientFactory>()
+        val client = mockk<PlatformClient>()
+        every { factory.getClient(Platform.NAVER_CLIP) } returns client
+
+        val service = PlatformUploadServiceImpl(
+            platformClientFactory = factory,
+            channelRepository = mockk(),
+            tokenEncryptionPort = mockk(),
+            streamWriterFactories = emptyList(),
+        )
+
+        assertThat(service.supports(Platform.NAVER_CLIP)).isFalse()
+        // 게시 경로가 있는 플랫폼은 그대로 지원해야 한다 — 가드가 과하게 잡으면 매출이 멈춘다.
+        every { factory.getClient(Platform.YOUTUBE) } returns client
+        assertThat(service.supports(Platform.YOUTUBE)).isTrue()
+    }
+
+    /**
+     * `supports` 를 거치지 않은 직접 호출도 외부 API·미구현 분기로 내려가면 안 된다.
+     * 채널 조회조차 하지 않고 사용자용 문장으로 끝난다.
+     */
+    @Test
+    fun `업로드 API가 없는 플랫폼은 클라이언트를 부르지 않고 정직한 사유로 실패한다`() {
+        val factory = mockk<PlatformClientFactory>(relaxed = true)
+        val channelRepository = mockk<ChannelRepository>()
+        val tokenEncryptionPort = mockk<TokenEncryptionPort>()
+
+        val service = PlatformUploadServiceImpl(
+            platformClientFactory = factory,
+            channelRepository = channelRepository,
+            tokenEncryptionPort = tokenEncryptionPort,
+            streamWriterFactories = emptyList(),
+        )
+
+        val result = service.upload(
+            config = PlatformUploadConfig(
+                platform = Platform.NAVER_CLIP,
+                videoUploadId = 10L,
+                title = "제목",
+                description = null,
+                tags = emptyList(),
+                visibility = Visibility.PUBLIC,
+                thumbnailUrl = null,
+                fileSize = 100,
+                scheduledAt = null,
+            ),
+            fileUrl = "https://storage.example/video.mp4",
+            userId = 7L,
+        )
+
+        assertThat(result.success).isFalse()
+        assertThat(result.published).isFalse()
+        assertThat(result.retryable).isFalse()
+        // 내부 마이그레이션 안내가 사용자에게 새지 않는다.
+        assertThat(result.errorMessage).doesNotContain("StreamPublishUseCase")
+        assertThat(result.errorMessage).doesNotContain("uploadVideo")
+        assertThat(result.errorMessage).contains("Naver Clip")
+
+        // 외부 경계도, 채널 조회도 건드리지 않는다.
+        verify(exactly = 0) { factory.getClient(any()) }
+        verify { channelRepository wasNot Called }
+        verify { tokenEncryptionPort wasNot Called }
+    }
 }

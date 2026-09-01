@@ -148,7 +148,9 @@ class ChannelJooqRepository(
             platformChannelId = get(PLATFORM_CHANNEL_ID),
             channelName = get(CHANNEL_NAME),
             channelUrl = get(CHANNEL_URL),
-            subscriberCount = longValue(SUBSCRIBER_COUNT) ?: 0,
+            // `?: 0` 을 붙이지 않는다. 컬럼이 NULL 인 행은 **재지 않은 것**이고,
+            // 여기서 0 으로 되살리면 저장된 사실이 조회 시점에 바뀐다.
+            subscriberCount = longValue(SUBSCRIBER_COUNT),
             profileImageUrl = get(PROFILE_IMAGE_URL),
             accessToken = EncryptedToken(get(ACCESS_TOKEN)),
             refreshToken = get(REFRESH_TOKEN)?.let(::EncryptedToken),

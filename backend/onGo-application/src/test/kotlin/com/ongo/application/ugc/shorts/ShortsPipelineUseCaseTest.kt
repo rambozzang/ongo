@@ -161,6 +161,7 @@ class ShortsPipelineUseCaseTest {
         useCase = ShortsPipelineUseCase(
             pipelineRunRepository = pipelineRunRepository,
             runStageRepository = runStageRepository,
+        stageCreditService = ShortsStageCreditService(creditService, runStageRepository),
             shortsClipRepository = shortsClipRepository,
             clipHookRepository = clipHookRepository,
             shortsTemplateRepository = shortsTemplateRepository,
@@ -926,6 +927,8 @@ class ShortsPipelineUseCaseTest {
         grantAccess(workspaceId)
         val target = run(PipelineRunStatus.AWAITING_HOOK_SELECTION)
         every { pipelineRunRepository.findById(runId) } returns target
+        // 지우기 전 정산 대상이 없다 — 이 픽스처의 단계는 모두 완료됐거나 차감이 없다.
+        every { runStageRepository.findUnsettled(runId, any()) } returns emptyList()
         every { runStageRepository.deleteFrom(runId, any()) } returns 3
         every { shortsClipRepository.findByRunId(runId) } returns listOf(clip(1L, 1), clip(2L, 2))
         every { clipHookRepository.deleteByClipIds(any()) } returns 4
@@ -939,6 +942,16 @@ class ShortsPipelineUseCaseTest {
         useCase.rerunStage(userId, workspaceId, runId, "HOOK")
 
         verify { runStageRepository.deleteFrom(runId, PipelineStage.HOOK.sortOrder) }
+        /*
+         * **지우기 전에 정산해야 한다.**
+         *
+         * 삭제는 단계 행을 하드 삭제하므로, 미정산 단계가 있으면 차감 분해가 함께 사라져
+         * 되돌릴 근거가 영영 없어진다. 순서가 뒤집히면 사용자가 낸 크레딧이 조용히 증발한다.
+         */
+        verifyOrder {
+            runStageRepository.findUnsettled(runId, PipelineStage.HOOK.sortOrder)
+            runStageRepository.deleteFrom(runId, PipelineStage.HOOK.sortOrder)
+        }
         // HOOK 재실행이면 후킹만 지우고 클립은 DRAFT 로 되돌린다
         verify { clipHookRepository.deleteByClipIds(listOf(1L, 2L)) }
         verify(exactly = 0) { shortsClipRepository.deleteByRunId(any()) }
@@ -948,6 +961,8 @@ class ShortsPipelineUseCaseTest {
     fun `SEGMENT 부터 재실행하면 클립을 전부 삭제한다`() {
         grantAccess(workspaceId)
         every { pipelineRunRepository.findById(runId) } returns run(PipelineRunStatus.FAILED)
+        // 지우기 전 정산 대상이 없다 — 이 픽스처의 단계는 모두 완료됐거나 차감이 없다.
+        every { runStageRepository.findUnsettled(runId, any()) } returns emptyList()
         every { runStageRepository.deleteFrom(runId, any()) } returns 5
         every { shortsClipRepository.findByRunId(runId) } returns listOf(clip(1L, 1))
         every { clipHookRepository.deleteByClipIds(any()) } returns 2
@@ -975,6 +990,8 @@ class ShortsPipelineUseCaseTest {
     fun `재실행 이벤트를 스테이지 삭제보다 먼저 기록한다`() {
         grantAccess(workspaceId)
         every { pipelineRunRepository.findById(runId) } returns run(PipelineRunStatus.AWAITING_HOOK_SELECTION)
+        // 지우기 전 정산 대상이 없다 — 이 픽스처의 단계는 모두 완료됐거나 차감이 없다.
+        every { runStageRepository.findUnsettled(runId, any()) } returns emptyList()
         every { runStageRepository.deleteFrom(runId, any()) } returns 3
         every { shortsClipRepository.findByRunId(runId) } returns listOf(clip(1L, 1))
         every { clipHookRepository.deleteByClipIds(any()) } returns 2
@@ -1560,6 +1577,7 @@ class ShortsPipelineUseCaseTest {
     private fun bundleUseCase() = ShortsPipelineUseCase(
         pipelineRunRepository = pipelineRunRepository,
         runStageRepository = runStageRepository,
+        stageCreditService = ShortsStageCreditService(creditService, runStageRepository),
         shortsClipRepository = shortsClipRepository,
         clipHookRepository = clipHookRepository,
         shortsTemplateRepository = shortsTemplateRepository,
@@ -1671,12 +1689,19 @@ class ShortsPipelineUseCaseTest {
         every { pipelineRunRepository.findById(runId) } returns run(PipelineRunStatus.RUNNING)
         val updated = slot<PipelineRun>()
         every { pipelineRunRepository.update(capture(updated)) } answers { firstArg() }
+        // 삭제 전 정산 대상이 없다 — 이 픽스처에는 차감된 진행 중 단계가 없다.
+        every { runStageRepository.findUnsettled(runId, any()) } returns emptyList()
         every { pipelineRunRepository.delete(runId) } returns true
 
         useCase.deleteRun(userId, workspaceId, runId)
 
         assertEquals(PipelineRunStatus.CANCELLED, updated.captured.status)
         verify { pipelineRunRepository.delete(runId) }
+        // 지우기 전에 정산한다 — 지운 뒤에는 차감 분해가 사라져 되돌릴 근거가 없다.
+        verifyOrder {
+            runStageRepository.findUnsettled(runId, 0)
+            pipelineRunRepository.delete(runId)
+        }
     }
 
     companion object {

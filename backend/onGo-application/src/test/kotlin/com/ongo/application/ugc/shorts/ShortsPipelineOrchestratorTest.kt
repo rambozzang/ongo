@@ -33,10 +33,12 @@ import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -56,6 +58,44 @@ class ShortsPipelineOrchestratorTest {
         override fun save(run: PipelineRun) = run.also { current = it }
         override fun update(run: PipelineRun) = run.also { current = it }
         override fun findById(id: Long) = current.takeIf { it.id == id }
+
+        /** 이 페이크는 실행 하나만 들고 있다. 조건만 실제 질의와 같게 맞춘다. */
+        override fun findFailedWithUnsettledStages(limit: Int) =
+            listOf(current).filter { it.status == PipelineRunStatus.FAILED }.take(limit)
+
+        /**
+         * 정상 이벤트는 발행 직전에 반드시 `PENDING` 으로 무장된다. 조건을 넓히면 게이트나
+         * 완료 뒤에 도착한 중복 이벤트가 통과해 이중 청구가 되살아난다.
+         */
+        /**
+         * 실제 구현의 `WHERE status='RUNNING' AND version = ?` 과 같은 계약.
+         * version 조건을 빼면 살아 있는 작업의 진행을 놓쳐 복구가 그것을 덮어쓴다.
+         */
+        override fun failStale(id: Long, expectedVersion: Long, reason: String): Boolean {
+            if (current.id != id) return false
+            if (current.status != PipelineRunStatus.RUNNING) return false
+            if (current.version != expectedVersion) return false
+            current = current.copy(
+                status = PipelineRunStatus.FAILED,
+                errorMessage = reason,
+                version = expectedVersion + 1,
+            )
+            return true
+        }
+
+        override fun claimRunning(id: Long): Boolean {
+            if (current.id != id) return false
+            // 실제 구현의 `WHERE status = 'PENDING'` 과 같은 계약.
+            if (current.status != PipelineRunStatus.PENDING) return false
+            // 확보도 진척이다 — version·updatedAt 을 함께 옮겨야 복구기의 낡은 관측이 빗나간다.
+            current = current.copy(
+                status = PipelineRunStatus.RUNNING,
+                errorMessage = null,
+                version = current.version + 1,
+                updatedAt = Instant.now(),
+            )
+            return true
+        }
 
         /** 실제 구현의 `WHERE started_at IS NULL` 과 같은 계약: 비어 있을 때만 쓴다. */
         override fun markStartedIfAbsent(id: Long, startedAt: Instant): Boolean {
@@ -80,13 +120,43 @@ class ShortsPipelineOrchestratorTest {
         val records = mutableListOf<RunStage>()
         private var nextId = 1L
         override fun save(stage: RunStage): RunStage = stage.copy(id = nextId++).also { records += it }
+        /** 오케스트레이터가 단계를 **직접 닫았는지** 관측하기 위한 기록. */
+        val updatedStatuses = mutableListOf<Pair<Long, RunStageStatus>>()
+
         override fun update(stage: RunStage): RunStage {
+            updatedStatuses += stage.id to stage.status
             records.replaceAll { if (it.id == stage.id) stage else it }
             return stage
         }
         override fun findByRunId(runId: Long) = records.filter { it.runId == runId }
         override fun findByRunIdAndStage(runId: Long, stage: PipelineStage) =
             records.lastOrNull { it.runId == runId && it.stage == stage }
+        /** 실제 구현과 같은 조건: RUNNING · 미정산 · 청구액 있음. 완료 단계는 제외된다. */
+        override fun findUnsettled(runId: Long, fromSortOrder: Int): List<RunStage> =
+            records.filter {
+                it.runId == runId &&
+                    it.stage.sortOrder >= fromSortOrder &&
+                    it.status == RunStageStatus.RUNNING &&
+                    it.refundedCredits == 0 &&
+                    it.creditCost > 0
+            }
+
+        /** 실제 구현의 조건부 갱신과 같은 계약. 조건을 빼면 이중 환불이 열린다. */
+        override fun settleRefund(stageId: Long, refundedCredits: Int, reason: String): Boolean {
+            val idx = records.indexOfFirst { it.id == stageId }
+            if (idx < 0) return false
+            val current = records[idx]
+            if (current.status != RunStageStatus.RUNNING || current.refundedCredits != 0) return false
+            records[idx] = current.copy(
+                status = RunStageStatus.FAILED,
+                refundedCredits = refundedCredits,
+                errorMessage = reason,
+                // 실제 구현이 COMPLETED_AT 을 채운다. 빠뜨리면 계약이 갈린다.
+                completedAt = Instant.now(),
+            )
+            return true
+        }
+
         override fun deleteFrom(runId: Long, fromSortOrder: Int): Int {
             val targets = records.filter { it.runId == runId && it.stage.sortOrder >= fromSortOrder }
             records.removeAll(targets.toSet())
@@ -202,7 +272,31 @@ class ShortsPipelineOrchestratorTest {
         )
     }
 
+    /**
+     * 단계마다 **서로 다른 영수증**을 돌려준다. 그래야 "실패한 그 단계의 차감"이
+     * 환불됐는지 확인할 수 있다. 하나만 쓰면 아무 단계나 환불해도 통과한다.
+     */
+    private val allocations = mutableMapOf<String, com.ongo.application.credit.CreditAllocation>()
+
+    /**
+     * 실제로 돈이 나간 영수증을 만든다.
+     *
+     * 예전에는 `empty`(총액 0)였다. 그러면 저장할 분해가 없어 **크래시 후 환불 경로가 전혀
+     * 실행되지 않는다** — 테스트가 통과해도 실제 계약을 재지 못한다.
+     */
+    private fun allocationFor(featureName: String, amount: Int) =
+        allocations.getOrPut(featureName) {
+            com.ongo.application.credit.CreditAllocation.restored(userId, featureName, amount, emptyMap())
+        }
+
+    private fun stubAllocations() {
+        every { creditService.validateAndDeduct(userId, any<Int>(), any<String>()) } answers {
+            allocationFor(thirdArg(), secondArg())
+        }
+    }
+
     private fun stubCommon(templates: List<ShortsTemplate> = emptyList()) {
+        stubAllocations()
         every { videoRepository.findById(videoId) } returns
             Video(id = videoId, userId = userId, title = "원본 영상", fileUrl = "https://cdn.example.com/source.mp4")
         every { userSettingsRepository.findByUserId(userId) } returns null
@@ -224,10 +318,439 @@ class ShortsPipelineOrchestratorTest {
         shortsTemplateRepository = shortsTemplateRepository,
         videoRepository = videoRepository,
         creditService = creditService,
+        // 실제 구현을 쓴다 — 목으로 바꾸면 차감·정산 배선이 검증되지 않는다.
+        // 목 creditService 를 그대로 넘기므로 기존 차감/환불 단정은 그대로 동작한다.
+        stageCreditService = ShortsStageCreditService(creditService, stageRepo),
         rateLimiter = rateLimiter,
         userSettingsRepository = userSettingsRepository,
         executors = executors,
     )
+
+    // ---- 중복 실행 청구 ----
+
+    /**
+     * **같은 실행이 두 번 돌면 모든 AI 단계가 두 번 청구된다.**
+     *
+     * 실행은 `@Async @TransactionalEventListener(AFTER_COMMIT)` 로 시작되고, 그 이벤트를
+     * 내는 곳이 다섯 군데다(생성·단계 재실행·후킹 선택·예약 확정·자동 예약 워커).
+     * 재실행 API 의 `status == RUNNING` 가드는 **잠금 없이 읽고 판단**하므로, 버튼을 두 번
+     * 누르거나 커밋과 비동기 리스너 사이의 틈에 두 번째 요청이 들어오면 두 이벤트가 모두
+     * 통과한다.
+     *
+     * 그 뒤 [ShortsPipelineOrchestrator.run] 은 `CANCELLED` 만 확인하고 조건 없이 RUNNING
+     * 으로 쓰기 때문에 두 실행이 나란히 진행된다. TRANSCRIBE 는 원본 길이에 비례해
+     * 청구되므로 긴 영상일수록 이중 차감액이 커진다.
+     *
+     * 여기서는 첫 실행이 TRANSCRIBE 를 도는 **도중에** 두 번째 이벤트가 도착한 상황을
+     * 재진입으로 재현한다 — 그 시점의 상태는 실제 동시 실행과 똑같이 RUNNING 이다.
+     */
+    @Test
+    fun `실행 중에 도착한 두 번째 이벤트는 같은 단계를 다시 청구하지 않는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+        lateinit var subject: ShortsPipelineOrchestrator
+        var reentered = false
+
+        val executors = hookGateExecutors().map { executor ->
+            if (executor.stage != PipelineStage.TRANSCRIBE) executor
+            else FakeStageExecutor(PipelineStage.TRANSCRIBE) {
+                // 첫 실행이 아직 이 단계 안에 있는 동안 두 번째 이벤트가 도착한다.
+                if (!reentered) {
+                    reentered = true
+                    subject.run(1L, PipelineStage.TRANSCRIBE)
+                }
+                ShortsStageOutput(outputSnapshot = """{"text":"t","segments":[]}""", transcriptText = "t")
+            }
+        }
+        subject = orchestrator(runRepo, stageRepo, clipRepo, hookRepo, executors)
+        stubCommon()
+
+        subject.run(1L, PipelineStage.TRANSCRIBE)
+
+        assertTrue(reentered, "두 번째 이벤트가 재현되지 않았다")
+        // 사용자는 한 번만 요청했다. 청구도 한 번이어야 한다.
+        verify(exactly = 1) {
+            creditService.validateAndDeduct(userId, any(), AiFeature.STT.name)
+        }
+    }
+
+    /**
+     * **첫 실행이 끝난 뒤 도착한 중복 이벤트도 다시 청구하면 안 된다.**
+     *
+     * 재실행 API 의 상태 가드가 잠금 없이 판단하므로 버튼을 두 번 누르면 이벤트가 두 개
+     * 발행된다. 두 이벤트가 겹쳐 도착하면 두 번째는 `RUNNING` 을 보고 거절되지만,
+     * **첫 실행이 후킹 게이트에서 멈춘 뒤**에 도착하면 그때 상태는 `AWAITING_HOOK_SELECTION`
+     * 이다. 확보 조건이 "RUNNING·CANCELLED 만 제외" 라면 그 상태는 통과하고, 파이프라인이
+     * 처음부터 다시 돌아 모든 AI 단계가 두 번 청구된다.
+     *
+     * 정상 이벤트는 발행 직전에 **반드시 PENDING 으로 전환된 뒤** 나온다(생성·단계 재실행·
+     * 후킹 확정·예약 확정·자동 예약 워커 다섯 곳 모두). 그러므로 PENDING 이 아닌 상태에서
+     * 들어온 실행 요청은 중복이다.
+     */
+    @Test
+    fun `게이트에서 멈춘 뒤 도착한 중복 이벤트는 다시 청구하지 않는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        val subject = orchestrator(
+            runRepo, stageRepo, InMemoryShortsClipRepository(), InMemoryClipHookRepository(),
+            hookGateExecutors(),
+        )
+        stubCommon()
+
+        subject.run(1L, PipelineStage.TRANSCRIBE)
+        // 후킹 게이트에서 멈춘 상태다 — 사용자의 선택을 기다린다.
+        assertEquals(PipelineRunStatus.AWAITING_HOOK_SELECTION, runRepo.findById(1L)!!.status)
+
+        // 같은 요청에서 발행된 두 번째 이벤트가 뒤늦게 도착한다.
+        subject.run(1L, PipelineStage.TRANSCRIBE)
+
+        verify(exactly = 1) {
+            creditService.validateAndDeduct(userId, any(), AiFeature.STT.name)
+        }
+    }
+
+    /**
+     * 완료된 실행에 뒤늦은 이벤트가 닿아도 마찬가지다. 결과물은 이미 납품됐고,
+     * 다시 도는 것은 순수한 손실이다.
+     */
+    @Test
+    fun `완료된 실행에 도착한 중복 이벤트는 다시 청구하지 않는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun(status = PipelineRunStatus.COMPLETED))
+        val subject = orchestrator(
+            runRepo, InMemoryRunStageRepository(), InMemoryShortsClipRepository(),
+            InMemoryClipHookRepository(), hookGateExecutors(),
+        )
+        stubCommon()
+
+        subject.run(1L, PipelineStage.TRANSCRIBE)
+
+        verify(exactly = 0) { creditService.validateAndDeduct(userId, any(), any<String>()) }
+        assertEquals(PipelineRunStatus.COMPLETED, runRepo.findById(1L)!!.status)
+    }
+
+    /**
+     * **크래시로 `RUNNING` 에 고착된 실행은 스스로 풀리지 않는다.**
+     *
+     * 오케스트레이터는 `@Transactional` 이 아니다. 단계마다 `validateAndDeduct` 가 자기
+     * 트랜잭션으로 **즉시 커밋**하므로, 프로세스가 단계 도중 죽으면 그 차감은 이미 확정돼 있고
+     * 실패 경로의 환불(`refundAllocation`)은 실행되지 않는다. 사용자는 돈을 냈고 결과는 없다.
+     *
+     * 그 상태에서 남은 길이 없다.
+     *  - 새 이벤트: 확보 조건이 `PENDING` 이라 `RUNNING` 은 통과하지 못한다(아래 검증).
+     *  - 재실행 API: `rerunStage` 가 `RUNNING` 을 명시적으로 거절한다.
+     *  - 남는 것은 실행을 **삭제하고 처음부터 다시 결제하는 것**뿐이다.
+     *
+     * 이 테스트는 그 막다른 길을 고정한다. 복구 경로가 생기면 그 경로가 이 상태를 풀어야 한다.
+     */
+    @Test
+    fun `크래시로 RUNNING 에 고착된 실행은 새 이벤트로 진행되지 않는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun(status = PipelineRunStatus.RUNNING))
+        val subject = orchestrator(
+            runRepo, InMemoryRunStageRepository(), InMemoryShortsClipRepository(),
+            InMemoryClipHookRepository(), hookGateExecutors(),
+        )
+        stubCommon()
+
+        subject.run(1L, PipelineStage.TRANSCRIBE)
+
+        // 재실행되지 않는 것은 옳다 — 살아 있는 작업과 겹치면 이중 청구가 된다.
+        verify(exactly = 0) { creditService.validateAndDeduct(userId, any(), any<String>()) }
+        // 그러나 상태도 그대로라, 사용자가 스스로 벗어날 방법이 없다.
+        assertEquals(PipelineRunStatus.RUNNING, runRepo.findById(1L)!!.status)
+    }
+
+    /**
+     * **복구된 실행은 사용자가 누를 때까지 다시 돌지 않는다.**
+     *
+     * 고착 복구는 `FAILED` 로만 되돌린다. 그 상태로 이벤트가 들어와도 확보 조건(`PENDING`)을
+     * 만족하지 않으므로 자동 재실행도 자동 청구도 없다. 다시 돌릴지는 재실행 API 를 통해
+     * 사용자가 정하고, 그때 비로소 `PENDING` 으로 무장된다.
+     */
+    @Test
+    fun `고착 복구 후에도 이벤트만으로는 다시 청구되지 않는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun(status = PipelineRunStatus.RUNNING))
+        val subject = orchestrator(
+            runRepo, InMemoryRunStageRepository(), InMemoryShortsClipRepository(),
+            InMemoryClipHookRepository(), hookGateExecutors(),
+        )
+        stubCommon()
+
+        // 복구기가 하는 일과 같다 — 관측한 version 으로 FAILED 로만 되돌린다.
+        val observed = runRepo.findById(1L)!!
+        assertTrue(runRepo.failStale(1L, observed.version, "서버가 중단되어 실행이 멈췄습니다"))
+        assertEquals(PipelineRunStatus.FAILED, runRepo.findById(1L)!!.status)
+
+        subject.run(1L, PipelineStage.TRANSCRIBE)
+
+        verify(exactly = 0) { creditService.validateAndDeduct(userId, any(), any<String>()) }
+        assertEquals(PipelineRunStatus.FAILED, runRepo.findById(1L)!!.status)
+    }
+
+    /**
+     * **확보는 관측 시점을 갱신해야 한다.**
+     *
+     * 고착 복구기는 `RUNNING` 목록을 읽어 관측한 `version` 으로 CAS 를 건다. 그런데 확보가
+     * `version` 을 올리지 않으면, **확보 직후 `activeRunIds` 에 등록되기 전 창**에서 복구기가
+     * 확보 이전에 읽은 값 그대로 CAS 에 성공한다. 방금 시작한 실행이 `FAILED` 로 바뀌는데도
+     * 오케스트레이터는 단계를 계속 돌리고, 그 사이 사용자가 재실행을 누르면 **같은 작업이
+     * 두 번 청구된다.**
+     *
+     * 확보가 `version` 을 올리면 그 CAS 는 반드시 빗나간다 — 복구기의 관측이 낡았다는 사실이
+     * 조건 자체로 드러난다. 레지스트리 등록 타이밍에 기대지 않는 방어다.
+     */
+    @Test
+    fun `확보 직후에는 확보 전 version 으로 복구되지 않는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun().copy(version = 7L))
+        val observedBeforeClaim = runRepo.findById(1L)!!.version
+
+        assertTrue(runRepo.claimRunning(1L), "확보에 실패하면 이 테스트는 의미가 없다")
+
+        // 복구기가 확보 직전에 읽은 version 으로 CAS 를 시도한다.
+        assertFalse(
+            runRepo.failStale(1L, observedBeforeClaim, "중단됨"),
+            "확보 직후인 실행이 낡은 version 으로 FAILED 가 됐다",
+        )
+        assertEquals(PipelineRunStatus.RUNNING, runRepo.findById(1L)!!.status)
+    }
+
+    /* ── 재실행 청구 정확성 ─────────────────────────────────────────── */
+
+    /**
+     * **(2) 단계 완료 후 재실행 — 이미 완료·청구된 단계는 다시 청구하지 않는다.**
+     *
+     * 오케스트레이터는 `fromStage.sortOrder` 이상만 돌린다. 재실행 API 는 그 단계부터의 기록만
+     * 지우므로, 앞선 단계는 결과도 청구도 그대로 남는다. 이 필터가 느슨해지면 뒤 단계 하나를
+     * 다시 돌리려던 사용자가 파이프라인 전체를 다시 결제하게 된다.
+     */
+    @Test
+    fun `뒤 단계부터 재실행하면 앞선 완료 단계는 다시 청구하지 않는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+        val subject = { orchestrator(runRepo, stageRepo, clipRepo, hookRepo, hookGateExecutors()) }
+        stubCommon()
+
+        subject().run(1L, PipelineStage.TRANSCRIBE)
+        assertEquals(PipelineRunStatus.AWAITING_HOOK_SELECTION, runRepo.findById(1L)!!.status)
+
+        // 후킹 확정이 PENDING 으로 무장한 뒤 HOOK 부터 다시 돌린다.
+        runRepo.update(runRepo.findById(1L)!!.copy(status = PipelineRunStatus.PENDING))
+        subject().run(1L, PipelineStage.HOOK)
+
+        // 앞선 단계는 한 번만 청구된다.
+        verify(exactly = 1) { creditService.validateAndDeduct(userId, any(), AiFeature.STT.name) }
+        verify(exactly = 1) { creditService.validateAndDeduct(userId, any(), AiFeature.SHORTS_REFRAME.name) }
+        verify(exactly = 1) { creditService.validateAndDeduct(userId, any(), AiFeature.SHORTS_SEGMENT.name) }
+        // 재실행 대상 단계만 두 번째 청구가 있다.
+        verify(exactly = 2) { creditService.validateAndDeduct(userId, any(), AiFeature.SHORTS_HOOK.name) }
+    }
+
+    /**
+     * **(4) 고착 복구 뒤 재시도 — 중단된 단계부터만 청구된다.**
+     *
+     * 크래시로 `RUNNING` 에 고착된 실행을 복구기가 `FAILED` 로 되돌린 뒤, 사용자가 중단된
+     * 단계부터 다시 시도하는 전체 여정이다. 완료된 앞 단계가 다시 청구되면 사용자는 이미
+     * 받은 결과에 두 번 결제하게 된다.
+     */
+    @Test
+    fun `고착 복구 후 중단된 단계부터 재시도하면 앞 단계는 다시 청구되지 않는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+        stubCommon()
+
+        // 1) TRANSCRIBE~SEGMENT 까지 진행하다 SEGMENT 에서 프로세스가 죽었다고 본다.
+        val crashing = hookGateExecutors().map {
+            if (it.stage != PipelineStage.SUBTITLE) it
+            else FakeStageExecutor(PipelineStage.SUBTITLE) { error("프로세스 중단") }
+        }
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, crashing).run(1L, PipelineStage.TRANSCRIBE)
+
+        // 2) 고착 복구기가 하는 일 — FAILED 로만 되돌린다.
+        runRepo.update(runRepo.findById(1L)!!.copy(status = PipelineRunStatus.RUNNING))
+        val observed = runRepo.findById(1L)!!
+        assertTrue(runRepo.failStale(1L, observed.version, "서버가 중단되어 실행이 멈췄습니다"))
+
+        // 3) 사용자가 중단된 단계부터 재시도한다(재실행 API 가 PENDING 으로 무장).
+        stageRepo.deleteFrom(1L, PipelineStage.SUBTITLE.sortOrder)
+        runRepo.update(runRepo.findById(1L)!!.copy(status = PipelineRunStatus.PENDING))
+        orchestrator(runRepo, stageRepo, clipRepo, hookRepo, hookGateExecutors())
+            .run(1L, PipelineStage.SUBTITLE)
+
+        // 완료된 앞 단계는 정확히 한 번만 청구됐다.
+        verify(exactly = 1) { creditService.validateAndDeduct(userId, any(), AiFeature.STT.name) }
+        verify(exactly = 1) { creditService.validateAndDeduct(userId, any(), AiFeature.SHORTS_REFRAME.name) }
+        verify(exactly = 1) { creditService.validateAndDeduct(userId, any(), AiFeature.SHORTS_SEGMENT.name) }
+        // 중단된 단계는 실패분이 환불되고 재시도에서 다시 청구된다.
+        verify(exactly = 2) { creditService.validateAndDeduct(userId, any(), AiFeature.SHORTS_SUBTITLE.name) }
+        verify(exactly = 1) { creditService.refundAllocation(any()) }
+    }
+
+    /* ── 크래시 후 새 컨텍스트 정산 ──────────────────────────────────── */
+
+    /**
+     * **(핵심) 프로세스가 죽어도 다른 컨텍스트가 정확히 한 번 환불한다.**
+     *
+     * 차감·단계 행·분해가 한 커밋이므로, 인메모리 영수증을 잃은 뒤에도 DB 에 남은 분해로
+     * 되돌릴 수 있다. 예전에는 영수증이 지역 변수뿐이라 이 상황에서 크레딧이 영영 사라졌다.
+     */
+    @Test
+    fun `크래시로 잃은 영수증을 새 컨텍스트가 저장된 분해로 환불한다`() {
+        val stageRepo = InMemoryRunStageRepository()
+        stubCommon()
+        /*
+         * 공통 스텁의 영수증은 총액 0 이라 저장할 분해가 없다. 여기서는 **실제로 돈이 나간**
+         * 차감을 재현해야 하므로 무료 2 + 구매 패키지 3 짜리 영수증을 준다.
+         */
+        every { creditService.validateAndDeduct(userId, 5, AiFeature.STT.name) } returns
+            com.ongo.application.credit.CreditAllocation.restored(userId, AiFeature.STT.name, 2, mapOf(11L to 3))
+
+        // 1) TRANSCRIBE 차감까지 커밋된 직후 프로세스가 죽었다고 본다.
+        val charging = ShortsStageCreditService(creditService, stageRepo)
+        charging.chargeAndOpenStage(1L, userId, PipelineStage.TRANSCRIBE, AiFeature.STT.name, 5)
+
+        val open = stageRepo.findByRunIdAndStage(1L, PipelineStage.TRANSCRIBE)!!
+        assertEquals(RunStageStatus.RUNNING, open.status)
+        assertNotNull(open.creditAllocation, "분해가 없으면 새 컨텍스트가 환불할 수 없다")
+
+        // 2) 새 프로세스(새 서비스 인스턴스)가 정산한다 — 인메모리 영수증은 없다.
+        val recovering = ShortsStageCreditService(creditService, stageRepo)
+        val unsettled = stageRepo.findUnsettled(1L)
+        assertEquals(1, unsettled.size)
+        assertTrue(recovering.settleStage(userId, unsettled.single(), "서버 중단"))
+
+        verify(exactly = 1) { creditService.refundAllocation(any()) }
+
+        // 3) 두 번째 정산은 아무 일도 하지 않는다 — 표식이 DB 에 있다.
+        assertTrue(stageRepo.findUnsettled(1L).isEmpty(), "정산된 단계가 다시 미정산으로 잡힌다")
+        assertFalse(recovering.settleStage(userId, unsettled.single(), "서버 중단"))
+        verify(exactly = 1) { creditService.refundAllocation(any()) }
+    }
+
+    /**
+     * **정상 완료된 단계는 어떤 경로에서도 환불되지 않는다.**
+     *
+     * 그 단계는 실제로 일한 대가로 정당하게 청구된 것이다. 환불하면 우리가 받은 적 없는
+     * 돈을 돌려주는 것이 된다.
+     */
+    @Test
+    fun `정상 완료된 단계는 미정산으로 잡히지 않는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        stubCommon()
+
+        orchestrator(runRepo, stageRepo, InMemoryShortsClipRepository(), InMemoryClipHookRepository(), hookGateExecutors())
+            .run(1L, PipelineStage.TRANSCRIBE)
+        assertEquals(PipelineRunStatus.AWAITING_HOOK_SELECTION, runRepo.findById(1L)!!.status)
+
+        // 게이트까지의 단계는 모두 COMPLETED 다.
+        assertTrue(
+            stageRepo.records.filter { it.runId == 1L }.all { it.status == RunStageStatus.COMPLETED },
+            "완료 이후에도 열린 단계가 남아 있다: ${stageRepo.records.map { it.stage to it.status }}",
+        )
+        assertTrue(stageRepo.findUnsettled(1L).isEmpty(), "완료 단계가 환불 대상으로 잡힌다")
+    }
+
+    /**
+     * 단계 실패 경로도 **표식을 남긴다.** 남기지 않으면 고착 복구기가 같은 단계를 미정산으로
+     * 보고 인메모리 환불에 더해 **한 번 더** 돌려준다.
+     */
+    @Test
+    fun `실패로 환불한 단계는 정산 표식이 남아 다시 환불되지 않는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        stubCommon()
+        val failing = hookGateExecutors().map {
+            if (it.stage != PipelineStage.SEGMENT) it
+            else FakeStageExecutor(PipelineStage.SEGMENT) { error("AI 응답 파싱 실패") }
+        }
+
+        orchestrator(runRepo, stageRepo, InMemoryShortsClipRepository(), InMemoryClipHookRepository(), failing)
+            .run(1L, PipelineStage.TRANSCRIBE)
+
+        verify(exactly = 1) { creditService.refundAllocation(any()) }
+        assertTrue(stageRepo.findUnsettled(1L).isEmpty(), "환불한 단계가 미정산으로 남아 재환불된다")
+        /*
+         * **환불은 정산 경로를 지나야 한다.**
+         *
+         * 예전에는 catch 가 인메모리 영수증으로 먼저 환불하고 표식을 나중에 세웠다. 그러면
+         * 표식이 실패했을 때 복구기가 같은 단계를 한 번 더 환불한다. 표식이 환불보다 앞선다는
+         * 것이 "정확히 한 번" 의 근거다.
+         */
+        val settled = stageRepo.records.single { it.stage == PipelineStage.SEGMENT }
+        assertEquals(RunStageStatus.FAILED, settled.status)
+        assertTrue(settled.refundedCredits > 0, "정산 표식 없이 환불됐다 — 복구기가 재환불한다")
+    }
+
+    /**
+     * **환불이 실패하면 단계를 닫지 않는다.**
+     *
+     * 표식은 롤백되어 `refunded_credits = 0` 으로 돌아오지만, 여기서 상태를 `FAILED` 로 닫아
+     * 버리면 `findUnsettled` 가 `RUNNING` 만 보므로 **재시도 대상에서 영구히 빠진다.**
+     * 사용자는 크레딧을 영영 잃는다. 열어 둔 채로 복구기·재실행·삭제가 다시 집게 한다.
+     */
+    @Test
+    fun `환불이 실패하면 단계를 열어 두어 다시 정산할 수 있게 한다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        stubCommon()
+        every { creditService.validateAndDeduct(userId, any<Int>(), AiFeature.SHORTS_SEGMENT.name) } returns
+            com.ongo.application.credit.CreditAllocation.restored(userId, AiFeature.SHORTS_SEGMENT.name, 8, emptyMap())
+        every { creditService.refundAllocation(any()) } throws IllegalStateException("환불 실패")
+
+        val failing = hookGateExecutors().map {
+            if (it.stage != PipelineStage.SEGMENT) it
+            else FakeStageExecutor(PipelineStage.SEGMENT) { error("AI 응답 파싱 실패") }
+        }
+        orchestrator(runRepo, stageRepo, InMemoryShortsClipRepository(), InMemoryClipHookRepository(), failing)
+            .run(1L, PipelineStage.TRANSCRIBE)
+
+        val segment = stageRepo.findByRunIdAndStage(1L, PipelineStage.SEGMENT)!!
+
+        /*
+         * **오케스트레이터가 이 단계를 직접 닫지 않아야 한다.**
+         *
+         * 표식 롤백은 DB 트랜잭션의 일이고 단위 테스트에는 실제 트랜잭션이 없다(그래서 여기서
+         * 페이크가 롤백을 흉내내지 않는다). 대신 이 테스트는 결함이 실제로 있던 자리 —
+         * catch 가 `update(status = FAILED)` 를 이어서 부르던 것 — 을 고정한다.
+         * 그 호출이 있으면 롤백된 뒤에도 단계가 닫혀 `findUnsettled` 에서 영구히 빠진다.
+         */
+        assertTrue(
+            stageRepo.updatedStatuses.none { it.first == segment.id && it.second == RunStageStatus.FAILED },
+            "환불 실패 단계를 오케스트레이터가 닫았다 — 롤백돼도 재시도 대상에서 빠진다: ${stageRepo.updatedStatuses}",
+        )
+        // 분해는 보존되어야 되돌릴 근거가 남는다.
+        assertNotNull(segment.creditAllocation, "분해가 사라지면 되돌릴 근거가 없다")
+
+        // 실행 자체는 실패로 끝난다 — 사용자에게는 결과가 없다는 사실을 알려야 한다.
+        assertEquals(PipelineRunStatus.FAILED, runRepo.findById(1L)!!.status)
+    }
+
+    /** 정산할 것이 없는 단계(차감 전 실패)는 아무도 닫아 주지 않으므로 여기서 닫는다. */
+    @Test
+    fun `차감 전에 실패한 단계는 FAILED 로 닫는다`() {
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        stubCommon()
+        // 무과금처럼 분해가 없는 상태를 만든다.
+        every { creditService.validateAndDeduct(userId, any<Int>(), AiFeature.SHORTS_SEGMENT.name) } returns
+            com.ongo.application.credit.CreditAllocation.empty(userId, AiFeature.SHORTS_SEGMENT.name)
+
+        val failing = hookGateExecutors().map {
+            if (it.stage != PipelineStage.SEGMENT) it
+            else FakeStageExecutor(PipelineStage.SEGMENT) { error("AI 응답 파싱 실패") }
+        }
+        orchestrator(runRepo, stageRepo, InMemoryShortsClipRepository(), InMemoryClipHookRepository(), failing)
+            .run(1L, PipelineStage.TRANSCRIBE)
+
+        val segment = stageRepo.findByRunIdAndStage(1L, PipelineStage.SEGMENT)!!
+        assertEquals(RunStageStatus.FAILED, segment.status)
+        assertTrue(stageRepo.findUnsettled(1L).isEmpty(), "정산할 것이 없는데 재시도 대상으로 남았다")
+    }
 
     // ---- 파일럿 측정: 최초 실행 시각 ----
 
@@ -318,6 +841,10 @@ class ShortsPipelineOrchestratorTest {
         // 1차 실행: HOOK 게이트에서 멈춘다
         orchestrator(runRepo, stageRepo, clipRepo, hookRepo, executors).run(1L, PipelineStage.TRANSCRIBE)
         assertEquals(PipelineRunStatus.AWAITING_HOOK_SELECTION, runRepo.findById(1L)!!.status)
+
+        // 후킹 확정(selectHooks)이 재개 전에 PENDING 으로 무장한다. 그 무장이 있어야
+        // 재개 이벤트가 중복 이벤트와 구분된다.
+        runRepo.update(runRepo.findById(1L)!!.copy(status = PipelineRunStatus.PENDING))
 
         // 재개: 새 인스턴스로 TEMPLATE 부터. 메모리 컨텍스트는 남아 있지 않다
         orchestrator(runRepo, stageRepo, clipRepo, hookRepo, executors).run(1L, PipelineStage.TEMPLATE)
@@ -482,7 +1009,8 @@ class ShortsPipelineOrchestratorTest {
         )
         stubCommon(templates = listOf(defaultTemplate))
         val runRepo = InMemoryPipelineRunRepository(
-            baseRun(PipelineRunStatus.AWAITING_HOOK_SELECTION).copy(clipCount = 2, transcriptText = "전사 전문"),
+            // 후킹 확정(selectHooks)이 PENDING 으로 무장한 뒤 이벤트를 내므로 재개 시점 상태는 PENDING 이다.
+            baseRun().copy(clipCount = 2, transcriptText = "전사 전문"),
         )
         val stageRepo = InMemoryRunStageRepository()
         val clipRepo = InMemoryShortsClipRepository(
@@ -531,7 +1059,7 @@ class ShortsPipelineOrchestratorTest {
     @Test
     fun `예약 파라미터와 함께 SCHEDULE을 실행하면 클립이 예약되고 COMPLETED로 끝난다`() {
         stubCommon()
-        val runRepo = InMemoryPipelineRunRepository(baseRun(PipelineRunStatus.AWAITING_SCHEDULE).copy(clipCount = 3))
+        val runRepo = InMemoryPipelineRunRepository(baseRun().copy(clipCount = 3))
         val stageRepo = InMemoryRunStageRepository()
         val clipRepo = InMemoryShortsClipRepository(
             listOf(
@@ -569,7 +1097,7 @@ class ShortsPipelineOrchestratorTest {
     @Test
     fun `SCHEDULE 일부 실패는 PARTIALLY_COMPLETED로 끝나고 재게시 안내를 남긴다`() {
         stubCommon()
-        val runRepo = InMemoryPipelineRunRepository(baseRun(PipelineRunStatus.AWAITING_SCHEDULE))
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
         val stageRepo = InMemoryRunStageRepository()
         val clipRepo = InMemoryShortsClipRepository(emptyList())
         val hookRepo = InMemoryClipHookRepository()
@@ -629,10 +1157,69 @@ class ShortsPipelineOrchestratorTest {
         verify { creditService.validateAndDeduct(userId, AiFeature.STT.creditCost, "STT") }
         verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_REFRAME.creditCost, "SHORTS_REFRAME") }
         verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_SEGMENT.creditCost, "SHORTS_SEGMENT") }
-        verify(exactly = 1) {
-            creditService.refundCredit(userId, AiFeature.SHORTS_SEGMENT.creditCost, "SHORTS_SEGMENT")
+        /*
+         * 환불은 **저장된 분해**로 한다. 금액만 넘기면 구매분이 무료분으로 바뀐다
+         * (CreditAllocation 참고). 차감 당시 객체와 같은 인스턴스가 아니므로 금액으로 비교한다.
+         */
+        val refunded = slot<com.ongo.application.credit.CreditAllocation>()
+        verify(exactly = 1) { creditService.refundAllocation(capture(refunded)) }
+        assertEquals(AiFeature.SHORTS_SEGMENT.creditCost, refunded.captured.total)
+    }
+
+    /**
+     * 환불 자체가 실패하는 경우.
+     *
+     * 예전에는 결과를 버리는 `runCatching` 이라 실패가 흔적 없이 사라졌다. 사용자는 결과도
+     * 크레딧도 잃고, 운영은 그런 일이 있었다는 것조차 모른다. 이제 복구에 필요한 값
+     * (runId·stage·userId·금액)을 error 로 남긴다.
+     *
+     * 로그 내용을 Logback appender 로 직접 확인한다 — "삼키지 않는다"는 주장을 문자열로
+     * 증명하지 않으면 다음 리팩터링에서 그대로 사라진다.
+     */
+    @Test
+    fun `환불이 실패해도 파이프라인을 끝내고 복구 가능한 로그를 남긴다`() {
+        stubCommon()
+        val runRepo = InMemoryPipelineRunRepository(baseRun())
+        val stageRepo = InMemoryRunStageRepository()
+        val clipRepo = InMemoryShortsClipRepository()
+        val hookRepo = InMemoryClipHookRepository()
+
+        every {
+            creditService.refundAllocation(any())
+        } throws IllegalStateException("환불 저장 실패")
+
+        val transcribe = FakeStageExecutor(PipelineStage.TRANSCRIBE) {
+            ShortsStageOutput(outputSnapshot = """{"text":"t","segments":[]}""", transcriptText = "t")
         }
-        verify(exactly = 1) { creditService.refundCredit(any(), any(), any()) }
+        val reframe = FakeStageExecutor(PipelineStage.REFRAME) { ShortsStageOutput(outputSnapshot = "{}") }
+        val segment = FakeStageExecutor(PipelineStage.SEGMENT) { throw RuntimeException("AI 응답 파싱 실패") }
+
+        val logger = org.slf4j.LoggerFactory.getLogger(ShortsPipelineOrchestrator::class.java)
+            as ch.qos.logback.classic.Logger
+        val appender = ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>()
+        appender.start()
+        logger.addAppender(appender)
+        try {
+            orchestrator(runRepo, stageRepo, clipRepo, hookRepo, listOf(transcribe, reframe, segment))
+                .run(1L, PipelineStage.TRANSCRIBE)
+        } finally {
+            logger.detachAppender(appender)
+        }
+
+        // 환불 실패가 파이프라인을 중단시키지 않는다. 상태는 정상적으로 FAILED 로 닫힌다.
+        assertEquals(PipelineRunStatus.FAILED, runRepo.findById(1L)!!.status)
+        assertEquals(RunStageStatus.FAILED, stageRepo.findByRunIdAndStage(1L, PipelineStage.SEGMENT)!!.status)
+
+        val refundError = appender.list.firstOrNull {
+            it.level == ch.qos.logback.classic.Level.ERROR && it.formattedMessage.contains("환불 실패")
+        }
+        assertNotNull(refundError, "환불 실패가 error 로 남지 않았다: ${appender.list.map { it.formattedMessage }}")
+        // 운영이 수기로 복구하려면 누구에게 얼마를 돌려줄지가 로그에 있어야 한다.
+        val message = refundError.formattedMessage
+        assertTrue(message.contains("runId=1"), message)
+        assertTrue(message.contains("stage=SEGMENT"), message)
+        assertTrue(message.contains("userId=$userId"), message)
+        assertTrue(message.contains("amount=${AiFeature.SHORTS_SEGMENT.creditCost}"), message)
     }
 
     /*
@@ -671,6 +1258,9 @@ class ShortsPipelineOrchestratorTest {
         val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes)
 
         repeat(2) {
+            // 재실행 API(rerunStage)가 상태를 PENDING 으로 되돌린 뒤 이벤트를 낸다.
+            // 그 무장을 빼면 두 번째 호출은 중복 이벤트와 구분되지 않는다.
+            runRepo.update(runRepo.findById(1L)!!.copy(status = PipelineRunStatus.PENDING))
             orchestrator(runRepo, stageRepo, clipRepo, hookRepo, hookGateExecutors())
                 .run(1L, PipelineStage.TRANSCRIBE)
         }
@@ -697,8 +1287,13 @@ class ShortsPipelineOrchestratorTest {
         orchestrator(runRepo, stageRepo, clipRepo, hookRepo, listOf(transcribe)).run(1L, PipelineStage.TRANSCRIBE)
 
         val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes)
-        verify(exactly = 1) { creditService.refundCredit(userId, expected, "STT") }
-        verify(exactly = 1) { creditService.refundCredit(any(), any(), any()) }
+        /*
+         * 환불은 이제 **저장된 분해로 복원한** 영수증을 쓴다. 차감 당시의 객체와 같은
+         * 인스턴스가 아니므로 금액과 출처로 비교한다 — 실제 계약은 그쪽이다.
+         */
+        val refunded = slot<com.ongo.application.credit.CreditAllocation>()
+        verify(exactly = 1) { creditService.refundAllocation(capture(refunded)) }
+        assertEquals(expected, refunded.captured.total)
     }
 
     /*
@@ -763,7 +1358,7 @@ class ShortsPipelineOrchestratorTest {
 
         assertEquals(PipelineRunStatus.FAILED, runRepo.findById(1L)!!.status)
         assertEquals(0, transcribe.callCount)
-        verify(exactly = 0) { creditService.refundCredit(any(), any(), any()) }
+        verify(exactly = 0) { creditService.refundAllocation(any()) }
     }
 
     // ---- 협조적 중단 ----

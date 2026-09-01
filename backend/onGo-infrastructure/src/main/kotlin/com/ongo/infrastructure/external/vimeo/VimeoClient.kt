@@ -99,13 +99,20 @@ class VimeoClient(
             )
 
             PlatformAnalytics(
-                views = response.stats?.plays ?: 0,
-                likes = response.metadata?.connections?.likes?.total ?: 0,
-                comments = response.metadata?.connections?.comments?.total ?: 0,
+                views = response.stats?.plays.requireMetric("Vimeo", "stats.plays"),
+                likes = response.metadata?.connections?.likes?.total
+                    .requireMetric("Vimeo", "connections.likes.total"),
+                comments = response.metadata?.connections?.comments?.total
+                    .requireMetric("Vimeo", "connections.comments.total"),
+                // 공유는 Vimeo API 가 주지 않는다 — availability 가 미수집으로 선언한다.
                 shares = 0,
                 watchTimeSeconds = 0,
                 subscriberGained = 0,
             )
+        } catch (e: PlatformApiException) {
+            // 어떤 지표가 빠졌는지 담은 메시지를 그대로 올려 보낸다. 일반 메시지로 덮으면
+            // 스케줄러 경고 로그에서 원인 지표를 알 수 없다.
+            throw e
         } catch (e: Exception) {
             log.warn("Vimeo 분석 데이터 조회 실패: {}", e.message)
             throw PlatformApiException("Vimeo", "분석 데이터 조회 실패", e)
@@ -127,7 +134,7 @@ class VimeoClient(
             channelId = userId,
             channelName = response.name ?: "",
             channelUrl = response.link ?: "https://vimeo.com/$userId",
-            subscriberCount = response.metadata?.connections?.followers?.total ?: 0,
+            subscriberCount = response.metadata?.connections?.followers?.total,
             profileImageUrl = profileImage,
         )
     }

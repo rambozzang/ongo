@@ -16,8 +16,10 @@ import com.ongo.domain.ugc.submission.SubmissionStatus
 import com.ongo.application.notification.WebSocketNotificationService
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 
 class UploadCompletedEventListenerTest {
     private val notifications = mockk<NotificationRepository>(relaxed = true)
@@ -84,6 +86,16 @@ class UploadCompletedEventListenerTest {
             })
             notifications.save(match { it.type == NotificationType.UPLOAD_COMPLETE })
         }
+
+        val websocketPayload = slot<Any>()
+        verify { websocket.sendToUser(4L, "UPLOAD_COMPLETE", capture(websocketPayload)) }
+        @Suppress("UNCHECKED_CAST")
+        val payload = websocketPayload.captured as Map<String, Any>
+        assertEquals("YOUTUBE 업로드 완료", payload["title"])
+        assertEquals("영상이 YOUTUBE에 성공적으로 업로드되었습니다.", payload["message"])
+        assertEquals("video", payload["referenceType"])
+        assertEquals(5L, payload["referenceId"])
+        assertEquals(5L, payload["videoId"])
     }
 
     @Test

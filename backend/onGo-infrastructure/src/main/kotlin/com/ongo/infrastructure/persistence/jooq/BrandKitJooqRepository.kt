@@ -97,6 +97,29 @@ class BrandKitJooqRepository(
             .execute()
     }
 
+    /**
+     * `assets_json` 안에 그 `assetId` 를 가진 항목이 있는 브랜드킷 이름.
+     *
+     * JSONB 포함 연산자(`@>`)로 배열 원소를 통째로 맞춘다. 문자열 `LIKE` 로 찾으면
+     * `assetId: 4` 가 `assetId: 42` 에도 걸린다.
+     *
+     * 사용자 범위로 먼저 좁히므로 `idx_brand_kits_user_id` 를 탄다. 한 사람의 브랜드킷은
+     * 많아야 몇 개라 별도 GIN 인덱스 없이도 충분하다.
+     */
+    override fun findNamesReferencingAsset(userId: Long, assetId: Long): List<String> =
+        dsl.select(NAME)
+            .from(BRAND_KITS)
+            .where(USER_ID.eq(userId))
+            .and(
+                DSL.condition(
+                    "{0} @> {1}::jsonb",
+                    DSL.field("assets_json", JSONB::class.java),
+                    DSL.`val`("""[{"assetId": ${assetId}}]"""),
+                ),
+            )
+            .fetch(NAME)
+            .filterNotNull()
+
     override fun clearDefault(userId: Long) {
         dsl.update(BRAND_KITS)
             .set(IS_DEFAULT, false)

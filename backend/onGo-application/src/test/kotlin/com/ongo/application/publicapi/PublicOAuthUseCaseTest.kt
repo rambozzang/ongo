@@ -50,7 +50,7 @@ class PublicOAuthUseCaseTest {
 
     @Test
     fun `callback은 서명된 state의 사용자와 verifier로 단 한번 연결한다`() {
-        every { channelUseCase.connectChannel(any(), any(), any()) } returns mockk()
+        every { channelUseCase.connectChannelFromTrustedAuthorization(any(), any(), any()) } returns mockk()
         val oauth = useCase()
         val url = oauth.authorizationUrl(42, "youtube", null).url
         val state = Regex("[?&]state=([^&]+)").find(url)!!.groupValues[1]
@@ -60,7 +60,7 @@ class PublicOAuthUseCaseTest {
         assertTrue(redirect.contains("channel=connected"))
         assertTrue(redirect.contains("platform=youtube"))
         verify(exactly = 1) {
-            channelUseCase.connectChannel(
+            channelUseCase.connectChannelFromTrustedAuthorization(
                 42,
                 "YOUTUBE",
                 match { it.authorizationCode == "one-time-code" && !it.codeVerifier.isNullOrBlank() },
@@ -70,7 +70,16 @@ class PublicOAuthUseCaseTest {
         assertFailsWith<IllegalArgumentException> {
             oauth.complete("one-time-code", state)
         }
-        verify(exactly = 1) { channelUseCase.connectChannel(any(), any(), any()) }
+        verify(exactly = 1) { channelUseCase.connectChannelFromTrustedAuthorization(any(), any(), any()) }
+    }
+
+    @Test
+    fun `공개 YouTube OAuth도 수익 scope와 재동의를 요청한다`() {
+        val url = useCase().authorizationUrl(42, "youtube", null).url
+
+        assertTrue(url.contains("yt-analytics-monetary.readonly"), url)
+        assertTrue(url.contains("prompt=consent"), url)
+        assertTrue(url.contains("access_type=offline"), url)
     }
 
     @Test
@@ -81,7 +90,7 @@ class PublicOAuthUseCaseTest {
         assertFailsWith<IllegalArgumentException> {
             oauth.complete("code", "$state-tampered")
         }
-        verify(exactly = 0) { channelUseCase.connectChannel(any(), any(), any()) }
+        verify(exactly = 0) { channelUseCase.connectChannelFromTrustedAuthorization(any(), any(), any()) }
     }
 
     @Test

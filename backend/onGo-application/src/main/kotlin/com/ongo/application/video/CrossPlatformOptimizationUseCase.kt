@@ -1,17 +1,20 @@
 package com.ongo.application.video
 
-import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.video.dto.*
 import com.ongo.common.enums.Platform
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.ongo.common.exception.BusinessException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
+/**
+ * 규칙 기반 최적화 검사([checkOptimization])는 그대로 제공하고, 요금이 정해지지 않은
+ * AI 최적화([optimizeContent])는 막는다.
+ *
+ * `ChatClientResolver`/`ObjectMapper` 의존을 **생성자에서 제거했다.** 남겨 두면 다음 사람이
+ * 가격 결정 없이 다시 배선할 수 있다.
+ */
 @Service
-class CrossPlatformOptimizationUseCase(
-    private val chatClientResolver: ChatClientResolver,
-    private val objectMapper: ObjectMapper,
-) {
+class CrossPlatformOptimizationUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -240,91 +243,51 @@ class CrossPlatformOptimizationUseCase(
     }
 
     /**
-     * AI를 활용하여 각 플랫폼별로 콘텐츠를 최적화합니다.
+     * **현재 비활성이다. 호출하면 항상 실패한다.**
+     *
+     * ## 왜 껐는가
+     *
+     * 이 메서드는 요금이 정해지지 않은 채 LLM 을 부르고 있었다. 생성자에 [CreditService]
+     * 도 `AiRateLimiter` 도 없었고, `request.platforms` 가 비면 `Platform.entries` 전체로
+     * 확장돼 **요청 한 건에 순차 13 회** 모델을 태웠다. `VIDEO_CREATE` 권한만 있으면
+     * 누구나 무제한으로 0 크레딧에 그 비용을 발생시킬 수 있었다.
+     *
+     * 게다가 플랫폼별 실패를 잡아 **원본 title/description/tags 를 그대로 담아** 돌려줬다.
+     * 호출자에게는 "최적화됨"과 "실패해서 원본 그대로"가 같은 성공 응답이었다.
+     *
+     * ## 왜 요금을 붙여서 살리지 않았는가
+     *
+     * 기존 [AiFeature] 중 이 작업과 값을 빌려올 만큼 동등한 것이 없다.
+     *
+     * - `META_GENERATION(5)` — 입력이 스크립트다. 신규 생성이지 기존 메타 최적화가 아니다.
+     * - `CONTENT_REPURPOSE(10)` — 영상을 클립 재활용용으로 분석한다. 출력이 다르다.
+     * - `META_REWRITE(3)` — **작업은 같다.** 기존 메타 → 플랫폼 맞춤 제안 + reasoning 이고
+     *   출력 형태도 사실상 같다. 다만 그쪽은 전 플랫폼을 **한 프롬프트, LLM 1 회**로
+     *   처리한다. 여기 구조에 3 크레딧을 붙이면 1 회분 가격으로 13 회를 태우게 된다.
+     *
+     * 없는 가격을 지어내는 대신 막았다. 되살리려면 둘 중 하나가 먼저 정해져야 한다.
+     *
+     * 1. 전용 [AiFeature] 항목과 크레딧 단가를 신설한다(제품 결정).
+     * 2. `META_REWRITE` 처럼 **LLM 1 회로 전 플랫폼을 처리하도록 재작성**해 그 요금과의
+     *    동등성을 근거로 만든다. 이 경우 프롬프트·파싱을 실제 모델로 검증해야 한다.
+     *
+     * ## 지금 잃는 것은 없다
+     *
+     * 프론트엔드는 이 엔드포인트를 부르지 않는다(`videos/optimize` 검색 결과 0 건).
+     * 운영 코드 호출자도 없다. 같은 일을 하는 [com.ongo.application.metarewrite.MetaRewriteUseCase]
+     * 가 이미 `META_REWRITE` 로 과금되며 화면에 연결돼 있다.
+     *
+     * LLM 을 부르지 않는 [checkOptimization] 은 그대로 살아 있다 — 그쪽은 규칙 기반이고
+     * 프론트가 실제로 쓴다.
      */
     fun optimizeContent(userId: Long, request: AiOptimizationRequest): AiOptimizationResponse {
-        val platforms = request.platforms.ifEmpty { Platform.entries }
-        val optimized = platforms.associate { platform ->
-            try {
-                val content = optimizeForPlatform(userId, platform, request)
-                platform to content
-            } catch (e: Exception) {
-                log.warn("AI 최적화 실패: platform={}, userId={}: {}", platform, userId, e.message)
-                platform to AiOptimizedContent(
-                    title = request.title,
-                    description = request.description,
-                    tags = request.tags,
-                    reasoning = "AI 최적화 실패: ${e.message}",
-                )
-            }
-        }
-        return AiOptimizationResponse(original = request, optimized = optimized)
-    }
-
-    private fun optimizeForPlatform(
-        userId: Long,
-        platform: Platform,
-        request: AiOptimizationRequest,
-    ): AiOptimizedContent {
-        val systemPrompt = buildSystemPrompt(platform)
-        val userPrompt = buildUserPrompt(platform, request)
-
-        val response = chatClientResolver.resolve(userId).prompt()
-            .system(systemPrompt)
-            .user(userPrompt)
-            .call()
-            .content()
-            ?: throw IllegalStateException("AI 응답이 비어있습니다")
-
-        return parseAiResponse(response)
-    }
-
-    private fun buildSystemPrompt(platform: Platform): String {
-        return """
-            당신은 ${platform.name} 플랫폼의 콘텐츠 최적화 전문가입니다.
-            주어진 원본 콘텐츠를 ${platform.name}의 특성과 알고리즘에 맞게 최적화하세요.
-            
-            ${platform.name} 플랫폼 특성:
-            ${getPlatformCharacteristics(platform)}
-            
-            응답은 다음 JSON 형식으로 반환하세요:
-            {
-                "title": "최적화된 제목",
-                "description": "최적화된 설명 (없으면 null)",
-                "tags": ["태그1", "태그2", "태그3"],
-                "reasoning": "왜 이렇게 최적화했는지 간단한 설명"
-            }
-        """.trimIndent()
-    }
-
-    private fun getPlatformCharacteristics(platform: Platform): String {
-        return when (platform) {
-            Platform.YOUTUBE -> "- 제목: 10-70자, 키워드 앞 배치\n- 설명: 200자 이상, 타임스탬프와 링크 포함\n- 태그: 3-15개"
-            Platform.TIKTOK -> "- 제목: 짧고 임팩트 있게, 해시태그 중심\n- 설명: 링크 제거, #해시태그 5-8개\n- 트렌디하고 젊은 어조"
-            Platform.INSTAGRAM -> "- 캡션: 첫 줄에 후킹 문장, 이모지 활용\n- 해시태그: 10-20개, 다양한 규모 혼합\n- 시각적 중심"
-            Platform.NAVER_CLIP -> "- 공개 업로드·분석 API가 없어 현재 지원하지 않음"
-            Platform.TWITTER -> "- 제목: 280자 이내, 간결하게\n- 해시태그: 1-2개\n- 실시성과 참여 유도"
-            else -> "- 제목: 간결하고 명확하게\n- 태그: 3-10개\n- 플랫폼 특성에 맞는 어조"
-        }
-    }
-
-    private fun buildUserPrompt(platform: Platform, request: AiOptimizationRequest): String {
-        return """
-            플랫폼: ${platform.name}
-            원본 제목: ${request.title}
-            원본 설명: ${request.description ?: "(없음)"}
-            원본 태그: ${request.tags.joinToString(", ")}
-            
-            위 콘텐츠를 ${platform.name}에 최적화해주세요.
-        """.trimIndent()
-    }
-
-    private fun parseAiResponse(response: String): AiOptimizedContent {
-        val json = response.trim()
-            .removePrefix("```json")
-            .removePrefix("```")
-            .removeSuffix("```")
-            .trim()
-        return objectMapper.readValue(json, AiOptimizedContent::class.java)
+        log.warn(
+            "AI 크로스 플랫폼 최적화는 요금 미정으로 비활성 상태다. userId={} platforms={}",
+            userId, request.platforms.size,
+        )
+        throw BusinessException(
+            "FEATURE_NOT_AVAILABLE",
+            "AI 크로스 플랫폼 최적화는 현재 제공하지 않습니다. 영상 목록의 '메타데이터 리라이트'를 사용해 주세요.",
+        )
     }
 }

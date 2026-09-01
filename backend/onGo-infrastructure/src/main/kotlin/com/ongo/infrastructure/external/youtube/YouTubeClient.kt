@@ -3,12 +3,15 @@ package com.ongo.infrastructure.external.youtube
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformApiException
 import com.ongo.common.exception.PlatformUploadException
+import com.ongo.domain.analytics.RevenueMeasurement
+import com.ongo.domain.analytics.RevenueReport
 import com.ongo.infrastructure.external.platform.*
 import com.ongo.infrastructure.external.youtube.dto.YouTubeCommentInsertRequest
 import com.ongo.application.publicapi.PlatformToolDefinition
 import com.ongo.application.publicapi.PlatformToolField
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.web.client.RestClientResponseException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -19,6 +22,17 @@ class YouTubeClient(
     private val googleOAuthApi: GoogleOAuthApi,
     private val youTubeConfig: YouTubeConfig,
 ) : PlatformClient {
+
+    private companion object {
+        const val REVENUE_METRIC = "estimatedRevenue"
+
+        /**
+         * 수익을 원화로 받아 온다. 지정하지 않으면 채널의 AdSense 지급 통화(USD 등)로
+         * 내려오는데, `analytics_daily.revenue_micro` 는 통화 하나만 담을 수 있어
+         * 원화로 읽으면 몇백 배 틀린다.
+         */
+        const val REVENUE_CURRENCY = "KRW"
+    }
 
     private val log = LoggerFactory.getLogger(YouTubeClient::class.java)
 
@@ -140,21 +154,88 @@ class YouTubeClient(
             val row = response.rows?.firstOrNull()
             if (row != null && row.size >= 8) {
                 return PlatformAnalytics(
-                    views = row[0].toLongOrNull() ?: 0,
-                    likes = row[1].toLongOrNull() ?: 0,
-                    comments = row[2].toLongOrNull() ?: 0,
-                    shares = row[3].toLongOrNull() ?: 0,
-                    watchTimeSeconds = (row[4].toLongOrNull() ?: 0) * 60, // minutes → seconds
-                    subscriberGained = row[5].toIntOrNull() ?: 0,
-                    impressions = row[6].toLongOrNull() ?: 0,
-                    avgViewDurationSeconds = row[7].toLongOrNull() ?: 0,
+                    // YouTube 는 여덟 지표를 모두 조회한다(위 metrics 목록). 즉 전부
+                    // "지원" 이므로 빈 칸·파싱 실패는 미수집이 아니라 응답 이상이다.
+                    views = row[0].requireLongMetric("YouTube", "views"),
+                    likes = row[1].requireLongMetric("YouTube", "likes"),
+                    comments = row[2].requireLongMetric("YouTube", "comments"),
+                    shares = row[3].requireLongMetric("YouTube", "shares"),
+                    // 분 단위로 온다.
+                    watchTimeSeconds = row[4].requireLongMetric("YouTube", "estimatedMinutesWatched") * 60,
+                    subscriberGained = row[5].requireIntMetric("YouTube", "subscribersGained"),
+                    impressions = row[6].requireLongMetric("YouTube", "impressions"),
+                    avgViewDurationSeconds = row[7].requireLongMetric("YouTube", "averageViewDuration"),
                 )
             }
 
             throw PlatformApiException("YouTube", "분석 데이터가 없습니다.")
+        } catch (e: PlatformApiException) {
+            // 어떤 지표가 빠졌는지 담은 메시지를 그대로 올려 보낸다. 일반 메시지로 덮으면
+            // 스케줄러 경고 로그에서 원인 지표를 알 수 없다.
+            throw e
         } catch (e: Exception) {
             log.warn("YouTube 분석 데이터 조회 실패: {}", e.message)
             throw PlatformApiException("YouTube", "분석 데이터 조회 실패", e)
+        }
+    }
+
+    /**
+     * 일별 광고 수익. **[getVideoAnalytics] 와 분리된 호출이다.**
+     *
+     * 금전 지표는 `yt-analytics-monetary.readonly` 를 따로 요구한다. 기존 scope 로 이미
+     * 연결된 채널은 그 권한이 없어 401/403 이 온다. 그때 예외를 밖으로 던지지 않고
+     * `PERMISSION_REQUIRED` 상태만 돌려준다 — 이 호출의 실패가 같은 주기의 일반 분석
+     * 수집을 멈추면 안 된다.
+     *
+     * 응답에 없는 날짜는 채우지 않는다. YouTube 는 확정 전 날짜의 행을 아예 주지 않으며,
+     * 그걸 0 원으로 저장하면 며칠 뒤 확정될 금액을 "0 원 확정"으로 굳혀 버린다.
+     */
+    override fun getVideoRevenue(
+        platformVideoId: String,
+        accessToken: String,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): RevenueReport {
+        return try {
+            val response = youTubeAnalyticsApi.queryRevenue(
+                ids = "channel==MINE",
+                startDate = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                endDate = endDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                metrics = REVENUE_METRIC,
+                dimensions = "day",
+                filters = "video==$platformVideoId",
+                currency = REVENUE_CURRENCY,
+                authorization = "Bearer $accessToken",
+            )
+
+            val rows = response.rows
+            if (rows.isNullOrEmpty()) {
+                // 권한은 통과했는데 행이 없다. 확정 지연이지 0 원 확정이 아니다.
+                return RevenueReport.PENDING
+            }
+
+            val daily = rows.mapNotNull { row ->
+                if (row.size < 2) return@mapNotNull null
+                val date = runCatching { LocalDate.parse(row[0]) }.getOrNull() ?: return@mapNotNull null
+                date to RevenueMeasurement.fromApi(row[1], REVENUE_CURRENCY)
+            }.toMap()
+
+            if (daily.isEmpty()) RevenueReport.ERROR else RevenueReport.measured(daily)
+        } catch (e: RestClientResponseException) {
+            val status = e.statusCode.value()
+            if (status == 401 || status == 403) {
+                log.info(
+                    "YouTube 수익 조회 권한이 없다. 채널 재연동이 필요하다: videoId={}, status={}",
+                    platformVideoId, status,
+                )
+                RevenueReport.PERMISSION_REQUIRED
+            } else {
+                log.warn("YouTube 수익 조회 실패: videoId={}, status={}", platformVideoId, status)
+                RevenueReport.ERROR
+            }
+        } catch (e: Exception) {
+            log.warn("YouTube 수익 조회 실패: videoId={}, {}", platformVideoId, e.message)
+            RevenueReport.ERROR
         }
     }
 
@@ -174,7 +255,7 @@ class YouTubeClient(
             channelId = channel.id,
             channelName = channel.snippet?.title ?: "",
             channelUrl = channel.snippet?.customUrl?.let { "https://www.youtube.com/$it" } ?: "",
-            subscriberCount = channel.statistics?.subscriberCount?.toLongOrNull() ?: 0,
+            subscriberCount = channel.statistics?.subscriberCount?.toLongOrNull(),
             profileImageUrl = channel.snippet?.thumbnails?.default?.url,
         )
     }
@@ -291,7 +372,10 @@ class YouTubeClient(
             )
             val uploadsPlaylistId = channelResponse.items.firstOrNull()
                 ?.contentDetails?.relatedPlaylists?.get("uploads")
-                ?: return PlatformFeedResult(emptyList())
+                ?: return PlatformFeedResult(
+                    items = emptyList(),
+                    errorMessage = "YouTube 채널의 업로드 목록을 확인하지 못했습니다.",
+                )
 
             // 2. playlist items 조회
             val playlistResponse = youTubeApi.listPlaylistItems(
@@ -323,9 +407,11 @@ class YouTubeClient(
                     thumbnailUrl = item.snippet?.thumbnails?.high?.url
                         ?: item.snippet?.thumbnails?.medium?.url,
                     platformUrl = "https://www.youtube.com/watch?v=$videoId",
-                    viewCount = stats?.viewCount?.toLongOrNull() ?: 0,
-                    likeCount = stats?.likeCount?.toLongOrNull() ?: 0,
-                    commentCount = stats?.commentCount?.toLongOrNull() ?: 0,
+                    // 비공개·통계 숨김 영상은 이 값들이 응답에서 빠진다 — 0 이 아니라 미측정이다.
+                    // 공유 수는 videos.list statistics 가 주지 않으므로 기본값(null)로 남는다.
+                    viewCount = stats?.viewCount?.toLongOrNull(),
+                    likeCount = stats?.likeCount?.toLongOrNull(),
+                    commentCount = stats?.commentCount?.toLongOrNull(),
                     publishedAt = item.snippet?.publishedAt,
                 )
             }
@@ -337,7 +423,10 @@ class YouTubeClient(
             )
         } catch (e: Exception) {
             log.error("YouTube 영상 목록 조회 실패: {}", e.message)
-            return PlatformFeedResult(emptyList())
+            return PlatformFeedResult(
+                items = emptyList(),
+                errorMessage = "YouTube 영상 목록을 불러오지 못했습니다.",
+            )
         }
     }
 

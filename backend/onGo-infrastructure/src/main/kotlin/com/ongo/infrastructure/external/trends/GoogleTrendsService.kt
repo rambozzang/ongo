@@ -29,34 +29,43 @@ class GoogleTrendsService : TrendDataSource {
         }
     }
 
-    private fun parseRssFeed(xml: String, region: String): List<Trend> {
-        val trends = mutableListOf<Trend>()
-        val titleRegex = Regex("<title>(.+?)</title>")
-        val trafficRegex = Regex("<ht:approx_traffic>(.+?)</ht:approx_traffic>")
+    internal fun parseRssFeed(xml: String, region: String): List<Trend> {
+        /*
+         * 제목과 트래픽을 각각 전부 찾은 뒤 인덱스로 맞추면 중간 item 하나에
+         * approx_traffic 이 빠지는 순간 **다음 키워드에 이전 키워드의 점수**가 붙는다.
+         * item 단위로 읽어야 RSS 필드 누락이 다른 트렌드의 근거를 오염시키지 않는다.
+         */
+        val itemRegex = Regex("<item\\b[^>]*>(.*?)</item>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+        val titleRegex = Regex("<title\\b[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+        val trafficRegex = Regex(
+            "<ht:approx_traffic\\b[^>]*>(.*?)</ht:approx_traffic>",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+        )
 
-        val titles = titleRegex.findAll(xml).map { it.groupValues[1] }.toList().drop(1)
-        val traffics = trafficRegex.findAll(xml).map { it.groupValues[1] }.toList()
+        return itemRegex.findAll(xml).mapNotNull { item ->
+            val body = item.groupValues[1]
+            val title = titleRegex.find(body)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }
+            val score = parseTrafficScore(trafficRegex.find(body)?.groupValues?.get(1))
 
-        titles.forEachIndexed { index, title ->
-            val traffic = traffics.getOrNull(index)
-            val score = parseTrafficScore(traffic)
-            trends.add(
-                Trend(
-                    keyword = title.trim(),
-                    score = score,
-                    source = "GOOGLE_TRENDS",
-                    region = region,
-                    date = LocalDate.now(),
-                    category = "TRENDING",
-                )
+            if (title == null || score == null) {
+                log.debug("Google Trends item을 근거 부족으로 제외한다: titlePresent={}, trafficPresent={}", title != null, score != null)
+                return@mapNotNull null
+            }
+
+            Trend(
+                keyword = title,
+                score = score,
+                source = "GOOGLE_TRENDS",
+                region = region,
+                date = LocalDate.now(),
+                category = "TRENDING",
             )
-        }
-        return trends
+        }.toList()
     }
 
-    private fun parseTrafficScore(traffic: String?): Double {
-        if (traffic == null) return 0.0
+    private fun parseTrafficScore(traffic: String?): Double? {
+        if (traffic == null) return null
         val cleaned = traffic.replace("+", "").replace(",", "").trim()
-        return cleaned.toDoubleOrNull() ?: 0.0
+        return cleaned.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0.0 }
     }
 }

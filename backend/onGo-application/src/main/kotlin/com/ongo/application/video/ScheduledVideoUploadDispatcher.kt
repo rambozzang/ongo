@@ -33,12 +33,32 @@ class ScheduledVideoUploadDispatcher(
             val video = videoRepository.findById(upload.videoId)
             // DB에 저장된 URL이 presigned URL인 경우 예약 기간 중 만료될 수 있다.
             // due 시점에 새 URL을 발급해 외부 Graph/API가 실제 파일을 읽게 한다.
-            val fileUrl = video?.let { current ->
-                runCatching { storageService.getFileUrl(current.id!!, current.fileUrl) }.getOrNull() ?: current.fileUrl
-            }
             val uploadId = upload.id
-            if (video == null || fileUrl.isNullOrBlank() || uploadId == null) {
+            if (video == null || uploadId == null) {
                 log.warn("예약 게시 작업을 깨울 수 없습니다: videoId={}, uploadId={}", upload.videoId, uploadId)
+                return@forEach
+            }
+            /*
+             * 예약 시각에는 업로드 시점의 presigned URL이 이미 만료됐을 수 있다.
+             * 재발급에 실패했는데 예전 URL을 다시 쓰면, 외부 플랫폼에는 실제 파일이
+             * 없는 것처럼 보이는 요청이 나가고 같은 예약을 반복해도 계속 실패한다.
+             * 더 나쁘게는 플랫폼이 일부 바이트를 받은 뒤 응답을 잃어 FAILED/중복 판단이
+             * 흐려질 수 있다. 오래된 URL은 절대 폴백으로 사용하지 않고, 행을 그대로
+             * 큐에 남겨 다음 주기에 재시도한다.
+             */
+            val fileUrl = try {
+                storageService.getFileUrl(video.id!!, video.fileUrl)
+            } catch (e: Exception) {
+                log.warn(
+                    "예약 게시 파일 URL 재발급 실패, 다음 주기에 재시도합니다: videoId={}, uploadId={}, reason={}",
+                    video.id,
+                    uploadId,
+                    e.javaClass.simpleName,
+                )
+                return@forEach
+            }
+            if (fileUrl.isBlank()) {
+                log.warn("예약 게시 파일 URL이 비어 있어 다음 주기에 재시도합니다: videoId={}, uploadId={}", video.id, uploadId)
                 return@forEach
             }
             try {

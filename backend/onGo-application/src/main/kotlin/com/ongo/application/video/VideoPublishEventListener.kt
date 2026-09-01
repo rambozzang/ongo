@@ -86,13 +86,19 @@ class VideoPublishEventListener(
         }
         val service = platformUploadServices.find { it.supports(config.platform) }
         if (service == null) {
-            log.error("플랫폼 {} 에 대한 업로드 서비스를 찾을 수 없습니다", config.platform)
+            /*
+             * 게시 게이트가 생기기 전에 만들어진 행이 여기까지 온다. 이유를 capability 에서
+             * 가져와 사용자가 읽을 수 있는 문장으로 남긴다 — "지원되지 않는 플랫폼" 만으로는
+             * 왜 안 되는지, 기다리면 되는지 알 수 없다.
+             */
+            val reason = PlatformUploadCapabilities.unsupportedReason(config.platform)
+            log.error("플랫폼 {} 에 대한 업로드 서비스를 찾을 수 없습니다: {}", config.platform, reason)
             updateUploadStatus(
                 config.videoUploadId,
                 UploadStatus.FAILED,
-                "지원되지 않는 플랫폼: ${config.platform}",
+                reason,
             )
-            fireCompletedEvent(event, config.platform, false, errorMessage = "지원되지 않는 플랫폼")
+            fireCompletedEvent(event, config.platform, false, errorMessage = reason)
             return
         }
 

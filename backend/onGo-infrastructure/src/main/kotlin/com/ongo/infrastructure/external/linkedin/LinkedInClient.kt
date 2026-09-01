@@ -231,13 +231,17 @@ class LinkedInClient(
             val stats = response.elements?.firstOrNull()?.totalShareStatistics
 
             PlatformAnalytics(
-                views = stats?.impressionCount ?: 0,
-                likes = stats?.likeCount ?: 0,
-                comments = stats?.commentCount ?: 0,
-                shares = stats?.shareCount ?: 0,
+                views = stats?.impressionCount.requireMetric("LinkedIn", "impressionCount"),
+                likes = stats?.likeCount.requireMetric("LinkedIn", "likeCount"),
+                comments = stats?.commentCount.requireMetric("LinkedIn", "commentCount"),
+                shares = stats?.shareCount.requireMetric("LinkedIn", "shareCount"),
                 watchTimeSeconds = 0,
                 subscriberGained = 0,
             )
+        } catch (e: PlatformApiException) {
+            // 어떤 지표가 빠졌는지 담은 메시지를 그대로 올려 보낸다. 일반 메시지로 덮으면
+            // 스케줄러 경고 로그에서 원인 지표를 알 수 없다.
+            throw e
         } catch (e: Exception) {
             log.warn("LinkedIn 분석 데이터 조회 실패: {}", e.message)
             throw PlatformApiException("LinkedIn", "분석 데이터 조회 실패", e)
@@ -261,7 +265,8 @@ class LinkedInClient(
             channelId = response.id,
             channelName = fullName,
             channelUrl = response.vanityName?.let { "https://www.linkedin.com/in/$it" } ?: "",
-            subscriberCount = 0,
+            // 개인 프로필만 조회한다 — 팔로워 수는 요청 목록에 없으므로 0 이 아니라 null 이다.
+            subscriberCount = null,
             profileImageUrl = profileImage,
         )
     }

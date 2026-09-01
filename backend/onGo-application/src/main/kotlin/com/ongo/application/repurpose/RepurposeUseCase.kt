@@ -18,7 +18,6 @@ import com.ongo.domain.repurpose.RepurposeJobRepository
 import com.ongo.domain.video.VideoRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 @Service
 class RepurposeUseCase(
@@ -32,10 +31,25 @@ class RepurposeUseCase(
 
     private val log = LoggerFactory.getLogger(RepurposeUseCase::class.java)
 
-    @Transactional
+    /**
+     * **트랜잭션을 열지 않는다.** LLM 호출을 `@Transactional` 안에 두면 `ai_credits` 행
+     * 잠금과 DB 커넥션이 모델 응답 시간만큼 묶인다. 차감·환불의 커밋 경계는
+     * [CreditService.withCredits] 가 잡는다.
+     *
+     * ## job 행을 차감 **뒤에** 만드는 이유
+     *
+     * 예전에는 `withCredits` 보다 먼저 `PROCESSING` job 을 저장했다. 그러면 잔액이 부족해
+     * [com.ongo.common.exception.InsufficientCreditException] 이 나는 순간, 아무도 끝내지
+     * 않을 `PROCESSING` job 이 목록에 남는다. 사용자는 "분석 중" 을 영원히 보고, 그 행을
+     * 정리하는 코드는 어디에도 없다.
+     *
+     * 차감이 확정된 뒤에만 만든다. 저장 자체가 실패하면 블록 밖의 [CreditService.withCredits]
+     * 가 환불하고, 그때는 job 이 아예 없으므로 남길 상태도 없다.
+     *
+     * job 상태는 트랜잭션 롤백이 아니라 명시적으로 적는다. 원래 흐름 그대로다.
+     */
     fun analyzeForRepurpose(userId: Long, videoId: Long): RepurposeDetailResponse {
         rateLimiter.checkRateLimit(userId)
-        creditService.validateAndDeduct(userId, AiFeature.CONTENT_REPURPOSE)
 
         val video = videoRepository.findById(videoId)
             ?: throw BusinessException("VIDEO_NOT_FOUND", "영상을 찾을 수 없습니다: $videoId")
@@ -46,6 +60,7 @@ class RepurposeUseCase(
 
         val transcript = video.description ?: video.title
 
+        return creditService.withCredits(userId, AiFeature.CONTENT_REPURPOSE) {
         val job = repurposeJobRepository.save(
             RepurposeJob(
                 userId = userId,
@@ -85,7 +100,7 @@ class RepurposeUseCase(
             val completedJob = repurposeJobRepository.updateStatus(job.id, "COMPLETED", clips.size)
                 ?: job.copy(status = "COMPLETED", clipCount = clips.size)
 
-            return RepurposeDetailResponse(
+            RepurposeDetailResponse(
                 job = toJobResponse(completedJob),
                 clips = clips.map { toClipResponse(it) },
             )
@@ -93,10 +108,10 @@ class RepurposeUseCase(
             repurposeJobRepository.updateStatus(job.id, "FAILED", 0)
             throw e
         } catch (e: Exception) {
-            log.error("AI 리퍼포징 분석 실패, 크레딧 환불: userId={}, videoId={}", userId, videoId, e)
+            log.error("AI 리퍼포징 분석 실패: userId={}, videoId={}", userId, videoId, e)
             repurposeJobRepository.updateStatus(job.id, "FAILED", 0)
-            creditService.refundCredit(userId, AiFeature.CONTENT_REPURPOSE.creditCost, AiFeature.CONTENT_REPURPOSE.name)
             throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+        }
         }
     }
 

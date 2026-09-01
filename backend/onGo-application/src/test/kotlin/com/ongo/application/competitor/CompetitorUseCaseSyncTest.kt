@@ -35,6 +35,7 @@ class CompetitorUseCaseSyncTest {
         channelLookupPort = channelLookupPort,
         competitorRefreshService = refreshService,
         analyticsRepository = mockk<AnalyticsRepository>(relaxed = true),
+        videoUploadRepository = mockk<com.ongo.domain.video.VideoUploadRepository>(relaxed = true),
         channelRepository = mockk<ChannelRepository>(relaxed = true),
         subscriptionRepository = mockk<SubscriptionRepository>(relaxed = true),
     )

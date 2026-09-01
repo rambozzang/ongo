@@ -64,6 +64,18 @@ class PortOneController(
     ): ResData<PortOnePaymentResult> = ResData(data = service.complete(userId, paymentId))
 
     /**
+     * 결제창 이탈·실패 뒤 PG 상태를 재조회해 미확정 원장을 정리한다.
+     *
+     * 브라우저 오류만으로 FAILED 를 기록하지 않고 PortOne 상태가 확정적으로 실패한 경우에만
+     * 닫는다. 실제 PAID 면 일반 완료 경로로 돌려 크레딧·구독 권한을 놓치지 않는다.
+     */
+    @PostMapping("/payments/{paymentId}/reconcile")
+    fun reconcile(
+        @CurrentUser userId: Long,
+        @PathVariable paymentId: String,
+    ): ResData<PortOnePaymentResult> = ResData(data = service.reconcileCheckout(userId, paymentId))
+
+    /**
      * 포트원 웹훅 수신 엔드포인트.
      *
      * Standard Webhooks 서명을 먼저 검증하고, 본문은 신뢰하지 않고 paymentId로 PortOne API를

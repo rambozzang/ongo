@@ -6,6 +6,7 @@ import org.springframework.context.ApplicationEventPublisher
 import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
+import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.channel.Channel
 import com.ongo.domain.channel.ChannelRepository
@@ -98,10 +99,22 @@ class StreamPublishUseCaseTest {
         every { videoRepository.update(any()) } answers { firstArg() }
     }
 
+    /**
+     * 이 배포에 모든 플랫폼 자격증명이 있는 상태.
+     *
+     * 대부분의 테스트는 업로드 흐름을 보므로 설정은 갖춰졌다고 두고, 설정 자체를 다루는
+     * 테스트만 다른 값을 넘긴다. **기본값을 null 로 두면 안 된다** — null 은 이제 "확인
+     * 불가" 라서 게시가 거부되고, 그러면 모든 테스트가 설정 검사에서 멈춰 정작 검증하려는
+     * 업로드 로직에 닿지 못한다.
+     */
+    private val allPlatformsConfigured = object : PlatformConfigurationPort {
+        override fun status(platform: Platform) = PlatformConfigurationStatus(configured = true)
+    }
+
     private fun createUseCase(
         factories: List<PlatformStreamWriterFactory>,
         platformClientPort: PlatformClientPort? = null,
-        platformConfigurationPort: PlatformConfigurationPort? = null,
+        platformConfigurationPort: PlatformConfigurationPort? = allPlatformsConfigured,
     ) = StreamPublishUseCase(
             videoRepository = videoRepository,
             videoUploadRepository = videoUploadRepository,
@@ -250,6 +263,81 @@ class StreamPublishUseCaseTest {
 
         // 플랜 한도 초과 시 저장 로직은 호출되지 않아야 함
         verify(exactly = 0) { videoRepository.save(any()) }
+    }
+
+    /* ---- 플랫폼 설정 확인 (fail-closed) ---- */
+
+    /**
+     * **설정을 확인할 수 없는 것은 설정된 것이 아니다.**
+     *
+     * 예전에는 조회 통로가 null 이면 `?.` 로 검사를 건너뛰어, 어댑터가 빠진 배포에서
+     * 자격증명 없는 플랫폼으로도 업로드가 시작됐다. 사용자는 파일을 다 올린 뒤에야 실패를
+     * 봤다. 잘못된 배포는 게시가 막히는 쪽으로 틀려야 한다.
+     */
+    @Test
+    fun `설정 조회 통로가 없으면 업로드를 시작하지 않는다`() {
+        stubSubscription(PlanType.PRO)
+        stubMonthlyCount(0L)
+
+        val useCaseWithoutPort = createUseCase(
+            defaultStreamWriterFactories,
+            platformConfigurationPort = null,
+        )
+
+        val error = assertFailsWith<BusinessException> {
+            useCaseWithoutPort.initiate(
+                userId,
+                buildFile(),
+                buildRequest(platforms = listOf(buildPlatformRequest(Platform.YOUTUBE))),
+            )
+        }
+
+        assertEquals("PLATFORM_NOT_CONFIGURED", error.code)
+        // 영상 행도 업로드 세션도 만들지 않는다.
+        verify(exactly = 0) { videoRepository.save(any()) }
+        verify(exactly = 0) { videoUploadRepository.save(any()) }
+    }
+
+    @Test
+    fun `미설정 플랫폼은 업로드를 시작하지 않는다`() {
+        stubSubscription(PlanType.PRO)
+        stubMonthlyCount(0L)
+
+        val unconfigured = object : PlatformConfigurationPort {
+            override fun status(platform: Platform) = PlatformConfigurationStatus(
+                configured = false,
+                reason = "YouTube 플랫폼 연동 설정이 운영 서버에 구성되지 않았습니다.",
+            )
+        }
+
+        val error = assertFailsWith<BusinessException> {
+            createUseCase(defaultStreamWriterFactories, platformConfigurationPort = unconfigured)
+                .initiate(
+                    userId,
+                    buildFile(),
+                    buildRequest(platforms = listOf(buildPlatformRequest(Platform.YOUTUBE))),
+                )
+        }
+
+        assertEquals("PLATFORM_NOT_CONFIGURED", error.code)
+        assertEquals("YouTube 플랫폼 연동 설정이 운영 서버에 구성되지 않았습니다.", error.message)
+        verify(exactly = 0) { videoRepository.save(any()) }
+    }
+
+    /** 목록 조회도 같은 규칙이다. 확인 불가를 정상으로 보여주면 사용자가 고른 뒤에 실패한다. */
+    @Test
+    fun `설정 조회 통로가 없으면 capability를 사용 불가로 노출한다`() {
+        val capabilities = createUseCase(
+            defaultStreamWriterFactories,
+            platformConfigurationPort = null,
+        ).getCapabilities()
+
+        assertTrue(capabilities.isNotEmpty())
+        assertTrue(
+            capabilities.none { it.configurationAvailable },
+            "설정을 확인할 수 없는데 사용 가능으로 노출됐다",
+        )
+        assertTrue(capabilities.all { !it.configurationUnavailableReason.isNullOrBlank() })
     }
 
     // 2. 채널 미연동 시 IllegalStateException 발생

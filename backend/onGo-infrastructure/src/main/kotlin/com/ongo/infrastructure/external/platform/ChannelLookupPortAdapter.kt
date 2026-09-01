@@ -74,9 +74,10 @@ class ChannelLookupPortAdapter(
                 platformChannelId = item.id,
                 channelName = item.snippet?.title,
                 channelUrl = channelUrl,
-                subscriberCount = item.statistics?.subscriberCount?.toLongOrNull() ?: 0,
-                totalViews = item.statistics?.viewCount?.toLongOrNull() ?: 0,
-                videoCount = item.statistics?.videoCount?.toIntOrNull() ?: 0,
+                // 구독자 수를 숨긴 채널은 이 필드가 빠진다 — 재지 못한 것이지 0 명이 아니다.
+                subscriberCount = item.statistics?.subscriberCount?.toLongOrNull(),
+                totalViews = item.statistics?.viewCount?.toLongOrNull(),
+                videoCount = item.statistics?.videoCount?.toIntOrNull(),
                 profileImageUrl = item.snippet?.thumbnails?.default?.url,
                 platform = "YOUTUBE",
             )

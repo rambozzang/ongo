@@ -113,6 +113,29 @@ interface YouTubeAnalyticsApi {
         @RequestParam("filters") filters: String,
         @RequestHeader("Authorization") authorization: String,
     ): com.ongo.infrastructure.external.youtube.dto.YouTubeAnalyticsResponse
+
+    /**
+     * 금전 지표 전용 질의.
+     *
+     * **[queryAnalytics] 와 절대 합치지 않는다.** `estimatedRevenue` 는
+     * `yt-analytics-monetary.readonly` 를 따로 요구하고, 그 권한이 없으면 응답 전체가
+     * 403 이다. 한 질의에 섞으면 수익 권한 하나 때문에 조회수·좋아요·댓글까지 전부
+     * 저장되지 않는다.
+     *
+     * [currency] 는 ISO 4217. 지정하지 않으면 채널의 지급 통화로 내려와 원화로 읽을 수
+     * 없다. [dimensions] 로 일별 행을 받아야 하루 단위로 저장할 수 있다.
+     */
+    @GetExchange("/v2/reports")
+    fun queryRevenue(
+        @RequestParam("ids") ids: String,
+        @RequestParam("startDate") startDate: String,
+        @RequestParam("endDate") endDate: String,
+        @RequestParam("metrics") metrics: String,
+        @RequestParam("dimensions") dimensions: String,
+        @RequestParam("filters") filters: String,
+        @RequestParam("currency") currency: String,
+        @RequestHeader("Authorization") authorization: String,
+    ): com.ongo.infrastructure.external.youtube.dto.YouTubeAnalyticsResponse
 }
 
 @HttpExchange

@@ -4,6 +4,7 @@ import com.ongo.api.auth.dto.AuthResponse
 import com.ongo.api.auth.dto.RefreshTokenRequest
 import com.ongo.api.auth.dto.SocialLoginRequest
 import com.ongo.api.auth.dto.UserResponse
+import com.ongo.api.config.ClientAddressResolver
 import com.ongo.api.config.CurrentUser
 import com.ongo.application.auth.AuthOAuthAuthorizationUseCase
 import com.ongo.application.auth.AuthRateLimiter
@@ -37,6 +38,11 @@ class AuthController(
     private val authRateLimiter: AuthRateLimiter,
     private val oAuthStateManager: OAuthStateManager,
     private val authOAuthAuthorizationUseCase: AuthOAuthAuthorizationUseCase,
+    /**
+     * 상한 키를 만드는 유일한 경로. `remoteAddr` 을 직접 쓰면 nginx 뒤에서 전 사용자가
+     * 버킷 하나를 공유하게 된다 — 자세한 근거는 [ClientAddressResolver] 에 있다.
+     */
+    private val clientAddressResolver: ClientAddressResolver,
 ) {
 
     @Operation(summary = "SSE 토큰 발급", description = "SSE(Server-Sent Events) 연결용 단기 토큰을 발급합니다 (5분 만료).")
@@ -83,7 +89,7 @@ class AuthController(
         @Valid @RequestBody request: SocialLoginRequest,
         httpRequest: HttpServletRequest,
     ): ResponseEntity<ResData<AuthResponse>> {
-        authRateLimiter.checkLoginRateLimit(httpRequest.remoteAddr)
+        authRateLimiter.checkLoginRateLimit(clientAddressResolver.resolve(httpRequest))
         if (!oAuthStateManager.verifyAnonymous(request.state)) {
             throw com.ongo.common.exception.UnauthorizedException("유효하지 않은 OAuth state입니다. CSRF 공격일 수 있습니다.")
         }
@@ -107,7 +113,7 @@ class AuthController(
         @Valid @RequestBody request: RefreshTokenRequest,
         httpRequest: HttpServletRequest,
     ): ResponseEntity<ResData<AuthResponse>> {
-        authRateLimiter.checkRefreshRateLimit(httpRequest.remoteAddr)
+        authRateLimiter.checkRefreshRateLimit(clientAddressResolver.resolve(httpRequest))
         val result = authUseCase.refreshToken(request.refreshToken)
         return ResData.success(toAuthResponse(result), "토큰이 갱신되었습니다")
     }

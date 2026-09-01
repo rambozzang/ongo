@@ -10,6 +10,7 @@ import com.ongo.infrastructure.persistence.jooq.Tables.PAYMENTS
 import com.ongo.infrastructure.persistence.jooq.Tables.WEBHOOK_EVENTS
 import com.ongo.infrastructure.testsupport.SqlStates
 import org.jooq.DSLContext
+import org.jooq.impl.DSL
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -71,6 +72,24 @@ class JooqExceptionContractIT {
         dsl.deleteFrom(PAYMENTS).execute()
     }
 
+    /**
+     * 제약 위반을 일으키기 위한 **평범한 INSERT**.
+     *
+     * 저장소에는 이런 삽입이 없다. `saveIfAbsent` 는 `ON CONFLICT DO NOTHING` 이라 충돌을
+     * 삼키는 것이 목적이고(멱등 게이트), 그래서 유니크 위반을 만들지 못한다. 여기서 보려는
+     * 것은 저장소 메서드가 아니라 **jOOQ 예외를 스프링 예외로 번역하는 리스너가 붙어
+     * 있는가**이며, 그 리스너는 `DSLContext` 에 달려 있으므로 직접 삽입해도 동일하게
+     * 검증된다.
+     */
+    private fun insertRaw(event: WebhookEvent) {
+        dsl.insertInto(WEBHOOK_EVENTS)
+            .set(Fields.EVENT_ID, event.eventId)
+            .set(Fields.EVENT_TYPE, event.eventType)
+            .set(DSL.field("payload", String::class.java), event.payload)
+            .set(Fields.STATUS, event.status)
+            .execute()
+    }
+
 
     @Test
     @DisplayName("UNIQUE 위반은 스프링 DuplicateKeyException으로 번역된다")
@@ -80,11 +99,11 @@ class JooqExceptionContractIT {
             eventType = "Transaction.Paid",
             payload = """{"t":1}""",
         )
-        webhookRepo.save(event)
+        insertRaw(event)
 
         // DuplicateKeyException 은 DataIntegrityViolationException 의 하위다.
         // 상위 타입 여부는 컴파일 타임 사실이라 단언하지 않는다.
-        val thrown = assertThrows<DuplicateKeyException> { webhookRepo.save(event) }
+        val thrown = assertThrows<DuplicateKeyException> { insertRaw(event) }
 
         assertEquals(
             SqlStates.UNIQUE_VIOLATION, SqlStates.of(thrown),
@@ -120,13 +139,13 @@ class JooqExceptionContractIT {
             eventType = "Transaction.Paid",
             payload = """{"t":1}""",
         )
-        webhookRepo.save(event)
+        insertRaw(event)
 
         // 번역 리스너가 빠지면 jOOQ 원본 예외가 올라와 이 assertThrows 자체가 실패한다.
         // 그게 곧 감지 수단이다. 별도의 `!is jOOQ 예외` 단언은 컴파일 타임에 참이라 두지 않는다.
         // 이 테스트가 깨지면 TransactionAwareDataSourceProxy도 함께 빠졌을 가능성이 크므로
         // SpringTransactionParticipationIT 를 반드시 함께 확인한다.
-        val thrown = assertThrows<DataIntegrityViolationException> { webhookRepo.save(event) }
+        val thrown = assertThrows<DataIntegrityViolationException> { insertRaw(event) }
 
         assertEquals(SqlStates.UNIQUE_VIOLATION, SqlStates.of(thrown))
     }

@@ -23,5 +23,20 @@ interface StorageService {
     /** Copy a durable video object to the storage prefix of another video row. */
     fun copyVideoFile(sourceVideoId: Long, targetVideoId: Long, storedFileUrl: String? = null): String
     fun deleteFile(videoId: Long)
+
+    /**
+     * 이 영상에 딸린 **게시 이미지 객체를 모두** 지운다.
+     *
+     * [deleteFile] 은 `videos/{videoId}/` 만 본다. 이미지는 `content/{videoId}/` 라 그
+     * 호출로는 닿지 않아, 행만 사라지고 객체는 버킷에 영구히 남아 있었다.
+     *
+     * 접두사로 지우는 것이 여기서는 안전하다 — 접두사가 **지금 지우는 행의 기본키**로만
+     * 만들어져 다른 사용자의 객체가 그 아래 올 수 없다. 저장된 URL 을 되짚어 키를 추측하는
+     * 것과는 다른 이야기다.
+     */
+    fun deleteContentImages(videoId: Long)
+
+    /** 키를 알고 있는 객체 하나를 지운다. 업로드가 실패했을 때 되돌리는 용도다. */
+    fun deleteFileByKey(key: String)
     fun uploadFile(key: String, inputStream: InputStream, contentType: String, size: Long): String
 }

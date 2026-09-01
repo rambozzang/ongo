@@ -47,7 +47,18 @@ class PlatformUploadServiceImpl(
         )
     }
 
+    /**
+     * 이 서비스가 게시를 맡을 수 있는 플랫폼인지.
+     *
+     * **클라이언트 빈이 있다는 것만으로는 부족하다.** Naver Clip 처럼 연동 조회·댓글용
+     * 클라이언트는 등록돼 있지만 업로드 API 자체가 없는 플랫폼이 있다. 빈 존재만 보면
+     * `supports` 가 true 를 돌려주고, 호출자의 "지원되지 않는 플랫폼" 안전망이 비껴간 뒤
+     * [upload] 가 클라이언트의 미구현 분기까지 내려가 내부 문구를 실패 사유로 남겼다.
+     *
+     * 게시 가능 여부의 단일 판정은 [PlatformUploadCapabilities] 다. 여기서도 그것을 쓴다.
+     */
     override fun supports(platform: Platform): Boolean {
+        if (!PlatformUploadCapabilities.canPublish(platform)) return false
         return try {
             platformClientFactory.getClient(platform)
             true
@@ -57,6 +68,21 @@ class PlatformUploadServiceImpl(
     }
 
     override fun upload(config: PlatformUploadConfig, fileUrl: String, userId: Long): PlatformUploadResult {
+        /*
+         * [supports] 를 거치지 않고 직접 부르는 호출자가 생겨도 외부 API 나 미구현 분기로
+         * 내려가지 않게 한 겹 더 막는다. 채널을 조회하기 전에 끝내 불필요한 DB 접근도 없다.
+         */
+        if (!PlatformUploadCapabilities.canPublish(config.platform)) {
+            val reason = PlatformUploadCapabilities.unsupportedReason(config.platform)
+            log.warn("게시를 지원하지 않는 플랫폼 업로드 요청을 거절합니다: platform={} userId={}", config.platform, userId)
+            return PlatformUploadResult(
+                success = false,
+                published = false,
+                errorMessage = reason,
+                confirmation = PublishConfirmation.CONFIRMED,
+                retryable = false,
+            )
+        }
         var channel = resolveChannel(config.channelId, userId, config.platform)
             ?: throw NotFoundException("채널", "${config.platform} (userId=$userId)")
         // Channel.accessToken은 저장 시 AES-GCM으로 암호화된다. 외부 플랫폼 경계에서만

@@ -342,6 +342,10 @@ object Fields {
     val IMPRESSIONS = DSL.field("impressions", Int::class.java)
     val AVG_VIEW_DURATION_SECONDS = DSL.field("avg_view_duration_seconds", Int::class.java)
 
+    // analytics_daily revenue (V107) — 금액만으로는 "0원"과 "모름"이 구분되지 않는다.
+    val REVENUE_CURRENCY = DSL.field("revenue_currency", String::class.java)
+    val REVENUE_STATUS = DSL.field("revenue_status", String::class.java)
+
     // channel_insights_daily
     val TRAFFIC_SOURCE = DSL.field("traffic_source", Any::class.java)
     val DEMOGRAPHICS_AGE = DSL.field("demographics_age", Any::class.java)
@@ -913,7 +917,9 @@ object Fields {
     val DISCOUNT_AMOUNT = DSL.field("discount_amount", Int::class.java)
     val SUBSCRIPTION_ID = DSL.field("subscription_id", Long::class.java)
     val BILLING_KEY_ENCRYPTED = DSL.field("billing_key_encrypted", String::class.java)
+    val PENDING_BILLING_CYCLE = DSL.field("pending_billing_cycle", String::class.java)
     val PERIOD_START = DSL.field("period_start", java.time.LocalDateTime::class.java)
+    val PAYMENT_ID = DSL.field("payment_id", Long::class.java)
     val OUTCOME = DSL.field("outcome", String::class.java)
 
     // usage_alert_configs

@@ -5,6 +5,14 @@ import java.time.LocalDateTime
 
 interface SubscriptionRepository {
     fun findByUserId(userId: Long): Subscription?
+
+    /**
+     * 구독 id 로 조회한다.
+     *
+     * 갱신 원장은 userId 가 아니라 subscriptionId 를 갖는다. 운영자 재확인은 **저장된
+     * 스냅샷이 아니라 지금 상태**를 봐야 하므로 그때마다 다시 읽는다.
+     */
+    fun findById(id: Long): Subscription?
     fun findByPaddleSubscriptionId(paddleSubscriptionId: String): Subscription?
     fun save(subscription: Subscription): Subscription
     fun update(subscription: Subscription): Subscription

@@ -60,6 +60,8 @@ import java.util.zip.ZipOutputStream
 class ShortsPipelineUseCase(
     private val pipelineRunRepository: PipelineRunRepository,
     private val runStageRepository: RunStageRepository,
+    /** 지우기 전 미정산 단계를 정확히 한 번 환불한다. */
+    private val stageCreditService: ShortsStageCreditService,
     private val shortsClipRepository: ShortsClipRepository,
     private val clipHookRepository: ClipHookRepository,
     private val shortsTemplateRepository: ShortsTemplateRepository,
@@ -409,6 +411,19 @@ class ShortsPipelineUseCase(
             ),
         )
 
+        /*
+         * **지우기 전에 정산한다.**
+         *
+         * 아래 삭제는 단계 행을 하드 삭제하므로, 미정산 단계가 있으면 차감 분해가 함께
+         * 사라져 되돌릴 근거가 영영 없어진다. 완료된 단계는 `findUnsettled` 가 돌려주지
+         * 않으므로 정당한 청구는 그대로 남는다.
+         */
+        stageCreditService.settleBeforeDiscard(
+            runId = runId,
+            userId = run.userId,
+            fromSortOrder = stage.sortOrder,
+            reason = "재실행으로 이전 시도를 정산했습니다",
+        )
         runStageRepository.deleteFrom(runId, stage.sortOrder)
 
         val clips = shortsClipRepository.findByRunId(runId)
@@ -744,6 +759,16 @@ class ShortsPipelineUseCase(
         if (run.status == PipelineRunStatus.RUNNING) {
             pipelineRunRepository.update(run.copy(status = PipelineRunStatus.CANCELLED))
         }
+        /*
+         * 실행을 지우면 단계 행도 CASCADE 로 사라진다. 미정산 단계가 있으면 그 차감은
+         * 되돌릴 근거를 잃으므로 **지우기 전에** 정산한다.
+         */
+        stageCreditService.settleBeforeDiscard(
+            runId = runId,
+            userId = run.userId,
+            fromSortOrder = 0,
+            reason = "실행 삭제로 진행 중이던 단계를 정산했습니다",
+        )
         pipelineRunRepository.delete(runId)
     }
 

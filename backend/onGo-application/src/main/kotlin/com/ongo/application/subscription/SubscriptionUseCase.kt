@@ -2,9 +2,11 @@ package com.ongo.application.subscription
 
 import com.ongo.application.paddle.PaddleGateway
 import com.ongo.application.subscription.dto.*
+import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.common.enums.BillingCycle
 import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.SubscriptionStatus
+import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.util.safeValueOfOrThrow
 import com.ongo.domain.subscription.Subscription
@@ -15,7 +17,6 @@ import java.time.YearMonth
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 
 @Service
 class SubscriptionUseCase(
@@ -23,6 +24,8 @@ class SubscriptionUseCase(
     private val userRepository: UserRepository,
     private val videoRepository: VideoRepository,
     private val paddleGateway: PaddleGateway,
+    /** 영상·에셋·게시 이미지·진행 중 예약을 합산하는 단일 저장공간 기준. */
+    private val storageQuotaUseCase: StorageQuotaUseCase,
     /** 체험 시작 시 플랜 크레딧 권한을 같은 트랜잭션에서 적용한다. */
     private val creditService: com.ongo.application.credit.CreditService,
     /** 전환 퍼널 측정. 체험이 실제로 시작된 뒤에만 기록한다. */
@@ -45,7 +48,20 @@ class SubscriptionUseCase(
             ?: throw NotFoundException("사용자", userId)
 
         val isUpgrade = targetPlan.price > subscription.planType.price
+        val isBillingCycleUpgrade = subscription.billingCycle == BillingCycle.MONTHLY &&
+            billingCycle == BillingCycle.YEARLY
+        val isPaidCycleChange = targetPlan != PlanType.FREE &&
+            isBillingCycleUpgrade &&
+            billingCycle != subscription.billingCycle &&
+            targetPlan.price >= subscription.planType.price
         val now = LocalDateTime.now()
+
+        // 같은 상태를 다시 저장해 예약이 영원히 남거나 적용일이 밀리지 않게 한다.
+        if (targetPlan == subscription.planType &&
+            (billingCycle == subscription.billingCycle || targetPlan == PlanType.FREE)
+        ) {
+            return ChangePlanResponse(subscription.toResponse(), null, subscription.currentPeriodEnd ?: now)
+        }
 
         // Paddle 구독이 있는 경우 Paddle API로 변경 처리
         if (subscription.paddleSubscriptionId != null) {
@@ -60,56 +76,83 @@ class SubscriptionUseCase(
             return ChangePlanResponse(subscription.toResponse(), null, effectiveDate)
         }
 
-        // 트라이얼 중에는 결제 없이 플랜을 올릴 수 없다. 반드시 체크아웃을 거쳐야 한다.
-        //
-        // 트라이얼은 planType 이 유료인데 paddleSubscriptionId 는 null 이라, 위의 두 가드를
-        // 모두 통과해 아래 업그레이드 분기로 그대로 흘렀다. 그 결과 트라이얼 시작 직후
-        // 플랜 변경을 호출하면 결제 한 푼 없이 상위 플랜을 얻었고, 그 과정에서 status 가
-        // ACTIVE 로 덮여 findTrialExpired(TRIALING 조회)에도 걸리지 않아 만료조차 되지 않았다.
-        if (subscription.status == SubscriptionStatus.TRIALING && targetPlan != PlanType.FREE) {
-            return ChangePlanResponse(subscription.toResponse(), null, now)
-        }
-
-        // FREE → 유료 전환 (Paddle 체크아웃 필요 → 프론트엔드에서 체크아웃 오버레이를 열어야 함)
-        if (subscription.planType == PlanType.FREE && targetPlan != PlanType.FREE) {
-            return ChangePlanResponse(subscription.toResponse(), null, now)
-        }
-
-        if (isUpgrade) {
-            // 업그레이드: 즉시 적용, 일할 계산 차액
-            val remainingDays = subscription.currentPeriodEnd?.let {
-                ChronoUnit.DAYS.between(now, it).toInt()
-            } ?: 0
-            val totalPeriodDays = if (subscription.currentPeriodStart != null && subscription.currentPeriodEnd != null) {
-                ChronoUnit.DAYS.between(subscription.currentPeriodStart, subscription.currentPeriodEnd).toInt()
-            } else if (subscription.billingCycle == BillingCycle.YEARLY) 365 else 30
-
-            val currentPrice = subscription.price
-            val targetPrice = targetPlan.priceFor(billingCycle)
-            val proratedAmount = calculateProration(currentPrice, targetPrice, remainingDays, totalPeriodDays)
-
-            val updated = subscription.copy(
-                planType = targetPlan,
-                price = targetPlan.priceFor(billingCycle),
-                billingCycle = billingCycle,
-                status = SubscriptionStatus.ACTIVE,
-                updatedAt = now
+        /*
+         * 같은 플랜의 월간↔연간 전환과 상향을 동반한 주기 전환은 새 금액을 즉시 결제해야
+         * 한다. 이 API가 예약만 세우면 결제 없이 연간 권한·기간을 얻거나, 결제 화면과
+         * 서버의 의도가 서로 달라진다. 하위 플랜의 주기 변경만은 이미 결제한 기간을
+         * 존중해 기간 종료 시 플랜과 주기를 함께 바꾸도록 아래 예약 경로에서 처리한다.
+         */
+        if (isPaidCycleChange) {
+            throw BusinessException(
+                "PAYMENT_REQUIRED",
+                "결제 주기를 변경하려면 구독 화면에서 결제를 진행해 주세요.",
             )
-            subscriptionRepository.update(updated)
-            userRepository.update(user.copy(planType = targetPlan))
-
-            return ChangePlanResponse(updated.toResponse(), proratedAmount, now)
-        } else {
-            // 다운그레이드: 현재 기간 종료 후 적용
-            val effectiveDate = subscription.currentPeriodEnd ?: now
-            // 다운그레이드 예약: pendingPlanType에 대상 플랜 저장
-            val updated = subscription.copy(
-                pendingPlanType = targetPlan,
-                updatedAt = now
-            )
-            subscriptionRepository.update(updated)
-            return ChangePlanResponse(updated.toResponse(), null, effectiveDate)
         }
+
+        /*
+         * 여기부터는 **결제 수단이 연결되지 않은 구독**이다(paddleSubscriptionId 가 없다).
+         * 이 경로로 유료 플랜을 올리는 것은 전부 거절한다.
+         *
+         * ## 왜 성공 응답이 아니라 예외인가
+         *
+         * 예전에는 TRIALING·FREE 두 경우를 "아무것도 하지 않고 성공 응답"으로 돌려보냈다.
+         * 그러면 호출자는 요청이 받아들여진 줄 알고, 프런트가 체크아웃을 여는 분기를
+         * 놓치면 사용자는 플랜이 바뀐 줄 안다. 거절은 거절이라고 말해야 한다.
+         *
+         * ## 왜 유료 → 상위 유료도 막는가
+         *
+         * 그 분기는 아래에서 planType·price 를 **즉시 갱신하면서 결제를 만들지 않았다.**
+         * proratedAmount 를 계산해 응답에 담기만 했을 뿐 청구가 없어서, STARTER 고객이
+         * 이 API 한 번으로 BUSINESS 를 얻었다. 일할 계산 주석이 있다는 것은 원래 청구가
+         * 의도였다는 뜻이고, 그 청구가 빠진 채 적용만 남아 있었다.
+         *
+         * 상향은 반드시 체크아웃(PortOne)을 거쳐야 한다. 결제가 확정되면
+         * `PortOnePaymentService.completeSubscription` 이 플랜을 바꾼다 — 플랜을 바꾸는
+         * 곳은 결제가 끝난 그 한 곳이어야 한다.
+         *
+         * 다운그레이드는 막지 않는다. 돈을 더 받지 않으므로 결제가 필요 없고, 플랜과
+         * 결제 주기를 기간 종료 후 함께 적용되도록 예약한다.
+         */
+        if (isUpgrade || (subscription.planType == PlanType.FREE && targetPlan != PlanType.FREE)) {
+            throw BusinessException(
+                "PAYMENT_REQUIRED",
+                "플랜을 올리려면 결제가 필요합니다. 구독 화면에서 결제를 진행해 주세요.",
+            )
+        }
+
+        /*
+         * 체험 중에는 다운그레이드도 막는다.
+         *
+         * 체험은 planType 이 유료인데 결제가 없다. 여기서 FREE 로 내리면 아래 예약 분기가
+         * pendingPlanType 을 세우는데, 체험 만료 처리(BillingScheduler)가 이미 FREE 전환을
+         * 맡고 있어 두 경로가 같은 구독을 각각 건드리게 된다. 체험 해지는 취소 API 의 몫이다.
+         */
+        if (subscription.status == SubscriptionStatus.TRIALING) {
+            throw BusinessException(
+                "PAYMENT_REQUIRED",
+                "체험 중에는 플랜을 변경할 수 없습니다. 구독 화면에서 결제하거나 체험을 해지해 주세요.",
+            )
+        }
+
+        /*
+         * 여기까지 왔다면 결제가 필요 없는 변경, 즉 다운그레이드(또는 동일가 플랜)다.
+         *
+         * 상향 분기는 위에서 예외로 끝나므로 여기 없다. 결제 없이 planType·price 를 갱신하는
+         * 코드가 남아 있으면 위 가드가 나중에 느슨해질 때 그대로 되살아난다. 상향은 결제가
+         * 확정된 뒤 `PortOnePaymentService.completeSubscription` 한 곳에서만 적용한다.
+         *
+         * 즉시 적용하지 않고 예약한다. 이미 받은 이번 주기 요금만큼은 쓰게 두는 것이 맞고,
+         * 실제 전환은 BillingScheduler 의 pendingPlanType 처리가 기간 종료 후에 한다.
+         */
+        val effectiveDate = subscription.currentPeriodEnd ?: now
+        val cycleChanged = billingCycle != subscription.billingCycle
+        val updated = subscription.copy(
+            pendingPlanType = targetPlan,
+            pendingBillingCycle = billingCycle.takeIf { cycleChanged && targetPlan != PlanType.FREE },
+            updatedAt = now,
+        )
+        subscriptionRepository.update(updated)
+        return ChangePlanResponse(updated.toResponse(), null, effectiveDate)
     }
 
     @Transactional
@@ -125,7 +168,10 @@ class SubscriptionUseCase(
 
         val updated = subscription.copy(
             status = SubscriptionStatus.CANCELLED,
-            cancelledAt = LocalDateTime.now()
+            cancelledAt = LocalDateTime.now(),
+            // 해지한 구독의 하향 예약이 나중에 다시 활성화되는 경로를 남기지 않는다.
+            pendingPlanType = null,
+            pendingBillingCycle = null,
         )
         subscriptionRepository.update(updated)
         return updated.toResponse()
@@ -240,12 +286,17 @@ class SubscriptionUseCase(
         val currentMonth = YearMonth.now()
         val uploadsThisMonth = videoRepository.countByUserIdAndMonth(userId, currentMonth).toInt()
 
-        // Calculate storage: sum all video file sizes
-        val videos = videoRepository.findByUserId(userId, page = 0, size = 10000)
-        val storageUsedBytes = videos.sumOf { it.fileSizeBytes ?: 0L }
+        // 업로드 화면의 쿼터 검사와 같은 기준을 사용한다. 영상만 더하면 에셋·게시 이미지가
+        // 빠져 실제보다 적게 보여지고, 사용자가 플랜 한도를 우회할 수 있다.
+        val storageUsedBytes = storageQuotaUseCase.getCurrentUsage(userId)
+        val storageLimitBytes = storageQuotaUseCase.getEffectiveLimit(userId)
         val storageUsedMb = storageUsedBytes / (1024 * 1024)
 
-        return UsageResponse(uploadsThisMonth = uploadsThisMonth, storageUsedMb = storageUsedMb)
+        return UsageResponse(
+            uploadsThisMonth = uploadsThisMonth,
+            storageUsedMb = storageUsedMb,
+            storageLimitBytes = storageLimitBytes,
+        )
     }
 
     fun initializeSubscription(userId: Long): Subscription {
@@ -261,17 +312,6 @@ class SubscriptionUseCase(
         return subscriptionRepository.save(subscription)
     }
 
-    private fun calculateProration(
-        currentPrice: Int,
-        targetPrice: Int,
-        remainingDays: Int,
-        totalPeriodDays: Int,
-    ): Int {
-        if (totalPeriodDays <= 0) return 0
-        val dailyDiff = (targetPrice - currentPrice).toDouble() / totalPeriodDays
-        return (dailyDiff * remainingDays).toInt().coerceAtLeast(0)
-    }
-
     private fun Subscription.toResponse(): SubscriptionResponse = SubscriptionResponse(
         planType = planType,
         status = status,
@@ -283,6 +323,8 @@ class SubscriptionUseCase(
         trialEnd = trialEnd,
         pausedAt = pausedAt,
         resumeAt = resumeAt,
+        pendingPlanType = pendingPlanType,
+        pendingBillingCycle = pendingBillingCycle,
     )
 
     private fun PlanType.toFeatures(): PlanFeatures = PlanFeatures(

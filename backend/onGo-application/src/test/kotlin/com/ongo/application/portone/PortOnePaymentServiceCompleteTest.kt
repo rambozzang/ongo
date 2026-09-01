@@ -12,9 +12,13 @@ import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.AuthProvider
 import com.ongo.domain.subscription.Subscription
 import com.ongo.domain.user.User
+import java.time.LocalDateTime
 import com.ongo.common.enums.PaymentStatus
 import com.ongo.common.enums.PaymentType
 import com.ongo.domain.payment.Payment
+import com.ongo.application.subscription.DummyTransactionManagerForTest
+import com.ongo.application.webhook.WebhookEventRecorder
+import com.ongo.application.webhook.WebhookInboundGuard
 import com.ongo.domain.payment.PaymentRepository
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
@@ -87,6 +91,11 @@ class PortOnePaymentServiceCompleteTest {
                 webhookSecret = "webhook-abc12345",
             ),
             eventPublisher = eventPublisher,
+            webhookInboundGuard = WebhookInboundGuard(
+                webhookEventRepository,
+                WebhookEventRecorder(webhookEventRepository, DummyTransactionManagerForTest()),
+                DummyTransactionManagerForTest(),
+            ),
         )
     }
 
@@ -177,6 +186,21 @@ class PortOnePaymentServiceCompleteTest {
 
         verify(exactly = 0) { creditService.addPurchasedCredits(any(), any(), any()) }
         verify(exactly = 0) { paymentRepository.update(any()) }
+    }
+
+    @Test
+    @DisplayName("환불된 결제는 늦은 완료 호출로 되살리지 않는다")
+    fun refundedPaymentNeverCompletesAgain() {
+        every { paymentRepository.findByIdForUpdate(internalPaymentId) } returns
+            creditPayment(PaymentStatus.REFUNDED)
+
+        assertThrows(IllegalStateException::class.java) {
+            service.complete(userId, portonePaymentId)
+        }
+
+        verify(exactly = 0) { gateway.getPayment(any()) }
+        verify(exactly = 0) { paymentRepository.update(any()) }
+        verify(exactly = 0) { creditService.addPurchasedCredits(any(), any(), any()) }
     }
 
     /** 금액이 어긋나면 지급하지 않는다. 결제 금액 검증 자체는 이번 변경 대상이 아니다. */
@@ -299,6 +323,107 @@ class PortOnePaymentServiceCompleteTest {
         assertEquals("enc:already-registered", saved.captured.billingKeyEncrypted)
         // 다음 청구일도 함께 채워져야 갱신 스케줄러가 이 구독을 찾는다.
         assertEquals(saved.captured.currentPeriodEnd, saved.captured.nextBillingDate)
+    }
+
+    /**
+     * **기간은 뒤로 가지 않는다.**
+     *
+     * 갱신 정산이 기간을 늘린 뒤 늦은 웹훅이 도착하면, now 기준으로 다시 계산한 값이 이미
+     * 늘어난 종료일보다 이를 수 있다. 그대로 쓰면 고객이 산 기간이 줄어든다.
+     */
+    @Test
+    @DisplayName("이미 더 뒤인 기간은 늦은 정산이 앞당기지 못한다")
+    fun settlementNeverMovesPeriodBackward() {
+        val farFuture = LocalDateTime.now().plusMonths(6)
+        val subscriptionPayment = Payment(
+            id = internalPaymentId, userId = userId, type = PaymentType.SUBSCRIPTION,
+            amount = PlanType.STARTER.price, currency = "KRW",
+            status = PaymentStatus.PENDING, pgProvider = "portone",
+            description = "SUBSCRIPTION_RENEWAL|STARTER|MONTHLY",
+        )
+        every { paymentRepository.findByIdForUpdate(internalPaymentId) } returns subscriptionPayment
+        every { paymentRepository.update(any()) } answers { firstArg() }
+        every { gateway.getPayment(portonePaymentId) } returns
+            paidAtGateway(amount = PlanType.STARTER.price)
+        every { subscriptionRepository.findByUserId(userId) } returns
+            Subscription(
+                id = 1, userId = userId, planType = PlanType.STARTER,
+                currentPeriodEnd = farFuture,
+            )
+        val saved = slot<Subscription>()
+        every { subscriptionRepository.update(capture(saved)) } answers { saved.captured }
+        every { userRepository.findById(userId) } returns
+            User(id = userId, email = "a@b.c", name = "t", provider = AuthProvider.GOOGLE, providerId = "g-1")
+        every { userRepository.update(any()) } answers { firstArg() }
+        every { creditService.applyPlanEntitlement(any(), any(), any()) } just runs
+
+        service.complete(userId, portonePaymentId)
+
+        assertEquals(farFuture, saved.captured.currentPeriodEnd)
+        assertEquals(farFuture, saved.captured.nextBillingDate)
+    }
+
+    @Test
+    @DisplayName("늦은 갱신 정산은 처리 시각이 아니라 기존 청구 경계에서 다음 기간을 계산한다")
+    fun lateRenewalExtendsFromBillingBoundary() {
+        val billingBoundary = LocalDateTime.now().minusDays(5)
+        val subscriptionPayment = Payment(
+            id = internalPaymentId, userId = userId, type = PaymentType.SUBSCRIPTION,
+            amount = PlanType.STARTER.price, currency = "KRW",
+            status = PaymentStatus.PENDING, pgProvider = "portone",
+            description = "SUBSCRIPTION_RENEWAL|STARTER|MONTHLY",
+        )
+        every { paymentRepository.findByIdForUpdate(internalPaymentId) } returns subscriptionPayment
+        every { paymentRepository.update(any()) } answers { firstArg() }
+        every { gateway.getPayment(portonePaymentId) } returns
+            paidAtGateway(amount = PlanType.STARTER.price)
+        every { subscriptionRepository.findByUserId(userId) } returns
+            Subscription(
+                id = 1, userId = userId, planType = PlanType.STARTER,
+                currentPeriodEnd = billingBoundary,
+                nextBillingDate = billingBoundary,
+            )
+        val saved = slot<Subscription>()
+        every { subscriptionRepository.update(capture(saved)) } answers { saved.captured }
+        every { userRepository.findById(userId) } returns
+            User(id = userId, email = "a@b.c", name = "t", provider = AuthProvider.GOOGLE, providerId = "g-1")
+        every { userRepository.update(any()) } answers { firstArg() }
+        every { creditService.applyPlanEntitlement(any(), any(), any()) } just runs
+
+        service.complete(userId, portonePaymentId)
+
+        assertEquals(billingBoundary.plusMonths(1), saved.captured.currentPeriodEnd)
+        assertEquals(billingBoundary, saved.captured.currentPeriodStart)
+        assertEquals(saved.captured.currentPeriodEnd, saved.captured.nextBillingDate)
+    }
+
+    /** 갱신 결제도 일반 구독 결제와 같은 규칙으로 정산된다 — 크레딧 권한 포함. */
+    @Test
+    @DisplayName("갱신 결제 정산도 플랜 권한을 적용한다")
+    fun renewalSettlementAppliesEntitlement() {
+        val subscriptionPayment = Payment(
+            id = internalPaymentId, userId = userId, type = PaymentType.SUBSCRIPTION,
+            amount = PlanType.STARTER.price, currency = "KRW",
+            status = PaymentStatus.PENDING, pgProvider = "portone",
+            description = "SUBSCRIPTION_RENEWAL|STARTER|MONTHLY",
+        )
+        every { paymentRepository.findByIdForUpdate(internalPaymentId) } returns subscriptionPayment
+        every { paymentRepository.update(any()) } answers { firstArg() }
+        every { gateway.getPayment(portonePaymentId) } returns
+            paidAtGateway(amount = PlanType.STARTER.price)
+        every { subscriptionRepository.findByUserId(userId) } returns
+            Subscription(id = 1, userId = userId, planType = PlanType.STARTER)
+        every { subscriptionRepository.update(any()) } answers { firstArg() }
+        every { userRepository.findById(userId) } returns
+            User(id = userId, email = "a@b.c", name = "t", provider = AuthProvider.GOOGLE, providerId = "g-1")
+        every { userRepository.update(any()) } answers { firstArg() }
+        every { creditService.applyPlanEntitlement(any(), any(), any()) } just runs
+
+        service.complete(userId, portonePaymentId)
+
+        verify(exactly = 1) {
+            creditService.applyPlanEntitlement(userId, PlanType.STARTER, "SUBSCRIPTION_PAID")
+        }
     }
 
     /** 재완료는 조기 반환한다 — 추가 이벤트가 나가면 결제 한 건이 여러 번 세어진다. */

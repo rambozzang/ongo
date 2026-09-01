@@ -13,7 +13,10 @@ data class AnalyticsDaily(
     val shares: Int = 0,
     val watchTimeSeconds: Long = 0,
     val subscriberGained: Int = 0,
+    /** [revenueStatus] 가 [RevenueStatus.MEASURED] 일 때만 의미가 있다. */
     val revenueMicro: Long = 0,
+    val revenueCurrency: String? = null,
+    val revenueStatus: RevenueStatus = RevenueStatus.UNSUPPORTED,
     val impressions: Int = 0,
     val avgViewDurationSeconds: Int = 0,
     val createdAt: LocalDateTime? = null,

@@ -23,12 +23,12 @@ class ChannelOAuthController(
     @Operation(summary = "채널 OAuth URL 생성")
     @GetMapping("/{platform}/authorization-url")
     fun authorizationUrl(
-        @Parameter(hidden = true) @CurrentUser _userId: Long,
+        @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable platform: String,
         @RequestParam redirectUri: String,
         @RequestParam state: String,
         @RequestParam(required = false) codeChallenge: String?,
     ): ResponseEntity<ResData<ChannelOAuthAuthorizationResponse>> = ResData.success(
-        authorizationUseCase.authorizationUrl(platform, redirectUri, state, codeChallenge),
+        authorizationUseCase.authorizationUrl(userId, platform, redirectUri, state, codeChallenge),
     )
 }

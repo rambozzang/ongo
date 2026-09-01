@@ -36,10 +36,15 @@ class RevenueAlertScheduler(
                 val revenueKrw = summary.totalRevenueKrw
                 val growthPercent = summary.growthPercent
 
-                val message = if (growthPercent >= 0) {
-                    "전일 수익: ${revenueKrw}원 (전일 대비 +${growthPercent}%)"
-                } else {
-                    "전일 수익: ${revenueKrw}원 (전일 대비 ${growthPercent}%)"
+                /*
+                 * 이전 기간 수익이 0 이면 성장률이 없다(`null`). 예전 값 `100.0` 을 그대로
+                 * 알림에 넣으면 첫 수익이 발생한 날 "전일 대비 +100%" 라는 **측정된 적 없는
+                 * 수치**가 사용자에게 발송된다. 알림은 되돌릴 수 없으므로 더 조심한다.
+                 */
+                val message = when {
+                    growthPercent == null -> "전일 수익: ${revenueKrw}원 (전일 데이터가 없어 비교 불가)"
+                    growthPercent >= 0 -> "전일 수익: ${revenueKrw}원 (전일 대비 +${growthPercent}%)"
+                    else -> "전일 수익: ${revenueKrw}원 (전일 대비 ${growthPercent}%)"
                 }
 
                 notificationRepository.save(

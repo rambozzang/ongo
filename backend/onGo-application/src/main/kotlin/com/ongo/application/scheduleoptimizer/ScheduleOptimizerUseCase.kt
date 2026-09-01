@@ -15,6 +15,7 @@ import com.ongo.common.enums.Platform
 import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.schedule.ScheduleRepository
 import com.ongo.domain.scheduleoptimizer.OptimalSlot
 import com.ongo.domain.scheduleoptimizer.OptimalSlotRepository
@@ -36,21 +37,92 @@ class ScheduleOptimizerUseCase(
     private val scheduleUseCase: ScheduleUseCase,
     private val analyticsUseCase: AnalyticsUseCase,
     private val videoRepository: VideoRepository,
+    private val channelRepository: ChannelRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(ScheduleOptimizerUseCase::class.java)
 
-    @Transactional
+    companion object {
+        /** 프롬프트에 넣을 최적 시간 후보 상한. 상위 구간만으로 근거는 충분하다. */
+        private const val ANALYTICS_SLOT_LIMIT = 12
+
+        /**
+         * 그 슬롯의 참여율을 잰 적이 없을 때 프롬프트에 넣는 문구.
+         *
+         * 숫자가 아니라 **문장**이어야 한다 — 어떤 숫자를 넣든 모델은 그것을 관측으로
+         * 읽고 없는 근거로 일정을 추천한다. 단위(`%`)도 붙이지 않는다.
+         */
+        const val ENGAGEMENT_NOT_MEASURED = "측정 불가(수집하는 플랫폼 없음)"
+    }
+
+    /**
+     * **트랜잭션을 열지 않는다.** LLM 호출을 `@Transactional` 안에 두면 `ai_credits` 행
+     * 잠금과 DB 커넥션이 모델 응답 시간만큼 묶인다. 차감·환불의 커밋 경계는
+     * [CreditService.withCredits] 가 잡고, 결과 저장은 호출 이후 짧게 끝난다.
+     *
+     * 프롬프트에는 실제 데이터만 넣는다. 예전에는 채널 ID·카테고리·성과 데이터 자리에
+     * 전부 `"자동 분석"` 이라는 문자열을 넣고 정가로 과금했다 — 모델은 아무 근거 없이
+     * 일반론을 지어냈고 사용자는 그걸 자기 채널 분석 결과로 읽었다.
+     */
     fun generateOptimalSlots(userId: Long, platform: String): List<OptimalSlotResponse> {
         rateLimiter.checkRateLimit(userId)
-        creditService.validateAndDeduct(userId, AiFeature.SCHEDULE_SUGGESTION)
+
+        val targetPlatform = runCatching { Platform.valueOf(platform.trim().uppercase()) }
+            .getOrElse {
+                throw BusinessException("UNSUPPORTED_PLATFORM", "지원하지 않는 플랫폼입니다: $platform")
+            }
+
+        // 분석 집계(findDailyAnalyticsByChannelIds)가 해당 플랫폼 업로드 전체를 대상으로
+        // 하므로 채널도 같은 범위로 모은다. 한 플랫폼에 여러 계정을 연동할 수 있다.
+        val platformChannelIds = channelRepository.findByUserId(userId)
+            .filter { it.platform == targetPlatform }
+            .map { it.platformChannelId }
+        if (platformChannelIds.isEmpty()) {
+            throw BusinessException(
+                "CHANNEL_NOT_CONNECTED",
+                "$platform 채널이 연동되어 있지 않아 최적 업로드 시간을 분석할 수 없습니다",
+            )
+        }
+
+        // 근거가 없으면 유료 AI 를 부르지 않는다. 차감 전에 거절해야 크레딧이 사라지지 않는다.
+        val optimalTimes = analyticsUseCase.getOptimalPublishTimes(userId, targetPlatform)
+        if (optimalTimes.slots.isEmpty()) {
+            throw BusinessException(
+                "ANALYTICS_DATA_UNAVAILABLE",
+                "$platform 업로드 성과 데이터가 없어 최적 업로드 시간을 분석할 수 없습니다. " +
+                    "게시 후 분석 데이터가 쌓이면 다시 시도해주세요",
+            )
+        }
+        val analyticsData = optimalTimes.slots
+            .sortedByDescending { it.score }
+            .take(ANALYTICS_SLOT_LIMIT)
+            .joinToString("\n") { slot ->
+                /*
+                 * **`String.format("%.2f", null)` 은 문자열 `"null"` 을 만든다.**
+                 *
+                 * 참여 지표를 하나도 보고하지 않는 플랫폼의 슬롯은 참여율이 `null` 이다.
+                 * 예전에는 그 자리가 서버에서 `0.0` 으로 채워져 "참여율 0.00%" 가
+                 * 프롬프트에 들어갔고, 모델은 그것을 관측으로 읽어 "참여가 없는 시간대"
+                 * 라는 근거로 일정을 추천했다. 유료 호출이라 대가까지 치른다.
+                 *
+                 * 단위(`%`)는 값이 직접 들고 온다 — 밖에 붙이면 "측정 불가%" 가 된다.
+                 */
+                val engagement = slot.engagementRate
+                    ?.let { String.format("%.2f%%", it) }
+                    ?: ENGAGEMENT_NOT_MEASURED
+                "- ${slot.dayLabel} ${slot.timeLabel}: 조회수 중앙값 ${slot.expectedViews}, " +
+                    "참여율 $engagement, " +
+                    "신뢰도 ${slot.confidenceScore.toInt()}%"
+            }
 
         val userPrompt = PromptTemplates.SCHEDULE_SUGGESTION_USER
-            .replace("{channelId}", "자동 분석")
+            .replace("{channelId}", platformChannelIds.joinToString(", "))
             .replace("{platform}", platform)
-            .replace("{category}", "자동 분석")
-            .replace("{analyticsData}", "자동 분석")
+            // 채널 엔티티에 카테고리가 없다. 임의의 값으로 꾸미지 않고 부재를 명시한다.
+            .replace("{category}", "미지정")
+            .replace("{analyticsData}", analyticsData)
 
+        return creditService.withCredits(userId, AiFeature.SCHEDULE_SUGGESTION) {
         try {
             val result = chatClientResolver.resolve(userId).prompt()
                 .system(PromptTemplates.SCHEDULE_SUGGESTION_SYSTEM)
@@ -76,13 +148,13 @@ class ScheduleOptimizerUseCase(
             }
 
             val saved = slotRepository.saveBatch(slots)
-            return saved.map { it.toResponse() }
+            saved.map { it.toResponse() }
         } catch (e: BusinessException) {
             throw e
         } catch (e: Exception) {
-            log.error("AI 최적 업로드 시간 생성 실패, 크레딧 환불 처리: userId={}, platform={}", userId, platform, e)
-            creditService.refundCredit(userId, AiFeature.SCHEDULE_SUGGESTION.creditCost, AiFeature.SCHEDULE_SUGGESTION.name)
+            log.error("AI 최적 업로드 시간 생성 실패: userId={}, platform={}", userId, platform, e)
             throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+        }
         }
     }
 

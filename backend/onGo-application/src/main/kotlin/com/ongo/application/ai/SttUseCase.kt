@@ -62,19 +62,24 @@ class SttUseCase(
         val fileUrl = video.fileUrl
             ?: throw BusinessException("VIDEO_FILE_NOT_FOUND", "영상 파일 URL이 없습니다. videoId: $videoId")
 
-        creditService.validateAndDeduct(userId, AiFeature.STT)
-
-        try {
-            return transcribe(fileUrl)
-        } catch (e: BusinessException) {
-            // 준비 실패(인코더 부재·추출 실패)도 사용자 잘못이 아니다. 차감한 크레딧을 돌려준다.
-            log.error("STT 처리 실패, 크레딧 환불 처리: userId={}", userId, e)
-            creditService.refundCredit(userId, AiFeature.STT.creditCost, AiFeature.STT.name)
-            throw e
-        } catch (e: Exception) {
-            log.error("STT 처리 실패, 크레딧 환불 처리: userId={}", userId, e)
-            creditService.refundCredit(userId, AiFeature.STT.creditCost, AiFeature.STT.name)
-            throw BusinessException("AI_CALL_FAILED", "음성 인식에 실패했습니다: ${e.message}")
+        /*
+         * 차감·환불은 [CreditService.withCredits] 한 곳에서 처리한다. 준비 실패(인코더
+         * 부재·추출 실패)도 사용자 잘못이 아니므로 환불 대상이라는 기존 의미를 그대로
+         * 가져간다 — withCredits 는 Throwable 을 모두 환불한다.
+         *
+         * [executeInternal] 은 파이프라인이 이미 예약한 크레딧으로 도는 경로라 차감하지
+         * 않는다. 여기서만 과금한다.
+         */
+        return creditService.withCredits(userId, AiFeature.STT) {
+            try {
+                transcribe(fileUrl)
+            } catch (e: BusinessException) {
+                log.error("STT 처리 실패: userId={}", userId, e)
+                throw e
+            } catch (e: Exception) {
+                log.error("STT 처리 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "음성 인식에 실패했습니다: ${e.message}")
+            }
         }
     }
 

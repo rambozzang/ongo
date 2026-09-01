@@ -7,10 +7,14 @@ import com.ongo.common.enums.CreditPackage
 import com.ongo.common.enums.PaymentStatus
 import com.ongo.common.enums.PaymentType
 import com.ongo.domain.payment.Payment
+import com.ongo.application.subscription.DummyTransactionManagerForTest
+import com.ongo.application.webhook.WebhookEventRecorder
+import com.ongo.application.webhook.WebhookInboundGuard
 import com.ongo.domain.payment.PaymentRepository
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.User
 import com.ongo.domain.user.UserRepository
+import com.ongo.domain.webhook.WebhookEvent
 import com.ongo.domain.webhook.WebhookEventRepository
 import com.ongo.application.payment.PaymentCompletedEvent
 import io.mockk.MockKAnnotations
@@ -22,6 +26,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.springframework.context.ApplicationEventPublisher
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -70,6 +75,12 @@ class PortOnePendingPaymentTest {
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
+        /*
+         * 정상 사용자는 가입 시 크레딧 원장이 만들어져 있다. 체크아웃은 결제창을 열기 전에
+         * 그 존재를 확인하므로 기본 픽스처를 정상 상태로 둔다 — 원장 부재를 막는 계약은
+         * `PortOnePaymentServiceCheckoutGuardTest` 가 따로 고정한다.
+         */
+        every { creditService.ensureAccountPresence(any()) } returns Unit
         service = PortOnePaymentService(
             paymentRepository = paymentRepository,
             subscriptionRepository = subscriptionRepository,
@@ -87,6 +98,11 @@ class PortOnePendingPaymentTest {
                 webhookSecret = "webhook-abc12345",
             ),
             eventPublisher = eventPublisher,
+            webhookInboundGuard = WebhookInboundGuard(
+                webhookEventRepository,
+                WebhookEventRecorder(webhookEventRepository, DummyTransactionManagerForTest()),
+                DummyTransactionManagerForTest(),
+            ),
         )
     }
 
@@ -158,7 +174,11 @@ class PortOnePendingPaymentTest {
     @DisplayName("지연된 Transaction.Paid 웹훅이 도착하면 PENDING 이 COMPLETED 로 바뀐다")
     fun delayedWebhookResolvesPending() {
         allowSignature()
+        // 수신 기록은 별도 트랜잭션에서 남긴 뒤 그 행을 다시 읽어 쓴다.
         every { webhookEventRepository.saveIfAbsent(any()) } returns true
+        every { webhookEventRepository.findByEventId(any()) } returns null andThen
+            WebhookEvent(id = 1L, eventId = "portone:$webhookId", eventType = "Transaction.Paid", payload = "{}")
+        every { webhookEventRepository.findByEventIdForUpdate(any()) } returns null
         every { webhookEventRepository.markProcessed(any(), any()) } returns true
 
         val pending = Payment(
@@ -195,4 +215,120 @@ class PortOnePendingPaymentTest {
             )
         }
     }
+
+    private fun pendingCredit() = Payment(
+        id = 42,
+        userId = userId,
+        type = PaymentType.CREDIT,
+        amount = CreditPackage.BASIC.price,
+        currency = "KRW",
+        status = PaymentStatus.PENDING,
+        pgProvider = "portone",
+        description = "CREDIT|BASIC",
+    )
+
+    @Test
+    @DisplayName("PortOne 에 결제가 없으면 PENDING 원장을 FAILED 로 닫는다")
+    fun reconcileMissingPaymentMarksFailed() {
+        every { paymentRepository.findByIdForUpdate(42) } returns pendingCredit()
+        every { gateway.findPayment("ongo-42") } returns null
+        every { paymentRepository.update(any()) } answers { firstArg() }
+
+        val result = service.reconcileCheckout(userId, "ongo-42")
+
+        assertEquals(PaymentStatus.FAILED.name, result.status)
+        verify(exactly = 1) {
+            paymentRepository.update(match { it.id == 42L && it.status == PaymentStatus.FAILED })
+        }
+        verify(exactly = 0) { gateway.getPayment(any()) }
+        verify(exactly = 0) { creditService.addPurchasedCredits(any(), any(), any()) }
+    }
+
+    @Test
+    @DisplayName("PortOne 조회가 실패하면 PENDING 을 추측으로 바꾸지 않는다")
+    fun reconcileLookupFailureLeavesPaymentUntouched() {
+        every { paymentRepository.findByIdForUpdate(42) } returns pendingCredit()
+        every { gateway.findPayment("ongo-42") } throws IllegalStateException("PortOne unavailable")
+
+        assertThrows(IllegalStateException::class.java) {
+            service.reconcileCheckout(userId, "ongo-42")
+        }
+
+        verify(exactly = 0) { paymentRepository.update(any()) }
+    }
+
+    @Test
+    @DisplayName("PortOne 결제가 아직 중간 상태면 PENDING 을 유지한다")
+    fun reconcileIntermediatePaymentLeavesPending() {
+        every { paymentRepository.findByIdForUpdate(42) } returns pendingCredit()
+        every { gateway.findPayment("ongo-42") } returns PortOnePayment(
+            paymentId = "ongo-42",
+            status = "READY",
+            amount = CreditPackage.BASIC.price,
+            currency = "KRW",
+            transactionId = null,
+            paymentMethod = "CARD",
+            receiptUrl = null,
+        )
+
+        val result = service.reconcileCheckout(userId, "ongo-42")
+
+        assertEquals(PaymentStatus.PENDING.name, result.status)
+        verify(exactly = 0) { paymentRepository.update(any()) }
+    }
+
+    @Test
+    @DisplayName("자동 갱신 원장은 브라우저 재조회로 건드리지 않는다")
+    fun reconcileDoesNotTouchRenewalPayment() {
+        val renewalPayment = pendingCredit().copy(
+            type = PaymentType.SUBSCRIPTION,
+            description = "SUBSCRIPTION_RENEWAL|PRO|MONTHLY",
+        )
+        every { paymentRepository.findByIdForUpdate(42) } returns renewalPayment
+
+        val result = service.reconcileCheckout(userId, "ongo-42")
+
+        assertEquals(PaymentStatus.PENDING.name, result.status)
+        verify(exactly = 0) { gateway.findPayment(any()) }
+        verify(exactly = 0) { paymentRepository.update(any()) }
+    }
+
+    @Test
+    @DisplayName("다른 사용자의 결제는 재조회할 수 없다")
+    fun reconcileRejectsAnotherUsersPayment() {
+        every { paymentRepository.findByIdForUpdate(42) } returns pendingCredit().copy(userId = userId + 1)
+
+        assertThrows(IllegalStateException::class.java) {
+            service.reconcileCheckout(userId, "ongo-42")
+        }
+
+        verify(exactly = 0) { gateway.findPayment(any()) }
+        verify(exactly = 0) { paymentRepository.update(any()) }
+    }
+
+    @Test
+    @DisplayName("실패 콜백 뒤 실제 PAID 를 발견하면 일반 완료 경로로 정산한다")
+    fun reconcilePaidPaymentUsesNormalCompletion() {
+        every { paymentRepository.findByIdForUpdate(42) } returns pendingCredit()
+        every { gateway.findPayment("ongo-42") } returns paidPayment()
+        every { gateway.getPayment("ongo-42") } returns paidPayment()
+        every { paymentRepository.update(any()) } answers { firstArg() }
+        every { creditService.addPurchasedCredits(userId, CreditPackage.BASIC, 42) } returns Unit
+
+        val result = service.reconcileCheckout(userId, "ongo-42")
+
+        assertEquals(PaymentStatus.COMPLETED.name, result.status)
+        verify(exactly = 1) { creditService.addPurchasedCredits(userId, CreditPackage.BASIC, 42) }
+        verify(exactly = 1) { eventPublisher.publishEvent(any<PaymentCompletedEvent>()) }
+    }
+
+    private fun paidPayment() = PortOnePayment(
+        paymentId = "ongo-42",
+        status = "PAID",
+        amount = CreditPackage.BASIC.price,
+        currency = "KRW",
+        transactionId = "tx-1",
+        paymentMethod = "CARD",
+        receiptUrl = "https://receipt",
+    )
 }

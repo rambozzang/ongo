@@ -31,29 +31,34 @@ class AnalyzeScriptUseCase(
             ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
     }
 
+    /**
+     * 차감·환불은 [CreditService.withCredits] 한 곳에서 처리한다. `AI_PARSE_ERROR` 도
+     * 환불 대상이다.
+     *
+     * [executeInternal] 은 파이프라인이 이미 예약한 크레딧으로 도는 경로라 차감하지
+     * 않는다. 여기서만 과금한다.
+     */
     fun execute(userId: Long, script: String): ScriptAnalysisResult {
         rateLimiter.checkRateLimit(userId)
-        creditService.validateAndDeduct(userId, AiFeature.SCRIPT_ANALYSIS)
 
         val sanitizedScript = InputSanitizer.sanitize(script)
         val userPrompt = PromptTemplates.SCRIPT_ANALYSIS_USER
             .replace("{script}", sanitizedScript)
 
-        try {
-            val result = chatClientResolver.resolve(userId).prompt()
-                .system(PromptTemplates.SCRIPT_ANALYSIS_SYSTEM)
-                .user(userPrompt)
-                .call()
-                .entity(ScriptAnalysisResult::class.java)
-
-            return result
-                ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
-        } catch (e: BusinessException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("AI 스크립트 분석 실패, 크레딧 환불 처리: userId={}", userId, e)
-            creditService.refundCredit(userId, AiFeature.SCRIPT_ANALYSIS.creditCost, AiFeature.SCRIPT_ANALYSIS.name)
-            throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+        return creditService.withCredits(userId, AiFeature.SCRIPT_ANALYSIS) {
+            try {
+                chatClientResolver.resolve(userId).prompt()
+                    .system(PromptTemplates.SCRIPT_ANALYSIS_SYSTEM)
+                    .user(userPrompt)
+                    .call()
+                    .entity(ScriptAnalysisResult::class.java)
+                    ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+            } catch (e: BusinessException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("AI 스크립트 분석 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+            }
         }
     }
 }

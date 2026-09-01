@@ -8,6 +8,9 @@ import com.ongo.common.enums.PaymentType
 import com.ongo.common.enums.PlanType
 import com.ongo.common.exception.UnauthorizedException
 import com.ongo.domain.payment.Payment
+import com.ongo.application.subscription.DummyTransactionManagerForTest
+import com.ongo.application.webhook.WebhookEventRecorder
+import com.ongo.application.webhook.WebhookInboundGuard
 import com.ongo.domain.payment.PaymentRepository
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
@@ -66,6 +69,9 @@ class PortOnePaymentServiceWebhookTest {
 
     private lateinit var service: PortOnePaymentService
 
+    /** `webhook_events` 대신 쓰는 인메모리 저장소. 수신 기록 후 재조회를 재현한다. */
+    private val storedEvents = mutableMapOf<String, WebhookEvent>()
+
     private val webhookId = "webhook-1"
     private val signature = "v1,signature"
     private val timestamp = "1700000000"
@@ -73,8 +79,20 @@ class PortOnePaymentServiceWebhookTest {
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        // 기본값은 "처음 보는 웹훅". 중복 케이스에서만 false로 덮어쓴다.
-        every { webhookEventRepository.saveIfAbsent(any()) } returns true
+        storedEvents.clear()
+        /*
+         * 수신 기록은 이제 원자적 삽입 후 그 행을 **다시 읽어** 쓴다. 그 왕복을 재현하려면
+         * 저장소가 상태를 가져야 하므로 작은 인메모리 가짜를 둔다. 중복 케이스는
+         * [storedEvents] 에 PROCESSED 행을 미리 넣어 만든다.
+         */
+        every { webhookEventRepository.saveIfAbsent(any()) } answers {
+            val event = firstArg<WebhookEvent>()
+            storedEvents.putIfAbsent(event.eventId, event.copy(id = 1L)) == null
+        }
+        every { webhookEventRepository.findByEventId(any()) } answers { storedEvents[firstArg()] }
+        // 잠금 조회도 같은 행을 돌려준다. 경합 자체는 별도 테스트에서 본다.
+        every { webhookEventRepository.findByEventIdForUpdate(any()) } answers { storedEvents[firstArg()] }
+        every { webhookEventRepository.updateIfNotProcessed(any()) } returns true
         every { webhookEventRepository.markProcessed(any(), any()) } returns true
         service = PortOnePaymentService(
             paymentRepository = paymentRepository,
@@ -94,11 +112,49 @@ class PortOnePaymentServiceWebhookTest {
                 webhookSecret = "webhook-abc12345",
             ),
             eventPublisher = eventPublisher,
+            webhookInboundGuard = WebhookInboundGuard(
+                webhookEventRepository,
+                WebhookEventRecorder(webhookEventRepository, DummyTransactionManagerForTest()),
+                DummyTransactionManagerForTest(),
+            ),
         )
     }
 
     private fun body(type: String, paymentId: String = "ongo-42") =
         """{"type":"$type","timestamp":"2026-08-05T10:00:00Z","data":{"paymentId":"$paymentId","storeId":"store-test"}}"""
+
+    /**
+     * 결제가 정상 완료되는 최소 구성.
+     *
+     * 멱등 키 모양만 보는 테스트에도 이것이 필요하다. 예전에는 `saveIfAbsent` 가 false 를
+     * 돌려주면 업무 처리 전에 반환됐지만, 이제 멱등 판정은 "처리가 끝났는가"이므로 키를
+     * 기록한 뒤 실제로 처리까지 진행한다. 예외를 삼켜 넘기면 그 경로를 검증하지 않는 셈이라,
+     * **성공하는 경로를 갖춰 두고** 키를 확인한다.
+     */
+    private fun allowPaidProcessing(portonePaymentId: String = "ongo-42") {
+        val payment = Payment(
+            id = 42,
+            userId = 7,
+            type = PaymentType.CREDIT,
+            amount = CreditPackage.BASIC.price,
+            currency = "KRW",
+            status = PaymentStatus.PENDING,
+            pgProvider = "portone",
+            description = "CREDIT|BASIC",
+        )
+        every { paymentRepository.findByIdForUpdate(42) } returns payment
+        every { paymentRepository.update(any()) } returns payment
+        every { gateway.getPayment(portonePaymentId) } returns PortOnePayment(
+            paymentId = portonePaymentId,
+            status = "PAID",
+            amount = CreditPackage.BASIC.price,
+            currency = "KRW",
+            transactionId = "tx-1",
+            paymentMethod = "CARD",
+            receiptUrl = "https://receipt",
+        )
+        every { creditService.addPurchasedCredits(7, CreditPackage.BASIC, 42) } just runs
+    }
 
     private fun allowSignature(valid: Boolean = true) {
         every { gateway.verifyWebhookSignature(any(), any(), any(), any()) } returns valid
@@ -410,10 +466,17 @@ class PortOnePaymentServiceWebhookTest {
     }
 
     @Test
-    @DisplayName("이미 수신한 webhook-id면 처리하지 않고 조용히 반환한다 — 재전송 멱등")
+    @DisplayName("이미 처리한 webhook-id면 처리하지 않고 조용히 반환한다 — 재전송 멱등")
     fun duplicateWebhookIdIsIgnored() {
         allowSignature()
-        every { webhookEventRepository.saveIfAbsent(any()) } returns false
+        // 멱등 판정 기준은 "행이 있다"가 아니라 "처리가 끝났다"이다. 실패한 이력은 재시도돼야 한다.
+        storedEvents["portone:$webhookId"] = WebhookEvent(
+            id = 1L,
+            eventId = "portone:$webhookId",
+            eventType = "Transaction.Paid",
+            payload = "{}",
+            status = "PROCESSED",
+        )
 
         service.handleWebhook(body("Transaction.Paid"), webhookId, signature, timestamp)
 
@@ -429,13 +492,13 @@ class PortOnePaymentServiceWebhookTest {
     @DisplayName("멱등 키는 portone: 접두사를 붙여 Paddle 이벤트 ID와 충돌하지 않게 한다")
     fun idempotencyKeyIsPrefixed() {
         allowSignature()
-        val saved = slot<WebhookEvent>()
-        every { webhookEventRepository.saveIfAbsent(capture(saved)) } returns false
+        allowPaidProcessing()
 
         service.handleWebhook(body("Transaction.Paid"), webhookId, signature, timestamp)
 
-        assertEquals("portone:$webhookId", saved.captured.eventId)
-        assertEquals("Transaction.Paid", saved.captured.eventType)
+        val saved = storedEvents.values.single()
+        assertEquals("portone:$webhookId", saved.eventId)
+        assertEquals("Transaction.Paid", saved.eventType)
     }
 
     @Test
@@ -443,12 +506,11 @@ class PortOnePaymentServiceWebhookTest {
     fun overlongWebhookIdIsHashedNotTruncated() {
         allowSignature()
         val longId = "w".repeat(500)
-        val saved = slot<WebhookEvent>()
-        every { webhookEventRepository.saveIfAbsent(capture(saved)) } returns false
+        allowPaidProcessing()
 
         service.handleWebhook(body("Transaction.Paid"), longId, signature, timestamp)
 
-        val key = saved.captured.eventId
+        val key = storedEvents.values.single().eventId
         assertTrue(key.length <= 200, "event_id 컬럼 길이를 넘으면 삽입이 실패한다: ${key.length}")
         assertTrue(key.startsWith("portone:sha256:"), "해시 폴백이어야 한다: $key")
         // 자르기였다면 서로 다른 웹훅이 같은 키가 되어 정상 웹훅을 삼킨다
@@ -462,15 +524,19 @@ class PortOnePaymentServiceWebhookTest {
         val longId = "z".repeat(300)
         val keys = mutableListOf<String>()
         every { webhookEventRepository.saveIfAbsent(any()) } answers {
-            keys += firstArg<WebhookEvent>().eventId
-            false
+            val event = firstArg<WebhookEvent>()
+            keys += event.eventId
+            storedEvents.putIfAbsent(event.eventId, event.copy(id = 1L)) == null
         }
 
+        allowPaidProcessing()
+
         service.handleWebhook(body("Transaction.Paid"), longId, signature, timestamp)
         service.handleWebhook(body("Transaction.Paid"), longId, signature, timestamp)
 
-        assertEquals(2, keys.size)
-        assertEquals(keys[0], keys[1])
+        // 두 번째는 이미 있는 행을 그대로 쓰므로 삽입 시도는 한 번만 일어난다.
+        assertEquals(1, keys.size)
+        assertEquals(1, storedEvents.size, "같은 긴 id 가 서로 다른 키를 만들었다: ${storedEvents.keys}")
     }
 
     @Test

@@ -228,35 +228,64 @@ class SttUseCaseTest {
         verify(exactly = 0) { audioPort.prepare(any()) }
     }
 
+    /**
+     * 차감·환불은 이제 `CreditService.withCredits` 한 곳에서 처리한다. 여기서 고정하는
+     * 것은 **공개 경로가 그 공통 경로를 탄다**는 사실이다 — 환불 보장 자체는
+     * `CreditServiceTest` 가 따로 검증한다.
+     */
+    private fun stubCreditsGranted() {
+        every { creditService.withCredits(userId, AiFeature.STT, any<() -> Any>()) } answers {
+            @Suppress("UNCHECKED_CAST")
+            (thirdArg<() -> Any>())()
+        }
+    }
+
     @Test
-    fun `공개 실행은 크레딧을 차감하고 성공하면 환불하지 않는다`() {
+    fun `공개 실행은 공통 크레딧 경로를 통과한다`() {
         val prepared = FakePreparedAudio(listOf(part(0)))
         every { rateLimiter.checkRateLimit(userId) } just runs
-        every { creditService.validateAndDeduct(userId, AiFeature.STT) } returns mockk(relaxed = true)
+        stubCreditsGranted()
         every { audioPort.isAvailable() } returns true
         every { audioPort.prepare(sourceUrl) } returns prepared
         respondPerPart(verboseJson("본문"))
 
         useCase.execute(userId, videoId)
 
-        verify(exactly = 1) { creditService.validateAndDeduct(userId, AiFeature.STT) }
-        verify(exactly = 0) { creditService.refundCredit(any(), any(), any()) }
+        verify(exactly = 1) { creditService.withCredits(userId, AiFeature.STT, any<() -> Any>()) }
+        // 직접 차감·환불하지 않는다. 그 책임은 공통 경로에 있다.
+        verify(exactly = 0) { creditService.validateAndDeduct(any(), any<AiFeature>()) }
+        verify(exactly = 0) { creditService.refundAllocation(any()) }
     }
 
     /*
-     * 준비 실패는 사용자 잘못이 아니다. 예전에는 BusinessException 이 그대로 빠져나가
-     * 차감한 크레딧이 남았다.
+     * 준비 실패(인코더 부재)는 사용자 잘못이 아니다. 예외가 withCredits 블록 밖으로
+     * 나가야 공통 경로가 환불한다 — 블록 안에서 삼키면 결과 없이 크레딧만 사라진다.
      */
     @Test
-    fun `인코더 부재로 실패하면 차감한 크레딧을 환불한다`() {
+    fun `인코더 부재 실패는 공통 크레딧 경로 밖으로 전파된다`() {
         every { rateLimiter.checkRateLimit(userId) } just runs
-        every { creditService.validateAndDeduct(userId, AiFeature.STT) } returns mockk(relaxed = true)
-        every { creditService.refundCredit(any(), any(), any()) } just runs
+        stubCreditsGranted()
         every { audioPort.isAvailable() } returns false
 
         val ex = assertFailsWith<BusinessException> { useCase.execute(userId, videoId) }
 
         assertEquals("STT_ENCODER_UNAVAILABLE", ex.code)
-        verify(exactly = 1) { creditService.refundCredit(userId, AiFeature.STT.creditCost, AiFeature.STT.name) }
+        verify(exactly = 1) { creditService.withCredits(userId, AiFeature.STT, any<() -> Any>()) }
+    }
+
+    /** 파이프라인 경로는 이미 예약된 크레딧으로 돈다. 여기서 또 차감하면 이중 과금이다. */
+    @Test
+    fun `내부 실행은 크레딧을 건드리지 않는다`() {
+        val prepared = FakePreparedAudio(listOf(part(0)))
+        every { audioPort.isAvailable() } returns true
+        every { audioPort.prepare(sourceUrl) } returns prepared
+        respondPerPart(verboseJson("본문"))
+
+        useCase.executeInternal(userId, videoId)
+
+        verify(exactly = 0) { creditService.withCredits(any(), any<AiFeature>(), any<() -> Any>()) }
+        verify(exactly = 0) { creditService.validateAndDeduct(any(), any<AiFeature>()) }
+        verify(exactly = 0) { creditService.refundAllocation(any()) }
+        verify(exactly = 0) { rateLimiter.checkRateLimit(any()) }
     }
 }

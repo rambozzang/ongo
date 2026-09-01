@@ -4,6 +4,7 @@ import com.ongo.application.ai.result.RevenueReportResult
 import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AiFeature
 import com.ongo.common.exception.BusinessException
+import com.ongo.application.revenue.RevenueAvailability
 import com.ongo.domain.analytics.AnalyticsRepository
 import com.ongo.domain.revenue.RevenueRepository
 import org.slf4j.LoggerFactory
@@ -22,9 +23,12 @@ class GenerateRevenueReportUseCase(
 
     private val log = LoggerFactory.getLogger(GenerateRevenueReportUseCase::class.java)
 
+    /**
+     * 차감·환불은 [CreditService.withCredits] 한 곳에서 처리한다. `AI_PARSE_ERROR` 도
+     * 환불 대상이다.
+     */
     fun execute(userId: Long, days: Int): RevenueReportResult {
         rateLimiter.checkRateLimit(userId)
-        creditService.validateAndDeduct(userId, AiFeature.REVENUE_REPORT)
 
         val to = LocalDate.now()
         val from = to.minusDays(days.toLong())
@@ -32,6 +36,19 @@ class GenerateRevenueReportUseCase(
 
         val totalRevenue = revenueRepository.getTotalRevenue(userId, from, to)
         val dailyAverage = if (days > 0) totalRevenue / days else 0L
+
+        // 실제로 측정된 수익이 없으면 유료 AI 를 부르지 않는다. `revenue_micro` 는
+        // 기본값이 0 이라 "측정된 0" 처럼 보이지만, 모델에게 설명시킬 근거가 아니다.
+        // 왜 없는지(재연동 필요/집계 대기/미지원)는 사유 문구가 구분해 알려 준다.
+        val availability = RevenueAvailability.evaluate(
+            revenueRepository.getRevenueStatusCounts(userId, from, to),
+        )
+        if (!availability.available) {
+            throw BusinessException(
+                "REVENUE_DATA_UNAVAILABLE",
+                availability.reason ?: "광고 수익 데이터가 없어 수익 리포트를 생성할 수 없습니다.",
+            )
+        }
 
         val platformRevenue = revenueRepository.getPlatformRevenue(userId, from, to)
         val platformRevenueStr = platformRevenue.joinToString("\n") { pr ->
@@ -50,21 +67,20 @@ class GenerateRevenueReportUseCase(
             .replace("{platformRevenue}", platformRevenueStr)
             .replace("{dailyTrend}", dailyTrendStr)
 
-        try {
-            val result = chatClientResolver.resolve(userId).prompt()
-                .system(PromptTemplates.REVENUE_REPORT_SYSTEM)
-                .user(userPrompt)
-                .call()
-                .entity(RevenueReportResult::class.java)
-
-            return result
-                ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
-        } catch (e: BusinessException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("AI 수익 리포트 생성 실패, 크레딧 환불 처리: userId={}", userId, e)
-            creditService.refundCredit(userId, AiFeature.REVENUE_REPORT.creditCost, AiFeature.REVENUE_REPORT.name)
-            throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+        return creditService.withCredits(userId, AiFeature.REVENUE_REPORT) {
+            try {
+                chatClientResolver.resolve(userId).prompt()
+                    .system(PromptTemplates.REVENUE_REPORT_SYSTEM)
+                    .user(userPrompt)
+                    .call()
+                    .entity(RevenueReportResult::class.java)
+                    ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+            } catch (e: BusinessException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("AI 수익 리포트 생성 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
+            }
         }
     }
 

@@ -13,7 +13,6 @@ import com.ongo.domain.keyword.KeywordResearch
 import com.ongo.domain.keyword.KeywordResearchRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 @Service
 class KeywordResearchUseCase(
@@ -25,23 +24,33 @@ class KeywordResearchUseCase(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @Transactional
+    /**
+     * **트랜잭션을 열지 않는다.** LLM 호출을 `@Transactional` 안에 두면 `ai_credits` 행
+     * 잠금과 DB 커넥션이 모델 응답 시간만큼 묶인다. 차감·환불의 커밋 경계는
+     * [CreditService.withCredits] 가 잡고, 결과 저장은 호출 이후 짧게 끝난다.
+     */
     fun research(userId: Long, request: KeywordResearchRequest): KeywordResearchResponse {
         rateLimiter.checkRateLimit(userId)
-        creditService.validateAndDeduct(userId, AiFeature.KEYWORD_RESEARCH)
 
         val userPrompt = PromptTemplates.KEYWORD_RESEARCH_USER
             .replace("{keyword}", request.keyword)
             .replace("{platforms}", request.platforms.joinToString(", "))
             .replace("{category}", request.category)
 
-        return try {
-            val result = chatClientResolver.resolve(userId).prompt()
-                .system(PromptTemplates.KEYWORD_RESEARCH_SYSTEM)
-                .user(userPrompt)
-                .call()
-                .entity(KeywordResearchResult::class.java)
-                ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+        return creditService.withCredits(userId, AiFeature.KEYWORD_RESEARCH) {
+            val result = try {
+                chatClientResolver.resolve(userId).prompt()
+                    .system(PromptTemplates.KEYWORD_RESEARCH_SYSTEM)
+                    .user(userPrompt)
+                    .call()
+                    .entity(KeywordResearchResult::class.java)
+                    ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
+            } catch (e: BusinessException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("키워드 리서치 AI 호출 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "AI 키워드 분석에 실패했습니다: ${e.message}")
+            }
 
             val resultJson = objectMapper.writeValueAsString(result)
 
@@ -55,12 +64,6 @@ class KeywordResearchUseCase(
             )
 
             toResponse(saved, result)
-        } catch (e: BusinessException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("키워드 리서치 AI 호출 실패, 크레딧 환불: userId={}", userId, e)
-            creditService.refundCredit(userId, AiFeature.KEYWORD_RESEARCH.creditCost, AiFeature.KEYWORD_RESEARCH.name)
-            throw BusinessException("AI_CALL_FAILED", "AI 키워드 분석에 실패했습니다: ${e.message}")
         }
     }
 

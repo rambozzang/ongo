@@ -2,6 +2,7 @@ package com.ongo.infrastructure.external.platform
 
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.PlatformApiException
+import com.ongo.domain.analytics.RevenueReport
 import com.ongo.domain.channel.PlatformAnalyticsResult
 import com.ongo.domain.channel.PlatformChannelInfoResult
 import com.ongo.domain.channel.PlatformClientPort
@@ -44,6 +45,28 @@ class PlatformClientPortAdapter(
             impressions = analytics.impressions,
             avgViewDurationSeconds = analytics.avgViewDurationSeconds,
         )
+    }
+
+    /**
+     * 수익 조회는 **재시도도 서킷 브레이커도 걸지 않는다.**
+     *
+     * 권한 부족(403)은 재시도해도 같은 답이고, 같은 서킷을 쓰면 수익 실패가 누적돼
+     * 업로드·상태조회 같은 다른 플랫폼 호출까지 함께 차단된다. 클라이언트가 이미 모든
+     * 실패를 상태로 바꿔 돌려주므로 여기서는 예상 밖의 예외만 [RevenueReport.ERROR] 로
+     * 막는다.
+     */
+    override fun getVideoRevenue(
+        platform: Platform,
+        platformVideoId: String,
+        accessToken: PlainToken,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): RevenueReport = runCatching {
+        platformClientFactory.getClient(platform)
+            .getVideoRevenue(platformVideoId, accessToken.value, startDate, endDate)
+    }.getOrElse { e ->
+        log.warn("플랫폼 {} 수익 조회 실패: {}", platform, e.message)
+        RevenueReport.ERROR
     }
 
     @Retry(name = "platformApi")
@@ -130,6 +153,7 @@ class PlatformClientPortAdapter(
             },
             nextPageToken = result.nextPageToken,
             totalCount = result.totalCount,
+            errorMessage = result.errorMessage,
         )
     }
 

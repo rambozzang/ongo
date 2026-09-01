@@ -1,9 +1,12 @@
 package com.ongo.infrastructure.persistence.jooq
 
+import com.ongo.application.analytics.PlatformMetricAvailability
+import com.ongo.domain.analytics.RevenueStatus
 import com.ongo.domain.revenue.BrandDealRevenueRaw
 import com.ongo.domain.revenue.CpmRpmRaw
 import com.ongo.domain.revenue.DailyRevenue
 import com.ongo.domain.revenue.PlatformRevenue
+import com.ongo.domain.revenue.PlatformRevenueStatusCount
 import com.ongo.domain.revenue.RevenueRepository
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -14,6 +17,29 @@ import java.time.LocalDate
 class RevenueJooqRepository(
     private val dsl: DSLContext,
 ) : RevenueRepository {
+
+    private companion object {
+        /**
+         * 금액 합산은 **실제로 측정된 행만** 더한다.
+         *
+         * 조건이 둘인 이유가 각각 다르다.
+         *
+         * - 상태: `revenue_micro` 는 `NOT NULL DEFAULT 0` 이라 아직 확정되지 않은 날짜도
+         *   0 을 들고 있다. 그것까지 더하면 "측정된 0 원"처럼 보인다.
+         * - 플랫폼: [RevenueAvailability] 의 가용성 판정이 수익 수집 플랫폼만 보므로
+         *   합산도 같은 범위를 봐야 한다. 한쪽만 걸면 금액은 더해지는데 화면은
+         *   "수집하지 않습니다" 라고 말하는 모순이 난다.
+         *
+         * 두 조건 모두 [PlatformMetricAvailability] 한 곳에서 나온다. 새 플랫폼이 수익을
+         * 지원하게 되면 그 계약만 고치면 판정과 합산이 함께 따라온다.
+         */
+        val MEASURED_ONLY = DSL.field("ad.revenue_status", String::class.java)
+            .eq(RevenueStatus.MEASURED.name)
+            .and(
+                DSL.field("vu.platform::text", String::class.java)
+                    .`in`(PlatformMetricAvailability.platformsReporting(PlatformMetricAvailability.REVENUE_MICRO)),
+            )
+    }
 
     override fun getDailyRevenue(userId: Long, from: LocalDate, to: LocalDate): List<DailyRevenue> {
         val uploadIds = getUserUploadIds(userId)
@@ -30,6 +56,7 @@ class RevenueJooqRepository(
             .where(DSL.field("ad.video_upload_id", Long::class.java).`in`(uploadIds))
             .and(dateField.greaterOrEqual(from))
             .and(dateField.lessOrEqual(to))
+            .and(MEASURED_ONLY)
             .groupBy(dateField, platformField)
             .orderBy(dateField.asc())
             .fetch()
@@ -56,6 +83,7 @@ class RevenueJooqRepository(
             .where(DSL.field("ad.video_upload_id", Long::class.java).`in`(uploadIds))
             .and(DSL.field("ad.date", LocalDate::class.java).greaterOrEqual(from))
             .and(DSL.field("ad.date", LocalDate::class.java).lessOrEqual(to))
+            .and(MEASURED_ONLY)
             .groupBy(platformField)
             .fetch()
             .map { record ->
@@ -66,17 +94,58 @@ class RevenueJooqRepository(
             }
     }
 
+    /**
+     * 다른 합산과 **같은 조인 모양**을 쓴다. 예전에는 여기만 `analytics_daily` 단독
+     * 조회라 [MEASURED_ONLY] 를 공유하지 못했고, 그래서 총합만 조건이 갈라질 여지가 있었다.
+     */
     override fun getTotalRevenue(userId: Long, from: LocalDate, to: LocalDate): Long {
         val uploadIds = getUserUploadIds(userId)
         if (uploadIds.isEmpty()) return 0L
 
-        return dsl.select(DSL.sum(Fields.REVENUE_MICRO).`as`("total"))
-            .from(Tables.ANALYTICS_DAILY)
-            .where(Fields.VIDEO_UPLOAD_ID.`in`(uploadIds))
-            .and(Fields.DATE.greaterOrEqual(from))
-            .and(Fields.DATE.lessOrEqual(to))
+        return dsl.select(DSL.sum(DSL.field("ad.revenue_micro", Long::class.java)).`as`("total"))
+            .from(DSL.table("analytics_daily").`as`("ad"))
+            .join(DSL.table("video_uploads").`as`("vu"))
+            .on(DSL.field("ad.video_upload_id", Long::class.java).eq(DSL.field("vu.id", Long::class.java)))
+            .where(DSL.field("ad.video_upload_id", Long::class.java).`in`(uploadIds))
+            .and(DSL.field("ad.date", LocalDate::class.java).greaterOrEqual(from))
+            .and(DSL.field("ad.date", LocalDate::class.java).lessOrEqual(to))
+            .and(MEASURED_ONLY)
             .fetchOne()
             ?.get("total", Long::class.java) ?: 0L
+    }
+
+    /**
+     * 플랫폼 × 상태별 행 수. 금액 조회가 `MEASURED` 만 더하므로, "0 원"의 원인은
+     * 이 집계로만 설명할 수 있다.
+     */
+    override fun getRevenueStatusCounts(
+        userId: Long,
+        from: LocalDate,
+        to: LocalDate,
+    ): List<PlatformRevenueStatusCount> {
+        val uploadIds = getUserUploadIds(userId)
+        if (uploadIds.isEmpty()) return emptyList()
+
+        val platformField = DSL.field("vu.platform::text", String::class.java)
+        val statusField = DSL.field("ad.revenue_status", String::class.java)
+        val rowCount = DSL.count().`as`("row_count")
+
+        return dsl.select(platformField, statusField, rowCount)
+            .from(DSL.table("analytics_daily").`as`("ad"))
+            .join(DSL.table("video_uploads").`as`("vu"))
+            .on(DSL.field("ad.video_upload_id", Long::class.java).eq(DSL.field("vu.id", Long::class.java)))
+            .where(DSL.field("ad.video_upload_id", Long::class.java).`in`(uploadIds))
+            .and(DSL.field("ad.date", LocalDate::class.java).greaterOrEqual(from))
+            .and(DSL.field("ad.date", LocalDate::class.java).lessOrEqual(to))
+            .groupBy(platformField, statusField)
+            .fetch()
+            .map { record ->
+                PlatformRevenueStatusCount(
+                    platform = record.get(platformField) ?: "UNKNOWN",
+                    status = record.get(statusField) ?: RevenueStatus.UNSUPPORTED.name,
+                    rows = (record.get("row_count", Int::class.java) ?: 0).toLong(),
+                )
+            }
     }
 
     override fun getPaymentTotal(userId: Long, from: LocalDate, to: LocalDate): Long {
@@ -107,6 +176,9 @@ class RevenueJooqRepository(
             .where(DSL.field("ad.video_upload_id", Long::class.java).`in`(uploadIds))
             .and(DSL.field("ad.date", LocalDate::class.java).greaterOrEqual(from))
             .and(DSL.field("ad.date", LocalDate::class.java).lessOrEqual(to))
+            // 분자(수익)와 분모(노출·조회)를 같은 행으로 맞춘다. 측정되지 않은 날의
+            // 노출을 분모에 넣으면 CPM 이 실제보다 낮게 나온다.
+            .and(MEASURED_ONLY)
             .groupBy(platformField)
             .fetch()
             .map { record ->

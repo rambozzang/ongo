@@ -1,5 +1,6 @@
 package com.ongo.application.trend
 
+import com.ongo.application.ai.AiRateLimiter
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.credit.CreditService
 import com.ongo.application.trend.dto.*
@@ -18,6 +19,7 @@ class TrendUseCase(
     private val trendRepository: TrendRepository,
     private val creditService: CreditService,
     private val chatClientResolver: ChatClientResolver,
+    private val rateLimiter: AiRateLimiter,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -33,9 +35,15 @@ class TrendUseCase(
     fun searchTrends(keyword: String): List<TrendResponse> =
         trendRepository.searchByKeyword(keyword).map { it.toResponse() }
 
-    @Transactional
+    /**
+     * **트랜잭션을 열지 않는다.** LLM 호출을 `@Transactional` 안에 두면 `ai_credits` 행
+     * 잠금과 DB 커넥션이 모델 응답 시간만큼 묶인다. 차감·환불의 커밋 경계는
+     * [CreditService.withCredits] 가 잡는다.
+     */
     fun analyzeTrends(userId: Long, category: String?): TrendAnalysisResponse {
-        creditService.validateAndDeduct(userId, ANALYSIS_CREDIT_COST, "TREND_ANALYSIS")
+        // 조회보다 먼저다. 순서가 바뀌면 제한된 사용자도 DB 를 읽는다.
+        // LLM 호출은 아래 블록에서 정확히 1 회이므로 토큰도 1 개다.
+        rateLimiter.checkRateLimit(userId)
 
         val trends = trendRepository.findByDate(LocalDate.now(), category)
         val topKeywords = trends.take(20)
@@ -51,12 +59,19 @@ class TrendUseCase(
             appendLine("2. 콘텐츠 제작 추천 (5개)")
         }
 
-        return try {
-            val response = chatClientResolver.resolve(userId).prompt()
-                .system("당신은 한국 콘텐츠 트렌드 분석 전문가입니다. 크리에이터에게 실용적인 조언을 제공합니다.")
-                .user(prompt)
-                .call()
-                .content() ?: ""
+        return creditService.withCredits(userId, ANALYSIS_CREDIT_COST, "TREND_ANALYSIS") {
+            val response = try {
+                chatClientResolver.resolve(userId).prompt()
+                    .system("당신은 한국 콘텐츠 트렌드 분석 전문가입니다. 크리에이터에게 실용적인 조언을 제공합니다.")
+                    .user(prompt)
+                    .call()
+                    .content() ?: ""
+            } catch (e: BusinessException) {
+                throw e
+            } catch (e: Exception) {
+                log.error("트렌드 AI 분석 실패: userId={}", userId, e)
+                throw BusinessException("AI_CALL_FAILED", "AI 트렌드 분석에 실패했습니다: ${e.message}")
+            }
 
             val lines = response.lines().filter { it.isNotBlank() }
             val summary = lines.take(3).joinToString("\n")
@@ -67,12 +82,6 @@ class TrendUseCase(
                 recommendations = recommendations.ifEmpty { listOf("트렌드 데이터가 충분하지 않습니다.") },
                 topKeywords = topKeywords.map { it.toResponse() },
             )
-        } catch (e: BusinessException) {
-            throw e
-        } catch (e: Exception) {
-            log.error("트렌드 AI 분석 실패, 크레딧 환불: userId={}", userId, e)
-            creditService.refundCredit(userId, ANALYSIS_CREDIT_COST, "TREND_ANALYSIS")
-            throw BusinessException("AI_CALL_FAILED", "AI 트렌드 분석에 실패했습니다: ${e.message}")
         }
     }
 

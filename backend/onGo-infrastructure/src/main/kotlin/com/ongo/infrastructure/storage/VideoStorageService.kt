@@ -99,6 +99,21 @@ class VideoStorageService(
         log.info("영상 파일 삭제 완료: videoId={}", videoId)
     }
 
+    /**
+     * 게시 이미지 객체 정리. 접두사가 videoId 로만 만들어져 남의 객체가 섞일 수 없다.
+     *
+     * 실패를 삼키지 않는다. 호출부가 "정리하지 못했다" 를 사용자에게 그대로 알려야 한다.
+     */
+    override fun deleteContentImages(videoId: Long) {
+        val prefix = "content/$videoId/"
+        storageClient.listObjects(prefix).forEach { key -> storageClient.deleteFile(key) }
+        log.info("게시 이미지 파일 삭제 완료: videoId={}", videoId)
+    }
+
+    override fun deleteFileByKey(key: String) {
+        storageClient.deleteFile(key)
+    }
+
     override fun uploadFile(key: String, inputStream: InputStream, contentType: String, size: Long): String {
         storageClient.uploadFile(key, inputStream, contentType, size)
         return storageClient.getFileUrl(key)

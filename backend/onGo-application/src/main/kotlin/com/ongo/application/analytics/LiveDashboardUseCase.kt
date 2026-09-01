@@ -6,6 +6,9 @@ import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.analytics.*
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
+import com.ongo.domain.revenue.RevenueRepository
+import com.ongo.domain.video.VideoUploadRepository
+import com.ongo.application.revenue.RevenueAvailability
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -18,6 +21,10 @@ class LiveDashboardUseCase(
     private val liveAlertRepository: LiveAlertRepository,
     private val liveAlertConfigRepository: LiveAlertConfigRepository,
     private val channelRepository: ChannelRepository,
+    /** 어떤 플랫폼이 실제로 집계 행을 만들었는지 알아야 지표별 수집 여부를 판정할 수 있다. */
+    private val videoUploadRepository: VideoUploadRepository,
+    /** 수익은 플랫폼만으로 판정할 수 없다 — `revenue_status` 까지 봐야 한다. */
+    private val revenueRepository: RevenueRepository,
 ) {
 
     /**
@@ -28,23 +35,55 @@ class LiveDashboardUseCase(
         val today = LocalDate.now()
         val historyFrom = today.minusDays(7)
 
-        // 최근 7일 일별 집계 (히스토리 + 현재/이전 비교용)
-        val dailyAggregates = analyticsRepository.getDailyAggregates(userId, historyFrom, today)
-        val aggregateByDate = dailyAggregates.associateBy { it.date }
+        /*
+         * **`getDailyAggregates` 를 쓰지 않는다 — 그 결과에는 플랫폼이 없다.**
+         *
+         * `AnalyticsJooqRepository.kt:641` 은 `analytics_daily` 를 **날짜로만** 묶는다.
+         * 그래서 `TumblrClient.kt:141` 의 `total_notes`(좋아요+리블로그+답글 총합)가 `VIEWS`
+         * 합계에, `PinterestClient.kt:158/160` 의 `SAVE`(저장)·`PIN_CLICK`(클릭)이
+         * `LIKES`·`SHARES` 합계에 그대로 더해진다.
+         *
+         * 이건 수집하지 않는 플랫폼의 하드코딩 0 과 다르다. **다른 뜻의 큰 숫자**라
+         * 합계 자체를 오염시킨다. 같은 기간을 업로드 단위로 읽어 행마다 플랫폼을 붙인다.
+         */
+        val channelUploads = videoUploadRepository.findByUserId(userId)
+        val rowPlatforms = AnalyticsRowPlatforms.of(channelUploads)
+        val rows = analyticsRepository
+            .findByVideoUploadIdsAndDateRange(channelUploads.mapNotNull { it.id }, historyFrom, today)
+            .values
+            .flatten()
 
-        // 현재 값: 오늘 데이터 (없으면 가장 최근 날짜)
-        val currentAggregate = aggregateByDate[today]
-            ?: dailyAggregates.lastOrNull()
-            ?: DailyAggregate(today, 0, 0, 0, 0, 0, 0, 0)
+        /*
+         * 측정된 행이 하나라도 있는가.
+         *
+         * 행이 하나라도 있으면 그 안의 0 은 **유효한 측정값**이다. 그 경우는 true 다.
+         */
+        val dataAvailable = rows.isNotEmpty()
 
-        // 이전 값: 어제 또는 그 이전 날짜
-        val yesterday = today.minusDays(1)
-        val previousAggregate = aggregateByDate[yesterday]
-            ?: dailyAggregates.dropLast(1).lastOrNull()
-            ?: DailyAggregate(yesterday, 0, 0, 0, 0, 0, 0, 0)
+        /*
+         * **이 사용자가 어떤 플랫폼에 게시했는가 — 행이 아니라 업로드로 판정한다.**
+         *
+         * "그 지표를 주는 플랫폼이 하나도 없다"(영원히 못 잰다)와 "아직 수집 전이다"
+         * (곧 채워진다)는 서로 다른 상태다. 행만 보면 둘이 똑같이 비어 보인다.
+         */
+        val uploadPlatforms = channelUploads.map { it.platform.name }.toSet()
+
+        /*
+         * 수익은 플랫폼만으로 부족하다. YouTube 를 연결했어도 재연동 전이면 못 읽고,
+         * 그때의 0 은 "수익 0 원" 이 아니다. 이미 있는 판정을 그대로 쓴다.
+         */
+        val revenueAvailability = RevenueAvailability.evaluate(
+            revenueRepository.getRevenueStatusCounts(userId, historyFrom, today),
+        )
 
         // 6개 지표 카드 생성
-        val metrics = buildMetrics(currentAggregate, previousAggregate, dailyAggregates)
+        val metrics = buildMetrics(
+            rows,
+            rowPlatforms,
+            today,
+            uploadPlatforms,
+            revenueAvailability,
+        )
 
         // 알림 목록
         val alerts = liveAlertRepository.findByUserId(userId).map { it.toAlertResponse() }
@@ -58,8 +97,15 @@ class LiveDashboardUseCase(
             metrics = metrics,
             alerts = alerts,
             activePlatforms = activePlatforms,
-            lastUpdated = LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toString(),
+            // 갱신된 적 없는 데이터에 갱신 시각을 붙이지 않는다. 클라이언트가
+            // "마지막 업데이트: 방금"을 그리면 비어 있는 화면이 최신처럼 보인다.
+            lastUpdated = if (dataAvailable) {
+                LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toString()
+            } else {
+                null
+            },
             isConnected = activePlatforms.isNotEmpty(),
+            dataAvailable = dataAvailable,
         )
     }
 
@@ -173,38 +219,125 @@ class LiveDashboardUseCase(
      * 6개 지표 카드(VIEWS, SUBSCRIBERS, LIKES, COMMENTS, WATCH_TIME, REVENUE) 생성
      */
     private fun buildMetrics(
-        current: DailyAggregate,
-        previous: DailyAggregate,
-        dailyAggregates: List<DailyAggregate>,
+        rows: List<AnalyticsDaily>,
+        rowPlatforms: AnalyticsRowPlatforms,
+        today: LocalDate,
+        uploadPlatforms: Set<String>,
+        revenueAvailability: RevenueAvailability.Result,
     ): List<LiveMetricResponse> {
         data class MetricDef(
             val type: String,
-            val extract: (DailyAggregate) -> Long,
+            /** [PlatformMetricAvailability] 의 지표 이름. 이 지표를 주는 플랫폼이 있는지 판정한다. */
+            val metric: String,
+            val extract: (AnalyticsDaily) -> Long,
         )
 
         val definitions = listOf(
-            MetricDef("VIEWS") { it.views },
-            MetricDef("SUBSCRIBERS") { it.subscriberGained },
-            MetricDef("LIKES") { it.likes },
-            MetricDef("COMMENTS") { it.comments },
-            MetricDef("WATCH_TIME") { it.watchTimeSeconds },
-            MetricDef("REVENUE") { it.revenueMicro },
+            MetricDef("VIEWS", PlatformMetricAvailability.VIEWS) { it.views.toLong() },
+            MetricDef("SUBSCRIBERS", PlatformMetricAvailability.SUBSCRIBER_GAINED) { it.subscriberGained.toLong() },
+            MetricDef("LIKES", PlatformMetricAvailability.LIKES) { it.likes.toLong() },
+            MetricDef("COMMENTS", PlatformMetricAvailability.COMMENTS) { it.commentsCount.toLong() },
+            MetricDef("WATCH_TIME", PlatformMetricAvailability.WATCH_TIME_SECONDS) { it.watchTimeSeconds },
+            MetricDef("REVENUE", PlatformMetricAvailability.REVENUE_MICRO) { it.revenueMicro },
         )
 
         return definitions.map { def ->
-            val currentValue = def.extract(current)
-            val previousValue = def.extract(previous)
-            val changePercent = calculateChangePercent(previousValue, currentValue)
+            /*
+             * 이 지표를 **물어볼 수 있는 플랫폼이 하나라도 있었는가.**
+             *
+             * `SUBSCRIBERS`·`WATCH_TIME`·`REVENUE` 는 `YouTubeClient` 만 조회한다. TikTok·
+             * Instagram 만 쓰는 크리에이터에게 그 합계 0 은 "오늘 0" 이 아니라 물어볼 곳이
+             * 없다는 뜻인데, 예전에는 실제 0 과 구분되지 않았다.
+             */
+            val reported = uploadPlatforms.any { PlatformMetricAvailability.isAvailable(it, def.metric) }
+
+            // 수익은 여기에 더해 `revenue_status` 판정까지 통과해야 한다.
+            val unavailableReason = when {
+                !reported -> METRIC_NOT_COLLECTED
+                def.type == "REVENUE" && !revenueAvailability.available -> revenueAvailability.reason
+                else -> null
+            }
+
+            if (unavailableReason != null) {
+                return@map LiveMetricResponse(
+                    type = def.type,
+                    currentValue = null,
+                    previousValue = null,
+                    changePercent = null,
+                    trend = TREND_UNKNOWN,
+                    unavailableReason = unavailableReason,
+                    // 그릴 수 있는 계열이 없다. 0 선을 그으면 "계속 0 이었다" 로 보인다.
+                    history = emptyList(),
+                )
+            }
+
+            /*
+             * **이 지표를 실제로 수집하는 행만 더한다.**
+             *
+             * 가용성을 지표 단위가 아니라 **행 단위**로 적용하는 지점이다. YouTube 와
+             * Tumblr 를 함께 쓰면 `VIEWS` 는 "수집하는 플랫폼 있음"으로 판정되지만,
+             * 합계에 Tumblr 의 노트 총합이 섞이면 그 숫자는 조회수가 아니다.
+             * 지원하는 행만 남기면 섞임이 사라지고, 남은 행의 0 은 실측 그대로다.
+             */
+            val measuredRows = rowPlatforms.rowsReporting(rows, def.metric)
+                .let { reporting ->
+                    // 수익은 행 단위 상태까지 봐야 한다 — `AnalyticsDaily.revenueMicro` 는
+                    // `revenueStatus == MEASURED` 일 때만 의미가 있다(도메인 주석).
+                    if (def.type == "REVENUE") {
+                        reporting.filter { it.revenueStatus == RevenueStatus.MEASURED }
+                    } else {
+                        reporting
+                    }
+                }
+
+            /*
+             * 게시한 플랫폼은 이 지표를 주지만 기간 내 수집된 행이 아직 없다.
+             * 예전에는 여기서 합성 행의 `0` 이 나가 "오늘 0 건"과 구분되지 않았다.
+             */
+            if (measuredRows.isEmpty()) {
+                return@map LiveMetricResponse(
+                    type = def.type,
+                    currentValue = null,
+                    previousValue = null,
+                    changePercent = null,
+                    trend = TREND_UNKNOWN,
+                    unavailableReason = METRIC_NOT_MEASURED_YET,
+                    history = emptyList(),
+                )
+            }
+
+            val byDate = measuredRows.groupBy { it.date }.toSortedMap()
+            val measuredDates = byDate.keys.toList()
+            fun sumOn(date: LocalDate?): Long? = date?.let { d -> byDate[d]?.sumOf(def.extract) }
+
+            // 현재 값: 오늘 (없으면 측정된 가장 최근 날짜)
+            val currentDate = if (today in byDate) today else measuredDates.last()
+            val currentValue = sumOn(currentDate)!!
+            /*
+             * 이전 값: **현재 날짜보다 앞선 가장 최근 측정 날짜.**
+             *
+             * 예전처럼 `어제` 를 먼저 찾으면 자정을 넘겼을 때 어제가 곧 현재 날짜가 되어
+             * 같은 행을 현재와 이전 양쪽에 넣는다. 측정 날짜가 하나뿐이면 비교 대상이
+             * 없다 → `null`.
+             */
+            val previousValue = sumOn(measuredDates.lastOrNull { it < currentDate })
+
+            // 이전 값이 0 이거나 없으면 비율의 기준이 없다 → null. [MetricChange] 참고.
+            val changePercent = previousValue?.let { MetricChange.percentChange(it, currentValue) }
             val trend = when {
+                // 비교 불가를 STABLE 로 내리면 "변화 없음"이라는 측정 결과가 되어 버린다.
+                changePercent == null -> TREND_UNKNOWN
                 changePercent > 1.0 -> "UP"
                 changePercent < -1.0 -> "DOWN"
                 else -> "STABLE"
             }
 
-            val history = dailyAggregates.map { agg ->
+            // 측정된 날짜만 그린다. 수집하지 않는 플랫폼의 날짜에 0 점을 찍으면
+            // 그래프가 "그날 0 이었다"로 읽힌다.
+            val history = byDate.map { (date, dayRows) ->
                 LiveMetricPointResponse(
-                    timestamp = agg.date.atStartOfDay(ZoneId.systemDefault()).toInstant().toString(),
-                    value = def.extract(agg),
+                    timestamp = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toString(),
+                    value = dayRows.sumOf(def.extract),
                 )
             }
 
@@ -212,19 +345,42 @@ class LiveDashboardUseCase(
                 type = def.type,
                 currentValue = currentValue,
                 previousValue = previousValue,
-                changePercent = Math.round(changePercent * 100) / 100.0,
+                // null 을 반올림하려다 0 으로 만들면 비교 불가가 "변화 없음"이 된다.
+                changePercent = changePercent?.let { Math.round(it * 100) / 100.0 },
                 trend = trend,
                 history = history,
             )
         }
     }
 
-    private fun calculateChangePercent(previous: Long, current: Long): Double =
-        if (previous == 0L) {
-            if (current > 0) 100.0 else 0.0
-        } else {
-            ((current - previous).toDouble() / previous.toDouble()) * 100.0
-        }
+    companion object {
+        /**
+         * 비교할 이전 값이 없을 때의 [LiveMetricResponse.trend].
+         *
+         * `UP`/`DOWN`/`STABLE` 3 값만 있던 계약에 **추가**한 네 번째 값이다. 기존 값의
+         * 의미는 하나도 바뀌지 않았고, 이 값은 예전에 `STABLE`(previous=0, current=0) 또는
+         * `UP`(previous=0, current>0) 으로 **잘못 표시되던 경우에만** 나온다.
+         *
+         * 이 API(`GET /api/v1/analytics/live`)에는 현재 프론트엔드 소비자가 없다
+         * (`frontend/src` 에서 `analytics/live`·`LiveMetric` 검색 결과 0 건). 그래서 값을
+         * 추가해도 깨질 화면이 없고, 계약은 `LiveDashboardUseCaseTest` 가 고정한다.
+         *
+         * 클라이언트는 이 값을 받으면 증감 배지·색상을 그리지 말아야 한다.
+         * [LiveMetricResponse.changePercent] 도 함께 `null` 이다.
+         */
+        const val TREND_UNKNOWN = "UNKNOWN"
+
+        /** 이 지표를 수집하는 플랫폼에 게시된 기록이 없을 때의 [LiveMetricResponse.unavailableReason]. */
+        const val METRIC_NOT_COLLECTED = "이 지표를 수집하는 플랫폼에 게시된 기록이 없습니다"
+
+        /**
+         * 수집하는 플랫폼에는 게시했지만 **기간 내 측정 행이 없을 때**.
+         *
+         * [METRIC_NOT_COLLECTED] 와 구분한다 — 저쪽은 물어볼 곳이 아예 없어 영원히 못 재고,
+         * 이쪽은 아직 동기화되지 않았을 뿐 다음 수집에서 채워진다.
+         */
+        const val METRIC_NOT_MEASURED_YET = "선택한 기간에 수집된 측정 기록이 없습니다"
+    }
 
     /** LiveAlert 도메인 → LiveAlertResponse DTO 변환 */
     private fun LiveAlert.toAlertResponse() = LiveAlertResponse(
@@ -233,8 +389,13 @@ class LiveDashboardUseCase(
         title = extractAlertTitle(message),
         description = message,
         metric = mapAlertMetric(type),
-        value = 0L,
-        threshold = 0L,
+        /*
+         * `LiveAlert` 도메인에는 값도 임계값도 없다(`LiveAlert.kt` — type·message·severity 뿐).
+         * 예전에는 `0L` 을 하드코딩해 내려보냈고, 화면이 그리면 "조회수 0 이 임계값 0 을
+         * 넘었다" 는 말이 된다. 없는 것은 없다고 알린다.
+         */
+        value = null,
+        threshold = null,
         createdAt = createdAt?.atZone(ZoneId.systemDefault())?.toInstant()?.toString(),
         read = isRead,
     )

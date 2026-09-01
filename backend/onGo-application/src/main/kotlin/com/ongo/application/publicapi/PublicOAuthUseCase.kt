@@ -86,12 +86,13 @@ class PublicOAuthUseCase(
         require(code.isNotBlank()) { "OAuth code가 없습니다" }
         val payload = verifyState(state)
         requireSupportedProvider(payload.platform)
-        channelUseCase.connectChannel(
+        channelUseCase.connectChannelFromTrustedAuthorization(
             userId = payload.userId,
             platformStr = payload.platform.name,
             request = ConnectChannelRequest(
                 authorizationCode = code,
                 redirectUri = callbackUrl,
+                state = "public-oauth-state-verified",
                 codeVerifier = payload.verifier,
             ),
         )
@@ -173,7 +174,14 @@ class PublicOAuthUseCase(
             .apply {
                 parameters["code_challenge"]?.let { queryParam("code_challenge", it) }
                 parameters["code_challenge_method"]?.let { queryParam("code_challenge_method", it) }
-                if (platform == Platform.YOUTUBE) queryParam("access_type", "offline")
+                if (platform == Platform.YOUTUBE) {
+                    queryParam("access_type", "offline")
+                    // YouTube's monetary analytics scope is not added to an existing
+                    // refresh token. Public API re-connections must show consent too,
+                    // otherwise the channel can appear connected while revenue calls
+                    // continue to return 403.
+                    queryParam("prompt", "consent")
+                }
             }
             .build()
             .encode()
@@ -181,7 +189,7 @@ class PublicOAuthUseCase(
     }
 
     private fun scopes(platform: Platform): String = when (platform) {
-        Platform.YOUTUBE -> "https://www.googleapis.com/auth/youtube"
+        Platform.YOUTUBE -> com.ongo.domain.channel.PlatformOAuthScopes.YOUTUBE
         // Direct Post requires video.publish; video.upload is kept for the
         // draft/upload flow used by accounts that are not approved for direct
         // posting yet.

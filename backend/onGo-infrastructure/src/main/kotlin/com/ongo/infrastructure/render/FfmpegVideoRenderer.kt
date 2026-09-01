@@ -35,8 +35,21 @@ import java.util.concurrent.atomic.AtomicReference
  */
 @Component
 class FfmpegVideoRenderer(
-    @param:Value("\${shorts.render.ffmpeg-path:ffmpeg}")
-    private val executable: String,
+    /*
+     * **설정값을 프로퍼티로 두지 않는다.**
+     *
+     * 예전에는 `private val` 이라 클래스 어디서나 읽을 수 있었고, 실제로 [checkAvailability]
+     * 는 해석된 경로로 확인하면서 [buildCommand] 는 설정 원본을 그대로 실행했다. 배포는
+     * ffmpeg 를 `/data/ffmpeg/bin` 같은 곳에 두므로 서비스 사용자의 PATH 에는 없다 —
+     * **가용성은 "쓸 수 있다"고 답하고 실제 렌더는 실행 파일을 못 찾아 실패했다.**
+     * 화면은 그 응답으로 렌더 버튼을 노출하므로, 사용자는 앞 단계 크레딧을 쓴 뒤에야 알게 된다.
+     *
+     * 생성자 파라미터로만 두면 멤버 함수에서 참조할 수 없어 **같은 실수가 컴파일되지 않는다.**
+     * 형제 어댑터(FfmpegVideoGenerationAdapter·FfmpegTranscriptionAudioAdapter·
+     * YtDlpVideoDownloader)는 모두 해석된 경로로 실행한다.
+     */
+    @Value("\${shorts.render.ffmpeg-path:ffmpeg}")
+    executable: String,
     @param:Value("\${shorts.render.timeout-seconds:1800}")
     private val timeoutSeconds: Long,
     @param:Value("\${shorts.render.crf:20}")
@@ -45,6 +58,7 @@ class FfmpegVideoRenderer(
     private val preset: String,
 ) : VideoRenderer {
 
+    /** 확인과 실행이 **반드시 같은 바이너리를 가리켜야 한다.** 이 값 하나만 쓴다. */
     private val resolvedExecutable = RuntimeExecutableResolver.resolve(executable)
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -97,7 +111,7 @@ class FfmpegVideoRenderer(
         }
 
         return listOf(
-            executable,
+            resolvedExecutable,
             "-nostdin",              // 파이프에서 입력을 기다리다 멈추는 것을 막는다
             "-y",                    // 출력 덮어쓰기. 매번 새 디렉터리라 충돌은 없다
             "-ss", seconds(request.startMs),

@@ -50,6 +50,8 @@ class ShortsPipelineOrchestrator(
     private val shortsTemplateRepository: ShortsTemplateRepository,
     private val videoRepository: VideoRepository,
     private val creditService: CreditService,
+    /** 차감·정산의 트랜잭션 경계. 오케스트레이터는 트랜잭션 없이 돌기 때문에 별도 빈이다. */
+    private val stageCreditService: ShortsStageCreditService,
     private val rateLimiter: AiRateLimiter,
     private val userSettingsRepository: UserSettingsRepository,
     executors: List<ShortsStageExecutor>,
@@ -59,12 +61,51 @@ class ShortsPipelineOrchestrator(
     private val mapper = jacksonObjectMapper()
     private val executorsByStage: Map<PipelineStage, ShortsStageExecutor> = executors.associateBy { it.stage }
 
+    /** 이 프로세스가 실행 중인 run. 고착 복구기의 생존 확인용이다. */
+    private val activeRunIds: MutableSet<Long> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
     fun run(runId: Long, fromStage: PipelineStage, schedule: ScheduleParams? = null) {
         val loaded = pipelineRunRepository.findById(runId) ?: return
         if (loaded.status == PipelineRunStatus.CANCELLED) return
 
-        pipelineRunRepository.update(loaded.copy(status = PipelineRunStatus.RUNNING, errorMessage = null))
+        /*
+         * **이 실행을 돌릴 권리를 먼저 확보한다.**
+         *
+         * 예전에는 조건 없이 RUNNING 을 썼다. 그런데 실행은 `@Async` 이벤트로 시작되고 그
+         * 이벤트를 내는 곳이 다섯 군데이며, 재실행 API 의 상태 가드는 잠금 없이 읽고 판단한다.
+         * 그래서 버튼을 두 번 누르거나 커밋과 비동기 리스너 사이의 틈에 두 번째 요청이 들어오면
+         * 두 실행이 나란히 진행됐고, **모든 AI 단계가 두 번 청구됐다.** 사용자는 한 번 요청했고
+         * 결과도 하나인데 돈만 두 번 나갔다.
+         *
+         * 확보에 실패했다는 것은 이 이벤트가 중복이라는 뜻이다. 조용히 끝낸다 — 이미 도는
+         * 실행이 결과를 만들고 있으므로 사용자에게 알릴 실패가 없다.
+         */
+        if (!pipelineRunRepository.claimRunning(runId)) {
+            log.info("이미 실행 중이라 중복 이벤트를 건너뛴다. runId={} fromStage={}", runId, fromStage)
+            return
+        }
 
+        /*
+         * **이 프로세스가 지금 이 실행을 들고 있다**는 표시. 확보 직후에 등록하고 어떤
+         * 경로로 나가든 지운다.
+         *
+         * 고착 복구기가 이 값을 보고 살아 있는 실행을 건드리지 않는다. 시간만으로 판단하면
+         * 오래 걸리는 단계(긴 원본의 전사)를 죽은 것으로 오인할 수 있고, 그때 상태를 되돌리면
+         * 사용자가 재실행을 눌러 **같은 작업이 두 번 청구된다.** 렌더 복구기가
+         * `ShortsRenderUseCase.isActiveInThisProcess` 로 같은 보호를 한다.
+         */
+        activeRunIds += runId
+        try {
+            execute(runId, fromStage, schedule)
+        } finally {
+            activeRunIds -= runId
+        }
+    }
+
+    /** 같은 JVM에서 아직 도는 실행은 고착 복구기가 건드리지 않게 한다. */
+    fun isActiveInThisProcess(runId: Long): Boolean = runId in activeRunIds
+
+    private fun execute(runId: Long, fromStage: PipelineStage, schedule: ScheduleParams?) {
         /*
          * 리드타임의 시작점. 재실행·재개도 이 진입점을 지나므로 최초 한 번만 기록한다 —
          * 덮어쓰면 "며칠 걸린 납품"이 "방금 시작한 납품"으로 보인다.
@@ -153,22 +194,29 @@ class ShortsPipelineOrchestrator(
         val creditCost = creditCostOf(stage, feature, run)
 
         var runStage: RunStage? = null
-        var deducted = false
         try {
             if (feature != null) {
                 rateLimiter.checkRateLimit(run.userId)
-                creditService.validateAndDeduct(run.userId, creditCost, feature.name)
-                deducted = true
             }
 
-            runStage = runStageRepository.save(
-                RunStage(
-                    runId = run.id,
-                    stage = stage,
-                    status = RunStageStatus.RUNNING,
-                    startedAt = Instant.now(),
-                ),
+            /*
+             * **차감과 단계 행·영수증 저장이 한 커밋이다.**
+             *
+             * 예전에는 차감이 자기 트랜잭션으로 혼자 커밋된 뒤 단계 행을 저장했다. 그 사이
+             * 저장이 실패하면 되돌릴 근거 없이 돈만 빠졌고, 커밋 직후 프로세스가 죽으면
+             * 인메모리 영수증이 사라져 아무도 환불할 수 없었다.
+             *
+             * 이 호출이 커밋된 뒤에는 분해가 DB 에 남아, 어느 프로세스에서 죽어도 복구기가
+             * 정확히 같은 자리로 되돌린다. 저장이 실패하면 차감도 함께 롤백된다.
+             */
+            val charged = stageCreditService.chargeAndOpenStage(
+                runId = run.id,
+                userId = run.userId,
+                stage = stage,
+                featureName = feature?.name,
+                creditCost = creditCost,
             )
+            runStage = charged.runStage
 
             val output = executor.execute(context)
             applyOutput(run, stage, context, output)
@@ -191,18 +239,56 @@ class ShortsPipelineOrchestrator(
             log.error("쇼츠 파이프라인 단계 실패: runId={}, stage={}", run.id, stage, e)
             // 단계 실패 시 그 단계분 크레딧만 환불한다 (차감이 실제로 일어났을 때만).
             // 차감과 **같은 값**을 돌려준다 — 단가를 쓰면 긴 원본에서 낸 것보다 적게 받는다.
-            if (deducted && feature != null) {
-                runCatching { creditService.refundCredit(run.userId, creditCost, feature.name) }
-            }
             runStage?.let { saved ->
-                runCatching {
-                    runStageRepository.update(
-                        saved.copy(
-                            status = RunStageStatus.FAILED,
-                            errorMessage = e.message,
-                            completedAt = Instant.now(),
-                        ),
-                    )
+                /*
+                 * **정산은 한 번, 한 곳에서.**
+                 *
+                 * 예전에는 여기서 인메모리 영수증으로 먼저 환불하고 표식을 나중에 세웠다.
+                 * 그러면 표식이 실패했을 때 고착 복구기가 같은 단계를 **한 번 더** 환불하고,
+                 * 복구·재실행·삭제와 겹치면 환불이 두 번 나갈 수 있었다.
+                 *
+                 * 이제 저장된 분해로 [ShortsStageCreditService.settleStage] 한 번에 처리한다.
+                 * 표식과 환불이 같은 트랜잭션이라, 환불이 실패하면 표식도 롤백되어 복구기가
+                 * 다시 집는다. 다른 정산이 먼저 끝냈으면 조건부 갱신이 그것을 알려준다.
+                 *
+                 * 차감이 없던 단계(무과금·차감 전 실패)는 정산할 것이 없으므로 상태만 닫는다.
+                 */
+                if (saved.creditAllocation == null) {
+                    /*
+                     * 정산할 것이 없는 단계(무과금·차감 전 실패)다. 아무도 닫아 주지 않으므로
+                     * 여기서 닫는다.
+                     */
+                    runCatching {
+                        runStageRepository.update(
+                            saved.copy(
+                                status = RunStageStatus.FAILED,
+                                errorMessage = e.message,
+                                completedAt = Instant.now(),
+                            ),
+                        )
+                    }
+                } else {
+                    /*
+                     * **차감이 있었던 단계는 정산만이 닫는다.**
+                     *
+                     * `settleStage` 가 성공하면 표식과 함께 이미 FAILED 로 닫혔고, 다른 정산이
+                     * 먼저 끝냈어도(false) 그쪽이 닫아 두었다.
+                     *
+                     * 던졌다면 표식이 롤백되어 이 단계는 `RUNNING` · `refunded_credits = 0` ·
+                     * 분해 보존 상태로 남아 있다. **여기서 FAILED 로 닫으면 안 된다** —
+                     * `findUnsettled` 가 `RUNNING` 만 보므로, 닫는 순간 환불하지 못한 단계가
+                     * 재시도 대상에서 영구히 빠지고 사용자는 크레딧을 영영 잃는다.
+                     * 열어 둔 채로 복구기·재실행·삭제가 다시 집게 한다.
+                     */
+                    runCatching {
+                        stageCreditService.settleStage(run.userId, saved, e.message ?: "단계 실패")
+                    }.onFailure { settleError ->
+                        log.error(
+                            "쇼츠 단계 크레딧 환불 실패. 단계를 미정산으로 열어 두어 다시 시도한다. " +
+                                "runId={} stage={} stageId={} userId={} amount={}",
+                            run.id, stage, saved.id, run.userId, saved.creditCost, settleError,
+                        )
+                    }
                 }
             }
             persistRun(run.id) {
