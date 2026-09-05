@@ -54,6 +54,8 @@ ongo_invalid_short_env_vars() {
     echo "$invalid"
 }
 
+# 사람이 읽는 오류 안내는 stderr로 보낸다. systemd의 StandardOutput=null에서도
+# StandardError=journal을 통해 기동 실패 사유가 남아야 한다.
 ongo_report_invalid_short_env_vars() {
     local invalid="$1"
     local env_file="$2"
@@ -64,7 +66,7 @@ ongo_report_invalid_short_env_vars() {
         echo "          - $var (최소 8자)"
     done
     echo "        ${env_file} 파일에 실제 발급값을 넣은 뒤 다시 배포해주세요. 값 자체는 출력하지 않습니다."
-}
+} >&2
 
 # 누락 변수를 사람이 읽을 형태로 출력한다. 값은 찍지 않는다.
 #   $1 = ongo_missing_env_vars 결과, $2 = .env 경로
@@ -93,7 +95,7 @@ ongo_report_missing_env_vars() {
             echo "        상세: docs/operations/EXTERNAL_SERVICE_SETUP_CHECKLIST.md 4.2절"
             ;;
     esac
-}
+} >&2
 
 # .env 를 로드한다. 이미 로드된 환경변수를 덮어쓴다.
 #   $1 = .env 경로
