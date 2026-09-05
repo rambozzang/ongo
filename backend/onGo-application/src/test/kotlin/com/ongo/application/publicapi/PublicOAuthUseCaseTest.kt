@@ -1,6 +1,7 @@
 package com.ongo.application.publicapi
 
 import com.ongo.application.channel.ChannelUseCase
+import com.ongo.common.enums.Platform
 import com.ongo.domain.channel.ChannelRepository
 import io.mockk.every
 import io.mockk.just
@@ -8,7 +9,10 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import org.junit.jupiter.api.Test
+import java.net.URLDecoder
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class PublicOAuthUseCaseTest {
@@ -128,5 +132,56 @@ class PublicOAuthUseCaseTest {
 
         assertTrue(tiktokUrl.contains("video.publish"))
         assertTrue(instagramUrl.contains("instagram_business_content_publish"))
+    }
+
+    /** 인가 URL 의 쿼리를 `이름 to 값` 으로 편다. */
+    private fun queryOf(url: String): Map<String, String> =
+        url.substringAfter('?').split("&").associate { pair ->
+            val (name, value) = pair.split("=", limit = 2)
+            name to URLDecoder.decode(value, "UTF-8")
+        }
+
+    /**
+     * TikTok Login Kit for Web 은 `client_key` 를 요구한다. `client_id` 가 같이 남아 있으면
+     * 안 된다 — TikTok 은 모르는 파라미터를 무시하므로 둘 다 보내면 통과하겠지만, 그러면
+     * 어느 쪽이 실제로 쓰이는지 알 수 없는 상태가 그대로 굳는다.
+     */
+    @Test
+    fun `공개 API TikTok 인가 URL은 client_key만 싣는다`() {
+        val query = queryOf(useCase().authorizationUrl(42, "tiktok", null).url)
+
+        assertEquals("tiktok-client-id", query["client_key"], "client_key가 없다: $query")
+        assertFalse(query.containsKey("client_id"), "TikTok에 client_id가 남아 있다: $query")
+    }
+
+    /** TikTok 분기가 다른 제공자까지 끌고 가지 않았는지 — 여기가 깨지면 전체 연동이 죽는다. */
+    @Test
+    fun `공개 API의 TikTok 외 플랫폼은 client_id를 유지한다`() {
+        val others = Platform.entries - Platform.TIKTOK - Platform.NAVER_CLIP
+
+        others.forEach { platform ->
+            val query = queryOf(useCase().authorizationUrl(42, platform.name, null).url)
+            assertTrue(query.containsKey("client_id"), "$platform 에 client_id가 없다: $query")
+            assertFalse(query.containsKey("client_key"), "$platform 에 client_key가 잘못 붙었다: $query")
+        }
+    }
+
+    /**
+     * 파라미터 이름만 고치고 나머지 조립을 흘리지 않았는지. 이 빌더는 `parameters` 맵에서
+     * 키로 값을 꺼내 쓰기 때문에, 키 이름을 바꾸면 값이 통째로 `null` 이 되는 실수를 하기
+     * 쉽다.
+     */
+    @Test
+    fun `TikTok 인가 URL의 나머지 파라미터는 그대로다`() {
+        val query = queryOf(useCase().authorizationUrl(42, "tiktok", null).url)
+
+        assertEquals("code", query["response_type"], query.toString())
+        assertEquals(
+            "https://ongo.example.com/public/v1/social/callback",
+            query["redirect_uri"],
+            query.toString(),
+        )
+        assertTrue(query["state"]?.isNotBlank() == true, query.toString())
+        assertEquals("video.publish,video.upload,video.list", query["scope"], query.toString())
     }
 }

@@ -69,7 +69,7 @@ class PublicOAuthUseCase(
         val verifier = randomUrlSafe(32)
         val state = signState(userId, platform, verifier)
         val parameters = linkedMapOf(
-            "client_id" to requiredClientId(platform),
+            clientIdParam(platform) to requiredClientId(platform),
             "redirect_uri" to callbackUrl,
             "response_type" to "code",
             "state" to state,
@@ -121,6 +121,21 @@ class PublicOAuthUseCase(
         }
     }
 
+    /**
+     * 인가 URL 이 클라이언트 식별자를 실어 보내는 파라미터 이름.
+     *
+     * TikTok Login Kit for Web 만 `client_key` 를 요구하고, 나머지 제공자는 OAuth 2.0
+     * 표준대로 `client_id` 다. 토큰 교환·갱신(`TikTokClient`)은 이미 `client_key` 를
+     * 쓰고 있어서, 인가 URL 만 `client_id` 로 나가면 사용자는 동의 화면에 닿기도 전에
+     * TikTok 쪽에서 막힌다.
+     *
+     * 이 판정은 인증 UI 경로의 `PlatformOAuthAuthorizationAdapter` 와 **같은 규칙이어야
+     * 한다.** 두 경로가 인가 URL 조립을 통째로 복제하고 있어 한쪽만 고치면 조용히
+     * 갈라진다 — `PlatformOAuthClientParamTest` 가 두 URL 을 실제로 만들어 비교한다.
+     */
+    private fun clientIdParam(platform: Platform): String =
+        if (platform == Platform.TIKTOK) "client_key" else "client_id"
+
     private fun requiredClientId(platform: Platform): String {
         val clientId = when (platform) {
             Platform.YOUTUBE -> googleClientId
@@ -165,8 +180,9 @@ class PublicOAuthUseCase(
             Platform.VIMEO -> "https://api.vimeo.com/oauth/authorize"
             Platform.DAILYMOTION -> "https://api.dailymotion.com/oauth/authorize"
         }
+        val clientIdParam = clientIdParam(platform)
         return UriComponentsBuilder.fromUriString(base)
-            .queryParam("client_id", parameters["client_id"])
+            .queryParam(clientIdParam, parameters[clientIdParam])
             .queryParam("redirect_uri", parameters["redirect_uri"])
             .queryParam("response_type", parameters["response_type"])
             .queryParam("state", parameters["state"])

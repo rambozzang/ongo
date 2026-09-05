@@ -32,7 +32,7 @@ class PlatformOAuthAuthorizationAdapter(
         codeChallenge: String?,
     ): String {
         val builder = UriComponentsBuilder.fromUriString(baseUrl(platform))
-            .queryParam("client_id", requiredClientId(platform))
+            .queryParam(clientIdParam(platform), requiredClientId(platform))
             .queryParam("redirect_uri", redirectUri)
             .queryParam("response_type", "code")
             .queryParam("scope", scopes(platform))
@@ -48,6 +48,17 @@ class PlatformOAuthAuthorizationAdapter(
         }
         return builder.build().encode().toUriString()
     }
+
+    /**
+     * 인가 URL 이 클라이언트 식별자를 실어 보내는 파라미터 이름.
+     *
+     * TikTok Login Kit for Web 만 `client_key` 를 요구하고, 나머지 제공자는 OAuth 2.0
+     * 표준대로 `client_id` 다. 토큰 교환·갱신(`TikTokClient`)은 이미 `client_key` 를
+     * 쓰고 있어서, 인가 URL 만 `client_id` 로 나가면 사용자는 동의 화면에 닿기도 전에
+     * TikTok 쪽에서 막힌다 — 우리 서버 로그에는 아무것도 남지 않는다.
+     */
+    private fun clientIdParam(platform: Platform): String =
+        if (platform == Platform.TIKTOK) "client_key" else "client_id"
 
     private fun requiredClientId(platform: Platform): String {
         val value = when (platform) {
