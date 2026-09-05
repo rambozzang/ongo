@@ -301,6 +301,66 @@ preflight_env() {
         )
         exit 1
     fi
+
+    preflight_server_port
+}
+
+# 앱이 들을 포트와 nginx 가 넘길 포트가 같은지 본다.
+#
+# ## 왜 필요한가
+#
+# `SERVER_PORT` 는 필수 환경변수 목록에 **없다.** 없어도 정상이기 때문이다 —
+# 비어 있으면 `application.yml` 의 `server.port: 8070` 이 쓰인다.
+#
+# 문제는 값이 **있을 때**다. `.env` 의 `SERVER_PORT` 는 export 되어 Spring 의
+# relaxed binding 으로 `server.port` 를 덮는다. 반면 nginx 의 `proxy_pass` 는
+# 설정 파일에 박혀 있고 배포 스크립트가 건드리지 않는다(운영자 수동 반영).
+#
+# 그래서 `.env` 에 포트를 하나 적는 것만으로 앱은 8071 에서 멀쩡히 뜨고 nginx 만
+# 8070 으로 502 를 낸다. **이때 systemd 는 `active (running)` 이라 정상으로 보인다.**
+# 프로세스도 살아 있고 로그도 깨끗해서 원인을 찾는 데 가장 오래 걸리는 형태다.
+#
+# ## 왜 8070 을 여기 적지 않는가
+#
+# 적으면 같은 상수가 네 곳(`application.yml`, `start.sh`, nginx, 여기)에 생겨
+# 드리프트가 하나 더 는다. nginx 설정에서 **읽어서** 비교한다.
+#
+# nginx 설정을 못 읽으면 통과시킨다. 이 검사는 배포를 막는 것이 목적이 아니라
+# 어긋남을 잡는 것이고, 설정 파일 위치는 호스트마다 다를 수 있다.
+preflight_server_port() {
+    local nginx_conf="$SRC_DIR/deploy/oracle/nginx-ongo.conf"
+    [ -f "$nginx_conf" ] || return 0
+
+    # `grep -o` 로 뽑는다. `sed` 의 `\+` 는 BSD(macOS)에서 안 먹어 빈 값이 되고,
+    # 그러면 아래 `return 0` 으로 **조용히 통과**한다 — 검사가 fail-open 이 된다.
+    local nginx_port
+    nginx_port="$(grep -o 'proxy_pass http://localhost:[0-9][0-9]*' "$nginx_conf" \
+        | grep -o '[0-9][0-9]*' | head -1)"
+
+    # 못 뽑으면 통과시키되 침묵하지 않는다. 설정 형식이 바뀌었다는 신호다.
+    if [ -z "$nginx_port" ]; then
+        warn "nginx 설정에서 upstream 포트를 읽지 못해 포트 정합성 검사를 건너뜁니다: $nginx_conf"
+        return 0
+    fi
+
+    local configured_port
+    configured_port="$(
+        set +e
+        source "$SRC_DIR/deploy/required-env.sh" 2>/dev/null || exit 0
+        ongo_load_env_file "$ENV_FILE" >/dev/null 2>&1 || exit 0
+        printf '%s' "${SERVER_PORT:-}"
+    )"
+
+    # 비어 있으면 application.yml 기본값을 쓴다 — nginx 와 맞는지는 저장소 테스트가 본다.
+    [ -n "$configured_port" ] || return 0
+
+    if [ "$configured_port" != "$nginx_port" ]; then
+        error "SERVER_PORT($configured_port) 와 nginx upstream($nginx_port) 이 다릅니다."
+        error "이대로 배포하면 앱은 정상 기동하지만 외부 API 는 전부 502 가 됩니다."
+        error "$ENV_FILE 의 SERVER_PORT 를 지우거나, nginx 설정의 proxy_pass 를 함께 바꾸세요."
+        error "기존 서비스는 그대로 실행 중입니다."
+        exit 1
+    fi
 }
 
 # ============================================================
