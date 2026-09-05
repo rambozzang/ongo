@@ -1529,7 +1529,7 @@
       "features": {
         "multiUpload": {
           "title": "영상 하나로, 모든 플랫폼에",
-          "description": "YouTube, TikTok, Instagram 외 13개 플랫폼 동시 게시"
+          "description": "YouTube, TikTok, Instagram 등 11개 플랫폼에 동시 게시"
         },
         "aiMetadata": {
           "title": "AI가 제목, 태그를 자동 생성",
