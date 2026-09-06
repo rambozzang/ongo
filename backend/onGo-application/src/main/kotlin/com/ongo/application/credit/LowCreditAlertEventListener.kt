@@ -29,10 +29,23 @@ class LowCreditAlertEventListener(
         )
         notificationRepository.save(notification)
 
+        /*
+         * **DB 행과 같은 문구를 실어 보낸다.**
+         *
+         * 프런트는 `payload.title` 이 없으면 `message.type` 으로 폴백한다
+         * (`useWebSocket.handleMessage`). 숫자만 보내면 실시간 토스트가 원문 enum 인
+         * "CREDIT_LOW" 로 뜨고 본문은 빈 문자열이 된다 — 정작 읽을 수 있는 문구는
+         * 바로 위에서 DB 에만 저장된다. 알림센터를 열어야 보이는 것을 실시간이라
+         * 부를 수는 없다.
+         *
+         * 숫자 두 개는 예전 클라이언트를 위해 남긴다.
+         */
         webSocketNotificationService.sendToUser(
             userId = event.userId,
             type = "CREDIT_LOW",
             payload = mapOf(
+                "title" to notification.title,
+                "message" to notification.message,
                 "balance" to event.balance,
                 "freeMonthly" to event.freeMonthly,
             ),

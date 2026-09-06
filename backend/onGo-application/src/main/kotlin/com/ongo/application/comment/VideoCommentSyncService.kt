@@ -160,10 +160,25 @@ class VideoCommentSyncService(
                         message = "${platform.name}에서 새 댓글 ${newCount}개가 도착했습니다.",
                     )
                     notificationRepository.save(notification)
+                    /*
+                     * DB 행과 같은 문구·참조를 함께 보낸다. 프런트는 `payload.title` 이
+                     * 없으면 `message.type`("COMMENT")으로 폴백하고 본문은 비운다
+                     * (`useWebSocket.handleMessage`). 또 `referenceType`/`referenceId` 를
+                     * 읽어 알림에서 대상으로 이동하는데, `videoId` 만 보내면 그 링크가
+                     * 붙지 않는다 — 이름이 다르기 때문이다.
+                     */
                     webSocketNotificationService.sendToUser(
                         userId = userId,
                         type = "COMMENT",
-                        payload = mapOf("newCount" to newCount, "platform" to platform.name, "videoId" to videoId),
+                        payload = mapOf(
+                            "title" to notification.title,
+                            "message" to notification.message,
+                            "referenceType" to "video",
+                            "referenceId" to videoId,
+                            "newCount" to newCount,
+                            "platform" to platform.name,
+                            "videoId" to videoId,
+                        ),
                     )
                 }
             } catch (e: Exception) {
