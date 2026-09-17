@@ -98,7 +98,7 @@ class VideoPublishEventListener(
                 UploadStatus.FAILED,
                 reason,
             )
-            fireCompletedEvent(event, config.platform, false, errorMessage = reason)
+            fireCompletedEvent(event, config.platform, UploadOutcome.FAILED, errorMessage = reason)
             return
         }
 
@@ -136,7 +136,7 @@ class VideoPublishEventListener(
             // user investigate a publication that was never attempted.
             val message = "게시 파일 준비 실패: ${e.message ?: "파일 URL을 확인하지 못했습니다."}"
             updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, message, leaseOwner = leaseOwner)
-            fireCompletedEvent(event, config.platform, false, errorMessage = message)
+            fireCompletedEvent(event, config.platform, UploadOutcome.FAILED, errorMessage = message)
             log.error("영상 {} 파일 URL 준비 실패: platform={}", event.videoId, config.platform, e)
             return
         }
@@ -144,7 +144,7 @@ class VideoPublishEventListener(
             log.warn("영상 {} 에 fileUrl이 없어 플랫폼 업로드를 건너뜁니다 (스트리밍 업로드)", event.videoId)
             val message = "파일 URL이 없습니다. 스트리밍 방식으로 업로드된 영상입니다."
             updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, message, leaseOwner = leaseOwner)
-            fireCompletedEvent(event, config.platform, false, errorMessage = message)
+            fireCompletedEvent(event, config.platform, UploadOutcome.FAILED, errorMessage = message)
             return
         }
 
@@ -160,7 +160,14 @@ class VideoPublishEventListener(
             // 무조건 FAILED로 기록하면 사용자가 재시도하여 중복 게시를 만들 수 있으므로
             // 확인 불가 상태로 남기고, 후속 조회/운영 재검증 대상으로 보낸다.
             updateUploadStatus(config.videoUploadId, UploadStatus.UNCONFIRMED, e.message, leaseOwner = leaseOwner)
-            fireCompletedEvent(event, config.platform, false, errorMessage = "게시 결과 확인 필요: ${e.message}")
+            fireCompletedEvent(
+                event,
+                config.platform,
+                // 바로 위에서 DB 를 UNCONFIRMED 로 남겼다. 이벤트만 FAILED 라고 말하면
+                // 사용자는 "실패" 알림을 보고 다시 올려 중복 게시를 만든다.
+                UploadOutcome.UNCONFIRMED,
+                errorMessage = "게시 결과 확인 필요: ${e.message}",
+            )
             return
         }
 
@@ -177,7 +184,7 @@ class VideoPublishEventListener(
                 fireCompletedEvent(
                     event,
                     config.platform,
-                    true,
+                    UploadOutcome.PUBLISHED,
                     platformUrl = outcome.platformUrl,
                     platformPostId = outcome.platformVideoId,
                 )
@@ -219,7 +226,7 @@ class VideoPublishEventListener(
                     )
                 } else {
                     updateUploadStatus(config.videoUploadId, UploadStatus.FAILED, outcome.message, clearPollToken = true, leaseOwner = leaseOwner)
-                    fireCompletedEvent(event, config.platform, false, errorMessage = outcome.message)
+                    fireCompletedEvent(event, config.platform, UploadOutcome.FAILED, errorMessage = outcome.message)
                     log.warn("플랫폼 {} 업로드 실패: videoId={}, error={}", config.platform, event.videoId, outcome.message)
                 }
             }
@@ -235,7 +242,9 @@ class VideoPublishEventListener(
                 fireCompletedEvent(
                     event,
                     config.platform,
-                    false,
+                    // 위에서 DB 를 UNCONFIRMED 로 남겼다. 이벤트도 같은 사실을 말해야 한다 —
+                    // 로그는 "확인 필요" 라고 적으면서 사용자에게는 "실패" 라고 알리던 자리다.
+                    UploadOutcome.UNCONFIRMED,
                     platformPostId = outcome.platformVideoId,
                     errorMessage = outcome.message,
                 )
@@ -297,10 +306,15 @@ class VideoPublishEventListener(
         videoRepository.update(video.copy(status = overallStatus))
     }
 
+    /**
+     * @param outcome **Boolean 이 아닌 이유가 있다.** 결과는 셋이다 — 게시됨·실패함·
+     *   확인 못 함. 확인 못 한 것을 실패로 접으면 사용자가 다시 올려 중복 게시가 나고
+     *   UGC 제출이 실패로 확정된다. 자세한 근거는 [UploadOutcome] 참고.
+     */
     private fun fireCompletedEvent(
         event: VideoPublishEvent,
         platform: Platform,
-        success: Boolean,
+        outcome: UploadOutcome,
         platformUrl: String? = null,
         platformPostId: String? = null,
         errorMessage: String? = null,
@@ -310,7 +324,7 @@ class VideoPublishEventListener(
                 videoId = event.videoId,
                 userId = event.userId,
                 platform = platform,
-                success = success,
+                outcome = outcome,
                 platformUrl = platformUrl,
                 platformPostId = platformPostId,
                 errorMessage = errorMessage,

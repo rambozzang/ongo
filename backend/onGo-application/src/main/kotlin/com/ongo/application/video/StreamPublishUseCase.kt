@@ -516,7 +516,8 @@ class StreamPublishUseCase(
                                 videoId,
                                 userId,
                                 ctx.platform,
-                                false,
+                                // 바로 위에서 DB 를 UNCONFIRMED 로 남겼다.
+                                UploadOutcome.UNCONFIRMED,
                                 videoUploadId = ctx.videoUploadId,
                                 errorMessage = "게시 결과 확인 필요: ${error.message}",
                             )
@@ -575,7 +576,7 @@ class StreamPublishUseCase(
                                         videoId,
                                         userId,
                                         ctx.platform,
-                                        true,
+                                        UploadOutcome.PUBLISHED,
                                         videoUploadId = ctx.videoUploadId,
                                         platformUrl = outcome.platformUrl,
                                         platformPostId = outcome.platformVideoId,
@@ -607,7 +608,7 @@ class StreamPublishUseCase(
                                         videoId,
                                         userId,
                                         ctx.platform,
-                                        false,
+                                        UploadOutcome.FAILED,
                                         videoUploadId = ctx.videoUploadId,
                                         errorMessage = outcome.message,
                                     )
@@ -621,7 +622,7 @@ class StreamPublishUseCase(
                                         pollToken = outcome.pollToken,
                                         leaseOwner = owner,
                                     )
-                                    fireCompletedEvent(videoId, userId, ctx.platform, false, videoUploadId = ctx.videoUploadId, errorMessage = outcome.message)
+                                    fireCompletedEvent(videoId, userId, ctx.platform, UploadOutcome.UNCONFIRMED, videoUploadId = ctx.videoUploadId, errorMessage = outcome.message)
                                     log.warn("플랫폼 {} 게시 결과 확인 필요: videoId={}, error={}", ctx.platform, videoId, outcome.message)
                                 }
                             }
@@ -633,7 +634,7 @@ class StreamPublishUseCase(
                                 e.message,
                                 leaseOwner = leaseOwners[ctx.videoUploadId],
                             )
-                            fireCompletedEvent(videoId, userId, ctx.platform, false, videoUploadId = ctx.videoUploadId, errorMessage = e.message)
+                            fireCompletedEvent(videoId, userId, ctx.platform, UploadOutcome.UNCONFIRMED, videoUploadId = ctx.videoUploadId, errorMessage = e.message)
                         }
                     }
                 }
@@ -755,7 +756,9 @@ class StreamPublishUseCase(
         videoId: Long,
         userId: Long,
         platform: Platform,
-        success: Boolean,
+        // Boolean 이 아닌 이유는 UploadOutcome 에 적어 두었다. 요지는 "확인 못 함" 을
+        // 실패로 접으면 사용자가 다시 올려 중복 게시가 나고 UGC 정산이 누락된다는 것.
+        outcome: UploadOutcome,
         videoUploadId: Long? = null,
         platformUrl: String? = null,
         platformPostId: String? = null,
@@ -767,7 +770,7 @@ class StreamPublishUseCase(
                     videoId = videoId,
                     userId = userId,
                     platform = platform,
-                    success = success,
+                    outcome = outcome,
                     platformUrl = platformUrl,
                     platformPostId = platformPostId,
                     errorMessage = errorMessage,

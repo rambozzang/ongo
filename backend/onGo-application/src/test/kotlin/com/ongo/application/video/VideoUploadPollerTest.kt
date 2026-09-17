@@ -173,7 +173,9 @@ class VideoUploadPollerTest {
                 it.nextRetryAt == null
         }, match { it.startsWith("poll:23:") }) }
         verify(exactly = 1) { events.publishEvent(match<UploadCompletedEvent> {
-            it.videoId == 7L && it.userId == 20L && it.platform == Platform.TIKTOK && !it.success
+            it.videoId == 7L && it.userId == 20L && it.platform == Platform.TIKTOK &&
+                // !success 는 FAILED 로 접혀도 통과한다. 저장된 상태와 같은 사실인지 본다.
+                it.outcome == UploadOutcome.UNCONFIRMED
         }) }
         verify(exactly = 0) { service.upload(any(), any(), any()) }
     }
@@ -258,7 +260,8 @@ class VideoUploadPollerTest {
         assertFalse(reason.contains("StreamPublishUseCase"), "내부 문구가 노출됐다: $reason")
 
         verify { events.publishEvent(match<UploadCompletedEvent> {
-            it.platform == Platform.NAVER_CLIP && !it.success
+            // 게시를 시도조차 하지 못했다 — 게시물이 없음을 아는 확정 실패다.
+            it.platform == Platform.NAVER_CLIP && it.outcome == UploadOutcome.FAILED
         }) }
         verify(exactly = 0) { service.poll(any(), any(), any(), any(), any()) }
     }
@@ -289,8 +292,16 @@ class VideoUploadPollerTest {
         verify { uploads.updateOwned(capture(saved), match { it.startsWith("poll:15:") }) }
         assertEquals(UploadStatus.UNCONFIRMED, saved.captured.status)
         assertTrue(saved.captured.errorMessage!!.contains("게시 결과 확인 실패"))
+        /*
+         * **`!success` 로는 부족하다.** UNCONFIRMED 와 FAILED 둘 다 false 라, 이벤트가
+         * "확인 불가" 를 "실패" 로 접어도 그 단언은 그대로 통과한다. 실제로 그 상태로
+         * 오래 있었다 — 사용자는 "업로드 실패" 를 보고 다시 올려 중복을 만들었고,
+         * UGC 제출은 실패로 굳어 정산에서 빠졌다.
+         *
+         * 저장된 상태(UNCONFIRMED)와 내보낸 결과가 **같은 사실**을 말하는지 본다.
+         */
         verify { events.publishEvent(match<UploadCompletedEvent> {
-            it.platform == Platform.THREADS && !it.success
+            it.platform == Platform.THREADS && it.outcome == UploadOutcome.UNCONFIRMED
         }) }
         verify(exactly = 0) { service.upload(any(), any(), any()) }
     }
@@ -364,7 +375,10 @@ class VideoUploadPollerTest {
         poller.pollDueUploads()
 
         verify { uploads.updateOwned(match { it.status == UploadStatus.FAILED && it.errorMessage == "정책 위반" }, any()) }
-        verify { events.publishEvent(match<UploadCompletedEvent> { it.platform == Platform.YOUTUBE && !it.success }) }
+        verify { events.publishEvent(match<UploadCompletedEvent> {
+            // 플랫폼이 거절한 것은 게시물이 없다는 것을 아는 상태다 — 확정 실패여야 한다.
+            it.platform == Platform.YOUTUBE && it.outcome == UploadOutcome.FAILED
+        }) }
         verify(exactly = 0) { service.upload(any(), any(), any()) }
     }
 
@@ -424,7 +438,11 @@ class VideoUploadPollerTest {
         poller.pollDueUploads()
 
         verify { uploads.updateOwned(match { it.status == UploadStatus.UNCONFIRMED }, any()) }
-        verify { events.publishEvent(match<UploadCompletedEvent> { it.platform == Platform.TIKTOK && !it.success }) }
+        verify { events.publishEvent(match<UploadCompletedEvent> {
+            // 응답 본문을 잃었을 뿐이라 이미 게시됐을 수 있다. 실패로 접으면
+            // 사용자가 다시 올려 중복이 된다.
+            it.platform == Platform.TIKTOK && it.outcome == UploadOutcome.UNCONFIRMED
+        }) }
         verify(exactly = 0) { service.upload(any(), any(), any()) }
     }
 

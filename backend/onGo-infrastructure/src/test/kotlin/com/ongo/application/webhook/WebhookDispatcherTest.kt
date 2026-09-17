@@ -1,5 +1,7 @@
 package com.ongo.application.webhook
 
+import com.ongo.application.video.UploadOutcome
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ongo.application.video.UploadCompletedEvent
 import com.ongo.common.enums.Platform
@@ -54,7 +56,7 @@ class WebhookDispatcherTest {
                 videoId = 42L,
                 userId = 7L,
                 platform = Platform.YOUTUBE,
-                success = true,
+                outcome = UploadOutcome.PUBLISHED,
                 platformUrl = "https://youtube.example/42",
             )
         )

@@ -1,5 +1,7 @@
 package com.ongo.application.automation
 
+import com.ongo.application.video.UploadOutcome
+
 import com.ongo.application.video.UploadCompletedEvent
 import com.ongo.common.enums.NotificationType
 import com.ongo.domain.automation.AutomationRule
@@ -45,7 +47,7 @@ class PerformanceTriggerEventListenerTest {
         every { rules.findAll() } returns listOf(rule)
         every { rules.findById(9L) } returns rule
 
-        listener.onUploadCompleted(UploadCompletedEvent(1L, 11L, com.ongo.common.enums.Platform.YOUTUBE, true))
+        listener.onUploadCompleted(UploadCompletedEvent(1L, 11L, com.ongo.common.enums.Platform.YOUTUBE, UploadOutcome.PUBLISHED))
 
         verify { notifications.save(any()) }
         verify { logs.save(match { it.ruleId == 9L && it.status == "SUCCESS" }) }

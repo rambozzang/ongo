@@ -210,7 +210,13 @@ class VideoUploadPoller(
                     videoId = upload.videoId,
                     userId = userId,
                     platform = upload.platform,
-                    success = status == UploadStatus.PUBLISHED,
+                    // UNCONFIRMED 를 "실패" 로 접지 않는다. 그렇게 하면 사용자가 다시
+                    // 올려 중복 게시가 나고, UGC 제출이 실패로 확정돼 정산이 누락된다.
+                    outcome = when (status) {
+                        UploadStatus.PUBLISHED -> UploadOutcome.PUBLISHED
+                        UploadStatus.UNCONFIRMED -> UploadOutcome.UNCONFIRMED
+                        else -> UploadOutcome.FAILED
+                    },
                     platformUrl = published?.platformUrl,
                     platformPostId = published?.platformVideoId ?: upload.platformVideoId,
                     errorMessage = errorMessage,
