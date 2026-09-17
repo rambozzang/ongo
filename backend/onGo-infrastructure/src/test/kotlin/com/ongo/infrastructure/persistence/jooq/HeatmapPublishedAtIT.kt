@@ -107,13 +107,26 @@ class HeatmapPublishedAtIT {
             publishedAt,
         )!!.get(0, Long::class.java)
 
-    private fun analytics(uploadId: Long, views: Int, date: LocalDate = METRIC_DATE) {
+    /**
+     * @param engagementBasis V115. 이 픽스처의 행들은 **그 날의 실제 증분**이라
+     *   INCREMENTAL 이다. 컬럼의 DB 기본값은 LEGACY_CUMULATIVE(fail-closed)여서
+     *   지정하지 않으면 모든 행이 합계에서 빠져 히트맵이 통째로 0 이 된다.
+     *   누적 스냅샷이 제외되는지는 아래 별도 케이스가 본다.
+     */
+    private fun analytics(
+        uploadId: Long,
+        views: Int,
+        date: LocalDate = METRIC_DATE,
+        engagementBasis: String = "INCREMENTAL",
+    ) {
         dsl.execute(
-            "INSERT INTO analytics_daily (video_upload_id, date, views, created_at) VALUES (?, ?, ?, ?)",
+            "INSERT INTO analytics_daily (video_upload_id, date, views, created_at, engagement_basis) " +
+                "VALUES (?, ?, ?, ?, ?)",
             uploadId,
             date,
             views,
             ROW_WRITTEN_AT,
+            engagementBasis,
         )
     }
 
@@ -233,5 +246,38 @@ class HeatmapPublishedAtIT {
         upload("YOUTUBE", PUBLISHED_WEDNESDAY_14H)
 
         assertTrue(heatmap().isEmpty(), "수집 전 상태를 0 칸으로 그렸다: ${heatmap()}")
+    }
+
+    // ══ 누적 스냅샷 제외 (V115) ═════════════════════════════════════════════
+
+    /**
+     * **누적값이 한 칸에 통째로 쌓이면 그 시간이 영원히 "최적 업로드 시간" 이 된다.**
+     *
+     * 히트맵은 조회수를 보고하는 플랫폼만 이미 거르지만 그 조건은 "조회하는가" 만 본다.
+     * 값의 **의미**는 engagement_basis 가 가른다. 위 픽스처가 기본으로 INCREMENTAL 을
+     * 넣으므로, 이 케이스가 없으면 필터가 사라져도 아무 테스트도 실패하지 않는다.
+     */
+    @Test
+    @DisplayName("누적 스냅샷은 히트맵에 섞이지 않는다")
+    fun legacyCumulativeRowsAreExcludedFromHeatmap() {
+        val tiktok = upload("TIKTOK", PUBLISHED_WEDNESDAY_14H)
+        analytics(tiktok, views = 5000, engagementBasis = "LEGACY_CUMULATIVE")
+        analytics(tiktok, views = 5000, date = METRIC_DATE.minusDays(1), engagementBasis = "LEGACY_CUMULATIVE")
+
+        assertTrue(
+            heatmap().isEmpty(),
+            "평생 누적값이 한 시간대에 쌓였다 — 그 칸이 항상 최적 시간으로 뽑힌다: ${heatmap()}",
+        )
+    }
+
+    /** 섞여 있으면 증분만 그린다. */
+    @Test
+    @DisplayName("증분과 누적이 섞이면 증분만 그린다")
+    fun onlyIncrementalRowsAreCharted() {
+        val tiktok = upload("TIKTOK", PUBLISHED_WEDNESDAY_14H)
+        analytics(tiktok, views = 5000, date = METRIC_DATE.minusDays(1), engagementBasis = "LEGACY_CUMULATIVE")
+        analytics(tiktok, views = 300, engagementBasis = "INCREMENTAL")
+
+        assertEquals(300L, heatmap()[WEDNESDAY]?.get(PUBLISH_HOUR), "증분만 더해야 한다")
     }
 }

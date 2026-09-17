@@ -269,15 +269,63 @@ class VideoUploadChannelTargetIT {
             EMAIL,
         )!!.get(0, Long::class.java)
 
+        /*
+         * **결제 기간을 채운다.** `findByPlanType` 은 유료 플랜에 대해
+         * current_period_start/end 와 next_billing_date 가 모두 있어야 돌려준다
+         * (`022e6646` 결제 정합성 보강). 기간 없는 PRO 는 "결제로 확인되지 않은 유료" 라
+         * 조회 대상이 아니다.
+         *
+         * 이 테스트의 관심사는 **enum 비교가 PostgreSQL 타입 오류 없이 도는가**이므로,
+         * 질의가 정상적으로 돌려줄 자격이 있는 행을 만들어야 그 질문에 답할 수 있다.
+         * 조건을 느슨하게 하는 것이 아니라 픽스처를 계약에 맞추는 것이다.
+         */
+        val now = java.time.LocalDateTime.now()
         subscriptionRepository.save(
             Subscription(
                 userId = userId,
                 planType = com.ongo.common.enums.PlanType.PRO,
                 status = com.ongo.common.enums.SubscriptionStatus.ACTIVE,
+                currentPeriodStart = now.minusDays(1),
+                currentPeriodEnd = now.plusDays(29),
+                nextBillingDate = now.plusDays(29),
             ),
         )
 
         assertEquals(1, subscriptionRepository.findByPlanType(com.ongo.common.enums.PlanType.PRO).size)
+    }
+
+    /**
+     * 결제 기간이 없는 유료 구독은 조회되지 않는다 (`022e6646`).
+     *
+     * 위 케이스가 기간을 채우도록 바뀌었으므로, 이 케이스가 없으면 **그 조건이 사라져도
+     * 아무 테스트도 실패하지 않는다.** 결제로 확인되지 않은 PRO 가 유료 사용자로 집계되면
+     * 권한 게이트와 정산이 함께 어긋난다.
+     */
+    @Test
+    @DisplayName("결제 기간이 없는 유료 구독은 플랜 조회에서 빠진다")
+    fun paidSubscriptionWithoutBillingPeriodIsExcluded() {
+        val userId = dsl.fetchOne(
+            """
+            INSERT INTO users (email, name, provider, provider_id, role, plan_type)
+            VALUES (?, 'incomplete-paid', 'GOOGLE', 'video-upload-incomplete-paid-it', 'USER', 'FREE')
+            RETURNING id
+            """.trimIndent(),
+            "incomplete-paid-$EMAIL",
+        )!!.get(0, Long::class.java)
+
+        subscriptionRepository.save(
+            Subscription(
+                userId = userId,
+                planType = com.ongo.common.enums.PlanType.BUSINESS,
+                status = com.ongo.common.enums.SubscriptionStatus.ACTIVE,
+            ),
+        )
+
+        assertEquals(
+            0,
+            subscriptionRepository.findByPlanType(com.ongo.common.enums.PlanType.BUSINESS).size,
+            "결제 기간이 없는 유료 구독이 조회됐다 — 결제로 확인되지 않은 플랜이 유료로 집계된다",
+        )
     }
 
     @Test

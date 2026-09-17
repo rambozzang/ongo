@@ -14,6 +14,7 @@ import com.ongo.infrastructure.persistence.jooq.Fields.RETRY_COUNT
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Tables.WEBHOOK_EVENTS
 import org.jooq.DSLContext
+import org.jooq.JSONB
 import org.jooq.Record
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
@@ -194,11 +195,35 @@ class WebhookEventJooqRepository(
             "수신만 기록되고 처리가 끝나지 않은 채 방치된 이벤트라 재시도 대상으로 되살렸습니다"
     }
 
+    /**
+     * `payload` 는 DB 에서 **JSONB** 다(V34). `select()` 로 전 컬럼을 가져오면 jOOQ 는
+     * 결과 메타데이터를 보고 그 칸을 `org.jooq.JSONB` 로 채운다.
+     *
+     * 그 값을 `DSL.field("payload", String::class.java)` 로 꺼내면 이름으로 찾은 뒤
+     * **변환 없이 캐스팅**해서 터진다:
+     *
+     *   java.lang.ClassCastException: class org.jooq.JSONB cannot be cast to
+     *   class java.lang.String
+     *
+     * 쓰기는 멀쩡하다 — JDBC URL 의 `stringtype=unspecified` 덕에 문자열을 JSONB 칸에
+     * 그대로 넣을 수 있다. 그래서 저장은 되는데 **읽기만** 죽는 비대칭이 생겼다.
+     * 웹훅 재시도·조회 다섯 경로가 전부 이 함수를 지난다.
+     *
+     * 여기서는 타입을 단정하지 않고 값의 실제 모양을 보고 문자열로 만든다. 드라이버나
+     * jOOQ 버전이 바뀌어 String 으로 오더라도 그대로 동작한다.
+     */
+    private fun Record.payloadJson(): String =
+        when (val raw = get("payload")) {
+            null -> "{}"
+            is JSONB -> raw.data()
+            else -> raw.toString()
+        }
+
     private fun Record.toWebhookEvent(): WebhookEvent = WebhookEvent(
         id = get(ID),
         eventId = get(EVENT_ID),
         eventType = get(EVENT_TYPE),
-        payload = get(DSL.field("payload", String::class.java)) ?: "{}",
+        payload = payloadJson(),
         status = get(STATUS) ?: "PENDING",
         retryCount = get(RETRY_COUNT) ?: 0,
         maxRetries = get(MAX_RETRIES) ?: 5,

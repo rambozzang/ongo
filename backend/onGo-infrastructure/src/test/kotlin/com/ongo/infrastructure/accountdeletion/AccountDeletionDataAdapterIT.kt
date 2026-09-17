@@ -62,6 +62,28 @@ class AccountDeletionDataAdapterIT {
             "DELETE FROM account_deletion_jobs WHERE user_id IN (SELECT id FROM users WHERE email = ?)",
             EMAIL,
         )
+
+        /*
+         * **users 를 조인하는 위 정리만으로는 부족하다.**
+         *
+         * 이 클래스의 테스트 일부는 실제로 사용자 행을 지운다(계정 삭제가 하는 일이다).
+         * 그 순간 job 의 주인이 사라지고 — `account_deletion_jobs.user_id` 에는 FK 가
+         * 없어 행은 그대로 남는다 — 위 서브쿼리가 그 job 을 찾지 못한다.
+         *
+         * 남은 고아 job 은 여전히 claim 대상이다. `claimNext` 는 `ORDER BY requested_at, id`
+         * 로 **전역에서 가장 오래된 것**을 집으므로(그게 맞는 동작이다), 뒤에 만든 job 을
+         * 기대한 테스트가 엉뚱한 id 를 받는다.
+         *
+         * 실제로 이 클래스의 재시도 테스트는 단독 실행하면 통과하고 클래스 전체를 돌리면
+         * 실패했다. Docker 가 없어 IT 가 한 번도 돌지 않는 동안 드러나지 않았다.
+         */
+        dsl.execute(
+            """
+            DELETE FROM account_deletion_jobs
+             WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.id = account_deletion_jobs.user_id)
+            """.trimIndent(),
+        )
+
         dsl.execute("DELETE FROM users WHERE email = ?", EMAIL)
         dsl.execute(
             """

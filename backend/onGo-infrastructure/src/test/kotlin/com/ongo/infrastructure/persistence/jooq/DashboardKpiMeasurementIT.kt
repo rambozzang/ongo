@@ -106,12 +106,21 @@ class DashboardKpiMeasurementIT {
         likes: Int = 0,
         comments: Int = 0,
         subscriberGained: Int = 0,
+        /*
+         * V115. 이 픽스처의 행들은 **그 날의 실제 증분**을 뜻하므로 INCREMENTAL 이다.
+         *
+         * 컬럼의 DB 기본값은 LEGACY_CUMULATIVE(fail-closed)라, 지정하지 않으면 모든 행이
+         * 합계에서 빠져 이 파일의 모든 단언이 0/null 이 된다. 여기서 이 값을 넘기는 것은
+         * 검사를 느슨하게 하는 것이 아니라 **"측정된 일별 값" 이라는 픽스처의 전제를
+         * 스키마에 맞춰 적는 것**이다. 누적 스냅샷이 제외되는지는 아래 별도 케이스가 본다.
+         */
+        engagementBasis: String = "INCREMENTAL",
     ) {
         dsl.execute(
             """
             INSERT INTO analytics_daily
-                (video_upload_id, date, views, likes, comments_count, subscriber_gained)
-            VALUES (?, ?, ?, ?, ?, ?)
+                (video_upload_id, date, views, likes, comments_count, subscriber_gained, engagement_basis)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
             uploadId,
             date,
@@ -119,6 +128,7 @@ class DashboardKpiMeasurementIT {
             likes,
             comments,
             subscriberGained,
+            engagementBasis,
         )
     }
 
@@ -333,5 +343,55 @@ class DashboardKpiMeasurementIT {
         analytics(upload("YOUTUBE"), inCurrent, subscriberGained = 0)
 
         assertEquals(0L, kpi().totalSubscribers)
+    }
+
+    // ══ 6) 누적 스냅샷 제외 (V115) ══════════════════════════════════════════
+
+    /**
+     * **핵심.** 차분 도입 이전의 누적 스냅샷이 합계에 섞이면 30 배가 된다.
+     *
+     * TikTok 은 `view_count`(평생 누적)를 돌려주는데 그것이 날짜별 행에 반복 저장돼
+     * 있었다. 그 행들은 LEGACY_CUMULATIVE 로 표시돼 합계에서 빠져야 한다.
+     *
+     * 위 픽스처가 기본으로 INCREMENTAL 을 넣으므로, 이 케이스가 없으면 **필터가
+     * 사라져도 아무 테스트도 실패하지 않는다.**
+     */
+    @Test
+    @DisplayName("누적 스냅샷 행은 조회수 합계에 섞이지 않는다")
+    fun legacyCumulativeRowsAreExcluded() {
+        val tiktok = upload("TIKTOK")
+        // 같은 평생 누적값이 사흘에 걸쳐 복사된 상태 — 예전 백필이 만들던 모양이다.
+        analytics(tiktok, inCurrent, views = 5000, engagementBasis = "LEGACY_CUMULATIVE")
+        analytics(tiktok, inCurrent.minusDays(1), views = 5000, engagementBasis = "LEGACY_CUMULATIVE")
+        analytics(tiktok, inCurrent.minusDays(2), views = 5000, engagementBasis = "LEGACY_CUMULATIVE")
+
+        assertNull(
+            kpi().totalViews,
+            "누적 스냅샷이 합산됐다 — 실제 5,000 인 영상이 15,000 으로 나온다",
+        )
+    }
+
+    /** 기준선 행의 0 은 "실측 0" 이 아니다. 합산 대상에 넣으면 평균이 왜곡된다. */
+    @Test
+    @DisplayName("BASELINE 행도 합계에서 빠진다")
+    fun baselineRowsAreExcluded() {
+        analytics(upload("TIKTOK"), inCurrent, views = 0, engagementBasis = "BASELINE")
+
+        assertNull(kpi().totalViews, "기준선 행이 실측처럼 합산됐다")
+    }
+
+    /** 섞여 있으면 증분만 더한다 — 누적 플랫폼도 차분이 쌓이면 정상 집계돼야 한다. */
+    @Test
+    @DisplayName("증분과 누적이 섞이면 증분만 더한다")
+    fun onlyIncrementalRowsAreSummed() {
+        val tiktok = upload("TIKTOK")
+        analytics(tiktok, inCurrent.minusDays(2), views = 5000, engagementBasis = "LEGACY_CUMULATIVE")
+        analytics(tiktok, inCurrent.minusDays(1), views = 0, engagementBasis = "BASELINE")
+        analytics(tiktok, inCurrent, views = 120, engagementBasis = "INCREMENTAL")
+
+        assertEquals(
+            120L, kpi().totalViews,
+            "차분 이후의 증분만 더해야 한다",
+        )
     }
 }

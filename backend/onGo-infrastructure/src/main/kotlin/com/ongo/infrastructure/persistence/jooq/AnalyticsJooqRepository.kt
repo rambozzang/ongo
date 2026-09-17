@@ -221,11 +221,26 @@ class AnalyticsJooqRepository(
             .and(DATE.lessOrEqual(now))
             .fetchOne()
 
-        // **네 지표 모두 `?: 0L` 을 하지 않는다.** NULL 은 "수집 플랫폼의 행이 없다" 는 신호다.
-        val currentViews = current?.get("total_views", Long::class.java)
-        val currentLikes = current?.get("total_likes", Long::class.java)
-        val currentComments = current?.get("total_comments", Long::class.java)
-        val currentSubs = current?.get("total_subs", Long::class.java)
+        /*
+         * **네 지표 모두 `?: 0L` 을 하지 않는다.** NULL 은 "수집 플랫폼의 행이 없다" 는 신호다.
+         *
+         * ## `javaObjectType` 이어야 하는 이유
+         *
+         * Kotlin 의 `Long::class.java` 는 **primitive `long`** 이다(`java.lang.Long` 이 아니다).
+         * jOOQ 의 변환기는 대상이 primitive 면 NULL 을 그 타입의 기본값 — 즉 **0** 으로
+         * 돌려준다. 그래서 위 `measuredSum` 이 공들여 만든 NULL 이 여기서 전부 0 이 됐다.
+         *
+         * 타입만 보면 `Long?` 이라 널 가능해 보이고, 주석도 "?: 0L 을 하지 않는다" 고
+         * 적혀 있어 읽는 사람은 계약이 지켜진다고 믿는다. 실제로는 정반대였다 —
+         * **"측정한 적 없음" 이 "0 회" 로 둔갑해 첫 화면에 나갔다.**
+         *
+         * `DashboardKpiMeasurementIT` 가 이것을 잡도록 만들어져 있었지만 Testcontainers
+         * 라 Docker 없이는 실행되지 않았고, 그 사이 이 결함이 남아 있었다.
+         */
+        val currentViews = current?.get("total_views", Long::class.javaObjectType)
+        val currentLikes = current?.get("total_likes", Long::class.javaObjectType)
+        val currentComments = current?.get("total_comments", Long::class.javaObjectType)
+        val currentSubs = current?.get("total_subs", Long::class.javaObjectType)
 
         // Previous period aggregates for change %
         val previous = dsl.select(
@@ -241,9 +256,11 @@ class AnalyticsJooqRepository(
             .and(DATE.lessThan(currentFrom))
             .fetchOne()
 
-        val previousViews = previous?.get("total_views", Long::class.java)
-        val previousLikes = previous?.get("total_likes", Long::class.java)
-        val previousSubs = previous?.get("total_subs", Long::class.java)
+        // 증감 계산의 기준이다. 여기가 0 이 되면 "지난 기간 0 회 → 이번 기간 N 회" 라는
+        // 가짜 증가율이 만들어진다. 위와 같은 이유로 javaObjectType 을 쓴다.
+        val previousViews = previous?.get("total_views", Long::class.javaObjectType)
+        val previousLikes = previous?.get("total_likes", Long::class.javaObjectType)
+        val previousSubs = previous?.get("total_subs", Long::class.javaObjectType)
 
         // Credit info
         val creditRecord = dsl.select(
@@ -426,11 +443,27 @@ class AnalyticsJooqRepository(
              * 전부 **일요일 0 시** 칸에 쌓였다. 그 시간에 올린 적이 없는데도 히트맵이
              * 그 칸을 채우고, 최적 시간으로 뽑히기까지 한다.
              */
-            val dow = record.get("day_of_week", Int::class.java) ?: continue
-            val h = record.get("hour", Int::class.java) ?: continue
+            /*
+             * **`javaObjectType` 이어야 위 `?: continue` 가 살아 있다.**
+             *
+             * Kotlin 의 `Int::class.java` 는 primitive `int` 라, jOOQ 는 NULL 을 **0** 으로
+             * 돌려준다. 그래서 `?: continue` 는 한 번도 실행되지 않았고, 게시 시각을 모르는
+             * 행이 전부 `dow = 0` — **일요일 0 시** 칸에 쌓였다. 바로 위 주석이 "고쳤다"
+             * 고 적어 둔 그 증상이 타입 하나 때문에 그대로 살아 있던 셈이다.
+             */
+            val dow = record.get("day_of_week", Int::class.javaObjectType) ?: continue
+            val h = record.get("hour", Int::class.javaObjectType) ?: continue
             val dayName = dayNames.getOrNull(dow) ?: continue
-            // 합계 0 은 "그 시간에 올렸고 조회가 없었다" 는 관측이므로 그대로 남긴다.
-            val views = record.get("total_views", Long::class.java) ?: 0L
+
+            /*
+             * 합계 `0` 은 "그 시간에 올렸고 조회가 없었다" 는 **관측**이므로 남긴다.
+             * 합계 `NULL` 은 "더할 수 있는 행이 하나도 없다" 는 뜻이라 칸을 만들지 않는다 —
+             * 누적 스냅샷(LEGACY_CUMULATIVE)만 있는 시간대가 여기 해당한다.
+             *
+             * 둘을 같이 0 으로 그리면, 아직 아무것도 측정되지 않은 칸이 "조회 0 회" 라는
+             * 관측처럼 보이고 최적 시간 추천의 입력이 된다.
+             */
+            val views = record.get("total_views", Long::class.javaObjectType) ?: continue
 
             heatmap.getOrPut(dayName) { mutableMapOf() }[h] = views
         }
@@ -451,6 +484,13 @@ class AnalyticsJooqRepository(
             .set(REVENUE_MICRO, analytics.revenueMicro)
             .set(IMPRESSIONS, analytics.impressions)
             .set(AVG_VIEW_DURATION_SECONDS, analytics.avgViewDurationSeconds)
+            // **basis 를 빠뜨리면 이 행은 통째로 합계에서 사라진다.** DB 기본값이
+            // LEGACY_CUMULATIVE(fail-closed)라서, 쓰지 않으면 조용히 제외된다.
+            .set(ENGAGEMENT_BASIS, analytics.engagementBasis.name)
+            .set(VIEWS_TOTAL, analytics.viewsTotal)
+            .set(LIKES_TOTAL, analytics.likesTotal)
+            .set(COMMENTS_TOTAL, analytics.commentsTotal)
+            .set(SHARES_TOTAL, analytics.sharesTotal)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -554,22 +594,26 @@ class AnalyticsJooqRepository(
     override fun saveBatch(analytics: List<AnalyticsDaily>) {
         if (analytics.isEmpty()) return
 
-        val insert = dsl.insertInto(
-            ANALYTICS_DAILY,
-            VIDEO_UPLOAD_ID, DATE, VIEWS, LIKES, COMMENTS_COUNT,
-            SHARES, WATCH_TIME_SECONDS, SUBSCRIBER_GAINED, REVENUE_MICRO,
-            IMPRESSIONS, AVG_VIEW_DURATION_SECONDS,
-        )
-
-        var batch = insert.values(null as Long?, null, null, null, null, null, null, null, null, null, null)
-        // Use batch binding
+        /*
+         * **basis 와 스냅샷을 함께 넣는다.**
+         *
+         * 빠뜨리면 DB 기본값 LEGACY_CUMULATIVE(fail-closed)가 남아 이 행들이 통째로
+         * 합계에서 사라진다. 배치 경로라 한 번에 많이 사라진다.
+         *
+         * 바인드 순서는 위 컬럼 목록과 **정확히 같아야 한다.** 어긋나면 타입이 맞는
+         * 자리끼리 조용히 뒤바뀐다.
+         */
         val batchBind = dsl.batch(
             dsl.insertInto(
                 ANALYTICS_DAILY,
                 VIDEO_UPLOAD_ID, DATE, VIEWS, LIKES, COMMENTS_COUNT,
                 SHARES, WATCH_TIME_SECONDS, SUBSCRIBER_GAINED, REVENUE_MICRO,
                 IMPRESSIONS, AVG_VIEW_DURATION_SECONDS,
-            ).values(null as Long?, null, null, null, null, null, null, null, null, null, null)
+                ENGAGEMENT_BASIS, VIEWS_TOTAL, LIKES_TOTAL, COMMENTS_TOTAL, SHARES_TOTAL,
+            ).values(
+                null as Long?, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null,
+            )
         )
 
         for (a in analytics) {
@@ -577,6 +621,7 @@ class AnalyticsJooqRepository(
                 a.videoUploadId, a.date, a.views, a.likes, a.commentsCount,
                 a.shares, a.watchTimeSeconds, a.subscriberGained, a.revenueMicro,
                 a.impressions, a.avgViewDurationSeconds,
+                a.engagementBasis.name, a.viewsTotal, a.likesTotal, a.commentsTotal, a.sharesTotal,
             )
         }
 
