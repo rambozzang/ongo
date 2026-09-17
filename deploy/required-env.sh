@@ -19,12 +19,88 @@
 # installation does not need multiple frontends. Keeping both variables in the
 # required list made older production .env files fail before the application
 # could use the safe APP_BASE_URL fallback.
-ONGO_REQUIRED_ENV_VARS="JWT_SECRET DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET OAUTH_STATE_SECRET APP_BASE_URL R2_ACCOUNT_ID R2_BUCKET R2_ACCESS_KEY R2_SECRET_KEY PORTONE_STORE_ID PORTONE_CHANNEL_KEY PORTONE_API_SECRET PORTONE_WEBHOOK_SECRET"
+#
+# OPENAI_API_KEY 는 AI 기능용이 아니라 **기동 조건**이라 여기 있다.
+# ProductionConfigurationValidator 의 마지막 requireReal 이 그 값을 강제한다 —
+# 쇼츠 파이프라인의 STT 가 OpenAI 전용이라 다른 제공자로 대체되지 않기 때문이다.
+# application.yml 기본값이 `dummy-openai-key` 이고 검증기가 "dummy" 를 거부하므로,
+# 이 값이 없으면 **배포는 성공하고 기동만 죽는다.** 그 자리를 여기서 막는다.
+ONGO_REQUIRED_ENV_VARS="JWT_SECRET DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET OAUTH_STATE_SECRET APP_BASE_URL R2_ACCOUNT_ID R2_BUCKET R2_ACCESS_KEY R2_SECRET_KEY PORTONE_STORE_ID PORTONE_CHANNEL_KEY PORTONE_API_SECRET PORTONE_WEBHOOK_SECRET OPENAI_API_KEY"
 
 # Presence alone is not enough for credentials. This smaller set contains
 # values that have a stable, non-trivial identifier shape across deployments;
 # it catches accidental values such as "12" before the service is stopped.
-ONGO_SANITY_ENV_VARS="JWT_SECRET DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET OAUTH_STATE_SECRET APP_BASE_URL R2_BUCKET R2_ACCOUNT_ID R2_ACCESS_KEY R2_SECRET_KEY PORTONE_STORE_ID PORTONE_CHANNEL_KEY PORTONE_API_SECRET PORTONE_WEBHOOK_SECRET"
+ONGO_SANITY_ENV_VARS="JWT_SECRET DB_PASSWORD PLATFORM_TOKEN_ENCRYPTION_KEY GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET KAKAO_CLIENT_ID KAKAO_CLIENT_SECRET OAUTH_STATE_SECRET APP_BASE_URL R2_BUCKET R2_ACCOUNT_ID R2_ACCESS_KEY R2_SECRET_KEY PORTONE_STORE_ID PORTONE_CHANNEL_KEY PORTONE_API_SECRET PORTONE_WEBHOOK_SECRET OPENAI_API_KEY"
+
+# 길이 8자로는 통과하지만 기동 검증기가 거부하는 값들.
+#
+# ## 왜 일반 규칙과 따로 두는가
+#
+# 위 8자 규칙은 `ONGO_SANITY_ENV_VARS` 전체에 같은 기준을 적용한다. 그런데 검증기는
+# 일부 값에 **더 엄한 기준**을 건다. 그 차이가 그대로 사고의 자리다 — 20자짜리
+# OAUTH_STATE_SECRET 은 배포 검증을 통과하고 기동에서 죽는다.
+#
+# ## 왜 이 검사를 추가해도 안전한가
+#
+# 여기서 새로 거절되는 값은 **이미 기동 검증기가 거절하던 값**이다. 지금 정상 가동
+# 중인 배포는 정의상 검증기를 통과했으므로 이 검사에도 걸리지 않는다. 즉 이 추가는
+# 살아 있는 서비스를 막지 않고, "중지 뒤 기동 실패(서비스 다운)" 를
+# "중지 전 배포 거절(무중단 실패)" 로 옮기기만 한다.
+ONGO_MIN_LENGTH_OAUTH_STATE_SECRET=32
+
+# 검증기의 추가 규칙을 배포 전에 미리 거른다. 위반한 변수명만 반환한다.
+#   - OAUTH_STATE_SECRET: 32자 이상 (ProductionConfigurationValidator 의 require)
+#   - APP_BASE_URL: https 스킴. 검증기는 여기서 파생되는 public-api.oauth.callback-url
+#     이 https 로 시작할 것을 요구한다.
+ongo_invalid_startup_gate_env_vars() {
+    local invalid=""
+    local state_secret="${OAUTH_STATE_SECRET:-}"
+    local base_url="${APP_BASE_URL:-}"
+
+    if [ "${#state_secret}" -gt 0 ] && \
+       [ "${#state_secret}" -lt "$ONGO_MIN_LENGTH_OAUTH_STATE_SECRET" ]; then
+        invalid="$invalid OAUTH_STATE_SECRET"
+    fi
+
+    # PUBLIC_OAUTH_CALLBACK_URL 을 직접 지정했다면 그쪽이 이긴다(application.yml:210).
+    if [ -n "${PUBLIC_OAUTH_CALLBACK_URL:-}" ]; then
+        case "${PUBLIC_OAUTH_CALLBACK_URL}" in
+            https://*) ;;
+            *) invalid="$invalid PUBLIC_OAUTH_CALLBACK_URL" ;;
+        esac
+    elif [ -n "$base_url" ]; then
+        case "$base_url" in
+            https://*) ;;
+            *) invalid="$invalid APP_BASE_URL" ;;
+        esac
+    fi
+
+    echo "$invalid"
+}
+
+# 사람이 읽는 안내는 stderr 로. 값은 절대 찍지 않는다.
+ongo_report_invalid_startup_gate_env_vars() {
+    local invalid="$1"
+    local env_file="$2"
+    local var
+
+    echo "[ERROR] 다음 환경변수는 값이 있어도 백엔드 기동 검증을 통과하지 못합니다:"
+    for var in $invalid; do
+        case "$var" in
+            OAUTH_STATE_SECRET)
+                echo "          - OAUTH_STATE_SECRET (최소 ${ONGO_MIN_LENGTH_OAUTH_STATE_SECRET}자)"
+                ;;
+            APP_BASE_URL)
+                echo "          - APP_BASE_URL (https:// 로 시작해야 합니다)"
+                ;;
+            PUBLIC_OAUTH_CALLBACK_URL)
+                echo "          - PUBLIC_OAUTH_CALLBACK_URL (https:// 로 시작해야 합니다)"
+                ;;
+        esac
+    done
+    echo "        지금 막지 않으면 서비스를 중지한 뒤 기동에서 실패합니다."
+    echo "        ${env_file} 파일을 고친 뒤 다시 배포해주세요. 값 자체는 출력하지 않습니다."
+} >&2
 
 # 누락된 변수명을 공백 구분 문자열로 표준출력에 낸다. 전부 있으면 빈 문자열.
 ongo_missing_env_vars() {

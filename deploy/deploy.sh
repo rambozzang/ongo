@@ -302,6 +302,31 @@ preflight_env() {
         exit 1
     fi
 
+    # 값은 있고 길이도 충분하지만 **기동 검증기가 거부하는** 값을 여기서 잡는다.
+    # 위 두 검사(존재·최소 8자)보다 엄한 규칙이 ProductionConfigurationValidator 에
+    # 따로 있어서, 그 차이만큼이 "배포 성공 후 기동 실패" 로 빠지던 자리다.
+    local INVALID_GATE_VARS
+    INVALID_GATE_VARS="$(
+        set +e
+        # shellcheck source=deploy/required-env.sh
+        source "$SRC_DIR/deploy/required-env.sh" || exit 10
+        ongo_load_env_file "$ENV_FILE" >/dev/null 2>&1 || exit $((20 + $?))
+        ongo_invalid_startup_gate_env_vars
+    )" || ENV_PREFLIGHT_RC=$?
+
+    if [ "$ENV_PREFLIGHT_RC" -ne 0 ]; then
+        error "기동 게이트 선행 검증에 실패했습니다(rc=$ENV_PREFLIGHT_RC). 기존 서비스는 그대로 실행 중입니다."
+        exit 1
+    fi
+    if [ -n "$INVALID_GATE_VARS" ]; then
+        error "백엔드 기동 검증을 통과하지 못할 값이라 배포를 중단합니다. 기존 서비스는 그대로 실행 중입니다."
+        (
+            source "$SRC_DIR/deploy/required-env.sh"
+            ongo_report_invalid_startup_gate_env_vars "$INVALID_GATE_VARS" "$ENV_FILE"
+        )
+        exit 1
+    fi
+
     preflight_server_port
 }
 
