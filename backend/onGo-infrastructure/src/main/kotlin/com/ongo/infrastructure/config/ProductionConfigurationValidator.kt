@@ -41,60 +41,81 @@ class ProductionConfigurationValidator(
     @Value("\${dashscope.api-key:}") private val dashScopeApiKey: String,
 ) {
 
+    /**
+     * **위반을 전부 모아 한 번에 보고한다.**
+     *
+     * 예전에는 첫 `require` 에서 멈춰, 값이 다섯 개 빠져 있으면 배포를 다섯 번 반복해야
+     * 전부 알 수 있었다. 이 검증기는 `@PostConstruct` 라 실패하면 앱이 죽고 그 사이
+     * nginx 는 502 를 낸다 — 반복할수록 다운타임이 곱해진다.
+     *
+     * 검사 자체는 그대로다. fail-closed 도 그대로다 — 하나라도 위반이면 기동하지 않는다.
+     */
     @PostConstruct
     fun validate() {
-        require(jwtSecret.toByteArray().size >= 32) {
+        val violations = Violations()
+
+        violations.check(jwtSecret.toByteArray().size >= 32) {
             "jwt.secret must contain at least 32 bytes in production"
         }
 
+        /*
+         * Base64 디코딩 실패는 **던지지 않고 담는다.**
+         *
+         * 예전에는 여기서 곧바로 IllegalStateException 을 던져, 그 뒤의 검사가 전부
+         * 실행되지 않았다. 암호화 키 오타 하나가 나머지 22 개 문제를 가리던 자리다.
+         */
         val encryptionBytes = try {
             Base64.getDecoder().decode(platformEncryptionKey)
         } catch (_: IllegalArgumentException) {
-            throw IllegalStateException("platform.token.encryption-key must be valid Base64")
+            null
         }
-        require(encryptionBytes.size == 32) {
-            "platform.token.encryption-key must decode to exactly 32 bytes"
+        if (encryptionBytes == null) {
+            violations.check(false) { "platform.token.encryption-key must be valid Base64" }
+        } else {
+            violations.check(encryptionBytes.size == 32) {
+                "platform.token.encryption-key must decode to exactly 32 bytes"
+            }
         }
 
         val effectiveAllowedOrigins = allowedOrigins.ifBlank { appBaseUrl }
-        requireReal("cors.allowed-origins (or APP_BASE_URL)", effectiveAllowedOrigins)
-        require(!effectiveAllowedOrigins.split(',').any { it.trim() == "*" || it.contains("localhost") }) {
+        violations.requireReal("cors.allowed-origins (or APP_BASE_URL)", effectiveAllowedOrigins, ::isRealValue)
+        violations.check(!effectiveAllowedOrigins.split(',').any { it.trim() == "*" || it.contains("localhost") }) {
             "cors.allowed-origins must not contain '*' or localhost in production"
         }
 
-        require(storageType.equals("s3", ignoreCase = true)) {
+        violations.check(storageType.equals("s3", ignoreCase = true)) {
             "storage.type must be s3 in production"
         }
-        requireReal("storage.bucket", storageBucket)
-        requireReal("storage.s3.endpoint", storageEndpoint)
-        require(storageEndpoint.matches(Regex("https://[a-z0-9]+\\.r2\\.cloudflarestorage\\.com/?"))) {
+        violations.requireReal("storage.bucket", storageBucket, ::isRealValue)
+        violations.requireReal("storage.s3.endpoint", storageEndpoint, ::isRealValue)
+        violations.check(storageEndpoint.matches(Regex("https://[a-z0-9]+\\.r2\\.cloudflarestorage\\.com/?"))) {
             "storage.s3.endpoint must be a valid Cloudflare R2 endpoint in production"
         }
-        requireReal("storage.s3.access-key", storageAccessKey)
-        requireReal("storage.s3.secret-key", storageSecretKey)
+        violations.requireReal("storage.s3.access-key", storageAccessKey, ::isRealValue)
+        violations.requireReal("storage.s3.secret-key", storageSecretKey, ::isRealValue)
 
-        requireReal("payment.portone.store-id", portoneStoreId)
-        requireReal("payment.portone.channel-key", portoneChannelKey)
-        requireReal("payment.portone.api-secret", portoneApiSecret)
+        violations.requireReal("payment.portone.store-id", portoneStoreId, ::isRealValue)
+        violations.requireReal("payment.portone.channel-key", portoneChannelKey, ::isRealValue)
+        violations.requireReal("payment.portone.api-secret", portoneApiSecret, ::isRealValue)
         // A missing webhook secret makes every webhook unverifiable while the
         // service still appears healthy. Fail startup before payments can get
         // stuck in a pending state.
-        requireReal("payment.portone.webhook-secret", portoneWebhookSecret)
+        violations.requireReal("payment.portone.webhook-secret", portoneWebhookSecret, ::isRealValue)
 
-        requireReal("google OAuth client-id", googleClientId)
-        requireReal("google OAuth client-secret", googleClientSecret)
-        requireReal("kakao OAuth client-id", kakaoClientId)
-        requireReal("kakao OAuth client-secret", kakaoClientSecret)
-        requireReal("OAUTH_STATE_SECRET", oauthStateSecret)
-        require(oauthStateSecret.length >= 32) {
+        violations.requireReal("google OAuth client-id", googleClientId, ::isRealValue)
+        violations.requireReal("google OAuth client-secret", googleClientSecret, ::isRealValue)
+        violations.requireReal("kakao OAuth client-id", kakaoClientId, ::isRealValue)
+        violations.requireReal("kakao OAuth client-secret", kakaoClientSecret, ::isRealValue)
+        violations.requireReal("OAUTH_STATE_SECRET", oauthStateSecret, ::isRealValue)
+        violations.check(oauthStateSecret.length >= 32) {
             "OAUTH_STATE_SECRET must contain at least 32 characters in production"
         }
-        requireReal("public-api.oauth.callback-url", publicOAuthCallbackUrl)
-        require(publicOAuthCallbackUrl.startsWith("https://")) {
+        violations.requireReal("public-api.oauth.callback-url", publicOAuthCallbackUrl, ::isRealValue)
+        violations.check(publicOAuthCallbackUrl.startsWith("https://")) {
             "public-api.oauth.callback-url must use HTTPS in production"
         }
 
-        require(listOf(anthropicApiKey, openAiApiKey, geminiApiKey, dashScopeApiKey).any(::isRealValue)) {
+        violations.check(listOf(anthropicApiKey, openAiApiKey, geminiApiKey, dashScopeApiKey).any(::isRealValue)) {
             "at least one production AI provider API key must be configured"
         }
 
@@ -107,12 +128,55 @@ class ProductionConfigurationValidator(
          * run still dies at TRANSCRIBE with a provider auth error. That failure
          * surfaces minutes into a paid run, long after the user committed.
          */
-        requireReal("spring.ai.openai.api-key (Shorts transcription)", openAiApiKey)
+        violations.requireReal("spring.ai.openai.api-key (Shorts transcription)", openAiApiKey, ::isRealValue)
+
+        violations.throwIfAny()
     }
 
-    private fun requireReal(name: String, value: String) {
-        require(isRealValue(value)) {
-            "$name must be configured with a production value"
+    /**
+     * 위반을 **모아 두는** 수집기. 첫 실패에서 멈추지 않는다.
+     *
+     * ## 왜 모으는가
+     *
+     * 예전에는 `require` 23 개가 순차로 터졌다. 값이 다섯 개 빠져 있으면 운영자는
+     * **배포를 다섯 번 반복**해야 전부 알 수 있었다. 한 번에 하나씩, 매번 몇 분씩.
+     *
+     * 게다가 이 검증기는 `@PostConstruct` 라 실패하면 앱이 죽는다. 그 사이 nginx 는
+     * 502 를 낸다. 한 번에 다 보여주면 한 번의 수정으로 끝난다.
+     */
+    private class Violations {
+        private val messages = mutableListOf<String>()
+
+        fun check(condition: Boolean, message: () -> String) {
+            if (!condition) messages += message()
+        }
+
+        fun requireReal(name: String, value: String, isReal: (String) -> Boolean) {
+            check(isReal(value)) { "$name must be configured with a production value" }
+        }
+
+        /**
+         * 하나라도 있으면 전부 담아 던진다.
+         *
+         * 번호를 붙이는 이유는 journal 에서 줄바꿈이 뭉개져도 항목 경계를 알아볼 수
+         * 있게 하기 위해서다.
+         */
+        fun throwIfAny() {
+            if (messages.isEmpty()) return
+            // `require` 가 던지던 타입을 그대로 쓴다. 설정 **값**이 잘못된 것이므로
+            // IllegalArgumentException 이 맞고, 기존 호출부·테스트의 계약도 유지된다.
+            // (Base64 실패만 IllegalStateException 이었는데 그 불일치도 여기서 없어진다.)
+            throw IllegalArgumentException(
+                buildString {
+                    append("production configuration is incomplete (")
+                    append(messages.size)
+                    append(" problem(s)):")
+                    messages.forEachIndexed { index, message ->
+                        append("\n  ${index + 1}. $message")
+                    }
+                    append("\n운영 .env 를 고친 뒤 다시 배포하세요. 값 자체는 출력하지 않습니다.")
+                },
+            )
         }
     }
 

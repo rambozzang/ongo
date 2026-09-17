@@ -66,6 +66,77 @@ class ProductionConfigurationValidatorTest {
         kotlin.test.assertTrue(error.message.orEmpty().contains("spring.ai.openai.api-key"))
     }
 
+    /**
+     * **위반을 전부 모아서 한 번에 알려준다.**
+     *
+     * 예전에는 `require` 23 개가 순차로 터져 첫 하나만 보였다. 값이 여러 개 빠져 있으면
+     * 운영자는 **배포를 그 횟수만큼 반복**해야 전부 알 수 있었다. 이 검증기는
+     * `@PostConstruct` 라 실패하면 앱이 죽고 그동안 nginx 는 502 를 내므로, 반복할수록
+     * 다운타임이 곱해진다.
+     */
+    @Test
+    fun `여러 설정이 빠지면 한 번에 모두 보고한다`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            validator(
+                portoneWebhookSecret = "",
+                portoneStoreId = "",
+                openAiApiKey = "",
+                anthropicApiKey = "",
+                geminiApiKey = "",
+                dashScopeApiKey = "",
+            ).validate()
+        }
+
+        val message = error.message.orEmpty()
+        listOf(
+            "payment.portone.webhook-secret",
+            "payment.portone.store-id",
+            "spring.ai.openai.api-key",
+            "at least one production AI provider",
+        ).forEach { expected ->
+            kotlin.test.assertTrue(
+                expected in message,
+                "빠진 설정 '$expected' 가 보고에 없다. 한 번에 다 보여주지 않으면 배포를 반복해야 한다:\n$message",
+            )
+        }
+    }
+
+    /** 몇 개가 문제인지 먼저 말해 줘야 운영자가 한 번에 고칠 분량을 가늠한다. */
+    @Test
+    fun `문제 개수를 먼저 알려준다`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            validator(portoneWebhookSecret = "", portoneStoreId = "").validate()
+        }
+
+        kotlin.test.assertTrue(
+            Regex("""\d+ problem\(s\)""").containsMatchIn(error.message.orEmpty()),
+            "문제 개수가 없다: ${error.message}",
+        )
+    }
+
+    /**
+     * 암호화 키 오타 하나가 **나머지 검사를 통째로 가리던** 자리다.
+     *
+     * 예전에는 Base64 디코딩 실패에서 곧바로 IllegalStateException 을 던져, 그 뒤 22 개
+     * 검사가 실행되지 않았다. 운영자는 키를 고치고 다시 배포한 뒤에야 다음 문제를 봤다.
+     */
+    @Test
+    fun `암호화 키가 깨져도 나머지 검사를 계속한다`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            validator(portoneStoreId = "", platformEncryptionKey = "!!not-base64!!").validate()
+        }
+
+        val message = error.message.orEmpty()
+        kotlin.test.assertTrue(
+            "platform.token.encryption-key" in message,
+            "Base64 오류가 보고되지 않았다: $message",
+        )
+        kotlin.test.assertTrue(
+            "payment.portone.store-id" in message,
+            "Base64 오류가 뒤 검사를 가렸다 — 예전의 조기 throw 가 되돌아왔다: $message",
+        )
+    }
+
     private fun validator(
         portoneWebhookSecret: String = "d2Vic2l0ZS13ZWJob29rLXNlY3JldA==",
         portoneStoreId: String = "store-123",
@@ -73,9 +144,10 @@ class ProductionConfigurationValidatorTest {
         openAiApiKey: String = "openai-api-key",
         geminiApiKey: String = "",
         dashScopeApiKey: String = "",
+        platformEncryptionKey: String = Base64.getEncoder().encodeToString(ByteArray(32) { 1 }),
     ) = ProductionConfigurationValidator(
         jwtSecret = "j".repeat(32),
-        platformEncryptionKey = Base64.getEncoder().encodeToString(ByteArray(32) { 1 }),
+        platformEncryptionKey = platformEncryptionKey,
         allowedOrigins = "https://ongo.test",
         appBaseUrl = "https://ongo.test",
         storageType = "s3",
