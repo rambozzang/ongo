@@ -498,6 +498,14 @@ export const sectionsKo: ManualSection[] = [
         text: '모든 연동된 플랫폼의 성과 데이터를 한 화면에서 확인할 수 있습니다. 조회수, 좋아요, 댓글 수, 구독자 변화 등을 통합적으로 모니터링하세요.',
       },
       {
+        subtitle: '기간별 수치가 언제부터 보이나요',
+        text: 'YouTube를 제외한 플랫폼은 API가 "기간별 조회수"를 제공하지 않고 게시 이후 누적된 총합만 알려줍니다. 그래서 onGo는 6시간마다 총합을 기록해 두고 그 차이로 기간별 수치를 계산합니다. 채널을 막 연동했다면 비교할 이전 기록이 없어 첫 수집은 기준점으로만 쓰이며, 다음 수집(최대 6시간 뒤)부터 기간별 수치가 나타납니다. 이 기간에는 0 대신 "-"로 표시해 실제로 0회인 것과 구분합니다.',
+      },
+      {
+        subtitle: '연동 이전 기간은 조회할 수 없습니다',
+        text: '누적 총합만 제공하는 플랫폼은 지나간 날짜의 값을 되물을 방법이 없습니다. onGo는 알 수 없는 과거를 추정해 채워 넣지 않으므로, 채널 연동 이전 기간은 비어 있는 상태로 남습니다. YouTube는 기간별 조회가 가능해 최근 누락분을 자동으로 채웁니다.',
+      },
+      {
         subtitle: '수익 분석',
         text: '플랫폼별 수익 현황과 추이를 확인할 수 있습니다. 다만 현재 플랫폼 분석 연동은 광고 수익을 자동 수집하지 않아 광고 수익은 0으로 표시되며, 수익 분석 리포트 등 광고 수익 기반 AI 기능은 사용할 수 없습니다. 실제로 집계되는 수익은 직접 입력한 브랜드딜 수익입니다.',
       },
@@ -3476,6 +3484,14 @@ export const sectionsEn: ManualSection[] = [
       {
         subtitle: 'Unified Analytics',
         text: 'View performance data from all connected platforms on one screen. Monitor views, likes, comments, subscriber changes, and more in an integrated dashboard.',
+      },
+      {
+        subtitle: 'When do per-period numbers appear?',
+        text: 'Apart from YouTube, platform APIs do not report "views for a date range" — they only return the lifetime total accumulated since the post went up. onGo therefore records that total every 6 hours and derives per-period numbers from the difference. If you have just connected a channel there is no earlier record to compare against, so the first collection is used only as a starting point and per-period numbers appear from the next collection (up to 6 hours later). During that window we show "-" rather than 0, so a pending baseline is never mistaken for a measured zero.',
+      },
+      {
+        subtitle: 'Periods before you connected cannot be retrieved',
+        text: 'For platforms that only expose a lifetime total, there is no way to ask what the value was on a past date. onGo does not estimate unknown history and fill it in, so periods before the channel was connected stay empty. YouTube supports date-range queries, so recent gaps there are backfilled automatically.',
       },
       {
         subtitle: 'Revenue Analytics',

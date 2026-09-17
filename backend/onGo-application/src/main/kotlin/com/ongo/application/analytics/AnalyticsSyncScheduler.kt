@@ -5,6 +5,9 @@ import com.ongo.domain.accountdeletion.canWrite
 import com.ongo.application.config.ExecutorConfig
 import com.ongo.domain.analytics.AnalyticsDaily
 import com.ongo.domain.analytics.AnalyticsRepository
+import com.ongo.domain.analytics.EngagementBasis
+import com.ongo.domain.analytics.EngagementDelta
+import com.ongo.domain.analytics.EngagementTotals
 import com.ongo.domain.analytics.RevenueMeasurement
 import com.ongo.domain.analytics.RevenueStatus
 import com.ongo.domain.channel.ChannelRepository
@@ -94,7 +97,28 @@ class AnalyticsSyncScheduler(
                                 val missingDates =
                                     AnalyticsSyncWindow.datesToSync(today, latestDate, existingDates)
 
-                                missingDates.forEach { date ->
+                                /*
+                                 * **누적 플랫폼은 과거 날짜를 백필하지 않는다.**
+                                 *
+                                 * 백필은 "그 날짜의 값을 물어볼 수 있다" 를 전제한다.
+                                 * 기간값을 주는 YouTube 만 그게 가능하다. 나머지 12개는
+                                 * 무엇을 물어도 **지금 이 순간의 평생 누적값**을 준다.
+                                 *
+                                 * 그래서 예전 코드는 오늘의 누적값을 빈 과거 날짜마다
+                                 * 복사해 넣었다. 30일이 비어 있으면 같은 숫자가 30개
+                                 * 생기고, 화면이 그걸 합산해 30배를 보여줬다.
+                                 *
+                                 * 지나간 날의 값은 이제 알 수 없다. 모르는 것을 지어내는
+                                 * 대신 비워 둔다 — 오늘부터 스냅샷을 쌓아 차분한다.
+                                 */
+                                val backfillDates =
+                                    if (PlatformMetricAccumulation.isCumulative(channel.platform.name)) {
+                                        emptyList()
+                                    } else {
+                                        missingDates
+                                    }
+
+                                backfillDates.forEach { date ->
                                     analyticsSemaphore.acquire()
                                     try {
                                         syncVideoAnalytics(channel.platform, videoId, token, uploadId, date, channel.userId)
@@ -157,18 +181,61 @@ class AnalyticsSyncScheduler(
             }
             if (!stillWritable) return
 
-            analyticsRepository.upsert(AnalyticsDaily(
-                videoUploadId = uploadId,
-                date = date,
-                views = analytics.views.toInt(),
-                likes = analytics.likes.toInt(),
-                commentsCount = analytics.comments.toInt(),
-                shares = analytics.shares.toInt(),
-                watchTimeSeconds = analytics.watchTimeSeconds,
-                subscriberGained = analytics.subscriberGained,
-                impressions = analytics.impressions.toInt(),
-                avgViewDurationSeconds = analytics.avgViewDurationSeconds.toInt(),
-            ))
+            /*
+             * 어댑터가 준 숫자가 **그 기간의 값인지 평생 누적인지**에 따라 저장이 갈린다.
+             *
+             * 기간값(YouTube)은 그대로 넣는다. 누적값은 직전 스냅샷과 차분해 증분을
+             * 만들고, 원본 누적값은 다음 주기의 기준선으로 함께 저장한다. 이렇게 해야
+             * 집계가 지금처럼 단순 `SUM` 으로 남는다.
+             */
+            val row = if (PlatformMetricAccumulation.isCumulative(platform.name)) {
+                val totals = EngagementTotals(
+                    views = analytics.views,
+                    likes = analytics.likes,
+                    comments = analytics.comments,
+                    shares = analytics.shares,
+                )
+                val previous = analyticsRepository.findLatestTotalsBefore(uploadId, date)
+                // 기준선이 없으면 증분을 낼 수 없다. 0 을 실측처럼 두지 않고 BASELINE 으로
+                // 표시해 합계에서 뺀다 — 다음 주기부터 INCREMENTAL 이 나온다.
+                val delta = previous?.let { totals.deltaFrom(it) } ?: EngagementDelta.NONE
+                val basis =
+                    if (previous == null) EngagementBasis.BASELINE else EngagementBasis.INCREMENTAL
+
+                AnalyticsDaily(
+                    videoUploadId = uploadId,
+                    date = date,
+                    views = delta.viewsInt,
+                    likes = delta.likesInt,
+                    commentsCount = delta.commentsInt,
+                    shares = delta.sharesInt,
+                    watchTimeSeconds = analytics.watchTimeSeconds,
+                    subscriberGained = analytics.subscriberGained,
+                    impressions = analytics.impressions.toInt(),
+                    avgViewDurationSeconds = analytics.avgViewDurationSeconds.toInt(),
+                    engagementBasis = basis,
+                    viewsTotal = totals.views,
+                    likesTotal = totals.likes,
+                    commentsTotal = totals.comments,
+                    sharesTotal = totals.shares,
+                )
+            } else {
+                AnalyticsDaily(
+                    videoUploadId = uploadId,
+                    date = date,
+                    views = analytics.views.toInt(),
+                    likes = analytics.likes.toInt(),
+                    commentsCount = analytics.comments.toInt(),
+                    shares = analytics.shares.toInt(),
+                    watchTimeSeconds = analytics.watchTimeSeconds,
+                    subscriberGained = analytics.subscriberGained,
+                    impressions = analytics.impressions.toInt(),
+                    avgViewDurationSeconds = analytics.avgViewDurationSeconds.toInt(),
+                    engagementBasis = EngagementBasis.INCREMENTAL,
+                )
+            }
+
+            analyticsRepository.upsert(row)
         } catch (e: Exception) {
             log.warn("영상 분석 동기화 실패 [uploadId=$uploadId, date=$date]: ${e.message}")
         }

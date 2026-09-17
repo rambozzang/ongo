@@ -162,10 +162,49 @@ class HeatmapQueryContractTest {
         assertFalse("tumblr" in sql, "조회수를 주지 않는 플랫폼이 목록에 들어갔다: $sql")
     }
 
-    /** 합산 대상은 조회수다 — 계약이 다른 컬럼으로 조용히 바뀌지 않도록 고정한다. */
+    /**
+     * 합산 대상은 조회수다 — 계약이 다른 컬럼으로 조용히 바뀌지 않도록 고정한다.
+     *
+     * 괄호 한 겹을 허용하는 이유는 집계가 `sum(case when ... in (...) then ad.views end)`
+     * 형태이기 때문이다. `[^)]*` 로는 `in ('incremental')` 의 닫는 괄호를 넘지 못해,
+     * **조회수를 제대로 합산하고 있는데도** 이 검사가 실패했다.
+     */
     @Test
     @DisplayName("조회수를 합산한다")
     fun sumsViews() {
-        assertTrue(Regex("""sum\([^)]*views[^)]*\)""").containsMatchIn(heatmapSql()), "조회수 합계가 아니다")
+        val nested = """sum\((?:[^()]|\([^()]*\))*views(?:[^()]|\([^()]*\))*\)"""
+        assertTrue(
+            Regex(nested).containsMatchIn(heatmapSql()),
+            "조회수 합계가 아니다: ${heatmapSql()}",
+        )
+    }
+
+    /**
+     * **누적 스냅샷이 히트맵에 섞이지 않는지.**
+     *
+     * 어댑터 13개 중 YouTube 하나만 기간값을 준다. 나머지는 평생 누적 카운터라, 차분
+     * 이전에 저장된 행을 더하면 그 영상이 게시된 시간대 한 칸에 평생 조회수가 통째로
+     * 쌓인다. 그 칸이 영원히 "최적 업로드 시간" 으로 뽑힌다.
+     *
+     * 히트맵은 조회수를 보고하는 플랫폼만 이미 거르지만(위 케이스), 그 조건은
+     * **"조회하는가"** 만 본다. 값의 **의미**는 engagement_basis 가 가른다.
+     */
+    @Test
+    @DisplayName("합산 가능한 행만 더한다")
+    fun sumsOnlySummableRows() {
+        val sql = heatmapSql()
+
+        assertTrue(
+            "engagement_basis" in sql,
+            "basis 조건이 없다 — 평생 누적값이 한 시간대에 통째로 쌓인다: $sql",
+        )
+        assertTrue(
+            "incremental" in sql,
+            "합산 대상 라벨이 조건에 없다: $sql",
+        )
+        assertFalse(
+            "legacy_cumulative" in sql,
+            "누적 스냅샷 라벨이 합산 대상에 들어갔다: $sql",
+        )
     }
 }

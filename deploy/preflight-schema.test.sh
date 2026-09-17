@@ -82,6 +82,11 @@ case "\$query" in
       if [ "\$scenario" = "failed-migration" ]; then echo "105, 106"; else echo ""; fi ;;
   *"credit_tx_type"*)
       if [ "\$scenario" = "no-revoke-enum" ]; then echo ""; else echo "1"; fi ;;
+  # V114 가 더하는 enum 값. 없으면 "문제가 생겼을 때 알려주는 장치" 만 골라서 죽는다.
+  *"notification_type"*)
+      if [ "\$scenario" = "no-notification-enum" ]; then echo ""; else echo "1"; fi ;;
+  *"subscription_status"*)
+      if [ "\$scenario" = "no-suspended-enum" ]; then echo ""; else echo "1"; fi ;;
   *"ORDER BY installed_rank"*)
       case "\$scenario" in
         no-v104) echo "93" ;;
@@ -174,9 +179,9 @@ rc=$?
 [ "$rc" -eq 1 ] \
     && pass "요구 버전 이력이 없으면 rc=1 로 중단한다" \
     || fail "요구 버전 없음을 rc=1 로 알리지 않았다" "rc=$rc"
-grep -q "V94~V113" "$LAST_TMP/out.log" \
-    && pass "중단 메시지가 V94~V113 선행 적용을 명시한다" \
-    || fail "중단 메시지에 V94~V113 안내가 없다" "$(tail -3 "$LAST_TMP/out.log")"
+grep -q "V94~V115" "$LAST_TMP/out.log" \
+    && pass "중단 메시지가 V94~V115 선행 적용을 명시한다" \
+    || fail "중단 메시지에 V94~V115 안내가 없다" "$(tail -3 "$LAST_TMP/out.log")"
 
 run_with no-column DB_PASSWORD=secret
 rc=$?
@@ -285,6 +290,28 @@ grep -q "REVOKE" "$LAST_TMP/out.log" \
     && pass "중단 메시지가 빠진 enum 값을 알려 준다" \
     || fail "어떤 enum 값이 없는지 알려주지 않았다" "$(tail -3 "$LAST_TMP/out.log")"
 
+# ---- enum 값(V114) ----
+#
+# V114 도 컬럼이 아니라 enum 값을 더한다. 하필 **문제가 생겼을 때 알려주는 장치**만
+# 골라서 죽는 조합이라 평상시에는 드러나지 않는다.
+run_with no-notification-enum DB_PASSWORD=secret
+rc=$?
+[ "$rc" -eq 1 ] \
+    && pass "notification_type enum 값이 없으면 rc=1 로 중단한다" \
+    || fail "V114 notification_type 누락을 잡지 못했다" "rc=$rc / $(tail -3 "$LAST_TMP/out.log")"
+
+# 채널이 EXPIRED 로 바뀐 뒤 알림 저장이 실패하면 사용자는 채널이 끊긴 것을 영원히
+# 모른다. 그 결과를 안내에 적어 둬야 운영자가 심각성을 판단할 수 있다.
+grep -q "CHANNEL_TOKEN_EXPIRED" "$LAST_TMP/out.log" \
+    && pass "중단 메시지가 빠진 notification_type 값을 알려 준다" \
+    || fail "어떤 알림 타입이 없는지 알려주지 않았다" "$(tail -3 "$LAST_TMP/out.log")"
+
+run_with no-suspended-enum DB_PASSWORD=secret
+rc=$?
+[ "$rc" -eq 1 ] \
+    && pass "subscription_status 에 SUSPENDED 가 없으면 rc=1 로 중단한다" \
+    || fail "V114 subscription_status 누락을 잡지 못했다" "rc=$rc / $(tail -3 "$LAST_TMP/out.log")"
+
 run_with ok DB_PASSWORD=secret
 rc=$?
 [ "$rc" -eq 0 ] \
@@ -368,6 +395,14 @@ grep -q "ugc_shorts_run_stages:refunded_credits" "$TARGET" \
 grep -q "content_images:storage_object_key" "$TARGET" \
     && pass "REQUIRED_SCHEMA 가 V112 컬럼을 포함한다" \
     || fail "V112 컬럼이 REQUIRED_SCHEMA 에 없다" "$(grep REQUIRED_SCHEMA "$TARGET")"
+# V115. 스케줄러가 매 주기 쓰고 모든 참여 지표 집계가 이 컬럼으로 거른다 —
+# 없으면 성과 동기화와 대시보드가 함께 SQL 오류로 죽는다.
+grep -q "analytics_daily:engagement_basis" "$TARGET" \
+    && pass "REQUIRED_SCHEMA 가 V115 basis 컬럼을 포함한다" \
+    || fail "V115 basis 컬럼이 REQUIRED_SCHEMA 에 없다" "$(grep REQUIRED_SCHEMA "$TARGET")"
+grep -q "analytics_daily:views_total" "$TARGET" \
+    && pass "REQUIRED_SCHEMA 가 V115 스냅샷 컬럼을 포함한다" \
+    || fail "V115 스냅샷 컬럼이 REQUIRED_SCHEMA 에 없다" "$(grep REQUIRED_SCHEMA "$TARGET")"
 grep -q "brand_kits:watermark_url" "$TARGET" \
     && pass "URL 타입 검사가 brand_kits 네 컬럼을 포함한다" \
     || fail "brand_kits URL 컬럼이 타입 검사에 없다" "$(grep REQUIRED_TEXT_COLUMNS "$TARGET")"

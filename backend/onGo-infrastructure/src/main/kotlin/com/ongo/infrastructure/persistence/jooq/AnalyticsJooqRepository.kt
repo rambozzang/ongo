@@ -11,31 +11,38 @@ import com.ongo.domain.analytics.MetricChange
 import com.ongo.domain.analytics.CrossPlatformRaw
 import com.ongo.domain.analytics.DailyAggregate
 import com.ongo.domain.analytics.DashboardKpi
+import com.ongo.domain.analytics.EngagementBasis
+import com.ongo.domain.analytics.EngagementTotals
 import com.ongo.domain.analytics.RevenueMeasurement
 import com.ongo.domain.analytics.RevenueStatus
 import com.ongo.domain.analytics.TrendData
 import com.ongo.domain.video.Video
 import com.ongo.infrastructure.persistence.jooq.Fields.AVG_VIEW_DURATION_SECONDS
 import com.ongo.infrastructure.persistence.jooq.Fields.COMMENTS_COUNT
+import com.ongo.infrastructure.persistence.jooq.Fields.COMMENTS_TOTAL
 import com.ongo.infrastructure.persistence.jooq.Fields.CREATED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.DATE
+import com.ongo.infrastructure.persistence.jooq.Fields.ENGAGEMENT_BASIS
 import com.ongo.infrastructure.persistence.jooq.Fields.DEMOGRAPHICS_AGE
 import com.ongo.infrastructure.persistence.jooq.Fields.DEMOGRAPHICS_COUNTRY
 import com.ongo.infrastructure.persistence.jooq.Fields.DEMOGRAPHICS_GENDER
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.IMPRESSIONS
 import com.ongo.infrastructure.persistence.jooq.Fields.LIKES
+import com.ongo.infrastructure.persistence.jooq.Fields.LIKES_TOTAL
 import com.ongo.infrastructure.persistence.jooq.Fields.PLATFORM
 import com.ongo.infrastructure.persistence.jooq.Fields.PUBLISHED_AT
 import com.ongo.infrastructure.persistence.jooq.Fields.REVENUE_CURRENCY
 import com.ongo.infrastructure.persistence.jooq.Fields.REVENUE_MICRO
 import com.ongo.infrastructure.persistence.jooq.Fields.REVENUE_STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.SHARES
+import com.ongo.infrastructure.persistence.jooq.Fields.SHARES_TOTAL
 import com.ongo.infrastructure.persistence.jooq.Fields.SUBSCRIBER_GAINED
 import com.ongo.infrastructure.persistence.jooq.Fields.TRAFFIC_SOURCE
 import com.ongo.infrastructure.persistence.jooq.Fields.USER_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.VIDEO_UPLOAD_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.VIEWS
+import com.ongo.infrastructure.persistence.jooq.Fields.VIEWS_TOTAL
 import com.ongo.infrastructure.persistence.jooq.Fields.WATCH_TIME_SECONDS
 import com.ongo.infrastructure.persistence.jooq.Tables.ANALYTICS_DAILY
 import com.ongo.infrastructure.persistence.jooq.Tables.CHANNEL_INSIGHTS_DAILY
@@ -54,6 +61,44 @@ class AnalyticsJooqRepository(
     private val dsl: DSLContext,
     private val objectMapper: ObjectMapper,
 ) : AnalyticsRepository {
+
+    /**
+     * 참여 지표를 **합산해도 되는 행만** 남긴 컬럼 (V115).
+     *
+     * ## 왜 필요한가
+     *
+     * 어댑터 13개 중 YouTube 하나만 기간값을 준다. 나머지 12개는 평생 누적 카운터를
+     * 돌려주고, 예전에는 그것이 날짜별 행에 그대로 저장돼 있었다. 기간 `SUM` 이 그
+     * 행들을 더하면 30일 창에서 조회수가 약 30배가 된다.
+     *
+     * `CASE WHEN ... THEN column END` 는 조건에 맞지 않는 행에 NULL 을 남기고 `SUM` 은
+     * NULL 을 건너뛴다. `measuredSum` 이 쓰는 것과 같은 수법이다 — 합산 대상이 하나도
+     * 없으면 합계가 **NULL** 이 되어 "측정된 0" 과 구분된다.
+     *
+     * ## 왜 헬퍼로 묶는가
+     *
+     * 이 파일에는 참여 지표 집계 지점이 열 곳 넘게 있다. 각자 조건을 적으면 새 집계를
+     * 추가할 때 한 곳만 빠뜨려도 그 화면만 조용히 부풀어 오른다. 조건을 한 군데 둔다.
+     *
+     * @param qualifier 별칭이 붙은 쿼리는 `"ad"` 처럼 접두사를 넘긴다. 같은 쿼리 안에
+     *   analytics_daily 가 별칭으로 들어가 있으면 수식 없는 컬럼은 해석되지 않는다.
+     */
+    private fun summableEngagement(
+        column: org.jooq.Field<Int>,
+        qualifier: String? = null,
+    ): org.jooq.Field<Int> {
+        val basis =
+            if (qualifier == null) ENGAGEMENT_BASIS
+            else DSL.field("$qualifier.engagement_basis", String::class.java)
+        return DSL.`when`(basis.`in`(EngagementBasis.summableNames()), column)
+    }
+
+    /** [summableEngagement] 를 씌운 `SUM(...) AS alias`. 집계 지점이 이 한 줄만 쓰게 한다. */
+    private fun engagementSum(
+        column: org.jooq.Field<Int>,
+        alias: String,
+        qualifier: String? = null,
+    ) = DSL.sum(summableEngagement(column, qualifier)).`as`(alias)
 
     override fun findByVideoUploadIdAndDateRange(
         videoUploadId: Long,
@@ -123,10 +168,20 @@ class AnalyticsJooqRepository(
          * NULL 을 건너뛴다. 그래서 **일치하는 행이 하나도 없으면 합계가 NULL** 이 된다 —
          * 이것이 "측정된 0" 과 "물어볼 곳 없음" 을 가르는 신호다. 별도 쿼리 없이 얻는다.
          */
+        /*
+         * 조건이 둘인 이유는 **가용성과 의미가 서로 다른 축**이기 때문이다.
+         *
+         *  - `platformsReporting` — 그 플랫폼이 이 지표를 **조회하기는 하는가**
+         *  - `engagement_basis`   — 그 행에 담긴 숫자가 **그 날의 증분인가**
+         *
+         * 둘 다 참이어야 더할 수 있다. TikTok 은 조회수를 분명히 조회하지만(첫 조건 통과)
+         * 평생 누적을 주므로 차분 이전 행은 더하면 안 된다(둘째 조건이 막는다).
+         */
         fun measuredSum(metric: String, column: org.jooq.Field<Int>, alias: String) = DSL.sum(
             DSL.`when`(
                 PLATFORM.cast(String::class.java)
-                    .`in`(PlatformMetricAvailability.platformsReporting(metric)),
+                    .`in`(PlatformMetricAvailability.platformsReporting(metric))
+                    .and(ENGAGEMENT_BASIS.`in`(EngagementBasis.summableNames())),
                 column,
             ),
         ).`as`(alias)
@@ -234,7 +289,7 @@ class AnalyticsJooqRepository(
 
         val platformField = DSL.field("vu.platform::text", String::class.java)
         val dateField = DSL.field("ad.date", LocalDate::class.java)
-        val viewsSum = DSL.sum(DSL.field("ad.views", Int::class.java)).`as`("total_views")
+        val viewsSum = engagementSum(DSL.field("ad.views", Int::class.java), "total_views", "ad")
         val subscribersSum = DSL.sum(DSL.field("ad.subscriber_gained", Int::class.java)).`as`("total_subscribers")
 
         return dsl.select(dateField, platformField, viewsSum, subscribersSum)
@@ -261,7 +316,7 @@ class AnalyticsJooqRepository(
         val from = LocalDate.now().minusDays(days.toLong())
 
         val videoIdField = DSL.field("v.id", Long::class.java)
-        val viewsSum = DSL.sum(DSL.field("ad.views", Int::class.java)).`as`("total_views")
+        val viewsSum = engagementSum(DSL.field("ad.views", Int::class.java), "total_views", "ad")
 
         return dsl.select(
             videoIdField,
@@ -341,7 +396,7 @@ class AnalyticsJooqRepository(
          */
         val dayOfWeek = DSL.field("EXTRACT(DOW FROM {0})", Int::class.java, PUBLISHED_AT).`as`("day_of_week")
         val hour = DSL.field("EXTRACT(HOUR FROM {0})", Int::class.java, PUBLISHED_AT).`as`("hour")
-        val viewsSum = DSL.sum(VIEWS).`as`("total_views")
+        val viewsSum = engagementSum(VIEWS, "total_views")
 
         val results = dsl.select(dayOfWeek, hour, viewsSum)
             .from(ANALYTICS_DAILY)
@@ -424,6 +479,13 @@ class AnalyticsJooqRepository(
             .set(SUBSCRIBER_GAINED, analytics.subscriberGained)
             .set(IMPRESSIONS, analytics.impressions)
             .set(AVG_VIEW_DURATION_SECONDS, analytics.avgViewDurationSeconds)
+            // 참여 지표의 의미와 누적 스냅샷 (V115). basis 를 함께 쓰지 않으면 DB 기본값
+            // LEGACY_CUMULATIVE 가 남아 새 행이 통째로 합계에서 빠진다.
+            .set(ENGAGEMENT_BASIS, analytics.engagementBasis.name)
+            .set(VIEWS_TOTAL, analytics.viewsTotal)
+            .set(LIKES_TOTAL, analytics.likesTotal)
+            .set(COMMENTS_TOTAL, analytics.commentsTotal)
+            .set(SHARES_TOTAL, analytics.sharesTotal)
             .onConflict(VIDEO_UPLOAD_ID, DATE)
             .doUpdate()
             .set(VIEWS, analytics.views)
@@ -434,6 +496,11 @@ class AnalyticsJooqRepository(
             .set(SUBSCRIBER_GAINED, analytics.subscriberGained)
             .set(IMPRESSIONS, analytics.impressions)
             .set(AVG_VIEW_DURATION_SECONDS, analytics.avgViewDurationSeconds)
+            .set(ENGAGEMENT_BASIS, analytics.engagementBasis.name)
+            .set(VIEWS_TOTAL, analytics.viewsTotal)
+            .set(LIKES_TOTAL, analytics.likesTotal)
+            .set(COMMENTS_TOTAL, analytics.commentsTotal)
+            .set(SHARES_TOTAL, analytics.sharesTotal)
             .returningResult(ID)
             .fetchOne()!!
             .get(ID)
@@ -569,6 +636,34 @@ class AnalyticsJooqRepository(
             .fetchOne(0, LocalDate::class.java)
     }
 
+    /**
+     * 증분 계산의 기준선이 될 직전 누적 스냅샷.
+     *
+     * `views_total IS NOT NULL` 이 핵심 조건이다. 기간값 플랫폼의 행과 V115 이전의 행은
+     * 스냅샷을 갖지 않으므로 기준선이 될 수 없다. 그런 행을 0 으로 읽어 차분하면 평생
+     * 누적값 전체가 하루치 증분으로 들어간다.
+     *
+     * `date` 를 제외(`lt`)하는 이유는 같은 날을 두 번 동기화할 때 자기 자신과 차분해
+     * 증분이 0 이 되는 것을 막기 위해서다.
+     */
+    override fun findLatestTotalsBefore(videoUploadId: Long, date: LocalDate): EngagementTotals? =
+        dsl.select(VIEWS_TOTAL, LIKES_TOTAL, COMMENTS_TOTAL, SHARES_TOTAL)
+            .from(ANALYTICS_DAILY)
+            .where(VIDEO_UPLOAD_ID.eq(videoUploadId))
+            .and(DATE.lt(date))
+            .and(VIEWS_TOTAL.isNotNull)
+            .orderBy(DATE.desc())
+            .limit(1)
+            .fetchOne()
+            ?.let { record ->
+                EngagementTotals(
+                    views = record.get(VIEWS_TOTAL) ?: 0,
+                    likes = record.get(LIKES_TOTAL) ?: 0,
+                    comments = record.get(COMMENTS_TOTAL) ?: 0,
+                    shares = record.get(SHARES_TOTAL) ?: 0,
+                )
+            }
+
     private fun getUserUploadIds(userId: Long): List<Long> =
         dsl.select(DSL.field("vu.id", Long::class.java))
             .from(DSL.table("video_uploads").`as`("vu"))
@@ -610,6 +705,13 @@ class AnalyticsJooqRepository(
             ?: RevenueStatus.UNSUPPORTED,
         impressions = get(IMPRESSIONS) ?: 0,
         avgViewDurationSeconds = get(AVG_VIEW_DURATION_SECONDS) ?: 0,
+        // 알 수 없는 문자열은 LEGACY_CUMULATIVE 로 떨어진다(EngagementBasis.from).
+        // 정체 모를 행을 합계에 넣지 않기 위한 fail-closed 다.
+        engagementBasis = EngagementBasis.from(get(ENGAGEMENT_BASIS)?.trim()),
+        viewsTotal = get(VIEWS_TOTAL),
+        likesTotal = get(LIKES_TOTAL),
+        commentsTotal = get(COMMENTS_TOTAL),
+        sharesTotal = get(SHARES_TOTAL),
         createdAt = localDateTime(CREATED_AT),
     )
 
@@ -670,10 +772,10 @@ class AnalyticsJooqRepository(
             videoTitleField,
             platformField,
             vuIdField,
-            DSL.sum(DSL.field("ad.views", Int::class.java)).`as`("total_views"),
-            DSL.sum(DSL.field("ad.likes", Int::class.java)).`as`("total_likes"),
-            DSL.sum(DSL.field("ad.comments_count", Int::class.java)).`as`("total_comments"),
-            DSL.sum(DSL.field("ad.shares", Int::class.java)).`as`("total_shares"),
+            engagementSum(DSL.field("ad.views", Int::class.java), "total_views", "ad"),
+            engagementSum(DSL.field("ad.likes", Int::class.java), "total_likes", "ad"),
+            engagementSum(DSL.field("ad.comments_count", Int::class.java), "total_comments", "ad"),
+            engagementSum(DSL.field("ad.shares", Int::class.java), "total_shares", "ad"),
             DSL.sum(DSL.field("ad.watch_time_seconds", Long::class.java)).`as`("total_watch_time"),
             DSL.sum(DSL.field("ad.revenue_micro", Long::class.java)).`as`("total_revenue"),
             DSL.sum(DSL.field("ad.impressions", Int::class.java)).`as`("total_impressions"),
@@ -715,10 +817,10 @@ class AnalyticsJooqRepository(
 
         return dsl.select(
             dateField,
-            DSL.sum(DSL.field("ad.views", Int::class.java)).`as`("total_views"),
-            DSL.sum(DSL.field("ad.likes", Int::class.java)).`as`("total_likes"),
-            DSL.sum(DSL.field("ad.comments_count", Int::class.java)).`as`("total_comments"),
-            DSL.sum(DSL.field("ad.shares", Int::class.java)).`as`("total_shares"),
+            engagementSum(DSL.field("ad.views", Int::class.java), "total_views", "ad"),
+            engagementSum(DSL.field("ad.likes", Int::class.java), "total_likes", "ad"),
+            engagementSum(DSL.field("ad.comments_count", Int::class.java), "total_comments", "ad"),
+            engagementSum(DSL.field("ad.shares", Int::class.java), "total_shares", "ad"),
             DSL.sum(DSL.field("ad.watch_time_seconds", Long::class.java)).`as`("total_watch_time"),
             DSL.sum(DSL.field("ad.subscriber_gained", Int::class.java)).`as`("total_subs"),
             DSL.sum(DSL.field("ad.revenue_micro", Long::class.java)).`as`("total_revenue"),
@@ -773,10 +875,10 @@ class AnalyticsJooqRepository(
             publishedAtField,
             platformField,
             vuIdField,
-            DSL.sum(DSL.field("ad.views", Int::class.java)).`as`("total_views"),
-            DSL.sum(DSL.field("ad.likes", Int::class.java)).`as`("total_likes"),
-            DSL.sum(DSL.field("ad.comments_count", Int::class.java)).`as`("total_comments"),
-            DSL.sum(DSL.field("ad.shares", Int::class.java)).`as`("total_shares"),
+            engagementSum(DSL.field("ad.views", Int::class.java), "total_views", "ad"),
+            engagementSum(DSL.field("ad.likes", Int::class.java), "total_likes", "ad"),
+            engagementSum(DSL.field("ad.comments_count", Int::class.java), "total_comments", "ad"),
+            engagementSum(DSL.field("ad.shares", Int::class.java), "total_shares", "ad"),
             DSL.sum(DSL.field("ad.watch_time_seconds", Long::class.java)).`as`("total_watch_time"),
             DSL.sum(DSL.field("ad.revenue_micro", Long::class.java)).`as`("total_revenue"),
             DSL.sum(DSL.field("ad.impressions", Int::class.java)).`as`("total_impressions"),

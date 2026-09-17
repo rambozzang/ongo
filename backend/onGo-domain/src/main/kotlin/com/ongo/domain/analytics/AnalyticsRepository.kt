@@ -50,6 +50,21 @@ interface AnalyticsRepository {
 
     /** 해당 upload의 가장 최근 동기화된 날짜를 반환 (없으면 null) */
     fun findLatestDateByVideoUploadId(videoUploadId: Long): LocalDate?
+
+    /**
+     * [date] **이전**의 가장 최근 누적 스냅샷. 증분을 구하는 기준선이다.
+     *
+     * 누적 플랫폼(YouTube 외 전부)은 평생 카운터를 돌려주므로, 저장 전에 직전 관측과
+     * 차분해야 그 날의 증가분이 된다. 없으면 `null` — 첫 관측이라
+     * [EngagementBasis.BASELINE] 으로 기록해야 한다는 뜻이다.
+     *
+     * **[date] 를 포함하지 않는다.** 같은 날짜를 두 번 동기화할 때 자기 자신과 차분해
+     * 증분이 0 이 되는 것을 막는다.
+     *
+     * 스냅샷이 없는 행(`views_total IS NULL`)은 건너뛴다. 기간값 플랫폼의 행이거나
+     * 차분 도입 이전의 행이라 기준선이 될 수 없다.
+     */
+    fun findLatestTotalsBefore(videoUploadId: Long, date: LocalDate): EngagementTotals?
     fun upsertChannelInsights(insights: ChannelInsightsDaily)
     fun findChannelInsights(userId: Long, platform: com.ongo.common.enums.Platform?, startDate: LocalDate, endDate: LocalDate): List<ChannelInsightsDaily>
     fun findCrossPlatformMetrics(userId: Long, days: Int): List<CrossPlatformRaw>

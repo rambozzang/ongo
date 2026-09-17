@@ -346,6 +346,17 @@ object Fields {
     val REVENUE_CURRENCY = DSL.field("revenue_currency", String::class.java)
     val REVENUE_STATUS = DSL.field("revenue_status", String::class.java)
 
+    // analytics_daily 참여 지표의 의미 (V115).
+    //
+    // 어댑터 13개 중 YouTube 만 기간값을 준다. 나머지는 평생 누적 카운터라 그대로
+    // SUM 하면 안 된다. ENGAGEMENT_BASIS 가 그 판정을 싣고, *_TOTAL 은 다음 주기의
+    // 증분을 구하는 기준선이다.
+    val ENGAGEMENT_BASIS = DSL.field("engagement_basis", String::class.java)
+    val VIEWS_TOTAL = DSL.field("views_total", Long::class.java)
+    val LIKES_TOTAL = DSL.field("likes_total", Long::class.java)
+    val COMMENTS_TOTAL = DSL.field("comments_total", Long::class.java)
+    val SHARES_TOTAL = DSL.field("shares_total", Long::class.java)
+
     // channel_insights_daily
     val TRAFFIC_SOURCE = DSL.field("traffic_source", Any::class.java)
     val DEMOGRAPHICS_AGE = DSL.field("demographics_age", Any::class.java)
