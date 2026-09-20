@@ -34,10 +34,37 @@ jobs:
       - name: Reject disabled runtime profiles
         working-directory: backend
         run: |
-          if rg -n '^\s*@Profile\("(wip|disabled)"\)' onGo-api/src/main onGo-application/src/main --glob '*.kt'; then
-            echo 'Disabled/WIP runtime profiles are not allowed.'
+          if rg -n '^\s*@Profile\("disabled"\)' onGo-api/src/main onGo-application/src/main --glob '*.kt'; then
+            echo 'Disabled runtime profiles are not allowed.'
             exit 1
           fi
+
+      # WIP 는 **backend 전체**를 본다. Jenkinsfile-backend 와 같은 범위다.
+      # 예전에는 이 검사가 onGo-api·onGo-application 두 모듈만 봐서,
+      # infrastructure·domain 에 들어온 @Profile("wip") 가 그대로 운영으로 나갔다.
+      - name: Reject WIP runtime profiles
+        run: |
+          if rg -n '^\s*@Profile\("wip"\)' backend --glob '*.kt'; then
+            echo 'WIP runtime profiles must not reach the runtime tree.'
+            exit 1
+          fi
+
+      # DB 덤프가 저장소에 들어오는 것을 막는다. 한 번 커밋되면 히스토리에서 지우기
+      # 어렵고, 덤프에는 보통 운영 데이터가 그대로 들어 있다.
+      - name: Reject tracked database exports
+        run: |
+          set -euo pipefail
+          tracked="$(git ls-files | grep -E '(^|/)([^/]*(backup|dump)[^/]*\.(sql|dump|bak))$' || true)"
+          if [ -n "$tracked" ]; then
+            echo "::error::Tracked database export detected:"
+            echo "$tracked"
+            exit 1
+          fi
+          # 위 검사는 이미 들어온 파일을 잡는다. 이 검사는 **다시 들어올 길**을 막는다.
+          grep -qE '^\*\.sql$' .gitignore || {
+            echo "::error::.gitignore 의 *.sql 차단 규칙이 사라졌습니다 — DB 덤프 재유입 가드입니다."
+            exit 1
+          }
 
       - name: Reject duplicate Flyway migration versions
         run: bash scripts/check-flyway-versions.sh
@@ -111,3 +138,38 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+
+  # 배포 스크립트도 코드다. 그리고 **틀리면 서비스가 내려간다.**
+  #
+  # deploy/ 에는 164건의 테스트가 있다 — 환경변수 게이트, nginx 설정 정합성, 서버 포트
+  # 일치, 스키마 선행검증, 기동 게이트 패리티. 그런데 지금까지 CI 에서 한 번도 돌지
+  # 않았다. Jenkins 는 `bash -n` 문법 검사만 했고, 테스트는 사람이 손으로 돌려야 했다.
+  #
+  # 이 job 이 없으면 "배포 전에 막는다" 고 적힌 가드들이 정작 **자기 자신은 검증받지
+  # 못한 채** 운영 배포 경로에 놓인다.
+  deploy-scripts:
+    name: Deploy Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 문법 오류는 배포 도중에 드러나면 늦다. deploy.sh 는 서비스를 멈춘 뒤에도 돈다.
+      - name: Shell syntax
+        run: |
+          set -euo pipefail
+          for f in deploy/*.sh; do
+            bash -n "$f" || { echo "::error file=$f::문법 오류"; exit 1; }
+          done
+
+      - name: Deploy script tests
+        run: |
+          set -uo pipefail
+          failed=0
+          for t in deploy/*.test.sh; do
+            echo "── $(basename "$t") ──"
+            if bash "$t"; then :; else
+              echo "::error file=$t::실패"
+              failed=1
+            fi
+          done
+          exit "$failed"
