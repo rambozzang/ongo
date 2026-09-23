@@ -79,6 +79,8 @@ class StorageQuotaOverrideLifecycleTest {
         every { subscriptionRepository.findPastDue(7) } returns emptyList()
         every { subscriptionRepository.findDueForBilling(any()) } returns emptyList()
         every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveEndingBetween(any(), any()) } returns emptyList()
         every { subscriptionRepository.findWithPendingPlanType() } returns emptyList()
         every { userRepository.findById(any()) } answers {
             User(
@@ -153,6 +155,20 @@ class StorageQuotaOverrideLifecycleTest {
         val saved = capturedUpdate()
         assertEquals(PlanType.FREE, saved.planType)
         assertNull(saved.storageQuotaLimitBytes, "FREE 로 내려갔는데 BUSINESS 한도가 남았다")
+    }
+
+    /** 자동 갱신 없이 기간이 끝난 강등도 같다 — 다음 기간 값을 내지 않았다. */
+    @Test
+    @DisplayName("기간 만료 FREE 전환이 저장공간 오버라이드를 지운다")
+    fun unrenewedExpiryClearsOverride() {
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns
+            listOf(paidSubscription(plan = PlanType.BUSINESS, overrideBytes = businessBytes))
+
+        billingScheduler.processBilling()
+
+        val saved = capturedUpdate()
+        assertEquals(PlanType.FREE, saved.planType)
+        assertNull(saved.storageQuotaLimitBytes, "기간이 끝났는데 BUSINESS 한도가 남았다")
     }
 
     /** 미납 7일 강등도 같다 — 돈이 들어오지 않은 계정이다. */

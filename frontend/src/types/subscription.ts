@@ -196,3 +196,12 @@ export interface UsageAlertConfig {
   enabled: boolean
   lastAlertedAt: string | null
 }
+
+/**
+ * 서버의 결제 정책. `autoRenewal` 이 false 면 기간이 끝날 때 청구하지 않고 Free 로 내려간다 —
+ * 그 경우 결제 화면은 자동 결제를 약속하면 안 된다.
+ */
+export interface BillingPolicy {
+  autoRenewal: boolean
+  expiryNoticeDays: number
+}

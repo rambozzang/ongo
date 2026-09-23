@@ -147,7 +147,87 @@ class BillingSchedulerTest {
         every { subscriptionRepository.findPastDue(7) } returns emptyList()
         every { subscriptionRepository.findDueForBilling(any()) } returns emptyList()
         every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveEndingBetween(any(), any()) } returns emptyList()
         every { subscriptionRepository.findWithPendingPlanType() } returns emptyList()
+    }
+
+    /* ── 자동 갱신 없는 기간 만료 ─────────────────────────────────────── */
+
+    /**
+     * **한 번 결제하고 유료 플랜을 영구히 쓰던 구멍.** 갱신이 꺼진 동안 ACTIVE 구독은 기간이
+     * 끝나도 어떤 단계에도 걸리지 않았다. 구독·사용자 플랜·크레딧·알림이 함께 Free 로 가야 한다
+     * — 한도 판정은 users.plan_type 을 보므로 구독 행만 바꾸면 유료 기능이 그대로 열려 있다.
+     */
+    @Test
+    @DisplayName("기간이 끝난 유료 구독은 구독·사용자 플랜·크레딧을 함께 Free 로 내린다")
+    fun `기간 만료 - Free 전환`() {
+        stubEmptyDefaults()
+        val expired = createSubscription(id = 5L, userId = 55L, planType = PlanType.PRO, currentPeriodEnd = now.minusHours(1))
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns listOf(expired)
+        val savedSub = slot<Subscription>()
+        every { subscriptionRepository.update(capture(savedSub)) } answers { firstArg() }
+        every { userRepository.findById(55L) } returns createUser(55L, PlanType.PRO)
+        val savedUser = slot<User>()
+        every { userRepository.update(capture(savedUser)) } answers { firstArg() }
+        val notice = slot<Notification>()
+        every { notificationRepository.save(capture(notice)) } answers { firstArg() }
+
+        billingScheduler.processBilling()
+
+        assertEquals(PlanType.FREE, savedSub.captured.planType)
+        assertEquals(SubscriptionStatus.FREE, savedSub.captured.status)
+        assertEquals(0, savedSub.captured.price)
+        assertEquals(PlanType.FREE, savedUser.captured.planType, "사용자 플랜이 남으면 유료 한도가 그대로 열려 있다")
+        verify(exactly = 1) { creditService.applyPlanEntitlement(55L, PlanType.FREE, "SUBSCRIPTION_EXPIRED") }
+        assertEquals("구독 기간이 끝났습니다", notice.captured.title)
+    }
+
+    @Test
+    @DisplayName("기간 만료 한 건이 실패해도 나머지 건이 계속된다")
+    fun `기간 만료 - 건별 격리`() {
+        stubEmptyDefaults()
+        val failing = createSubscription(id = 1L, userId = 11L, currentPeriodEnd = now.minusDays(1))
+        val healthy = createSubscription(id = 2L, userId = 22L, currentPeriodEnd = now.minusDays(1))
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns listOf(failing, healthy)
+        every { userRepository.findById(any()) } answers { createUser(firstArg()) }
+        every { userRepository.update(any()) } answers { firstArg() }
+        every { subscriptionRepository.update(any()) } answers { firstArg() }
+        every { notificationRepository.save(any()) } answers { firstArg() }
+        every {
+            creditService.applyPlanEntitlement(11L, PlanType.FREE, "SUBSCRIPTION_EXPIRED")
+        } throws IllegalStateException("크레딧 회수 실패")
+
+        billingScheduler.processBilling()
+
+        verify(exactly = 1) { creditService.applyPlanEntitlement(22L, PlanType.FREE, "SUBSCRIPTION_EXPIRED") }
+    }
+
+    /**
+     * 자동 결제가 없으니 미리 알리지 않으면 사용자는 기능이 꺼진 뒤에야 안다. 창은 하루 폭
+     * `[now+3일, now+4일)` — 매일 한 번 도는 배치에서 구독마다 한 번만 걸리게 하는 폭이다.
+     */
+    @Test
+    @DisplayName("기간 종료 3일 전에 하루 폭 창으로 만료를 예고한다")
+    fun `만료 예고 - 3일 전 하루 창`() {
+        stubEmptyDefaults()
+        val from = slot<LocalDateTime>()
+        val to = slot<LocalDateTime>()
+        val ending = createSubscription(id = 7L, userId = 77L, planType = PlanType.STARTER, currentPeriodEnd = now.plusDays(3).plusHours(2))
+        every { subscriptionRepository.findActiveEndingBetween(capture(from), capture(to)) } returns listOf(ending)
+        val notice = slot<Notification>()
+        every { notificationRepository.save(capture(notice)) } answers { firstArg() }
+
+        val before = LocalDateTime.now()
+        billingScheduler.processBilling()
+
+        assertTrue(!from.captured.isBefore(before.plusDays(3)), "예고 창이 3일보다 이르다: ${from.captured}")
+        assertTrue(from.captured.isBefore(LocalDateTime.now().plusDays(3).plusSeconds(1)))
+        assertEquals(from.captured.plusDays(1), to.captured, "창 폭이 하루가 아니면 중복 또는 누락 알림이 생긴다")
+        assertEquals(77L, notice.captured.userId)
+        assertEquals("구독이 곧 끝납니다", notice.captured.title)
+        assertTrue(ending.currentPeriodEnd!!.toLocalDate().toString() in notice.captured.message, notice.captured.message)
+        verify(exactly = 0) { subscriptionRepository.update(any()) }
     }
 
     /**
@@ -905,6 +985,8 @@ class BillingSchedulerTest {
         // 기간이 남은 취소 구독은 findCancelledExpired(current_period_end < now)의
         // 조회 결과에 애초에 포함되지 않는다.
         every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveEndingBetween(any(), any()) } returns emptyList()
 
         // when
         billingScheduler.processBilling()

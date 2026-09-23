@@ -49,7 +49,7 @@ class BillingScheduler(
      *
      * 켜기 전 전제는 `docs/operations/SUBSCRIPTION_RENEWAL_ROLLOUT.md` 에 있다.
      */
-    @param:Value("\${subscription.renewal.enabled:false}")
+    @param:Value(SubscriptionBillingPolicy.RENEWAL_ENABLED)
     private val renewalEnabled: Boolean,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -118,6 +118,8 @@ class BillingScheduler(
              */
             runPhase("하향 예약 적용") { processPendingDowngrades(now) }
             runPhase("자동 갱신") { processRenewals(now) }
+            runPhase("기간 만료") { expireWithoutRenewal(now) }
+            runPhase("만료 예고") { notifyUpcomingExpiry(now) }
             runPhase("기존 처리") { processDueSubscriptions() }
         }
         if (!ran) log.debug("다른 인스턴스에서 빌링 처리 실행 중, 스킵")
@@ -153,6 +155,71 @@ class BillingScheduler(
             runCatching { renewalService.renew(subscription, now) }
                 .onFailure { log.error("구독 갱신 처리 실패. subscriptionId={}", subscription.id, it) }
         }
+    }
+
+    /**
+     * **자동 갱신이 꺼져 있으면 결제 기간이 끝난 유료 구독을 Free 로 내린다.**
+     *
+     * 갱신이 꺼진 동안 이 단계가 없었다. 나머지 처리는 PAST_DUE·CANCELLED·체험만 보므로
+     * ACTIVE 구독은 기간이 끝나도 **아무도 내리지 않았다** — 한 달 결제하면 유료 플랜을
+     * 영구히 썼다. 갱신이 켜져 있으면 이 대상은 갱신 단계가 청구하고, 실패하면 PAST_DUE
+     * 유예로 넘어가므로 여기서 건드리지 않는다.
+     *
+     * 기간을 모르는 행은 조회에서 빠진다(결제 근거가 없어 사람이 먼저 본다).
+     */
+    private fun expireWithoutRenewal(now: LocalDateTime) {
+        if (renewalEnabled) return
+        subscriptionRepository.findActiveExpiredWithoutRenewal(now)
+            .forEachIsolated("기간 만료 Free 전환") { sub -> expireUnrenewed(sub, now) }
+    }
+
+    /**
+     * 기간 종료 [EXPIRY_NOTICE_DAYS]일 전에 한 번 알린다. 자동 결제가 없으니 알리지 않으면
+     * 사용자는 기능이 꺼진 뒤에야 안다 — 재결제 기회를 가장 싸게 만드는 자리다.
+     *
+     * 창을 하루 폭 `[now+N일, now+N+1일)` 로 잡아 매일 한 번 도는 배치에서 구독마다 한 번만 걸린다.
+     */
+    private fun notifyUpcomingExpiry(now: LocalDateTime) {
+        if (renewalEnabled) return
+        val from = now.plusDays(EXPIRY_NOTICE_DAYS)
+        subscriptionRepository.findActiveEndingBetween(from, from.plusDays(1))
+            .forEachIsolated("만료 예고 알림") { sub ->
+                val end = sub.currentPeriodEnd ?: sub.nextBillingDate
+                notificationRepository.save(Notification(
+                    userId = sub.userId,
+                    type = NotificationType.SYSTEM,
+                    title = "구독이 곧 끝납니다",
+                    message = "${sub.planType.displayName} 구독이 ${end?.toLocalDate()}에 끝납니다. " +
+                        "자동으로 결제되지 않으니, 끝난 뒤 구독 화면에서 다시 결제하면 이어서 쓸 수 있습니다.",
+                ))
+            }
+    }
+
+    /** 기간 만료 → Free. 구독·사용자 플랜·크레딧·알림이 한 덩어리다. */
+    private fun expireUnrenewed(sub: Subscription, now: LocalDateTime) {
+        subscriptionRepository.update(sub.copy(
+            planType = PlanType.FREE,
+            status = SubscriptionStatus.FREE,
+            price = 0,
+            pendingPlanType = null,
+            pendingBillingCycle = null,
+            // 유료 시절의 저장공간 오버라이드를 함께 거둔다 — 이유는 downgradePastDue 와 같다.
+            storageQuotaLimitBytes = null,
+            updatedAt = now,
+        ))
+        val user = userRepository.findById(sub.userId)
+        if (user != null) {
+            userRepository.update(user.copy(planType = PlanType.FREE))
+        }
+        creditService.applyPlanEntitlement(sub.userId, PlanType.FREE, reason = "SUBSCRIPTION_EXPIRED")
+        notificationRepository.save(Notification(
+            userId = sub.userId,
+            type = NotificationType.SYSTEM,
+            title = "구독 기간이 끝났습니다",
+            message = "${sub.planType.displayName} 구독 기간이 끝나 Free 플랜으로 전환되었습니다. " +
+                "구독 화면에서 다시 결제하면 바로 이어서 쓸 수 있습니다.",
+        ))
+        log.info("기간 만료 → Free 전환: userId={}, plan={}", sub.userId, sub.planType)
     }
 
     /** 기간 경계의 하향 예약을 갱신보다 먼저 적용한다. */
@@ -459,5 +526,10 @@ class BillingScheduler(
             .forEachIsolated("취소 만료 Free 전환") { sub -> downgradeCancelled(sub) }
 
         log.info("빌링 처리 완료")
+    }
+
+    private companion object {
+        /** 만료 예고를 보내는 시점(기간 종료 며칠 전). 결제 화면 안내와 같은 값이다. */
+        const val EXPIRY_NOTICE_DAYS = SubscriptionBillingPolicy.EXPIRY_NOTICE_DAYS.toLong()
     }
 }

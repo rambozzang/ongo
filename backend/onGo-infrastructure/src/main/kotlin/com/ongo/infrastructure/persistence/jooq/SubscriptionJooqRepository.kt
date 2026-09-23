@@ -43,6 +43,9 @@ class SubscriptionJooqRepository(
     private val dsl: DSLContext,
 ) : SubscriptionRepository {
 
+    /** 기간 경계. 하향 예약 적용(`BillingScheduler.processPendingDowngrades`)과 같은 규칙이다. */
+    private val PERIOD_BOUNDARY = DSL.coalesce(CURRENT_PERIOD_END, NEXT_BILLING_DATE)
+
     override fun findByUserId(userId: Long): Subscription? =
         dsl.select()
             .from(SUBSCRIPTIONS)
@@ -255,6 +258,31 @@ class SubscriptionJooqRepository(
      * 기간이 실제로 남아 있는 정상 취소 구독은 `current_period_end` 가 채워져 있으므로
      * 이 분기에 걸리지 않는다 — 기간이 끝난 뒤에 첫 조건으로 잡힌다.
      */
+    override fun findActiveExpiredWithoutRenewal(now: LocalDateTime): List<Subscription> =
+        selectNonRenewingPaid(PERIOD_BOUNDARY.lessOrEqual(now))
+
+    override fun findActiveEndingBetween(from: LocalDateTime, to: LocalDateTime): List<Subscription> =
+        selectNonRenewingPaid(PERIOD_BOUNDARY.greaterOrEqual(from).and(PERIOD_BOUNDARY.lessThan(to)))
+
+    /**
+     * 자동 갱신 없이 기간으로만 끝나는 유료 ACTIVE 구독.
+     *
+     * `COALESCE` 가 NULL 이면 두 비교 모두 UNKNOWN 이라 **기간을 모르는 행은 자연히 빠진다** —
+     * 의도한 것이다([SubscriptionRepository.findActiveExpiredWithoutRenewal] 참고).
+     */
+    private fun selectNonRenewingPaid(boundaryCondition: org.jooq.Condition): List<Subscription> =
+        dsl.select()
+            .from(SUBSCRIPTIONS)
+            .where(STATUS_TEXT.eq(SubscriptionStatus.ACTIVE.name))
+            .and(PLAN_TYPE_TEXT.ne(PlanType.FREE.name))
+            .and(PADDLE_SUBSCRIPTION_ID.isNull)
+            .and(PENDING_PLAN_TYPE.isNull)
+            .and(PENDING_BILLING_CYCLE.isNull)
+            .and(boundaryCondition)
+            .orderBy(ID.asc())
+            .fetch()
+            .map { it.toSubscription() }
+
     override fun findCancelledExpired(now: LocalDateTime): List<Subscription> =
         dsl.select()
             .from(SUBSCRIPTIONS)

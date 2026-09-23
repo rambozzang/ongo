@@ -124,26 +124,44 @@
         </div>
 
         <!--
-          정기결제 동의. 유료 플랜에만 뜬다 — 무료 플랜은 결제 자체가 없다.
+          결제 수단 등록 동의. 유료 플랜에만 뜬다 — 무료 플랜은 결제 자체가 없다.
 
           결제 전에 카드 등록 창이 한 번 더 뜬다는 사실을 미리 알린다. 예고 없이 창이
           두 번 뜨면 사용자는 결제가 두 번 되는 줄 안다.
+
+          **자동 결제 여부는 서버 설정을 그대로 말한다.** 정기 청구가 꺼져 있는데 "매월 자동
+          결제" 를 약속하면, 카드를 등록한 사용자가 기간 끝에 예고 없이 Free 로 내려간 것처럼
+          느낀다. 켜져 있는데 "자동 결제 없음" 이라 말하면 동의 없는 청구가 된다. 그래서 정책을
+          모르면 동의 자체를 받지 않는다.
         -->
-        <label
+        <div
           v-if="requiresBillingConsent && !processing && !paymentComplete"
-          class="mt-6 flex items-start gap-2 text-body text-gray-600 dark:text-gray-400"
+          class="mt-6 text-body text-gray-600 dark:text-gray-400"
         >
-          <input
-            v-model="billingConsent"
-            type="checkbox"
-            class="mt-1"
-            data-testid="billing-consent"
-          />
-          <span>
-            매월 자동으로 결제되는 데 동의합니다. 결제 진행 시 카드 등록 창이 먼저 열리며,
-            등록한 수단은 다음 결제일에 자동으로 청구됩니다. 구독 화면에서 언제든 해지할 수 있습니다.
-          </span>
-        </label>
+          <label v-if="billingPolicy" class="flex items-start gap-2">
+            <input
+              v-model="billingConsent"
+              type="checkbox"
+              class="mt-1"
+              data-testid="billing-consent"
+            />
+            <span v-if="billingPolicy.autoRenewal" data-testid="billing-consent-auto">
+              매월 자동으로 결제되는 데 동의합니다. 결제 진행 시 카드 등록 창이 먼저 열리며,
+              등록한 수단은 다음 결제일에 자동으로 청구됩니다. 구독 화면에서 언제든 해지할 수 있습니다.
+            </span>
+            <span v-else data-testid="billing-consent-manual">
+              결제 수단(카드) 등록에 동의합니다. 결제 진행 시 카드 등록 창이 먼저 열립니다.
+              지금은 자동으로 결제되지 않습니다 — 이번 결제로 {{ billingCycle === 'YEARLY' ? '1년' : '1개월' }}
+              동안 이용하고, 끝나기 {{ billingPolicy.expiryNoticeDays }}일 전에 알려 드립니다. 끝난 뒤 다시
+              결제하면 이어서 쓸 수 있습니다. 자동 결제를 시작하게 되면 미리 알려 드립니다.
+            </span>
+          </label>
+          <p v-else-if="billingPolicyError" class="flex items-center gap-2" data-testid="billing-policy-error">
+            결제 조건을 불러오지 못했습니다.
+            <button type="button" class="underline" @click="loadBillingPolicy">다시 시도</button>
+          </p>
+          <p v-else data-testid="billing-policy-loading">결제 조건을 확인하는 중...</p>
+        </div>
 
         <!-- Navigation Buttons -->
         <div class="mt-8 flex justify-end gap-3">
@@ -159,7 +177,7 @@
             v-if="!processing && !paymentComplete"
             type="button"
             class="btn-primary"
-            :disabled="portoneLoading || (requiresBillingConsent && !billingConsent)"
+            :disabled="portoneLoading || (requiresBillingConsent && (!billingPolicy || !billingConsent))"
             @click="startPayment"
           >
             {{ portoneLoading ? '준비 중...' : '결제하기' }}
@@ -184,6 +202,8 @@ import { XMarkIcon, SparklesIcon, CheckCircleIcon, InformationCircleIcon } from 
 import { type Plan, type PlanType } from '@/types/subscription'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { usePortOne } from '@/composables/usePortOne'
+import { subscriptionApi } from '@/api/subscription'
+import type { BillingPolicy } from '@/types/subscription'
 import { useFocusTrap } from '@/composables/useAccessibility'
 
 interface Props {
@@ -273,10 +293,24 @@ const requiresBillingConsent = computed(() => props.price > 0)
 
 const billingConsent = ref(false)
 
+/** 서버 결제 정책. 모르는 동안에는 동의를 받지 않는다 — 템플릿 주석 참고. */
+const billingPolicy = ref<BillingPolicy | null>(null)
+const billingPolicyError = ref(false)
+
+async function loadBillingPolicy() {
+  billingPolicyError.value = false
+  try {
+    billingPolicy.value = await subscriptionApi.getBillingPolicy()
+  } catch {
+    billingPolicy.value = null
+    billingPolicyError.value = true
+  }
+}
+
 async function startPayment() {
   paymentError.value = ''
   // 버튼도 잠기지만, 여기서 한 번 더 막는다 — 동의 없이 카드 등록 창을 열지 않는다.
-  if (requiresBillingConsent.value && !billingConsent.value) return
+  if (requiresBillingConsent.value && (!billingPolicy.value || !billingConsent.value)) return
   try {
     await openSubscriptionCheckout(props.targetPlan, {
       onSuccess: () => {
@@ -339,6 +373,7 @@ watch(() => props.modelValue, async (isOpen) => {
      */
     clearCompletionTimer()
     resetState()
+    if (requiresBillingConsent.value) void loadBillingPolicy()
     previousActiveElement.value = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null

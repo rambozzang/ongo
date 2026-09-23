@@ -10,6 +10,7 @@ import com.ongo.domain.subscription.Subscription
 import com.ongo.domain.subscription.SubscriptionRenewalOutcome
 import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.user.UserRepository
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -122,6 +123,25 @@ class BillingSchedulerRenewalTest {
         verify(exactly = 0) { renewalService.renew(any(), any()) }
     }
 
+    /**
+     * **갱신이 꺼져 있으면 기간이 끝난 ACTIVE 구독을 내리고, 켜져 있으면 건드리지 않는다.**
+     *
+     * 꺼진 채로 이 단계가 없던 동안 ACTIVE 구독은 어떤 조회에도 걸리지 않아, 한 번 결제하면
+     * 유료 플랜을 영구히 썼다. 켜져 있을 때 같은 대상을 내리면 갱신 청구와 경쟁한다.
+     */
+    @Test
+    fun `기간 만료 강등과 만료 예고는 갱신이 꺼져 있을 때만 돈다`() {
+        runSchedulerWith(scheduler(renewalEnabled = false))
+        verify(exactly = 1) { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) }
+        verify(exactly = 1) { subscriptionRepository.findActiveEndingBetween(any(), any()) }
+
+        clearMocks(subscriptionRepository, answers = false, recordedCalls = true)
+        every { subscriptionRepository.findDueForBilling(any()) } returns emptyList()
+        runSchedulerWith(scheduler(renewalEnabled = true))
+        verify(exactly = 0) { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) }
+        verify(exactly = 0) { subscriptionRepository.findActiveEndingBetween(any(), any()) }
+    }
+
     /** 갱신을 꺼도 체험 만료·유예·취소·다운그레이드는 그대로 돌아야 한다. */
     @Test
     fun `꺼져 있어도 기존 처리는 그대로 실행한다`() {
@@ -168,6 +188,8 @@ class BillingSchedulerRenewalTest {
         every { subscriptionRepository.findPausedToResume(any()) } returns emptyList()
         every { subscriptionRepository.findPastDue(any()) } returns emptyList()
         every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveEndingBetween(any(), any()) } returns emptyList()
         every { subscriptionRepository.findWithPendingPlanType() } returns emptyList()
         target.processBilling()
     }
@@ -182,6 +204,8 @@ class BillingSchedulerRenewalTest {
         every { subscriptionRepository.findPausedToResume(any()) } returns emptyList()
         every { subscriptionRepository.findPastDue(any()) } returns emptyList()
         every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveEndingBetween(any(), any()) } returns emptyList()
         every { subscriptionRepository.findWithPendingPlanType() } returns emptyList()
         scheduler.processBilling()
     }
@@ -269,6 +293,8 @@ class BillingSchedulerRenewalTest {
         every { subscriptionRepository.findPausedToResume(any()) } returns emptyList()
         every { subscriptionRepository.findPastDue(any()) } returns emptyList()
         every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveEndingBetween(any(), any()) } returns emptyList()
 
         scheduler(renewalEnabled = true).processBilling()
 
@@ -308,6 +334,8 @@ class BillingSchedulerRenewalTest {
         every { subscriptionRepository.findPausedToResume(any()) } returns emptyList()
         every { subscriptionRepository.findPastDue(any()) } returns emptyList()
         every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveEndingBetween(any(), any()) } returns emptyList()
 
         every { distributedLockPort.withLock(any(), any<() -> Unit>()) } answers {
             secondArg<() -> Unit>().invoke()
@@ -341,6 +369,8 @@ class BillingSchedulerRenewalTest {
         every { subscriptionRepository.findPausedToResume(any()) } returns emptyList()
         every { subscriptionRepository.findPastDue(any()) } returns emptyList()
         every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveEndingBetween(any(), any()) } returns emptyList()
         every { distributedLockPort.withLock(any(), any<() -> Unit>()) } answers {
             secondArg<() -> Unit>().invoke()
             true
@@ -369,6 +399,8 @@ class BillingSchedulerRenewalTest {
         every { subscriptionRepository.findPausedToResume(any()) } returns emptyList()
         every { subscriptionRepository.findPastDue(any()) } answers { order += "pastDue"; emptyList() }
         every { subscriptionRepository.findCancelledExpired(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveExpiredWithoutRenewal(any()) } returns emptyList()
+        every { subscriptionRepository.findActiveEndingBetween(any(), any()) } returns emptyList()
         every { subscriptionRepository.findWithPendingPlanType() } answers { order += "downgrade"; emptyList() }
 
         scheduler.processBilling()

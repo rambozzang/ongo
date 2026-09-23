@@ -578,6 +578,15 @@ export const sectionsKo: ManualSection[] = [
         subtitle: '결제 관리',
         text: '사이드바의 "구독/결제" 메뉴에서 현재 플랜 확인, 플랜 변경, 결제 내역 조회가 가능합니다.',
       },
+      {
+        subtitle: '구독 기간과 재결제',
+        text: '결제 화면의 동의 문구가 지금 자동 결제가 되는지 알려 줍니다.',
+        items: [
+          '자동 결제가 꺼져 있을 때: 한 번 결제하면 1개월(연간은 1년) 동안 이용합니다. 기간이 끝나기 3일 전에 알림을 보내 드리고, 끝나면 Free 플랜으로 전환됩니다.',
+          '기간이 끝난 뒤 구독 화면에서 다시 결제하면 바로 이어서 쓸 수 있습니다. 기간 중에는 같은 플랜을 중복 결제할 수 없습니다.',
+          '자동 결제가 켜져 있을 때: 등록한 카드로 다음 결제일에 자동 청구되며, 구독 화면에서 언제든 해지할 수 있습니다.',
+        ],
+      },
     ],
   },
   {
@@ -3571,6 +3580,15 @@ export const sectionsEn: ManualSection[] = [
       {
         subtitle: 'Billing Management',
         text: 'Check your current plan, change plans, and view payment history from the "Subscription" menu in the sidebar.',
+      },
+      {
+        subtitle: 'Subscription Period and Renewal',
+        text: 'The consent text on the payment screen tells you whether automatic billing is currently on.',
+        items: [
+          'When automatic billing is off: one payment covers 1 month (1 year for yearly). We notify you 3 days before the period ends, and your account moves to the Free plan when it ends.',
+          'After the period ends, pay again from the Subscription page to continue right away. The same plan cannot be paid twice while a period is still active.',
+          'When automatic billing is on: your registered card is charged on the next billing date, and you can cancel anytime from the Subscription page.',
+        ],
       },
     ],
   },

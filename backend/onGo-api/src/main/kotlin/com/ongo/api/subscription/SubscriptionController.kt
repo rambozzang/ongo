@@ -3,6 +3,8 @@ package com.ongo.api.subscription
 import com.ongo.api.config.CurrentUser
 import com.ongo.application.subscription.dto.*
 import com.ongo.application.subscription.SubscriptionUseCase
+import com.ongo.application.subscription.BillingPolicyResponse
+import com.ongo.application.subscription.SubscriptionBillingPolicy
 import com.ongo.common.ResData
 import com.ongo.common.exception.RateLimitExceededException
 import io.swagger.v3.oas.annotations.Operation
@@ -20,7 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger
 @RestController
 @RequestMapping("/api/v1/subscriptions")
 class SubscriptionController(
-    private val subscriptionUseCase: SubscriptionUseCase
+    private val subscriptionUseCase: SubscriptionUseCase,
+    private val billingPolicy: SubscriptionBillingPolicy,
 ) {
 
     companion object {
@@ -107,6 +110,14 @@ class SubscriptionController(
     fun getPlans(@Parameter(hidden = true) @CurrentUser userId: Long): ResponseEntity<ResData<PlanComparisonResponse>> {
         return ResData.success(subscriptionUseCase.getPlans(userId))
     }
+
+    @Operation(
+        summary = "결제 정책 조회",
+        description = "구독이 기간 끝에 자동 결제되는지 알려줍니다. 결제 화면의 동의 문구가 이 값을 따릅니다.",
+    )
+    @GetMapping("/billing-policy")
+    fun getBillingPolicy(): ResponseEntity<ResData<BillingPolicyResponse>> =
+        ResData.success(billingPolicy.current())
 
     @Operation(summary = "사용량 조회", description = "현재 월간 업로드 수, 스토리지 사용량을 조회합니다.")
     @GetMapping("/usage")

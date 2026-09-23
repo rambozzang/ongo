@@ -1,6 +1,6 @@
 import apiClient, { unwrapResponse } from './client'
 import type { ResData } from '@/types/api'
-import type { Subscription, ChangePlanRequest, ChangePlanResponse, PlanInfo, PlanType, UsageAlertConfig } from '@/types/subscription'
+import type { Subscription, ChangePlanRequest, ChangePlanResponse, PlanInfo, PlanType, UsageAlertConfig, BillingPolicy } from '@/types/subscription'
 
 export const subscriptionApi = {
   getCurrent() {
@@ -25,6 +25,13 @@ export const subscriptionApi = {
   cancel() {
     return apiClient
       .post<ResData<Subscription>>('/subscriptions/cancel')
+      .then(unwrapResponse)
+  },
+
+  /** 구독이 기간 끝에 자동 결제되는지. 결제 모달의 동의 문구가 이 값을 따른다. */
+  getBillingPolicy(): Promise<BillingPolicy> {
+    return apiClient
+      .get<ResData<BillingPolicy>>('/subscriptions/billing-policy')
       .then(unwrapResponse)
   },
 

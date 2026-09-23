@@ -18,6 +18,23 @@ vi.mock('@/composables/usePortOne', async () => {
   }
 })
 
+/**
+ * 결제 정책. 기본은 **자동 결제 켜짐** — 기존 테스트가 그 문구를 전제로 쓰였다. 꺼진 경우와
+ * 불러오기 실패는 아래 '결제 정책' 묶음이 따로 본다.
+ */
+const billing = vi.hoisted(() => ({
+  getBillingPolicy: vi.fn(),
+}))
+
+vi.mock('@/api/subscription', () => ({
+  subscriptionApi: { getBillingPolicy: billing.getBillingPolicy },
+}))
+
+beforeEach(() => {
+  billing.getBillingPolicy.mockReset()
+  billing.getBillingPolicy.mockResolvedValue({ autoRenewal: true, expiryNoticeDays: 3 })
+})
+
 type Callbacks = { onSuccess?: () => void; onClose?: () => void }
 
 /**
@@ -56,6 +73,8 @@ function renderModal(overrides: Record<string, unknown> = {}) {
 
 /** 유료 플랜은 정기결제 동의 없이는 결제 버튼이 잠긴다. */
 async function consent(wrapper: ReturnType<typeof renderModal>) {
+  // 동의 체크박스는 결제 정책을 받은 뒤에야 뜬다.
+  await flushPromises()
   const box = wrapper.find('[data-testid="billing-consent"]')
   if (!box.exists()) throw new Error('정기결제 동의 체크박스를 찾지 못했습니다')
   await box.setValue(true)
@@ -344,8 +363,10 @@ describe('PaymentModal 정기결제 동의', () => {
   })
 
   /** 자동 청구가 일어난다는 사실과 해지 방법이 문구에 있어야 한다. */
-  it('동의 문구가 자동 청구와 해지 방법을 알린다', () => {
-    const text = renderModal().text()
+  it('동의 문구가 자동 청구와 해지 방법을 알린다', async () => {
+    const wrapper = renderModal()
+    await flushPromises()
+    const text = wrapper.text()
 
     expect(text).toContain('자동으로 결제')
     expect(text).toContain('카드 등록 창')
@@ -365,5 +386,82 @@ describe('PaymentModal 정기결제 동의', () => {
     })
 
     expect(wrapper.find('[data-testid="billing-consent"]').exists()).toBe(false)
+  })
+})
+
+/*
+ * **화면의 약속은 서버의 정기 청구 설정을 따른다.**
+ *
+ * 청구가 꺼져 있는데 "매월 자동 결제" 를 약속하면, 카드를 등록한 사용자가 기간 끝에 예고 없이
+ * Free 로 내려간 것처럼 느낀다. 켜져 있는데 "자동 결제 없음" 이라 말하면 동의 없는 청구다.
+ */
+describe('PaymentModal 결제 정책', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    portone.loading.value = false
+  })
+
+  it('자동 결제가 꺼져 있으면 자동 청구를 약속하지 않고 만료·재결제를 알린다', async () => {
+    billing.getBillingPolicy.mockResolvedValue({ autoRenewal: false, expiryNoticeDays: 3 })
+    const wrapper = renderModal()
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).not.toContain('매월 자동으로 결제되는 데 동의')
+    expect(text).toContain('자동으로 결제되지 않습니다')
+    expect(text).toContain('1개월')
+    expect(text).toContain('3일 전')
+    expect(text).toContain('다시')
+    expect(wrapper.find('[data-testid="billing-consent-manual"]').exists()).toBe(true)
+  })
+
+  it('연간 결제는 이용 기간을 1년으로 말한다', async () => {
+    billing.getBillingPolicy.mockResolvedValue({ autoRenewal: false, expiryNoticeDays: 3 })
+    const wrapper = renderModal({ billingCycle: 'YEARLY' })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="billing-consent-manual"]').text()).toContain('1년')
+  })
+
+  it('자동 결제가 켜져 있으면 자동 청구 동의를 받는다', async () => {
+    const wrapper = renderModal()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="billing-consent-auto"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="billing-consent-manual"]').exists()).toBe(false)
+  })
+
+  /** 정책을 모르면 어느 쪽 약속도 할 수 없다 — 동의를 받지 않고 결제도 막는다. */
+  it('정책을 불러오지 못하면 동의를 받지 않고 결제를 막으며, 다시 시도할 수 있다', async () => {
+    billing.getBillingPolicy.mockRejectedValueOnce(new Error('network'))
+    const wrapper = renderModal()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="billing-consent"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="billing-policy-error"]').exists()).toBe(true)
+    const pay = wrapper.findAll('button').find((b) => b.text().includes('결제하기'))!
+    expect(pay.attributes('disabled')).toBeDefined()
+    await pay.trigger('click')
+    expect(portone.openSubscriptionCheckout).not.toHaveBeenCalled()
+
+    const retry = wrapper.findAll('button').find((b) => b.text().includes('다시 시도'))!
+    await retry.trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="billing-consent"]').exists()).toBe(true)
+  })
+
+  it('무료 플랜은 결제 정책을 묻지 않는다', async () => {
+    mount(PaymentModal, {
+      props: {
+        modelValue: true,
+        targetPlan: 'FREE' as const,
+        price: 0,
+        plan: { ...STARTER_PLAN, type: 'FREE' as const, name: 'FREE', price: 0, yearlyPrice: 0 },
+      },
+      global: { stubs: { teleport: true, LoadingSpinner: true } },
+    })
+    await flushPromises()
+
+    expect(billing.getBillingPolicy).not.toHaveBeenCalled()
   })
 })
