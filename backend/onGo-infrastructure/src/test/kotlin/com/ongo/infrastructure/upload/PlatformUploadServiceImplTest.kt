@@ -1,6 +1,7 @@
 package com.ongo.infrastructure.upload
 
 import com.ongo.application.video.PlatformUploadConfig
+import com.ongo.application.video.PlatformStreamWriterFactory
 import com.ongo.application.video.toPublishOutcome
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.MediaType
@@ -15,6 +16,7 @@ import com.ongo.infrastructure.external.platform.PlatformClient
 import com.ongo.infrastructure.external.platform.PlatformClientFactory
 import com.ongo.infrastructure.external.platform.PlatformTokenResult
 import com.ongo.infrastructure.external.platform.PlatformUploadResult as ClientUploadResult
+import com.ongo.infrastructure.external.platform.downloadFileToTemp
 import io.mockk.*
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -26,6 +28,73 @@ import org.springframework.web.client.HttpClientErrorException
 import java.net.SocketTimeoutException
 
 class PlatformUploadServiceImplTest {
+
+    @Test
+    fun `durable Instagram Threads 게시가 원본 URL을 직접 전달하고 stream staging을 건너뛴다`() {
+        mockkStatic("com.ongo.infrastructure.external.platform.PlatformClientKt")
+        try {
+            every { downloadFileToTemp(any()) } throws AssertionError("durable URL 게시에서 원본 다운로드를 하면 안 됩니다")
+            val sourceUrl = "https://storage.example/original.mp4?signature=source"
+
+            listOf(
+                Platform.INSTAGRAM to "https://instagram.com/reel/ig-direct",
+                Platform.THREADS to "https://threads.net/post/threads-direct",
+            ).forEachIndexed { index, (platform, platformUrl) ->
+                val factory = mockk<PlatformClientFactory>()
+                val channels = mockk<ChannelRepository>()
+                val encryption = mockk<TokenEncryptionPort>()
+                val client = mockk<PlatformClient>()
+                val writerFactory = mockk<PlatformStreamWriterFactory>()
+                val request = slot<com.ongo.infrastructure.external.platform.PlatformUploadRequest>()
+                every { writerFactory.platform } returns platform
+                every { factory.getClient(platform) } returns client
+                every { channels.findByUserIdAndPlatform(7L, platform) } returns Channel(
+                    id = index + 1L,
+                    userId = 7L,
+                    platform = platform,
+                    platformChannelId = "${platform.name.lowercase()}-user",
+                    channelName = "creator",
+                    accessToken = EncryptedToken("encrypted-$index"),
+                    status = ChannelStatus.ACTIVE,
+                )
+                every { encryption.decrypt(EncryptedToken("encrypted-$index")) } returns PlainToken("plain-$index")
+                every { client.uploadVideo(capture(request)) } returns ClientUploadResult(
+                    platformVideoId = "post-$index",
+                    platformUrl = platformUrl,
+                    status = "PUBLISHED",
+                )
+
+                val result = PlatformUploadServiceImpl(factory, channels, encryption, listOf(writerFactory)).upload(
+                    config = PlatformUploadConfig(
+                        platform = platform,
+                        videoUploadId = 100L + index,
+                        title = "제목",
+                        description = "설명",
+                        tags = emptyList(),
+                        visibility = Visibility.PUBLIC,
+                        thumbnailUrl = null,
+                        scheduledAt = null,
+                        fileSize = 1234,
+                    ),
+                    fileUrl = sourceUrl,
+                    userId = 7L,
+                )
+
+                assertThat(request.captured.fileUrl).isEqualTo(sourceUrl)
+                assertThat(request.captured.accessToken.value).isEqualTo("plain-$index")
+                assertThat(result.success).isTrue()
+                assertThat(result.published).isTrue()
+                assertThat(result.platformVideoId).isEqualTo("post-$index")
+                assertThat(result.platformUrl).isEqualTo(platformUrl)
+                verify(exactly = 0) { writerFactory.createWriter() }
+                verify(exactly = 1) { client.uploadVideo(any()) }
+            }
+
+            verify(exactly = 0) { downloadFileToTemp(any()) }
+        } finally {
+            unmockkStatic("com.ongo.infrastructure.external.platform.PlatformClientKt")
+        }
+    }
 
     private fun channel(
         refreshToken: EncryptedToken? = null,

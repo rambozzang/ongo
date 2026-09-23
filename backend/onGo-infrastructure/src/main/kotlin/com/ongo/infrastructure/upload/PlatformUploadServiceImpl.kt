@@ -37,6 +37,12 @@ class PlatformUploadServiceImpl(
     companion object {
         private const val MAX_RETRIES = 3
         private const val INITIAL_DELAY_MS = 1000L
+        /**
+         * Durable publish already has a stable, public R2 URL. Instagram and Threads
+         * accept that URL directly, so their chunk writer (local buffer + temporary
+         * R2 object) is reserved for StreamPublishUseCase, where no source object exists.
+         */
+        private val SOURCE_URL_VIDEO_PLATFORMS = setOf(Platform.INSTAGRAM, Platform.THREADS)
         private val PUBLISHED_STATUSES = setOf(
             "PUBLISHED", "PUBLISH_COMPLETE", "FINISHED", "FINISH", "PROCESSED", "UPLOADED",
             "READY", "LIVE", "SUCCEEDED", "SUCCESS", "COMPLETED", "COMPLETE", "POSTED",
@@ -96,7 +102,8 @@ class PlatformUploadServiceImpl(
                 val directFactory = streamWriterFactories.find { it.platform == config.platform }
                     ?.takeIf {
                         config.mediaType == MediaType.VIDEO &&
-                            PlatformUploadCapabilities.get(config.platform)?.directVideoUpload == true
+                            PlatformUploadCapabilities.get(config.platform)?.directVideoUpload == true &&
+                            config.platform !in SOURCE_URL_VIDEO_PLATFORMS
                     }
                 val result = if (directFactory != null) {
                     uploadFromCloudUrl(directFactory, config, fileUrl, accessToken, channel.platformChannelId)
