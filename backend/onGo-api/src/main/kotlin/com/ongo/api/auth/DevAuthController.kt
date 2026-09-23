@@ -3,6 +3,7 @@ package com.ongo.api.auth
 import com.ongo.api.auth.dto.AuthResponse
 import com.ongo.api.auth.dto.UserResponse
 import com.ongo.common.ResData
+import com.ongo.common.config.DevOnlyProfiles
 import com.ongo.application.auth.AuthUseCase
 import com.ongo.application.auth.dto.AuthResult
 import com.ongo.domain.auth.AuthTokenPort
@@ -16,7 +17,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
-@Profile("dev", "local")
+@Profile(DevOnlyProfiles.EXPRESSION)
 @Tag(name = "인증 (개발용)", description = "개발/로컬 환경 전용 토큰 발급")
 @RestController
 @RequestMapping("/api/v1/auth")

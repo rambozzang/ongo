@@ -3,6 +3,7 @@ package com.ongo.infrastructure.config
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import java.util.Base64
+import org.springframework.mock.env.MockEnvironment
 
 class ProductionConfigurationValidatorTest {
 
@@ -13,6 +14,23 @@ class ProductionConfigurationValidatorTest {
         val error = assertFailsWith<IllegalArgumentException> { validator.validate() }
 
         kotlin.test.assertTrue(error.message.orEmpty().contains("payment.portone.webhook-secret"))
+    }
+
+    /*
+     * 2026-08-08 운영에서 dev 프로필이 섞여 `/auth/dev-login` 이 인증 없이 ADMIN 토큰을
+     * 발급했다. 값이 모두 멀쩡해도 프로필 하나로 관리자 우회가 열리므로 기동을 거부한다.
+     */
+    @Test
+    fun `운영에 dev 나 local 프로필이 섞이면 기동 검증에서 거부한다`() {
+        for (leaked in listOf("dev", "local")) {
+            val error = assertFailsWith<IllegalArgumentException>("prod+$leaked 가 기동을 통과했다") {
+                validator(activeProfiles = arrayOf("prod", leaked)).validate()
+            }
+            kotlin.test.assertTrue(
+                "development profiles must not be active in production: $leaked" in error.message.orEmpty(),
+                error.message,
+            )
+        }
     }
 
     @Test
@@ -145,6 +163,7 @@ class ProductionConfigurationValidatorTest {
         geminiApiKey: String = "",
         dashScopeApiKey: String = "",
         platformEncryptionKey: String = Base64.getEncoder().encodeToString(ByteArray(32) { 1 }),
+        activeProfiles: Array<String> = arrayOf("prod"),
     ) = ProductionConfigurationValidator(
         jwtSecret = "j".repeat(32),
         platformEncryptionKey = platformEncryptionKey,
@@ -169,5 +188,6 @@ class ProductionConfigurationValidatorTest {
         openAiApiKey = openAiApiKey,
         geminiApiKey = geminiApiKey,
         dashScopeApiKey = dashScopeApiKey,
+        environment = MockEnvironment().apply { setActiveProfiles(*activeProfiles) },
     )
 }

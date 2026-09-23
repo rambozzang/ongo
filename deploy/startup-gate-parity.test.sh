@@ -158,6 +158,42 @@ grep -q 'callback-url:.*PUBLIC_OAUTH_CALLBACK_URL.*APP_BASE_URL' "$APP_YML" \
     || fail "콜백 URL 파생 관계가 바뀌었다 — 매핑 표의 '-' 항목을 다시 볼 것" \
             "$(grep -n 'callback-url' "$APP_YML")"
 
+# ---- 개발 프로필 누수 ----
+#
+# 검증기는 운영에 dev/local 이 섞이면 기동을 거부한다(인증 없는 관리자 로그인 차단).
+# 배포 사전검사가 이것을 모르면, 운영 .env 에 SPRING_PROFILES_INCLUDE=dev 가 있던 서버는
+# 이 규칙이 들어간 첫 배포에서 **중지 뒤 기동 실패**로 내려간다.
+DEV_PROFILES_KT="$REPO_ROOT/backend/onGo-common/src/main/kotlin/com/ongo/common/config/DevOnlyProfiles.kt"
+KT_FORBIDDEN="$(grep -o 'FORBIDDEN_WITH_PROD = setOf([^)]*)' "$DEV_PROFILES_KT" 2>/dev/null \
+    | grep -o '"[a-z]*"' | tr -d '"' | sort | tr '\n' ' ')"
+SH_FORBIDDEN="$(sed -n '/^ongo_profiles_leak_dev()/,/^}/p' "$REQUIRED_ENV" \
+    | grep -o '^ *[a-z|]*) return 0' | sed 's/) return 0//; s/ //g' | tr '|' '\n' | sort | tr '\n' ' ')"
+if grep -q 'DevOnlyProfiles.FORBIDDEN_WITH_PROD' "$VALIDATOR"; then
+    [ -n "$KT_FORBIDDEN" ] && [ "$KT_FORBIDDEN" = "$SH_FORBIDDEN" ] \
+        && pass "금지 프로필 목록이 검증기와 배포 사전검사에서 같다 (${KT_FORBIDDEN% })" \
+        || fail "금지 프로필 목록이 다르다" "검증기=[${KT_FORBIDDEN}] 배포=[${SH_FORBIDDEN}]"
+else
+    fail "검증기가 개발 프로필 누수를 검사하지 않는다 — 운영 관리자 우회 차단이 빠졌다" ""
+fi
+
+gate_with() {
+    ( unset SPRING_PROFILES_INCLUDE JAVA_TOOL_OPTIONS JDK_JAVA_OPTIONS OAUTH_STATE_SECRET APP_BASE_URL PUBLIC_OAUTH_CALLBACK_URL
+      export "$@"
+      # shellcheck source=deploy/required-env.sh
+      source "$REQUIRED_ENV"
+      ongo_invalid_startup_gate_env_vars )
+}
+expect_gate() {
+    local want="$1" label="$2"; shift 2
+    local got; got="$(gate_with "$@" | xargs)"
+    [ "$got" = "$want" ] && pass "$label" || fail "$label" "기대=[$want] 실제=[$got]"
+}
+expect_gate "SPRING_PROFILES_INCLUDE" "SPRING_PROFILES_INCLUDE=dev 는 중지 전에 거절한다" SPRING_PROFILES_INCLUDE=dev
+expect_gate "SPRING_PROFILES_INCLUDE" "쉼표 목록 안의 local 도 거절한다" SPRING_PROFILES_INCLUDE=metrics,local
+expect_gate "" "devops 같은 다른 프로필은 막지 않는다(검증기도 정확 일치)" SPRING_PROFILES_INCLUDE=devops
+expect_gate "JAVA_TOOL_OPTIONS" "JVM 옵션의 -Dspring.profiles.include=dev 도 거절한다" "JAVA_TOOL_OPTIONS=-Xmx1g -Dspring.profiles.include=dev"
+expect_gate "" "include 가 없으면 통과한다(살아 있는 서비스를 막지 않는다)" X=1
+
 # ---- 새 검사가 실제로 배포 경로에 연결돼 있는가 ----
 
 # 함수만 있고 아무도 부르지 않으면 이 모든 것이 장식이다.

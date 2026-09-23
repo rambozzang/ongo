@@ -3,7 +3,10 @@ package com.ongo.infrastructure.config
 import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
+import org.springframework.core.env.Environment
+import org.springframework.core.env.StandardEnvironment
 import org.springframework.stereotype.Component
+import com.ongo.common.config.DevOnlyProfiles
 import java.util.Base64
 
 /**
@@ -39,6 +42,7 @@ class ProductionConfigurationValidator(
     @Value("\${spring.ai.openai.api-key:}") private val openAiApiKey: String,
     @Value("\${spring.ai.google.genai.api-key:}") private val geminiApiKey: String,
     @Value("\${dashscope.api-key:}") private val dashScopeApiKey: String,
+    private val environment: Environment = StandardEnvironment(),
 ) {
 
     /**
@@ -53,6 +57,18 @@ class ProductionConfigurationValidator(
     @PostConstruct
     fun validate() {
         val violations = Violations()
+
+        /*
+         * **개발 프로필이 운영에 섞이면 기동하지 않는다.**
+         *
+         * dev/local 이 켜지면 인증 없는 관리자 로그인 같은 개발 전용 빈이 뜬다. 컨트롤러 쪽도
+         * `DevOnlyProfiles.EXPRESSION` 으로 prod 와 함께면 꺼지지만, 그 한 겹만 믿지 않는다 —
+         * 개발용 기본값(application-dev.yml)이 운영 값을 덮는 것까지 막으려면 기동 자체를 거부해야 한다.
+         */
+        val leakedProfiles = environment.activeProfiles.filter { it in DevOnlyProfiles.FORBIDDEN_WITH_PROD }
+        violations.check(leakedProfiles.isEmpty()) {
+            "development profiles must not be active in production: ${leakedProfiles.joinToString()}"
+        }
 
         violations.check(jwtSecret.toByteArray().size >= 32) {
             "jwt.secret must contain at least 32 bytes in production"

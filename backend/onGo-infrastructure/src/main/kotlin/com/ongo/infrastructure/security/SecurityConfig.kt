@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.core.env.Environment
+import com.ongo.common.config.DevOnlyProfiles
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
@@ -66,7 +67,7 @@ class SecurityConfig(
                     "/api/v1/public/v1/social/callback",
                     "/public/v1/social/callback",
                 )
-                if (environment.acceptsProfiles(org.springframework.core.env.Profiles.of("dev", "local"))) {
+                if (environment.acceptsProfiles(org.springframework.core.env.Profiles.of(DevOnlyProfiles.EXPRESSION))) {
                     publicPaths += "/api/v1/auth/dev-login"
                 }
                 auth

@@ -75,7 +75,37 @@ ongo_invalid_startup_gate_env_vars() {
         esac
     fi
 
+    # 개발 프로필이 운영에 섞이면 검증기가 기동을 거부한다(인증 없는 관리자 로그인 차단).
+    # start.sh 가 -Dspring.profiles.active=prod 를 직접 주므로 SPRING_PROFILES_ACTIVE 는
+    # 이기지 못한다. 섞일 수 있는 길은 include 뿐이다.
+    if ongo_profiles_leak_dev "${SPRING_PROFILES_INCLUDE:-}"; then
+        invalid="$invalid SPRING_PROFILES_INCLUDE"
+    fi
+    local opts_var
+    for opts_var in JAVA_TOOL_OPTIONS JDK_JAVA_OPTIONS; do
+        if ongo_profiles_leak_dev "$(ongo_profiles_include_from_jvm_opts "${!opts_var:-}")"; then
+            invalid="$invalid $opts_var"
+        fi
+    done
+
     echo "$invalid"
+}
+
+# 쉼표·공백으로 나눈 프로필 목록에 dev 또는 local 이 **토큰으로** 있으면 참.
+# `devops` 같은 이름은 걸지 않는다 — 검증기(DevOnlyProfiles.FORBIDDEN_WITH_PROD)도 정확히 일치로 본다.
+ongo_profiles_leak_dev() {
+    local token
+    for token in $(printf '%s' "$1" | tr ',' ' '); do
+        case "$token" in
+            dev|local) return 0 ;;
+        esac
+    done
+    return 1
+}
+
+# JVM 옵션 문자열에서 -Dspring.profiles.include=... 의 값만 뽑는다.
+ongo_profiles_include_from_jvm_opts() {
+    printf '%s' "$1" | tr ' ' '\n' | sed -n 's/^-Dspring\.profiles\.include=//p' | tr -d "\"'"
 }
 
 # 사람이 읽는 안내는 stderr 로. 값은 절대 찍지 않는다.
@@ -95,6 +125,9 @@ ongo_report_invalid_startup_gate_env_vars() {
                 ;;
             PUBLIC_OAUTH_CALLBACK_URL)
                 echo "          - PUBLIC_OAUTH_CALLBACK_URL (https:// 로 시작해야 합니다)"
+                ;;
+            SPRING_PROFILES_INCLUDE|JAVA_TOOL_OPTIONS|JDK_JAVA_OPTIONS)
+                echo "          - $var (dev/local 프로필을 운영에 섞을 수 없습니다 — 인증 없는 관리자 로그인이 열립니다)"
                 ;;
         esac
     done
