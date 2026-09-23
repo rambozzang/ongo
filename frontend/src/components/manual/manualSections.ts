@@ -360,6 +360,10 @@ export const sectionsKo: ManualSection[] = [
         ],
       },
       {
+        subtitle: '큰 파일과 끊긴 업로드',
+        text: '64MB 이상 영상은 여러 조각으로 나눠 동시에 올립니다. 와이파이가 잠깐 끊겨도 실패한 조각만 자동으로 다시 보내므로 처음부터 다시 올릴 필요가 없습니다. 업로드를 일시정지하거나 실패 후 "다시 시도"를 누르면 이미 올라간 부분은 건너뛰고 남은 부분만 이어서 올립니다. 단, 페이지를 새로고침하거나 닫으면 이어받기 정보가 사라지니 업로드 중에는 창을 열어 두세요. 한 파일의 최대 크기는 2GB입니다.',
+      },
+      {
         subtitle: '멀티 플랫폼 동시 업로드',
         text: '여러 플랫폼에 동시에 업로드할 수 있습니다. 각 플랫폼별로 제목/설명을 개별 수정할 수도 있고, AI를 활용해 플랫폼에 최적화된 메타데이터를 자동 생성할 수도 있습니다.',
       },
@@ -3346,6 +3350,10 @@ export const sectionsEn: ManualSection[] = [
           'Enter metadata and select target platforms for publishing.',
           'Click "Upload" to start the upload.',
         ],
+      },
+      {
+        subtitle: 'Large files and interrupted uploads',
+        text: 'Videos of 64 MB or more are split into parts and uploaded in parallel. If your connection drops briefly, only the failed parts are retried automatically, so you never start over from zero. If you pause an upload or press "Retry" after a failure, parts that already reached storage are skipped and only the rest is sent. Resume information is lost if you refresh or close the page, so keep the window open while uploading. The maximum size per file is 2 GB.',
       },
       {
         subtitle: 'Multi-Platform Simultaneous Upload',

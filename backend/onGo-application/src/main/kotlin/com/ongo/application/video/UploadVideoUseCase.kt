@@ -91,12 +91,147 @@ class UploadVideoUseCase(
     @Transactional
     fun confirmPresignedUpload(userId: Long, videoId: Long) {
         userWriteGuard.requireWritable(userId)
-        val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
-        if (video.userId != userId) throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        val video = ownedVideo(userId, videoId)
 
         // 이미 확정된 업로드의 재호출 — 아무것도 다시 세지 않는다.
-        if (video.status != UploadStatus.UPLOADING && !video.fileUrl.isNullOrBlank()) return
+        if (isConfirmed(video)) return
 
+        confirmUploaded(video, userId, videoId)
+    }
+
+    // ── 멀티파트 업로드 ──────────────────────────────────────────────────
+    //
+    // 단일 PUT 은 끊기면 처음부터 다시 올려야 하고, 클라이언트 30분 제한에 걸리면 2GB 를
+    // 끝까지 보낼 수 없다. 멀티파트는 실패한 조각만 다시 보낸다.
+    //
+    // 검증은 단일 PUT 과 **같은 자리**에서 한다. 시작 시 신고 크기로 1차, 완료 시 스토리지가
+    // 보고한 실제 크기로 2차([confirmUploaded] 재사용). 조각별 크기는 서명에 묶여 있어
+    // 계획과 다른 조각은 스토리지가 거부한다.
+
+    /**
+     * 업로드를 시작한다. 스토리지가 멀티파트를 지원하지 않으면(MinIO) 단일 PUT URL 을 돌려준다 —
+     * 클라이언트는 [UploadInitiation.multipart] 를 보고 분기한다.
+     */
+    fun initiateUpload(userId: Long, filename: String, contentType: String, fileSize: Long): UploadInitiation {
+        if (!storageService.supportsMultipartUpload()) {
+            val single = initiatePresignedUpload(userId, filename, contentType, fileSize)
+            return UploadInitiation(videoId = single.videoId, multipart = false, uploadUrl = single.uploadUrl)
+        }
+
+        userWriteGuard.requireWritable(userId)
+        FileValidationUtil.validate(filename, contentType, fileSize)
+        storageQuotaUseCase.checkQuota(userId, fileSize)
+        val plan = MultipartUploadPlan.forSize(fileSize)
+
+        val video = videoRepository.save(
+            Video(
+                userId = userId,
+                title = filename.substringBeforeLast('.').ifBlank { "업로드 영상" }.take(100),
+                fileSizeBytes = fileSize,
+                originalFilename = filename,
+                mediaType = MediaType.VIDEO,
+                status = UploadStatus.UPLOADING,
+            )
+        )
+        val videoId = requireNotNull(video.id) { "업로드 레코드 생성에 실패했습니다." }
+
+        val session = try {
+            storageService.startMultipartUpload(videoId, filename, contentType)
+        } catch (e: Exception) {
+            // 세션을 못 열었는데 행만 남으면 사용자에게 "업로드 중" 인 유령 영상이 보인다.
+            runCatching { videoRepository.delete(videoId) }
+            throw e
+        }
+        return UploadInitiation(
+            videoId = videoId,
+            multipart = true,
+            uploadId = session.uploadId,
+            objectKey = session.objectKey,
+            partSize = plan.partSize,
+            partCount = plan.partCount,
+        )
+    }
+
+    /**
+     * 조각 URL 을 **몇 개씩** 발급한다. 한꺼번에 주면 느린 회선에서 뒷조각 URL 이 만료된다.
+     *
+     * 조각 크기는 클라이언트가 아니라 **행에 저장된 신고 크기로 서버가 다시 계산**한다.
+     * 클라이언트가 크기를 정하게 두면 서명에 무엇을 넣을지 알 수 없다.
+     */
+    fun presignUploadParts(
+        userId: Long,
+        videoId: Long,
+        uploadId: String,
+        objectKey: String,
+        partNumbers: List<Int>,
+    ): Map<Int, String> {
+        userWriteGuard.requireWritable(userId)
+        val video = ownedVideo(userId, videoId)
+        if (video.status != UploadStatus.UPLOADING) {
+            throw IllegalStateException("업로드 중인 영상이 아닙니다.")
+        }
+        require(partNumbers.isNotEmpty()) { "요청한 조각이 없습니다." }
+        require(partNumbers.size <= MAX_PART_URLS_PER_REQUEST) {
+            "조각 URL 은 한 번에 ${MAX_PART_URLS_PER_REQUEST}개까지 요청할 수 있습니다."
+        }
+
+        val plan = planOf(video)
+        // sizeOf 가 범위 밖 번호를 거부한다. 중복은 한 번만 서명한다.
+        val sizes = partNumbers.distinct().associateWith(plan::sizeOf)
+        return storageService.presignUploadParts(videoId, objectKey, uploadId, sizes)
+    }
+
+    /**
+     * 조각을 합치고 기존 확정 절차를 그대로 밟는다.
+     *
+     * 빠진 조각이 있으면 [IncompleteMultipartUploadException] 이 나가고 **아무것도 지우지
+     * 않는다**. 세션이 살아 있어야 클라이언트가 빠진 조각만 다시 보낼 수 있다.
+     */
+    @Transactional
+    fun completeMultipartUpload(userId: Long, videoId: Long, uploadId: String, objectKey: String) {
+        userWriteGuard.requireWritable(userId)
+        val video = ownedVideo(userId, videoId)
+        if (isConfirmed(video)) return
+
+        val plan = planOf(video)
+        storageService.completeMultipartUpload(
+            videoId,
+            objectKey,
+            uploadId,
+            (1..plan.partCount).associateWith(plan::sizeOf),
+        )
+        confirmUploaded(video, userId, videoId)
+    }
+
+    /** 사용자가 취소했다. 올라온 조각과 행을 함께 정리한다. */
+    fun abortMultipartUpload(userId: Long, videoId: Long, uploadId: String, objectKey: String) {
+        userWriteGuard.requireWritable(userId)
+        val video = ownedVideo(userId, videoId)
+        if (isConfirmed(video)) throw IllegalStateException("이미 업로드가 끝난 영상은 취소할 수 없습니다.")
+
+        runCatching { storageService.abortMultipartUpload(videoId, objectKey, uploadId) }
+            .onFailure { log.warn("멀티파트 중단 실패 — 정리 경로에 맡김 [videoId={}]", videoId, it) }
+        // deleteFile 이 prefix 아래 미완료 업로드도 함께 중단하므로, 위 호출이 실패해도 여기서 회수된다.
+        discardUpload(video, videoId, "사용자 취소")
+    }
+
+    private fun ownedVideo(userId: Long, videoId: Long): Video {
+        val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
+        if (video.userId != userId) throw ForbiddenException("해당 영상에 대한 접근 권한이 없습니다")
+        return video
+    }
+
+    private fun isConfirmed(video: Video): Boolean =
+        video.status != UploadStatus.UPLOADING && !video.fileUrl.isNullOrBlank()
+
+    /** 확정 전 행의 fileSizeBytes 는 시작 시 신고한 크기다. 그 값으로 계획을 다시 세운다. */
+    private fun planOf(video: Video): MultipartUploadPlan {
+        val declared = video.fileSizeBytes
+            ?: throw IllegalStateException("업로드 크기 정보가 없습니다.")
+        return MultipartUploadPlan.forSize(declared)
+    }
+
+    private fun confirmUploaded(video: Video, userId: Long, videoId: Long) {
         val actualSize = readActualSizeOrDiscard(video, videoId)
         try {
             FileValidationUtil.validateFileSize(actualSize)
@@ -157,3 +292,20 @@ class UploadVideoUseCase(
 }
 
 data class PresignedUploadResult(val videoId: Long, val uploadUrl: String)
+
+/**
+ * 업로드 시작 결과. [multipart] 가 false 면 [uploadUrl] 하나로 단일 PUT,
+ * true 면 [uploadId]·[objectKey]·[partSize]·[partCount] 로 멀티파트를 진행한다.
+ */
+data class UploadInitiation(
+    val videoId: Long,
+    val multipart: Boolean,
+    val uploadUrl: String? = null,
+    val uploadId: String? = null,
+    val objectKey: String? = null,
+    val partSize: Long? = null,
+    val partCount: Int? = null,
+)
+
+/** 조각 URL 한 번 요청의 상한. 클라이언트 동시 전송 수보다 넉넉하면 된다. */
+const val MAX_PART_URLS_PER_REQUEST = 20

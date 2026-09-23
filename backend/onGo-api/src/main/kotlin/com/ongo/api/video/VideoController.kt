@@ -60,6 +60,67 @@ class VideoController(
         return ResData.success(PresignedUploadResponse(result.videoId, result.uploadUrl))
     }
 
+    @Operation(
+        summary = "영상 업로드 시작 (멀티파트 우선)",
+        description = "스토리지가 지원하면 멀티파트 세션을 열고, 아니면 단일 PUT URL 을 돌려줍니다. " +
+            "멀티파트는 끊겨도 실패한 조각만 다시 보내면 됩니다.",
+    )
+    @RequiresPermission(Permission.VIDEO_CREATE)
+    @PostMapping("/upload/start")
+    fun startUpload(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @Valid @RequestBody req: PresignedUploadRequest,
+    ): ResponseEntity<ResData<UploadInitiationResponse>> {
+        val r = uploadVideoUseCase.initiateUpload(userId, req.filename, req.contentType, req.fileSize)
+        return ResData.success(
+            UploadInitiationResponse(
+                videoId = r.videoId,
+                multipart = r.multipart,
+                uploadUrl = r.uploadUrl,
+                uploadId = r.uploadId,
+                objectKey = r.objectKey,
+                partSize = r.partSize,
+                partCount = r.partCount,
+            ),
+        )
+    }
+
+    @Operation(summary = "멀티파트 조각 업로드 URL 발급 (최대 20개씩)")
+    @RequiresPermission(Permission.VIDEO_CREATE)
+    @PostMapping("/{id}/upload/multipart/parts")
+    fun presignMultipartParts(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @PathVariable id: Long,
+        @Valid @RequestBody req: MultipartPartUrlsRequest,
+    ): ResponseEntity<ResData<MultipartPartUrlsResponse>> {
+        val urls = uploadVideoUseCase.presignUploadParts(userId, id, req.uploadId, req.objectKey, req.partNumbers)
+        return ResData.success(MultipartPartUrlsResponse(urls))
+    }
+
+    @Operation(summary = "멀티파트 업로드 완료 (조각 병합 후 업로드 확인)")
+    @RequiresPermission(Permission.VIDEO_CREATE)
+    @PostMapping("/{id}/upload/multipart/complete")
+    fun completeMultipartUpload(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @PathVariable id: Long,
+        @Valid @RequestBody req: MultipartSessionRequest,
+    ): ResponseEntity<ResData<Nothing?>> {
+        uploadVideoUseCase.completeMultipartUpload(userId, id, req.uploadId, req.objectKey)
+        return ResData.success(null, "업로드가 확인되었습니다")
+    }
+
+    @Operation(summary = "멀티파트 업로드 취소")
+    @RequiresPermission(Permission.VIDEO_CREATE)
+    @PostMapping("/{id}/upload/multipart/abort")
+    fun abortMultipartUpload(
+        @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
+        @PathVariable id: Long,
+        @Valid @RequestBody req: MultipartSessionRequest,
+    ): ResponseEntity<ResData<Nothing?>> {
+        uploadVideoUseCase.abortMultipartUpload(userId, id, req.uploadId, req.objectKey)
+        return ResData.success(null, "업로드가 취소되었습니다")
+    }
+
     @Operation(summary = "Presigned 영상 업로드 완료 확인")
     @RequiresPermission(Permission.VIDEO_CREATE)
     @PostMapping("/{id}/upload/complete")

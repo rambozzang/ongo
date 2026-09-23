@@ -11,7 +11,7 @@ Reference: `CreFlow_Development_Guide_v2.0_1.md` contains the full specification
 ### 핵심 기능
 
 1. **멀티 플랫폼 동시 업로드** — 영상 하나를 YouTube, TikTok, Instagram Reels, Naver Clip에 한 번에 게시
-   - Tus 프로토콜 기반 이어받기 업로드
+   - R2/S3 멀티파트 직접 업로드(64MB 이상). 끊기면 실패한 조각만 다시 보내고, 일시정지·재시도 시 올린 조각을 건너뜀. 작은 파일은 presigned PUT 한 번. (Tus 는 쓰지 않는다)
    - 플랫폼별 상태 추적: `DRAFT → UPLOADING → PROCESSING/REVIEW → PUBLISHED/FAILED/REJECTED`
 2. **AI 메타데이터 최적화** — 각 플랫폼에 맞는 제목, 설명, 해시태그를 AI가 자동 생성
 3. **AI 크리에이터 도구** — 스크립트 작성, 썸네일 생성, 댓글 자동 답변, SEO 분석, 트렌드 예측
@@ -32,7 +32,7 @@ Reference: `CreFlow_Development_Guide_v2.0_1.md` contains the full specification
 - **Cache**: Caffeine (in-process) + Bucket4j for rate limiting
 - **Async**: Spring Events + Virtual Threads (no external MQ in Phase 1)
 - **Storage**: MinIO (local dev) → AWS S3 (production)
-- **File Upload**: Tus Protocol (resumable uploads)
+- **File Upload**: Presigned 직접 업로드 — 64MB 이상은 S3 멀티파트(조각 단위 재시도·이어받기), 미만은 단일 PUT. 한도 2GB
 - **CI/CD**: Jenkins + Docker + Gradle 9
 
 ## Architecture

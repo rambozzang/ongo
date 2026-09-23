@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.s3.model.*
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest
+import software.amazon.awssdk.services.s3.presigner.model.UploadPartPresignRequest
 import java.io.InputStream
 import java.time.Duration
 
@@ -147,6 +148,133 @@ class S3StorageClient(
         )
     } catch (_: NoSuchKeyException) {
         null
+    }
+
+    // ── 멀티파트 ────────────────────────────────────────────────────────────
+
+    override val supportsMultipart: Boolean get() = true
+
+    override fun createMultipartUpload(key: String, contentType: String): String {
+        validateStorageKey(key)
+        val response = s3Client.createMultipartUpload(
+            CreateMultipartUploadRequest.builder()
+                .bucket(storageProperties.bucket)
+                .key(key)
+                .contentType(contentType)
+                .build(),
+        )
+        return response.uploadId()
+    }
+
+    override fun presignUploadPart(
+        key: String,
+        uploadId: String,
+        partNumber: Int,
+        contentLength: Long,
+        expirationMinutes: Int,
+    ): String {
+        validateStorageKey(key)
+        require(contentLength > 0) { "조각 크기가 올바르지 않습니다." }
+        // 단일 PUT 과 같은 방어다. contentLength 가 서명 대상 헤더가 되어, 계획과 다른 크기의
+        // 조각은 스토리지가 서명 불일치로 거부한다(S3MultipartPresignContractTest 가 고정).
+        val uploadPartRequest = UploadPartRequest.builder()
+            .bucket(storageProperties.bucket)
+            .key(key)
+            .uploadId(uploadId)
+            .partNumber(partNumber)
+            .contentLength(contentLength)
+            .build()
+
+        return s3Presigner.presignUploadPart(
+            UploadPartPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(expirationMinutes.toLong()))
+                .uploadPartRequest(uploadPartRequest)
+                .build(),
+        ).url().toExternalForm()
+    }
+
+    /**
+     * 올라온 조각 전체. ListParts 는 한 번에 최대 1,000 개라 페이지를 끝까지 넘긴다 —
+     * 2 GB 는 128 조각이라 한 번이면 되지만, 조각 수가 늘면 앞 1,000 개만 보고 "빠졌다" 고
+     * 판정하게 된다.
+     */
+    override fun listUploadedParts(key: String, uploadId: String): List<UploadedPart> {
+        validateStorageKey(key)
+        val parts = mutableListOf<UploadedPart>()
+        var marker: Int? = null
+        do {
+            val response = s3Client.listParts(
+                ListPartsRequest.builder()
+                    .bucket(storageProperties.bucket)
+                    .key(key)
+                    .uploadId(uploadId)
+                    .apply { marker?.let { partNumberMarker(it) } }
+                    .build(),
+            )
+            response.parts().forEach { parts += UploadedPart(it.partNumber(), it.eTag(), it.size()) }
+            marker = response.nextPartNumberMarker()
+        } while (response.isTruncated == true)
+        return parts
+    }
+
+    override fun completeMultipartUpload(key: String, uploadId: String, parts: List<UploadedPart>) {
+        validateStorageKey(key)
+        s3Client.completeMultipartUpload(
+            CompleteMultipartUploadRequest.builder()
+                .bucket(storageProperties.bucket)
+                .key(key)
+                .uploadId(uploadId)
+                .multipartUpload(
+                    CompletedMultipartUpload.builder()
+                        .parts(
+                            parts.sortedBy { it.partNumber }.map {
+                                CompletedPart.builder().partNumber(it.partNumber).eTag(it.eTag).build()
+                            },
+                        )
+                        .build(),
+                )
+                .build(),
+        )
+    }
+
+    override fun abortMultipartUpload(key: String, uploadId: String) {
+        validateStorageKey(key)
+        try {
+            s3Client.abortMultipartUpload(
+                AbortMultipartUploadRequest.builder()
+                    .bucket(storageProperties.bucket)
+                    .key(key)
+                    .uploadId(uploadId)
+                    .build(),
+            )
+        } catch (_: NoSuchUploadException) {
+            // 이미 완료됐거나 중단됐다. 목표 상태(세션 없음)에 이미 도달했으므로 성공으로 본다.
+        }
+    }
+
+    override fun abortMultipartUploads(prefix: String): Int {
+        validateStorageKey(prefix)
+        var aborted = 0
+        var keyMarker: String? = null
+        var uploadIdMarker: String? = null
+        do {
+            val response = s3Client.listMultipartUploads(
+                ListMultipartUploadsRequest.builder()
+                    .bucket(storageProperties.bucket)
+                    .prefix(prefix)
+                    .apply { keyMarker?.let { keyMarker(it) } }
+                    .apply { uploadIdMarker?.let { uploadIdMarker(it) } }
+                    .build(),
+            )
+            response.uploads().forEach { upload ->
+                abortMultipartUpload(upload.key(), upload.uploadId())
+                aborted++
+            }
+            keyMarker = response.nextKeyMarker()
+            uploadIdMarker = response.nextUploadIdMarker()
+        } while (response.isTruncated == true)
+        if (aborted > 0) log.info("미완료 멀티파트 업로드 {}건 중단: prefix={}", aborted, prefix)
+        return aborted
     }
 
     private fun validateStorageKey(key: String) {
