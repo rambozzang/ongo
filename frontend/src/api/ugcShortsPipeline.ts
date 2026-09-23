@@ -24,6 +24,10 @@ export interface RenderAvailabilityResponse {
   reason: string | null
 }
 
+export interface ShortsCreditEstimateResponse {
+  credits: number
+}
+
 export interface StartRenderResponse {
   renderJobId: string
 }
@@ -147,6 +151,21 @@ export interface ScheduleRunRequest {
 const base = (workspaceId: number) => `/workspaces/${workspaceId}/ugc/shorts/runs`
 
 export const ugcShortsPipelineApi = {
+  /** 크레딧 [credits] 로 완주할 수 있는 최대 원본 길이(분). 못 하면 null. 가격 규칙은 서버에만 있다. */
+  creditCoverage(workspaceId: number, credits: number) {
+    return apiClient
+      .get<ResData<{ maxMinutes: number | null }>>(`${base(workspaceId)}/credit-coverage`, { params: { credits } })
+      .then(unwrapResponse)
+  },
+
+  estimateCredits(workspaceId: number, durationMs: number) {
+    return apiClient
+      .get<ResData<ShortsCreditEstimateResponse>>(`${base(workspaceId)}/credit-estimate`, {
+        params: { durationMs },
+      })
+      .then(unwrapResponse)
+  },
+
   create(workspaceId: number, request: CreatePipelineRunRequest, idempotencyKey?: string) {
     const response = idempotencyKey
       ? apiClient.post<ResData<PipelineRunResponse>>(base(workspaceId), request, {

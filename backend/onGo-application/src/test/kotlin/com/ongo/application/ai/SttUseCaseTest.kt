@@ -271,12 +271,15 @@ class SttUseCaseTest {
      * 것은 **공개 경로가 그 공통 경로를 탄다**는 사실이다 — 환불 보장 자체는
      * `CreditServiceTest` 가 따로 검증한다.
      */
-    private fun stubCreditsGranted() {
-        every { creditService.withCredits(userId, AiFeature.STT, any<() -> Any>()) } answers {
+    private fun stubCreditsGranted(durationMs: Long = 5 * 60_000L) {
+        every { audioPort.probeDurationMs(sourceUrl) } returns durationMs
+        every { creditService.withCredits(userId, any<Int>(), AiFeature.STT.name, any<() -> Any>()) } answers {
             @Suppress("UNCHECKED_CAST")
-            (thirdArg<() -> Any>())()
+            (arg<() -> Any>(3))()
         }
     }
+
+    private val perTenMinutes = SttCreditCalculator(model = "whisper-1").creditsPer10Minutes()
 
     @Test
     fun `공개 실행은 공통 크레딧 경로를 통과한다`() {
@@ -289,7 +292,7 @@ class SttUseCaseTest {
 
         useCase.execute(userId, videoId)
 
-        verify(exactly = 1) { creditService.withCredits(userId, AiFeature.STT, any<() -> Any>()) }
+        verify(exactly = 1) { creditService.withCredits(userId, perTenMinutes, AiFeature.STT.name, any<() -> Any>()) }
         // 직접 차감·환불하지 않는다. 그 책임은 공통 경로에 있다.
         verify(exactly = 0) { creditService.validateAndDeduct(any(), any<AiFeature>()) }
         verify(exactly = 0) { creditService.refundAllocation(any()) }
@@ -308,7 +311,7 @@ class SttUseCaseTest {
         val ex = assertFailsWith<BusinessException> { useCase.execute(userId, videoId) }
 
         assertEquals("STT_ENCODER_UNAVAILABLE", ex.code)
-        verify(exactly = 1) { creditService.withCredits(userId, AiFeature.STT, any<() -> Any>()) }
+        verify(exactly = 1) { creditService.withCredits(userId, any<Int>(), AiFeature.STT.name, any<() -> Any>()) }
     }
 
     /** 파이프라인 경로는 이미 예약된 크레딧으로 돈다. 여기서 또 차감하면 이중 과금이다. */
@@ -322,8 +325,41 @@ class SttUseCaseTest {
         useCase.executeInternal(userId, videoId)
 
         verify(exactly = 0) { creditService.withCredits(any(), any<AiFeature>(), any<() -> Any>()) }
+        verify(exactly = 0) { creditService.withCredits(any(), any<Int>(), any(), any<() -> Any>()) }
         verify(exactly = 0) { creditService.validateAndDeduct(any(), any<AiFeature>()) }
         verify(exactly = 0) { creditService.refundAllocation(any()) }
         verify(exactly = 0) { rateLimiter.checkRateLimit(any()) }
+    }
+
+    // ---- 길이 비례 과금 ----
+
+    /**
+     * 예전에는 길이와 무관하게 10크레딧이었다 — 3시간 원본도 10(원가 예산 약 ₩22)에 전사되어 한 번에 약 ₩1,600 을 잃었다.
+     * 음성 인식은 채팅이 아니라 원가 가로채기가 막지 못하므로 과금 자체가 길이를 따라야 한다.
+     */
+    @Test
+    fun `공개 실행은 원본 길이의 10분 단위마다 과금한다`() {
+        every { rateLimiter.checkRateLimit(userId) } just runs
+        stubCreditsGranted(durationMs = 3 * 60 * 60_000L)
+        every { audioPort.isAvailable() } returns true
+        every { audioPort.prepare(sourceUrl) } returns FakePreparedAudio(listOf(part(0)))
+        respondPerPart(verboseJson("본문"))
+
+        useCase.execute(userId, videoId)
+
+        verify(exactly = 1) { creditService.withCredits(userId, 18 * perTenMinutes, AiFeature.STT.name, any<() -> Any>()) }
+    }
+
+    /** 길이를 모르면 10분 값으로 매기지 않는다 — 과금 없이 멈춘다. */
+    @Test
+    fun `길이를 잴 수 없으면 과금하지 않고 거절한다`() {
+        every { rateLimiter.checkRateLimit(userId) } just runs
+        every { audioPort.probeDurationMs(sourceUrl) } throws IllegalStateException("ffprobe 없음")
+
+        val ex = assertFailsWith<BusinessException> { useCase.execute(userId, videoId) }
+
+        assertEquals("STT_DURATION_UNKNOWN", ex.code)
+        verify(exactly = 0) { creditService.withCredits(any(), any<Int>(), any(), any<() -> Any>()) }
+        verify(exactly = 0) { transcriptionModel.call(any<AudioTranscriptionPrompt>()) }
     }
 }

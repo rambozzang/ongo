@@ -40,6 +40,34 @@ class ShortsPipelineController(
     private val pipelineUseCase: ShortsPipelineUseCase,
 ) {
 
+    data class CreditEstimateResponse(val credits: Int)
+
+    @Operation(summary = "쇼츠 파이프라인 크레딧 예상치", description = "서버의 현재 STT 모델 단가와 과금 규칙으로 계산한다")
+    @GetMapping("/credit-estimate")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
+    fun estimateCredits(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable workspaceId: Long,
+        @RequestParam durationMs: Long,
+    ): ResponseEntity<ResData<CreditEstimateResponse>> {
+        // 워크스페이스 권한은 엔드포인트 정책이 본다. 견적은 잔액과 무관한 가격표라 userId 는 쓰지 않는다.
+        require(durationMs > 0) { "durationMs must be positive" }
+        return ResData.success(CreditEstimateResponse(pipelineUseCase.estimateCreditsForDuration(durationMs)))
+    }
+
+    data class CreditCoverageResponse(val maxMinutes: Int?)
+
+    @Operation(summary = "크레딧으로 완주할 수 있는 최대 원본 길이", description = "체험 안내용. 가격 규칙은 서버에만 있다")
+    @GetMapping("/credit-coverage")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
+    fun creditCoverage(
+        @PathVariable workspaceId: Long,
+        @RequestParam credits: Int,
+    ): ResponseEntity<ResData<CreditCoverageResponse>> {
+        require(credits >= 0) { "credits must not be negative" }
+        return ResData.success(CreditCoverageResponse(pipelineUseCase.coverableMinutesFor(credits)))
+    }
+
     @Operation(summary = "파이프라인 실행 생성 및 시작")
     @PostMapping
     @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)

@@ -37,6 +37,7 @@ class AiController(
     private val competitorInsightUseCase: CompetitorInsightUseCase,
     private val strategyCoachUseCase: StrategyCoachUseCase,
     private val generateRevenueReportUseCase: GenerateRevenueReportUseCase,
+    private val sttCreditCalculator: com.ongo.application.ai.SttCreditCalculator,
 ) {
 
     @Operation(
@@ -52,11 +53,23 @@ class AiController(
     fun getFeaturePricing(): ResponseEntity<ResData<List<AiFeaturePricingResponse>>> =
         ResData.success(
             AiFeature.entries.map { feature ->
-                AiFeaturePricingResponse(
-                    key = feature.name,
-                    displayName = feature.displayName,
-                    creditCost = feature.creditCost,
-                )
+                // 음성 인식은 길이에 비례한다. 설정 모델의 "10분당" 값을 보여 준다(고정 enum 값이 아니다).
+                if (feature == AiFeature.STT) {
+                    AiFeaturePricingResponse(
+                        key = feature.name,
+                        displayName = "${feature.displayName} (10분당)",
+                        creditCost = sttCreditCalculator.creditsPer10Minutes(),
+                    )
+                } else if (feature == AiFeature.VIDEO_TTS) {
+                    // 음성 합성은 글자 수 비례다. enum 의 고정값(0)을 보이면 무료로 오해한다.
+                    AiFeaturePricingResponse(
+                        key = feature.name,
+                        displayName = "${feature.displayName} (1,000자당)",
+                        creditCost = sttCreditCalculator.unitEconomics.ttsCreditsPer1000Chars(),
+                    )
+                } else {
+                    AiFeaturePricingResponse(key = feature.name, displayName = feature.displayName, creditCost = feature.creditCost)
+                }
             },
         )
 

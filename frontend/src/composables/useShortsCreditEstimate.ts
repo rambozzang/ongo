@@ -3,45 +3,17 @@ import { ref } from 'vue'
 /**
  * 쇼츠 완주 크레딧의 **예상치**.
  *
- * ## 서버 과금 규칙을 그대로 옮긴다
+ * ## 가격은 서버가 정한다
  *
- * 백엔드 `ShortsPipelineCreditRequirements` 가 진실이다. 여기 숫자는 그 규칙을 사용자에게
- * 설명하기 위한 사본이며, **판정은 언제나 서버가 한다.** 화면이 통과시켜도 서버가 거절할
- * 수 있고 그 반대도 가능하다(다른 요청이 그 사이 크레딧을 쓰면).
+ * 크레딧은 모델 단가에서 나오는 원가 보장 규칙(`AiUnitEconomics`·`ShortsPipelineCreditRequirements`)으로 계산된다.
+ * 예전에는 이 파일이 규칙의 사본(27 + 10분당 10)을 들고 있었는데, 단가가 바뀌면 화면만 옛 값을 보여 조용히
+ * 다르게 청구하는 것과 같았다. 이제 화면은 길이만 재고 금액은 `GET .../credit-estimate` 가 준다.
  *
  * ## 왜 길이를 브라우저에서 재는가
  *
- * 영상 목록 API(`Video`)에는 **길이가 없다.** 그런데 전사 크레딧은 길이에 비례하므로,
- * 길이를 모르면 정확한 금액을 말할 수 없다. 그렇다고 최소값(37)만 보여주면 60분 영상을
- * 고른 사용자에게 87 이 나올 때 "왜 다르냐"는 문제가 된다 — 조용히 다르게 청구하는 것과
- * 같다.
- *
- * 그래서 `preload="metadata"` 로 **헤더만** 읽는다. 전체 파일을 받지 않는다.
+ * 영상 목록 API 에는 길이가 없다. 전사 크레딧은 길이에 비례하므로 `preload="metadata"` 로 **헤더만** 읽어
+ * 길이를 잰다. 전체 파일을 받지 않는다. 판정은 언제나 서버가 한다 — 화면 예상치는 안내다.
  */
-
-/** 단계 정액 합계: REFRAME 3 + SEGMENT 8 + SUBTITLE 5 + HOOK 5 + TEMPLATE 3 + VALIDATE 3 */
-export const SHORTS_FIXED_CREDITS = 27
-
-/** 전사 단가. 10분 구간이 **시작될 때마다** 한 번씩 붙는다. */
-export const SHORTS_TRANSCRIBE_CREDITS_PER_WINDOW = 10
-
-/** 전사 과금 구간(분). 서버의 `TRANSCRIBE_BILLING_WINDOW_MS` 와 같아야 한다. */
-export const SHORTS_TRANSCRIBE_WINDOW_MINUTES = 10
-
-/** 길이를 모를 때의 하한. 10분 이하 영상의 실제 금액과 같다. */
-export const SHORTS_MIN_CREDITS = SHORTS_FIXED_CREDITS + SHORTS_TRANSCRIBE_CREDITS_PER_WINDOW
-
-/**
- * 서버 `totalCreditsForRun` 과 같은 계산.
- *
- * 시작된 구간은 전부 센다 — 10분 1초는 두 번째 구간을 시작한 것이므로 2단위다.
- */
-export function shortsCreditsForDuration(durationSeconds: number): number {
-  if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return SHORTS_MIN_CREDITS
-  const windowSeconds = SHORTS_TRANSCRIBE_WINDOW_MINUTES * 60
-  const windows = Math.ceil(durationSeconds / windowSeconds)
-  return SHORTS_FIXED_CREDITS + windows * SHORTS_TRANSCRIBE_CREDITS_PER_WINDOW
-}
 
 export interface ShortsCreditEstimate {
   /** 길이를 읽었을 때만 채워진다. 못 읽으면 null 이고 규칙 안내만 보여준다. */
@@ -56,7 +28,7 @@ export interface ShortsCreditEstimate {
  * null 로 두고, 화면은 규칙 안내만 보여준다. 여기서 오류를 띄우면 멀쩡한 생성 흐름이
  * 부가 기능 때문에 막힌 것처럼 보인다.
  */
-export function useShortsCreditEstimate() {
+export function useShortsCreditEstimate(quoteCredits: (durationMs: number) => Promise<number>) {
   const estimate = ref<ShortsCreditEstimate>({ credits: null, durationSeconds: null })
   const measuring = ref(false)
 
@@ -86,8 +58,10 @@ export function useShortsCreditEstimate() {
       // 그 사이 다른 영상으로 바뀌었으면 이 결과는 버린다.
       if (current !== requestId) return
       if (durationSeconds != null) {
+        const credits = await quoteCredits(Math.ceil(durationSeconds * 1000))
+        if (current !== requestId) return
         estimate.value = {
-          credits: shortsCreditsForDuration(durationSeconds),
+          credits,
           durationSeconds,
         }
       }

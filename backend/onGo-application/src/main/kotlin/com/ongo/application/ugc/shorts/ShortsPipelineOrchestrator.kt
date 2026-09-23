@@ -2,6 +2,9 @@ package com.ongo.application.ugc.shorts
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.ai.AiRateLimiter
+import com.ongo.application.ai.SttCreditCalculator
+import com.ongo.application.ai.economics.AiSpendContext
+import com.ongo.application.ai.economics.AiUnitEconomics
 import com.ongo.application.credit.CreditService
 import com.ongo.application.ugc.shorts.stage.ClipCandidate
 import com.ongo.application.ugc.shorts.stage.ScheduleParams
@@ -31,6 +34,7 @@ import com.ongo.domain.ugc.shorts.ShortsTemplateRepository
 import com.ongo.domain.video.VideoRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.beans.factory.annotation.Value
 import java.time.Instant
 
 /**
@@ -55,6 +59,10 @@ class ShortsPipelineOrchestrator(
     private val rateLimiter: AiRateLimiter,
     private val userSettingsRepository: UserSettingsRepository,
     executors: List<ShortsStageExecutor>,
+    private val unitEconomics: AiUnitEconomics = AiUnitEconomics(),
+    private val sttCreditCalculator: SttCreditCalculator = SttCreditCalculator(unitEconomics),
+    @param:Value("\${shorts.transcribe.max-source-duration-ms:10800000}")
+    private val maxSourceDurationMs: Long = ShortsPipelineCreditRequirements.DEFAULT_MAX_SOURCE_DURATION_MS,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -218,7 +226,10 @@ class ShortsPipelineOrchestrator(
             )
             runStage = charged.runStage
 
-            val output = executor.execute(context)
+            val output = AiSpendContext.withBudget(
+                limitKrw = unitEconomics.budgetKrw(creditCost),
+                label = "SHORTS_${stage.name}",
+            ) { executor.execute(context) }
             applyOutput(run, stage, context, output)
 
             runStageRepository.update(
@@ -312,12 +323,14 @@ class ShortsPipelineOrchestrator(
      * 금액을 내면 사용자가 동의한 적 없는 청구가 된다. 이 필드 도입 이전 실행은 `null` 이라
      * 헬퍼가 종전 정액을 돌려준다.
      */
-    private fun creditCostOf(stage: PipelineStage, feature: AiFeature?, run: PipelineRun): Int = when {
-        feature == null -> 0
-        stage == PipelineStage.TRANSCRIBE ->
-            ShortsPipelineCreditRequirements.transcribeCredits(run.sourceDurationMs)
-        else -> feature.creditCost
-    }
+    private fun creditCostOf(stage: PipelineStage, feature: AiFeature?, run: PipelineRun): Int =
+        ShortsPipelineCreditRequirements.creditCostForStage(
+            stage = stage,
+            sourceDurationMs = run.sourceDurationMs,
+            sttCreditsPer10Minutes = sttCreditCalculator.creditsPer10Minutes(),
+            unitEconomics = unitEconomics,
+            unknownDurationFallbackMs = maxSourceDurationMs,
+        ).takeIf { feature != null } ?: 0
 
     /** 단계 출력을 컨텍스트와 DB에 반영한다. */
     private fun applyOutput(run: PipelineRun, stage: PipelineStage, context: ShortsStageContext, output: ShortsStageOutput) {

@@ -11,6 +11,8 @@ data class VideoGenerationSpec(
     val prompt: String,
     val orientation: VideoOrientation,
     val voice: String? = null,
+    /** 음성은 애플리케이션이 크레딧을 받은 뒤 합성해 넘긴다. 이 포트는 CPU 렌더만 한다. */
+    val generatedAudio: GeneratedAudioFile? = null,
 )
 
 enum class VideoOrientation(val width: Int, val height: Int) {

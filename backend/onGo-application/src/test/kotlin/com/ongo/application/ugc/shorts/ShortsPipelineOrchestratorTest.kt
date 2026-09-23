@@ -1,6 +1,8 @@
 package com.ongo.application.ugc.shorts
 
 import com.ongo.application.ai.AiRateLimiter
+import com.ongo.application.ai.SttCreditCalculator
+import com.ongo.application.ai.economics.AiUnitEconomics
 import com.ongo.application.credit.CreditService
 import com.ongo.application.ugc.shorts.stage.ClipCandidate
 import com.ongo.application.ugc.shorts.stage.GeneratedHook
@@ -50,6 +52,12 @@ import kotlin.test.assertTrue
  * 정적 스텁 대신 인메모리 페이크를 쓴다.
  */
 class ShortsPipelineOrchestratorTest {
+
+    private val testEconomics = AiUnitEconomics()
+    private val testSttCredits = SttCreditCalculator(testEconomics).creditsPer10Minutes()
+
+    private fun stageCredits(stage: PipelineStage, durationMs: Long? = null) =
+        ShortsPipelineCreditRequirements.creditCostForStage(stage, durationMs, testSttCredits, testEconomics)
 
     // ---- 인메모리 페이크 ----
 
@@ -324,6 +332,8 @@ class ShortsPipelineOrchestratorTest {
         rateLimiter = rateLimiter,
         userSettingsRepository = userSettingsRepository,
         executors = executors,
+        unitEconomics = testEconomics,
+        sttCreditCalculator = SttCreditCalculator(testEconomics),
     )
 
     // ---- 중복 실행 청구 ----
@@ -698,8 +708,9 @@ class ShortsPipelineOrchestratorTest {
         val runRepo = InMemoryPipelineRunRepository(baseRun())
         val stageRepo = InMemoryRunStageRepository()
         stubCommon()
-        every { creditService.validateAndDeduct(userId, any<Int>(), AiFeature.SHORTS_SEGMENT.name) } returns
-            com.ongo.application.credit.CreditAllocation.restored(userId, AiFeature.SHORTS_SEGMENT.name, 8, emptyMap())
+        every { creditService.validateAndDeduct(userId, any<Int>(), AiFeature.SHORTS_SEGMENT.name) } answers {
+            com.ongo.application.credit.CreditAllocation.restored(userId, AiFeature.SHORTS_SEGMENT.name, secondArg(), emptyMap())
+        }
         every { creditService.refundAllocation(any()) } throws IllegalStateException("환불 실패")
 
         val failing = hookGateExecutors().map {
@@ -986,15 +997,15 @@ class ShortsPipelineOrchestratorTest {
 
         // 단계 → 기능 매핑대로 차감된다 (TRANSCRIBE=STT, REFRAME/SEGMENT/SUBTITLE/HOOK).
         // 이 실행은 길이가 NULL 이라 전사도 종전 정액이다.
-        verify { creditService.validateAndDeduct(userId, AiFeature.STT.creditCost, "STT") }
+        verify { creditService.validateAndDeduct(userId, stageCredits(PipelineStage.TRANSCRIBE), "STT") }
         verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_REFRAME.creditCost, "SHORTS_REFRAME") }
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_SEGMENT.creditCost, "SHORTS_SEGMENT") }
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_SUBTITLE.creditCost, "SHORTS_SUBTITLE") }
+        verify { creditService.validateAndDeduct(userId, stageCredits(PipelineStage.SEGMENT), "SHORTS_SEGMENT") }
+        verify { creditService.validateAndDeduct(userId, stageCredits(PipelineStage.SUBTITLE), "SHORTS_SUBTITLE") }
         verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_HOOK.creditCost, "SHORTS_HOOK") }
         verify(exactly = 5) { creditService.validateAndDeduct(userId, any<Int>(), any<String>()) }
         // 단계 기록에 기능별 비용과 AI 제공자가 남는다 (UserSettings 없으면 QWEN)
         val costByStage = stageRepo.records.associate { it.stage to it.creditCost }
-        assertEquals(AiFeature.STT.creditCost, costByStage[PipelineStage.TRANSCRIBE])
+        assertEquals(stageCredits(PipelineStage.TRANSCRIBE), costByStage[PipelineStage.TRANSCRIBE])
         assertEquals(AiFeature.SHORTS_HOOK.creditCost, costByStage[PipelineStage.HOOK])
         assertEquals("QWEN", stageRepo.records.first { it.stage == PipelineStage.HOOK }.aiProvider)
     }
@@ -1154,16 +1165,16 @@ class ShortsPipelineOrchestratorTest {
         assertEquals(0, subtitle.callCount)
         assertEquals(0, hook.callCount)
         // 차감은 실패 단계까지 일어났고, 환불은 실패 단계분(SEGMENT=8)만 한 번
-        verify { creditService.validateAndDeduct(userId, AiFeature.STT.creditCost, "STT") }
+        verify { creditService.validateAndDeduct(userId, stageCredits(PipelineStage.TRANSCRIBE), "STT") }
         verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_REFRAME.creditCost, "SHORTS_REFRAME") }
-        verify { creditService.validateAndDeduct(userId, AiFeature.SHORTS_SEGMENT.creditCost, "SHORTS_SEGMENT") }
+        verify { creditService.validateAndDeduct(userId, stageCredits(PipelineStage.SEGMENT), "SHORTS_SEGMENT") }
         /*
          * 환불은 **저장된 분해**로 한다. 금액만 넘기면 구매분이 무료분으로 바뀐다
          * (CreditAllocation 참고). 차감 당시 객체와 같은 인스턴스가 아니므로 금액으로 비교한다.
          */
         val refunded = slot<com.ongo.application.credit.CreditAllocation>()
         verify(exactly = 1) { creditService.refundAllocation(capture(refunded)) }
-        assertEquals(AiFeature.SHORTS_SEGMENT.creditCost, refunded.captured.total)
+        assertEquals(stageCredits(PipelineStage.SEGMENT), refunded.captured.total)
     }
 
     /**
@@ -1219,7 +1230,7 @@ class ShortsPipelineOrchestratorTest {
         assertTrue(message.contains("runId=1"), message)
         assertTrue(message.contains("stage=SEGMENT"), message)
         assertTrue(message.contains("userId=$userId"), message)
-        assertTrue(message.contains("amount=${AiFeature.SHORTS_SEGMENT.creditCost}"), message)
+        assertTrue(message.contains("amount=${stageCredits(PipelineStage.SEGMENT)}"), message)
     }
 
     /*
@@ -1238,7 +1249,7 @@ class ShortsPipelineOrchestratorTest {
         orchestrator(runRepo, stageRepo, clipRepo, hookRepo, hookGateExecutors())
             .run(1L, PipelineStage.TRANSCRIBE)
 
-        val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes)
+        val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes, testSttCredits)
         verify(exactly = 1) { creditService.validateAndDeduct(userId, expected, "STT") }
         assertEquals(expected, stageRepo.records.first { it.stage == PipelineStage.TRANSCRIBE }.creditCost)
     }
@@ -1255,7 +1266,7 @@ class ShortsPipelineOrchestratorTest {
         val stageRepo = InMemoryRunStageRepository()
         val clipRepo = InMemoryShortsClipRepository()
         val hookRepo = InMemoryClipHookRepository()
-        val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes)
+        val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes, testSttCredits)
 
         repeat(2) {
             // 재실행 API(rerunStage)가 상태를 PENDING 으로 되돌린 뒤 이벤트를 낸다.
@@ -1286,7 +1297,7 @@ class ShortsPipelineOrchestratorTest {
 
         orchestrator(runRepo, stageRepo, clipRepo, hookRepo, listOf(transcribe)).run(1L, PipelineStage.TRANSCRIBE)
 
-        val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes)
+        val expected = ShortsPipelineCreditRequirements.transcribeCredits(sixtyMinutes, testSttCredits)
         /*
          * 환불은 이제 **저장된 분해로 복원한** 영수증을 쓴다. 차감 당시의 객체와 같은
          * 인스턴스가 아니므로 금액과 출처로 비교한다 — 실제 계약은 그쪽이다.
@@ -1333,9 +1344,9 @@ class ShortsPipelineOrchestratorTest {
         orchestrator(runRepo, stageRepo, clipRepo, hookRepo, hookGateExecutors())
             .run(1L, PipelineStage.TRANSCRIBE)
 
-        verify(exactly = 1) { creditService.validateAndDeduct(userId, AiFeature.STT.creditCost, "STT") }
+        verify(exactly = 1) { creditService.validateAndDeduct(userId, stageCredits(PipelineStage.TRANSCRIBE), "STT") }
         assertEquals(
-            AiFeature.STT.creditCost,
+            stageCredits(PipelineStage.TRANSCRIBE),
             stageRepo.records.first { it.stage == PipelineStage.TRANSCRIBE }.creditCost,
         )
     }
@@ -1350,7 +1361,7 @@ class ShortsPipelineOrchestratorTest {
 
         // 차감 자체가 실패 (크레딧 부족 등)
         every {
-            creditService.validateAndDeduct(userId, AiFeature.STT.creditCost, "STT")
+            creditService.validateAndDeduct(userId, stageCredits(PipelineStage.TRANSCRIBE), "STT")
         } throws RuntimeException("크레딧 부족")
         val transcribe = FakeStageExecutor(PipelineStage.TRANSCRIBE) { ShortsStageOutput(outputSnapshot = "{}") }
 

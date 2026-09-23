@@ -133,7 +133,7 @@ export interface PipelineStepInfo {
 }
 
 export const PIPELINE_STEPS: PipelineStepInfo[] = [
-  { key: 'STT', displayName: '음성 텍스트 변환', creditCost: 10, description: '영상의 음성을 텍스트로 변환합니다' },
+  { key: 'STT', displayName: '음성 텍스트 변환 (10분 이하)', creditCost: 52, description: '10분 이하 영상의 음성을 텍스트로 변환합니다. 긴 영상은 개별 음성 인식(10분당 과금)이나 쇼츠 만들기를 이용하세요' },
   { key: 'ANALYZE_SCRIPT', displayName: '대본 분석', creditCost: 5, description: '키워드, 타겟 오디언스, 카테고리를 분석합니다' },
   { key: 'GENERATE_META', displayName: '메타데이터 생성', creditCost: 5, description: '제목과 설명을 자동 생성합니다' },
   { key: 'GENERATE_HASHTAGS', displayName: '해시태그 생성', creditCost: 3, description: '최적의 해시태그를 추천합니다' },
@@ -194,8 +194,9 @@ export interface AiBatchItemStatus {
 export const BATCH_OPERATIONS: { key: AiBatchOperation; label: string; creditCost: number }[] = [
   { key: 'GENERATE_META', label: '메타데이터 생성', creditCost: 5 },
   { key: 'GENERATE_HASHTAGS', label: '해시태그 생성', creditCost: 3 },
-  { key: 'STT', label: '음성 텍스트 변환', creditCost: 10 },
-  { key: 'ALL', label: '전체 (메타 + 해시태그 + STT)', creditCost: 18 },
+  // STT 는 영상 길이에 비례한다(서버 /ai/features 의 10분당 값 × 10분 단위). 아래 값은 10분 이하 영상 기준 최소치다.
+  { key: 'STT', label: '음성 텍스트 변환 (10분당)', creditCost: 41 },
+  { key: 'ALL', label: '전체 (메타 + 해시태그 + STT)', creditCost: 49 },
 ]
 
 // Weekly Digest types

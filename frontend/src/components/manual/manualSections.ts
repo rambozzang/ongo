@@ -466,28 +466,25 @@ export const sectionsKo: ManualSection[] = [
         text: '영상 주제와 트렌드를 분석하여 효과적인 해시태그를 추천합니다.',
       },
       {
-        subtitle: 'AI 제공자 선택',
-        text: '설정 페이지에서 원하는 AI 모델을 선택하여 사용할 수 있습니다.',
+        subtitle: 'AI 모델',
+        text: 'onGo 의 AI 기능은 한국어 생성 품질과 비용이 균형 잡힌 Qwen 3.5 모델을 사용합니다(사용할 수 없을 때는 MiniMax 로 자동 대체).',
         items: [
-          'Claude — 자연스러운 한국어 생성에 강점이 있습니다.',
-          'Gemini — 다국어 지원이 뛰어납니다.',
-          'OpenAI GPT — 범용 AI 모델입니다.',
-          'Qwen 3.5 — 균형 잡힌 성능과 Vision(이미지 분석)을 지원합니다.',
-          'Kimi K2.5 — 강력한 추론 능력과 Vision을 지원합니다.',
-          'GLM-5 — 중국어/한국어에 강점이 있습니다.',
-          'MiniMax M2.5 — 코딩 및 분석에 특화되어 있습니다.',
-          '선택한 AI 제공자는 메타 생성, 해시태그 추천, 성과 분석 등 모든 AI 기능에 적용됩니다.',
-          '선택한 AI 제공자는 모든 AI 기능에 동일하게 적용됩니다.',
+          '모든 AI 기능(메타 생성, 해시태그 추천, 성과 분석, 쇼츠 등)에 같은 모델이 적용됩니다.',
+          '예전에 설정에서 다른 모델(Claude, Gemini, GPT 등)을 골랐다면 자동으로 Qwen 3.5 로 바뀝니다.',
         ],
       },
       {
         subtitle: 'AI 크레딧 시스템',
-        text: 'AI 기능은 크레딧을 소비합니다.',
+        text: 'AI 기능은 크레딧을 소비합니다. 기능마다 필요한 크레딧은 버튼에 표시됩니다.',
         items: [
           '매월 무료 크레딧이 제공됩니다 (플랜별 상이).',
           '무료 크레딧 소진 시 구매한 크레딧이 사용됩니다.',
           '크레딧 잔량은 상단 바 또는 AI 도구 페이지에서 확인할 수 있습니다.',
           '크레딧이 모두 소진되면 AI 기능만 비활성화되며, 다른 기능은 정상 이용 가능합니다.',
+          '입력이 아주 길면(예: 매우 긴 스크립트) "입력 내용이 너무 길어 처리할 수 없습니다" 가 표시되고 크레딧은 돌려드립니다. 내용을 줄여 다시 시도해 주세요.',
+          '영상 음성 인식(STT)과 쇼츠 만들기는 영상 길이에 비례해 크레딧이 듭니다. 시작 전에 필요한 크레딧을 먼저 보여 드립니다.',
+          '텍스트 영상에 음성(내레이션)을 넣으면 글자 수에 비례해 크레딧이 듭니다.',
+          '실패한 AI 작업의 크레딧은 자동으로 돌려드립니다.',
         ],
       },
     ],
@@ -599,7 +596,7 @@ export const sectionsKo: ManualSection[] = [
         items: [
           '프로필: 닉네임, 프로필 이미지, 크리에이터 카테고리 설정',
           '알림: 이메일/푸시 알림, 댓글 알림 빈도, 크레딧 알림 설정',
-          '기본 설정: 기본 공개 설정, 기본 업로드 플랫폼, AI 톤, AI 제공자 설정',
+          '기본 설정: 기본 공개 설정, 기본 업로드 플랫폼, AI 톤',
           '언어: 한국어 / English 전환',
           '계정: 연동된 소셜 계정 확인, 안전한 회원 탈퇴 가능 여부 확인',
         ],
@@ -2151,7 +2148,7 @@ export const sectionsKo: ManualSection[] = [
     content: [
       {
         subtitle: '개요',
-        text: 'AI 감정 분석기는 콘텐츠 댓글의 감정을 자동으로 분석하여 긍정, 중립, 부정으로 분류하고 인사이트를 제공하는 기능입니다.',
+        text: 'AI 감정 분석기는 콘텐츠 댓글의 감정을 자동으로 분석하여 긍정, 중립, 부정으로 분류하고 인사이트를 제공하는 기능입니다. 유료 요금제(Starter 이상)에서 새 댓글을 하루 최대 200개까지 자동 분석하며, 크레딧은 차감하지 않습니다.',
       },
       {
         subtitle: '주요 기능',
@@ -3469,28 +3466,25 @@ export const sectionsEn: ManualSection[] = [
         text: 'Effective hashtags are recommended based on video topic analysis and trends.',
       },
       {
-        subtitle: 'AI Provider Selection',
-        text: 'You can choose your preferred AI model from the Settings page.',
+        subtitle: 'AI Model',
+        text: "onGo's AI features use the Qwen 3.5 model, which balances Korean generation quality and cost (it falls back to MiniMax automatically when unavailable).",
         items: [
-          'Claude — Strong natural Korean generation.',
-          'Gemini — Excellent multilingual support.',
-          'OpenAI GPT — General-purpose AI model.',
-          'Qwen 3.5 — Balanced performance with Vision (image analysis) support.',
-          'Kimi K2.5 — Strong reasoning with Vision support.',
-          'GLM-5 — Strength in Chinese/Korean languages.',
-          'MiniMax M2.5 — Specialized in coding and analysis.',
-          'The selected AI provider applies to all AI features including metadata generation, hashtag recommendations, and performance analysis.',
-          'The selected AI provider applies to all AI features.',
+          'The same model applies to every AI feature (metadata, hashtags, performance analysis, Shorts and more).',
+          'If you previously chose another model in Settings (Claude, Gemini, GPT, etc.), it now uses Qwen 3.5 automatically.',
         ],
       },
       {
         subtitle: 'AI Credit System',
-        text: 'AI features consume credits.',
+        text: 'AI features consume credits. The credits each feature needs are shown on its button.',
         items: [
           'Free monthly credits are provided (varies by plan).',
           'Purchased credits are used after free credits are depleted.',
           'Check your credit balance in the top bar or AI Tools page.',
           'When all credits are depleted, only AI features are disabled; other features work normally.',
+          'If an input is very long (for example, a very long script), you will see "The input is too long to process" and your credits are returned. Shorten it and try again.',
+          'Video speech-to-text (STT) and Shorts creation cost credits in proportion to video length. The required credits are shown before you start.',
+          'Adding a voice-over to a text video costs credits in proportion to the number of characters.',
+          'Credits for failed AI jobs are returned automatically.',
         ],
       },
     ],
@@ -3602,7 +3596,7 @@ export const sectionsEn: ManualSection[] = [
         items: [
           'Profile: Nickname, profile image, creator category',
           'Notifications: Email/push notifications, comment notification frequency, credit alerts',
-          'Defaults: Default visibility, default upload platforms, AI tone, AI provider',
+          'Defaults: Default visibility, default upload platforms, AI tone',
           'Language: Switch between Korean / English',
           'Account: View connected social accounts, delete account',
         ],
@@ -5162,7 +5156,7 @@ export const sectionsEn: ManualSection[] = [
     content: [
       {
         subtitle: 'Overview',
-        text: 'The AI Sentiment Analyzer automatically analyzes the sentiment of content comments, classifying them as positive, neutral, or negative, and provides actionable insights.',
+        text: 'The AI Sentiment Analyzer automatically analyzes the sentiment of content comments, classifying them as positive, neutral, or negative, and provides actionable insights. On paid plans (Starter and above) it analyzes up to 200 new comments per day automatically, without using credits.',
       },
       {
         subtitle: 'Key Features',

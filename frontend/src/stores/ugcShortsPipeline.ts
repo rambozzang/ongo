@@ -80,6 +80,17 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
     return await ugcShortsPipelineApi.create(await requireWorkspaceId(), request)
   }
 
+  async function estimateCredits(durationMs: number): Promise<number> {
+    const id = await requireWorkspaceId()
+    const quote = await ugcShortsPipelineApi.estimateCredits(id, durationMs)
+    return quote.credits
+  }
+
+  async function creditCoverageMinutes(credits: number): Promise<number | null> {
+    const id = await requireWorkspaceId()
+    return (await ugcShortsPipelineApi.creditCoverage(id, credits)).maxMinutes
+  }
+
   /** 단계 재실행 후 상세를 다시 읽어 진행 표시를 갱신한다 */
   async function rerunStage(runId: number, stage: PipelineStage) {
     await ugcShortsPipelineApi.rerunStage(await requireWorkspaceId(), runId, stage)
@@ -164,6 +175,8 @@ export const useUgcShortsPipelineStore = defineStore('ugcShortsPipeline', () => 
     fetchRuns,
     fetchDetail,
     createRun,
+    estimateCredits,
+    creditCoverageMinutes,
     rerunStage,
     selectHooks,
     confirmSchedule,

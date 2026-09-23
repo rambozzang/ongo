@@ -1,6 +1,8 @@
 package com.ongo.application.ugc.shorts
 
 import com.ongo.common.enums.AiFeature
+import com.ongo.application.ai.SttCreditCalculator
+import com.ongo.application.ai.economics.AiUnitEconomics
 import com.ongo.domain.ugc.shorts.PipelineStage
 
 /**
@@ -41,7 +43,7 @@ object ShortsPipelineCreditRequirements {
      *
      * 가격 단위는 가격 결정으로만 바뀌어야 하므로 여기에 따로 둔다.
      */
-    const val TRANSCRIBE_BILLING_WINDOW_MS: Long = 10 * 60 * 1000L
+    const val TRANSCRIBE_BILLING_WINDOW_MS: Long = SttCreditCalculator.BILLING_WINDOW_MS
 
     /**
      * 원본 길이에 대한 전사(TRANSCRIBE) 크레딧.
@@ -63,15 +65,15 @@ object ShortsPipelineCreditRequirements {
      * @throws IllegalArgumentException 0 이하가 들어온 경우. 길이가 아닌 값으로 금액을
      *   계산하면 조용히 0 원이나 음수가 되므로 통과시키지 않는다.
      */
-    fun transcribeCredits(sourceDurationMs: Long?): Int {
-        val unit = AiFeature.STT.creditCost
-        if (sourceDurationMs == null) return unit
+    fun transcribeCredits(sourceDurationMs: Long?, creditsPer10Minutes: Int = AiFeature.STT.creditCost): Int {
+        require(creditsPer10Minutes > 0) { "10분 전사 크레딧은 양수여야 합니다" }
+        if (sourceDurationMs == null) return creditsPer10Minutes
         require(sourceDurationMs > 0) {
             "원본 길이는 0보다 커야 합니다: $sourceDurationMs"
         }
         // 시작된 구간은 전부 센다. 10분 1ms 는 두 번째 구간을 시작한 것이므로 2단위다.
-        val windows = (sourceDurationMs + TRANSCRIBE_BILLING_WINDOW_MS - 1) / TRANSCRIBE_BILLING_WINDOW_MS
-        return Math.toIntExact(windows * unit)
+        val windows = (sourceDurationMs - 1) / TRANSCRIBE_BILLING_WINDOW_MS + 1
+        return Math.toIntExact(windows * creditsPer10Minutes)
     }
 
     /**
@@ -86,8 +88,57 @@ object ShortsPipelineCreditRequirements {
      * @param sourceDurationMs [transcribeCredits] 와 **같은 값**을 받아야 한다. 선검사와
      *   실제 차감이 다른 근거를 쓰면, 통과시킨 실행이 중간에 크레딧 부족으로 죽는다.
      */
-    fun totalCreditsForRun(sourceDurationMs: Long?): Int =
+    fun totalCreditsForRun(
+        sourceDurationMs: Long?,
+        sttCreditsPer10Minutes: Int = AiFeature.STT.creditCost,
+        unitEconomics: AiUnitEconomics = AiUnitEconomics(),
+        unknownDurationFallbackMs: Long = DEFAULT_MAX_SOURCE_DURATION_MS,
+    ): Int =
         FEATURE_BY_STAGE.entries.sumOf { (stage, feature) ->
-            if (stage == PipelineStage.TRANSCRIBE) transcribeCredits(sourceDurationMs) else feature.creditCost
+            creditCostForStage(stage, sourceDurationMs, sttCreditsPer10Minutes, unitEconomics, unknownDurationFallbackMs)
         }
+
+    /** 사전 견적·단계 차감·환불·원장 금액이 모두 쓰는 단 하나의 계산. */
+    fun creditCostForStage(
+        stage: PipelineStage,
+        sourceDurationMs: Long?,
+        sttCreditsPer10Minutes: Int,
+        unitEconomics: AiUnitEconomics,
+        unknownDurationFallbackMs: Long = DEFAULT_MAX_SOURCE_DURATION_MS,
+    ): Int {
+        val feature = FEATURE_BY_STAGE[stage] ?: return 0
+        return when (stage) {
+            // 길이를 모르는 실행(길이 측정 도입 전 행)은 허용 최대 길이로 본다 — 10분 값으로 전사하면 긴 원본에서 손해다.
+            PipelineStage.TRANSCRIBE -> transcribeCredits(sourceDurationMs ?: unknownDurationFallbackMs, sttCreditsPer10Minutes)
+            PipelineStage.SEGMENT -> maxOf(
+                feature.creditCost,
+                unitEconomics.creditsForLlmCall(segmentInputChars(sourceDurationMs, unitEconomics, unknownDurationFallbackMs)),
+            )
+            PipelineStage.SUBTITLE -> maxOf(
+                feature.creditCost,
+                unitEconomics.creditsForLlmCall(SUBTITLE_MAX_INPUT_CHARS),
+            )
+            else -> feature.creditCost
+        }
+    }
+
+    /** 전사문 전체 + 타임코드 상한 + 프롬프트 여유분. 맥락 컷 단계의 입력 상한이다. */
+    fun segmentInputChars(
+        sourceDurationMs: Long?,
+        unitEconomics: AiUnitEconomics,
+        unknownDurationFallbackMs: Long = DEFAULT_MAX_SOURCE_DURATION_MS,
+    ): Long {
+        require(unknownDurationFallbackMs > 0) { "미측정 원본 길이 상한은 양수여야 합니다" }
+        val minutes = (sourceDurationMs ?: unknownDurationFallbackMs).coerceAtLeast(0).div(60_000.0)
+        return Math.addExact(
+            Math.addExact(unitEconomics.transcriptCharsFor(minutes), SEGMENT_TIMECODE_MAX_CHARS),
+            PROMPT_OVERHEAD_CHARS,
+        )
+    }
+
+    const val SEGMENT_TIMECODE_MAX_CHARS = 8_000L
+    const val SUBTITLE_INPUT_MAX_CHARS = 8_000L
+    const val PROMPT_OVERHEAD_CHARS = 1_500L
+    const val SUBTITLE_MAX_INPUT_CHARS = SUBTITLE_INPUT_MAX_CHARS + PROMPT_OVERHEAD_CHARS
+    const val DEFAULT_MAX_SOURCE_DURATION_MS = 180L * 60 * 1000
 }

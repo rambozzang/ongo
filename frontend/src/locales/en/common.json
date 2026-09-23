@@ -436,6 +436,7 @@
           "creditMeasuring": "Checking the video length…",
           "creditEstimate": "Estimated {credits} credits (based on about {minutes} min)",
           "creditRule": "A full run costs at least {min} credits, and transcription adds {perWindow} credits for every {window} minutes. We could not read this video's length, so no exact estimate is shown.",
+          "creditEstimateUnknown": "We could not read the video length, so no estimate is available. The server calculates the actual credit requirement.",
           "creditBalance": "You have {balance} credits left",
           "creditShortfall": "{shortfall} credits short.",
           "creditServerDecides": "The server measures the video length and makes the final decision on what is charged.",

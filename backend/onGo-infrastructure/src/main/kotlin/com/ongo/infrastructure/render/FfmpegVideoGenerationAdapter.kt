@@ -3,7 +3,6 @@ package com.ongo.infrastructure.render
 import com.ongo.application.video.GeneratedVideoFile
 import com.ongo.application.video.VideoGenerationPort
 import com.ongo.application.video.VideoGenerationSpec
-import com.ongo.application.video.TextToSpeechPort
 import com.ongo.infrastructure.runtime.RuntimeExecutableResolver
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -20,7 +19,6 @@ import java.util.concurrent.TimeUnit
  */
 @Component
 class FfmpegVideoGenerationAdapter(
-    private val textToSpeechPort: TextToSpeechPort,
     @param:Value("\${shorts.render.ffmpeg-path:ffmpeg}")
     private val executable: String,
     @param:Value("\${video.generation.timeout-seconds:180}")
@@ -31,15 +29,16 @@ class FfmpegVideoGenerationAdapter(
     private val resolvedExecutable = RuntimeExecutableResolver.resolve(executable)
 
     override fun generate(request: VideoGenerationSpec): GeneratedVideoFile {
+        require(request.voice == null || request.generatedAudio != null) {
+            "음성 합성은 과금된 GeneratedVideoUseCase 경로에서 먼저 실행해야 합니다"
+        }
         val workDir = Files.createTempDirectory("ongo-video-generation-")
         try {
             val textFile = workDir.resolve("slide.txt")
             Files.writeString(textFile, request.prompt, StandardCharsets.UTF_8)
             val output = workDir.resolve("generated.mp4")
             val filter = "drawtext=textfile=${filterPath(textFile)}:fontcolor=white:fontsize=64:line_spacing=14:x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.35:boxborderw=28"
-            val audio = request.voice?.trim()?.takeIf { it.isNotBlank() }?.let {
-                textToSpeechPort.synthesize(request.prompt, it)
-            }
+            val audio = request.generatedAudio
             val hasAudio = audio != null
             val command = listOf(
                 resolvedExecutable,
@@ -59,11 +58,7 @@ class FfmpegVideoGenerationAdapter(
                 }
                 add(output.fileName.toString())
             }
-            try {
-                runProcess(command, workDir)
-            } finally {
-                audio?.let { Files.deleteIfExists(it.path) }
-            }
+            runProcess(command, workDir)
             require(Files.isRegularFile(output) && Files.size(output) > 0) {
                 "영상 인코더가 결과 파일을 만들지 않았습니다"
             }

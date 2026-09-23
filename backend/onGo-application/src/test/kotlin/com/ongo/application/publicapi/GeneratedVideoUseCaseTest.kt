@@ -6,6 +6,10 @@ import com.ongo.application.video.GeneratedVideoFile
 import com.ongo.application.video.VideoGenerationPort
 import com.ongo.application.video.VideoGenerationSpec
 import com.ongo.application.video.TextToSpeechPort
+import com.ongo.application.video.GeneratedAudioFile
+import com.ongo.application.credit.CreditService
+import com.ongo.application.ai.economics.AiUnitEconomics
+import com.ongo.common.enums.AiFeature
 import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
@@ -15,6 +19,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
 import java.nio.file.Files
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -29,6 +34,7 @@ class GeneratedVideoUseCaseTest {
     private val videos = mockk<VideoRepository>()
     private val writeGuard = mockk<UserWriteGuard>()
     private val textToSpeech = mockk<TextToSpeechPort>()
+    private val creditService = mockk<CreditService>()
     private lateinit var useCase: GeneratedVideoUseCase
     private val temporaryDirectories = mutableListOf<java.nio.file.Path>()
 
@@ -36,7 +42,10 @@ class GeneratedVideoUseCaseTest {
     fun setUp() {
         every { writeGuard.requireWritable(7L, any(), any()) } just runs
         every { textToSpeech.availableVoices() } returns emptyList()
-        useCase = GeneratedVideoUseCase(generator, storage, videos, writeGuard, jacksonObjectMapper(), textToSpeech)
+        every { creditService.withCredits(any(), any(), any(), any<() -> GeneratedAudioFile>()) } answers {
+            (invocation.args[3] as () -> GeneratedAudioFile).invoke()
+        }
+        useCase = GeneratedVideoUseCase(generator, storage, videos, writeGuard, jacksonObjectMapper(), textToSpeech, creditService)
     }
 
     @AfterEach
@@ -99,5 +108,33 @@ class GeneratedVideoUseCaseTest {
             useCase.generate(7L, PublicGenerateVideoRequest("image-text-slides", "horizontal", jacksonObjectMapper().readTree("""{"prompt":"x"}""")))
         }
         verify(exactly = 1) { storage.deleteByKey(any()) }
+    }
+
+    @Test
+    fun `voice generation charges before synthesis and passes generated audio to renderer`() {
+        val directory = Files.createTempDirectory("generated-video-test-").also(temporaryDirectories::add)
+        val audioPath = directory.resolve("voice.mp3").also { Files.write(it, byteArrayOf(1)) }
+        val videoPath = directory.resolve("generated.mp4").also { Files.write(it, byteArrayOf(1)) }
+        every { textToSpeech.availableVoices() } returns listOf(com.ongo.application.video.TextToSpeechVoice("voice-1", "Voice"))
+        every { textToSpeech.synthesize("hello", "voice-1") } returns GeneratedAudioFile(audioPath, 1)
+        every { generator.generate(any()) } returns GeneratedVideoFile(videoPath, 1)
+        every { storage.uploadByKey(any(), any(), any(), any()) } returns "https://cdn.example/generated.mp4"
+        every { videos.save(any()) } answers { firstArg<Video>().copy(id = 92L) }
+
+        useCase.generate(
+            7L,
+            PublicGenerateVideoRequest("image-text-slides", "vertical", jacksonObjectMapper().readTree("""{"prompt":"hello","voice":"voice-1"}""")),
+        )
+
+        verifyOrder {
+            creditService.withCredits(
+                7L,
+                AiUnitEconomics().ttsCreditsPer1000Chars(),
+                AiFeature.VIDEO_TTS.name,
+                any<() -> GeneratedAudioFile>(),
+            )
+            textToSpeech.synthesize("hello", "voice-1")
+        }
+        verify { generator.generate(match<VideoGenerationSpec> { it.generatedAudio?.path == audioPath }) }
     }
 }

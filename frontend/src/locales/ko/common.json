@@ -436,6 +436,7 @@
           "creditMeasuring": "영상 길이를 확인하는 중입니다…",
           "creditEstimate": "예상 크레딧 약 {credits}개 (약 {minutes}분 기준)",
           "creditRule": "완주에는 최소 {min}개가 들며, 전사는 {window}분 구간마다 {perWindow}개가 추가됩니다. 이 영상의 길이를 확인하지 못해 정확한 예상치는 표시하지 못했습니다.",
+          "creditEstimateUnknown": "영상 길이를 확인할 수 없어 예상 크레딧을 표시하지 못했습니다. 실제 필요 크레딧은 서버가 계산합니다.",
           "creditBalance": "현재 잔여 크레딧 {balance}개",
           "creditShortfall": "{shortfall}개가 부족합니다.",
           "creditServerDecides": "실제 차감 금액은 서버가 영상 길이를 측정해 최종 판정합니다.",

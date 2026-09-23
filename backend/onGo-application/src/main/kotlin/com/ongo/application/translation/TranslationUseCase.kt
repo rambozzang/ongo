@@ -3,6 +3,8 @@ package com.ongo.application.translation
 import com.ongo.application.ai.AiRateLimiter
 import com.ongo.application.credit.CreditAllocation
 import com.ongo.application.ai.ChatClientResolver
+import com.ongo.application.ai.economics.AiSpendContext
+import com.ongo.application.ai.economics.AiUnitEconomics
 import com.ongo.application.credit.CreditService
 import com.ongo.application.translation.dto.*
 import com.ongo.common.exception.BusinessException
@@ -31,6 +33,7 @@ class TranslationUseCase(
     private val chatClientResolver: ChatClientResolver,
     private val rateLimiter: AiRateLimiter,
     transactionManager: PlatformTransactionManager,
+    private val unitEconomics: AiUnitEconomics = AiUnitEconomics(),
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -285,11 +288,16 @@ class TranslationUseCase(
                     appendLine("""{"title": "번역된 제목", "description": "번역된 설명"}""")
                 }
 
-                val response = chatClientResolver.resolve(userId).prompt()
-                    .system("당신은 다국어 콘텐츠 번역 전문가입니다. 플랫폼에 최적화된 자연스러운 번역을 제공합니다.")
-                    .user(prompt)
-                    .call()
-                    .content() ?: ""
+                val response = AiSpendContext.withBudget(
+                    limitKrw = unitEconomics.budgetKrw(CREDIT_PER_LANGUAGE),
+                    label = "TRANSLATION:$translationId:$language",
+                ) {
+                    chatClientResolver.resolve(userId).prompt()
+                        .system("당신은 다국어 콘텐츠 번역 전문가입니다. 플랫폼에 최적화된 자연스러운 번역을 제공합니다.")
+                        .user(prompt)
+                        .call()
+                        .content() ?: ""
+                }
 
                 val jsonStart = response.indexOf("{")
                 val jsonEnd = response.lastIndexOf("}") + 1

@@ -131,11 +131,7 @@
               }) }}
             </p>
             <p v-else class="text-body-xs text-gray-700 dark:text-gray-200" data-testid="shorts-credit-rule">
-              {{ $t('ugc.shorts.runs.create.creditRule', {
-                min: SHORTS_MIN_CREDITS,
-                window: SHORTS_TRANSCRIBE_WINDOW_MINUTES,
-                perWindow: SHORTS_TRANSCRIBE_CREDITS_PER_WINDOW,
-              }) }}
+              {{ $t('ugc.shorts.runs.create.creditEstimateUnknown') }}
             </p>
             <!--
               잔액은 **알 때만** 적는다. 조회 실패·미로딩에서 0 을 그리면 측정하지 못한
@@ -297,13 +293,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import {
-  SHORTS_FIXED_CREDITS,
-  SHORTS_MIN_CREDITS,
-  SHORTS_TRANSCRIBE_CREDITS_PER_WINDOW,
-  SHORTS_TRANSCRIBE_WINDOW_MINUTES,
-  useShortsCreditEstimate,
-} from '@/composables/useShortsCreditEstimate'
+import { useShortsCreditEstimate } from '@/composables/useShortsCreditEstimate'
 import { useSubscriptionStore } from '@/stores/subscription'
 import { useCreditStore } from '@/stores/credit'
 import {
@@ -375,7 +365,7 @@ const videosLoading = ref(false)
  * 예상 크레딧. 영상 목록에는 길이가 없어 fileUrl 헤더만 읽어 재본다. 실패는 오류가
  * 아니라 "모름" 이며, 그때는 규칙 안내만 보여준다.
  */
-const creditEstimate = useShortsCreditEstimate()
+const creditEstimate = useShortsCreditEstimate((durationMs) => store.estimateCredits(durationMs))
 const estimatedMinutes = computed(() => {
   const seconds = creditEstimate.estimate.value.durationSeconds
   return seconds == null ? '' : String(Math.max(1, Math.round(seconds / 60)))
@@ -432,6 +422,23 @@ const starterTrialCredits = computed<number | null>(
 )
 
 /**
+ * 체험으로 완주할 수 있는 최대 원본 길이(분). 커버되는 길이가 없거나 모르면 null.
+ *
+ * **서버가 계산한다**(`GET .../credit-coverage`). 가격 규칙(모델 단가에서 나오는 원가 보장 크레딧)은 서버에만
+ * 있다 — 화면이 사본을 들고 있으면 단가가 바뀔 때 조용히 틀린 분을 말한다. 못 읽으면 분을 말하지 않는다.
+ */
+const trialMaxMinutes = ref<number | null>(null)
+watch(starterTrialCredits, async (credits) => {
+  trialMaxMinutes.value = null
+  if (credits === null) return
+  try {
+    trialMaxMinutes.value = await store.creditCoverageMinutes(credits)
+  } catch {
+    trialMaxMinutes.value = null
+  }
+}, { immediate: true })
+
+/**
  * 체험이 이 영상을 완주시킬 수 있는가.
  *
  * **null 은 "모른다" 이지 "커버한다" 가 아니다.** 체험 크레딧이나 예상 비용 중 하나라도
@@ -442,19 +449,6 @@ const trialCoversEstimate = computed<boolean | null>(() => {
   const cost = creditEstimate.estimate.value.credits
   if (credits === null || cost === null) return null
   return cost <= credits
-})
-
-/**
- * 체험으로 완주할 수 있는 최대 원본 길이(분). 커버되는 길이가 없으면 null.
- *
- * 서버 값에서 유도한다 — 고정 단계 합계와 전사 구간 단가는
- * `useShortsCreditEstimate` 가 서버 규칙의 사본으로 들고 있다.
- */
-const trialMaxMinutes = computed<number | null>(() => {
-  const credits = starterTrialCredits.value
-  if (credits === null) return null
-  const windows = Math.floor((credits - SHORTS_FIXED_CREDITS) / SHORTS_TRANSCRIBE_CREDITS_PER_WINDOW)
-  return windows > 0 ? windows * SHORTS_TRANSCRIBE_WINDOW_MINUTES : null
 })
 
 /**

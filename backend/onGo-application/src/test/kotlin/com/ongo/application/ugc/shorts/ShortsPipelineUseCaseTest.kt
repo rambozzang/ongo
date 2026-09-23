@@ -3,6 +3,8 @@ package com.ongo.application.ugc.shorts
 import com.ongo.application.ai.audio.AudioPreparationException
 import com.ongo.application.activitylog.ActivityLogActions
 import com.ongo.application.ai.audio.TranscriptionAudioPort
+import com.ongo.application.ai.SttCreditCalculator
+import com.ongo.application.ai.economics.AiUnitEconomics
 import com.ongo.application.credit.CreditBalanceInfo
 import com.ongo.application.credit.CreditService
 import com.ongo.application.ugc.shorts.dto.CreatePipelineRunRequest
@@ -186,7 +188,7 @@ class ShortsPipelineUseCaseTest {
          * verify(exactly = 0) 로 확인하므로 이 스텁이 그 검증을 가리지 않는다.
          */
         every { creditService.getBalance(userId) } returns
-            balance(ShortsPipelineCreditRequirements.totalCreditsForRun(SHORT_SOURCE_DURATION_MS))
+            balance(requiredCredits(null))
     }
 
     private val userId = 1L
@@ -349,6 +351,13 @@ class ShortsPipelineUseCaseTest {
         freeResetDate = LocalDate.of(2026, 9, 1),
     )
 
+    private fun requiredCredits(durationMs: Long?) = ShortsPipelineCreditRequirements.totalCreditsForRun(
+        durationMs,
+        SttCreditCalculator().creditsPer10Minutes(),
+        AiUnitEconomics(),
+        MAX_SOURCE_DURATION_MS,
+    )
+
     /**
      * 완주 비용이 애초에 모자란 요청.
      *
@@ -362,7 +371,7 @@ class ShortsPipelineUseCaseTest {
         every { videoRepository.findById(videoId) } returns sourceVideo()
         every { audioPort.probeDurationMs(SOURCE_URL) } returns SHORT_SOURCE_DURATION_MS
         every { creditService.getBalance(userId) } returns
-            balance(ShortsPipelineCreditRequirements.totalCreditsForRun(SHORT_SOURCE_DURATION_MS) - 1)
+            balance(requiredCredits(SHORT_SOURCE_DURATION_MS) - 1)
 
         val ex = assertFailsWith<BusinessException> {
             useCase.createRun(userId, workspaceId, CreatePipelineRunRequest(sourceVideoId = videoId))
@@ -380,7 +389,7 @@ class ShortsPipelineUseCaseTest {
         every { videoRepository.findById(videoId) } returns sourceVideo()
         every { audioPort.probeDurationMs(SOURCE_URL) } returns SHORT_SOURCE_DURATION_MS
         every { creditService.getBalance(userId) } returns
-            balance(ShortsPipelineCreditRequirements.totalCreditsForRun(SHORT_SOURCE_DURATION_MS))
+            balance(requiredCredits(SHORT_SOURCE_DURATION_MS))
         every { pipelineRunRepository.save(any()) } returns run(PipelineRunStatus.PENDING)
         every { eventPublisher.publishEvent(any<ShortsPipelineEvent>()) } just runs
 
@@ -397,9 +406,9 @@ class ShortsPipelineUseCaseTest {
      */
     @Test
     fun `필요 크레딧은 단계별 AiFeature 합계와 같다`() {
-        val expected = ShortsPipelineCreditRequirements.FEATURE_BY_STAGE.values.sumOf { it.creditCost }
+        val expected = requiredCredits(SHORT_SOURCE_DURATION_MS)
 
-        assertEquals(expected, ShortsPipelineCreditRequirements.totalCreditsForRun(SHORT_SOURCE_DURATION_MS))
+        assertEquals(expected, requiredCredits(SHORT_SOURCE_DURATION_MS))
         // 차감이 없는 단계는 매핑에 없어야 한다 — 있으면 필요액이 부풀어 생성이 막힌다.
         assertEquals(null, ShortsPipelineCreditRequirements.FEATURE_BY_STAGE[PipelineStage.RENDER_SPEC])
         assertEquals(null, ShortsPipelineCreditRequirements.FEATURE_BY_STAGE[PipelineStage.SCHEDULE])
@@ -454,7 +463,7 @@ class ShortsPipelineUseCaseTest {
         every { videoRepository.findById(videoId) } returns sourceVideo()
         every { audioPort.probeDurationMs(SOURCE_URL) } returns SHORT_SOURCE_DURATION_MS
         every { creditService.getBalance(userId) } returns
-            balance(ShortsPipelineCreditRequirements.totalCreditsForRun(SHORT_SOURCE_DURATION_MS) - 1)
+            balance(requiredCredits(SHORT_SOURCE_DURATION_MS) - 1)
 
         assertFailsWith<BusinessException> {
             useCase.createRun(userId, workspaceId, CreatePipelineRunRequest(sourceVideoId = videoId))
@@ -591,7 +600,7 @@ class ShortsPipelineUseCaseTest {
         every { audioPort.probeDurationMs(SOURCE_URL) } returns MAX_SOURCE_DURATION_MS
         // 상한 길이의 실행은 전사 크레딧이 길이에 비례해 커진다. 잔액도 그만큼 필요하다.
         every { creditService.getBalance(userId) } returns
-            balance(ShortsPipelineCreditRequirements.totalCreditsForRun(MAX_SOURCE_DURATION_MS))
+            balance(requiredCredits(MAX_SOURCE_DURATION_MS))
         every { pipelineRunRepository.save(any()) } returns run(PipelineRunStatus.PENDING)
         every { eventPublisher.publishEvent(any<ShortsPipelineEvent>()) } just runs
 
@@ -610,7 +619,7 @@ class ShortsPipelineUseCaseTest {
         every { videoRepository.findById(videoId) } returns sourceVideo()
         every { audioPort.probeDurationMs(SOURCE_URL) } returns MAX_SOURCE_DURATION_MS
         every { creditService.getBalance(userId) } returns
-            balance(ShortsPipelineCreditRequirements.totalCreditsForRun(MAX_SOURCE_DURATION_MS))
+            balance(requiredCredits(MAX_SOURCE_DURATION_MS))
         val saved = slot<PipelineRun>()
         every { pipelineRunRepository.save(capture(saved)) } returns run(PipelineRunStatus.PENDING)
         every { eventPublisher.publishEvent(any<ShortsPipelineEvent>()) } just runs
@@ -648,7 +657,7 @@ class ShortsPipelineUseCaseTest {
         every { audioPort.probeDurationMs(SOURCE_URL) } returns MAX_SOURCE_DURATION_MS
         // 짧은 원본이었다면 충분했을 잔액. 길이를 무시하면 이 요청이 통과한다.
         every { creditService.getBalance(userId) } returns
-            balance(ShortsPipelineCreditRequirements.totalCreditsForRun(SHORT_SOURCE_DURATION_MS))
+            balance(requiredCredits(SHORT_SOURCE_DURATION_MS))
 
         val ex = assertFailsWith<BusinessException> {
             useCase.createRun(userId, workspaceId, CreatePipelineRunRequest(sourceVideoId = videoId))
@@ -673,7 +682,7 @@ class ShortsPipelineUseCaseTest {
             useCase.createRun(userId, workspaceId, CreatePipelineRunRequest(sourceVideoId = videoId))
         }
 
-        val required = ShortsPipelineCreditRequirements.totalCreditsForRun(MAX_SOURCE_DURATION_MS)
+        val required = requiredCredits(MAX_SOURCE_DURATION_MS)
         assertTrue(ex.message!!.contains("${required}개"), "필요 크레딧이 안내에 없다: ${ex.message}")
         assertTrue(ex.message!!.contains("10분마다"), "과금 단위가 안내에 없다: ${ex.message}")
         assertTrue(ex.message!!.contains("60분"), "측정된 길이가 안내에 없다: ${ex.message}")
@@ -1597,6 +1606,19 @@ class ShortsPipelineUseCaseTest {
      * 빌더를 목으로 두면 "새 URL 이 담긴 spec 을 넘겼다"까지만 보이고, 정작 사용자가 받는
      * zip 안의 render-spec.json 과 render.sh 에 그 URL 이 실제로 들어갔는지는 증명되지 않는다.
      */
+    /** 체험 안내("체험 크레딧으로 N분짜리까지")는 서버 가격으로 계산한다. 경계값이 그대로 맞아야 한다. */
+    @Test
+    fun `coverable minutes is the longest 10-minute step whose full run fits the credits`() {
+        val tenMinutes = useCase.estimateCreditsForDuration(10 * 60_000L)
+        val twentyMinutes = useCase.estimateCreditsForDuration(20 * 60_000L)
+
+        assertEquals(null, useCase.coverableMinutesFor(tenMinutes - 1))
+        assertEquals(10, useCase.coverableMinutesFor(tenMinutes))
+        assertEquals(10, useCase.coverableMinutesFor(twentyMinutes - 1))
+        assertEquals(20, useCase.coverableMinutesFor(twentyMinutes))
+        assertEquals((MAX_SOURCE_DURATION_MS / 60_000).toInt(), useCase.coverableMinutesFor(Int.MAX_VALUE))
+    }
+
     private fun bundleUseCase() = ShortsPipelineUseCase(
         pipelineRunRepository = pipelineRunRepository,
         runStageRepository = runStageRepository,

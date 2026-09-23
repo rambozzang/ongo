@@ -2,11 +2,14 @@ package com.ongo.application.publicapi
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ongo.application.common.FileStoragePort
+import com.ongo.application.ai.economics.AiUnitEconomics
+import com.ongo.application.credit.CreditService
 import com.ongo.application.video.GeneratedVideoFile
 import com.ongo.application.video.VideoGenerationPort
 import com.ongo.application.video.VideoGenerationSpec
 import com.ongo.application.video.VideoOrientation
 import com.ongo.application.video.TextToSpeechPort
+import com.ongo.common.enums.AiFeature
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.accountdeletion.UserWriteGuard
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.nio.file.Files
 import java.util.UUID
+import kotlin.math.ceil
 
 /** Postiz generate-video 결과를 영속 Video로 만들어 즉시 발행 대상으로 연결한다. */
 @Service
@@ -27,6 +31,8 @@ class GeneratedVideoUseCase(
     private val userWriteGuard: UserWriteGuard,
     private val objectMapper: ObjectMapper,
     private val textToSpeechPort: TextToSpeechPort,
+    private val creditService: CreditService,
+    private val unitEconomics: AiUnitEconomics = AiUnitEconomics(),
 ) {
 
     @Transactional
@@ -66,39 +72,53 @@ class GeneratedVideoUseCase(
             ?.take(MAX_TAGS)
             ?: emptyList()
 
-        val generated = videoGenerationPort.generate(VideoGenerationSpec(prompt, orientation, voice))
-        val key = "generated/$userId/${UUID.randomUUID()}.mp4"
+        val generatedAudio = voice?.let { voiceId ->
+            val characters = prompt.codePointCount(0, prompt.length)
+            val thousandCharacterUnits = ceil(characters / 1000.0).toInt().coerceAtLeast(1)
+            val credits = Math.multiplyExact(thousandCharacterUnits, unitEconomics.ttsCreditsPer1000Chars())
+            creditService.withCredits(userId, credits, AiFeature.VIDEO_TTS.name) {
+                textToSpeechPort.synthesize(prompt, voiceId)
+            }
+        }
         try {
-            val fileUrl = Files.newInputStream(generated.path).use { input ->
-                fileStoragePort.uploadByKey(key, input, generated.contentType, generated.sizeBytes)
-            }
-            val sourceReference = objectMapper.createObjectNode().apply {
-                put("type", type)
-                put("output", request.output.trim().lowercase())
-                put("prompt", prompt)
-                voice?.let { put("voice", it) }
-            }
-            val video = videoRepository.save(
-                Video(
-                    userId = userId,
-                    title = title,
-                    description = prompt,
-                    tags = tags,
-                    fileUrl = fileUrl,
-                    fileSizeBytes = generated.sizeBytes,
-                    originalFilename = "generated-${UUID.randomUUID()}.mp4",
-                    status = UploadStatus.DRAFT,
-                    source = VideoSource.GENERATED,
-                    sourceReference = sourceReference,
-                ),
+            val generated = videoGenerationPort.generate(
+                VideoGenerationSpec(prompt, orientation, voice, generatedAudio),
             )
-            val videoId = video.id ?: throw IllegalStateException("생성 영상 레코드를 만들지 못했습니다")
-            return listOf(PublicGeneratedVideoResponse(videoId.toString(), fileUrl))
-        } catch (error: Exception) {
-            runCatching { fileStoragePort.deleteByKey(key) }
-            throw error
+            val key = "generated/$userId/${UUID.randomUUID()}.mp4"
+            try {
+                val fileUrl = Files.newInputStream(generated.path).use { input ->
+                    fileStoragePort.uploadByKey(key, input, generated.contentType, generated.sizeBytes)
+                }
+                val sourceReference = objectMapper.createObjectNode().apply {
+                    put("type", type)
+                    put("output", request.output.trim().lowercase())
+                    put("prompt", prompt)
+                    voice?.let { put("voice", it) }
+                }
+                val video = videoRepository.save(
+                    Video(
+                        userId = userId,
+                        title = title,
+                        description = prompt,
+                        tags = tags,
+                        fileUrl = fileUrl,
+                        fileSizeBytes = generated.sizeBytes,
+                        originalFilename = "generated-${UUID.randomUUID()}.mp4",
+                        status = UploadStatus.DRAFT,
+                        source = VideoSource.GENERATED,
+                        sourceReference = sourceReference,
+                    ),
+                )
+                val videoId = video.id ?: throw IllegalStateException("생성 영상 레코드를 만들지 못했습니다")
+                return listOf(PublicGeneratedVideoResponse(videoId.toString(), fileUrl))
+            } catch (error: Exception) {
+                runCatching { fileStoragePort.deleteByKey(key) }
+                throw error
+            } finally {
+                deleteGeneratedFile(generated)
+            }
         } finally {
-            deleteGeneratedFile(generated)
+            generatedAudio?.let { runCatching { Files.deleteIfExists(it.path) } }
         }
     }
 

@@ -11,6 +11,8 @@ import com.ongo.domain.credit.AiCreditTransaction
 import com.ongo.domain.credit.AiPurchasedCredit
 import com.ongo.domain.credit.CreditRepository
 import com.ongo.domain.event.CreditDeductedEvent
+import com.ongo.application.ai.economics.AiSpendContext
+import com.ongo.application.ai.economics.AiUnitEconomics
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -28,6 +30,8 @@ class CreditService(
     private val creditRepository: CreditRepository,
     private val eventPublisher: ApplicationEventPublisher,
     transactionManager: PlatformTransactionManager,
+    /** 받은 크레딧을 외부 원가 예산으로 바꾼다. [withCredits] 가 호출마다 예산을 연다. */
+    private val unitEconomics: AiUnitEconomics = AiUnitEconomics(),
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -78,7 +82,8 @@ class CreditService(
         val allocation = deductTx.execute { validateAndDeduct(userId, amount, featureName) }
             ?: CreditAllocation.empty(userId, featureName)
         return try {
-            block()
+            // 받은 크레딧만큼만 외부 원가를 쓸 수 있다. 모든 채팅 호출이 이 예산을 확인한다(AiCostGuardAdvisor).
+            AiSpendContext.withBudget(unitEconomics.budgetKrw(amount), featureName) { block() }
         } catch (e: Throwable) {
             /*
              * 환불 실패가 원래 오류를 가리면 안 된다. 사용자가 보는 것은 "AI 호출 실패"

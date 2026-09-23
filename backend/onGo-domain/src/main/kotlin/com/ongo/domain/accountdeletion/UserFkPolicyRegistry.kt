@@ -48,6 +48,8 @@ object UserFkPolicyRegistry {
             "AI 파이프라인 상태·결과는 사용자 단독 작업 데이터이며 계정 삭제 시 함께 제거한다"),
         entry("ai_batch_jobs_user_id_fkey", "ai_batch_jobs", "user_id", FkPolicy.DELETE, RowOperation.ROW_DELETE,
             "AI 배치 상태·결과는 사용자 단독 작업 데이터이며 계정 삭제 시 함께 제거한다"),
+        entry("ai_sentiment_daily_usage_user_id_fkey", "ai_sentiment_daily_usage", "user_id", FkPolicy.DELETE, RowOperation.ROW_DELETE,
+            "자동 감정 분석의 하루 배치 수 카운터(V118). 원가 상한용 집계일 뿐 외부 식별자·공유 주체가 없는 사용자 단독 데이터"),
         entry("ai_credit_transactions_user_id_fkey", "ai_credit_transactions", "user_id", FkPolicy.REVIEW_BLOCK, RowOperation.ROW_BLOCK,
             "정책 미정. 판단 전까지 이 외래키로 엮인 행이 있는 사용자는 삭제하지 않는다"),
         entry("ai_purchased_credits_user_id_fkey", "ai_purchased_credits", "user_id", FkPolicy.REVIEW_BLOCK, RowOperation.ROW_BLOCK,

@@ -12,7 +12,27 @@ import { creditApi } from '@/api/credit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import koMessages from '@/locales/ko/common.json'
 
-vi.mock('@/api/ugcShortsPipeline', () => ({ ugcShortsPipelineApi: { list: vi.fn(), create: vi.fn() } }))
+/*
+ * 쇼츠 크레딧 견적은 **서버가 정한다**(`GET .../credit-estimate` — 모델 단가에서 계산하는 원가 보장 규칙).
+ * 이 화면 테스트는 가격 규칙이 아니라 "받은 견적을 어떻게 보여 주는가" 를 본다. 그래서 서버가 이 값을 줬다고
+ * 가정하는 고정 견적표를 둔다(4분 → 37, 90분 → 117). 가격 규칙 자체는 백엔드 ShortsPipelineCreditRequirementsTest·
+ * AiUnitEconomicsTest 가 고정한다.
+ */
+const SERVER_QUOTE_BY_MINUTES: Record<number, number> = { 4: 37, 90: 117 }
+
+vi.mock('@/api/ugcShortsPipeline', () => ({
+  ugcShortsPipelineApi: {
+    list: vi.fn(),
+    create: vi.fn(),
+    // 체험 크레딧(100)으로 완주 가능한 최대 길이도 서버가 준다고 가정한다.
+    creditCoverage: vi.fn(async (_workspaceId: number, credits: number) => ({ maxMinutes: credits >= 100 ? 70 : null })),
+    estimateCredits: vi.fn(async (_workspaceId: number, durationMs: number) => {
+      const credits = SERVER_QUOTE_BY_MINUTES[Math.round(durationMs / 60_000)]
+      if (credits === undefined) throw new Error(`테스트 견적표에 없는 길이: ${durationMs}ms`)
+      return { credits }
+    }),
+  },
+}))
 vi.mock('@/api/ugcShortsTemplate', () => ({ ugcShortsTemplateApi: { list: vi.fn() } }))
 vi.mock('@/api/video', () => ({ videoApi: { list: vi.fn() } }))
 vi.mock('@/api/workspace', () => ({ workspaceApi: { list: vi.fn() } }))
@@ -304,7 +324,7 @@ describe('ShortsPipelineView', () => {
      *
      * `preload="metadata"` 는 jsdom 에서 이벤트를 내지 않으므로, 기존 composable 테스트와
      * **같은 방식**으로 생성되는 video 요소에 길이를 심고 로드 완료를 알린다.
-     * 과금 규칙 자체는 손대지 않는다 — 실제 `shortsCreditsForDuration` 이 계산한다.
+     * 견적은 위 SERVER_QUOTE_BY_MINUTES 가 서버 응답을 대신한다.
      */
     function stubVideoDuration(seconds: number) {
       originalCreateElement = document.createElement.bind(document)
@@ -564,7 +584,7 @@ describe('ShortsPipelineView', () => {
       const notice = wrapper.get('[data-testid="shorts-trial-not-enough"]')
       expect(notice.text()).toContain('117')  // 이 영상 비용
       expect(notice.text()).toContain('100')  // 체험 크레딧 (서버 값)
-      expect(notice.text()).toContain('70')   // (100-27)/10 → 7구간 → 70분
+      expect(notice.text()).toContain('70')   // 서버 credit-coverage 가 준 최대 길이
       expect(wrapper.find('[data-testid="shorts-pick-shorter-video"]').exists()).toBe(true)
       expect(notice.text()).toContain('요금제 보기')
     })

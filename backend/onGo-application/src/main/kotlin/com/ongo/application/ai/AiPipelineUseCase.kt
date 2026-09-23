@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.ongo.application.ai.result.MetaGenerationResult
 import com.ongo.application.ai.result.ScriptAnalysisResult
 import com.ongo.application.ai.result.SttResult
+import com.ongo.application.ai.economics.AiSpendContext
+import com.ongo.application.ai.economics.AiUnitEconomics
 import com.ongo.application.credit.CreditAllocation
 import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.Platform
@@ -47,6 +49,7 @@ class AiPipelineUseCase(
     private val videoRepository: VideoRepository,
     private val pipelineRepository: AiPipelineRepository,
     transactionManager: PlatformTransactionManager,
+    private val unitEconomics: AiUnitEconomics = AiUnitEconomics(),
 ) {
 
     private val log = LoggerFactory.getLogger(AiPipelineUseCase::class.java)
@@ -105,6 +108,8 @@ class AiPipelineUseCase(
                 "같은 스텝을 두 번 선택할 수 없습니다: ${duplicated.joinToString { it.displayName }}",
             )
         }
+
+        if (AiPipelineStep.STT in steps) requirePipelineSttCovered(userId, videoId)
 
         val totalCost = AiPipelineStep.calculateTotalCost(steps)
         val discountApplied = steps.size >= AiPipelineStep.MIN_STEPS_FOR_DISCOUNT
@@ -198,6 +203,29 @@ class AiPipelineUseCase(
      * 운영이 수기로 복구하게 한다. 반대 순서(환불 먼저)는 이중 환불을 만들고, 그쪽이
      * 훨씬 되돌리기 어렵다.
      */
+    /**
+     * 파이프라인의 STT 단계가 **원가를 덮는지** 시작 전에 본다. 음성 인식은 채팅이 아니라 원가 가로채기가 막지 못한다.
+     *
+     * 단계 가격은 고정(10분 이하 1회)이라, 원본이 10분을 넘거나 설정 모델이 비싸 할인 뒤 몫이 10분 전사 원가를
+     * 덮지 못하면 과금 없이 거절한다. 긴 영상은 길이에 비례해 받는 개별 STT·쇼츠로 안내한다.
+     */
+    private fun requirePipelineSttCovered(userId: Long, videoId: Long) {
+        val quote = sttUseCase.quote(userId, videoId)
+        if (quote.durationMs > AiPipelineStep.STT_MAX_SOURCE_MS) {
+            throw BusinessException(
+                "PIPELINE_STT_TOO_LONG",
+                "AI 파이프라인의 음성 인식은 10분 이하 영상만 가능합니다. 긴 영상은 개별 음성 인식이나 쇼츠 만들기를 이용해 주세요.",
+            )
+        }
+        if (quote.credits > AiPipelineStep.sttShareAfterDiscount()) {
+            log.error("파이프라인 STT 가격이 설정 모델 원가를 덮지 못한다: required={} share={}", quote.credits, AiPipelineStep.sttShareAfterDiscount())
+            throw BusinessException(
+                "PIPELINE_STT_UNAVAILABLE",
+                "지금은 AI 파이프라인에서 음성 인식을 쓸 수 없습니다. 개별 음성 인식을 이용해 주세요.",
+            )
+        }
+    }
+
     private fun settle(pipeline: AiPipeline, finalStatus: PipelineStatus, reason: String) {
         val refundAmount = AiPipelineSettlement.unusedAmount(
             steps = pipeline.steps,
@@ -292,7 +320,12 @@ class AiPipelineUseCase(
                     now = now,
                     staleBefore = now.minusMinutes(30),
                 ) ?: return@start
-                executePipeline(pipeline)
+                // 가상 스레드 작업자에는 호출 스레드의 예산이 없다. 저장된 예약액이 이 파이프라인의 모든 채팅 호출에
+                // 공통인 단 하나의 원가 상한이다.
+                AiSpendContext.withBudget(
+                    limitKrw = unitEconomics.budgetKrw(pipeline.totalCreditsCharged),
+                    label = "AI_PIPELINE:${pipeline.id}",
+                ) { executePipeline(pipeline) }
             } catch (e: Exception) {
                 log.error("AI pipeline worker failed: pipelineId={}", pipelineId, e)
             } finally {

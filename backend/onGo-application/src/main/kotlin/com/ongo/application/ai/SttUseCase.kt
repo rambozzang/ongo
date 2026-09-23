@@ -34,6 +34,8 @@ class SttUseCase(
      */
     @param:Value("\${spring.ai.openai.audio.transcription.options.model:$DEFAULT_TRANSCRIPTION_MODEL}")
     private val transcriptionModelName: String = DEFAULT_TRANSCRIPTION_MODEL,
+    /** 원본 길이 → 크레딧. 같은 모델 설정을 읽는다. */
+    private val sttCreditCalculator: SttCreditCalculator = SttCreditCalculator(model = transcriptionModelName),
 ) {
 
     private val log = LoggerFactory.getLogger(SttUseCase::class.java)
@@ -62,18 +64,41 @@ class SttUseCase(
         return transcribe(fileUrl, sourceDurationMs, onTranscriptionRequest)
     }
 
-    fun execute(userId: Long, videoId: Long): SttResult {
-        rateLimiter.checkRateLimit(userId)
+    /** 전사 견적. 원본 길이와 그 길이에 해당하는 크레딧. */
+    data class SttQuote(val durationMs: Long, val credits: Int)
 
+    /**
+     * **원본 길이를 재서** 전사 크레딧을 정한다. 길이를 못 재면 과금하지 않고 거절한다.
+     *
+     * 예전에는 영상 길이와 무관하게 10크레딧이었다. 3시간 원본도 10크레딧(원가 예산 약 ₩22)에 전사되어
+     * 한 번에 약 ₩1,600 을 잃었다. 음성 인식은 채팅이 아니라 원가 가로채기가 막지 못하므로 여기서 막는다.
+     */
+    fun quote(userId: Long, videoId: Long): SttQuote {
+        val fileUrl = ownedFileUrl(userId, videoId)
+        val durationMs = try {
+            audioPort.probeDurationMs(fileUrl)
+        } catch (e: Exception) {
+            log.warn("STT 견적용 길이 측정 실패: videoId={}", videoId, e)
+            throw BusinessException("STT_DURATION_UNKNOWN", "영상 길이를 확인할 수 없어 음성 인식을 시작하지 않았습니다. 크레딧은 차감되지 않았습니다.")
+        }
+        return SttQuote(durationMs, sttCreditCalculator.creditsForDuration(durationMs))
+    }
+
+    private fun ownedFileUrl(userId: Long, videoId: Long): String {
         val video = videoRepository.findById(videoId)
             ?: throw NotFoundException("영상", videoId)
-
         if (video.userId != userId) {
             throw ForbiddenException("해당 영상에 접근 권한이 없습니다")
         }
-
-        val fileUrl = video.fileUrl
+        return video.fileUrl
             ?: throw BusinessException("VIDEO_FILE_NOT_FOUND", "영상 파일 URL이 없습니다. videoId: $videoId")
+    }
+
+    fun execute(userId: Long, videoId: Long): SttResult {
+        rateLimiter.checkRateLimit(userId)
+
+        val fileUrl = ownedFileUrl(userId, videoId)
+        val quote = quote(userId, videoId)
 
         /*
          * 차감·환불은 [CreditService.withCredits] 한 곳에서 처리한다. 준비 실패(인코더
@@ -83,9 +108,9 @@ class SttUseCase(
          * [executeInternal] 은 파이프라인이 이미 예약한 크레딧으로 도는 경로라 차감하지
          * 않는다. 여기서만 과금한다.
          */
-        return creditService.withCredits(userId, AiFeature.STT) {
+        return creditService.withCredits(userId, quote.credits, AiFeature.STT.name) {
             try {
-                transcribe(fileUrl)
+                transcribe(fileUrl, quote.durationMs)
             } catch (e: BusinessException) {
                 log.error("STT 처리 실패: userId={}", userId, e)
                 throw e

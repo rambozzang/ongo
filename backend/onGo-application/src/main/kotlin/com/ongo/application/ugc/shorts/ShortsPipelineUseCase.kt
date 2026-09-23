@@ -5,6 +5,7 @@ import com.ongo.application.ai.audio.AudioPreparationException
 import com.ongo.application.activitylog.ActivityLogActions
 import com.ongo.application.activitylog.ActivityLogUseCase
 import com.ongo.application.ai.audio.TranscriptionAudioPort
+import com.ongo.application.ai.SttCreditCalculator
 import com.ongo.application.credit.CreditService
 import com.ongo.application.ugc.shorts.dto.ClipHookResponse
 import com.ongo.application.ugc.shorts.dto.CreatePipelineRunRequest
@@ -16,7 +17,6 @@ import com.ongo.application.ugc.shorts.dto.RunStageResponse
 import com.ongo.application.ugc.shorts.dto.ScheduleConfirmRequest
 import com.ongo.application.ugc.shorts.dto.ClipPublicationResponse
 import com.ongo.application.ugc.shorts.dto.ShortsClipResponse
-import com.ongo.common.enums.AiFeature
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.BusinessException
 import com.ongo.common.util.FileValidationUtil
@@ -104,6 +104,7 @@ class ShortsPipelineUseCase(
     private val channelRepository: ChannelRepository,
     /** 대상별 게시 결과 조회 전용. 상세 응답에 사실대로 실어 보내기 위해서만 읽는다. */
     private val clipPublicationRepository: ClipPublicationRepository,
+    private val sttCreditCalculator: SttCreditCalculator = SttCreditCalculator(),
 ) {
     private val maxSourceBytes: Long = when {
         configuredMaxSourceBytes == 0L -> FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES
@@ -316,7 +317,7 @@ class ShortsPipelineUseCase(
      *   통과한 실행이 중간에 죽지 않는다.
      */
     private fun assertEnoughCreditsForRun(userId: Long, sourceDurationMs: Long?) {
-        val required = ShortsPipelineCreditRequirements.totalCreditsForRun(sourceDurationMs)
+        val required = estimateCreditsForDuration(sourceDurationMs)
         val available = creditService.getBalance(userId).totalBalance
         if (available >= required) return
 
@@ -346,7 +347,7 @@ class ShortsPipelineUseCase(
          */
         val basis = sourceDurationMs?.let {
             "전사는 ${minutes(ShortsPipelineCreditRequirements.TRANSCRIBE_BILLING_WINDOW_MS)}분마다 " +
-                "크레딧 ${AiFeature.STT.creditCost}개가 붙으며, 이 영상은 약 ${minutes(it)}분입니다. "
+                "크레딧 ${sttCreditCalculator.creditsPer10Minutes()}개가 붙으며, 이 영상은 약 ${minutes(it)}분입니다. "
         }.orEmpty()
 
         throw BusinessException(
@@ -355,6 +356,27 @@ class ShortsPipelineUseCase(
             "쇼츠 변환을 시작하려면 크레딧 ${required}개가 필요합니다. " + basis +
                 "현재 잔여는 ${available}개입니다.",
         )
+    }
+
+    /** 서버가 확정한 모델 단가를 UI 견적과 실제 사전 검사에서 함께 쓴다. */
+    fun estimateCreditsForDuration(sourceDurationMs: Long?): Int =
+        ShortsPipelineCreditRequirements.totalCreditsForRun(
+            sourceDurationMs,
+            sttCreditCalculator.creditsPer10Minutes(),
+            sttCreditCalculator.unitEconomics,
+            maxSourceDurationMs,
+        )
+
+    /**
+     * 크레딧 [credits] 로 완주할 수 있는 최대 원본 길이(분, 10분 단위). 하나도 못 하면 null.
+     *
+     * 체험 안내("체험 크레딧으로 N분짜리까지") 에 쓴다. 가격 규칙은 서버에만 있으므로 화면이 계산하지 않는다.
+     */
+    fun coverableMinutesFor(credits: Int): Int? {
+        val window = ShortsPipelineCreditRequirements.TRANSCRIBE_BILLING_WINDOW_MS
+        val maxWindows = maxSourceDurationMs / window
+        return (1..maxWindows).lastOrNull { windows -> estimateCreditsForDuration(windows * window) <= credits }
+            ?.let { (it * window / 60_000).toInt() }
     }
 
     /** 실행 목록 (페이지네이션). */

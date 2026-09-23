@@ -203,9 +203,10 @@ check_optional() {
 
 check_optional "쇼츠 렌더링"   "서버 렌더 불가"        FFMPEG_PATH
 check_optional "URL 임포트"    "외부 URL 가져오기 불가" YT_DLP_PATH
-check_optional "AI(Claude)"    "제공자 선택 불가"       ANTHROPIC_API_KEY
-check_optional "AI(Gemini)"    "제공자 선택 불가"       GEMINI_API_KEY
-check_optional "AI(DashScope)" "Qwen/Kimi/GLM 불가"    DASHSCOPE_API_KEY
+# AI 채팅은 DashScope 의 저가 모델(Qwen·MiniMax)만 쓴다(AiProvider.OFFERED). 크레딧 1개의 원가 예산 안에서
+# 쓸 만한 답을 내는 모델이 그것뿐이라 Claude·Gemini 키가 있어도 채팅에는 쓰지 않는다.
+# 이 키가 없으면 비싼 모델로 새지 않고 **AI 기능 전부가 멈춘다** — 원가가 조용히 5배가 되는 것보다 낫다.
+check_optional "AI 채팅(DashScope)" "AI 기능 전부 불가"    DASHSCOPE_API_KEY
 
 # ---- 요약 ----
 

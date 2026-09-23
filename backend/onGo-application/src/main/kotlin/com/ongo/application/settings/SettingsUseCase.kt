@@ -29,7 +29,7 @@ class SettingsUseCase(
                     defaultVisibility = request.defaultVisibility?.let { Visibility.valueOf(it) } ?: existing.defaultVisibility,
                     defaultPlatforms = request.defaultPlatforms?.map { Platform.valueOf(it) } ?: existing.defaultPlatforms,
                     defaultAiTone = request.defaultAiTone ?: existing.defaultAiTone,
-                    defaultAiProvider = request.defaultAiProvider?.let { AiProvider.fromString(it) } ?: existing.defaultAiProvider,
+                    defaultAiProvider = request.defaultAiProvider?.let { AiProvider.offeredOrDefault(it) } ?: existing.defaultAiProvider,
                     notificationUpload = request.notificationUpload ?: existing.notificationUpload,
                     notificationComment = request.notificationComment ?: existing.notificationComment,
                     notificationCreditThreshold = request.notificationCreditThreshold ?: existing.notificationCreditThreshold,
@@ -42,7 +42,7 @@ class SettingsUseCase(
                 defaultVisibility = request.defaultVisibility?.let { Visibility.valueOf(it) } ?: Visibility.PUBLIC,
                 defaultPlatforms = request.defaultPlatforms?.map { Platform.valueOf(it) } ?: emptyList(),
                 defaultAiTone = request.defaultAiTone ?: "friendly",
-                defaultAiProvider = request.defaultAiProvider?.let { AiProvider.fromString(it) } ?: AiProvider.QWEN,
+                defaultAiProvider = request.defaultAiProvider?.let { AiProvider.offeredOrDefault(it) } ?: AiProvider.QWEN,
                 notificationUpload = request.notificationUpload ?: true,
                 notificationComment = request.notificationComment ?: "realtime",
                 notificationCreditThreshold = request.notificationCreditThreshold ?: 20,
@@ -95,7 +95,7 @@ class SettingsUseCase(
                     defaultVisibility = Visibility.valueOf(request.visibility),
                     defaultPlatforms = request.platforms.map { Platform.valueOf(it) },
                     defaultAiTone = request.aiTone,
-                    defaultAiProvider = AiProvider.fromString(request.aiProvider),
+                    defaultAiProvider = AiProvider.offeredOrDefault(request.aiProvider),
                 )
             )
         } else {
@@ -104,7 +104,7 @@ class SettingsUseCase(
                 defaultVisibility = Visibility.valueOf(request.visibility),
                 defaultPlatforms = request.platforms.map { Platform.valueOf(it) },
                 defaultAiTone = request.aiTone,
-                defaultAiProvider = AiProvider.fromString(request.aiProvider),
+                defaultAiProvider = AiProvider.offeredOrDefault(request.aiProvider),
             )
             userSettingsRepository.save(settings)
         }
