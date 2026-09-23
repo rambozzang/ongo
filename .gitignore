@@ -66,6 +66,8 @@ frontend/tsconfig.node.tsbuildinfo
 # ---------------------------------------------------------------------------
 *.sql
 !backend/onGo-api/src/main/resources/db/migration/**/*.sql
+# 운영 읽기 전용 감사 쿼리. 실 PG IT(PaymentConsistencyAuditIT)가 이 파일을 직접 읽어 검증한다.
+!deploy/audit/*.sql
 
 # 시크릿 스캐너 리포트 — Jenkins 아티팩트로만 보관한다
 .gitleaks-report.json

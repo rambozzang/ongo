@@ -40,6 +40,13 @@ class AnalyticsUseCase(
         )
     }
 
+    /**
+     * [days] 는 요금제로 잘린 기간이다([limitPeriod]).
+     *
+     * **증감률은 직전 같은 길이의 기간과 비교하므로 요금제 기간보다 과거 행을 읽는다 — 의도한 것이다.**
+     * 내보내는 것은 비율 하나라 과거 지표 자체는 드러나지 않는다. 비교도 요금제 창 안으로 막으면
+     * Starter(30일) 기본 대시보드에서 증감 표시가 통째로 사라진다 — 유료 사용자의 가치를 깎는 쪽이다.
+     */
     @Cacheable(value = ["dashboardKpi"], key = "#userId + '-' + #days")
     fun getDashboardKpi(userId: Long, days: Int): DashboardKpiResponse {
         val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
