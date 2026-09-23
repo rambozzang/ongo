@@ -12,6 +12,7 @@ import com.ongo.application.ugc.shorts.dto.ScheduleConfirmRequest
 import com.ongo.application.video.StorageService
 import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.NotFoundException
+import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.ugc.shorts.ClipHook
 import com.ongo.domain.ugc.shorts.ClipHookRepository
 import com.ongo.domain.ugc.shorts.ClipStatus
@@ -169,7 +170,7 @@ class ShortsPipelineUseCaseTest {
             workspaceRepository = workspaceRepository,
             renderSpecBuilder = renderSpecBuilder,
             eventPublisher = eventPublisher,
-            maxSourceBytes = MAX_SOURCE_BYTES,
+            configuredMaxSourceBytes = MAX_SOURCE_BYTES,
             maxSourceDurationMs = MAX_SOURCE_DURATION_MS,
             audioPort = audioPort,
             storageService = storageService,
@@ -742,6 +743,28 @@ class ShortsPipelineUseCaseTest {
 
         verify(exactly = 0) { audioPort.probeDurationMs(any()) }
         assertNothingStarted()
+    }
+
+    @Test
+    fun `쇼츠 원본은 공유 직접 업로드 상수인 10GiB까지 허용하고 그 다음 바이트는 거절한다`() {
+        val directUploadLimit = FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES
+        useCase = useCaseWithMaxSourceBytes(0)
+        grantAccess(workspaceId)
+        every { videoRepository.findById(videoId) } returnsMany listOf(
+            sourceVideo(fileSizeBytes = directUploadLimit),
+            sourceVideo(fileSizeBytes = directUploadLimit + 1),
+        )
+        every { audioPort.probeDurationMs(SOURCE_URL) } returns SHORT_SOURCE_DURATION_MS
+        every { pipelineRunRepository.save(any()) } returns run(PipelineRunStatus.PENDING)
+        every { eventPublisher.publishEvent(any<ShortsPipelineEvent>()) } just runs
+
+        useCase.createRun(userId, workspaceId, CreatePipelineRunRequest(sourceVideoId = videoId))
+        val ex = assertFailsWith<BusinessException> {
+            useCase.createRun(userId, workspaceId, CreatePipelineRunRequest(sourceVideoId = videoId))
+        }
+
+        assertEquals("SHORTS_SOURCE_VIDEO_TOO_LARGE", ex.code)
+        verify(exactly = 1) { pipelineRunRepository.save(any()) }
     }
 
     /* 멱등 재사용은 길이 검사보다 먼저다. 같은 키로 다시 부를 때마다 원격 프로브를 돌리면 안 된다. */
@@ -1585,7 +1608,29 @@ class ShortsPipelineUseCaseTest {
         workspaceRepository = workspaceRepository,
         renderSpecBuilder = ShortsRenderSpecBuilder(),
         eventPublisher = eventPublisher,
-        maxSourceBytes = MAX_SOURCE_BYTES,
+        configuredMaxSourceBytes = MAX_SOURCE_BYTES,
+        maxSourceDurationMs = MAX_SOURCE_DURATION_MS,
+        audioPort = audioPort,
+        storageService = storageService,
+        pilotEventRepository = pilotEventRepository,
+        creditService = creditService,
+        activityLogUseCase = activityLogUseCase,
+        channelRepository = channelRepository,
+        clipPublicationRepository = clipPublicationRepository,
+    )
+
+    private fun useCaseWithMaxSourceBytes(configuredMaxSourceBytes: Long) = ShortsPipelineUseCase(
+        pipelineRunRepository = pipelineRunRepository,
+        runStageRepository = runStageRepository,
+        stageCreditService = ShortsStageCreditService(creditService, runStageRepository),
+        shortsClipRepository = shortsClipRepository,
+        clipHookRepository = clipHookRepository,
+        shortsTemplateRepository = shortsTemplateRepository,
+        videoRepository = videoRepository,
+        workspaceRepository = workspaceRepository,
+        renderSpecBuilder = renderSpecBuilder,
+        eventPublisher = eventPublisher,
+        configuredMaxSourceBytes = configuredMaxSourceBytes,
         maxSourceDurationMs = MAX_SOURCE_DURATION_MS,
         audioPort = audioPort,
         storageService = storageService,

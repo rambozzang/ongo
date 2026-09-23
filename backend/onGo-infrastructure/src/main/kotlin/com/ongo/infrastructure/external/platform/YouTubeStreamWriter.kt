@@ -29,18 +29,14 @@ class YouTubeStreamWriter(
     private val youTubeConfig: YouTubeConfig,
     private val fileTransferHelper: PlatformFileTransferHelper,
     private val objectMapper: ObjectMapper = jacksonObjectMapper(),
+    private val tempDiskSpaceGuard: TempDiskSpaceGuard = TempDiskSpaceGuard(),
 ) : PlatformStreamWriter {
 
     private val log = LoggerFactory.getLogger(javaClass)
-    private val buffer = TempFileChunkBuffer("youtube")
+    private val buffer = TempFileChunkBuffer("youtube", tempDiskSpaceGuard)
     private var sessionUri: String? = null
     private var accessTokenRef: String? = null
     private var customThumbnailUrl: String? = null
-
-    companion object {
-        private const val MAX_FILE_SIZE = 256L * 1024 * 1024 * 1024 // 256GB — YouTube 제한이지만 메모리 보호를 위해 실질 제한 적용
-        private const val MAX_MEMORY_FILE_SIZE = 2L * 1024 * 1024 * 1024 // 2GB — 메모리 버퍼링 상한
-    }
 
     override fun initSession(
         meta: VideoPlatformMeta,
@@ -49,13 +45,9 @@ class YouTubeStreamWriter(
         fileSize: Long,
         scheduledAt: LocalDateTime?,
     ): String {
+        buffer.ensureCapacity(fileSize)
         accessTokenRef = accessToken.value
         customThumbnailUrl = meta.customThumbnailUrl?.takeIf(String::isNotBlank)
-        if (fileSize > MAX_MEMORY_FILE_SIZE) {
-            throw IllegalArgumentException(
-                "스트리밍 업로드 최대 파일 크기(${MAX_MEMORY_FILE_SIZE / 1024 / 1024}MB)를 초과합니다: ${fileSize / 1024 / 1024}MB"
-            )
-        }
 
         // YouTube 예약 게시: privacyStatus=private + publishAt 설정
         // 업로드 후 publishAt 시점에 자동으로 public 전환됨

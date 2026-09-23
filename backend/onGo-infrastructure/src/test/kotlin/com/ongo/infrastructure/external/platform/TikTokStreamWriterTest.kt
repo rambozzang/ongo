@@ -14,6 +14,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertThrows
 
 class TikTokStreamWriterTest {
 
@@ -111,5 +112,29 @@ class TikTokStreamWriterTest {
         assertThat(result.published).isFalse()
         assertThat(result.platformUrl).isNull()
         assertThat(result.platformVideoId).isEqualTo(publishId)
+    }
+
+    @Test
+    fun `disk preflight rejects insufficient space before contacting TikTok`() {
+        writer = TikTokStreamWriter(
+            tikTokApi = tikTokApi,
+            fileTransferHelper = fileTransferHelper,
+            tempDiskSpaceGuard = TempDiskSpaceGuard(reservedFreeBytes = 1, usableSpace = { 100 }),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            writer.initSession(
+                meta = VideoPlatformMeta(videoUploadId = 1L, title = "테스트", visibility = Visibility.PUBLIC),
+                accessToken = PlainToken(accessToken),
+                platformChannelId = "creator_name",
+                fileSize = 100,
+                scheduledAt = null,
+            )
+        }
+
+        assertThat(error.message).contains("임시 디스크 공간이 부족합니다")
+        verify(exactly = 0) { tikTokApi.queryCreatorPublishInfo(any()) }
+        verify(exactly = 0) { tikTokApi.initVideoUpload(any(), any()) }
+        writer.abort()
     }
 }

@@ -30,10 +30,11 @@ class TikTokStreamWriter(
     private val statusPollIntervalMs: Long = 2_000L,
     private val statusPollMaxAttempts: Int = 15,
     private val objectMapper: ObjectMapper = jacksonObjectMapper(),
+    private val tempDiskSpaceGuard: TempDiskSpaceGuard = TempDiskSpaceGuard(),
 ) : PlatformStreamWriter {
 
     private val log = LoggerFactory.getLogger(javaClass)
-    private val buffer = TempFileChunkBuffer("tiktok")
+    private val buffer = TempFileChunkBuffer("tiktok", tempDiskSpaceGuard)
     private var publishId: String? = null
     private var uploadUrl: String? = null
     private var accessToken: String? = null
@@ -41,8 +42,6 @@ class TikTokStreamWriter(
 
     companion object {
         private const val CHUNK_SIZE = 10_000_000L // 10MB
-        private const val MAX_FILE_SIZE = 4L * 1024 * 1024 * 1024 // 4GB — TikTok 제한이지만 메모리 보호를 위해 실질 제한 적용
-        private const val MAX_MEMORY_FILE_SIZE = 2L * 1024 * 1024 * 1024 // 2GB — 메모리 버퍼링 상한
     }
 
     override fun initSession(
@@ -52,13 +51,9 @@ class TikTokStreamWriter(
         fileSize: Long,
         scheduledAt: LocalDateTime?,
     ): String {
+        buffer.ensureCapacity(fileSize)
         this.accessToken = accessToken.value
         this.platformChannelId = platformChannelId
-        if (fileSize > MAX_MEMORY_FILE_SIZE) {
-            throw IllegalArgumentException(
-                "스트리밍 업로드 최대 파일 크기(${MAX_MEMORY_FILE_SIZE / 1024 / 1024}MB)를 초과합니다: ${fileSize / 1024 / 1024}MB"
-            )
-        }
 
         val privacyLevel = mapVisibility(meta.visibility.name)
         val settings = meta.customSettingsJson

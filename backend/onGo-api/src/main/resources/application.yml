@@ -188,9 +188,8 @@ shorts:
     ffprobe-path: ${FFPROBE_PATH:ffprobe}
     # 길이 측정은 헤더만 읽으므로 짧게 잡는다. 여기서 오래 매달리면 실행 생성 API 가 같이 느려진다.
     probe-timeout-seconds: ${SHORTS_TRANSCRIBE_PROBE_TIMEOUT_SECONDS:30}
-    # 이 크기를 넘는 원본은 실행을 만들기 전에 거절한다. 단계 중간에 실패시키면
-    # 사용자는 크레딧이 걸린 뒤에야 알게 된다. 기본 2GiB.
-    max-source-bytes: ${SHORTS_TRANSCRIBE_MAX_SOURCE_BYTES:2147483648}
+    # 기본값은 ShortsPipelineUseCase 가 FileValidationUtil 의 직접 업로드 상수에서 가져온다.
+    # 필요하면 SHORTS_TRANSCRIBE_MAX_SOURCE_BYTES 환경 설정으로 더 낮출 수 있다.
     # 크기와 별개인 상한. 저화질 롱폼은 작고 길어서 크기 검사를 통과하는데, 조각 수와
     # 전사 요금·렌더 큐 대기는 길이에 비례한다. 바이트로 길이를 추정하지 않고 ffprobe 로
     # 실제로 재서 이 값과 비교한다. 기본 3시간.

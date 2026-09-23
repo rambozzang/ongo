@@ -19,6 +19,7 @@ import com.ongo.application.ugc.shorts.dto.ShortsClipResponse
 import com.ongo.common.enums.AiFeature
 import com.ongo.common.enums.Platform
 import com.ongo.common.exception.BusinessException
+import com.ongo.common.util.FileValidationUtil
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.channel.ChannelStatus
@@ -70,13 +71,14 @@ class ShortsPipelineUseCase(
     private val renderSpecBuilder: ShortsRenderSpecBuilder,
     private val eventPublisher: ApplicationEventPublisher,
     /**
-     * 전사 가능한 원본 크기 상한. 기본 2GiB.
+     * 전사 가능한 원본 크기 상한. 기본(0)은 직접 업로드 상한(`FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES`)이다.
      *
-     * 이 값은 제공자 한도가 아니라 우리가 감당하기로 정한 선이다. TRANSCRIBE 는 원본을
-     * 통째로 읽어 오디오를 뽑으므로 여기가 커질수록 추출 시간·임시 디스크가 같이 는다.
+     * 양수로 설정하면 **낮출 수만 있다** — 업로드로 들어올 수 없는 크기를 쇼츠가 받는다고 말하면 안 된다.
+     * 이 값은 제공자 한도가 아니라 우리가 감당하기로 정한 선이다. 원본이 클수록 음성 추출 시간과 렌더
+     * 대기가 같이 는다(ffmpeg 가 URL 을 직접 읽으므로 원본 전체를 로컬에 받지는 않는다).
      */
-    @param:Value("\${shorts.transcribe.max-source-bytes:2147483648}")
-    private val maxSourceBytes: Long,
+    @Value("\${shorts.transcribe.max-source-bytes:0}")
+    configuredMaxSourceBytes: Long,
     /**
      * 전사 가능한 원본 길이 상한. 기본 3시간.
      *
@@ -103,6 +105,11 @@ class ShortsPipelineUseCase(
     /** 대상별 게시 결과 조회 전용. 상세 응답에 사실대로 실어 보내기 위해서만 읽는다. */
     private val clipPublicationRepository: ClipPublicationRepository,
 ) {
+    private val maxSourceBytes: Long = when {
+        configuredMaxSourceBytes == 0L -> FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES
+        configuredMaxSourceBytes > 0 -> minOf(configuredMaxSourceBytes, FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES)
+        else -> throw IllegalArgumentException("shorts.transcribe.max-source-bytes must be positive when configured")
+    }
 
     private val mapper = jacksonObjectMapper()
 

@@ -14,6 +14,8 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import io.mockk.verify
+import org.junit.jupiter.api.Assertions.assertThrows
 
 /**
  * YouTube resumable upload의 세션 생성과 실제 파일 전송 경계를 고정한다.
@@ -112,6 +114,25 @@ class YouTubeStreamWriterHttpContractTest {
         assertThat(thumbnail.getHeader("Authorization")).isEqualTo("Bearer youtube-token")
         assertThat(thumbnail.getHeader("Content-Type")).startsWith("multipart/form-data")
         assertThat(thumbnail.body.readUtf8()).contains("thumbnail-bytes")
+    }
+
+    @Test
+    fun `disk preflight rejects insufficient space before requesting a resumable session`() {
+        val config = mockk<YouTubeConfig>()
+        val helper = mockk<PlatformFileTransferHelper>()
+        val writer = YouTubeStreamWriter(
+            config,
+            helper,
+            tempDiskSpaceGuard = TempDiskSpaceGuard(reservedFreeBytes = 1, usableSpace = { 100 }),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            writer.initSession(meta(), PlainToken("youtube-token"), null, 100, null)
+        }
+
+        assertThat(error.message).contains("임시 디스크 공간이 부족합니다")
+        verify(exactly = 0) { helper.initiateYouTubeResumableUpload(any(), any(), any(), any()) }
+        writer.abort()
     }
 
     private fun meta() = VideoPlatformMeta(

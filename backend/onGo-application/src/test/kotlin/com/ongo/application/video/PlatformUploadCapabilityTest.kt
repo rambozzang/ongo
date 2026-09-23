@@ -2,6 +2,7 @@ package com.ongo.application.video
 
 import com.ongo.common.enums.Platform
 import com.ongo.common.enums.MediaType
+import com.ongo.common.util.FileValidationUtil
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -125,5 +126,16 @@ class PlatformUploadCapabilityTest {
             PlatformUploadCapabilities.get(Platform.TWITTER)?.unavailableReason,
             PlatformUploadCapabilities.unsupportedReason(Platform.TWITTER),
         )
+    }
+
+    @Test
+    fun `platform ceilings are grounded in provider limits and never exceed direct storage upload`() {
+        val capabilities = PlatformUploadCapabilities.all().associateBy { it.platform }
+
+        assertEquals(FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES, capabilities.getValue(Platform.YOUTUBE).maxFileSizeBytes)
+        assertEquals(4_000_000_000L, capabilities.getValue(Platform.TIKTOK).maxFileSizeBytes)
+        assertEquals(5_000_000_000L, capabilities.getValue(Platform.LINKEDIN).maxFileSizeBytes)
+        assertEquals(100_000_000L, capabilities.getValue(Platform.TUMBLR).maxFileSizeBytes)
+        assertTrue(capabilities.values.all { it.maxFileSizeBytes <= FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES })
     }
 }
