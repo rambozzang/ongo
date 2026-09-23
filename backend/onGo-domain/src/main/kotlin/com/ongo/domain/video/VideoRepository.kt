@@ -30,7 +30,13 @@ interface VideoRepository {
      *
      * presigned URL 이 만료되면 사용자는 더 이상 그 행을 완료할 수 없는데, 그 사이 업로드된
      * 오브젝트는 스토리지에 남아 계속 과금된다. 회수 대상은 UPLOADING 이면서 fileUrl 이 없고
-     * 생성된 지 기준 시각보다 오래된 행뿐이다 — DRAFT 나 게시된 행은 절대 포함되지 않는다.
+     * **생성도 마지막 업로드 활동도** 기준 시각보다 오래된 행뿐이다 — DRAFT 나 게시된 행은 절대 포함되지 않는다.
+     *
+     * 생성 시각만 보던 때는 3시간 넘게 걸리는 정상 업로드(10GB 를 초당 7Mbps 미만으로 올리는 경우)를
+     * 올리는 도중에 지웠다. 활동은 [touchUploadActivity] 가 조각 URL 을 발급할 때마다 남긴다.
      */
-    fun findStaleUploading(createdBefore: LocalDateTime, limit: Int): List<Video>
+    fun findStaleUploading(inactiveSince: LocalDateTime, limit: Int): List<Video>
+
+    /** 업로드가 아직 진행 중이라는 신호. UPLOADING 행의 `updated_at` 만 갱신한다. */
+    fun touchUploadActivity(videoId: Long, at: LocalDateTime)
 }

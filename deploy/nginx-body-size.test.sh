@@ -9,7 +9,7 @@
 # 업로드가 1MB 를 넘는 순간 **프록시에서 413 으로 잘린다.** 백엔드까지 닿지 않으므로 서버
 # 로그에는 아무것도 남지 않고, 화면에는 원인을 알 수 없는 실패만 보인다.
 #
-# 백엔드는 2GB 를 허용한다고 두 곳에 적어 두었다(`FileValidationUtil.DEFAULT_MAX_FILE_SIZE`,
+# 백엔드는 서버 경유 업로드에 2GB 를 허용한다고 두 곳에 적어 두었다(`FileValidationUtil.SERVER_PROXIED_MAX_BYTES`,
 # `AssetController`). 그 선언과 프록시 설정이 어긋나 있으면 **선언한 적 없는 한도가 실제
 # 한도가 된다** — 코드만 읽어서는 알 수 없는 종류의 불일치다.
 #
@@ -68,10 +68,15 @@ echo "nginx 요청 본문 상한"
 
 # 백엔드가 2GB 를 허용한다고 적어 둔 곳. 이 값이 바뀌면 프록시도 함께 바뀌어야 한다.
 BACKEND_LIMIT_DECL="$REPO_ROOT/backend/onGo-common/src/main/kotlin/com/ongo/common/util/FileValidationUtil.kt"
-grep -q "DEFAULT_MAX_FILE_SIZE: Long = 2L \* 1024 \* 1024 \* 1024" "$BACKEND_LIMIT_DECL" \
-    && pass "백엔드 선언 상한이 2GB 다" \
-    || fail "백엔드 상한이 2GB 가 아니다 — 프록시 값도 함께 맞춰야 한다" \
-            "$(grep -n DEFAULT_MAX_FILE_SIZE "$BACKEND_LIMIT_DECL" | head -1)"
+# 이 프록시를 지나는 것은 **서버 경유** 업로드뿐이다. 직접 업로드(10GiB)는 R2 로 바로 가므로 여기와 무관하다.
+grep -q "SERVER_PROXIED_MAX_BYTES: Long = 2L \* 1024 \* 1024 \* 1024" "$BACKEND_LIMIT_DECL" \
+    && pass "백엔드 서버 경유 상한이 2GB 다" \
+    || fail "백엔드 서버 경유 상한이 2GB 가 아니다 — 프록시 값도 함께 맞춰야 한다" \
+            "$(grep -n SERVER_PROXIED_MAX_BYTES "$BACKEND_LIMIT_DECL" | head -1)"
+# 크기를 명시하지 않은 검증이 서버 경유 한도를 쓰는지. 넓은 쪽을 기본으로 두면 프록시가 413 으로 자른다.
+grep -q "DEFAULT_MAX_FILE_SIZE: Long = SERVER_PROXIED_MAX_BYTES" "$BACKEND_LIMIT_DECL" \
+    && pass "검증 기본값이 서버 경유 상한이다" \
+    || fail "검증 기본값이 서버 경유 상한이 아니다" "$(grep -n DEFAULT_MAX_FILE_SIZE "$BACKEND_LIMIT_DECL" | head -1)"
 
 grep -q "2L \* 1024 \* 1024 \* 1024" "$REPO_ROOT/backend/onGo-api/src/main/kotlin/com/ongo/api/asset/AssetController.kt" \
     && pass "에셋 컨트롤러 상한이 2GB 다" \

@@ -5,6 +5,7 @@ import type { Platform } from '@/types/channel'
 import type { MediaType, PlatformPublishConfig } from '@/types/video'
 import { usePresignedUpload } from '@/composables/usePresignedUpload'
 import { useNotificationStore } from '@/stores/notification'
+import { IMAGE_MAX_UPLOAD_BYTES, IMAGE_MAX_UPLOAD_LABEL, VIDEO_MAX_UPLOAD_BYTES, VIDEO_MAX_UPLOAD_LABEL } from '@/constants/uploadLimits'
 
 /**
  * `needs-config` — 파일 전송은 끝났지만 게시할 플랫폼 설정이 없어 어디에도 게시되지
@@ -73,8 +74,6 @@ const IMAGE_MIMES = [
   'image/heic',
 ]
 const ALLOWED_MIMES = [...VIDEO_MIMES, ...IMAGE_MIMES]
-const VIDEO_MAX_SIZE = 2 * 1024 * 1024 * 1024 // 2GB
-const IMAGE_MAX_SIZE = 50 * 1024 * 1024 // 50MB
 const MAX_CONCURRENT = 2
 
 function detectMediaType(file: File): MediaType {
@@ -241,9 +240,9 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
 
       // Validate size based on media type
       const fileMediaType = detectMediaType(file)
-      const maxSize = fileMediaType === 'IMAGE' ? IMAGE_MAX_SIZE : VIDEO_MAX_SIZE
+      const maxSize = fileMediaType === 'IMAGE' ? IMAGE_MAX_UPLOAD_BYTES : VIDEO_MAX_UPLOAD_BYTES
       if (file.size > maxSize) {
-        const limitLabel = fileMediaType === 'IMAGE' ? '50MB' : '2GB'
+        const limitLabel = fileMediaType === 'IMAGE' ? IMAGE_MAX_UPLOAD_LABEL : VIDEO_MAX_UPLOAD_LABEL
         useNotificationStore().error(`파일 크기가 ${limitLabel}를 초과합니다: ${file.name}`)
         continue
       }

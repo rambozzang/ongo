@@ -305,7 +305,8 @@ class StreamPublishUseCase(
     private fun validateRequest(file: MultipartFile, request: StreamPublishRequest) {
         val filename = file.originalFilename?.trim().orEmpty()
         val contentType = file.contentType?.trim().orEmpty()
-        FileValidationUtil.validate(filename, contentType, file.size)
+        // 본문이 우리 서버를 지나는 경로다 — 직접 업로드 한도(10GiB)가 아니라 서버 경유 한도를 쓴다.
+        FileValidationUtil.validate(filename, contentType, file.size, FileValidationUtil.SERVER_PROXIED_MAX_BYTES)
         file.inputStream.use { FileValidationUtil.validateVideoContent(it, contentType) }
 
         require(request.title.isNotBlank()) { "제목을 입력해주세요." }

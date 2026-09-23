@@ -1,6 +1,9 @@
 package com.ongo.infrastructure.videodownload
 
+import com.ongo.common.exception.BusinessException
+import com.ongo.common.util.FileValidationUtil
 import org.slf4j.LoggerFactory
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.ongo.application.videodownload.DownloaderAvailability
 import com.ongo.application.videodownload.DownloadedVideo
@@ -26,7 +29,7 @@ class YtDlpVideoDownloader(
     private val objectMapper: ObjectMapper,
     @param:Value("\${videodownload.yt-dlp-path:yt-dlp}")
     private val executable: String,
-    @param:Value("\${videodownload.download-timeout-seconds:1200}")
+    @param:Value("\${videodownload.download-timeout-seconds:3600}")
     private val timeoutSeconds: Long,
 ) : VideoSourceDownloader {
 
@@ -47,6 +50,7 @@ class YtDlpVideoDownloader(
             )
             val metadata = objectMapper.readTree(metadataOutput)
             val title = metadata.path("title").asText("").take(200)
+            checkCapacity(estimatedSize(metadata), directory.toFile().usableSpace)
 
             val downloadCommand = buildList {
                 add(resolvedExecutable)
@@ -58,6 +62,8 @@ class YtDlpVideoDownloader(
                         "--no-warnings",
                         "--format", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
                         "--merge-output-format", "mp4",
+                        // 메타데이터에 크기가 없는 영상도 있다. 받는 도중에 상한을 넘으면 yt-dlp 가 멈춘다.
+                        "--max-filesize", FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES.toString(),
                     ),
                 )
                 addAll(ffmpegLocationArgs())
@@ -90,6 +96,9 @@ class YtDlpVideoDownloader(
                 contentType = contentType,
                 size = size,
             )
+        } catch (e: VideoTooLargeException) {
+            deleteDirectory(directory)
+            throw e
         } catch (e: Exception) {
             deleteDirectory(directory)
             throw IllegalStateException("외부 영상 추출에 실패했습니다 (${provider.name})", e)
@@ -187,8 +196,49 @@ class YtDlpVideoDownloader(
     }
 
     companion object {
+        /**
+         * 받기 전에 알 수 있는 크기. 병합 형식이면 요청된 형식들의 합이다. 모르면 null.
+         * yt-dlp 는 정확한 `filesize` 가 없을 때 `filesize_approx` 를 준다.
+         */
+        internal fun estimatedSize(metadata: JsonNode): Long? {
+            fun sizeOf(node: JsonNode): Long? =
+                node.path("filesize").takeIf { it.isNumber }?.asLong()
+                    ?: node.path("filesize_approx").takeIf { it.isNumber }?.asLong()
+            sizeOf(metadata)?.let { return it }
+            val parts = metadata.path("requested_formats").takeIf { it.isArray }?.map(::sizeOf) ?: return null
+            return if (parts.isNotEmpty() && parts.all { it != null }) parts.sumOf { it!! } else null
+        }
+
+        /**
+         * 받기 전에 거른다. 상한을 넘는 영상을 끝까지 받은 뒤 버리면 대역폭과 시간을 버리고, 디스크가
+         * 모자라면 다른 작업(쇼츠 렌더·게시 임시 파일)까지 함께 실패한다.
+         *
+         * 영상·음성을 따로 받아 합치는 동안 원본 둘과 결과물이 함께 있으므로 **예상 크기의 2배**에 여유를 더한다.
+         * 크기를 모르면 디스크는 판단하지 않는다 — `--max-filesize` 와 다운로드 후 검증이 막는다.
+         */
+        internal fun checkCapacity(estimatedBytes: Long?, usableBytes: Long) {
+            if (estimatedBytes == null) return
+            if (estimatedBytes > FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES) {
+                throw VideoTooLargeException(estimatedBytes)
+            }
+            val needed = estimatedBytes * 2 + DISK_HEADROOM_BYTES
+            if (usableBytes < needed) {
+                throw IllegalStateException(
+                    "서버 임시 공간이 부족합니다 (필요 ${needed / MIB}MB, 여유 ${usableBytes / MIB}MB)",
+                )
+            }
+        }
+
+        private const val MIB = 1024L * 1024
+        private const val DISK_HEADROOM_BYTES = 512L * MIB
         private val AVAILABILITY_TTL: Duration = Duration.ofMinutes(5)
         private const val PROBE_TIMEOUT_SECONDS = 5L
         private const val MAX_PROCESS_OUTPUT = 16 * 1024
     }
 }
+
+/** 받기 전에 크기가 상한을 넘는다고 확인된 영상. 사용자에게 한도를 그대로 알린다. */
+class VideoTooLargeException(val estimatedBytes: Long) : BusinessException(
+    "VIDEO_DOWNLOAD_SIZE_INVALID",
+    "영상이 너무 큽니다(약 ${estimatedBytes / (1024 * 1024 * 1024)}GB). 최대 10GB 까지 가져올 수 있습니다.",
+)

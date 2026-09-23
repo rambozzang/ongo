@@ -12,8 +12,15 @@ import type {
   VideoFeedResponse,
   PlatformUploadCapability,
   VideoDownloadAvailability,
+  VideoImportJob,
+  VideoImportResult,
   VideoDeletionResult,
 } from '@/types/video'
+
+const IMPORT_POLL_INTERVAL_MS = 3_000
+/** 10GB 원본도 이 안에 끝난다. 넘으면 기다리기를 멈출 뿐 서버 작업은 계속된다. */
+const IMPORT_MAX_WAIT_MS = 3 * 60 * 60 * 1_000
+const IMPORT_MAX_TRANSIENT_FAILURES = 5
 
 export const videoApi = {
   getImportAvailability() {
@@ -22,14 +29,52 @@ export const videoApi = {
       .then(unwrapResponse)
   },
 
-  importUrl(request: { url: string; title?: string }) {
-    return apiClient
-      .post<ResData<{ videoId: number; title: string; provider: string; fileUrl?: string | null }>>(
-        '/videos/import-url',
-        request,
-        { timeout: 1_500_000 },
-      )
+  /**
+   * URL 에서 영상을 가져온다. **서버 작업을 시작하고 끝날 때까지 상태를 묻는다.**
+   *
+   * 예전에는 POST 한 번이 끝날 때까지 기다렸다. nginx 는 1분에 연결을 끊어, 1분 넘게 걸리는 가져오기는
+   * 서버가 끝까지 해내는데도 화면은 실패를 보였다. 10GB 원본은 수십 분이 걸린다.
+   *
+   * 호출하는 쪽의 약속은 그대로다 — 성공하면 결과를, 실패하면 사용자에게 보일 문구를 담은 Error 를 던진다.
+   */
+  async importUrl(
+    request: { url: string; title?: string },
+    options: { pollIntervalMs?: number; maxWaitMs?: number; sleep?: (ms: number) => Promise<void> } = {},
+  ): Promise<VideoImportResult> {
+    const pollIntervalMs = options.pollIntervalMs ?? IMPORT_POLL_INTERVAL_MS
+    const maxWaitMs = options.maxWaitMs ?? IMPORT_MAX_WAIT_MS
+    const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
+
+    let job = await apiClient
+      .post<ResData<VideoImportJob>>('/videos/import-url', request)
       .then(unwrapResponse)
+
+    let waited = 0
+    let transientFailures = 0
+    while (job.status === 'QUEUED' || job.status === 'RUNNING') {
+      if (waited >= maxWaitMs) {
+        throw new Error('가져오기가 너무 오래 걸립니다. 잠시 뒤 내 영상 목록에서 확인해 주세요.')
+      }
+      await sleep(pollIntervalMs)
+      waited += pollIntervalMs
+      try {
+        job = await apiClient
+          .get<ResData<VideoImportJob>>(`/videos/import-url/jobs/${encodeURIComponent(job.jobId)}`)
+          .then(unwrapResponse)
+        transientFailures = 0
+      } catch (error) {
+        // 작업 상태는 서버 메모리에 있다. 재기동하면 사라지지만 영상은 이미 만들어졌을 수 있다.
+        if ((error as { response?: { status?: number } })?.response?.status === 404) {
+          throw new Error('가져오기 상태를 확인할 수 없습니다. 서버가 다시 시작됐을 수 있으니 내 영상 목록을 확인해 주세요.')
+        }
+        // 잠깐의 네트워크 끊김으로 수십 분짜리 작업을 실패로 보이게 하지 않는다.
+        transientFailures += 1
+        if (transientFailures >= IMPORT_MAX_TRANSIENT_FAILURES) throw error
+      }
+    }
+
+    if (job.status === 'SUCCEEDED' && job.result) return job.result
+    throw new Error(job.errorMessage || '소스 영상을 가져오지 못했습니다.')
   },
 
   getUploadCapabilities() {

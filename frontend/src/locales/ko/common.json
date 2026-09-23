@@ -2309,7 +2309,7 @@
       "dropHere": "여기에 놓으세요!",
       "fileAdded": "파일이 추가되었습니다!",
       "selectFile": "또는 파일을 선택하세요",
-      "formatHint": "영상: MP4, MOV, AVI, MKV, WebM (최대 2GB) • 사진: JPG, PNG, WebP, GIF, HEIC (최대 50MB)",
+      "formatHint": "영상: MP4, MOV, AVI, MKV, WebM (최대 10GB) • 사진: JPG, PNG, WebP, GIF, HEIC (최대 50MB)",
       "change": "변경",
       "remove": "삭제",
       "ariaLabel": "영상 또는 사진 파일 선택"

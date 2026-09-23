@@ -187,6 +187,7 @@
 </template>
 
 <script setup lang="ts">
+import { IMAGE_MAX_UPLOAD_BYTES, IMAGE_MAX_UPLOAD_LABEL, VIDEO_MAX_UPLOAD_BYTES, VIDEO_MAX_UPLOAD_LABEL } from '@/constants/uploadLimits'
 import { ref, computed, onUnmounted } from 'vue'
 import { ArrowUpTrayIcon, CheckCircleIcon, VideoCameraIcon, PhotoIcon } from '@heroicons/vue/24/outline'
 import { useLocale } from '@/composables/useLocale'
@@ -214,8 +215,6 @@ const IMAGE_MIMES = [
 ]
 const ALLOWED_MIMES = [...VIDEO_MIMES, ...IMAGE_MIMES]
 
-const VIDEO_MAX_SIZE = 2 * 1024 * 1024 * 1024 // 2GB
-const IMAGE_MAX_SIZE = 50 * 1024 * 1024 // 50MB
 const MAX_IMAGE_COUNT = 10
 
 function detectMediaType(file: File): MediaType {
@@ -226,7 +225,7 @@ function detectMediaType(file: File): MediaType {
 }
 
 function getMaxSize(file: File): number {
-  return detectMediaType(file) === 'IMAGE' ? IMAGE_MAX_SIZE : VIDEO_MAX_SIZE
+  return detectMediaType(file) === 'IMAGE' ? IMAGE_MAX_UPLOAD_BYTES : VIDEO_MAX_UPLOAD_BYTES
 }
 
 const emit = defineEmits<{
@@ -322,7 +321,7 @@ function handleFiles(fileList: FileList) {
         errors.push(`${file.name}: ${t('upload.error.invalidFile')}`)
         continue
       }
-      if (file.size > IMAGE_MAX_SIZE) {
+      if (file.size > IMAGE_MAX_UPLOAD_BYTES) {
         errors.push(`${file.name}: ${t('upload.error.fileTooLarge', { limit: '50MB' })}`)
         continue
       }
@@ -358,7 +357,7 @@ function handleFiles(fileList: FileList) {
       }
       const maxSize = getMaxSize(file)
       if (file.size > maxSize) {
-        const limitLabel = detectMediaType(file) === 'IMAGE' ? '50MB' : '2GB'
+        const limitLabel = detectMediaType(file) === 'IMAGE' ? IMAGE_MAX_UPLOAD_LABEL : VIDEO_MAX_UPLOAD_LABEL
         errors.push(`${file.name}: ${t('upload.error.fileTooLarge', { limit: limitLabel })}`)
         continue
       }
@@ -388,7 +387,7 @@ function validateAndEmit(file: File) {
 
   const maxSize = getMaxSize(file)
   if (file.size > maxSize) {
-    const limitLabel = detectMediaType(file) === 'IMAGE' ? '50MB' : '2GB'
+    const limitLabel = detectMediaType(file) === 'IMAGE' ? IMAGE_MAX_UPLOAD_LABEL : VIDEO_MAX_UPLOAD_LABEL
     emit('error', t('upload.error.fileTooLargeDetail', { limit: limitLabel }))
     return
   }

@@ -28,3 +28,15 @@ data class VideoDownloadAvailabilityResponse(
     val available: Boolean,
     val reason: String? = null,
 )
+
+/**
+ * URL 가져오기 작업 상태. `status` 가 SUCCEEDED 면 [result] 가, FAILED 면 [errorCode]·[errorMessage] 가 있다.
+ * 작업은 서버 메모리에 있어 재기동하면 사라진다 — 그때 조회는 404 다.
+ */
+data class VideoImportJobResponse(
+    val jobId: String,
+    val status: String,
+    val result: VideoDownloadResponse? = null,
+    val errorCode: String? = null,
+    val errorMessage: String? = null,
+)

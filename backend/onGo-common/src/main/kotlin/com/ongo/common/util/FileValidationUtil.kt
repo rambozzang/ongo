@@ -30,8 +30,33 @@ object FileValidationUtil {
         "webm" to "video/webm",
     )
 
-    /** Phase 1 기본 최대 크기: 2GB */
-    const val DEFAULT_MAX_FILE_SIZE: Long = 2L * 1024 * 1024 * 1024
+    /**
+     * **브라우저가 R2 로 직접 올리는** 영상의 최대 크기: 10GiB.
+     *
+     * presigned PUT·멀티파트 업로드, URL 가져오기, 쇼츠 원본이 이 값을 쓴다. 요청 본문이 우리 서버를
+     * 지나지 않으므로 서버 메모리·nginx 한도와 무관하다. 3시간 1080p 라이브(4~8GB)를 받기 위한 값이다.
+     * 실제로 올릴 수 있는 양은 요금제 저장공간(`StorageQuotaUseCase`)이 따로 정한다.
+     */
+    const val VIDEO_DIRECT_UPLOAD_MAX_BYTES: Long = 10L * 1024 * 1024 * 1024
+
+    /**
+     * **presigned PUT 한 번**으로 올리는 최대 크기: 5GiB. S3·R2 의 단일 PutObject 상한이다.
+     *
+     * 멀티파트를 지원하지 않는 저장소로 폴백할 때 이 경로를 탄다. 10GiB 를 허용하면 저장소가 업로드
+     * 도중에 거절해, 사용자는 몇십 분을 기다린 뒤 실패를 본다.
+     */
+    const val SINGLE_PUT_MAX_BYTES: Long = 5L * 1024 * 1024 * 1024
+
+    /**
+     * **요청 본문이 우리 서버를 지나는** 업로드의 최대 크기: 2GiB (유지).
+     *
+     * 즉시 스트림 게시, 에셋 업로드, 공개 API 미디어가 여기에 해당한다. nginx `client_max_body_size`·
+     * 서블릿 multipart 한도와 묶여 있어 직접 업로드 한도와 함께 올리면 안 된다.
+     */
+    const val SERVER_PROXIED_MAX_BYTES: Long = 2L * 1024 * 1024 * 1024
+
+    /** 크기를 명시하지 않은 검증의 기본값. 더 엄한 쪽(서버 경유)으로 둔다 — 넓히는 것은 호출부가 명시한다. */
+    const val DEFAULT_MAX_FILE_SIZE: Long = SERVER_PROXIED_MAX_BYTES
 
     // --- Image ---
 
@@ -100,11 +125,20 @@ object FileValidationUtil {
             throw FileValidationException("파일 크기가 유효하지 않습니다.")
         }
         if (fileSize > maxSize) {
-            val maxSizeMB = maxSize / (1024 * 1024)
-            val fileSizeMB = fileSize / (1024 * 1024)
             throw FileValidationException(
-                "파일 크기(${fileSizeMB}MB)가 최대 허용 크기(${maxSizeMB}MB)를 초과합니다."
+                "파일 크기(${humanSize(fileSize)})가 최대 허용 크기(${humanSize(maxSize)})를 초과합니다."
             )
+        }
+    }
+
+    /** 1GiB 이상은 GB 로 보인다. "10240MB" 는 사용자가 한도를 가늠하기 어렵다. */
+    private fun humanSize(bytes: Long): String {
+        val gib = 1024L * 1024 * 1024
+        return if (bytes >= gib) {
+            val gb = bytes.toDouble() / gib
+            if (gb % 1.0 == 0.0) "${gb.toLong()}GB" else "%.1fGB".format(gb)
+        } else {
+            "${bytes / (1024 * 1024)}MB"
         }
     }
 

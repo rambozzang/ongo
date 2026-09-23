@@ -11,6 +11,7 @@ import com.ongo.common.util.FileValidationUtil
 import com.ongo.application.storage.StorageQuotaUseCase
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 import org.springframework.transaction.annotation.Transactional
 
 @Service
@@ -60,7 +61,8 @@ class UploadVideoUseCase(
         fileSize: Long,
     ): PresignedUploadResult {
         userWriteGuard.requireWritable(userId)
-        FileValidationUtil.validate(filename, contentType, fileSize)
+        // 단일 PUT 은 저장소 상한(5GiB)에 묶인다. 그보다 큰 파일은 멀티파트([initiateUpload])로만 간다.
+        FileValidationUtil.validate(filename, contentType, fileSize, FileValidationUtil.SINGLE_PUT_MAX_BYTES)
         // 신고 크기 기준의 1차 방어. 실제 크기는 confirm 에서 다시 본다.
         storageQuotaUseCase.checkQuota(userId, fileSize)
         monthlyUploadQuotaUseCase.check(userId)
@@ -126,7 +128,7 @@ class UploadVideoUseCase(
         }
 
         userWriteGuard.requireWritable(userId)
-        FileValidationUtil.validate(filename, contentType, fileSize)
+        FileValidationUtil.validate(filename, contentType, fileSize, FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES)
         storageQuotaUseCase.checkQuota(userId, fileSize)
         monthlyUploadQuotaUseCase.check(userId)
         val plan = MultipartUploadPlan.forSize(fileSize)
@@ -186,7 +188,10 @@ class UploadVideoUseCase(
         val plan = planOf(video)
         // sizeOf 가 범위 밖 번호를 거부한다. 중복은 한 번만 서명한다.
         val sizes = partNumbers.distinct().associateWith(plan::sizeOf)
-        return storageService.presignUploadParts(videoId, objectKey, uploadId, sizes)
+        val urls = storageService.presignUploadParts(videoId, objectKey, uploadId, sizes)
+        // 방치 업로드 정리가 "살아 있는 긴 업로드" 를 지우지 않도록 활동을 남긴다.
+        videoRepository.touchUploadActivity(videoId, LocalDateTime.now())
+        return urls
     }
 
     /**
@@ -242,7 +247,8 @@ class UploadVideoUseCase(
     private fun confirmUploaded(video: Video, userId: Long, videoId: Long) {
         val actualSize = readActualSizeOrDiscard(video, videoId)
         try {
-            FileValidationUtil.validateFileSize(actualSize)
+            // 경로와 무관하게 직접 업로드 상한으로 본다. 단일 PUT 5GiB 는 저장소가 이미 강제한다.
+            FileValidationUtil.validateFileSize(actualSize, FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES)
             // 이 영상의 예약분은 빼고 실제 크기로 다시 본다 — 같은 업로드를 두 번 세지 않는다.
             storageQuotaUseCase.checkQuota(userId, actualSize, excludeVideoId = videoId)
         } catch (e: Exception) {

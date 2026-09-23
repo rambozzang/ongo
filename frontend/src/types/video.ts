@@ -124,6 +124,22 @@ export interface VideoDownloadAvailability {
   reason?: string | null
 }
 
+export interface VideoImportResult {
+  videoId: number
+  title: string
+  provider: string
+  fileUrl?: string | null
+}
+
+/** 서버의 URL 가져오기 작업. 서버 메모리에 있어 재기동하면 사라진다(조회 404). */
+export interface VideoImportJob {
+  jobId: string
+  status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED'
+  result?: VideoImportResult | null
+  errorCode?: string | null
+  errorMessage?: string | null
+}
+
 export interface VideoDeletionResult {
   videoId: number
   storageDeletionFailed: boolean

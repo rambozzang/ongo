@@ -82,16 +82,26 @@ class VideoJooqRepository(
      * 세 조건을 모두 만족해야 한다 — UPLOADING 상태, fileUrl 없음, 기준 시각 이전 생성.
      * 하나라도 빠지면 정상 업로드나 남의 최신 업로드를 지울 수 있다. 오래된 것부터 처리한다.
      */
-    override fun findStaleUploading(createdBefore: LocalDateTime, limit: Int): List<Video> {
+    override fun findStaleUploading(inactiveSince: LocalDateTime, limit: Int): List<Video> {
         return dsl.select()
             .from(VIDEOS)
             .where(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
             .and(FILE_URL.isNull)
-            .and(CREATED_AT.lessThan(createdBefore))
+            .and(CREATED_AT.lessThan(inactiveSince))
+            // 조각 URL 발급마다 갱신된다(touchUploadActivity). 진행 중인 긴 업로드를 지우지 않는다.
+            .and(UPDATED_AT.lessThan(inactiveSince))
             .orderBy(CREATED_AT.asc())
             .limit(limit)
             .fetch()
             .map { it.toVideo() }
+    }
+
+    override fun touchUploadActivity(videoId: Long, at: LocalDateTime) {
+        dsl.update(VIDEOS)
+            .set(UPDATED_AT, at)
+            .where(ID.eq(videoId))
+            .and(STATUS_TEXT.eq(UploadStatus.UPLOADING.name))
+            .execute()
     }
 
     override fun countByUserId(userId: Long, status: UploadStatus?): Long {

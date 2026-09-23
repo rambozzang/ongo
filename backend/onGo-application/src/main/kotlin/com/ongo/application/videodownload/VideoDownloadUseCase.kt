@@ -24,9 +24,14 @@ class VideoDownloadUseCase(
      */
     fun checkAvailability(): DownloaderAvailability = sourceDownloader.checkAvailability()
 
+    /** 작업을 등록하기 전에 즉시 거를 수 있는 것. 막힐 사용자를 몇 분 기다리게 하지 않는다. */
+    fun precheck(userId: Long) {
+        monthlyUploadQuotaUseCase.check(userId)
+    }
+
     fun importVideo(userId: Long, request: VideoDownloadRequest): VideoDownloadResult {
         val source = VideoDownloadUrl.parse(request.url)
-        // 사전 검사 — 막힐 사용자에게 최대 2 GB 를 내려받을 이유가 없다. 트랜잭션 밖이라 잠금은
+        // 사전 검사 — 막힐 사용자에게 최대 10 GB 를 내려받을 이유가 없다. 트랜잭션 밖이라 잠금은
         // 바로 풀리고, 최종 판정은 persist 안에서 다시 한다.
         monthlyUploadQuotaUseCase.check(userId)
         val downloaded = try {
@@ -55,7 +60,7 @@ class VideoDownloadUseCase(
             /*
              * 여기부터가 트랜잭션이다. 다운로드는 이미 끝났고, 한도 판정·업로드·행 저장만
              * 한 트랜잭션에 묶여 사용자 행 잠금이 확정 시점까지 유지된다. 다운로드까지 감싸면
-             * 2GB 를 받는 몇 분 동안 잠금과 커넥션을 붙들게 되므로 경계를 여기에 둔다.
+             * 수 GB 를 받는 수십 분 동안 잠금과 커넥션을 붙들게 되므로 경계를 여기에 둔다.
              */
             val video = importedVideoPersister.persist(
                 userId = userId,
@@ -87,7 +92,7 @@ class VideoDownloadUseCase(
 
     private fun validateDownloadedVideo(downloaded: DownloadedVideo) {
         if (downloaded.size <= 0 || downloaded.size > MAX_FILE_SIZE_BYTES) {
-            throw BusinessException("VIDEO_DOWNLOAD_SIZE_INVALID", "영상 크기는 1바이트 이상 2GB 이하여야 합니다.")
+            throw BusinessException("VIDEO_DOWNLOAD_SIZE_INVALID", "영상 크기는 1바이트 이상 10GB 이하여야 합니다.")
         }
         if (!Files.isRegularFile(downloaded.path)) {
             throw BusinessException("VIDEO_DOWNLOAD_FAILED", "다운로드된 영상 파일을 찾을 수 없습니다.")
@@ -108,7 +113,8 @@ class VideoDownloadUseCase(
     }
 
     companion object {
-        const val MAX_FILE_SIZE_BYTES: Long = 2L * 1024 * 1024 * 1024
+        /** 직접 업로드와 같은 상한. 가져온 영상도 같은 저장소·같은 처리 경로를 탄다. */
+        const val MAX_FILE_SIZE_BYTES: Long = com.ongo.common.util.FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES
         private const val MAX_TITLE_LENGTH = 200
         private const val MAX_FILENAME_LENGTH = 500
         private val ALLOWED_EXTENSIONS = setOf("mp4", "mov", "webm", "mkv", "avi")

@@ -361,7 +361,7 @@ export const sectionsKo: ManualSection[] = [
       },
       {
         subtitle: '큰 파일과 끊긴 업로드',
-        text: '64MB 이상 영상은 여러 조각으로 나눠 동시에 올립니다. 와이파이가 잠깐 끊겨도 실패한 조각만 자동으로 다시 보내므로 처음부터 다시 올릴 필요가 없습니다. 업로드를 일시정지하거나 실패 후 "다시 시도"를 누르면 이미 올라간 부분은 건너뛰고 남은 부분만 이어서 올립니다. 단, 페이지를 새로고침하거나 닫으면 이어받기 정보가 사라지니 업로드 중에는 창을 열어 두세요. 한 파일의 최대 크기는 2GB입니다.',
+        text: '64MB 이상 영상은 여러 조각으로 나눠 동시에 올립니다. 와이파이가 잠깐 끊겨도 실패한 조각만 자동으로 다시 보내므로 처음부터 다시 올릴 필요가 없습니다. 업로드를 일시정지하거나 실패 후 "다시 시도"를 누르면 이미 올라간 부분은 건너뛰고 남은 부분만 이어서 올립니다. 단, 페이지를 새로고침하거나 닫으면 이어받기 정보가 사라지니 업로드 중에는 창을 열어 두세요. 한 파일의 최대 크기는 10GB입니다(3시간 분량의 1080p 라이브도 올릴 수 있습니다). 단, 요금제 저장공간보다 큰 파일은 올릴 수 없습니다 — Free 1GB, Starter 10GB, Pro 50GB, Business 200GB. 큰 파일은 회선에 따라 몇 시간 걸릴 수 있으니 업로드가 끝날 때까지 창을 열어 두세요.',
       },
       {
         subtitle: '멀티 플랫폼 동시 업로드',
@@ -3364,7 +3364,7 @@ export const sectionsEn: ManualSection[] = [
       },
       {
         subtitle: 'Large files and interrupted uploads',
-        text: 'Videos of 64 MB or more are split into parts and uploaded in parallel. If your connection drops briefly, only the failed parts are retried automatically, so you never start over from zero. If you pause an upload or press "Retry" after a failure, parts that already reached storage are skipped and only the rest is sent. Resume information is lost if you refresh or close the page, so keep the window open while uploading. The maximum size per file is 2 GB.',
+        text: 'Videos of 64 MB or more are split into parts and uploaded in parallel. If your connection drops briefly, only the failed parts are retried automatically, so you never start over from zero. If you pause an upload or press "Retry" after a failure, parts that already reached storage are skipped and only the rest is sent. Resume information is lost if you refresh or close the page, so keep the window open while uploading. The maximum size per file is 10 GB (enough for a 3-hour 1080p live stream). A file cannot exceed your plan\'s storage: Free 1 GB, Starter 10 GB, Pro 50 GB, Business 200 GB. Large files can take hours depending on your connection, so keep the window open until the upload finishes.',
       },
       {
         subtitle: 'Multi-Platform Simultaneous Upload',

@@ -4,6 +4,7 @@ import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.FileValidationException
+import com.ongo.common.util.FileValidationUtil
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.exception.StorageQuotaExceededException
 import com.ongo.domain.video.Video
@@ -159,7 +160,7 @@ class UploadVideoUseCaseTest {
     fun `confirm cleans up when the actual size is not a valid file size`() {
         val video = uploadingVideo()
         every { videoRepository.findById(1L) } returns video
-        every { storageService.getUploadedSize(1L) } returns 3L * 1024 * 1024 * 1024 // 2GB 상한 초과
+        every { storageService.getUploadedSize(1L) } returns FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES + 1 // 10GB 상한 초과
         every { videoRepository.delete(1L) } just runs
 
         assertFailsWith<FileValidationException> { useCase.confirmPresignedUpload(100L, 1L) }

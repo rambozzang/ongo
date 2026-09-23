@@ -4,6 +4,7 @@ import com.ongo.application.storage.StorageQuotaUseCase
 import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.exception.FileValidationException
+import com.ongo.common.util.FileValidationUtil
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.StorageQuotaExceededException
 import com.ongo.domain.accountdeletion.UserWriteGuard
@@ -52,6 +53,7 @@ class MultipartUploadUseCaseTest {
         clearAllMocks()
         useCase = UploadVideoUseCase(videoRepository, storageService, userWriteGuard, storageQuotaUseCase, mockk<com.ongo.application.video.MonthlyUploadQuotaUseCase>(relaxed = true))
         every { storageService.supportsMultipartUpload() } returns true
+        every { videoRepository.touchUploadActivity(any(), any()) } just Runs
     }
 
     private fun uploading(declared: Long = 40 * mib, owner: Long = userId) = Video(
@@ -97,11 +99,32 @@ class MultipartUploadUseCaseTest {
     }
 
     @Test
-    fun `2GB 를 넘으면 세션을 열지 않는다`() {
+    fun `10GB 를 넘으면 세션을 열지 않는다`() {
         assertFailsWith<FileValidationException> {
-            useCase.initiateUpload(userId, "clip.mp4", "video/mp4", 3L * 1024 * mib)
+            useCase.initiateUpload(userId, "clip.mp4", "video/mp4", FileValidationUtil.VIDEO_DIRECT_UPLOAD_MAX_BYTES + 1)
         }
         verify(exactly = 0) { storageService.startMultipartUpload(any(), any(), any()) }
+    }
+
+    /** 단일 PUT 은 S3·R2 가 5GiB 까지만 받는다. 그보다 크면 업로드 도중이 아니라 시작 전에 막는다. */
+    @Test
+    fun `단일 PUT 은 5GB 를 넘으면 시작하지 않는다`() {
+        assertFailsWith<FileValidationException> {
+            useCase.initiatePresignedUpload(userId, "clip.mp4", "video/mp4", FileValidationUtil.SINGLE_PUT_MAX_BYTES + 1)
+        }
+        verify(exactly = 0) { videoRepository.save(any()) }
+    }
+
+    /** 3시간 1080p 라이브(4~8GB)가 대표 사례다. 옛 2GB 상한에서는 여기서 막혔다. */
+    @Test
+    fun `2GB 를 넘는 원본도 10GB 까지는 멀티파트 세션을 연다`() {
+        every { videoRepository.save(any()) } answers { firstArg<Video>().copy(id = videoId) }
+        every { storageService.startMultipartUpload(any(), any(), any()) } returns
+            MultipartUploadSession(uploadId = uploadId, objectKey = objectKey)
+
+        useCase.initiateUpload(userId, "live.mp4", "video/mp4", 8L * 1024 * mib)
+
+        verify(exactly = 1) { storageService.startMultipartUpload(any(), any(), any()) }
     }
 
     /** 세션을 못 열었는데 행만 남으면 사용자에게 "업로드 중" 인 유령 영상이 보인다. */
@@ -144,6 +167,20 @@ class MultipartUploadUseCaseTest {
         useCase.presignUploadParts(userId, videoId, uploadId, objectKey, listOf(1, 3, 3))
 
         assertEquals(mapOf(1 to 16 * mib, 3 to 8 * mib), sizes.captured, "중복은 한 번만, 마지막 조각은 나머지")
+    }
+
+    /**
+     * 조각 URL 발급은 "업로드가 살아 있다" 는 신호다. 방치 정리가 생성 시각만 보던 때는 3시간 넘게
+     * 걸리는 정상 업로드를 올리는 도중에 지웠다.
+     */
+    @Test
+    fun `조각 URL 을 발급할 때마다 업로드 활동을 남긴다`() {
+        every { videoRepository.findById(videoId) } returns uploading(40 * mib)
+        every { storageService.presignUploadParts(videoId, objectKey, uploadId, any()) } returns emptyMap()
+
+        useCase.presignUploadParts(userId, videoId, uploadId, objectKey, listOf(1))
+
+        verify(exactly = 1) { videoRepository.touchUploadActivity(videoId, any()) }
     }
 
     @Test
