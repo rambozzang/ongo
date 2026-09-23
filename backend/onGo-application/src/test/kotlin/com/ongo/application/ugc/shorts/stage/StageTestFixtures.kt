@@ -6,8 +6,10 @@ import com.ongo.domain.ugc.shorts.ShortsClip
 import io.mockk.every
 import io.mockk.mockk
 import org.springframework.ai.chat.client.ChatClient
+import org.springframework.ai.chat.client.ResponseEntity
+import org.springframework.ai.chat.model.ChatResponse
 
-/** ChatClient 플루언트 체인(resolve → prompt → system → user → call → entity)이 [result]를 반환하도록 스텁한다. */
+/** ChatClient 플루언트 체인이 동일한 parsed entity와 response envelope를 반환하도록 스텁한다. */
 fun <T : Any> stubChatClientEntity(resolver: ChatClientResolver, type: Class<T>, result: T) {
     val requestSpec = mockk<ChatClient.ChatClientRequestSpec>()
     val callSpec = mockk<ChatClient.CallResponseSpec>()
@@ -17,7 +19,7 @@ fun <T : Any> stubChatClientEntity(resolver: ChatClientResolver, type: Class<T>,
     every { requestSpec.system(any<String>()) } returns requestSpec
     every { requestSpec.user(any<String>()) } returns requestSpec
     every { requestSpec.call() } returns callSpec
-    every { callSpec.entity(type) } returns result
+    every { callSpec.responseEntity(type) } returns ResponseEntity(mockk<ChatResponse>(), result)
 }
 
 /** 테스트용 실행 컨텍스트. 필요한 필드만 골라 채운다. */

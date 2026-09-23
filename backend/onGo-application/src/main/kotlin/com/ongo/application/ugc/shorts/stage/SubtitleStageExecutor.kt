@@ -3,6 +3,7 @@ package com.ongo.application.ugc.shorts.stage
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.InputSanitizer
+import com.ongo.application.ugc.shorts.ShortsCostLedger
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.ugc.shorts.PipelineStage
 import com.ongo.domain.ugc.shorts.ShortsPromptRepository
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component
 class SubtitleStageExecutor(
     private val chatClientResolver: ChatClientResolver,
     private val shortsPromptRepository: ShortsPromptRepository,
+    private val costLedger: ShortsCostLedger? = null,
 ) : ShortsStageExecutor {
 
     override val stage: PipelineStage = PipelineStage.SUBTITLE
@@ -45,11 +47,13 @@ class SubtitleStageExecutor(
             append("\n\n각 클립의 자막 줄을 다듬어 줘. 줄 개수와 순서는 입력과 반드시 같아야 해. 응답은 clips 배열에 {clipSeq, lines} 객체를 담은 JSON으로만 해 줘.")
         }
 
-        val polished = chatClientResolver.resolve(context.userId).prompt()
+        val response = chatClientResolver.resolve(context.userId).prompt()
             .system(prompt.systemPrompt ?: DEFAULT_SYSTEM)
             .user(userPrompt)
             .call()
-            .entity(SubtitlePolishResult::class.java)
+            .responseEntity(SubtitlePolishResult::class.java)
+        costLedger?.recordLlm(context.run.id, context.userId, stage.name, response.response)
+        val polished = response.entity
             ?: throw BusinessException("AI_PARSE_ERROR", "자막 응답을 파싱할 수 없습니다")
 
         val polishedBySeq = polished.clips.associateBy { it.clipSeq }

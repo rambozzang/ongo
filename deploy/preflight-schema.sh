@@ -84,7 +84,7 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; }
 #
 # 새 마이그레이션을 추가하면 **이 값을 함께 올려야 한다.** 그러지 않으면 컬럼이 없는
 # 서버가 기동을 통과한 뒤 런타임에 SQL 오류를 낸다 — preflight 가 있으나 마나가 된다.
-REQUIRED_FLYWAY_VERSION="116"
+REQUIRED_FLYWAY_VERSION="117"
 
 # 버전 확인과 별개로 실제 스키마도 본다. 이력만 믿으면 수동으로 컬럼을 지운 경우를
 # 놓친다. "테이블:컬럼" 이며 컬럼이 비면 테이블 존재만 본다.
@@ -92,7 +92,7 @@ REQUIRED_FLYWAY_VERSION="116"
 # `analytics_daily.engagement_basis` 와 `views_total` (V115) 는 참여 지표가 "그 날의
 # 증분" 인지 "평생 누적" 인지를 싣는다. AnalyticsSyncScheduler 가 매 주기 이 컬럼에
 # 쓰고 모든 참여 지표 집계가 이 컬럼으로 거르므로, 없으면 동기화와 대시보드가 함께 죽는다.
-REQUIRED_SCHEMA="subscriptions:billing_key_encrypted subscriptions:pending_billing_cycle subscription_renewal_attempts:payment_id ai_pipeline_jobs:refunded_credits ai_pipeline_jobs:credit_allocation analytics_daily:revenue_status analytics_daily:revenue_currency video_translations:credit_allocation video_translations:claimed_at video_translations:attempts ugc_post_metric_snapshots:source ugc_post_metric_snapshots:unavailable_metrics ugc_shorts_run_stages:credit_allocation ugc_shorts_run_stages:refunded_credits content_images:storage_object_key analytics_daily:engagement_basis analytics_daily:views_total"
+REQUIRED_SCHEMA="subscriptions:billing_key_encrypted subscriptions:pending_billing_cycle subscription_renewal_attempts:payment_id ai_pipeline_jobs:refunded_credits ai_pipeline_jobs:credit_allocation analytics_daily:revenue_status analytics_daily:revenue_currency video_translations:credit_allocation video_translations:claimed_at video_translations:attempts ugc_post_metric_snapshots:source ugc_post_metric_snapshots:unavailable_metrics ugc_shorts_run_stages:credit_allocation ugc_shorts_run_stages:refunded_credits content_images:storage_object_key analytics_daily:engagement_basis analytics_daily:views_total ugc_shorts_cost_ledger:input_tokens"
 
 abort_migration_needed() {
     error "배포를 중단합니다. $1"
@@ -101,7 +101,7 @@ abort_migration_needed() {
     error "기능 토글(SUBSCRIPTION_RENEWAL_ENABLED)로는 막을 수 없습니다 —"
     error "토글은 정기 청구 실행만 끄고, 컬럼 접근은 구독을 읽는 모든 경로에 있습니다."
     error ""
-    error "조치: V94~V116 를 순서대로 먼저 적용한 뒤 다시 배포하세요."
+    error "조치: V94~V117 를 순서대로 먼저 적용한 뒤 다시 배포하세요."
     error "절차는 docs/operations/SUBSCRIPTION_RENEWAL_ROLLOUT.md 를 따르세요."
     exit 1
 }
@@ -171,7 +171,7 @@ fi
 # 1) 마이그레이션 이력
 APPLIED="$(query "SELECT 1 FROM flyway_schema_history WHERE version = '$REQUIRED_FLYWAY_VERSION' AND success LIMIT 1")"
 if [ "$APPLIED" != "1" ]; then
-    abort_migration_needed "V$REQUIRED_FLYWAY_VERSION 이 적용되지 않았습니다(현재: ${CURRENT_VERSION:-알 수 없음}). V94~V116 선행 적용이 필요합니다."
+    abort_migration_needed "V$REQUIRED_FLYWAY_VERSION 이 적용되지 않았습니다(현재: ${CURRENT_VERSION:-알 수 없음}). V94~V117 선행 적용이 필요합니다."
 fi
 
 # 2) 실제 스키마 — 이력만 믿으면 수동으로 지운 컬럼을 놓친다.

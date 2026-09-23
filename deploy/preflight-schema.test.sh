@@ -116,6 +116,8 @@ case "\$query" in
       if [ "\$scenario" = "no-column" ] || [ "\$scenario" = "no-source-column" ]; then echo ""; else echo "1"; fi ;;
   *"column_name = 'unavailable_metrics'"*)
       if [ "\$scenario" = "no-column" ] || [ "\$scenario" = "no-unavailable-column" ]; then echo ""; else echo "1"; fi ;;
+  *"column_name = 'input_tokens'"*)
+      if [ "\$scenario" = "no-column" ] || [ "\$scenario" = "no-cost-ledger" ]; then echo ""; else echo "1"; fi ;;
   *"column_name = 'storage_object_key'"*)
       if [ "\$scenario" = "no-column" ] || [ "\$scenario" = "no-content-image-key" ]; then echo ""; else echo "1"; fi ;;
   # V113 은 컬럼을 더하지 않고 길이 제한을 뗀다. 존재 검사와 분리된 질의라 따로 가른다.
@@ -181,9 +183,9 @@ rc=$?
 [ "$rc" -eq 1 ] \
     && pass "요구 버전 이력이 없으면 rc=1 로 중단한다" \
     || fail "요구 버전 없음을 rc=1 로 알리지 않았다" "rc=$rc"
-grep -q "V94~V116" "$LAST_TMP/out.log" \
-    && pass "중단 메시지가 V94~V116 선행 적용을 명시한다" \
-    || fail "중단 메시지에 V94~V116 안내가 없다" "$(tail -3 "$LAST_TMP/out.log")"
+grep -q "V94~V117" "$LAST_TMP/out.log" \
+    && pass "중단 메시지가 V94~V117 선행 적용을 명시한다" \
+    || fail "중단 메시지에 V94~V117 안내가 없다" "$(tail -3 "$LAST_TMP/out.log")"
 
 run_with no-column DB_PASSWORD=secret
 rc=$?
@@ -313,6 +315,14 @@ rc=$?
 [ "$rc" -eq 1 ] \
     && pass "subscription_status 에 SUSPENDED 가 없으면 rc=1 로 중단한다" \
     || fail "V114 subscription_status 누락을 잡지 못했다" "rc=$rc / $(tail -3 "$LAST_TMP/out.log")"
+
+# V117 — 쇼츠 원가 원장. 없으면 원가 기록만 실패하고 실행은 계속되지만(측정은 부수 효과),
+# 가격 판단에 쓸 실측이 조용히 비어 간다. 스키마 전제가 어긋난 배포는 막는다.
+run_with no-cost-ledger DB_PASSWORD=secret
+rc=$?
+[ "$rc" -eq 1 ] && grep -q "ugc_shorts_cost_ledger" "$LAST_TMP/out.log" \
+    && pass "V117 원가 원장이 없으면 rc=1 로 중단하고 테이블을 짚는다" \
+    || fail "V117 원가 원장 누락을 잡지 못했다" "rc=$rc / $(tail -3 "$LAST_TMP/out.log")"
 
 # V116 — 사본 출처. 없으면 재활용·반복 예약·쇼츠 클립 저장이 INSERT 에서 죽는다.
 run_with no-derived-enum DB_PASSWORD=secret

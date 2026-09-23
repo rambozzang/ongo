@@ -221,6 +221,7 @@ object Tables {
     // UGC 쇼츠 파이프라인 실행 (V56)
     val UGC_SHORTS_PIPELINE_RUNS = DSL.table("ugc_shorts_pipeline_runs")
     val UGC_SHORTS_RUN_STAGES = DSL.table("ugc_shorts_run_stages")
+    val UGC_SHORTS_COST_LEDGER = DSL.table("ugc_shorts_cost_ledger")
     val UGC_SHORTS_CLIPS = DSL.table("ugc_shorts_clips")
     val UGC_SHORTS_CLIP_HOOKS = DSL.table("ugc_shorts_clip_hooks")
     val UGC_SHORTS_CLIP_PUBLICATIONS = DSL.table("ugc_shorts_clip_publications")

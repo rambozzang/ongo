@@ -3,6 +3,7 @@ package com.ongo.application.ugc.shorts.stage
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.InputSanitizer
+import com.ongo.application.ugc.shorts.ShortsCostLedger
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.ugc.shorts.ClipStatus
 import com.ongo.domain.ugc.shorts.ClipValidation
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component
 class ValidateStageExecutor(
     private val chatClientResolver: ChatClientResolver,
     private val shortsPromptRepository: ShortsPromptRepository,
+    private val costLedger: ShortsCostLedger? = null,
     private val clipValidationRepository: ClipValidationRepository,
 ) : ShortsStageExecutor {
 
@@ -108,11 +110,13 @@ class ValidateStageExecutor(
             append("\n\n응답은 {passed, summary} JSON으로만 해 줘.")
         }
 
-        val verdict = chatClientResolver.resolve(context.userId).prompt()
+        val response = chatClientResolver.resolve(context.userId).prompt()
             .system(prompt.systemPrompt ?: DEFAULT_SYSTEM)
             .user(userPrompt)
             .call()
-            .entity(ValidateVerdictResult::class.java)
+            .responseEntity(ValidateVerdictResult::class.java)
+        costLedger?.recordLlm(context.run.id, context.userId, stage.name, response.response)
+        val verdict = response.entity
             ?: throw BusinessException("AI_PARSE_ERROR", "검증 응답을 파싱할 수 없습니다")
 
         val snapshot = mapper.writeValueAsString(

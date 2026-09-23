@@ -3,6 +3,7 @@ package com.ongo.application.ugc.shorts.stage
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.InputSanitizer
+import com.ongo.application.ugc.shorts.ShortsCostLedger
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.ugc.shorts.HookVariant
 import com.ongo.domain.ugc.shorts.PipelineStage
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component
 class HookStageExecutor(
     private val chatClientResolver: ChatClientResolver,
     private val shortsPromptRepository: ShortsPromptRepository,
+    private val costLedger: ShortsCostLedger? = null,
 ) : ShortsStageExecutor {
 
     override val stage: PipelineStage = PipelineStage.HOOK
@@ -40,11 +42,13 @@ class HookStageExecutor(
             append("\n\n응답은 clips 배열에 {clipSeq, hookA, hookB} 객체를 담은 JSON으로만 해 줘.")
         }
 
-        val result = chatClientResolver.resolve(context.userId).prompt()
+        val response = chatClientResolver.resolve(context.userId).prompt()
             .system(prompt.systemPrompt ?: DEFAULT_SYSTEM)
             .user(userPrompt)
             .call()
-            .entity(HookGenerationResult::class.java)
+            .responseEntity(HookGenerationResult::class.java)
+        costLedger?.recordLlm(context.run.id, context.userId, stage.name, response.response)
+        val result = response.entity
             ?: throw BusinessException("AI_PARSE_ERROR", "후킹 문구 응답을 파싱할 수 없습니다")
 
         val bySeq = result.clips.associateBy { it.clipSeq }

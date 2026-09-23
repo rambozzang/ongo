@@ -3,6 +3,7 @@ package com.ongo.application.ugc.shorts.stage
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.InputSanitizer
+import com.ongo.application.ugc.shorts.ShortsCostLedger
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.ugc.shorts.PipelineStage
 import com.ongo.domain.ugc.shorts.ShortsPromptRepository
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component
 class SegmentStageExecutor(
     private val chatClientResolver: ChatClientResolver,
     private val shortsPromptRepository: ShortsPromptRepository,
+    private val costLedger: ShortsCostLedger? = null,
 ) : ShortsStageExecutor {
 
     override val stage: PipelineStage = PipelineStage.SEGMENT
@@ -41,11 +43,13 @@ class SegmentStageExecutor(
             append("\n\n응답은 clips 배열에 {title, caption, startMs, endMs} 객체를 담은 JSON으로만 해 줘.")
         }
 
-        val result = chatClientResolver.resolve(context.userId).prompt()
+        val response = chatClientResolver.resolve(context.userId).prompt()
             .system(prompt.systemPrompt ?: DEFAULT_SYSTEM)
             .user(userPrompt)
             .call()
-            .entity(SegmentExtractionResult::class.java)
+            .responseEntity(SegmentExtractionResult::class.java)
+        costLedger?.recordLlm(context.run.id, context.userId, stage.name, response.response)
+        val result = response.entity
             ?: throw BusinessException("AI_PARSE_ERROR", "클립 후보 응답을 파싱할 수 없습니다")
 
         // 유효하지 않은 구간(end <= start)은 버린다

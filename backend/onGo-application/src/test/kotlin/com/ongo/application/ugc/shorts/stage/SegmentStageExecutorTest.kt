@@ -12,6 +12,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.ai.chat.client.ChatClient
+import org.springframework.ai.chat.client.ResponseEntity
+import org.springframework.ai.chat.model.ChatResponse
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
@@ -90,7 +92,8 @@ class SegmentStageExecutorTest {
         every { requestSpec.system(any<String>()) } returns requestSpec
         every { requestSpec.user(any<String>()) } returns requestSpec
         every { requestSpec.call() } returns callSpec
-        every { callSpec.entity(SegmentExtractionResult::class.java) } returns null
+        every { callSpec.responseEntity(SegmentExtractionResult::class.java) } returns
+            ResponseEntity(mockk<ChatResponse>(), null)
 
         val ex = assertFailsWith<BusinessException> { executor.execute(stageContext()) }
         assertEquals("AI_PARSE_ERROR", ex.code)

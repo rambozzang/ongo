@@ -115,6 +115,44 @@ class SttUseCaseTest {
         verify(exactly = 1) { audioPort.prepare(sourceUrl) }
     }
 
+    // ---- 전사 모델은 설정을 따른다 ----
+
+    /**
+     * 모델 교체(원가 절반인 `gpt-4o-mini-transcribe` 등)는 설정 한 줄로 해야 한다. 코드 상수로
+     * 박히면 설정을 바꿔도 요청은 옛 모델로 나가고, 원가 원장도 옛 이름을 적어 실측이 틀린다.
+     */
+    @Test
+    fun `설정한 전사 모델로 요청하고 원장에도 같은 이름을 넘긴다`() {
+        val configured = SttUseCase(
+            transcriptionModel, creditService, rateLimiter, videoRepository, audioPort,
+            transcriptionModelName = "gpt-4o-mini-transcribe",
+        )
+        every { audioPort.isAvailable() } returns true
+        every { audioPort.prepare(sourceUrl) } returns FakePreparedAudio(listOf(part(0)))
+        val prompt = slot<AudioTranscriptionPrompt>()
+        every { transcriptionModel.call(capture(prompt)) } returns
+            AudioTranscriptionResponse(AudioTranscription(verboseJson("안녕하세요")))
+        var recordedModel: String? = null
+
+        configured.executeInternal(userId, videoId, sourceDurationMs = 60_000) { _, model -> recordedModel = model }
+
+        assertEquals("gpt-4o-mini-transcribe", prompt.captured.options?.model)
+        assertEquals("gpt-4o-mini-transcribe", recordedModel)
+    }
+
+    @Test
+    fun `설정이 없으면 whisper-1 로 요청한다`() {
+        every { audioPort.isAvailable() } returns true
+        every { audioPort.prepare(sourceUrl) } returns FakePreparedAudio(listOf(part(0)))
+        val prompt = slot<AudioTranscriptionPrompt>()
+        every { transcriptionModel.call(capture(prompt)) } returns
+            AudioTranscriptionResponse(AudioTranscription(verboseJson("안녕하세요")))
+
+        useCase.executeInternal(userId, videoId)
+
+        assertEquals("whisper-1", prompt.captured.options?.model)
+    }
+
     // ---- 여러 조각 병합 ----
 
     @Test

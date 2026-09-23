@@ -2,6 +2,7 @@ package com.ongo.application.ugc.shorts.stage
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.ai.SttUseCase
+import com.ongo.application.ugc.shorts.ShortsCostLedger
 import com.ongo.domain.ugc.shorts.PipelineStage
 import org.springframework.stereotype.Component
 
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component
 @Component
 class TranscribeStageExecutor(
     private val sttUseCase: SttUseCase,
+    private val costLedger: ShortsCostLedger? = null,
 ) : ShortsStageExecutor {
 
     override val stage: PipelineStage = PipelineStage.TRANSCRIBE
@@ -19,7 +21,13 @@ class TranscribeStageExecutor(
     private val mapper = jacksonObjectMapper()
 
     override fun execute(context: ShortsStageContext): ShortsStageOutput {
-        val result = sttUseCase.executeInternal(context.userId, context.run.sourceVideoId)
+        val result = sttUseCase.executeInternal(
+            context.userId,
+            context.run.sourceVideoId,
+            context.run.sourceDurationMs,
+        ) { durationMs, model ->
+            costLedger?.recordTranscription(context.run.id, durationMs, model)
+        }
 
         // 초 → ms 변환
         val segments = result.segments.map { segment ->

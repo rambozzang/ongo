@@ -17,6 +17,7 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
@@ -26,6 +27,13 @@ class SttUseCase(
     private val rateLimiter: AiRateLimiter,
     private val videoRepository: VideoRepository,
     private val audioPort: TranscriptionAudioPort,
+    /**
+     * 전사 모델. **Spring AI 설정 키를 그대로 읽는다** — 모델 교체(예: `gpt-4o-mini-transcribe`)를
+     * 코드 수정 없이 설정 한 줄로 할 수 있어야 하고, 원가 원장에 적히는 모델명이 실제 요청과 같아야 한다.
+     * 코드에 상수로 박으면 설정을 바꿔도 요청은 옛 모델로 나가고 원장도 옛 이름을 적는다.
+     */
+    @param:Value("\${spring.ai.openai.audio.transcription.options.model:$DEFAULT_TRANSCRIPTION_MODEL}")
+    private val transcriptionModelName: String = DEFAULT_TRANSCRIPTION_MODEL,
 ) {
 
     private val log = LoggerFactory.getLogger(SttUseCase::class.java)
@@ -35,7 +43,12 @@ class SttUseCase(
      * Pipeline-internal execution: skips rate-limit check and credit deduction
      * (credits are pre-reserved by the pipeline).
      */
-    fun executeInternal(userId: Long, videoId: Long): SttResult {
+    fun executeInternal(
+        userId: Long,
+        videoId: Long,
+        sourceDurationMs: Long? = null,
+        onTranscriptionRequest: (durationMs: Long?, model: String) -> Unit = { _, _ -> },
+    ): SttResult {
         val video = videoRepository.findById(videoId)
             ?: throw NotFoundException("영상", videoId)
 
@@ -46,7 +59,7 @@ class SttUseCase(
         val fileUrl = video.fileUrl
             ?: throw BusinessException("VIDEO_FILE_NOT_FOUND", "영상 파일 URL이 없습니다. videoId: $videoId")
 
-        return transcribe(fileUrl)
+        return transcribe(fileUrl, sourceDurationMs, onTranscriptionRequest)
     }
 
     fun execute(userId: Long, videoId: Long): SttResult {
@@ -98,7 +111,11 @@ class SttUseCase(
      * 조각을 동시에 보내면 빨라지지만 사용자 한 명이 제공자 rate limit 을 독식한다.
      * 파이프라인은 이미 비동기라 여기서 서두를 이유가 없다.
      */
-    private fun transcribe(sourceUrl: String): SttResult {
+    private fun transcribe(
+        sourceUrl: String,
+        sourceDurationMs: Long? = null,
+        onTranscriptionRequest: (durationMs: Long?, model: String) -> Unit = { _, _ -> },
+    ): SttResult {
         if (!audioPort.isAvailable()) {
             // 준비가 안 되는 걸 알면서 모델을 부르면 요금만 나가고 결과는 같다.
             throw BusinessException(
@@ -119,6 +136,7 @@ class SttUseCase(
         // 조각은 로컬 임시 파일이다. 성공하든 실패하든 반드시 지운다.
         return prepared.use { audio ->
             val options = OpenAiAudioTranscriptionOptions.builder()
+                .model(transcriptionModelName)
                 .responseFormat(AudioResponseFormat.VERBOSE_JSON)
                 .language("ko")
                 .build()
@@ -126,29 +144,36 @@ class SttUseCase(
             val texts = mutableListOf<String>()
             val segments = mutableListOf<SttResult.SttSegmentResult>()
 
-            audio.parts.forEach { part ->
-                val response: AudioTranscriptionResponse =
-                    transcriptionModel.call(AudioTranscriptionPrompt(part.resource, options))
-                val partText = response.result.output
+            var requestStarted = false
+            try {
+                audio.parts.forEach { part ->
+                    requestStarted = true
+                    val response: AudioTranscriptionResponse =
+                        transcriptionModel.call(AudioTranscriptionPrompt(part.resource, options))
+                    val partText = response.result.output
 
-                texts += parseText(partText)
-                /*
-                 * 조각 전사의 타임스탬프는 조각 기준(0부터)이다. 오프셋을 더하지 않으면
-                 * 두 번째 조각부터 자막이 전부 영상 앞머리로 겹쳐 붙는다.
-                 */
-                val offsetSeconds = part.offsetMs / 1000.0
-                segments += parseSegments(partText).map { segment ->
-                    segment.copy(
-                        startTime = segment.startTime + offsetSeconds,
-                        endTime = segment.endTime + offsetSeconds,
-                    )
+                    texts += parseText(partText)
+                    /*
+                     * 조각 전사의 타임스탬프는 조각 기준(0부터)이다. 오프셋을 더하지 않으면
+                     * 두 번째 조각부터 자막이 전부 영상 앞머리로 겹쳐 붙는다.
+                     */
+                    val offsetSeconds = part.offsetMs / 1000.0
+                    segments += parseSegments(partText).map { segment ->
+                        segment.copy(
+                            startTime = segment.startTime + offsetSeconds,
+                            endTime = segment.endTime + offsetSeconds,
+                        )
+                    }
                 }
-            }
 
-            SttResult(
-                text = texts.filter { it.isNotBlank() }.joinToString(" "),
-                segments = segments,
-            )
+                SttResult(
+                    text = texts.filter { it.isNotBlank() }.joinToString(" "),
+                    segments = segments,
+                )
+            } finally {
+                // This is an observation callback. Its failure must never turn a successful STT run into failure.
+                if (requestStarted) runCatching { onTranscriptionRequest(sourceDurationMs, transcriptionModelName) }
+            }
         }
     }
 
@@ -183,5 +208,10 @@ class SttUseCase(
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    companion object {
+        /** Spring AI 의 기본 전사 모델과 같다. 설정이 없을 때만 쓴다. */
+        const val DEFAULT_TRANSCRIPTION_MODEL = "whisper-1"
     }
 }

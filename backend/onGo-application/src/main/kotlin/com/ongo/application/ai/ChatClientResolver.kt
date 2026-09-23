@@ -15,7 +15,13 @@ class ChatClientResolver(
 
     private val log = LoggerFactory.getLogger(ChatClientResolver::class.java)
 
-    fun resolve(userId: Long): ChatClient {
+    fun resolve(userId: Long): ChatClient = chatClientRegistry.getClient(resolveProvider(userId))
+
+    /**
+     * [resolve] 가 실제로 고르는 제공자. 원가 원장처럼 "어느 제공자로 나갔는가" 를 적는 곳은
+     * 규칙을 복사하지 말고 이것을 불러야 한다 — 선택 규칙이 바뀌면 기록이 따라 틀린다.
+     */
+    fun resolveProvider(userId: Long): AiProvider {
         val requested = if (userId == 0L) {
             null
         } else {
@@ -34,7 +40,7 @@ class ChatClientResolver(
             log.warn("AI 제공자 {} 사용 불가, 설정된 {}으로 대체: userId={}", requested, provider, userId)
         }
 
-        return chatClientRegistry.getClient(provider)
+        return provider
     }
 
     companion object {
