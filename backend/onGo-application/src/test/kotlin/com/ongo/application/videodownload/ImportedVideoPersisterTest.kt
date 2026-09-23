@@ -48,7 +48,7 @@ class ImportedVideoPersisterTest {
     @BeforeEach
     fun setUp() {
         clearAllMocks()
-        persister = ImportedVideoPersister(videoRepository, fileStoragePort, storageQuotaUseCase)
+        persister = ImportedVideoPersister(videoRepository, fileStoragePort, storageQuotaUseCase, mockk<com.ongo.application.video.MonthlyUploadQuotaUseCase>(relaxed = true))
     }
 
     private fun stream(): InputStream = ByteArrayInputStream(ByteArray(4))

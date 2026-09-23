@@ -1,3 +1,4 @@
+import { readStableCode } from '@/composables/usePlanLimit'
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Platform } from '@/types/channel'
@@ -36,6 +37,8 @@ export interface QueueItem {
   status: QueueItemStatus
   progress: number
   error?: string
+  /** 서버 안정 코드. 한도 초과면 화면이 업그레이드 안내를 띄운다. */
+  errorCode?: string
   addedAt: string
   startedAt?: string
   completedAt?: string
@@ -310,6 +313,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
       item.status = 'queued'
       item.progress = 0
       item.error = undefined
+    item.errorCode = undefined
     }
   }
 
@@ -411,6 +415,7 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
     item.status = 'uploading'
     item.progress = 0
     item.error = undefined
+    item.errorCode = undefined
     item.startedAt = new Date().toISOString()
 
     // Update platform progress
@@ -476,6 +481,9 @@ export const useUploadQueueStore = defineStore('uploadQueue', () => {
     } catch (error: unknown) {
       item.status = 'failed'
       item.error = error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다.'
+      // 메시지만 남기면 화면은 한도 초과인지 알 수 없어 업그레이드 안내를 띄우지 못한다.
+      // 월 업로드·저장 공간 한도에 걸린 사용자가 "업로드 실패" 만 보고 떠나는 자리였다.
+      item.errorCode = readStableCode(error) ?? undefined
       startNextPending()
     } finally {
       abortHandlers.delete(id)

@@ -9,7 +9,16 @@ interface VideoRepository {
     fun findByIds(ids: List<Long>): List<Video>
     fun findByUserId(userId: Long, page: Int, size: Int, status: UploadStatus? = null): List<Video>
     fun countByUserId(userId: Long, status: UploadStatus? = null): Long
-    fun countByUserIdAndMonth(userId: Long, yearMonth: YearMonth): Long
+
+    /**
+     * 그 달에 만들어진 영상 중 [sources] 에 해당하는 것만 센다. 월 업로드 한도의 근거다.
+     * 무엇을 셀지는 [MonthlyUploadPolicy.COUNTED_SOURCES] 가 정한다 — 호출부가 목록을 만들지 말 것.
+     */
+    fun countByUserIdAndMonthAndSources(
+        userId: Long,
+        yearMonth: YearMonth,
+        sources: Set<com.ongo.domain.contentsource.VideoSource>,
+    ): Long
     fun save(video: Video): Video
     fun update(video: Video): Video
     /** Atomically reserves a DRAFT for one publish request. */

@@ -3,6 +3,12 @@ export interface ResData<T> {
   message: string | null
   data: T | null
   error: string | null
+  periodLimit?: {
+    requestedDays: number
+    appliedDays: number
+    maxDays: number
+    wasTruncated: boolean
+  } | null
 }
 
 export interface PageRequest {

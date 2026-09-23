@@ -63,6 +63,15 @@ class StreamPublishUseCaseTest {
     private val videoUploadRepository = mockk<VideoUploadRepository>()
     private val videoPlatformMetaRepository = mockk<VideoPlatformMetaRepository>()
     private val subscriptionRepository = mockk<SubscriptionRepository>()
+    private val userRepository = mockk<com.ongo.domain.user.UserRepository>()
+    private val storageQuotaPort = mockk<com.ongo.domain.storage.StorageQuotaPort>(relaxed = true)
+
+    /*
+     * 월 한도 판정은 목이 아니라 **실제 유스케이스**를 끼운다. 이 경로가 새 규칙
+     * (MonthlyUploadPolicy — 원본만 센다)을 실제로 쓰는지까지 검증하기 위해서다.
+     */
+    private val monthlyUploadQuotaUseCase =
+        MonthlyUploadQuotaUseCase(userRepository, videoRepository, storageQuotaPort)
     private val channelRepository = mockk<ChannelRepository>()
     private val tokenEncryptionPort = mockk<TokenEncryptionPort>()
     private val eventPublisher = mockk<ApplicationEventPublisher>(relaxed = true)
@@ -119,7 +128,7 @@ class StreamPublishUseCaseTest {
             videoRepository = videoRepository,
             videoUploadRepository = videoUploadRepository,
             videoPlatformMetaRepository = videoPlatformMetaRepository,
-            subscriptionRepository = subscriptionRepository,
+            monthlyUploadQuotaUseCase = monthlyUploadQuotaUseCase,
             channelRepository = channelRepository,
             tokenEncryptionPort = tokenEncryptionPort,
             eventPublisher = eventPublisher,
@@ -204,13 +213,29 @@ class StreamPublishUseCaseTest {
     private fun buildSavedMeta(id: Long = 300L, uploadId: Long = 200L) =
         VideoPlatformMeta(id = id, videoUploadId = uploadId, title = "테스트 영상")
 
+    /** 요금제 판정은 채널·예약 게이트와 같은 users.plan_type 기준이다. */
     private fun stubSubscription(planType: PlanType = PlanType.PRO) {
         every { subscriptionRepository.findByUserId(userId) } returns
             Subscription(id = 1L, userId = userId, planType = planType)
+        every { userRepository.findById(userId) } returns com.ongo.domain.user.User(
+            id = userId,
+            email = "u@test.io",
+            name = "u",
+            provider = com.ongo.common.enums.AuthProvider.GOOGLE,
+            providerId = "p",
+            planType = planType,
+        )
     }
 
+    /** 원본(MonthlyUploadPolicy.COUNTED_SOURCES)만 세는 카운트를 흉내 낸다. */
     private fun stubMonthlyCount(count: Long) {
-        every { videoRepository.countByUserIdAndMonth(userId, any<YearMonth>()) } returns count
+        every {
+            videoRepository.countByUserIdAndMonthAndSources(
+                userId,
+                any<YearMonth>(),
+                com.ongo.domain.video.MonthlyUploadPolicy.COUNTED_SOURCES,
+            )
+        } returns count
     }
 
     // ─────────────────────────────────────────────

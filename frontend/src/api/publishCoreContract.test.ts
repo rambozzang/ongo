@@ -149,7 +149,7 @@ describe('publish core API contracts', () => {
 
   it('loads server analytics used by the Compose best-time mode', async () => {
     await analyticsApi.getOptimalTimes('YOUTUBE')
-    expect(get).toHaveBeenCalledWith('/analytics/optimal-times', { params: { platform: 'YOUTUBE' } })
+    expect(get).toHaveBeenCalledWith('/analytics/optimal-times', { params: { platform: 'YOUTUBE', days: 30 } })
   })
 
   it('keeps channel, AI, UGC campaign, and Shorts pipeline flows on the server', async () => {

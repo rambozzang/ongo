@@ -3,11 +3,9 @@ package com.ongo.application.video
 import com.ongo.application.config.ExecutorConfig
 import com.ongo.common.enums.MediaType
 import com.ongo.common.enums.Platform
-import com.ongo.common.enums.PlanType
 import com.ongo.common.enums.ScheduleStatus
 import com.ongo.common.enums.UploadStatus
 import com.ongo.common.enums.Visibility
-import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.common.exception.BusinessException
 import com.ongo.common.util.FileValidationUtil
 import com.ongo.domain.channel.ChannelRepository
@@ -20,7 +18,6 @@ import org.springframework.context.ApplicationEventPublisher
 import com.ongo.domain.channel.ChannelStatus
 import com.ongo.domain.schedule.Schedule
 import com.ongo.domain.schedule.ScheduleRepository
-import com.ongo.domain.subscription.SubscriptionRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoPlatformMeta
 import com.ongo.domain.video.VideoPlatformMetaRepository
@@ -38,7 +35,6 @@ import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.client.HttpStatusCodeException
 import java.nio.file.Files
 import java.time.LocalDateTime
-import java.time.YearMonth
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -47,7 +43,7 @@ class StreamPublishUseCase(
     private val videoRepository: VideoRepository,
     private val videoUploadRepository: VideoUploadRepository,
     private val videoPlatformMetaRepository: VideoPlatformMetaRepository,
-    private val subscriptionRepository: SubscriptionRepository,
+    private val monthlyUploadQuotaUseCase: MonthlyUploadQuotaUseCase,
     private val channelRepository: ChannelRepository,
     private val tokenEncryptionPort: TokenEncryptionPort,
     private val streamWriterFactories: List<PlatformStreamWriterFactory>,
@@ -100,12 +96,9 @@ class StreamPublishUseCase(
         validateRequest(file, request)
 
         // 1. 플랜 한도 확인 (월간 업로드 횟수 + 스토리지 쿼터)
-        val subscription = subscriptionRepository.findByUserId(userId)
-        val planType = subscription?.planType ?: PlanType.FREE
-        val monthlyCount = videoRepository.countByUserIdAndMonth(userId, YearMonth.now())
-        if (monthlyCount >= planType.monthlyUploads) {
-            throw PlanLimitExceededException("월간 업로드", planType.monthlyUploads)
-        }
+        // 월 한도는 모든 업로드 경로가 같은 규칙을 쓴다. 예전에는 여기에만 있었고, 쇼츠 클립·
+        // 재활용 사본까지 세는 카운트를 썼다(MonthlyUploadQuotaUseCase·MonthlyUploadPolicy).
+        monthlyUploadQuotaUseCase.check(userId)
         // 즉시 게시만 로컬 임시 파일로 흘려보낸다. 예약 게시도 프로세스가 재시작되어도
         // 살아 있어야 하므로 영구 오브젝트 URL을 먼저 확보한다.
 

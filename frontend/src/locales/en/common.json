@@ -1772,6 +1772,8 @@
     }
   },
   "dashboard": {
+    "periodLimited": "Your current plan shows analytics for the latest {days} days.",
+    "periodLimitUpgrade": "View up to 365 days with Pro",
     "totalViews": "Total Views",
     "totalSubscribers": "Total Subscribers",
     "totalLikes": "Total Likes",
@@ -2892,6 +2894,8 @@
   "competitor": {
     "title": "Competitor Analysis",
     "description": "Benchmark competing channels and gain strategic insights",
+    "planLimitReached": "You have reached your plan's competitor channel limit.",
+    "viewPlans": "Upgrade plan",
     "refresh": "Refresh",
     "sync": "Sync",
     "syncing": "Syncing...",

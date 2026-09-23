@@ -9,6 +9,7 @@ import com.ongo.common.exception.BusinessException
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.common.enums.PlanType
+import com.ongo.common.exception.PlanLimitExceededException
 import com.ongo.domain.analytics.AnalyticsRepository
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.competitor.ChannelLookupPort
@@ -130,10 +131,7 @@ class CompetitorUseCase(
         val planType = subscriptionRepository.findByUserId(userId)?.planType ?: PlanType.FREE
         val limit = planType.competitorLimit
         val count = competitorRepository.countByUserId(userId)
-        if (count >= limit) throw BusinessException(
-            "COMPETITOR_LIMIT",
-            "현재 요금제(${planType.displayName})에서는 경쟁 채널을 최대 ${limit}개까지 추가할 수 있습니다",
-        )
+        if (count >= limit) throw PlanLimitExceededException("경쟁 채널", limit)
 
         val competitor = Competitor(
             userId = userId,

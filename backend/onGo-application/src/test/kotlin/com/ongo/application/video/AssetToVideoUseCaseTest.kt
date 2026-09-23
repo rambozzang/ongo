@@ -57,6 +57,7 @@ class AssetToVideoUseCaseTest {
         clearAllMocks()
         useCase = AssetToVideoUseCase(
             assetRepository, videoRepository, storageQuotaUseCase, fileStoragePort, userWriteGuard,
+            mockk<MonthlyUploadQuotaUseCase>(relaxed = true),
         )
     }
 

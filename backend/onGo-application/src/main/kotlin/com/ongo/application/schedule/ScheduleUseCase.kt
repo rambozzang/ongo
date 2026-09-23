@@ -32,7 +32,7 @@ class ScheduleUseCase(
     private val userWriteGuard: UserWriteGuard,
 ) {
     companion object {
-        val KST: ZoneId = ZoneId.of("Asia/Seoul")
+        val KST: ZoneId = SchedulePlanLimit.KST
     }
 
     @Transactional
@@ -228,14 +228,8 @@ class ScheduleUseCase(
         }
     }
 
-    private fun validateScheduleLimit(planType: PlanType, scheduledAt: LocalDateTime) {
-        if (planType == PlanType.FREE) throw PlanLimitExceededException("예약 업로드", 0)
-        val maxDays = planType.scheduleDays.toLong()
-        val nowKst = LocalDateTime.now(KST)
-        if (scheduledAt.isAfter(nowKst.plusDays(maxDays))) {
-            throw PlanLimitExceededException("예약 기간", planType.scheduleDays)
-        }
-    }
+    private fun validateScheduleLimit(planType: PlanType, scheduledAt: LocalDateTime) =
+        SchedulePlanLimit.validate(planType, scheduledAt)
 
     private fun validatePlatformScheduleTimes(
         planType: PlanType,

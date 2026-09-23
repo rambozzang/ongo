@@ -15,8 +15,11 @@ interface AnalyticsRepository {
      * 축은 `video_uploads.published_at` 이다 — 집계일이나 행 저장 시각이 아니다.
      * 게시된 적 없는 업로드(`published_at IS NULL`)와 조회수를 보고하지 않는 플랫폼의
      * 행은 제외한다. 해당 칸에 데이터가 없으면 **키 자체가 없다** — 0 을 채우지 않는다.
+     *
+     * [days] 가 `null` 이면 기간 조건을 걸지 않는다. `Int.MAX_VALUE` 같은 큰 수로 "무제한" 을
+     * 흉내 내면 `now - days` 가 PostgreSQL 날짜 범위를 넘어 쿼리가 실패한다.
      */
-    fun getHeatmapData(userId: Long): Map<String, Map<Int, Long>>
+    fun getHeatmapData(userId: Long, days: Int? = null): Map<String, Map<Int, Long>>
     fun save(analytics: AnalyticsDaily): AnalyticsDaily
 
     /** 일반 분석 지표만 갱신한다. **수익 컬럼은 건드리지 않는다** — [updateRevenue] 소관이다. */

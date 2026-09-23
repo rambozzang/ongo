@@ -24,6 +24,7 @@ class VideoDownloadAvailabilityTest {
         sourceDownloader = downloader,
         importedVideoPersister = mockk<ImportedVideoPersister>(relaxed = true),
         objectMapper = ObjectMapper(),
+        monthlyUploadQuotaUseCase = mockk<com.ongo.application.video.MonthlyUploadQuotaUseCase>(relaxed = true),
     )
 
     @Test

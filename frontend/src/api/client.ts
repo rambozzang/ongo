@@ -237,7 +237,12 @@ export class ApiError extends Error {
 
 export function unwrapResponse<T>(response: { data: ResData<T> }): T {
   if (response.data.success) {
-    return response.data.data as T
+    const data = response.data.data as T
+    const periodLimit = response.data.periodLimit
+    if (periodLimit && data !== null && typeof data === 'object') {
+      Object.assign(data, { periodLimit })
+    }
+    return data
   }
   throw new ApiError(response.data.message ?? response.data.error ?? 'No data', 0)
 }

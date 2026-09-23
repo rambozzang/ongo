@@ -31,6 +31,7 @@ class ImportedVideoPersister(
     private val videoRepository: VideoRepository,
     private val fileStoragePort: FileStoragePort,
     private val storageQuotaUseCase: StorageQuotaUseCase,
+    private val monthlyUploadQuotaUseCase: com.ongo.application.video.MonthlyUploadQuotaUseCase,
 ) {
 
     /**
@@ -50,6 +51,9 @@ class ImportedVideoPersister(
         // 잠금은 이 트랜잭션이 끝날 때 풀린다. 아래 업로드·저장이 같은 트랜잭션 안에 있어야
         // 검사와 확정 사이에 다른 요청이 끼어들지 못한다.
         storageQuotaUseCase.checkQuota(userId, downloaded.size)
+        // 확정 판정. 다운로드 전의 사전 검사(VideoDownloadUseCase)는 잠금 없이 지나가므로,
+        // 그 사이 다른 업로드가 한도를 채웠을 수 있다. 여기가 잠금 안의 최종 판정이다.
+        monthlyUploadQuotaUseCase.check(userId)
 
         /*
          * 정리 담당을 하나로 모은다.

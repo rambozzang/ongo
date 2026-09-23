@@ -132,3 +132,41 @@ describe('upload queue store', () => {
     expect(store.queue.map((item) => item.id)).toEqual([second.id])
   })
 })
+
+describe('upload queue store — 한도 초과를 업그레이드 기회로 남긴다', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  /**
+   * 메시지만 남기면 화면은 한도 초과인지 알 수 없어 업그레이드 안내를 띄우지 못한다.
+   * 월 업로드 한도에 걸린 사용자가 "업로드 실패" 만 보고 떠나던 자리다.
+   */
+  it('실패의 안정 코드를 보존한다', async () => {
+    const error = Object.assign(new Error('월간 업로드 한도(5)를 초과했습니다'), {
+      response: { status: 400, data: { error: 'PLAN_LIMIT_EXCEEDED', message: null } },
+    })
+    const upload = vi.fn().mockRejectedValue(error)
+    vi.mocked(usePresignedUpload).mockReturnValue({ upload, abort: vi.fn() } as never)
+    const store = useUploadQueueStore()
+    store.addToQueue(queueItem())
+
+    store.startProcessing()
+    await vi.waitFor(() => expect(store.queue[0].status).toBe('failed'))
+
+    expect(store.queue[0].errorCode).toBe('PLAN_LIMIT_EXCEEDED')
+  })
+
+  it('코드가 없는 실패는 코드를 남기지 않는다', async () => {
+    const upload = vi.fn().mockRejectedValue(new Error('네트워크 오류로 업로드 실패'))
+    vi.mocked(usePresignedUpload).mockReturnValue({ upload, abort: vi.fn() } as never)
+    const store = useUploadQueueStore()
+    store.addToQueue(queueItem())
+
+    store.startProcessing()
+    await vi.waitFor(() => expect(store.queue[0].status).toBe('failed'))
+
+    expect(store.queue[0].errorCode).toBeUndefined()
+  })
+})

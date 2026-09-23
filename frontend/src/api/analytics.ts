@@ -154,9 +154,9 @@ export const analyticsApi = {
       )
   },
 
-  heatmap(): Promise<HeatmapData[]> {
+  heatmap(days = 30): Promise<HeatmapData[]> {
     return apiClient
-      .get<ResData<BackendHeatmapResponse>>('/analytics/heatmap')
+      .get<ResData<BackendHeatmapResponse>>('/analytics/heatmap', { params: { days } })
       .then(unwrapResponse)
       .then((res) => {
         const result: HeatmapData[] = []
@@ -203,10 +203,14 @@ export const analyticsApi = {
       )
   },
 
-  getOptimalTimes(platform?: string) {
-    const params = platform ? { platform } : {}
+  getOptimalTimes(platform?: string, days = 30) {
+    const params = platform ? { platform, days } : { days }
     return apiClient
-      .get<ResData<{ slots: OptimalTimeSlot[]; unavailableReason?: string | null }>>('/analytics/optimal-times', { params })
+      .get<ResData<{
+        slots: OptimalTimeSlot[]
+        unavailableReason?: string | null
+        periodLimit?: { requestedDays: number; appliedDays: number; maxDays: number; wasTruncated: boolean } | null
+      }>>('/analytics/optimal-times', { params })
       .then(unwrapResponse)
   },
 

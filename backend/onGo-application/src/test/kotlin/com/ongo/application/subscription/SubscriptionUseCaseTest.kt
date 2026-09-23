@@ -345,7 +345,15 @@ class SubscriptionUseCaseTest {
 
     @Test
     fun `getUsage should calculate uploads and storage correctly`() {
-        every { videoRepository.countByUserIdAndMonth(100L, any<YearMonth>()) } returns 5L
+        // 표시 사용량은 한도 검사와 **같은 기준**(원본 출처만)으로 센다. 다른 기준을 쓰면
+        // 화면은 "3/5" 인데 업로드가 막히거나, 그 반대가 된다.
+        every {
+            videoRepository.countByUserIdAndMonthAndSources(
+                100L,
+                any<YearMonth>(),
+                com.ongo.domain.video.MonthlyUploadPolicy.COUNTED_SOURCES,
+            )
+        } returns 5L
         every { storageQuotaUseCase.getCurrentUsage(100L) } returns 30L * 1024 * 1024
         every { storageQuotaUseCase.getEffectiveLimit(100L) } returns 50L * 1024 * 1024 * 1024
 

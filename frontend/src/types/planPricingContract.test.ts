@@ -44,6 +44,7 @@ interface ServerPlan {
   storageGB: number
   freeCredits: number
   maxTeamMembers: number
+  competitorLimit: number
 }
 
 /**
@@ -69,12 +70,12 @@ function readServerPlans(): Record<string, ServerPlan> {
 
     const [
       price, yearlyPrice, maxPlatforms, monthlyUploads,
-      scheduleDays, analyticsDays, storageGB, freeCredits, maxTeamMembers,
+      scheduleDays, analyticsDays, storageGB, freeCredits, maxTeamMembers, competitorLimit,
     ] = numbers
 
     parsed[match[1]] = {
       price, yearlyPrice, maxPlatforms, monthlyUploads,
-      scheduleDays, analyticsDays, storageGB, freeCredits, maxTeamMembers,
+      scheduleDays, analyticsDays, storageGB, freeCredits, maxTeamMembers, competitorLimit,
     }
   }
   return parsed
@@ -118,6 +119,7 @@ describe('플랜 상수와 서버 결제 기준', () => {
     expect(shown.storageMb).toBe(server.storageGB * 1024)
     expect(shown.freeAiCredits).toBe(server.freeCredits)
     expect(shown.teamMembers).toBe(server.maxTeamMembers)
+    expect(shown.competitorLimit).toBe(server.competitorLimit)
   })
 })
 

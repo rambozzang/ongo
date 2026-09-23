@@ -15,6 +15,12 @@ import PlatformBadge from '@/components/common/PlatformBadge.vue'
 import type { UploadQueueItem } from '@/types/uploadQueue'
 import type { Platform } from '@/types/channel'
 import { formatFileSize } from '@/utils/format'
+import { RouterLink } from 'vue-router'
+import {
+  PLAN_LIMIT_EXCEEDED,
+  PLAN_UPGRADE_PATH,
+  STORAGE_QUOTA_EXCEEDED,
+} from '@/composables/usePlanLimit'
 
 const props = defineProps<{
   item: UploadQueueItem
@@ -30,6 +36,17 @@ const emit = defineEmits<{
   moveUp: [id: string]
   moveDown: [id: string]
 }>()
+
+/**
+ * 요금제를 올리면 풀리는 실패인가. 월 업로드·저장 공간 한도에 걸린 사용자가 "업로드 실패" 만
+ * 보고 떠나면 돈이 되는 순간을 놓친다. 판단은 문구가 아니라 서버 안정 코드로만 한다 —
+ * 결제로 풀리지 않는 실패(네트워크·파일 형식)에 결제를 권하면 정작 필요할 때 믿지 않는다.
+ */
+const upgradeResolves = computed(
+  () =>
+    props.item.status === 'failed' &&
+    (props.item.errorCode === PLAN_LIMIT_EXCEEDED || props.item.errorCode === STORAGE_QUOTA_EXCEEDED),
+)
 
 const fileIcon = computed(() => {
   const mime = props.item.mimeType
@@ -173,6 +190,14 @@ const canRemove = computed(() => props.item.status !== 'completed')
           class="mt-2 rounded-md bg-error-subtle px-3 py-2"
         >
           <p class="text-body-xs text-error-strong">{{ item.error }}</p>
+          <RouterLink
+            v-if="upgradeResolves"
+            :to="PLAN_UPGRADE_PATH"
+            class="mt-1.5 inline-flex items-center text-caption font-semibold text-primary-700 underline hover:text-primary-800 dark:text-primary-400"
+            data-testid="upload-upgrade-link"
+          >
+            요금제 업그레이드하고 계속 올리기
+          </RouterLink>
         </div>
 
         <!-- Action buttons -->

@@ -1,7 +1,26 @@
 import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readStableCode } from '@/composables/usePlanLimit'
-import apiClient from './client'
+import apiClient, { unwrapResponse } from './client'
+
+describe('analytics period metadata', () => {
+  it('keeps server clamp metadata available to analytics UI after unwrapping', () => {
+    const result = unwrapResponse({
+      data: {
+        success: true,
+        message: null,
+        error: null,
+        data: { totalViews: 12 },
+        periodLimit: { requestedDays: 365, appliedDays: 7, maxDays: 7, wasTruncated: true },
+      },
+    })
+
+    expect(result).toMatchObject({
+      totalViews: 12,
+      periodLimit: { requestedDays: 365, appliedDays: 7, maxDays: 7, wasTruncated: true },
+    })
+  })
+})
 
 const unauthorizedAdapter = async (
   config: InternalAxiosRequestConfig,

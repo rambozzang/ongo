@@ -12,6 +12,7 @@ class VideoDownloadUseCase(
     private val sourceDownloader: VideoSourceDownloader,
     private val importedVideoPersister: ImportedVideoPersister,
     private val objectMapper: ObjectMapper,
+    private val monthlyUploadQuotaUseCase: com.ongo.application.video.MonthlyUploadQuotaUseCase,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -25,6 +26,9 @@ class VideoDownloadUseCase(
 
     fun importVideo(userId: Long, request: VideoDownloadRequest): VideoDownloadResult {
         val source = VideoDownloadUrl.parse(request.url)
+        // 사전 검사 — 막힐 사용자에게 최대 2 GB 를 내려받을 이유가 없다. 트랜잭션 밖이라 잠금은
+        // 바로 풀리고, 최종 판정은 persist 안에서 다시 한다.
+        monthlyUploadQuotaUseCase.check(userId)
         val downloaded = try {
             sourceDownloader.download(source.canonical, source.provider)
         } catch (e: BusinessException) {

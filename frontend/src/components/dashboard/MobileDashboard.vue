@@ -17,6 +17,15 @@
     <DashboardSkeleton v-if="loading" />
 
     <template v-else>
+      <div
+        v-if="kpi?.periodLimit?.wasTruncated"
+        data-testid="analytics-period-limit"
+        class="rounded-lg border border-warning bg-warning-subtle px-3 py-2 text-body-xs text-warning-strong"
+        role="status"
+      >
+        <p>{{ $t('dashboard.periodLimited', { days: kpi.periodLimit.appliedDays }) }}</p>
+        <router-link to="/subscription" class="mt-1 inline-block font-semibold underline">{{ $t('dashboard.periodLimitUpgrade') }}</router-link>
+      </div>
       <!-- Onboarding Banner -->
       <OnboardingBanner />
 

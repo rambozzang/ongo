@@ -566,10 +566,12 @@ export const sectionsKo: ManualSection[] = [
         subtitle: '플랜 종류',
         text: '',
         items: [
-          'Free: 기본 기능, 월 3회 업로드, 1GB 저장 공간',
-          'Starter (9,900원/월): 월 30회 업로드, 10GB 저장 공간, 2개 플랫폼',
-          'Pro (19,900원/월): 무제한 업로드, 50GB 저장 공간, 4개 플랫폼, AI 크레딧 포함',
-          'Business (49,900원/월): 모든 기능, 무제한 저장 공간, 팀 관리, 우선 지원',
+          'Free: 월 5회 업로드, 1GB 저장 공간, 채널 1개, 분석 7일, 경쟁 채널 2개, 월 30 AI 크레딧',
+          'Starter (9,900원/월 또는 99,000원/년): 월 30회 업로드, 10GB, 채널 3개, 7일 예약, 분석 30일, 경쟁 채널 5개, 월 100 AI 크레딧',
+          'Pro (19,900원/월 또는 199,000원/년): 월 100회 업로드, 50GB, 채널 4개, 30일 예약, 분석 365일, 경쟁 채널 15개, 팀원 2명, 월 300 AI 크레딧',
+          'Business (49,900원/월 또는 499,000원/년): 업로드·분석·경쟁 채널 무제한, 200GB, 채널 4개, 90일 예약, 팀원 10명, 월 1,000 AI 크레딧',
+          '월 업로드 횟수에는 직접 올린 원본(PC 업로드, 구글 드라이브, URL 가져오기)만 셉니다. 쇼츠로 만든 클립, 재활용·반복 예약으로 생긴 사본은 세지 않습니다.',
+          '예약 업로드는 Starter 이상에서 쓸 수 있고, 요금제의 예약 기간 안에서만 잡을 수 있습니다. 요금제를 낮추면 기간을 벗어난 반복 예약은 멈추고 알림으로 알려 드립니다.',
         ],
       },
       {
@@ -924,7 +926,7 @@ export const sectionsKo: ManualSection[] = [
           '경쟁사 분석 페이지에서 "경쟁자 추가" 버튼을 클릭합니다.',
           '경쟁 채널의 URL 또는 이름으로 검색합니다.',
           '분석 대상 채널을 선택하고 추가합니다.',
-          '최대 10개 채널까지 경쟁자로 등록할 수 있습니다.',
+          '등록할 수 있는 경쟁 채널 수는 요금제마다 다릅니다 (Free 2개, Starter 5개, Pro 15개, Business 무제한).',
         ],
       },
       {
@@ -3558,10 +3560,12 @@ export const sectionsEn: ManualSection[] = [
         subtitle: 'Plans',
         text: '',
         items: [
-          'Free: Basic features, 3 uploads/month, 1GB storage',
-          'Starter (KRW 9,900/mo): 30 uploads/month, 10GB storage, 2 platforms',
-          'Pro (KRW 19,900/mo): Unlimited uploads, 50GB storage, 4 platforms, AI credits included',
-          'Business (KRW 49,900/mo): All features, unlimited storage, team management, priority support',
+          'Free: 5 uploads/month, 1GB storage, 1 connected channel, 7 analytics days, 2 competitor channels, 30 monthly AI credits',
+          'Starter (KRW 9,900/mo or 99,000/year): 30 uploads/month, 10GB, 3 channels, 7-day scheduling, 30 analytics days, 5 competitor channels, 100 monthly AI credits',
+          'Pro (KRW 19,900/mo or 199,000/year): 100 uploads/month, 50GB, 4 channels, 30-day scheduling, 365 analytics days, 15 competitor channels, 2 team seats, 300 monthly AI credits',
+          'Business (KRW 49,900/mo or 499,000/year): Unlimited uploads, analytics and competitor channels, 200GB, 4 channels, 90-day scheduling, 10 team seats, 1,000 monthly AI credits',
+          'The monthly upload count includes only originals you bring in (PC upload, Google Drive, URL import). Shorts clips and copies created by recycling or recurring schedules are not counted.',
+          'Scheduled publishing is available from Starter and only within your plan\'s scheduling window. If you downgrade, recurring schedules outside the window stop and you are notified.',
         ],
       },
       {
@@ -3916,7 +3920,7 @@ export const sectionsEn: ManualSection[] = [
           'Click the "Add Competitor" button on the Competitor Analysis page.',
           'Search by competitor channel URL or name.',
           'Select and add the target channel.',
-          'You can register up to 10 channels as competitors.',
+          'The number of competitor channels depends on your plan (Free 2, Starter 5, Pro 15, Business unlimited).',
         ],
       },
       {

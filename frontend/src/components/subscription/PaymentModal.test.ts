@@ -37,6 +37,7 @@ const STARTER_PLAN = {
   commentManagement: true,
   teamMembers: 0,
   freeAiCredits: 100,
+  competitorLimit: 5,
   support: '이메일',
 }
 

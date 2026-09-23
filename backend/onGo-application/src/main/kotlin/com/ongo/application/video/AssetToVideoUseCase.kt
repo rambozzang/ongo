@@ -63,6 +63,7 @@ class AssetToVideoUseCase(
     private val storageQuotaUseCase: StorageQuotaUseCase,
     private val fileStoragePort: FileStoragePort,
     private val userWriteGuard: UserWriteGuard,
+    private val monthlyUploadQuotaUseCase: com.ongo.application.video.MonthlyUploadQuotaUseCase,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -86,6 +87,9 @@ class AssetToVideoUseCase(
          * 의미를 갖는다 — 그 사이 다른 요청이 끼어들지 못한다.
          */
         storageQuotaUseCase.checkQuota(userId, sizeBytes)
+        // 에셋을 영상으로 바꾸는 것도 새 콘텐츠다. 여기를 세지 않으면 "에셋으로 올린 뒤 전환" 이
+        // 월 업로드 한도를 우회하는 길이 된다(에셋 업로드 자체에는 월 한도가 없다).
+        monthlyUploadQuotaUseCase.check(userId)
 
         /*
          * 사본 키에 새 영상 id 가 들어가야 하므로 행을 먼저 만든다. 이 시점의 행은

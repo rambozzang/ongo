@@ -52,6 +52,9 @@ class PgEnumDriftGuardTest {
         "notification_type" to NotificationType.entries.map { it.name },
         "subscription_status" to SubscriptionStatus.entries.map { it.name },
         "platform_type" to Platform.entries.map { it.name },
+        // V116 DERIVED — 월 업로드 한도가 사본을 원본과 구분하는 근거다. 값이 DB 에 없으면
+        // 재활용·반복 예약·쇼츠 저장이 INSERT 에서 죽는다.
+        "video_source" to com.ongo.domain.contentsource.VideoSource.entries.map { it.name },
     )
 
     /** 마이그레이션 전체를 합쳐 하나의 텍스트로 본다. Flyway 도 순서대로 전부 적용한다. */

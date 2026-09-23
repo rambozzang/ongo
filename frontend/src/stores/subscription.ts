@@ -58,6 +58,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
         commentManagement: ['PRO', 'BUSINESS'].includes(p.planType),
         teamMembers: p.features.maxTeamMembers,
         freeAiCredits: p.features.freeCredits,
+        competitorLimit: normalizeUnlimitedLimit(p.features.competitorLimit ?? 0),
         support: getSupportLevel(p.planType),
       }))
       currentPlan.value = data.currentPlan

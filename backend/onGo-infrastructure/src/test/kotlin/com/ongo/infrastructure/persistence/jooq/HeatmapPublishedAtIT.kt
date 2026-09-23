@@ -182,6 +182,25 @@ class HeatmapPublishedAtIT {
         assertTrue(heatmap().isEmpty(), "재지 않은 칸을 만들었다: ${heatmap()}")
     }
 
+    // ══ 요금제 기간 창 ═════════════════════════════════════════════════════
+
+    /**
+     * 기간을 주면 그 창 밖의 집계일은 빠지고, 안 주면 전체를 본다.
+     *
+     * 기간 없음을 `Int.MAX_VALUE` 로 흉내 내던 때는 `now - days` 가 PostgreSQL 날짜 범위를
+     * 넘어 **모든 호출이 실패했다** — AI 일정 추천과 라이브 대시보드가 그 기본값을 쓴다.
+     */
+    @Test
+    @DisplayName("기간을 주면 창 밖 집계일은 빼고, 안 주면 전체를 본다")
+    fun daysWindowFiltersByMetricDate() {
+        val uploadId = upload("YOUTUBE", PUBLISHED_WEDNESDAY_14H)
+        analytics(uploadId, views = 300, date = LocalDate.now().minusDays(2))
+        analytics(uploadId, views = 7_000, date = LocalDate.now().minusDays(60))
+
+        assertEquals(300L, analyticsRepository.getHeatmapData(userId, 7)[WEDNESDAY]?.get(PUBLISH_HOUR))
+        assertEquals(7_300L, heatmap()[WEDNESDAY]?.get(PUBLISH_HOUR))
+    }
+
     // ══ 3) published_at 이 null ═════════════════════════════════════════════
 
     /**

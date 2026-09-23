@@ -44,7 +44,8 @@ class AnalyticsController(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @Parameter(description = "조회 기간 (일 수, 기본값: 7)") @RequestParam(defaultValue = "7") days: Int
     ): ResponseEntity<ResData<DashboardKpiResponse>> {
-        return ResData.success(analyticsUseCase.getDashboardKpi(userId, days))
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getDashboardKpi(userId, period.appliedDays), period)
     }
 
     @Operation(
@@ -62,7 +63,8 @@ class AnalyticsController(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @Parameter(description = "조회 기간 (일 수, 기본값: 7)") @RequestParam(defaultValue = "7") days: Int
     ): ResponseEntity<ResData<TrendDataResponse>> {
-        return ResData.success(analyticsUseCase.getTrends(userId, days))
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getTrends(userId, period.appliedDays), period)
     }
 
     @Operation(
@@ -81,7 +83,8 @@ class AnalyticsController(
         @Parameter(description = "분석할 영상 ID") @PathVariable id: Long,
         @Parameter(description = "조회 기간 (일 수, 기본값: 7)") @RequestParam(defaultValue = "7") days: Int
     ): ResponseEntity<ResData<VideoAnalyticsResponse>> {
-        return ResData.success(analyticsUseCase.getVideoAnalytics(userId, id, days))
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getVideoAnalytics(userId, id, period.appliedDays), period)
     }
 
     @Operation(
@@ -95,9 +98,11 @@ class AnalyticsController(
     )
     @GetMapping("/heatmap")
     fun getHeatmap(
-        @Parameter(hidden = true) @CurrentUser userId: Long
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @Parameter(description = "조회 기간 (일 수, 기본값: 30)") @RequestParam(defaultValue = "30") days: Int,
     ): ResponseEntity<ResData<HeatmapResponse>> {
-        return ResData.success(analyticsUseCase.getHeatmap(userId))
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getHeatmap(userId, period.appliedDays), period)
     }
 
     @Operation(
@@ -115,7 +120,8 @@ class AnalyticsController(
         @Parameter(description = "조회 기간 (일 수, 기본값: 7)") @RequestParam(defaultValue = "7") days: Int,
         @Parameter(description = "조회할 영상 수 (기본값: 10)") @RequestParam(defaultValue = "10") limit: Int
     ): ResponseEntity<ResData<TopVideoResponse>> {
-        return ResData.success(analyticsUseCase.getTopVideos(userId, days, limit))
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getTopVideos(userId, period.appliedDays, limit), period)
     }
 
     @Operation(
@@ -132,7 +138,8 @@ class AnalyticsController(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @Parameter(description = "조회 기간 (일 수, 기본값: 7)") @RequestParam(defaultValue = "7") days: Int
     ): ResponseEntity<ResData<PlatformComparisonResponse>> {
-        return ResData.success(analyticsUseCase.getPlatformComparison(userId, days))
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getPlatformComparison(userId, period.appliedDays), period)
     }
 
     @Operation(
@@ -147,9 +154,11 @@ class AnalyticsController(
     @GetMapping("/optimal-times")
     fun getOptimalPublishTimes(
         @Parameter(hidden = true) @CurrentUser userId: Long,
-        @Parameter(description = "플랫폼 필터 (선택)") @RequestParam(required = false) platform: Platform?
+        @Parameter(description = "플랫폼 필터 (선택)") @RequestParam(required = false) platform: Platform?,
+        @Parameter(description = "조회 기간 (일 수, 기본값: 30)") @RequestParam(defaultValue = "30") days: Int,
     ): ResponseEntity<ResData<OptimalTimesResponse>> {
-        return ResData.success(analyticsUseCase.getOptimalPublishTimes(userId, platform))
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getOptimalPublishTimes(userId, platform, period.appliedDays), period)
     }
 
     @Operation(
@@ -167,7 +176,8 @@ class AnalyticsController(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @Parameter(description = "조회 기간 (일 수, 기본값: 30)") @RequestParam(defaultValue = "30") days: Int
     ): ResponseEntity<ResData<TagPerformanceResponse>> {
-        return ResData.success(analyticsUseCase.getTagPerformance(userId, days))
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getTagPerformance(userId, period.appliedDays), period)
     }
 
     @Operation(
@@ -220,7 +230,8 @@ class AnalyticsController(
         @Parameter(description = "비교할 영상 ID 목록") @RequestParam videoIds: List<Long>,
         @Parameter(description = "조회 기간 (예: 30d)") @RequestParam(defaultValue = "30") days: Int
     ): ResponseEntity<ResData<VideoCompareResponse>> {
-        return ResData.success(analyticsUseCase.getVideoComparison(userId, videoIds, days))
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getVideoComparison(userId, videoIds, period.appliedDays), period)
     }
 
     @Operation(
@@ -245,7 +256,16 @@ class AnalyticsController(
         } catch (_: IllegalArgumentException) {
             CohortGroupBy.CATEGORY
         }
-        return ResData.success(cohortAnalysisUseCase.getCohortAnalysis(userId, groupByEnum, from, to))
+        val requestedFrom = from ?: java.time.LocalDate.now().minusDays(90)
+        val requestedTo = to ?: java.time.LocalDate.now()
+        val requestedDays = (java.time.temporal.ChronoUnit.DAYS.between(requestedFrom, requestedTo) + 1)
+            .coerceAtLeast(1).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val period = analyticsUseCase.limitPeriod(userId, requestedDays)
+        val clampedFrom = requestedTo.minusDays((period.appliedDays - 1).toLong()).coerceAtLeast(requestedFrom)
+        return ResData.success(
+            cohortAnalysisUseCase.getCohortAnalysis(userId, groupByEnum, clampedFrom, requestedTo),
+            period,
+        )
     }
 
     @Operation(
@@ -282,8 +302,10 @@ class AnalyticsController(
     fun getTrafficSources(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @RequestParam(defaultValue = "30") days: Int,
-    ): ResponseEntity<ResData<TrafficSourceResponse>> =
-        ResData.success(analyticsUseCase.getTrafficSources(userId, days))
+    ): ResponseEntity<ResData<TrafficSourceResponse>> {
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getTrafficSources(userId, period.appliedDays), period)
+    }
 
     @Operation(summary = "시청자 인구통계 조회")
     @RequiresPermission(Permission.ANALYTICS_READ)
@@ -291,8 +313,10 @@ class AnalyticsController(
     fun getDemographics(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @RequestParam(defaultValue = "30") days: Int,
-    ): ResponseEntity<ResData<DemographicsResponse>> =
-        ResData.success(analyticsUseCase.getDemographics(userId, days))
+    ): ResponseEntity<ResData<DemographicsResponse>> {
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getDemographics(userId, period.appliedDays), period)
+    }
 
     @Operation(summary = "CTR 트렌드 조회")
     @RequiresPermission(Permission.ANALYTICS_READ)
@@ -300,8 +324,10 @@ class AnalyticsController(
     fun getCTRTrend(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @RequestParam(defaultValue = "30") days: Int,
-    ): ResponseEntity<ResData<CTRResponse>> =
-        ResData.success(analyticsUseCase.getCTRTrend(userId, days))
+    ): ResponseEntity<ResData<CTRResponse>> {
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getCTRTrend(userId, period.appliedDays), period)
+    }
 
     @Operation(summary = "평균 시청 시간 트렌드")
     @RequiresPermission(Permission.ANALYTICS_READ)
@@ -309,8 +335,10 @@ class AnalyticsController(
     fun getAvgViewDuration(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @RequestParam(defaultValue = "30") days: Int,
-    ): ResponseEntity<ResData<AvgViewDurationResponse>> =
-        ResData.success(analyticsUseCase.getAvgViewDuration(userId, days))
+    ): ResponseEntity<ResData<AvgViewDurationResponse>> {
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getAvgViewDuration(userId, period.appliedDays), period)
+    }
 
     @Operation(
         summary = "크로스 플랫폼 성과 비교",
@@ -326,8 +354,10 @@ class AnalyticsController(
     fun getCrossPlatformComparison(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @Parameter(description = "조회 기간 (일 수, 기본값: 30)") @RequestParam(defaultValue = "30") days: Int,
-    ): ResponseEntity<ResData<CrossPlatformSummaryResponse>> =
-        ResData.success(analyticsUseCase.getCrossPlatformComparison(userId, days))
+    ): ResponseEntity<ResData<CrossPlatformSummaryResponse>> {
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getCrossPlatformComparison(userId, period.appliedDays), period)
+    }
 
     @Operation(summary = "구독 전환 분석")
     @RequiresPermission(Permission.ANALYTICS_READ)
@@ -335,8 +365,10 @@ class AnalyticsController(
     fun getSubscriberConversion(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @RequestParam(defaultValue = "30") days: Int,
-    ): ResponseEntity<ResData<SubscriberConversionResponse>> =
-        ResData.success(analyticsUseCase.getSubscriberConversion(userId, days))
+    ): ResponseEntity<ResData<SubscriberConversionResponse>> {
+        val period = analyticsUseCase.limitPeriod(userId, days)
+        return ResData.success(analyticsUseCase.getSubscriberConversion(userId, period.appliedDays), period)
+    }
 
     // ── 라이브 대시보드 ─────────────────────────────────────────────────
 

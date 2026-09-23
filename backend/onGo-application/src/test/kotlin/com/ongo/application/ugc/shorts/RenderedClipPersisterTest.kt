@@ -94,6 +94,21 @@ class RenderedClipPersisterTest {
         )
     }
 
+    /**
+     * 쇼츠 결과물은 크레딧으로 이미 과금된다. 월 업로드로 세면 쇼츠를 한 번 돌린 무료 사용자가
+     * 자기 영상을 올리지 못한다(클립 20개가 한도 5를 넘긴다).
+     */
+    @Test
+    fun `쇼츠 클립은 서버 생성물로 저장해 월 업로드로 세지 않는다`() {
+        givenVideoSaved()
+
+        persist()
+
+        verify {
+            videoRepository.save(match { it.source == com.ongo.domain.contentsource.VideoSource.GENERATED })
+        }
+    }
+
     @Test
     fun `saves the video, links the clip and marks the job completed`() {
         givenVideoSaved()

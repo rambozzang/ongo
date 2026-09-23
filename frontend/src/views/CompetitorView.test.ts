@@ -10,7 +10,12 @@ const i18n = createI18n({
   fallbackLocale: 'en',
   messages: { ko, en },
 })
-const mountOpts = { global: { plugins: [i18n] } }
+const mountOpts = {
+  global: {
+    plugins: [i18n],
+    stubs: { 'router-link': { props: ['to'], template: '<a :href="to"><slot /></a>' } },
+  },
+}
 
 const testCtx = vi.hoisted(() => ({
   state: {
@@ -139,6 +144,18 @@ describe('CompetitorView', () => {
     const wrapper = mount(CompetitorView, mountOpts)
     expect(wrapper.find('[data-testid="competitor-ai-error"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="competitor-ai-credit-cta"]').exists()).toBe(false)
+  })
+
+  it('COMPETITOR_LIMIT 시 업그레이드 CTA를 구독 페이지로 연결한다', async () => {
+    vi.mocked(store.addCompetitor).mockRejectedValue({ response: { data: { error: 'COMPETITOR_LIMIT' } } })
+    const wrapper = mount(CompetitorView, mountOpts)
+    const modal = wrapper.findComponent({ name: 'AddCompetitorModal' })
+    modal.vm.$emit('add', { name: 'Competitor' })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="competitor-plan-limit"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="competitor-plan-limit"] a').attributes('href')).toBe('/subscription')
+    expect(wrapper.find('[data-testid="competitor-plan-limit"]').text()).toContain('플랜 업그레이드')
   })
 
   it('크레딧 CTA 클릭 → 구매 모달이 열리고, 구매 후 자동 재호출 없이 차단만 해제된다', async () => {

@@ -1772,6 +1772,8 @@
     }
   },
   "dashboard": {
+    "periodLimited": "현재 플랜에서는 최근 {days}일의 분석 데이터를 표시합니다.",
+    "periodLimitUpgrade": "Pro에서 최대 365일까지 보기",
     "totalViews": "총 조회수",
     "totalSubscribers": "총 구독자",
     "totalLikes": "총 좋아요",
@@ -2892,6 +2894,8 @@
   "competitor": {
     "title": "경쟁사 분석",
     "description": "경쟁 채널을 벤치마크하고 전략적 인사이트를 확보하세요",
+    "planLimitReached": "현재 플랜의 경쟁 채널 한도에 도달했습니다.",
+    "viewPlans": "플랜 업그레이드",
     "refresh": "새로고침",
     "sync": "동기화",
     "syncing": "동기화 중...",

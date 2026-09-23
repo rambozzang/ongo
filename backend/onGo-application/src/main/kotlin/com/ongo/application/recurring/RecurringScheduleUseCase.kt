@@ -10,6 +10,10 @@ import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.common.enums.Platform
 import com.ongo.application.video.StorageService
+import com.ongo.application.schedule.SchedulePlanLimit
+import com.ongo.common.enums.PlanType
+import com.ongo.common.exception.PlanLimitExceededException
+import com.ongo.domain.user.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.DayOfWeek
@@ -25,6 +29,7 @@ class RecurringScheduleUseCase(
     private val userWriteGuard: UserWriteGuard,
     private val channelRepository: ChannelRepository,
     private val storageService: StorageService,
+    private val userRepository: UserRepository,
 ) {
 
     companion object {
@@ -42,10 +47,10 @@ class RecurringScheduleUseCase(
         require(request.frequency in FREQUENCIES) { "유효하지 않은 빈도: ${request.frequency}" }
         require(request.name.isNotBlank()) { "반복 예약 이름을 입력하세요." }
         validateCadence(request.frequency, request.intervalDays, request.dayOfWeek, request.dayOfMonth, request.timezone)
-        validateSource(userId, request.videoId, request.platforms)
-
         val timeOfDay = LocalTime.parse(request.timeOfDay)
-        val schedule = RecurringSchedule(
+        val firstRun = calculateNextRunAt(request.frequency, request.intervalDays, request.dayOfWeek, request.dayOfMonth, timeOfDay, request.timezone)
+        val planType = planTypeFor(userId)
+        val recurrence = RecurringSchedule(
             userId = userId,
             videoId = request.videoId,
             name = request.name,
@@ -56,11 +61,16 @@ class RecurringScheduleUseCase(
             timeOfDay = timeOfDay,
             timezone = request.timezone,
             platforms = request.platforms,
+            nextRunAt = firstRun,
+        )
+        SchedulePlanLimit.validate(planType, firstRun)
+        SchedulePlanLimit.validate(planType, nextRunAtAfter(recurrence, firstRun))
+        validateSource(userId, request.videoId, request.platforms)
+        val schedule = recurrence.copy(
             titleTemplate = request.titleTemplate,
             descriptionTemplate = request.descriptionTemplate,
             tags = request.tags,
             isActive = request.isActive,
-            nextRunAt = calculateNextRunAt(request.frequency, request.intervalDays, request.dayOfWeek, request.dayOfMonth, timeOfDay, request.timezone),
         )
         return recurringScheduleRepository.save(schedule).toResponse()
     }
@@ -87,6 +97,20 @@ class RecurringScheduleUseCase(
         val newTimezone = request.timezone ?: schedule.timezone
         require((request.name ?: schedule.name).isNotBlank()) { "반복 예약 이름을 입력하세요." }
         validateCadence(newFrequency, newIntervalDays, newDayOfWeek, newDayOfMonth, newTimezone)
+        val nextRun = calculateNextRunAt(newFrequency, newIntervalDays, newDayOfWeek, newDayOfMonth, newTimeOfDay, newTimezone)
+        val planType = planTypeFor(userId)
+        val recurrence = schedule.copy(
+            frequency = newFrequency,
+            intervalDays = newIntervalDays,
+            dayOfWeek = newDayOfWeek,
+            dayOfMonth = newDayOfMonth,
+            timeOfDay = newTimeOfDay,
+            timezone = newTimezone,
+            platforms = request.platforms ?: schedule.platforms,
+            nextRunAt = nextRun,
+        )
+        SchedulePlanLimit.validate(planType, nextRun)
+        SchedulePlanLimit.validate(planType, nextRunAtAfter(recurrence, nextRun))
 
         val updated = schedule.copy(
             videoId = request.videoId ?: schedule.videoId,
@@ -101,10 +125,24 @@ class RecurringScheduleUseCase(
             titleTemplate = request.titleTemplate ?: schedule.titleTemplate,
             descriptionTemplate = request.descriptionTemplate ?: schedule.descriptionTemplate,
             tags = request.tags ?: schedule.tags,
-            nextRunAt = calculateNextRunAt(newFrequency, newIntervalDays, newDayOfWeek, newDayOfMonth, newTimeOfDay, newTimezone),
+            nextRunAt = nextRun,
         )
         return recurringScheduleRepository.update(updated).toResponse()
     }
+
+    /** Existing recurring definitions must not keep generating occurrences after a downgrade. */
+    fun deactivateIfOutsideCurrentPlan(userId: Long, occurrence: LocalDateTime): Boolean {
+        val planType = planTypeFor(userId)
+        return try {
+            SchedulePlanLimit.validate(planType, occurrence)
+            false
+        } catch (_: PlanLimitExceededException) {
+            true
+        }
+    }
+
+    private fun planTypeFor(userId: Long): PlanType =
+        userRepository.findById(userId)?.planType ?: PlanType.FREE
 
     @Transactional
     fun deleteSchedule(userId: Long, scheduleId: Long) {

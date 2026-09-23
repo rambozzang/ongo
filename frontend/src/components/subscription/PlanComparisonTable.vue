@@ -101,6 +101,16 @@
           </td>
         </tr>
 
+        <!-- 경쟁 채널 -->
+        <tr>
+          <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 font-medium text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
+            경쟁 채널 추적
+          </td>
+          <td v-for="plan in displayPlans" :key="`competitors-${plan.type}`" class="px-4 py-3 text-center" :class="getCellClass(plan.type)">
+            <span class="font-medium">{{ plan.competitorLimit === -1 ? '무제한' : plan.competitorLimit + '개' }}</span>
+          </td>
+        </tr>
+
         <!-- Action Buttons -->
         <tr class="bg-gray-50 dark:bg-gray-800/50">
           <td class="sticky left-0 z-10 bg-gray-50 dark:bg-gray-800/50 px-4 py-4 border-r border-gray-200 dark:border-gray-700" />

@@ -33,7 +33,13 @@ describe('최적 게시 시간 추천 폴백 제거', () => {
     const i18n = createI18n({ legacy: false, locale: 'ko', messages: { ko: koMessages } })
     return mount(BestTimeCard, {
       props: { data: heatmap },
-      global: { plugins: [i18n], stubs: { AsyncState: false } },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          AsyncState: false,
+          'router-link': { props: ['to'], template: '<a :href="to"><slot /></a>' },
+        },
+      },
     })
   }
 
@@ -65,6 +71,20 @@ describe('최적 게시 시간 추천 폴백 제거', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('게시 시각이 확인된 성과 데이터가 없어')
+  })
+
+  it('분석 기간이 플랜 한도로 잘리면 한도와 업그레이드 CTA를 보여준다', async () => {
+    vi.mocked(analyticsApi.getOptimalTimes).mockResolvedValue({
+      slots: [],
+      unavailableReason: null,
+      periodLimit: { requestedDays: 30, appliedDays: 7, maxDays: 7, wasTruncated: true },
+    } as never)
+
+    const wrapper = mountCard()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="optimal-times-period-limit"]').text()).toContain('최근 7일')
+    expect(wrapper.find('[data-testid="optimal-times-period-limit"] a').attributes('href')).toBe('/subscription')
   })
 
   it('사유가 없으면 기본 빈 상태 문구를 보여준다', async () => {

@@ -27,7 +27,7 @@ class UploadVideoUseCaseTest {
     @BeforeEach
     fun setUp() {
         clearAllMocks()
-        useCase = UploadVideoUseCase(videoRepository, storageService, userWriteGuard, storageQuotaUseCase)
+        useCase = UploadVideoUseCase(videoRepository, storageService, userWriteGuard, storageQuotaUseCase, mockk<com.ongo.application.video.MonthlyUploadQuotaUseCase>(relaxed = true))
     }
 
     private fun uploadingVideo(

@@ -50,7 +50,7 @@ class MultipartUploadUseCaseTest {
     @BeforeEach
     fun setUp() {
         clearAllMocks()
-        useCase = UploadVideoUseCase(videoRepository, storageService, userWriteGuard, storageQuotaUseCase)
+        useCase = UploadVideoUseCase(videoRepository, storageService, userWriteGuard, storageQuotaUseCase, mockk<com.ongo.application.video.MonthlyUploadQuotaUseCase>(relaxed = true))
         every { storageService.supportsMultipartUpload() } returns true
     }
 

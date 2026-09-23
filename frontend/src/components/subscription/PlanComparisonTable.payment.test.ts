@@ -7,17 +7,17 @@ const plans: Plan[] = [
   {
     type: 'FREE', name: 'Free', price: 0, yearlyPrice: 0, maxPlatforms: 1,
     maxUploadsPerMonth: 5, maxScheduleDays: 0, analyticsPeriodDays: 7, storageMb: 1024,
-    commentManagement: false, teamMembers: 0, freeAiCredits: 30, support: '커뮤니티',
+    commentManagement: false, teamMembers: 0, freeAiCredits: 30, competitorLimit: 2, support: '커뮤니티',
   },
   {
     type: 'PRO', name: 'Pro', price: 19900, yearlyPrice: 199000, maxPlatforms: 4,
     maxUploadsPerMonth: 100, maxScheduleDays: 30, analyticsPeriodDays: 365, storageMb: 51200,
-    commentManagement: true, teamMembers: 2, freeAiCredits: 300, support: '우선 이메일',
+    commentManagement: true, teamMembers: 2, freeAiCredits: 300, competitorLimit: 15, support: '우선 이메일',
   },
   {
     type: 'BUSINESS', name: 'Business', price: 49900, yearlyPrice: 499000, maxPlatforms: 4,
     maxUploadsPerMonth: -1, maxScheduleDays: 90, analyticsPeriodDays: -1, storageMb: 204800,
-    commentManagement: true, teamMembers: 10, freeAiCredits: 1000, support: '전담 매니저',
+    commentManagement: true, teamMembers: 10, freeAiCredits: 1000, competitorLimit: -1, support: '전담 매니저',
   },
 ]
 
@@ -35,6 +35,14 @@ describe('PlanComparisonTable 결제 상태 게이팅', () => {
     const paidButton = wrapper.findAll('button').find((button) => button.text() === '업그레이드')
     expect(paidButton?.attributes('disabled')).toBeDefined()
     expect(paidButton?.attributes('title')).toBe('결제 설정을 확인할 수 없습니다.')
+  })
+
+  it('경쟁 채널 한도를 플랜별로 표시한다', () => {
+    const wrapper = mount(PlanComparisonTable, { props: { plans, paymentEnabled: true } })
+    const row = wrapper.findAll('tr').find((item) => item.text().includes('경쟁 채널 추적'))
+    expect(row?.text()).toContain('2개')
+    expect(row?.text()).toContain('15개')
+    expect(row?.text()).toContain('무제한')
   })
 
   it('결제가 불가해도 다운그레이드 버튼은 사용할 수 있다', () => {

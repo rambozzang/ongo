@@ -14,6 +14,7 @@ import java.io.InputStreamReader
 @Service
 class CsvImportUseCase(
     private val videoRepository: VideoRepository,
+    private val monthlyUploadQuotaUseCase: com.ongo.application.video.MonthlyUploadQuotaUseCase,
 ) {
 
     @Transactional
@@ -53,6 +54,15 @@ class CsvImportUseCase(
                 }
 
                 val tags = tagsRaw.split(";").map { it.trim() }.filter { it.isNotEmpty() }
+
+                // CSV 한 줄도 새 콘텐츠다. 한도를 넘는 줄은 그 줄만 실패로 보고한다 —
+                // 앞의 줄까지 되돌리면 사용자가 무엇이 들어갔는지 알 수 없다.
+                try {
+                    monthlyUploadQuotaUseCase.check(userId)
+                } catch (e: com.ongo.common.exception.PlanLimitExceededException) {
+                    errors.add(CsvRowError(rowNumber, e.message ?: "월간 업로드 한도를 넘었습니다."))
+                    continue
+                }
 
                 val video = Video(
                     userId = userId,

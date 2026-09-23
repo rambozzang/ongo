@@ -53,7 +53,9 @@ class RecycleVideoUseCase(
                 originalFilename = source.originalFilename,
                 thumbnailUrls = source.thumbnailUrls,
                 mediaType = source.mediaType,
-                source = source.source,
+                // 재게시 사본이다. 원본은 들어올 때 이미 월 업로드로 셌다 — 원본의 출처를 복사하면
+                // 같은 콘텐츠를 두 번 센다(MonthlyUploadPolicy).
+                source = com.ongo.domain.contentsource.VideoSource.DERIVED,
                 status = com.ongo.common.enums.UploadStatus.DRAFT,
             )
         )

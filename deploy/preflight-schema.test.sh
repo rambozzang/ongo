@@ -87,6 +87,8 @@ case "\$query" in
       if [ "\$scenario" = "no-notification-enum" ]; then echo ""; else echo "1"; fi ;;
   *"subscription_status"*)
       if [ "\$scenario" = "no-suspended-enum" ]; then echo ""; else echo "1"; fi ;;
+  *"video_source"*)
+      if [ "\$scenario" = "no-derived-enum" ]; then echo ""; else echo "1"; fi ;;
   *"ORDER BY installed_rank"*)
       case "\$scenario" in
         no-v104) echo "93" ;;
@@ -179,9 +181,9 @@ rc=$?
 [ "$rc" -eq 1 ] \
     && pass "요구 버전 이력이 없으면 rc=1 로 중단한다" \
     || fail "요구 버전 없음을 rc=1 로 알리지 않았다" "rc=$rc"
-grep -q "V94~V115" "$LAST_TMP/out.log" \
-    && pass "중단 메시지가 V94~V115 선행 적용을 명시한다" \
-    || fail "중단 메시지에 V94~V115 안내가 없다" "$(tail -3 "$LAST_TMP/out.log")"
+grep -q "V94~V116" "$LAST_TMP/out.log" \
+    && pass "중단 메시지가 V94~V116 선행 적용을 명시한다" \
+    || fail "중단 메시지에 V94~V116 안내가 없다" "$(tail -3 "$LAST_TMP/out.log")"
 
 run_with no-column DB_PASSWORD=secret
 rc=$?
@@ -311,6 +313,13 @@ rc=$?
 [ "$rc" -eq 1 ] \
     && pass "subscription_status 에 SUSPENDED 가 없으면 rc=1 로 중단한다" \
     || fail "V114 subscription_status 누락을 잡지 못했다" "rc=$rc / $(tail -3 "$LAST_TMP/out.log")"
+
+# V116 — 사본 출처. 없으면 재활용·반복 예약·쇼츠 클립 저장이 INSERT 에서 죽는다.
+run_with no-derived-enum DB_PASSWORD=secret
+rc=$?
+[ "$rc" -eq 1 ] \
+    && pass "video_source 에 DERIVED 가 없으면 rc=1 로 중단한다" \
+    || fail "V116 video_source 누락을 잡지 못했다" "rc=$rc / $(tail -3 "$LAST_TMP/out.log")"
 
 run_with ok DB_PASSWORD=secret
 rc=$?

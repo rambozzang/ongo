@@ -1,6 +1,8 @@
 import type { Platform } from './channel'
 
 export interface DashboardKpi {
+  /** Server-enforced date range; present only when the request was plan-limited. */
+  periodLimit?: { requestedDays: number; appliedDays: number; maxDays: number; wasTruncated: boolean } | null
   /**
    * 기간 내 조회수 합계. **조회수를 수집하는 플랫폼의 행이 없으면 `null`** 이다.
    *

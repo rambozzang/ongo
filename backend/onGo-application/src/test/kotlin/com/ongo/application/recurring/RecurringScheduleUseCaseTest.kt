@@ -3,12 +3,16 @@ package com.ongo.application.recurring
 import com.ongo.application.recurring.dto.CreateRecurringScheduleRequest
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.AccountFrozenException
+import com.ongo.common.enums.AuthProvider
+import com.ongo.common.enums.PlanType
 import com.ongo.domain.accountdeletion.UserWriteGuard
 import com.ongo.domain.recurring.RecurringSchedule
 import com.ongo.domain.recurring.RecurringScheduleRepository
 import com.ongo.domain.video.Video
 import com.ongo.domain.video.VideoRepository
 import com.ongo.domain.channel.ChannelRepository
+import com.ongo.domain.user.User
+import com.ongo.domain.user.UserRepository
 import com.ongo.application.video.StorageService
 import io.mockk.every
 import io.mockk.mockk
@@ -27,6 +31,17 @@ class RecurringScheduleUseCaseTest {
     private val userWriteGuard = mockk<UserWriteGuard>(relaxed = true)
     private val channelRepository = mockk<ChannelRepository>(relaxed = true)
     private val storageService = mockk<StorageService>(relaxed = true)
+    private val userRepository = mockk<UserRepository>()
+
+    @Test
+    fun `Free 플랜은 반복 예약을 생성하지 못한다`() {
+        val error = assertThrows(com.ongo.common.exception.PlanLimitExceededException::class.java) {
+            useCase(plan = PlanType.FREE).createSchedule(1L, request())
+        }
+
+        assertEquals("PLAN_LIMIT_EXCEEDED", error.code)
+        verify(exactly = 0) { repository.save(any()) }
+    }
 
     @Test
     fun `동결된 계정은 반복 예약을 생성할 수 없다`() {
@@ -42,6 +57,7 @@ class RecurringScheduleUseCaseTest {
 
     @Test
     fun `반복 예약은 원본 영상 소유자만 생성할 수 있다`() {
+        every { userRepository.findById(1L) } returns user()
         every { videoRepository.findById(10L) } returns Video(
             id = 10L,
             userId = 99L,
@@ -56,6 +72,7 @@ class RecurringScheduleUseCaseTest {
 
     @Test
     fun `반복 예약은 파일이 있는 소유 영상과 유효한 플랫폼을 저장한다`() {
+        every { userRepository.findById(1L) } returns user()
         every { videoRepository.findById(10L) } returns Video(
             id = 10L,
             userId = 1L,
@@ -132,10 +149,20 @@ class RecurringScheduleUseCaseTest {
         )
     }
 
-    private fun useCase(): RecurringScheduleUseCase {
+    private fun useCase(plan: PlanType = PlanType.BUSINESS): RecurringScheduleUseCase {
         every { storageService.getFileUrl(any(), any()) } returns "https://storage.test/video.mp4"
-        return RecurringScheduleUseCase(repository, videoRepository, userWriteGuard, channelRepository, storageService)
+        every { userRepository.findById(1L) } returns user(plan)
+        return RecurringScheduleUseCase(repository, videoRepository, userWriteGuard, channelRepository, storageService, userRepository)
     }
+
+    private fun user(plan: PlanType = PlanType.BUSINESS) = User(
+        id = 1L,
+        email = "creator@example.com",
+        name = "Creator",
+        provider = AuthProvider.GOOGLE,
+        providerId = "google-1",
+        planType = plan,
+    )
 
     private fun request() = CreateRecurringScheduleRequest(
         videoId = 10L,

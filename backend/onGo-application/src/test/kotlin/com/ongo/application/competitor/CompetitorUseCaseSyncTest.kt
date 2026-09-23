@@ -1,6 +1,8 @@
 package com.ongo.application.competitor
 
 import com.ongo.common.exception.BusinessException
+import com.ongo.common.exception.PlanLimitExceededException
+import com.ongo.common.enums.PlanType
 import com.ongo.domain.analytics.AnalyticsRepository
 import com.ongo.domain.channel.ChannelRepository
 import com.ongo.domain.competitor.ChannelLookupPort
@@ -8,6 +10,7 @@ import com.ongo.domain.competitor.ChannelLookupResult
 import com.ongo.domain.competitor.Competitor
 import com.ongo.domain.competitor.CompetitorRepository
 import com.ongo.domain.subscription.SubscriptionRepository
+import com.ongo.domain.subscription.Subscription
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -28,6 +31,7 @@ class CompetitorUseCaseSyncTest {
 
     private val competitorRepository = mockk<CompetitorRepository>(relaxed = true)
     private val channelLookupPort = mockk<ChannelLookupPort>()
+    private val subscriptionRepository = mockk<SubscriptionRepository>(relaxed = true)
     private val refreshService = CompetitorRefreshService(competitorRepository, channelLookupPort)
 
     private val useCase = CompetitorUseCase(
@@ -37,7 +41,7 @@ class CompetitorUseCaseSyncTest {
         analyticsRepository = mockk<AnalyticsRepository>(relaxed = true),
         videoUploadRepository = mockk<com.ongo.domain.video.VideoUploadRepository>(relaxed = true),
         channelRepository = mockk<ChannelRepository>(relaxed = true),
-        subscriptionRepository = mockk<SubscriptionRepository>(relaxed = true),
+        subscriptionRepository = subscriptionRepository,
     )
 
     private fun competitor(id: Long, platform: String = "YOUTUBE") = Competitor(
@@ -49,6 +53,27 @@ class CompetitorUseCaseSyncTest {
     )
 
     private fun found() = ChannelLookupResult(found = true, subscriberCount = 10, totalViews = 100, videoCount = 5)
+
+    @Test
+    @DisplayName("Free 경쟁 채널 한도는 공통 플랜 한도 코드로 거절한다")
+    fun competitorCapUsesPlanLimitCode() {
+        every { subscriptionRepository.findByUserId(7L) } returns Subscription(userId = 7L, planType = PlanType.FREE)
+        every { competitorRepository.countByUserId(7L) } returns PlanType.FREE.competitorLimit
+
+        val error = assertFailsWith<PlanLimitExceededException> {
+            useCase.addCompetitor(
+                7L,
+                com.ongo.application.competitor.dto.CreateCompetitorRequest(
+                    platform = "YOUTUBE",
+                    platformChannelId = "other-channel",
+                    channelName = "other",
+                ),
+            )
+        }
+
+        assertEquals("PLAN_LIMIT_EXCEEDED", error.code)
+        verify(exactly = 0) { competitorRepository.save(any()) }
+    }
 
     @Test
     @DisplayName("제공자를 실제로 호출해 갱신하고 건수를 그대로 보고한다")

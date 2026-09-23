@@ -69,7 +69,9 @@ class RecycleVideoUseCaseTest {
                 it.title == "복사본" &&
                     it.fileUrl == source.fileUrl &&
                     it.thumbnailUrls == source.thumbnailUrls &&
-                    it.status == UploadStatus.DRAFT
+                    it.status == UploadStatus.DRAFT &&
+                    // 사본이다. 원본 출처(UPLOAD_PC)를 복사하면 같은 콘텐츠를 월 업로드로 두 번 센다.
+                    it.source == com.ongo.domain.contentsource.VideoSource.DERIVED
             })
             publishVideoUseCase.publishVideo(1L, 20L, match { it.single().platform == Platform.YOUTUBE })
         }

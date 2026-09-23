@@ -20,6 +20,16 @@
       </div>
     </div>
 
+    <div
+      v-if="periodLimit?.wasTruncated"
+      data-testid="optimal-times-period-limit"
+      class="flex flex-wrap items-center gap-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2 text-body-xs text-warning-strong"
+      role="status"
+    >
+      <span class="flex-1">{{ $t('dashboard.periodLimited', { days: periodLimit.appliedDays }) }}</span>
+      <router-link to="/subscription" class="font-semibold underline">{{ $t('dashboard.periodLimitUpgrade') }}</router-link>
+    </div>
+
     <!-- 로딩 → 빈 상태 → 추천 목록 -->
     <AsyncState
       :loading="loadingOptimal"
@@ -137,6 +147,7 @@ const loadingOptimal = ref(false)
 const { t } = useI18n({ useScope: 'global' })
 
 const optimalSlots = ref<OptimalTimeSlot[]>([])
+const periodLimit = ref<{ requestedDays: number; appliedDays: number; maxDays: number; wasTruncated: boolean } | null>(null)
 /** 서버가 추천을 못 만든 이유. 화면이 그대로 보여준다. */
 const optimalUnavailableReason = ref<string | null>(null)
 
@@ -147,9 +158,11 @@ async function fetchOptimalTimes() {
     const result = await analyticsApi.getOptimalTimes(platform)
     optimalSlots.value = result.slots
     optimalUnavailableReason.value = result.unavailableReason ?? null
+    periodLimit.value = result.periodLimit ?? null
   } catch {
     optimalSlots.value = []
     optimalUnavailableReason.value = null
+    periodLimit.value = null
   } finally {
     loadingOptimal.value = false
   }

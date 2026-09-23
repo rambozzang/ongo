@@ -10,6 +10,7 @@ export interface PlanFeatures {
   storageGB: number
   freeCredits: number
   maxTeamMembers: number
+  competitorLimit?: number
 }
 
 export interface Subscription {
@@ -50,6 +51,7 @@ export interface Plan {
   commentManagement: boolean
   teamMembers: number
   freeAiCredits: number
+  competitorLimit: number
   support: string
 }
 
@@ -77,6 +79,7 @@ export const PLANS: Plan[] = [
     commentManagement: false,
     teamMembers: 0,
     freeAiCredits: 30,
+    competitorLimit: 2,
     support: '커뮤니티',
   },
   {
@@ -92,6 +95,7 @@ export const PLANS: Plan[] = [
     commentManagement: false,
     teamMembers: 0,
     freeAiCredits: 100,
+    competitorLimit: 5,
     support: '이메일',
   },
   {
@@ -107,6 +111,7 @@ export const PLANS: Plan[] = [
     commentManagement: true,
     teamMembers: 2,
     freeAiCredits: 300,
+    competitorLimit: 15,
     support: '우선 이메일',
   },
   {
@@ -122,6 +127,7 @@ export const PLANS: Plan[] = [
     commentManagement: true,
     teamMembers: 10,
     freeAiCredits: 1000,
+    competitorLimit: -1,
     support: '전담 매니저',
   },
 ]

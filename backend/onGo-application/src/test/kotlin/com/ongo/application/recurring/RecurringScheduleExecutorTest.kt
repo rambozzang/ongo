@@ -31,6 +31,8 @@ class RecurringScheduleExecutorTest {
     private val userWriteGuard = mockk<UserWriteGuard>()
     private val storageService = mockk<StorageService>()
     private val transactionManager = mockk<PlatformTransactionManager>()
+    private val notificationRepository =
+        mockk<com.ongo.domain.notification.NotificationRepository>(relaxed = true)
 
     private lateinit var executor: RecurringScheduleExecutor
     private val occurrence = LocalDateTime.of(2099, 3, 2, 9, 0)
@@ -46,6 +48,7 @@ class RecurringScheduleExecutorTest {
             true
         }
         every { recurringUseCase.nextRunAtAfter(any(), occurrence) } returns nextOccurrence
+        every { recurringUseCase.deactivateIfOutsideCurrentPlan(any(), any()) } returns false
         every { userWriteGuard.requireWritable(7L, any(), any()) } returns Unit
         executor = RecurringScheduleExecutor(
             recurringRepository,
@@ -56,6 +59,7 @@ class RecurringScheduleExecutorTest {
             userWriteGuard,
             storageService,
             transactionManager,
+            notificationRepository,
         )
     }
 
@@ -87,6 +91,8 @@ class RecurringScheduleExecutorTest {
         executor.executeDueSchedules()
 
         verify(exactly = 1) { videoRepository.save(match { it.id == null && it.userId == 7L }) }
+        // 회차 사본이다. 원본 출처를 복사하면 매 회차가 새 업로드로 세어져 월 한도가 저절로 준다.
+        verify { videoRepository.save(match { it.source == com.ongo.domain.contentsource.VideoSource.DERIVED }) }
         verify(exactly = 1) {
             scheduleRepository.save(match { it.videoId == 20L && it.platforms.keys == setOf(Platform.YOUTUBE.name) })
         }
@@ -94,6 +100,40 @@ class RecurringScheduleExecutorTest {
             videoRepository.update(match { it.id == 20L && it.fileUrl == "https://storage.test/occurrence.mp4" })
         }
         verify(exactly = 1) { transactionManager.commit(any<TransactionStatus>()) }
+    }
+
+    @Test
+    fun `다운그레이드 후 플랜 밖 반복 예약은 비활성화하고 회차를 만들지 않는다`() {
+        val definition = definition()
+        every { recurringRepository.findDue(any()) } returns listOf(definition)
+        every { recurringUseCase.deactivateIfOutsideCurrentPlan(7L, occurrence) } returns true
+        every { recurringRepository.update(definition.copy(isActive = false)) } returns definition.copy(isActive = false)
+
+        executor.executeDueSchedules()
+
+        verify(exactly = 1) { recurringRepository.update(definition.copy(isActive = false)) }
+        verify(exactly = 0) { videoRepository.save(any()) }
+        verify(exactly = 0) { scheduleRepository.save(any()) }
+        verify(exactly = 0) { recurringRepository.markRun(any(), any(), any(), any()) }
+        // 조용히 멈추면 사용자는 왜 게시가 안 되는지 모른다. 멈춘 사실과 해법(업그레이드)을 알린다.
+        verify(exactly = 1) {
+            notificationRepository.save(match { it.userId == 7L && it.referenceType == "recurring_schedule" })
+        }
+    }
+
+    /** 알림 저장이 실패해도 비활성화는 유지된다 — 한도를 넘는 게시를 막는 것이 우선이다. */
+    @Test
+    fun `알림 저장이 실패해도 반복 예약은 멈춘 상태로 남는다`() {
+        val definition = definition()
+        every { recurringRepository.findDue(any()) } returns listOf(definition)
+        every { recurringUseCase.deactivateIfOutsideCurrentPlan(7L, occurrence) } returns true
+        every { recurringRepository.update(definition.copy(isActive = false)) } returns definition.copy(isActive = false)
+        every { notificationRepository.save(any()) } throws IllegalStateException("db down")
+
+        executor.executeDueSchedules()
+
+        verify(exactly = 1) { recurringRepository.update(definition.copy(isActive = false)) }
+        verify(exactly = 0) { videoRepository.save(any()) }
     }
 
     @Test

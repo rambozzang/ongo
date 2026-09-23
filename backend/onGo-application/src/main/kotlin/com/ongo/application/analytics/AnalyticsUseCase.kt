@@ -2,6 +2,7 @@ package com.ongo.application.analytics
 
 import com.ongo.application.analytics.dto.*
 import com.ongo.common.enums.Platform
+import com.ongo.common.PeriodLimitMetadata
 import com.ongo.common.exception.ForbiddenException
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.analytics.AnalyticsDaily
@@ -25,6 +26,19 @@ class AnalyticsUseCase(
     private val videoUploadRepository: VideoUploadRepository,
     private val creditRepository: CreditRepository
 ) {
+
+    fun limitPeriod(userId: Long, requestedDays: Int): PeriodLimitMetadata {
+        val user = userRepository.findById(userId) ?: throw NotFoundException("사용자", userId)
+        val requested = requestedDays.coerceAtLeast(1)
+        val maximum = user.planType.analyticsDays
+        val applied = minOf(requested, maximum)
+        return PeriodLimitMetadata(
+            requestedDays = requestedDays,
+            appliedDays = applied,
+            maxDays = maximum,
+            wasTruncated = requested > maximum,
+        )
+    }
 
     @Cacheable(value = ["dashboardKpi"], key = "#userId + '-' + #days")
     fun getDashboardKpi(userId: Long, days: Int): DashboardKpiResponse {
@@ -170,8 +184,8 @@ class AnalyticsUseCase(
         return VideoAnalyticsResponse(videoId = videoId, title = video.title, platforms = platforms)
     }
 
-    fun getHeatmap(userId: Long): HeatmapResponse {
-        val data = analyticsRepository.getHeatmapData(userId)
+    fun getHeatmap(userId: Long, days: Int = Int.MAX_VALUE): HeatmapResponse {
+        val data = analyticsRepository.getHeatmapData(userId, days)
         return HeatmapResponse(data = data)
     }
 
@@ -380,13 +394,13 @@ class AnalyticsUseCase(
      * ([PlatformMetricAvailability]). 미지원 지표의 저장 0 을 더하면 참여율이 실제보다
      * 낮게 나온다. 조회수가 0 인 행도 분모가 없어 제외한다.
      */
-    fun getOptimalPublishTimes(userId: Long, platform: Platform?): OptimalTimesResponse {
+    fun getOptimalPublishTimes(userId: Long, platform: Platform?, days: Int = 30): OptimalTimesResponse {
         /*
          * 게시 시각과 플랫폼은 `findCrossPlatformDetailMetrics` 가 함께 준다
          * (V(현재) 이후 `publishedAt` 은 `video_uploads.published_at` 을 읽는다).
          * 새 쿼리를 만들지 않는다.
          */
-        val uploads = analyticsRepository.findCrossPlatformDetailMetrics(userId, OPTIMAL_TIME_WINDOW_DAYS)
+        val uploads = analyticsRepository.findCrossPlatformDetailMetrics(userId, days)
             .filter { platform == null || it.platform == platform.name }
             // 게시 시각을 모르면 시각을 추천할 근거가 없다. 정오로 가정하지 않는다.
             .filter { it.publishedAt != null }

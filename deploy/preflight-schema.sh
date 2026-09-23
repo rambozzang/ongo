@@ -84,7 +84,7 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; }
 #
 # 새 마이그레이션을 추가하면 **이 값을 함께 올려야 한다.** 그러지 않으면 컬럼이 없는
 # 서버가 기동을 통과한 뒤 런타임에 SQL 오류를 낸다 — preflight 가 있으나 마나가 된다.
-REQUIRED_FLYWAY_VERSION="115"
+REQUIRED_FLYWAY_VERSION="116"
 
 # 버전 확인과 별개로 실제 스키마도 본다. 이력만 믿으면 수동으로 컬럼을 지운 경우를
 # 놓친다. "테이블:컬럼" 이며 컬럼이 비면 테이블 존재만 본다.
@@ -101,7 +101,7 @@ abort_migration_needed() {
     error "기능 토글(SUBSCRIPTION_RENEWAL_ENABLED)로는 막을 수 없습니다 —"
     error "토글은 정기 청구 실행만 끄고, 컬럼 접근은 구독을 읽는 모든 경로에 있습니다."
     error ""
-    error "조치: V94~V115 를 순서대로 먼저 적용한 뒤 다시 배포하세요."
+    error "조치: V94~V116 를 순서대로 먼저 적용한 뒤 다시 배포하세요."
     error "절차는 docs/operations/SUBSCRIPTION_RENEWAL_ROLLOUT.md 를 따르세요."
     exit 1
 }
@@ -171,7 +171,7 @@ fi
 # 1) 마이그레이션 이력
 APPLIED="$(query "SELECT 1 FROM flyway_schema_history WHERE version = '$REQUIRED_FLYWAY_VERSION' AND success LIMIT 1")"
 if [ "$APPLIED" != "1" ]; then
-    abort_migration_needed "V$REQUIRED_FLYWAY_VERSION 이 적용되지 않았습니다(현재: ${CURRENT_VERSION:-알 수 없음}). V94~V115 선행 적용이 필요합니다."
+    abort_migration_needed "V$REQUIRED_FLYWAY_VERSION 이 적용되지 않았습니다(현재: ${CURRENT_VERSION:-알 수 없음}). V94~V116 선행 적용이 필요합니다."
 fi
 
 # 2) 실제 스키마 — 이력만 믿으면 수동으로 지운 컬럼을 놓친다.
@@ -242,6 +242,7 @@ done <<'ENUM_CHECKS'
 notification_type:CHANNEL_TOKEN_EXPIRED:채널 토큰 만료 알림이 실패하고 토큰 갱신 배치가 중단됩니다.
 notification_type:REVENUE_ALERT:수익 알림 저장이 실패합니다.
 subscription_status:SUSPENDED:관리자의 구독 정지가 실패합니다.
+video_source:DERIVED:재활용·반복 예약 사본 저장이 실패합니다(V116).
 ENUM_CHECKS
 
 info "DB 스키마 점검 통과 — V$REQUIRED_FLYWAY_VERSION 적용 확인, 필요한 테이블·컬럼 존재."

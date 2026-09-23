@@ -284,7 +284,13 @@ class SubscriptionUseCase(
 
     fun getUsage(userId: Long): UsageResponse {
         val currentMonth = YearMonth.now()
-        val uploadsThisMonth = videoRepository.countByUserIdAndMonth(userId, currentMonth).toInt()
+        // 화면에 보이는 "이번 달 3/5" 와 서버가 막는 기준이 **같은 숫자**여야 한다. 예전에는 모든 영상
+        // 행을 세서, 쇼츠 클립·재활용 사본까지 사용량으로 보여 줬다(MonthlyUploadQuotaUseCase 와 같은 질의).
+        val uploadsThisMonth = videoRepository.countByUserIdAndMonthAndSources(
+            userId,
+            currentMonth,
+            com.ongo.domain.video.MonthlyUploadPolicy.COUNTED_SOURCES,
+        ).toInt()
 
         // 업로드 화면의 쿼터 검사와 같은 기준을 사용한다. 영상만 더하면 에셋·게시 이미지가
         // 빠져 실제보다 적게 보여지고, 사용자가 플랜 한도를 우회할 수 있다.
@@ -334,6 +340,7 @@ class SubscriptionUseCase(
         analyticsDays = analyticsDays,
         storageGB = storageGB,
         freeCredits = freeCredits,
-        maxTeamMembers = maxTeamMembers
+        maxTeamMembers = maxTeamMembers,
+        competitorLimit = competitorLimit,
     )
 }

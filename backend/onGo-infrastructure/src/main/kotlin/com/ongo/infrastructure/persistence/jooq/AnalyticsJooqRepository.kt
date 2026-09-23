@@ -392,7 +392,7 @@ class AnalyticsJooqRepository(
             }
     }
 
-    override fun getHeatmapData(userId: Long): Map<String, Map<Int, Long>> {
+    override fun getHeatmapData(userId: Long, days: Int?): Map<String, Map<Int, Long>> {
         val uploadIds = getUserUploadIds(userId)
         if (uploadIds.isEmpty()) return emptyMap()
 
@@ -420,6 +420,7 @@ class AnalyticsJooqRepository(
             .join(VIDEO_UPLOADS).on(VIDEO_UPLOAD_ID.eq(DSL.field("video_uploads.id", Long::class.java)))
             .where(VIDEO_UPLOAD_ID.`in`(uploadIds))
             .and(PUBLISHED_AT.isNotNull)
+            .and(days?.let { DATE.ge(java.time.LocalDate.now().minusDays(it.toLong())) } ?: DSL.noCondition())
             /*
              * **조회수를 실제로 보고하는 플랫폼의 행만 더한다.**
              *

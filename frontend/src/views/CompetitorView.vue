@@ -69,6 +69,16 @@
       </button>
     </div>
 
+    <div
+      v-if="planLimitError"
+      data-testid="competitor-plan-limit"
+      class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2.5 text-body text-warning-strong"
+      role="alert"
+    >
+      <span class="min-w-0 flex-1">{{ $t('competitor.planLimitReached') }}</span>
+      <router-link to="/subscription" class="btn-primary">{{ $t('competitor.viewPlans') }}</router-link>
+    </div>
+
     <!-- 채널 목록 -->
     <SectionCard :title="$t('competitor.tabList')" body-class="p-4" class="mb-6">
       <div v-if="store.loading" data-testid="competitor-loading" class="flex justify-center py-8">
@@ -248,6 +258,7 @@ import {
   SparklesIcon,
 } from '@heroicons/vue/24/outline'
 import { useI18n } from 'vue-i18n'
+import { PLAN_LIMIT_EXCEEDED, matchesCode } from '@/composables/usePlanLimit'
 import { useCompetitorStore } from '@/stores/competitor'
 import { useCreditStore } from '@/stores/credit'
 import type { Competitor, CompetitorSyncResponse } from '@/types/competitor'
@@ -265,6 +276,7 @@ const store = useCompetitorStore()
 const creditStore = useCreditStore()
 const showAddModal = ref(false)
 const showCreditModal = ref(false)
+const planLimitError = ref(false)
 const selectedComparisonId = ref<number | null>(null)
 
 const selectedCompetitor = computed(() =>
@@ -291,8 +303,17 @@ function buildSyncSummary(r: CompetitorSyncResponse | null): string {
 const syncSummaryText = computed(() => buildSyncSummary(store.lastSync))
 
 async function onAddCompetitor(data: Omit<Competitor, 'id' | 'addedAt'>) {
-  await store.addCompetitor(data)
-  showAddModal.value = false
+  planLimitError.value = false
+  try {
+    await store.addCompetitor(data)
+    showAddModal.value = false
+  } catch (error) {
+    if (matchesCode(error, PLAN_LIMIT_EXCEEDED, 'COMPETITOR_LIMIT')) {
+      planLimitError.value = true
+      return
+    }
+    throw error
+  }
 }
 
 // 크레딧 충전 후 차단만 해제한다. 인사이트는 자동 재호출하지 않는다.

@@ -65,6 +65,9 @@ class RenderedClipPersister(
                     fileSizeBytes = sizeBytes,
                     originalFilename = "clip-${clip.seq}.mp4",
                     status = UploadStatus.DRAFT,
+                    // 쇼츠 결과물은 크레딧으로 이미 과금된다. 월 업로드로 세면 쇼츠를 한 번
+                    // 돌린 무료 사용자가 자기 영상을 올리지 못한다(MonthlyUploadPolicy).
+                    source = com.ongo.domain.contentsource.VideoSource.GENERATED,
                 ),
             )
             val videoId = video.id ?: throw IllegalStateException("영상 레코드를 만들지 못했습니다")

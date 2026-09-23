@@ -22,7 +22,8 @@ data class PlanFeatures(
     val analyticsDays: Int,
     val storageGB: Int,
     val freeCredits: Int,
-    val maxTeamMembers: Int
+    val maxTeamMembers: Int,
+    val competitorLimit: Int,
 )
 
 data class ChangePlanRequest(

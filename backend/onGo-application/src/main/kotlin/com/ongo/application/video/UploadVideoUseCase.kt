@@ -19,6 +19,7 @@ class UploadVideoUseCase(
     private val storageService: StorageService,
     private val userWriteGuard: UserWriteGuard,
     private val storageQuotaUseCase: StorageQuotaUseCase,
+    private val monthlyUploadQuotaUseCase: MonthlyUploadQuotaUseCase,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -33,6 +34,9 @@ class UploadVideoUseCase(
         mediaType: MediaType = MediaType.VIDEO,
     ): Video {
         userWriteGuard.requireWritable(userId)
+        // 초안도 월 업로드로 센다(출처 UPLOAD_PC). 세면서 여기서 막지 않으면, 초안을 몇 개 만든
+        // 사용자가 이유도 모른 채 영상 업로드에서 막힌다(MonthlyUploadPolicy).
+        monthlyUploadQuotaUseCase.check(userId)
         val video = videoRepository.save(
             Video(
                 userId = userId,
@@ -59,6 +63,7 @@ class UploadVideoUseCase(
         FileValidationUtil.validate(filename, contentType, fileSize)
         // 신고 크기 기준의 1차 방어. 실제 크기는 confirm 에서 다시 본다.
         storageQuotaUseCase.checkQuota(userId, fileSize)
+        monthlyUploadQuotaUseCase.check(userId)
         val video = videoRepository.save(
             Video(
                 userId = userId,
@@ -112,6 +117,8 @@ class UploadVideoUseCase(
      * 업로드를 시작한다. 스토리지가 멀티파트를 지원하지 않으면(MinIO) 단일 PUT URL 을 돌려준다 —
      * 클라이언트는 [UploadInitiation.multipart] 를 보고 분기한다.
      */
+    // 월 한도·용량 검사가 잡는 사용자 행 잠금이 영상 행 저장까지 유지되도록 트랜잭션으로 묶는다.
+    @Transactional
     fun initiateUpload(userId: Long, filename: String, contentType: String, fileSize: Long): UploadInitiation {
         if (!storageService.supportsMultipartUpload()) {
             val single = initiatePresignedUpload(userId, filename, contentType, fileSize)
@@ -121,6 +128,7 @@ class UploadVideoUseCase(
         userWriteGuard.requireWritable(userId)
         FileValidationUtil.validate(filename, contentType, fileSize)
         storageQuotaUseCase.checkQuota(userId, fileSize)
+        monthlyUploadQuotaUseCase.check(userId)
         val plan = MultipartUploadPlan.forSize(fileSize)
 
         val video = videoRepository.save(

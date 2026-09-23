@@ -35,8 +35,9 @@ class VideoDownloadUseCaseTest {
         // 확정 구간은 실제 구현을 조립한다 — 다운로드부터 저장까지의 기존 계약을 그대로 검증하기 위해서다.
         useCase = VideoDownloadUseCase(
             sourceDownloader,
-            ImportedVideoPersister(videoRepository, fileStoragePort, storageQuotaUseCase),
+            ImportedVideoPersister(videoRepository, fileStoragePort, storageQuotaUseCase, mockk<com.ongo.application.video.MonthlyUploadQuotaUseCase>(relaxed = true)),
             objectMapper,
+            mockk<com.ongo.application.video.MonthlyUploadQuotaUseCase>(relaxed = true),
         )
     }
 
@@ -125,7 +126,7 @@ class VideoDownloadUseCaseTest {
     @Test
     fun `downloads outside the transaction and persists only after the download completes`() {
         val persister = mockk<ImportedVideoPersister>()
-        val useCaseWithMockPersister = VideoDownloadUseCase(sourceDownloader, persister, objectMapper)
+        val useCaseWithMockPersister = VideoDownloadUseCase(sourceDownloader, persister, objectMapper, mockk<com.ongo.application.video.MonthlyUploadQuotaUseCase>(relaxed = true))
         val path = Files.createTempFile("ongo-video-download-", ".mp4").also { temporaryFiles.add(it) }
         Files.write(path, ByteArray(10))
         every { sourceDownloader.download(any(), any()) } returns DownloadedVideo(
@@ -149,7 +150,7 @@ class VideoDownloadUseCaseTest {
     @Test
     fun `never reaches the transaction when the download fails`() {
         val persister = mockk<ImportedVideoPersister>()
-        val useCaseWithMockPersister = VideoDownloadUseCase(sourceDownloader, persister, objectMapper)
+        val useCaseWithMockPersister = VideoDownloadUseCase(sourceDownloader, persister, objectMapper, mockk<com.ongo.application.video.MonthlyUploadQuotaUseCase>(relaxed = true))
         every { sourceDownloader.download(any(), any()) } throws IllegalStateException("추출기 실패")
 
         assertFailsWith<com.ongo.common.exception.BusinessException> {

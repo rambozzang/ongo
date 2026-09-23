@@ -106,7 +106,16 @@ class VideoJooqRepository(
             .fetchOne(0, Long::class.java) ?: 0L
     }
 
-    override fun countByUserIdAndMonth(userId: Long, yearMonth: YearMonth): Long {
+    /**
+     * `source` 는 PostgreSQL enum 이라 `::text` 로 비교한다(SOURCE_TEXT). 문자열 목록과 enum 을
+     * 직접 비교하면 "operator does not exist: video_source = character varying" 으로 실패한다.
+     */
+    override fun countByUserIdAndMonthAndSources(
+        userId: Long,
+        yearMonth: YearMonth,
+        sources: Set<com.ongo.domain.contentsource.VideoSource>,
+    ): Long {
+        if (sources.isEmpty()) return 0L
         val startOfMonth = yearMonth.atDay(1).atStartOfDay()
         val startOfNextMonth = yearMonth.plusMonths(1).atDay(1).atStartOfDay()
 
@@ -115,6 +124,7 @@ class VideoJooqRepository(
             .where(USER_ID.eq(userId))
             .and(CREATED_AT.greaterOrEqual(startOfMonth))
             .and(CREATED_AT.lessThan(startOfNextMonth))
+            .and(SOURCE_TEXT.`in`(sources.map { it.name }))
             .fetchOne(0, Long::class.java) ?: 0L
     }
 
