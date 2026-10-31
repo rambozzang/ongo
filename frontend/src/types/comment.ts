@@ -160,4 +160,15 @@ export interface BatchActionResult {
   successCount: number
   failCount: number
   totalRequested: number
+  /** 요청 순서대로의 항목별 결과. 실패한 것만 다시 시도하려면 이것이 필요하다. */
+  items: BatchItemResult[]
+}
+
+export interface BatchItemResult {
+  commentId: number
+  success: boolean
+  errorCode: string | null
+  message: string | null
+  /** 다시 보내면 성공할 수 있는가(플랫폼 일시 오류 등). 권한·미지원은 false. */
+  retryable: boolean
 }

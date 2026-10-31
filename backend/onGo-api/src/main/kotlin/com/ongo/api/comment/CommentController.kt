@@ -129,13 +129,18 @@ class CommentController(
         return ResData.success(null, "댓글이 삭제되었습니다")
     }
 
-    @Operation(summary = "댓글 숨김 토글", description = "지정된 댓글의 숨김 상태를 토글합니다.")
+    @Operation(
+        summary = "댓글 숨김",
+        description = "hidden=true/false 로 숨김 상태를 정한다. 생략하면 뒤집는다(예전 토글 동작). " +
+            "\"처리 완료\" 처럼 결과가 정해져야 하는 동작은 반드시 값을 준다.",
+    )
     @PutMapping("/{id}/hide")
     fun hideComment(
         @Parameter(hidden = true) @CurrentUser userId: Long,
         @PathVariable id: Long,
+        @RequestParam(required = false) hidden: Boolean?,
     ): ResponseEntity<ResData<CommentResponse>> {
-        val result = commentEngagementUseCase.hideComment(userId, id)
+        val result = commentEngagementUseCase.setHidden(userId, id, hidden)
         return ResData.success(result)
     }
 

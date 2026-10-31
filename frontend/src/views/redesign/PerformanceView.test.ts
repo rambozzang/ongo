@@ -15,6 +15,10 @@ vi.mock('@/api/analytics', () => ({
     topVideos: vi.fn(),
     avgViewDuration: vi.fn(),
     subscriberConversion: vi.fn(),
+    platformComparison: vi.fn(),
+    tagPerformance: vi.fn(),
+    getOptimalTimes: vi.fn(),
+    videoCompare: vi.fn(),
   },
 }))
 vi.mock('@/api/schedule', () => ({ scheduleApi: { list: vi.fn() } }))
@@ -22,7 +26,10 @@ vi.mock('@/api/schedule', () => ({ scheduleApi: { list: vi.fn() } }))
 async function renderPerformance() {
   const pinia = createPinia()
   setActivePinia(pinia)
-  const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/performance', component: { template: '<div />' } }] })
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/performance', component: { template: '<div />' } }],
+  })
   const i18n = createI18n({ legacy: false, locale: 'ko', messages: { ko: koMessages } })
   await router.push('/performance')
   await router.isReady()
@@ -30,9 +37,16 @@ async function renderPerformance() {
     global: {
       plugins: [pinia, router, i18n],
       stubs: {
-        KpiCard: { template: '<div class="kpi"><span>{{ label }}</span><span>{{ value }}</span><span>{{ note }}</span></div>', props: ['label', 'value', 'note'] },
+        KpiCard: {
+          template:
+            '<div class="kpi"><span>{{ label }}</span><span>{{ value }}</span><span>{{ note }}</span></div>',
+          props: ['label', 'value', 'note'],
+        },
         PlatformChip: { template: '<span><slot /></span>' },
-        SectionCard: { template: '<section><h2>{{ title }}</h2><slot /></section>', props: ['title'] },
+        SectionCard: {
+          template: '<section><h2>{{ title }}</h2><slot /></section>',
+          props: ['title'],
+        },
         ThumbPlaceholder: true,
         ArrowDownTrayIcon: true,
         ChartBarIcon: true,
@@ -44,19 +58,55 @@ async function renderPerformance() {
   return wrapper
 }
 
-const dashboard = () => ({ totalViews: 12500, viewsChangePercent: 12.5, totalSubscribers: 400, subscribersChange: 10, totalLikes: 900, likesChangePercent: 2, creditBalance: 0, creditTotal: 0 })
-const trends = () => [{ date: '2026-08-08', totalViews: 9000, platformViews: {} }, { date: '2026-08-09', totalViews: 12500, platformViews: {} }]
-const topVideos = () => [{ videoId: 11, title: '성과가 좋은 영상', thumbnailUrl: null, totalViews: 12500, totalLikes: 900, publishedAt: '2026-08-08T00:00:00Z', platforms: ['YOUTUBE'] }]
+const dashboard = () => ({
+  totalViews: 12500,
+  viewsChangePercent: 12.5,
+  totalSubscribers: 400,
+  subscribersChange: 10,
+  totalLikes: 900,
+  likesChangePercent: 2,
+  creditBalance: 0,
+  creditTotal: 0,
+})
+const trends = () => [
+  { date: '2026-08-08', totalViews: 9000, platformViews: {} },
+  { date: '2026-08-09', totalViews: 12500, platformViews: {} },
+]
+const topVideos = () => [
+  {
+    videoId: 11,
+    title: '성과가 좋은 영상',
+    thumbnailUrl: null,
+    totalViews: 12500,
+    totalLikes: 900,
+    publishedAt: '2026-08-08T00:00:00Z',
+    platforms: ['YOUTUBE'],
+  },
+]
 
 describe('PerformanceView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(analyticsApi.platformComparison).mockResolvedValue([])
+    vi.mocked(analyticsApi.tagPerformance).mockResolvedValue([])
+    vi.mocked(analyticsApi.getOptimalTimes).mockResolvedValue({ slots: [] })
     vi.mocked(analyticsApi.dashboard).mockResolvedValue(dashboard() as never)
     vi.mocked(analyticsApi.trends).mockResolvedValue(trends() as never)
     vi.mocked(analyticsApi.topVideos).mockResolvedValue(topVideos() as never)
-    vi.mocked(analyticsApi.avgViewDuration).mockResolvedValue({ period: '30일', avgDurationSeconds: 95, data: [] } as never)
-    vi.mocked(analyticsApi.subscriberConversion).mockResolvedValue({ period: '30일', totalGained: 24, data: [] } as never)
-    vi.mocked(scheduleApi.list).mockResolvedValue([{ status: 'PUBLISHED' }, { status: 'FAILED' }] as never)
+    vi.mocked(analyticsApi.avgViewDuration).mockResolvedValue({
+      period: '30일',
+      avgDurationSeconds: 95,
+      data: [],
+    } as never)
+    vi.mocked(analyticsApi.subscriberConversion).mockResolvedValue({
+      period: '30일',
+      totalGained: 24,
+      data: [],
+    } as never)
+    vi.mocked(scheduleApi.list).mockResolvedValue([
+      { status: 'PUBLISHED' },
+      { status: 'FAILED' },
+    ] as never)
   })
 
   it('renders server analytics, top video and changes the requested period', async () => {
@@ -110,7 +160,10 @@ describe('PerformanceView', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
     const wrapper = await renderPerformance()
 
-    await wrapper.findAll('button').find((button) => button.text().includes('CSV'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('CSV'))!
+      .trigger('click')
     const csv = await blobs[0].text()
 
     expect(csv).toContain(koMessages.analyticsView.notMeasured)
@@ -137,7 +190,10 @@ describe('PerformanceView', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
     const wrapper = await renderPerformance()
 
-    await wrapper.findAll('button').find((button) => button.text().includes('CSV'))!.trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('CSV'))!
+      .trigger('click')
     const csv = await blobs[0].text()
 
     expect(csv).toContain('"성과가 좋은 영상","0"')

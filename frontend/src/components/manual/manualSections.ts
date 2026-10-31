@@ -108,6 +108,7 @@ const RELEASED_MANUAL_SECTION_CAPABILITIES: Record<string, string> = {
   upload: 'compose',
   'image-upload': 'assets',
   scheduling: 'calendar-v2',
+  inbox: 'inbox-v2',
   'ai-tools': 'ai',
   analytics: 'performance',
   competitors: 'competitors',
@@ -349,6 +350,14 @@ export const sectionsKo: ManualSection[] = [
     icon: ArrowUpTrayIcon,
     content: [
       {
+        "subtitle": "작성 중인 내용 보호",
+        "text": "저장하지 않은 문구가 있으면 화면 이동 시 계속 편집, 임시 저장하고 이동, 저장하지 않고 이동 중에서 선택합니다. 저장 실패 시 이동하지 않으며, 저장 도중 추가로 입력한 내용은 다시 저장해야 합니다. 새로고침·창 닫기에도 브라우저 경고가 표시됩니다. 업로드하지 않은 파일과 예약 설정은 문구 임시 저장에 포함되지 않습니다."
+      },
+      {
+        "subtitle": "게시 접수 뒤 추가 작업 실패",
+        "text": "원본 게시가 접수된 후 반복 게시·쇼츠 생성이 실패해도 원본을 다시 제출하지 않습니다. 실패 이유를 확인하고 \"접수된 게시 작업 확인\"에서 원본의 플랫폼별 진행 상태를 확인하세요."
+      },
+      {
         subtitle: '업로드 프로세스',
         text: 'onGo는 Presigned URL 방식으로 파일을 클라우드 스토리지(S3)에 직접 업로드합니다. 서버를 거치지 않아 빠르고 안정적입니다.',
         steps: [
@@ -437,6 +446,18 @@ export const sectionsKo: ManualSection[] = [
     icon: CalendarDaysIcon,
     content: [
       {
+        "subtitle": "주간·월간·목록 보기",
+        "text": "주간은 한 주의 일정을, 월간은 6주를, 목록은 선택한 주의 예약과 플랫폼별 시간을 표시합니다. 제목 검색과 플랫폼·상태 필터를 함께 사용할 수 있습니다. 모든 예약 시간은 한국 시간(Asia/Seoul)입니다. 기존 /schedule 링크도 목록 보기로 연결됩니다."
+      },
+      {
+        "subtitle": "플랫폼별 시간과 일괄 운영",
+        "text": "목록에서 아직 실행되지 않은 예약의 \"플랫폼별 시간 편집\"을 선택해 기준 시간과 대상 채널의 게시 시간을 각각 저장합니다. 여러 대기 예약을 선택해 일정 일수만큼 이동하거나 취소할 수 있습니다. 전체 이동 시 플랫폼 간 시간 차이는 유지됩니다. 각 예약을 개별 처리하므로 일부 실패할 수 있으며, 성공한 예약을 제외하고 실패한 예약만 선택해 다시 실행할 수 있습니다. 실행 중·완료된 작업은 변경할 수 없습니다."
+      },
+      {
+        "subtitle": "외부 캘린더로 내보내기",
+        "text": "현재 기간과 필터 결과를 .ics 파일로 내보내 Google Calendar, Apple Calendar, Outlook 등으로 가져올 수 있습니다. 각 대상 채널의 실제 예약 시각을 별도 일정으로 내보냅니다. 외부 캘린더는 읽기용 스냅샷이며 onGo 예약 변경이 자동 동기화되지는 않습니다."
+      },
+      {
         subtitle: '예약 업로드',
         text: '영상을 특정 날짜와 시간에 자동으로 게시되도록 예약할 수 있습니다.',
         steps: [
@@ -489,11 +510,39 @@ export const sectionsKo: ManualSection[] = [
       },
     ],
   },
+
+  {
+    "id": "inbox",
+    "title": "인박스와 댓글 운영",
+    "icon": ChatBubbleLeftRightIcon,
+    "content": [
+      {
+        "subtitle": "검색·필터·일괄 답변",
+        "text": "댓글을 검색어·플랫폼·감정으로 검색하고 더 불러오기로 다음 페이지를 확인합니다. 선택한 댓글에 같은 답변 보내기 또는 숨김을 실행할 수 있습니다. 작업마다 성공·실패 이유를 확인하고 실패한 항목만 다시 시도하세요. 숨김은 이미 숨긴 댓글을 다시 노출하지 않습니다."
+      },
+      {
+        "subtitle": "AI 일괄 초안 검토",
+        "text": "예상 크레딧을 확인하고 선택한 댓글의 답변 초안을 생성합니다. 초안은 자동 게시되지 않으며 검토·수정한 뒤 전송합니다. 본인 댓글만 처리하며, 일괄 초안은 최대 25개, 일반 일괄 작업은 최대 50개입니다. 일부 초안만 생성되면 실제 AI 원가를 감당하는 최소 사용량을 제외한 미사용 크레딧을 반환합니다. 표시되는 사용량은 최종 정산량이며, 생성 요청이 실패하면 차감분 전액을 반환합니다."
+      }
+    ]
+  },
   {
     id: 'analytics',
     title: '분석',
     icon: ChartBarIcon,
     content: [
+      {
+        "subtitle": "플랫폼·태그별 성과 작업대",
+        "text": "플랫폼별 실제 조회수·좋아요·댓글·공유를 비교합니다. 미측정 지표는 0과 구분해 표시합니다. 태그별 평균 조회수·좋아요 비율·표본 수·추세를 함께 보면서 다음 콘텐츠 방향을 판단하세요. \"완료된 예약 게시\"는 예약으로 실행된 작업 수이며 모든 즉시 게시 영상 수가 아닙니다."
+      },
+      {
+        "subtitle": "영상 비교와 다음 게시 계획",
+        "text": "현재 인기 영상 중 2~5개를 선택해 같은 기간의 조회수·일평균·좋아요·댓글·참여율을 비교합니다. 참여율이 일부 지표만 반영하면 \"일부 측정\"을 표시합니다. 과거 게시 실적에 기반한 추천 시간의 \"이 시간에 만들기\"를 누르면 미래의 한국 시간으로 만들기 화면을 엽니다. 추천은 성과를 보장하지 않으며 표본과 신뢰도를 함께 확인해야 합니다."
+      },
+      {
+        "subtitle": "조회 실패와 보고서 내보내기",
+        "text": "기간을 바꾸면 이전 기간의 데이터를 새 기간 값처럼 표시하지 않습니다. 같은 기간 새로고침 실패 시 일부 이전 값이 남을 수 있으며 실패 안내가 표시됩니다. 플랜에서 제공하는 분석 기간이 제한되면 적용된 일수를 표시합니다. CSV는 추이·인기 영상·플랫폼별 집계와 측정 불가 표시를 포함합니다."
+      },
       {
         subtitle: '통합 분석',
         text: '모든 연동된 플랫폼의 성과 데이터를 한 화면에서 확인할 수 있습니다. 조회수, 좋아요, 댓글 수, 구독자 변화 등을 통합적으로 모니터링하세요.',
@@ -3348,6 +3397,14 @@ export const sectionsEn: ManualSection[] = [
     icon: ArrowUpTrayIcon,
     content: [
       {
+        "subtitle": "Protecting work in progress",
+        "text": "When you navigate away with unsaved copy, choose Keep editing, Save draft and leave, or Leave without saving. A failed save keeps you on the page; copy entered while saving requires another save. Refreshing or closing the tab also triggers a browser warning. Files that have not been uploaded and publishing schedules are not included in metadata draft saves."
+      },
+      {
+        "subtitle": "Failed follow-ups after publishing is submitted",
+        "text": "If recurring publishing or Shorts creation fails after the original is submitted, the original cannot be submitted again from this session. Read the failure and use View submitted publishing job to check the original platform jobs."
+      },
+      {
         subtitle: 'Upload Process',
         text: 'onGo uploads files directly to cloud storage (S3) using Presigned URLs. This bypasses the server for faster and more reliable transfers.',
         steps: [
@@ -3437,6 +3494,18 @@ export const sectionsEn: ManualSection[] = [
     icon: CalendarDaysIcon,
     content: [
       {
+        "subtitle": "Week, month and list views",
+        "text": "Week shows one week, Month shows six weeks, and List shows reservations and platform times for the selected week. Combine title search with platform and status filters. All publishing times use Asia/Seoul. Existing /schedule links open List view."
+      },
+      {
+        "subtitle": "Platform times and batch operations",
+        "text": "In List view, use Edit platform times on a pending reservation to save its reference time and each target account time. Select multiple pending reservations to move them by a number of days or cancel them. Moving a whole reservation preserves platform offsets. Each reservation is processed separately; partial failures remain selected so only those need retrying. Jobs that have started or completed cannot be changed."
+      },
+      {
+        "subtitle": "Exporting to an external calendar",
+        "text": "Export the current period and filtered results as .ics for Google Calendar, Apple Calendar or Outlook. Each target account is exported at its actual scheduled time. This is a read-only snapshot; future changes in onGo are not automatically synchronized."
+      },
+      {
         subtitle: 'Scheduled Uploads',
         text: 'You can schedule videos to be published automatically at a specific date and time.',
         steps: [
@@ -3489,11 +3558,39 @@ export const sectionsEn: ManualSection[] = [
       },
     ],
   },
+
+  {
+    "id": "inbox",
+    "title": "Inbox and comment operations",
+    "icon": ChatBubbleLeftRightIcon,
+    "content": [
+      {
+        "subtitle": "Search, filters and batch replies",
+        "text": "Search comments by text, platform and sentiment, and load more pages. Send the same reply to selected comments or hide them. Inspect each success or failure and retry only failed items. Hiding a comment never unhides an already hidden comment."
+      },
+      {
+        "subtitle": "Reviewing AI batch drafts",
+        "text": "Review the credit estimate before generating reply drafts for selected comments. Drafts are not published automatically; review and edit before sending. Only your own comments are processed. Batch drafting supports up to 25 comments and ordinary batches up to 50. If only some drafts are generated, unused credits are returned after retaining the minimum needed to cover actual AI cost. The displayed usage is the settled charge. Failed generation requests receive a full refund."
+      }
+    ]
+  },
   {
     id: 'analytics',
     title: 'Analytics',
     icon: ChartBarIcon,
     content: [
+      {
+        "subtitle": "Platform and tag performance workbench",
+        "text": "Compare actual views, likes, comments and shares for each platform. Unmeasured metrics remain distinct from zero. Use average views, like rate, sample size and trends by tag to inform future content. Completed scheduled posts counts scheduled publishing jobs, not every immediately published video."
+      },
+      {
+        "subtitle": "Video comparison and planning your next post",
+        "text": "Select 2–5 top videos to compare views, daily averages, likes, comments and engagement in the same period. Engagement using only some metrics is marked Partial. Create for this time opens the composer with the next future publishing time in Asia/Seoul. Historical recommendations do not guarantee results; consider their confidence and sample size."
+      },
+      {
+        "subtitle": "Loading failures and reporting",
+        "text": "Changing the period clears old-period data instead of displaying it as current. A failed refresh of the same period may retain previous values with a visible warning. If your plan limits the analysis period, the applied number of days is displayed. CSV includes trends, top videos, platform aggregates and unmeasured indicators."
+      },
       {
         subtitle: 'Unified Analytics',
         text: 'View performance data from all connected platforms on one screen. Monitor views, likes, comments, subscriber changes, and more in an integrated dashboard.',

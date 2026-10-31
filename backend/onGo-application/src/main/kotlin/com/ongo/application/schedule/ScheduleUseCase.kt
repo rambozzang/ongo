@@ -146,6 +146,16 @@ class ScheduleUseCase(
             scheduledAt = newScheduledAt,
             platforms = updatedPlatformTimes,
         )
+        // A parent-time move retains each target's offset. Validate the result,
+        // not just the parent: an earlier target may now be in the past or a
+        // later target may exceed this user's plan horizon.
+        val validationNow = LocalDateTime.now(KST)
+        updated.scheduledTargets().forEach { target ->
+            require(!target.scheduledAt.isBefore(validationNow)) {
+                "플랫폼별 예약 시간은 현재 시간 이후여야 합니다"
+            }
+            SchedulePlanLimit.validate(user.planType, target.scheduledAt, validationNow)
+        }
         val originalTargets = schedule.scheduledTargets()
         val uploads = videoUploadRepository.findByVideoId(schedule.videoId)
         val matchedUploads = originalTargets.mapNotNull { target ->

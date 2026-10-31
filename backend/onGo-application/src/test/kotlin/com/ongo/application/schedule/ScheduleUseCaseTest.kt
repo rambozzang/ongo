@@ -465,4 +465,44 @@ class ScheduleUseCaseTest {
         verify(exactly = 0) { videoUploads.rescheduleScheduledUploads(any(), any()) }
         verify(exactly = 0) { schedules.update(any()) }
     }
+    @Test
+    fun `전체 이동으로 플랫폼 시각이 과거가 되면 durable 큐 변경 전에 거부한다`() {
+        val now = LocalDateTime.now(ScheduleUseCase.KST)
+        val original = now.plusHours(4)
+        every { schedules.findById(71L) } returns Schedule(
+            id = 71L, videoId = 22L, userId = 7L, scheduledAt = original,
+            status = ScheduleStatus.SCHEDULED,
+            platforms = mapOf("YOUTUBE#7" to mapOf("scheduledAt" to now.plusHours(1).toString())),
+        )
+        every { users.findById(7L) } returns User(
+            id = 7L, email = "creator@example.com", name = "Creator",
+            provider = AuthProvider.GOOGLE, providerId = "google-7", planType = PlanType.PRO,
+        )
+        assertFailsWith<IllegalArgumentException> {
+            useCase.updateSchedule(7L, 71L, UpdateScheduleRequest(scheduledAt = now.plusHours(2)))
+        }
+        verify(exactly = 0) { videoUploads.rescheduleScheduledUploads(any(), any()) }
+        verify(exactly = 0) { schedules.update(any()) }
+    }
+
+    @Test
+    fun `전체 이동으로 플랫폼 시각이 플랜 기간을 넘으면 durable 큐 변경 전에 거부한다`() {
+        val now = LocalDateTime.now(ScheduleUseCase.KST)
+        val original = now.plusDays(1)
+        every { schedules.findById(72L) } returns Schedule(
+            id = 72L, videoId = 22L, userId = 7L, scheduledAt = original,
+            status = ScheduleStatus.SCHEDULED,
+            platforms = mapOf("YOUTUBE#7" to mapOf("scheduledAt" to original.plusDays(2).toString())),
+        )
+        every { users.findById(7L) } returns User(
+            id = 7L, email = "creator@example.com", name = "Creator",
+            provider = AuthProvider.GOOGLE, providerId = "google-7", planType = PlanType.STARTER,
+        )
+        assertFailsWith<com.ongo.common.exception.PlanLimitExceededException> {
+            useCase.updateSchedule(7L, 72L, UpdateScheduleRequest(scheduledAt = now.plusDays(PlanType.STARTER.scheduleDays.toLong()).minusHours(1)))
+        }
+        verify(exactly = 0) { videoUploads.rescheduleScheduledUploads(any(), any()) }
+        verify(exactly = 0) { schedules.update(any()) }
+    }
+
 }

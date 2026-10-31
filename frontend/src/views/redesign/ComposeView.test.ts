@@ -75,23 +75,24 @@ const capabilities = [
   { platform: 'INSTAGRAM', maxTitleLength: 2200, maxDescriptionLength: 2200, maxTagCount: 30 },
 ]
 
-function renderCompose(initialPath = '/compose') {
+function renderCompose(initialPath = '/compose', routed = false) {
   const pinia = createPinia()
   setActivePinia(pinia)
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: '/compose', component: { template: '<div />' } },
+      { path: '/compose', component: routed ? ComposeView : { template: '<div />' } },
       { path: '/today', component: { template: '<div />' } },
     ],
   })
   const i18n = createI18n({ legacy: false, locale: 'ko', messages: { ko: koMessages } })
   return router.push(initialPath).then(async () => {
     await router.isReady()
-    const wrapper = mount(ComposeView, {
+    const wrapper = mount(routed ? { template: '<router-view />' } : ComposeView, {
       global: {
         plugins: [pinia, router, i18n],
         stubs: {
+          teleport: true,
           ThumbPlaceholder: { template: '<div />' },
           PlatformPreviewPanel: {
             name: 'PlatformPreviewPanel',
@@ -473,12 +474,17 @@ describe('ComposeView', () => {
     expect(wrapper.find('input[type="file"]').exists()).toBe(true)
     expect(wrapper.findAll('button').some((button) => button.text() === '자동 자막')).toBe(false)
 
-    const schedule = wrapper.findAll('button').find((button) => button.text().includes('1개 채널 예약'))
+    const schedule = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('1개 채널 예약'))
     expect(schedule).toBeDefined()
     await schedule!.trigger('click')
     await flushPromises()
 
-    expect(videoApi.update).toHaveBeenCalledWith(505, expect.objectContaining({ mediaType: 'IMAGE' }))
+    expect(videoApi.update).toHaveBeenCalledWith(
+      505,
+      expect.objectContaining({ mediaType: 'IMAGE' }),
+    )
     expect(videoApi.publish).toHaveBeenCalledWith(505, expect.any(Object))
     expect(ugcShortsPipelineApi.getRenderAvailability).not.toHaveBeenCalled()
   })
@@ -605,6 +611,13 @@ describe('ComposeView', () => {
     expect(recurringApi.create).toHaveBeenCalledOnce()
     expect(ugcShortsPipelineApi.create).toHaveBeenCalledOnce()
     expect(wrapper.text()).toContain('반복 게시 서버 장애')
+    const submitAgain = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('2개 채널 예약'))!
+    expect(submitAgain.attributes('disabled')).toBeDefined()
+    await submitAgain.trigger('click')
+    await flushPromises()
+    expect(videoApi.publish).toHaveBeenCalledOnce()
   })
 
   it('shows an upgrade CTA when publish fails with PLAN_LIMIT_EXCEEDED', async () => {
@@ -723,5 +736,69 @@ describe('ComposeView', () => {
 
     expect(wrapper.find('a[href="/subscription"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('일시적인 서버 오류')
+  })
+  it('keeps an unsaved draft on the compose page when navigation is cancelled', async () => {
+    const { wrapper, router } = await renderCompose('/compose', true)
+    await wrapper.get('#compose-title').setValue('저장하지 않은 제목')
+    const navigation = router.push('/today')
+    await flushPromises()
+    expect(wrapper.find('[role="dialog"]').text()).toContain('저장하지 않은 변경 사항')
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '계속 편집')!
+      .trigger('click')
+    await navigation
+    expect(router.currentRoute.value.path).toBe('/compose')
+    expect((wrapper.get('#compose-title').element as HTMLInputElement).value).toBe(
+      '저장하지 않은 제목',
+    )
+    wrapper.unmount()
+  })
+
+  it('saves the draft before resolving a pending navigation', async () => {
+    const { wrapper, router } = await renderCompose('/compose', true)
+    useUploadStore().videoId = 101
+    await wrapper.get('#compose-title').setValue('저장하고 나갈 제목')
+    const navigation = router.push('/today')
+    await flushPromises()
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '임시 저장하고 이동')!
+      .trigger('click')
+    await navigation
+    await flushPromises()
+    expect(videoApi.update).toHaveBeenCalledWith(
+      101,
+      expect.objectContaining({ title: '저장하고 나갈 제목' }),
+    )
+    expect(router.currentRoute.value.path).toBe('/today')
+    wrapper.unmount()
+  })
+
+  it('does not leave or discard new edits when saving fails', async () => {
+    vi.mocked(videoApi.update).mockRejectedValueOnce(new Error('offline'))
+    const { wrapper, router } = await renderCompose('/compose', true)
+    useUploadStore().videoId = 101
+    await wrapper.get('#compose-title').setValue('반드시 보존할 제목')
+    const navigation = router.push('/today')
+    await flushPromises()
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '임시 저장하고 이동')!
+      .trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/compose')
+    expect(wrapper.find('[role="dialog"]').text()).toContain(
+      koMessages.redesign.compose.draftFailed,
+    )
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '계속 편집')!
+      .trigger('click')
+    await navigation
+    expect((wrapper.get('#compose-title').element as HTMLInputElement).value).toBe(
+      '반드시 보존할 제목',
+    )
+    wrapper.unmount()
   })
 })

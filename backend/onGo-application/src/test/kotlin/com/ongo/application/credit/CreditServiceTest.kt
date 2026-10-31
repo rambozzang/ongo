@@ -456,6 +456,86 @@ class CreditServiceTest {
         assertEquals(listOf(CreditTransactionType.DEDUCT, CreditTransactionType.REFUND), transactions)
     }
 
+    /**
+     * 일괄 기능은 개수만큼 미리 받지만 모델이 일부만 돌려줄 수 있다. 받지 못한 결과의 몫은 돌려줘야 한다 —
+     * 예를 들어 댓글 5개 AI 초안(15)에서 3개만 나오면 6을 돌려준다.
+     */
+    @Test
+    fun `withCreditsRefundingUnused 는 성공한 결과 중 제공하지 못한 몫만 돌려준다`() {
+        stubCreditRow()
+        val transactions = mutableListOf<AiCreditTransaction>()
+        every { creditRepository.saveTransaction(any()) } answers { transactions += firstArg<AiCreditTransaction>(); firstArg() }
+        var budgetInsideBlock: Double? = null
+
+        val result = creditService.withCreditsRefundingUnused(userId, 15, "BATCH_REPLY_DRAFT", unusedOf = { used: Int -> 15 - used }) {
+            budgetInsideBlock = com.ongo.application.ai.economics.AiSpendContext.current()?.limitKrw
+            9
+        }
+
+        assertEquals(9, result.value)
+        assertEquals(9, result.creditsCharged)
+        assertEquals(listOf(CreditTransactionType.DEDUCT, CreditTransactionType.REFUND), transactions.map { it.type })
+        assertEquals(6, transactions.last().amount, "15 중 9 만 제공했으면 6 만 돌려줘야 한다")
+        // 받은 크레딧만큼의 원가 예산 안에서 모델을 부른다.
+        assertEquals(com.ongo.application.ai.economics.AiUnitEconomics().budgetKrw(15), budgetInsideBlock)
+    }
+
+    /**
+     * 원가 예산은 처음 받은 크레딧 전체로 열린다. 그만큼 실제로 썼다면, 결과가 적게 나와도 그 원가를 덮는 크레딧은
+     * 남겨야 한다 — 다 돌려주면 남은 크레딧의 예산보다 원가가 커져 "크레딧 1개당 원가 ≤ 예산" 이 깨진다.
+     */
+    @Test
+    fun `withCreditsRefundingUnused 는 실제로 쓴 원가를 덮는 크레딧은 돌려주지 않는다`() {
+        stubCreditRow()
+        val transactions = mutableListOf<AiCreditTransaction>()
+        every { creditRepository.saveTransaction(any()) } answers { transactions += firstArg<AiCreditTransaction>(); firstArg() }
+        val economics = com.ongo.application.ai.economics.AiUnitEconomics()
+        val spent = economics.budgetKrw(10) // 15 를 받아 10 크레딧어치 원가를 썼다
+
+        val result = creditService.withCreditsRefundingUnused(userId, 15, "BATCH_REPLY_DRAFT", unusedOf = { _: String -> 12 }) {
+            com.ongo.application.ai.economics.AiSpendContext.current()!!.record(spent)
+            "초안 1개"
+        }
+
+        val mustKeep = economics.creditsFor(spent)
+        assertEquals(mustKeep, result.creditsCharged, "원가를 덮는 ${mustKeep} 크레딧은 남겨야 한다")
+        assertEquals(15 - mustKeep, transactions.last().amount)
+        kotlin.test.assertTrue(economics.budgetKrw(result.creditsCharged) >= spent, "남긴 크레딧의 예산이 실제 원가보다 작다")
+    }
+
+    /** 환불 거래가 실패하면 크레딧은 그대로 빠져 있다. 사용량을 환불된 것처럼 줄여 보이면 안 된다. */
+    @Test
+    fun `withCreditsRefundingUnused 는 환불 거래가 실패하면 받은 크레딧 전부를 사용량으로 보인다`() {
+        stubCreditRow()
+        every { creditRepository.saveTransaction(any()) } answers {
+            if (firstArg<AiCreditTransaction>().type == CreditTransactionType.REFUND) throw IllegalStateException("DB 오류")
+            firstArg()
+        }
+
+        val result = creditService.withCreditsRefundingUnused(userId, 15, "BATCH_REPLY_DRAFT", unusedOf = { _: String -> 6 }) { "결과" }
+
+        assertEquals("결과", result.value, "환불 실패가 이미 받은 결과를 버리게 하면 안 된다")
+        assertEquals(15, result.creditsCharged)
+    }
+
+    @Test
+    fun `withCreditsRefundingUnused 는 다 썼으면 돌려주지 않고 실패하면 전부 돌려준다`() {
+        stubCreditRow()
+        val types = mutableListOf<CreditTransactionType>()
+        every { creditRepository.saveTransaction(any()) } answers { types += firstArg<AiCreditTransaction>().type; firstArg() }
+
+        creditService.withCreditsRefundingUnused(userId, 6, "BATCH_REPLY_DRAFT", unusedOf = { _: String -> 0 }) { "ok" }
+        assertEquals(listOf(CreditTransactionType.DEDUCT), types)
+
+        types.clear()
+        assertFailsWith<IllegalStateException> {
+            creditService.withCreditsRefundingUnused(userId, 6, "BATCH_REPLY_DRAFT", unusedOf = { _: String -> 0 }) {
+                throw IllegalStateException("모델 실패")
+            }
+        }
+        assertEquals(listOf(CreditTransactionType.DEDUCT, CreditTransactionType.REFUND), types)
+    }
+
     /** 잔액이 없으면 모델을 부르지 않는다. 부르면 돈은 나가고 크레딧은 못 받는다. */
     @Test
     fun `withCredits 는 잔액이 부족하면 블록을 실행하지 않는다`() {

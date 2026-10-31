@@ -1,7 +1,47 @@
 <template>
   <div class="grid h-full grid-cols-1 desktop:[grid-template-columns:minmax(0,1fr)_372px]">
+    <BaseModal
+      :model-value="draftProtection.leaveRequested.value"
+      :title="t('creatorPro.compose.leaveTitle')"
+      @update:model-value="draftProtection.settleLeave(false)"
+    >
+      <p class="text-sm leading-6 text-content-secondary">
+        {{ t('creatorPro.compose.leaveMessage') }}
+      </p>
+      <p v-if="leaveSaveError" role="alert" class="mt-3 text-sm text-error-strong">
+        {{ leaveSaveError }}
+      </p>
+      <div class="mt-5 flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          class="btn-secondary min-h-11"
+          :disabled="saving"
+          @click="draftProtection.settleLeave(false)"
+        >
+          {{ t('creatorPro.compose.keepEditing') }}
+        </button>
+        <button
+          type="button"
+          class="min-h-11 px-3 text-sm text-error-strong"
+          :disabled="saving"
+          @click="draftProtection.settleLeave(true)"
+        >
+          {{ t('creatorPro.compose.discard') }}
+        </button>
+        <button
+          type="button"
+          class="btn-primary min-h-11"
+          :disabled="saving || uploadStore.isUploading || !form.title.trim()"
+          @click="saveBeforeLeaving"
+        >
+          {{ saving ? t('redesign.compose.saving') : t('creatorPro.compose.saveAndLeave') }}
+        </button>
+      </div>
+    </BaseModal>
     <!-- 좌: 입력 -->
-    <div class="overflow-y-auto px-5 pb-[120px] pt-[18px] scrollbar-dark desktop:border-r desktop:border-line">
+    <div
+      class="overflow-y-auto px-5 pb-[120px] pt-[18px] scrollbar-dark desktop:border-r desktop:border-line"
+    >
       <nav
         class="mb-4 overflow-x-auto rounded-lg border border-line bg-surface-card px-3 py-2.5"
         :aria-label="t('redesign.compose.workflowLabel')"
@@ -14,11 +54,13 @@
           >
             <span
               class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border font-mono text-[10px] font-bold"
-              :class="step.complete
-                ? 'border-success bg-success-subtle text-success-strong'
-                : step.current
-                  ? 'border-accent bg-accent-dim text-accent'
-                  : 'border-line-control text-content-tertiary'"
+              :class="
+                step.complete
+                  ? 'border-success bg-success-subtle text-success-strong'
+                  : step.current
+                    ? 'border-accent bg-accent-dim text-accent'
+                    : 'border-line-control text-content-tertiary'
+              "
             >
               {{ step.complete ? '✓' : index + 1 }}
             </span>
@@ -29,7 +71,8 @@
               v-if="index < workflowSteps.length - 1"
               class="mx-0.5 text-content-quaternary"
               aria-hidden="true"
-            >→</span>
+              >→</span
+            >
           </li>
         </ol>
         <p class="mt-2 text-[10.5px] text-content-tertiary">
@@ -90,7 +133,13 @@
             {{ captioning ? t('redesign.compose.captioning') : t('redesign.compose.autoCaption') }}
           </button>
         </div>
-        <input ref="fileInput" type="file" accept="video/*,image/*" class="hidden" @change="onFileChosen" />
+        <input
+          ref="fileInput"
+          type="file"
+          accept="video/*,image/*"
+          class="hidden"
+          @change="onFileChosen"
+        />
       </div>
 
       <!-- 서버 영상 생성 -->
@@ -272,7 +321,10 @@
       </section>
 
       <!-- 문구 탭 -->
-      <section id="compose-details" class="mt-[18px] overflow-hidden rounded-[11px] border border-line bg-surface-card">
+      <section
+        id="compose-details"
+        class="mt-[18px] overflow-hidden rounded-[11px] border border-line bg-surface-card"
+      >
         <div class="flex border-b border-line-row" role="tablist">
           <button
             v-for="tab in tabs"
@@ -418,7 +470,9 @@
     </div>
 
     <!-- 우: 미리보기 + 예약 -->
-    <aside class="flex min-h-[620px] flex-col overflow-y-auto bg-surface-input px-4 py-[18px] scrollbar-dark desktop:min-h-0">
+    <aside
+      class="flex min-h-[620px] flex-col overflow-y-auto bg-surface-input px-4 py-[18px] scrollbar-dark desktop:min-h-0"
+    >
       <h2 class="text-[12px] font-bold text-content">{{ t('redesign.compose.preview') }}</h2>
 
       <div class="mt-2.5">
@@ -553,7 +607,9 @@
       </div>
 
       <!-- 액션 -->
-      <div class="sticky bottom-0 z-10 mt-auto -mx-4 border-t border-line bg-surface-input px-4 pb-1 pt-3">
+      <div
+        class="sticky bottom-0 z-10 mt-auto -mx-4 border-t border-line bg-surface-input px-4 pb-1 pt-3"
+      >
         <p
           v-if="dataLoadError"
           class="mb-2 rounded-lg border border-error-subtle bg-error-subtle px-3 py-2 text-[11px] text-error-strong"
@@ -561,10 +617,24 @@
         >
           {{ dataLoadError }}
         </p>
-        <p v-if="blockedReason" class="mb-2 text-[11px] text-error-strong" role="alert">{{ blockedReason }}</p>
-        <p v-else-if="notice" class="mb-2 text-[11px] text-content-secondary" role="status" aria-live="polite">{{ notice }}</p>
-        <div v-if="showPlanUpgrade" class="mb-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2">
-          <p class="text-[11px] leading-5 text-warning-strong">{{ t('redesign.compose.planLimitHint') }}</p>
+        <p v-if="blockedReason" class="mb-2 text-[11px] text-error-strong" role="alert">
+          {{ blockedReason }}
+        </p>
+        <p
+          v-else-if="notice"
+          class="mb-2 text-[11px] text-content-secondary"
+          role="status"
+          aria-live="polite"
+        >
+          {{ notice }}
+        </p>
+        <div
+          v-if="showPlanUpgrade"
+          class="mb-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2"
+        >
+          <p class="text-[11px] leading-5 text-warning-strong">
+            {{ t('redesign.compose.planLimitHint') }}
+          </p>
           <router-link
             :to="PLAN_UPGRADE_PATH"
             class="btn-primary mt-2 inline-flex w-full justify-center !text-[12px]"
@@ -572,8 +642,13 @@
             {{ t('redesign.compose.planLimitCta') }}
           </router-link>
         </div>
-        <div v-if="showStorageUpgrade" class="mb-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2">
-          <p class="text-[11px] leading-5 text-warning-strong">{{ t('redesign.compose.storageQuotaHint') }}</p>
+        <div
+          v-if="showStorageUpgrade"
+          class="mb-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2"
+        >
+          <p class="text-[11px] leading-5 text-warning-strong">
+            {{ t('redesign.compose.storageQuotaHint') }}
+          </p>
           <router-link
             :to="PLAN_UPGRADE_PATH"
             class="btn-primary mt-2 inline-flex w-full justify-center !text-[12px]"
@@ -581,8 +656,13 @@
             {{ t('redesign.compose.storageQuotaCta') }}
           </router-link>
         </div>
-        <div v-if="metaCreditBlocked || sttCreditBlocked" class="mb-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2">
-          <p class="text-[11px] leading-5 text-warning-strong">{{ t('redesign.compose.creditBlocked') }}</p>
+        <div
+          v-if="metaCreditBlocked || sttCreditBlocked"
+          class="mb-2 rounded-lg border border-warning bg-warning-subtle px-3 py-2"
+        >
+          <p class="text-[11px] leading-5 text-warning-strong">
+            {{ t('redesign.compose.creditBlocked') }}
+          </p>
           <button
             type="button"
             data-testid="compose-credit-cta"
@@ -596,7 +676,7 @@
           <button
             type="button"
             class="btn-secondary flex-1 !text-[12px]"
-            :disabled="saving || uploadStore.isUploading"
+            :disabled="saving || submitting || uploadStore.isUploading || sourceAlreadySubmitted"
             @click="saveDraft"
           >
             {{ saving ? t('redesign.compose.saving') : t('redesign.compose.saveDraft') }}
@@ -606,7 +686,11 @@
             class="btn-primary !text-[12px]"
             style="flex: 1.4"
             :disabled="
-              !!blockedReason || submitting || uploadStore.isUploading || metadataGenerating
+              !!blockedReason ||
+              submitting ||
+              uploadStore.isUploading ||
+              metadataGenerating ||
+              sourceAlreadySubmitted
             "
             @click="submit"
           >
@@ -616,6 +700,21 @@
                 : t('redesign.compose.schedule', { count: selectedCount })
             }}
           </button>
+        </div>
+        <p
+          v-if="draftProtection.dirty.value && !sourceAlreadySubmitted"
+          class="mt-2 text-xs text-warning-strong"
+          aria-live="polite"
+        >
+          {{ t('creatorPro.compose.unsaved') }}
+        </p>
+        <div v-if="sourceAlreadySubmitted" class="mt-3 text-xs text-content-secondary">
+          <p>{{ t('creatorPro.compose.alreadySubmitted') }}</p>
+          <router-link
+            :to="`/videos/${completedPublishId}`"
+            class="inline-flex min-h-11 items-center font-semibold text-accent"
+            >{{ t('creatorPro.compose.openSubmitted') }}</router-link
+          >
         </div>
         <p class="mt-2 text-center font-mono text-[10.5px] text-content-tertiary">
           {{ t('redesign.compose.shortcutHint') }}
@@ -628,9 +727,17 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import BaseModal from '@/components/common/BaseModal.vue'
+import { useDraftProtection } from '@/composables/useDraftProtection'
 import { useLocale } from '@/composables/useLocale'
-import { PLAN_LIMIT_EXCEEDED, STORAGE_QUOTA_EXCEEDED, PLAN_UPGRADE_PATH, matchesCode, CREDIT_INSUFFICIENT } from '@/composables/usePlanLimit'
+import {
+  PLAN_LIMIT_EXCEEDED,
+  STORAGE_QUOTA_EXCEEDED,
+  PLAN_UPGRADE_PATH,
+  matchesCode,
+  CREDIT_INSUFFICIENT,
+} from '@/composables/usePlanLimit'
 import ThumbPlaceholder from '@/components/redesign/ThumbPlaceholder.vue'
 import { aiApi } from '@/api/ai'
 import { analyticsApi } from '@/api/analytics'
@@ -675,19 +782,7 @@ import {
 const { t } = useLocale()
 const route = useRoute()
 
-type ChipCode =
-  | 'YT'
-  | 'IG'
-  | 'TT'
-  | 'FB'
-  | 'TH'
-  | 'TW'
-  | 'PI'
-  | 'LI'
-  | 'WP'
-  | 'DM'
-  | 'VI'
-  | 'TU'
+type ChipCode = 'YT' | 'IG' | 'TT' | 'FB' | 'TH' | 'TW' | 'PI' | 'LI' | 'WP' | 'DM' | 'VI' | 'TU'
 const CHIP: Partial<Record<Platform, ChipCode>> = {
   YOUTUBE: 'YT',
   INSTAGRAM: 'IG',
@@ -742,6 +837,12 @@ const generating = ref(false)
 const importedVideoId = ref<number | null>(null)
 const importAvailability = ref<{ available: boolean; reason?: string | null } | null>(null)
 const submitting = ref(false)
+const completedPublishId = ref<number | null>(null)
+const sourceAlreadySubmitted = computed(
+  () =>
+    completedPublishId.value !== null &&
+    completedPublishId.value === (importedVideoId.value ?? uploadStore.videoId),
+)
 const saving = ref(false)
 const captioning = ref(false)
 const metadataGenerating = ref(false)
@@ -831,6 +932,50 @@ const commonDraftDirty = reactive<Record<keyof FormDraft, boolean>>({
 const pendingPlatformForms = reactive<Partial<Record<Platform, FormDraft>>>({})
 const pendingPlatformDirty = reactive<Partial<Record<Platform, DraftDirty>>>({})
 const file = reactive({ name: '', thumbnailUrl: null as string | null, meta: '' })
+const draftSnapshot = computed(() =>
+  JSON.stringify({
+    form,
+    channelForms: Object.fromEntries(
+      Object.entries(channelForms).filter(([id]) =>
+        Object.values(channelDraftDirty[Number(id)] ?? {}).some(Boolean),
+      ),
+    ),
+    pendingPlatformForms,
+  }),
+)
+const draftHasContent = computed(() =>
+  Boolean(
+    form.title.trim() ||
+    form.description.trim() ||
+    form.hashtags.trim() ||
+    Object.values(channelForms).some((draft) => draft.title.trim() || draft.description.trim()),
+  ),
+)
+const draftProtection = useDraftProtection(draftSnapshot, draftHasContent)
+const leaveSaveError = ref('')
+
+onBeforeRouteLeave(() => {
+  if (saving.value || submitting.value || uploadStore.isUploading) {
+    notice.value = t('creatorPro.compose.operationInProgress')
+    return false
+  }
+  leaveSaveError.value = ''
+  return draftProtection.requestLeave()
+})
+
+async function saveBeforeLeaving() {
+  leaveSaveError.value = ''
+  const saved = await saveDraft()
+  if (!saved) {
+    leaveSaveError.value = notice.value
+    return
+  }
+  if (draftProtection.dirty.value) {
+    leaveSaveError.value = t('creatorPro.compose.changedDuringSave')
+    return
+  }
+  draftProtection.settleLeave(true)
+}
 
 const sourceModes = computed(() => [
   { key: 'file' as const, label: t('redesign.compose.fileSourceUpload') },
@@ -923,7 +1068,8 @@ const platformOptions = computed(() =>
       label: ch.channelName,
       handle: '',
       channel: ch,
-      supported: capability != null && hasUploadPath && acceptedMediaTypes.includes(uploadStore.mediaType),
+      supported:
+        capability != null && hasUploadPath && acceptedMediaTypes.includes(uploadStore.mediaType),
     }
   }),
 )
@@ -952,7 +1098,9 @@ const activeChannel = computed(() => {
 const selectedCount = computed(() => selectedChannels.value.length)
 const sourceReady = computed(() => Boolean(uploadStore.videoId || importedVideoId.value))
 const targetReady = computed(() => selectedCount.value > 0)
-const copyReady = computed(() => Boolean(form.title.trim() || form.description.trim() || form.hashtags.trim()))
+const copyReady = computed(() =>
+  Boolean(form.title.trim() || form.description.trim() || form.hashtags.trim()),
+)
 const workflowSteps = computed(() => [
   {
     key: 'source',
@@ -994,9 +1142,7 @@ const shortsPlatforms = computed(() =>
 )
 const shortsTargets = computed(() =>
   selectedChannels.value
-    .filter((channel) =>
-      ['YOUTUBE', 'TIKTOK', 'INSTAGRAM'].includes(channel.platform),
-    )
+    .filter((channel) => ['YOUTUBE', 'TIKTOK', 'INSTAGRAM'].includes(channel.platform))
     .map((channel) => `${channel.platform}#${channel.id}`),
 )
 
@@ -1504,15 +1650,17 @@ async function generateMetadataFor(videoId: number) {
 
 /** 임시 저장 — 파일 업로드 없이 메타데이터만 영상 레코드로 남긴다. */
 async function saveDraft() {
+  if (saving.value || submitting.value || sourceAlreadySubmitted.value) return false
   if (!form.title.trim()) {
     notice.value = t('redesign.compose.draftNeedTitle')
-    return
+    return false
   }
   if (uploadStore.isUploading) {
     notice.value = t('redesign.compose.uploadInProgress')
-    return
+    return false
   }
   saving.value = true
+  const acknowledgedSnapshot = draftSnapshot.value
   notice.value = ''
   try {
     const metadata = {
@@ -1547,8 +1695,11 @@ async function saveDraft() {
       await videoApi.update(created.id, { ...metadata, platforms })
     }
     notice.value = t('redesign.compose.draftSaved')
+    draftProtection.markSaved(acknowledgedSnapshot)
+    return true
   } catch {
     notice.value = t('redesign.compose.draftFailed')
+    return false
   } finally {
     saving.value = false
   }
@@ -1559,7 +1710,7 @@ async function saveDraft() {
  * 예약 시각은 선택한 방식(now / best / fix)에 따라 플랫폼마다 계산한다.
  */
 async function submit() {
-  if (blockedReason.value || submitting.value) return
+  if (blockedReason.value || submitting.value || sourceAlreadySubmitted.value) return
   const selected = uploadStore.file
   if (!selected && !importedVideoId.value) {
     notice.value = t('redesign.compose.needFile')
@@ -1577,7 +1728,11 @@ async function submit() {
     // 쇼츠를 선택한 상태에서 렌더러가 내려가 있으면 원본만 먼저 게시하지 않는다.
     // 그래야 사용자가 한 번의 작업으로 원본과 쇼츠가 함께 처리될 것이라는 기대를
     // 어기고 부분 성공을 재전송하는 상황을 예방할 수 있다.
-    if (uploadStore.mediaType === 'VIDEO' && shortsEnabled.value && shortsPlatforms.value.length > 0) {
+    if (
+      uploadStore.mediaType === 'VIDEO' &&
+      shortsEnabled.value &&
+      shortsPlatforms.value.length > 0
+    ) {
       const availability = await ugcShortsPipelineApi.getRenderAvailability()
       if (!availability.available) {
         throw new Error(availability.reason || t('redesign.compose.shortsUnavailable'))
@@ -1655,8 +1810,11 @@ async function submit() {
       }
     })
 
+    const publishedSnapshot = draftSnapshot.value
     await videoApi.publish(sourceVideoId, { platforms: configs })
     publishCompleted = true
+    completedPublishId.value = sourceVideoId
+    draftProtection.markSaved(publishedSnapshot)
     if (recurringEnabled.value) {
       try {
         await recurringApi.create({
@@ -1690,7 +1848,11 @@ async function submit() {
     }
     // Shorts is an optional follow-up. A Facebook/X-only post must still be
     // considered successful when no selected channel can host a vertical clip.
-    if (uploadStore.mediaType === 'VIDEO' && shortsEnabled.value && shortsPlatforms.value.length > 0) {
+    if (
+      uploadStore.mediaType === 'VIDEO' &&
+      shortsEnabled.value &&
+      shortsPlatforms.value.length > 0
+    ) {
       try {
         await publishAutomaticShorts(sourceVideoId)
       } catch (error) {
@@ -1707,6 +1869,7 @@ async function submit() {
       return
     }
     notice.value = t('redesign.compose.scheduled')
+    submitting.value = false
     router.push('/today')
   } catch (e) {
     const detail =
@@ -1768,14 +1931,18 @@ async function publishAutomaticShorts(sourceVideoId: number) {
       scheduledStart ? kstWallClockToInstant(scheduledStart).getTime() : Date.now(),
     ),
   )
-  const run = await ugcShortsPipelineApi.create(workspaceId, {
-    sourceVideoId,
-    templateId: null,
-    autoSchedule: true,
-    scheduleStartAt: startAt.toISOString(),
-    scheduleIntervalHours: 2,
-    platforms: shortsTargets.value,
-  }, shortsIdempotencyKey.value ?? (shortsIdempotencyKey.value = crypto.randomUUID()))
+  const run = await ugcShortsPipelineApi.create(
+    workspaceId,
+    {
+      sourceVideoId,
+      templateId: null,
+      autoSchedule: true,
+      scheduleStartAt: startAt.toISOString(),
+      scheduleIntervalHours: 2,
+      platforms: shortsTargets.value,
+    },
+    shortsIdempotencyKey.value ?? (shortsIdempotencyKey.value = crypto.randomUUID()),
+  )
   await waitForShortsState(workspaceId, run.id, 'COMPLETED')
   shortsStatus.value = t('redesign.compose.shortsDone')
   // 완료된 작업은 다음 Compose 제출에서 새 작업 키를 사용한다.
@@ -1902,6 +2069,7 @@ async function loadDraft(videoId: number) {
     }
   }
   draftLoaded.value = true
+  draftProtection.markSaved()
   notice.value = '저장된 초안을 불러왔습니다. 내용을 확인한 뒤 게시하세요.'
 }
 

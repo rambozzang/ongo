@@ -55,9 +55,13 @@ export const commentsApi = {
       .then(unwrapResponse)
   },
 
-  hide(id: number) {
+  /**
+   * 숨김 상태를 정한다. [hidden] 을 생략하면 서버가 뒤집는다(예전 토글 — 댓글 관리 화면).
+   * "처리 완료" 처럼 결과가 정해져야 하는 곳은 반드시 true 를 준다 — 토글이면 이미 숨긴 댓글이 도로 보인다.
+   */
+  hide(id: number, hidden?: boolean) {
     return apiClient
-      .put<ResData<CommentResponse>>(`/comments/${id}/hide`)
+      .put<ResData<CommentResponse>>(`/comments/${id}/hide`, undefined, hidden === undefined ? undefined : { params: { hidden } })
       .then(unwrapResponse)
   },
 

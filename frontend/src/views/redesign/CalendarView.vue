@@ -1,5 +1,11 @@
 <template>
-  <div class="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-[14px] overflow-y-auto px-4 py-[18px] tablet:px-5">
+  <div
+    class="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-[14px] overflow-y-auto px-4 py-[18px] tablet:px-5"
+  >
+    <PageHeader
+      :title="t('creatorPro.calendar.title')"
+      :description="t('creatorPro.calendar.description')"
+    />
     <ConfirmModal
       :model-value="pendingAction !== null"
       :title="confirmationTitle"
@@ -23,6 +29,7 @@
           type="button"
           class="rounded-[7px] border border-line-control px-[9px] py-[6px] text-[12px] text-content-secondary transition-colors duration-[120ms] ease-out hover:border-line-hover hover:text-content"
           :aria-label="$t('redesign.calendar.prevWeek')"
+          :disabled="store.moving"
           @click="store.shiftWeek(-1)"
         >
           <ChevronLeftIcon class="h-4 w-4" />
@@ -31,6 +38,7 @@
           type="button"
           class="rounded-[7px] border border-line-control px-[9px] py-[6px] text-[12px] text-content-secondary transition-colors duration-[120ms] ease-out hover:border-line-hover hover:text-content"
           :aria-label="$t('redesign.calendar.nextWeek')"
+          :disabled="store.moving"
           @click="store.shiftWeek(1)"
         >
           <ChevronRightIcon class="h-4 w-4" />
@@ -42,6 +50,7 @@
       <button
         type="button"
         class="whitespace-nowrap rounded-[7px] border border-line-control px-[10px] py-[6px] text-[11.5px] text-content-secondary transition-colors duration-[120ms] ease-out hover:border-line-hover hover:text-content"
+        :disabled="store.moving"
         @click="store.goToday()"
       >
         {{ $t('redesign.calendar.today') }}
@@ -63,6 +72,8 @@
         {{ $t('action.retry') }}
       </button>
     </div>
+
+    <CalendarOperations />
 
     <!-- 추천을 실제 예약과 연결한다. 적용 전에는 서버의 PENDING 상태만 보여준다. -->
     <section
@@ -110,7 +121,9 @@
             </p>
             <p class="mt-1 text-[11px] text-content-secondary">
               {{ formatRecommendationDate(recommendation.recommendedSchedule) }} ·
-              {{ t('redesign.calendar.autoArrangeConfidence', { count: recommendation.confidence }) }}
+              {{
+                t('redesign.calendar.autoArrangeConfidence', { count: recommendation.confidence })
+              }}
             </p>
           </div>
           <button
@@ -133,7 +146,10 @@
     </section>
 
     <!-- 주간 그리드 -->
-    <div class="overflow-x-auto rounded-[12px] border border-line bg-surface-card">
+    <div
+      v-if="store.view === 'week'"
+      class="overflow-x-auto rounded-[12px] border border-line bg-surface-card"
+    >
       <div class="min-w-[840px]">
         <div class="grid grid-cols-7 border-b border-line">
           <div
@@ -191,9 +207,20 @@
                       {{ statusLabel(s.status) }}
                     </StatusPill>
                   </span>
-                  <span class="mt-[6px] block text-[11.5px] font-semibold leading-[1.35] text-content">
+                  <span
+                    class="mt-[6px] block text-[11.5px] font-semibold leading-[1.35] text-content"
+                  >
                     {{ s.videoTitle }}
                   </span>
+                </button>
+                <button
+                  v-if="s.status === 'SCHEDULED'"
+                  type="button"
+                  class="min-h-8 px-1 text-[10px] text-accent"
+                  :aria-label="t('creatorPro.calendar.editTimes')"
+                  @click="router.replace({ query: { view: 'list' } })"
+                >
+                  {{ t('action.edit') }}
                 </button>
                 <button
                   v-if="s.status === 'SCHEDULED'"
@@ -336,6 +363,8 @@ import { useNotificationStore } from '@/stores/notification'
 import PlatformChip from '@/components/redesign/PlatformChip.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
+import CalendarOperations from '@/components/creator/CalendarOperations.vue'
 import { toDateStr, toDateTimeLocal } from '@/utils/schedule'
 import type { Schedule } from '@/types/schedule'
 import { recurringApi, type RecurringSchedule } from '@/api/recurring'
@@ -378,6 +407,8 @@ const CHIP_MAP: Record<string, ChipPlatform> = {
 
 const weekTitle = computed(() => {
   const d = store.weekStart
+  if (store.view === 'month')
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`
   return t('redesign.calendar.weekTitle', {
     year: d.getFullYear(),
     month: d.getMonth() + 1,
@@ -431,7 +462,7 @@ function statusLabel(status: Schedule['status']): string {
 /** 로컬 날짜가 같은 예약만 시간순으로 */
 function schedulesOf(day: Date): Schedule[] {
   const key = toDateStr(day)
-  return store.schedules
+  return store.filteredSchedules
     .filter((s) => toDateStr(new Date(s.scheduledAt)) === key)
     .sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))
 }
@@ -447,7 +478,7 @@ function isToday(day: Date): boolean {
 
 /** 서버가 허용하는 유일한 이동 상태와 UI의 드래그 가능 상태를 일치시킨다. */
 function isMovable(schedule: Schedule): boolean {
-  return schedule.status === 'SCHEDULED' && !store.moving
+  return schedule.status === 'SCHEDULED' && !store.moving && !store.loading && !store.loadError
 }
 
 // ---- 드래그 이동 ----
@@ -513,10 +544,10 @@ function recurringSummary(schedule: RecurringSchedule): string {
     schedule.frequency === 'INTERVAL'
       ? `${schedule.intervalDays ?? 1}일마다`
       : schedule.frequency === 'MONTHLY'
-      ? t('redesign.calendar.recurringDayOfMonth', { day: schedule.dayOfMonth ?? 1 })
-      : schedule.frequency === 'WEEKLY' || schedule.frequency === 'BIWEEKLY'
-        ? t(`redesign.calendar.weekdays.${WEEKDAY_KEYS[(schedule.dayOfWeek ?? 1) - 1]}`)
-        : ''
+        ? t('redesign.calendar.recurringDayOfMonth', { day: schedule.dayOfMonth ?? 1 })
+        : schedule.frequency === 'WEEKLY' || schedule.frequency === 'BIWEEKLY'
+          ? t(`redesign.calendar.weekdays.${WEEKDAY_KEYS[(schedule.dayOfWeek ?? 1) - 1]}`)
+          : ''
   return [frequency, day, schedule.timeOfDay.slice(0, 5)].filter(Boolean).join(' · ')
 }
 
@@ -533,7 +564,10 @@ function channelNameForRecommendation(recommendation: ScheduleRecommendation): s
   const channel = recommendation.channelId
     ? channelStore.channels.find((item) => item.id === recommendation.channelId)
     : null
-  return channel?.channelName ?? t('redesign.calendar.autoArrangeChannelFallback', { id: recommendation.channelId })
+  return (
+    channel?.channelName ??
+    t('redesign.calendar.autoArrangeChannelFallback', { id: recommendation.channelId })
+  )
 }
 
 async function refreshRecommendations() {

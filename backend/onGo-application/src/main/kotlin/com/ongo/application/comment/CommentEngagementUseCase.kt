@@ -152,14 +152,24 @@ class CommentEngagementUseCase(
     }
 
     @Transactional
-    fun hideComment(userId: Long, commentId: Long): CommentResponse {
+    fun hideComment(userId: Long, commentId: Long): CommentResponse = setHidden(userId, commentId, hidden = null)
+
+    /**
+     * 숨김 상태를 정한다. [hidden] 이 null 이면 뒤집는다(예전 토글 동작 — 댓글 관리 화면이 쓴다).
+     *
+     * **"처리 완료" 는 명시값(true)으로 보내야 한다.** 토글이면 이미 숨긴 댓글을 다시 처리할 때 도로 보이게 되고,
+     * 일괄 숨김에 섞인 숨긴 댓글이 전부 되살아난다.
+     */
+    @Transactional
+    fun setHidden(userId: Long, commentId: Long, hidden: Boolean?): CommentResponse {
         validateCommentAccess(userId)
         val comment = commentRepository.findById(commentId)
             ?: throw NotFoundException("댓글", commentId)
         if (comment.userId != userId) throw ForbiddenException("해당 댓글에 대한 권한이 없습니다")
 
-        val updated = comment.copy(isHidden = !comment.isHidden)
-        return commentRepository.update(updated).toResponse()
+        val target = hidden ?: !comment.isHidden
+        if (comment.isHidden == target) return comment.toResponse()
+        return commentRepository.update(comment.copy(isHidden = target)).toResponse()
     }
 
     @Transactional

@@ -100,6 +100,59 @@ class CreditService(
         }
     }
 
+    /** [withCreditsRefundingUnused] 의 결과와 **최종적으로 가져간 크레딧**. 화면에 보이는 사용량은 이 값이어야 한다. */
+    data class Settled<T>(val value: T, val creditsCharged: Int)
+
+    /**
+     * [withCredits] 와 같되, 성공한 결과 중 **실제로 제공하지 못한 몫**([unusedOf])을 돌려준다.
+     *
+     * 일괄 기능(예: 댓글 25개 AI 초안)은 개수만큼 미리 받지만 모델이 일부만 돌려줄 수 있다. 받은 만큼 다 가져가면
+     * 사용자는 받지 못한 초안에 크레딧을 낸다. 실패 시 전액 환불·원가 예산은 [withCredits] 와 같다.
+     *
+     * ## 환불은 원가 상한을 깨지 않는 만큼만
+     *
+     * 원가 예산은 **처음 받은 크레딧 전체**로 열린다(AiSpendContext). 그런데 나중에 일부를 돌려주면 남은 크레딧의
+     * 예산보다 실제 원가가 클 수 있다 — 75 를 받고 72 를 돌려주면 남은 3(₩6.6)으로 최대 ₩165 를 쓴 셈이 되어
+     * "크레딧 1개당 원가 ≤ 예산(AiUnitEconomics.budgetKrwPerCredit)" 이 깨진다. 그래서 실제로 쓴 원가를 덮는 최소
+     * 크레딧([AiUnitEconomics.creditsFor])은 남기고, 그 위만 돌려준다.
+     */
+    fun <T> withCreditsRefundingUnused(
+        userId: Long,
+        amount: Int,
+        featureName: String,
+        unusedOf: (T) -> Int,
+        block: () -> T,
+    ): Settled<T> {
+        val allocation = deductTx.execute { validateAndDeduct(userId, amount, featureName) }
+            ?: CreditAllocation.empty(userId, featureName)
+        val (result, spentKrw) = try {
+            AiSpendContext.withBudget(unitEconomics.budgetKrw(amount), featureName) {
+                val value = block()
+                value to (AiSpendContext.current()?.spentKrw ?: 0.0)
+            }
+        } catch (e: Throwable) {
+            runCatching { refundTx.execute { refundAllocation(allocation) } }
+                .onFailure { log.error("크레딧 환불 실패. userId={} amount={} feature={}", userId, amount, featureName, it) }
+            throw e
+        }
+        val mustKeep = if (spentKrw > 0) unitEconomics.creditsFor(spentKrw).coerceAtMost(amount) else 0
+        val unused = unusedOf(result).coerceIn(0, amount - mustKeep)
+        // 환불 거래가 **실제로 커밋된 만큼만** 뺀다. 실패했는데 뺀 값을 보이면 DB 는 그대로인데 화면만 환불된 것처럼 말한다.
+        val refunded = if (unused > 0) {
+            runCatching { refundTx.execute { refundAllocation(allocation, unused) } }
+                .fold(
+                    onSuccess = { unused },
+                    onFailure = {
+                        log.error("미사용 크레딧 환불 실패. 수동 확인 필요. userId={} unused={} feature={}", userId, unused, featureName, it)
+                        0
+                    },
+                )
+        } else {
+            0
+        }
+        return Settled(result, amount - refunded)
+    }
+
     fun <T> withCredits(userId: Long, feature: AiFeature, block: () -> T): T =
         withCredits(userId, feature.creditCost, feature.name, block)
 

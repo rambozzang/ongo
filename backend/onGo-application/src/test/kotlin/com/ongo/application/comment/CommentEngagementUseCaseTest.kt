@@ -35,6 +35,28 @@ class CommentEngagementUseCaseTest {
     private val users = mockk<UserRepository>(relaxed = true)
     private val useCase = CommentEngagementUseCase(comments, platform, channels, tokens, users)
 
+    /** "처리 완료" 는 숨김으로 정한다. 토글이면 이미 숨긴 댓글을 다시 처리할 때 도로 보이게 된다. */
+    @Test
+    fun `setHidden true keeps an already hidden comment hidden without rewriting it`() {
+        val userId = 7L
+        every { users.findById(userId) } returns User(
+            id = userId, email = "c@example.com", name = "C", provider = AuthProvider.GOOGLE,
+            providerId = "c-1", planType = PlanType.PRO,
+        )
+        val hidden = Comment(id = 12L, userId = userId, authorName = "a", content = "c", isHidden = true)
+        every { comments.findById(12L) } returns hidden
+
+        val result = useCase.setHidden(userId, 12L, hidden = true)
+
+        kotlin.test.assertTrue(result.isHidden)
+        io.mockk.verify(exactly = 0) { comments.update(any()) }
+
+        // 값을 주지 않으면 예전처럼 뒤집는다(댓글 관리 화면 호환).
+        every { comments.update(any()) } answers { firstArg() }
+        val toggled = useCase.setHidden(userId, 12L, hidden = null)
+        kotlin.test.assertFalse(toggled.isHidden)
+    }
+
     @Test
     fun `hide-only providers do not receive an unsupported delete request`() {
         val userId = 7L

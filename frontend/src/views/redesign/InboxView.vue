@@ -64,24 +64,130 @@
         class="min-h-0 w-full flex-col overflow-y-auto border-r border-line min-[1024px]:flex min-[1024px]:w-[340px] min-[1024px]:shrink-0"
         :class="store.selectedThread ? 'hidden' : 'flex'"
       >
-        <div class="sticky top-0 z-10 flex items-center gap-[9px] border-b border-line bg-surface px-[13px] py-[11px]">
-          <div class="flex-1 text-[12px] font-bold text-content">
-            {{ $t('redesign.inbox.unanswered', { count: store.filterCounts.all }) }}
+        <div class="sticky top-0 z-10 border-b border-line bg-surface">
+          <!-- 서버 검색: 댓글 전체에서 찾는다(불러온 목록만 거르지 않는다) -->
+          <div class="flex gap-[6px] px-[13px] pt-[11px]">
+            <input
+              v-model="searchInput"
+              type="search"
+              data-testid="inbox-search"
+              class="min-h-[36px] min-w-0 flex-1 rounded-[7px] border border-line-control bg-surface-input px-[10px] text-[12px] text-content outline-none placeholder:text-content-quaternary focus:border-accent"
+              :placeholder="$t('redesign.inbox.searchPlaceholder')"
+              :aria-label="$t('redesign.inbox.searchLabel')"
+            />
+            <select
+              data-testid="inbox-platform"
+              class="min-h-[36px] rounded-[7px] border border-line-control bg-surface-input px-[8px] text-[12px] text-content"
+              :aria-label="$t('redesign.inbox.platformLabel')"
+              :value="store.platform ?? ''"
+              @change="onPlatformChange(($event.target as HTMLSelectElement).value)"
+            >
+              <option value="">{{ $t('redesign.inbox.platformAll') }}</option>
+              <option v-for="(label, key) in PLATFORM_LABELS" :key="key" :value="key">{{ label }}</option>
+            </select>
           </div>
-          <button
-            type="button"
-            class="text-[11px] text-content-secondary hover:text-content"
-            @click="store.toggleCheckAll()"
+
+          <div class="flex items-center gap-[9px] px-[13px] py-[11px]">
+            <div class="flex-1 text-[12px] font-bold text-content">
+              <template v-if="checkedCount > 0">{{ $t('redesign.inbox.checkedCount', { count: checkedCount }) }}</template>
+              <template v-else>{{ $t('redesign.inbox.unanswered', { count: store.filterCounts.all }) }}</template>
+            </div>
+            <button
+              type="button"
+              class="min-h-[32px] text-[11px] text-content-secondary hover:text-content"
+              @click="store.toggleCheckAll()"
+            >
+              {{ $t('redesign.inbox.selectAll') }}
+            </button>
+          </div>
+
+          <!-- 일괄 도구: 선택이 있을 때만 -->
+          <div v-if="checkedCount > 0" class="flex flex-wrap gap-[6px] px-[13px] pb-[11px]" data-testid="inbox-batch-bar">
+            <p v-if="checkedCount > INBOX_BATCH_MAX" class="w-full text-[11px] text-warn" role="alert">
+              {{ $t('redesign.inbox.batchTooMany', { max: INBOX_BATCH_MAX }) }}
+            </p>
+            <button
+              type="button"
+              data-testid="inbox-batch-hide"
+              class="min-h-[32px] rounded-[7px] border border-line-control px-[10px] text-[11.5px] text-content-secondary hover:border-line-hover hover:text-content disabled:opacity-40"
+              :disabled="store.batchRunning || checkedCount > INBOX_BATCH_MAX"
+              @click="runBatch"
+            >
+              {{ $t('redesign.inbox.batchHide') }}
+            </button>
+            <button
+              type="button"
+              data-testid="inbox-batch-reply-open"
+              class="min-h-[32px] rounded-[7px] border border-line-control px-[10px] text-[11.5px] text-content-secondary hover:border-line-hover hover:text-content disabled:opacity-40"
+              :disabled="store.batchRunning || checkedCount > INBOX_BATCH_MAX"
+              @click="batchReplyOpen = !batchReplyOpen"
+            >
+              {{ $t('redesign.inbox.batchReply') }}
+            </button>
+            <button
+              type="button"
+              data-testid="inbox-ai-draft"
+              class="min-h-[32px] rounded-[7px] border border-line-control px-[10px] text-[11.5px] text-accent hover:border-accent disabled:opacity-40"
+              :disabled="store.batchRunning || draftCredits === null || checkedCount > INBOX_AI_DRAFT_MAX"
+              :title="checkedCount > INBOX_AI_DRAFT_MAX ? $t('redesign.inbox.aiDraftTooMany', { max: INBOX_AI_DRAFT_MAX }) : undefined"
+              @click="runAiDrafts"
+            >
+              {{ draftCredits === null
+                ? $t('redesign.inbox.aiDraftCostUnknown')
+                : $t('redesign.inbox.aiDraftCost', { credits: draftCredits }) }}
+            </button>
+
+            <div v-if="batchReplyOpen" class="w-full overflow-hidden rounded-[9px] border border-line-control bg-surface-input">
+              <textarea
+                v-model="batchReplyText"
+                rows="2"
+                data-testid="inbox-batch-reply-text"
+                class="block w-full resize-y border-0 bg-transparent px-[11px] py-[9px] text-[12.5px] text-content outline-none placeholder:text-content-quaternary"
+                :placeholder="$t('redesign.inbox.batchReplyPlaceholder')"
+              />
+              <div class="flex justify-end gap-[6px] border-t border-line px-[9px] py-[7px]">
+                <button type="button" class="min-h-[32px] px-[8px] text-[11px] text-content-secondary" @click="batchReplyOpen = false">
+                  {{ $t('redesign.inbox.batchCancel') }}
+                </button>
+                <button
+                  type="button"
+                  data-testid="inbox-batch-reply-send"
+                  class="min-h-[32px] rounded-[7px] bg-accent px-[11px] text-[11.5px] font-bold text-accent-on disabled:opacity-40"
+                  :disabled="!batchReplyText.trim() || store.batchRunning"
+                  @click="runBatchReply"
+                >
+                  {{ $t('redesign.inbox.batchReplySend', { count: checkedCount }) }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 다시 시도할 수 있는 실패 -->
+          <div
+            v-if="store.retryableFailures.length > 0"
+            class="flex items-center gap-2 border-t border-line px-[13px] py-[8px]"
+            data-testid="inbox-retry-bar"
           >
-            {{ $t('redesign.inbox.selectAll') }}
-          </button>
+            <span class="flex-1 text-[11px] text-warn">{{ $t('redesign.inbox.retryFailed', { count: store.retryableFailures.length }) }}</span>
+            <button
+              type="button"
+              data-testid="inbox-retry"
+              class="min-h-[32px] rounded-[7px] border border-line-control px-[10px] text-[11px] text-content hover:border-line-hover disabled:opacity-40"
+              :disabled="store.batchRunning"
+              @click="runRetry"
+            >
+              {{ store.batchRunning ? $t('redesign.inbox.retrying') : $t('redesign.inbox.retryFailed', { count: store.retryableFailures.length }) }}
+            </button>
+          </div>
+
           <button
+            v-if="store.pendingDrafts.length > 0 && !showDrafts"
             type="button"
-            class="text-[11px] text-accent disabled:opacity-40"
-            :disabled="store.checkedIds.length === 0 || batchProcessing"
-            @click="runBatch"
+            class="block w-full border-t border-line px-[13px] py-[8px] text-left text-[11.5px] font-semibold text-accent"
+            data-testid="inbox-drafts-open"
+            @click="showDrafts = true"
           >
-            {{ $t('redesign.inbox.batchProcess') }}
+            {{ $t('redesign.inbox.draftOpen', { count: store.pendingDrafts.length }) }}
           </button>
         </div>
 
@@ -126,15 +232,88 @@
             </span>
             <StatusPill :variant="categoryOf(t).variant">{{ $t(`redesign.inbox.categories.${categoryOf(t).key}`) }}</StatusPill>
           </div>
+          <p
+            v-if="store.failures[t.id]"
+            class="mt-[6px] text-[11px] leading-[1.45] text-error-strong"
+            :data-testid="`inbox-failure-${t.id}`"
+          >
+            {{ $t('redesign.inbox.failedReason', { reason: store.failures[t.id].message ?? $t('redesign.inbox.failedUnknown') }) }}
+            <span v-if="!store.failures[t.id].retryable" class="text-content-tertiary"> · {{ $t('redesign.inbox.notRetryable') }}</span>
+          </p>
         </div>
+
+        <button
+          v-if="store.hasMoreComments"
+          type="button"
+          data-testid="inbox-load-more"
+          class="m-[13px] min-h-[36px] rounded-[7px] border border-line-control text-[12px] text-content-secondary hover:border-line-hover hover:text-content disabled:opacity-40"
+          :disabled="store.loadingMore"
+          @click="loadMore"
+        >
+          {{ store.loadingMore ? $t('redesign.inbox.loadingMore') : $t('redesign.inbox.loadMore') }}
+        </button>
       </section>
 
       <!-- 3열: 상세. <1024px 에서는 선택 시에만 보인다 -->
       <section
         class="min-h-0 flex-1 flex-col overflow-y-auto min-[1024px]:flex"
-        :class="store.selectedThread ? 'flex' : 'hidden'"
+        :class="store.selectedThread || reviewingDrafts ? 'flex' : 'hidden'"
       >
-        <template v-if="store.selectedThread">
+        <!-- AI 초안 검토: 보내기 전까지 아무것도 게시되지 않는다 -->
+        <div v-if="reviewingDrafts" class="flex flex-col gap-[12px] p-[18px]" data-testid="inbox-draft-review">
+          <div class="flex items-center gap-2">
+            <h2 class="flex-1 text-[13px] font-bold text-content">
+              {{ $t('redesign.inbox.draftReviewTitle', { count: store.pendingDrafts.length }) }}
+            </h2>
+            <button type="button" class="min-h-[32px] px-[8px] text-[11px] text-content-secondary" @click="showDrafts = false">
+              {{ $t('redesign.inbox.draftClose') }}
+            </button>
+            <button
+              type="button"
+              data-testid="inbox-drafts-send-all"
+              class="min-h-[32px] rounded-[7px] bg-accent px-[11px] text-[11.5px] font-bold text-accent-on disabled:opacity-40"
+              :disabled="store.batchRunning"
+              @click="runSendDrafts()"
+            >
+              {{ $t('redesign.inbox.draftSendAll') }}
+            </button>
+          </div>
+          <p class="text-[11px] text-content-tertiary">{{ $t('redesign.inbox.draftReviewHint') }}</p>
+          <div
+            v-for="d in store.pendingDrafts"
+            :key="d.thread.id"
+            class="rounded-[11px] border border-line bg-surface-card p-3"
+            :data-testid="`inbox-draft-${d.thread.id}`"
+          >
+            <div class="mb-[5px] text-[11px] text-content-tertiary">{{ d.thread.author }} · {{ platformLabel(d.thread.platform) }}</div>
+            <p class="mb-[8px] text-[12.5px] leading-[1.55] text-content-secondary">{{ d.thread.text }}</p>
+            <textarea
+              :value="d.text"
+              rows="2"
+              class="block w-full resize-y rounded-[8px] border border-line-control bg-surface-input px-[10px] py-[8px] text-[12.5px] text-content outline-none focus:border-accent"
+              :aria-label="$t('redesign.inbox.draftReviewTitle', { count: 1 })"
+              @input="store.updateDraft(d.thread.id, ($event.target as HTMLTextAreaElement).value)"
+            />
+            <p v-if="store.failures[d.thread.id]" class="mt-[6px] text-[11px] text-error-strong">
+              {{ $t('redesign.inbox.failedReason', { reason: store.failures[d.thread.id].message ?? $t('redesign.inbox.failedUnknown') }) }}
+            </p>
+            <div class="mt-[8px] flex justify-end gap-[6px]">
+              <button type="button" class="min-h-[32px] px-[8px] text-[11px] text-content-secondary" @click="store.discardDraft(d.thread.id)">
+                {{ $t('redesign.inbox.draftDiscard') }}
+              </button>
+              <button
+                type="button"
+                class="min-h-[32px] rounded-[7px] border border-line-control px-[10px] text-[11.5px] text-content disabled:opacity-40"
+                :disabled="store.batchRunning || !d.text.trim()"
+                @click="runSendDrafts([d.thread.id])"
+              >
+                {{ $t('redesign.inbox.draftSend') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <template v-else-if="store.selectedThread">
           <!-- 상세 헤더 -->
           <div class="flex items-center gap-[10px] border-b border-line px-[18px] py-[14px]">
             <button
@@ -269,7 +448,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRedesignInboxStore, type InboxFilter, type InboxThread } from '@/stores/redesignInbox'
+import {
+  INBOX_AI_DRAFT_MAX,
+  INBOX_BATCH_MAX,
+  useRedesignInboxStore,
+  type InboxBatchOutcome,
+  type InboxFilter,
+  type InboxThread,
+} from '@/stores/redesignInbox'
+import { useAiFeaturePricing } from '@/composables/useAiFeaturePricing'
 import { useNotificationStore } from '@/stores/notification'
 import { videoApi } from '@/api/video'
 import PlatformChip from '@/components/redesign/PlatformChip.vue'
@@ -281,6 +468,7 @@ const store = useRedesignInboxStore()
 const notify = useNotificationStore()
 
 const FILTERS: InboxFilter[] = ['all', 'question', 'negative', 'dm', 'collab', 'done']
+const SEARCH_DEBOUNCE_MS = 300
 
 // 저장된 답변 — 문구는 i18n 으로 관리한다
 interface SavedReply {
@@ -298,8 +486,22 @@ const savedReplies = computed<SavedReply[]>(() =>
 const draft = ref('')
 const aiSuggesting = ref(false)
 const savedMenuOpen = ref(false)
-const batchProcessing = ref(false)
 const targetVideoTitle = ref<string | null>(null)
+
+const pricing = useAiFeaturePricing()
+const searchInput = ref('')
+const batchReplyOpen = ref(false)
+const batchReplyText = ref('')
+const showDrafts = ref(false)
+
+const checkedCount = computed(() => store.checkedIds.length)
+const reviewingDrafts = computed(() => showDrafts.value && store.pendingDrafts.length > 0)
+
+/** AI 초안 비용 — 서버 단가 × 선택 수. 단가를 모르면 null 이고 버튼을 열지 않는다(화면이 금액을 지어내지 않는다). */
+const draftCredits = computed<number | null>(() => {
+  const per = pricing.costOf('BATCH_REPLY_DRAFT')
+  return per == null ? null : per * checkedCount.value
+})
 
 const isDm = computed(() => store.selectedThread?.source === 'dm')
 
@@ -401,17 +603,89 @@ async function runHide() {
   }
 }
 
+/** 일괄 결과를 사용자에게 알린다. 실패가 있으면 성공처럼 말하지 않는다. */
+function reportOutcome(outcome: InboxBatchOutcome) {
+  const params = { succeeded: outcome.succeeded, failed: outcome.failed }
+  if (outcome.failed > 0) notify.error(t('redesign.inbox.batchResult', params))
+  else if (outcome.succeeded > 0) notify.success(t('redesign.inbox.batchAllDone', params))
+}
+
+function errorMessage(e: unknown, fallbackKey: string): string {
+  const server = (e as { response?: { data?: { message?: unknown } } })?.response?.data?.message
+  if (typeof server === 'string' && server.trim()) return server
+  return e instanceof Error && e.message ? e.message : t(fallbackKey)
+}
+
 async function runBatch() {
-  batchProcessing.value = true
   try {
-    const count = await store.batchHideChecked()
-    notify.success(t('redesign.inbox.batchDone', { count }))
+    reportOutcome(await store.batchHideChecked())
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : t('redesign.inbox.actionFailed'))
-  } finally {
-    batchProcessing.value = false
+    notify.error(errorMessage(e, 'redesign.inbox.actionFailed'))
   }
 }
+
+async function runBatchReply() {
+  try {
+    const outcome = await store.batchReplyChecked(batchReplyText.value)
+    reportOutcome(outcome)
+    // 다 나갔을 때만 입력을 비운다. 실패가 있으면 같은 문구로 다시 시도할 수 있게 남긴다.
+    if (outcome.failed === 0) {
+      batchReplyText.value = ''
+      batchReplyOpen.value = false
+    }
+  } catch (e) {
+    notify.error(errorMessage(e, 'redesign.inbox.sendFailed'))
+  }
+}
+
+async function runRetry() {
+  try {
+    reportOutcome(await store.retryFailed())
+  } catch (e) {
+    notify.error(errorMessage(e, 'redesign.inbox.actionFailed'))
+  }
+}
+
+async function runAiDrafts() {
+  try {
+    const result = await store.generateDrafts()
+    if (result.created === 0) return
+    showDrafts.value = true
+    notify.success(
+      result.created < result.requested
+        ? t('redesign.inbox.aiDraftPartial', { created: result.created, requested: result.requested })
+        : t('redesign.inbox.aiDraftCreated', { created: result.created, credits: result.creditsUsed }),
+    )
+  } catch (e) {
+    // 크레딧 부족·권한·상한은 서버 문구를 그대로 보인다. 실패하면 서버가 크레딧을 돌려준다.
+    notify.error(errorMessage(e, 'redesign.inbox.aiDraftFailed'))
+  }
+}
+
+async function runSendDrafts(ids?: string[]) {
+  reportOutcome(await store.sendDrafts(ids))
+}
+
+async function loadMore() {
+  try {
+    await store.loadMoreComments()
+  } catch {
+    notify.error(t('redesign.inbox.loadMoreFailed'))
+  }
+}
+
+function onPlatformChange(value: string) {
+  void store.setQuery({ platform: value || null })
+}
+
+// 입력을 멈춘 뒤에 서버 검색을 보낸다 — 글자마다 요청하지 않는다.
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+watch(searchInput, (value) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    void store.setQuery({ search: value })
+  }, SEARCH_DEBOUNCE_MS)
+})
 
 // 대상 게시물 제목 — CommentResponse 에는 videoId 만 있어 따로 읽는다
 watch(
@@ -447,11 +721,14 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 onMounted(() => {
+  searchInput.value = store.search
   store.fetchAll()
+  void pricing.load()
   window.addEventListener('keydown', onKeydown)
 })
 
 onBeforeUnmount(() => {
+  if (searchTimer) clearTimeout(searchTimer)
   window.removeEventListener('keydown', onKeydown)
 })
 </script>
