@@ -15,6 +15,7 @@ import com.ongo.application.ugc.shorts.dto.PipelineRunListResponse
 import com.ongo.application.ugc.shorts.dto.PipelineRunResponse
 import com.ongo.application.ugc.shorts.dto.RunStageResponse
 import com.ongo.application.ugc.shorts.dto.ScheduleConfirmRequest
+import com.ongo.application.ugc.shorts.dto.SegmentOptionsResponse
 import com.ongo.application.ugc.shorts.dto.ClipPublicationResponse
 import com.ongo.application.ugc.shorts.dto.ShortsClipResponse
 import com.ongo.common.enums.Platform
@@ -147,6 +148,11 @@ class ShortsPipelineUseCase(
             require(request.platforms.isNotEmpty()) { "자동 쇼츠 게시 대상 플랫폼이 필요합니다" }
         }
 
+        // 크레딧·원본 검사보다 먼저 본다. 잘못된 조건이면 비싼 길이 측정을 할 필요가 없다.
+        val segmentOptions = request.segment?.let {
+            ShortsSegmentPolicy.Options.of(it.clipCount, it.minDurationSec, it.maxDurationSec)
+        }
+
         val video = videoRepository.findById(request.sourceVideoId)
             ?: throw BusinessException("SHORTS_SOURCE_VIDEO_NOT_FOUND", "원본 영상을 찾을 수 없습니다: ${request.sourceVideoId}")
         if (video.userId != userId) {
@@ -176,6 +182,9 @@ class ShortsPipelineUseCase(
             requestHash = requestHash,
             // 방금 잰 값을 그대로 고정한다. 재실행은 이 값을 다시 읽어 같은 금액을 낸다.
             sourceDurationMs = sourceDurationMs,
+            segmentClipCount = segmentOptions?.clipCount,
+            segmentMinDurationMs = segmentOptions?.minDurationMs,
+            segmentMaxDurationMs = segmentOptions?.maxDurationMs,
             status = PipelineRunStatus.PENDING,
         )
 
@@ -892,6 +901,14 @@ class ShortsPipelineUseCase(
         errorMessage = errorMessage,
         createdAt = createdAt,
         updatedAt = updatedAt,
+        segmentOptions = segmentOptions().let { options ->
+            SegmentOptionsResponse(
+                clipCount = options.effectiveClipCount,
+                minDurationSec = (options.effectiveMinMs / 1000).toInt(),
+                maxDurationSec = (options.effectiveMaxMs / 1000).toInt(),
+                userSpecified = segmentClipCount != null || segmentMinDurationMs != null || segmentMaxDurationMs != null,
+            )
+        },
     )
 
     private fun com.ongo.domain.ugc.shorts.RunStage.toResponse() = RunStageResponse(
@@ -920,6 +937,8 @@ class ShortsPipelineUseCase(
         caption = caption,
         status = status.name,
         scheduledAt = scheduledAt,
+        score = score,
+        scoreReason = scoreReason,
         hooks = hooks.map {
             ClipHookResponse(id = it.id, variant = it.variant.name, text = it.text, selected = it.selected)
         },

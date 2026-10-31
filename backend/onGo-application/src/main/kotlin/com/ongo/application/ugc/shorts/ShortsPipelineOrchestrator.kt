@@ -347,6 +347,7 @@ class ShortsPipelineOrchestrator(
                 persistRun(run.id) { it.copy(cropJson = output.cropJson) }
             }
             PipelineStage.SEGMENT -> {
+                // 후보는 점수 높은 순으로 온다. seq 1 이 가장 좋은 클립이라 자동 예약도 그 순서로 나간다.
                 val candidates: List<ClipCandidate> = output.clipCandidates.orEmpty()
                 val saved = shortsClipRepository.saveAll(
                     candidates.mapIndexed { index, candidate ->
@@ -359,6 +360,11 @@ class ShortsPipelineOrchestrator(
                             caption = candidate.caption,
                             status = ClipStatus.DRAFT,
                             dedupKey = "${run.id}:${index + 1}",
+                            score = candidate.score,
+                            scoreReason = candidate.scoreReason,
+                            platformMetaJson = ShortsPlatformMeta.toJson(
+                                ShortsPlatformMeta.initial(candidate.title, candidate.caption, candidate.hashtags),
+                            ),
                         )
                     },
                 )
@@ -462,6 +468,11 @@ class ShortsPipelineOrchestrator(
                     startMs = node.path("startMs").asLong(),
                     endMs = node.path("endMs").asLong(),
                     text = node.path("text").asText(),
+                    // 단어 시각: [시작, 끝, 글자]. 예전 스냅샷에는 없다.
+                    words = node.path("w").mapNotNull { w ->
+                        if (w.size() != 3 || !w[0].isNumber || !w[1].isNumber) null
+                        else CaptionWord(w[0].asLong(), w[1].asLong(), w[2].asText())
+                    },
                 )
             }
         }.getOrDefault(emptyList())

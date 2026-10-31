@@ -41,4 +41,12 @@ interface ShortsRenderJobRepository {
     /** QUEUED 상태를 원자적으로 RUNNING으로 선점한다. 이미 선점됐으면 null을 반환한다. */
     fun claimQueued(id: String, startedAt: Instant): ShortsRenderJob?
     fun update(job: ShortsRenderJob): ShortsRenderJob
+
+    /**
+     * 끝난(COMPLETED·FAILED) 작업만 지운다. 클립을 편집해 이전 결과가 낡았을 때 쓴다.
+     *
+     * 조건부 삭제라 그 사이 다른 요청이 렌더를 시작했으면(QUEUED·RUNNING) 지우지 않고 false 다.
+     * 작업이 없었으면 true — 지울 것이 없는 것도 "낡은 결과가 남지 않았다"는 같은 뜻이다.
+     */
+    fun deleteFinished(runId: Long, clipId: Long): Boolean
 }

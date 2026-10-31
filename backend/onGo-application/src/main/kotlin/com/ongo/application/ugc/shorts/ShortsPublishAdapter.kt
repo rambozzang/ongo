@@ -41,18 +41,33 @@ class ShortsPublishAdapter(
     ): List<PlatformPublishOutcome> {
         val video = videoRepository.findById(videoId) ?: throw NotFoundException("영상", videoId)
         require(requests.isNotEmpty()) { "게시할 플랫폼을 하나 이상 선택해주세요." }
+        // 클립 메타에 해시태그가 없을 때만 쓰는 마지막 근거. 사용자가 원본에 단 태그다.
+        val sourceTagsById = requests.mapNotNull { it.sourceVideoId }.distinct()
+            .associateWith { id -> videoRepository.findById(id)?.tags.orEmpty() }
 
         val configs = requests.map { request ->
             val target = parseShortsPublishTarget(request.platformName, request.channelId)
             val platform = runCatching { Platform.valueOf(target.platformName) }
                 .getOrElse { throw IllegalArgumentException("지원하지 않는 플랫폼입니다: ${request.platformName}") }
+            /*
+             * 플랫폼별 메타로 제목·설명·해시태그를 채운다. 예전에는 태그를 늘 빈 목록으로 보냈다.
+             * 값은 게시 검증과 같은 한도로 맞춰져 있어, 여기서 통과한 글이 게시에서 거절되지 않는다.
+             */
+            val meta = ShortsPlatformMeta.forTarget(
+                platform = platform,
+                metaJson = request.platformMetaJson,
+                clipTitle = request.title,
+                clipCaption = request.caption,
+                fallbackTitle = video.title,
+                sourceVideoTags = request.sourceVideoId?.let { sourceTagsById[it] }.orEmpty(),
+            )
             PlatformUploadConfig(
                 platform = platform,
                 channelId = target.channelId,
                 videoUploadId = 0,
-                title = request.title?.ifBlank { video.title } ?: video.title,
-                description = request.caption,
-                tags = emptyList(),
+                title = meta.title.ifBlank { video.title },
+                description = meta.description.ifBlank { null },
+                tags = meta.hashtags,
                 visibility = Visibility.PUBLIC,
                 thumbnailUrl = null,
                 scheduledAt = LocalDateTime.ofInstant(request.scheduledAt, ZoneOffset.UTC),
@@ -86,6 +101,10 @@ data class ShortsPublishRequest(
     val caption: String?,
     val scheduledAt: Instant,
     val channelId: Long? = null,
+    /** 클립의 플랫폼별 메타(`ShortsPlatformMeta` 형식). 없으면 제목·설명으로 같은 규칙에 맞춘다. */
+    val platformMetaJson: String? = null,
+    /** 해시태그가 하나도 없을 때 원본 영상 태그를 쓰기 위한 id. */
+    val sourceVideoId: Long? = null,
 )
 
 data class ShortsPublishTarget(val platformName: String, val channelId: Long?)

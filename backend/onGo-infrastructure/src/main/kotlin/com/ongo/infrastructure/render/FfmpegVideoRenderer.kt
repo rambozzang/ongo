@@ -3,6 +3,7 @@ package com.ongo.infrastructure.render
 import com.ongo.domain.ugc.shorts.ClipRenderRequest
 import com.ongo.domain.ugc.shorts.RenderedClip
 import com.ongo.domain.ugc.shorts.RendererAvailability
+import com.ongo.domain.ugc.shorts.ShortsFilterGraph
 import com.ongo.domain.ugc.shorts.VideoRenderer
 import com.ongo.infrastructure.runtime.RuntimeExecutableResolver
 import org.slf4j.LoggerFactory
@@ -17,8 +18,8 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * ffmpeg 어댑터. 크롭 → 스케일 → 자막 번인 순서는
- * `ShortsRenderSpecBuilder.buildRenderScript` 가 만드는 명령과 같다.
+ * ffmpeg 어댑터. 화면 구성 → 스케일 → 자막 번인 필터는 [ShortsFilterGraph] 하나에서 나오고,
+ * `ShortsRenderSpecBuilder.buildRenderScript` 도 같은 것을 쓴다.
  *
  * ## 셸을 거치지 않는다
  *
@@ -75,8 +76,9 @@ class FfmpegVideoRenderer(
                     }
                 }
 
+            val fontsDir = subtitlePath?.let { installFonts(workDir) }
             val output = workDir.resolve("clip.mp4")
-            runProcess(buildCommand(request, subtitlePath, output), workDir, timeoutSeconds)
+            runProcess(buildCommand(request, subtitlePath, fontsDir, output), workDir, timeoutSeconds)
 
             if (!Files.exists(output) || Files.size(output) == 0L) {
                 // ffmpeg 가 0 으로 끝나고도 결과를 못 만드는 경우가 있다. 크기까지 봐야 안다.
@@ -94,21 +96,23 @@ class FfmpegVideoRenderer(
     }
 
     /**
-     * 필터 체인은 `크롭 → 스케일 → 자막` 순서다. 순서가 바뀌면 결과가 달라진다 —
-     * 스케일 뒤에 크롭하면 좌표가 원본 기준이 아니게 되고, 자막을 먼저 구우면 크롭에 잘린다.
+     * 필터는 [ShortsFilterGraph] 가 만든다 — 내려받는 `render.sh` 와 같은 함수다.
+     * 자막 파일명에 콜론·백슬래시가 있으면 필터 문법이 깨지므로, 작업 디렉터리 안의
+     * 고정된 이름만 넘긴다.
      */
     private fun buildCommand(
         request: ClipRenderRequest,
         subtitlePath: Path?,
+        fontsDir: Path?,
         output: Path,
     ): List<String> {
-        val filters = buildList {
-            request.crop?.let { add("crop=${it.width}:${it.height}:${it.x}:${it.y}") }
-            add("scale=${request.outputWidth}:${request.outputHeight}")
-            // 파일명에 콜론·백슬래시가 있으면 필터 문법이 깨진다. 작업 디렉터리에서
-            // 고정된 이름으로만 쓰므로 상대 경로를 그대로 넘긴다.
-            subtitlePath?.let { add("ass=${it.fileName}") }
-        }
+        val filters = ShortsFilterGraph.build(
+            framing = request.framing,
+            width = request.outputWidth,
+            height = request.outputHeight,
+            subtitleFile = subtitlePath?.fileName?.toString(),
+            fontsDir = fontsDir?.fileName?.toString(),
+        )
 
         return listOf(
             resolvedExecutable,
@@ -117,7 +121,7 @@ class FfmpegVideoRenderer(
             "-ss", seconds(request.startMs),
             "-to", seconds(request.endMs),
             "-i", request.sourceUrl,
-            "-vf", filters.joinToString(","),
+            "-vf", filters,
             "-c:v", "libx264",
             "-preset", preset,
             "-crf", crf.toString(),
@@ -126,6 +130,20 @@ class FfmpegVideoRenderer(
             output.fileName.toString(),
         )
     }
+
+    /**
+     * 함께 실은 한글 글꼴(SIL OFL)을 작업 디렉터리에 푼다. 서버에 한글 글꼴이 없으면 자막이
+     * 네모(□)로 구워지는데 ffmpeg 는 성공으로 끝난다 — 사용자는 깨진 영상을 받는다.
+     * 글꼴을 못 풀면 시스템 글꼴로 진행한다(렌더 자체를 막을 이유는 아니다).
+     */
+    private fun installFonts(workDir: Path): Path? = runCatching {
+        val dir = Files.createDirectories(workDir.resolve("fonts"))
+        BUNDLED_FONTS.forEach { name ->
+            val stream = javaClass.getResourceAsStream("/fonts/shorts/$name") ?: error("글꼴 없음: $name")
+            stream.use { Files.copy(it, dir.resolve(name)) }
+        }
+        dir
+    }.onFailure { log.warn("자막 글꼴을 준비하지 못했다. 시스템 글꼴로 진행한다: {}", it.message) }.getOrNull()
 
     override fun checkAvailability(): RendererAvailability {
         cachedAvailability.get()?.let { (at, value) ->
@@ -136,12 +154,25 @@ class FfmpegVideoRenderer(
         return result
     }
 
+    /**
+     * 실행 여부만이 아니라 **자막 필터(libass)가 들어 있는지**까지 본다. 자막을 굽지 못하는
+     * 빌드(예: 최소 구성 ffmpeg)는 렌더 마지막에야 "필터 없음"으로 실패하는데, 그때는 앞 단계
+     * 크레딧을 이미 쓴 뒤다.
+     */
     private fun probe(): RendererAvailability =
         try {
             val dir = Files.createTempDirectory("ongo-ffmpeg-probe-")
             try {
-            runProcess(listOf(resolvedExecutable, "-version"), dir, PROBE_TIMEOUT_SECONDS)
-                RendererAvailability(available = true)
+                val filters = runProcess(listOf(resolvedExecutable, "-hide_banner", "-filters"), dir, PROBE_TIMEOUT_SECONDS)
+                if (hasSubtitleFilter(filters)) {
+                    RendererAvailability(available = true)
+                } else {
+                    log.warn("영상 인코더에 자막 필터(ass)가 없다. libass 가 포함된 ffmpeg 가 필요하다. executable={}", resolvedExecutable)
+                    RendererAvailability(
+                        available = false,
+                        reason = "서버 영상 인코더가 자막 굽기를 지원하지 않아 렌더링할 수 없습니다. 관리자에게 문의해 주세요.",
+                    )
+                }
             } finally {
                 deleteRecursively(dir)
             }
@@ -153,7 +184,8 @@ class FfmpegVideoRenderer(
             )
         }
 
-    private fun runProcess(command: List<String>, directory: Path, timeout: Long) {
+    /** 실행하고 출력(앞부분 최대 [MAX_OUTPUT] 자)을 돌려준다. 실패하면 예외. */
+    private fun runProcess(command: List<String>, directory: Path, timeout: Long): String {
         // 셸을 거치지 않는다. 인자 배열이라 메타문자가 해석될 통로가 없다.
         val process = ProcessBuilder(command)
             .directory(directory.toFile())
@@ -187,6 +219,7 @@ class FfmpegVideoRenderer(
             log.warn("인코더 실패. exit={} output={}", process.exitValue(), captured.toString().takeLast(500))
             throw IllegalStateException("영상 렌더링에 실패했습니다")
         }
+        return captured.toString()
     }
 
     private fun deleteRecursively(dir: Path) {
@@ -201,8 +234,13 @@ class FfmpegVideoRenderer(
     private fun seconds(ms: Long): String = String.format("%.3f", ms / 1000.0)
 
     companion object {
+        /** `ffmpeg -filters` 목록에 `ass` 필터 줄이 있는지. 형식: ` T.. ass               V->V       Render ASS ...` */
+        fun hasSubtitleFilter(filtersOutput: String): Boolean =
+            filtersOutput.lineSequence().any { line -> line.trim().split(Regex("\\s+")).getOrNull(1) == "ass" }
+
         private val AVAILABILITY_TTL: Duration = Duration.ofMinutes(5)
         private const val PROBE_TIMEOUT_SECONDS = 5L
-        private const val MAX_OUTPUT = 16_384
+        private const val MAX_OUTPUT = 65_536
+        private val BUNDLED_FONTS = listOf("Pretendard-ExtraBold.otf")
     }
 }

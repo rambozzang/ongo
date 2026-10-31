@@ -14,7 +14,6 @@ vi.mock('@/api/repurpose', () => ({ repurposeApi: { analyzeForRepurpose: vi.fn()
 vi.mock('@/api/metaRewrite', () => ({ metaRewriteApi: { rewrite: vi.fn() } }))
 vi.mock('@/api/publishChecklist', () => ({ publishChecklistApi: { get: vi.fn() } }))
 vi.mock('@/api/videoSeo', () => ({ videoSeoApi: { analyze: vi.fn() } }))
-vi.mock('@/api/viewsPrediction', () => ({ viewsPredictionApi: { predict: vi.fn() } }))
 vi.mock('@/api/video', () => ({ videoApi: { feed: vi.fn(), list: vi.fn() } }))
 vi.mock('@/api/credit', () => ({
   creditApi: {

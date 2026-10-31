@@ -2,6 +2,7 @@ package com.ongo.application.ugc.shorts.stage
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.ai.SttUseCase
+import com.ongo.application.ugc.shorts.CaptionWord
 import com.ongo.application.ugc.shorts.ShortsCostLedger
 import com.ongo.domain.ugc.shorts.PipelineStage
 import org.springframework.stereotype.Component
@@ -29,20 +30,32 @@ class TranscribeStageExecutor(
             costLedger?.recordTranscription(context.run.id, durationMs, model)
         }
 
-        // 초 → ms 변환
+        // 초 → ms 변환. 단어는 중심 시각이 들어가는 세그먼트에 붙인다.
+        val words = result.words.map {
+            CaptionWord((it.startTime * 1000).toLong(), (it.endTime * 1000).toLong(), it.text)
+        }
         val segments = result.segments.map { segment ->
+            val startMs = (segment.startTime * 1000).toLong()
+            val endMs = (segment.endTime * 1000).toLong()
             TranscriptSegmentMs(
-                startMs = (segment.startTime * 1000).toLong(),
-                endMs = (segment.endTime * 1000).toLong(),
+                startMs = startMs,
+                endMs = endMs,
                 text = segment.text,
+                words = words.filter { (it.startMs + it.endMs) / 2 in startMs until endMs },
             )
         }
 
+        // 단어는 [시작, 끝, 글자] 배열로 줄여 담는다 — 3시간 영상이면 수만 개라 키 이름만으로도 커진다.
         val snapshot = mapper.writeValueAsString(
             mapOf(
                 "text" to result.text,
                 "segments" to segments.map {
-                    mapOf("startMs" to it.startMs, "endMs" to it.endMs, "text" to it.text)
+                    buildMap {
+                        put("startMs", it.startMs)
+                        put("endMs", it.endMs)
+                        put("text", it.text)
+                        if (it.words.isNotEmpty()) put("w", it.words.map { w -> listOf(w.startMs, w.endMs, w.text) })
+                    }
                 },
             ),
         )

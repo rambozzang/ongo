@@ -259,9 +259,13 @@ class InstagramClient(
     ): PlatformAnalytics {
         log.debug("Instagram 분석 데이터 조회: mediaId={}", platformVideoId)
 
+        /*
+         * `plays` 는 Meta 가 2025-04-21 모든 버전에서 폐기했다 — 요청에 넣으면 호출 전체가 오류다.
+         * 그 탓에 Instagram 수집이 매번 실패했다. 대체 지표는 `views`(릴스 재생 포함)다.
+         */
         val insightsResponse = instagramApi.getMediaInsights(
             mediaId = platformVideoId,
-            metric = "plays,likes,comments,shares,saved",
+            metric = "views,likes,comments,shares,saved",
             accessToken = accessToken,
         )
         insightsResponse.error?.let {
@@ -277,7 +281,7 @@ class InstagramClient(
         } ?: emptyMap()
 
         return PlatformAnalytics(
-            views = metrics["plays"].requireMetric("Instagram", "plays"),
+            views = metrics["views"].requireMetric("Instagram", "views"),
             likes = metrics["likes"].requireMetric("Instagram", "likes"),
             comments = metrics["comments"].requireMetric("Instagram", "comments"),
             shares = metrics["shares"].requireMetric("Instagram", "shares"),

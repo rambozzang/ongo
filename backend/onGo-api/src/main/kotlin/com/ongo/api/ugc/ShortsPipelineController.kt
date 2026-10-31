@@ -3,7 +3,11 @@ package com.ongo.api.ugc
 import com.ongo.api.ugc.dto.ShortsRenderJobResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import com.ongo.application.ugc.shorts.ShortsClipEditUseCase
 import com.ongo.application.ugc.shorts.ShortsPipelineUseCase
+import com.ongo.application.ugc.shorts.dto.ClipEditRequest
+import com.ongo.application.ugc.shorts.dto.ClipEditResponse
+import com.ongo.application.ugc.shorts.dto.ClipEditorResponse
 import com.ongo.application.ugc.shorts.dto.AttachRenderedVideoRequest
 import com.ongo.application.ugc.shorts.dto.CreatePipelineRunRequest
 import com.ongo.application.ugc.shorts.dto.HookSelectionRequest
@@ -24,6 +28,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -38,6 +43,7 @@ import org.springframework.web.bind.annotation.RestController
 class ShortsPipelineController(
     private val renderUseCase: com.ongo.application.ugc.shorts.ShortsRenderUseCase,
     private val pipelineUseCase: ShortsPipelineUseCase,
+    private val clipEditUseCase: ShortsClipEditUseCase,
 ) {
 
     data class CreditEstimateResponse(val credits: Int)
@@ -228,6 +234,37 @@ class ShortsPipelineController(
         val job = renderUseCase.requestRender(userId, workspaceId, runId, clipId)
         return ResponseEntity.accepted().body(ResData(data = ShortsRenderJobResponse.from(job)))
     }
+
+    @Operation(summary = "클립 편집기 데이터", description = "구간·자막 줄(클립 기준 ms)·크롭·플랫폼별 메타와 편집 가능 여부")
+    @GetMapping("/{runId}/clips/{clipId}/editor")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_VIEW)
+    fun clipEditor(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable workspaceId: Long,
+        @PathVariable runId: Long,
+        @PathVariable clipId: Long,
+    ): ResponseEntity<ResData<ClipEditorResponse>> =
+        ResData.success(clipEditUseCase.getEditor(userId, workspaceId, runId, clipId))
+
+    @Operation(
+        summary = "클립 편집 저장",
+        description = "보낸 항목만 바꾼다. 구간·자막·크롭을 바꾸면 렌더 지시서를 새로 만들고 이전 렌더 결과를 버린다 — 다시 렌더해야 한다",
+    )
+    @ApiResponses(
+        ApiResponse(responseCode = "200", description = "저장됨"),
+        ApiResponse(responseCode = "400", description = "SHORTS_CLIP_EDIT_INVALID · SHORTS_CROP_INVALID · SHORTS_CLIP_NOT_EDITABLE"),
+        ApiResponse(responseCode = "404", description = "실행 또는 클립 없음"),
+    )
+    @PatchMapping("/{runId}/clips/{clipId}")
+    @RequiresPermission(Permission.SHORTS_PIPELINE_MANAGE)
+    fun editClip(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+        @PathVariable workspaceId: Long,
+        @PathVariable runId: Long,
+        @PathVariable clipId: Long,
+        @RequestBody request: ClipEditRequest,
+    ): ResponseEntity<ResData<ClipEditResponse>> =
+        ResData.success(clipEditUseCase.edit(userId, workspaceId, runId, clipId, request))
 
     @Operation(summary = "클립 렌더 상태 조회", description = "QUEUED / RUNNING / COMPLETED / FAILED")
     @GetMapping("/{runId}/clips/{clipId}/render")

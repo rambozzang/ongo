@@ -416,73 +416,25 @@
         >
           {{ predictModal.error }}
         </div>
-        <div v-else-if="predictModal.result">
-          <!-- Prediction Cards -->
-          <div class="grid grid-cols-3 gap-3">
-            <div class="rounded-lg bg-gray-50 p-3 text-center dark:bg-gray-800/50">
-              <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.24h') }}</p>
-              <p class="mt-1 text-h2 font-bold text-gray-900 dark:text-white">{{ formatCount(predictModal.result.predicted24h) }}</p>
-            </div>
-            <div class="rounded-lg bg-primary-50 p-3 text-center dark:bg-primary-900/20">
-              <p class="text-body-xs text-primary-600 dark:text-primary-400">{{ $t('videosView.viewsPrediction.7d') }}</p>
-              <p class="mt-1 text-h2 font-bold text-primary-700 dark:text-primary-300">{{ formatCount(predictModal.result.predicted7d) }}</p>
-            </div>
-            <div class="rounded-lg bg-gray-50 p-3 text-center dark:bg-gray-800/50">
-              <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.30d') }}</p>
-              <p class="mt-1 text-h2 font-bold text-gray-900 dark:text-white">{{ formatCount(predictModal.result.predicted30d) }}</p>
-            </div>
+        <div v-else-if="predictModal.result" data-testid="views-prediction-result">
+          <!-- 실측 일별 조회수의 추세로 계산한 값이다. AI 가 지어낸 숫자를 보여 주지 않는다. -->
+          <div v-if="predictModal.result.prediction7d !== null" class="rounded-lg bg-primary-50 p-4 text-center dark:bg-primary-900/20">
+            <p class="text-body-xs text-primary-600 dark:text-primary-400">{{ $t('videosView.viewsPrediction.7d') }}</p>
+            <p class="mt-1 text-h2 font-bold text-primary-700 dark:text-primary-300">{{ formatCount(predictModal.result.prediction7d) }}</p>
+            <p v-if="predictModal.result.trend" class="mt-1 text-body-xs text-gray-600 dark:text-gray-300">
+              {{ $t(`videosView.viewsPrediction.trend.${predictModal.result.trend}`) }}
+            </p>
           </div>
-          <!-- Confidence + Comparison -->
-          <div class="mt-3 flex gap-3">
-            <div class="flex-1 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-              <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.confidence') }}</p>
-              <p class="mt-0.5 text-title font-semibold text-gray-900 dark:text-white">{{ predictModal.result.confidenceScore }}%</p>
-            </div>
-            <div class="flex-1 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-              <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.vsAverage') }}</p>
-              <p
-                class="mt-0.5 text-title font-semibold"
-                :class="predictModal.result.comparisonToAverage >= 0 ? 'text-success-strong' : 'text-error-strong'"
-              >
-                {{ predictModal.result.comparisonToAverage >= 0 ? '+' : '' }}{{ predictModal.result.comparisonToAverage }}%
-              </p>
-            </div>
+          <div v-else class="rounded-lg border border-gray-200 p-4 text-body text-gray-700 dark:border-gray-700 dark:text-gray-300" data-testid="views-prediction-unavailable">
+            {{ predictModal.result.unavailableMetrics?.prediction7d ?? $t('videosView.viewsPrediction.notEnoughData') }}
           </div>
-          <!-- Influencing Factors -->
-          <div v-if="predictModal.result.influencingFactors.length" class="mt-4">
-            <h4 class="mb-2 text-body-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              {{ $t('videosView.viewsPrediction.factors') }}
-            </h4>
-            <div class="space-y-2">
-              <div
-                v-for="(f, i) in predictModal.result.influencingFactors"
-                :key="i"
-                class="flex items-start gap-2 text-body"
-              >
-                <span
-                  class="mt-0.5 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
-                  :class="f.impact === 'POSITIVE' ? 'bg-success-subtle text-success-strong'
-                    : f.impact === 'NEGATIVE' ? 'bg-error-subtle text-error-strong'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'"
-                >
-                  {{ f.impact === 'POSITIVE' ? '+' : f.impact === 'NEGATIVE' ? '-' : '=' }}
-                </span>
-                <div>
-                  <p class="font-medium text-gray-900 dark:text-white">{{ f.factor }}</p>
-                  <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ f.description }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p class="mt-3 text-body-xs text-gray-400 dark:text-gray-500">
-            {{ $t('videosView.viewsPrediction.creditsUsed', { count: predictModal.result.creditsUsed }) }}
-          </p>
+          <p class="mt-3 text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.basis') }}</p>
         </div>
         <div v-else class="space-y-2">
           <p class="text-body text-gray-600 dark:text-gray-400">
             {{ $t('videosView.viewsPrediction.prompt', { title: predictModal.item?.title }) }}
           </p>
-          <p class="text-body-xs text-gray-400 dark:text-gray-500">{{ $t('videosView.viewsPrediction.creditNotice') }}</p>
+          <p class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.viewsPrediction.creditNotice') }}</p>
         </div>
       </div>
       <template #footer>
@@ -795,7 +747,8 @@ import { metaRewriteApi, type MetaRewriteResponse } from '@/api/metaRewrite'
 import { repurposeApi } from '@/api/repurpose'
 import type { RepurposeClip } from '@/types/repurpose'
 import { videoSeoApi, type SeoScoreResponse } from '@/api/videoSeo'
-import { viewsPredictionApi, type ViewsPredictionResponse } from '@/api/viewsPrediction'
+import { analyticsApi } from '@/api/analytics'
+import type { PerformanceScoreResponse } from '@/types/analytics'
 import { publishChecklistApi, type PublishChecklistResponse } from '@/api/publishChecklist'
 import { CREDIT_INSUFFICIENT, matchesCode } from '@/composables/usePlanLimit'
 
@@ -935,7 +888,7 @@ const predictModal = ref<{
   loading: boolean
   error: string | null
   item: VideoFeedItem | null
-  result: ViewsPredictionResponse | null
+  result: PerformanceScoreResponse | null
 }>({ open: false, loading: false, error: null, item: null, result: null })
 
 function openPredictModal(item: VideoFeedItem) {
@@ -954,7 +907,7 @@ async function runPrediction() {
   predictModal.value.loading = true
   predictModal.value.error = null
   try {
-    predictModal.value.result = await viewsPredictionApi.predict(videoIdNum)
+    predictModal.value.result = await analyticsApi.performanceScore(videoIdNum)
   } catch (e) {
     predictModal.value.error = e instanceof Error ? e.message : '조회수 예측 실패'
   } finally {

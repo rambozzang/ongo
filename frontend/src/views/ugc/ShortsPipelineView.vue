@@ -227,6 +227,55 @@
             </option>
           </select>
         </div>
+        <!-- 클립 고르기 조건. 비우면 서버 기본값을 쓴다 — 기본값을 여기서 채워 보내지 않는다. -->
+        <fieldset class="rounded-xl border border-gray-200 p-3 dark:border-gray-700" data-testid="segment-options">
+          <legend class="px-1 text-body font-medium text-gray-700 dark:text-gray-300">
+            {{ $t('ugc.shorts.editor.options.title') }}
+          </legend>
+          <p class="mb-2 text-body-xs text-gray-500 dark:text-gray-400">{{ $t('ugc.shorts.editor.options.description') }}</p>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="text-body-xs text-gray-600 dark:text-gray-300">
+              {{ $t('ugc.shorts.editor.options.clipCount') }}
+              <input
+                v-model="form.clipCount"
+                type="number"
+                min="1"
+                max="10"
+                step="1"
+                inputmode="numeric"
+                class="input-field mt-1 w-full"
+                data-testid="segment-clip-count"
+              />
+            </label>
+            <label class="text-body-xs text-gray-600 dark:text-gray-300">
+              {{ $t('ugc.shorts.editor.options.minDuration') }}
+              <input
+                v-model="form.minDurationSec"
+                type="number"
+                min="5"
+                max="180"
+                step="1"
+                inputmode="numeric"
+                class="input-field mt-1 w-full"
+                data-testid="segment-min-duration"
+              />
+            </label>
+            <label class="text-body-xs text-gray-600 dark:text-gray-300">
+              {{ $t('ugc.shorts.editor.options.maxDuration') }}
+              <input
+                v-model="form.maxDurationSec"
+                type="number"
+                min="5"
+                max="180"
+                step="1"
+                inputmode="numeric"
+                class="input-field mt-1 w-full"
+                data-testid="segment-max-duration"
+              />
+            </label>
+          </div>
+          <p class="mt-2 text-caption text-gray-400">{{ $t('ugc.shorts.editor.options.durationHint') }}</p>
+        </fieldset>
         <!--
           완주 크레딧이 모자란 경우에만 나온다. 모달을 닫지 않으므로 선택한 영상이 그대로
           남고, 사용자는 여기서 요금제로 가거나 그냥 닫을 수 있다.
@@ -314,6 +363,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { buildSegmentOptions } from './shortsSegmentOptions'
 import {
   ChatBubbleLeftRightIcon,
   ChevronRightIcon,
@@ -474,6 +524,10 @@ function clearSelectedVideo() {
 const form = ref({
   sourceVideoId: 0,
   templateId: null as number | null,
+  // 빈 칸('')은 "지정 안 함"이다. 숫자 입력은 v-model 에서 number 로 들어올 수도 있다.
+  clipCount: '' as number | string,
+  minDurationSec: '' as number | string,
+  maxDurationSec: '' as number | string,
 })
 
 /*
@@ -542,7 +596,7 @@ async function goPage(page: number) {
 }
 
 function openCreate() {
-  form.value = { sourceVideoId: 0, templateId: null }
+  form.value = { sourceVideoId: 0, templateId: null, clipCount: '', minDurationSec: '', maxDurationSec: '' }
   createOpen.value = true
   loadVideos()
   if (shortsStore.templates.length === 0) {
@@ -568,6 +622,11 @@ async function create() {
     notify.error(t('ugc.shorts.runs.create.videoRequired'))
     return
   }
+  const segment = buildSegmentOptions(form.value)
+  if (!segment.ok) {
+    notify.error(t(`ugc.shorts.editor.options.${segment.error}`))
+    return
+  }
   creating.value = true
   // 다시 시도할 때 이전 안내가 남아 있으면 방금 결과인지 알 수 없다.
   creditBlockMessage.value = null
@@ -576,6 +635,7 @@ async function create() {
     const run = await store.createRun({
       sourceVideoId: form.value.sourceVideoId,
       templateId: form.value.templateId,
+      ...(segment.value ? { segment: segment.value } : {}),
     })
     createOpen.value = false
     notify.success(t('ugc.shorts.runs.create.created'))

@@ -67,6 +67,7 @@ class ShortsTemplateUseCase(
                 safeAreaTop = request.safeAreaTop,
                 safeAreaBottom = request.safeAreaBottom,
                 isDefault = request.isDefault,
+                extraSpec = CaptionStyle.writeTo(null, request.captionStyle, request.highlightColor),
                 createdBy = userId,
             ),
         )
@@ -105,6 +106,7 @@ class ShortsTemplateUseCase(
                 safeAreaTop = request.safeAreaTop,
                 safeAreaBottom = request.safeAreaBottom,
                 isDefault = request.isDefault,
+                extraSpec = CaptionStyle.writeTo(existing.extraSpec, request.captionStyle, request.highlightColor),
             ),
         )
         return saved.toResponse()
@@ -177,6 +179,8 @@ class ShortsTemplateUseCase(
         safeAreaBottom = safeAreaBottom,
         referenceImageUrl = referenceImageUrl,
         isDefault = isDefault,
+        captionStyle = CaptionStyle.of(extraSpec).name,
+        highlightColor = CaptionStyle.highlightColorOf(extraSpec),
         createdAt = createdAt,
         updatedAt = updatedAt,
     )

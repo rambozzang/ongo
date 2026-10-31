@@ -39,13 +39,14 @@ interface VideoRenderer {
 
 /**
  * @param sourceUrl 원본 영상 위치. 구현체는 이 값을 **셸에 넘기지 않는다**
+ * @param framing 세로 화면 구성. 기본은 검은 띠 맞춤 — 크롭 정보가 없을 때 화면을 늘이지 않는다
  * @param subtitleAss ASS 자막 본문. 없으면 자막을 굽지 않는다
  */
 data class ClipRenderRequest(
     val sourceUrl: String,
     val startMs: Long,
     val endMs: Long,
-    val crop: RenderCropBox? = null,
+    val framing: RenderFraming = RenderFraming.FIT_BARS,
     val subtitleAss: String? = null,
     val outputWidth: Int = DEFAULT_WIDTH,
     val outputHeight: Int = DEFAULT_HEIGHT,
@@ -61,18 +62,6 @@ data class ClipRenderRequest(
         /** 쇼츠 기본 해상도. 세로 9:16. */
         const val DEFAULT_WIDTH = 1080
         const val DEFAULT_HEIGHT = 1920
-    }
-}
-
-data class RenderCropBox(
-    val x: Int,
-    val y: Int,
-    val width: Int,
-    val height: Int,
-) {
-    init {
-        require(width > 0 && height > 0) { "크롭 크기는 양수여야 한다" }
-        require(x >= 0 && y >= 0) { "크롭 좌표는 음수일 수 없다" }
     }
 }
 

@@ -11,6 +11,8 @@ import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.RENDERED_VIDEO_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.RUN_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.SCHEDULED_AT
+import com.ongo.infrastructure.persistence.jooq.Fields.SCORE_INT
+import com.ongo.infrastructure.persistence.jooq.Fields.SCORE_REASON
 import com.ongo.infrastructure.persistence.jooq.Fields.SEQ
 import com.ongo.infrastructure.persistence.jooq.Fields.START_MS
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
@@ -46,6 +48,9 @@ class ShortsClipJooqRepository(
                 .set(DEDUP_KEY, clip.dedupKey)
                 .set(RENDERED_VIDEO_ID, clip.renderedVideoId)
                 .set(SCHEDULED_AT, clip.scheduledAt?.let { LocalDateTime.ofInstant(it, ZoneOffset.UTC) })
+                .set(SCORE_INT, clip.score)
+                .set(SCORE_REASON, clip.scoreReason)
+                .set(PLATFORM_META_JSONB, clip.platformMetaJson?.let { JSONB.jsonb(it) })
                 .returningResult(ID)
                 .fetchOne()!!
                 .get(ID)
@@ -66,6 +71,9 @@ class ShortsClipJooqRepository(
             .set(DEDUP_KEY, clip.dedupKey)
             .set(RENDERED_VIDEO_ID, clip.renderedVideoId)
             .set(SCHEDULED_AT, clip.scheduledAt?.let { LocalDateTime.ofInstant(it, ZoneOffset.UTC) })
+            .set(SCORE_INT, clip.score)
+            .set(SCORE_REASON, clip.scoreReason)
+            .set(PLATFORM_META_JSONB, clip.platformMetaJson?.let { JSONB.jsonb(it) })
             .set(UPDATED_AT, LocalDateTime.now())
             .where(ID.eq(clip.id))
             .execute()
@@ -108,6 +116,9 @@ class ShortsClipJooqRepository(
         dedupKey = get(DEDUP_KEY),
         renderedVideoId = get(RENDERED_VIDEO_ID),
         scheduledAt = localDateTime(SCHEDULED_AT)?.atZone(ZoneOffset.UTC)?.toInstant(),
+        score = get(SCORE_INT),
+        scoreReason = get(SCORE_REASON),
+        platformMetaJson = jsonbString("platform_meta"),
         createdAt = localDateTime(CREATED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
         updatedAt = localDateTime(UPDATED_AT)!!.atZone(ZoneOffset.UTC).toInstant(),
     )
@@ -117,6 +128,7 @@ class ShortsClipJooqRepository(
         private val SUBTITLE_JSON_JSONB = DSL.field("subtitle_json", JSONB::class.java)
         private val CROP_JSON_JSONB = DSL.field("crop_json", JSONB::class.java)
         private val RENDER_SPEC_JSONB = DSL.field("render_spec", JSONB::class.java)
+        private val PLATFORM_META_JSONB = DSL.field("platform_meta", JSONB::class.java)
 
         /** jsonb 컬럼 값을 JSON 문자열로 꺼낸다. 드라이버 반환 타입(JSONB/PGobject/String)을 모두 수용한다. */
         private fun Record.jsonbString(column: String): String? = when (val raw = get(column)) {

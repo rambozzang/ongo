@@ -9,6 +9,7 @@ import org.springframework.ai.chat.client.ChatClientRequest
 import org.springframework.ai.chat.client.ChatClientResponse
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain
+import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.metadata.Usage
 import org.springframework.ai.chat.prompt.ChatOptions
 import org.springframework.ai.chat.prompt.Prompt
@@ -65,7 +66,9 @@ class AiCostGuardAdvisor(
 
     internal fun plan(prompt: Prompt, remainingKrw: Double): Plan {
         val bytes = prompt.instructions.sumOf { (it.text ?: "").toByteArray(Charsets.UTF_8).size.toLong() }
-        val inputTokens = economics.estimateInputTokens(bytes)
+        // 이미지는 글자로 세지 않으면 0 으로 잡혀 예산을 넘는다. 한 장마다 상한 토큰을 더한다.
+        val images = prompt.instructions.sumOf { (it as? UserMessage)?.media?.size?.toLong() ?: 0L }
+        val inputTokens = economics.estimateInputTokens(bytes) + images * AiUnitEconomics.IMAGE_INPUT_TOKENS_MAX
         val affordable = economics.affordableOutputTokens(provider, inputTokens, remainingKrw)
         val requested = (prompt.options?.maxTokens ?: maxOutputTokens).toLong()
         val allowed = minOf(affordable, requested, maxOutputTokens.toLong()).toInt()

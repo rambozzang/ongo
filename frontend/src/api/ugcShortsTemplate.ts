@@ -3,6 +3,8 @@ import type { ResData } from '@/types/api'
 
 export type ShortsBackgroundStyle = 'BLACK_BARS' | 'BLURRED' | 'SOLID'
 export type ShortsTextPosition = 'TOP' | 'CENTER' | 'BOTTOM'
+/** 자막 스타일 프리셋. 서버 `CaptionStyle` 과 같다. */
+export type ShortsCaptionStyle = 'POP' | 'CLEAN' | 'BOX'
 
 export interface ShortsTemplateResponse {
   id: number
@@ -26,6 +28,8 @@ export interface ShortsTemplateResponse {
   safeAreaBottom: number
   referenceImageUrl: string | null
   isDefault: boolean
+  captionStyle: ShortsCaptionStyle
+  highlightColor: string | null
   createdAt: string | null
   updatedAt: string | null
 }
@@ -51,6 +55,10 @@ export interface ShortsTemplateRequest {
   safeAreaTop: number
   safeAreaBottom: number
   isDefault: boolean
+  /** 생략하면 서버가 기존 값을 유지한다 */
+  captionStyle?: ShortsCaptionStyle
+  /** 빈 문자열이면 기본색으로 되돌린다 */
+  highlightColor?: string
 }
 
 const base = (workspaceId: number) => `/workspaces/${workspaceId}/ugc/shorts/templates`

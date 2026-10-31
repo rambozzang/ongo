@@ -11,6 +11,9 @@ import com.ongo.infrastructure.persistence.jooq.Fields.ERROR_MESSAGE
 import com.ongo.infrastructure.persistence.jooq.Fields.ID
 import com.ongo.infrastructure.persistence.jooq.Fields.IDEMPOTENCY_KEY
 import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE_DURATION_MS
+import com.ongo.infrastructure.persistence.jooq.Fields.SEGMENT_CLIP_COUNT
+import com.ongo.infrastructure.persistence.jooq.Fields.SEGMENT_MAX_DURATION_MS
+import com.ongo.infrastructure.persistence.jooq.Fields.SEGMENT_MIN_DURATION_MS
 import com.ongo.infrastructure.persistence.jooq.Fields.SOURCE_VIDEO_ID
 import com.ongo.infrastructure.persistence.jooq.Fields.STATUS
 import com.ongo.infrastructure.persistence.jooq.Fields.TEMPLATE_ID
@@ -61,6 +64,10 @@ class ShortsRunJooqRepository(
             .set(REQUEST_HASH, run.requestHash)
             // 견적은 삽입 시점에 한 번만 쓴다. update 에는 넣지 않는다 — 아래 update 주석 참조.
             .set(SOURCE_DURATION_MS, run.sourceDurationMs)
+            // 선택 조건도 생성 때 한 번만 쓴다. 재실행은 같은 조건으로 다시 고른다.
+            .set(SEGMENT_CLIP_COUNT, run.segmentClipCount)
+            .set(SEGMENT_MIN_DURATION_MS, run.segmentMinDurationMs)
+            .set(SEGMENT_MAX_DURATION_MS, run.segmentMaxDurationMs)
             .set(STATUS, run.status.name)
             .set(CURRENT_STAGE, run.currentStage?.name)
             .set(TRANSCRIPT_TEXT, run.transcriptText)
@@ -89,6 +96,10 @@ class ShortsRunJooqRepository(
             .set(IDEMPOTENCY_KEY, key)
             .set(REQUEST_HASH, run.requestHash)
             .set(SOURCE_DURATION_MS, run.sourceDurationMs)
+            // 선택 조건도 생성 때 한 번만 쓴다. 재실행은 같은 조건으로 다시 고른다.
+            .set(SEGMENT_CLIP_COUNT, run.segmentClipCount)
+            .set(SEGMENT_MIN_DURATION_MS, run.segmentMinDurationMs)
+            .set(SEGMENT_MAX_DURATION_MS, run.segmentMaxDurationMs)
             .set(STATUS, run.status.name)
             .set(CURRENT_STAGE, run.currentStage?.name)
             .set(TRANSCRIPT_TEXT, run.transcriptText)
@@ -344,6 +355,9 @@ class ShortsRunJooqRepository(
         requestHash = get(REQUEST_HASH),
         // 이 컬럼 도입 이전 행은 NULL 이다. 그대로 NULL 로 읽어 정액 경로를 타게 둔다.
         sourceDurationMs = get(SOURCE_DURATION_MS),
+        segmentClipCount = get(SEGMENT_CLIP_COUNT),
+        segmentMinDurationMs = get(SEGMENT_MIN_DURATION_MS),
+        segmentMaxDurationMs = get(SEGMENT_MAX_DURATION_MS),
         status = PipelineRunStatus.valueOf(get(STATUS)),
         currentStage = get(CURRENT_STAGE)?.let { PipelineStage.valueOf(it) },
         transcriptText = get(TRANSCRIPT_TEXT),

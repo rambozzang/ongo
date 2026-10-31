@@ -53,6 +53,26 @@ export interface PipelineRunResponse {
   errorMessage: string | null
   createdAt: string | null
   updatedAt: string | null
+  /** 클립을 고를 때 쓰는 조건. 지정하지 않았으면 서버 기본값이 들어 있다. */
+  segmentOptions?: SegmentOptionsResponse | null
+}
+
+export interface SegmentOptionsResponse {
+  clipCount: number
+  minDurationSec: number
+  maxDurationSec: number
+  /** false 면 서버 기본값이다. */
+  userSpecified: boolean
+}
+
+/** 실행 생성 시 클립 선택 조건. 생략한 값은 서버 기본값을 쓴다. */
+export interface SegmentOptionsRequest {
+  /** 1~10개 */
+  clipCount?: number | null
+  /** 5~180초 */
+  minDurationSec?: number | null
+  /** 5~180초, 최소 이상 */
+  maxDurationSec?: number | null
 }
 
 export interface RunStageResponse {
@@ -84,6 +104,12 @@ export interface ShortsClipResponse {
   caption: string | null
   status: string
   scheduledAt: string | null
+  /**
+   * 맥락 컷 AI 점수(0~100). 롱폼을 안 본 사람이 이 클립만으로 이해하고 끝까지 볼지를 매긴다.
+   * null 은 AI 가 점수를 주지 않은 것이다 — 0 으로 바꿔 보여 주지 않는다.
+   */
+  score?: number | null
+  scoreReason?: string | null
   hooks: ClipHookResponse[]
   subtitleCount: number
   hasRenderSpec: boolean
@@ -128,6 +154,8 @@ export interface CreatePipelineRunRequest {
   scheduleIntervalHours?: number | null
   /** PLATFORM 또는 PLATFORM#channelId */
   platforms?: string[]
+  /** 클립 개수·길이 조건. 없으면 서버 기본값 */
+  segment?: SegmentOptionsRequest | null
 }
 
 export interface HookSelectionItem {
@@ -265,4 +293,78 @@ export const ugcShortsPipelineApi = {
       )
       .then(unwrapResponse)
   },
+
+  /** 클립 편집기 데이터 (구간·자막·크롭·플랫폼별 메타·편집 가능 여부) */
+  getClipEditor(workspaceId: number, runId: number, clipId: number) {
+    return apiClient
+      .get<ResData<ClipEditorResponse>>(`${base(workspaceId)}/${runId}/clips/${clipId}/editor`)
+      .then(unwrapResponse)
+  },
+
+  /** 클립 편집 저장. 보낸 항목만 바뀐다. 구간·자막·크롭을 바꾸면 이전 렌더 결과는 버려진다. */
+  editClip(workspaceId: number, runId: number, clipId: number, request: ClipEditRequest) {
+    return apiClient
+      .patch<ResData<ClipEditResponse>>(`${base(workspaceId)}/${runId}/clips/${clipId}`, request)
+      .then(unwrapResponse)
+  },
+}
+
+// ---- 클립 편집기 ----
+
+export interface EditorSubtitleLine {
+  /** 클립 시작 기준 ms */
+  startMs: number
+  endMs: number
+  text: string
+  /** 단어 강조 시각이 있는 줄. 문구나 시각을 고치면 서버가 지운다. */
+  hasWordTiming: boolean
+}
+
+export interface PlatformMeta {
+  platform: string
+  title: string
+  description: string
+  /** # 없이 */
+  hashtags: string[]
+}
+
+export interface ClipEditorResponse {
+  clipId: number
+  runId: number
+  seq: number
+  /** 원본 기준 ms */
+  startMs: number
+  endMs: number
+  title: string | null
+  caption: string | null
+  status: string
+  subtitles: EditorSubtitleLine[]
+  /** 정규화된 크롭 JSON 문자열. 없으면 null */
+  cropJson: string | null
+  sourceDurationMs: number | null
+  editable: boolean
+  notEditableReason: string | null
+  hasRenderedVideo: boolean
+  platformMeta: PlatformMeta[]
+}
+
+export interface ClipEditRequest {
+  startMs?: number
+  endMs?: number
+  title?: string
+  caption?: string
+  subtitles?: { startMs: number; endMs: number; text: string }[]
+  crop?: { x: number; y: number; width: number; height: number; mode?: string }
+  /** 영상 요소의 videoWidth/videoHeight. 크롭 정규화가 원본 해상도를 알아야 정확하다. */
+  sourceWidth?: number
+  sourceHeight?: number
+  platformMeta?: PlatformMeta[]
+}
+
+export interface ClipEditResponse {
+  editor: ClipEditorResponse
+  /** 이전 렌더 결과를 버렸다 — 다시 렌더해야 한다 */
+  needsRerender: boolean
+  /** 구간을 늘려 자막이 없는 부분이 생겼다 */
+  uncoveredSubtitleSpan: boolean
 }

@@ -362,4 +362,52 @@ class SttUseCaseTest {
         verify(exactly = 0) { creditService.withCredits(any(), any<Int>(), any(), any<() -> Any>()) }
         verify(exactly = 0) { transcriptionModel.call(any<AudioTranscriptionPrompt>()) }
     }
+
+    // ---- 단어 시각 ----
+
+    /**
+     * Spring AI 2.0 전사 모델은 VERBOSE_JSON 을 요청해도 본문만 돌려준다. 그래서 시각은 별도 통로
+     * ([com.ongo.application.ai.audio.VerboseTranscriber])로 받아야 한다 — 주입되면 그것을 쓴다.
+     */
+    @Test
+    fun `시각 통로가 주입되면 모델 대신 그것으로 전사하고 단어 시각을 조각 오프셋만큼 민다`() {
+        val prepared = FakePreparedAudio(listOf(part(0), part(600_000)))
+        every { audioPort.isAvailable() } returns true
+        every { audioPort.prepare(sourceUrl) } returns prepared
+        val responses = ArrayDeque(
+            listOf(
+                """{"text":"안녕 하세요","segments":[{"start":0.0,"end":1.0,"text":"안녕 하세요"}],"words":[{"word":"안녕","start":0.0,"end":0.4},{"word":" 하세요","start":0.4,"end":1.0}]}""",
+                """{"text":"둘째","segments":[],"words":[{"word":"둘째","start":0.5,"end":0.9},{"word":"","start":1.0,"end":1.1},{"word":"거꾸로","start":2.0,"end":1.0}]}""",
+            ),
+        )
+        val withTranscriber = SttUseCase(
+            transcriptionModel, creditService, rateLimiter, videoRepository, audioPort,
+            verboseTranscriber = { responses.removeFirst() },
+        )
+
+        val result = withTranscriber.executeInternal(userId, videoId)
+
+        assertEquals(listOf("안녕", "하세요", "둘째"), result.words.map { it.text })
+        assertEquals(listOf(0.0, 0.4, 600.5), result.words.map { it.startTime })
+        assertEquals(1, result.segments.size)
+        verify(exactly = 0) { transcriptionModel.call(any<AudioTranscriptionPrompt>()) }
+    }
+
+    @Test
+    fun `whisper 는 문장과 단어 시각을 함께 요청하고 시각을 못 주는 모델에는 본문만 요청한다`() {
+        val whisper = SttUseCase.transcriptionOptions("whisper-1")
+        assertEquals(com.openai.models.audio.AudioResponseFormat.VERBOSE_JSON, whisper.responseFormat)
+        assertEquals(
+            listOf(
+                com.openai.models.audio.transcriptions.TranscriptionCreateParams.TimestampGranularity.WORD,
+                com.openai.models.audio.transcriptions.TranscriptionCreateParams.TimestampGranularity.SEGMENT,
+            ),
+            whisper.timestampGranularities,
+        )
+        assertEquals("ko", whisper.language)
+
+        val mini = SttUseCase.transcriptionOptions("gpt-4o-mini-transcribe")
+        assertEquals(com.openai.models.audio.AudioResponseFormat.JSON, mini.responseFormat)
+        assertTrue(mini.timestampGranularities.isNullOrEmpty())
+    }
 }

@@ -36,6 +36,8 @@ enum class AiFeature(
     SHORTS_HOOK("쇼츠 후킹 문구", 5),
     SHORTS_TEMPLATE("쇼츠 템플릿 적용", 3),
     SHORTS_VALIDATE("쇼츠 검증", 3),
+    /** 장면 격자 이미지 1장 + 비전 모델. 실제 크레딧은 AiUnitEconomics.creditsForVisionCall 과 이 값 중 큰 쪽이다. */
+    SHORTS_SPEAKER_TRACK("쇼츠 화자 추적", 4),
     /** 글자 수 비례 과금이다. 실제 크레딧은 AiUnitEconomics.ttsCreditsPer1000Chars() 로 계산한다(이 고정값이 아니다). */
     VIDEO_TTS("영상 음성 합성", 0),
 }

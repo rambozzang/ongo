@@ -234,6 +234,35 @@
                 </option>
               </select>
             </div>
+            <div>
+              <label class="mb-1 block text-body-xs text-gray-500 dark:text-gray-400" for="shorts-tpl-caption-style">
+                {{ $t('ugc.shorts.caption.style') }}
+              </label>
+              <select id="shorts-tpl-caption-style" v-model="form.captionStyle" class="input-field w-full" aria-describedby="shorts-tpl-caption-style-hint">
+                <option v-for="opt in captionStyleOptions" :key="opt" :value="opt">
+                  {{ $t(`ugc.shorts.caption.styles.${opt}`) }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-1 block text-body-xs text-gray-500 dark:text-gray-400" for="shorts-tpl-highlight-color">
+                {{ $t('ugc.shorts.caption.highlightColor') }}
+              </label>
+              <input
+                id="shorts-tpl-highlight-color"
+                v-model="form.highlightColor"
+                type="text"
+                class="input-field w-full"
+                placeholder="#FFE100"
+                :aria-describedby="'shorts-tpl-highlight-color-hint'"
+              />
+              <p id="shorts-tpl-highlight-color-hint" class="mt-1 text-body-xs text-gray-500 dark:text-gray-400">
+                {{ $t('ugc.shorts.caption.highlightColorHint') }}
+              </p>
+            </div>
+            <p id="shorts-tpl-caption-style-hint" class="text-body-xs text-gray-500 dark:text-gray-400 mobile:col-span-2">
+              {{ $t('ugc.shorts.caption.styleHint') }}
+            </p>
           </div>
         </fieldset>
 
@@ -316,6 +345,7 @@ import type {
   ShortsTemplateRequest,
   ShortsTemplateResponse,
   ShortsTextPosition,
+  ShortsCaptionStyle,
 } from '@/api/ugcShortsTemplate'
 import PageHeader from '@/components/common/PageHeader.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
@@ -336,6 +366,7 @@ const notify = useNotificationStore()
 
 const backgroundStyleOptions: ShortsBackgroundStyle[] = ['BLACK_BARS', 'BLURRED', 'SOLID']
 const positionOptions: ShortsTextPosition[] = ['TOP', 'CENTER', 'BOTTOM']
+const captionStyleOptions: ShortsCaptionStyle[] = ['POP', 'CLEAN', 'BOX']
 
 const formOpen = ref(false)
 const editingTemplate = ref<ShortsTemplateResponse | null>(null)
@@ -367,6 +398,8 @@ function emptyForm() {
     safeAreaTop: 0,
     safeAreaBottom: 0,
     isDefault: false,
+    captionStyle: 'POP' as ShortsCaptionStyle,
+    highlightColor: '',
   }
 }
 
@@ -417,6 +450,8 @@ function openEdit(tpl: ShortsTemplateResponse) {
     safeAreaTop: tpl.safeAreaTop,
     safeAreaBottom: tpl.safeAreaBottom,
     isDefault: tpl.isDefault,
+    captionStyle: tpl.captionStyle ?? 'POP',
+    highlightColor: tpl.highlightColor ?? '',
   }
   formOpen.value = true
 }
@@ -445,6 +480,8 @@ function toRequest(): ShortsTemplateRequest {
     safeAreaTop: f.safeAreaTop,
     safeAreaBottom: f.safeAreaBottom,
     isDefault: f.isDefault,
+    captionStyle: f.captionStyle,
+    highlightColor: f.highlightColor.trim(),
   }
 }
 

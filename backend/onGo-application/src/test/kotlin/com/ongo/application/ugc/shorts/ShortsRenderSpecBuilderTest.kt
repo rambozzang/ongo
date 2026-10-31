@@ -18,7 +18,7 @@ class ShortsRenderSpecBuilderTest {
     private val mapper = jacksonObjectMapper()
 
     private fun spec(
-        crop: ShortsRenderSpecBuilder.CropBox? = ShortsRenderSpecBuilder.CropBox(10, 20, 1080, 1920),
+        crop: CropSpec? = CropSpec(10, 20, 1080, 1920),
         hookText: String? = "후킹 문구",
         hookPosition: String = "TOP",
     ) = ShortsRenderSpecBuilder.RenderSpec(
@@ -146,12 +146,18 @@ class ShortsRenderSpecBuilderTest {
         assertTrue(ass.contains("Dialogue: 0,0:00:01.50,0:00:03.00,Caption,,0,0,0,,자막2"))
     }
 
+    /** 예전에는 클립 끝까지 떠 있어 자막·화면을 가렸다. 첫 몇 초에 시선을 잡고 사라진다. */
     @Test
-    fun `후킹 문구는 클립 전 구간을 덮는 별도 레이어 줄로 적는다`() {
+    fun `후킹 문구는 처음 몇 초만 별도 레이어로 크게 띄운다`() {
         val ass = builder.buildAss(spec(), template())
+        val hook = ass.lines().single { it.contains(",Hook,,") }
 
-        // 클립 길이 16500 - 1500 = 15000ms → 0:00:15.00
-        assertTrue(ass.contains("Dialogue: 1,0:00:00.00,0:00:15.00,Hook,,0,0,0,,후킹 문구"))
+        assertTrue(hook.startsWith("Dialogue: 1,0:00:00.00,0:00:03.50,Hook,,0,0,0,,"), hook)
+        assertTrue(hook.endsWith("후킹 문구"), hook)
+        assertTrue(hook.contains("\\fad("), hook)
+
+        val short = builder.buildAss(spec().copy(endMs = 3_500), template())
+        assertTrue(short.contains("Dialogue: 1,0:00:00.00,0:00:02.00,Hook"), "클립보다 길게 띄우면 안 된다: $short")
     }
 
     @Test
@@ -176,23 +182,36 @@ class ShortsRenderSpecBuilderTest {
 
     // ---- render.sh ----
 
+    /**
+     * 예전에는 `crop=상자,scale=1080:1920` 이라 상자가 9:16 이 아니면 화면이 늘어났다.
+     * 이제 창 크기는 입력 크기에서 9:16 으로 계산하고, 위치는 원본 안으로 묶는다.
+     */
     @Test
-    fun `render sh는 크롭-스케일-자막번인 순서의 ffmpeg 명령을 만든다`() {
+    fun `render sh는 9대16 창 크롭-스케일-자막번인 순서의 ffmpeg 명령을 만든다`() {
         val script = builder.buildRenderScript(spec())
 
         assertTrue(script.startsWith("#!/bin/bash"), script)
         assertTrue(script.contains("ffmpeg -ss 1.500 -to 16.500 -i \"https://cdn.example.com/source.mp4\""), script)
-        assertTrue(script.contains("-vf \"crop=1080:1920:10:20,scale=1080:1920,ass=clip-1.ass\""), script)
+        val vf = script.substringAfter("-vf '").substringBefore("'")
+        assertTrue(vf.startsWith("crop=w=trunc(min(ih\\,iw*1920/1080)"), vf)
+        assertTrue(vf.contains("clip("), "원본 밖으로 나가지 않게 위치를 묶어야 한다: $vf")
+        assertTrue(vf.indexOf("crop=") < vf.indexOf("scale=1080:1920") && vf.indexOf("scale=1080:1920") < vf.indexOf("ass=clip-1.ass"), vf)
         assertTrue(script.contains("-c:v libx264 -preset medium -crf 20 -c:a aac -b:a 128k"), script)
         assertTrue(script.contains("\"clip-1.mp4\""), script)
     }
 
+    /** 크롭이 없으면 가로 영상을 통째로 세로로 늘였다. 이제 늘이지 않고 템플릿 배경으로 맞춘다. */
     @Test
-    fun `render sh는 크롭이 없으면 스케일부터 시작한다`() {
-        val script = builder.buildRenderScript(spec(crop = null))
+    fun `render sh는 크롭이 없으면 늘이지 않고 템플릿 배경 스타일로 맞춘다`() {
+        val bars = builder.buildRenderScript(spec(crop = null))
+        assertTrue(bars.contains("force_original_aspect_ratio=decrease"), bars)
+        assertTrue(bars.contains("pad=1080:1920"), bars)
+        assertFalse(bars.contains("crop="), bars)
 
-        assertTrue(script.contains("-vf \"scale=1080:1920,ass=clip-1.ass\""), script)
-        assertFalse(script.contains("crop="))
+        val blur = builder.buildRenderScript(spec(crop = null).copy(backgroundStyle = "BLURRED"))
+        assertTrue(blur.contains("boxblur"), blur)
+        assertTrue(blur.contains("overlay=(W-w)/2:(H-h)/2"), blur)
+        assertTrue(blur.contains("ass=clip-1.ass"), blur)
     }
 
     @Test
@@ -225,11 +244,92 @@ class ShortsRenderSpecBuilderTest {
     }
 
     @Test
-    fun `parseCrop은 유효한 크롭 JSON만 CropBox로 파싱한다`() {
+    fun `parseCrop은 유효한 크롭 JSON만 CropSpec으로 파싱한다`() {
         assertEquals(
-            ShortsRenderSpecBuilder.CropBox(1, 2, 3, 4),
+            CropSpec(1, 2, 3, 4),
             builder.parseCrop("""{"x":1,"y":2,"width":3,"height":4}"""),
         )
         assertNull(builder.parseCrop("{not-json"))
+    }
+
+    // ---- 단어 강조 자막 ----
+
+    private fun wordSpec() = spec().copy(
+        subtitles = listOf(
+            ShortsRenderSpecBuilder.SubtitleLine(
+                0, 1500, "구독과 좋아요",
+                words = listOf(CaptionWord(0, 600, "구독과"), CaptionWord(600, 1500, "좋아요")),
+            ),
+        ),
+    )
+
+    @Test
+    fun `단어 시각이 있으면 말하는 단어마다 그 단어를 강조한 이벤트를 만든다`() {
+        val ass = builder.buildAss(wordSpec(), template())
+        val captions = ass.lines().filter { it.contains(",Caption,,") }
+
+        assertEquals(2, captions.size, ass)
+        assertTrue(captions[0].startsWith("Dialogue: 0,0:00:00.00,0:00:00.60,Caption"), captions[0])
+        assertTrue(captions[0].endsWith("{\\c&H0000E1FF&\\fscx112\\fscy112}구독과{\\r} 좋아요"), captions[0])
+        assertTrue(captions[1].startsWith("Dialogue: 0,0:00:00.60,0:00:01.50,Caption"), captions[1])
+        assertTrue(captions[1].endsWith("구독과 {\\c&H0000E1FF&\\fscx112\\fscy112}좋아요{\\r}"), captions[1])
+    }
+
+    @Test
+    fun `스타일 프리셋과 강조색은 템플릿 extraSpec 으로 고른다`() {
+        val box = template().copy(extraSpec = """{"captionStyle":"box","highlightColor":"#00FF00"}""")
+        val ass = builder.buildAss(wordSpec(), box)
+        val style = ass.lines().single { it.startsWith("Style: Caption,") }.split(",")
+
+        assertEquals("3", style[15], "상자 스타일은 BorderStyle 3: $style")
+        assertTrue(ass.contains("{\\c&H0000FF00&}구독과{\\r}"), ass)
+
+        val clean = builder.buildAss(wordSpec(), template().copy(extraSpec = """{"captionStyle":"CLEAN"}"""))
+        assertFalse(clean.contains("fscx112"), clean)
+    }
+
+    @Test
+    fun `사용자 템플릿에 프리셋이 없으면 강조 팝을 쓰고 깨진 extraSpec 도 기본으로 처리한다`() {
+        assertEquals(CaptionStyle.POP, CaptionStyle.of(null))
+        assertEquals(CaptionStyle.POP, CaptionStyle.of("{not-json"))
+        assertEquals(CaptionStyle.CLEAN, CaptionStyle.of("""{"captionStyle":"clean"}"""))
+    }
+
+    @Test
+    fun `가운데 위치는 정렬 5 이고 아래 자막은 플랫폼 버튼 영역 위로 올린다`() {
+        val center = builder.buildAss(spec(), template().copy(captionPosition = "CENTER"))
+            .lines().single { it.startsWith("Style: Caption,") }.split(",")
+        assertEquals("5", center[18])
+
+        val bottom = builder.buildAss(spec(), template().copy(safeAreaBottom = 600))
+            .lines().single { it.startsWith("Style: Caption,") }.split(",")
+        assertEquals("2", bottom[18])
+        assertEquals("600", bottom[21], "세이프 영역이 기본 여백보다 크면 세이프 영역을 따른다")
+
+        val defaultBottom = builder.buildAss(spec(), template())
+            .lines().single { it.startsWith("Style: Caption,") }.split(",")
+        assertEquals(ShortsRenderSpecBuilder.CAPTION_BOTTOM_MARGIN.toString(), defaultBottom[21])
+    }
+
+    @Test
+    fun `긴 문장 줄은 짧은 묶음으로 나눠 여러 이벤트로 띄운다`() {
+        val long = spec().copy(
+            subtitles = listOf(ShortsRenderSpecBuilder.SubtitleLine(0, 4000, "오늘은 제가 직접 만든 김치찌개 레시피를 알려드릴게요")),
+        )
+        val captions = builder.buildAss(long, template()).lines().filter { it.contains(",Caption,,") }
+
+        assertTrue(captions.size >= 2, "한 화면에 문장 전체를 띄우면 안 된다: $captions")
+        assertTrue(captions.none { it.contains("\\c&") }, "추정 시각으로는 단어를 강조하지 않는다")
+    }
+
+    @Test
+    fun `단어 시각은 render-spec 왕복과 subtitle_json 파싱에서 보존된다`() {
+        val original = wordSpec()
+        assertEquals(original.subtitles, builder.parseSpec(builder.toJson(original)).subtitles)
+
+        val parsed = builder.parseSubtitles(
+            """[{"startMs":0,"endMs":900,"text":"안녕","words":[{"startMs":0,"endMs":900,"text":"안녕"},{"startMs":"x","endMs":1,"text":"깨짐"}]}]""",
+        )
+        assertEquals(listOf(CaptionWord(0, 900, "안녕")), parsed.single().words)
     }
 }

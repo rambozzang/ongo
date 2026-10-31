@@ -10,6 +10,7 @@ import { videoApi } from '@/api/video'
 import { subscriptionApi } from '@/api/subscription'
 import { creditApi } from '@/api/credit'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useNotificationStore } from '@/stores/notification'
 import koMessages from '@/locales/ko/common.json'
 
 /*
@@ -128,6 +129,48 @@ describe('ShortsPipelineView', () => {
     await flushPromises()
     expect(ugcShortsPipelineApi.create).toHaveBeenCalledWith(2, { sourceVideoId: 4, templateId: null })
     expect(router.currentRoute.value.fullPath).toBe('/ugc/shorts/runs/18')
+  })
+
+  // ---- 클립 고르기 조건 ----
+
+  async function openCreateWithVideo() {
+    const rendered = await renderPipeline()
+    await rendered.wrapper.findAll('button').find((button) => button.text().includes('새 실행'))!.trigger('click')
+    await flushPromises()
+    await rendered.wrapper.get('#shorts-run-video').setValue('4')
+    return rendered
+  }
+
+  function submitButton(wrapper: Awaited<ReturnType<typeof renderPipeline>>['wrapper']) {
+    return wrapper.findAll('button').find((button) => button.text() === '실행 시작')!
+  }
+
+  it('입력한 클립 개수·길이만 조건으로 보낸다', async () => {
+    vi.mocked(ugcShortsPipelineApi.create).mockResolvedValue(run({ id: 18, status: 'RUNNING' }) as never)
+    const { wrapper } = await openCreateWithVideo()
+    await wrapper.get('[data-testid="segment-clip-count"]').setValue('3')
+    await wrapper.get('[data-testid="segment-max-duration"]').setValue('45')
+
+    await submitButton(wrapper).trigger('click')
+    await flushPromises()
+
+    expect(ugcShortsPipelineApi.create).toHaveBeenCalledWith(2, {
+      sourceVideoId: 4,
+      templateId: null,
+      segment: { clipCount: 3, maxDurationSec: 45 },
+    })
+  })
+
+  it('조건이 범위를 벗어나면 실행을 만들지 않고 이유를 알린다', async () => {
+    const { wrapper } = await openCreateWithVideo()
+    await wrapper.get('[data-testid="segment-min-duration"]').setValue('60')
+    await wrapper.get('[data-testid="segment-max-duration"]').setValue('30')
+
+    await submitButton(wrapper).trigger('click')
+    await flushPromises()
+
+    expect(ugcShortsPipelineApi.create).not.toHaveBeenCalled()
+    expect(useNotificationStore().toasts.map((toast) => toast.message)).toContain('최소 길이가 최대 길이보다 길 수 없습니다')
   })
 
   // ---- 완주 크레딧 부족 ----

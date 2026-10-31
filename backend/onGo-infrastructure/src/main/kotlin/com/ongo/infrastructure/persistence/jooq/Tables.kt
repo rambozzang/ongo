@@ -1128,6 +1128,12 @@ object Fields {
     val RENDER_SPEC = DSL.field("render_spec", String::class.java)
     val DEDUP_KEY = DSL.field("dedup_key", String::class.java)
     val RENDERED_VIDEO_ID = DSL.field("rendered_video_id", Long::class.java)
+    /** 쇼츠 클립 점수 근거 (V119). 점수 자체는 [SCORE_INT] 를 쓴다. */
+    val SCORE_REASON = DSL.field("score_reason", String::class.java)
+    /** 사용자가 정한 맥락 컷 조건 (V119). NULL 은 지정 안 함. */
+    val SEGMENT_CLIP_COUNT = DSL.field("segment_clip_count", Int::class.java)
+    val SEGMENT_MIN_DURATION_MS = DSL.field("segment_min_duration_ms", Long::class.java)
+    val SEGMENT_MAX_DURATION_MS = DSL.field("segment_max_duration_ms", Long::class.java)
     /** 실행 생성 시 수락한 원본 길이. 전사 크레딧 산정의 근거이며 생성 후 바뀌지 않는다. */
     val SOURCE_DURATION_MS = DSL.field("source_duration_ms", Long::class.java)
     val AUTO_SCHEDULE = DSL.field("auto_schedule", Boolean::class.java)

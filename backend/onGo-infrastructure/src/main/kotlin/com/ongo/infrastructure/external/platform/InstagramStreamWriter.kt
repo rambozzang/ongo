@@ -11,6 +11,7 @@ import com.ongo.infrastructure.external.instagram.InstagramClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
+import com.ongo.application.video.PlatformUploadCapabilities
 import java.util.UUID
 
 /**
@@ -45,7 +46,10 @@ class InstagramStreamWriter(
         fileSize: Long,
         scheduledAt: LocalDateTime?,
     ): String {
-        require(fileSize <= 500L * 1024 * 1024) { "Instagram 릴스는 500MB 이하만 지원합니다." }
+        // 한도는 화면·사전 검사와 **같은 값**을 쓴다. 예전에는 여기만 500MB 라, 1GB 까지 받아 예약해 둔 영상이
+        // 게시 시각에야 거절됐다.
+        val limit = PlatformUploadCapabilities.get(Platform.INSTAGRAM)?.maxFileSizeBytes ?: INSTAGRAM_FALLBACK_LIMIT
+        require(fileSize <= limit) { "Instagram 릴스는 ${limit / 1_000_000}MB 이하만 지원합니다." }
         // 예약 게시도 durable dispatcher가 예약 시각에 도달한 뒤 이 writer를
         // 호출한다. scheduledAt은 upload 레코드의 추적 정보로 전달되므로,
         // writer가 null만 허용하면 예약 Instagram 게시가 항상 거부된다.
@@ -115,3 +119,6 @@ class InstagramStreamWriter(
     }
 
 }
+
+/** 능력 표에 항목이 없을 때만 쓴다(Meta 릴스 상한 1GB). */
+private const val INSTAGRAM_FALLBACK_LIMIT = 1_000_000_000L

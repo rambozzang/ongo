@@ -3,8 +3,10 @@ package com.ongo.application.ai
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.openai.models.audio.AudioResponseFormat
+import com.openai.models.audio.transcriptions.TranscriptionCreateParams.TimestampGranularity
 import com.ongo.application.ai.audio.AudioPreparationException
 import com.ongo.application.ai.audio.TranscriptionAudioPort
+import com.ongo.application.ai.audio.VerboseTranscriber
 import com.ongo.application.ai.result.SttResult
 import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AiFeature
@@ -14,7 +16,6 @@ import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.video.VideoRepository
 import org.slf4j.LoggerFactory
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt
-import org.springframework.ai.audio.transcription.AudioTranscriptionResponse
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions
 import org.springframework.beans.factory.annotation.Value
@@ -36,6 +37,8 @@ class SttUseCase(
     private val transcriptionModelName: String = DEFAULT_TRANSCRIPTION_MODEL,
     /** 원본 길이 → 크레딧. 같은 모델 설정을 읽는다. */
     private val sttCreditCalculator: SttCreditCalculator = SttCreditCalculator(model = transcriptionModelName),
+    /** 시각까지 담긴 응답 원문을 받아 오는 통로. 운영에서는 인프라 구현이 주입된다. */
+    private val verboseTranscriber: VerboseTranscriber = VerboseTranscriber { transcriptionModel.call(it).result.output },
 ) {
 
     private val log = LoggerFactory.getLogger(SttUseCase::class.java)
@@ -160,22 +163,17 @@ class SttUseCase(
 
         // 조각은 로컬 임시 파일이다. 성공하든 실패하든 반드시 지운다.
         return prepared.use { audio ->
-            val options = OpenAiAudioTranscriptionOptions.builder()
-                .model(transcriptionModelName)
-                .responseFormat(AudioResponseFormat.VERBOSE_JSON)
-                .language("ko")
-                .build()
+            val options = transcriptionOptions(transcriptionModelName)
 
             val texts = mutableListOf<String>()
             val segments = mutableListOf<SttResult.SttSegmentResult>()
+            val words = mutableListOf<SttResult.SttWordResult>()
 
             var requestStarted = false
             try {
                 audio.parts.forEach { part ->
                     requestStarted = true
-                    val response: AudioTranscriptionResponse =
-                        transcriptionModel.call(AudioTranscriptionPrompt(part.resource, options))
-                    val partText = response.result.output
+                    val partText = verboseTranscriber.transcribe(AudioTranscriptionPrompt(part.resource, options))
 
                     texts += parseText(partText)
                     /*
@@ -189,11 +187,15 @@ class SttUseCase(
                             endTime = segment.endTime + offsetSeconds,
                         )
                     }
+                    words += parseWords(partText).map { word ->
+                        word.copy(startTime = word.startTime + offsetSeconds, endTime = word.endTime + offsetSeconds)
+                    }
                 }
 
                 SttResult(
                     text = texts.filter { it.isNotBlank() }.joinToString(" "),
                     segments = segments,
+                    words = words,
                 )
             } finally {
                 // This is an observation callback. Its failure must never turn a successful STT run into failure.
@@ -235,7 +237,39 @@ class SttUseCase(
         }
     }
 
+    /** VERBOSE_JSON 의 최상위 `words` 배열. 없거나 깨졌으면 빈 목록이다(자막은 문장 단위로 나간다). */
+    private fun parseWords(responseText: String): List<SttResult.SttWordResult> =
+        try {
+            val json = objectMapper.readValue<Map<String, Any>>(responseText)
+            @Suppress("UNCHECKED_CAST")
+            (json["words"] as? List<Map<String, Any>>).orEmpty().mapNotNull { word ->
+                val start = (word["start"] as? Number)?.toDouble() ?: return@mapNotNull null
+                val end = (word["end"] as? Number)?.toDouble() ?: return@mapNotNull null
+                val text = (word["word"] as? String)?.trim().orEmpty()
+                if (text.isEmpty() || end < start) null else SttResult.SttWordResult(start, end, text)
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+
     companion object {
+        /**
+         * 시각(문장·단어)을 주는 형식은 whisper 계열만 받는다. gpt-4o 계열 전사 모델에 VERBOSE_JSON 을
+         * 보내면 요청 자체가 거절되므로, 그 모델들에는 본문만 요청한다(쇼츠 자막 시각은 비게 된다).
+         */
+        fun transcriptionOptions(model: String): OpenAiAudioTranscriptionOptions {
+            val builder = OpenAiAudioTranscriptionOptions.builder().model(model).language("ko")
+            return if (model.startsWith("whisper", ignoreCase = true)) {
+                builder.responseFormat(AudioResponseFormat.VERBOSE_JSON)
+                    // 단어 시각을 함께 받는다(추가 요금 없음). 쇼츠 자막이 말하는 단어를 강조하는 데 쓴다.
+                    // 단어만 요청하면 문장 구간이 빠지므로 둘 다 요청한다.
+                    .timestampGranularities(listOf(TimestampGranularity.WORD, TimestampGranularity.SEGMENT))
+                    .build()
+            } else {
+                builder.responseFormat(AudioResponseFormat.JSON).build()
+            }
+        }
+
         /** Spring AI 의 기본 전사 모델과 같다. 설정이 없을 때만 쓴다. */
         const val DEFAULT_TRANSCRIPTION_MODEL = "whisper-1"
     }

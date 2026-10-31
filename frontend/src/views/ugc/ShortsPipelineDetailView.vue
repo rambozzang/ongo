@@ -102,6 +102,7 @@
         <p class="mt-1 text-body text-gray-500 dark:text-gray-400">
           {{ $t('ugc.shorts.runs.hooks.description') }}
         </p>
+        <p class="mt-1 text-body-xs text-gray-400">{{ $t('ugc.shorts.editor.sortedByScore') }}</p>
 
         <div class="mt-4 space-y-4">
           <div
@@ -114,6 +115,7 @@
                 {{ $t('ugc.shorts.runs.detail.clipSeq', { seq: clip.seq }) }}
               </span>
               <span class="text-body-xs text-gray-400">{{ formatClipRange(clip) }}</span>
+              <ShortsClipScore :score="clip.score" />
               <span v-if="clip.title" class="truncate text-body-xs text-gray-500 dark:text-gray-400">
                 {{ clip.title }}
               </span>
@@ -127,6 +129,10 @@
                 {{ $t('ugc.shorts.runs.hooks.discard') }}
               </label>
             </div>
+            <!-- 버릴지 고를 때 근거가 필요하다. 점수만 보면 왜 낮은지 알 수 없다. -->
+            <p v-if="clip.scoreReason" class="-mt-1 mb-3 text-body-xs text-gray-500 dark:text-gray-400" data-testid="clip-score-reason">
+              {{ $t('ugc.shorts.editor.scoreReason') }}: {{ clip.scoreReason }}
+            </p>
 
             <div :class="hookChoices[clip.id]?.discarded ? 'pointer-events-none opacity-50' : ''">
               <!-- A안 / B안 카드 -->
@@ -308,6 +314,7 @@
               {{ $t('ugc.shorts.runs.detail.clipSeq', { seq: clip.seq }) }}
             </span>
             <span class="text-body-xs text-gray-400">{{ formatClipRange(clip) }}</span>
+            <ShortsClipScore :score="clip.score" />
             <!--
               대상 중 실패가 섞여 있으면 원문 상태(SCHEDULED)를 그대로 쓰지 않는다.
               그 값은 대상 하나라도 성공하면 붙어서 부분 실패를 성공처럼 보이게 한다.
@@ -461,6 +468,16 @@
               >
                 <ArrowDownTrayIcon class="h-4 w-4" />
                 {{ $t('ugc.shorts.runs.detail.downloadSpec') }}
+              </button>
+              <!-- 편집 가능 여부는 서버가 판정한다(실행 중·렌더 중·예약 후 거절). 편집기가 이유를 보여 준다. -->
+              <button
+                v-if="clip.status !== 'DISCARDED'"
+                type="button"
+                class="btn-secondary inline-flex min-h-[44px] items-center gap-1"
+                :data-testid="`clip-edit-${clip.id}`"
+                @click="openEditor(clip.id)"
+              >
+                {{ $t('ugc.shorts.editor.open') }}
               </button>
               <!--
                 렌더 전 검수. 스펙은 RENDER_SPEC 단계에서 만들어지므로 그 이후 클립에만 붙는다.
@@ -624,6 +641,16 @@
     />
 
     <!-- 예약표 가져오기 미리보기: diff를 확인한 뒤에만 반영한다 -->
+    <ShortsClipEditorModal
+      v-if="editorClipId != null && editorWorkspaceId != null && run"
+      v-model="editorOpen"
+      :workspace-id="editorWorkspaceId"
+      :run-id="runId"
+      :clip-id="editorClipId"
+      :source-video-id="run.sourceVideoId"
+      @saved="onClipSaved"
+    />
+
     <BaseModal
       v-model="sheetPreviewOpen"
       :title="$t('ugc.shorts.runs.sheet.previewTitle')"
@@ -769,11 +796,13 @@ import { videoApi } from '@/api/video'
 import { channelApi } from '@/api/channel'
 import type { Video, PlatformUploadCapability } from '@/types/video'
 import type { Channel } from '@/types/channel'
-import type { RenderJobStatusResponse } from '@/api/ugcShortsPipeline'
+import type { ClipEditResponse, RenderJobStatusResponse } from '@/api/ugcShortsPipeline'
 import PageHeader from '@/components/common/PageHeader.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import ShortsClipScore from '@/components/ugc/ShortsClipScore.vue'
+import ShortsClipEditorModal from '@/components/ugc/ShortsClipEditorModal.vue'
 import {
   ArrowDownTrayIcon,
   ArrowLeftIcon,
@@ -933,6 +962,28 @@ const scheduleForm = ref({
 })
 
 const run = computed(() => store.detail?.run ?? null)
+
+// ---- 클립 편집기 ----
+const editorOpen = ref(false)
+const editorClipId = ref<number | null>(null)
+const editorWorkspaceId = ref<number | null>(null)
+
+async function openEditor(clipId: number) {
+  editorWorkspaceId.value = await requireWorkspaceId()
+  editorClipId.value = clipId
+  editorOpen.value = true
+}
+
+async function onClipSaved(result: ClipEditResponse) {
+  // 검수 패널은 렌더 지시서를 캐시한다. 편집 뒤에는 낡은 값이므로 버린다.
+  const rest = { ...clipReviews.value }
+  delete rest[result.editor.clipId]
+  clipReviews.value = rest
+  if (result.needsRerender) notify.warning(t('ugc.shorts.editor.savedNeedsRerender'))
+  else notify.success(t('ugc.shorts.editor.saved'))
+  if (result.uncoveredSubtitleSpan) notify.warning(t('ugc.shorts.editor.uncoveredSpan'))
+  await store.fetchDetail(runId)
+}
 const clips = computed(() => store.detail?.clips ?? [])
 
 const runTitle = computed(() => {

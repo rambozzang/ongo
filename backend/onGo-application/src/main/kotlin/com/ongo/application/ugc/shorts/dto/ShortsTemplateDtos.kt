@@ -28,6 +28,10 @@ data class ShortsTemplateResponse(
     val safeAreaBottom: Int,
     val referenceImageUrl: String?,
     val isDefault: Boolean,
+    /** 자막 스타일 프리셋(CLEAN·POP·BOX). 저장값이 없으면 POP. */
+    val captionStyle: String = "POP",
+    /** 말하는 단어 강조색(#RRGGBB). 없으면 기본 노랑. */
+    val highlightColor: String? = null,
     val createdAt: Instant?,
     val updatedAt: Instant?,
 )
@@ -55,4 +59,7 @@ data class ShortsTemplateRequest(
     val safeAreaTop: Int = 0,
     val safeAreaBottom: Int = 0,
     val isDefault: Boolean = false,
+    /** null 이면 기존 값을 유지한다(예전 화면이 보내지 않아도 지워지지 않게). */
+    val captionStyle: String? = null,
+    val highlightColor: String? = null,
 )

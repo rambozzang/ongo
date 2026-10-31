@@ -37,6 +37,13 @@ data class PipelineRun(
      * 클라이언트가 보낸 값을 넣지 않는다 — 청구 근거를 청구받는 쪽이 정할 수는 없다.
      */
     val sourceDurationMs: Long? = null,
+    /**
+     * 사용자가 정한 맥락 컷 조건. null 은 "지정 안 함"이며 서버 기본값을 쓴다.
+     * 재실행도 이 값을 다시 읽어 같은 조건으로 고른다.
+     */
+    val segmentClipCount: Int? = null,
+    val segmentMinDurationMs: Long? = null,
+    val segmentMaxDurationMs: Long? = null,
     val status: PipelineRunStatus = PipelineRunStatus.PENDING,
     val currentStage: PipelineStage? = null,
     val transcriptText: String? = null,

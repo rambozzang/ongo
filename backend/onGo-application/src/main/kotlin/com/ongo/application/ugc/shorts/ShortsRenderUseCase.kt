@@ -7,7 +7,6 @@ import com.ongo.application.video.StorageService
 import com.ongo.common.exception.NotFoundException
 import com.ongo.domain.ugc.shorts.ClipRenderRequest
 import com.ongo.domain.ugc.shorts.PipelineRunRepository
-import com.ongo.domain.ugc.shorts.RenderCropBox
 import com.ongo.domain.ugc.shorts.RendererAvailability
 import com.ongo.domain.ugc.shorts.ShortsClipRepository
 import com.ongo.domain.ugc.shorts.ShortsPilotActorType
@@ -144,7 +143,7 @@ class ShortsRenderUseCase(
                         sourceUrl = source,
                         startMs = spec.startMs,
                         endMs = spec.endMs,
-                        crop = spec.crop?.let { RenderCropBox(it.x, it.y, it.width, it.height) },
+                        framing = ShortsCropPolicy.toFraming(spec.crop, spec.backgroundStyle ?: template?.backgroundStyle),
                         subtitleAss = renderSpecBuilder.buildAss(spec, template),
                     ),
                 )

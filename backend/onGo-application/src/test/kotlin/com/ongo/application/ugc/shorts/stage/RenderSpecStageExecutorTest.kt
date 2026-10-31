@@ -58,7 +58,7 @@ class RenderSpecStageExecutorTest {
         assertEquals(1, spec.clipSeq)
         assertEquals(5, spec.sourceVideoId)
         assertEquals("https://cdn.example.com/source.mp4", spec.sourceFileUrl)
-        assertEquals(ShortsRenderSpecBuilder.CropBox(10, 20, 1080, 1920), spec.crop)
+        assertEquals(com.ongo.application.ugc.shorts.CropSpec(10, 20, 1080, 1920), spec.crop)
         assertEquals(listOf(ShortsRenderSpecBuilder.SubtitleLine(0, 1500, "자막")), spec.subtitles)
     }
 

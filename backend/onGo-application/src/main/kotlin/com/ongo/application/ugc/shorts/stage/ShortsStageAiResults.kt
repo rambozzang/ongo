@@ -22,6 +22,12 @@ data class SegmentExtractionResult(
         val caption: String? = null,
         val startMs: Long = 0,
         val endMs: Long = 0,
+        /** 0~100. 모델이 빠뜨리면 null 로 남는다. */
+        val score: Int? = null,
+        /** 점수의 근거 한두 문장. */
+        val reason: String? = null,
+        /** 클립 내용 해시태그(# 없이). 플랫폼별 메타의 바탕이 된다. */
+        val hashtags: List<String> = emptyList(),
     )
 }
 

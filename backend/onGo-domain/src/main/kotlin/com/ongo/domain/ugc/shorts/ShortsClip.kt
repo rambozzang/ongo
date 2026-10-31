@@ -20,6 +20,11 @@ data class ShortsClip(
     val dedupKey: String? = null,
     val renderedVideoId: Long? = null,
     val scheduledAt: Instant? = null,
+    /** 맥락 컷 AI 점수(0~100). AI 가 주지 않았으면 null. */
+    val score: Int? = null,
+    val scoreReason: String? = null,
+    /** 플랫폼별 제목·설명·해시태그 JSON. 만들기 전이면 null. */
+    val platformMetaJson: String? = null,
     val createdAt: Instant = Instant.now(),
     val updatedAt: Instant = Instant.now(),
 )

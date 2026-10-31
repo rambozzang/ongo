@@ -76,6 +76,16 @@ class AiUnitEconomics(
         return creditsFor(worst)
     }
 
+    /**
+     * 이미지 [images] 장 + 글자 [textChars] 를 보내고 [outputTokens] 를 받는 비전 호출의 크레딧.
+     * 이미지 한 장은 [IMAGE_INPUT_TOKENS_MAX] 토큰으로 본다(모델이 큰 이미지를 이 근처로 줄인다). 가장 비싼 제공 모델 기준.
+     */
+    fun creditsForVisionCall(images: Int, textChars: Long = 1_500, outputTokens: Long = VISION_OUTPUT_TOKENS): Int {
+        val inputTokens = estimateInputTokens(textChars * KOREAN_BYTES_PER_CHAR) + images * IMAGE_INPUT_TOKENS_MAX
+        val worst = AiProvider.OFFERED.maxOf { llmCostKrw(it, inputTokens, outputTokens) }
+        return creditsFor(worst)
+    }
+
     /** 말하는 영상 [minutes] 분의 전사문 글자 수 상한. 빠른 한국어 발화 기준으로 넉넉히 잡는다. */
     fun transcriptCharsFor(minutes: Double): Long = ceil(minutes.coerceAtLeast(0.0) * SPOKEN_CHARS_PER_MINUTE_MAX).toLong()
 
@@ -131,6 +141,10 @@ class AiUnitEconomics(
         /** 채팅 호출 한 번의 출력 상한(AiCostGuardAdvisor.DEFAULT_MAX_OUTPUT_TOKENS 와 같다). */
         const val AI_MAX_OUTPUT_TOKENS = 4096
         const val KOREAN_BYTES_PER_CHAR = 3L
+        /** 이미지 한 장의 입력 토큰 상한(보수적). Qwen 계열은 기본 최대 해상도에서 약 1,280 토큰이다. */
+        const val IMAGE_INPUT_TOKENS_MAX = 2_000L
+        /** 화자 추적 응답(12칸 좌표 JSON)의 출력 상한. */
+        const val VISION_OUTPUT_TOKENS = 800L
         /** 빠른 한국어 발화는 분당 약 300자다. 여유를 둔다. */
         const val SPOKEN_CHARS_PER_MINUTE_MAX = 350.0
         const val INPUT_OVERHEAD_TOKENS = 512

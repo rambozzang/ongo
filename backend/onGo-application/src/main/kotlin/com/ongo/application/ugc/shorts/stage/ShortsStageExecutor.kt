@@ -11,11 +11,12 @@ import com.ongo.domain.ugc.shorts.ShortsPromptRepository
 import com.ongo.domain.ugc.shorts.ShortsTemplate
 import java.time.Instant
 
-/** 전사 세그먼트 (밀리초 기준). STT 결과의 초 단위를 변환한 것이다. */
+/** 전사 세그먼트 (밀리초 기준). STT 결과의 초 단위를 변환한 것이다. [words] 는 원본 기준 단어 시각(없을 수 있다). */
 data class TranscriptSegmentMs(
     val startMs: Long,
     val endMs: Long,
     val text: String,
+    val words: List<com.ongo.application.ugc.shorts.CaptionWord> = emptyList(),
 )
 
 /** 예약 확정 파라미터. SCHEDULE 단계에서만 사용한다. */
@@ -31,6 +32,11 @@ data class ClipCandidate(
     val caption: String?,
     val startMs: Long,
     val endMs: Long,
+    /** 0~100. AI 가 점수를 주지 않았으면 null — 지어내지 않는다. */
+    val score: Int? = null,
+    val scoreReason: String? = null,
+    /** AI 가 제안한 해시태그(# 없이). 저장 때 플랫폼 한도에 맞춘다. */
+    val hashtags: List<String> = emptyList(),
 )
 
 /** HOOK 단계 AI가 만든 클립별 후킹 문구 하나. */

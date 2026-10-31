@@ -138,4 +138,21 @@ class AiCostGuardAdvisorTest {
         }
         assertNull(AiSpendContext.current())
     }
+
+    /** 이미지는 글자가 없어 예전 계산으로는 입력 0 이었다. 한 장마다 상한 토큰을 입력으로 센다. */
+    @Test
+    @DisplayName("이미지가 붙은 요청은 이미지 토큰까지 입력으로 세어 출력 허용량을 줄인다")
+    fun countsImagesAsInput() {
+        val budget = economics.budgetKrw(4)
+        val textOnly = advisor.plan(Prompt(UserMessage("장면 위치")), budget)
+        val image = org.springframework.ai.content.Media(
+            org.springframework.util.MimeTypeUtils.IMAGE_JPEG,
+            org.springframework.core.io.ByteArrayResource(byteArrayOf(1, 2, 3)),
+        )
+        val withImage = advisor.plan(Prompt(UserMessage.builder().text("장면 위치").media(image).build()), budget)
+
+        assertEquals(textOnly.estimatedInputTokens + AiUnitEconomics.IMAGE_INPUT_TOKENS_MAX, withImage.estimatedInputTokens)
+        assertTrue(withImage.maxOutputTokens < textOnly.maxOutputTokens)
+        assertTrue(withImage.worstCaseKrw <= budget, "이미지 요청의 최악 원가가 예산을 넘는다")
+    }
 }

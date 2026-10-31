@@ -124,4 +124,56 @@ class SubtitleStageExecutorTest {
 
         assertEquals(emptyList(), subtitleLines(output, 11L))
     }
+
+    // ---- 단어 시각 ----
+
+    private val wordSegments = listOf(
+        TranscriptSegmentMs(
+            8000, 12000, "그래서 오늘은 김치찌개",
+            words = listOf(
+                com.ongo.application.ugc.shorts.CaptionWord(8000, 9000, "그래서"),
+                com.ongo.application.ugc.shorts.CaptionWord(10000, 11000, "오늘은"),
+                com.ongo.application.ugc.shorts.CaptionWord(11000, 12000, "김치찌개"),
+            ),
+        ),
+    )
+
+    private fun wordsOf(output: ShortsStageOutput, clipId: Long) =
+        mapper.readTree(output.subtitles!!.getValue(clipId)).map { line ->
+            line.path("words").map { Triple(it.path("startMs").asLong(), it.path("endMs").asLong(), it.path("text").asText()) }
+        }
+
+    @Test
+    fun `단어 시각을 클립 기준으로 옮기고 클립 밖에서 한 말은 자막에서 뺀다`() {
+        stubChatClientEntity(
+            chatClientResolver,
+            SubtitlePolishResult::class.java,
+            SubtitlePolishResult(clips = listOf(SubtitlePolishResult.ClipSubtitles(clipSeq = 1, lines = listOf("오늘은 김치찌개")))),
+        )
+
+        val output = executor.execute(stageContext(clips = listOf(clip), transcriptSegments = wordSegments))
+
+        assertEquals(listOf(Triple(0L, 2000L, "오늘은 김치찌개")), subtitleLines(output, 11L))
+        assertEquals(listOf(listOf(Triple(0L, 1000L, "오늘은"), Triple(1000L, 2000L, "김치찌개"))), wordsOf(output, 11L))
+    }
+
+    @Test
+    fun `AI 가 어절 수를 지켜 고치면 단어 시각을 유지하고 어절 수가 바뀌면 그 줄의 단어 시각을 버린다`() {
+        stubChatClientEntity(
+            chatClientResolver,
+            SubtitlePolishResult::class.java,
+            SubtitlePolishResult(clips = listOf(SubtitlePolishResult.ClipSubtitles(clipSeq = 1, lines = listOf("오늘은 김치찌게")))),
+        )
+        val kept = executor.execute(stageContext(clips = listOf(clip), transcriptSegments = wordSegments))
+        assertEquals(listOf(listOf(Triple(0L, 1000L, "오늘은"), Triple(1000L, 2000L, "김치찌게"))), wordsOf(kept, 11L))
+
+        stubChatClientEntity(
+            chatClientResolver,
+            SubtitlePolishResult::class.java,
+            SubtitlePolishResult(clips = listOf(SubtitlePolishResult.ClipSubtitles(clipSeq = 1, lines = listOf("오늘의 김치 찌개 레시피")))),
+        )
+        val dropped = executor.execute(stageContext(clips = listOf(clip), transcriptSegments = wordSegments))
+        assertEquals(listOf(emptyList()), wordsOf(dropped, 11L))
+        assertEquals("오늘의 김치 찌개 레시피", subtitleLines(dropped, 11L).single().third)
+    }
 }

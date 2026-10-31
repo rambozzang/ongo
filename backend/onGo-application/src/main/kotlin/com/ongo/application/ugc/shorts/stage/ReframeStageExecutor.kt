@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.InputSanitizer
 import com.ongo.application.ugc.shorts.ShortsCostLedger
+import com.ongo.application.ugc.shorts.ShortsCropPolicy
 import com.ongo.common.exception.BusinessException
 import com.ongo.domain.ugc.shorts.PipelineStage
 import com.ongo.domain.ugc.shorts.ShortsPromptRepository
@@ -45,8 +46,11 @@ class ReframeStageExecutor(
         val result = response.entity
             ?: throw BusinessException("AI_PARSE_ERROR", "세로 변환 크롭 박스 응답을 파싱할 수 없습니다")
 
-        val cropJson = mapper.writeValueAsString(
-            mapOf("x" to result.x, "y" to result.y, "width" to result.width, "height" to result.height),
+        // LLM 이 준 상자는 비율·범위가 제멋대로다. 저장 전에 9:16·원본 안으로 맞춘다.
+        val cropJson = ShortsCropPolicy.normalizeJson(
+            mapper.writeValueAsString(
+                mapOf("x" to result.x, "y" to result.y, "width" to result.width, "height" to result.height),
+            ),
         )
 
         return ShortsStageOutput(

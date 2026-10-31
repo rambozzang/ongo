@@ -40,6 +40,8 @@ const template = (overrides: Record<string, unknown> = {}) => ({
   safeAreaBottom: 160,
   referenceImageUrl: null,
   isDefault: true,
+  captionStyle: 'POP',
+  highlightColor: null,
   createdAt: null,
   updatedAt: null,
   ...overrides,
@@ -105,5 +107,17 @@ describe('ShortsTemplatesView', () => {
     await flushPromises()
     expect(ugcShortsTemplateApi.create).not.toHaveBeenCalled()
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+  })
+
+  it('sends the chosen caption style and highlight color, and an empty color resets to default', async () => {
+    const wrapper = await renderTemplates()
+    await wrapper.findAll('button').find((button) => button.text() === '수정')!.trigger('click')
+    expect((wrapper.get('#shorts-tpl-caption-style').element as HTMLSelectElement).value).toBe('POP')
+
+    await wrapper.get('#shorts-tpl-caption-style').setValue('BOX')
+    await wrapper.get('#shorts-tpl-highlight-color').setValue(' #00ff00 ')
+    await wrapper.findAll('button').find((button) => button.text() === '저장')!.trigger('click')
+    await flushPromises()
+    expect(ugcShortsTemplateApi.update).toHaveBeenLastCalledWith(2, 5, expect.objectContaining({ captionStyle: 'BOX', highlightColor: '#00ff00' }))
   })
 })

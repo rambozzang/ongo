@@ -62,8 +62,16 @@ data class PerformanceReportResult(
 data class SttResult(
     val text: String,
     val segments: List<SttSegmentResult>,
+    /** 단어 단위 시각(초). 모델이 주지 않으면 비어 있다 — 그때 자막은 문장 단위로만 강조 없이 나간다. */
+    val words: List<SttWordResult> = emptyList(),
 ) {
     data class SttSegmentResult(
+        val startTime: Double,
+        val endTime: Double,
+        val text: String,
+    )
+
+    data class SttWordResult(
         val startTime: Double,
         val endTime: Double,
         val text: String,

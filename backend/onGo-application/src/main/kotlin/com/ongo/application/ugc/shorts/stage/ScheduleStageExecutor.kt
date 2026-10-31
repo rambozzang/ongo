@@ -100,7 +100,11 @@ class ScheduleStageExecutor(
 
             if (pendingPlatforms.isNotEmpty()) {
                 val requests = pendingPlatforms.map { (target, _) ->
-                    ShortsPublishRequest(target.platformName, clip.title, clip.caption, scheduledAt, target.channelId)
+                    ShortsPublishRequest(
+                        target.platformName, clip.title, clip.caption, scheduledAt, target.channelId,
+                        platformMetaJson = clip.platformMetaJson,
+                        sourceVideoId = context.run.sourceVideoId,
+                    )
                 }
                 val outcomes = runCatching {
                     shortsPublishAdapter.publishAll(

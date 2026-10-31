@@ -1,5 +1,6 @@
 package com.ongo.application.ugc.shorts.dto
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.ongo.domain.ugc.shorts.HookVariant
 import java.time.Instant
 
@@ -18,6 +19,16 @@ data class PipelineRunResponse(
     val errorMessage: String?,
     val createdAt: Instant?,
     val updatedAt: Instant?,
+    /** 이 실행이 클립을 고를 때 쓰는(또는 쓴) 조건. 지정하지 않았으면 서버 기본값이 들어 있다. */
+    val segmentOptions: SegmentOptionsResponse? = null,
+)
+
+/** 맥락 컷 조건. `userSpecified` 가 false 면 서버 기본값이다. */
+data class SegmentOptionsResponse(
+    val clipCount: Int,
+    val minDurationSec: Int,
+    val maxDurationSec: Int,
+    val userSpecified: Boolean,
 )
 
 /** 실행 목록 페이지 응답. */
@@ -69,6 +80,12 @@ data class ShortsClipResponse(
     val caption: String?,
     val status: String,
     val scheduledAt: Instant?,
+    /**
+     * 맥락 컷 AI 점수(0~100). 롱폼을 안 본 사람이 이 클립만으로 이해하고 끝까지 볼지를 매긴다.
+     * AI 가 주지 않았으면 null — 화면은 "점수 없음"으로 보여야 하고 0으로 바꾸면 안 된다.
+     */
+    val score: Int? = null,
+    val scoreReason: String? = null,
     val hooks: List<ClipHookResponse>,
     val subtitleCount: Int,
     val hasRenderSpec: Boolean,
@@ -128,6 +145,24 @@ data class CreatePipelineRunRequest(
     val scheduleStartAt: Instant? = null,
     val scheduleIntervalHours: Int? = null,
     val platforms: List<String> = emptyList(),
+    /**
+     * 클립 개수·길이 조건. 없으면 서버 기본값이다.
+     *
+     * null 이면 직렬화하지 않는다 — 멱등 키 지문이 요청 JSON 의 해시라, 이 필드가 생기기 전
+     * 요청을 다시 보냈을 때 지문이 바뀌어 "다른 요청"으로 거절되면 안 된다.
+     */
+    @get:JsonInclude(JsonInclude.Include.NON_NULL)
+    val segment: SegmentOptionsRequest? = null,
+)
+
+/** 실행 생성 시 클립 선택 조건. 각 값은 생략할 수 있다(생략하면 서버 기본값). */
+data class SegmentOptionsRequest(
+    /** 1~10개. */
+    val clipCount: Int? = null,
+    /** 5~180초. */
+    val minDurationSec: Int? = null,
+    /** 5~180초, 최소 이상. */
+    val maxDurationSec: Int? = null,
 )
 
 /** 후킹 선택 하나. CUSTOM이면 customText가 필요하다. */

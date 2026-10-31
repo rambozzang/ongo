@@ -122,7 +122,11 @@ class FfmpegVideoRendererTest {
     @Test
     @DisplayName("가용하다고 답한 인코더로는 렌더도 실행된다")
     fun availabilityAgreesWithRendering() {
-        val encoder = fakeEncoder("printf 'rendered-bytes' > clip.mp4")
+        // 진짜 ffmpeg 처럼 필터 목록 요청에는 자막 필터 줄을 출력한다.
+        val encoder = fakeEncoder(
+            "case \"$*\" in *-filters*) echo ' T.. ass               V->V       Render ASS subtitles.' ;; " +
+                "*) printf 'rendered-bytes' > clip.mp4 ;; esac",
+        )
         val subject = renderer(encoder)
 
         assertTrue(subject.checkAvailability().available)
@@ -145,6 +149,29 @@ class FfmpegVideoRendererTest {
         // 사용자에게 보여줄 문장이므로 경로가 들어가면 안 된다.
         assertFalse(availability.reason!!.contains("nonexistent"), availability.reason)
         assertThrows<Exception> { subject.render(request) }
+    }
+
+    /**
+     * 자막 필터가 없는 빌드는 실행은 되지만 자막 있는 렌더가 마지막에 "필터 없음"으로 실패한다.
+     * 그때는 앞 단계 크레딧을 이미 쓴 뒤라, 가용성 단계에서 미리 "쓸 수 없다"고 답해야 한다.
+     */
+    @Test
+    @DisplayName("자막 필터가 없는 인코더는 가용하지 않다고 답한다")
+    fun encoderWithoutSubtitleFilterIsUnavailable() {
+        val encoder = fakeEncoder("echo ' .. scale             V->V       Scale the input video size.'")
+
+        val availability = renderer(encoder).checkAvailability()
+
+        assertFalse(availability.available)
+        assertTrue(availability.reason!!.contains("자막"), availability.reason)
+    }
+
+    @Test
+    @DisplayName("필터 목록에서 ass 필터 줄만 자막 필터로 인정한다")
+    fun recognizesOnlyTheAssFilterLine() {
+        assertTrue(FfmpegVideoRenderer.hasSubtitleFilter(" T.. ass               V->V       Render ASS subtitles."))
+        assertFalse(FfmpegVideoRenderer.hasSubtitleFilter(" ... assplit           V->N       Split audio."))
+        assertFalse(FfmpegVideoRenderer.hasSubtitleFilter("Render ASS subtitles via ass filter"))
     }
 
     /* ── 뒷정리 ──────────────────────────────────────────────────────── */

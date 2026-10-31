@@ -92,6 +92,16 @@ class ShortsRenderJobJooqRepository(
         return findById(job.id) ?: error("렌더 job을 찾을 수 없습니다: ${job.id}")
     }
 
+    override fun deleteFinished(runId: Long, clipId: Long): Boolean {
+        dsl.deleteFrom(TABLE)
+            .where(RUN_ID.eq(runId))
+            .and(CLIP_ID.eq(clipId))
+            .and(STATUS.`in`(ShortsRenderJobStatus.COMPLETED.name, ShortsRenderJobStatus.FAILED.name))
+            .execute()
+        // 지운 뒤에도 남아 있으면 진행 중인 작업이다.
+        return findByRunAndClip(runId, clipId) == null
+    }
+
     private fun Record.toJob(): ShortsRenderJob = ShortsRenderJob(
         id = get(ID)!!,
         runId = get(RUN_ID)!!,
