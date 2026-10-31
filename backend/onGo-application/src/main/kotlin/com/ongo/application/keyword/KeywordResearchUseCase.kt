@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.ongo.application.ai.AiRateLimiter
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.PromptTemplates
+import com.ongo.application.ai.estimate.AiEstimate
 import com.ongo.application.ai.result.KeywordResearchResult
 import com.ongo.application.credit.CreditService
 import com.ongo.application.keyword.dto.*
@@ -84,17 +85,28 @@ class KeywordResearchUseCase(
         platforms = result.platforms.map {
             PlatformKeywordAnalysisDto(
                 platform = it.platform,
-                searchVolume = it.searchVolume,
-                competition = it.competition,
-                trend = it.trend,
-                opportunityScore = it.opportunityScore,
+                searchVolume = it.searchVolume?.let { v -> grade(v, LEVELS) },
+                competition = it.competition?.let { v -> grade(v, LEVELS) },
+                trend = it.trend?.let { v -> grade(v, TRENDS) },
                 relatedKeywords = it.relatedKeywords,
             )
         },
         overallOpportunity = result.overallOpportunity,
         suggestions = result.suggestions,
+        aiEstimate = AiEstimate(basis = BASIS),
+        creditsUsed = AiFeature.KEYWORD_RESEARCH.creditCost,
         createdAt = saved.createdAt.toString(),
     )
+
+    companion object {
+        const val BASIS =
+            "검색량·경쟁도·추세는 실제 검색 데이터 없이 AI 모델의 일반 지식으로 추정한 등급입니다. 플랫폼 공식 수치가 아닙니다."
+        private val LEVELS = setOf("HIGH", "MEDIUM", "LOW")
+        private val TRENDS = setOf("RISING", "STABLE", "DECLINING")
+
+        /** 정해진 등급만 받는다. 모델이 숫자·문장을 넣었으면 "판단 못 함"(null)으로 본다. */
+        fun grade(raw: String, allowed: Set<String>): String? = raw.trim().uppercase().takeIf { it in allowed }
+    }
 
     private fun toSummary(research: KeywordResearch) = KeywordResearchSummary(
         id = research.id!!,

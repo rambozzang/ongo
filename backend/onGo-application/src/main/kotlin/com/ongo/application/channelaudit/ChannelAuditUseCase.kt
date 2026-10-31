@@ -1,11 +1,12 @@
 package com.ongo.application.channelaudit
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.ongo.application.ai.AiRateLimiter
 import com.ongo.application.ai.ChatClientResolver
 import com.ongo.application.ai.PromptTemplates
+import com.ongo.application.ai.estimate.AiEstimate
 import com.ongo.application.ai.result.ChannelAuditResult
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AiFeature
 import com.ongo.common.exception.BusinessException
@@ -115,16 +116,32 @@ class ChannelAuditUseCase(
                 .entity(ChannelAuditResult::class.java)
                 ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
 
-            val contentJson = objectMapper.writeValueAsString(result)
+            /*
+             * AI 가 점수를 채워 보냈어도 버린다 — 묻지 않은 숫자다. 대신 이 보고서의 근거가 된
+             * 실측 지표를 함께 저장해, 나중에 열어도 "그때 무엇을 보고 쓴 진단인지"를 보여 준다.
+             */
+            val stored = result.copy(overallScore = null)
+            val measured = ChannelAuditMeasured(
+                periodDays = PERIOD_DAYS,
+                totalViews = kpi.totalViews,
+                totalViewsChange = kpi.totalViewsChange,
+                totalLikes = kpi.totalLikes,
+                totalComments = kpi.totalComments,
+                subscriberCount = totalSubscribers,
+                analyzedVideoCount = topVideos.size,
+            )
+            val content = objectMapper.valueToTree<ObjectNode>(stored)
+                .set<ObjectNode>(MEASURED_KEY, objectMapper.valueToTree(measured))
             val report = channelAuditRepository.save(
                 ChannelAuditReport(
                     userId = userId,
-                    overallScore = result.overallScore,
-                    content = contentJson,
+                    // 컬럼은 NOT NULL 이라 0 을 넣지만 **화면에 쓰지 않는다**. 표시는 본문(content)만 본다.
+                    overallScore = 0,
+                    content = objectMapper.writeValueAsString(content),
                 )
             )
 
-            toResponse(report, result)
+            toResponse(report, stored, measured)
         } catch (e: BusinessException) {
             throw e
         } catch (e: Exception) {
@@ -155,11 +172,15 @@ class ChannelAuditUseCase(
     }
 
     private fun parseToResponse(report: ChannelAuditReport): ChannelAuditResponse {
+        val tree = runCatching { objectMapper.readTree(report.content) as? ObjectNode }.getOrNull()
+        val measured = tree?.remove(MEASURED_KEY)
+            ?.let { runCatching { objectMapper.treeToValue(it, ChannelAuditMeasured::class.java) }.getOrNull() }
         val result = runCatching {
-            objectMapper.readValue<ChannelAuditResult>(report.content)
+            objectMapper.treeToValue(tree, ChannelAuditResult::class.java)!!
         }.getOrElse {
             ChannelAuditResult(
-                overallScore = report.overallScore,
+                // 본문을 읽지 못하면 점수도 모른다. 컬럼 값은 새 보고서에서 0 이라 근거가 될 수 없다.
+                overallScore = null,
                 strengths = emptyList(),
                 weaknesses = emptyList(),
                 actionItems = emptyList(),
@@ -167,13 +188,19 @@ class ChannelAuditUseCase(
                 growthForecast = "",
             )
         }
-        return toResponse(report, result)
+        return toResponse(report, result, measured)
     }
 
-    private fun toResponse(report: ChannelAuditReport, result: ChannelAuditResult): ChannelAuditResponse =
+    private fun toResponse(
+        report: ChannelAuditReport,
+        result: ChannelAuditResult,
+        measured: ChannelAuditMeasured?,
+    ): ChannelAuditResponse =
         ChannelAuditResponse(
             id = report.id!!,
             overallScore = result.overallScore,
+            overallScoreEstimate = result.overallScore?.let { AiEstimate(basis = LEGACY_SCORE_BASIS) },
+            measured = measured,
             strengths = result.strengths,
             weaknesses = result.weaknesses,
             actionItems = result.actionItems.map {
@@ -191,6 +218,7 @@ class ChannelAuditUseCase(
                 )
             },
             growthForecast = result.growthForecast,
+            forecastEstimate = AiEstimate(basis = FORECAST_BASIS),
             createdAt = report.createdAt,
         )
 
@@ -229,6 +257,13 @@ class ChannelAuditUseCase(
         }
 
     companion object {
+        private const val PERIOD_DAYS = 30
+        private const val MEASURED_KEY = "measured"
+        const val LEGACY_SCORE_BASIS =
+            "예전 보고서에서 AI 가 매긴 점수입니다. 정해진 계산식이나 측정값이 아니어서 지금은 새로 매기지 않습니다."
+        const val FORECAST_BASIS =
+            "최근 30일 실측 지표와 상위 영상 성과만 보고 AI 가 쓴 전망입니다. 미래 수치를 계산한 것이 아닙니다."
+
         /**
          * 영상별 참여율을 낼 수 없을 때 프롬프트에 넣는 문구.
          *

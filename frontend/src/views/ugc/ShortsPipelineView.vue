@@ -350,7 +350,7 @@ import {
   PLAN_UPGRADE_PATH,
   SHORTS_INSUFFICIENT_CREDIT_FOR_RUN,
 } from '@/composables/usePlanLimit'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUgcShortsPipelineStore } from '@/stores/ugcShortsPipeline'
 import { useUgcShortsStore } from '@/stores/ugcShorts'
@@ -375,6 +375,7 @@ import {
 
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
+const route = useRoute()
 const store = useUgcShortsPipelineStore()
 const shortsStore = useUgcShortsStore()
 const notify = useNotificationStore()
@@ -716,6 +717,12 @@ async function startTrialForRun() {
 }
 
 onMounted(async () => {
+  // "다음에 할 일" 에서 왔으면 그 영상을 고른 채로 만들기 창을 연다.
+  const preselected = Number(route.query.videoId)
+  if (Number.isInteger(preselected) && preselected > 0) {
+    openCreate()
+    form.value.sourceVideoId = preselected
+  }
   try {
     await store.fetchRuns(0)
   } catch (e) {

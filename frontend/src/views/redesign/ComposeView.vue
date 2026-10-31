@@ -1637,7 +1637,9 @@ async function generateMetadataFor(videoId: number) {
     metadataGeneratedPlatforms.value = [
       ...new Set([...metadataGeneratedPlatforms.value, ...missingPlatforms]),
     ]
-    notice.value = t('redesign.compose.metadataGenerated')
+    notice.value = result.grounding?.used
+      ? t('redesign.compose.metadataGeneratedGrounded', { count: result.grounding.topCount })
+      : t('redesign.compose.metadataGenerated')
   } catch (e) {
     // 잔액 부족은 안정 코드로만 판단한다(메타 생성 자체 또는 사전 transcriptFor STT 모두 해당).
     // 문구/상태코드/일반 Error 로는 충전 CTA 를 띄우지 않는다. 호출부 안내는 그대로 둔다.

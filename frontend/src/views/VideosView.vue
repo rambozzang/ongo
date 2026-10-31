@@ -328,9 +328,14 @@
               </div>
             </div>
           </div>
-          <!-- Category Bars -->
+          <!-- 점수의 정체: 규칙 점수(실측). AI 가 매긴 숫자가 아니다. -->
+          <p class="-mt-2 mb-3 text-center text-body-xs text-gray-500 dark:text-gray-400" data-testid="seo-score-basis">
+            <span class="font-semibold text-gray-700 dark:text-gray-300">{{ $t('videosView.seoScore.ruleScore') }}</span>
+            · {{ seoModal.result.scoreBasis }}
+          </p>
+          <!-- Category Bars + 항목별 근거 -->
           <div class="space-y-3">
-            <div v-for="cat in seoModal.result.categories" :key="cat.name">
+            <div v-for="cat in seoModal.result.categories" :key="cat.key">
               <div class="mb-1 flex items-center justify-between text-body-xs">
                 <span class="text-gray-700 dark:text-gray-300">{{ cat.name }}</span>
                 <span class="font-medium text-gray-900 dark:text-white">{{ cat.score }}/{{ cat.maxScore }}</span>
@@ -342,13 +347,28 @@
                   :style="{ width: `${(cat.score / cat.maxScore) * 100}%` }"
                 />
               </div>
+              <ul class="mt-1 space-y-0.5">
+                <li
+                  v-for="check in cat.checks"
+                  :key="check.key"
+                  class="flex items-start gap-1.5 text-caption"
+                  :class="check.passed ? 'text-gray-500 dark:text-gray-400' : 'text-error-strong'"
+                  data-testid="seo-check"
+                >
+                  <span aria-hidden="true">{{ check.passed ? '✓' : '✗' }}</span>
+                  <span>{{ check.label }} — {{ check.detail }} ({{ check.points }}/{{ check.maxPoints }})</span>
+                </li>
+              </ul>
             </div>
           </div>
-          <!-- Suggestions -->
-          <div v-if="seoModal.result.suggestions.length" class="mt-4">
-            <h4 class="mb-2 text-body-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              {{ $t('videosView.seoScore.suggestions') }}
-            </h4>
+          <!-- AI 몫: 제안과 관련 키워드 -->
+          <div v-if="seoModal.result.suggestions.length || seoModal.result.relatedKeywords.length" class="mt-4">
+            <div class="mb-2 flex items-center gap-2">
+              <h4 class="text-body-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {{ $t('videosView.seoScore.suggestions') }}
+              </h4>
+              <AiEstimateBadge :basis="seoModal.result.aiEstimate.basis" :label="$t('common.aiEstimate.suggestion')" />
+            </div>
             <ul class="space-y-1.5">
               <li
                 v-for="(s, i) in seoModal.result.suggestions"
@@ -359,6 +379,14 @@
                 {{ s }}
               </li>
             </ul>
+            <div v-if="seoModal.result.relatedKeywords.length" class="mt-3 flex flex-wrap items-center gap-1.5" data-testid="seo-related-keywords">
+              <span class="text-body-xs text-gray-500 dark:text-gray-400">{{ $t('videosView.seoScore.relatedKeywords') }}</span>
+              <span
+                v-for="kw in seoModal.result.relatedKeywords"
+                :key="kw"
+                class="rounded-full bg-gray-100 px-2 py-0.5 text-caption text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+              >#{{ kw }}</span>
+            </div>
           </div>
           <p class="mt-3 text-body-xs text-gray-400 dark:text-gray-500">
             {{ $t('videosView.seoScore.creditsUsed', { count: seoModal.result.creditsUsed }) }}
@@ -747,6 +775,7 @@ import { metaRewriteApi, type MetaRewriteResponse } from '@/api/metaRewrite'
 import { repurposeApi } from '@/api/repurpose'
 import type { RepurposeClip } from '@/types/repurpose'
 import { videoSeoApi, type SeoScoreResponse } from '@/api/videoSeo'
+import AiEstimateBadge from '@/components/common/AiEstimateBadge.vue'
 import { analyticsApi } from '@/api/analytics'
 import type { PerformanceScoreResponse } from '@/types/analytics'
 import { publishChecklistApi, type PublishChecklistResponse } from '@/api/publishChecklist'

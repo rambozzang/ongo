@@ -592,6 +592,16 @@
           {{ $t('videoDetail.uploadNow') }}
         </button>
       </div>
+
+      <!-- 네이버 클립은 공개 업로드 API 가 없어 직접 올리는 길을 준비해 준다(자동처럼 보이지 않게). -->
+      <NaverClipManualUpload
+        v-if="video.mediaType === 'VIDEO'"
+        class="mt-6"
+        :title="video.title"
+        :description="video.description"
+        :tags="video.tags"
+        :file-url="video.fileUrl || null"
+      />
     </template>
 
     <!-- Delete Confirmation Modal -->
@@ -623,6 +633,7 @@
 </template>
 
 <script setup lang="ts">
+import NaverClipManualUpload from '@/components/video/NaverClipManualUpload.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'

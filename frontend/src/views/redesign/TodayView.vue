@@ -52,6 +52,9 @@
       </div>
     </header>
 
+    <!-- 실측 성과에서만 나온 다음 행동(근거 없으면 숨김) -->
+    <NextActionsCard />
+
     <!-- KPI 4장 -->
     <div class="grid gap-2.5" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr))">
       <KpiCard
@@ -212,6 +215,7 @@ import { useRouter } from 'vue-router'
 import { useLocale } from '@/composables/useLocale'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import KpiCard from '@/components/redesign/KpiCard.vue'
+import NextActionsCard from '@/components/redesign/NextActionsCard.vue'
 import PlatformChip from '@/components/redesign/PlatformChip.vue'
 import SectionCard from '@/components/redesign/SectionCard.vue'
 import StatusPill from '@/components/redesign/StatusPill.vue'

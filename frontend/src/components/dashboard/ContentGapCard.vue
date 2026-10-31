@@ -66,6 +66,8 @@
 
       <!-- Results -->
       <div v-else class="space-y-3">
+        <!-- 수요·경쟁은 AI 추정이다. 무엇을 보고 추정했는지 함께 보인다. -->
+        <AiEstimateBadge :basis="result.aiEstimate.basis" />
         <!-- Opportunities -->
         <div v-if="result.opportunities.length > 0">
           <p class="mb-2 text-caption text-success-strong">기회 발견</p>
@@ -80,8 +82,9 @@
                 <span
                   class="flex-shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
                   :class="demandBadge(opp.estimatedDemand)"
+                  data-testid="contentgap-demand"
                 >
-                  {{ opp.estimatedDemand }}
+                  {{ opp.estimatedDemand ?? $t('common.aiEstimate.unknown') }}
                 </span>
               </div>
               <p class="mt-1 text-[11px] text-gray-600 dark:text-gray-400">{{ opp.suggestedAngle }}</p>
@@ -126,6 +129,7 @@ import { LightBulbIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import { aiApi } from '@/api/ai'
 import type { ContentGapResponse } from '@/types/ai'
 import AsyncState from '@/components/common/AsyncState.vue'
+import AiEstimateBadge from '@/components/common/AiEstimateBadge.vue'
 import { CREDIT_INSUFFICIENT, matchesCode } from '@/composables/usePlanLimit'
 import { useCreditStore } from '@/stores/credit'
 import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
@@ -150,7 +154,7 @@ onMounted(() => {
   void loadPricing()
 })
 
-function demandBadge(demand: string) {
+function demandBadge(demand: string | null) {
   switch (demand) {
     case 'HIGH':
       return 'bg-success-subtle text-success-strong'

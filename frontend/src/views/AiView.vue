@@ -225,6 +225,15 @@
 
               <!-- Meta Results -->
               <div v-else class="space-y-4">
+                <p
+                  v-if="aiStore.metaResult.grounding"
+                  class="rounded-lg bg-gray-50 px-3 py-2 text-body-xs text-gray-700 dark:bg-gray-800/50 dark:text-gray-300"
+                  data-testid="meta-grounding"
+                >
+                  {{ aiStore.metaResult.grounding.used
+                    ? $t('aiView.metaGrounded', { top: aiStore.metaResult.grounding.topCount, bottom: aiStore.metaResult.grounding.bottomCount })
+                    : aiStore.metaResult.grounding.reason }}
+                </p>
                 <div
                   v-for="(result, idx) in aiStore.metaResult.platforms"
                   :key="idx"

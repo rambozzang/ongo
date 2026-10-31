@@ -299,6 +299,15 @@ class ShortsRunJooqRepository(
             .fetch()
             .map { it.toPipelineRun() }
 
+    override fun findSourceVideoIdsWithRuns(userId: Long, videoIds: Collection<Long>): Set<Long> {
+        if (videoIds.isEmpty()) return emptySet()
+        return dsl.selectDistinct(SOURCE_VIDEO_ID)
+            .from(UGC_SHORTS_PIPELINE_RUNS)
+            .where(USER_ID.eq(userId))
+            .and(SOURCE_VIDEO_ID.`in`(videoIds))
+            .fetchSet(SOURCE_VIDEO_ID)
+    }
+
     override fun countByWorkspace(workspaceId: Long): Long =
         dsl.fetchCount(UGC_SHORTS_PIPELINE_RUNS, WORKSPACE_ID.eq(workspaceId)).toLong()
 

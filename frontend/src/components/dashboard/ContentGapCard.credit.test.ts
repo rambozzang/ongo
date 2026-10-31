@@ -113,11 +113,14 @@ describe('ContentGapCard 크레딧 차단 CTA (CONTENT_GAP_ANALYSIS)', () => {
           estimatedDemand: 'HIGH',
           competitionLevel: 'LOW',
           suggestedAngle: '앵글',
-          relevanceScore: 1,
         },
       ],
       oversaturated: [],
-    } as never)
+      analyzedAt: '2026-11-01T00:00:00',
+      aiEstimate: { estimated: true, basis: '내 영상 3개만 보고 AI 가 추정' },
+      analyzedVideoCount: 3,
+      creditsUsed: 10,
+    })
 
     wrapper = mountCard()
     const vm = wrapper.vm as unknown as ContentGapVm
@@ -129,6 +132,28 @@ describe('ContentGapCard 크레딧 차단 CTA (CONTENT_GAP_ANALYSIS)', () => {
     expect(wrapper.find('[data-testid="contentgap-credit-cta"]').exists()).toBe(false)
     expect(vm.result).not.toBeNull()
     expect(wrapper.text()).toContain('주제A')
+  })
+
+  it('수요는 AI 추정 배지·근거와 함께 보이고, 판단하지 못한 등급은 "판단 못 함"으로 보인다', async () => {
+    vi.mocked(aiApi.contentGapAnalysis).mockResolvedValue({
+      opportunities: [{ topic: '주제B', estimatedDemand: null, competitionLevel: null, suggestedAngle: '' }],
+      oversaturated: [],
+      analyzedAt: '2026-11-01T00:00:00',
+      aiEstimate: { estimated: true, basis: '내 영상 1개만 보고 AI 가 추정했습니다' },
+      analyzedVideoCount: 1,
+      creditsUsed: 10,
+    })
+
+    wrapper = mountCard()
+    await readyToAnalyze()
+    await startButton().trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="contentgap-demand"]').text()).toBe('판단 못 함')
+    const badge = wrapper.get('[data-testid="ai-estimate-badge"]')
+    expect(badge.text()).toBe('AI 추정')
+    await badge.trigger('click')
+    expect(wrapper.get('[data-testid="ai-estimate-basis"]').text()).toContain('내 영상 1개만 보고')
   })
 
   it('purchase 이벤트 뒤 fetchBalance 호출 + 상태 정리(자동 재호출 없음)', async () => {

@@ -94,15 +94,19 @@ class AiController(
         val script = request.script
             ?: throw BusinessException("SCRIPT_REQUIRED", "스크립트 또는 STT 옵션이 필요합니다.")
 
-        val result = generateMetaUseCase.execute(
+        val outcome = generateMetaUseCase.executeWithGrounding(
             userId = userId,
             script = script,
             targetPlatforms = request.targetPlatforms,
             tone = request.tone,
             category = request.category,
         )
+        val result = outcome.result
 
         val response = GenerateMetaResponse(
+            grounding = outcome.grounding.let {
+                GenerateMetaResponse.Grounding(it.used, it.topCount, it.bottomCount, it.reason)
+            },
             platforms = result.platforms.map {
                 GenerateMetaResponse.PlatformMeta(
                     platform = it.platform,
@@ -355,31 +359,14 @@ class AiController(
     fun contentGapAnalysis(
         @Parameter(hidden = true) @AuthenticationPrincipal userId: Long,
         @Valid @RequestBody request: ContentGapRequest,
-    ): ResponseEntity<ResData<ContentGapResponse>> {
+    ): ResponseEntity<ResData<com.ongo.application.ai.dto.ContentGapResponse>> {
+        // 응용 계층 응답을 그대로 보낸다. 예전에는 여기서 같은 모양의 DTO 로 옮겨 담았는데,
+        // 추정 표시(aiEstimate)처럼 새 필드가 생기면 옮기는 곳에서 조용히 빠졌다.
         val result = contentGapAnalysisUseCase.execute(
             userId = userId,
             includeCompetitors = request.includeCompetitors,
         )
-        val response = ContentGapResponse(
-            opportunities = result.opportunities.map {
-                ContentOpportunity(
-                    topic = it.topic,
-                    estimatedDemand = it.estimatedDemand,
-                    competitionLevel = it.competitionLevel,
-                    suggestedAngle = it.suggestedAngle,
-                    relevanceScore = it.relevanceScore,
-                )
-            },
-            oversaturated = result.oversaturated.map {
-                OversaturatedTopic(
-                    topic = it.topic,
-                    saturationLevel = it.saturationLevel,
-                    recommendation = it.recommendation,
-                )
-            },
-            analyzedAt = result.analyzedAt,
-        )
-        return ResData.success(response)
+        return ResData.success(result)
     }
 
     // ─── Competitor Insight endpoint ─────────────────────────────────

@@ -223,6 +223,13 @@ export const analyticsApi = {
       .then(unwrapResponse)
   },
 
+  /** 실측 성과에서 나온 "다음에 할 일". 근거가 없으면 빈 목록이다. */
+  nextActions() {
+    return apiClient
+      .get<ResData<NextAction[]>>('/analytics/next-actions')
+      .then(unwrapResponse)
+  },
+
   performanceScore(videoId: number) {
     return apiClient
       .get<ResData<PerformanceScoreResponse>>(`/analytics/videos/${videoId}/performance-score`)
@@ -293,4 +300,12 @@ export const analyticsApi = {
       .get<ResData<CrossPlatformSummaryResponse>>('/analytics/cross-platform', { params: { days } })
       .then(unwrapResponse)
   },
+}
+
+export interface NextAction {
+  type: 'MAKE_SHORTS'
+  videoId: number
+  title: string
+  /** 왜 이 추천인지(실측 근거 문장) */
+  reason: string
 }

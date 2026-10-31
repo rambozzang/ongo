@@ -94,9 +94,9 @@ class BenchmarkPromptMeasurementTest {
             creditService.withCredits(
                 userId,
                 AiFeature.ENGAGEMENT_BENCHMARK,
-                any<() -> EngagementBenchmarkResult>(),
+                any<() -> EngagementBenchmarkResponse>(),
             )
-        } answers { thirdArg<() -> EngagementBenchmarkResult>().invoke() }
+        } answers { thirdArg<() -> EngagementBenchmarkResponse>().invoke() }
 
         val userPrompt = slot<String>()
         val requestSpec = mockk<ChatClient.ChatClientRequestSpec>()

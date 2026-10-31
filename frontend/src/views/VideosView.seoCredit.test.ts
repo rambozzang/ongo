@@ -73,11 +73,15 @@ describe('VideosView SEO 점수 크레딧 차단 CTA', () => {
     pinia = createPinia()
     setActivePinia(pinia)
     vi.mocked(videoApi.feed).mockResolvedValue({ items: [internalVideo], platforms: [], errors: [] } as never)
+    // 서버 계약 그대로(VideoSeoScoreResponse). 예전 목은 서버가 보내지 않는 모양이라 고장을 가렸다.
     vi.mocked(videoSeoApi.analyze).mockResolvedValue({
       videoId: 123,
       overallScore: 80,
+      scoreBasis: 'onGo 규칙 점수입니다.',
       categories: [],
       suggestions: [],
+      relatedKeywords: [],
+      aiEstimate: { estimated: true, basis: 'AI 근거' },
       creditsUsed: 1,
     })
   })
@@ -104,6 +108,48 @@ describe('VideosView SEO 점수 크레딧 차단 CTA', () => {
       },
     })
   }
+
+  it('서버 응답 그대로 규칙 점수의 근거·항목과 AI 제안 배지를 그린다', async () => {
+    vi.mocked(videoSeoApi.analyze).mockResolvedValue({
+      videoId: 123,
+      overallScore: 45,
+      scoreBasis: 'onGo 규칙 점수입니다. AI 가 매기지 않았습니다.',
+      categories: [
+        {
+          key: 'description',
+          name: '설명',
+          score: 5,
+          maxScore: 25,
+          checks: [
+            { key: 'descriptionPresent', label: '설명이 있음', passed: true, points: 5, maxPoints: 5, detail: '12자' },
+            { key: 'descriptionLength', label: '설명 100자 이상', passed: false, points: 0, maxPoints: 10, detail: '12자' },
+          ],
+        },
+      ],
+      suggestions: ['설명을 늘리세요'],
+      relatedKeywords: ['브이로그'],
+      aiEstimate: { estimated: true, basis: '제목·설명·태그만 보고 만든 제안' },
+      creditsUsed: 2,
+    })
+
+    wrapper = mountView()
+    const vm = wrapper.vm as unknown as SeoVm
+    vm.openSeoModal(internalVideo as never)
+    await flushPromises()
+    await vm.runSeoAnalysis()
+    await flushPromises()
+
+    const body = document.body
+    expect(body.querySelector('[data-testid="seo-score-basis"]')?.textContent).toContain('AI 가 매기지 않았습니다')
+    const checks = Array.from(body.querySelectorAll('[data-testid="seo-check"]')).map((el) => el.textContent)
+    expect(checks).toEqual([
+      expect.stringContaining('설명이 있음 — 12자 (5/5)'),
+      expect.stringContaining('설명 100자 이상 — 12자 (0/10)'),
+    ])
+    expect(body.querySelector('[data-testid="ai-estimate-badge"]')?.textContent).toContain('AI 제안')
+    expect(body.querySelector('[data-testid="seo-related-keywords"]')?.textContent).toContain('#브이로그')
+    expect(body.textContent).toContain('2 크레딧 소모됨')
+  })
 
   it('CREDIT_INSUFFICIENT면 충전 CTA가 노출되고 클릭하면 실제 구매 모달이 열린다', async () => {
     vi.mocked(videoSeoApi.analyze).mockRejectedValue(creditError('CREDIT_INSUFFICIENT'))

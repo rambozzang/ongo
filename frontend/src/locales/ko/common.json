@@ -1,4 +1,5 @@
 {
+  "naverClipManual": {"title": "네이버 클립에 직접 올리기", "notice": "네이버는 클립 업로드 API 를 제공하지 않아 onGo 가 자동으로 올릴 수 없습니다. 아래 순서로 PC 웹(클립 크리에이터)에서 직접 올려 주세요. 올린 클립의 조회수는 onGo 에 자동으로 모이지 않습니다.", "step1": "1. 영상 파일을 내려받습니다", "download": "영상 내려받기", "noFile": "내려받을 파일이 아직 없습니다", "step2": "2. 제목과 설명·해시태그를 복사해 붙여 넣습니다", "copyTitle": "제목 복사", "copyBody": "설명·해시태그 복사", "copied": "복사됨", "copyFailed": "복사하지 못했습니다. 직접 선택해 복사해 주세요", "step3": "3. 클립 크리에이터에서 업로드 > 동영상 업로드를 누릅니다", "open": "클립 크리에이터 열기"},
   "app": {
     "name": "onGo",
     "description": "크리에이터 멀티 플랫폼 관리"
@@ -1998,6 +1999,7 @@
     "reorderSuccess": "일정이 변경되었습니다"
   },
   "aiView": {
+    "metaGrounded": "최근 90일 내 채널에서 조회수가 높았던 영상 {top}개와 낮았던 영상 {bottom}개의 제목 차이를 근거로 만들었습니다.",
     "title": "AI 크리에이터 어시스턴트",
     "usedToday": "오늘 사용",
     "remaining": "잔여",
@@ -2612,9 +2614,11 @@
       "button": "AI 도구"
     },
     "seoScore": {
+      "ruleScore": "규칙 점수",
+      "relatedKeywords": "관련 키워드",
       "button": "SEO 점수",
-      "modalTitle": "AI SEO 점수 분석",
-      "prompt": "'{title}' 영상의 SEO 최적화 수준을 AI가 진단합니다",
+      "modalTitle": "SEO 점검",
+      "prompt": "'{title}' 영상의 제목·설명·태그를 규칙으로 점검하고 AI가 개선안을 제안합니다",
       "creditNotice": "AI 크레딧이 소모됩니다",
       "run": "SEO 분석 실행",
       "analyzing": "AI가 분석 중입니다...",
@@ -4481,6 +4485,16 @@
     }
   },
   "channelAudit": {
+    "measured": {
+      "title": "실측 지표 (최근 {days}일)",
+      "viewsIn": "최근 {days}일 조회수",
+      "views": "조회수",
+      "viewsChange": "조회수 증감",
+      "likes": "좋아요",
+      "comments": "댓글",
+      "subscribers": "구독자",
+      "videos": "분석한 영상"
+    },
     "title": "채널 오디트",
     "description": "AI가 채널 전체를 진단하고 개선 액션 아이템을 제시합니다",
     "generateButton": "AI 오디트 생성",
@@ -4527,6 +4541,15 @@
     "historyEmptyDesc": "키워드를 분석하면 이력이 저장됩니다"
   },
   "common": {
+    "aiEstimate": {
+      "label": "AI 추정",
+      "suggestion": "AI 제안",
+      "basis": "근거",
+      "showBasis": "근거 보기",
+      "measured": "실측",
+      "notMeasured": "측정 안 됨",
+      "unknown": "판단 못 함"
+    },
     "showMore": "더보기",
     "collapse": "접기"
   },
@@ -4713,6 +4736,7 @@
       }
     },
     "today": {
+      "nextActions": {"title": "다음에 할 일", "makeShorts": "'{title}' 을(를) 쇼츠로 만들기", "makeShortsCta": "쇼츠 만들기"},
       "workHeading": "오늘 처리할 작업",
       "workSummary": "발행 상태와 확인이 필요한 일을 한 화면에서 정리합니다.",
       "workStatus": "오늘 발행 {queue}건 · 확인 필요 {attention}건",
@@ -4788,6 +4812,7 @@
       "autoCaption": "자동 자막",
       "metadataGenerating": "자막을 읽고 메타데이터를 만드는 중…",
       "metadataGenerated": "제목·설명·해시태그를 자동 생성했습니다. 각 플랫폼 탭에서 수정할 수 있습니다.",
+      "metadataGeneratedGrounded": "제목·설명·해시태그를 자동 생성했습니다. 내 채널에서 성과 좋았던 영상 {count}개의 제목 패턴을 참고했습니다. 각 플랫폼 탭에서 수정할 수 있습니다.",
       "metadataFailed": "메타데이터 자동 생성에 실패했습니다. 직접 입력한 뒤 다시 시도해 주세요.",
       "creditBlocked": "AI 크레딧이 부족합니다. 충전 후 다시 시도하세요.",
       "chargeCredits": "크레딧 충전하기",

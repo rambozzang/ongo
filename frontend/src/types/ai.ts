@@ -1,3 +1,4 @@
+import type { AiEstimate } from '@/types/aiEstimate'
 import type { Platform } from './channel'
 
 export type AiTone = 'FRIENDLY' | 'PROFESSIONAL' | 'HUMOROUS'
@@ -18,8 +19,17 @@ export interface GenerateMetaRequest {
   category: string
 }
 
+/** 내 채널 실측 성과를 근거로 썼는지. 안 썼으면 reason 에 이유(사람이 읽는 문장). */
+export interface MetaGrounding {
+  used: boolean
+  topCount: number
+  bottomCount: number
+  reason: string | null
+}
+
 export interface GenerateMetaResponse {
   platforms: PlatformMetaResult[]
+  grounding?: MetaGrounding | null
   creditsUsed?: number
   creditsRemaining?: number
 }
@@ -216,18 +226,23 @@ export interface ContentGapRequest {
   includeCompetitors: boolean
 }
 
+/** 수요·경쟁·포화도는 모두 AI 추정이다. `aiEstimate.basis` 가 무엇을 보고 추정했는지 말한다. */
 export interface ContentGapResponse {
   opportunities: ContentOpportunity[]
   oversaturated: OversaturatedTopic[]
   analyzedAt: string
+  aiEstimate: AiEstimate
+  /** 분석에 넣은 내 영상 수(실측) */
+  analyzedVideoCount: number
+  creditsUsed: number
 }
 
+/** 등급은 AI 가 판단하지 못했으면 null. 예전의 관련성 점수(0~100)는 근거가 없어 없앴다. */
 export interface ContentOpportunity {
   topic: string
-  estimatedDemand: 'HIGH' | 'MEDIUM' | 'LOW'
-  competitionLevel: string
+  estimatedDemand: 'HIGH' | 'MEDIUM' | 'LOW' | null
+  competitionLevel: 'HIGH' | 'MEDIUM' | 'LOW' | null
   suggestedAngle: string
-  relevanceScore: number
 }
 
 export interface OversaturatedTopic {

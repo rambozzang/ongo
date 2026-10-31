@@ -110,6 +110,9 @@ interface PipelineRunRepository {
 
     fun findById(id: Long): PipelineRun?
 
+    /** [videoIds] 중 이 사용자가 이미 쇼츠 실행을 만든 원본 영상 id. "다음에 할 일" 이 같은 영상을 다시 권하지 않게 한다. */
+    fun findSourceVideoIdsWithRuns(userId: Long, videoIds: Collection<Long>): Set<Long> = emptySet()
+
     /**
      * 여러 실행을 한 번에 읽는다. 파일럿 보고가 등록된 실행의 시각을 모을 때 쓴다.
      *

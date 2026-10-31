@@ -2,6 +2,7 @@ package com.ongo.application.scheduleoptimizer
 
 import com.ongo.application.ai.AiRateLimiter
 import com.ongo.application.ai.ChatClientResolver
+import com.ongo.application.ai.estimate.AiEstimate
 import com.ongo.application.ai.PromptTemplates
 import com.ongo.application.ai.result.ScheduleOptimalResult
 import com.ongo.application.analytics.AnalyticsUseCase
@@ -43,6 +44,13 @@ class ScheduleOptimizerUseCase(
     private val log = LoggerFactory.getLogger(ScheduleOptimizerUseCase::class.java)
 
     companion object {
+        /** AI 응답의 요일 코드. 인덱스가 실측 슬롯의 dayOfWeek(0=일요일)와 같다. */
+        private val DAY_CODES = listOf("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT")
+        /** 경쟁도를 잴 데이터가 없다는 저장 표시. 컬럼이 NOT NULL 이라 값으로 남긴다. */
+        const val UNKNOWN_COMPETITION = "UNKNOWN"
+        const val LEGACY_SLOT_BASIS =
+            "예전에 AI 가 매긴 점수입니다. 시청자 수·경쟁도는 근거가 없어 보여 주지 않습니다. 다시 분석하면 실측 값으로 바뀝니다."
+
         /** 프롬프트에 넣을 최적 시간 후보 상한. 상위 구간만으로 근거는 충분하다. */
         private const val ANALYTICS_SLOT_LIMIT = 12
 
@@ -131,21 +139,39 @@ class ScheduleOptimizerUseCase(
                 .entity(ScheduleOptimalResult::class.java)
                 ?: throw BusinessException("AI_PARSE_ERROR", "AI 응답을 파싱할 수 없습니다")
 
-            // 기존 슬롯 삭제 후 신규 저장
-            slotRepository.deleteByUserIdAndPlatform(userId, platform)
-
-            val slots = result.slots.map { item ->
+            /*
+             * **숫자는 실측으로 채운다.** AI 가 하는 일은 측정된 시간대 중에서 고르고 이유를 쓰는 것뿐이다.
+             *
+             * 예전에는 모델이 "예상 시청자 수"(audienceOnline)·경쟁도·점수를 지어내 그대로 저장했다.
+             * 시청자 수는 우리가 재지 않는 값이고, 경쟁도는 볼 데이터가 없다. 이제
+             * - 조회수: 그 시간대에 게시한 영상의 조회수 중앙값(실측)
+             * - 점수: 그 시간대의 분석 점수를 이번 결과 중 최고 시간대 대비 %로(실측에서 계산)
+             * - 경쟁도: 데이터가 없어 [UNKNOWN_COMPETITION] 으로 저장, 응답에서는 null
+             * 측정한 적 없는 시간대를 AI 가 골랐으면 버린다.
+             */
+            val measuredByKey = optimalTimes.slots.associateBy { it.dayOfWeek to it.hour }
+            val topMeasuredScore = optimalTimes.slots.maxOf { it.score }.takeIf { it > 0 }
+            val slots = result.slots.mapNotNull { item ->
+                val day = DAY_CODES.indexOf(item.dayOfWeek.trim().uppercase()).takeIf { it >= 0 } ?: return@mapNotNull null
+                val measured = measuredByKey[day to item.hour] ?: return@mapNotNull null
                 OptimalSlot(
                     userId = userId,
                     platform = platform,
-                    dayOfWeek = item.dayOfWeek,
+                    dayOfWeek = DAY_CODES[day],
                     hour = item.hour,
-                    score = item.score,
-                    audienceOnline = item.audienceOnline,
-                    competitionLevel = item.competitionLevel,
+                    score = topMeasuredScore?.let { (measured.score / it * 100).toInt().coerceIn(0, 100) } ?: 0,
+                    audienceOnline = measured.expectedViews.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+                    competitionLevel = UNKNOWN_COMPETITION,
                     reason = item.reason,
                 )
             }
+            if (slots.isEmpty()) {
+                // 저장할 것이 없으니 이전 추천을 지우지 않는다. 예외로 크레딧이 환불된다.
+                throw BusinessException("AI_PARSE_ERROR", "AI 가 측정된 시간대 안에서 추천을 고르지 못했습니다. 다시 시도해 주세요")
+            }
+
+            // 기존 슬롯 삭제 후 신규 저장
+            slotRepository.deleteByUserIdAndPlatform(userId, platform)
 
             val saved = slotRepository.saveBatch(slots)
             saved.map { it.toResponse() }
@@ -246,11 +272,22 @@ class ScheduleOptimizerUseCase(
         )
     }
 
-    private fun OptimalSlot.toResponse() = OptimalSlotResponse(
-        id = id!!, platform = platform, dayOfWeek = dayOfWeek, hour = hour,
-        score = score, audienceOnline = audienceOnline, competitionLevel = competitionLevel,
-        reason = reason, createdAt = createdAt,
-    )
+    /**
+     * [UNKNOWN_COMPETITION] 이 아닌 행은 **이 변경 전에 AI 가 지어낸 값**이 저장된 것이다.
+     * 그 조회수·경쟁도는 내보내지 않고, 점수는 추정으로 표시한다.
+     */
+    private fun OptimalSlot.toResponse(): OptimalSlotResponse {
+        val measured = competitionLevel == UNKNOWN_COMPETITION
+        return OptimalSlotResponse(
+            id = id!!, platform = platform, dayOfWeek = dayOfWeek, hour = hour,
+            score = score,
+            audienceOnline = if (measured) audienceOnline else null,
+            competitionLevel = null,
+            measured = measured,
+            aiEstimate = if (measured) null else AiEstimate(basis = LEGACY_SLOT_BASIS),
+            reason = reason, createdAt = createdAt,
+        )
+    }
 
     private fun ScheduleRecommendation.toRecResponse() = ScheduleRecommendationResponse(
         id = id!!, videoId = videoId, channelId = channelId, videoTitle = videoTitle,

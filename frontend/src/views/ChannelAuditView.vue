@@ -80,11 +80,19 @@
       >
           <div class="flex items-center justify-between gap-4">
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="font-mono text-h1 font-bold text-accent">
-                {{ report.overallScore }}
-              </span>
-              <span class="text-body-sm text-content-tertiary">/ 100</span>
+            <div class="flex flex-wrap items-center gap-3 mb-2">
+              <!-- 새 보고서는 AI 점수가 없다. 실측 조회수를 보이고, 예전 보고서의 AI 점수만 추정 배지와 함께 보인다. -->
+              <template v-if="report.measured">
+                <span class="font-mono text-h3 font-bold text-content" data-testid="audit-list-views">
+                  {{ formatCount(report.measured.totalViews) }}
+                </span>
+                <span class="text-body-xs text-content-tertiary">{{ $t('channelAudit.measured.viewsIn', { days: report.measured.periodDays }) }}</span>
+              </template>
+              <template v-else-if="report.overallScore != null">
+                <span class="font-mono text-h1 font-bold text-accent">{{ report.overallScore }}</span>
+                <span class="text-body-sm text-content-tertiary">/ 100</span>
+                <AiEstimateBadge :basis="report.overallScoreEstimate?.basis" />
+              </template>
               <span class="text-body-xs text-content-quaternary">
                 {{ formatDate(report.createdAt) }}
               </span>
@@ -116,13 +124,31 @@
       max-width="xl"
     >
       <div v-if="store.selectedReport" class="space-y-6">
-        <!-- Score Summary -->
+        <!-- 실측 지표(감사 시점). 수집하지 않는 지표는 "측정 안 됨" -->
+        <div v-if="store.selectedReport.measured" class="card" data-testid="audit-measured">
+          <h3 class="mb-2 text-body font-semibold text-content">
+            {{ $t('channelAudit.measured.title', { days: store.selectedReport.measured.periodDays }) }}
+            <span class="ml-1 text-body-xs font-normal text-content-tertiary">{{ $t('common.aiEstimate.measured') }}</span>
+          </h3>
+          <dl class="grid grid-cols-2 gap-2 tablet:grid-cols-3">
+            <div v-for="row in measuredRows(store.selectedReport.measured)" :key="row.key">
+              <dt class="text-body-xs text-content-tertiary">{{ $t(`channelAudit.measured.${row.key}`) }}</dt>
+              <dd class="font-mono text-body font-semibold text-content" :data-testid="`audit-measured-${row.key}`">{{ row.value }}</dd>
+            </div>
+          </dl>
+        </div>
         <div class="grid grid-cols-2 gap-4">
-          <div class="rounded-[11px] border border-line-control bg-accent-dim p-4 text-center">
+          <!-- 예전 보고서의 AI 점수만. 새 보고서는 점수를 매기지 않는다. -->
+          <div
+            v-if="store.selectedReport.overallScore != null"
+            class="rounded-[11px] border border-line-control bg-accent-dim p-4 text-center"
+            data-testid="audit-legacy-score"
+          >
             <p class="font-mono text-display font-bold text-accent">
               {{ store.selectedReport.overallScore }}
             </p>
             <p class="mt-1 text-body-xs text-content-tertiary">{{ $t('channelAudit.overall') }}</p>
+            <AiEstimateBadge class="mt-2" :basis="store.selectedReport.overallScoreEstimate?.basis" show-basis />
           </div>
           <div class="rounded-[11px] border border-line-control bg-surface-raised p-4 text-center">
             <p class="font-mono text-h1 font-bold text-content">{{ store.selectedReport.actionItems.length }}</p>
@@ -132,7 +158,10 @@
 
         <!-- Summary -->
         <div class="card">
-          <h3 class="mb-2 text-h3 text-content">{{ $t('channelAudit.summaryLabel') }}</h3>
+          <div class="mb-2 flex items-center gap-2">
+            <h3 class="text-h3 text-content">{{ $t('channelAudit.summaryLabel') }}</h3>
+            <AiEstimateBadge :basis="store.selectedReport.forecastEstimate?.basis" />
+          </div>
           <p class="whitespace-pre-line text-body-sm text-content-secondary">{{ store.selectedReport.growthForecast || 'AI 진단 요약이 없습니다.' }}</p>
         </div>
 
@@ -230,6 +259,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   SparklesIcon,
   ChevronRightIcon,
@@ -238,11 +268,12 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useChannelAuditStore } from '@/stores/channelAudit'
 import { useCreditStore } from '@/stores/credit'
-import type { ChannelAuditReport } from '@/types/channelAudit'
+import type { ChannelAuditMeasured, ChannelAuditReport } from '@/types/channelAudit'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import BaseModal from '@/components/common/BaseModal.vue'
+import AiEstimateBadge from '@/components/common/AiEstimateBadge.vue'
 import CreditPurchaseModal from '@/components/subscription/CreditPurchaseModal.vue'
 
 const store = useChannelAuditStore()
@@ -253,6 +284,27 @@ const showCreditModal = ref(false)
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
   return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+const { t } = useI18n()
+
+/** 숫자가 없으면 "측정 안 됨" — 0 으로 보이면 "아무도 안 봤다"는 관측이 된다. */
+function formatCount(value: number | null): string {
+  return value == null ? t('common.aiEstimate.notMeasured') : value.toLocaleString()
+}
+
+function measuredRows(m: ChannelAuditMeasured) {
+  return [
+    { key: 'views', value: formatCount(m.totalViews) },
+    {
+      key: 'viewsChange',
+      value: m.totalViewsChange == null ? t('common.aiEstimate.notMeasured') : `${m.totalViewsChange > 0 ? '+' : ''}${m.totalViewsChange.toFixed(1)}%`,
+    },
+    { key: 'likes', value: formatCount(m.totalLikes) },
+    { key: 'comments', value: formatCount(m.totalComments) },
+    { key: 'subscribers', value: formatCount(m.subscriberCount) },
+    { key: 'videos', value: m.analyzedVideoCount.toLocaleString() },
+  ]
 }
 
 function openDetail(report: ChannelAuditReport) {

@@ -6,6 +6,7 @@ import com.ongo.application.analytics.AnalyticsUseCase
 import com.ongo.application.analytics.CohortAnalysisUseCase
 import com.ongo.application.analytics.CohortGroupBy
 import com.ongo.application.analytics.LiveDashboardUseCase
+import com.ongo.application.analytics.NextActionsUseCase
 import com.ongo.application.analytics.PerformanceScoreUseCase
 import com.ongo.common.ResData
 import com.ongo.common.annotation.RequiresPermission
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*
 class AnalyticsController(
     private val analyticsUseCase: AnalyticsUseCase,
     private val performanceScoreUseCase: PerformanceScoreUseCase,
+    private val nextActionsUseCase: NextActionsUseCase,
     private val cohortAnalysisUseCase: CohortAnalysisUseCase,
     private val liveDashboardUseCase: LiveDashboardUseCase,
 ) {
@@ -179,6 +181,13 @@ class AnalyticsController(
         val period = analyticsUseCase.limitPeriod(userId, days)
         return ResData.success(analyticsUseCase.getTagPerformance(userId, period.appliedDays), period)
     }
+
+    @Operation(summary = "다음에 할 일", description = "실측 성과에서 나온 추천만 돌려준다(예: 조회수 상위인데 아직 쇼츠로 만들지 않은 영상). 근거가 없으면 빈 목록")
+    @GetMapping("/next-actions")
+    fun nextActions(
+        @Parameter(hidden = true) @CurrentUser userId: Long,
+    ): ResponseEntity<ResData<List<NextActionsUseCase.NextAction>>> =
+        ResData.success(nextActionsUseCase.nextActions(userId))
 
     @Operation(
         summary = "영상 성과 점수 조회",

@@ -6,6 +6,7 @@ import com.ongo.application.analytics.ChannelSubscriberTotal
 import com.ongo.application.analytics.PlatformMetricAvailability
 import com.ongo.application.ai.InputSanitizer
 import com.ongo.application.ai.PromptTemplates
+import com.ongo.application.ai.estimate.AiEstimate
 import com.ongo.application.ai.result.EngagementBenchmarkResult
 import com.ongo.application.credit.CreditService
 import com.ongo.common.enums.AiFeature
@@ -35,7 +36,7 @@ class EngagementBenchmarkUseCase(
      * 잠금과 DB 커넥션이 모델 응답 시간만큼 묶인다. 차감·환불의 커밋 경계는
      * [CreditService.withCredits] 가 잡는다.
      */
-    fun execute(userId: Long): EngagementBenchmarkResult {
+    fun execute(userId: Long): EngagementBenchmarkResponse {
         rateLimiter.checkRateLimit(userId)
 
         val channels = channelRepository.findByUserId(userId)
@@ -81,12 +82,7 @@ class EngagementBenchmarkUseCase(
                      * 분자 지표를 하나도 수집하지 않으면 비율이 성립하지 않는다 —
                      * `"0.00"` 은 "참여가 없었다" 는 관측이 된다.
                      */
-                    val numerator = listOfNotNull(likes, comments)
-                    val engRate = if (views != null && views > 0 && numerator.isNotEmpty()) {
-                        String.format("%.2f%%", numerator.sum().toDouble() / views * 100)
-                    } else {
-                        NOT_COLLECTED
-                    }
+                    val engRate = platformRate(platform, metrics)?.let { String.format("%.2f%%", it) } ?: NOT_COLLECTED
 
                     "- $platform: 조회수 ${describe(PlatformMetricAvailability.VIEWS) { views ?: 0 }}, " +
                         "좋아요 ${describe(PlatformMetricAvailability.LIKES) { likes ?: 0 }}, " +
@@ -128,10 +124,11 @@ class EngagementBenchmarkUseCase(
              * 붙여 두면 미측정일 때 `측정 불가(...)%` 라는 문장이 만들어진다.
              * `MetricChange.describePercent` 와 같은 이유다.
              */
-            String.format("%.2f%%", numerator.toDouble() / engagementViews * 100)
+            numerator.toDouble() / engagementViews * 100
         } else {
-            NOT_COLLECTED
+            null
         }
+        val overallEngRateText = overallEngRate?.let { String.format("%.2f%%", it) } ?: NOT_COLLECTED
 
         fun average(rows: List<CrossPlatformRaw>, pick: (CrossPlatformRaw) -> Long): String =
             if (rows.isEmpty()) NOT_COLLECTED else (rows.sumOf(pick) / rows.size).toString()
@@ -147,10 +144,15 @@ class EngagementBenchmarkUseCase(
             .replace("{avgViews}", avgViews)
             .replace("{avgLikes}", avgLikes)
             .replace("{avgComments}", avgComments)
-            .replace("{engagementRate}", overallEngRate)
+            .replace("{engagementRate}", overallEngRateText)
+
+        val measuredPlatforms = crossPlatformMetrics.groupBy { it.platform }
+            .map { (platform, metrics) ->
+                EngagementBenchmarkResponse.PlatformEngagement(platform, platformRate(platform, metrics)?.let(::round2))
+            }
 
         return creditService.withCredits(userId, AiFeature.ENGAGEMENT_BENCHMARK) {
-            try {
+            val result = try {
                 chatClientResolver.resolve(userId).prompt()
                     .system(PromptTemplates.ENGAGEMENT_BENCHMARK_SYSTEM)
                     .user(userPrompt)
@@ -163,8 +165,31 @@ class EngagementBenchmarkUseCase(
                 log.error("참여율 벤치마크 분석 실패: userId={}", userId, e)
                 throw BusinessException("AI_CALL_FAILED", "AI 호출에 실패했습니다: ${e.message}")
             }
+            // AI 가 낸 참여율·업계 평균·백분위는 쓰지 않는다. 숫자는 위에서 잰 값만 내보낸다.
+            EngagementBenchmarkResponse(
+                periodDays = PERIOD_DAYS,
+                overallEngagementRate = overallEngRate?.let(::round2),
+                platforms = measuredPlatforms,
+                strengths = result.strengths,
+                improvements = result.improvements,
+                aiEstimate = AiEstimate(basis = BASIS),
+                creditsUsed = AiFeature.ENGAGEMENT_BENCHMARK.creditCost,
+            )
         }
     }
+
+    /** 플랫폼 하나의 실측 참여율(%). 분모(조회수)나 분자 지표를 수집하지 않으면 null. */
+    private fun platformRate(platform: String, metrics: List<CrossPlatformRaw>): Double? {
+        fun reports(metric: String) = PlatformMetricAvailability.isAvailable(platform, metric)
+        val views = if (reports(PlatformMetricAvailability.VIEWS)) metrics.sumOf { it.views } else null
+        val numerator = listOfNotNull(
+            if (reports(PlatformMetricAvailability.LIKES)) metrics.sumOf { it.likes } else null,
+            if (reports(PlatformMetricAvailability.COMMENTS)) metrics.sumOf { it.comments } else null,
+        )
+        return if (views != null && views > 0 && numerator.isNotEmpty()) numerator.sum().toDouble() / views * 100 else null
+    }
+
+    private fun round2(value: Double): Double = Math.round(value * 100) / 100.0
 
     companion object {
         /**
@@ -174,5 +199,8 @@ class EngagementBenchmarkUseCase(
          * 읽고 없는 성과를 설명한다.
          */
         const val NOT_COLLECTED = "측정 불가(이 플랫폼은 수집하지 않음)"
+        private const val PERIOD_DAYS = 30
+        const val BASIS =
+            "강점·개선점은 AI 가 최근 30일 실측 참여율만 보고 쓴 문장입니다. 업계 평균과 비교한 것이 아닙니다."
     }
 }

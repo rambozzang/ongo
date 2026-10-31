@@ -67,6 +67,17 @@ class ShortsRunSourceDurationIT {
         assertEquals(SIXTY_MINUTES_MS, runRepo.findById(saved.id)!!.sourceDurationMs)
     }
 
+    /** "다음에 할 일" 이 이미 쇼츠로 만든 영상을 다시 권하지 않게 하는 조회. 다른 사용자의 실행은 세지 않는다. */
+    @Test
+    fun `source videos with runs are found per user only`() {
+        runRepo.save(PipelineRun(workspaceId = 1, userId = 1, sourceVideoId = 10))
+        runRepo.save(PipelineRun(workspaceId = 1, userId = 1, sourceVideoId = 10))
+        runRepo.save(PipelineRun(workspaceId = 2, userId = 2, sourceVideoId = 11))
+
+        assertEquals(setOf(10L), runRepo.findSourceVideoIdsWithRuns(1, listOf(10L, 11L, 12L)))
+        assertEquals(emptySet<Long>(), runRepo.findSourceVideoIdsWithRuns(1, emptyList()))
+    }
+
     /* 이 컬럼 도입 이전 행과 같은 상태. 소급 추정하지 않으므로 NULL 로 읽혀야 한다. */
     @Test
     fun `null source duration reads back as null`() {

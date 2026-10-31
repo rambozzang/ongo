@@ -1,4 +1,5 @@
 {
+  "naverClipManual": {"title": "Upload to Naver Clip yourself", "notice": "Naver offers no upload API for Clip, so onGo cannot post there automatically. Upload it yourself on the Clip Creators PC web using the steps below. Views of that clip are not collected by onGo.", "step1": "1. Download the video file", "download": "Download video", "noFile": "No file to download yet", "step2": "2. Copy the title and the description/hashtags and paste them", "copyTitle": "Copy title", "copyBody": "Copy description & hashtags", "copied": "Copied", "copyFailed": "Copy failed. Please select and copy it manually", "step3": "3. In Clip Creators, choose Upload > Video upload", "open": "Open Clip Creators"},
   "app": {
     "name": "onGo",
     "description": "Creator Multi-Platform Management"
@@ -1998,6 +1999,7 @@
     "reorderSuccess": "Schedule has been reordered"
   },
   "aiView": {
+    "metaGrounded": "Based on title differences between your {top} highest-viewed and {bottom} lowest-viewed videos in the last 90 days.",
     "title": "AI Creator Assistant",
     "usedToday": "Used Today",
     "remaining": "Remaining",
@@ -2612,9 +2614,11 @@
       "button": "AI Tools"
     },
     "seoScore": {
+      "ruleScore": "Rule score",
+      "relatedKeywords": "Related keywords",
       "button": "SEO Score",
-      "modalTitle": "AI SEO Score Analysis",
-      "prompt": "AI diagnoses the SEO optimization level of '{title}'",
+      "modalTitle": "SEO check",
+      "prompt": "Checks the title, description and tags of '{title}' against rules, and AI suggests improvements",
       "creditNotice": "AI credits will be used",
       "run": "Run SEO analysis",
       "analyzing": "AI is analyzing...",
@@ -4491,6 +4495,16 @@
     }
   },
   "channelAudit": {
+    "measured": {
+      "title": "Measured (last {days} days)",
+      "viewsIn": "views in last {days} days",
+      "views": "Views",
+      "viewsChange": "Views change",
+      "likes": "Likes",
+      "comments": "Comments",
+      "subscribers": "Subscribers",
+      "videos": "Videos analyzed"
+    },
     "title": "Channel Audit",
     "description": "AI diagnoses your entire channel and suggests actionable improvements",
     "generateButton": "Generate AI Audit",
@@ -4537,6 +4551,15 @@
     "historyEmptyDesc": "Your keyword analyses will be saved here"
   },
   "common": {
+    "aiEstimate": {
+      "label": "AI estimate",
+      "suggestion": "AI suggestion",
+      "basis": "Basis",
+      "showBasis": "Show basis",
+      "measured": "Measured",
+      "notMeasured": "Not measured",
+      "unknown": "Undetermined"
+    },
     "showMore": "Show more",
     "collapse": "Collapse"
   },
@@ -4723,6 +4746,7 @@
       }
     },
     "today": {
+      "nextActions": {"title": "Next up", "makeShorts": "Turn '{title}' into shorts", "makeShortsCta": "Make shorts"},
       "workHeading": "Work to finish today",
       "workSummary": "See publishing status and next actions in one place.",
       "workStatus": "{queue} publishing today · {attention} need attention",
@@ -4798,6 +4822,7 @@
       "autoCaption": "Auto captions",
       "metadataGenerating": "Reading captions and generating metadata…",
       "metadataGenerated": "Title, description, and hashtags are ready. Edit them per platform tab.",
+      "metadataGeneratedGrounded": "Generated titles, descriptions and hashtags using the title patterns of your {count} best-performing videos. You can edit them in each platform tab.",
       "metadataFailed": "Could not generate metadata. Enter it manually and try again.",
       "creditBlocked": "Insufficient AI credits. Charge and try again.",
       "chargeCredits": "Charge credits",

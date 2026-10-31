@@ -80,3 +80,36 @@
   - R2: ShortsFilterGraph(서버 렌더·render.sh 공용), 크롭 9:16·범위 고정, FIT_BLUR/FIT_BARS, 크롭 없으면 템플릿 배경.
   - R3: 클립별 "화자 추적 적용"(POST …/clips/{id}/track-speaker) — 장면 12칸 격자 → Qwen 비전 → 머무름-이동 크롭 → 편집기 저장 경로. 적용 시에만 크레딧(실패·인물 부족은 환불). **실제 비전 모델 호출은 검증 못 함**(외부 호출 금지).
   - 편집기 버튼: `components/ugc/ShortsSpeakerTrackButton.vue` — S 가 ShortsClipEditorModal 에 배치.
+
+## 3단계 — 2순위: "믿을 수 있는 숫자 + 내 성과로 배우는 AI" (2026-11-01, 1순위 저장 1cc08164)
+
+경쟁 조사 결론: 조용한 실패·지어낸 숫자 없음 = 신뢰가 차별점. 그리고 생성→게시→분석 루프를 **닫는** 제품이 없다.
+
+### T — 협업 세션 소유: AI 가 지어낸 수치 정리
+대상(02 B 절): 키워드 검색량·경쟁도(KEYWORD_RESEARCH), 콘텐츠 갭 수요(CONTENT_GAP_ANALYSIS), 채널 감사 점수·성장 전망(CHANNEL_AUDIT),
+수익 예측 시나리오(REVENUE_FORECAST), SEO 점수(VIDEO_SEO_SCORE), 참여율 벤치마크(ENGAGEMENT_BENCHMARK, 컨트롤러 없음), 스케줄 최적화 audienceOnline.
+- 각 수치마다: **실측으로 바꿀 수 있으면 실측**(우리 DB 의 analytics_daily 등), 아니면 응답 DTO 에 `estimated: true` + `basis`(무엇을 근거로 추정했는지 한 문장)를 붙이고
+  화면에 "AI 추정" 배지와 근거를 보인다. 근거 없이 숫자만 내는 프롬프트는 "모르면 null" 로 바꾼다.
+- 공통 배지 컴포넌트 1개(`components/common/AiEstimateBadge.vue`)를 만들어 쓴다. i18n `common.aiEstimate.*`.
+- 파일: 위 기능의 UseCase·DTO·프롬프트(PromptTemplates 의 해당 함수만)·뷰. **GenerateMetaUseCase·PromptTemplates 의 메타 생성 함수는 R 소유라 건드리지 않는다.**
+
+### M — Claude 소유: 성과 기반 메타데이터
+- GenerateMetaUseCase·메타 프롬프트: 내 채널에서 성과 좋은 영상(실측 조회·참여)의 제목·태그 패턴을 근거로 넣는다. 데이터 부족이면 넣지 않고 그 사실을 응답에 표시.
+- 플랫폼 규칙을 PlatformUploadCapabilities 한도표에서 생성(TikTok 150자 오기 수정, 전 플랫폼), 해시태그 수도 플랫폼별.
+- Compose 의 tone/category 고정값 문제는 화면 쪽이라 마지막에 본다.
+
+### 겹침
+- `PromptTemplates.kt`: T 는 위 대상 함수만, M 은 메타 생성 함수만. 같은 함수를 고치지 않는다.
+- `manualSections.ts`·locale: 줄 단위 삽입.
+
+### 편집 중 (T — term_ee09746a)
+- `PromptTemplates.kt`: `VIDEO_SEO_*`, `CONTENT_GAP_*`, `CHANNEL_AUDIT_*`, `KEYWORD_RESEARCH_*`, `ENGAGEMENT_BENCHMARK_*`, `SCHEDULE_SUGGESTION_*` 와 **쓰이지 않는** `REVENUE_FORECAST_*`(삭제)만. 메타 생성 함수는 안 건드린다.
+- `ai/result/AiStructuredResults.kt`: 위 기능의 결과 타입만(`VideoSeoScoreResult`, `ContentGapResult`, `ChannelAuditResult`, `KeywordResearchResult`, `RevenueForecastResult`(삭제)). `SttResult` 등 R 쪽은 안 건드린다.
+- 유스케이스·DTO: `videoseo/*`, `ai/ContentGapAnalysisUseCase`+DTO, `channelaudit/*`, `keyword/*`, `scheduleoptimizer/ScheduleOptimizerUseCase.generateOptimalSlots`, `benchmark/*`. 마이그레이션 없음.
+- 프런트: `api/videoSeo.ts`, `VideosView.vue` SEO 모달만, `components/dashboard/ContentGapCard.vue`, `ChannelAuditView.vue`, 신규 `components/common/AiEstimateBadge.vue`, i18n `common.aiEstimate.*`.
+
+### M 진행 기록 (Claude, 11-01)
+- 메타 생성: 한도표 기반 플랫폼 규칙(MetaPlatformRules, TikTok 150자 오기 제거, 플랫폼별 해시태그 수), 생성 직후 한도 맞춤,
+  내 채널 실측 근거(MetaPerformanceGrounding — 최근 90일 조회수 상위 5·하위 3 제목·태그, 6개 미만이면 미사용+이유). 응답 `grounding` → AiView·Compose 표시.
+- "다음에 할 일"(NextActionsUseCase, GET /analytics/next-actions): 최근 14일 조회수 상위인데 쇼츠 실행이 없는 영상 → 오늘 화면 카드 → 쇼츠 실행 만들기(영상 선택된 채로).
+  ShortsPipelineView 는 S 가 끝낸 파일이라 onMounted 에 미리 선택 몇 줄만 넣었다.

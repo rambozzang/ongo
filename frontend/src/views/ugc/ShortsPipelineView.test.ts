@@ -58,7 +58,7 @@ const run = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-async function renderPipeline() {
+async function renderPipeline(path = '/ugc/shorts/runs') {
   const pinia = createPinia()
   setActivePinia(pinia)
   const workspace = useWorkspaceStore()
@@ -74,7 +74,7 @@ async function renderPipeline() {
     ],
   })
   const i18n = createI18n({ legacy: false, locale: 'ko', messages: { ko: koMessages } })
-  await router.push('/ugc/shorts/runs')
+  await router.push(path)
   await router.isReady()
   const wrapper = mount(ShortsPipelineView, {
     global: {
@@ -129,6 +129,17 @@ describe('ShortsPipelineView', () => {
     await flushPromises()
     expect(ugcShortsPipelineApi.create).toHaveBeenCalledWith(2, { sourceVideoId: 4, templateId: null })
     expect(router.currentRoute.value.fullPath).toBe('/ugc/shorts/runs/18')
+  })
+
+  it('"다음에 할 일" 에서 영상 id 를 받아 오면 그 영상을 고른 채로 만들기 창을 연다', async () => {
+    vi.mocked(ugcShortsPipelineApi.create).mockResolvedValue(run({ id: 19, status: 'RUNNING' }) as never)
+    const { wrapper } = await renderPipeline('/ugc/shorts/runs?videoId=4')
+
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+    expect((wrapper.get('#shorts-run-video').element as HTMLSelectElement).value).toBe('4')
+    await wrapper.findAll('button').find((button) => button.text() === '실행 시작')!.trigger('click')
+    await flushPromises()
+    expect(ugcShortsPipelineApi.create).toHaveBeenCalledWith(2, { sourceVideoId: 4, templateId: null })
   })
 
   // ---- 클립 고르기 조건 ----

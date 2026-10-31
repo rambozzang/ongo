@@ -240,6 +240,7 @@ export const sectionsKo: ManualSection[] = [
           '후킹 문구는 처음 3.5초 동안만 크게 떴다 사라집니다. 아래 자막은 플랫폼 버튼·설명에 가리지 않도록 화면 아래 약 20% 위에 놓이며, 하단 세이프에어리어가 더 크면 그 값을 따릅니다.',
           '세로 화면은 늘어나지 않습니다. 크롭은 항상 9:16 으로 맞춰지고 원본 밖으로 나가지 않으며, 크롭이 없으면 배경 스타일(블러 배경 또는 위아래 검은 바)로 원본 전체를 담습니다.',
           '한글 자막은 서버에 함께 실린 글꼴(Pretendard)로 굽기 때문에 글자가 네모로 깨지지 않습니다. 단어 시각이 없는 자막 줄(직접 고친 줄 등)은 강조 없이 나갑니다.',
+          '"오늘" 화면의 "다음에 할 일"은 최근 14일 조회수가 높은데 아직 쇼츠로 만들지 않은 영상을 실제 수집된 조회수 순위로 알려 줍니다. "쇼츠 만들기"를 누르면 그 영상을 고른 채로 실행 만들기 창이 열립니다. 근거가 없으면 카드가 보이지 않습니다.',
           '클립 편집기의 "화자 추적 적용"은 클립 장면을 보고 말하는 사람을 따라 세로 화면을 움직입니다. 사람이 바뀌면 그 자리에 머물다 짧게 옮겨 가고, 인물을 충분히 찾지 못하면 적용하지 않고 크레딧을 돌려드립니다. 적용한 뒤에는 다시 렌더해야 합니다.',
           '"기본 템플릿으로 지정"을 켜면 워크스페이스의 기본 템플릿이 됩니다(워크스페이스당 1개).',
         ],
@@ -343,6 +344,7 @@ export const sectionsKo: ManualSection[] = [
           'TikTok: TikTok 비즈니스 또는 크리에이터 계정이 필요합니다.',
           'Instagram Reels: Facebook/Meta 비즈니스 계정과 연결된 Instagram 계정이 필요합니다.',
           'Naver Clip: 공개 업로드 API와 제휴 조건이 확인되지 않아 현재 연동·게시를 지원하지 않습니다.',
+          '대신 영상 상세의 "네이버 클립에 직접 올리기"에서 영상 파일 내려받기, 제목·설명·해시태그 복사, 클립 크리에이터(PC 웹) 열기를 한 곳에서 할 수 있습니다. 올리는 것은 직접 하며, 올린 클립의 조회수는 onGo 에 모이지 않습니다.',
           'X (Twitter): Twitter/X 개발자 계정이 필요합니다. OAuth 2.0 PKCE를 사용합니다.',
           'Facebook: Facebook 페이지 관리자 권한이 필요합니다.',
           'Threads: Meta/Instagram 비즈니스 계정이 필요합니다.',
@@ -493,6 +495,10 @@ export const sectionsKo: ManualSection[] = [
       {
         subtitle: '제목/설명 생성',
         text: 'AI가 영상 내용을 분석하여 최적화된 제목과 설명을 자동 생성합니다. 플랫폼별 특성에 맞춰 각각 다른 버전을 제안합니다.',
+        items: [
+          '내 채널에서 최근 90일 조회수가 높았던 영상과 낮았던 영상의 제목·태그 차이를 근거로 제목을 만듭니다. 조회수가 집계된 영상이 6개 미만이면 참고하지 않고, 결과 화면에 그 이유를 보여 줍니다.',
+          '제목·설명 길이와 해시태그 개수는 게시할 때 쓰는 플랫폼별 한도와 같은 기준으로 맞춰서 나옵니다(예: Threads 해시태그 1개). 게시 단계에서 한도 초과로 거절되지 않습니다.',
+        ],
       },
       {
         subtitle: '해시태그 추천',
@@ -1002,7 +1008,8 @@ export const sectionsKo: ManualSection[] = [
         items: [
           '경쟁 채널의 인기 주제와 내 채널의 주제를 비교합니다.',
           '미발굴 주제에 대한 콘텐츠 제안을 제공합니다.',
-          '예상 성과와 경쟁 강도를 함께 표시합니다.',
+          '예상 수요와 경쟁 강도는 "AI 추정" 배지와 함께 표시됩니다. 검색량·시장 데이터 없이 내 영상과 경쟁 채널 정보만 보고 추정한 것이며, 배지를 누르면 근거가 보입니다. 판단할 근거가 없으면 "판단 못 함"으로 표시합니다.',
+          '분석할 영상이 하나도 없으면 분석을 시작하지 않고 크레딧도 차감하지 않습니다.',
           '추천 주제를 바로 콘텐츠 캘린더에 추가할 수 있습니다.',
         ],
       },
@@ -2522,16 +2529,16 @@ export const sectionsKo: ManualSection[] = [
     content: [
       {
         subtitle: '개요',
-        text: '비디오 SEO 최적화는 영상의 제목, 설명, 태그, 썸네일을 분석하여 검색 최적화 점수와 개선 방안을 제시합니다.',
+        text: '비디오 SEO 최적화는 영상의 제목·설명·태그를 정해진 항목으로 점검해 규칙 점수를 매기고, AI가 개선 방안을 제안합니다.',
       },
       {
         subtitle: '주요 기능',
         text: '',
         items: [
-          'SEO 점수: 제목, 설명, 태그, 썸네일 각각의 점수와 종합 점수를 제공합니다.',
-          '개선 제안: AI가 SEO 점수를 높이기 위한 구체적인 개선 사항을 추천합니다.',
-          '키워드 분석: 관련 키워드의 검색량, 경쟁도, 트렌드를 분석합니다.',
-          '플랫폼별 분석: 플랫폼 특성에 맞는 SEO 최적화 방향을 제시합니다.',
+          '규칙 점수: 제목·설명·태그·전반 네 영역을 정해진 점검 항목(제목 길이와 플랫폼 한도, 태그가 제목·설명에 들어 있는지, 태그 수·중복 등)으로 채점합니다. 같은 영상이면 늘 같은 점수가 나오며, 항목마다 통과 여부와 실제 글자 수·개수가 표시됩니다. AI가 매긴 점수가 아니며 플랫폼 검색 순위를 뜻하지 않습니다.',
+          '개선 제안: 통과하지 못한 항목을 바탕으로 AI가 고칠 방법을 제안합니다("AI 제안" 배지).',
+          '관련 키워드: AI가 제목·설명·태그만 보고 제안한 키워드입니다. 검색량 데이터는 보지 않습니다.',
+          '플랫폼별 한도: 게시 대상 플랫폼 중 가장 엄격한 제목 길이·태그 개수 한도로 점검합니다.',
         ],
       },
       {
@@ -3299,6 +3306,7 @@ export const sectionsEn: ManualSection[] = [
           'The hook text appears large for the first 3.5 seconds only. Bottom captions sit above the bottom ~20% so platform buttons and descriptions do not cover them; a larger bottom safe area takes precedence.',
           'Vertical video is never stretched. Crops are always forced to 9:16 and kept inside the source; without a crop, the whole source is shown over the background style (blurred background or black bars).',
           'Korean captions are burned in with a bundled font (Pretendard), so characters never render as boxes. Lines without word timings (such as lines you edited) are shown without highlighting.',
+          '"Next up" on the Today screen points to a video with high measured views in the last 14 days that you have not turned into shorts yet. "Make shorts" opens the run form with that video selected. Without evidence the card is hidden.',
           '"Apply speaker tracking" in the clip editor looks at the clip\'s scenes and moves the vertical frame to follow whoever is speaking. When the speaker changes it holds, then moves quickly; if too few people are found it is not applied and your credits are returned. Re-render after applying.',
           'Turn on "Set as default template" to make it the workspace default (one per workspace).',
         ],
@@ -3402,6 +3410,7 @@ export const sectionsEn: ManualSection[] = [
           'TikTok: A TikTok Business or Creator account is required.',
           'Instagram Reels: An Instagram account linked to a Facebook/Meta Business account is required.',
           'Naver Clip: Channel connection and publishing are not supported until a public upload API and partnership requirements are confirmed.',
+          'Instead, "Upload to Naver Clip yourself" on the video detail page lets you download the file, copy the title/description/hashtags, and open Clip Creators (PC web) in one place. You upload it yourself, and views of that clip are not collected by onGo.',
           'X (Twitter): A Twitter/X developer account is required. Uses OAuth 2.0 PKCE.',
           'Facebook: Facebook Page admin permissions are required.',
           'Threads: A Meta/Instagram Business account is required.',
@@ -3553,6 +3562,10 @@ export const sectionsEn: ManualSection[] = [
       {
         subtitle: 'Title & Description Generation',
         text: 'AI analyzes your video content and automatically generates optimized titles and descriptions. It suggests different versions tailored to each platform\'s characteristics.',
+        items: [
+          'Titles are grounded in the difference between the titles and tags of your highest- and lowest-viewed videos from the last 90 days. With fewer than 6 measured videos this is skipped and the result screen tells you why.',
+          'Title/description length and hashtag count follow the same per-platform limits used at publishing (e.g. 1 hashtag for Threads), so posts are not rejected for exceeding limits.',
+        ],
       },
       {
         subtitle: 'Hashtag Recommendations',
@@ -4062,7 +4075,8 @@ export const sectionsEn: ManualSection[] = [
         items: [
           'Compares popular topics from competitor channels with your channel\'s topics.',
           'Provides content suggestions for undiscovered topics.',
-          'Displays expected performance and competition intensity together.',
+          'Expected demand and competition are shown with an "AI estimate" badge. They are estimated from your videos and competitor channel info only, without search or market data — tap the badge to see the basis. If there is no basis, they show as "Undetermined".',
+          'If you have no videos, the analysis doesn\'t start and no credits are charged.',
           'Add recommended topics directly to your content calendar.',
         ],
       },
@@ -5590,16 +5604,16 @@ export const sectionsEn: ManualSection[] = [
     content: [
       {
         subtitle: 'Overview',
-        text: 'Video SEO Optimizer analyzes video titles, descriptions, tags, and thumbnails to provide search optimization scores and improvement suggestions.',
+        text: 'Video SEO Optimizer checks a video\'s title, description and tags against fixed rules to give a rule score, and AI suggests improvements.',
       },
       {
         subtitle: 'Key Features',
         text: '',
         items: [
-          'SEO Scores: Get individual scores for title, description, tags, and thumbnail, plus an overall score.',
-          'Improvement Suggestions: AI recommends specific actions to boost your SEO score.',
-          'Keyword Analysis: Analyze search volume, competition, and trends for related keywords.',
-          'Platform-specific: Get SEO optimization recommendations tailored to each platform.',
+          'Rule score: Title, description, tags and general are scored with fixed checks (title length and platform limit, whether tags appear in the title and description, tag count and duplicates, etc.). The same video always gets the same score, and each check shows whether it passed with the actual length or count. It is not scored by AI and does not mean a platform search ranking.',
+          'Improvement suggestions: AI suggests fixes based on the checks that failed ("AI suggestion" badge).',
+          'Related keywords: Keywords AI suggests from the title, description and tags only. No search volume data is used.',
+          'Platform limits: Checks use the strictest title length and tag count limit among your publishing targets.',
         ],
       },
       {

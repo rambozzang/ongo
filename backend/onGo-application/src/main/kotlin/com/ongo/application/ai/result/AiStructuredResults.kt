@@ -124,12 +124,15 @@ data class ContentGapResult(
     val opportunities: List<ContentOpportunityResult>,
     val oversaturated: List<OversaturatedTopicResult>,
 ) {
+    /**
+     * 수요·경쟁은 AI 추정이다(검색·시장 데이터를 보지 않는다). 모르면 null.
+     * 예전의 관련성 점수(0~100)는 근거가 없어 없앴다.
+     */
     data class ContentOpportunityResult(
         val topic: String,
-        val estimatedDemand: String,
-        val competitionLevel: String,
-        val suggestedAngle: String,
-        val relevanceScore: Double,
+        val estimatedDemand: String? = null,
+        val competitionLevel: String? = null,
+        val suggestedAngle: String = "",
     )
     data class OversaturatedTopicResult(
         val topic: String,
@@ -195,40 +198,6 @@ data class ContentCalendarResult(
     )
 }
 
-data class RevenueForecastResult(
-    val currentMonthlyRevenue: Long,
-    val forecastedMonthlyRevenue: Long,
-    val growthRate: Double,
-    val confidence: Double,
-    val breakdowns: List<RevenueBreakdownItem>,
-    val scenarios: List<ForecastScenarioItem>,
-    val chartData: List<ChartDataPoint>,
-) {
-    data class RevenueBreakdownItem(
-        val source: String,
-        val currentMonthly: Long,
-        val forecastMonthly: Long,
-        val growthRate: Double,
-        val share: Double,
-    )
-    data class ForecastScenarioItem(
-        val name: String,
-        val description: String,
-        val uploadFrequency: Int,
-        val avgViewsPerVideo: Long,
-        val subscriberGrowthRate: Double,
-        val forecastData: List<ChartDataPoint>,
-        val totalForecast: Long,
-    )
-    data class ChartDataPoint(
-        val month: String,
-        val actual: Long? = null,
-        val forecast: Long? = null,
-        val lowerBound: Long? = null,
-        val upperBound: Long? = null,
-    )
-}
-
 data class RevenueInsightResult(
     val insightType: String,
     val summary: String,
@@ -259,8 +228,15 @@ data class ContentRepurposeResult(
     )
 }
 
+/**
+ * 채널 감사의 AI 응답이자 저장 형식.
+ *
+ * [overallScore] 는 **더 이상 AI 에게 묻지 않는다**(근거 없는 0~100 점수였다). 이 필드는 예전에 저장된
+ * 보고서를 읽기 위해 남겨 두며, 새 보고서는 null 로 저장한다. 실측 지표는 저장할 때 `measured` 로
+ * 따로 붙인다 — 이 클래스에 넣으면 구조화 출력 스키마에 들어가 모델이 그 숫자까지 채우려 든다.
+ */
 data class ChannelAuditResult(
-    val overallScore: Int,
+    val overallScore: Int? = null,
     val strengths: List<String>,
     val weaknesses: List<String>,
     val actionItems: List<ActionItem>,
@@ -280,17 +256,13 @@ data class ChannelAuditResult(
     )
 }
 
+/**
+ * SEO 점검의 AI 몫: 개선 제안과 관련 키워드뿐이다. 점수는 `SeoRubric` 이 규칙으로 매긴다 —
+ * AI 에게 점수를 묻지 않는다(근거 없는 숫자가 측정값처럼 보였다).
+ */
 data class VideoSeoScoreResult(
-    val overallScore: Int,
-    val titleScore: Int,
-    val descriptionScore: Int,
-    val tagsScore: Int,
-    val generalScore: Int,
-    val titleSuggestions: List<String>,
-    val descriptionSuggestions: List<String>,
-    val tagsSuggestions: List<String>,
-    val generalSuggestions: List<String>,
-    val competitorKeywords: List<String>,
+    val suggestions: List<String> = emptyList(),
+    val relatedKeywords: List<String> = emptyList(),
 )
 
 data class KeywordResearchResult(
@@ -299,12 +271,15 @@ data class KeywordResearchResult(
     val overallOpportunity: String,
     val suggestions: List<String>,
 ) {
+    /**
+     * 검색량·경쟁도·추세는 **AI 추정**이다 — 모델은 검색 데이터를 보지 않는다. 모르면 null.
+     * 예전의 기회 점수(1~100)는 근거가 없어 없앴다.
+     */
     data class PlatformKeywordAnalysis(
         val platform: String,
-        val searchVolume: String,
-        val competition: String,
-        val trend: String,
-        val opportunityScore: Int,
-        val relatedKeywords: List<String>,
+        val searchVolume: String? = null,
+        val competition: String? = null,
+        val trend: String? = null,
+        val relatedKeywords: List<String> = emptyList(),
     )
 }

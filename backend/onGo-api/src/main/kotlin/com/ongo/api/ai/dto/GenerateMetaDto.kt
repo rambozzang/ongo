@@ -22,7 +22,11 @@ data class GenerateMetaRequest(
 
 data class GenerateMetaResponse(
     val platforms: List<PlatformMeta>,
+    /** 내 채널 실측 성과를 근거로 썼는지. 안 썼으면 [Grounding.reason] 에 이유. */
+    val grounding: Grounding? = null,
 ) {
+    data class Grounding(val used: Boolean, val topCount: Int, val bottomCount: Int, val reason: String?)
+
     data class PlatformMeta(
         val platform: String,
         val titleCandidates: List<String>,
